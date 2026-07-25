@@ -110,6 +110,7 @@ function coverageNote(dataset) {
   const dinoElig = dc.inserts_eligible;
   const nc = m.nc_coverage || {};
   const ncElig = nc.options_eligible;
+  const comp = m.compendium_coverage || {};
   const parts = [
     "<strong>Optimized:</strong> worn affixes, augments" +
       (aug != null ? ` (${aug} placeable)` : "") +
@@ -119,6 +120,10 @@ function coverageNote(dataset) {
     "<strong>Pending:</strong> U81 Nearly Complete crafting — the effect pool is sourced" +
       (ncElig != null ? ` (${ncElig} options)` : "") +
       " but no U81 item hosts are published yet, so it does not yet contribute; likewise the Dino Weapon/Armor/Raid/Set-Bonus pools and other expansion crafting systems",
+    "<strong>Compendium:</strong> " +
+      (comp.total_indexed != null ? `${comp.total_indexed} named items indexed across the game` : "named-item index in progress") +
+      (comp.enriched_matched != null ? `, of which ${comp.enriched_matched} are enriched and solver-active` : "") +
+      " — indexed-only items are browsable (name, slot, wiki link) but not yet stat-sourced, so the solver ranges over the enriched set; stat enrichment proceeds in batches",
   ];
   return `<p class="scope-note">${parts.join(". ")}. All optimized values are wiki-traceable.</p>`;
 }

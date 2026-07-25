@@ -3,7 +3,7 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 
-const { filterVariants, variantStats, affixText, dinoInsertRow, ncRow, browsableItems } = require("../web/browse.js");
+const { filterVariants, variantStats, affixText, dinoInsertRow, ncRow, compendiumRow, browsableItems } = require("../web/browse.js");
 const data = JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")
 );
@@ -61,7 +61,11 @@ test("browsableItems appends the Dino insert pool as display rows", () => {
   const inserts = list.filter((v) => v.dino_insert);
   assert.strictEqual(inserts.length, (data.dino_inserts || []).length);
   assert.ok(inserts.length >= 50, "expected the sourced insert pool");
-  assert.strictEqual(list.length, items.length + inserts.length);
+  // browsable = real variants + every appended display pool (dino inserts,
+  // NC options, and the indexed-only compendium index)
+  const nc = (data.nearly_complete || []).length;
+  const comp = (data.compendium || []).filter((x) => x.status === "indexed").length;
+  assert.strictEqual(list.length, items.length + inserts.length + nc + comp);
 });
 
 test("a Dino insert is findable in the browser by stat", () => {
@@ -109,6 +113,31 @@ test("ncRow tags the tier's ML and renders its value", () => {
   const row = ncRow({ category: "Ability Score", stat: "Constitution", bonus_type: "Enhancement", value: 15, tier: "legendary", wiki_url: "w" });
   assert.strictEqual(row.minimum_level, 35);
   assert.ok(affixText(row).some((t) => /Constitution \+15/.test(t)));
+});
+
+test("browsableItems appends the compendium index (indexed-only entries)", () => {
+  const list = browsableItems(data);
+  const idx = list.filter((v) => v.compendium);
+  const indexedOnly = (data.compendium || []).filter((x) => x.status === "indexed").length;
+  assert.strictEqual(idx.length, indexedOnly, "indexed-only compendium rows are browsable");
+  assert.ok(idx.length > 0, "expected a non-empty compendium index");
+  // enriched entries are NOT re-listed here (they appear as real variant rows)
+  assert.ok(!idx.some((v) => v.verification !== "indexed"));
+});
+
+test("compendiumRow renders an indexed, solver-excluded row with a wiki link", () => {
+  const row = compendiumRow({ name: "Some Ring", slot: "Ring", wiki_url: "w", status: "indexed" });
+  assert.strictEqual(row.verification, "indexed");
+  assert.strictEqual(row.slot, "Ring");
+  assert.deepStrictEqual(row.affixes, []);
+  assert.ok(row.wiki_url);
+});
+
+test("indexed items are filterable by status and slot", () => {
+  const list = browsableItems(data);
+  const rows = filterVariants(list, { verification: "indexed", slot: "Ring" });
+  assert.ok(rows.length > 0, "indexed Rings surface under the status+slot filter");
+  for (const v of rows) { assert.strictEqual(v.verification, "indexed"); assert.strictEqual(v.slot, "Ring"); }
 });
 
 console.log(`\n${passed} passed`);

@@ -87,14 +87,37 @@ function ncRow(opt) {
   };
 }
 
-/** The browsable list: real item variants plus the Dino insert pool and the U81
- *  Nearly-Complete option pool rendered as display rows. Pure, so it is
- *  unit-testable. */
+/** Display-only pseudo-variant for one compendium roster entry — a named item
+ *  the index knows exists (name, slot, wiki link) but whose stats are not yet
+ *  sourced. Status "indexed": browse-only, never fed to the solver. Enriched
+ *  items appear as their own real variant rows, so only indexed-only entries are
+ *  rendered here (no double-listing). */
+function compendiumRow(it) {
+  const typ = it.weapon_type || it.armor_type || it.offhand_type;
+  return {
+    variant_id: it.name,
+    source_item: `Compendium index — ${it.slot}${typ ? ` (${typ})` : ""}`,
+    slot: it.slot,
+    minimum_level: null,
+    verification: "indexed",
+    verification_reasons: ["indexed — stats not yet sourced"],
+    affixes: [],
+    scaling: [],
+    wiki_url: it.wiki_url,
+    compendium: true,
+  };
+}
+
+/** The browsable list: real item variants plus the Dino insert pool, the U81
+ *  Nearly-Complete option pool, and the compendium index (indexed-only entries)
+ *  rendered as display rows. Pure, so it is unit-testable. */
 function browsableItems(dataset) {
   const items = (dataset && dataset.items) || [];
   const inserts = ((dataset && dataset.dino_inserts) || []).map(dinoInsertRow);
   const nc = ((dataset && dataset.nearly_complete) || []).map(ncRow);
-  return items.concat(inserts, nc);
+  const comp = ((dataset && dataset.compendium) || [])
+    .filter((x) => x.status === "indexed").map(compendiumRow);
+  return items.concat(inserts, nc, comp);
 }
 
 // ---- DOM rendering (browser only) ----
@@ -117,6 +140,7 @@ function initBrowse(dataset) {
       <option value="all">All</option>
       <option value="verified">Verified only</option>
       <option value="quarantined">Quarantined only</option>
+      <option value="indexed">Indexed (not yet sourced)</option>
     </select>
     <button id="f-clear" type="button">Clear</button>`;
 
@@ -175,5 +199,5 @@ if (typeof window !== "undefined" && window.App) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { filterVariants, variantStats, affixText, dinoInsertRow, ncRow, browsableItems };
+  module.exports = { filterVariants, variantStats, affixText, dinoInsertRow, ncRow, compendiumRow, browsableItems };
 }

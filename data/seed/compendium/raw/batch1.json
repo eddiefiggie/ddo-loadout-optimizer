@@ -1,0 +1,122 @@
+{
+ "metadata": {
+  "layer": "raw-wikitext",
+  "batch": "batch1",
+  "harvested": "2026-07-25",
+  "note": "raw {{template}} enhancement fields; enriched_*.json is regenerable from these via src.enrich.build_item_record"
+ },
+ "items": [
+  {
+   "name": "Legendary Adversion",
+   "slot": "Ring",
+   "minimum_level": 29,
+   "field": "* {{Spell Focus|Abjuration|7}}\n* {{Spell Focus|Abjuration|3|Insightful|prefix=Insightful}}\n* {{Wizardry|269}}\n* {{Spellpen|8}}\n* {{Augment|yellow}}\n* {{Named item sets|Adherent of the Mists Set (Legendary)}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Adversion"
+  },
+  {
+   "name": "Legendary Argonnessen Eye Band",
+   "slot": "Ring",
+   "minimum_level": 34,
+   "field": "* {{Spell Focus|Spell Focus Mastery|5}}\n* {{Wizardry|155|Insightful}}\n* {{Spellpen|5|Insight|prefix=Insightful}}\n* {{Spell Focus|Spell Focus Mastery|3|Sacred}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Argonnessen_Eye_Band"
+  },
+  {
+   "name": "Legendary Band of Acrobatics",
+   "slot": "Ring",
+   "minimum_level": 33,
+   "field": "* {{Skills|Jump|21}}\n* {{Skills|Tumble|21}}\n* {{Skills|Tumble|10|Insight|prefix=Insightful}}\n* {{Accuracy|5|Legendary}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_Acrobatics"
+  },
+  {
+   "name": "Legendary Band of Faith and Fortress",
+   "slot": "Ring",
+   "minimum_level": 33,
+   "field": "* {{Sheltering|9|Quality|Physical}}\n* {{Fortification|156}}\n* {{Hp|False Life|56}}\n* {{Temperance of Belief}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_Faith_and_Fortress"
+  },
+  {
+   "name": "Legendary Band of Insightful Commands",
+   "slot": "Ring",
+   "minimum_level": 28,
+   "field": "* {{Stat|Well Rounded|2|Profane}}\n* {{Accuracy|9|Insightful}}\n* {{Deadly|3|Quality}}\n* {{Skills|Intimidate|20}}\n* {{Augment|Yellow}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_Insightful_Commands"
+  },
+  {
+   "name": "Legendary Band of Manifest Magic",
+   "slot": "Ring",
+   "minimum_level": 33,
+   "field": "* {{Spell Focus|Evocation|11}}\n* {{Spell Focus|Conjuration|11}}\n* {{Spell Focus|Transmutation|11}}\n* {{Wizardry|151|Insightful}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_Manifest_Magic"
+  },
+  {
+   "name": "Legendary Band of Mental Magic",
+   "slot": "Ring",
+   "minimum_level": 33,
+   "field": "* {{Spell Focus|Enchantment|11}}\n* {{Spell Focus|Illusion|11}}\n* {{Spell Focus|Necromancy|11}}\n* {{Wizardry|151|Insightful}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_Mental_Magic"
+  },
+  {
+   "name": "Legendary Band of Seasons' Warding",
+   "slot": "Ring",
+   "minimum_level": 33,
+   "field": "* {{Elemental Resistance|Fire|56}}\n* {{Elemental Resistance|Cold|56}}\n* {{Elemental Resistance|Electric|56}}\n* {{Elemental Resistance|Acid|56}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_Seasons'_Warding"
+  },
+  {
+   "name": "Legendary Adherent's Pendant",
+   "slot": "Necklace",
+   "minimum_level": 30,
+   "field": "* {{Spelllore|Healing|21}}\n* {{SpellPower|Devotion|146}}\n* {{Wizardry|277}}\n* {{Action Boost Enhancement}}\n* {{Augment|Yellow}}\n* {{Augment|Green}}\n* {{Named item sets|Legendary Oasis of Morality}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Adherent's_Pendant"
+  },
+  {
+   "name": "Legendary Alchemist's Pendant",
+   "slot": "Necklace",
+   "minimum_level": 29,
+   "field": "* {{Nearly Finished|{{Stat|CON|13}}|{{Stat|con|6|Insightful}}|{{Stat|con|3|Quality}}}}\n* {{Spell Focus|Mastery|2|Profane}}\n* {{Hp|Legendary Elemental Energy}}\n* {{Save|Spell|11}}\n* {{Augment|Blue}}\n* {{Augment|Yellow}}\n* {{Named item sets|Astute Alchemist}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Alchemist's_Pendant"
+  },
+  {
+   "name": "Legendary Amber Pendant",
+   "slot": "Necklace",
+   "minimum_level": 29,
+   "field": "* {{Spell Focus|Mastery|6}}\n* {{Spell Focus|Mastery|3|Insightful}}\n* {{Spell Focus|Necromancy|2|Quality}}\n* {{Sheltering|17|Insightful}}\n* {{Augment|Green}}\n* {{Named item sets|Eminence of Autumn}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Amber_Pendant"
+  },
+  {
+   "name": "Legendary Amulet of the Makers",
+   "slot": "Necklace",
+   "minimum_level": 28,
+   "field": "* {{SpellPower|Reconstruction|146}}\n* {{SpellPower|Reconstruction|71|Insight}}\n* {{Hp|Vitality|44}}\n* {{Wizardry|67|Quality}}\n* {{Augment|Blue}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Amulet_of_the_Makers"
+  },
+  {
+   "name": "Legendary Anchorchain",
+   "slot": "Necklace",
+   "minimum_level": 30,
+   "field": "* {{Spelllore|Ice|21}}\n* {{SpellPower|Glaciation|146}}\n* {{Hp|Profane Lifeforce|45}}\n* {{Spell Focus|Spell Focus Mastery|II|Profane}}\n* {{Guard|Legendary Ice Shards}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Named item sets|Legendary Saltmarsh Explorer}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Anchorchain"
+  },
+  {
+   "name": "Legendary Astral Spore Pendant",
+   "slot": "Necklace",
+   "minimum_level": 35,
+   "field": "* {{Absorption|Poison|39}}\n* {{Save|Will|6|Insightful}}\n* {{Hp|False Life|29|Insightful}}\n* {{Nearly Complete|Quality Ability Score|1}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Astral_Spore_Pendant"
+  },
+  {
+   "name": "Legendary Azure Necklace of Prophecy",
+   "slot": "Necklace",
+   "minimum_level": 30,
+   "field": "* {{Spelllore|Lightning|22}}\n* {{SpellPower|Magnetism|151}}\n* {{Absorption|Electricity|36}}\n* {{Elemental Resistance|Electric|54}}\n* {{Augment|Green}}\n* {{Named item sets|Legendary Draconic Prophecy}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Azure_Necklace_of_Prophecy"
+  },
+  {
+   "name": "Legendary Baron Aubrecker's Family Amulet",
+   "slot": "Necklace",
+   "minimum_level": 34,
+   "field": "* {{Power in Pact|3}}\n* {{Spell Focus|Mastery|8}}\n* {{Lamordia Slot|Melancholic|Accessory}}\n* {{Lamordia Slot|Dolorous|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Baron_Aubrecker's_Family_Amulet"
+  }
+ ]
+}

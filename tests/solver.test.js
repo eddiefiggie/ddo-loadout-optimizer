@@ -489,5 +489,21 @@ function setPiece(id, slotName, affixes, setName, tiers) {
       "no NC slot on the item -> pool unused");
   });
 
+  await test("enriched compendium item is solver-selectable end-to-end (real dataset)", async () => {
+    const fs = require("fs");
+    const { buildModel } = require("../web/model.js");
+    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    // "Diversion" is carried ONLY by enriched compendium items, so a positive
+    // achieved value proves an enriched item entered the solver pool, survived the
+    // dominance filter, and was selected — not just that it "verified".
+    const query = { mlCap: 34, targets: ["Diversion"], armorType: null, weaponSetup: null, classRace: null };
+    const model = buildModel(data.items, query, data.dino_inserts, data.nearly_complete);
+    const res = await S.solveLexicographic(model, highs);
+    assert.strictEqual(res.status, "optimal");
+    assert.ok(res.effective["Diversion"] > 0, "an enriched item supplying Diversion was selected");
+    const pick = res.chosen.find((c) => (c.variant.affixes || []).some((a) => a.stat === "Diversion"));
+    assert.ok(pick, "the selected loadout includes the Diversion-carrying enriched item");
+  });
+
   console.log(`\n${passed} passed`);
 })();

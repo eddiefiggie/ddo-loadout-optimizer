@@ -24,11 +24,15 @@ from src import colors as colors_mod
 from src import set_parser as set_mod
 from src import dino as dino_mod
 from src import nearly_complete as nc_mod
+from src import compendium as compendium_mod
+
+import glob
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SEED_PATH = os.path.join(HERE, "data", "seed", "ddo_items.json")
 DINO_SEED_PATH = os.path.join(HERE, "data", "seed", "dino_crafting.json")
 NC_SEED_PATH = os.path.join(HERE, "data", "seed", "nearly_complete.json")
+COMPENDIUM_DIR = os.path.join(HERE, "data", "seed", "compendium")
 # Output lands inside web/ so that directory is a self-contained, deployable
 # site root (GitHub Pages serves web/ as the root; the app fetches data/ relatively).
 OUT_PATH = os.path.join(HERE, "web", "data", "items.json")
@@ -56,6 +60,19 @@ def load_nc_seed(path: str = NC_SEED_PATH) -> dict:
         return json.load(fh)
 
 
+def load_enriched_items(dirpath: str = COMPENDIUM_DIR) -> list:
+    """Load stat-enriched compendium items (data/seed/compendium/enriched_*.json).
+
+    These are base-seed-shape records produced by src.enrich from item wikitext;
+    they merge into the item pipeline so their parsed affixes become solver-active.
+    """
+    items = []
+    for path in sorted(glob.glob(os.path.join(dirpath, "enriched_*.json"))):
+        with open(path, "r", encoding="utf-8") as fh:
+            items.extend(json.load(fh).get("items", []))
+    return items
+
+
 def build(seed: dict) -> dict:
     """Transform the seed into the optimizer dataset.
 
@@ -64,7 +81,25 @@ def build(seed: dict) -> dict:
     `items` are variant records; each carries `affixes`, `verification`, and
     flags. `metadata.coverage` records per-slot verified/quarantined counts.
     """
-    variants = expand_dataset(seed["items"])            # parse enhancements + expand tiers
+    # Merge stat-enriched compendium items into the base seed before expansion so
+    # they flow through the identical parse (affix_parser) + verify pipeline and
+    # become solver-active. Enriched records are strict (src.enrich); unmapped
+    # effects are recorded, never fabricated.
+    # Dedupe: skip enriched records whose name already exists (base seed wins — it
+    # is the hand-verified source; a same-name enriched copy would double-list in
+    # browse and put two identities of one item into the solver). Also drops any
+    # cross-batch name collision.
+    enriched_items = load_enriched_items()
+    seen_names = {it.get("name") for it in seed["items"]}
+    deduped = []
+    for it in enriched_items:
+        name = it.get("name")
+        if name in seen_names:
+            continue
+        seen_names.add(name)
+        deduped.append(it)
+    enriched_items = deduped
+    variants = expand_dataset(seed["items"] + enriched_items)  # parse enhancements + expand tiers
     for v in variants:                                  # U2 augment-color normalization
         colors_mod.annotate_variant(v)
         set_mod.annotate_variant(v)                     # U4 set-bonus threshold parsing
@@ -83,6 +118,19 @@ def build(seed: dict) -> dict:
     # items pending wiki; the pool + machinery ship now).
     nc = nc_mod.parse_nearly_complete(load_nc_seed())
 
+    # Compendium roster: the complete named-item INDEX (name + slot + wiki link
+    # for every named item on the wiki, harvested by category). Roster entries
+    # are browse-only ("indexed") until their stats are enriched into real item
+    # records; those already solver-active are cross-referenced as "enriched" so
+    # the two layers do not double-count. Does not feed the solver.
+    enriched_names = {v.get("source_item") for v in variants if v.get("source_item")}
+    comp_records, comp_cov = compendium_mod.build_compendium(enriched_names)
+    comp_cov["enriched_items"] = len(enriched_items)
+    # Surface the strict-provenance disclosure: how many wiki effects were recorded
+    # as unmapped (never guessed) across the enriched batches.
+    comp_cov["enriched_unmapped_effects"] = sum(
+        len(it.get("_enrich_unmapped", [])) for it in enriched_items)
+
     out = {
         "metadata": {
             "title": "DDO Loadout Optimizer — dataset",
@@ -96,11 +144,13 @@ def build(seed: dict) -> dict:
             "set_coverage": set_mod.set_coverage(variants),
             "dino_coverage": dino_cov,
             "nc_coverage": nc["coverage"],
-            "pipeline_stage": "M3-sources+dino+nc",
+            "compendium_coverage": comp_cov,
+            "pipeline_stage": "M4-compendium-roster",
         },
         "items": variants,
         "dino_inserts": dino_inserts,
         "nearly_complete": nc["records"],
+        "compendium": comp_records,
     }
     return out
 
