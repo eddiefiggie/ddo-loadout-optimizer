@@ -1,0 +1,27 @@
+{
+  "metadata": {
+    "system": "Update 81 (Terror of Demogorgon) — Nearly Complete crafting",
+    "note": "Sourced from ddowiki.com/page/Nearly_Complete via Claude-in-Chrome (plain fetch returns empty for ddowiki). Each category shares a per-tier magnitude (Heroic ML11 / Legendary ML35); options carry their own stat + bonus_type. Values are verbatim; nothing inferred (KTD2). Item->slot host mapping is deferred (U81 named-item pages not yet published).",
+    "source_pages": [
+      "https://ddowiki.com/page/Nearly_Complete",
+      "https://ddowiki.com/page/Update_81_Release_Notes"
+    ],
+    "sourcing_status": "starter sample — Ability Score verified; remaining 5 categories populated in U2"
+  },
+  "categories": [
+    {
+      "category": "Ability Score",
+      "heroic_value": 6,
+      "legendary_value": 15,
+      "wiki_url": "https://ddowiki.com/page/Nearly_Complete",
+      "options": [
+        {"stat": "Strength", "bonus_type": "Enhancement"},
+        {"stat": "Dexterity", "bonus_type": "Enhancement"},
+        {"stat": "Constitution", "bonus_type": "Enhancement"},
+        {"stat": "Intelligence", "bonus_type": "Enhancement"},
+        {"stat": "Wisdom", "bonus_type": "Enhancement"},
+        {"stat": "Charisma", "bonus_type": "Enhancement"}
+      ]
+    }
+  ]
+}
