@@ -1,0 +1,326 @@
+{
+ "metadata": {
+  "layer": "raw-wikitext",
+  "batch": "batch5",
+  "harvested": "2026-07-25",
+  "note": "raw {{template}} fields; regenerable via src.enrich"
+ },
+ "items": [
+  {
+   "name": "Legendary Anchorchain",
+   "slot": "Necklace",
+   "minimum_level": 30,
+   "field": "* {{Spelllore|Ice|21}}\n* {{SpellPower|Glaciation|146}}\n* {{Hp|Profane Lifeforce|45}}\n* {{Spell Focus|Spell Focus Mastery|II|Profane}}\n* {{Guard|Legendary Ice Shards}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Named item sets|Legendary Saltmarsh Explorer}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Anchorchain"
+  },
+  {
+   "name": "Legendary Astral Spore Pendant",
+   "slot": "Necklace",
+   "minimum_level": 35,
+   "field": "* {{Absorption|Poison|39}}\n* {{Save|Will|6|Insightful}}\n* {{Hp|False Life|29|Insightful}}\n* {{Nearly Complete|Quality Ability Score|1}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Astral_Spore_Pendant"
+  },
+  {
+   "name": "Legendary Azure Necklace of Prophecy",
+   "slot": "Necklace",
+   "minimum_level": 30,
+   "field": "* {{Spelllore|Lightning|22}}\n* {{SpellPower|Magnetism|151}}\n* {{Absorption|Electricity|36}}\n* {{Elemental Resistance|Electric|54}}\n* {{Augment|Green}}\n* {{Named item sets|Legendary Draconic Prophecy}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Azure_Necklace_of_Prophecy"
+  },
+  {
+   "name": "Legendary Baron Aubrecker's Family Amulet",
+   "slot": "Necklace",
+   "minimum_level": 34,
+   "field": "* {{Power in Pact|3}}\n* {{Spell Focus|Mastery|8}}\n* {{Lamordia Slot|Melancholic|Accessory}}\n* {{Lamordia Slot|Dolorous|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Baron_Aubrecker's_Family_Amulet"
+  },
+  {
+   "name": "Legendary Beads of Winter",
+   "slot": "Necklace",
+   "minimum_level": 34,
+   "field": "* {{Spell Focus|Evocation|12}}\n* {{Skills|Spellcraft|11|Insight|prefix=Insightful}}\n* {{Lamordia Slot|Melancholic|Accessory}}\n* {{Lamordia Slot|Dolorous|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Beads_of_Winter"
+  },
+  {
+   "name": "Legendary Black Dynamo",
+   "slot": "Necklace",
+   "minimum_level": 34,
+   "field": "* {{Stat|CON|7|Insightful}}\n* {{Armor-Piercing|11|Insightful}}\n* {{Lamordia Slot|Melancholic|Accessory}}\n* {{Lamordia Slot|Dolorous|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Black_Dynamo"
+  },
+  {
+   "name": "Legendary Blademark Amulet",
+   "slot": "Necklace",
+   "minimum_level": 32,
+   "field": "* {{Save|Fortitude|12}}\n* {{Hp|Profane Lifeforce|48}}\n* {{Sheltering|17|Insightful|Physical}}\n* {{HealingAmp|57|R}}\n* {{Named item sets|Legendary Forbidden Knowledge}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Blademark_Amulet"
+  },
+  {
+   "name": "Legendary Chains",
+   "slot": "Necklace",
+   "minimum_level": 28,
+   "field": "* {{Slaver's Slot|Prefix|Legendary}}\n* {{Slaver's Slot|Suffix|Legendary}}\n* {{Slaver's Slot|Extra|Legendary}}\n* {{Slaver's Slot|Bonus|Legendary}}\n* {{CraftingEffects|Against the Slave Lords Set Bonus}}\n* {{Slaver's Slot|Augment|Legendary}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Chains"
+  },
+  {
+   "name": "Legendary Chains of Yeenoghu",
+   "slot": "Necklace",
+   "minimum_level": 35,
+   "field": "* {{Accuracy|5|Quality}}\n* {{Bloodrage|Enhanced}}\n* {{Incite|140}}\n* {{Conditioning|10|Legendary}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Chains_of_Yeenoghu"
+  },
+  {
+   "name": "Legendary Climber's Remembrance",
+   "slot": "Necklace",
+   "minimum_level": 34,
+   "field": "* {{Spell Focus|Mastery|4|Insightful}}\n* {{Lamordia Slot|Melancholic|Accessory}}\n* {{Lamordia Slot|Dolorous|Accessory}}\n* {{Lamordia Slot|Miserable|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Climber's_Remembrance"
+  },
+  {
+   "name": "Legendary Corroded Iron Lenses",
+   "slot": "Goggles",
+   "minimum_level": 30,
+   "field": "* {{Spelllore|Acid|21}}\n* {{SpellPower|Corrosion|146}}\n* {{Spell Focus|Conjuration|8}}\n* {{Sheltering|34|Enhancement|Magical}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Named item sets|Legendary Saltmarsh Explorer}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Corroded_Iron_Lenses"
+  },
+  {
+   "name": "Legendary Doctor Gustav's Warped Lenses",
+   "slot": "Goggles",
+   "minimum_level": 34,
+   "field": "* {{Spell Focus|Spell|2|Profane}}\n* {{Spellpen|3|Quality|prefix=Quality}}\n* {{Wizardry|310}}\n* {{Dodge|7|Insightful|prefix=Insightful}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Sun}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Doctor_Gustav's_Warped_Lenses"
+  },
+  {
+   "name": "Legendary Dragon Eyes",
+   "slot": "Goggles",
+   "minimum_level": 28,
+   "field": "* {{Spell Focus|Breath Weapon|7}}\n* {{Stat|CHA|3|Quality}}\n* {{Immunity|Blindness}}\n* {{Save|Reflex|5|Insight}}\n* {{Augment|Blue}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dragon_Eyes"
+  },
+  {
+   "name": "Legendary Drider's Vision",
+   "slot": "Goggles",
+   "minimum_level": 35,
+   "field": "* {{Assassinate|17}}\n* {{Deception|22|Bluff=Improved}}\n* {{Deception|12}}\n* {{Nearly Complete|Skill|1}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Sun}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Drider's_Vision"
+  },
+  {
+   "name": "Legendary Dusk Lenses",
+   "slot": "Goggles",
+   "minimum_level": 29,
+   "field": "* {{SpellPower|Potency|98}}\n* {{SpellPower|Potency|49|Insightful}}\n* {{Efficient Metamagic|Empower|II}}\n* {{Efficient Metamagic|Maximize|II}}\n* {{Augment|Yellow}}\n* {{Named item sets|Legendary Esoteric Initiate}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dusk_Lenses"
+  },
+  {
+   "name": "Legendary Electric Eyes",
+   "slot": "Goggles",
+   "minimum_level": 34,
+   "field": "* {{Spell Power|Magnetism|159}}\n* {{Sheltering|38|Enhancement|Magical}}\n* {{Speed|30}}\n* {{Wizardry|310}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Sun}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Electric_Eyes"
+  },
+  {
+   "name": "Legendary Eternal Flameguard's Lenses",
+   "slot": "Goggles",
+   "minimum_level": 31,
+   "field": "* {{Deadly|11}}\n* {{Deadly|3|Quality}}\n* {{Doublestrike|16}}\n* {{Doublestrike|4|Quality}}\n* {{Named item sets|Legendary Temple's Inferno}}\n* {{Augment|Yellow}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Eternal_Flameguard's_Lenses"
+  },
+  {
+   "name": "Legendary Experimenter's Goggles",
+   "slot": "Goggles",
+   "minimum_level": 29,
+   "field": "* {{Skills|Search|20|Competence}}\n* {{Skills|Spot|20|Competence}}\n* {{Skills|Open Lock|20|Competence}}\n* {{Skills|Disable Device|20|Competence}}\n* {{Augment|Blue}}\n* {{Named item sets|Legendary Profane Experiment}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Experimenter's_Goggles"
+  },
+  {
+   "name": "Legendary Band of Mental Magic",
+   "slot": "Ring",
+   "minimum_level": 33,
+   "field": "* {{Spell Focus|Enchantment|11}}\n* {{Spell Focus|Illusion|11}}\n* {{Spell Focus|Necromancy|11}}\n* {{Wizardry|151|Insightful}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_Mental_Magic"
+  },
+  {
+   "name": "Legendary Band of Seasons' Warding",
+   "slot": "Ring",
+   "minimum_level": 33,
+   "field": "* {{Elemental Resistance|Fire|56}}\n* {{Elemental Resistance|Cold|56}}\n* {{Elemental Resistance|Electric|56}}\n* {{Elemental Resistance|Acid|56}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_Seasons'_Warding"
+  },
+  {
+   "name": "Legendary Band of the Holy Way",
+   "slot": "Ring",
+   "minimum_level": 33,
+   "field": "* {{Extra Smites|3}}\n* {{Bonus Turning|Sacred|14}}\n* {{Bonus Turning|Greater Turning}}\n* {{Bonus Turning|Hallowed|14}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_the_Holy_Way"
+  },
+  {
+   "name": "Legendary Band of the Imprisoned One",
+   "slot": "Ring",
+   "minimum_level": 35,
+   "field": "* {{Sheltering|39|Enhancement|Magical}}\n* {{Spell Resistance|45}}\n* {{Save|Spell|5|Insightful}}\n* {{Nearly Complete|Ability Score|1}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_the_Imprisoned_One"
+  },
+  {
+   "name": "Legendary Brazenband",
+   "slot": "Ring",
+   "minimum_level": 29,
+   "field": "* {{Spell Focus|Enchantment|7}}\n* {{Spell Focus|Evocation|3|Insightful}}\n* {{Speed|XIV}}\n* {{Dodge|6|Insight|prefix=Insightful}}\n* {{Augment|Yellow}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brazenband"
+  },
+  {
+   "name": "Legendary Celestial Amethyst Ring",
+   "slot": "Ring",
+   "minimum_level": 29,
+   "field": "* {{Nearly Finished|{{Stat|Str|13}}|{{Stat|Int|13}}|{{Stat|Cha|13}}}}\n* {{Auto-Repair|Greater}}\n* {{HealingAmp|27|r|Insightful}}\n* {{Skills|Repair|20}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Celestial_Amethyst_Ring"
+  },
+  {
+   "name": "Legendary Celestial Emerald Ring",
+   "slot": "Ring",
+   "minimum_level": 29,
+   "field": "* {{Nearly Finished|{{Stat|Con|13}}|{{Stat|Str|13}}|{{Stat|Wis|13}}}}\n* {{Incite|52|Insightful}}\n* {{Skills|Intimidate|10|Insight|prefix=Insightful}}\n* {{Skills|Linguistics|10}}\n* {{Augment|Blue}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Celestial_Emerald_Ring"
+  },
+  {
+   "name": "Legendary Celestial Ruby Ring",
+   "slot": "Ring",
+   "minimum_level": 29,
+   "field": "* {{Nearly Finished|{{Stat|STR|13}}|{{Stat|DEX|13}}|{{Stat|INT|13}}}}\n* {{Stunning|15}}\n* {{Accuracy|20}}\n* {{Ghostly}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Celestial_Ruby_Ring"
+  },
+  {
+   "name": "Legendary Celestial Sapphire Ring",
+   "slot": "Ring",
+   "minimum_level": 29,
+   "field": "* {{Nearly Finished|{{Stat|CON|13}}|{{Stat|DEX|13}}|{{Stat|INT|13}}}}\n* {{Deception|Bluff=Improved}}\n* {{Dodge|13}}\n* {{Stat|Well Rounded|2|Profane}}\n* {{Augment|Yellow}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Celestial_Sapphire_Ring"
+  },
+  {
+   "name": "Legendary Celestial Topaz Ring",
+   "slot": "Ring",
+   "minimum_level": 29,
+   "field": "* {{Nearly Finished|{{Stat|int|13}}|{{Stat|wis|13}}|{{Stat|cha|13}}}}\n* {{Wizardry|269}}\n* {{Parrying|6}}\n* {{Concealment|Lesser Displacement}}\n* {{Augment|Yellow}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Celestial_Topaz_Ring"
+  },
+  {
+   "name": "Legendary Bone Figurine",
+   "slot": "Trinket",
+   "minimum_level": 29,
+   "field": "* {{Stat|Strength|3|quality}}\n* {{Doublestrike|15}}\n* {{Seeker|6|Insight}}\n* {{Absorption|Evil|22}}\n* {{Augment|Blue}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bone_Figurine"
+  },
+  {
+   "name": "Legendary Book of Spirits",
+   "slot": "Trinket",
+   "minimum_level": 29,
+   "field": "* {{Ghostly}}\n* {{Diversion|20}}\n* {{TrueSeeing}}\n* {{Protection from Evil|6}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Book_of_Spirits"
+  },
+  {
+   "name": "Legendary Bottle of Shadows",
+   "slot": "Trinket",
+   "minimum_level": 29,
+   "field": "* {{Stat|Well Rounded|2|Profane}}\n* {{Absorption|Law|22}}\n* {{Absorption|Good|22}}\n* {{Concealment|Lesser Displacement}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bottle_of_Shadows"
+  },
+  {
+   "name": "Legendary Bottle of Smoke",
+   "slot": "Trinket",
+   "minimum_level": 29,
+   "field": "* {{Stat|Dex|3|Quality}}\n* {{Concealment|Smoke Screen}}\n* {{Speed|30}}\n* {{Deception|10}}\n* {{Augment|Blue}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bottle_of_Smoke"
+  },
+  {
+   "name": "Legendary Brawn's Spirits",
+   "slot": "Trinket",
+   "minimum_level": 30,
+   "field": "* {{Clicky|Rage (spell)|15|5|5|label=Rage}}\n* {{Skills|Intimidate|20}}\n* {{Incite|124}}\n* {{Stat|Strength|6|Insightful}}\n* {{Stat|Constitution|6|Insightful}}\n* {{Cursed|Foolishness}}\n* {{Cursed|Dullness}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brawn's_Spirits"
+  },
+  {
+   "name": "Legendary Breaker's Bauble",
+   "slot": "Trinket",
+   "minimum_level": 33,
+   "field": "* {{Doublestrike|16}}\n* {{Doublestrike|7|Insightful}}\n* {{Accuracy|23}}\n* {{Armor-Piercing|23}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Sun}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Breaker's_Bauble"
+  },
+  {
+   "name": "Legendary Bronze Figurine",
+   "slot": "Trinket",
+   "minimum_level": 29,
+   "field": "* {{Incite|120}}\n* {{Incite|52|Insightful}}\n* {{Sheltering|33|Enhancement|Magical}}\n* {{Parrying|6}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bronze_Figurine"
+  },
+  {
+   "name": "Legendary Chaos in a Bottle",
+   "slot": "Trinket",
+   "minimum_level": 29,
+   "field": "* {{SpellPower|Spell Turmoil}}\n* {{SpellPower|Potency|98}}\n* {{Wizardry|269}}\n* {{Sheltering|33|Enhancement|Magical}}\n* {{Taint of Chaos}}\n* {{Augment|Blue}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Chaos_in_a_Bottle"
+  },
+  {
+   "name": "Legendary Acidic Sphere",
+   "slot": "Off Hand",
+   "minimum_level": 28,
+   "field": "* {{Enhancement bonus|oi|13|28}}\n* {{SpellPower|Corrosion|142}}\n* {{Diversion|20|Mystic}}\n* {{Diversion|9|Mystic|Insightful}}\n* {{SpellPower|Corrosion|71|Insightful}}\n* {{Augment|Orange}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Acidic_Sphere",
+   "offhand_type": "orb"
+  },
+  {
+   "name": "Legendary Alchemical Orb",
+   "slot": "Off Hand",
+   "minimum_level": 29,
+   "field": "* {{Enhancement bonus|o|15}}\n* {{CraftingEffects|Legendary Alchemical Crafting (Prototype)}}\n* {{Augment|Red}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Alchemical_Orb",
+   "offhand_type": "orb"
+  },
+  {
+   "name": "Legendary Arcane Contraption",
+   "slot": "Off Hand",
+   "minimum_level": 34,
+   "field": "* {{Enhancement bonus|oi|15|34}}\n* {{Spell Power|Potency|55|Insight}}\n* {{Save|Will|13}}\n* {{Lamordia Slot|Melancholic|Weapon}}\n* {{Lamordia Slot|Dolorous|Weapon}}\n* {{Augment|Purple}}\n* {{Augment|Orange}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Arcane_Contraption",
+   "offhand_type": "orb"
+  },
+  {
+   "name": "Legendary Bolt Sphere",
+   "slot": "Off Hand",
+   "minimum_level": 28,
+   "field": "* {{Enhancement bonus|oi|13|28}}\n* {{SpellPower|Magnetism|142}}\n* {{Diversion|20|Mystic}}\n* {{Diversion|9|Mystic|Insightful}}\n* {{SpellPower|Magnetism|71|Insightful}}\n* {{Augment|Orange}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bolt_Sphere",
+   "offhand_type": "orb"
+  },
+  {
+   "name": "Legendary Concentrated Chaos",
+   "slot": "Off Hand",
+   "minimum_level": 29,
+   "field": "* {{Enhancement bonus|o|15}}\n* {{Nearly Finished|{{Stat|Int|3|Quality|}}|{{Stat|Wis|3|Quality|}}|{{Stat|Cha|3|Quality|}}}}\n* {{Spell Focus|Enchantment|3|Insight}}\n* {{Spell Focus|Necromancy|3|Insight}}\n* {{Absorption|Chaos|22}}\n* {{Augment|Purple}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Concentrated_Chaos",
+   "offhand_type": "orb"
+  },
+  {
+   "name": "Legendary Core of a War Machine",
+   "slot": "Off Hand",
+   "minimum_level": 32,
+   "field": "* {{Enhancement bonus|o|15}}\n* {{Blast|Force|6}}\n* {{Shield Bashing|%=22}}\n* {{Impactful|6}}\n* {{Doublestrike|3|Quality}}\n* {{Named item sets|Legendary Forbidden Knowledge}}\n* {{Augment|Purple}}\n* {{Augment|Orange}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Core_of_a_War_Machine",
+   "offhand_type": "orb"
+  },
+  {
+   "name": "Legendary Cursed Skull",
+   "slot": "Off Hand",
+   "minimum_level": 29,
+   "field": "* {{Enhancement bonus|oi|15|29}}\n* {{SpellPower|Nullification|71|Insight}}\n* {{Spelllore|Void|21}}\n* {{Spell Focus|Necromancy|7}}\n* {{HealingAmp|53|n|Profane}}\n* {{Augment|Purple}}\n* {{Named item sets|Curse Necromancer (Legendary)}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cursed_Skull",
+   "offhand_type": "orb"
+  },
+  {
+   "name": "Legendary Death's Anchor",
+   "slot": "Off Hand",
+   "minimum_level": 34,
+   "field": "* {{Enhancement bonus|oi|15|34}}\n* {{Spell Power|Nullification|39|Quality}}\n* {{Spell Focus|Necromancy|12}}\n* {{Lamordia Slot|Melancholic|Weapon}}\n* {{Lamordia Slot|Dolorous|Weapon}}\n* {{Augment|Purple}}\n* {{Augment|Orange}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Death's_Anchor",
+   "offhand_type": "orb"
+  }
+ ]
+}
