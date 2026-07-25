@@ -20,6 +20,10 @@ BONUS_TYPES = {
     "Enhancement", "Insightful", "Quality", "Exceptional", "Profane", "Sacred",
     "Competence", "Artifact", "Primal", "Festive", "Alchemical", "Deific",
     "Fatesinger", "Legendary",
+    # Isle of Dread Dino-crafting pool uses these (distinct stacking types); they
+    # are legitimate DDO bonus types that also appear on other gear. "Insight" is
+    # a distinct type from "Insightful" (both occur in-game), preserved verbatim.
+    "Equipment", "Resistance", "Insight",
 }
 # Tokens inside a trailing "(A/B)" that we expand to multiple stats.
 MULTI_STAT_TOKENS = {"PRR", "MRR"}
