@@ -83,11 +83,17 @@ function countColors(colors) {
   return m;
 }
 
-/** Per-slot Pareto filter: keep only non-dominated variants for these targets. */
-function dominanceFilter(slotVariants, targetSet, mlCap) {
+/** Per-slot Pareto filter: keep only non-dominated variants for these targets.
+ *  In a multi-pick slot (cardinality > 1, e.g. two Rings), a set-member variant
+ *  can add a piece toward a set THRESHOLD even when another variant dominates it
+ *  on the target buckets — set bonuses count pieces, so dominance (which is only
+ *  sound for max-buckets) must never prune a set member there, or a piece-count
+ *  tier can become silently unreachable. */
+function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1) {
   const kept = [];
   for (let i = 0; i < slotVariants.length; i++) {
     const A = slotVariants[i];
+    if (cardinality > 1 && (A.set_bonus || []).length) { kept.push(A); continue; }
     let dominated = false;
     for (let j = 0; j < slotVariants.length; j++) {
       if (i === j) continue;
@@ -112,10 +118,11 @@ function buildModel(variants, query) {
 
   const worn = [];
   for (const slotName of WORN_SLOTS) {
+    const card = SLOT_CARDINALITY[slotName] || 1;
     let cands = elig.filter((v) => v.slot === slotName);
-    cands = dominanceFilter(cands, targetSet, mlCap);
+    cands = dominanceFilter(cands, targetSet, mlCap, card);
     if (cands.length) {
-      worn.push({ slot: slotName, cardinality: SLOT_CARDINALITY[slotName] || 1, variants: cands });
+      worn.push({ slot: slotName, cardinality: card, variants: cands });
     }
   }
 

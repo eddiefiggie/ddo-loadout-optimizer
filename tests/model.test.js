@@ -40,6 +40,18 @@ test("dominanceFilter prunes the dominated variant", () => {
   assert.deepStrictEqual(kept.map((x) => x.source_item), ["A"]);
 });
 
+test("dominanceFilter keeps a dominated set-member in a multi-pick slot", () => {
+  // Two Rings of the same set: A dominates B on the target, but in a cardinality-2
+  // slot both count as set pieces toward a threshold, so B must NOT be pruned.
+  const A = v("A", "Ring", [["Strength", "Enhancement", 10]], { sets: ["S"] });
+  const B = v("B", "Ring", [["Strength", "Enhancement", 8]], { sets: ["S"] });
+  const kept2 = M.dominanceFilter([A, B], new Set(["Strength"]), 30, 2);
+  assert.strictEqual(kept2.length, 2, "both set-members survive in a cardinality-2 slot");
+  // sanity: at cardinality 1 the dominated set-member is still pruned
+  const kept1 = M.dominanceFilter([A, B], new Set(["Strength"]), 30, 1);
+  assert.deepStrictEqual(kept1.map((x) => x.source_item), ["A"]);
+});
+
 test("different bonus-type on same stat is NOT dominated", () => {
   // A has Enhancement INT, B has Insightful INT — neither dominates (different buckets)
   const A = v("A", "Ring", [["Intelligence", "Enhancement", 10]]);

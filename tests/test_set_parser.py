@@ -77,6 +77,50 @@ def test_non_numeric_piece_label_is_flagged():
     assert any("piece count" in f["reason"] for f in parsed[0]["flagged"])
 
 
+def test_trailing_type_does_not_override_explicit_inline_type():
+    # A trailing "(Artifact)" must not re-type a clause that states its own type.
+    affixes, _ = set_parser.parse_piece_text(
+        "+15 Quality bonus to Fortification; +10 Ranged Power (Artifact)")
+    fort = _affix(affixes, "Fortification")
+    assert fort is not None and fort["bonus_type"] == "Quality", "explicit Quality preserved"
+    rp = _affix(affixes, "Ranged Power")
+    assert rp is not None and rp["bonus_type"] == "Artifact", "untyped clause takes the line type"
+
+
+def test_membership_marker_is_not_minted_as_a_type():
+    # "(Legendary set)" is a set-membership marker, not the "Legendary" bonus type.
+    affixes, _ = set_parser.parse_piece_text("+8 Strength (Legendary set)")
+    s = _affix(affixes, "Strength")
+    assert s is not None
+    assert s["bonus_type"] != "Legendary", "must not fabricate a bonus type from a marker"
+    assert s["bonus_type"] == "Enhancement"
+
+
+def test_non_magnitude_text_is_flagged_not_minted():
+    # Dice/crit/proc text must be quarantined, never turned into an affix.
+    for junk in ["Fireball 6d6", "Fortitude 19-20/x3"]:
+        affixes, flagged = set_parser.parse_piece_text(junk)
+        assert affixes == [], f"{junk!r} should mint no affix"
+        assert len(flagged) == 1
+
+
+def test_pieces_required_zero_is_not_a_threshold():
+    parsed = set_parser.parse_set_bonuses([{
+        "set": "Zero Set",
+        "piece_bonuses": {"0 Pieces": "+99 Enhancement bonus to Charisma"},
+    }])
+    assert parsed[0]["pieces_required"] is None, "0 pieces is not a real threshold"
+
+
+def test_prr_mrr_compound_splits_into_both_stats():
+    # "+20 PRR/MRR" (value-first) must expand so PRR and MRR targets both see it.
+    affixes, _ = set_parser.parse_piece_text("+20 PRR/MRR (Artifact)")
+    stats = {a["stat"] for a in affixes}
+    assert any("PRR" in s for s in stats) and any("MRR" in s for s in stats), stats
+    for a in affixes:
+        assert a["value"] == 20 and a["bonus_type"] == "Artifact"
+
+
 def test_whole_seed_set_bonuses_parse_without_exceptions():
     items = json.load(open(os.path.join(ROOT, "web", "data", "items.json"), encoding="utf-8"))["items"]
     total_affixes = 0

@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import re
 
-from src.affix_parser import _parse_value_bearing, _norm_type
+from src.affix_parser import parse_line, BONUS_TYPES, MULTI_STAT_TOKENS
 from src import vocab
 
 _PIECES = re.compile(r"(\d+)")
@@ -28,35 +28,60 @@ _TRAILING_TYPE = re.compile(r"\(([^)]+)\)\s*$")
 
 
 def _pieces_required(label: str):
+    """First integer in the tier label, but only a real threshold (>= 1)."""
     m = _PIECES.search(label or "")
-    return int(m.group(1)) if m else None
+    n = int(m.group(1)) if m else None
+    return n if (n is not None and n >= 1) else None
+
+
+def _expand_compound(stat: str):
+    """Split a "/"-joined multi-stat token (e.g. "PRR/MRR") the value-first parse
+    left intact, so the halves match real targets. Non-compound stats pass through."""
+    parts = [p.strip() for p in stat.split("/")]
+    if len(parts) > 1 and all(p in MULTI_STAT_TOKENS for p in parts):
+        return parts
+    return [stat]
 
 
 def parse_piece_text(text: str) -> tuple[list, list]:
-    """Parse one piece-bonus string into (affixes, flagged)."""
+    """Parse one piece-bonus string into (affixes, flagged).
+
+    Clauses run through affix_parser.parse_line so the dice/crit/proc/scaling/noise
+    guards apply (never mint an affix from non-magnitude text). A trailing "(Type)"
+    types the line, but only when it is a single known bonus type (so a membership
+    marker like "(Legendary set)" is not fabricated into a type), and only for
+    clauses that carry no explicit type of their own (never override a stated one).
+    """
     affixes, flagged = [], []
     text = (text or "").strip()
     if not text:
         return affixes, flagged
 
-    # a trailing "(Type)" applies to every clause on the line
     line_type = None
     m = _TRAILING_TYPE.search(text)
-    if m and _norm_type(m.group(1)):
-        line_type = _norm_type(m.group(1))
-        text = text[: m.start()].strip()
+    if m:
+        inner = m.group(1).strip()
+        if inner in BONUS_TYPES:
+            line_type = inner                       # a real trailing bonus type
+            text = text[: m.start()].strip()
+        elif inner.lower().endswith("set"):
+            text = text[: m.start()].strip()        # a membership marker — strip, don't mint a type
 
     for clause in re.split(r";|\n", text):
         clause = clause.strip()
         if not clause:
             continue
-        got = _parse_value_bearing(clause, clause, forced_type=line_type)
-        if got:
-            for a in got:
-                a["stat"] = vocab.normalize_stat(a["stat"])
-            affixes.extend(got)
-        else:
-            flagged.append({"raw": clause, "reason": "no parseable magnitude"})
+        r = parse_line(clause)
+        if r["kind"] != "affix":
+            flagged.append({"raw": clause, "reason": r.get("reason") or f"non-affix ({r['kind']})"})
+            continue
+        for a in r["affixes"]:
+            for part in _expand_compound(a["stat"]):
+                b = dict(a)
+                b["stat"] = vocab.normalize_stat(part)
+                if line_type and b["bonus_type"] == "Enhancement":
+                    b["bonus_type"] = line_type  # apply trailing type only to untyped clauses
+                affixes.append(b)
     return affixes, flagged
 
 

@@ -20,7 +20,7 @@ CANONICAL = {
 
 # Ravenloft "Lamordia" augments fill type-specific slots; the type is meaningful
 # (a Woeful augment needs a Woeful slot), so preserve it as a namespaced color.
-_LAMORDIA = re.compile(r"^Lamordia:\s*([A-Za-z]+)$")
+_LAMORDIA = re.compile(r"^Lamordia:\s*([A-Za-z]+)$", re.I)
 
 _CASEMAP = {c.lower(): c for c in CANONICAL}
 
