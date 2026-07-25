@@ -2,6 +2,7 @@
 title: Encoding exact gear optimization as a client-side MILP
 module: solver
 date: 2026-07-25
+last_updated: 2026-07-25
 problem_type: design_pattern
 component: tooling
 severity: medium
@@ -12,10 +13,13 @@ tags:
   - lexicographic
   - stacking
   - ddo
+  - gated-contribution
+  - dominance-pruning
 applies_when:
   - "Choose-one-per-slot selection where stats stack by bonus-type with caps and ranked priorities"
   - "Turning a provably-optimal requirement into a client-side (in-browser) exact solve"
   - "Encoding max-of-selected, threshold, or clamp semantics into a linear program"
+  - "Folding heterogeneous conditional sources (augments with slot capacity, set bonuses with piece thresholds) into one exact model without combinatorial variant expansion"
 ---
 
 # Encoding exact gear optimization as a client-side MILP
@@ -26,9 +30,18 @@ The DDO Loadout Optimizer's solver (U6–U8, Milestone 2) had to be **provably o
 
 ## Guidance
 
-**1. Dominance-prune before you build the model.** For a given target set, drop any per-slot variant beaten on every dimension that can matter (each target's per-bonus-type value, set membership, augment-slot count) by a same-slot peer — it can never be in an optimal solution. This collapses a naive ~10⁸ combination space to a tiny model, so the MILP is near-instant (`web/model.js` `dominanceFilter`; measured <100 ms per solve).
+**1. Dominance-prune before you build the model — but only where the objective is max-aggregation.** For a given target set, drop any per-slot variant beaten on every dimension that can matter (each target's per-bonus-type value, set membership, augment-slot count) by a same-slot peer — it can never be in an optimal solution. This collapses a naive ~10⁸ combination space to a tiny model, so the MILP is near-instant (`web/model.js` `dominanceFilter`; measured <100 ms per solve).
+
+**The soundness argument holds only while every objective is "take the max of what's equipped." The moment an objective COUNTS equipped items, dominance becomes unsound in any multi-pick slot.** DDO set bonuses count pieces: a tier fires at ≥N equipped members. In a cardinality-2 slot (two Rings), equipping *both* rings of a set is a legitimate way to reach the threshold — but if one ring dominates the other on the query targets, dominance prunes it, the second piece vanishes, and the threshold silently becomes unreachable. The result is a confidently-wrong "provably optimal" set (real repro: *Seasons of the Feywild*'s 6-piece tier needing both rings). Fix: skip dominance for set-member variants when `cardinality > 1` (`web/model.js` `dominanceFilter`, the `cardinality` guard). The augment pool is safe from this because augments only feed max-buckets, never a count — but note augment dominance must still be done **within a color**, never across colors (different colors occupy different slots, so a Blue augment can never dominate a Red one).
 
 **2. Bonus-type stacking = a "select-one" group per `(stat, bonus_type)` bucket, NOT a naive max.** For each bucket, add binary `z` vars over the contributing sources with `sum(z) <= 1` and `z_i <= x_i` (the source's item must be equipped). Effective stat = sum over bonus types of `value_i * z_i`. Because the objective maximizes it, the solver selects the single highest *equipped* value per type, and sums across types — exactly the stacking rule (`web/solver.js` `buildProgram` / `encodeStage`).
+
+**2b. Generalize the select-one source into a "gated contribution" so heterogeneous sources share one model.** Milestone 3 added augments and set bonuses to the objective. Rather than a second code path per source type, generalize the `z` var: a contribution is a `(stat, bonus_type, value)` whose `z` is available only when *all* of its `gates` (a list of enabling binaries) are 1 — emit one `z <= gate` per gate. A worn affix has a single gate (its item pick var, identical to before); the new sources add more gates plus their backing structural vars/constraints:
+- **Augment** — a placement binary `p`; the augment's stat is a contribution gated by `[p]`; per color, `sum(p of color) <= sum(open_slots_of_color(item) * x_item)` bounds placements by aggregate open capacity on equipped items (KTD2: aggregate per-color capacity, not per-physical-slot identity — reconstruct a concrete slot for display afterward).
+- **Set threshold** — a binary `set_active` with the linear indicator `N * set_active - sum(equipped pieces of the set) <= 0` (can only be 1 at ≥N pieces); the tier's stats are contributions gated by `[set_active]`. Under the lexicographic solve this completes a set only when its bonus advances a ranked target — no special-case logic.
+- **Crafting add-on (planned)** — the same shape: an option gated by `[x_item, track_choice]`, mutually exclusive within a track. Independent tracks are independent gates, so an item taking a slot AND an augment AND an upgrade is additive vars, **not** a combinatorial variant explosion.
+
+All of them feed the same `(stat, bonus_type)` max-buckets from #2, so cross-source stacking (a worn Enhancement maxed against an augment Enhancement, plus an Insightful summed) is correct for free. Implementation: `web/solver.js` `buildProgram` `extraVars`/`extraConstraints` seam.
 
 **3. A stat cap is a CLAMP, not a ceiling — this is the subtle bug.** A hard constraint `effective_dodge <= cap` does **not** clamp; it makes equipping any item whose dodge exceeds the cap *infeasible*, so the solver drops the item and reports 0. Instead introduce a continuous `d` with `d <= cap` (bound) and `d <= raw` (constraint), and let the objective maximize `d`. Then `d = min(raw, cap)` — a real clamp (`web/solver.js` `encodeStage`, the `d_<stat>` handling).
 
@@ -39,6 +52,8 @@ The DDO Loadout Optimizer's solver (U6–U8, Milestone 2) had to be **provably o
 ## Why This Matters
 
 The clamp-vs-ceiling distinction (#3) is a silent correctness trap: the naive `effective <= cap` encoding passes casual inspection, produces feasible-looking output, and is *wrong* — it forbids the best item instead of capping its contribution, so a capped target (dodge) with any strong source degrades to 0 and the loadout omits the item. It was caught only by a known-answer test asserting "the dodge item is still equipped." The select-one encoding (#2) is likewise the difference between a solver that respects DDO stacking and one that double-counts same-type bonuses. Getting these two wrong doesn't crash — it produces a confidently-wrong "best-in-slot", the exact failure the tool exists to avoid.
+
+The dominance/threshold interaction (#1) is the same class of trap one layer up: a **pre-filter that is provably correct for one objective shape silently violates optimality once you add an objective of a different shape.** Max-aggregation makes "a dominated same-slot peer can never help" true; a piece-*count* threshold makes it false in multi-pick slots. The lesson generalizes beyond this codebase — any Pareto/dominance reduction encodes assumptions about how the objective consumes the kept set, and adding a counting, threshold, or set-cover objective can invalidate a filter that was sound the day it was written. Re-audit every pre-filter when the objective's *shape* changes, not just its weights. Caught here only by an adversarial review with a runnable repro, then pinned by a regression test (`tests/model.test.js`, "keeps a dominated set-member in a multi-pick slot").
 
 ## When to Apply
 
@@ -73,4 +88,6 @@ c: z_int_enh_B - x_B <= 0
 
 Verified by `tests/solver.test.js` against the real HiGHS engine: same-type does-not-stack, different-type sums, dodge-cap clamps with the item still equipped, lexicographic priority-1-maxed-at-cost-of-priority-2, and cross-run determinism.
 
-**Refinements from the code review (fixed):** two edge bugs in this code were caught and fixed — a capped target with *zero* eligible sources reported the cap instead of 0 (the `d <= raw` constraint was skipped when `raw` was empty; now it emits `d <= 0`), and multiple weapon *types* were modeled as independent slots so the solver could equip several weapons at once (now all weapon-category variants compete for one main-hand slot, rune-arm separate). Both were pinned by known-answer tests. Set-bonus and augment optimization remain deferred (their bonuses are still free text — see `parsing-ddo-wiki-affix-text.md`); the four lower-priority review findings (contributes-display overstatement, null-ML bypass, scaling-formula duplication, `d_<stat>` name fragility) are also open.
+**Refinements from the Milestone 2 code review (fixed):** two edge bugs — a capped target with *zero* eligible sources reported the cap instead of 0 (the `d <= raw` constraint was skipped when `raw` was empty; now it emits `d <= 0`), and multiple weapon *types* modeled as independent slots so the solver could equip several weapons at once (now all weapon-category variants compete for one main-hand slot, rune-arm separate). Both pinned by known-answer tests.
+
+**Milestone 3 (augments + set bonuses now optimized, PR [#1](https://github.com/eddiefiggie/ddo-loadout-optimizer/pull/1)):** the gated-contribution generalization (#2b) folded augments and set bonuses into the objective. Its two-model adversarial review caught the P1 dominance/threshold unsoundness (#1) plus several parser bugs — the most instructive being that reusing a permissive text parser (`affix_parser._parse_value_bearing`) across a new caller silently bypassed its noise/dice/scaling guards and fabricated affixes; routing the new set-bonus parser through the *guarded* `parse_line` entry point fixed it (see `parsing-ddo-wiki-affix-text.md`). **Crafting / gear upgrade paths remain deferred** (need live wiki sourcing) but the gated-contribution shape (#2b, "Crafting add-on") is already designed for them. Older open items from M2 (contributes-display overstatement, null-ML bypass, scaling-formula duplication, `d_<stat>` name fragility) persist.
