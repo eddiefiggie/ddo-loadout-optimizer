@@ -3,7 +3,7 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 
-const { filterVariants, variantStats, affixText } = require("../web/browse.js");
+const { filterVariants, variantStats, affixText, dinoInsertRow, browsableItems } = require("../web/browse.js");
 const data = JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")
 );
@@ -52,6 +52,44 @@ test("affixText renders typed and untyped affixes", () => {
   const texts = affixText(withAffix);
   assert.ok(texts.length > 0);
   assert.ok(texts.every((t) => /\+\d/.test(t)));
+});
+
+// ---- Dino content is browsable (insert pool + blank slots) ----
+
+test("browsableItems appends the Dino insert pool as display rows", () => {
+  const list = browsableItems(data);
+  const inserts = list.filter((v) => v.dino_insert);
+  assert.strictEqual(inserts.length, (data.dino_inserts || []).length);
+  assert.ok(inserts.length >= 50, "expected the sourced insert pool");
+  assert.strictEqual(list.length, items.length + inserts.length);
+});
+
+test("a Dino insert is findable in the browser by stat", () => {
+  const list = browsableItems(data);
+  const rows = filterVariants(list, { stat: "Constitution" });
+  assert.ok(rows.some((v) => v.dino_insert && v.slot === "Dino Insert (Scale)"),
+    "the Scale Constitution insert should surface under the Constitution stat filter");
+});
+
+test("a Dino insert is findable by text search on its type", () => {
+  const list = browsableItems(data);
+  const rows = filterVariants(list, { query: "claw" });
+  assert.ok(rows.some((v) => v.dino_insert), "searching 'claw' surfaces Claw inserts");
+});
+
+test("dinoInsertRow carries a percentage unit for spell-crit inserts", () => {
+  const row = dinoInsertRow({ dino_type: "Scale", stat: "Fire Spell Crit Damage",
+    bonus_type: "Enhancement", value: 20, unit: "pct", wiki_url: "w" });
+  assert.strictEqual(row.affixes[0].unit, "pct");
+  assert.ok(affixText(row).some((t) => /\+20%/.test(t)), "renders +20% not +20");
+});
+
+test("a Dinosaur Bone blank shows its Isle of Dread slots instead of nothing", () => {
+  const blank = items.find((v) => v.source === "dino_crafting_blank");
+  assert.ok(blank, "expected a blank host in the dataset");
+  const texts = affixText(blank);
+  assert.ok(texts.some((t) => /Isle of Dread slots:/.test(t)),
+    "blank should surface its typed Dino slots");
 });
 
 console.log(`\n${passed} passed`);

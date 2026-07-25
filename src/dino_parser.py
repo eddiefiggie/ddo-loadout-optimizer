@@ -87,6 +87,7 @@ def parse_inserts(inserts):
                 "stat": a["stat"],
                 "bonus_type": a["bonus_type"],
                 "value": a["value"],
+                "unit": a.get("unit", "flat"),
                 "wiki_url": wiki_url,
                 "raw": raw,
             })
