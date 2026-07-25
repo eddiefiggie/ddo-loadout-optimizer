@@ -40,3 +40,31 @@ main { padding: 1.25rem 1.5rem; max-width: 1100px; margin: 0 auto; }
   border-top: 1px solid var(--border);
 }
 .app-footer a { color: var(--accent); }
+
+/* Browse controls */
+.controls { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; }
+.controls input, .controls select, .controls button {
+  background: #12141a; color: var(--text); border: 1px solid var(--border);
+  border-radius: 6px; padding: 0.35rem 0.5rem; font-size: 0.85rem;
+}
+.controls input[type="search"] { min-width: 220px; flex: 1 1 220px; }
+.controls button { cursor: pointer; }
+.controls button:hover { border-color: var(--accent); }
+.controls label { color: var(--muted); font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.3rem; }
+
+/* Results table */
+.items { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.items th, .items td { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+.items th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--panel); }
+.items td.num { text-align: right; font-variant-numeric: tabular-nums; }
+#browse-results { overflow-x: auto; }
+
+.badge { display: inline-block; padding: 0.05rem 0.45rem; border-radius: 999px; font-size: 0.72rem; text-transform: capitalize; }
+.badge.verified { background: rgba(76,175,125,0.18); color: var(--verified); border: 1px solid var(--verified); }
+.badge.quarantined { background: rgba(208,139,58,0.16); color: var(--quarantined); border: 1px solid var(--quarantined); }
+
+.chip { display: inline-block; background: #12141a; border: 1px solid var(--border); border-radius: 5px; padding: 0.05rem 0.4rem; margin: 0.05rem; font-size: 0.78rem; }
+.muted { color: var(--muted); font-size: 0.78rem; }
+.items a { color: var(--accent); }
+.empty { padding: 1.5rem; text-align: center; color: var(--muted); }
+.empty button { margin-left: 0.5rem; background: #12141a; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.6rem; cursor: pointer; }
