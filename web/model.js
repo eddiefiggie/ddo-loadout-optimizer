@@ -117,7 +117,7 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1) {
 
 /** Build the abstract model. Returns worn slots (filtered + pruned), the
  *  augment source pool, the Dino insert pool, target list, and the dodge cap. */
-function buildModel(variants, query, dinoInserts = []) {
+function buildModel(variants, query, dinoInserts = [], nearlyComplete = []) {
   const targetSet = new Set(query.targets);
   const mlCap = query.mlCap;
   const elig = eligible(variants, query);
@@ -166,7 +166,15 @@ function buildModel(variants, query, dinoInserts = []) {
   // total placements per type by the open typed slots on equipped items.
   const dinoPool = (dinoInserts || []).filter((i) => i && targetSet.has(i.stat) && i.value > 0);
 
-  return { query, targets: query.targets, worn, augments, dinoInserts: dinoPool, dodgeCap, mlCap };
+  // U81 Nearly Complete: the parametric option pool. Keep only options that
+  // advance a ranked target; the solver attaches them per item via the item's
+  // `nearly_complete` category + tier.
+  const ncPool = (nearlyComplete || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
+
+  return {
+    query, targets: query.targets, worn, augments,
+    dinoInserts: dinoPool, nearlyComplete: ncPool, dodgeCap, mlCap,
+  };
 }
 
 // exports for node tests; harmless in the browser

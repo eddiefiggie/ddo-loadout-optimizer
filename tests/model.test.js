@@ -159,4 +159,13 @@ test("buildModel exposes a target-filtered Dino insert pool", () => {
   assert.strictEqual(model.dinoInserts[0].stat, "Constitution");
 });
 
+test("buildModel exposes a target-filtered Nearly-Complete pool", () => {
+  const model = M.buildModel([], { mlCap: 36, targets: ["Constitution"] }, [], [
+    { category: "Ability Score", stat: "Constitution", bonus_type: "Enhancement", value: 15, tier: "legendary" },
+    { category: "Spell Focus", stat: "Evocation Focus", bonus_type: "Equipment", value: 13, tier: "legendary" }, // not a target
+  ]);
+  assert.strictEqual(model.nearlyComplete.length, 1, "only target-relevant options kept");
+  assert.strictEqual(model.nearlyComplete[0].stat, "Constitution");
+});
+
 console.log(`\n${passed} passed`);
