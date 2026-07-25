@@ -37,6 +37,19 @@ def test_skills_and_spellpower_and_focus():
     assert _affixes(_field("{{Spell Focus|Abjuration|7}}")) == ["Abjuration Spell Focus +7"]
 
 
+def test_spell_focus_typed_and_universal():
+    # typed school focus keeps its bonus type
+    assert _affixes(_field("{{Spell Focus|Abjuration|3|Insightful}}")) == ["Insightful Abjuration Spell Focus +3"]
+    # universal (value-first) focus
+    assert _affixes(_field("{{Spell Focus|5|Insightful}}")) == ["Insightful Spell Focus +5"]
+
+
+def test_hp_typed_and_multiarg():
+    assert _affixes(_field("{{Hp|False Life|56}}")) == ["False Life +56"]
+    assert _affixes(_field("{{Hp|False Life|56|Insightful}}")) == ["Insightful False Life +56"]
+    assert _affixes(_field("{{Hp|Vitality|20}}")) == ["Vitality +20"]
+
+
 def test_sheltering_prr_mrr():
     assert _affixes(_field("{{Sheltering|9|Quality|Physical}}")) == ["Quality Physical Sheltering +9"]
     assert _affixes(_field("{{Sheltering|12|Magical}}")) == ["Magical Sheltering +12"]

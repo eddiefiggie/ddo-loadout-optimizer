@@ -97,9 +97,14 @@ def _r_sheltering(a):
 
 def _r_spellfocus(a):
     # {{Spell Focus|Abjuration|7}} -> "Abjuration Spell Focus +7"
+    # {{Spell Focus|Abjuration|3|Insightful}} -> "Insightful Abjuration Spell Focus +3"
+    # {{Spell Focus|5|Insightful}} (universal, value-first) -> "Insightful Spell Focus +5"
+    if len(a) >= 2 and _num(a[0]) and not _num(a[1]):
+        return [_typed(a[1].strip(), "Spell Focus", a[0])]  # universal, value-first
     if len(a) < 2 or not _num(a[1]):
         return []
-    return [_typed("", f"{a[0].strip()} Spell Focus", a[1])]
+    btype = a[2].strip() if len(a) >= 3 and a[2].strip() and not _num(a[2]) else ""
+    return [_typed(btype, f"{a[0].strip()} Spell Focus", a[1])]
 
 
 def _r_spelllore(a):
@@ -117,10 +122,14 @@ def _r_save(a):
 
 
 def _r_hp(a):
-    # {{Hp|False Life|56}} -> "False Life +56"
-    if len(a) < 2 or not _num(a[-1]):
+    # {{Hp|False Life|56}} | {{Hp|False Life|56|Insightful}} | {{Hp|Vitality|20}}
+    nums = [i for i, x in enumerate(a) if _num(x)]
+    if not nums:
         return []
-    return [_typed("", a[0].strip(), a[-1])]
+    vi = nums[0]
+    stat = " ".join(a[:vi]).strip() or "False Life"
+    btype = a[vi + 1].strip() if len(a) > vi + 1 and a[vi + 1].strip() and not _num(a[vi + 1]) else ""
+    return [_typed(btype, stat, a[vi])]
 
 
 def _named_value(stat, pct=False):

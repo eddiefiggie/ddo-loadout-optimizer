@@ -12,7 +12,7 @@
    "slot": "Ring",
    "enhancements": [
     "Abjuration Spell Focus +7",
-    "Abjuration Spell Focus +3",
+    "Insightful Abjuration Spell Focus +3",
     "Wizardry +269",
     "Spell Penetration +8",
     "Yellow Augment Slot",
@@ -34,7 +34,7 @@
     "Spell Focus Mastery Spell Focus +5",
     "Insightful Wizardry +155",
     "Insight Spell Penetration +5",
-    "Spell Focus Mastery Spell Focus +3",
+    "Sacred Spell Focus Mastery Spell Focus +3",
     "Green Augment Slot",
     "Colorless Augment Slot"
    ],
@@ -200,7 +200,7 @@
    "category": "item",
    "slot": "Necklace",
    "enhancements": [
-    "Mastery Spell Focus +2",
+    "Profane Mastery Spell Focus +2",
     "Spell Save +11",
     "Blue Augment Slot",
     "Yellow Augment Slot",
@@ -224,8 +224,8 @@
    "slot": "Necklace",
    "enhancements": [
     "Mastery Spell Focus +6",
-    "Mastery Spell Focus +3",
-    "Necromancy Spell Focus +2",
+    "Insightful Mastery Spell Focus +3",
+    "Quality Necromancy Spell Focus +2",
     "Insightful Physical Sheltering +17",
     "Green Augment Slot",
     "Eminence of Autumn (set)"
@@ -288,6 +288,7 @@
    "enhancements": [
     "Poison Absorption +39%",
     "Will Save +6",
+    "Insightful False Life +29",
     "Green Augment Slot",
     "Colorless Augment Slot",
     "Moon Augment Slot"
@@ -299,7 +300,6 @@
     "Moon"
    ],
    "_enrich_unmapped": [
-    "Hp",
     "Nearly Complete"
    ],
    "_enriched": true,
