@@ -65,6 +65,8 @@ function buildProgram(model) {
   // raw LP constraint bodies that encodeStage injects verbatim.
   const extraVars = [];
   const extraConstraints = [];
+  const augMeta = new Map(); // placement var -> {variant_id, color, wiki_url}
+  const setMeta = new Map(); // set_active var -> {set, pieces_required, pieces_label, wiki_url}
 
   // U3 — augment assignment. Each augment gets a placement binary p_i; its stat
   // is a contribution gated by [p_i]. Per color, total placements are bounded by
@@ -89,6 +91,7 @@ function buildProgram(model) {
     if (!best.size) continue; // augment advances no target — leave it out
     const p = "p" + pc++;
     extraVars.push(p);
+    augMeta.set(p, { variant_id: aug.variant_id, color, wiki_url: aug.wiki_url });
     if (!augByColor.has(color)) augByColor.set(color, []);
     augByColor.get(color).push(p);
     for (const [k, val] of best) {
@@ -142,6 +145,10 @@ function buildProgram(model) {
       if (!best.size) continue; // this tier advances no target
       const sa = "s" + sc++;
       extraVars.push(sa);
+      setMeta.set(sa, {
+        set: setName, pieces_required: tier.pieces_required,
+        pieces_label: tier.pieces_label, wiki_url: tier.wiki_url,
+      });
       extraConstraints.push(`${tier.pieces_required} ${sa} - ${pieceVars.join(" - ")} <= 0`);
       for (const [k, val] of best) {
         if (!zByBucket.has(k)) zByBucket.set(k, []);
@@ -152,7 +159,7 @@ function buildProgram(model) {
 
   return {
     xVars, zByBucket, cappedStats, targetList: model.targets, model,
-    extraVars, extraConstraints, _zc: zc,
+    extraVars, extraConstraints, augMeta, setMeta, _zc: zc,
   };
 }
 
@@ -238,7 +245,11 @@ function readSolution(res, program) {
     if (program.cappedStats[stat] != null) effective[stat] = Math.round(prim("d_" + stat));
     else effective[stat] = rawExpr(program, stat).reduce((sum, t) => sum + (prim(t.name) > 0.5 ? t.coef : 0), 0);
   }
-  return { chosen, effective };
+  const augmentsPlaced = [];
+  for (const [p, meta] of program.augMeta || []) if (prim(p) > 0.5) augmentsPlaced.push(meta);
+  const setsActive = [];
+  for (const [s, meta] of program.setMeta || []) if (prim(s) > 0.5) setsActive.push(meta);
+  return { chosen, effective, augmentsPlaced, setsActive };
 }
 
 async function solveLexicographic(model, highs) {
@@ -259,7 +270,10 @@ async function solveLexicographic(model, highs) {
   const finalRes = tb.Status === "Optimal" ? tb : null;
   const sol = readSolution(finalRes || highs.solve(encodeStage(program, { objectiveStat: program.targetList.at(-1), sense: "max", locks })), program);
 
-  return { status: "optimal", perTarget, effective: sol.effective, chosen: sol.chosen, program };
+  return {
+    status: "optimal", perTarget, effective: sol.effective, chosen: sol.chosen,
+    augmentsPlaced: sol.augmentsPlaced, setsActive: sol.setsActive, program,
+  };
 }
 
 if (typeof module !== "undefined" && module.exports) {

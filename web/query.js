@@ -7,8 +7,10 @@ window.App && window.App.ready((dataset) => {
   // Targetable stats: distinct affix stats present in the dataset.
   const statSet = new Set();
   dataset.items.forEach((v) => {
-    (v.affixes || []).forEach((a) => statSet.add(a.stat));
+    (v.affixes || []).forEach((a) => statSet.add(a.stat));   // worn + augment affixes
     (v.scaling || []).forEach((s) => statSet.add(s.stat));
+    (v.parsed_set_bonuses || []).forEach((tier) =>           // set-bonus threshold stats
+      (tier.affixes || []).forEach((a) => statSet.add(a.stat)));
   });
   const allStats = [...statSet].sort();
 
@@ -107,7 +109,7 @@ window.App && window.App.ready((dataset) => {
       const ms = Math.round(performance.now() - t0);
       $("q-status").textContent = result.status === "optimal" ? `Solved in ${ms} ms.` : "";
       // eslint-disable-next-line no-undef
-      renderResults($("q-results"), { model, result, query });
+      renderResults($("q-results"), { model, result, query, dataset });
     } catch (err) {
       $("q-status").textContent = `Solver error: ${err.message}`;
       console.error(err);
