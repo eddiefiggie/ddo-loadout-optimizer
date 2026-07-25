@@ -3,7 +3,7 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 
-const { filterVariants, variantStats, affixText, dinoInsertRow, browsableItems } = require("../web/browse.js");
+const { filterVariants, variantStats, affixText, dinoInsertRow, ncRow, browsableItems } = require("../web/browse.js");
 const data = JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")
 );
@@ -90,6 +90,25 @@ test("a Dinosaur Bone blank shows its Isle of Dread slots instead of nothing", (
   const texts = affixText(blank);
   assert.ok(texts.some((t) => /Isle of Dread slots:/.test(t)),
     "blank should surface its typed Dino slots");
+});
+
+test("browsableItems appends the U81 Nearly-Complete option pool", () => {
+  const list = browsableItems(data);
+  const nc = list.filter((v) => v.nc_option);
+  assert.strictEqual(nc.length, (data.nearly_complete || []).length);
+  assert.ok(nc.length >= 60, "expected the sourced NC option pool");
+});
+
+test("a Nearly-Complete option is findable in the browser by stat", () => {
+  const list = browsableItems(data);
+  const rows = filterVariants(list, { stat: "Constitution" });
+  assert.ok(rows.some((v) => v.nc_option), "Constitution NC craft options surface under the stat filter");
+});
+
+test("ncRow tags the tier's ML and renders its value", () => {
+  const row = ncRow({ category: "Ability Score", stat: "Constitution", bonus_type: "Enhancement", value: 15, tier: "legendary", wiki_url: "w" });
+  assert.strictEqual(row.minimum_level, 35);
+  assert.ok(affixText(row).some((t) => /Constitution \+15/.test(t)));
 });
 
 console.log(`\n${passed} passed`);
