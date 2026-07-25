@@ -44,6 +44,48 @@ def test_spell_focus_typed_and_universal():
     assert _affixes(_field("{{Spell Focus|5|Insightful}}")) == ["Insightful Spell Focus +5"]
 
 
+def test_save_carries_type_normalizes_case_and_rejects_typos():
+    # bonus type carried (was silently dropped -> Enhancement)
+    assert _affixes(_field("{{Save|Reflex|11|Resistance}}")) == ["Resistance Reflex Save +11"]
+    # lowercase wiki arg normalized so saves aggregate ("will" -> "Will")
+    assert _affixes(_field("{{Save|will|12}}")) == ["Will Save +12"]
+    # malformed school (wiki typo {{Save|r|11}}) recorded unmapped, not emitted as junk
+    r = enrich.parse_enhancement_field(_field("{{Save|r|11}}"))
+    assert r["enhancements"] == [] and r["unmapped"] == ["Save"]
+
+
+def test_elem_res_and_absorption_carry_type_and_need_element():
+    assert _affixes(_field("{{Elemental Resistance|Fire|56|Insightful}}")) == ["Insightful Fire Resistance +56"]
+    assert _affixes(_field("{{Absorption|Fire|20|Insightful}}")) == ["Insightful Fire Absorption +20%"]
+    # element-less (numeric first arg) -> unmapped, never a bare "Resistance"
+    assert enrich.parse_enhancement_field(_field("{{Elemental Resistance|15}}"))["enhancements"] == []
+
+
+def test_stat_and_skills_reject_numeric_type_slot():
+    # a stray numeric 4th arg must not become a bonus type ("5 Jump")
+    assert _affixes(_field("{{Skills|Jump|21|5}}")) == ["Jump +21"]
+    assert _affixes(_field("{{Stat|CON|13|5}}")) == ["Constitution +13"]
+
+
+def test_sheltering_rejects_junk_bonus_type():
+    # only a real DDO bonus type is treated as the type; "Guard" is dropped, not
+    # folded into the stat name
+    assert _affixes(_field("{{Sheltering|9|Physical|Guard}}")) == ["Physical Sheltering +9"]
+    assert _affixes(_field("{{Sheltering|9|Quality|Magical}}")) == ["Quality Magical Sheltering +9"]
+
+
+def test_idiomatic_wiki_spacing_parses():
+    # "{{ Stat | CON | 13 }}" (spaces around name/args) must parse, not silently unmap
+    assert _affixes(_field("{{ Stat | CON | 13 }}")) == ["Constitution +13"]
+    assert _affixes(_field("{{ Skills | Jump | 21 }}")) == ["Jump +21"]
+
+
+def test_malformed_template_line_recorded_not_dropped():
+    # a template with trailing prose is recorded as unmapped (honest), not silently lost
+    r = enrich.parse_enhancement_field("* {{Clicky|Rage}} on hit, 3/rest")
+    assert r["enhancements"] == [] and r["unmapped"] == ["Clicky"]
+
+
 def test_spell_power_and_lore_spaced_aliases_and_types():
     # both {{SpellPower|...}} and the armor {{Spell Power|...}} spaced form map,
     # and a trailing bonus type is carried, not dropped.
@@ -131,13 +173,13 @@ def test_shipped_batch_flows_through_pipeline_to_verified():
     from src.variants import expand_dataset
     from src import verify as verify_mod
     p = os.path.join(ROOT, "data", "seed", "compendium", "enriched_batch1.json")
-    if not os.path.exists(p):
-        return  # batch is optional content; skip if not present
+    assert os.path.exists(p), "shipped enriched batch must exist"
     items = json.load(open(p, encoding="utf-8")).get("items", [])
     assert items, "enriched batch should carry items"
     variants, _ = verify_mod.apply(expand_dataset(items))
     verified = [v for v in variants if v.get("verification") == "verified"]
-    assert len(verified) >= 10, "most enriched items should verify with real affixes"
+    # every batch1 item carries mapped affixes, so all must verify (exact, not >=)
+    assert len(verified) == len(items), f"expected all {len(items)} enriched items verified, got {len(verified)}"
     faith = [v for v in variants if v.get("source_item", "").startswith("Legendary Band of Faith")]
     assert faith, "known enriched item present"
     assert any(a["stat"] == "Fortification" and a["value"] == 156 for a in faith[0].get("affixes", [])), \

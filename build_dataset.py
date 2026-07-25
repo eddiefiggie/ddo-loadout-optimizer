@@ -85,7 +85,20 @@ def build(seed: dict) -> dict:
     # they flow through the identical parse (affix_parser) + verify pipeline and
     # become solver-active. Enriched records are strict (src.enrich); unmapped
     # effects are recorded, never fabricated.
+    # Dedupe: skip enriched records whose name already exists (base seed wins — it
+    # is the hand-verified source; a same-name enriched copy would double-list in
+    # browse and put two identities of one item into the solver). Also drops any
+    # cross-batch name collision.
     enriched_items = load_enriched_items()
+    seen_names = {it.get("name") for it in seed["items"]}
+    deduped = []
+    for it in enriched_items:
+        name = it.get("name")
+        if name in seen_names:
+            continue
+        seen_names.add(name)
+        deduped.append(it)
+    enriched_items = deduped
     variants = expand_dataset(seed["items"] + enriched_items)  # parse enhancements + expand tiers
     for v in variants:                                  # U2 augment-color normalization
         colors_mod.annotate_variant(v)
@@ -113,6 +126,10 @@ def build(seed: dict) -> dict:
     enriched_names = {v.get("source_item") for v in variants if v.get("source_item")}
     comp_records, comp_cov = compendium_mod.build_compendium(enriched_names)
     comp_cov["enriched_items"] = len(enriched_items)
+    # Surface the strict-provenance disclosure: how many wiki effects were recorded
+    # as unmapped (never guessed) across the enriched batches.
+    comp_cov["enriched_unmapped_effects"] = sum(
+        len(it.get("_enrich_unmapped", [])) for it in enriched_items)
 
     out = {
         "metadata": {

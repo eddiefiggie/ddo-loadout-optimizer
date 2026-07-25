@@ -18,6 +18,8 @@ from __future__ import annotations
 
 import re
 
+from src.affix_parser import BONUS_TYPES
+
 # Ability-score arg tokens (any case) -> canonical stat name.
 _ABIL = {
     "str": "Strength", "dex": "Dexterity", "con": "Constitution",
@@ -35,6 +37,12 @@ def _num(tok: str) -> bool:
     return bool(re.fullmatch(r"[+-]?\d+", tok.strip()))
 
 
+def _opt_type(a, i):
+    """The optional trailing bonus-type arg at index `i`, or "" — the single
+    shared idiom for every renderer: present, non-empty, and not a number."""
+    return a[i].strip() if len(a) > i and a[i].strip() and not _num(a[i]) else ""
+
+
 def _typed(prefix_type, stat, value, pct=False):
     """Render one affix string in value-last form. `prefix_type` is peeled by the
     parser only if it is a known bonus type; harmless otherwise."""
@@ -49,51 +57,50 @@ def _r_stat(a):
     # {{Stat|CON|13}} | {{Stat|Well Rounded|2|Profane}} | {{Stat|con|6|Insightful}}
     if len(a) < 2 or not _num(a[1]):
         return []
-    stat, val = _abil(a[0]), a[1]
-    btype = a[2].strip() if len(a) >= 3 and a[2].strip() else ""
-    return [_typed(btype, stat, val)]
+    return [_typed(_opt_type(a, 2), _abil(a[0]), a[1])]
 
 
 def _r_skills(a):
     # {{Skills|Jump|21}} | {{Skills|Jump|21|Competence}}
     if len(a) < 2 or not _num(a[1]):
         return []
-    btype = a[2].strip() if len(a) >= 3 else ""
-    return [_typed(btype, a[0].strip(), a[1])]
+    return [_typed(_opt_type(a, 2), a[0].strip(), a[1])]
 
 
 def _r_spellpower(a):
     # {{SpellPower|Devotion|146}} -> "Devotion +146"
     # {{Spell Power|Universal|15|Exceptional}} -> "Exceptional Universal +15"
-    if len(a) < 2 or not _num(a[1]):
+    if len(a) < 2 or not _num(a[1]) or _num(a[0]):
         return []
-    btype = a[2].strip() if len(a) >= 3 and a[2].strip() and not _num(a[2]) else ""
-    return [_typed(btype, a[0].strip(), a[1])]
+    return [_typed(_opt_type(a, 2), a[0].strip(), a[1])]
 
 
 def _r_elem_res(a):
-    # {{Elemental Resistance|Fire|56}} -> "Fire Resistance +56"
-    if len(a) < 2 or not _num(a[1]):
+    # {{Elemental Resistance|Fire|56}} | {{Elemental Resistance|Elemental|15|Competence}}
+    if len(a) < 2 or not _num(a[1]) or _num(a[0]):
         return []
-    return [_typed("", f"{a[0].strip()} Resistance", a[1])]
+    return [_typed(_opt_type(a, 2), f"{a[0].strip()} Resistance", a[1])]
 
 
 def _r_absorption(a):
-    # {{Absorption|Poison|39}} -> "Poison Absorption +39%"
-    if len(a) < 2 or not _num(a[1]):
+    # {{Absorption|Poison|39}} | {{Absorption|Fire|20|Insightful}}
+    if len(a) < 2 or not _num(a[1]) or _num(a[0]):
         return []
-    return [_typed("", f"{a[0].strip()} Absorption", a[1], pct=True)]
+    return [_typed(_opt_type(a, 2), f"{a[0].strip()} Absorption", a[1], pct=True)]
 
 
 def _r_sheltering(a):
-    # {{Sheltering|9|Quality|Physical}} | {{Sheltering|9}}
+    # {{Sheltering|9|Quality|Physical}} | {{Sheltering|9}} (bare = Physical/PRR by
+    # DDO convention). A non-phys/mag token is only treated as the bonus type when
+    # it is a real DDO bonus type; junk tokens (e.g. "Guard") are dropped, not
+    # folded into the stat name.
     nums = [x for x in a if _num(x)]
     if not nums:
         return []
     val = nums[0]
     rest = [x.strip() for x in a if not _num(x) and x.strip()]
     physmag = next((x for x in rest if x.lower() in ("physical", "magical")), "Physical")
-    btype = next((x for x in rest if x.lower() not in ("physical", "magical")), "")
+    btype = next((x for x in rest if x in BONUS_TYPES), "")
     return [_typed(btype, f"{physmag} Sheltering", val)]
 
 
@@ -105,8 +112,7 @@ def _r_spellfocus(a):
         return [_typed(a[1].strip(), "Spell Focus", a[0])]  # universal, value-first
     if len(a) < 2 or not _num(a[1]):
         return []
-    btype = a[2].strip() if len(a) >= 3 and a[2].strip() and not _num(a[2]) else ""
-    return [_typed(btype, f"{a[0].strip()} Spell Focus", a[1])]
+    return [_typed(_opt_type(a, 2), f"{a[0].strip()} Spell Focus", a[1])]
 
 
 def _r_spelllore(a):
@@ -114,15 +120,20 @@ def _r_spelllore(a):
     # {{Spell Lore|Universal Spell|5|Exceptional}} -> "Exceptional Universal Spell Lore +5%"
     if len(a) < 2 or not _num(a[1]):
         return []
-    btype = a[2].strip() if len(a) >= 3 and a[2].strip() and not _num(a[2]) else ""
-    return [_typed(btype, f"{a[0].strip()} Lore", a[1], pct=True)]
+    return [_typed(_opt_type(a, 2), f"{a[0].strip()} Lore", a[1], pct=True)]
 
 
 def _r_save(a):
-    # {{Save|Spell|11}} -> "Spell Save +11"
+    # {{Save|Spell|11}} -> "Spell Save +11" | {{Save|Reflex|11|Resistance}} typed.
+    # Normalize school case ("will" -> "Will") so saves aggregate; reject a
+    # malformed school arg (wiki typos like {{Save|r|11}}) as unmapped rather
+    # than emitting a junk "r Save" stat.
     if len(a) < 2 or not _num(a[1]):
         return []
-    return [_typed("", f"{a[0].strip()} Save", a[1])]
+    school = a[0].strip()
+    if len(school) < 2 or _num(school):
+        return []
+    return [_typed(_opt_type(a, 2), f"{school.title()} Save", a[1])]
 
 
 def _r_hp(a):
@@ -132,8 +143,7 @@ def _r_hp(a):
         return []
     vi = nums[0]
     stat = " ".join(a[:vi]).strip() or "False Life"
-    btype = a[vi + 1].strip() if len(a) > vi + 1 and a[vi + 1].strip() and not _num(a[vi + 1]) else ""
-    return [_typed(btype, stat, a[vi])]
+    return [_typed(_opt_type(a, vi + 1), stat, a[vi])]
 
 
 def _named_value(stat, pct=False):
@@ -141,8 +151,7 @@ def _named_value(stat, pct=False):
     def render(a):
         if not a or not _num(a[0]):
             return []
-        btype = a[1].strip() if len(a) >= 2 and a[1].strip() and not _num(a[1]) else ""
-        return [_typed(btype, stat, a[0], pct=pct)]
+        return [_typed(_opt_type(a, 1), stat, a[0], pct=pct)]
     return render
 
 
@@ -184,9 +193,10 @@ RENDERERS = {
 _SKIP_SILENT = {"augment", "named item sets"}  # handled specially, not "unmapped"
 
 
-def _split_args(inner: str):
+def _split_top_level(inner: str):
     """Split template inner text on top-level '|', ignoring '|' inside nested
-    braces. Drop `key=value` named args (e.g. label=Rage)."""
+    braces. Returns raw parts (no strip, no filtering); parts[0] is the template
+    name, the rest are its args."""
     parts, depth, cur = [], 0, ""
     for ch in inner:
         if ch == "{":
@@ -199,8 +209,7 @@ def _split_args(inner: str):
         else:
             cur += ch
     parts.append(cur)
-    args = [p.strip() for p in parts]
-    return [x for x in args if "=" not in x]
+    return parts
 
 
 def parse_enhancement_field(field: str) -> dict:
@@ -215,20 +224,28 @@ def parse_enhancement_field(field: str) -> dict:
         if not line.startswith("*"):
             continue
         line = line.lstrip("*").strip()
-        m = re.match(r"\{\{\s*([^|}\n]+?)\s*(\||\}\})", line)
-        if not m:
-            continue
-        name = m.group(1).strip()
-        key = name.lower()
-        # extract this template's inner text (handles a single top-level template)
+        if not line.startswith("{{"):
+            continue  # descriptive bullet, not a template
         tm = re.match(r"\{\{(.*)\}\}\s*$", line, re.S)
-        inner = tm.group(1) if tm else line.strip("{}")
-        # nested composite (e.g. Nearly Finished): skip, record
-        body_after_name = inner[len(name):]
-        args = _split_args(body_after_name.lstrip("|")) if body_after_name.startswith("|") else []
-        if "{{" in body_after_name:
+        if not tm:
+            # a template-ish line we can't cleanly parse (trailing text / malformed)
+            mm = re.match(r"\{\{\s*([^|}\n]+)", line)
+            unmapped.append(mm.group(1).strip() if mm else "?")
+            continue
+        # Name and args come from the top-level split — never a length-based slice,
+        # so idiomatic wiki spacing ("{{ Stat | CON | 13 }}") parses correctly.
+        parts = _split_top_level(tm.group(1))
+        name = parts[0].strip()
+        if not name:
+            continue
+        key = name.lower()
+        rest = parts[1:]
+        # nested composite (a sub-template as an arg, e.g. Nearly Finished): record
+        if any("{{" in p for p in rest):
             unmapped.append(name)
             continue
+        # drop key=value named args (e.g. label=Rage, prefix=Insightful)
+        args = [p.strip() for p in rest if "=" not in p]
         if key == "augment":
             if args:
                 augs.append(args[0].strip().title())

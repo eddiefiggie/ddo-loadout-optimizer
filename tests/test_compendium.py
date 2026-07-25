@@ -74,11 +74,14 @@ def test_type_fields_preserved():
              "items": ["Full Plate of Z"]},
             {"category": "Great Axes", "slot": "Weapon", "weapon_type": "Great Axes",
              "items": ["Axe of W"]},
+            {"category": "Orbs", "slot": "Off Hand", "offhand_type": "orb",
+             "items": ["Orb of V"]},
         ])
         recs, _ = compendium.build_compendium(enriched_names=set(), dirpath=d)
         by_name = {r["name"]: r for r in recs}
         assert by_name["Full Plate of Z"]["armor_type"] == "heavy"
         assert by_name["Axe of W"]["weapon_type"] == "Great Axes"
+        assert by_name["Orb of V"]["offhand_type"] == "orb"
 
 
 def test_missing_dir_returns_empty():

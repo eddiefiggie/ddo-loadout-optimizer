@@ -1,0 +1,154 @@
+{
+ "metadata": {
+  "layer": "raw-wikitext",
+  "batch": "batch3_armor",
+  "harvested": "2026-07-25",
+  "note": "raw {{template}} enhancement fields; enriched_*.json is regenerable from these via src.enrich.build_item_record"
+ },
+ "items": [
+  {
+   "name": "Legendary Barovian Nobles' Regalia",
+   "slot": "Armor",
+   "minimum_level": 29,
+   "field": "* {{Enhancement bonus|a|15}}\n* {{Spell Lore|Universal Spell|5|Exceptional}}\n* {{Spell Power|Universal|15|Exceptional}}\n* {{Fortification|142}}\n* {{Shield Bonus|13}}\n* {{Augment|Green}}\n* {{Named item sets|Beacon of Magic Set (Legendary)}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Barovian_Nobles'_Regalia",
+   "armor_type": "cloth"
+  },
+  {
+   "name": "Legendary Deep Arcanum",
+   "slot": "Armor",
+   "minimum_level": 28,
+   "field": "* {{Enhancement bonus|a|13}}\n* {{Resistance|10}}\n* {{Sheltering|8|Quality|Magical}}\n* {{Sheltering|16|Insightful|Physical}}\n* {{Wizardry|134|Insightful}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Deep_Arcanum",
+   "armor_type": "cloth"
+  },
+  {
+   "name": "Legendary Diabolist's Robe",
+   "slot": "Armor",
+   "minimum_level": 30,
+   "field": "* {{Clicky|Summon Monster IX|20|5|5}}\n* {{Enhancement bonus|a|15}}\n* {{Stat|Intelligence|14}}\n* {{Stat|Charisma|14}}\n* {{Spell Focus|Conjuration|9}}\n* {{Spell Resistance|41}}\n* {{Named item sets|Legendary Deadly Diabolist}}\n* {{Augment|Blue}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Diabolist's_Robe",
+   "armor_type": "cloth"
+  },
+  {
+   "name": "Legendary Disciple of the Dawn",
+   "slot": "Armor",
+   "minimum_level": 29,
+   "field": "* {{Enhancement bonus|a|14}}\n* {{Fortification|142}}\n* {{Parrying|6}}\n* {{Sheltering|33|Enhancement|Physical}}\n* {{Stat|Well Rounded|2|Profane}}\n* {{Augment|Green}}\n* {{Named item sets|Silent Avenger Set (Legendary)}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Disciple_of_the_Dawn",
+   "armor_type": "cloth"
+  },
+  {
+   "name": "Legendary Dockworker's Outfit",
+   "slot": "Armor",
+   "minimum_level": 30,
+   "field": "* {{Enhancement bonus|a|15}}\n* {{Fortification|146}}\n* {{Dodge|13}}\n* {{HealingAmp|54|H|Competence}}\n* {{Resistance|11}}\n* {{Augment|Blue}}\n* {{Augment|Green}}\n* {{Named item sets|Legendary Saltmarsh Explorer}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dockworker's_Outfit",
+   "armor_type": "cloth"
+  },
+  {
+   "name": "Legendary Allegience of the Wild Hunt",
+   "slot": "Armor",
+   "minimum_level": 29,
+   "field": "* {{Enhancement bonus|a|15}}\n* {{Fortification|142}}\n* {{Sheltering|33|Enhancement|Physical}}\n* {{Save|r|11}}\n* {{Dodge|13}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Allegience_of_the_Wild_Hunt",
+   "armor_type": "light"
+  },
+  {
+   "name": "Legendary Armor of Moonlight",
+   "slot": "Armor",
+   "minimum_level": 33,
+   "field": "* {{Enhancement bonus|a|15}}\n* {{Accuracy|23}}\n* {{Deadly|12}}\n* {{Save|Reflex|6|Insightful}}\n* {{SpellPower|Potency|26|Quality}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Sun}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Armor_of_Moonlight",
+   "armor_type": "light"
+  },
+  {
+   "name": "Legendary Armor of Sunlight",
+   "slot": "Armor",
+   "minimum_level": 33,
+   "field": "* {{Enhancement bonus|a|15}}\n* {{Accuracy|23}}\n* {{Deadly|12}}\n* {{Save|Reflex|6|Insightful}}\n* {{Accuracy|5|Quality}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Sun}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Armor_of_Sunlight",
+   "armor_type": "light"
+  },
+  {
+   "name": "Legendary Azurescale Armor",
+   "slot": "Armor",
+   "minimum_level": 34,
+   "field": "* {{Enhancement bonus|a|15}}\n* {{Elemental Resistance|Electric|57}}\n* {{Sheltering|38|Enhancement|Physical}}\n* {{NaturalArmor|15}}\n* {{Sheltering|18|Insightful|Magical}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Sun}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Azurescale_Armor",
+   "armor_type": "light"
+  },
+  {
+   "name": "Legendary Cook's Coat",
+   "slot": "Armor",
+   "minimum_level": 32,
+   "field": "* {{Enhancement bonus|a|15}}\n* {{Absorption|Fire|36}}\n* {{Elemental Resistance|Fire|26|Insightful}}\n* {{Sheltering|8|Quality|Magical}}\n* {{Sheltering|36|Enhancement|Physical}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|Legendary Cooking By the Book}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cook's_Coat",
+   "armor_type": "light"
+  },
+  {
+   "name": "Legendary Armor of Midday",
+   "slot": "Armor",
+   "minimum_level": 33,
+   "field": "* {{Enhancement bonus|a|15}}\n* {{Accuracy|23}}\n* {{Deadly|12}}\n* {{Save|Fortitude|6|Insightful}}\n* {{Deadly|3|Quality}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Sun}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Armor_of_Midday",
+   "armor_type": "medium"
+  },
+  {
+   "name": "Legendary Armor of Midnight",
+   "slot": "Armor",
+   "minimum_level": 33,
+   "field": "* {{Enhancement bonus|a|15}}\n* {{Accuracy|23}}\n* {{Deadly|12}}\n* {{Save|Fortitude|6|Insightful}}\n* {{SpellPower|Potency|109}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Sun}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Armor_of_Midnight",
+   "armor_type": "medium"
+  },
+  {
+   "name": "Legendary Baphomet's Brutality",
+   "slot": "Armor",
+   "minimum_level": 35,
+   "field": "* {{Enhancement bonus|a|16}}\n* {{Hp|Profane Lifeforce|54}}\n* {{Demonic Shield|Legendary}}\n* {{Tactics|Combat Mastery|3|Quality}}\n* {{Nearly Complete|Ability Score|1}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Sun}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Baphomet's_Brutality",
+   "armor_type": "medium"
+  },
+  {
+   "name": "Legendary Blessed Vestments",
+   "slot": "Armor",
+   "minimum_level": 29,
+   "field": "* {{Enhancement bonus|a|15}}\n* {{Fortification|142}}\n* {{Sheltering|33|Enhancement|Physical}}\n* {{HealingAmp|53|h|Competence}}\n* {{Hp|False Life|50}}\n* {{Augment|Green}}\n* {{Named item sets|Legendary Flamecleansed Fury}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Blessed_Vestments",
+   "armor_type": "medium"
+  },
+  {
+   "name": "Legendary Coat of the Traveler",
+   "slot": "Armor",
+   "minimum_level": 29,
+   "field": "* {{Enhancement bonus|a|14}}\n* {{Fortification|142}}\n* {{Parrying|6}}\n* {{Sheltering|33|Enhancement|Physical}}\n* {{Stat|Well Rounded|2|Profane}}\n* {{Augment|Blue}}\n* {{Named item sets|Crypt Raider Set (Legendary)}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Coat_of_the_Traveler",
+   "armor_type": "medium"
+  },
+  {
+   "name": "Legendary Armor of Sunset",
+   "slot": "Armor",
+   "minimum_level": 33,
+   "field": "* {{Enhancement bonus|a|15}}\n* {{Accuracy|23}}\n* {{Deadly|12}}\n* {{Incite|133}}\n* {{Protection|12}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Sun}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Armor_of_Sunset",
+   "armor_type": "heavy"
+  },
+  {
+   "name": "Legendary Armor of the New Moon",
+   "slot": "Armor",
+   "minimum_level": 33,
+   "field": "* {{Enhancement bonus|a|15}}\n* {{Accuracy|23}}\n* {{Deadly|12}}\n* {{Save|Fortitude|6|Insightful}}\n* {{Deadly|3|Quality}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Sun}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Armor_of_the_New_Moon",
+   "armor_type": "heavy"
+  },
+  {
+   "name": "Legendary Blessed Bulwark",
+   "slot": "Armor",
+   "minimum_level": 29,
+   "field": "* {{Enhancement bonus|a|15}}\n* {{Fortification|142}}\n* {{Sheltering|33|Enhancement|Physical}}\n* {{HealingAmp|53|h|Competence}}\n* {{Hp|False Life|50}}\n* {{Augment|Green}}\n* {{Named item sets|Legendary Flamecleansed Fury}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Blessed_Bulwark",
+   "armor_type": "heavy"
+  }
+ ]
+}

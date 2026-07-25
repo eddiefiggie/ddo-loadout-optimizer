@@ -1,0 +1,262 @@
+{
+ "metadata": {
+  "layer": "raw-wikitext",
+  "batch": "batch2",
+  "harvested": "2026-07-25",
+  "note": "raw {{template}} enhancement fields; enriched_*.json is regenerable from these via src.enrich.build_item_record"
+ },
+ "items": [
+  {
+   "name": "Legendary Acolyte's Lenses",
+   "slot": "Goggles",
+   "minimum_level": 29,
+   "field": "* {{Stat|Intelligence|13}}\n* {{Stat|Intelligence|6|Insightful}}\n* {{Wizardry|134|Insightful}}\n* {{Skills|Spellcraft|20}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Acolyte's_Lenses"
+  },
+  {
+   "name": "Legendary Agony's Eyes",
+   "slot": "Goggles",
+   "minimum_level": 34,
+   "field": "* {{Sound and Silence}}\n* {{Lamordia Slot|Melancholic|Accessory}}\n* {{Lamordia Slot|Dolorous|Accessory}}\n* {{Lamordia Slot|Miserable|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Blue}}\n* {{Augment|Colorless}}\n* {{Augment|Sun}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Agony's_Eyes"
+  },
+  {
+   "name": "Legendary Amethyst Loupe",
+   "slot": "Goggles",
+   "minimum_level": 30,
+   "field": "* {{Eversight}}\n* {{Deception|20|Bluff=Improved}}\n* {{Skills|Search|20}}\n* {{Skills|Spot|20}}\n* {{Save|Reflex|12}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Named item sets|Legendary Saltmarsh Explorer}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Amethyst_Loupe"
+  },
+  {
+   "name": "Legendary Black Earth Guardian's Lenses",
+   "slot": "Goggles",
+   "minimum_level": 31,
+   "field": "* {{Stat|Constitution|3|Quality}}\n* {{Sheltering|35|Enhancement|Physical}}\n* {{Incite|127}}\n* {{Hp|False Life|53}}\n* {{Named item sets|Legendary Temple's Monolith}}\n* {{Augment|Blue}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Black_Earth_Guardian's_Lenses"
+  },
+  {
+   "name": "Legendary Blazing Sniper's Sights",
+   "slot": "Goggles",
+   "minimum_level": 31,
+   "field": "* {{Deadly|11}}\n* {{Deadly|3|Quality}}\n* {{Doubleshot|9}}\n* {{Doubleshot|5|Insightful}}\n* {{Named item sets|Legendary Temple's Inferno}}\n* {{Augment|Yellow}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Blazing_Sniper's_Sights"
+  },
+  {
+   "name": "Legendary Collective Sight",
+   "slot": "Goggles",
+   "minimum_level": 29,
+   "field": "* {{Nearly Finished|{{Stat|str|13}}|{{Stat|dex|13}}|{{Stat|con|13}}|{{Stat|int|13}}|{{Stat|wis|13}}|{{Stat|cha|13}}}}\n* {{Almost There|{{Stat|str|6|Insightful}}|{{Stat|dex|6|Insightful}}|{{Stat|con|6|Insightful}}|{{Stat|int|6|Insightful}}|{{Stat|wis|6|Insightful}}|{{Stat|cha|6|Insightful}}}}\n* {{Resistance|2|Quality}}\n* {{Temperance of Belief}}\n* {{Augment|Blue}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Collective_Sight"
+  },
+  {
+   "name": "Legendary Admiral's Wristwatch",
+   "slot": "Bracers",
+   "minimum_level": 31,
+   "field": "* {{Armor-Piercing|21}}\n* {{Accuracy|21}}\n* {{Deadly|11}}\n* {{Dino Slot|Scale|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Admiral's_Wristwatch"
+  },
+  {
+   "name": "Legendary Aetherband",
+   "slot": "Bracers",
+   "minimum_level": 29,
+   "field": "* {{Spellpen|8}}\n* {{Spellpen|4|Insight|prefix=Insightful}}\n* {{Magical Efficiency|10}}\n* {{Shield Bonus|13}}\n* {{Augment|Green}}\n* {{Named item sets|Legendary Esoteric Initiate}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Aetherband"
+  },
+  {
+   "name": "Legendary Aosu'riel's Bracers",
+   "slot": "Bracers",
+   "minimum_level": 29,
+   "field": "* {{Spelllore|Healing|21}}\n* {{SpellPower|Devotion|142}}\n* {{Fortification|142}}\n* {{HealingAmp|53|H|Competence}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Aosu'riel's_Bracers"
+  },
+  {
+   "name": "Legendary Auspicious Bracers",
+   "slot": "Bracers",
+   "minimum_level": 34,
+   "field": "* {{Spell Focus|Illusion|12}}\n* {{Skills|Spellcraft|22}}\n* {{Lamordia Slot|Melancholic|Accessory}}\n* {{Lamordia Slot|Dolorous|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Auspicious_Bracers"
+  },
+  {
+   "name": "Legendary Black Opal Bracers",
+   "slot": "Bracers",
+   "minimum_level": 29,
+   "field": "* {{Heroism|Greater}}\n* {{Sheltering|33|Enhancement|Magical}}\n* {{Save|Will|11}}\n* {{Ethereal}}\n* {{Augment|Yellow}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Black_Opal_Bracers"
+  },
+  {
+   "name": "Legendary Bodysnatcher's Bracers",
+   "slot": "Bracers",
+   "minimum_level": 34,
+   "field": "* {{Accuracy|5|Legendary}}\n* {{Undying|285}}\n* {{Lamordia Slot|Melancholic|Accessory}}\n* {{Lamordia Slot|Dolorous|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bodysnatcher's_Bracers"
+  },
+  {
+   "name": "Legendary Admiral's Gumshoes",
+   "slot": "Boots",
+   "minimum_level": 31,
+   "field": "* {{Speed|30}}\n* {{Seeker|14}}\n* {{Deception|11}}\n* {{Dino Slot|Scale|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Admiral's_Gumshoes"
+  },
+  {
+   "name": "Legendary Beachcombers",
+   "slot": "Boots",
+   "minimum_level": 31,
+   "field": "* {{Speed|30}}\n* {{Dodge|14}}\n* {{Save|Reflex|12}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}\n* {{Dino Slot|Scale|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Beachcombers"
+  },
+  {
+   "name": "Legendary Boots of Corrosion",
+   "slot": "Boots",
+   "minimum_level": 30,
+   "field": "* {{SpellPower|Corrosion|151}}\n* {{SpellPower|Nullification|151}}\n* {{Guard|Disintegration}}\n* {{Elemental Resistance|Acid|54}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|Legendary Might of the Abishai}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Boots_of_Corrosion"
+  },
+  {
+   "name": "Legendary Boots of Fleet and Fortune",
+   "slot": "Boots",
+   "minimum_level": 33,
+   "field": "* {{Good Luck|5}}\n* {{Skills|Nimble|10|Exceptional}} \n* {{Skills|Nimble|5|Quality}} \n* {{Skills|Nimble|10|Insightful}} \n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Boots_of_Fleet_and_Fortune"
+  },
+  {
+   "name": "Legendary Boots of the Battlemaster",
+   "slot": "Boots",
+   "minimum_level": 33,
+   "field": "* {{Stat|DEX|15}}\n* {{Stat|DEX|3|Quality}}\n* {{Speed|30}}\n* {{Save|Reflex|6|Insightful}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Boots_of_the_Battlemaster"
+  },
+  {
+   "name": "Legendary Boots of the Devil Commander",
+   "slot": "Boots",
+   "minimum_level": 29,
+   "field": "* {{Sheltering|8|Quality|Physical}}\n* {{Sheltering|16|Insight|Physical}}\n* {{Incite|52|Insight}}\n* {{Fortification|142}}\n* {{Augment|blue}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Boots_of_the_Devil_Commander"
+  },
+  {
+   "name": "Legendary Absorption Gauntlet",
+   "slot": "Gloves",
+   "minimum_level": 32,
+   "field": "* {{Elemental Resistance|Elemental|15|Competence}}\n* {{Sheltering|17|Insightful|Magical}}\n* {{Skills|Spellcraft|5|Quality|prefix=Quality}}\n* {{Absorption|Fire|36}}\n* {{Named item sets|Legendary Forbidden Knowledge}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Absorption_Gauntlet"
+  },
+  {
+   "name": "Legendary Admiral's Gloves",
+   "slot": "Gloves",
+   "minimum_level": 31,
+   "field": "* {{Spell Focus|Illusion|9}}\n* {{Wizardry|286}}\n* {{Save|will|12}}\n* {{Dino Slot|Scale|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Admiral's_Gloves"
+  },
+  {
+   "name": "Legendary Attunement Gauntlets",
+   "slot": "Gloves",
+   "minimum_level": 29,
+   "field": "* {{Spell Power|Magnetism|142}}\n* {{Spell Lore|Lightning|21}}\n* {{Spell Focus|Evocation|7}}\n* {{ItemGrantedFeat|Quick Draw}}\n* {{Augment|Green}}\n* {{Named item sets|Legendary Arcsteel Battlemage}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Attunement_Gauntlets"
+  },
+  {
+   "name": "Legendary Balorskin Gauntlets",
+   "slot": "Gloves",
+   "minimum_level": 35,
+   "field": "* {{Reinforced Fists|Superior}}\n* {{Deception|6|Insightful}}\n* {{Accuracy|5|Legendary}}\n* {{Nearly Complete|Ability Score|1}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Balorskin_Gauntlets"
+  },
+  {
+   "name": "Legendary Baron Aubrecker's Monogrammed Gloves",
+   "slot": "Gloves",
+   "minimum_level": 34,
+   "field": "* {{Spell Focus|Transmutation|12}}\n* {{Save|Spell|5|Insightful}}\n* {{Lamordia Slot|Melancholic|Accessory}}\n* {{Lamordia Slot|Dolorous|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Baron_Aubrecker's_Monogrammed_Gloves"
+  },
+  {
+   "name": "Legendary Birchlore Gauntlets",
+   "slot": "Gloves",
+   "minimum_level": 31,
+   "field": "* {{spelllore|Healing|22}}\n* {{SpellPower|Devotion|149}}\n* {{Hp|Vitality|47}}\n* {{Dino Slot|Scale|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Birchlore_Gauntlets"
+  },
+  {
+   "name": "Legendary Alchemist's Crown",
+   "slot": "Helmet",
+   "minimum_level": 29,
+   "field": "* {{Nearly Finished|{{Stat|WIS|13}}|{{Stat|wis|6|Insightful}}|{{Stat|wis|3|Quality}}}}\n* {{SpellPower|Devotion|148}}\n* {{SpellPower|Nullification|148}} \n* {{Wizardry|283}}\n* {{Augment|Green}}\n* {{Augment|Blue}}\n* {{Named item sets|Astute Alchemist}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Alchemist's_Crown"
+  },
+  {
+   "name": "Legendary Arcsteel Brim",
+   "slot": "Helmet",
+   "minimum_level": 29,
+   "field": "* {{Spell Focus|Spell Focus Mastery|6}}\n* {{Save|Will|11}}\n* {{Sheltering|16|Insightful|Magical}}\n* {{Sheltering|33|Enhancement|Magical}}\n* {{Named item sets|Legendary Arcsteel Battlemage}}\n* {{Augment|Yellow}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Arcsteel_Brim"
+  },
+  {
+   "name": "Legendary Big Top",
+   "slot": "Helmet",
+   "minimum_level": 30,
+   "field": "* {{Clicky|Otto's Irresistible Dance|30|3|3}}\n* {{Stat|Charisma|13}}\n* {{Dodge|13}}\n* {{Skills|Alluring|10|Exceptional}}\n* {{Skills|Use Magic Device|5}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Big_Top"
+  },
+  {
+   "name": "Legendary Boundless",
+   "slot": "Helmet",
+   "minimum_level": 29,
+   "field": "* {{Wizardry|134|Insightful}}\n* {{SpellPower|Potency|24|Quality}}\n* {{Sheltering|8|Quality|Physical}}\n* {{Fortification|142}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Boundless"
+  },
+  {
+   "name": "Legendary Chainmail Coif",
+   "slot": "Helmet",
+   "minimum_level": 30,
+   "field": "* {{SpellPower|Potency|100}}\n* {{Bonus Turning|Hallowed|13}}\n* {{Bonus Turning|Sacred|13}}\n* {{Bonus Turning|Turning}}\n* {{Named item sets|Legendary Oasis of Morality}}\n* {{Augment|Colorless}}\n* {{Augment|Yellow}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Chainmail_Coif"
+  },
+  {
+   "name": "Legendary Chimera's Crown",
+   "slot": "Helmet",
+   "minimum_level": 30,
+   "field": "* {{Dragonmark|Lesser|Major}}\n* {{Dragonmark|Greater}}\n* {{Spell Resistance|39}}\n* {{NaturalArmor|13}}\n* {{Dragonmark|Chimera's Vitality}}\n* {{Augment|Colorless}}\n* {{Augment|Yellow}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Chimera's_Crown"
+  },
+  {
+   "name": "Legendary Admiral's Cummerbund",
+   "slot": "Belt",
+   "minimum_level": 31,
+   "field": "* {{Parrying|6}}\n* {{Absorption|Law|23}}\n* {{Absorption|Chaos|23}}\n* {{Dino Slot|Claw|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Admiral's_Cummerbund"
+  },
+  {
+   "name": "Legendary Agarta's Belt",
+   "slot": "Belt",
+   "minimum_level": 33,
+   "field": "* {{Stat|STR|15}}\n* {{Stat|STR|3|Quality}}\n* {{Ram's Might}}\n* {{Save|Fortitude|6|Insightful}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Agarta's_Belt"
+  },
+  {
+   "name": "Legendary Animated Rope",
+   "slot": "Belt",
+   "minimum_level": 28,
+   "field": "* {{Diversion|20}}\n* {{Deception|10}}\n* {{Dodge|13}}\n* {{Tactics|Combat Mastery|10}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Animated_Rope"
+  },
+  {
+   "name": "Legendary Baron Aubrecker's Monogrammed Belt",
+   "slot": "Belt",
+   "minimum_level": 34,
+   "field": "* {{Spell Focus|Enchantment|12}}\n* {{Save|Spell|12}}\n* {{Lamordia Slot|Melancholic|Accessory}}\n* {{Lamordia Slot|Dolorous|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Baron_Aubrecker's_Monogrammed_Belt"
+  },
+  {
+   "name": "Legendary Belt of Bold Brilliance",
+   "slot": "Belt",
+   "minimum_level": 33,
+   "field": "* {{Stat|INT|6|Insightful}}\n* {{Save|Reflex|3|Quality}} \n* {{Stat|Well Rounded|3|Profane}}\n* {{HealingAmp|15|Healing|Exceptional}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Belt_of_Bold_Brilliance"
+  },
+  {
+   "name": "Legendary Belt of Myriad Pockets",
+   "slot": "Belt",
+   "minimum_level": 30,
+   "field": "* {{Stat|Constitution|6|Insightful}}\n* {{Sheltering|34|Enhancement|Physical}}\n* {{Protection|11}}\n* {{Shield Bonus|13}}\n* {{Hp|Legendary Elemental Energy}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Named item sets|Legendary Saltmarsh Explorer}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Belt_of_Myriad_Pockets"
+  }
+ ]
+}

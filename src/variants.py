@@ -88,7 +88,7 @@ def expand_item(item) -> list:
                 parsed=_combine(base_parsed, tier_parsed)))
         return variants
 
-    var = _make_variant(item, ml=item["minimum_level"], tier_label=None,
+    var = _make_variant(item, ml=item.get("minimum_level"), tier_label=None,
                         parsed=base_parsed)
     ml_list = _parse_tier_ml_list(item.get("upgradeable", ""))
     if ml_list and len(ml_list) > 1:

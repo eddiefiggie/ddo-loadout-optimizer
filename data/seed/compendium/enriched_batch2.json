@@ -367,7 +367,7 @@
    "enhancements": [
     "Dexterity +15",
     "Quality Dexterity +3",
-    "Reflex Save +6",
+    "Insightful Reflex Save +6",
     "Green Augment Slot",
     "Colorless Augment Slot",
     "Moon Augment Slot"
@@ -409,7 +409,7 @@
    "category": "item",
    "slot": "Gloves",
    "enhancements": [
-    "Elemental Resistance +15",
+    "Competence Elemental Resistance +15",
     "Insightful Magical Sheltering +17",
     "Quality Spellcraft +5",
     "Fire Absorption +36%",
@@ -433,7 +433,7 @@
    "enhancements": [
     "Illusion Spell Focus +9",
     "Wizardry +286",
-    "will Save +12",
+    "Will Save +12",
     "Green Augment Slot",
     "Colorless Augment Slot",
     "The Legendary Dread Isle's Curse (set)"
@@ -454,6 +454,8 @@
    "category": "item",
    "slot": "Gloves",
    "enhancements": [
+    "Magnetism +142",
+    "Lightning Lore +21%",
     "Evocation Spell Focus +7",
     "Green Augment Slot",
     "Legendary Arcsteel Battlemage (set)"
@@ -463,8 +465,6 @@
     "Green"
    ],
    "_enrich_unmapped": [
-    "Spell Power",
-    "Spell Lore",
     "ItemGrantedFeat"
    ],
    "_enriched": true,
@@ -500,7 +500,7 @@
    "slot": "Gloves",
    "enhancements": [
     "Transmutation Spell Focus +12",
-    "Spell Save +5",
+    "Insightful Spell Save +5",
     "Green Augment Slot",
     "Colorless Augment Slot",
     "Moon Augment Slot"
@@ -611,7 +611,7 @@
    "slot": "Helmet",
    "enhancements": [
     "Insightful Wizardry +134",
-    "Potency +24",
+    "Quality Potency +24",
     "Quality Physical Sheltering +8",
     "Fortification +142",
     "Green Augment Slot"
@@ -700,7 +700,7 @@
    "enhancements": [
     "Strength +15",
     "Quality Strength +3",
-    "Fortitude Save +6",
+    "Insightful Fortitude Save +6",
     "Green Augment Slot",
     "Colorless Augment Slot",
     "Moon Augment Slot"
@@ -767,7 +767,7 @@
    "slot": "Belt",
    "enhancements": [
     "Insightful Intelligence +6",
-    "Reflex Save +3",
+    "Quality Reflex Save +3",
     "Profane Well Rounded +3",
     "Green Augment Slot",
     "Colorless Augment Slot",

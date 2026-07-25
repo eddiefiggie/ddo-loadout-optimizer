@@ -132,7 +132,6 @@
    "enhancements": [
     "Fortification +142",
     "Enhancement Physical Sheltering +33",
-    "r Save +11",
     "Dodge +13%",
     "Green Augment Slot"
    ],
@@ -141,7 +140,8 @@
     "Green"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus"
+    "Enhancement bonus",
+    "Save"
    ],
    "_enriched": true,
    "minimum_level": 29,
@@ -154,7 +154,7 @@
    "enhancements": [
     "Accuracy +23",
     "Deadly +12",
-    "Reflex Save +6",
+    "Insightful Reflex Save +6",
     "Quality Potency +26",
     "Green Augment Slot",
     "Colorless Augment Slot",
@@ -180,7 +180,7 @@
    "enhancements": [
     "Accuracy +23",
     "Deadly +12",
-    "Reflex Save +6",
+    "Insightful Reflex Save +6",
     "Quality Accuracy +5",
     "Green Augment Slot",
     "Colorless Augment Slot",
@@ -231,7 +231,7 @@
    "slot": "Armor",
    "enhancements": [
     "Fire Absorption +36%",
-    "Fire Resistance +26",
+    "Insightful Fire Resistance +26",
     "Quality Magical Sheltering +8",
     "Enhancement Physical Sheltering +36",
     "Green Augment Slot",
@@ -257,7 +257,7 @@
    "enhancements": [
     "Accuracy +23",
     "Deadly +12",
-    "Fortitude Save +6",
+    "Insightful Fortitude Save +6",
     "Quality Deadly +3",
     "Green Augment Slot",
     "Colorless Augment Slot",
@@ -283,7 +283,7 @@
    "enhancements": [
     "Accuracy +23",
     "Deadly +12",
-    "Fortitude Save +6",
+    "Insightful Fortitude Save +6",
     "Potency +109",
     "Green Augment Slot",
     "Colorless Augment Slot",
@@ -407,7 +407,7 @@
    "enhancements": [
     "Accuracy +23",
     "Deadly +12",
-    "Fortitude Save +6",
+    "Insightful Fortitude Save +6",
     "Quality Deadly +3",
     "Green Augment Slot",
     "Colorless Augment Slot",
