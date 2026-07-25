@@ -129,11 +129,20 @@ function buildModel(variants, query) {
 
   // Augment pool: augments (category augment) as an exact color-capacity source
   // pool. Each augment used at most once; total per color bounded by open slots
-  // on equipped worn items (encoded in U7).
-  const augments = dominanceFilter(
-    elig.filter((v) => v.category === "augment"),
-    targetSet, mlCap,
-  );
+  // on equipped worn items (encoded in U3). Dominance is per COLOR — augments of
+  // different colors occupy different slots, so one color can never dominate
+  // another (that would wrongly prune the sole source in a color).
+  const augByColor = new Map();
+  for (const a of elig.filter((v) => v.category === "augment")) {
+    const color = (a.aug_color || {}).color;
+    if (!color) continue; // quarantined color: no exact slot to place into
+    if (!augByColor.has(color)) augByColor.set(color, []);
+    augByColor.get(color).push(a);
+  }
+  const augments = [];
+  for (const [, group] of augByColor) {
+    augments.push(...dominanceFilter(group, targetSet, mlCap));
+  }
 
   const dodgeCap = query.armorType && targetSet.has("Dodge")
     ? (ARMOR_DODGE_CAP[query.armorType] ?? null) : null;

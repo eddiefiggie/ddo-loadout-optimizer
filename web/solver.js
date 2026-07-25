@@ -61,13 +61,56 @@ function buildProgram(model) {
     zByBucket.set(key, sources.map((src) => ({ name: "z" + zc++, gates: src.gates, value: src.value })));
   }
 
-  // Extension seam for U3/U5/U7: extraVars are structural binaries (augment
-  // placements, set_active indicators, per-track option picks); extraConstraints
-  // are raw LP constraint bodies (capacity, thresholds, select-one groups) that
-  // encodeStage injects verbatim. Empty here — worn affixes need neither.
+  // Extension seam (U1): extraVars are structural binaries; extraConstraints are
+  // raw LP constraint bodies that encodeStage injects verbatim.
+  const extraVars = [];
+  const extraConstraints = [];
+
+  // U3 — augment assignment. Each augment gets a placement binary p_i; its stat
+  // is a contribution gated by [p_i]. Per color, total placements are bounded by
+  // the open slots of that color across equipped worn items (aggregate capacity,
+  // not per-physical-slot — KTD2). A quarantined-color augment has no exact slot
+  // and is skipped in the pool (see model.js).
+  const augByColor = new Map(); // canonical color -> [placement var names]
+  let pc = 0;
+  for (const aug of model.augments || []) {
+    const color = (aug.aug_color || {}).color;
+    if (!color) continue;
+    const best = new Map();
+    for (const a of aug.affixes || []) {
+      const k = `${a.stat}||${a.bonus_type}`;
+      if (targetSet.has(a.stat) && a.value > 0 && (!best.has(k) || best.get(k) < a.value)) best.set(k, a.value);
+    }
+    for (const s of aug.scaling || []) {
+      const val = scaleAt(s, mlCap);
+      const k = `${s.stat}||${s.bonus_type}`;
+      if (targetSet.has(s.stat) && val > 0 && (!best.has(k) || best.get(k) < val)) best.set(k, val);
+    }
+    if (!best.size) continue; // augment advances no target — leave it out
+    const p = "p" + pc++;
+    extraVars.push(p);
+    if (!augByColor.has(color)) augByColor.set(color, []);
+    augByColor.get(color).push(p);
+    for (const [k, val] of best) {
+      if (!zByBucket.has(k)) zByBucket.set(k, []);
+      zByBucket.get(k).push({ name: "z" + zc++, gates: [p], value: val });
+    }
+  }
+  // capacity: sum(p of color) - sum(open_slots_of_color(item) * x_item) <= 0
+  for (const [color, ps] of augByColor) {
+    const capTerms = [];
+    for (const xv of xVars) {
+      const slotColors = ((xv.variant.augment_slots_norm || {}).colors) || [];
+      const n = slotColors.filter((c) => c === color).length;
+      if (n > 0) capTerms.push(`${n} ${xv.name}`);
+    }
+    const rhs = capTerms.length ? " - " + capTerms.join(" - ") : "";
+    extraConstraints.push(`${ps.join(" + ")}${rhs} <= 0`);
+  }
+
   return {
     xVars, zByBucket, cappedStats, targetList: model.targets, model,
-    extraVars: [], extraConstraints: [], _zc: zc,
+    extraVars, extraConstraints, _zc: zc,
   };
 }
 
