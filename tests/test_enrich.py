@@ -44,6 +44,14 @@ def test_spell_focus_typed_and_universal():
     assert _affixes(_field("{{Spell Focus|5|Insightful}}")) == ["Insightful Spell Focus +5"]
 
 
+def test_spell_power_and_lore_spaced_aliases_and_types():
+    # both {{SpellPower|...}} and the armor {{Spell Power|...}} spaced form map,
+    # and a trailing bonus type is carried, not dropped.
+    assert _affixes(_field("{{SpellPower|Devotion|146}}")) == ["Devotion +146"]
+    assert _affixes(_field("{{Spell Power|Universal|15|Exceptional}}")) == ["Exceptional Universal +15"]
+    assert _affixes(_field("{{Spell Lore|Universal Spell|5|Exceptional}}")) == ["Exceptional Universal Spell Lore +5%"]
+
+
 def test_hp_typed_and_multiarg():
     assert _affixes(_field("{{Hp|False Life|56}}")) == ["False Life +56"]
     assert _affixes(_field("{{Hp|False Life|56|Insightful}}")) == ["Insightful False Life +56"]

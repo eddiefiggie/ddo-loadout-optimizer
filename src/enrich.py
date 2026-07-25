@@ -63,10 +63,12 @@ def _r_skills(a):
 
 
 def _r_spellpower(a):
-    # {{SpellPower|Devotion|146}}  -> "Devotion +146"
+    # {{SpellPower|Devotion|146}} -> "Devotion +146"
+    # {{Spell Power|Universal|15|Exceptional}} -> "Exceptional Universal +15"
     if len(a) < 2 or not _num(a[1]):
         return []
-    return [_typed("", a[0].strip(), a[1])]
+    btype = a[2].strip() if len(a) >= 3 and a[2].strip() and not _num(a[2]) else ""
+    return [_typed(btype, a[0].strip(), a[1])]
 
 
 def _r_elem_res(a):
@@ -109,9 +111,11 @@ def _r_spellfocus(a):
 
 def _r_spelllore(a):
     # {{Spelllore|Healing|21}} -> "Healing Lore +21%"
+    # {{Spell Lore|Universal Spell|5|Exceptional}} -> "Exceptional Universal Spell Lore +5%"
     if len(a) < 2 or not _num(a[1]):
         return []
-    return [_typed("", f"{a[0].strip()} Lore", a[1], pct=True)]
+    btype = a[2].strip() if len(a) >= 3 and a[2].strip() and not _num(a[2]) else ""
+    return [_typed(btype, f"{a[0].strip()} Lore", a[1], pct=True)]
 
 
 def _r_save(a):
@@ -146,11 +150,13 @@ RENDERERS = {
     "stat": _r_stat,
     "skills": _r_skills,
     "spellpower": _r_spellpower,
+    "spell power": _r_spellpower,        # armor uses the spaced form
     "elemental resistance": _r_elem_res,
     "absorption": _r_absorption,
     "sheltering": _r_sheltering,
     "spell focus": _r_spellfocus,
     "spelllore": _r_spelllore,
+    "spell lore": _r_spelllore,          # armor uses the spaced form
     "save": _r_save,
     "hp": _r_hp,
     # name-is-the-stat templates: {{Name|value|type?}}
