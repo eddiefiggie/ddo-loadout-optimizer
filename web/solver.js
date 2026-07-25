@@ -129,7 +129,7 @@ function buildProgram(model) {
     extraVars.push(q);
     dinoMeta.set(q, {
       dino_type: type, stat: ins.stat, bonus_type: ins.bonus_type,
-      value: ins.value, wiki_url: ins.wiki_url,
+      value: ins.value, unit: ins.unit || "flat", wiki_url: ins.wiki_url,
     });
     if (!dinoByType.has(type)) dinoByType.set(type, []);
     dinoByType.get(type).push(q);

@@ -45,13 +45,43 @@ function affixText(v) {
     return `${a.stat} +${a.value}${unit}${type}`;
   });
   (v.scaling || []).forEach((s) => parts.push(`${s.stat} (scales to +${s.val_hi}${s.unit === "pct" ? "%" : ""})`));
+  // A Dinosaur Bone blank's value is its typed Dino slots, not affixes — surface
+  // them so it reads as a host, not an empty row.
+  if ((v.dino_slots_norm || []).length) {
+    parts.push(`Isle of Dread slots: ${v.dino_slots_norm.join(" / ")}`);
+  }
   return parts;
+}
+
+/** Display-only pseudo-variant for one Dino insert, so the crafting pool is
+ *  browsable alongside items. NOT an equippable item — the solver reads the
+ *  separate dino_inserts pool; this is inventory visibility only. */
+function dinoInsertRow(ins) {
+  return {
+    variant_id: `${ins.dino_type}: ${ins.stat}`,
+    source_item: "Isle of Dread Dino insert",
+    slot: `Dino Insert (${ins.dino_type})`,
+    minimum_level: 31,
+    verification: "verified",
+    affixes: [{ stat: ins.stat, bonus_type: ins.bonus_type, value: ins.value, unit: ins.unit || "flat" }],
+    scaling: [],
+    wiki_url: ins.wiki_url,
+    dino_insert: true,
+  };
+}
+
+/** The browsable list: real item variants plus the Dino insert pool rendered as
+ *  display rows. Pure, so it is unit-testable. */
+function browsableItems(dataset) {
+  const items = (dataset && dataset.items) || [];
+  const inserts = ((dataset && dataset.dino_inserts) || []).map(dinoInsertRow);
+  return items.concat(inserts);
 }
 
 // ---- DOM rendering (browser only) ----
 
 function initBrowse(dataset) {
-  const items = dataset.items;
+  const items = browsableItems(dataset);   // real items + Dino insert pool rows
   const controls = document.getElementById("browse-controls");
   const status = document.getElementById("browse-status");
   const results = document.getElementById("browse-results");
@@ -126,5 +156,5 @@ if (typeof window !== "undefined" && window.App) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { filterVariants, variantStats, affixText };
+  module.exports = { filterVariants, variantStats, affixText, dinoInsertRow, browsableItems };
 }
