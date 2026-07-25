@@ -87,12 +87,34 @@ test("buildModel over real dataset prunes per slot", () => {
     mlCap: 34, targets: ["Intelligence", "Constitution"], armorType: null,
   });
   assert.ok(model.worn.length > 0, "expected worn slots");
+  const eligible = (pred) => data.items.filter((x) => pred(x) && x.verification === "verified" && x.minimum_level <= 34).length;
   for (const slot of model.worn) {
-    const raw = data.items.filter((x) => x.slot === slot.slot && x.verification === "verified" && x.minimum_level <= 34).length;
-    assert.ok(slot.variants.length <= raw, `${slot.slot}: pruned <= raw`);
+    // Main Hand / Rune Arm are synthetic (category-merged) slots; others map to a real slot field.
+    let raw;
+    if (slot.slot === "Main Hand") raw = eligible((x) => x.category === "weapon");
+    else if (slot.slot === "Rune Arm") raw = eligible((x) => x.category === "runearm");
+    else raw = eligible((x) => x.slot === slot.slot);
+    assert.ok(slot.variants.length <= raw, `${slot.slot}: pruned (${slot.variants.length}) <= raw (${raw})`);
     assert.ok(slot.variants.length >= 1);
   }
   assert.ok(model.augments.length >= 0);
+});
+
+test("weapon types share ONE main-hand slot (not one slot per type)", () => {
+  const lc = v("LC", "Light Crossbow", [["Accuracy", "Enhancement", 10]], { category: "weapon" });
+  const hc = v("HC", "Heavy Crossbow", [["Deadly", "Enhancement", 10]], { category: "weapon" });
+  const rc = v("RC", "Repeating Heavy Crossbow", [["Seeker", "Enhancement", 10]], { category: "weapon" });
+  const ra = v("RA", "Rune Arm", [["Intelligence", "Enhancement", 10]], { category: "runearm" });
+  const model = M.buildModel([lc, hc, rc, ra], {
+    mlCap: 34, targets: ["Accuracy", "Deadly", "Seeker", "Intelligence"], armorType: null,
+  });
+  const mh = model.worn.find((s) => s.slot === "Main Hand");
+  assert.ok(mh, "expected a single Main Hand slot");
+  assert.strictEqual(mh.cardinality, 1);
+  assert.deepStrictEqual(mh.variants.map((x) => x.source_item).sort(), ["HC", "LC", "RC"]);
+  assert.ok(model.worn.find((s) => s.slot === "Rune Arm"), "rune-arm is its own slot");
+  // and no per-weapon-type slots leak through
+  assert.ok(!model.worn.some((s) => s.slot === "Light Crossbow"));
 });
 
 test("dodge cap set only when Dodge is a target and armor given", () => {

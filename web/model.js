@@ -119,12 +119,13 @@ function buildModel(variants, query) {
     }
   }
 
-  // Weapon-category slots (crossbows, rune arm) as their own single slots.
-  const weaponSlots = [...new Set(elig.filter((v) => v.category === "weapon" || v.category === "runearm").map((v) => v.slot))];
-  for (const slotName of weaponSlots) {
-    let cands = dominanceFilter(elig.filter((v) => v.slot === slotName), targetSet, mlCap);
-    if (cands.length) worn.push({ slot: slotName, cardinality: 1, variants: cands });
-  }
+  // One main-hand weapon: all weapon-category variants compete for a single slot
+  // so the solver can never equip several weapons at once. Rune-arm is a separate
+  // off-hand slot.
+  const mainHand = dominanceFilter(elig.filter((v) => v.category === "weapon"), targetSet, mlCap);
+  if (mainHand.length) worn.push({ slot: "Main Hand", cardinality: 1, variants: mainHand });
+  const runeArm = dominanceFilter(elig.filter((v) => v.category === "runearm"), targetSet, mlCap);
+  if (runeArm.length) worn.push({ slot: "Rune Arm", cardinality: 1, variants: runeArm });
 
   // Augment pool: augments (category augment) as an exact color-capacity source
   // pool. Each augment used at most once; total per color bounded by open slots

@@ -85,6 +85,16 @@ function slot(name, variants, card = 1) { return { slot: name, cardinality: card
     assert.strictEqual(r.chosen[0].variant.variant_id, "hiB");
   });
 
+  await test("capped target with NO source reports 0, not the cap", async () => {
+    const model = {
+      targets: ["Dodge"], mlCap: 34, dodgeCap: 4,
+      worn: [slot("Ring", [item("R", "Ring", [["Intelligence", "Enhancement", 10]])])], // no Dodge anywhere
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.Dodge, 0, "no dodge source -> 0, not the cap");
+  });
+
   await test("solve is deterministic across runs (tie-break)", async () => {
     const mk = () => ({
       targets: ["Intelligence"], mlCap: 34, dodgeCap: null,

@@ -102,10 +102,12 @@ function encodeStage(program, { objectiveStat, sense, locks, tieBreak }) {
     for (const z of zs) L.push(` c${c++}: ${z.name} - ${z.gate} <= 0`);
   }
 
-  // capped stats: d <= raw (bound d <= cap is in Bounds)
+  // capped stats: d <= raw (bound d <= cap is in Bounds). With no sources, pin
+  // d <= 0 so the cap var cannot float up to its bound under the maximizing objective.
   for (const stat of Object.keys(program.cappedStats)) {
     const raw = rawExpr(program, stat);
     if (raw.length) L.push(` c${c++}: d_${stat} ${fmtExpr(raw.map((t) => ({ coef: -t.coef, name: t.name })), fb)} <= 0`);
+    else L.push(` c${c++}: d_${stat} <= 0`);
   }
 
   for (const lock of locks || []) {
