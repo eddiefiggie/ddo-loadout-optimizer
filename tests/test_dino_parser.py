@@ -138,14 +138,44 @@ def test_slot_multiplicity_preserved():
     assert layouts[0]["dino_slots"] == ["Scale", "Scale"]
 
 
-def test_shipped_seed_parses_clean():
-    # The committed starter seed: item layouts verified, insert pool pending U2.
+def test_value_last_multi_affix_is_quarantined():
+    # An unsigned second magnitude (value-last) must still be caught, not minted
+    # into one wrong-value record.
+    records, quarantined = dino_parser.parse_inserts([
+        {"type": "Fang", "effect": "Sneak Attacks 11, Sneak Attack Damage 17", "wiki_url": _WIKI},
+    ])
+    assert records == []
+    assert quarantined[0]["reason"] == "multi-affix insert (unsupported)"
+
+
+def test_unrecognized_slot_type_dropped_and_quarantined():
+    layouts, quarantined = dino_parser.parse_slot_layouts([
+        {"item": "Weird Boots", "slot": "accessory",
+         "dino_slots": [{"type": "Scale"}, {"type": "Tooth"}], "wiki_url": _WIKI},
+    ])
+    assert layouts[0]["dino_slots"] == ["Scale"]      # bad slot dropped, item kept
+    assert any(q["reason"].startswith("unrecognized dino slot type") for q in quarantined)
+
+
+def test_shipped_seed_parses_clean_and_pins_the_pool():
+    # The committed Accessory seed: item layouts + the real sourced insert pool.
     seed_path = os.path.join(ROOT, "data", "seed", "dino_crafting.json")
     with open(seed_path, encoding="utf-8") as fh:
         seed = json.load(fh)
     result = dino_parser.parse_dino_crafting(seed)
+    cov = result["coverage"]
     assert result["quarantined"]["items"] == []      # every shipped item has a wiki_url
-    assert result["coverage"]["items_sourced"] >= 1
+    assert cov["items_sourced"] >= 1
+    # Regression pin on the real sourced data (not just synthetic fixtures):
+    assert cov["inserts_eligible"] >= 50, cov
+    assert cov["inserts_quarantined"] == 3, cov
+    for t in ("Scale", "Fang", "Claw", "Horn"):
+        assert cov["by_type"][t] > 0, f"no eligible {t} inserts"
+    reasons = {q["reason"] for q in result["quarantined"]["inserts"]}
+    assert "multi-affix insert (unsupported)" in reasons
+    # Every eligible record carries a wiki_url (strict provenance, KTD2).
+    for r in result["insert_records"]:
+        assert r["wiki_url"]
     # Every shipped item layout carries only canonical Dino slot types.
     for layout in result["slot_layouts"]:
         for t in layout["dino_slots"]:

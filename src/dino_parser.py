@@ -21,12 +21,28 @@ import re
 
 from src.affix_parser import parse_line
 
-# An insert carrying two or more signed magnitudes is a single augment granting
-# multiple affixes (e.g. "Fang: Deception" = +11 Sneak Attacks AND +17 Sneak
-# Attack Damage). The per-record placement model can't represent "both apply
-# together from one slot", so such inserts are quarantined rather than modeled as
+# An insert carrying two or more magnitudes is a single augment granting multiple
+# affixes (e.g. "Fang: Deception" = +11 Sneak Attacks AND +17 Sneak Attack
+# Damage). The per-record placement model can't represent "both apply together
+# from one slot", so such inserts are quarantined rather than modeled as
 # independently placeable halves. Supporting them is deferred follow-up work.
 _VALUE_TOKEN = re.compile(r"[+-]\s?\d+")
+
+
+def _is_multi_affix(raw):
+    """True when an effect string carries two or more distinct affix magnitudes.
+
+    Two detectors, because the second magnitude may be value-first (signed) or
+    value-last (unsigned): (1) more than one signed token; (2) comma-separated
+    clauses that each contain a number. A compound single stat with one value
+    ("+14 ... Critical Confirmation and Critical Damage") has no comma and one
+    magnitude, so it is not caught.
+    """
+    text = raw or ""
+    if len(_VALUE_TOKEN.findall(text)) > 1:
+        return True
+    numbered_clauses = [p for p in text.split(",") if re.search(r"\d", p)]
+    return len(numbered_clauses) > 1
 
 # The four Isle of Dread Dino slot types. A slot accepts only an insert of its
 # own type (a Scale slot takes a Scale insert), exactly like a colored augment
@@ -58,7 +74,7 @@ def parse_inserts(inserts):
         if not wiki_url:
             quarantined.append({"raw": raw, "reason": "missing wiki_url"})
             continue
-        if len(_VALUE_TOKEN.findall(raw or "")) > 1:
+        if _is_multi_affix(raw):
             quarantined.append({"raw": raw, "reason": "multi-affix insert (unsupported)"})
             continue
         r = parse_line(raw or "")

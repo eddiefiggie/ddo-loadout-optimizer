@@ -68,9 +68,22 @@ def build_dino(seed):
     and the count of blank hosts materialized, for the results-view disclosure.
     """
     parsed = dino_parser.parse_dino_crafting(seed or {})
-    blanks = [b for b in (_blank_variant(l) for l in parsed["slot_layouts"]) if b]
+    blanks, blanks_quarantined = [], []
+    for layout in parsed["slot_layouts"]:
+        b = _blank_variant(layout)
+        if b:
+            blanks.append(b)
+        else:
+            # Every other rejection path quarantines with a reason; a blank whose
+            # item name maps to no worn slot (a non-accessory in the deferred
+            # Weapon/Armor/Raid pools) is recorded here, not silently dropped.
+            blanks_quarantined.append({
+                "raw": layout["item"],
+                "reason": "no worn-slot mapping (non-accessory; deferred)",
+            })
     coverage = dict(parsed["coverage"])
     coverage["blank_hosts"] = len(blanks)
+    coverage["blanks_quarantined"] = blanks_quarantined
     coverage["quarantined"] = parsed["quarantined"]
     coverage["system"] = (seed or {}).get("metadata", {}).get("system", "Isle of Dread — Dino crafting")
     coverage["sourcing_status"] = (seed or {}).get("metadata", {}).get("sourcing_status", "")

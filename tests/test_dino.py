@@ -59,6 +59,19 @@ def test_coverage_reports_blank_hosts_and_quarantine():
     assert cov["by_type"]["Scale"] == 1
 
 
+def test_non_accessory_blank_is_quarantined_not_dropped():
+    # A weapon/armor blank maps to no worn accessory slot; it must be recorded
+    # with a reason, not silently dropped (coverage would otherwise undercount).
+    seed = {"items": [{"item": "Legendary Bottle o' Rum", "slot": "weapon",
+                       "dino_slots": [{"type": "Scale"}], "wiki_url": _WIKI}],
+            "inserts": []}
+    blanks, _, cov = dino.build_dino(seed)
+    assert blanks == []
+    assert cov["blank_hosts"] == 0
+    assert cov["blanks_quarantined"][0]["raw"] == "Legendary Bottle o' Rum"
+    assert "non-accessory" in cov["blanks_quarantined"][0]["reason"]
+
+
 def test_empty_seed_yields_nothing_gracefully():
     blanks, inserts, cov = dino.build_dino({})
     assert blanks == [] and inserts == []

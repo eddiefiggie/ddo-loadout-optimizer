@@ -199,3 +199,31 @@ def test_whole_seed_parses_without_exceptions():
         eligible += len(res["affixes"])
     # A meaningful fraction of lines yield clean value-bearing affixes.
     assert eligible > 200, f"only {eligible} eligible affixes parsed from the seed"
+
+
+# --- bonus-type vocabulary: Equipment / Resistance / Insight (Dino pool) ---
+
+def test_equipment_and_insight_bonus_types_recognized():
+    # Value-first Dino lines: the leading type word must become the bonus_type.
+    eq = parse_line("+9 Equipment bonus to Spell Penetration")["affixes"][0]
+    assert eq["bonus_type"] == "Equipment" and eq["stat"] == "Spell Penetration" and eq["value"] == 9
+    ins = parse_line("+10% Insight bonus to Fire Spell Crit Damage")["affixes"][0]
+    assert ins["bonus_type"] == "Insight" and ins["stat"] == "Fire Spell Crit Damage"
+
+
+def test_resistance_as_type_vs_bare_stat():
+    # "Resistance" is BOTH a bonus type and a bare stat name; the parser must not
+    # peel it when nothing remains as the stat (regression: this produced stat="").
+    bare = parse_line("Resistance +3")["affixes"][0]
+    assert bare["stat"] == "Resistance" and bare["bonus_type"] == "Enhancement" and bare["value"] == 3
+    typed = parse_line("+12 Resistance bonus to all Saving Throws")["affixes"][0]
+    assert typed["bonus_type"] == "Resistance" and typed["stat"] == "all Saving Throws"
+
+
+def test_insight_is_distinct_from_insightful():
+    # Distinct stacking buckets — they must not collapse into one type.
+    a = parse_line("Insight Constitution +5")["affixes"][0]
+    b = parse_line("Insightful Constitution +5")["affixes"][0]
+    assert a["bonus_type"] == "Insight"
+    assert b["bonus_type"] == "Insightful"
+    assert a["bonus_type"] != b["bonus_type"]
