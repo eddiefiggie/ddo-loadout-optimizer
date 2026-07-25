@@ -15,10 +15,14 @@ A public DDO gear optimizer: given a build's minimum-level cap, class/race, armo
 
 ## Build & run
 ```
-python3 build_dataset.py          # reads data/seed/ddo_items.json -> writes data/items.json
+python3 build_dataset.py          # reads data/seed/ddo_items.json -> writes web/data/items.json
 python3 -m http.server 8000       # then open http://localhost:8000/web/
+python3 tests/run_tests.py        # Python suite (stdlib-only runner; pytest also works)
+node tests/browse.test.js         # JS filter suite
 ```
-`data/items.json` is a generated artifact; edit the pipeline (`build_dataset.py` + `src/`), not the JSON. Run the Python tests with `pytest` (or `python3 -m pytest`).
+`web/data/items.json` is a generated artifact (gitignored) — edit the pipeline (`build_dataset.py` + `src/`), not the JSON.
+
+**Live site:** `web/` is a self-contained static site deployed to GitHub Pages by `.github/workflows/deploy.yml` (builds the dataset + runs tests, then deploys on every push to `main`).
 
 ## Architecture (from the plan)
 - **Client-side static app on GitHub Pages** — zero server, matching the other DDO tools. Solver runs in-browser via **HiGHS-WebAssembly** (exact MILP, provably optimal); staged sequential lexicographic solve.

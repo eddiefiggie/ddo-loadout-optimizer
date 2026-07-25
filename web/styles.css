@@ -25,6 +25,7 @@ body {
 }
 .app-header h1 { margin: 0; font-size: 1.4rem; }
 .tagline { margin: 0.2rem 0 0; color: var(--muted); font-size: 0.9rem; }
+.wip { margin: 0.5rem 0 0; display: inline-block; color: var(--quarantined); font-size: 0.8rem; border: 1px solid var(--quarantined); border-radius: 6px; padding: 0.15rem 0.5rem; }
 
 main { padding: 1.25rem 1.5rem; max-width: 1100px; margin: 0 auto; }
 

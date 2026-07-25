@@ -23,7 +23,9 @@ from src import verify as verify_mod
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SEED_PATH = os.path.join(HERE, "data", "seed", "ddo_items.json")
-OUT_PATH = os.path.join(HERE, "data", "items.json")
+# Output lands inside web/ so that directory is a self-contained, deployable
+# site root (GitHub Pages serves web/ as the root; the app fetches data/ relatively).
+OUT_PATH = os.path.join(HERE, "web", "data", "items.json")
 
 
 def load_seed(path: str = SEED_PATH) -> dict:

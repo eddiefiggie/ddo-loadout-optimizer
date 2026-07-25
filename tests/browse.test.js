@@ -5,7 +5,7 @@ const path = require("path");
 
 const { filterVariants, variantStats, affixText } = require("../web/browse.js");
 const data = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "..", "data", "items.json"), "utf-8")
+  fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")
 );
 const items = data.items;
 

@@ -55,7 +55,7 @@ def test_build_dataset_end_to_end_produces_verified_and_coverage():
     # Run the full pipeline and inspect the artifact.
     subprocess.run([sys.executable, "build_dataset.py"], cwd=ROOT, check=True,
                    capture_output=True)
-    out = json.load(open(os.path.join(ROOT, "data", "items.json"), encoding="utf-8"))
+    out = json.load(open(os.path.join(ROOT, "web", "data", "items.json"), encoding="utf-8"))
     assert out["metadata"]["pipeline_stage"] == "U4-verified"
     assert "coverage" in out["metadata"]
     assert all("verification" in v for v in out["items"])
