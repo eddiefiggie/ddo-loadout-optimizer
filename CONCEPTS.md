@@ -43,6 +43,9 @@ A crafted Isle of Dread effect placed into a **typed** slot — Scale, Fang, Cla
 ### Blank host
 A Dinosaur Bone item whose entire value is the typed Dino slots it exposes — it carries no affixes of its own. Because its worth lives in a non-affix dimension, any code path that reads only affixes (a list view, or a dominance comparison) will treat it as empty and wrongly discard it unless taught to read its slots.
 
+### Nearly Complete slot
+An Update 81 upgrade slot that lets an item gain one extra affix chosen from a fixed **category** menu (Ability Score, Insightful Ability, Quality Ability, Healing Amplification, Skill, Spell Focus) — the category fixes the bonus type, the player picks the stat. Modeled as a **choice-slot**: a select-one over the category's option pool, gated by the item being equipped, so the solver picks whichever option best advances the ranked targets. The in-game choice is irreversible, so at most one option per slot ever applies.
+
 ## Data trust
 
 ### Verified
