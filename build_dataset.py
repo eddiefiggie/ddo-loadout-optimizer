@@ -20,6 +20,8 @@ import os
 
 from src.variants import expand_dataset
 from src import verify as verify_mod
+from src import colors as colors_mod
+from src import set_parser as set_mod
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SEED_PATH = os.path.join(HERE, "data", "seed", "ddo_items.json")
@@ -42,8 +44,11 @@ def build(seed: dict) -> dict:
     `items` are variant records; each carries `affixes`, `verification`, and
     flags. `metadata.coverage` records per-slot verified/quarantined counts.
     """
-    variants = expand_dataset(seed["items"])            # U2 (via parser) + U3
-    variants, cov = verify_mod.apply(variants)          # U4
+    variants = expand_dataset(seed["items"])            # parse enhancements + expand tiers
+    for v in variants:                                  # U2 augment-color normalization
+        colors_mod.annotate_variant(v)
+        set_mod.annotate_variant(v)                     # U4 set-bonus threshold parsing
+    variants, cov = verify_mod.apply(variants)          # per-affix verification gate
     out = {
         "metadata": {
             "title": "DDO Loadout Optimizer — dataset",
@@ -53,7 +58,9 @@ def build(seed: dict) -> dict:
             "variant_count": len(variants),
             "item_count": len(variants),
             "coverage": cov,
-            "pipeline_stage": "U4-verified",
+            "color_coverage": colors_mod.color_coverage(variants),
+            "set_coverage": set_mod.set_coverage(variants),
+            "pipeline_stage": "M3-sources",
         },
         "items": variants,
     }
