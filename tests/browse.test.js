@@ -61,7 +61,11 @@ test("browsableItems appends the Dino insert pool as display rows", () => {
   const inserts = list.filter((v) => v.dino_insert);
   assert.strictEqual(inserts.length, (data.dino_inserts || []).length);
   assert.ok(inserts.length >= 50, "expected the sourced insert pool");
-  assert.strictEqual(list.length, items.length + inserts.length);
+  // browsable = real variants + every appended display pool (dino inserts,
+  // NC options, and the indexed-only compendium index)
+  const nc = (data.nearly_complete || []).length;
+  const comp = (data.compendium || []).filter((x) => x.status === "indexed").length;
+  assert.strictEqual(list.length, items.length + inserts.length + nc + comp);
 });
 
 test("a Dino insert is findable in the browser by stat", () => {
