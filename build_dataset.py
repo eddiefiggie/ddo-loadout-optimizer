@@ -18,6 +18,9 @@ from __future__ import annotations
 import json
 import os
 
+from src.variants import expand_dataset
+from src import verify as verify_mod
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 SEED_PATH = os.path.join(HERE, "data", "seed", "ddo_items.json")
 OUT_PATH = os.path.join(HERE, "data", "items.json")
@@ -32,21 +35,25 @@ def load_seed(path: str = SEED_PATH) -> dict:
 def build(seed: dict) -> dict:
     """Transform the seed into the optimizer dataset.
 
-    U1 is a passthrough: every seed item is carried through unchanged so the
-    round-trip count is preserved. Later units insert parse/expand/verify
-    stages here.
+    Pipeline: parse enhancements[] (U2) -> expand tier variants + normalize
+    vocab (U3) -> per-affix verification gate + coverage (U4). The output
+    `items` are variant records; each carries `affixes`, `verification`, and
+    flags. `metadata.coverage` records per-slot verified/quarantined counts.
     """
-    items = list(seed["items"])
+    variants = expand_dataset(seed["items"])            # U2 (via parser) + U3
+    variants, cov = verify_mod.apply(variants)          # U4
     out = {
         "metadata": {
             "title": "DDO Loadout Optimizer — dataset",
             "source": seed["metadata"].get("source", ""),
             "seed_generated": seed["metadata"].get("generated", ""),
             "seed_count": len(seed["items"]),
-            "item_count": len(items),
-            "pipeline_stage": "U1-passthrough",
+            "variant_count": len(variants),
+            "item_count": len(variants),
+            "coverage": cov,
+            "pipeline_stage": "U4-verified",
         },
-        "items": items,
+        "items": variants,
     }
     return out
 
