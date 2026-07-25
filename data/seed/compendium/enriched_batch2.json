@@ -1,0 +1,813 @@
+{
+ "metadata": {
+  "layer": "enriched",
+  "batch": "batch2",
+  "harvested": "2026-07-25",
+  "count": 36
+ },
+ "items": [
+  {
+   "name": "Legendary Acolyte's Lenses",
+   "category": "item",
+   "slot": "Goggles",
+   "enhancements": [
+    "Intelligence +13",
+    "Insightful Intelligence +6",
+    "Insightful Wizardry +134",
+    "Spellcraft +20",
+    "Green Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Acolyte's_Lenses",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Agony's Eyes",
+   "category": "item",
+   "slot": "Goggles",
+   "enhancements": [
+    "Green Augment Slot",
+    "Blue Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Agony's_Eyes",
+   "augment_slots": [
+    "Green",
+    "Blue",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Sound and Silence",
+    "Lamordia Slot",
+    "Lamordia Slot",
+    "Lamordia Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 34
+  },
+  {
+   "name": "Legendary Amethyst Loupe",
+   "category": "item",
+   "slot": "Goggles",
+   "enhancements": [
+    "Deception +20",
+    "Search +20",
+    "Spot +20",
+    "Reflex Save +12",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Amethyst_Loupe",
+   "augment_slots": [
+    "Green",
+    "Yellow"
+   ],
+   "_enrich_unmapped": [
+    "Eversight"
+   ],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Black Earth Guardian's Lenses",
+   "category": "item",
+   "slot": "Goggles",
+   "enhancements": [
+    "Quality Constitution +3",
+    "Enhancement Physical Sheltering +35",
+    "False Life +53",
+    "Blue Augment Slot",
+    "Legendary Temple's Monolith (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Black_Earth_Guardian's_Lenses",
+   "augment_slots": [
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Incite"
+   ],
+   "_enriched": true,
+   "minimum_level": 31
+  },
+  {
+   "name": "Legendary Blazing Sniper's Sights",
+   "category": "item",
+   "slot": "Goggles",
+   "enhancements": [
+    "Deadly +11",
+    "Quality Deadly +3",
+    "Doubleshot +9%",
+    "Insightful Doubleshot +5%",
+    "Yellow Augment Slot",
+    "Legendary Temple's Inferno (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Blazing_Sniper's_Sights",
+   "augment_slots": [
+    "Yellow"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 31
+  },
+  {
+   "name": "Legendary Collective Sight",
+   "category": "item",
+   "slot": "Goggles",
+   "enhancements": [
+    "Quality Resistance +2",
+    "Blue Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Collective_Sight",
+   "augment_slots": [
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Nearly Finished",
+    "Almost There",
+    "Temperance of Belief"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Admiral's Wristwatch",
+   "category": "item",
+   "slot": "Bracers",
+   "enhancements": [
+    "Accuracy +21",
+    "Deadly +11",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Admiral's_Wristwatch",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Armor-Piercing",
+    "Dino Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 31
+  },
+  {
+   "name": "Legendary Aetherband",
+   "category": "item",
+   "slot": "Bracers",
+   "enhancements": [
+    "Spell Penetration +8",
+    "Insight Spell Penetration +4",
+    "Green Augment Slot",
+    "Legendary Esoteric Initiate (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Aetherband",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "Magical Efficiency",
+    "Shield Bonus"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Aosu'riel's Bracers",
+   "category": "item",
+   "slot": "Bracers",
+   "enhancements": [
+    "Healing Lore +21%",
+    "Devotion +142",
+    "Fortification +142",
+    "Green Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Aosu'riel's_Bracers",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "HealingAmp"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Auspicious Bracers",
+   "category": "item",
+   "slot": "Bracers",
+   "enhancements": [
+    "Illusion Spell Focus +12",
+    "Spellcraft +22",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Auspicious_Bracers",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "Lamordia Slot",
+    "Lamordia Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 34
+  },
+  {
+   "name": "Legendary Black Opal Bracers",
+   "category": "item",
+   "slot": "Bracers",
+   "enhancements": [
+    "Enhancement Magical Sheltering +33",
+    "Will Save +11",
+    "Yellow Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Black_Opal_Bracers",
+   "augment_slots": [
+    "Yellow"
+   ],
+   "_enrich_unmapped": [
+    "Heroism",
+    "Ethereal"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Bodysnatcher's Bracers",
+   "category": "item",
+   "slot": "Bracers",
+   "enhancements": [
+    "Legendary Accuracy +5",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bodysnatcher's_Bracers",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "Undying",
+    "Lamordia Slot",
+    "Lamordia Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 34
+  },
+  {
+   "name": "Legendary Admiral's Gumshoes",
+   "category": "item",
+   "slot": "Boots",
+   "enhancements": [
+    "Seeker +14",
+    "Deception +11",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Admiral's_Gumshoes",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Speed",
+    "Dino Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 31
+  },
+  {
+   "name": "Legendary Beachcombers",
+   "category": "item",
+   "slot": "Boots",
+   "enhancements": [
+    "Dodge +14%",
+    "Reflex Save +12",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Beachcombers",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Speed",
+    "Dino Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 31
+  },
+  {
+   "name": "Legendary Boots of Corrosion",
+   "category": "item",
+   "slot": "Boots",
+   "enhancements": [
+    "Corrosion +151",
+    "Nullification +151",
+    "Acid Resistance +54",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Legendary Might of the Abishai (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Boots_of_Corrosion",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Guard"
+   ],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Boots of Fleet and Fortune",
+   "category": "item",
+   "slot": "Boots",
+   "enhancements": [
+    "Good Luck +5",
+    "Exceptional Nimble +10",
+    "Quality Nimble +5",
+    "Insightful Nimble +10",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Boots_of_Fleet_and_Fortune",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 33
+  },
+  {
+   "name": "Legendary Boots of the Battlemaster",
+   "category": "item",
+   "slot": "Boots",
+   "enhancements": [
+    "Dexterity +15",
+    "Quality Dexterity +3",
+    "Reflex Save +6",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Boots_of_the_Battlemaster",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "Speed"
+   ],
+   "_enriched": true,
+   "minimum_level": 33
+  },
+  {
+   "name": "Legendary Boots of the Devil Commander",
+   "category": "item",
+   "slot": "Boots",
+   "enhancements": [
+    "Quality Physical Sheltering +8",
+    "Insight Physical Sheltering +16",
+    "Fortification +142",
+    "Blue Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Boots_of_the_Devil_Commander",
+   "augment_slots": [
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Incite"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Absorption Gauntlet",
+   "category": "item",
+   "slot": "Gloves",
+   "enhancements": [
+    "Elemental Resistance +15",
+    "Insightful Magical Sheltering +17",
+    "Quality Spellcraft +5",
+    "Fire Absorption +36%",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Absorption_Gauntlet",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 32
+  },
+  {
+   "name": "Legendary Admiral's Gloves",
+   "category": "item",
+   "slot": "Gloves",
+   "enhancements": [
+    "Illusion Spell Focus +9",
+    "Wizardry +286",
+    "will Save +12",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Admiral's_Gloves",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Dino Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 31
+  },
+  {
+   "name": "Legendary Attunement Gauntlets",
+   "category": "item",
+   "slot": "Gloves",
+   "enhancements": [
+    "Evocation Spell Focus +7",
+    "Green Augment Slot",
+    "Legendary Arcsteel Battlemage (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Attunement_Gauntlets",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "Spell Power",
+    "Spell Lore",
+    "ItemGrantedFeat"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Balorskin Gauntlets",
+   "category": "item",
+   "slot": "Gloves",
+   "enhancements": [
+    "Insightful Deception +6",
+    "Legendary Accuracy +5",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Balorskin_Gauntlets",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "Reinforced Fists",
+    "Nearly Complete"
+   ],
+   "_enriched": true,
+   "minimum_level": 35
+  },
+  {
+   "name": "Legendary Baron Aubrecker's Monogrammed Gloves",
+   "category": "item",
+   "slot": "Gloves",
+   "enhancements": [
+    "Transmutation Spell Focus +12",
+    "Spell Save +5",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Baron_Aubrecker's_Monogrammed_Gloves",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "Lamordia Slot",
+    "Lamordia Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 34
+  },
+  {
+   "name": "Legendary Birchlore Gauntlets",
+   "category": "item",
+   "slot": "Gloves",
+   "enhancements": [
+    "Healing Lore +22%",
+    "Devotion +149",
+    "Vitality +47",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Birchlore_Gauntlets",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Dino Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 31
+  },
+  {
+   "name": "Legendary Alchemist's Crown",
+   "category": "item",
+   "slot": "Helmet",
+   "enhancements": [
+    "Devotion +148",
+    "Nullification +148",
+    "Wizardry +283",
+    "Green Augment Slot",
+    "Blue Augment Slot",
+    "Astute Alchemist (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Alchemist's_Crown",
+   "augment_slots": [
+    "Green",
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Nearly Finished"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Arcsteel Brim",
+   "category": "item",
+   "slot": "Helmet",
+   "enhancements": [
+    "Spell Focus Mastery Spell Focus +6",
+    "Will Save +11",
+    "Insightful Magical Sheltering +16",
+    "Enhancement Magical Sheltering +33",
+    "Yellow Augment Slot",
+    "Legendary Arcsteel Battlemage (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Arcsteel_Brim",
+   "augment_slots": [
+    "Yellow"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Big Top",
+   "category": "item",
+   "slot": "Helmet",
+   "enhancements": [
+    "Charisma +13",
+    "Dodge +13%",
+    "Exceptional Alluring +10",
+    "Use Magic Device +5",
+    "Colorless Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Big_Top",
+   "augment_slots": [
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Clicky"
+   ],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Boundless",
+   "category": "item",
+   "slot": "Helmet",
+   "enhancements": [
+    "Insightful Wizardry +134",
+    "Potency +24",
+    "Quality Physical Sheltering +8",
+    "Fortification +142",
+    "Green Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Boundless",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Chainmail Coif",
+   "category": "item",
+   "slot": "Helmet",
+   "enhancements": [
+    "Potency +100",
+    "Colorless Augment Slot",
+    "Yellow Augment Slot",
+    "Legendary Oasis of Morality (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Chainmail_Coif",
+   "augment_slots": [
+    "Colorless",
+    "Yellow"
+   ],
+   "_enrich_unmapped": [
+    "Bonus Turning",
+    "Bonus Turning",
+    "Bonus Turning"
+   ],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Chimera's Crown",
+   "category": "item",
+   "slot": "Helmet",
+   "enhancements": [
+    "Spell Resistance +39",
+    "Natural Armor +13",
+    "Colorless Augment Slot",
+    "Yellow Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Chimera's_Crown",
+   "augment_slots": [
+    "Colorless",
+    "Yellow"
+   ],
+   "_enrich_unmapped": [
+    "Dragonmark",
+    "Dragonmark",
+    "Dragonmark"
+   ],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Admiral's Cummerbund",
+   "category": "item",
+   "slot": "Belt",
+   "enhancements": [
+    "Parrying +6",
+    "Law Absorption +23%",
+    "Chaos Absorption +23%",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Admiral's_Cummerbund",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Dino Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 31
+  },
+  {
+   "name": "Legendary Agarta's Belt",
+   "category": "item",
+   "slot": "Belt",
+   "enhancements": [
+    "Strength +15",
+    "Quality Strength +3",
+    "Fortitude Save +6",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Agarta's_Belt",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "Ram's Might"
+   ],
+   "_enriched": true,
+   "minimum_level": 33
+  },
+  {
+   "name": "Legendary Animated Rope",
+   "category": "item",
+   "slot": "Belt",
+   "enhancements": [
+    "Diversion +20",
+    "Deception +10",
+    "Dodge +13%",
+    "Green Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Animated_Rope",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "Tactics"
+   ],
+   "_enriched": true,
+   "minimum_level": 28
+  },
+  {
+   "name": "Legendary Baron Aubrecker's Monogrammed Belt",
+   "category": "item",
+   "slot": "Belt",
+   "enhancements": [
+    "Enchantment Spell Focus +12",
+    "Spell Save +12",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Baron_Aubrecker's_Monogrammed_Belt",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "Lamordia Slot",
+    "Lamordia Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 34
+  },
+  {
+   "name": "Legendary Belt of Bold Brilliance",
+   "category": "item",
+   "slot": "Belt",
+   "enhancements": [
+    "Insightful Intelligence +6",
+    "Reflex Save +3",
+    "Profane Well Rounded +3",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Belt_of_Bold_Brilliance",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "HealingAmp"
+   ],
+   "_enriched": true,
+   "minimum_level": 33
+  },
+  {
+   "name": "Legendary Belt of Myriad Pockets",
+   "category": "item",
+   "slot": "Belt",
+   "enhancements": [
+    "Insightful Constitution +6",
+    "Enhancement Physical Sheltering +34",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Belt_of_Myriad_Pockets",
+   "augment_slots": [
+    "Green",
+    "Yellow"
+   ],
+   "_enrich_unmapped": [
+    "Protection",
+    "Shield Bonus",
+    "Hp"
+   ],
+   "_enriched": true,
+   "minimum_level": 30
+  }
+ ]
+}
