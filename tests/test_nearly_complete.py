@@ -92,3 +92,14 @@ def test_shipped_seed_parses_clean():
     leg = {(r["stat"], r["category"]): r for r in result["records"] if r["tier"] == "legendary"}
     assert leg[("Constitution", "Ability Score")]["value"] == 15
     assert leg[("Positive Healing Amplification", "Healing Amplification")]["bonus_type"] == "Competence"
+
+
+def test_built_dataset_carries_nearly_complete_pool():
+    # U3: the real build wires the pool + coverage into the dataset.
+    import build_dataset
+    dataset = build_dataset.build(build_dataset.load_seed())
+    assert "nearly_complete" in dataset
+    assert len(dataset["nearly_complete"]) >= 60
+    nc_cov = dataset["metadata"]["nc_coverage"]
+    assert set(nc_cov["categories_sourced"]) == nearly_complete.CATEGORIES
+    assert "pending" in nc_cov["item_hosts"]
