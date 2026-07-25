@@ -108,6 +108,48 @@ function buildProgram(model) {
     extraConstraints.push(`${ps.join(" + ")}${rhs} <= 0`);
   }
 
+  // U5 — set thresholds. A set tier's parsed stats count only when >= N pieces
+  // of the set are equipped. Per tier: a binary set_active with the linear
+  // indicator  N*set_active - sum(equipped pieces of the set) <= 0  (so it can
+  // only be 1 when the piece count reaches N), and each tier stat is a
+  // contribution gated by [set_active]. The lexicographic solve then completes a
+  // set only when its bonus advances a ranked target.
+  const setPieces = new Map(); // set name -> [piece x-var names]
+  const setTiers = new Map();  // set name -> Map(pieces_label -> tier)
+  for (const xv of xVars) {
+    for (const sb of xv.variant.set_bonus || []) {
+      if (!sb.set) continue;
+      if (!setPieces.has(sb.set)) setPieces.set(sb.set, []);
+      setPieces.get(sb.set).push(xv.name);
+    }
+    for (const tier of xv.variant.parsed_set_bonuses || []) {
+      if (tier.pieces_required == null || !(tier.affixes || []).length) continue;
+      if (!setTiers.has(tier.set)) setTiers.set(tier.set, new Map());
+      const byLabel = setTiers.get(tier.set);
+      if (!byLabel.has(tier.pieces_label)) byLabel.set(tier.pieces_label, tier);
+    }
+  }
+  let sc = 0;
+  for (const [setName, byLabel] of setTiers) {
+    const pieceVars = setPieces.get(setName) || [];
+    if (!pieceVars.length) continue;
+    for (const [, tier] of byLabel) {
+      const best = new Map();
+      for (const a of tier.affixes) {
+        const k = `${a.stat}||${a.bonus_type}`;
+        if (targetSet.has(a.stat) && a.value > 0 && (!best.has(k) || best.get(k) < a.value)) best.set(k, a.value);
+      }
+      if (!best.size) continue; // this tier advances no target
+      const sa = "s" + sc++;
+      extraVars.push(sa);
+      extraConstraints.push(`${tier.pieces_required} ${sa} - ${pieceVars.join(" - ")} <= 0`);
+      for (const [k, val] of best) {
+        if (!zByBucket.has(k)) zByBucket.set(k, []);
+        zByBucket.get(k).push({ name: "z" + zc++, gates: [sa], value: val });
+      }
+    }
+  }
+
   return {
     xVars, zByBucket, cappedStats, targetList: model.targets, model,
     extraVars, extraConstraints, _zc: zc,

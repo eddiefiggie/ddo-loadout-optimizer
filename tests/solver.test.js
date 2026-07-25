@@ -38,6 +38,17 @@ function augment(id, color, affixes) {
     scaling: [], set_bonus: [], augment_slots: [],
   };
 }
+// a worn item that belongs to a set and carries the set's parsed tier bonuses (U5)
+function setPiece(id, slotName, affixes, setName, tiers) {
+  const v = item(id, slotName, affixes);
+  v.set_bonus = [{ set: setName }];
+  v.parsed_set_bonuses = (tiers || []).map((t) => ({
+    set: setName, pieces_required: t.n, pieces_label: `${t.n} Pieces`,
+    affixes: t.affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, value, unit: "flat" })),
+    flagged: [],
+  }));
+  return v;
+}
 
 (async () => {
   const highs = await Highs({ locateFile: (f) => vendor + f });
@@ -217,6 +228,53 @@ function augment(id, color, affixes) {
     };
     assert.strictEqual((await S.solveLexicographic(blueSlot, highs)).effective.Resistance, 0,
       "a Moon augment cannot go in a Blue slot");
+  });
+
+  await test("U5/AE1: set stat counts only at the piece threshold", async () => {
+    const tier = [{ n: 2, affixes: [["Strength", "Enhancement", 10]] }];
+    const twoPieces = {
+      targets: ["Strength"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Ring", [setPiece("R", "Ring", [], "TestSet", tier)]),
+        slot("Necklace", [setPiece("N", "Necklace", [], "TestSet", tier)]),
+      ],
+    };
+    const a = await S.solveLexicographic(twoPieces, highs);
+    assert.strictEqual(a.effective.Strength, 10, "2 pieces -> set bonus active");
+    assert.strictEqual(a.chosen.length, 2, "both set pieces equipped");
+
+    const onePiece = {
+      targets: ["Strength"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [setPiece("R", "Ring", [], "TestSet", tier)])],
+    };
+    const b = await S.solveLexicographic(onePiece, highs);
+    assert.strictEqual(b.effective.Strength, 0, "1 piece < threshold -> no set bonus");
+  });
+
+  await test("U5: set bonus obeys bonus-type stacking with worn", async () => {
+    const sameType = {
+      targets: ["Strength"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Ring", [setPiece("R", "Ring", [["Strength", "Enhancement", 6]], "TestSet",
+          [{ n: 2, affixes: [["Strength", "Enhancement", 10]] }])]),
+        slot("Necklace", [setPiece("N", "Necklace", [], "TestSet",
+          [{ n: 2, affixes: [["Strength", "Enhancement", 10]] }])]),
+      ],
+    };
+    const s = await S.solveLexicographic(sameType, highs);
+    assert.strictEqual(s.effective.Strength, 10, "same type -> max(worn 6, set 10)");
+
+    const diffType = {
+      targets: ["Strength"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Ring", [setPiece("R", "Ring", [["Strength", "Enhancement", 6]], "TestSet",
+          [{ n: 2, affixes: [["Strength", "Insightful", 10]] }])]),
+        slot("Necklace", [setPiece("N", "Necklace", [], "TestSet",
+          [{ n: 2, affixes: [["Strength", "Insightful", 10]] }])]),
+      ],
+    };
+    const d = await S.solveLexicographic(diffType, highs);
+    assert.strictEqual(d.effective.Strength, 16, "different types -> worn 6 + set 10");
   });
 
   console.log(`\n${passed} passed`);
