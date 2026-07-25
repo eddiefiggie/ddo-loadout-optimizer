@@ -63,6 +63,7 @@ main { padding: 1.25rem 1.5rem; max-width: 1100px; margin: 0 auto; }
 .badge { display: inline-block; padding: 0.05rem 0.45rem; border-radius: 999px; font-size: 0.72rem; text-transform: capitalize; }
 .badge.verified { background: rgba(76,175,125,0.18); color: var(--verified); border: 1px solid var(--verified); }
 .badge.quarantined { background: rgba(208,139,58,0.16); color: var(--quarantined); border: 1px solid var(--quarantined); }
+.badge.indexed { background: rgba(154,163,173,0.14); color: var(--muted); border: 1px solid var(--border); }
 
 .chip { display: inline-block; background: #12141a; border: 1px solid var(--border); border-radius: 5px; padding: 0.05rem 0.4rem; margin: 0.05rem; font-size: 0.78rem; }
 .chip.aug { border-color: #3a4a6a; }
