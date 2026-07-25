@@ -23,10 +23,12 @@ from src import verify as verify_mod
 from src import colors as colors_mod
 from src import set_parser as set_mod
 from src import dino as dino_mod
+from src import nearly_complete as nc_mod
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SEED_PATH = os.path.join(HERE, "data", "seed", "ddo_items.json")
 DINO_SEED_PATH = os.path.join(HERE, "data", "seed", "dino_crafting.json")
+NC_SEED_PATH = os.path.join(HERE, "data", "seed", "nearly_complete.json")
 # Output lands inside web/ so that directory is a self-contained, deployable
 # site root (GitHub Pages serves web/ as the root; the app fetches data/ relatively).
 OUT_PATH = os.path.join(HERE, "web", "data", "items.json")
@@ -40,6 +42,14 @@ def load_seed(path: str = SEED_PATH) -> dict:
 
 def load_dino_seed(path: str = DINO_SEED_PATH) -> dict:
     """Load the Dino-crafting seed (freshly sourced; separate from the base seed)."""
+    if not os.path.exists(path):
+        return {}
+    with open(path, "r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def load_nc_seed(path: str = NC_SEED_PATH) -> dict:
+    """Load the U81 Nearly-Complete seed (freshly sourced; separate from the base seed)."""
     if not os.path.exists(path):
         return {}
     with open(path, "r", encoding="utf-8") as fh:
@@ -68,6 +78,11 @@ def build(seed: dict) -> dict:
     dino_blanks, dino_inserts, dino_cov = dino_mod.build_dino(dino_seed)
     variants = variants + dino_blanks
 
+    # U81 Nearly Complete: expose the parametric choice-slot effect pool. Items
+    # carrying a `nearly_complete: <category>` field draw one option from it (host
+    # items pending wiki; the pool + machinery ship now).
+    nc = nc_mod.parse_nearly_complete(load_nc_seed())
+
     out = {
         "metadata": {
             "title": "DDO Loadout Optimizer — dataset",
@@ -80,10 +95,12 @@ def build(seed: dict) -> dict:
             "color_coverage": colors_mod.color_coverage(variants),
             "set_coverage": set_mod.set_coverage(variants),
             "dino_coverage": dino_cov,
-            "pipeline_stage": "M3-sources+dino",
+            "nc_coverage": nc["coverage"],
+            "pipeline_stage": "M3-sources+dino+nc",
         },
         "items": variants,
         "dino_inserts": dino_inserts,
+        "nearly_complete": nc["records"],
     }
     return out
 

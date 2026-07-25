@@ -68,6 +68,7 @@ function buildProgram(model) {
   const augMeta = new Map(); // placement var -> {variant_id, color, wiki_url}
   const setMeta = new Map(); // set_active var -> {set, pieces_required, pieces_label, wiki_url}
   const dinoMeta = new Map(); // dino placement var -> {dino_type, stat, bonus_type, value, wiki_url}
+  const ncMeta = new Map(); // nc placement var -> {item, category, stat, bonus_type, value, tier, wiki_url}
 
   // U3 — augment assignment. Each augment gets a placement binary p_i; its stat
   // is a contribution gated by [p_i]. Per color, total placements are bounded by
@@ -149,6 +150,39 @@ function buildProgram(model) {
     extraConstraints.push(`${qs.join(" + ")}${rhs} <= 0`);
   }
 
+  // U81 Nearly Complete — a parametric choice-slot on an item. An item carrying
+  // `nearly_complete: <category>` may craft one option from that category's pool
+  // (at the item's tier): each candidate option gets a placement binary n, its
+  // stat is a contribution gated [n], n is available only when the host item is
+  // equipped (n - x_item <= 0), and Σ n <= 1 enforces the single (irreversible)
+  // choice. Feeds the same (stat, bonus_type) buckets, so stacking is correct.
+  let ncc = 0;
+  for (const xv of xVars) {
+    const category = xv.variant.nearly_complete;
+    if (!category) continue;
+    // Tier from the host's ML, not a fixed default — never grant the larger
+    // (Legendary ML35) magnitude to a heroic item that omitted nc_tier.
+    const tier = xv.variant.nc_tier || ((xv.variant.minimum_level || 0) >= 35 ? "legendary" : "heroic");
+    const slotVars = [];
+    for (const opt of model.nearlyComplete || []) {
+      if (opt.category !== category || opt.tier !== tier) continue;
+      if (!(targetSet.has(opt.stat) && opt.value > 0)) continue;
+      const n = "n" + ncc++;
+      extraVars.push(n);
+      ncMeta.set(n, {
+        item: xv.variant.variant_id, category, stat: opt.stat,
+        bonus_type: opt.bonus_type, value: opt.value, unit: opt.unit || "flat",
+        tier, wiki_url: opt.wiki_url,
+      });
+      slotVars.push(n);
+      extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
+      const k = `${opt.stat}||${opt.bonus_type}`;
+      if (!zByBucket.has(k)) zByBucket.set(k, []);
+      zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: opt.value });
+    }
+    if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single choice per slot
+  }
+
   // U5 — set thresholds. A set tier's parsed stats count only when >= N pieces
   // of the set are equipped. Per tier: a binary set_active with the linear
   // indicator  N*set_active - sum(equipped pieces of the set) <= 0  (so it can
@@ -197,7 +231,7 @@ function buildProgram(model) {
 
   return {
     xVars, zByBucket, cappedStats, targetList: model.targets, model,
-    extraVars, extraConstraints, augMeta, setMeta, dinoMeta, _zc: zc,
+    extraVars, extraConstraints, augMeta, setMeta, dinoMeta, ncMeta, _zc: zc,
   };
 }
 
@@ -289,7 +323,9 @@ function readSolution(res, program) {
   for (const [s, meta] of program.setMeta || []) if (prim(s) > 0.5) setsActive.push(meta);
   const dinoPlaced = [];
   for (const [q, meta] of program.dinoMeta || []) if (prim(q) > 0.5) dinoPlaced.push(meta);
-  return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced };
+  const ncPlaced = [];
+  for (const [n, meta] of program.ncMeta || []) if (prim(n) > 0.5) ncPlaced.push(meta);
+  return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced };
 }
 
 async function solveLexicographic(model, highs) {
@@ -313,7 +349,7 @@ async function solveLexicographic(model, highs) {
   return {
     status: "optimal", perTarget, effective: sol.effective, chosen: sol.chosen,
     augmentsPlaced: sol.augmentsPlaced, setsActive: sol.setsActive,
-    dinoPlaced: sol.dinoPlaced, program,
+    dinoPlaced: sol.dinoPlaced, ncPlaced: sol.ncPlaced, program,
   };
 }
 

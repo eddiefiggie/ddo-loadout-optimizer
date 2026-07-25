@@ -70,12 +70,31 @@ function dinoInsertRow(ins) {
   };
 }
 
-/** The browsable list: real item variants plus the Dino insert pool rendered as
- *  display rows. Pure, so it is unit-testable. */
+/** Display-only pseudo-variant for one U81 Nearly-Complete craft option, so the
+ *  effect pool is browsable. NOT an equippable item — an item's slot selects one
+ *  option; this is inventory visibility only. */
+function ncRow(opt) {
+  return {
+    variant_id: `Nearly Complete: ${opt.stat} (${opt.tier})`,
+    source_item: `U81 Nearly Complete — ${opt.category}`,
+    slot: `Nearly Complete (${opt.category})`,
+    minimum_level: opt.tier === "legendary" ? 35 : 11,
+    verification: "verified",
+    affixes: [{ stat: opt.stat, bonus_type: opt.bonus_type, value: opt.value, unit: opt.unit || "flat" }],
+    scaling: [],
+    wiki_url: opt.wiki_url,
+    nc_option: true,
+  };
+}
+
+/** The browsable list: real item variants plus the Dino insert pool and the U81
+ *  Nearly-Complete option pool rendered as display rows. Pure, so it is
+ *  unit-testable. */
 function browsableItems(dataset) {
   const items = (dataset && dataset.items) || [];
   const inserts = ((dataset && dataset.dino_inserts) || []).map(dinoInsertRow);
-  return items.concat(inserts);
+  const nc = ((dataset && dataset.nearly_complete) || []).map(ncRow);
+  return items.concat(inserts, nc);
 }
 
 // ---- DOM rendering (browser only) ----
@@ -156,5 +175,5 @@ if (typeof window !== "undefined" && window.App) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { filterVariants, variantStats, affixText, dinoInsertRow, browsableItems };
+  module.exports = { filterVariants, variantStats, affixText, dinoInsertRow, ncRow, browsableItems };
 }

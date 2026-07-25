@@ -364,5 +364,130 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.strictEqual(d.effective.Constitution, 17, "different types -> worn 10 + dino 7");
   });
 
+  // ---- U81 Nearly Complete (parametric choice-slot) ----
+  // a worn item carrying a Nearly-Complete slot of a category at a tier
+  function ncHost(id, slotName, category, tier, affixes) {
+    const v = item(id, slotName, affixes || []);
+    v.nearly_complete = category;
+    v.nc_tier = tier || "legendary";
+    return v;
+  }
+  function ncOpt(category, stat, bonus_type, value, tier) {
+    return { category, stat, bonus_type, value, tier: tier || "legendary", unit: "flat" };
+  }
+  const ABIL_POOL = [
+    ncOpt("Ability Score", "Constitution", "Enhancement", 15),
+    ncOpt("Ability Score", "Strength", "Enhancement", 15),
+  ];
+
+  await test("NC/AE1: solver crafts the option that best advances the ranked targets", async () => {
+    const conFirst = {
+      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Boots", [ncHost("B", "Boots", "Ability Score", "legendary")])],
+      nearlyComplete: ABIL_POOL,
+    };
+    const a = await S.solveLexicographic(conFirst, highs);
+    assert.strictEqual(a.effective.Constitution, 15, "crafts +15 Con for a Con-first ranking");
+    assert.ok(a.ncPlaced.some((n) => n.stat === "Constitution"), "reported as crafted");
+
+    const strFirst = { ...conFirst, targets: ["Strength", "Constitution"] };
+    const b = await S.solveLexicographic(strFirst, highs);
+    assert.strictEqual(b.effective.Strength, 15, "swapping priority crafts +15 Str instead");
+  });
+
+  await test("NC/AE2: at most one option per slot (single irreversible choice)", async () => {
+    const oneSlot = {
+      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Boots", [ncHost("B", "Boots", "Ability Score", "legendary")])],
+      nearlyComplete: ABIL_POOL,
+    };
+    const r = await S.solveLexicographic(oneSlot, highs);
+    assert.strictEqual(r.effective.Constitution, 15, "priority-1 crafted");
+    assert.strictEqual(r.effective.Strength, 0, "one slot -> only one option, not both");
+    assert.strictEqual(r.ncPlaced.length, 1, "exactly one craft placed");
+  });
+
+  await test("NC/AE3: crafted option obeys bonus-type stacking with worn", async () => {
+    const sameType = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Boots", [ncHost("B", "Boots", "Ability Score", "legendary", [["Constitution", "Enhancement", 10]])])],
+      nearlyComplete: [ncOpt("Ability Score", "Constitution", "Enhancement", 15)],
+    };
+    assert.strictEqual((await S.solveLexicographic(sameType, highs)).effective.Constitution, 15,
+      "same type -> max(worn 10, nc 15), not 25");
+
+    const diffType = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Boots", [ncHost("B", "Boots", "Insightful Ability Score", "legendary", [["Constitution", "Enhancement", 10]])])],
+      nearlyComplete: [ncOpt("Insightful Ability Score", "Constitution", "Insight", 7)],
+    };
+    assert.strictEqual((await S.solveLexicographic(diffType, highs)).effective.Constitution, 17,
+      "different types -> worn Enhancement 10 + nc Insight 7");
+  });
+
+  await test("NC/host-gating: an unequipped NC host cannot craft (n <= x_item)", async () => {
+    // Two candidates for one Ring slot: the NC host is intrinsically weaker; a
+    // rival with a strictly better target stat is equipped instead, so the host's
+    // craft must NOT apply. This is the constraint that dominates() must also not prune.
+    const m = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [
+        ncHost("H", "Ring", "Ability Score", "legendary"),          // craftable +15 Con, no base
+        item("R", "Ring", [["Constitution", "Enhancement", 30]]),   // strictly better intrinsically
+      ])],
+      nearlyComplete: ABIL_POOL,
+    };
+    const r = await S.solveLexicographic(m, highs);
+    assert.strictEqual(r.effective.Constitution, 30, "the better rival is equipped");
+    assert.strictEqual(r.ncPlaced.length, 0, "the unequipped host cannot craft");
+  });
+
+  await test("NC/cross-item: Σn<=1 is per host item, not global", async () => {
+    const m = {
+      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Boots", [ncHost("B", "Boots", "Ability Score", "legendary")]),
+        slot("Gloves", [ncHost("G", "Gloves", "Ability Score", "legendary")]),
+      ],
+      nearlyComplete: ABIL_POOL,
+    };
+    const r = await S.solveLexicographic(m, highs);
+    assert.strictEqual(r.effective.Constitution, 15, "host 1 crafts Con");
+    assert.strictEqual(r.effective.Strength, 15, "host 2 crafts Str (separate slot)");
+    assert.strictEqual(r.ncPlaced.length, 2, "two hosts -> two crafts");
+  });
+
+  await test("NC/tier: a heroic host pulls the heroic magnitude, not legendary", async () => {
+    const pool = [
+      ncOpt("Ability Score", "Constitution", "Enhancement", 6, "heroic"),
+      ncOpt("Ability Score", "Constitution", "Enhancement", 15, "legendary"),
+    ];
+    const m = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Boots", [ncHost("B", "Boots", "Ability Score", "heroic")])],
+      nearlyComplete: pool,
+    };
+    assert.strictEqual((await S.solveLexicographic(m, highs)).effective.Constitution, 6,
+      "heroic host -> +6, not the legendary +15");
+  });
+
+  await test("NC: tier + ML36 — a legendary slot applies at mlCap 36", async () => {
+    const m36 = {
+      targets: ["Constitution"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Boots", [ncHost("B", "Boots", "Ability Score", "legendary")])],
+      nearlyComplete: ABIL_POOL,
+    };
+    assert.strictEqual((await S.solveLexicographic(m36, highs)).effective.Constitution, 15);
+
+    // an item with no nearly_complete field contributes nothing new
+    const none = {
+      targets: ["Constitution"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Boots", [item("B", "Boots", [])])],
+      nearlyComplete: ABIL_POOL,
+    };
+    assert.strictEqual((await S.solveLexicographic(none, highs)).effective.Constitution, 0,
+      "no NC slot on the item -> pool unused");
+  });
+
   console.log(`\n${passed} passed`);
 })();

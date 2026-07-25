@@ -108,13 +108,17 @@ function coverageNote(dataset) {
   const setAff = (m.set_coverage || {}).set_affixes_parsed;
   const dc = m.dino_coverage || {};
   const dinoElig = dc.inserts_eligible;
+  const nc = m.nc_coverage || {};
+  const ncElig = nc.options_eligible;
   const parts = [
     "<strong>Optimized:</strong> worn affixes, augments" +
       (aug != null ? ` (${aug} placeable)` : "") +
       ", set bonuses" + (setAff != null ? ` (${setAff} threshold effects)` : "") +
       ", and Isle of Dread Dino crafting" + (dinoElig != null ? ` (${dinoElig} Accessory inserts)` : ""),
     "<strong>Coverage:</strong> results reflect only verified, wiki-sourced data; ambiguous effects are quarantined and excluded",
-    "<strong>Pending:</strong> Dino Weapon/Armor/Raid/Set-Bonus insert pools (and other expansion crafting systems) are not yet sourced, so they do not yet contribute",
+    "<strong>Pending:</strong> U81 Nearly Complete crafting — the effect pool is sourced" +
+      (ncElig != null ? ` (${ncElig} options)` : "") +
+      " but no U81 item hosts are published yet, so it does not yet contribute; likewise the Dino Weapon/Armor/Raid/Set-Bonus pools and other expansion crafting systems",
   ];
   return `<p class="scope-note">${parts.join(". ")}. All optimized values are wiki-traceable.</p>`;
 }
@@ -131,6 +135,12 @@ function renderResults(container, { model, result, query, dataset }) {
   // group equipped picks by slot, preserving a flat index for augment assignment
   const augAssign = assignAugments(result.chosen, result.augmentsPlaced);
   const dinoAssign = assignDinoInserts(result.chosen, result.dinoPlaced);
+  // U81 Nearly Complete: each placed craft already names its host item.
+  const ncByItem = new Map();
+  for (const n of result.ncPlaced || []) {
+    if (!ncByItem.has(n.item)) ncByItem.set(n.item, []);
+    ncByItem.get(n.item).push(n);
+  }
   const rowsBySlot = new Map();
   result.chosen.forEach((c, idx) => {
     if (!rowsBySlot.has(c.slot)) rowsBySlot.set(c.slot, []);
@@ -150,12 +160,14 @@ function renderResults(container, { model, result, query, dataset }) {
         .map((a) => `<span class="chip aug" title="augment slotted (${a.color})">${a.variant_id} <span class="muted">(${a.color})</span></span>`).join(" ");
       const dinos = (dinoAssign.byIndex.get(idx) || [])
         .map((d) => `<span class="chip dino" title="Isle of Dread ${d.dino_type} insert">${d.dino_type}: ${affixLabel({ stat: d.stat, bonus_type: d.bonus_type, value: d.value, unit: d.unit || "flat" })}</span>`).join(" ");
+      const ncs = (ncByItem.get(v.variant_id) || [])
+        .map((n) => `<span class="chip nc" title="U81 Nearly Complete (${n.category}, ${n.tier})">Nearly Complete: ${affixLabel({ stat: n.stat, bonus_type: n.bonus_type, value: n.value, unit: n.unit || "flat" })}</span>`).join(" ");
       const link = v.wiki_url ? `<a href="${v.wiki_url}" target="_blank" rel="noopener">wiki</a>` : "";
       rows.push(`<tr>
         <td>${slot.slot}</td>
         <td>${v.variant_id}</td>
         <td class="num">${v.minimum_level ?? "—"}</td>
-        <td>${contrib} ${augs} ${dinos}</td>
+        <td>${contrib} ${augs} ${dinos} ${ncs}</td>
         <td>${link}</td>
       </tr>`);
     }
