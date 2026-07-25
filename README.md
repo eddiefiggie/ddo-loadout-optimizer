@@ -6,10 +6,11 @@
 
 A public DDO gear optimizer: given a build's minimum-level cap, class/race, armor type, weapon setup, and a *ranked* list of target affixes, it returns the theoretically-optimal fully-upgraded gear set — items, tiers, and augments — computed against DDO's real bonus-type stacking rules, with every value traceable to the DDO Wiki. Built data-first (a verified, searchable item database ships first; the lexicographic solver layers on top), seeded from the existing `ddo-item-puller` dataset.
 
-**Status:** Milestone 1 (data platform + browse) built, tested, and **published live on GitHub Pages** (2026-07-25) on `main`. Milestone 2 (solver) not yet started.
+**Status:** Milestone 1 (data platform + browse) live on GitHub Pages. Milestone 2 (solver) built & tested on branch `feat/milestone-2-solver` (2026-07-25), not yet merged/deployed.
 
-- **U1–U5 done:** pipeline (`build_dataset.py`) parses the seed's free-text `enhancements[]` into structured `parsed_affixes[]`, expands tiered items into per-tier variants, gates per-affix (142 verified / 32 quarantined of 174 variants), and serves a searchable browse view (`web/`). 33 tests green (27 Python + 6 JS); browser pass clean.
-- **U6–U8 remaining:** the HiGHS-WASM solver model, staged lexicographic solve, and query/results UI.
+- **U1–U5 (Milestone 1):** pipeline parses free-text `enhancements[]` → structured `parsed_affixes[]`, per-tier variants, per-affix verification gate; searchable browse view.
+- **U6–U8 (Milestone 2):** per-slot dominance pre-filter + exact worn-item MILP via HiGHS-WASM (bonus-type stacking, dodge-cap clamp, staged lexicographic, deterministic tie-break) + a query/results UI. ML-34 queries solve in <100ms. 57 tests (36 Python + 21 JS incl. HiGHS known-answer fixtures); browser pass clean.
+- **Known v1 boundary:** the solver optimizes **worn-item affixes** exactly; **set bonuses and augments are displayed but not yet in the objective** (their bonuses are still free text in the dataset). Structuring those and folding them into the MILP is the next follow-up.
 
 ## Files
 - `docs/plans/2026-07-24-001-feat-ddo-loadout-optimizer-plan.md` — the unified plan (Product Contract + Implementation Units U1–U8). Feed this to `/ce-work` to build.
