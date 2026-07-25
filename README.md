@@ -4,7 +4,10 @@
 
 A public DDO gear optimizer: given a build's minimum-level cap, class/race, armor type, weapon setup, and a *ranked* list of target affixes, it returns the theoretically-optimal fully-upgraded gear set — items, tiers, and augments — computed against DDO's real bonus-type stacking rules, with every value traceable to the DDO Wiki. Built data-first (a verified, searchable item database ships first; the lexicographic solver layers on top), seeded from the existing `ddo-item-puller` dataset.
 
-**Status:** Implementation-ready plan written (2026-07-24). Not yet built.
+**Status:** Milestone 1 (data platform + browse) built & tested (2026-07-25) on branch `feat/milestone-1-data-platform`. Milestone 2 (solver) not yet started.
+
+- **U1–U5 done:** pipeline (`build_dataset.py`) parses the seed's free-text `enhancements[]` into structured `parsed_affixes[]`, expands tiered items into per-tier variants, gates per-affix (142 verified / 32 quarantined of 174 variants), and serves a searchable browse view (`web/`). 33 tests green (27 Python + 6 JS); browser pass clean.
+- **U6–U8 remaining:** the HiGHS-WASM solver model, staged lexicographic solve, and query/results UI.
 
 ## Files
 - `docs/plans/2026-07-24-001-feat-ddo-loadout-optimizer-plan.md` — the unified plan (Product Contract + Implementation Units U1–U8). Feed this to `/ce-work` to build.
