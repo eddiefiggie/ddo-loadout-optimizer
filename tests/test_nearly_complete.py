@@ -78,9 +78,17 @@ def test_shipped_seed_parses_clean():
     with open(seed_path, encoding="utf-8") as fh:
         seed = json.load(fh)
     result = nearly_complete.parse_nearly_complete(seed)
-    assert result["coverage"]["options_eligible"] >= 1
-    assert "Ability Score" in result["coverage"]["categories_sourced"]
+    cov = result["coverage"]
+    # Regression pin on the full sourced pool (U2): all 6 categories, 0 quarantined.
+    assert set(cov["categories_sourced"]) == nearly_complete.CATEGORIES
+    assert cov["options_quarantined"] == 0, result["quarantined"]
+    assert cov["options_eligible"] >= 60
+    assert "pending" in cov["item_hosts"]
     for r in result["records"]:
         assert r["category"] in nearly_complete.CATEGORIES
         assert r["wiki_url"]
         assert r["tier"] in ("heroic", "legendary")
+    # spot-check reconciled endgame values
+    leg = {(r["stat"], r["category"]): r for r in result["records"] if r["tier"] == "legendary"}
+    assert leg[("Constitution", "Ability Score")]["value"] == 15
+    assert leg[("Positive Healing Amplification", "Healing Amplification")]["bonus_type"] == "Competence"
