@@ -106,5 +106,24 @@ function slot(name, variants, card = 1) { return { slot: name, cardinality: card
     assert.deepStrictEqual(a.chosen.map((c) => c.variant.variant_id), b.chosen.map((c) => c.variant.variant_id));
   });
 
+  await test("U1 primitive: a contribution is gated by ALL of its gates", async () => {
+    // A hand-built program with a two-gate contribution must emit one
+    // `z - gate <= 0` per gate, and declare the extra structural binary.
+    const program = {
+      xVars: [{ name: "x0", slot: "Ring", cardinality: 1, variant: {} }],
+      zByBucket: new Map([["Strength||Enhancement", [{ name: "z0", gates: ["x0", "g1"], value: 5 }]]]),
+      extraVars: ["g1"],
+      extraConstraints: ["g1 - x0 <= 0"],
+      cappedStats: {},
+      targetList: ["Strength"],
+      model: {},
+    };
+    const lp = S.encodeStage(program, { objectiveStat: "Strength", sense: "max", locks: [] });
+    assert.ok(lp.includes("z0 - x0 <= 0"), "gate on the item pick var");
+    assert.ok(lp.includes("z0 - g1 <= 0"), "gate on the extra structural binary");
+    assert.ok(/\bg1 - x0 <= 0\b/.test(lp), "extraConstraint injected verbatim");
+    assert.ok(/Binary[\s\S]*\bg1\b/.test(lp), "extra binary declared");
+  });
+
   console.log(`\n${passed} passed`);
 })();
