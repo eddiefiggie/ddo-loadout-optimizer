@@ -69,3 +69,18 @@ main { padding: 1.25rem 1.5rem; max-width: 1100px; margin: 0 auto; }
 .items a { color: var(--accent); }
 .empty { padding: 1.5rem; text-align: center; color: var(--muted); }
 .empty button { margin-left: 0.5rem; background: #12141a; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.6rem; cursor: pointer; }
+
+/* Solver */
+#solver { margin-bottom: 1.25rem; }
+.controls button.primary { background: var(--accent); color: #06121f; border-color: var(--accent); font-weight: 600; }
+.ranked { list-style: decimal; margin: 0.5rem 0; padding-left: 1.5rem; }
+.ranked li { padding: 0.2rem 0; display: flex; justify-content: space-between; align-items: center; max-width: 420px; }
+.rank-name { font-size: 0.9rem; }
+.rank-ctrl button { background: #12141a; color: var(--text); border: 1px solid var(--border); border-radius: 5px; padding: 0.05rem 0.4rem; margin-left: 0.15rem; cursor: pointer; font-size: 0.8rem; }
+.rank-ctrl button:disabled { opacity: 0.35; cursor: default; }
+.rank-ctrl button.del { color: var(--quarantined); }
+.result-grid { display: grid; grid-template-columns: minmax(180px, 260px) 1fr; gap: 1.25rem; align-items: start; }
+@media (max-width: 720px) { .result-grid { grid-template-columns: 1fr; } }
+.result-grid h3 { margin: 0.25rem 0 0.5rem; font-size: 0.95rem; }
+.empty-slot td { opacity: 0.7; }
+.scope-note { margin-top: 0.75rem; color: var(--muted); font-size: 0.8rem; border-left: 2px solid var(--border); padding-left: 0.6rem; }

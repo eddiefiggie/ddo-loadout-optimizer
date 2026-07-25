@@ -10,10 +10,12 @@
   <header class="app-header">
     <h1>DDO Loadout Optimizer</h1>
     <p class="tagline">Wiki-sourced gear database &amp; best-in-slot solver</p>
-    <p class="wip">Work in progress — the item browser is live; the loadout solver is coming next.</p>
+    <p class="wip">Solver optimizes worn-item affixes exactly; set bonuses &amp; augments are shown but not yet optimized.</p>
   </header>
 
   <main id="app">
+    <section id="solver" class="panel"><!-- loadout solver injected by query.js --></section>
+
     <section id="browse" class="panel">
       <h2>Item Browser</h2>
       <div id="browse-controls" class="controls"><!-- filters injected by browse.js --></div>
@@ -28,6 +30,11 @@
   </footer>
 
   <script src="app.js"></script>
+  <script src="model.js"></script>
+  <script src="solver.js"></script>
+  <script src="vendor/highs.js"></script>
+  <script src="results.js"></script>
+  <script src="query.js"></script>
   <script src="browse.js"></script>
 </body>
 </html>
