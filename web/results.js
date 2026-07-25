@@ -114,10 +114,11 @@ function coverageNote(dataset) {
     "<strong>Optimized:</strong> worn affixes, augments" +
       (aug != null ? ` (${aug} placeable)` : "") +
       ", set bonuses" + (setAff != null ? ` (${setAff} threshold effects)` : "") +
-      ", Isle of Dread Dino crafting" + (dinoElig != null ? ` (${dinoElig} Accessory inserts)` : "") +
-      ", and U81 Nearly Complete crafting" + (ncElig != null ? ` (${ncElig} craft options)` : ""),
+      ", and Isle of Dread Dino crafting" + (dinoElig != null ? ` (${dinoElig} Accessory inserts)` : ""),
     "<strong>Coverage:</strong> results reflect only verified, wiki-sourced data; ambiguous effects are quarantined and excluded",
-    "<strong>Pending:</strong> U81 Nearly-Complete <em>item hosts</em> (the effect pool is sourced) and the Dino Weapon/Armor/Raid/Set-Bonus pools (and other expansion crafting systems) are not yet sourced, so they do not yet contribute",
+    "<strong>Pending:</strong> U81 Nearly Complete crafting — the effect pool is sourced" +
+      (ncElig != null ? ` (${ncElig} options)` : "") +
+      " but no U81 item hosts are published yet, so it does not yet contribute; likewise the Dino Weapon/Armor/Raid/Set-Bonus pools and other expansion crafting systems",
   ];
   return `<p class="scope-note">${parts.join(". ")}. All optimized values are wiki-traceable.</p>`;
 }

@@ -160,7 +160,9 @@ function buildProgram(model) {
   for (const xv of xVars) {
     const category = xv.variant.nearly_complete;
     if (!category) continue;
-    const tier = xv.variant.nc_tier || "legendary";
+    // Tier from the host's ML, not a fixed default — never grant the larger
+    // (Legendary ML35) magnitude to a heroic item that omitted nc_tier.
+    const tier = xv.variant.nc_tier || ((xv.variant.minimum_level || 0) >= 35 ? "legendary" : "heroic");
     const slotVars = [];
     for (const opt of model.nearlyComplete || []) {
       if (opt.category !== category || opt.tier !== tier) continue;

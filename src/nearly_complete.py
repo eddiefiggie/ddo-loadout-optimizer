@@ -10,12 +10,20 @@ turns a freshly-sourced seed (``data/seed/nearly_complete.json``) into structure
 option records and QUARANTINES anything it cannot verify.
 
 Strict wiki provenance (KTD2). An option record is solver-eligible only with a
-canonical category, an explicit ``(stat, bonus_type, value)`` per tier, and a
-non-empty ``wiki_url``. Ambiguous records — a non-canonical category, an
-unreconciled bonus type — are quarantined with a reason, never inferred. Sourced
-via Claude-in-Chrome (plain fetch returns empty for ddowiki).
+canonical category, a canonical ``bonus_type`` (in ``affix_parser.BONUS_TYPES``),
+a present ``stat`` (run through ``vocab.normalize_stat`` to match the item
+pipeline's vocabulary), an integer per-tier ``value``, and a non-empty
+``wiki_url``. Anything else is quarantined with a reason, never inferred.
+Choosing between two source spellings of a bonus type (e.g. the release notes'
+"Competence Positive Amplification" vs the Nearly_Complete page's wording) is a
+seed-authoring reconciliation, not parser logic — the parser only rejects a type
+outside the canonical set. Sourced via Claude-in-Chrome (plain fetch returns
+empty for ddowiki).
 """
 from __future__ import annotations
+
+from src.affix_parser import BONUS_TYPES
+from src import vocab
 
 # The six Nearly Complete categories (the wiki's names on the Nearly_Complete page).
 CATEGORIES = {
@@ -47,6 +55,10 @@ def parse_categories(cats):
             if not stat or not bonus_type:
                 quarantined.append({"raw": f"{category}: {opt}", "reason": "missing stat or bonus_type"})
                 continue
+            if bonus_type not in BONUS_TYPES:
+                quarantined.append({"raw": f"{category}: {stat} ({bonus_type})", "reason": "unrecognized bonus type"})
+                continue
+            stat = vocab.normalize_stat(stat)  # match the item pipeline's stat vocabulary
             for tier, val in tier_values.items():
                 if not isinstance(val, int):
                     quarantined.append({"raw": f"{category}/{stat}/{tier}", "reason": "missing magnitude"})
@@ -69,6 +81,7 @@ def parse_nearly_complete(seed):
         "categories_sourced": sorted({r["category"] for r in records}),
         "options_eligible": len(records),
         "options_quarantined": len(quarantined),
+        "quarantined": quarantined,  # surface the reasons (mirrors dino coverage)
         "by_category": by_category,
         "item_hosts": "pending — U81 named-item pages not yet published",
     }

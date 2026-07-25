@@ -159,6 +159,20 @@ test("buildModel exposes a target-filtered Dino insert pool", () => {
   assert.strictEqual(model.dinoInserts[0].stat, "Constitution");
 });
 
+test("dominates: an affix item does NOT dominate a Nearly-Complete host it can't match", () => {
+  // Regression: a host whose value is a craftable NC slot must survive dominance
+  // against an intrinsically-better rival that lacks that slot (or its category).
+  const real = v("Real", "Ring", [["Strength", "Enhancement", 12]]);
+  const host = v("Host", "Ring", [["Strength", "Enhancement", 8]]);
+  host.nearly_complete = "Ability Score";
+  host.minimum_level = 35;
+  const targets = new Set(["Strength"]);
+  assert.strictEqual(M.dominates(real, host, targets, 36), false,
+    "a rival lacking the NC slot cannot dominate the host");
+  const kept = M.dominanceFilter([real, host], targets, 36, 1);
+  assert.strictEqual(kept.length, 2, "the NC host survives per-slot dominance");
+});
+
 test("buildModel exposes a target-filtered Nearly-Complete pool", () => {
   const model = M.buildModel([], { mlCap: 36, targets: ["Constitution"] }, [], [
     { category: "Ability Score", stat: "Constitution", bonus_type: "Enhancement", value: 15, tier: "legendary" },

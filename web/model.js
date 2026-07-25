@@ -79,6 +79,10 @@ function dominates(A, B, targetSet, mlCap) {
   const da = countColors(A.dino_slots_norm || []);
   const db = countColors(B.dino_slots_norm || []);
   for (const [type, n] of db) if ((da.get(type) || 0) < n) return false;
+  // Nearly-Complete choice-slot: B can craft an option A cannot unless A offers
+  // the same category+tier slot, so an intrinsic win must not prune B's craft.
+  if (B.nearly_complete && (A.nearly_complete !== B.nearly_complete
+      || ncTier(A) !== ncTier(B))) return false;
   // strictly better somewhere, OR keep A as the canonical of an equal pair
   return true;
 }
@@ -87,6 +91,12 @@ function countColors(colors) {
   const m = new Map();
   for (const c of colors) m.set(c, (m.get(c) || 0) + 1);
   return m;
+}
+
+/** A Nearly-Complete host's tier: explicit nc_tier, else derived from ML
+ *  (Legendary only at ML>=35). Matches the solver's derivation. */
+function ncTier(v) {
+  return v.nc_tier || ((v.minimum_level || 0) >= 35 ? "legendary" : "heroic");
 }
 
 /** Per-slot Pareto filter: keep only non-dominated variants for these targets.
