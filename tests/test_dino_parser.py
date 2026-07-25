@@ -58,6 +58,31 @@ def test_unparseable_effect_is_quarantined():
     assert len(quarantined) == 1
 
 
+def test_multi_affix_insert_is_quarantined():
+    # Fang: Deception packs two affixes into one augment; the per-record model
+    # can't represent "both apply from one slot", so it is quarantined.
+    records, quarantined = dino_parser.parse_inserts([
+        {"type": "Fang",
+         "effect": "+11 Enhancement bonus to Sneak Attacks, "
+                   "+17 Enhancement bonus to Sneak Attack Damage",
+         "wiki_url": _WIKI},
+    ])
+    assert records == []
+    assert quarantined[0]["reason"] == "multi-affix insert (unsupported)"
+
+
+def test_compound_and_stat_stays_single_affix():
+    # "Critical Confirmation and Critical Damage" is one bonus over a compound
+    # stat (one value) — eligible, not multi-affix.
+    records, quarantined = dino_parser.parse_inserts([
+        {"type": "Fang", "effect": "+14 Enhancement bonus to Critical Confirmation and Critical Damage",
+         "wiki_url": _WIKI},
+    ])
+    assert quarantined == []
+    assert len(records) == 1
+    assert records[0]["value"] == 14
+
+
 def test_unrecognized_dino_type_is_quarantined():
     records, quarantined = dino_parser.parse_inserts([
         {"type": "Tooth", "effect": "+14 Constitution", "wiki_url": _WIKI},

@@ -17,7 +17,16 @@ provenance-incomplete records are quarantined with a reason, never guessed.
 """
 from __future__ import annotations
 
+import re
+
 from src.affix_parser import parse_line
+
+# An insert carrying two or more signed magnitudes is a single augment granting
+# multiple affixes (e.g. "Fang: Deception" = +11 Sneak Attacks AND +17 Sneak
+# Attack Damage). The per-record placement model can't represent "both apply
+# together from one slot", so such inserts are quarantined rather than modeled as
+# independently placeable halves. Supporting them is deferred follow-up work.
+_VALUE_TOKEN = re.compile(r"[+-]\s?\d+")
 
 # The four Isle of Dread Dino slot types. A slot accepts only an insert of its
 # own type (a Scale slot takes a Scale insert), exactly like a colored augment
@@ -48,6 +57,9 @@ def parse_inserts(inserts):
             continue
         if not wiki_url:
             quarantined.append({"raw": raw, "reason": "missing wiki_url"})
+            continue
+        if len(_VALUE_TOKEN.findall(raw or "")) > 1:
+            quarantined.append({"raw": raw, "reason": "multi-affix insert (unsupported)"})
             continue
         r = parse_line(raw or "")
         if r["kind"] != "affix":

@@ -1,54 +1,456 @@
 {
   "metadata": {
-    "system": "Isle of Dread — Dino crafting",
-    "note": "Freshly sourced from ddowiki.com (plain fetch returns empty; sourced via Claude-in-Chrome). Every record carries a wiki_url. Insert 'effect' strings are stored VERBATIM from the wiki and parsed by src/dino_parser.py — values are never hand-structured here (KTD2, never inferred). This starter sample carries hand-verified item slot layouts; the full insert pool + remaining items are populated in U2.",
+    "system": "Isle of Dread — Dino crafting (Accessory slice)",
+    "note": "Sourced from ddowiki.com/page/Dinosaur_Bone_crafting (§ Accessories) via Claude-in-Chrome; plain fetch returns empty for ddowiki. Insert 'effect' strings are VERBATIM; documented base value only (the undocumented Minor-Artifact +N bump is not encoded). The strict parser decides eligibility; nothing here is inferred (KTD2).",
     "source_pages": [
-      "https://ddowiki.com/page/Update_55_named_items"
+      "https://ddowiki.com/page/Dinosaur_Bone_crafting"
     ],
-    "sourcing_status": "starter-sample — item layouts verified; insert pool pending U2"
+    "sourcing_status": "Accessory pools complete (Scale/Fang/Claw/Horn Accessory). DEFERRED (disclosed): Weapon/Armor/Raid/Set-Bonus augment pools + variant-aware (variant,type) slot typing; and multi-affix inserts (e.g. Fang: Deception)."
   },
   "items": [
+    {
+      "item": "Dinosaur Bone Belt",
+      "slot": "accessory",
+      "dino_slots": [
+        {
+          "type": "Scale"
+        },
+        {
+          "type": "Fang"
+        },
+        {
+          "type": "Claw"
+        },
+        {
+          "type": "Horn"
+        }
+      ],
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
     {
       "item": "Dinosaur Bone Boots",
       "slot": "accessory",
       "dino_slots": [
-        {"type": "Scale"},
-        {"type": "Fang"},
-        {"type": "Claw"},
-        {"type": "Horn"}
+        {
+          "type": "Scale"
+        },
+        {
+          "type": "Fang"
+        },
+        {
+          "type": "Claw"
+        },
+        {
+          "type": "Horn"
+        }
       ],
-      "wiki_url": "https://ddowiki.com/page/Update_55_named_items"
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
     },
     {
       "item": "Dinosaur Bone Bracers",
       "slot": "accessory",
       "dino_slots": [
-        {"type": "Scale"},
-        {"type": "Fang"},
-        {"type": "Claw"},
-        {"type": "Horn"}
+        {
+          "type": "Scale"
+        },
+        {
+          "type": "Fang"
+        },
+        {
+          "type": "Claw"
+        },
+        {
+          "type": "Horn"
+        }
       ],
-      "wiki_url": "https://ddowiki.com/page/Update_55_named_items"
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
     },
     {
       "item": "Dinosaur Bone Gloves",
       "slot": "accessory",
       "dino_slots": [
-        {"type": "Scale"},
-        {"type": "Fang"},
-        {"type": "Claw"},
-        {"type": "Horn"}
+        {
+          "type": "Scale"
+        },
+        {
+          "type": "Fang"
+        },
+        {
+          "type": "Claw"
+        },
+        {
+          "type": "Horn"
+        }
       ],
-      "wiki_url": "https://ddowiki.com/page/Update_55_named_items"
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
     },
     {
-      "item": "Legendary Bottle o' Rum",
-      "slot": "weapon",
+      "item": "Necklace",
+      "slot": "accessory",
       "dino_slots": [
-        {"type": "Scale"}
+        {
+          "type": "Scale"
+        },
+        {
+          "type": "Fang"
+        },
+        {
+          "type": "Claw"
+        },
+        {
+          "type": "Horn"
+        }
       ],
-      "wiki_url": "https://ddowiki.com/page/Update_55_named_items"
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "item": "Ring",
+      "slot": "accessory",
+      "dino_slots": [
+        {
+          "type": "Scale"
+        },
+        {
+          "type": "Fang"
+        },
+        {
+          "type": "Claw"
+        },
+        {
+          "type": "Horn"
+        }
+      ],
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "item": "Helmet",
+      "slot": "accessory",
+      "dino_slots": [
+        {
+          "type": "Scale"
+        },
+        {
+          "type": "Fang"
+        },
+        {
+          "type": "Claw"
+        },
+        {
+          "type": "Horn"
+        }
+      ],
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "item": "Cloak",
+      "slot": "accessory",
+      "dino_slots": [
+        {
+          "type": "Scale"
+        },
+        {
+          "type": "Fang"
+        },
+        {
+          "type": "Claw"
+        },
+        {
+          "type": "Horn"
+        }
+      ],
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
     }
   ],
-  "inserts": []
+  "inserts": [
+    {
+      "type": "Scale",
+      "effect": "+53 Enhancement bonus to Maximum HP",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Scale",
+      "effect": "+14 Enhancement bonus to Charisma",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Scale",
+      "effect": "+14 Enhancement bonus to Constitution",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Scale",
+      "effect": "+14 Enhancement bonus to Dexterity",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Scale",
+      "effect": "+14 Enhancement bonus to Intelligence",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Scale",
+      "effect": "+14 Enhancement bonus to Strength",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Scale",
+      "effect": "+14 Enhancement bonus to Wisdom",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Scale",
+      "effect": "+20% Enhancement bonus to Acid Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Scale",
+      "effect": "+20% Enhancement bonus to Cold Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Scale",
+      "effect": "+20% Enhancement bonus to Electric Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Scale",
+      "effect": "+20% Enhancement bonus to Fire Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Scale",
+      "effect": "+20% Enhancement bonus to Force and Physical Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Scale",
+      "effect": "+20% Enhancement bonus to Light and Alignment Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Scale",
+      "effect": "+20% Enhancement bonus to Negative and Poison Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Scale",
+      "effect": "+20% Enhancement bonus to Positive Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Scale",
+      "effect": "+20% Enhancement bonus to Repair Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Scale",
+      "effect": "+20% Enhancement bonus to Sonic Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Fang",
+      "effect": "+56 Competence bonus to Positive Healing Amplification",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Fang",
+      "effect": "+56 Profane bonus to Negative Healing Amplification",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Fang",
+      "effect": "+56 Enhancement bonus to Repair Amplification",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Fang",
+      "effect": "+21 Competence bonus to Attack",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Fang",
+      "effect": "+11 Competence bonus to Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Fang",
+      "effect": "+11 Enhancement bonus to Sneak Attacks, +17 Enhancement bonus to Sneak Attack Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Fang",
+      "effect": "+14 Enhancement bonus to Critical Confirmation and Critical Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Fang",
+      "effect": "+10% Insight bonus to Acid Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Fang",
+      "effect": "+10% Insight bonus to Cold Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Fang",
+      "effect": "+10% Insight bonus to Electric Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Fang",
+      "effect": "+10% Insight bonus to Fire Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Fang",
+      "effect": "+10% Insight bonus to Force and Physical Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Fang",
+      "effect": "+10% Insight bonus to Light and Alignment Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Fang",
+      "effect": "+10% Insight bonus to Negative and Poison Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Fang",
+      "effect": "+10% Insight bonus to Positive Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Fang",
+      "effect": "+10% Insight bonus to Repair Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Fang",
+      "effect": "+10% Insight bonus to Sonic Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Claw",
+      "effect": "+35 Enhancement bonus to Physical Resistance Rating",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Claw",
+      "effect": "+35 Enhancement bonus to Magical Resistance Rating",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Claw",
+      "effect": "+15 Enhancement bonus to Stunning DCs",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Claw",
+      "effect": "+15 Enhancement bonus to Trip DCs",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Claw",
+      "effect": "+15 Enhancement bonus to Sunder DCs",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Claw",
+      "effect": "+15 Enhancement bonus to Assassinate DCs",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Claw",
+      "effect": "+9 Equipment bonus to Spell Penetration",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Claw",
+      "effect": "+5% Quality bonus to Acid Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Claw",
+      "effect": "+5% Quality bonus to Cold Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Claw",
+      "effect": "+5% Quality bonus to Electric Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Claw",
+      "effect": "+5% Quality bonus to Fire Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Claw",
+      "effect": "+5% Quality bonus to Force and Physical Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Claw",
+      "effect": "+5% Quality bonus to Light and Alignment Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Claw",
+      "effect": "+5% Quality bonus to Negative and Poison Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Claw",
+      "effect": "+5% Quality bonus to Positive Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Claw",
+      "effect": "+5% Quality bonus to Repair Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Claw",
+      "effect": "+5% Quality bonus to Sonic Spell Crit Damage",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Horn",
+      "effect": "+12 Resistance bonus to all Saving Throws",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Horn",
+      "effect": "Equipping this item causes you to become partially incorporeal. Your melee and missile attacks do not roll a miss chance for Incorporeal targets.",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Horn",
+      "effect": "While this item is equipped, any killing blows you strike against enemies may drive you into a furious rage, providing a 5% Enhancement damage bonus.",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Horn",
+      "effect": "+22% Enhancement bonus to Fortification bypass",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Horn",
+      "effect": "+286 Enhancement bonus to Maximum SP",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Horn",
+      "effect": "+2 Profane bonus to Spell DCs",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    },
+    {
+      "type": "Horn",
+      "effect": "+2 Sacred bonus to Spell DCs",
+      "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"
+    }
+  ]
 }
