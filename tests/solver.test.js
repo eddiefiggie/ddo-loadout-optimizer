@@ -277,5 +277,92 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.strictEqual(d.effective.Strength, 16, "different types -> worn 6 + set 10");
   });
 
+  // ---- U4: Isle of Dread Dino crafting (typed slot-pools) ----
+  // a Dinosaur Bone blank host: worn item with typed Dino slots, no base affixes
+  function dinoHost(id, slotName, dinoTypes, affixes) {
+    const v = item(id, slotName, affixes || []);
+    v.dino_slots_norm = dinoTypes || [];
+    return v;
+  }
+  // a Dino insert record (one (dino_type, stat, bonus_type, value))
+  function dinoIns(dino_type, stat, bonus_type, value) {
+    return { dino_type, stat, bonus_type, value, wiki_url: "wiki" };
+  }
+
+  await test("Dino/AE1: insert counts only when its host is equipped + placed", async () => {
+    const withHost = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Boots", [dinoHost("B", "Boots", ["Scale"])])],
+      dinoInserts: [dinoIns("Scale", "Constitution", "Enhancement", 14)],
+    };
+    const a = await S.solveLexicographic(withHost, highs);
+    assert.strictEqual(a.effective.Constitution, 14, "placed into the open Scale slot");
+    assert.ok(a.dinoPlaced.some((d) => d.stat === "Constitution"), "reported as placed");
+
+    const noHost = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Boots", [item("B", "Boots", [])])], // host has no Dino slots
+      dinoInserts: [dinoIns("Scale", "Constitution", "Enhancement", 14)],
+    };
+    const b = await S.solveLexicographic(noHost, highs);
+    assert.strictEqual(b.effective.Constitution, 0, "no Scale slot -> insert cannot count");
+  });
+
+  await test("Dino/AE2: an insert fills only a matching-type slot", async () => {
+    const wrongType = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Boots", [dinoHost("B", "Boots", ["Fang"])])], // Fang slot, not Scale
+      dinoInserts: [dinoIns("Scale", "Constitution", "Enhancement", 14)],
+    };
+    const r = await S.solveLexicographic(wrongType, highs);
+    assert.strictEqual(r.effective.Constitution, 0, "a Scale insert cannot fill a Fang slot");
+  });
+
+  await test("Dino/AE3: per-type capacity bounds placements (one Scale slot -> one insert)", async () => {
+    const oneSlot = {
+      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Boots", [dinoHost("B", "Boots", ["Scale"])])], // one Scale slot
+      dinoInserts: [
+        dinoIns("Scale", "Constitution", "Enhancement", 14),
+        dinoIns("Scale", "Strength", "Enhancement", 14),
+      ],
+    };
+    const r = await S.solveLexicographic(oneSlot, highs);
+    assert.strictEqual(r.effective.Constitution, 14, "priority-1 insert placed");
+    assert.strictEqual(r.effective.Strength, 0, "only one Scale slot -> second insert cannot fit");
+
+    const twoSlots = {
+      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Boots", [dinoHost("B", "Boots", ["Scale"])]),
+        slot("Belt", [dinoHost("W", "Belt", ["Scale"])]),
+      ],
+      dinoInserts: [
+        dinoIns("Scale", "Constitution", "Enhancement", 14),
+        dinoIns("Scale", "Strength", "Enhancement", 14),
+      ],
+    };
+    const r2 = await S.solveLexicographic(twoSlots, highs);
+    assert.strictEqual(r2.effective.Strength, 14, "two Scale slots (Boots+Belt) -> both inserts fit");
+  });
+
+  await test("Dino/AE4: insert obeys bonus-type stacking with worn", async () => {
+    const sameType = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Boots", [dinoHost("B", "Boots", ["Scale"], [["Constitution", "Enhancement", 10]])])],
+      dinoInserts: [dinoIns("Scale", "Constitution", "Enhancement", 14)],
+    };
+    const s = await S.solveLexicographic(sameType, highs);
+    assert.strictEqual(s.effective.Constitution, 14, "same type -> max(worn 10, dino 14), not 24");
+
+    const diffType = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Boots", [dinoHost("B", "Boots", ["Scale"], [["Constitution", "Enhancement", 10]])])],
+      dinoInserts: [dinoIns("Scale", "Constitution", "Insightful", 7)],
+    };
+    const d = await S.solveLexicographic(diffType, highs);
+    assert.strictEqual(d.effective.Constitution, 17, "different types -> worn 10 + dino 7");
+  });
+
   console.log(`\n${passed} passed`);
 })();

@@ -73,6 +73,12 @@ function dominates(A, B, targetSet, mlCap) {
   const ca = countColors(variantAugColors(A));
   const cb = countColors(variantAugColors(B));
   for (const [color, n] of cb) if ((ca.get(color) || 0) < n) return false;
+  // Dino-slot multiset: A must have at least as many typed Dino slots as B, or a
+  // Dinosaur Bone blank (whose value is entirely its Dino slots) would be pruned
+  // by any affix-bearing item in the same slot and its insert capacity lost.
+  const da = countColors(A.dino_slots_norm || []);
+  const db = countColors(B.dino_slots_norm || []);
+  for (const [type, n] of db) if ((da.get(type) || 0) < n) return false;
   // strictly better somewhere, OR keep A as the canonical of an equal pair
   return true;
 }
@@ -110,8 +116,8 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1) {
 }
 
 /** Build the abstract model. Returns worn slots (filtered + pruned), the
- *  augment source pool, target list, and the dodge cap. */
-function buildModel(variants, query) {
+ *  augment source pool, the Dino insert pool, target list, and the dodge cap. */
+function buildModel(variants, query, dinoInserts = []) {
   const targetSet = new Set(query.targets);
   const mlCap = query.mlCap;
   const elig = eligible(variants, query);
@@ -154,7 +160,13 @@ function buildModel(variants, query) {
   const dodgeCap = query.armorType && targetSet.has("Dodge")
     ? (ARMOR_DODGE_CAP[query.armorType] ?? null) : null;
 
-  return { query, targets: query.targets, worn, augments, dodgeCap, mlCap };
+  // Dino insert pool: each record is a single (dino_type, stat, bonus_type,
+  // value) placeable into a matching typed slot. Keep only inserts that advance
+  // a ranked target — the rest add solver vars with no benefit. The solver caps
+  // total placements per type by the open typed slots on equipped items.
+  const dinoPool = (dinoInserts || []).filter((i) => i && targetSet.has(i.stat) && i.value > 0);
+
+  return { query, targets: query.targets, worn, augments, dinoInserts: dinoPool, dodgeCap, mlCap };
 }
 
 // exports for node tests; harmless in the browser

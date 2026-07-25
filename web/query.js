@@ -102,7 +102,7 @@ window.App && window.App.ready((dataset) => {
         classRace: $("q-class").value.trim() || null,
       };
       // eslint-disable-next-line no-undef
-      const model = buildModel(dataset.items, query);
+      const model = buildModel(dataset.items, query, dataset.dino_inserts);
       const t0 = performance.now();
       // eslint-disable-next-line no-undef
       const result = await solveLexicographic(model, h);

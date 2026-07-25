@@ -20,6 +20,10 @@ BONUS_TYPES = {
     "Enhancement", "Insightful", "Quality", "Exceptional", "Profane", "Sacred",
     "Competence", "Artifact", "Primal", "Festive", "Alchemical", "Deific",
     "Fatesinger", "Legendary",
+    # Isle of Dread Dino-crafting pool uses these (distinct stacking types); they
+    # are legitimate DDO bonus types that also appear on other gear. "Insight" is
+    # a distinct type from "Insightful" (both occur in-game), preserved verbatim.
+    "Equipment", "Resistance", "Insight",
 }
 # Tokens inside a trailing "(A/B)" that we expand to multiple stats.
 MULTI_STAT_TOKENS = {"PRR", "MRR"}
@@ -38,9 +42,14 @@ _NON_MAGNITUDE = re.compile(r"(\d+d\d+|/x\d|\d+-\d+/|Randomly rolls|slotted:|cha
 
 
 def _split_type(stat_part: str) -> tuple[str, str]:
-    """Peel a leading bonus-type word off a stat string. Default Enhancement."""
+    """Peel a leading bonus-type word off a stat string. Default Enhancement.
+
+    Only peel when a stat name remains: some bonus-type words are also bare stat
+    names (e.g. "Resistance" is the saving-throw stat as well as a bonus type), so
+    peeling "Resistance +3" would destroy the stat and mistype it. Require >1 word.
+    """
     words = stat_part.split()
-    if words and words[0] in BONUS_TYPES:
+    if len(words) > 1 and words[0] in BONUS_TYPES:
         return words[0], " ".join(words[1:]).strip()
     return "Enhancement", stat_part.strip()
 

@@ -43,6 +43,34 @@ function assignAugments(chosen, augmentsPlaced) {
   return { byIndex, unplaced };
 }
 
+/** Reconstruct a concrete Dino-insert -> item assignment from the solver's
+ *  aggregate per-type placements (mirrors assignAugments). Walk equipped items
+ *  in order and drop each placed insert into the first equipped item with a
+ *  remaining open Dino slot of its type. */
+function assignDinoInserts(chosen, dinoPlaced) {
+  const remaining = chosen.map((c) => {
+    const m = new Map();
+    for (const t of c.variant.dino_slots_norm || []) m.set(t, (m.get(t) || 0) + 1);
+    return m;
+  });
+  const byIndex = new Map();
+  const unplaced = [];
+  for (const ins of dinoPlaced || []) {
+    let placed = false;
+    for (let i = 0; i < chosen.length; i++) {
+      if ((remaining[i].get(ins.dino_type) || 0) > 0) {
+        remaining[i].set(ins.dino_type, remaining[i].get(ins.dino_type) - 1);
+        if (!byIndex.has(i)) byIndex.set(i, []);
+        byIndex.get(i).push(ins);
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) unplaced.push(ins);
+  }
+  return { byIndex, unplaced };
+}
+
 /** Sets you are exactly one piece short of, whose next tier would advance a
  *  target. Display-only nudge; never changes the computed optimum. */
 function nearMissSetHints(chosen, targets) {
@@ -78,12 +106,15 @@ function coverageNote(dataset) {
   const m = (dataset && dataset.metadata) || {};
   const aug = (m.color_coverage || {}).augments_placeable;
   const setAff = (m.set_coverage || {}).set_affixes_parsed;
+  const dc = m.dino_coverage || {};
+  const dinoElig = dc.inserts_eligible;
   const parts = [
     "<strong>Optimized:</strong> worn affixes, augments" +
       (aug != null ? ` (${aug} placeable)` : "") +
-      ", and set bonuses" + (setAff != null ? ` (${setAff} threshold effects)` : ""),
+      ", set bonuses" + (setAff != null ? ` (${setAff} threshold effects)` : "") +
+      ", and Isle of Dread Dino crafting" + (dinoElig != null ? ` (${dinoElig} Accessory inserts)` : ""),
     "<strong>Coverage:</strong> results reflect only verified, wiki-sourced data; ambiguous effects are quarantined and excluded",
-    "<strong>Pending:</strong> expansion crafting / gear upgrade paths are not yet sourced, so they do not yet contribute",
+    "<strong>Pending:</strong> Dino Weapon/Armor/Raid/Set-Bonus insert pools (and other expansion crafting systems) are not yet sourced, so they do not yet contribute",
   ];
   return `<p class="scope-note">${parts.join(". ")}. All optimized values are wiki-traceable.</p>`;
 }
@@ -99,6 +130,7 @@ function renderResults(container, { model, result, query, dataset }) {
 
   // group equipped picks by slot, preserving a flat index for augment assignment
   const augAssign = assignAugments(result.chosen, result.augmentsPlaced);
+  const dinoAssign = assignDinoInserts(result.chosen, result.dinoPlaced);
   const rowsBySlot = new Map();
   result.chosen.forEach((c, idx) => {
     if (!rowsBySlot.has(c.slot)) rowsBySlot.set(c.slot, []);
@@ -116,12 +148,14 @@ function renderResults(container, { model, result, query, dataset }) {
       const contrib = contributingAffixes(v, query.targets).map((a) => `<span class="chip">${affixLabel(a)}</span>`).join(" ") || `<span class="muted">—</span>`;
       const augs = (augAssign.byIndex.get(idx) || [])
         .map((a) => `<span class="chip aug" title="augment slotted (${a.color})">${a.variant_id} <span class="muted">(${a.color})</span></span>`).join(" ");
+      const dinos = (dinoAssign.byIndex.get(idx) || [])
+        .map((d) => `<span class="chip dino" title="Isle of Dread ${d.dino_type} insert">${d.dino_type}: ${affixLabel({ stat: d.stat, bonus_type: d.bonus_type, value: d.value, unit: "flat" })}</span>`).join(" ");
       const link = v.wiki_url ? `<a href="${v.wiki_url}" target="_blank" rel="noopener">wiki</a>` : "";
       rows.push(`<tr>
         <td>${slot.slot}</td>
         <td>${v.variant_id}</td>
         <td class="num">${v.minimum_level ?? "—"}</td>
-        <td>${contrib} ${augs}</td>
+        <td>${contrib} ${augs} ${dinos}</td>
         <td>${link}</td>
       </tr>`);
     }
@@ -155,5 +189,5 @@ function renderResults(container, { model, result, query, dataset }) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, affixLabel, assignAugments, nearMissSetHints };
+  module.exports = { renderResults, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, coverageNote };
 }

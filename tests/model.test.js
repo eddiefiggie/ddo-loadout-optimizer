@@ -136,4 +136,27 @@ test("dodge cap set only when Dodge is a target and armor given", () => {
   assert.strictEqual(cap.dodgeCap, M.ARMOR_DODGE_CAP.heavy);
 });
 
+test("dominates: an affix item does NOT dominate a Dino blank offering slots it lacks", () => {
+  // Regression (U4): a Dinosaur Bone blank's value is its typed Dino slots; if
+  // dominance ignored them, any affix-bearing item in the slot would prune the
+  // blank and its insert capacity would be lost.
+  const real = v("Real", "Boots", [["Constitution", "Enhancement", 10]]);
+  const blank = v("Blank", "Boots", []);
+  blank.dino_slots_norm = ["Scale", "Fang", "Claw", "Horn"];
+  const targets = new Set(["Constitution"]);
+  assert.strictEqual(M.dominates(real, blank, targets, 34), false,
+    "real item lacks Dino slots -> cannot dominate the blank host");
+  const kept = M.dominanceFilter([real, blank], targets, 34, 1);
+  assert.strictEqual(kept.length, 2, "blank survives per-slot dominance");
+});
+
+test("buildModel exposes a target-filtered Dino insert pool", () => {
+  const model = M.buildModel([], { mlCap: 34, targets: ["Constitution"] }, [
+    { dino_type: "Scale", stat: "Constitution", bonus_type: "Enhancement", value: 14 },
+    { dino_type: "Claw", stat: "Dodge", bonus_type: "Enhancement", value: 5 }, // not a target
+  ]);
+  assert.strictEqual(model.dinoInserts.length, 1, "only target-relevant inserts kept");
+  assert.strictEqual(model.dinoInserts[0].stat, "Constitution");
+});
+
 console.log(`\n${passed} passed`);

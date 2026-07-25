@@ -67,6 +67,7 @@ function buildProgram(model) {
   const extraConstraints = [];
   const augMeta = new Map(); // placement var -> {variant_id, color, wiki_url}
   const setMeta = new Map(); // set_active var -> {set, pieces_required, pieces_label, wiki_url}
+  const dinoMeta = new Map(); // dino placement var -> {dino_type, stat, bonus_type, value, wiki_url}
 
   // U3 — augment assignment. Each augment gets a placement binary p_i; its stat
   // is a contribution gated by [p_i]. Per color, total placements are bounded by
@@ -109,6 +110,43 @@ function buildProgram(model) {
     }
     const rhs = capTerms.length ? " - " + capTerms.join(" - ") : "";
     extraConstraints.push(`${ps.join(" + ")}${rhs} <= 0`);
+  }
+
+  // U4 (Dino) — Isle of Dread Dino crafting. Structurally the augment mechanic
+  // with a typed-slot vocabulary: each insert gets a placement binary q; its stat
+  // is a contribution gated by [q]. Per Dino type (Scale/Fang/Claw/Horn), total
+  // placements are bounded by the open typed slots across equipped worn items
+  // (aggregate capacity, mirroring the augment color model). A blank host carries
+  // dino_slots_norm — the list of typed slots it exposes. An insert advancing no
+  // ranked target is left out; an insert whose type has no open slot on any
+  // equipped item is forced to 0 by an empty-capacity constraint (AE2).
+  const dinoByType = new Map(); // dino_type -> [placement var names]
+  let qc = 0;
+  for (const ins of model.dinoInserts || []) {
+    const type = ins.dino_type;
+    if (!type || !(targetSet.has(ins.stat) && ins.value > 0)) continue;
+    const q = "q" + qc++;
+    extraVars.push(q);
+    dinoMeta.set(q, {
+      dino_type: type, stat: ins.stat, bonus_type: ins.bonus_type,
+      value: ins.value, wiki_url: ins.wiki_url,
+    });
+    if (!dinoByType.has(type)) dinoByType.set(type, []);
+    dinoByType.get(type).push(q);
+    const k = `${ins.stat}||${ins.bonus_type}`;
+    if (!zByBucket.has(k)) zByBucket.set(k, []);
+    zByBucket.get(k).push({ name: "z" + zc++, gates: [q], value: ins.value });
+  }
+  // capacity: sum(q of type) - sum(open_dino_slots_of_type(item) * x_item) <= 0
+  for (const [type, qs] of dinoByType) {
+    const capTerms = [];
+    for (const xv of xVars) {
+      const slots = xv.variant.dino_slots_norm || [];
+      const n = slots.filter((t) => t === type).length;
+      if (n > 0) capTerms.push(`${n} ${xv.name}`);
+    }
+    const rhs = capTerms.length ? " - " + capTerms.join(" - ") : "";
+    extraConstraints.push(`${qs.join(" + ")}${rhs} <= 0`);
   }
 
   // U5 — set thresholds. A set tier's parsed stats count only when >= N pieces
@@ -159,7 +197,7 @@ function buildProgram(model) {
 
   return {
     xVars, zByBucket, cappedStats, targetList: model.targets, model,
-    extraVars, extraConstraints, augMeta, setMeta, _zc: zc,
+    extraVars, extraConstraints, augMeta, setMeta, dinoMeta, _zc: zc,
   };
 }
 
@@ -249,7 +287,9 @@ function readSolution(res, program) {
   for (const [p, meta] of program.augMeta || []) if (prim(p) > 0.5) augmentsPlaced.push(meta);
   const setsActive = [];
   for (const [s, meta] of program.setMeta || []) if (prim(s) > 0.5) setsActive.push(meta);
-  return { chosen, effective, augmentsPlaced, setsActive };
+  const dinoPlaced = [];
+  for (const [q, meta] of program.dinoMeta || []) if (prim(q) > 0.5) dinoPlaced.push(meta);
+  return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced };
 }
 
 async function solveLexicographic(model, highs) {
@@ -272,7 +312,8 @@ async function solveLexicographic(model, highs) {
 
   return {
     status: "optimal", perTarget, effective: sol.effective, chosen: sol.chosen,
-    augmentsPlaced: sol.augmentsPlaced, setsActive: sol.setsActive, program,
+    augmentsPlaced: sol.augmentsPlaced, setsActive: sol.setsActive,
+    dinoPlaced: sol.dinoPlaced, program,
   };
 }
 
