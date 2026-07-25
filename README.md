@@ -6,11 +6,12 @@
 
 A public DDO gear optimizer: given a build's minimum-level cap, class/race, armor type, weapon setup, and a *ranked* list of target affixes, it returns the theoretically-optimal fully-upgraded gear set — items, tiers, and augments — computed against DDO's real bonus-type stacking rules, with every value traceable to the DDO Wiki. Built data-first (a verified, searchable item database ships first; the lexicographic solver layers on top), seeded from the existing `ddo-item-puller` dataset.
 
-**Status:** Milestone 1 (data platform + browse) live on GitHub Pages. Milestone 2 (solver) built & tested on branch `feat/milestone-2-solver` (2026-07-25), not yet merged/deployed.
+**Status:** Milestones 1 & 2 **live on GitHub Pages** (2026-07-25). The full tool — searchable item browser + exact loadout solver — is deployed.
 
 - **U1–U5 (Milestone 1):** pipeline parses free-text `enhancements[]` → structured `parsed_affixes[]`, per-tier variants, per-affix verification gate; searchable browse view.
-- **U6–U8 (Milestone 2):** per-slot dominance pre-filter + exact worn-item MILP via HiGHS-WASM (bonus-type stacking, dodge-cap clamp, staged lexicographic, deterministic tie-break) + a query/results UI. ML-34 queries solve in <100ms. 57 tests (36 Python + 21 JS incl. HiGHS known-answer fixtures); browser pass clean.
-- **Known v1 boundary:** the solver optimizes **worn-item affixes** exactly; **set bonuses and augments are displayed but not yet in the objective** (their bonuses are still free text in the dataset). Structuring those and folding them into the MILP is the next follow-up.
+- **U6–U8 (Milestone 2):** per-slot dominance pre-filter + exact worn-item MILP via HiGHS-WASM (bonus-type stacking, dodge-cap clamp, staged lexicographic, deterministic tie-break) + a query/results UI. ML-34 queries solve in <100ms. **59 tests** (36 Python + 23 JS incl. HiGHS known-answer fixtures); browser pass clean.
+- **Correctness fixes applied** (from the Milestone 2 code review): weapon-slot exclusivity (one main-hand weapon) and capped-target-with-no-source reporting 0.
+- **Known v1 boundary / follow-ups:** the solver optimizes **worn-item affixes** exactly; **set bonuses and augments are displayed but not yet in the objective** (free text in the dataset). Plus 4 lower-priority review findings deferred (see `docs/plans/2026-07-25-001-fix-solver-correctness-plan.md` Deferred-to-Follow-Up).
 
 ## Files
 - `docs/plans/2026-07-24-001-feat-ddo-loadout-optimizer-plan.md` — the unified plan (Product Contract + Implementation Units U1–U8). Feed this to `/ce-work` to build.
