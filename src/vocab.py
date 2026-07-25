@@ -2,9 +2,13 @@
 
 `BONUS_TYPES` (from the parser) is the canonical bonus-type set. `CORE_STATS`
 is the set of optimizer-target-relevant stats — the affixes a user actually
-ranks. A stat outside CORE_STATS is not fatal; it simply is not
-"target-relevant", which is what U4 uses to decide whether an item must be
-quarantined vs. merely have a line flagged.
+ranks.
+
+Scope note: `CORE_STATS` / `is_core_stat` are **solver-facing scaffolding** for
+Milestone 2 (target-relevance is applied at query time). The U4 verification
+gate (`verify.py`) does NOT consume them — it quarantines purely on whether an
+item has any solver-eligible affix. `normalize_stat` IS used by U3 to
+canonicalize affix stat names during variant expansion.
 """
 from __future__ import annotations
 

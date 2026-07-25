@@ -29,9 +29,12 @@ _NOISE = re.compile(
     r"weapon slots|slots:| Boost \+)",
 )
 _TRAILING_PAREN = re.compile(r"^(.*?)\s*\(([^)]+)\)\s*$")
-_VALUE_LAST = re.compile(r"^(.*?)\s*\+?\s*(\d+)(%?)$")
-_VALUE_FIRST = re.compile(r"^\+(\d+)(%?)\s+(.*)$")
+# sign is captured so penalties keep their negative value (e.g. "Concentration -50")
+_VALUE_LAST = re.compile(r"^(.*?)\s*([+-]?)\s*(\d+)(%?)$")
+_VALUE_FIRST = re.compile(r"^([+-])(\d+)(%?)\s+(.*)$")
 _SCALING = re.compile(r"\+?(\d+)(%?)\s*ML(\d+)\D+?(\d+)(%?)\s*ML(\d+)")
+# integers that are NOT magnitudes: weapon dice, crit ranges/multipliers, procs.
+_NON_MAGNITUDE = re.compile(r"(\d+d\d+|/x\d|\d+-\d+/|Randomly rolls|slotted:|charges|/day)", re.I)
 
 
 def _split_type(stat_part: str) -> tuple[str, str]:
@@ -60,12 +63,13 @@ def _parse_value_bearing(text: str, raw: str, forced_type: Optional[str] = None)
     # value-first: "+5 Enhancement Bonus", "+15% attack speed"
     m = _VALUE_FIRST.match(text)
     if m:
-        value, pct, remainder = int(m.group(1)), m.group(2), m.group(3).strip()
+        sign, digits, pct, remainder = m.group(1), m.group(2), m.group(3), m.group(4).strip()
+        value = int(sign + digits)
         unit = "pct" if pct else "flat"
         btype, rest = _split_type(remainder)
         rest = re.sub(r"^(bonus to|bonus|to)\s+", "", rest, flags=re.I).strip()
         rest = re.sub(r"\s+bonus$", "", rest, flags=re.I).strip()
-        stat = rest or (remainder if btype == "Enhancement" else remainder)
+        stat = rest or remainder
         return [_affix(stat or "Enhancement Bonus", forced_type or btype, value, unit, raw)]
 
     # trailing paren: "Disable Device +19 (Competence)", "... (PRR/MRR)", "Damage +8 (Deadly)"
@@ -86,15 +90,17 @@ def _parse_value_bearing(text: str, raw: str, forced_type: Optional[str] = None)
         outer_m = _VALUE_LAST.match(outer)
         if outer_m and outer_m.group(1).strip().lower() in {"damage", "hit and damage"} \
                 and " " not in inner:
-            unit = "pct" if outer_m.group(3) else "flat"
-            return [_affix(inner, "Enhancement", int(outer_m.group(2)), unit, raw)]
+            unit = "pct" if outer_m.group(4) else "flat"
+            return [_affix(inner, "Enhancement", int(outer_m.group(2) + outer_m.group(3)), unit, raw)]
         # otherwise ignore the paren qualifier and parse the outer part
         return _parse_value_bearing(outer, raw)
 
     # value-last: "Quality Intelligence +3", "Accuracy +12", "Armor-Piercing 12%", "Bleeding 4"
     m = _VALUE_LAST.match(text)
     if m and m.group(1).strip():
-        stat_part, value, pct = m.group(1).strip(), int(m.group(2)), m.group(3)
+        stat_part = m.group(1).strip()
+        value = int(m.group(2) + m.group(3))  # signed
+        pct = m.group(4)
         unit = "pct" if pct else "flat"
         if forced_type:
             btype, stat = forced_type, stat_part
@@ -145,6 +151,11 @@ def parse_line(line: str) -> dict:
     if _NOISE.search(text):
         return {**base, "kind": "noise"}
 
+    # A trailing integer inside a dice/crit/proc line is not a magnitude — flag it
+    # so the greedy value-last branch below never mints a false affix.
+    if _NON_MAGNITUDE.search(text):
+        return {**base, "kind": "unparsed", "reason": "non-magnitude (dice/crit/proc/descriptive)"}
+
     affixes = _parse_value_bearing(text, raw)
     if affixes:
         return {**base, "kind": "affix", "affixes": affixes}
@@ -154,7 +165,12 @@ def parse_line(line: str) -> dict:
 
 
 def parse_enhancements(lines) -> dict:
-    """Parse an item's whole `enhancements[]`, bucketed for the verification gate."""
+    """Parse an item's whole `enhancements[]`, bucketed for the verification gate.
+
+    Tier-unaware: `ML<n>: ...` tier lines and their comma-separated affixes are
+    handled by `variants.expand_item`, which strips/splits them before calling
+    this. Do not call this directly on a raw tiered seed item.
+    """
     out = {"affixes": [], "flagged": [], "scaling": [], "rolls": []}
     for line in lines or []:
         r = parse_line(line)

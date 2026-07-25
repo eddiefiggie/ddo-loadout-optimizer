@@ -9,16 +9,16 @@
     "coverage": {
       "by_slot": {
         "Trinket": {
-          "verified": 4,
-          "quarantined": 3
+          "verified": 3,
+          "quarantined": 4
         },
         "Helmet": {
           "verified": 6,
           "quarantined": 1
         },
         "Goggles": {
-          "verified": 4,
-          "quarantined": 2
+          "verified": 3,
+          "quarantined": 3
         },
         "Swappable": {
           "verified": 8,
@@ -29,12 +29,12 @@
           "quarantined": 1
         },
         "Cloak": {
-          "verified": 7,
-          "quarantined": 0
+          "verified": 6,
+          "quarantined": 1
         },
         "Armor": {
-          "verified": 10,
-          "quarantined": 0
+          "verified": 8,
+          "quarantined": 2
         },
         "Belt": {
           "verified": 3,
@@ -69,8 +69,8 @@
           "quarantined": 3
         },
         "Quiver": {
-          "verified": 3,
-          "quarantined": 0
+          "verified": 2,
+          "quarantined": 1
         },
         "Repeating Heavy Crossbow": {
           "verified": 1,
@@ -89,8 +89,8 @@
           "quarantined": 0
         },
         "Yellow": {
-          "verified": 9,
-          "quarantined": 2
+          "verified": 8,
+          "quarantined": 3
         },
         "Red": {
           "verified": 0,
@@ -106,8 +106,8 @@
         }
       },
       "totals": {
-        "verified": 142,
-        "quarantined": 32
+        "verified": 135,
+        "quarantined": 39
       },
       "variant_count": 174
     },
@@ -465,7 +465,7 @@
       "flagged": [
         {
           "raw": "Good Hope (3 charges, 3/day)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         },
         {
           "raw": "High Spirits",
@@ -944,7 +944,7 @@
       "flagged": [
         {
           "raw": "Invisibility (1 charge, 1/day)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         },
         {
           "raw": "Ghostly",
@@ -1006,7 +1006,7 @@
       "flagged": [
         {
           "raw": "Blur (3 charges, 3/day)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         },
         {
           "raw": "Haste Guard",
@@ -1427,7 +1427,7 @@
       "flagged": [
         {
           "raw": "Invisibility (1 charge, 1/day)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         },
         {
           "raw": "Ethereal",
@@ -2067,7 +2067,7 @@
       "flagged": [
         {
           "raw": "Invisibility (3 charges, 3/day)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         },
         {
           "raw": "Ghostly",
@@ -2708,14 +2708,6 @@
           "unit": "flat",
           "raw": "+4 Enhancement Bonus",
           "eligible": true
-        },
-        {
-          "stat": "Crit 18-20/x",
-          "bonus_type": "Enhancement",
-          "value": 3,
-          "unit": "flat",
-          "raw": "Crit 18-20/x3",
-          "eligible": true
         }
       ],
       "scaling": [],
@@ -2727,7 +2719,11 @@
         },
         {
           "raw": "Damage 1.50[1d8]+4 Pierce/Magic",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
+        },
+        {
+          "raw": "Crit 18-20/x3",
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         },
         {
           "raw": "DEX-based",
@@ -2738,7 +2734,7 @@
       "armor_type": null,
       "tier_values_incomplete": false,
       "tier_ml_list": null,
-      "eligible_affix_count": 2,
+      "eligible_affix_count": 1,
       "verification": "verified",
       "verification_reasons": []
     },
@@ -3250,9 +3246,9 @@
       "set_bonus": [],
       "affixes": [
         {
-          "stat": "Concentration -",
+          "stat": "Concentration",
           "bonus_type": "Enhancement",
-          "value": 50,
+          "value": -50,
           "unit": "flat",
           "raw": "Concentration -50",
           "eligible": true
@@ -3999,7 +3995,7 @@
       "flagged": [
         {
           "raw": "Invisibility (3 charges, 3/day)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         },
         {
           "raw": "Enhanced Ghostly",
@@ -4517,7 +4513,7 @@
       "flagged": [
         {
           "raw": "Conjure Radiant Bolt (1/day, summons The Everstar)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         },
         {
           "raw": "Mind Tear",
@@ -4626,19 +4622,14 @@
       "wiki_url": "https://ddowiki.com/page/Item:Epic_Purifying_Quiver",
       "augment_slots": [],
       "set_bonus": [],
-      "affixes": [
-        {
-          "stat": "Burning Ammunition 1d",
-          "bonus_type": "Enhancement",
-          "value": 8,
-          "unit": "flat",
-          "raw": "Burning Ammunition 1d8",
-          "eligible": true
-        }
-      ],
+      "affixes": [],
       "scaling": [],
       "roll_groups": [],
       "flagged": [
+        {
+          "raw": "Burning Ammunition 1d8",
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
+        },
         {
           "raw": "Blunted Ammunition",
           "reason": "no parseable magnitude"
@@ -4648,9 +4639,12 @@
       "armor_type": null,
       "tier_values_incomplete": false,
       "tier_ml_list": null,
-      "eligible_affix_count": 1,
-      "verification": "verified",
-      "verification_reasons": []
+      "eligible_affix_count": 0,
+      "verification": "quarantined",
+      "verification_reasons": [
+        "non-magnitude (dice/crit/proc/descriptive)",
+        "no parseable magnitude"
+      ]
     },
     {
       "source_item": "Skullduggery Cap",
@@ -4699,7 +4693,7 @@
       "flagged": [
         {
           "raw": "Death Ward (3 charges, 3/day)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         }
       ],
       "restrictions": "unknown",
@@ -4766,7 +4760,7 @@
       "flagged": [
         {
           "raw": "Death Ward, Mass (3 charges, 3/day)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         },
         {
           "raw": "Trap the Soul Guard",
@@ -4837,7 +4831,7 @@
       "flagged": [
         {
           "raw": "Death Ward, Mass (3 charges, 3/day)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         },
         {
           "raw": "Trap the Soul Guard",
@@ -4874,7 +4868,7 @@
       "flagged": [
         {
           "raw": "Spell Absorption — 20 charges, no recharge (base)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         },
         {
           "raw": "Suppressed Power",
@@ -4882,7 +4876,7 @@
         },
         {
           "raw": "Upgraded: Spell Absorption — 50 charges (15/day recharge)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         }
       ],
       "restrictions": "unknown",
@@ -4892,9 +4886,9 @@
       "eligible_affix_count": 0,
       "verification": "quarantined",
       "verification_reasons": [
+        "non-magnitude (dice/crit/proc/descriptive)",
         "no parseable magnitude",
-        "no parseable magnitude",
-        "no parseable magnitude"
+        "non-magnitude (dice/crit/proc/descriptive)"
       ]
     },
     {
@@ -4942,7 +4936,7 @@
       "flagged": [
         {
           "raw": "Shield (3 charges, 3/day)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         }
       ],
       "restrictions": "unknown",
@@ -4971,7 +4965,7 @@
       "flagged": [
         {
           "raw": "Greater Heroism (1 charge, 1/day)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         },
         {
           "raw": "Chaosguard",
@@ -4985,7 +4979,7 @@
       "eligible_affix_count": 0,
       "verification": "quarantined",
       "verification_reasons": [
-        "no parseable magnitude",
+        "non-magnitude (dice/crit/proc/descriptive)",
         "no parseable magnitude"
       ]
     },
@@ -5042,7 +5036,7 @@
       "flagged": [
         {
           "raw": "Good Hope (3 charges, 3/day)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         }
       ],
       "restrictions": "unknown",
@@ -5106,7 +5100,7 @@
       "flagged": [
         {
           "raw": "Good Hope (3 charges, 3/day)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         }
       ],
       "restrictions": "unknown",
@@ -5148,7 +5142,7 @@
       "flagged": [
         {
           "raw": "Major Mnemonic Aid (CL15, 3/day)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         }
       ],
       "restrictions": "unknown",
@@ -5158,7 +5152,7 @@
       "eligible_affix_count": 0,
       "verification": "quarantined",
       "verification_reasons": [
-        "no parseable magnitude"
+        "non-magnitude (dice/crit/proc/descriptive)"
       ]
     },
     {
@@ -5192,7 +5186,7 @@
       "flagged": [
         {
           "raw": "Major Mnemonic Aid (CL15, 5/day)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         }
       ],
       "restrictions": "unknown",
@@ -5202,7 +5196,7 @@
       "eligible_affix_count": 0,
       "verification": "quarantined",
       "verification_reasons": [
-        "no parseable magnitude"
+        "non-magnitude (dice/crit/proc/descriptive)"
       ]
     },
     {
@@ -5352,7 +5346,7 @@
         },
         {
           "raw": "slotted: Ruby of Flame (1D6)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         }
       ],
       "restrictions": "unknown",
@@ -5364,7 +5358,7 @@
       "verification_reasons": [
         "no parseable magnitude",
         "no parseable magnitude",
-        "no parseable magnitude"
+        "non-magnitude (dice/crit/proc/descriptive)"
       ]
     },
     {
@@ -5463,16 +5457,7 @@
         "Yellow"
       ],
       "set_bonus": [],
-      "affixes": [
-        {
-          "stat": "slotted: Topaz of Ranged Power",
-          "bonus_type": "Enhancement",
-          "value": 6,
-          "unit": "flat",
-          "raw": "slotted: Topaz of Ranged Power +6 (Yellow)",
-          "eligible": true
-        }
-      ],
+      "affixes": [],
       "scaling": [],
       "roll_groups": [],
       "flagged": [
@@ -5487,15 +5472,24 @@
         {
           "raw": "Insightful Search",
           "reason": "no parseable magnitude"
+        },
+        {
+          "raw": "slotted: Topaz of Ranged Power +6 (Yellow)",
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         }
       ],
       "restrictions": "unknown",
       "armor_type": null,
       "tier_values_incomplete": false,
       "tier_ml_list": null,
-      "eligible_affix_count": 1,
-      "verification": "verified",
-      "verification_reasons": []
+      "eligible_affix_count": 0,
+      "verification": "quarantined",
+      "verification_reasons": [
+        "no parseable magnitude",
+        "no parseable magnitude",
+        "no parseable magnitude",
+        "non-magnitude (dice/crit/proc/descriptive)"
+      ]
     },
     {
       "source_item": "Cannith Crafted Helm — Sheltering / Accuracy",
@@ -5668,16 +5662,7 @@
       "wiki_url": "https://ddowiki.com/page/Essence_Crafting",
       "augment_slots": [],
       "set_bonus": [],
-      "affixes": [
-        {
-          "stat": "slotted: Topaz of Feather Fall + Diamond of Exceptional Intelligence",
-          "bonus_type": "Enhancement",
-          "value": 1,
-          "unit": "flat",
-          "raw": "slotted: Topaz of Feather Fall + Diamond of Exceptional Intelligence +1",
-          "eligible": true
-        }
-      ],
+      "affixes": [],
       "scaling": [],
       "roll_groups": [],
       "flagged": [
@@ -5692,15 +5677,24 @@
         {
           "raw": "Fire Absorption",
           "reason": "no parseable magnitude"
+        },
+        {
+          "raw": "slotted: Topaz of Feather Fall + Diamond of Exceptional Intelligence +1",
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         }
       ],
       "restrictions": "unknown",
       "armor_type": null,
       "tier_values_incomplete": false,
       "tier_ml_list": null,
-      "eligible_affix_count": 1,
-      "verification": "verified",
-      "verification_reasons": []
+      "eligible_affix_count": 0,
+      "verification": "quarantined",
+      "verification_reasons": [
+        "no parseable magnitude",
+        "no parseable magnitude",
+        "no parseable magnitude",
+        "non-magnitude (dice/crit/proc/descriptive)"
+      ]
     },
     {
       "source_item": "Cannith Crafted Belt — Constitution of False Life",
@@ -5732,7 +5726,7 @@
         },
         {
           "raw": "slotted: The Master's Gift (XP); later Topaz of Vitality",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         }
       ],
       "restrictions": "unknown",
@@ -5745,7 +5739,7 @@
         "no parseable magnitude",
         "no parseable magnitude",
         "no parseable magnitude",
-        "no parseable magnitude"
+        "non-magnitude (dice/crit/proc/descriptive)"
       ]
     },
     {
@@ -5967,16 +5961,7 @@
         "ideally Green + Blue"
       ],
       "set_bonus": [],
-      "affixes": [
-        {
-          "stat": "slotted: Sapphire of Heavy Fortification + Sapphire of Resistance",
-          "bonus_type": "Enhancement",
-          "value": 4,
-          "unit": "flat",
-          "raw": "slotted: Sapphire of Heavy Fortification + Sapphire of Resistance +4",
-          "eligible": true
-        }
-      ],
+      "affixes": [],
       "scaling": [],
       "roll_groups": [],
       "flagged": [
@@ -5991,15 +5976,24 @@
         {
           "raw": "Parrying (crafted)",
           "reason": "no parseable magnitude"
+        },
+        {
+          "raw": "slotted: Sapphire of Heavy Fortification + Sapphire of Resistance +4",
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         }
       ],
       "restrictions": "unknown",
       "armor_type": "unknown",
       "tier_values_incomplete": false,
       "tier_ml_list": null,
-      "eligible_affix_count": 1,
-      "verification": "verified",
-      "verification_reasons": []
+      "eligible_affix_count": 0,
+      "verification": "quarantined",
+      "verification_reasons": [
+        "no parseable magnitude",
+        "no parseable magnitude",
+        "no parseable magnitude",
+        "non-magnitude (dice/crit/proc/descriptive)"
+      ]
     },
     {
       "source_item": "Magecraft Fearsome Docent",
@@ -6015,16 +6009,7 @@
         "ideally Green + Blue"
       ],
       "set_bonus": [],
-      "affixes": [
-        {
-          "stat": "slotted: Sapphire of Heavy Fortification + Sapphire of Resistance",
-          "bonus_type": "Enhancement",
-          "value": 4,
-          "unit": "flat",
-          "raw": "slotted: Sapphire of Heavy Fortification + Sapphire of Resistance +4",
-          "eligible": true
-        }
-      ],
+      "affixes": [],
       "scaling": [],
       "roll_groups": [],
       "flagged": [
@@ -6039,15 +6024,24 @@
         {
           "raw": "Parrying (crafted)",
           "reason": "no parseable magnitude"
+        },
+        {
+          "raw": "slotted: Sapphire of Heavy Fortification + Sapphire of Resistance +4",
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         }
       ],
       "restrictions": "unknown",
       "armor_type": "unknown",
       "tier_values_incomplete": false,
       "tier_ml_list": null,
-      "eligible_affix_count": 1,
-      "verification": "verified",
-      "verification_reasons": []
+      "eligible_affix_count": 0,
+      "verification": "quarantined",
+      "verification_reasons": [
+        "no parseable magnitude",
+        "no parseable magnitude",
+        "no parseable magnitude",
+        "non-magnitude (dice/crit/proc/descriptive)"
+      ]
     },
     {
       "source_item": "Dino Bone Heavy Crossbow",
@@ -6070,7 +6064,7 @@
       "flagged": [
         {
           "raw": "Meltscale (Crystal & Byeshk bypass, 15D6 Acid on hit)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         },
         {
           "raw": "Meltfang (Evil DR bypass, Acid DoT)",
@@ -6086,7 +6080,7 @@
         },
         {
           "raw": "slotted: Deconstructor + Lifetaker",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         }
       ],
       "restrictions": "unknown",
@@ -6096,11 +6090,11 @@
       "eligible_affix_count": 0,
       "verification": "quarantined",
       "verification_reasons": [
+        "non-magnitude (dice/crit/proc/descriptive)",
         "no parseable magnitude",
         "no parseable magnitude",
         "no parseable magnitude",
-        "no parseable magnitude",
-        "no parseable magnitude"
+        "non-magnitude (dice/crit/proc/descriptive)"
       ]
     },
     {
@@ -6184,31 +6178,29 @@
           "wiki_url": "https://ddowiki.com/page/Named_item_sets"
         }
       ],
-      "affixes": [
-        {
-          "stat": "Randomly rolls one Legendary set bonus from Pool 1 (incl. Legendary Vulkoor's Might) and one from Pool",
-          "bonus_type": "Enhancement",
-          "value": 2,
-          "unit": "flat",
-          "raw": "Randomly rolls one Legendary set bonus from Pool 1 (incl. Legendary Vulkoor's Might) and one from Pool 2",
-          "eligible": true
-        }
-      ],
+      "affixes": [],
       "scaling": [],
       "roll_groups": [],
       "flagged": [
         {
           "raw": "Craftable (hidden)",
           "reason": "no parseable magnitude"
+        },
+        {
+          "raw": "Randomly rolls one Legendary set bonus from Pool 1 (incl. Legendary Vulkoor's Might) and one from Pool 2",
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         }
       ],
       "restrictions": "unknown",
       "armor_type": null,
       "tier_values_incomplete": false,
       "tier_ml_list": null,
-      "eligible_affix_count": 1,
-      "verification": "verified",
-      "verification_reasons": []
+      "eligible_affix_count": 0,
+      "verification": "quarantined",
+      "verification_reasons": [
+        "no parseable magnitude",
+        "non-magnitude (dice/crit/proc/descriptive)"
+      ]
     },
     {
       "source_item": "Legendary Night Brigade Necklace",
@@ -6899,14 +6891,6 @@
           "eligible": true
         },
         {
-          "stat": "Crit 19-20/x",
-          "bonus_type": "Enhancement",
-          "value": 2,
-          "unit": "flat",
-          "raw": "Crit 19-20/x2",
-          "eligible": true
-        },
-        {
           "stat": "Armor-Piercing",
           "bonus_type": "Legendary",
           "value": 5,
@@ -6920,7 +6904,11 @@
       "flagged": [
         {
           "raw": "Damage 5.60[1d10+3]+15 Pierce; Silver, Magic",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
+        },
+        {
+          "raw": "Crit 19-20/x2",
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         },
         {
           "raw": "DEX-based (Attack & Damage Mod)",
@@ -6951,7 +6939,7 @@
       "armor_type": null,
       "tier_values_incomplete": false,
       "tier_ml_list": null,
-      "eligible_affix_count": 3,
+      "eligible_affix_count": 2,
       "verification": "verified",
       "verification_reasons": []
     },
@@ -6982,14 +6970,6 @@
           "unit": "flat",
           "raw": "+15 Enhancement Bonus",
           "eligible": true
-        },
-        {
-          "stat": "Crit 19-20/x",
-          "bonus_type": "Enhancement",
-          "value": 2,
-          "unit": "flat",
-          "raw": "Crit 19-20/x2",
-          "eligible": true
         }
       ],
       "scaling": [],
@@ -6997,7 +6977,11 @@
       "flagged": [
         {
           "raw": "Damage 6[1d8+3]+15 Pierce; Silver/Adamantine/Mithril/Cold Iron/Byeshk/Magic",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
+        },
+        {
+          "raw": "Crit 19-20/x2",
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         },
         {
           "raw": "DEX-based",
@@ -7016,7 +7000,7 @@
       "armor_type": null,
       "tier_values_incomplete": false,
       "tier_ml_list": null,
-      "eligible_affix_count": 2,
+      "eligible_affix_count": 1,
       "verification": "verified",
       "verification_reasons": []
     },
@@ -8070,9 +8054,9 @@
       "set_bonus": [],
       "affixes": [
         {
-          "stat": "Arcane Spell Failure -",
+          "stat": "Arcane Spell Failure",
           "bonus_type": "Enhancement",
-          "value": 15,
+          "value": -15,
           "unit": "pct",
           "raw": "Arcane Spell Failure -15% (Enhancement)",
           "eligible": true
@@ -8173,7 +8157,7 @@
       "flagged": [
         {
           "raw": "Fire damage on hit (+1d6 at ML1, scaling to +9d6 at ML32)",
-          "reason": "no parseable magnitude"
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
         }
       ],
       "restrictions": "unknown",
@@ -8183,7 +8167,7 @@
       "eligible_affix_count": 0,
       "verification": "quarantined",
       "verification_reasons": [
-        "no parseable magnitude"
+        "non-magnitude (dice/crit/proc/descriptive)"
       ]
     },
     {
@@ -9021,26 +9005,24 @@
       "wiki_url": "https://ddowiki.com/page/Item:Legendary_Moment_to_Legendary_Moment",
       "augment_slots": [],
       "set_bonus": [],
-      "affixes": [
-        {
-          "stat": "Action Boost Charges",
-          "bonus_type": "Enhancement",
-          "value": 3,
-          "unit": "flat",
-          "raw": "+3 Enhancement bonus to Action Boost Charges",
-          "eligible": true
-        }
-      ],
+      "affixes": [],
       "scaling": [],
       "roll_groups": [],
-      "flagged": [],
+      "flagged": [
+        {
+          "raw": "+3 Enhancement bonus to Action Boost Charges",
+          "reason": "non-magnitude (dice/crit/proc/descriptive)"
+        }
+      ],
       "restrictions": "unknown",
       "armor_type": null,
       "tier_values_incomplete": false,
       "tier_ml_list": null,
-      "eligible_affix_count": 1,
-      "verification": "verified",
-      "verification_reasons": []
+      "eligible_affix_count": 0,
+      "verification": "quarantined",
+      "verification_reasons": [
+        "non-magnitude (dice/crit/proc/descriptive)"
+      ]
     },
     {
       "source_item": "Topaz of Ranged Power (generic)",

@@ -30,9 +30,10 @@ def _parse_tier_ml_list(upgradeable: str):
 
 
 def _normalize_affixes(affixes):
-    for a in affixes:
-        a["stat"] = vocab.normalize_stat(a["stat"])
-    return affixes
+    # Return fresh dicts: this both canonicalizes the stat and de-aliases the
+    # affix objects so a base affix shared across tier variants is never mutated
+    # in place by a later stage (e.g. verify's per-affix eligibility flag).
+    return [{**a, "stat": vocab.normalize_stat(a["stat"])} for a in affixes]
 
 
 def _make_variant(item, ml, tier_label, parsed):
@@ -99,5 +100,9 @@ def expand_item(item) -> list:
 def expand_dataset(items) -> list:
     variants = []
     for item in items:
-        variants.extend(expand_item(item))
+        try:
+            variants.extend(expand_item(item))
+        except (KeyError, TypeError, AttributeError) as exc:
+            name = item.get("name", "<unnamed>") if isinstance(item, dict) else "<non-dict>"
+            raise ValueError(f"failed to expand seed item {name!r}: {exc!r}") from exc
     return variants

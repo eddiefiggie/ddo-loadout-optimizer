@@ -92,3 +92,34 @@ def test_vocab_core_stats_and_aliases():
     assert not vocab.is_core_stat("Featherfalling")
     assert vocab.is_known_bonus_type("Insightful")
     assert not vocab.is_known_bonus_type("Bogus")
+    assert vocab.normalize_stat("Con") == "Constitution"
+    assert vocab.normalize_stat("Intelligence") == "Intelligence"
+
+
+def test_expand_item_canonicalizes_alias_stats():
+    # a synthetic item whose affix stat is an alias must come out canonicalized
+    synthetic = {
+        "name": "Test Ring", "guide_source": "test", "category": "item",
+        "slot": "Ring", "minimum_level": 10, "binding": None,
+        "location_quest": "", "enhancements": ["Con +5"], "upgradeable": "No",
+        "augment_slots": [], "description": "", "wiki_url": "", "notes": "",
+        "set_bonus": [],
+    }
+    v = expand_item(synthetic)[0]
+    assert any(a["stat"] == "Constitution" for a in v["affixes"])
+
+
+def test_tier_variants_do_not_share_affix_objects():
+    # regression: base affixes must not be aliased across tier variants
+    variants = expand_item(_seed_item("Ring of the Stalker"))
+    ids = [id(a) for v in variants for a in v["affixes"]]
+    assert len(ids) == len(set(ids)), "affix dicts are shared across variants"
+
+
+def test_expand_dataset_wraps_bad_item_with_name():
+    bad = {"name": "Broken Item"}  # missing required fields
+    try:
+        expand_dataset([bad])
+        assert False, "expected ValueError"
+    except ValueError as e:
+        assert "Broken Item" in str(e)

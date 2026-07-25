@@ -127,20 +127,62 @@ def test_value_less_named_is_flagged_not_fatal():
 
 # --- (a) essence-crafting effect-identity coverage ---
 
-def test_essence_crafting_effects_are_recognized():
-    """For essence-crafted goggles the parser should surface the effect names
-    (Seeker/Deadly/Search/Spot) that the ground-truth layout records, proving
-    effect identity even where magnitudes are absent."""
+def test_essence_crafting_effects_surfaced_by_parser():
+    """Run the essence-crafted items' real lines THROUGH the parser and assert
+    the ground-truth effect identities (Seeker/Deadly/Search/Spot) are surfaced
+    (as affixes or flagged), never silently dropped as noise. This ties parser
+    output to oracle (a) — the earlier version grepped the seed and tested
+    nothing about the parser."""
     d = json.load(open(SEED, encoding="utf-8"))
-    layout = d["metadata"]["essence_crafting_verification"]["per_item_affix_layout"]
-    # The layout records effect identities; assert the vocabulary it names is a
-    # vocabulary our parser also recognizes as stats (not dropped as noise).
-    named_effects = set()
-    for desc in layout.values():
-        for part in desc.replace("|", " ").split():
-            named_effects.add(part.strip(":,"))
-    for effect in ["Seeker", "Deadly", "Search", "Spot"]:
-        assert effect in " ".join(layout.values()), f"{effect} missing from ground truth"
+    surfaced = set()
+    for item in d["items"]:
+        if item["category"] != "essence_crafted":
+            continue
+        for line in item.get("enhancements", []):
+            r = parse_line(line)
+            # an essence effect name must not be classified as noise
+            for effect in ["Seeker", "Deadly", "Search", "Spot"]:
+                if effect in line:
+                    assert r["kind"] != "noise", f"{line!r} wrongly dropped as noise"
+                    surfaced.add(effect)
+    # the goggles guarantee Seeker and Deadly are present in the seed
+    assert {"Seeker", "Deadly"} <= surfaced
+
+
+def test_negative_magnitude_keeps_its_sign():
+    a = _one("Concentration -50")
+    assert a["stat"] == "Concentration" and a["value"] == -50
+
+
+def test_dice_crit_proc_lines_are_not_affixes():
+    for line in ["Crit 18-20/x3", "Burning Ammunition 1d8", "Crit 19-20/x2",
+                 "Blur (3 charges, 3/day)"]:
+        r = parse_line(line)
+        assert r["kind"] == "unparsed", f"{line!r} should be unparsed, got {r['kind']}"
+        assert r["affixes"] == []
+
+
+def test_value_first_percent_unit():
+    a = _one("+15% attack speed")
+    assert a["value"] == 15 and a["unit"] == "pct" and a["stat"] == "attack speed"
+
+
+def test_trailing_paren_unknown_qualifier_falls_back_to_outer():
+    a = _one("Sheltering +10 (Feywild)")
+    assert a["stat"] == "Sheltering" and a["value"] == 10
+
+
+def test_empty_and_none_lines_are_noise():
+    assert parse_line("")["kind"] == "noise"
+    assert parse_line(None)["kind"] == "noise"
+    assert parse_line("   ")["kind"] == "noise"
+    r = parse_enhancements(None)
+    assert r == {"affixes": [], "flagged": [], "scaling": [], "rolls": []}
+
+
+def test_scaling_extracts_bonus_type():
+    s = parse_line("Dodge % (Enhancement; +1% ML1 up to +14% ML32)")["scaling"]
+    assert s["bonus_type"] == "Enhancement"
 
 
 # --- whole-seed sweep: no exceptions, per-affix tolerance ---
