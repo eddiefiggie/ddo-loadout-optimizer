@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DDO Loadout Optimizer</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>DDO Loadout Optimizer</h1>
+    <p class="tagline">Wiki-sourced gear database &amp; best-in-slot solver</p>
+  </header>
+
+  <main id="app">
+    <section id="browse" class="panel">
+      <h2>Item Browser</h2>
+      <div id="browse-controls" class="controls"><!-- filters injected by browse.js --></div>
+      <p id="browse-status" class="status"></p>
+      <div id="browse-results"><!-- rows injected by browse.js --></div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <span id="dataset-info"></span>
+    <span> · All item data sourced from the <a href="https://ddowiki.com" rel="noopener">DDO Wiki</a>.</span>
+  </footer>
+
+  <script src="app.js"></script>
+  <script src="browse.js"></script>
+</body>
+</html>
