@@ -70,4 +70,42 @@ test("nearMissSetHints stays silent when not exactly one short", () => {
   assert.strictEqual(R.nearMissSetHints(chosen, ["Dodge"]).length, 0);
 });
 
+// ---- U5: Dino insert assignment + coverage disclosure ----
+function chosenBlank(id, slot, dinoTypes) {
+  return { slot, variant: { variant_id: id, slot, dino_slots_norm: dinoTypes || [] } };
+}
+function placedInsert(dino_type, stat, bonus_type, value) {
+  return { dino_type, stat, bonus_type, value, wiki_url: "wiki" };
+}
+
+test("assignDinoInserts drops each placed insert into a matching-type slot", () => {
+  const chosen = [chosenBlank("Boots", "Boots", ["Scale", "Claw"])];
+  const placed = [
+    placedInsert("Scale", "Constitution", "Enhancement", 14),
+    placedInsert("Claw", "Physical Resistance Rating", "Enhancement", 35),
+  ];
+  const out = R.assignDinoInserts(chosen, placed);
+  const stats = out.byIndex.get(0).map((d) => d.stat).sort();
+  assert.deepStrictEqual(stats, ["Constitution", "Physical Resistance Rating"]);
+  assert.strictEqual(out.unplaced.length, 0);
+});
+
+test("assignDinoInserts respects per-type slot capacity", () => {
+  const chosen = [chosenBlank("Boots", "Boots", ["Scale"])]; // one Scale slot
+  const placed = [
+    placedInsert("Scale", "Constitution", "Enhancement", 14),
+    placedInsert("Scale", "Strength", "Enhancement", 14),
+  ];
+  const out = R.assignDinoInserts(chosen, placed);
+  assert.strictEqual(out.byIndex.get(0).length, 1, "only one fits the single Scale slot");
+  assert.strictEqual(out.unplaced.length, 1);
+});
+
+test("coverageNote discloses Dino crafting as optimized + names the pending pools", () => {
+  const note = R.coverageNote({ metadata: { dino_coverage: { inserts_eligible: 55 } } });
+  assert.ok(/Isle of Dread Dino crafting/.test(note), "names Dino crafting as optimized");
+  assert.ok(/55 Accessory inserts/.test(note), "shows the eligible count");
+  assert.ok(/Weapon\/Armor\/Raid/.test(note), "discloses the pending pools honestly");
+});
+
 console.log(`\n${passed} passed`);

@@ -40,6 +40,8 @@ def _blank_variant(layout):
     return {
         "name": layout["item"],
         "item": layout["item"],
+        "variant_id": layout["item"],   # results.js renders v.variant_id
+        "source_item": layout["item"],
         "slot": slot,
         "category": "item",
         # Pre-verified: a blank hosts Dino slots, so it is solver-eligible even
