@@ -22,9 +22,11 @@ from src.variants import expand_dataset
 from src import verify as verify_mod
 from src import colors as colors_mod
 from src import set_parser as set_mod
+from src import dino as dino_mod
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SEED_PATH = os.path.join(HERE, "data", "seed", "ddo_items.json")
+DINO_SEED_PATH = os.path.join(HERE, "data", "seed", "dino_crafting.json")
 # Output lands inside web/ so that directory is a self-contained, deployable
 # site root (GitHub Pages serves web/ as the root; the app fetches data/ relatively).
 OUT_PATH = os.path.join(HERE, "web", "data", "items.json")
@@ -32,6 +34,14 @@ OUT_PATH = os.path.join(HERE, "web", "data", "items.json")
 
 def load_seed(path: str = SEED_PATH) -> dict:
     """Load the immutable seed dataset."""
+    with open(path, "r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def load_dino_seed(path: str = DINO_SEED_PATH) -> dict:
+    """Load the Dino-crafting seed (freshly sourced; separate from the base seed)."""
+    if not os.path.exists(path):
+        return {}
     with open(path, "r", encoding="utf-8") as fh:
         return json.load(fh)
 
@@ -49,6 +59,15 @@ def build(seed: dict) -> dict:
         colors_mod.annotate_variant(v)
         set_mod.annotate_variant(v)                     # U4 set-bonus threshold parsing
     variants, cov = verify_mod.apply(variants)          # per-affix verification gate
+
+    # U3 — Isle of Dread Dino crafting: append pre-verified blank host variants
+    # (they carry typed Dino slots, no base affixes) and expose the insert pool
+    # the solver places into those slots. Blanks are added AFTER verify so their
+    # empty affix list does not quarantine them.
+    dino_seed = load_dino_seed()
+    dino_blanks, dino_inserts, dino_cov = dino_mod.build_dino(dino_seed)
+    variants = variants + dino_blanks
+
     out = {
         "metadata": {
             "title": "DDO Loadout Optimizer — dataset",
@@ -60,9 +79,11 @@ def build(seed: dict) -> dict:
             "coverage": cov,
             "color_coverage": colors_mod.color_coverage(variants),
             "set_coverage": set_mod.set_coverage(variants),
-            "pipeline_stage": "M3-sources",
+            "dino_coverage": dino_cov,
+            "pipeline_stage": "M3-sources+dino",
         },
         "items": variants,
+        "dino_inserts": dino_inserts,
     }
     return out
 
