@@ -1,0 +1,150 @@
+// U6 — solver model builder + dominance pre-filter.
+//
+// Turns (dataset variants, query) into an abstract MILP the LP encoder (U7)
+// consumes. Pure JS, node-testable without HiGHS. The two exactness-preserving
+// reductions here are the eligibility pre-filter and the per-slot dominance
+// (Pareto) pre-filter keyed to the query targets (KTD7).
+
+const WORN_SLOTS = [
+  "Armor", "Helmet", "Goggles", "Necklace", "Trinket", "Cloak",
+  "Belt", "Ring", "Gloves", "Boots", "Bracers", "Quiver",
+];
+const SLOT_CARDINALITY = { Ring: 2 }; // one of every other worn slot
+
+// Approximate DDO max-dodge by armor type (configurable; the mechanism is what
+// matters, not the exact cap). null = uncapped for this query.
+const ARMOR_DODGE_CAP = { cloth: 25, light: 25, medium: 11, heavy: 4 };
+
+/** Resolve an ML-scaling affix to its value at the query ML cap. */
+function scaledValue(s, mlCap) {
+  if (mlCap <= s.ml_lo) return s.val_lo;
+  if (mlCap >= s.ml_hi) return s.val_hi;
+  const t = (mlCap - s.ml_lo) / (s.ml_hi - s.ml_lo);
+  return Math.round(s.val_lo + (s.val_hi - s.val_lo) * t);
+}
+
+/** Map of "stat||type" -> best value this variant provides for a target stat. */
+function variantBuckets(variant, targetSet, mlCap) {
+  const b = new Map();
+  const put = (stat, type, val) => {
+    if (!targetSet.has(stat)) return;
+    const key = `${stat}||${type}`;
+    if (!b.has(key) || b.get(key) < val) b.set(key, val);
+  };
+  for (const a of variant.affixes || []) put(a.stat, a.bonus_type, a.value);
+  for (const s of variant.scaling || []) put(s.stat, s.bonus_type, scaledValue(s, mlCap));
+  return b;
+}
+
+/** Set names this variant belongs to. */
+function variantSets(variant) {
+  return new Set((variant.set_bonus || []).map((s) => s.set).filter(Boolean));
+}
+
+/** Augment-slot colors this variant carries (worn items only). */
+function variantAugColors(variant) {
+  return (variant.augment_slots || []).filter(Boolean);
+}
+
+function eligible(variants, query) {
+  const cap = query.mlCap;
+  return variants.filter((v) => {
+    if (v.verification !== "verified") return false;
+    if (v.minimum_level != null && v.minimum_level > cap) return false;
+    // class/race restrictions are fail-open until sourced (R18 / plan assumption)
+    if (query.classRace && v.restrictions && v.restrictions !== "unknown") {
+      // structured restrictions would be checked here; none exist in the seed yet
+    }
+    return true;
+  });
+}
+
+/** Does A dominate B in the same slot? A must be >= on every bucket, superset
+ *  of sets, and >= augment colors. Dominated variants are never optimal. */
+function dominates(A, B, targetSet, mlCap) {
+  const ba = variantBuckets(A, targetSet, mlCap);
+  const bb = variantBuckets(B, targetSet, mlCap);
+  for (const [key, vb] of bb) {
+    if ((ba.get(key) || 0) < vb) return false;
+  }
+  const sa = variantSets(A);
+  for (const s of variantSets(B)) if (!sa.has(s)) return false;
+  // augment-color multiset: A must have at least as many of each color
+  const ca = countColors(variantAugColors(A));
+  const cb = countColors(variantAugColors(B));
+  for (const [color, n] of cb) if ((ca.get(color) || 0) < n) return false;
+  // strictly better somewhere, OR keep A as the canonical of an equal pair
+  return true;
+}
+
+function countColors(colors) {
+  const m = new Map();
+  for (const c of colors) m.set(c, (m.get(c) || 0) + 1);
+  return m;
+}
+
+/** Per-slot Pareto filter: keep only non-dominated variants for these targets. */
+function dominanceFilter(slotVariants, targetSet, mlCap) {
+  const kept = [];
+  for (let i = 0; i < slotVariants.length; i++) {
+    const A = slotVariants[i];
+    let dominated = false;
+    for (let j = 0; j < slotVariants.length; j++) {
+      if (i === j) continue;
+      const B = slotVariants[j];
+      // B dominates A, and to break exact ties keep the lower index
+      if (dominates(B, A, targetSet, mlCap) && !(dominates(A, B, targetSet, mlCap) && i < j)) {
+        dominated = true;
+        break;
+      }
+    }
+    if (!dominated) kept.push(A);
+  }
+  return kept;
+}
+
+/** Build the abstract model. Returns worn slots (filtered + pruned), the
+ *  augment source pool, target list, and the dodge cap. */
+function buildModel(variants, query) {
+  const targetSet = new Set(query.targets);
+  const mlCap = query.mlCap;
+  const elig = eligible(variants, query);
+
+  const worn = [];
+  for (const slotName of WORN_SLOTS) {
+    let cands = elig.filter((v) => v.slot === slotName);
+    cands = dominanceFilter(cands, targetSet, mlCap);
+    if (cands.length) {
+      worn.push({ slot: slotName, cardinality: SLOT_CARDINALITY[slotName] || 1, variants: cands });
+    }
+  }
+
+  // Weapon-category slots (crossbows, rune arm) as their own single slots.
+  const weaponSlots = [...new Set(elig.filter((v) => v.category === "weapon" || v.category === "runearm").map((v) => v.slot))];
+  for (const slotName of weaponSlots) {
+    let cands = dominanceFilter(elig.filter((v) => v.slot === slotName), targetSet, mlCap);
+    if (cands.length) worn.push({ slot: slotName, cardinality: 1, variants: cands });
+  }
+
+  // Augment pool: augments (category augment) as an exact color-capacity source
+  // pool. Each augment used at most once; total per color bounded by open slots
+  // on equipped worn items (encoded in U7).
+  const augments = dominanceFilter(
+    elig.filter((v) => v.category === "augment"),
+    targetSet, mlCap,
+  );
+
+  const dodgeCap = query.armorType && targetSet.has("Dodge")
+    ? (ARMOR_DODGE_CAP[query.armorType] ?? null) : null;
+
+  return { query, targets: query.targets, worn, augments, dodgeCap, mlCap };
+}
+
+// exports for node tests; harmless in the browser
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    buildModel, eligible, dominanceFilter, dominates,
+    variantBuckets, variantSets, scaledValue,
+    WORN_SLOTS, SLOT_CARDINALITY, ARMOR_DODGE_CAP,
+  };
+}
