@@ -1,0 +1,54 @@
+{
+  "metadata": {
+    "system": "Isle of Dread — Dino crafting",
+    "note": "Freshly sourced from ddowiki.com (plain fetch returns empty; sourced via Claude-in-Chrome). Every record carries a wiki_url. Insert 'effect' strings are stored VERBATIM from the wiki and parsed by src/dino_parser.py — values are never hand-structured here (KTD2, never inferred). This starter sample carries hand-verified item slot layouts; the full insert pool + remaining items are populated in U2.",
+    "source_pages": [
+      "https://ddowiki.com/page/Update_55_named_items"
+    ],
+    "sourcing_status": "starter-sample — item layouts verified; insert pool pending U2"
+  },
+  "items": [
+    {
+      "item": "Dinosaur Bone Boots",
+      "slot": "accessory",
+      "dino_slots": [
+        {"type": "Scale"},
+        {"type": "Fang"},
+        {"type": "Claw"},
+        {"type": "Horn"}
+      ],
+      "wiki_url": "https://ddowiki.com/page/Update_55_named_items"
+    },
+    {
+      "item": "Dinosaur Bone Bracers",
+      "slot": "accessory",
+      "dino_slots": [
+        {"type": "Scale"},
+        {"type": "Fang"},
+        {"type": "Claw"},
+        {"type": "Horn"}
+      ],
+      "wiki_url": "https://ddowiki.com/page/Update_55_named_items"
+    },
+    {
+      "item": "Dinosaur Bone Gloves",
+      "slot": "accessory",
+      "dino_slots": [
+        {"type": "Scale"},
+        {"type": "Fang"},
+        {"type": "Claw"},
+        {"type": "Horn"}
+      ],
+      "wiki_url": "https://ddowiki.com/page/Update_55_named_items"
+    },
+    {
+      "item": "Legendary Bottle o' Rum",
+      "slot": "weapon",
+      "dino_slots": [
+        {"type": "Scale"}
+      ],
+      "wiki_url": "https://ddowiki.com/page/Update_55_named_items"
+    }
+  ],
+  "inserts": []
+}
