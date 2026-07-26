@@ -518,6 +518,7 @@
    "category": "item",
    "slot": "Ring",
    "enhancements": [
+    "Rolls one of: Strength +13 / Intelligence +13 / Charisma +13",
     "Repair +20",
     "Green Augment Slot"
    ],
@@ -526,7 +527,6 @@
     "Green"
    ],
    "_enrich_unmapped": [
-    "Nearly Finished",
     "Auto-Repair",
     "HealingAmp"
    ],
@@ -538,6 +538,7 @@
    "category": "item",
    "slot": "Ring",
    "enhancements": [
+    "Rolls one of: Constitution +13 / Strength +13 / Wisdom +13",
     "Insight Intimidate +10",
     "Linguistics +10",
     "Blue Augment Slot"
@@ -547,7 +548,6 @@
     "Blue"
    ],
    "_enrich_unmapped": [
-    "Nearly Finished",
     "Incite"
    ],
    "_enriched": true,
@@ -558,6 +558,7 @@
    "category": "item",
    "slot": "Ring",
    "enhancements": [
+    "Rolls one of: Strength +13 / Dexterity +13 / Intelligence +13",
     "Accuracy +20",
     "Green Augment Slot"
    ],
@@ -566,7 +567,6 @@
     "Green"
    ],
    "_enrich_unmapped": [
-    "Nearly Finished",
     "Stunning",
     "Ghostly"
    ],
@@ -578,6 +578,7 @@
    "category": "item",
    "slot": "Ring",
    "enhancements": [
+    "Rolls one of: Constitution +13 / Dexterity +13 / Intelligence +13",
     "Dodge +13%",
     "Profane Well Rounded +2",
     "Yellow Augment Slot"
@@ -587,7 +588,6 @@
     "Yellow"
    ],
    "_enrich_unmapped": [
-    "Nearly Finished",
     "Deception"
    ],
    "_enriched": true,
@@ -598,6 +598,7 @@
    "category": "item",
    "slot": "Ring",
    "enhancements": [
+    "Rolls one of: Intelligence +13 / Wisdom +13 / Charisma +13",
     "Wizardry +269",
     "Parrying +6",
     "Yellow Augment Slot"
@@ -607,7 +608,6 @@
     "Yellow"
    ],
    "_enrich_unmapped": [
-    "Nearly Finished",
     "Concealment"
    ],
    "_enriched": true,
@@ -872,6 +872,7 @@
    "category": "item",
    "slot": "Off Hand",
    "enhancements": [
+    "Rolls one of: Quality Intelligence +3 / Quality Wisdom +3 / Quality Charisma +3",
     "Insight Enchantment Spell Focus +3",
     "Insight Necromancy Spell Focus +3",
     "Chaos Absorption +22%",
@@ -882,8 +883,7 @@
     "Purple"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Nearly Finished"
+    "Enhancement bonus"
    ],
    "_enriched": true,
    "minimum_level": 29,

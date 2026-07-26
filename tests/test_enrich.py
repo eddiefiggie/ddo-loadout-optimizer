@@ -153,11 +153,25 @@ def test_nearly_complete_unknown_category_recorded_not_hosted():
     assert r["unmapped"] == ["Nearly Complete"]
 
 
-def test_nested_composite_is_skipped():
-    # {{Nearly Finished|{{Stat|CON|13}}|...}} — must not mis-harvest the inner Stat
-    r = enrich.parse_enhancement_field(_field("{{Nearly Finished|{{Stat|CON|13}}|{{Stat|con|6|Insightful}}}}"))
+def test_nearly_finished_becomes_a_choice_slot_roll_group():
+    # inline choice-slot: choose one of the listed ability options
+    r = enrich.parse_enhancement_field(_field("{{Nearly Finished|{{Stat|str|13}}|{{Stat|dex|13}}|{{Stat|con|13}}}}"))
+    assert r["enhancements"] == ["Rolls one of: Strength +13 / Dexterity +13 / Constitution +13"]
+    # and the affix_parser turns it into a real option group
+    res = parse_line(r["enhancements"][0])
+    assert res["kind"] == "rolls"
+    stats = [(o["stat"], o["bonus_type"], o["value"]) for o in res["options"]]
+    assert stats == [("Strength", "Enhancement", 13), ("Dexterity", "Enhancement", 13), ("Constitution", "Enhancement", 13)]
+    # mixed bonus types are preserved as distinct options
+    r2 = enrich.parse_enhancement_field(_field("{{Nearly Finished|{{Stat|WIS|13}}|{{Stat|wis|6|Insightful}}|{{Stat|wis|3|Quality}}}}"))
+    assert r2["enhancements"] == ["Rolls one of: Wisdom +13 / Insightful Wisdom +6 / Quality Wisdom +3"]
+
+
+def test_unhandled_nested_composite_is_skipped():
+    # a genuinely-unhandled wrapper with a sub-template arg must record, not harvest inner
+    r = enrich.parse_enhancement_field(_field("{{Some Wrapper|{{Stat|CON|13}}}}"))
     assert r["enhancements"] == []
-    assert r["unmapped"] == ["Nearly Finished"]
+    assert r["unmapped"] == ["Some Wrapper"]
 
 
 def test_rendered_strings_are_parseable_by_affix_parser():

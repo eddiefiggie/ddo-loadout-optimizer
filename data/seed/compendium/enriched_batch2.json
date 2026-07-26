@@ -121,6 +121,7 @@
    "category": "item",
    "slot": "Goggles",
    "enhancements": [
+    "Rolls one of: Strength +13 / Dexterity +13 / Constitution +13 / Intelligence +13 / Wisdom +13 / Charisma +13",
     "Quality Resistance +2",
     "Blue Augment Slot"
    ],
@@ -129,7 +130,6 @@
     "Blue"
    ],
    "_enrich_unmapped": [
-    "Nearly Finished",
     "Almost There",
     "Temperance of Belief"
    ],
@@ -546,6 +546,7 @@
    "category": "item",
    "slot": "Helmet",
    "enhancements": [
+    "Rolls one of: Wisdom +13 / Insightful Wisdom +6 / Quality Wisdom +3",
     "Devotion +148",
     "Nullification +148",
     "Wizardry +283",
@@ -558,9 +559,7 @@
     "Green",
     "Blue"
    ],
-   "_enrich_unmapped": [
-    "Nearly Finished"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
    "minimum_level": 29
   },
