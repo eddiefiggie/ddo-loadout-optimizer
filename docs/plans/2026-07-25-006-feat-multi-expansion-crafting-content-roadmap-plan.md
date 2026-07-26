@@ -21,8 +21,13 @@ title: Multi-Expansion Crafting-First Content Roadmap - Plan
 - **Viktranium Experiment crafting** (`https://ddowiki.com/page/Viktranium_Experiment_crafting`) — richly documented (44K chars, 15 tables): "Lamordia Augments" effect pool, "Items with Lamordia augment slots" (hosts), recipes, and Weapon/Accessory/Armor sections, plus a "Legendary Cataclysmic Weapons and Shields" section. **This IS the "Lamordia crafting" the 127 in-data slots belong to** — the harvest mislabeled the `{{Lamordia Slot|...}}` template; the real system is Viktranium. Confirmed sourceable.
 - **Dinosaur Bone crafting** (`https://ddowiki.com/page/Dinosaur_Bone_crafting`) — has **Weapons / Armors / Set Bonus** sections (the Accessory-insert pool already shipped in PR #2). Confirmed sourceable.
 - **Essence Crafting** (`https://ddowiki.com/page/Essence_Crafting`) — documented existing system (detailed steps + tables). Confirmed sourceable; the "split-prefix" framing is to be reconciled to the documented mechanic during M3 sourcing.
-- **Catalyst crafting** — **no wiki page.** Likely a rename of the **Cataclysmic** crafting documented *within* the Viktranium page, so folded into M1 rather than treated as a separate system.
+- **Catalyst Crafting** (`https://ddowiki.com/page/Catalyst_Crafting`) — **exists and is documented** (an earlier data-sweep search missed it; corrected here). But it is a fundamentally different *kind* of system: it combines rare Catalysts (from Terror of Demogorgon quests) with *older* named items to **create entirely new named items** (ML11 Heroic / ML35 Legendary, Drow/Demon-themed) at the Strange Catalyst Forge. It does **not** add an affix slot to an item — so it is **not** a choice-slot/insert to model in the solver. Its output is a roster of **named items** → covered under R4 (named-gear sourcing), not a crafting-primitive milestone.
 - **Myth Drannor crafting** — Myth Drannor exists as content (named-item packs/sagas) but has **no distinct crafting system**. Dropped from the crafting program; Myth Drannor contributes named + raid gear only.
+
+**Framing correction — two kinds of "crafting."** The confirmed systems split by what they do to the optimizer's data:
+- **Affix-adding (choice-slot / typed-insert)** — Nearly Complete ✅, Nearly Finished ✅ (roll-group), **Viktranium (M1)**, IoD Dino (M2). These attach a craftable affix to an *existing* item → modeled by reusing the gated-contribution primitive.
+- **Item-creating** — **Catalyst Crafting** produces *new* named items. These are just gear to source → R4, no solver work.
+- **Essence Crafting (M3)** is TBD which kind — reconciled during sourcing (Open Question 3); if it creates/modifies whole items rather than offering a choice-slot, it moves to R4 like Catalyst.
 
 ---
 
@@ -39,12 +44,12 @@ A DDO player theorycrafting an endgame build gets optimizer results that account
   - **M3 — Essence Crafting**: model the documented Essence crafting mechanic (reconciling "split-prefix" to the wiki's actual system).
 - **R2 — "Done" per crafting system** (the Nearly-Complete precedent): option pool sourced under strict provenance → `enrich.py` detects the host-slot marker → the **existing** choice-slot / typed-insert solver primitive attaches it → verified end-to-end by a real solve → honest per-system coverage disclosure (N hosts active). Host *population* rides along with named-item enrichment (R4), exactly as U81 Nearly-Complete hosts activated.
 - **R3 — Strict provenance, block-until-documented.** Only wiki-documented pools are committed; each milestone opens with a fail-fast Claude-in-Chrome data check and does not ship a system whose pool is not fully documented. Explicit values only; ambiguous → quarantined, never inferred; every value carries a `wiki_url`.
-- **R4 — Exhaustive named + raid gear, per expansion (M4+).** After the crafting systems, source **every viable named item per slot** (per the exhaustive-per-slot standard) for U81, IoD, and Myth Drannor — **including raid named gear** — via the established harvest → `enrich.py` → verify pipeline. Raid gear is named gear; no separate path.
+- **R4 — Exhaustive named + raid gear, per expansion (M4+).** After the crafting systems, source **every viable named item per slot** (per the exhaustive-per-slot standard) for U81, IoD, and Myth Drannor — **including raid named gear AND the Catalyst-crafted item roster** (item-creation output, not a solver primitive) — via the established harvest → `enrich.py` → verify pipeline. Raid gear and Catalyst-crafted gear are named gear; no separate path.
 - **R5 — Reuse over rebuild.** Every crafting system folds into the built primitive (augments/Dino/NC/roll-groups) and its data-layer conventions (strict `enrich.py` rendering, dominance guards, umbrella/alias normalization). New solver mechanics are out of scope unless a system provably cannot be expressed as a gated choice-slot / typed-insert.
 
 ### Out of scope (boundaries)
 
-- **Catalyst crafting as a separate system** — not a documented distinct mechanic; treated as the Cataclysmic crafting inside M1 (Viktranium), or dropped if it proves to be neither.
+- **Catalyst Crafting as a solver primitive** — it creates whole named items rather than adding a choice-slot, so it is sourced as named gear (R4), NOT modeled as a crafting milestone. (The Viktranium "Cataclysmic Weapons and Shields" arm is separate — that stays in M1.)
 - **Myth Drannor crafting** — no distinct system exists; Myth Drannor is named/raid gear only.
 - **Raid-specific *crafting*** — only if a raid documents a *distinct* crafting mechanic (none confirmed in the sweep); otherwise raid content is named gear (R4). A raid crafting system, if found, is deferred to its own milestone under R2's "done" bar.
 - **New solver/model primitives** — the whole thesis is reuse; a genuinely new mechanic is a separate brainstorm.
@@ -79,6 +84,6 @@ A DDO player theorycrafting an endgame build gets optimizer results that account
 
 ## Provenance
 
-- Source workflow: `ce-brainstorm` (Deep — feature). Grounding: a live Claude-in-Chrome data-availability sweep this session (confirmed Viktranium/Dino/Essence; dropped Catalyst/Myth-Drannor-crafting).
+- Source workflow: `ce-brainstorm` (Deep — feature). Grounding: a live Claude-in-Chrome data-availability sweep this session (confirmed Viktranium/Dino/Essence as choice-slot systems; Catalyst Crafting re-homed to named-gear sourcing as an item-creation mechanic per a user correction; Myth-Drannor-crafting dropped as non-existent).
 - Builds on the shipped gated-contribution primitive and its data-layer conventions (PRs #1–#4, #9, #12–#14) and the compendium enrichment pipeline (PRs #5–#8).
 - Next step: `/ce-plan docs/plans/2026-07-25-006-feat-multi-expansion-crafting-content-roadmap-plan.md` to enrich M1 (Viktranium) to implementation-ready first.
