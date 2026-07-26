@@ -110,16 +110,17 @@ function coverageNote(dataset) {
   const dinoElig = dc.inserts_eligible;
   const nc = m.nc_coverage || {};
   const ncElig = nc.options_eligible;
+  const ncHosts = nc.hosts_activated;
   const comp = m.compendium_coverage || {};
   const parts = [
     "<strong>Optimized:</strong> worn affixes, augments" +
       (aug != null ? ` (${aug} placeable)` : "") +
       ", set bonuses" + (setAff != null ? ` (${setAff} threshold effects)` : "") +
-      ", and Isle of Dread Dino crafting" + (dinoElig != null ? ` (${dinoElig} Accessory inserts)` : ""),
+      ", Isle of Dread Dino crafting" + (dinoElig != null ? ` (${dinoElig} Accessory inserts)` : "") +
+      ", and U81 Nearly Complete crafting" +
+      (ncHosts ? ` (${ncHosts} item hosts, ${ncElig != null ? ncElig + " options" : "sourced pool"})` : ""),
     "<strong>Coverage:</strong> results reflect only verified, wiki-sourced data; ambiguous effects are quarantined and excluded",
-    "<strong>Pending:</strong> U81 Nearly Complete crafting — the effect pool is sourced" +
-      (ncElig != null ? ` (${ncElig} options)` : "") +
-      " but no U81 item hosts are published yet, so it does not yet contribute; likewise the Dino Weapon/Armor/Raid/Set-Bonus pools and other expansion crafting systems",
+    "<strong>Pending:</strong> the Dino Weapon/Armor/Raid/Set-Bonus pools and other expansion crafting systems",
     "<strong>Compendium:</strong> " +
       (comp.total_indexed != null ? `${comp.total_indexed} named items indexed across the game` : "named-item index in progress") +
       (comp.enriched_matched != null ? `, of which ${comp.enriched_matched} are enriched and solver-active` : "") +

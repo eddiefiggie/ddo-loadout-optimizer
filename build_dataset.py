@@ -130,6 +130,10 @@ def build(seed: dict) -> dict:
     # as unmapped (never guessed) across the enriched batches.
     comp_cov["enriched_unmapped_effects"] = sum(
         len(it.get("_enrich_unmapped", [])) for it in enriched_items)
+    # U81 Nearly-Complete hosts activated via enrichment (items carrying an open
+    # NC 4th-affix slot the solver crafts into).
+    nc["coverage"]["hosts_activated"] = sum(
+        1 for it in enriched_items if it.get("nearly_complete"))
 
     out = {
         "metadata": {

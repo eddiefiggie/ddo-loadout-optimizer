@@ -321,12 +321,12 @@
    "_enrich_unmapped": [
     "Enhancement bonus",
     "Demonic Shield",
-    "Tactics",
-    "Nearly Complete"
+    "Tactics"
    ],
    "_enriched": true,
    "minimum_level": 35,
-   "armor_type": "medium"
+   "armor_type": "medium",
+   "nearly_complete": "Ability Score"
   },
   {
    "name": "Legendary Blessed Vestments",

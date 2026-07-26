@@ -450,11 +450,11 @@
    ],
    "_enrich_unmapped": [
     "Intensity",
-    "Nearly Complete",
     "Guard"
    ],
    "_enriched": true,
-   "minimum_level": 35
+   "minimum_level": 35,
+   "nearly_complete": "Spell Focus"
   },
   {
    "name": "Legendary Cranium Sphere",
@@ -604,11 +604,11 @@
     "Moon"
    ],
    "_enrich_unmapped": [
-    "Action Boost Enhancement",
-    "Nearly Complete"
+    "Action Boost Enhancement"
    ],
    "_enriched": true,
-   "minimum_level": 35
+   "minimum_level": 35,
+   "nearly_complete": "Insightful Ability Score"
   },
   {
    "name": "Legendary Golden Guile",

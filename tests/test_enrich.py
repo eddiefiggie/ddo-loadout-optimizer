@@ -136,6 +136,23 @@ def test_unmapped_effects_are_recorded_not_guessed():
     assert set(r["unmapped"]) == {"Clicky", "Immunity", "Ghostly"}
 
 
+def test_nearly_complete_open_slot_sets_host_field():
+    # {{Nearly Complete|<category>}} activates the item as a U81 NC host
+    r = enrich.parse_enhancement_field(_field("{{Nearly Complete|Ability Score|1}}"))
+    assert r["nearly_complete"] == "Ability Score"
+    assert r["enhancements"] == []  # the slot is not itself an affix
+    rec = enrich.build_item_record("Test Robe", "Armor", _field("{{Nearly Complete|Skill|1}}"),
+                                   "w", minimum_level=35)
+    assert rec["nearly_complete"] == "Skill"
+
+
+def test_nearly_complete_unknown_category_recorded_not_hosted():
+    # a category not in the NC pool must not silently become a host
+    r = enrich.parse_enhancement_field(_field("{{Nearly Complete|Bogus Category|1}}"))
+    assert r["nearly_complete"] is None
+    assert r["unmapped"] == ["Nearly Complete"]
+
+
 def test_nested_composite_is_skipped():
     # {{Nearly Finished|{{Stat|CON|13}}|...}} — must not mis-harvest the inner Stat
     r = enrich.parse_enhancement_field(_field("{{Nearly Finished|{{Stat|CON|13}}|{{Stat|con|6|Insightful}}}}"))

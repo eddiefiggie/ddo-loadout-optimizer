@@ -488,11 +488,11 @@
     "Moon"
    ],
    "_enrich_unmapped": [
-    "Reinforced Fists",
-    "Nearly Complete"
+    "Reinforced Fists"
    ],
    "_enriched": true,
-   "minimum_level": 35
+   "minimum_level": 35,
+   "nearly_complete": "Ability Score"
   },
   {
    "name": "Legendary Baron Aubrecker's Monogrammed Gloves",

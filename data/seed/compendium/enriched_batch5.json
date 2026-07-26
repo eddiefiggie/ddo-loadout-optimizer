@@ -48,11 +48,10 @@
     "Colorless",
     "Moon"
    ],
-   "_enrich_unmapped": [
-    "Nearly Complete"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
-   "minimum_level": 35
+   "minimum_level": 35,
+   "nearly_complete": "Quality Ability Score"
   },
   {
    "name": "Legendary Azure Necklace of Prophecy",
@@ -318,11 +317,11 @@
     "Sun"
    ],
    "_enrich_unmapped": [
-    "Assassinate",
-    "Nearly Complete"
+    "Assassinate"
    ],
    "_enriched": true,
-   "minimum_level": 35
+   "minimum_level": 35,
+   "nearly_complete": "Skill"
   },
   {
    "name": "Legendary Dusk Lenses",
@@ -489,11 +488,10 @@
     "Green",
     "Colorless"
    ],
-   "_enrich_unmapped": [
-    "Nearly Complete"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
-   "minimum_level": 35
+   "minimum_level": 35,
+   "nearly_complete": "Ability Score"
   },
   {
    "name": "Legendary Brazenband",

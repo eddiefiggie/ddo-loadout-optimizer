@@ -505,5 +505,20 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.ok(pick, "the selected loadout includes the Diversion-carrying enriched item");
   });
 
+  await test("U81 Nearly-Complete crafts onto a real enriched host (real dataset)", async () => {
+    const fs = require("fs");
+    const { buildModel } = require("../web/model.js");
+    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    // Enriched ML35 items now carry `nearly_complete` category slots; the solver
+    // must craft the best option from that category's pool onto the host.
+    const query = { mlCap: 36, targets: ["Constitution"], armorType: null, weaponSetup: null, classRace: null };
+    const model = buildModel(data.items, query, data.dino_inserts, data.nearly_complete);
+    const res = await S.solveLexicographic(model, highs);
+    assert.strictEqual(res.status, "optimal");
+    assert.ok((res.ncPlaced || []).length > 0, "at least one NC craft was placed onto a host");
+    const craft = res.ncPlaced.find((n) => n.stat === "Constitution");
+    assert.ok(craft && craft.value > 0, "an NC host crafted a Constitution option from its category pool");
+  });
+
   console.log(`\n${passed} passed`);
 })();

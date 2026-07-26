@@ -108,13 +108,13 @@ test("coverageNote discloses Dino crafting as optimized + names the pending pool
   assert.ok(/Weapon\/Armor\/Raid/.test(note), "discloses the pending pools honestly");
 });
 
-test("coverageNote discloses Nearly Complete as sourced-but-pending, not optimized", () => {
-  const note = R.coverageNote({ metadata: { nc_coverage: { options_eligible: 68, item_hosts: "pending" } } });
+test("coverageNote discloses Nearly Complete as optimized once item hosts exist", () => {
+  const note = R.coverageNote({ metadata: { nc_coverage: { options_eligible: 68, hosts_activated: 17 } } });
   const optimized = note.split("Coverage:")[0];
-  assert.ok(!/Nearly Complete/.test(optimized), "NC is NOT listed under Optimized (0 contribute)");
-  assert.ok(/U81 Nearly Complete crafting — the effect pool is sourced \(68 options\)/.test(note),
-    "discloses the sourced pool + count under Pending");
-  assert.ok(/no U81 item hosts are published/.test(note), "discloses hosts pending");
+  assert.ok(/U81 Nearly Complete crafting/.test(optimized), "NC is listed under Optimized now that hosts exist");
+  assert.ok(/17 item hosts/.test(optimized), "discloses the activated host count");
+  assert.ok(/68 options/.test(optimized), "discloses the eligible option count");
+  assert.ok(!/no U81 item hosts are published/.test(note), "no longer claims hosts are pending");
 });
 
 console.log(`\n${passed} passed`);

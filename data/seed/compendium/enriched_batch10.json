@@ -80,12 +80,12 @@
    ],
    "_enrich_unmapped": [
     "Enhancement bonus",
-    "Undying",
-    "Nearly Complete"
+    "Undying"
    ],
    "_enriched": true,
    "minimum_level": 35,
-   "armor_type": "cloth"
+   "armor_type": "cloth",
+   "nearly_complete": "Ability Score"
   },
   {
    "name": "Legendary Duergarcraft Outfit",
@@ -106,12 +106,12 @@
     "Sun"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Nearly Complete"
+    "Enhancement bonus"
    ],
    "_enriched": true,
    "minimum_level": 35,
-   "armor_type": "cloth"
+   "armor_type": "cloth",
+   "nearly_complete": "Ability Score"
   },
   {
    "name": "Legendary Duergarcraft Robe",
@@ -132,12 +132,12 @@
     "Sun"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Nearly Complete"
+    "Enhancement bonus"
    ],
    "_enriched": true,
    "minimum_level": 35,
-   "armor_type": "cloth"
+   "armor_type": "cloth",
+   "nearly_complete": "Ability Score"
   },
   {
    "name": "Legendary Emissary's Vestments",
@@ -303,12 +303,12 @@
     "Sun"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Nearly Complete"
+    "Enhancement bonus"
    ],
    "_enriched": true,
    "minimum_level": 35,
-   "armor_type": "light"
+   "armor_type": "light",
+   "nearly_complete": "Ability Score"
   },
   {
    "name": "Legendary Bittersnow",
