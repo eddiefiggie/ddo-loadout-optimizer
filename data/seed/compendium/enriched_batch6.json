@@ -78,6 +78,7 @@
    "category": "item",
    "slot": "Cloak",
    "enhancements": [
+    "Rolls one of: Quality Strength +3 / Quality Dexterity +3 / Quality Constitution +3",
     "Insight Seeker +6",
     "Parrying +6",
     "Green Augment Slot"
@@ -87,7 +88,6 @@
     "Green"
    ],
    "_enrich_unmapped": [
-    "Nearly Finished",
     "Freedom of Movement"
    ],
    "_enriched": true,

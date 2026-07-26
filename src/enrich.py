@@ -250,7 +250,25 @@ def parse_enhancement_field(field: str) -> dict:
             continue
         key = name.lower()
         rest = parts[1:]
-        # nested composite (a sub-template as an arg, e.g. Nearly Finished): record
+        if key == "nearly finished":
+            # inline choice-slot: {{Nearly Finished|{{Stat|str|13}}|{{Stat|dex|13}}|...}}
+            # -> a "Rolls one of" group; the solver picks the best option for the
+            # build's targets (reuses the affix_parser roll-group machinery).
+            opts = []
+            for sub in rest:
+                sm = re.match(r"\{\{\s*([^|}\n]+?)\s*\|(.+)\}\}\s*$", sub.strip(), re.S)
+                if not sm:
+                    continue
+                subargs = [x.strip() for x in _split_top_level(sm.group(2)) if "=" not in x]
+                r = RENDERERS.get(sm.group(1).strip().lower())
+                if r:
+                    opts.extend(r(subargs))
+            if len(opts) >= 2:
+                enh.append("Rolls one of: " + " / ".join(opts))
+            else:
+                unmapped.append(name)
+            continue
+        # nested composite (a sub-template as an arg): record, never harvest inner
         if any("{{" in p for p in rest):
             unmapped.append(name)
             continue

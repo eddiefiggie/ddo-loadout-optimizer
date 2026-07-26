@@ -200,6 +200,7 @@
    "category": "item",
    "slot": "Necklace",
    "enhancements": [
+    "Rolls one of: Constitution +13 / Insightful Constitution +6 / Quality Constitution +3",
     "Profane Mastery Spell Focus +2",
     "Spell Save +11",
     "Blue Augment Slot",
@@ -212,7 +213,6 @@
     "Yellow"
    ],
    "_enrich_unmapped": [
-    "Nearly Finished",
     "Hp"
    ],
    "_enriched": true,
