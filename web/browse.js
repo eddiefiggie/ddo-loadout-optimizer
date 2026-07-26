@@ -192,17 +192,19 @@ function initBrowse(dataset) {
       const tier = v.tier_values_incomplete ? ` <span class="muted">(tiers ${(v.tier_ml_list || []).join("/")}; upper-tier stats)</span>` : "";
       const link = v.wiki_url ? `<a href="${v.wiki_url}" rel="noopener" target="_blank">wiki</a>` : "";
       return `<tr>
-        <td>${v.variant_id}${tier}</td>
-        <td>${v.slot}</td>
-        <td class="num">${v.minimum_level ?? "—"}</td>
-        <td>${badge}</td>
-        <td>${affixes}</td>
-        <td>${link}</td>
+        <td data-label="Item">${v.variant_id}${tier}</td>
+        <td data-label="Slot">${v.slot}</td>
+        <td class="num" data-label="ML">${v.minimum_level ?? "—"}</td>
+        <td data-label="Status">${badge}</td>
+        <td data-label="Affixes">${affixes}</td>
+        <td data-label="Source">${link}</td>
       </tr>`;
     }).join("");
-    results.innerHTML = `<table class="items">
-      <thead><tr><th>Item</th><th>Slot</th><th>ML</th><th>Status</th><th>Affixes</th><th>Source</th></tr></thead>
-      <tbody>${body}</tbody></table>`;
+    // .items.cards turns rows into stacked cards under the phone breakpoint (R11);
+    // .table-wrap contains any residual overflow so the page never scrolls sideways.
+    results.innerHTML = `<div class="table-wrap"><table class="items cards">
+      <thead><tr><th>Item</th><th>Slot</th><th class="num">ML</th><th>Status</th><th>Affixes</th><th>Source</th></tr></thead>
+      <tbody>${body}</tbody></table></div>`;
   }
 
   function clearAll() {

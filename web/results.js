@@ -152,121 +152,199 @@ function coverageNote(dataset) {
   return `<p class="scope-note">${parts.join(". ")}. All optimized values are wiki-traceable.</p>`;
 }
 
+// Map a solver worn-slot name to its paperdoll grid position class (KTD2).
+// Ring is cardinality-2, so the caller passes which ring (0 or 1). Unknown slots
+// fall to "misc" so a new slot is surfaced, never silently dropped.
+const SLOT_POSITION = {
+  Helmet: "helmet", Goggles: "goggles", Necklace: "necklace", Trinket: "trinket",
+  Cloak: "cloak", Belt: "belt", Armor: "armor", Gloves: "gloves", Bracers: "bracers",
+  Boots: "boots", Quiver: "quiver", "Main Hand": "mainhand",
+  "Rune Arm": "offhand", "Off Hand": "offhand",
+};
+function slotPosition(slot, ringIndex) {
+  if (slot === "Ring") return ringIndex > 0 ? "ring2" : "ring1";
+  return SLOT_POSITION[slot] || "misc";
+}
+
+// escape for safe interpolation of data-derived strings into HTML
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// Build the per-slot detail chips (contributing affixes + every craft prescription).
+function slotDetailChips(v, idx, query, maps) {
+  const contrib = contributingAffixes(v, query.targets)
+    .map((a) => `<span class="chip">${esc(affixLabel(a))}</span>`).join(" ");
+  const augs = (maps.augAssign.byIndex.get(idx) || []).map((a) => {
+    const where = a.slot_color && a.slot_color !== a.color ? `${a.color} in ${a.slot_color} slot` : (a.color || "");
+    return `<span class="chip aug" title="augment slotted (${esc(where)})">${esc(a.variant_id)} <span class="muted">(${esc(where)})</span></span>`;
+  }).join(" ");
+  const dinos = (maps.dinoAssign.byIndex.get(idx) || []).map((d) => {
+    const affixes = (d.affixes && d.affixes.length) ? d.affixes
+      : [{ stat: d.stat, bonus_type: d.bonus_type, value: d.value, unit: d.unit || "flat" }];
+    const label = affixes.map((a) => affixLabel({ stat: a.stat, bonus_type: a.bonus_type, value: a.value, unit: a.unit || "flat" })).join(", ");
+    return `<span class="chip dino" title="Isle of Dread ${esc(d.dino_type)} insert">${esc(d.dino_type)}: ${d.name ? esc(d.name) + " — " : ""}${esc(label)}</span>`;
+  }).join(" ");
+  const ncs = (maps.ncByItem.get(v.variant_id) || [])
+    .map((n) => `<span class="chip nc" title="U81 Nearly Complete (${esc(n.category)}, ${esc(n.tier)})">Nearly Complete: ${esc(affixLabel({ stat: n.stat, bonus_type: n.bonus_type, value: n.value, unit: n.unit || "flat" }))}</span>`).join(" ");
+  const rolls = (maps.rollByItem.get(v.variant_id) || [])
+    .map((r) => `<span class="chip roll" title="choice-slot: best option selected">Choice: ${esc(affixLabel({ stat: r.stat, bonus_type: r.bonus_type, value: r.value, unit: r.unit || "flat" }))}</span>`).join(" ");
+  const viks = (maps.vikByItem.get(v.variant_id) || [])
+    .map((n) => `<span class="chip lamordia" title="U81 Viktranium / Lamordia (${esc(n.slot_type)} ${esc(n.category)}, ${esc(n.tier)})">Lamordia ${esc(n.slot_type)}: ${esc(affixLabel({ stat: n.stat, bonus_type: n.bonus_type, value: n.value, unit: n.unit || "flat" }))}</span>`).join(" ");
+  const seals = (maps.sealByItem.get(v.variant_id) || [])
+    .map((n) => `<span class="chip seal" title="Sealed in ${esc(n.seal_type)} — unseal one effect at the crafting table">Sealed in ${esc(n.seal_type)}: ${esc(affixLabel({ stat: n.stat, bonus_type: n.bonus_type, value: n.value, unit: n.unit || "flat" }))}</span>`).join(" ");
+  const link = v.wiki_url ? `<a href="${esc(v.wiki_url)}" target="_blank" rel="noopener">wiki ↗</a>` : "";
+  const chips = [contrib, augs, dinos, ncs, rolls, viks, seals].filter(Boolean).join(" ");
+  return `<div>${chips || '<span class="muted">— no target-relevant affixes —</span>'}</div>${link ? `<div class="pd-craftline">${link}</div>` : ""}`;
+}
+
+// One paperdoll slot cell. `pick` is {variant, idx} or null for an empty slot.
+function paperdollSlot(slotName, pos, pick, query, maps) {
+  if (!pick) {
+    return `<div class="pd-slot empty pos-${pos}"><div class="pd-label">${esc(slotName)}</div><div class="pd-item"><span class="muted">— empty —</span></div></div>`;
+  }
+  const v = pick.variant;
+  return `<details class="pd-slot occupied pos-${pos}">
+    <summary>
+      <div class="pd-label">${esc(slotName)}</div>
+      <div class="pd-item"><span>${esc(v.variant_id)}</span><span class="ml">ML ${esc(v.minimum_level ?? "—")}</span></div>
+    </summary>
+    <div class="pd-detail">${slotDetailChips(v, pick.idx, query, maps)}</div>
+  </details>`;
+}
+
+// Bonus-type/source breakdown bars for one target (R2, R7).
+function breakdownBars(parts, total) {
+  const base = Math.max(total, parts.reduce((s, p) => s + p.value, 0), 1);
+  if (!parts.length) return `<div class="stat-empty">no contributing gear for this target</div>`;
+  return `<div class="stat-bars">${parts.map((p) => {
+    const kind = p.sourceKind === "set" ? "is-set" : (p.sourceKind === "augment" ? "is-augment" : "");
+    const src = p.sourceKind === "set" ? `set: ${p.source}` : p.source;
+    const pct = Math.max(4, Math.round((p.value / base) * 100));
+    return `<div class="stat-bar">
+      <div class="bar-meta"><span class="bar-type">${esc(p.bonus_type)}</span><span class="bar-src ${kind}" title="${esc(src)}">${esc(src)}</span></div>
+      <span class="bar-val">+${esc(p.value)}</span>
+      <div class="bar-track"><div class="bar-fill ${kind}" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join("")}</div>`;
+}
+
+// Count-up motion (KTD4), robust to motion NOT running (AE4). The final value is
+// written into the DOM first and stays there unless an animation frame actually
+// fires — so if requestAnimationFrame is throttled/absent, or reduced-motion is
+// set, the correct result is always readable immediately, never gated on motion.
+function animateCounters(container) {
+  const reduce = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  container.querySelectorAll(".stat-value").forEach((el) => {
+    const final = Number(el.getAttribute("data-final")) || 0;
+    el.firstChild.textContent = String(final);              // final value in place first
+    if (reduce || final <= 0 || typeof requestAnimationFrame !== "function") return;
+    const dur = 520;
+    let started = null;
+    const tick = (now) => {
+      if (started === null) started = now;                  // anchor on the FIRST real frame
+      const p = Math.min(1, (now - started) / dur);
+      el.firstChild.textContent = String(Math.round(final * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) requestAnimationFrame(tick);
+      else el.firstChild.textContent = String(final);
+    };
+    requestAnimationFrame(tick);                            // only dips low once a frame runs
+  });
+}
+
 function renderResults(container, { model, result, query, dataset }) {
   if (result.status !== "optimal") {
-    container.innerHTML = `<div class="empty">No set satisfies these constraints${result.reason ? ` — ${result.reason}` : ""}. Loosen the ML cap, armor/class filters, or targets.</div>`;
+    container.innerHTML = `<div class="empty">No set satisfies these constraints${result.reason ? ` — ${esc(result.reason)}` : ""}.<br><span class="muted">Loosen the ML cap, armor/class filters, or targets.</span></div>`;
     return;
   }
-
-  const stats = query.targets.map((s, i) =>
-    `<tr><td class="num">${i + 1}</td><td>${s}</td><td class="num">${result.effective[s] ?? 0}</td></tr>`).join("");
 
   // group equipped picks by slot, preserving a flat index for augment assignment
   const augAssign = assignAugments(result.chosen, result.augmentsPlaced);
   const dinoAssign = assignDinoInserts(result.chosen, result.dinoPlaced);
-  // U81 Nearly Complete: each placed craft already names its host item.
-  const ncByItem = new Map();
-  for (const n of result.ncPlaced || []) {
-    if (!ncByItem.has(n.item)) ncByItem.set(n.item, []);
-    ncByItem.get(n.item).push(n);
-  }
-  // Roll-group choice-slots: show which option the solver selected per item.
-  const rollByItem = new Map();
-  for (const r of result.rollPlaced || []) {
-    if (!rollByItem.has(r.item)) rollByItem.set(r.item, []);
-    rollByItem.get(r.item).push(r);
-  }
-  // U81 Viktranium ("Lamordia"): each placed craft already names its host item.
-  const vikByItem = new Map();
-  for (const n of result.vikPlaced || []) {
-    if (!vikByItem.has(n.item)) vikByItem.set(n.item, []);
-    vikByItem.get(n.item).push(n);
-  }
-  // Seal slots ("Sealed in X"): each unsealed option already names its host item.
-  const sealByItem = new Map();
-  for (const n of result.sealPlaced || []) {
-    if (!sealByItem.has(n.item)) sealByItem.set(n.item, []);
-    sealByItem.get(n.item).push(n);
-  }
-  const rowsBySlot = new Map();
+  const byItemMap = (list) => {
+    const m = new Map();
+    for (const n of list || []) { if (!m.has(n.item)) m.set(n.item, []); m.get(n.item).push(n); }
+    return m;
+  };
+  const maps = {
+    augAssign, dinoAssign,
+    ncByItem: byItemMap(result.ncPlaced), rollByItem: byItemMap(result.rollPlaced),
+    vikByItem: byItemMap(result.vikPlaced), sealByItem: byItemMap(result.sealPlaced),
+  };
+
+  // group equipped picks by slot (preserving the flat index augment assignment used)
+  const picksBySlot = new Map();
   result.chosen.forEach((c, idx) => {
-    if (!rowsBySlot.has(c.slot)) rowsBySlot.set(c.slot, []);
-    rowsBySlot.get(c.slot).push({ variant: c.variant, idx });
+    if (!picksBySlot.has(c.slot)) picksBySlot.set(c.slot, []);
+    picksBySlot.get(c.slot).push({ variant: c.variant, idx });
   });
 
-  const rows = [];
+  // --- hero: ranked-target readout (R1, R2, R3, R7) ---
+  const cs = result.computeScale || { variants: 0, crafts: 0, stages: 0 };
+  const banner = `
+    <div class="solve-banner">
+      <div class="solve-verdict"><span class="dot"></span><span class="label">OPTIMAL</span><span class="sub">· exact MILP, provably best</span></div>
+      <div class="solve-scale">
+        <div class="scale-item"><span class="n">${esc(cs.variants)}</span><span class="k">variants</span></div>
+        <div class="scale-item"><span class="n">${esc(cs.crafts)}</span><span class="k">craft options</span></div>
+        <div class="scale-item"><span class="n">${esc(cs.stages)}</span><span class="k">solve stages</span></div>
+        <div class="scale-item"><span class="n">${esc(result.solveMs ?? "—")}</span><span class="k">ms</span></div>
+      </div>
+    </div>`;
+
+  const cards = query.targets.map((stat, i) => {
+    const total = result.effective[stat] ?? 0;
+    const parts = (result.breakdown && result.breakdown[stat]) || [];
+    return `<div class="stat-card">
+      <div class="stat-head"><span class="stat-rank">${i + 1}</span><span class="stat-name">${esc(stat)}</span></div>
+      <div class="stat-value" data-final="${esc(total)}">${esc(total)}</div>
+      ${breakdownBars(parts, total)}
+    </div>`;
+  }).join("");
+
+  // --- paperdoll (R4, R5) ---
+  const cells = [];
   for (const slot of model.worn) {
-    const picks = rowsBySlot.get(slot.slot) || [];
-    if (picks.length === 0) {
-      rows.push(`<tr class="empty-slot"><td>${slot.slot}</td><td colspan="4"><span class="muted">— no target-relevant item —</span></td></tr>`);
-      continue;
-    }
-    for (const { variant: v, idx } of picks) {
-      const contrib = contributingAffixes(v, query.targets).map((a) => `<span class="chip">${affixLabel(a)}</span>`).join(" ") || `<span class="muted">—</span>`;
-      const augs = (augAssign.byIndex.get(idx) || [])
-        .map((a) => {
-          // Show which slot color the augment filled (multi-fit: a Red augment can
-          // fill an Orange slot). Fall back to just the augment color for old data.
-          const where = a.slot_color && a.slot_color !== a.color ? `${a.color} in ${a.slot_color} slot` : (a.color || "");
-          return `<span class="chip aug" title="augment slotted (${where})">${a.variant_id} <span class="muted">(${where})</span></span>`;
-        }).join(" ");
-      const dinos = (dinoAssign.byIndex.get(idx) || [])
-        .map((d) => {
-          // A unit may carry several affixes (multi-affix insert, KTD4); render
-          // them all on one chip. Fall back to the flat single-affix shape.
-          const affixes = (d.affixes && d.affixes.length)
-            ? d.affixes
-            : [{ stat: d.stat, bonus_type: d.bonus_type, value: d.value, unit: d.unit || "flat" }];
-          const label = affixes.map((a) => affixLabel({ stat: a.stat, bonus_type: a.bonus_type, value: a.value, unit: a.unit || "flat" })).join(", ");
-          const name = d.name ? `${d.name} — ` : "";
-          return `<span class="chip dino" title="Isle of Dread ${d.dino_type} (${d.category || "Accessory"}) insert">${d.dino_type}: ${name}${label}</span>`;
-        }).join(" ");
-      const ncs = (ncByItem.get(v.variant_id) || [])
-        .map((n) => `<span class="chip nc" title="U81 Nearly Complete (${n.category}, ${n.tier})">Nearly Complete: ${affixLabel({ stat: n.stat, bonus_type: n.bonus_type, value: n.value, unit: n.unit || "flat" })}</span>`).join(" ");
-      const rolls = (rollByItem.get(v.variant_id) || [])
-        .map((r) => `<span class="chip roll" title="choice-slot: best option selected">Choice: ${affixLabel({ stat: r.stat, bonus_type: r.bonus_type, value: r.value, unit: r.unit || "flat" })}</span>`).join(" ");
-      const viks = (vikByItem.get(v.variant_id) || [])
-        .map((n) => `<span class="chip lamordia" title="U81 Viktranium / Lamordia (${n.slot_type} ${n.category}, ${n.tier})">Lamordia ${n.slot_type}: ${affixLabel({ stat: n.stat, bonus_type: n.bonus_type, value: n.value, unit: n.unit || "flat" })}</span>`).join(" ");
-      const seals = (sealByItem.get(v.variant_id) || [])
-        .map((n) => `<span class="chip seal" title="Sealed in ${n.seal_type} — unseal one effect at the crafting table">Sealed in ${n.seal_type}: ${affixLabel({ stat: n.stat, bonus_type: n.bonus_type, value: n.value, unit: n.unit || "flat" })}</span>`).join(" ");
-      const link = v.wiki_url ? `<a href="${v.wiki_url}" target="_blank" rel="noopener">wiki</a>` : "";
-      rows.push(`<tr>
-        <td>${slot.slot}</td>
-        <td>${v.variant_id}</td>
-        <td class="num">${v.minimum_level ?? "—"}</td>
-        <td>${contrib} ${augs} ${dinos} ${ncs} ${rolls} ${viks} ${seals}</td>
-        <td>${link}</td>
-      </tr>`);
+    const picks = picksBySlot.get(slot.slot) || [];
+    const cardinality = slot.cardinality || 1;
+    for (let r = 0; r < cardinality; r++) {
+      const pos = slotPosition(slot.slot, r);
+      cells.push(paperdollSlot(slot.slot, pos, picks[r] || null, query, maps));
     }
   }
 
-  // active sets + near-miss nudges
-  const active = (result.setsActive || []).map((s) => `<li><strong>${s.set}</strong> — ${s.pieces_required}-piece bonus active</li>`).join("");
-  const nearMiss = nearMissSetHints(result.chosen, query.targets)
-    .map((h) => `<li>One piece from <strong>${h.set}</strong> (${h.have}/${h.need}) → ${h.affixes.map(affixLabel).join(", ")}</li>`).join("");
+  // --- sets (R6, R7, R8) ---
+  const active = (result.setsActive || []).map((s) =>
+    `<li class="set-card"><strong>${esc(s.set)}</strong> <span class="meta">— ${esc(s.pieces_required)}-piece bonus active</span></li>`).join("");
+  const nearMiss = nearMissSetHints(result.chosen, query.targets).map((h) =>
+    `<li class="set-card near"><strong>${esc(h.set)}</strong> <span class="meta">(${esc(h.have)}/${esc(h.need)}) — one more piece adds ${esc(h.affixes.map(affixLabel).join(", "))}</span></li>`).join("");
   const setsBlock = (active || nearMiss) ? `
-      <div>
-        <h3>Set bonuses</h3>
-        <ul class="sets">${active}${nearMiss}</ul>
-      </div>` : "";
+    <div class="sets-section">
+      <h3 class="section-title">Set bonuses</h3>
+      <ul class="sets">${active}${nearMiss}</ul>
+    </div>` : "";
 
   container.innerHTML = `
-    <div class="result-grid">
-      <div>
-        <h3>Achieved (priority order)</h3>
-        <table class="items"><thead><tr><th>#</th><th>Affix</th><th class="num">Value</th></tr></thead><tbody>${stats}</tbody></table>
+    ${banner}
+    <div class="readout-grid">
+      <div class="readout-main">
+        <div class="readout-hero">
+          <h3 class="section-title">Achieved — ranked priority</h3>
+          <div class="targets">${cards}</div>
+          ${setsBlock}
+        </div>
+        <div class="readout-doll">
+          <h3 class="section-title">Loadout</h3>
+          <div class="paperdoll">${cells.join("")}</div>
+        </div>
       </div>
-      <div>
-        <h3>Loadout</h3>
-        <div style="overflow-x:auto"><table class="items">
-          <thead><tr><th>Slot</th><th>Item</th><th class="num">ML</th><th>Contributes / augments</th><th>Src</th></tr></thead>
-          <tbody>${rows.join("")}</tbody></table></div>
-      </div>
-      ${setsBlock}
     </div>
     ${coverageNote(dataset)}`;
+
+  animateCounters(container);
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, coverageNote };
+  module.exports = { renderResults, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, coverageNote, slotPosition, breakdownBars, esc };
 }

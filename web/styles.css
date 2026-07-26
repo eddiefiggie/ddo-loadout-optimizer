@@ -126,7 +126,11 @@ input, select {
   background: var(--bg-2); color: var(--text);
   border: 1px solid var(--border-2); border-radius: var(--radius-sm);
   padding: 0 var(--sp-3); min-height: var(--tap); font-size: var(--fs-md);
+  /* a <select> otherwise refuses to shrink below its widest <option>, which
+     forces page overflow on a phone (e.g. the affix filter). Let it shrink. */
+  min-width: 0; max-width: 100%;
 }
+.controls select { flex: 1 1 8rem; }
 input:focus-visible, select:focus-visible, button:focus-visible, .pd-slot:focus-visible {
   outline: none; box-shadow: var(--ring);
 }
@@ -270,9 +274,20 @@ button.primary:hover { filter: brightness(1.08); }
   min-height: var(--tap); cursor: default; text-align: left; width: 100%;
   color: var(--text); display: block;
 }
-.pd-slot.occupied { cursor: pointer; border-color: var(--border-2); }
+.pd-slot.occupied { cursor: pointer; border-color: var(--border-2); padding: 0; }
 .pd-slot.occupied:hover { border-color: var(--accent); }
 .pd-slot.empty { opacity: 0.5; }
+details.pd-slot > summary {
+  list-style: none; cursor: pointer; padding: var(--sp-2) var(--sp-3);
+  min-height: var(--tap); display: flex; flex-direction: column; justify-content: center; gap: 2px;
+}
+details.pd-slot > summary::-webkit-details-marker { display: none; }
+details.pd-slot > summary::after {
+  content: "▸"; position: absolute; right: var(--sp-3); color: var(--faint); transition: transform 0.15s;
+}
+details.pd-slot { position: relative; }
+details.pd-slot[open] > summary::after { transform: rotate(90deg); }
+details.pd-slot > .pd-detail { padding: 0 var(--sp-3) var(--sp-3); }
 .pd-label { font-size: var(--fs-xs); color: var(--faint); text-transform: uppercase; letter-spacing: 0.04em; }
 .pd-item { font-size: var(--fs-sm); color: var(--text); display: flex; justify-content: space-between; gap: var(--sp-2); align-items: baseline; }
 .pd-item .ml { color: var(--muted); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
@@ -322,11 +337,12 @@ button.primary:hover { filter: brightness(1.08); }
     border: 1px solid var(--border); border-radius: var(--radius-sm);
     margin-bottom: var(--sp-2); padding: var(--sp-2); background: var(--bg-2);
   }
-  .items.cards td { border: none; padding: var(--sp-1) 0; display: flex; gap: var(--sp-3); }
+  .items.cards td { border: none; padding: var(--sp-1) 0; display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); align-items: baseline; }
   .items.cards td::before {
     content: attr(data-label); color: var(--faint); font-size: var(--fs-xs);
     text-transform: uppercase; letter-spacing: 0.04em; flex: 0 0 6.5em;
   }
+  .items.cards td > * { flex: 0 1 auto; }
   .items.cards td.num { justify-content: flex-start; text-align: left; }
 }
 

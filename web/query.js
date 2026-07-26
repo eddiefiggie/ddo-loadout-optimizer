@@ -18,18 +18,18 @@ window.App && window.App.ready((dataset) => {
 
   root.innerHTML = `
     <h2>Loadout Solver</h2>
-    <div class="controls">
-      <label>ML cap <input id="q-ml" type="number" min="1" max="40" value="34" style="width:4rem"></label>
-      <label>Class/race <input id="q-class" type="text" placeholder="(optional)" style="width:9rem"></label>
-      <label>Armor
+    <div class="controls query-controls">
+      <label class="field"><span>ML cap</span><input id="q-ml" type="number" min="1" max="40" value="34"></label>
+      <label class="field"><span>Class / race</span><input id="q-class" type="text" placeholder="(optional)"></label>
+      <label class="field"><span>Armor</span>
         <select id="q-armor"><option value="">any</option><option>cloth</option><option>light</option><option>medium</option><option>heavy</option></select>
       </label>
-      <label>Weapon
+      <label class="field"><span>Weapon</span>
         <select id="q-weapon"><option value="">any</option><option value="2h">two-handed</option><option value="swordboard">sword &amp; board</option><option value="twf">two-weapon</option></select>
       </label>
     </div>
-    <div class="controls">
-      <input id="q-add" list="q-stats" placeholder="Add a target affix…" style="min-width:220px">
+    <div class="controls q-actions">
+      <input id="q-add" list="q-stats" placeholder="Add a target affix…" aria-label="Add a target affix">
       <datalist id="q-stats">${allStats.map((s) => `<option value="${s}">`).join("")}</datalist>
       <button id="q-add-btn" type="button">Add</button>
       <button id="q-solve" type="button" class="primary">Solve</button>
@@ -43,16 +43,17 @@ window.App && window.App.ready((dataset) => {
   function renderRanked() {
     const ol = $("q-ranked");
     if (!ranked.length) {
-      ol.innerHTML = `<li class="muted">Add at least one target affix, in priority order (drag/arrows to reorder).</li>`;
+      ol.innerHTML = `<li class="hint">Add at least one target affix, in priority order (arrows to reorder).</li>`;
       return;
     }
-    ol.innerHTML = ranked.map((s, i) => `<li>
+    ol.innerHTML = ranked.map((s, i) => `<li><div class="rank-item">
+      <span class="rank-order">${i + 1}</span>
       <span class="rank-name">${s}</span>
       <span class="rank-ctrl">
-        <button data-up="${i}" ${i === 0 ? "disabled" : ""}>↑</button>
-        <button data-down="${i}" ${i === ranked.length - 1 ? "disabled" : ""}>↓</button>
-        <button data-del="${i}" class="del">✕</button>
-      </span></li>`).join("");
+        <button data-up="${i}" aria-label="move ${s} up" ${i === 0 ? "disabled" : ""}>↑</button>
+        <button data-down="${i}" aria-label="move ${s} down" ${i === ranked.length - 1 ? "disabled" : ""}>↓</button>
+        <button data-del="${i}" class="del" aria-label="remove ${s}">✕</button>
+      </span></div></li>`).join("");
   }
 
   function addTarget(stat) {
@@ -107,6 +108,7 @@ window.App && window.App.ready((dataset) => {
       // eslint-disable-next-line no-undef
       const result = await solveLexicographic(model, h);
       const ms = Math.round(performance.now() - t0);
+      if (result.status === "optimal") result.solveMs = ms;
       $("q-status").textContent = result.status === "optimal" ? `Solved in ${ms} ms.` : "";
       // eslint-disable-next-line no-undef
       renderResults($("q-results"), { model, result, query, dataset });
