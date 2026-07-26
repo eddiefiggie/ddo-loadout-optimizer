@@ -47,7 +47,10 @@ def resolve(wiki_type, name):
         return "Armor", "item", ARMOR_TYPE.get(wiki_type)
     if wiki_type in SLOT_BY_TYPE:
         return SLOT_BY_TYPE[wiki_type], "item", None
-    if wiki_type is None or "Rune Arm" in name or "Craft" in name or "Flame" in name:
+    # Rune arms carry no weapon/armor `type` on the wiki (type field absent) — that
+    # null-type is the signal, not the item name (a name-substring heuristic would
+    # mis-slot any future null-type non-rune-arm item).
+    if wiki_type is None or "Rune Arm" in name:
         return "Rune Arm", "runearm", None
     return None, "item", None
 

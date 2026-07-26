@@ -31,8 +31,18 @@ QUEST_MAP = {
     "lamordia": ["Land of Lamordia", "Viktranium Experiment crafting"],
 }
 ENDGAME_ML = 29
-# planner slot -> our worn-slot vocabulary
-SLOT_FIX = {"Offhand": "Off Hand"}
+# planner slot vocabulary -> this repo's solver slot names (model.js WORN_SLOTS
+# + Main Hand / Rune Arm). Any planner slot NOT normalized here that also isn't a
+# WORN_SLOT would land an item outside every solver slot and silently drop it, so
+# every divergent name must be mapped: the planner uses "Helm" (we use "Helmet")
+# and "Offhand" (we use "Off Hand").
+SLOT_FIX = {"Offhand": "Off Hand", "Helm": "Helmet"}
+# Slots the solver actually places into (worn + weapon/rune-arm via category);
+# used to fail loudly if the planner introduces an unmapped slot vocabulary.
+SOLVER_SLOTS = {
+    "Armor", "Helmet", "Goggles", "Necklace", "Trinket", "Cloak", "Belt", "Ring",
+    "Gloves", "Boots", "Bracers", "Quiver", "Weapon", "Off Hand", "Rune Arm",
+}
 ARMOR_ML_TYPE = {"Cloth": "cloth", "Light": "light", "Medium": "medium", "Heavy": "heavy"}
 
 
@@ -42,8 +52,8 @@ def affix_to_string(a):
     name = (a.get("name") or "").strip()
     t = a.get("type")
     v = a.get("value")
-    if t == "Bool" or v in (None, "", 1) and t == "Bool":
-        return None
+    if t == "Bool":
+        return None  # a proc/flag (value 1), not a magnitude
     if name.startswith("Enhancement Bonus"):
         return None  # base weapon/armor bonus — not a ranked stat (as in wiki batches)
     try:
@@ -89,12 +99,19 @@ def main(expansion):
     quests = QUEST_MAP[expansion]
     data = json.load(open(SRC, encoding="utf-8"))
     # already enriched from wiki batches -> skip to avoid duplicate work
+    # Skip-set = names already enriched from the WIKI batches only. Crucially it
+    # must NOT include this importer's own planner outputs (batch14_*_planner) —
+    # otherwise a re-run reads its previous output as "already done" and writes an
+    # empty file (self-exclusion). Only the authoritative wiki batches gate here.
     already = set()
     cdir = os.path.join(ROOT, "data", "seed", "compendium")
     for f in os.listdir(cdir):
-        if f.startswith("enriched_batch") and f.endswith(".json"):
-            for it in json.load(open(os.path.join(cdir, f)))["items"]:
-                already.add(it["name"])
+        if not (f.startswith("enriched_batch") and f.endswith(".json")):
+            continue
+        if "planner" in f:
+            continue  # our own output — never self-exclude
+        for it in json.load(open(os.path.join(cdir, f)))["items"]:
+            already.add(it["name"])
     picked = []
     for it in data:
         if not (set(it.get("quests") or []) & set(quests)):
@@ -106,6 +123,11 @@ def main(expansion):
         if it["name"] in already:
             continue  # already sourced from the wiki
         rec = build_record(it)
+        # Fail loudly on an unmapped slot rather than silently dropping the item
+        # from the solver (the WORN_SLOTS mismatch class — see SLOT_FIX).
+        if rec["slot"] not in SOLVER_SLOTS and rec["category"] not in ("weapon", "runearm"):
+            print(f"  WARNING unmapped slot {rec['slot']!r} for {rec['name']!r} — "
+                  f"add it to SLOT_FIX or it will not reach the solver", file=sys.stderr)
         if any(not e.endswith("Augment Slot") for e in rec["enhancements"]):
             picked.append(rec)
 

@@ -5,7 +5,31 @@
   "system": "mythdrannor named gear (gear-planner import, strict re-parse)",
   "source": "illusionistpm/ddo-gear-planner items.json (ddowiki-derived)",
   "harvested": "2026-07-26",
-  "count": 0
+  "count": 1
  },
- "items": []
+ "items": [
+  {
+   "name": "Legendary Love at First Sight",
+   "category": "item",
+   "slot": "Goggles",
+   "enhancements": [
+    "Equipment Enchantment Focus +11",
+    "Competence Heal +21",
+    "Competence Healing Amplification +59",
+    "Poison Resistance +56",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Love_at_First_Sight",
+   "_enriched": true,
+   "_source": "gear-planner"
+  }
+ ]
 }
