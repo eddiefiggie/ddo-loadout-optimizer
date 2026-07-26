@@ -270,6 +270,17 @@ def parse_viktranium(seed):
         "options_quarantined": len(quarantined),
         "quarantined": quarantined,  # surface the reasons (mirrors dino / NC coverage)
         "by_pool": by_pool,
-        "item_hosts": "resolved from {{Lamordia Slot|...}} on enriched items",
+        "item_hosts": "resolved from {{Lamordia Slot|...}} on enriched items "
+                      "and human-readable Lamordia strings on base-seed items",
+        # Honest scope disclosure (U5). The four typed augment pools
+        # (Melancholic / Dolorous / Miserable / Woeful) that fill the {{Lamordia
+        # Slot}} choice-slots are sourced. Weapon-proc / material-type / "You
+        # have X" / multi-affix options are quarantined, never inferred. The
+        # "Cataclysmic Weapons and Shields" arm of the Viktranium page is
+        # item-CREATION (a new named weapon), not an affix choice-slot, so it is
+        # deferred to named-gear sourcing (R4) rather than modeled here.
+        "arms_note": "typed augment pools sourced; Cataclysmic weapon/shield "
+                     "creation is item-creation (deferred to named-gear R4), "
+                     "not a choice-slot",
     }
     return {"records": records, "quarantined": quarantined, "coverage": coverage}
