@@ -1,0 +1,465 @@
+{
+ "metadata": {
+  "layer": "enriched",
+  "batch": "batch10",
+  "harvested": "2026-07-25",
+  "count": 18
+ },
+ "items": [
+  {
+   "name": "Legendary Downcast Brawler's Garb",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Competence Elemental Resistance +15",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Downcast_Brawler's_Garb",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Lamordia Slot",
+    "Lamordia Slot",
+    "Lamordia Slot",
+    "Lamordia Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 34,
+   "armor_type": "cloth"
+  },
+  {
+   "name": "Legendary Downcast Robe",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Exceptional Universal Spell Lore +5%",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Downcast_Robe",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Lamordia Slot",
+    "Lamordia Slot",
+    "Lamordia Slot",
+    "Lamordia Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 34,
+   "armor_type": "cloth"
+  },
+  {
+   "name": "Legendary Drow Priestess' Mantle",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Power of the Dark Restoration +163",
+    "Potency +114",
+    "Insightful Void Lore +14%",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Drow_Priestess'_Mantle",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Undying",
+    "Nearly Complete"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "armor_type": "cloth"
+  },
+  {
+   "name": "Legendary Duergarcraft Outfit",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Fortification +163",
+    "Quality Physical Sheltering +9",
+    "Quality False Life +14",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Duergarcraft_Outfit",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Nearly Complete"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "armor_type": "cloth"
+  },
+  {
+   "name": "Legendary Duergarcraft Robe",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Fortification +163",
+    "Quality Physical Sheltering +9",
+    "Quality False Life +14",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Duergarcraft_Robe",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Nearly Complete"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "armor_type": "cloth"
+  },
+  {
+   "name": "Legendary Emissary's Vestments",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Enhancement Physical Sheltering +33",
+    "Insightful Magical Sheltering +16",
+    "Fortification +142",
+    "Green Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Emissary's_Vestments",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Stunning"
+   ],
+   "_enriched": true,
+   "minimum_level": 28,
+   "armor_type": "cloth"
+  },
+  {
+   "name": "Legendary Crimson Chain",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Dexterity +14",
+    "Reflex Save +12",
+    "Dodge +14%",
+    "Green Augment Slot",
+    "Colorless Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Crimson_Chain",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Guard",
+    "Mat"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "armor_type": "light"
+  },
+  {
+   "name": "Legendary Demon Scale Armor",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Electricity Absorption +36%",
+    "Electric Resistance +54",
+    "Enhancement Magical Sheltering +36",
+    "Green Augment Slot",
+    "Blue Augment Slot",
+    "Legendary Menechtarun Scavenger (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Demon_Scale_Armor",
+   "augment_slots": [
+    "Green",
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Proof"
+   ],
+   "_enriched": true,
+   "minimum_level": 30,
+   "armor_type": "light"
+  },
+  {
+   "name": "Legendary Downcast Vest",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Competence Elemental Resistance +15",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Downcast_Vest",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Lamordia Slot",
+    "Lamordia Slot",
+    "Lamordia Slot",
+    "Lamordia Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 34,
+   "armor_type": "light"
+  },
+  {
+   "name": "Legendary Drow Outrunner Armor",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Quality Spell Resistance +10",
+    "Resistance +10",
+    "Quality Spell Save +2",
+    "Blue Augment Slot",
+    "Green Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Drow_Outrunner_Armor",
+   "augment_slots": [
+    "Blue",
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Proof"
+   ],
+   "_enriched": true,
+   "minimum_level": 28,
+   "armor_type": "light"
+  },
+  {
+   "name": "Legendary Duelist's Leathers (level 32)",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Bal +21",
+    "Accuracy +22",
+    "Dodge +14%",
+    "Blue Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Duelist's_Leathers_(level_32)",
+   "augment_slots": [
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "ItemGrantedFeat"
+   ],
+   "_enriched": true,
+   "minimum_level": 32,
+   "armor_type": "light"
+  },
+  {
+   "name": "Legendary Duergarcraft Chain",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Fortification +163",
+    "Quality Physical Sheltering +9",
+    "Quality False Life +14",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Duergarcraft_Chain",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Nearly Complete"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "armor_type": "light"
+  },
+  {
+   "name": "Legendary Bittersnow",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Fortification +142",
+    "Enhancement Physical Sheltering +33",
+    "Parrying +6",
+    "Blue Augment Slot",
+    "Green Augment Slot",
+    "Eminence of Winter (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bittersnow",
+   "augment_slots": [
+    "Blue",
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "HealingAmp"
+   ],
+   "_enriched": true,
+   "minimum_level": 29,
+   "armor_type": "docent"
+  },
+  {
+   "name": "Legendary Blademark's Docent",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Physical Sheltering +34",
+    "False Life +51",
+    "Fortification +4",
+    "Colorless Augment Slot",
+    "Blue Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Blademark's_Docent",
+   "augment_slots": [
+    "Colorless",
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Angelic Grace",
+    "Vertigo"
+   ],
+   "_enriched": true,
+   "minimum_level": 30,
+   "armor_type": "docent"
+  },
+  {
+   "name": "Legendary Brightsun",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Fortification +142",
+    "Quality Seeker +3",
+    "Enhancement Physical Sheltering +33",
+    "Parrying +6",
+    "Blue Augment Slot",
+    "Green Augment Slot",
+    "Eminence of Summer (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brightsun",
+   "augment_slots": [
+    "Blue",
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus"
+   ],
+   "_enriched": true,
+   "minimum_level": 29,
+   "armor_type": "docent"
+  },
+  {
+   "name": "Legendary Clearwater",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Fortification +142",
+    "Reflex Save +11",
+    "Enhancement Dodge +13%",
+    "Blue Augment Slot",
+    "Green Augment Slot",
+    "Eminence of Spring (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Clearwater",
+   "augment_slots": [
+    "Blue",
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "HealingAmp"
+   ],
+   "_enriched": true,
+   "minimum_level": 29,
+   "armor_type": "docent"
+  },
+  {
+   "name": "Legendary Darkmoss",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Exceptional Universal Spell Lore +5%",
+    "Exceptional Universal +15",
+    "Enhancement Physical Sheltering +33",
+    "Parrying +6",
+    "Blue Augment Slot",
+    "Green Augment Slot",
+    "Eminence of Autumn (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Darkmoss",
+   "augment_slots": [
+    "Blue",
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus"
+   ],
+   "_enriched": true,
+   "minimum_level": 29,
+   "armor_type": "docent"
+  },
+  {
+   "name": "Legendary Diabolist's Docent",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Intelligence +14",
+    "Charisma +14",
+    "Conjuration Spell Focus +9",
+    "Spell Resistance +41",
+    "Blue Augment Slot",
+    "Colorless Augment Slot",
+    "Legendary Deadly Diabolist (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Diabolist's_Docent",
+   "augment_slots": [
+    "Blue",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Clicky",
+    "Enhancement bonus"
+   ],
+   "_enriched": true,
+   "minimum_level": 30,
+   "armor_type": "docent"
+  }
+ ]
+}
