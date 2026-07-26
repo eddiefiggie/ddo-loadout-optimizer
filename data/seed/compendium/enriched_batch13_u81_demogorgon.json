@@ -4,7 +4,7 @@
   "batch": "batch13_u81_demogorgon",
   "system": "Update 81 (Terror of Demogorgon) Legendary named gear (partial 119/166)",
   "harvested": "2026-07-26",
-  "count": 118
+  "count": 166
  },
  "items": [
   {
@@ -2850,6 +2850,1154 @@
    "_enriched": true,
    "minimum_level": 35,
    "weapon_type": "Heavy Pick"
+  },
+  {
+   "name": "Legendary Duergarcraft Buckler",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Insightful Diversion +11",
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Duergarcraft_Buckler",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Shield Bashing",
+    "Conditioning",
+    "Guardbreaking"
+   ],
+   "_enriched": true,
+   "minimum_level": 35
+  },
+  {
+   "name": "Legendary Occultic Circlet",
+   "category": "item",
+   "slot": "Helmet",
+   "enhancements": [
+    "Equipment Potency +118",
+    "Insightful Potency +59",
+    "Quality Potency +29",
+    "Sacred Mastery Spell Focus +3",
+    "Profane Well Rounded +3",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Occultic_Circlet",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 35
+  },
+  {
+   "name": "Legendary Perfected Bastard Sword of the Weapon Master",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Perfected_Bastard_Sword_of_the_Weapon_Master",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Rippling Energy",
+    "Maiming",
+    "Destruction",
+    "Fetters of Unreality"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "weapon_type": "Bastard Sword"
+  },
+  {
+   "name": "Legendary Perfected Dagger of the Weapon Master",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Perfected_Dagger_of_the_Weapon_Master",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Rippling Energy",
+    "Maiming",
+    "Destruction",
+    "Fetters of Unreality"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "weapon_type": "Dagger"
+  },
+  {
+   "name": "Legendary Perfected Dwarven Waraxe of the Weapon Master",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Perfected_Dwarven_Waraxe_of_the_Weapon_Master",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Rippling Energy",
+    "Maiming",
+    "Destruction",
+    "Fetters of Unreality"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "weapon_type": "Dwarven War Axe"
+  },
+  {
+   "name": "Legendary Perfected Greataxe of the Weapon Master",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Perfected_Greataxe_of_the_Weapon_Master",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Rippling Energy",
+    "Maiming",
+    "Destruction",
+    "Fetters of Unreality"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "weapon_type": "Great Axe"
+  },
+  {
+   "name": "Legendary Perfected Khopesh of the Weapon Master",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Perfected_Khopesh_of_the_Weapon_Master",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Rippling Energy",
+    "Maiming",
+    "Destruction",
+    "Fetters of Unreality"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "weapon_type": "Khopesh"
+  },
+  {
+   "name": "Legendary Perfected Light Mace of the Weapon Master",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Perfected_Light_Mace_of_the_Weapon_Master",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Rippling Energy",
+    "Maiming",
+    "Destruction",
+    "Fetters of Unreality"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "weapon_type": "Light Mace"
+  },
+  {
+   "name": "Legendary Perfected Longsword of the Weapon Master",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Perfected_Longsword_of_the_Weapon_Master",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Rippling Energy",
+    "Maiming",
+    "Destruction",
+    "Fetters of Unreality"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "weapon_type": "Long Sword"
+  },
+  {
+   "name": "Legendary Perfected Maul of the Weapon Master",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Perfected_Maul_of_the_Weapon_Master",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Rippling Energy",
+    "Maiming",
+    "Destruction",
+    "Fetters of Unreality"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "weapon_type": "Maul"
+  },
+  {
+   "name": "Legendary Perfected Quarterstaff of the Weapon Master",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Perfected_Quarterstaff_of_the_Weapon_Master",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Rippling Energy",
+    "Maiming",
+    "Destruction",
+    "Fetters of Unreality"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "weapon_type": "Quarterstaff"
+  },
+  {
+   "name": "Legendary Perfected Rapier of the Weapon Master",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Perfected_Rapier_of_the_Weapon_Master",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Rippling Energy",
+    "Maiming",
+    "Destruction",
+    "Fetters of Unreality"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "weapon_type": "Rapier"
+  },
+  {
+   "name": "Legendary Perfected Scimitar of the Weapon Master",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Perfected_Scimitar_of_the_Weapon_Master",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Rippling Energy",
+    "Maiming",
+    "Destruction",
+    "Fetters of Unreality"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "weapon_type": "Scimitar"
+  },
+  {
+   "name": "Legendary Perfected Shortsword of the Weapon Master",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Perfected_Shortsword_of_the_Weapon_Master",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Rippling Energy",
+    "Maiming",
+    "Destruction",
+    "Fetters of Unreality"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "weapon_type": "Short Sword"
+  },
+  {
+   "name": "Legendary Perfected Warhammer of the Weapon Master",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Perfected_Warhammer_of_the_Weapon_Master",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Rippling Energy",
+    "Maiming",
+    "Destruction",
+    "Fetters of Unreality"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "weapon_type": "War Hammer"
+  },
+  {
+   "name": "Legendary Piwafwi of the Drow Assassin",
+   "category": "item",
+   "slot": "Cloak",
+   "enhancements": [
+    "Deception +13",
+    "Legendary Armor-Piercing +6",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Piwafwi_of_the_Drow_Assassin",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Assassinate",
+    "Assassinate"
+   ],
+   "_enriched": true,
+   "minimum_level": 35
+  },
+  {
+   "name": "Legendary Planar Lariat",
+   "category": "item",
+   "slot": "Belt",
+   "enhancements": [
+    "Chaos Absorption +25%",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Planar_Lariat",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "Clicky",
+    "Shield Bonus",
+    "Riposte"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "nearly_complete": "Ability Score"
+  },
+  {
+   "name": "Legendary Purple Chiton Pouch",
+   "category": "item",
+   "slot": "Trinket",
+   "enhancements": [
+    "Insightful Magical Sheltering +19",
+    "Profane Lifeforce +52",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Purple_Chiton_Pouch",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Power in Pact"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "nearly_complete": "Insightful Ability Score"
+  },
+  {
+   "name": "Legendary Ruler of Ruin",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Kinetic Lore +24%",
+    "Force Absorption +17%",
+    "Blue Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ruler_of_Ruin",
+   "augment_slots": [
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Intensity"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "nearly_complete": "Spell Focus"
+  },
+  {
+   "name": "Legendary Scales of Demogorgon",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Electricity Absorption +40%",
+    "Electric Resistance +59",
+    "Natural Armor +15",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Scales_of_Demogorgon",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Demonic Shield",
+    "Smoke Screen"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "armor_type": "heavy"
+  },
+  {
+   "name": "Legendary Shaped Duergarcraft Cowl",
+   "category": "item",
+   "slot": "Helmet",
+   "enhancements": [
+    "Quality Dodge +3%",
+    "Quality Reflex Save +3",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Shaped_Duergarcraft_Cowl",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Protection"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "nearly_complete": "Ability Score"
+  },
+  {
+   "name": "Legendary Shaped Duergarcraft Helm",
+   "category": "item",
+   "slot": "Helmet",
+   "enhancements": [
+    "Insightful Physical Sheltering +19",
+    "Insightful Magical Sheltering +19",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Shaped_Duergarcraft_Helm",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "HealingAmp"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "nearly_complete": "Ability Score"
+  },
+  {
+   "name": "Legendary Shaped Great Forge Cowl",
+   "category": "item",
+   "slot": "Helmet",
+   "enhancements": [
+    "Quality Wizardry +79",
+    "Quality Mastery Spell Focus +2",
+    "Sacred Mastery Spell Focus +3",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Shaped_Great_Forge_Cowl",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 35,
+   "nearly_complete": "Quality Ability Score"
+  },
+  {
+   "name": "Legendary Shaped Great Forge Helm",
+   "category": "item",
+   "slot": "Helmet",
+   "enhancements": [
+    "Deadly +12",
+    "Seeker +15",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Shaped_Great_Forge_Helm",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Save"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "nearly_complete": "Ability Score"
+  },
+  {
+   "name": "Legendary Shard of the Mad Gem",
+   "category": "item",
+   "slot": "Trinket",
+   "enhancements": [
+    "Illusion Spell Focus +13",
+    "Insightful Illusion Spell Focus +6",
+    "Insightful Spell Resistance +23",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Shard_of_the_Mad_Gem",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 35,
+   "nearly_complete": "Ability Score"
+  },
+  {
+   "name": "Legendary Shards of the Deep",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Shards_of_the_Deep",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Piercing",
+    "Smashing",
+    "Disintegrate",
+    "Vampirism"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "weapon_type": "Handwrap"
+  },
+  {
+   "name": "Legendary Signet of the Prince of Pleasure",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Healing Lore +24%",
+    "Green Augment Slot",
+    "Colorless Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Signet_of_the_Prince_of_Pleasure",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Intensity",
+    "Efficient Metamagic"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "nearly_complete": "Spell Focus"
+  },
+  {
+   "name": "Legendary Six-Blade Belt",
+   "category": "item",
+   "slot": "Belt",
+   "enhancements": [
+    "Doublestrike +17%",
+    "Insightful Doublestrike +8%",
+    "Quality Doublestrike +4%",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Six-Blade_Belt",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 35,
+   "nearly_complete": "Quality Ability Score"
+  },
+  {
+   "name": "Legendary Spider's Bite",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Spider's_Bite",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement_bonus",
+    "Poisonous",
+    "Toxic",
+    "Nightshade Venom",
+    "Vampirism"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "weapon_type": "Great Axe"
+  },
+  {
+   "name": "Legendary Sporesphere",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Spell Lore +13%",
+    "Insightful Wizardry +159",
+    "Purple Augment Slot",
+    "Orange Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Sporesphere",
+   "augment_slots": [
+    "Purple",
+    "Orange"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Intensity"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "nearly_complete": "Healing Amplification"
+  },
+  {
+   "name": "Legendary Staff of the Deep",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Potency +114",
+    "Insightful Potency +57",
+    "Quality Mastery Spell Focus +2",
+    "Quality Spell Penetration +3",
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Staff_of_the_Deep",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Equipoised Focus"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "weapon_type": "Quarterstaff"
+  },
+  {
+   "name": "Legendary Staff of the Demonic Resurrector",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Insightful Necromancy Spell Focus +7",
+    "Blighted Lore +25%",
+    "Power of the Blight +169",
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Staff_of_the_Demonic_Resurrector",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Augmentation"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "weapon_type": "Quarterstaff"
+  },
+  {
+   "name": "Legendary Stitched Duergarcraft Cloak",
+   "category": "item",
+   "slot": "Cloak",
+   "enhancements": [
+    "Vitality +52",
+    "Enhancement Magical Sheltering +39",
+    "Insightful Fortification +81",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Stitched_Duergarcraft_Cloak",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 35,
+   "nearly_complete": "Quality Ability Score"
+  },
+  {
+   "name": "Legendary Stitched Duergarcraft Shroud",
+   "category": "item",
+   "slot": "Cloak",
+   "enhancements": [
+    "Quality Deception +3",
+    "Deception +22",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Stitched_Duergarcraft_Shroud",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Concealment"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "nearly_complete": "Quality Ability Score"
+  },
+  {
+   "name": "Legendary Stitched Great Forge Cloak",
+   "category": "item",
+   "slot": "Cloak",
+   "enhancements": [
+    "Insightful Armor-Piercing +11",
+    "Accuracy +24",
+    "Deadly +12",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Stitched_Great_Forge_Cloak",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 35,
+   "nearly_complete": "Quality Ability Score"
+  },
+  {
+   "name": "Legendary Stitched Great Forge Shroud",
+   "category": "item",
+   "slot": "Cloak",
+   "enhancements": [
+    "Quality Spell Penetration +3",
+    "Insightful Mastery Spell Focus +4",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Stitched_Great_Forge_Shroud",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Magical Efficiency"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "nearly_complete": "Quality Ability Score"
+  },
+  {
+   "name": "Legendary Sword of Spiders",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Sword_of_Spiders",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Poisonous",
+    "Toxic",
+    "Nightshade Venom",
+    "Crippling"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "weapon_type": "Long Sword"
+  },
+  {
+   "name": "Legendary Tail of the Demogorgon",
+   "category": "item",
+   "slot": "Trinket",
+   "enhancements": [
+    "Doubleshot +9%",
+    "Insightful Doubleshot +5%",
+    "Quality Doubleshot +3%",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Tail_of_the_Demogorgon",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Marksmanship"
+   ],
+   "_enriched": true,
+   "minimum_level": 35
+  },
+  {
+   "name": "Legendary The Blood of Demons",
+   "category": "item",
+   "slot": "Necklace",
+   "enhancements": [
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_The_Blood_of_Demons",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "Taint of Evil",
+    "Bloodrage",
+    "Raging Inferno",
+    "Raging Strength",
+    "Doublestrike"
+   ],
+   "_enriched": true,
+   "minimum_level": 35
+  },
+  {
+   "name": "Legendary The Bloody Boulder",
+   "category": "item",
+   "slot": "Trinket",
+   "enhancements": [
+    "Quality Seeker +3",
+    "Deception +22",
+    "Legendary Accuracy +6",
+    "Legendary Deadly +3",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_The_Bloody_Boulder",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 35
+  },
+  {
+   "name": "Legendary The Shadow King's Cruelty",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Insightful Spell Resistance +24",
+    "Insightful Fortification +84",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_The_Shadow_King's_Cruelty",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Revel in Blood"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "armor_type": "light",
+   "nearly_complete": "Ability Score"
+  },
+  {
+   "name": "Legendary The Wicked Pull",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Sonic Lore +25%",
+    "Resonance +169",
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_The_Wicked_Pull",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Sirocco",
+    "Reverberating",
+    "Rupturing Echo",
+    "Mat",
+    "ItemGrantedFeat"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "weapon_type": "Great Club"
+  },
+  {
+   "name": "Legendary Torc of the Lords of the Abyss",
+   "category": "item",
+   "slot": "Necklace",
+   "enhancements": [
+    "Mastery Spell Focus +9",
+    "Spell Penetration +10",
+    "Wizardry +332",
+    "Insightful Enchantment Spell Focus +7",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Torc_of_the_Lords_of_the_Abyss",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "Transform Kinetic Energy"
+   ],
+   "_enriched": true,
+   "minimum_level": 35
+  },
+  {
+   "name": "Legendary Visor of Fraz-Urb'luu",
+   "category": "item",
+   "slot": "Goggles",
+   "enhancements": [
+    "resistance Illusion Save +13",
+    "Insightful Illusion Spell Focus +7",
+    "Illusion Spell Focus +14",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Visor_of_Fraz-Urb'luu",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Clicky",
+    "Eversight"
+   ],
+   "_enriched": true,
+   "minimum_level": 35
+  },
+  {
+   "name": "Legendary Vizeran's Band",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Evocation Spell Focus +13",
+    "Insightful Evocation Spell Focus +6",
+    "Blue Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Vizeran's_Band",
+   "augment_slots": [
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Efficient Metamagic"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "nearly_complete": "Ability Score"
+  },
+  {
+   "name": "Legendary Wave of Wailing",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Wave_of_Wailing",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Echoes of Angdrelve",
+    "Anarchic",
+    "Disintegrate",
+    "Telekinetic"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "weapon_type": "Great Sword"
+  },
+  {
+   "name": "Legendary Webs of the Drow Penitent",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Enhancement Physical Sheltering +39",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Webs_of_the_Drow_Penitent",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Reinforced Fists",
+    "Enhanced Ki",
+    "Crippling"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "armor_type": "cloth",
+   "nearly_complete": "Ability Score"
+  },
+  {
+   "name": "Legendary Wormwrithe Ring",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Fortitude Save +13",
+    "Quality False Life +14",
+    "Green Augment Slot",
+    "Colorless Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Wormwrithe_Ring",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "HealingAmp"
+   ],
+   "_enriched": true,
+   "minimum_level": 35,
+   "nearly_complete": "Healing Amplification"
   }
  ]
 }
