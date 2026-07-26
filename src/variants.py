@@ -58,6 +58,10 @@ def _make_variant(item, ml, tier_label, parsed):
         "armor_type": "unknown" if slot == "Armor" else None,  # R11 dodge cap
         "tier_values_incomplete": False,
         "tier_ml_list": None,
+        # U81 Nearly-Complete host marker (category) — propagated so the solver's
+        # NC machinery can attach a craftable 4th affix to this item.
+        "nearly_complete": item.get("nearly_complete"),
+        "nc_tier": item.get("nc_tier"),
     }
 
 

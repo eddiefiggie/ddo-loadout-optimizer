@@ -85,11 +85,11 @@
    ],
    "_enrich_unmapped": [
     "Intensity",
-    "Spelllore",
-    "Nearly Complete"
+    "Spelllore"
    ],
    "_enriched": true,
-   "minimum_level": 35
+   "minimum_level": 35,
+   "nearly_complete": "Skill"
   },
   {
    "name": "Legendary Forge's Flame",
@@ -107,11 +107,11 @@
    ],
    "_enrich_unmapped": [
     "Intensity",
-    "Spelllore",
-    "Nearly Complete"
+    "Spelllore"
    ],
    "_enriched": true,
-   "minimum_level": 35
+   "minimum_level": 35,
+   "nearly_complete": "Skill"
   },
   {
    "name": "Legendary Frozen Contraption",

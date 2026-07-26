@@ -192,6 +192,15 @@ RENDERERS = {
 # magnitude-bearing target stat, so guessing one would violate strict provenance.
 _SKIP_SILENT = {"augment", "named item sets"}  # handled specially, not "unmapped"
 
+# U81 Nearly-Complete OPEN-slot categories (must match data/seed/nearly_complete.json).
+# {{Nearly Complete|<category>|<count>}} marks an item that carries a craftable 4th
+# affix from that category's pool — the host the solver's NC machinery attaches to.
+# (Distinct from {{Nearly Finished|...}}, an already-made choice, left unmapped.)
+NC_CATEGORIES = {
+    "Ability Score", "Insightful Ability Score", "Quality Ability Score",
+    "Healing Amplification", "Skill", "Spell Focus",
+}
+
 
 def _split_top_level(inner: str):
     """Split template inner text on top-level '|', ignoring '|' inside nested
@@ -219,6 +228,7 @@ def parse_enhancement_field(field: str) -> dict:
     sets: [set names], unmapped: [template names]}.
     """
     enh, augs, sets, unmapped = [], [], [], []
+    nearly_complete = None
     for raw in (field or "").split("\n"):
         line = raw.strip()
         if not line.startswith("*"):
@@ -254,6 +264,14 @@ def parse_enhancement_field(field: str) -> dict:
             if args:
                 sets.append(args[0].strip())
             continue
+        if key == "nearly complete":
+            # open NC 4th-affix slot: capture the category (validated) as the host
+            # marker; the solver's NC machinery crafts the best option from its pool.
+            if args and args[0] in NC_CATEGORIES:
+                nearly_complete = args[0]
+            else:
+                unmapped.append(name)
+            continue
         renderer = RENDERERS.get(key)
         if renderer:
             lines = renderer(args)
@@ -263,7 +281,8 @@ def parse_enhancement_field(field: str) -> dict:
                 unmapped.append(name)
         else:
             unmapped.append(name)
-    return {"enhancements": enh, "augment_slots": augs, "sets": sets, "unmapped": unmapped}
+    return {"enhancements": enh, "augment_slots": augs, "sets": sets,
+            "unmapped": unmapped, "nearly_complete": nearly_complete}
 
 
 def build_item_record(name, slot, field, wiki_url, minimum_level=None,
@@ -295,4 +314,8 @@ def build_item_record(name, slot, field, wiki_url, minimum_level=None,
         rec["minimum_level"] = minimum_level
     if armor_type:
         rec["armor_type"] = armor_type
+    if parsed["nearly_complete"]:
+        # activates the item as a U81 Nearly-Complete host; the solver crafts the
+        # best option from this category's pool (tier derived from ML at solve time)
+        rec["nearly_complete"] = parsed["nearly_complete"]
     return rec

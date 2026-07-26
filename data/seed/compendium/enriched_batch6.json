@@ -292,11 +292,11 @@
    "_enrich_unmapped": [
     "Tactics",
     "Tactics",
-    "Armor-Piercing",
-    "Nearly Complete"
+    "Armor-Piercing"
    ],
    "_enriched": true,
-   "minimum_level": 35
+   "minimum_level": 35,
+   "nearly_complete": "Quality Ability Score"
   },
   {
    "name": "Legendary Bracers of Deftness",
@@ -522,11 +522,11 @@
     "Moon"
    ],
    "_enrich_unmapped": [
-    "Ram's Might",
-    "Nearly Complete"
+    "Ram's Might"
    ],
    "_enriched": true,
-   "minimum_level": 35
+   "minimum_level": 35,
+   "nearly_complete": "Skill"
   },
   {
    "name": "Legendary Chamber Boots",
@@ -698,11 +698,11 @@
     "Moon"
    ],
    "_enrich_unmapped": [
-    "Armor-Piercing",
-    "Nearly Complete"
+    "Armor-Piercing"
    ],
    "_enriched": true,
-   "minimum_level": 35
+   "minimum_level": 35,
+   "nearly_complete": "Ability Score"
   },
   {
    "name": "Legendary Charged Gauntlets",
@@ -852,11 +852,11 @@
     "Sun"
    ],
    "_enrich_unmapped": [
-    "Freedom of Movement",
-    "Nearly Complete"
+    "Freedom of Movement"
    ],
    "_enriched": true,
-   "minimum_level": 35
+   "minimum_level": 35,
+   "nearly_complete": "Healing Amplification"
   }
  ]
 }
