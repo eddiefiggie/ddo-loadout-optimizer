@@ -1,0 +1,194 @@
+{
+ "metadata": {
+  "layer": "enriched",
+  "batch": "batch14_iod_planner",
+  "system": "iod named gear (gear-planner import, strict re-parse)",
+  "source": "illusionistpm/ddo-gear-planner items.json (ddowiki-derived)",
+  "harvested": "2026-07-26",
+  "count": 9
+ },
+ "items": [
+  {
+   "name": "Legendary Belt of the Black Sands",
+   "category": "item",
+   "slot": "Belt",
+   "enhancements": [
+    "Constitution +14",
+    "Green Augment Slot",
+    "Colorless Augment Slot"
+   ],
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Belt_of_the_Black_Sands",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Legendary Firemouth's Cloak",
+   "category": "item",
+   "slot": "Cloak",
+   "enhancements": [
+    "Strength +14",
+    "Fire Resistance +53",
+    "Speed +30",
+    "Green Augment Slot",
+    "Colorless Augment Slot"
+   ],
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Firemouth%27s_Cloak",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Legendary Firemouth's Diving Helmet",
+   "category": "item",
+   "slot": "Helm",
+   "enhancements": [
+    "Proof Against Disease +11",
+    "Insight Strength +6",
+    "Doublestrike +15",
+    "Competence Deadly +11",
+    "Competence Underwater Action +21",
+    "Green Augment Slot",
+    "Colorless Augment Slot"
+   ],
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Firemouth%27s_Diving_Helmet",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Legendary Firestalker Docent",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Constitution +14",
+    "Insight Spell Resistance +20",
+    "Quality Dodge +3",
+    "Insight Fortification +74",
+    "Blue Augment Slot",
+    "Yellow Augment Slot"
+   ],
+   "augment_slots": [
+    "Blue",
+    "Yellow"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Firestalker_Docent",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Legendary Manaweave Armor",
+   "category": "item",
+   "slot": "Armor",
+   "enhancements": [
+    "Armor Armor Class +25",
+    "Constitution +14",
+    "Insight Spell Resistance +20",
+    "Quality Dodge +3",
+    "Insight Fortification +74",
+    "Green Augment Slot",
+    "Colorless Augment Slot"
+   ],
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Manaweave_Armor",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Legendary Naildriver",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Stabbing +15",
+    "Anarchic +6",
+    "Red Augment Slot"
+   ],
+   "augment_slots": [
+    "Red"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Naildriver",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Legendary Powder-Packed Barrel",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Implement Universal Spell Power +31",
+    "Orb Orb Bonus +15",
+    "Equipment Fire Lore +22",
+    "Equipment Kinetic Lore +22",
+    "Equipment Combustion +149",
+    "Equipment Impulse +149",
+    "Quality Charisma +3",
+    "Purple Augment Slot"
+   ],
+   "augment_slots": [
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Powder-Packed_Barrel",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Legendary Sacrarium Cloak",
+   "category": "item",
+   "slot": "Cloak",
+   "enhancements": [
+    "Intelligence +14",
+    "Equipment Potency +103",
+    "Insight Potency +51",
+    "Green Augment Slot",
+    "Colorless Augment Slot"
+   ],
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Sacrarium_Cloak",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Legendary Wreckage of the Drowned Rat",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Shield Armor Class +19",
+    "Profane Well Rounded +2",
+    "Profane False Life +47",
+    "Profane Negative Amplification +56",
+    "Quality Intelligence +3",
+    "Red Augment Slot"
+   ],
+   "augment_slots": [
+    "Red"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Wreckage_of_the_Drowned_Rat",
+   "_enriched": true,
+   "_source": "gear-planner"
+  }
+ ]
+}
