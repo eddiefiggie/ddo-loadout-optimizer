@@ -1,0 +1,269 @@
+{
+ "metadata": {
+  "layer": "raw-wikitext",
+  "batch": "batch9",
+  "harvested": "2026-07-25",
+  "note": "raw {{template}} fields; regenerable via src.enrich"
+ },
+ "items": [
+  {
+   "name": "Legendary Cherished Wedding Ring",
+   "slot": "Ring",
+   "minimum_level": 31,
+   "field": "* {{Skills|Alluring|10|Insightful}}\n* {{Spell Power|Devotion|149}}\n* {{Skills|Heal|21}}\n* {{Hp|False Life|53}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cherished_Wedding_Ring"
+  },
+  {
+   "name": "Legendary Chieftain",
+   "slot": "Ring",
+   "minimum_level": 28,
+   "field": "* {{Stat|Wis|13}}\n* {{Stat|Wis|3|Quality}}\n* {{Save|spell|10}}\n* {{Save|w|3|Quality}}\n* {{Augment|Blue}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Chieftain"
+  },
+  {
+   "name": "Legendary Contraption Keyring",
+   "slot": "Ring",
+   "minimum_level": 34,
+   "field": "* {{Speed|30}}\n* {{Lamordia Slot|Melancholic|Accessory}}\n* {{Lamordia Slot|Dolorous|Accessory}}\n* {{Lamordia Slot|Miserable|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Contraption_Keyring"
+  },
+  {
+   "name": "Legendary Cursebane Ring",
+   "slot": "Ring",
+   "minimum_level": 29,
+   "field": "* {{Save|curse|4|insight}}\n* {{hp|vitality|44}}\n* {{Sheltering|8|Quality|Magical}}\n* {{Deathblock}}\n* {{Augment|Green}}\n* {{Named item sets|Adherent of the Mists Set (Legendary)}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cursebane_Ring"
+  },
+  {
+   "name": "Legendary Deadmonger Gang's Signet",
+   "slot": "Ring",
+   "minimum_level": 34,
+   "field": "* {{Action Boost Enhancement}}\n* {{Lamordia Slot|Melancholic|Accessory}}\n* {{Lamordia Slot|Dolorous|Accessory}}\n* {{Lamordia Slot|Miserable|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Deadmonger_Gang's_Signet"
+  },
+  {
+   "name": "Legendary Deathwarden",
+   "slot": "Ring",
+   "minimum_level": 29,
+   "field": "* {{Deathblock}}\n* {{Spelllore|Healing|21}}\n* {{Efficient Metamagic|Empower Healing|2}}\n* {{SpellPower|Devotion|15|Exceptional}}\n* {{Augment|blue}}\n* {{Named item sets|Adherent of the Mists Set (Legendary)}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Deathwarden"
+  },
+  {
+   "name": "Legendary Diabolist's Ring",
+   "slot": "Ring",
+   "minimum_level": 30,
+   "field": "* {{Stat|INT|6|Insightful}}\n* {{Stat|CHA|6|Insightful}}\n* {{Spell Focus|Evocation|4|Insightful}}\n* {{Wizardry|145|Insightful}}\n* {{Demonic Shield|Legendary}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Named item sets|Legendary Deadly Diabolist}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Diabolist's_Ring"
+  },
+  {
+   "name": "Legendary Duskbone Ring",
+   "slot": "Ring",
+   "minimum_level": 29,
+   "field": "* {{Vertigo|15}}\n* {{Ghostly}}\n* {{Hp|Profane Lifeforce|44}}\n* {{Hardened Exterior|2}}\n* {{Augment|Green}}\n* {{Named item sets|Eminence of Autumn}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Duskbone_Ring"
+  },
+  {
+   "name": "Legendary Ethereal Ring",
+   "slot": "Ring",
+   "minimum_level": 30,
+   "field": "* {{Clicky|Invisibility|30|3|3}}\n* {{Ghostly|Enhanced}}\n* {{Speed|30}}\n* {{Dodge|13}}\n* {{Save|Reflex|12}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Named item sets|Legendary Saltmarsh Explorer}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ethereal_Ring"
+  },
+  {
+   "name": "Legendary Five Rings",
+   "slot": "Ring",
+   "minimum_level": 28,
+   "field": "* {{Slaver's Slot|Prefix|Legendary}}\n* {{Slaver's Slot|Suffix|Legendary}}\n* {{Slaver's Slot|Extra|Legendary}}\n* {{Slaver's Slot|Bonus|Legendary}}\n* {{CraftingEffects|Against the Slave Lords Set Bonus}}\n* {{Slaver's Slot|Augment|Legendary}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Five_Rings"
+  },
+  {
+   "name": "Legendary Crocodile Tooth",
+   "slot": "Trinket",
+   "minimum_level": 30,
+   "field": "* {{Crippling}}\n* {{Armor-Piercing|21}}\n* {{Accuracy|21}}\n* {{Accuracy|10|Insightful}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Named item sets|Legendary Saltmarsh Explorer}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Crocodile_Tooth"
+  },
+  {
+   "name": "Legendary Cursebane Focus",
+   "slot": "Trinket",
+   "minimum_level": 29,
+   "field": "* {{Save|Curse|10}}\n* {{Save|Will|5|Insight|prefix=Insightful}}\n* {{Sheltering|33|Enhancement|Magical}}\n* {{Save|Spell|10}}\n* {{Augment|Green}}\n* {{Named item sets|Crypt Raider Set (Legendary)}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cursebane_Focus"
+  },
+  {
+   "name": "Legendary Cursekeeper",
+   "slot": "Trinket",
+   "minimum_level": 29,
+   "field": "* {{HealingAmp|27|n|Insight}}\n* {{Elemental Resistance|Light|24|Insightful}} \n* {{Hp|Vitality|44}}\n* {{Magical Efficiency|10}}\n* {{Augment|Green}}\n* {{Named item sets|Curse Necromancer (Legendary)}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cursekeeper"
+  },
+  {
+   "name": "Legendary Deep Promise Onyx",
+   "slot": "Trinket",
+   "minimum_level": 29,
+   "field": "* {{Stat|Intelligence|3|Quality}}\n* {{HealingAmp|27|N|Insightful}}\n* {{HealingAmp|14|N|Quality}}\n* {{Hp|False Life|50}}\n* {{Augment|Blue}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Deep_Promise_Onyx"
+  },
+  {
+   "name": "Legendary Dragon's Eye",
+   "slot": "Trinket",
+   "minimum_level": 30,
+   "field": "* {{Clicky|Greater Efficacy|1|5|5}}\n* {{Wizardry|291}}\n* {{Magical Efficiency|10}}\n* {{Spell Power|Universal|15|Exceptional}}\n* {{Spelllore|Universal Spell|5|Exceptional}}\n* {{Augment|Yellow}}\n* {{Named item sets|Legendary Draconic Prophecy}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dragon's_Eye"
+  },
+  {
+   "name": "Legendary Dusk Heart",
+   "slot": "Trinket",
+   "minimum_level": 30,
+   "field": "* {{Clicky|Death Ward, Mass|15|5|5}}\n* {{Concealment|Dusk}}\n* {{Hp|False Life|51}}\n* {{Dodge|13}}\n* {{Protection|11}}\n* {{Augment|Yellow}}\n* {{Augment|Blue}}\n* {{Named item sets|The Legendary Desert's Starless Nights}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dusk_Heart"
+  },
+  {
+   "name": "Legendary Emblem of Elemental Evil",
+   "slot": "Trinket",
+   "minimum_level": 31,
+   "field": "* {{Taint of Evil}}\n* {{Hp|Profane Lifeforce|47}}\n* {{Elemental Resistance|Elemental|15|Competence}}\n* {{Stat|Constitution|3|Quality}}\n* {{NaturalArmor|14}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Emblem_of_Elemental_Evil"
+  },
+  {
+   "name": "Legendary Empowered Dragonscale",
+   "slot": "Trinket",
+   "minimum_level": 28,
+   "field": "* {{Stat|CON|3|Quality}}\n* {{Hp|False Life|50}}\n* {{Save|Fortitude|5|Insight|prefix=Insightful}}\n* {{Elemental Resistance|Fire|50}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Empowered_Dragonscale"
+  },
+  {
+   "name": "Legendary Fragment of a Flayed Mind",
+   "slot": "Trinket",
+   "minimum_level": 32,
+   "field": "* {{Stat|WIS|3|Quality}}\n* {{Reinforced Fists|Superior}}\n* {{Enhanced Ki|4}}\n* {{Skills|Concentration|21}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Fragment_of_a_Flayed_Mind"
+  },
+  {
+   "name": "Legendary Conduit of the Soul",
+   "slot": "Necklace",
+   "minimum_level": 29,
+   "field": "* {{Augmentation|2|Divine|IX}}\n* {{Wizardry|269}}\n* {{Spelllore|Healing|21}}\n* {{SpellPower|Devotion|35|Quality}}\n* {{Augment|Yellow}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Conduit_of_the_Soul"
+  },
+  {
+   "name": "Legendary Cracked Symbol of Lolth",
+   "slot": "Necklace",
+   "minimum_level": 35,
+   "field": "* {{Intensity|Void|24}}\n* {{Spell Lore|Void|24}}\n* {{Nearly Complete|Spell Focus|1}}\n* {{Guard|Legendary Virulent Poison}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cracked_Symbol_of_Lolth"
+  },
+  {
+   "name": "Legendary Cranium Sphere",
+   "slot": "Necklace",
+   "minimum_level": 33,
+   "field": "* {{Clicky|Nightshield|25|3|3}}\n* {{Stat|Con|15}}\n* {{Stat|Con|3|Quality}}\n* {{Fortification|156}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cranium_Sphere"
+  },
+  {
+   "name": "Legendary Crimson Necklace of Prophecy",
+   "slot": "Necklace",
+   "minimum_level": 30,
+   "field": "* {{Spelllore|Fire|22}}\n* {{SpellPower|Combustion|151}}\n* {{Absorption|Fire|36}}\n* {{Elemental Resistance|Fire|54}}\n* {{Augment|Green}}\n* {{Named item sets|Legendary Draconic Prophecy}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Crimson_Necklace_of_Prophecy"
+  },
+  {
+   "name": "Legendary Dawn's Herald-Charm",
+   "slot": "Necklace",
+   "minimum_level": 29,
+   "field": "* {{Stat|Wisdom|13}}\n* {{Bonus Turning|Insightful Faith}}\n* {{Bonus Turning|Sacred}}\n* {{Bonus Turning|Hallowed}}\n* {{Augment|Yellow}}\n* {{Named item sets|Adherent of the Mists Set (Legendary)}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dawn's_Herald-Charm"
+  },
+  {
+   "name": "Legendary Dream Collar",
+   "slot": "Necklace",
+   "minimum_level": 29,
+   "field": "* {{Absorption|Chaos|22}}\n* {{True Seeing}}\n* {{ArmorBonus|13}}\n* {{Shield Bonus|13}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dream_Collar"
+  },
+  {
+   "name": "Legendary Elder's Focus",
+   "slot": "Necklace",
+   "minimum_level": 30,
+   "field": "* {{Wizardry|277}}\n* {{Spell Focus|Illusion|8}}\n* {{Sheltering|34|Enhancement|Magical}}\n* {{Efficient Metamagic|Extend|II}}\n* {{Efficient Metamagic|Enlarge|II}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|Legendary Elder's Knowledge}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Elder's_Focus"
+  },
+  {
+   "name": "Legendary Family Recruit Sigil",
+   "slot": "Necklace",
+   "minimum_level": 29,
+   "field": "* {{TrueSeeing}}\n* {{Armor-Piercing|20}}\n* {{Deadly|10}}\n* {{RelentlessFury}}\n* {{Augment|Yellow}}\n* {{Named item sets|Legendary Part of the Family}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Family_Recruit_Sigil"
+  },
+  {
+   "name": "Legendary Glabrezu Claw Pendant",
+   "slot": "Necklace",
+   "minimum_level": 35,
+   "field": "* {{Accuracy|5|Quality}}\n* {{Seeker|3|Quality}}\n* {{Action Boost Enhancement}}\n* {{Nearly Complete|Insightful Ability Score|1}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Glabrezu_Claw_Pendant"
+  },
+  {
+   "name": "Legendary Golden Guile",
+   "slot": "Necklace",
+   "minimum_level": 30,
+   "field": "* {{Ghostly|Enhanced}}\n* {{Skills|Bluff|20}}\n* {{Skills|Diplomacy|20}}\n* {{Deception|20|Bluff=Improved}}\n* {{Skills|Alluring|10|Exceptional}}\n* {{Augment|Yellow}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Golden_Guile"
+  },
+  {
+   "name": "Legendary Eyes of Enlightenment",
+   "slot": "Goggles",
+   "minimum_level": 32,
+   "field": "* {{Stat|Wisdom|14}}\n* {{SpellPower|Potency|26|Quality}}\n* {{Temperance of Spirit}}\n* {{Save|Illusion|11|Resistance}}\n* {{Named item sets|Legendary Forbidden Knowledge}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Eyes_of_Enlightenment"
+  },
+  {
+   "name": "Legendary Eyes of the Black Earth",
+   "slot": "Goggles",
+   "minimum_level": 31,
+   "field": "* {{Spelllore|Acid|22}}\n* {{Skills|Spellcraft|10|Insight|prefix=Insightful}}\n* {{Wizardry|286}}\n* {{Save|Spell|11}}\n* {{Named item sets|Legendary Temple's Monolith}}\n* {{Augment|Yellow}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Eyes_of_the_Black_Earth"
+  },
+  {
+   "name": "Legendary Eyes of the Crushing Wave",
+   "slot": "Goggles",
+   "minimum_level": 31,
+   "field": "* {{Spelllore|Ice|22}}\n* {{Skills|Spellcraft|10|Insight|prefix=Insightful}}\n* {{Wizardry|286}}\n* {{Save|Spell|11}}\n* {{Named item sets|Legendary Temple's Tide}}\n* {{Augment|Yellow}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Eyes_of_the_Crushing_Wave"
+  },
+  {
+   "name": "Legendary Eyes of the Eternal Flame",
+   "slot": "Goggles",
+   "minimum_level": 31,
+   "field": "* {{Spelllore|Fire|22}}\n* {{Skills|Spellcraft|10|Insight|prefix=Insightful}}\n* {{Wizardry|286}}\n* {{Save|Spell|11}}\n* {{Named item sets|Legendary Temple's Inferno}}\n* {{Augment|Yellow}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Eyes_of_the_Eternal_Flame"
+  },
+  {
+   "name": "Legendary Eyes of the Howling Hatred",
+   "slot": "Goggles",
+   "minimum_level": 31,
+   "field": "* {{Spelllore|Lightning|22}}\n* {{Skills|Spellcraft|10|Insight|prefix=Insightful}}\n* {{Wizardry|286}}\n* {{Save|Spell|11}}\n* {{Named item sets|Legendary Temple's Tempest}}\n* {{Augment|Yellow}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Eyes_of_the_Howling_Hatred"
+  },
+  {
+   "name": "Legendary Eyes of the Lady of Rot and Decay",
+   "slot": "Goggles",
+   "minimum_level": 31,
+   "field": "* {{Spelllore|Void|22}}\n* {{Skills|Spellcraft|10|Insight|prefix=Insightful}}\n* {{Wizardry|286}}\n* {{Save|Spell|11}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Eyes_of_the_Lady_of_Rot_and_Decay"
+  },
+  {
+   "name": "Legendary Feargaze",
+   "slot": "Goggles",
+   "minimum_level": 29,
+   "field": "* {{Skills|Linguistics|10}}\n* {{Skills|Intimidate|20}}\n* {{Skills|Intimidate|10|Insight|prefix=Insightful}}\n* {{Incite|26|Quality}}\n* {{Augment|Green}}\n* {{Named item sets|Knight of the Shadows Set (Legendary)}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Feargaze"
+  },
+  {
+   "name": "Legendary Garstone's Lenses",
+   "slot": "Goggles",
+   "minimum_level": 29,
+   "field": "* {{Spell Focus|Rune Arm|3|Insightful}}\n* {{Auto-Repair|Greater}}\n* {{SpellPower|Magnetism|142}}\n* {{SpellPower|Devotion|142}}\n* {{Augment|Blue}}\n* {{Named item sets|Adherent of the Mists Set (Legendary)}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Garstone's_Lenses"
+  }
+ ]
+}

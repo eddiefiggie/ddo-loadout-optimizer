@@ -1,0 +1,799 @@
+{
+ "metadata": {
+  "layer": "enriched",
+  "batch": "batch9",
+  "harvested": "2026-07-25",
+  "count": 37
+ },
+ "items": [
+  {
+   "name": "Legendary Cherished Wedding Ring",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Insightful Alluring +10",
+    "Devotion +149",
+    "Heal +21",
+    "False Life +53",
+    "Green Augment Slot",
+    "Colorless Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cherished_Wedding_Ring",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 31
+  },
+  {
+   "name": "Legendary Chieftain",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Wisdom +13",
+    "Quality Wisdom +3",
+    "Spell Save +10",
+    "Blue Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Chieftain",
+   "augment_slots": [
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Save"
+   ],
+   "_enriched": true,
+   "minimum_level": 28
+  },
+  {
+   "name": "Legendary Contraption Keyring",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Green Augment Slot",
+    "Colorless Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Contraption_Keyring",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Speed",
+    "Lamordia Slot",
+    "Lamordia Slot",
+    "Lamordia Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 34
+  },
+  {
+   "name": "Legendary Cursebane Ring",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "insight Curse Save +4",
+    "vitality +44",
+    "Quality Magical Sheltering +8",
+    "Green Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cursebane_Ring",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "Deathblock"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Deadmonger Gang's Signet",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Green Augment Slot",
+    "Colorless Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Deadmonger_Gang's_Signet",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Action Boost Enhancement",
+    "Lamordia Slot",
+    "Lamordia Slot",
+    "Lamordia Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 34
+  },
+  {
+   "name": "Legendary Deathwarden",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Healing Lore +21%",
+    "Exceptional Devotion +15",
+    "Blue Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Deathwarden",
+   "augment_slots": [
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Deathblock",
+    "Efficient Metamagic"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Diabolist's Ring",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Insightful Intelligence +6",
+    "Insightful Charisma +6",
+    "Insightful Evocation Spell Focus +4",
+    "Insightful Wizardry +145",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Legendary Deadly Diabolist (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Diabolist's_Ring",
+   "augment_slots": [
+    "Green",
+    "Yellow"
+   ],
+   "_enrich_unmapped": [
+    "Demonic Shield"
+   ],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Duskbone Ring",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Profane Lifeforce +44",
+    "Green Augment Slot",
+    "Eminence of Autumn (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Duskbone_Ring",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "Vertigo",
+    "Ghostly",
+    "Hardened Exterior"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Ethereal Ring",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Dodge +13%",
+    "Reflex Save +12",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ethereal_Ring",
+   "augment_slots": [
+    "Green",
+    "Yellow"
+   ],
+   "_enrich_unmapped": [
+    "Clicky",
+    "Ghostly",
+    "Speed"
+   ],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Five Rings",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Five_Rings",
+   "augment_slots": [],
+   "_enrich_unmapped": [
+    "Slaver's Slot",
+    "Slaver's Slot",
+    "Slaver's Slot",
+    "Slaver's Slot",
+    "CraftingEffects",
+    "Slaver's Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 28
+  },
+  {
+   "name": "Legendary Crocodile Tooth",
+   "category": "item",
+   "slot": "Trinket",
+   "enhancements": [
+    "Accuracy +21",
+    "Insightful Accuracy +10",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Crocodile_Tooth",
+   "augment_slots": [
+    "Green",
+    "Yellow"
+   ],
+   "_enrich_unmapped": [
+    "Crippling",
+    "Armor-Piercing"
+   ],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Cursebane Focus",
+   "category": "item",
+   "slot": "Trinket",
+   "enhancements": [
+    "Curse Save +10",
+    "Insight Will Save +5",
+    "Enhancement Magical Sheltering +33",
+    "Spell Save +10",
+    "Green Augment Slot",
+    "Crypt Raider Set (Legendary) (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cursebane_Focus",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Cursekeeper",
+   "category": "item",
+   "slot": "Trinket",
+   "enhancements": [
+    "Insightful Light Resistance +24",
+    "Vitality +44",
+    "Green Augment Slot",
+    "Curse Necromancer (Legendary) (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cursekeeper",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "HealingAmp",
+    "Magical Efficiency"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Deep Promise Onyx",
+   "category": "item",
+   "slot": "Trinket",
+   "enhancements": [
+    "Quality Intelligence +3",
+    "False Life +50",
+    "Blue Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Deep_Promise_Onyx",
+   "augment_slots": [
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "HealingAmp",
+    "HealingAmp"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Dragon's Eye",
+   "category": "item",
+   "slot": "Trinket",
+   "enhancements": [
+    "Wizardry +291",
+    "Exceptional Universal +15",
+    "Exceptional Universal Spell Lore +5%",
+    "Yellow Augment Slot",
+    "Legendary Draconic Prophecy (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dragon's_Eye",
+   "augment_slots": [
+    "Yellow"
+   ],
+   "_enrich_unmapped": [
+    "Clicky",
+    "Magical Efficiency"
+   ],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Dusk Heart",
+   "category": "item",
+   "slot": "Trinket",
+   "enhancements": [
+    "False Life +51",
+    "Dodge +13%",
+    "Yellow Augment Slot",
+    "Blue Augment Slot",
+    "The Legendary Desert's Starless Nights (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dusk_Heart",
+   "augment_slots": [
+    "Yellow",
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Clicky",
+    "Concealment",
+    "Protection"
+   ],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Emblem of Elemental Evil",
+   "category": "item",
+   "slot": "Trinket",
+   "enhancements": [
+    "Profane Lifeforce +47",
+    "Competence Elemental Resistance +15",
+    "Quality Constitution +3",
+    "Natural Armor +14",
+    "Green Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Emblem_of_Elemental_Evil",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "Taint of Evil"
+   ],
+   "_enriched": true,
+   "minimum_level": 31
+  },
+  {
+   "name": "Legendary Empowered Dragonscale",
+   "category": "item",
+   "slot": "Trinket",
+   "enhancements": [
+    "Quality Constitution +3",
+    "False Life +50",
+    "Insight Fortitude Save +5",
+    "Fire Resistance +50",
+    "Green Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Empowered_Dragonscale",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 28
+  },
+  {
+   "name": "Legendary Fragment of a Flayed Mind",
+   "category": "item",
+   "slot": "Trinket",
+   "enhancements": [
+    "Quality Wisdom +3",
+    "Concentration +21",
+    "Green Augment Slot",
+    "Colorless Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Fragment_of_a_Flayed_Mind",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Reinforced Fists",
+    "Enhanced Ki"
+   ],
+   "_enriched": true,
+   "minimum_level": 32
+  },
+  {
+   "name": "Legendary Conduit of the Soul",
+   "category": "item",
+   "slot": "Necklace",
+   "enhancements": [
+    "Wizardry +269",
+    "Healing Lore +21%",
+    "Quality Devotion +35",
+    "Yellow Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Conduit_of_the_Soul",
+   "augment_slots": [
+    "Yellow"
+   ],
+   "_enrich_unmapped": [
+    "Augmentation"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Cracked Symbol of Lolth",
+   "category": "item",
+   "slot": "Necklace",
+   "enhancements": [
+    "Void Lore +24%",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cracked_Symbol_of_Lolth",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "Intensity",
+    "Nearly Complete",
+    "Guard"
+   ],
+   "_enriched": true,
+   "minimum_level": 35
+  },
+  {
+   "name": "Legendary Cranium Sphere",
+   "category": "item",
+   "slot": "Necklace",
+   "enhancements": [
+    "Constitution +15",
+    "Quality Constitution +3",
+    "Fortification +156",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cranium_Sphere",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "Clicky"
+   ],
+   "_enriched": true,
+   "minimum_level": 33
+  },
+  {
+   "name": "Legendary Crimson Necklace of Prophecy",
+   "category": "item",
+   "slot": "Necklace",
+   "enhancements": [
+    "Fire Lore +22%",
+    "Combustion +151",
+    "Fire Absorption +36%",
+    "Fire Resistance +54",
+    "Green Augment Slot",
+    "Legendary Draconic Prophecy (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Crimson_Necklace_of_Prophecy",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Dawn's Herald-Charm",
+   "category": "item",
+   "slot": "Necklace",
+   "enhancements": [
+    "Wisdom +13",
+    "Yellow Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dawn's_Herald-Charm",
+   "augment_slots": [
+    "Yellow"
+   ],
+   "_enrich_unmapped": [
+    "Bonus Turning",
+    "Bonus Turning",
+    "Bonus Turning"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Dream Collar",
+   "category": "item",
+   "slot": "Necklace",
+   "enhancements": [
+    "Chaos Absorption +22%",
+    "Green Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dream_Collar",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "True Seeing",
+    "ArmorBonus",
+    "Shield Bonus"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Elder's Focus",
+   "category": "item",
+   "slot": "Necklace",
+   "enhancements": [
+    "Wizardry +277",
+    "Illusion Spell Focus +8",
+    "Enhancement Magical Sheltering +34",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Legendary Elder's Knowledge (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Elder's_Focus",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Efficient Metamagic",
+    "Efficient Metamagic"
+   ],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Family Recruit Sigil",
+   "category": "item",
+   "slot": "Necklace",
+   "enhancements": [
+    "Deadly +10",
+    "Yellow Augment Slot",
+    "Legendary Part of the Family (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Family_Recruit_Sigil",
+   "augment_slots": [
+    "Yellow"
+   ],
+   "_enrich_unmapped": [
+    "TrueSeeing",
+    "Armor-Piercing",
+    "RelentlessFury"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Glabrezu Claw Pendant",
+   "category": "item",
+   "slot": "Necklace",
+   "enhancements": [
+    "Quality Accuracy +5",
+    "Quality Seeker +3",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Glabrezu_Claw_Pendant",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "Action Boost Enhancement",
+    "Nearly Complete"
+   ],
+   "_enriched": true,
+   "minimum_level": 35
+  },
+  {
+   "name": "Legendary Golden Guile",
+   "category": "item",
+   "slot": "Necklace",
+   "enhancements": [
+    "Bluff +20",
+    "Diplomacy +20",
+    "Deception +20",
+    "Exceptional Alluring +10",
+    "Yellow Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Golden_Guile",
+   "augment_slots": [
+    "Yellow"
+   ],
+   "_enrich_unmapped": [
+    "Ghostly"
+   ],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Eyes of Enlightenment",
+   "category": "item",
+   "slot": "Goggles",
+   "enhancements": [
+    "Wisdom +14",
+    "Quality Potency +26",
+    "Resistance Illusion Save +11",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Eyes_of_Enlightenment",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Temperance of Spirit"
+   ],
+   "_enriched": true,
+   "minimum_level": 32
+  },
+  {
+   "name": "Legendary Eyes of the Black Earth",
+   "category": "item",
+   "slot": "Goggles",
+   "enhancements": [
+    "Acid Lore +22%",
+    "Insight Spellcraft +10",
+    "Wizardry +286",
+    "Spell Save +11",
+    "Yellow Augment Slot",
+    "Legendary Temple's Monolith (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Eyes_of_the_Black_Earth",
+   "augment_slots": [
+    "Yellow"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 31
+  },
+  {
+   "name": "Legendary Eyes of the Crushing Wave",
+   "category": "item",
+   "slot": "Goggles",
+   "enhancements": [
+    "Ice Lore +22%",
+    "Insight Spellcraft +10",
+    "Wizardry +286",
+    "Spell Save +11",
+    "Yellow Augment Slot",
+    "Legendary Temple's Tide (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Eyes_of_the_Crushing_Wave",
+   "augment_slots": [
+    "Yellow"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 31
+  },
+  {
+   "name": "Legendary Eyes of the Eternal Flame",
+   "category": "item",
+   "slot": "Goggles",
+   "enhancements": [
+    "Fire Lore +22%",
+    "Insight Spellcraft +10",
+    "Wizardry +286",
+    "Spell Save +11",
+    "Yellow Augment Slot",
+    "Legendary Temple's Inferno (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Eyes_of_the_Eternal_Flame",
+   "augment_slots": [
+    "Yellow"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 31
+  },
+  {
+   "name": "Legendary Eyes of the Howling Hatred",
+   "category": "item",
+   "slot": "Goggles",
+   "enhancements": [
+    "Lightning Lore +22%",
+    "Insight Spellcraft +10",
+    "Wizardry +286",
+    "Spell Save +11",
+    "Yellow Augment Slot",
+    "Legendary Temple's Tempest (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Eyes_of_the_Howling_Hatred",
+   "augment_slots": [
+    "Yellow"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 31
+  },
+  {
+   "name": "Legendary Eyes of the Lady of Rot and Decay",
+   "category": "item",
+   "slot": "Goggles",
+   "enhancements": [
+    "Void Lore +22%",
+    "Insight Spellcraft +10",
+    "Wizardry +286",
+    "Spell Save +11",
+    "Green Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Eyes_of_the_Lady_of_Rot_and_Decay",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 31
+  },
+  {
+   "name": "Legendary Feargaze",
+   "category": "item",
+   "slot": "Goggles",
+   "enhancements": [
+    "Linguistics +10",
+    "Intimidate +20",
+    "Insight Intimidate +10",
+    "Green Augment Slot",
+    "Knight of the Shadows Set (Legendary) (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Feargaze",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "Incite"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Garstone's Lenses",
+   "category": "item",
+   "slot": "Goggles",
+   "enhancements": [
+    "Insightful Rune Arm Spell Focus +3",
+    "Magnetism +142",
+    "Devotion +142",
+    "Blue Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Garstone's_Lenses",
+   "augment_slots": [
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Auto-Repair"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  }
+ ]
+}
