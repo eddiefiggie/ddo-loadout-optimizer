@@ -25,6 +25,7 @@ from src import set_parser as set_mod
 from src import dino as dino_mod
 from src import nearly_complete as nc_mod
 from src import compendium as compendium_mod
+from src import umbrella as umbrella_mod
 
 import glob
 
@@ -103,6 +104,9 @@ def build(seed: dict) -> dict:
     for v in variants:                                  # U2 augment-color normalization
         colors_mod.annotate_variant(v)
         set_mod.annotate_variant(v)                     # U4 set-bonus threshold parsing
+    # Expand umbrella ability affixes ("All Ability Scores +15", "Well Rounded")
+    # into the six concrete abilities so single-ability targets get credited.
+    umbrella_mod.expand_variants(variants)
     variants, cov = verify_mod.apply(variants)          # per-affix verification gate
 
     # U3 — Isle of Dread Dino crafting: append pre-verified blank host variants
