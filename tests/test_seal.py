@@ -60,6 +60,19 @@ def test_bad_option_is_quarantined_not_guessed():
     assert "missing magnitude" in reasons
 
 
+def test_unrecognized_seal_type_and_missing_wiki_url_quarantine():
+    bad = {"pools": [
+        {"seal_type": "Bogus", "domain": "x", "wiki_url": "https://ddowiki.com/", "options": []},
+        {"seal_type": "Undeath", "domain": "clothing/jewelry", "wiki_url": "",
+         "options": [{"name": "S", "stat": "Strength", "bonus_type": "Enhancement", "value": 15}]},
+    ]}
+    parsed = seal.parse_seal(bad)
+    reasons = " ".join(q["reason"] for q in parsed["quarantined"])
+    assert "unrecognized seal type" in reasons  # "Bogus" is not a canonical seal
+    assert "missing wiki_url" in reasons        # the Undeath pool has no wiki_url
+    assert parsed["records"] == []              # nothing solver-eligible survives
+
+
 def test_normalize_seal_type_folds_prefix_and_case():
     assert seal.normalize_seal_type("Sealed in Undeath") == "Undeath"
     assert seal.normalize_seal_type("undeath") == "Undeath"
@@ -91,6 +104,16 @@ def test_build_record_detects_bool_affix_seal():
           "crafting": []}
     rec = build_record(it)
     assert rec["seal_slots"] == [{"seal_type": "Fire", "category": "Weapon"}]
+
+
+def test_build_record_dedups_a_seal_in_both_fields():
+    # A seal redundantly encoded in BOTH affixes[] Bool and crafting[] must yield
+    # ONE slot, or the solver's per-slot single-pick would let it unseal twice.
+    it = {"name": "Dbl", "slot": "Trinket", "ml": 33,
+          "affixes": [{"name": "Sealed in Undeath", "type": "Bool", "value": 1}],
+          "crafting": ["Sealed in Undeath", "Green Augment Slot"]}
+    rec = build_record(it)
+    assert rec["seal_slots"] == [{"seal_type": "Undeath", "category": "Trinket"}]
 
 
 def test_build_record_no_seal_yields_no_slots():

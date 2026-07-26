@@ -277,7 +277,10 @@ function buildProgram(model) {
   // select-one primitive as Nearly Complete / Viktranium: a per-option binary n
   // gated by the host item (n - x_item <= 0), its stat fed into the (stat,
   // bonus_type) bucket [n], and Σ n <= 1 PER SLOT. The pool is keyed by seal_type
-  // alone (no tier split); an item's category selects which seal it can carry.
+  // ALONE — unlike Viktranium's (slot_type, category) key, a seal type is one flat
+  // pool whose gear domain is implied by the type (Undeath=clothing/jewelry,
+  // Fire=weapons). The host's `category` field is informational (carried for
+  // display), never a pool filter.
   let slc = 0;
   for (const xv of xVars) {
     const slots = xv.variant.seal_slots || [];

@@ -867,5 +867,16 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.ok(program.sealMeta.size > 0, "a real Undeath host generated seal unseal options in the program");
   });
 
+  await test("SEAL/mismatch: a pool option for a different seal_type is not applied", () => {
+    // A Fire-sealed host with an Undeath-only pool unseals nothing — the solver's
+    // opt.seal_type !== slot.seal_type filter excludes the mismatched pool.
+    const program = S.buildProgram({
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [sealHost("H", "Trinket", [{ seal_type: "Fire", category: "Trinket" }])])],
+      seal: SEAL_POOL, // Undeath options only
+    });
+    assert.strictEqual(program.sealMeta.size, 0, "no unseal option is generated for a seal_type absent from the pool");
+  });
+
   console.log(`\n${passed} passed`);
 })();

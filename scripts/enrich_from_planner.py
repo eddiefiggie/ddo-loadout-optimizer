@@ -88,16 +88,22 @@ def build_record(it):
     # (src/seal.py). The gear-planner encodes it in TWO places: Undeath/Mist/Gloom
     # as `crafting[]` entries, Fire/Amber as `affixes[]` {type:"Bool"} markers
     # (which affix_to_string drops). Detect both; the pool is keyed by seal_type.
-    seal_slots = []
+    # Dedup by (seal_type, category): a seal redundantly encoded in BOTH the
+    # affixes[] Bool marker and a crafting[] string must yield ONE slot, or the
+    # solver's per-slot single-pick would let the item unseal the same seal twice
+    # (an in-game-impossible loadout). Distinct seal types stay distinct slots.
+    seal_slots, _seen_seals = [], set()
+
+    def _add_seal(st):
+        if st and (st, slot) not in _seen_seals:
+            _seen_seals.add((st, slot))
+            seal_slots.append({"seal_type": st, "category": slot})
+
     for a in it.get("affixes", []):
         if a.get("type") == "Bool":
-            st = seal.normalize_seal_type(a.get("name"))
-            if st:
-                seal_slots.append({"seal_type": st, "category": slot})
+            _add_seal(seal.normalize_seal_type(a.get("name")))
     for c in it.get("crafting", []) or []:
-        st = seal.normalize_seal_type(c)
-        if st:
-            seal_slots.append({"seal_type": st, "category": slot})
+        _add_seal(seal.normalize_seal_type(c))
     rec = {
         "name": it["name"], "category": "item", "slot": slot,
         "enhancements": enh, "augment_slots": aug,

@@ -122,7 +122,7 @@ def build(seed: dict) -> dict:
             # seed predates, so a base-seed sealed item would otherwise be stranded.
             base_it = base_by_name.get(name)
             if base_it is not None and it.get("seal_slots") and not base_it.get("seal_slots"):
-                base_it["seal_slots"] = it["seal_slots"]
+                base_it["seal_slots"] = [dict(s) for s in it["seal_slots"]]  # copy: no shared ref across base + tier variants
             continue
         seen_names.add(name)
         deduped.append(it)
@@ -186,14 +186,27 @@ def build(seed: dict) -> dict:
     vik["coverage"]["hosts_active"] = len(vik_host_slots)
     vik["coverage"]["slots_active"] = sum(vik_host_slots.values())
 
-    # Seal-slot hosts activated across the item pipeline (items carrying seal_slots),
-    # deduped by source item so tier variants count once. Honest disclosure.
-    seal_host_slots = {}
+    # Seal-slot hosts, deduped by source item so tier variants count once. Honest
+    # disclosure: a host is solver-ACTIVE only when it survives the verification
+    # gate (a seal-only host with no base affixes is quarantined by the solver's
+    # eligible() before the seal MILP runs) AND its seal_type has a sourced
+    # (non-empty) pool. Everything else — an unsourced pool (Fire/Gloom/Mist
+    # pending) or a quarantined seal-only host — is disclosed as PENDING, not
+    # counted active, so the coverage note never overstates what the solver can craft.
+    sourced_seals = set(sl["coverage"]["seal_types_sourced"])
+    seal_active, seal_pending = {}, {}
     for v in variants:
-        if v.get("seal_slots"):
-            seal_host_slots[v["source_item"]] = len(v["seal_slots"])
-    sl["coverage"]["hosts_active"] = len(seal_host_slots)
-    sl["coverage"]["slots_active"] = sum(seal_host_slots.values())
+        slots = v.get("seal_slots")
+        if not slots:
+            continue
+        active_slots = [s for s in slots if s.get("seal_type") in sourced_seals]
+        if active_slots and v.get("verification") == "verified":
+            seal_active[v["source_item"]] = len(active_slots)
+        else:
+            seal_pending[v["source_item"]] = len(slots)
+    sl["coverage"]["hosts_active"] = len(seal_active)
+    sl["coverage"]["slots_active"] = sum(seal_active.values())
+    sl["coverage"]["hosts_pending"] = len(seal_pending)
 
     out = {
         "metadata": {

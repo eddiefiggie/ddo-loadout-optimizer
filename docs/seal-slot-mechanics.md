@@ -39,6 +39,10 @@ Which items carry a seal comes from the **gear-planner dataset** (ddowiki-derive
 
 The 9 Sealed-in-Undeath hosts are **Threats Old and New** raid jewelry/clothing (the Undying Age "Reflections" gear); they carry `quests: ["Threats Old and New"]`, which the planner import's `QUEST_MAP` did not cover, so they were skipped and appear in no wiki batch. The `undyingage` QUEST_MAP key closes that gap. See `data/seed/compendium/raw/seal_mechanics.json` for the host cross-check (no delta observed vs the gear-planner).
 
+## Known follow-up for the deferred Fire pool
+
+Seven of the Fire hosts (Finality, Flamefang, Folly, Kindling, Nova, Omen, Spur) are **seal-only weapons** — their gear-planner record carries the Fire seal but zero base affixes. The verification gate quarantines a zero-affix item, so `eligible()` prunes these before the seal solver runs. Today this is harmless (the Fire pool is empty, so they could not craft anything anyway), and the coverage count reports them as **pending**, not active — so nothing is overstated. But when the Fire pool is harvested, these hosts must be re-admitted the way Dinosaur Bone blanks are (materialized after the verify pass, or by treating a seal slot as a solver-eligible affix), or their Fire seal can never activate. Undeath is unaffected — every Undeath host carries base affixes and verifies.
+
 ## Not applicable (recorded, not deferred)
 
 - **Demogorgon raid upgrade** — the Terror of Demogorgon raid documents no seal/ritual/upgrade slot; its crafting is Catalyst (item-creation, sourced as named gear).
