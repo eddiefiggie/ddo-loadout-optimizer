@@ -30,7 +30,7 @@ window.App && window.App.ready((dataset) => {
     </div>
     <div class="controls q-actions">
       <input id="q-add" list="q-stats" placeholder="Add a target affix…" aria-label="Add a target affix">
-      <datalist id="q-stats">${allStats.map((s) => `<option value="${s}">`).join("")}</datalist>
+      <datalist id="q-stats">${allStats.map((s) => `<option value="${esc(s)}">`).join("")}</datalist>
       <button id="q-add-btn" type="button">Add</button>
       <button id="q-solve" type="button" class="primary">Solve</button>
     </div>
@@ -48,11 +48,11 @@ window.App && window.App.ready((dataset) => {
     }
     ol.innerHTML = ranked.map((s, i) => `<li><div class="rank-item">
       <span class="rank-order">${i + 1}</span>
-      <span class="rank-name">${s}</span>
+      <span class="rank-name">${esc(s)}</span>
       <span class="rank-ctrl">
-        <button data-up="${i}" aria-label="move ${s} up" ${i === 0 ? "disabled" : ""}>↑</button>
-        <button data-down="${i}" aria-label="move ${s} down" ${i === ranked.length - 1 ? "disabled" : ""}>↓</button>
-        <button data-del="${i}" class="del" aria-label="remove ${s}">✕</button>
+        <button data-up="${i}" aria-label="move ${esc(s)} up" ${i === 0 ? "disabled" : ""}>↑</button>
+        <button data-down="${i}" aria-label="move ${esc(s)} down" ${i === ranked.length - 1 ? "disabled" : ""}>↓</button>
+        <button data-del="${i}" class="del" aria-label="remove ${esc(s)}">✕</button>
       </span></div></li>`).join("");
   }
 

@@ -18,7 +18,7 @@
   /* ink */
   --text: #e8ebf0;
   --muted: #98a2b3;
-  --faint: #6b7482;
+  --faint: #8b95a5;   /* lifted to clear WCAG AA (~4.5:1) on --bg/--bg-2 for small labels */
 
   /* accents + roles */
   --accent: #4cc2ff;          /* primary — "compute" cyan */
@@ -245,10 +245,18 @@ button.primary:hover { filter: brightness(1.08); }
 .stat-value {
   font-size: var(--fs-hero); font-weight: 800; letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums; line-height: 1;
-  background: linear-gradient(180deg, #fff, #b9c6d6);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
+  color: #eef3f9;                  /* solid fallback: the headline number must never vanish */
+}
+/* only opt into the gradient text-clip where it is actually supported, so an
+   unsupporting browser keeps the solid color instead of rendering transparent. */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .stat-value {
+    background: linear-gradient(180deg, #fff, #b9c6d6);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
 }
 .stat-value .plus { font-size: 0.5em; color: var(--muted); -webkit-text-fill-color: var(--muted); }
+.stat-cap { display: inline-block; margin-top: var(--sp-1); font-size: var(--fs-xs); color: var(--quarantined); }
 .stat-bars { margin-top: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-1); }
 .stat-bar { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--sp-2); font-size: var(--fs-xs); }
 .bar-track { grid-column: 1 / -1; height: 6px; border-radius: 999px; background: var(--bg-2); overflow: hidden; }
@@ -383,6 +391,9 @@ details.pd-slot > .pd-detail { padding: 0 var(--sp-3) var(--sp-3); }
   .pd-slot.pos-mainhand { grid-area: mainhand; }
   .pd-slot.pos-offhand { grid-area: offhand; }
   .pd-slot.pos-armor { display: grid; align-content: center; }
+  /* a fallback cell for an unmapped future slot spans its own row instead of
+     auto-placing into an empty named area (which would misrepresent its slot). */
+  .pd-slot.pos-misc { grid-column: 1 / -1; }
 }
 
 /* accessibility: respect reduced motion (JS also checks this) */

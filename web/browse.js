@@ -185,16 +185,19 @@ function initBrowse(dataset) {
       document.getElementById("empty-clear").addEventListener("click", clearAll);
       return;
     }
+    // esc()/safeUrl() are globals from results.js (loaded first); this render runs
+    // only in the browser. Every dataset-derived field is escaped — the item data
+    // is wiki-harvested and not fully trusted, matching the results-panel hardening.
     const body = rows.map((v) => {
-      const badge = `<span class="badge ${v.verification}">${v.verification}</span>`;
-      const affixes = affixText(v).map((t) => `<span class="chip">${t}</span>`).join(" ")
-        || `<span class="muted">${(v.verification_reasons || []).join("; ") || "—"}</span>`;
-      const tier = v.tier_values_incomplete ? ` <span class="muted">(tiers ${(v.tier_ml_list || []).join("/")}; upper-tier stats)</span>` : "";
-      const link = v.wiki_url ? `<a href="${v.wiki_url}" rel="noopener" target="_blank">wiki</a>` : "";
+      const badge = `<span class="badge ${esc(v.verification)}">${esc(v.verification)}</span>`;
+      const affixes = affixText(v).map((t) => `<span class="chip">${esc(t)}</span>`).join(" ")
+        || `<span class="muted">${esc((v.verification_reasons || []).join("; ")) || "—"}</span>`;
+      const tier = v.tier_values_incomplete ? ` <span class="muted">(tiers ${esc((v.tier_ml_list || []).join("/"))}; upper-tier stats)</span>` : "";
+      const link = v.wiki_url ? `<a href="${safeUrl(v.wiki_url)}" rel="noopener" target="_blank">wiki</a>` : "";
       return `<tr>
-        <td data-label="Item">${v.variant_id}${tier}</td>
-        <td data-label="Slot">${v.slot}</td>
-        <td class="num" data-label="ML">${v.minimum_level ?? "—"}</td>
+        <td data-label="Item">${esc(v.variant_id)}${tier}</td>
+        <td data-label="Slot">${esc(v.slot)}</td>
+        <td class="num" data-label="ML">${esc(v.minimum_level ?? "—")}</td>
         <td data-label="Status">${badge}</td>
         <td data-label="Affixes">${affixes}</td>
         <td data-label="Source">${link}</td>

@@ -572,7 +572,8 @@ async function solveLexicographic(model, highs) {
     augmentsPlaced: sol.augmentsPlaced, setsActive: sol.setsActive,
     dinoPlaced: sol.dinoPlaced, ncPlaced: sol.ncPlaced, rollPlaced: sol.rollPlaced,
     vikPlaced: sol.vikPlaced, sealPlaced: sol.sealPlaced,
-    breakdown: breakdownByTarget(program, prim), computeScale: computeScale(program), program,
+    breakdown: breakdownByTarget(program, prim), computeScale: computeScale(program),
+    capped: { ...program.cappedStats }, program,
   };
 }
 

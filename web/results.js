@@ -172,6 +172,13 @@ function esc(s) {
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
+// href guard: only http(s) URLs are emitted; anything else (javascript:, data:,
+// …) becomes an inert "#". Defense-in-depth — esc() alone stops attribute
+// breakout but not a hostile scheme. Returns an already-escaped, safe href value.
+function safeUrl(u) {
+  return /^https?:\/\//i.test(String(u || "")) ? esc(u) : "#";
+}
+
 // Build the per-slot detail chips (contributing affixes + every craft prescription).
 function slotDetailChips(v, idx, query, maps) {
   const contrib = contributingAffixes(v, query.targets)
@@ -194,7 +201,7 @@ function slotDetailChips(v, idx, query, maps) {
     .map((n) => `<span class="chip lamordia" title="U81 Viktranium / Lamordia (${esc(n.slot_type)} ${esc(n.category)}, ${esc(n.tier)})">Lamordia ${esc(n.slot_type)}: ${esc(affixLabel({ stat: n.stat, bonus_type: n.bonus_type, value: n.value, unit: n.unit || "flat" }))}</span>`).join(" ");
   const seals = (maps.sealByItem.get(v.variant_id) || [])
     .map((n) => `<span class="chip seal" title="Sealed in ${esc(n.seal_type)} — unseal one effect at the crafting table">Sealed in ${esc(n.seal_type)}: ${esc(affixLabel({ stat: n.stat, bonus_type: n.bonus_type, value: n.value, unit: n.unit || "flat" }))}</span>`).join(" ");
-  const link = v.wiki_url ? `<a href="${esc(v.wiki_url)}" target="_blank" rel="noopener">wiki ↗</a>` : "";
+  const link = v.wiki_url ? `<a href="${safeUrl(v.wiki_url)}" target="_blank" rel="noopener">wiki ↗</a>` : "";
   const chips = [contrib, augs, dinos, ncs, rolls, viks, seals].filter(Boolean).join(" ");
   return `<div>${chips || '<span class="muted">— no target-relevant affixes —</span>'}</div>${link ? `<div class="pd-craftline">${link}</div>` : ""}`;
 }
@@ -296,9 +303,17 @@ function renderResults(container, { model, result, query, dataset }) {
   const cards = query.targets.map((stat, i) => {
     const total = result.effective[stat] ?? 0;
     const parts = (result.breakdown && result.breakdown[stat]) || [];
+    // A capped stat (e.g. Dodge under an armor cap) shows the CAPPED achieved
+    // value as the headline, but the raw contributions can sum higher. Disclose
+    // the cap so the headline and the breakdown bars don't read as a contradiction.
+    const cap = result.capped ? result.capped[stat] : null;
+    const rawSum = parts.reduce((s, p) => s + p.value, 0);
+    const capNote = (cap != null && rawSum > total)
+      ? `<span class="stat-cap" title="raw ${esc(rawSum)} exceeds the cap for this stat">capped at ${esc(total)} · raw ${esc(rawSum)}</span>` : "";
     return `<div class="stat-card">
       <div class="stat-head"><span class="stat-rank">${i + 1}</span><span class="stat-name">${esc(stat)}</span></div>
       <div class="stat-value" data-final="${esc(total)}">${esc(total)}</div>
+      ${capNote}
       ${breakdownBars(parts, total)}
     </div>`;
   }).join("");
@@ -346,5 +361,5 @@ function renderResults(container, { model, result, query, dataset }) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, coverageNote, slotPosition, breakdownBars, esc };
+  module.exports = { renderResults, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, coverageNote, slotPosition, breakdownBars, esc, safeUrl };
 }

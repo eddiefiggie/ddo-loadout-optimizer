@@ -188,4 +188,15 @@ test("breakdownBars escapes hostile source text (no raw HTML injection)", () => 
   assert.ok(/&lt;img/.test(html), "escaped form present");
 });
 
+test("safeUrl passes http(s) but neutralizes hostile schemes", () => {
+  assert.strictEqual(R.safeUrl("https://ddowiki.com/page/Item"), "https://ddowiki.com/page/Item");
+  assert.strictEqual(R.safeUrl("http://example.com"), "http://example.com");
+  assert.strictEqual(R.safeUrl("javascript:alert(1)"), "#", "javascript: scheme blocked");
+  assert.strictEqual(R.safeUrl("data:text/html,<script>"), "#", "data: scheme blocked");
+  assert.strictEqual(R.safeUrl(""), "#");
+  assert.strictEqual(R.safeUrl(null), "#");
+  // an http(s) url carrying a quote is still escaped (no attribute breakout)
+  assert.ok(!/[<>"]/.test(R.safeUrl('https://x/"onmouseover=alert(1)')), "quotes/brackets escaped");
+});
+
 console.log(`\n${passed} passed`);
