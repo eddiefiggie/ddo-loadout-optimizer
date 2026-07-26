@@ -1,0 +1,276 @@
+{
+ "metadata": {
+  "layer": "raw-wikitext",
+  "batch": "batch6",
+  "harvested": "2026-07-25",
+  "note": "raw {{template}} fields; regenerable via src.enrich"
+ },
+ "items": [
+  {
+   "name": "Legendary Capelet of Cuisine",
+   "slot": "Cloak",
+   "minimum_level": 32,
+   "field": "* {{Stat|Constitution|14}}\n* {{Fortification|153}}\n* {{Immunity|Fear}}\n* {{Stat|Dexterity|3|Quality}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|Legendary Cooking By the Book}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Capelet_of_Cuisine"
+  },
+  {
+   "name": "Legendary Chilling Sash of Tailara",
+   "slot": "Cloak",
+   "minimum_level": 34,
+   "field": "* {{Absorption|Cold|38}}\n* {{Hp|Profane Lifeforce|51}}\n* {{Stat|Well Rounded|3|Profane}}\n* {{Stat|CON|15}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Sun}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Chilling_Sash_of_Tailara"
+  },
+  {
+   "name": "Legendary Cloak of Autumn",
+   "slot": "Cloak",
+   "minimum_level": 29,
+   "field": "* {{Absorption|Acid|34}}\n* {{Stat|Con|6|Insightful}}\n* {{ItemGrantedFeat|Wind Through the Trees}}\n* {{Concealment|Lesser Displacement}}\n* {{Augment|Green}}\n* {{Named item sets|Eminence of Autumn}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_Autumn"
+  },
+  {
+   "name": "Legendary Cloak of Balance",
+   "slot": "Cloak",
+   "minimum_level": 29,
+   "field": "* {{Nearly Finished|{{Stat|str|3|Quality}}|{{Stat|dex|3|Quality}}|{{Stat|con|3|Quality}}}}\n* {{Freedom of Movement}}\n* {{Seeker|6|Insight}}\n* {{Parrying|6}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_Balance"
+  },
+  {
+   "name": "Legendary Cloak of Moonlight",
+   "slot": "Cloak",
+   "minimum_level": 33,
+   "field": "* {{Elemental Resistance|Elemental|15|Competence}}\n* {{Immunity|Fear}}\n* {{Proof|Poison|12}}\n* {{Wizardry|302}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Sun}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_Moonlight"
+  },
+  {
+   "name": "Legendary Cloak of Spring",
+   "slot": "Cloak",
+   "minimum_level": 29,
+   "field": "* {{Absorption|Electricity|34}}\n* {{Stat|Dex|13}}\n* {{Stat|Dex|6|Insightful}}\n* {{Parrying|6}}\n* {{Augment|Green}}\n* {{Named item sets|Eminence of Spring}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_Spring"
+  },
+  {
+   "name": "Legendary Cloak of Summer",
+   "slot": "Cloak",
+   "minimum_level": 29,
+   "field": "* {{Absorption|fire|34}}\n* {{Stat|Str|13}}\n* {{Stat|STR|6|Insightful}}\n* {{Doublestrike|15}}\n* {{Augment|Green}}\n* {{Named item sets|Eminence of Summer}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_Summer"
+  },
+  {
+   "name": "Legendary Cloak of Sunlight",
+   "slot": "Cloak",
+   "minimum_level": 33,
+   "field": "* {{Concealment|Lesser Displacement}}\n* {{HealingAmp|59||Competence}}\n* {{NaturalArmor|14}}\n* {{Proof|Disease|12}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Sun}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_Sunlight"
+  },
+  {
+   "name": "Legendary Cloak of the Ambassador",
+   "slot": "Cloak",
+   "minimum_level": 33,
+   "field": "* {{Deception|12}}\n* {{Deception|21|Bluff=Improved}}\n* {{Accuracy|23}}\n* {{Accuracy|5|Quality}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Sun}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_the_Ambassador"
+  },
+  {
+   "name": "Legendary Cloak of the Artblade",
+   "slot": "Cloak",
+   "minimum_level": 33,
+   "field": "* {{SpellPower|Power of the Firestorm|156}}\n* {{Sheltering|37|Enhancement|Physical}}\n* {{Sheltering|18|Insightful|Magical}}\n* {{Wizardry|302}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Sun}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_the_Artblade"
+  },
+  {
+   "name": "Legendary Bracelets of Flourishing Fauna",
+   "slot": "Bracers",
+   "minimum_level": 33,
+   "field": "* {{Bone Paws}}\n* {{Doublestrike|3|Quality}}\n* {{Druidic|Survival Mastery}}\n* {{True Seeing}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracelets_of_Flourishing_Fauna"
+  },
+  {
+   "name": "Legendary Bracelets of Subtle Life",
+   "slot": "Bracers",
+   "minimum_level": 31,
+   "field": "* {{Diversion|10||Insightful}}\n* {{Diversion|10|Distant|Insightful}}\n* {{Diversion|10|Mystic|Insightful}}\n* {{Sheltering|35|Enhancement|Physical}}\n* {{Sheltering|35|Enhancement|Magical}}\n* {{Concealment|Lesser Displacement}}\n* {{Named item sets|Legendary Temple's Tide}}\n* {{Augment|Blue}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracelets_of_Subtle_Life"
+  },
+  {
+   "name": "Legendary Bracers of Baphomet",
+   "slot": "Bracers",
+   "minimum_level": 35,
+   "field": "* {{Tactics|Combat Mastery|6|Insightful}}\n* {{Tactics|Combat Mastery|12}}\n* {{Armor-Piercing|24}}\n* {{Nearly Complete|Quality Ability Score|1}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_Baphomet"
+  },
+  {
+   "name": "Legendary Bracers of Deftness",
+   "slot": "Bracers",
+   "minimum_level": 30,
+   "field": "* {{ItemGrantedFeat|Mobility}}\n* {{ArmorBonus|13}}\n* {{Dodge|13}}\n* {{Skills|Tumble|20}}\n* {{Augment|Yellow}}\n* {{Augment|Green}}\n* {{Named item sets|Legendary Vulkoor's Chosen}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_Deftness"
+  },
+  {
+   "name": "Legendary Bracers of Method and Magic",
+   "slot": "Bracers",
+   "minimum_level": 33,
+   "field": "* {{Stat|INT|15}}\n* {{Stat|INT|3|Quality}}\n* {{Skills|Concentration|10|Insight|prefix=Insightful}}\n* {{Skills|Spellcraft|5|Quality|prefix=Quality}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_Method_and_Magic"
+  },
+  {
+   "name": "Legendary Bracers of Order and Chaos",
+   "slot": "Bracers",
+   "minimum_level": 29,
+   "field": "* {{Absorption|Chaos|22}}\n* {{Absorption|Law|22}}\n* {{HealingAmp|53|h|Competence}}\n* {{Resistance|10}}\n* {{Augment|Blue}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_Order_and_Chaos"
+  },
+  {
+   "name": "Legendary Bracers of the Claw",
+   "slot": "Bracers",
+   "minimum_level": 30,
+   "field": "* {{Stat|Constitution|6|Insightful}}\n* {{Fortification|146}}\n* {{Parrying|6}}\n* {{Hp|False Life|51}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|Legendary Vulkoor's Might}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_the_Claw"
+  },
+  {
+   "name": "Legendary Bracers of the Demon's Consort",
+   "slot": "Bracers",
+   "minimum_level": 30,
+   "field": "* {{Demonic Curse|Legendary}}\n* {{Demonic Shield|Legendary}}\n* {{Guard|Utter Disintegration}}\n* {{Tactics|Combat Mastery|11}}\n* Hidden effect: [[Demonic Drain]] (1% chance)\n* {{Stat|Strength|14}}\n* {{Augment|Blue}}\n* {{Augment|Green}}\n* {{Named item sets|The Legendary Desert's Starless Nights}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_the_Demon's_Consort"
+  },
+  {
+   "name": "Legendary Boots of the Mire",
+   "slot": "Boots",
+   "minimum_level": 30,
+   "field": "* {{Stat|Constitution|3|Quality}}\n* {{Sheltering|34}}\n* {{Skills|Balance|20}}\n* {{Hp|Vitality|45}}\n* {{Underwater Action|20}}\n* {{Augment|Yellow}}\n* {{Augment|Colorless}}\n* {{Named item sets|Legendary Marshwalker}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Boots_of_the_Mire"
+  },
+  {
+   "name": "Legendary Boots of the Rose",
+   "slot": "Boots",
+   "minimum_level": 31,
+   "field": "* {{Speed|30}}\n* {{Deception|5|Insightful}}\n* {{Skills|Hide|10|Insight|prefix=Insightful}}\n* {{Skills|Move Silently|10|Insight|prefix=Insightful}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Boots_of_the_Rose"
+  },
+  {
+   "name": "Legendary Boots of Uncanny Mending",
+   "slot": "Boots",
+   "minimum_level": 33,
+   "field": "* {{HealingAmp|59|Repair}} \n* {{HealingAmp|15|Repair|Quality}} \n* {{Skills|Repair|21}}\n* {{SpellPower|Reconstruction|38|Quality}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Boots_of_Uncanny_Mending"
+  },
+  {
+   "name": "Legendary Bugkickers",
+   "slot": "Boots",
+   "minimum_level": 33,
+   "field": "* {{Enhanced Ki|3}}\n* {{Deadly|12}}\n* {{Crippling}}\n* {{Tactics|Combat Mastery|12}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bugkickers"
+  },
+  {
+   "name": "Legendary Bulette-Armored Boots",
+   "slot": "Boots",
+   "minimum_level": 35,
+   "field": "* {{Sheltering|9|Quality|Physical}}\n* {{Absorption|Acid|39}}\n* {{Ram's Might}}\n* {{Nearly Complete|Skill|1}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bulette-Armored_Boots"
+  },
+  {
+   "name": "Legendary Chamber Boots",
+   "slot": "Boots",
+   "minimum_level": 29,
+   "field": "* {{Stat|Intelligence|6|Insightful}}\n* {{Speed|30}}\n* {{Dodge|13}}\n* {{ItemGrantedFeat|Quick Draw}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Chamber_Boots"
+  },
+  {
+   "name": "Legendary Clockwork Boots",
+   "slot": "Boots",
+   "minimum_level": 29,
+   "field": "* {{Stat|Int|3|Quality}}\n* {{Shatter|15}}\n* {{Spelllore|Repair|21}}\n* {{SpellPower|Reconstruction|142}}\n* {{Augment|Blue}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Clockwork_Boots"
+  },
+  {
+   "name": "Legendary Coldlight Runners",
+   "slot": "Boots",
+   "minimum_level": 34,
+   "field": "* {{Marksmanship|Greater}}\n* {{Doubleshot|5|Insight}}\n* {{Lamordia Slot|Melancholic|Accessory}}\n* {{Lamordia Slot|Dolorous|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Coldlight_Runners"
+  },
+  {
+   "name": "Legendary Blood-Stained Doctor's Gloves",
+   "slot": "Gloves",
+   "minimum_level": 34,
+   "field": "* {{Assassinate|8|Insight}}\n* {{Deception|6|Insightful}}\n* {{Deception|22|Bluff=Improved}}\n* {{Bloodrage|Enhanced}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Blood-Stained_Doctor's_Gloves"
+  },
+  {
+   "name": "Legendary Blurfingered Gloves",
+   "slot": "Gloves",
+   "minimum_level": 29,
+   "field": "* {{ItemGrantedFeat|Quick Draw}}\n* {{Concealment|Lesser Displacement}}\n* {{Efficient Metamagic|Maximize|2}}\n* {{Diversion|20|Mystic}}\n* {{Augment|Blue}}\n* {{Named item sets|Beacon of Magic Set (Legendary)}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Blurfingered_Gloves"
+  },
+  {
+   "name": "Legendary Bramble-Casters",
+   "slot": "Gloves",
+   "minimum_level": 30,
+   "field": "* {{Spelllore|Blighted|22}}\n* {{SpellPower|Power of the Blight|151}}\n* {{Spearblock|V}}\n* {{Guard|Greater Thorn}}\n* {{Augment|Yellow}}\n* {{Augment|Green}}\n* {{Named item sets|The Legendary Desert's Starless Nights}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bramble-Casters"
+  },
+  {
+   "name": "Legendary Brawling Gloves (level 32)",
+   "slot": "Gloves",
+   "minimum_level": 32,
+   "field": "* {{Stat|STR|14}}\n* {{Spike-Studded}}\n* {{Glass Jaw Strike}}\n* {{Deception|11}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brawling_Gloves_(level_32)"
+  },
+  {
+   "name": "Legendary Burrowing Claws",
+   "slot": "Gloves",
+   "minimum_level": 35,
+   "field": "* {{Armor-Piercing|5|Quality}}\n* {{Seeker|15}}\n* {{Seeker|7|Insightful}}\n* {{Nearly Complete|Ability Score|1}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Burrowing_Claws"
+  },
+  {
+   "name": "Legendary Charged Gauntlets",
+   "slot": "Gloves",
+   "minimum_level": 30,
+   "field": "* {{Lightning Strike|Sovereign}}\n* {{Stat|Strength|14}}\n* {{Speed|30}}\n* {{Elemental Resistance|Electric|54}}\n* {{Guard|Legendary Lightningstorm}}\n* {{Augment|Yellow}}\n* {{Named item sets|Legendary Might of the Abishai}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Charged_Gauntlets"
+  },
+  {
+   "name": "Legendary Cinderfingers",
+   "slot": "Gloves",
+   "minimum_level": 30,
+   "field": "* {{Spelllore|Fire|21}}\n* {{SpellPower|Combustion|146}}\n* {{Spell Focus|Evocation|8}}\n* {{Resistance|11}}\n* {{Immunity|Web}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Named item sets|Legendary Saltmarsh Explorer}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cinderfingers"
+  },
+  {
+   "name": "Legendary Clarissa's Lace Gloves",
+   "slot": "Gloves",
+   "minimum_level": 29,
+   "field": "* {{Assassinate|15}}\n* {{Accuracy|20}}\n* {{Deadly|10}}\n* {{Deception|10}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Clarissa's_Lace_Gloves"
+  },
+  {
+   "name": "Legendary Circlet of Shar",
+   "slot": "Helmet",
+   "minimum_level": 33,
+   "field": "* {{Stat|WIS|15}}\n* {{Stat|WIS|3|Quality}}\n* {{Immunity|Intercession Ward}}\n* {{Spell Focus|Spell|2|Profane}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Sun}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Circlet_of_Shar"
+  },
+  {
+   "name": "Legendary Compliance",
+   "slot": "Helmet",
+   "minimum_level": 29,
+   "field": "* {{Stat|Charisma|13}}\n* {{SpellPower|Potency|98|Equipment}}\n* {{Skills|Alluring|10|Exceptional}}\n* {{Skills|UMD|5}}\n* {{CraftingEffects|Trace of Madness}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Compliance"
+  },
+  {
+   "name": "Legendary Cowl of the Devotee",
+   "slot": "Helmet",
+   "minimum_level": 31,
+   "field": "* {{SpellPower|Radiance|149}}\n* {{SpellPower|Nullification|149}}\n* {{Spell Focus|Necromancy|9}}\n* {{Spellpen|5|Insight|prefix=Insightful}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cowl_of_the_Devotee"
+  },
+  {
+   "name": "Legendary Cowl of the Drow Devotee",
+   "slot": "Helmet",
+   "minimum_level": 35,
+   "field": "* {{Freedom of Movement}}\n* {{Dodge|16}}\n* {{Sheltering|41|Enhancement}}\n* {{Nearly Complete|Healing Amplification|1}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Sun}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cowl_of_the_Drow_Devotee"
+  }
+ ]
+}

@@ -1,0 +1,862 @@
+{
+ "metadata": {
+  "layer": "enriched",
+  "batch": "batch6",
+  "harvested": "2026-07-25",
+  "count": 38
+ },
+ "items": [
+  {
+   "name": "Legendary Capelet of Cuisine",
+   "category": "item",
+   "slot": "Cloak",
+   "enhancements": [
+    "Constitution +14",
+    "Fortification +153",
+    "Quality Dexterity +3",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Legendary Cooking By the Book (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Capelet_of_Cuisine",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Immunity"
+   ],
+   "_enriched": true,
+   "minimum_level": 32
+  },
+  {
+   "name": "Legendary Chilling Sash of Tailara",
+   "category": "item",
+   "slot": "Cloak",
+   "enhancements": [
+    "Cold Absorption +38%",
+    "Profane Lifeforce +51",
+    "Profane Well Rounded +3",
+    "Constitution +15",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Chilling_Sash_of_Tailara",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 34
+  },
+  {
+   "name": "Legendary Cloak of Autumn",
+   "category": "item",
+   "slot": "Cloak",
+   "enhancements": [
+    "Acid Absorption +34%",
+    "Insightful Constitution +6",
+    "Green Augment Slot",
+    "Eminence of Autumn (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_Autumn",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "ItemGrantedFeat",
+    "Concealment"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Cloak of Balance",
+   "category": "item",
+   "slot": "Cloak",
+   "enhancements": [
+    "Insight Seeker +6",
+    "Parrying +6",
+    "Green Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_Balance",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "Nearly Finished",
+    "Freedom of Movement"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Cloak of Moonlight",
+   "category": "item",
+   "slot": "Cloak",
+   "enhancements": [
+    "Competence Elemental Resistance +15",
+    "Wizardry +302",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_Moonlight",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Immunity",
+    "Proof"
+   ],
+   "_enriched": true,
+   "minimum_level": 33
+  },
+  {
+   "name": "Legendary Cloak of Spring",
+   "category": "item",
+   "slot": "Cloak",
+   "enhancements": [
+    "Electricity Absorption +34%",
+    "Dexterity +13",
+    "Insightful Dexterity +6",
+    "Parrying +6",
+    "Green Augment Slot",
+    "Eminence of Spring (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_Spring",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Cloak of Summer",
+   "category": "item",
+   "slot": "Cloak",
+   "enhancements": [
+    "fire Absorption +34%",
+    "Strength +13",
+    "Insightful Strength +6",
+    "Doublestrike +15%",
+    "Green Augment Slot",
+    "Eminence of Summer (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_Summer",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Cloak of Sunlight",
+   "category": "item",
+   "slot": "Cloak",
+   "enhancements": [
+    "Natural Armor +14",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_Sunlight",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Concealment",
+    "HealingAmp",
+    "Proof"
+   ],
+   "_enriched": true,
+   "minimum_level": 33
+  },
+  {
+   "name": "Legendary Cloak of the Ambassador",
+   "category": "item",
+   "slot": "Cloak",
+   "enhancements": [
+    "Deception +12",
+    "Deception +21",
+    "Accuracy +23",
+    "Quality Accuracy +5",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_the_Ambassador",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 33
+  },
+  {
+   "name": "Legendary Cloak of the Artblade",
+   "category": "item",
+   "slot": "Cloak",
+   "enhancements": [
+    "Power of the Firestorm +156",
+    "Enhancement Physical Sheltering +37",
+    "Insightful Magical Sheltering +18",
+    "Wizardry +302",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_the_Artblade",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 33
+  },
+  {
+   "name": "Legendary Bracelets of Flourishing Fauna",
+   "category": "item",
+   "slot": "Bracers",
+   "enhancements": [
+    "Quality Doublestrike +3%",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracelets_of_Flourishing_Fauna",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "Bone Paws",
+    "Druidic",
+    "True Seeing"
+   ],
+   "_enriched": true,
+   "minimum_level": 33
+  },
+  {
+   "name": "Legendary Bracelets of Subtle Life",
+   "category": "item",
+   "slot": "Bracers",
+   "enhancements": [
+    "Diversion +10",
+    "Distant Diversion +10",
+    "Mystic Diversion +10",
+    "Enhancement Physical Sheltering +35",
+    "Enhancement Magical Sheltering +35",
+    "Blue Augment Slot",
+    "Legendary Temple's Tide (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracelets_of_Subtle_Life",
+   "augment_slots": [
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Concealment"
+   ],
+   "_enriched": true,
+   "minimum_level": 31
+  },
+  {
+   "name": "Legendary Bracers of Baphomet",
+   "category": "item",
+   "slot": "Bracers",
+   "enhancements": [
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_Baphomet",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "Tactics",
+    "Tactics",
+    "Armor-Piercing",
+    "Nearly Complete"
+   ],
+   "_enriched": true,
+   "minimum_level": 35
+  },
+  {
+   "name": "Legendary Bracers of Deftness",
+   "category": "item",
+   "slot": "Bracers",
+   "enhancements": [
+    "Dodge +13%",
+    "Tumble +20",
+    "Yellow Augment Slot",
+    "Green Augment Slot",
+    "Legendary Vulkoor's Chosen (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_Deftness",
+   "augment_slots": [
+    "Yellow",
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "ItemGrantedFeat",
+    "ArmorBonus"
+   ],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Bracers of Method and Magic",
+   "category": "item",
+   "slot": "Bracers",
+   "enhancements": [
+    "Intelligence +15",
+    "Quality Intelligence +3",
+    "Insight Concentration +10",
+    "Quality Spellcraft +5",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_Method_and_Magic",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 33
+  },
+  {
+   "name": "Legendary Bracers of Order and Chaos",
+   "category": "item",
+   "slot": "Bracers",
+   "enhancements": [
+    "Chaos Absorption +22%",
+    "Law Absorption +22%",
+    "Resistance +10",
+    "Blue Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_Order_and_Chaos",
+   "augment_slots": [
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "HealingAmp"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Bracers of the Claw",
+   "category": "item",
+   "slot": "Bracers",
+   "enhancements": [
+    "Insightful Constitution +6",
+    "Fortification +146",
+    "Parrying +6",
+    "False Life +51",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Legendary Vulkoor's Might (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_the_Claw",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Bracers of the Demon's Consort",
+   "category": "item",
+   "slot": "Bracers",
+   "enhancements": [
+    "Strength +14",
+    "Blue Augment Slot",
+    "Green Augment Slot",
+    "The Legendary Desert's Starless Nights (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_the_Demon's_Consort",
+   "augment_slots": [
+    "Blue",
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "Demonic Curse",
+    "Demonic Shield",
+    "Guard",
+    "Tactics"
+   ],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Boots of the Mire",
+   "category": "item",
+   "slot": "Boots",
+   "enhancements": [
+    "Quality Constitution +3",
+    "Physical Sheltering +34",
+    "Balance +20",
+    "Vitality +45",
+    "Yellow Augment Slot",
+    "Colorless Augment Slot",
+    "Legendary Marshwalker (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Boots_of_the_Mire",
+   "augment_slots": [
+    "Yellow",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Underwater Action"
+   ],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Boots of the Rose",
+   "category": "item",
+   "slot": "Boots",
+   "enhancements": [
+    "Insightful Deception +5",
+    "Insight Hide +10",
+    "Insight Move Silently +10",
+    "Green Augment Slot",
+    "Colorless Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Boots_of_the_Rose",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Speed"
+   ],
+   "_enriched": true,
+   "minimum_level": 31
+  },
+  {
+   "name": "Legendary Boots of Uncanny Mending",
+   "category": "item",
+   "slot": "Boots",
+   "enhancements": [
+    "Repair +21",
+    "Quality Reconstruction +38",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Boots_of_Uncanny_Mending",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "HealingAmp",
+    "HealingAmp"
+   ],
+   "_enriched": true,
+   "minimum_level": 33
+  },
+  {
+   "name": "Legendary Bugkickers",
+   "category": "item",
+   "slot": "Boots",
+   "enhancements": [
+    "Deadly +12",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bugkickers",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "Enhanced Ki",
+    "Crippling",
+    "Tactics"
+   ],
+   "_enriched": true,
+   "minimum_level": 33
+  },
+  {
+   "name": "Legendary Bulette-Armored Boots",
+   "category": "item",
+   "slot": "Boots",
+   "enhancements": [
+    "Quality Physical Sheltering +9",
+    "Acid Absorption +39%",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bulette-Armored_Boots",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "Ram's Might",
+    "Nearly Complete"
+   ],
+   "_enriched": true,
+   "minimum_level": 35
+  },
+  {
+   "name": "Legendary Chamber Boots",
+   "category": "item",
+   "slot": "Boots",
+   "enhancements": [
+    "Insightful Intelligence +6",
+    "Dodge +13%",
+    "Green Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Chamber_Boots",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "Speed",
+    "ItemGrantedFeat"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Clockwork Boots",
+   "category": "item",
+   "slot": "Boots",
+   "enhancements": [
+    "Quality Intelligence +3",
+    "Repair Lore +21%",
+    "Reconstruction +142",
+    "Blue Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Clockwork_Boots",
+   "augment_slots": [
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Shatter"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Coldlight Runners",
+   "category": "item",
+   "slot": "Boots",
+   "enhancements": [
+    "Insight Doubleshot +5%",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Coldlight_Runners",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "Marksmanship",
+    "Lamordia Slot",
+    "Lamordia Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 34
+  },
+  {
+   "name": "Legendary Blood-Stained Doctor's Gloves",
+   "category": "item",
+   "slot": "Gloves",
+   "enhancements": [
+    "Insightful Deception +6",
+    "Deception +22",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Blood-Stained_Doctor's_Gloves",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "Assassinate",
+    "Bloodrage"
+   ],
+   "_enriched": true,
+   "minimum_level": 34
+  },
+  {
+   "name": "Legendary Blurfingered Gloves",
+   "category": "item",
+   "slot": "Gloves",
+   "enhancements": [
+    "Mystic Diversion +20",
+    "Blue Augment Slot",
+    "Beacon of Magic Set (Legendary) (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Blurfingered_Gloves",
+   "augment_slots": [
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "ItemGrantedFeat",
+    "Concealment",
+    "Efficient Metamagic"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Bramble-Casters",
+   "category": "item",
+   "slot": "Gloves",
+   "enhancements": [
+    "Blighted Lore +22%",
+    "Power of the Blight +151",
+    "Yellow Augment Slot",
+    "Green Augment Slot",
+    "The Legendary Desert's Starless Nights (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bramble-Casters",
+   "augment_slots": [
+    "Yellow",
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "Spearblock",
+    "Guard"
+   ],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Brawling Gloves (level 32)",
+   "category": "item",
+   "slot": "Gloves",
+   "enhancements": [
+    "Strength +14",
+    "Deception +11",
+    "Green Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brawling_Gloves_(level_32)",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "Spike-Studded",
+    "Glass Jaw Strike"
+   ],
+   "_enriched": true,
+   "minimum_level": 32
+  },
+  {
+   "name": "Legendary Burrowing Claws",
+   "category": "item",
+   "slot": "Gloves",
+   "enhancements": [
+    "Seeker +15",
+    "Insightful Seeker +7",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Burrowing_Claws",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Moon"
+   ],
+   "_enrich_unmapped": [
+    "Armor-Piercing",
+    "Nearly Complete"
+   ],
+   "_enriched": true,
+   "minimum_level": 35
+  },
+  {
+   "name": "Legendary Charged Gauntlets",
+   "category": "item",
+   "slot": "Gloves",
+   "enhancements": [
+    "Strength +14",
+    "Electric Resistance +54",
+    "Yellow Augment Slot",
+    "Legendary Might of the Abishai (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Charged_Gauntlets",
+   "augment_slots": [
+    "Yellow"
+   ],
+   "_enrich_unmapped": [
+    "Lightning Strike",
+    "Speed",
+    "Guard"
+   ],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Cinderfingers",
+   "category": "item",
+   "slot": "Gloves",
+   "enhancements": [
+    "Fire Lore +21%",
+    "Combustion +146",
+    "Evocation Spell Focus +8",
+    "Resistance +11",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cinderfingers",
+   "augment_slots": [
+    "Green",
+    "Yellow"
+   ],
+   "_enrich_unmapped": [
+    "Immunity"
+   ],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Clarissa's Lace Gloves",
+   "category": "item",
+   "slot": "Gloves",
+   "enhancements": [
+    "Accuracy +20",
+    "Deadly +10",
+    "Deception +10",
+    "Green Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Clarissa's_Lace_Gloves",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "Assassinate"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Circlet of Shar",
+   "category": "item",
+   "slot": "Helmet",
+   "enhancements": [
+    "Wisdom +15",
+    "Quality Wisdom +3",
+    "Profane Spell Spell Focus +2",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Circlet_of_Shar",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Immunity"
+   ],
+   "_enriched": true,
+   "minimum_level": 33
+  },
+  {
+   "name": "Legendary Compliance",
+   "category": "item",
+   "slot": "Helmet",
+   "enhancements": [
+    "Charisma +13",
+    "Equipment Potency +98",
+    "Exceptional Alluring +10",
+    "UMD +5",
+    "Green Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Compliance",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [
+    "CraftingEffects"
+   ],
+   "_enriched": true,
+   "minimum_level": 29
+  },
+  {
+   "name": "Legendary Cowl of the Devotee",
+   "category": "item",
+   "slot": "Helmet",
+   "enhancements": [
+    "Radiance +149",
+    "Nullification +149",
+    "Necromancy Spell Focus +9",
+    "Insight Spell Penetration +5",
+    "Green Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cowl_of_the_Devotee",
+   "augment_slots": [
+    "Green"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 31
+  },
+  {
+   "name": "Legendary Cowl of the Drow Devotee",
+   "category": "item",
+   "slot": "Helmet",
+   "enhancements": [
+    "Dodge +16%",
+    "Enhancement Physical Sheltering +41",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cowl_of_the_Drow_Devotee",
+   "augment_slots": [
+    "Green",
+    "Colorless",
+    "Sun"
+   ],
+   "_enrich_unmapped": [
+    "Freedom of Movement",
+    "Nearly Complete"
+   ],
+   "_enriched": true,
+   "minimum_level": 35
+  }
+ ]
+}

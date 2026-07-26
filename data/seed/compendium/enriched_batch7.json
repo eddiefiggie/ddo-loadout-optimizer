@@ -1,0 +1,474 @@
+{
+ "metadata": {
+  "layer": "enriched",
+  "batch": "batch7",
+  "harvested": "2026-07-25",
+  "count": 20
+ },
+ "items": [
+  {
+   "name": "Legendary Alchemical Large Shield",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Red Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Alchemical_Large_Shield",
+   "augment_slots": [
+    "Red"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "CraftingEffects"
+   ],
+   "_enriched": true,
+   "minimum_level": 29,
+   "offhand_type": "large"
+  },
+  {
+   "name": "Legendary Azure Rotella",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Quality Magical Sheltering +8",
+    "Purple Augment Slot",
+    "Orange Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Azure_Rotella",
+   "augment_slots": [
+    "Purple",
+    "Orange"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Shield Bashing",
+    "ItemGrantedFeat",
+    "Incite"
+   ],
+   "_enriched": true,
+   "minimum_level": 32,
+   "offhand_type": "large"
+  },
+  {
+   "name": "Legendary Breaker of Bodies",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Breaker_of_Bodies",
+   "augment_slots": [
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Shield Bashing",
+    "Maiming",
+    "Bashing",
+    "Riposte",
+    "CraftingEffects"
+   ],
+   "_enriched": true,
+   "minimum_level": 28,
+   "offhand_type": "large"
+  },
+  {
+   "name": "Legendary Cataclysmic Large Shield",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Purple Augment Slot",
+    "Orange Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cataclysmic_Large_Shield",
+   "augment_slots": [
+    "Purple",
+    "Orange"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Lamordia Slot",
+    "Lamordia Slot",
+    "Lamordia Slot",
+    "Lamordia Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 34,
+   "offhand_type": "large"
+  },
+  {
+   "name": "Legendary Coronation Shield",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Blue Augment Slot",
+    "Purple Augment Slot",
+    "Legendary Oasis of Morality (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Coronation_Shield",
+   "augment_slots": [
+    "Blue",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Impact",
+    "Blast",
+    "Blinding Fear",
+    "Guard",
+    "Guard"
+   ],
+   "_enriched": true,
+   "minimum_level": 30,
+   "offhand_type": "large"
+  },
+  {
+   "name": "Legendary Crystalline Ward",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Potency +98",
+    "Insightful Magical Sheltering +16",
+    "Quality Magical Sheltering +8",
+    "Blue Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Crystalline_Ward",
+   "augment_slots": [
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Arcane Casting Dexterity"
+   ],
+   "_enriched": true,
+   "minimum_level": 29,
+   "offhand_type": "large"
+  },
+  {
+   "name": "Legendary Aegis of Aosu'riel",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Alignment Absorption +22%",
+    "Quality Constitution +3",
+    "Insightful Physical Sheltering +16",
+    "Resistance +10",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Aegis_of_Aosu'riel",
+   "augment_slots": [
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus"
+   ],
+   "_enriched": true,
+   "minimum_level": 29,
+   "offhand_type": "tower"
+  },
+  {
+   "name": "Legendary Alchemical Tower Shield",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Red Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Alchemical_Tower_Shield",
+   "augment_slots": [
+    "Red"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement_bonus",
+    "CraftingEffects"
+   ],
+   "_enriched": true,
+   "minimum_level": 29,
+   "offhand_type": "tower"
+  },
+  {
+   "name": "Legendary Azure Tower",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Quality Magical Sheltering +8",
+    "Purple Augment Slot",
+    "Orange Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Azure_Tower",
+   "augment_slots": [
+    "Purple",
+    "Orange"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Shield Bashing",
+    "ItemGrantedFeat",
+    "Incite"
+   ],
+   "_enriched": true,
+   "minimum_level": 32,
+   "offhand_type": "tower"
+  },
+  {
+   "name": "Legendary Bulwark of Snow",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Force Absorption +16%",
+    "Cold Resistance +50",
+    "Purple Augment Slot",
+    "Eminence of Winter (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bulwark_of_Snow",
+   "augment_slots": [
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Avalanche",
+    "Shield of Snow",
+    "Mat"
+   ],
+   "_enriched": true,
+   "minimum_level": 29,
+   "offhand_type": "tower"
+  },
+  {
+   "name": "Legendary Cataclysmic Tower Shield",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Purple Augment Slot",
+    "Orange Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cataclysmic_Tower_Shield",
+   "augment_slots": [
+    "Purple",
+    "Orange"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Lamordia Slot",
+    "Lamordia Slot",
+    "Lamordia Slot",
+    "Lamordia Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 34,
+   "offhand_type": "tower"
+  },
+  {
+   "name": "Legendary Defiled Azure Tower",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Diversion +10",
+    "Purple Augment Slot",
+    "Orange Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Defiled_Azure_Tower",
+   "augment_slots": [
+    "Purple",
+    "Orange"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Shield Bashing",
+    "Shield Bashing",
+    "Unholy",
+    "Taint of Evil"
+   ],
+   "_enriched": true,
+   "minimum_level": 32,
+   "offhand_type": "tower"
+  },
+  {
+   "name": "Legendary Alchemical Buckler",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Red Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Alchemical_Buckler",
+   "augment_slots": [
+    "Red"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "CraftingEffects"
+   ],
+   "_enriched": true,
+   "minimum_level": 29,
+   "offhand_type": "buckler"
+  },
+  {
+   "name": "Legendary Azure Buckler",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Quality Magical Sheltering +8",
+    "Diversion +10",
+    "Purple Augment Slot",
+    "Orange Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Azure_Buckler",
+   "augment_slots": [
+    "Purple",
+    "Orange"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Shield Bashing",
+    "ItemGrantedFeat"
+   ],
+   "_enriched": true,
+   "minimum_level": 32,
+   "offhand_type": "buckler"
+  },
+  {
+   "name": "Legendary Buckler of the Fallen Age",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Purple Augment Slot",
+    "Orange Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Buckler_of_the_Fallen_Age",
+   "augment_slots": [
+    "Purple",
+    "Orange"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Shield Bashing",
+    "Shield Spikes",
+    "Rough Hide",
+    "Conditioning"
+   ],
+   "_enriched": true,
+   "minimum_level": 33,
+   "offhand_type": "buckler"
+  },
+  {
+   "name": "Legendary Buckler of the Golden Age",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Purple Augment Slot",
+    "Orange Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Buckler_of_the_Golden_Age",
+   "augment_slots": [
+    "Purple",
+    "Orange"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Shield Bashing",
+    "Conditioning",
+    "Shield Spikes",
+    "Guardbreaking"
+   ],
+   "_enriched": true,
+   "minimum_level": 33,
+   "offhand_type": "buckler"
+  },
+  {
+   "name": "Legendary Bloody Shadow Staff",
+   "category": "item",
+   "slot": "Weapon",
+   "enhancements": [
+    "Red Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bloody_Shadow_Staff",
+   "augment_slots": [
+    "Red",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement_bonus",
+    "Vampirism",
+    "Life Stealing",
+    "Entropic",
+    "Feeding"
+   ],
+   "_enriched": true,
+   "minimum_level": 31
+  },
+  {
+   "name": "Legendary Broken Oar (level 32)",
+   "category": "item",
+   "slot": "Weapon",
+   "enhancements": [
+    "Doublestrike +16%",
+    "Red Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Broken_Oar_(level_32)",
+   "augment_slots": [
+    "Red"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Bleeding",
+    "Impact",
+    "Felling the Oak"
+   ],
+   "_enriched": true,
+   "minimum_level": 32
+  },
+  {
+   "name": "Legendary Bullywug Priestess' Staff",
+   "category": "item",
+   "slot": "Weapon",
+   "enhancements": [
+    "Frozen Depths Lore +21%",
+    "Power of the Frozen Depths +146",
+    "Necromancy Spell Focus +8",
+    "Evocation Spell Focus +8",
+    "Equipment Spell Penetration +9",
+    "Red Augment Slot",
+    "Orange Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bullywug_Priestess'_Staff",
+   "augment_slots": [
+    "Red",
+    "Orange"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Immunity",
+    "Bane of the Depths"
+   ],
+   "_enriched": true,
+   "minimum_level": 30
+  },
+  {
+   "name": "Legendary Calamitous Quarterstaff",
+   "category": "item",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Calamitous_Quarterstaff",
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "_enrich_unmapped": [
+    "Enhancement bonus",
+    "Lamordia Slot",
+    "Lamordia Slot",
+    "Lamordia Slot",
+    "Lamordia Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 34
+  }
+ ]
+}
