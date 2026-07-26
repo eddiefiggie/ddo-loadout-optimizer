@@ -15,28 +15,15 @@ function contributingAffixes(variant, targets) {
 }
 
 /** Reconstruct a concrete augment->item assignment from the solver's aggregate
- *  per-color placements (KTD2). Deterministic: walk equipped items in order and
- *  drop each placed augment into the first equipped item with remaining open
- *  capacity of its color. Returns { byIndex: Map(chosenIndex -> [aug]), unplaced }. */
+ *  per-color-capacity placements. The solver decides WHICH augments are placed and
+ *  which slot COLOR each consumes (`slot_color` — multi-fit: a Red augment may
+ *  consume an Orange slot); it does not pin the host item (that would need the
+ *  per-slot variables we deliberately dropped for program size). Reconstruct the
+ *  host deterministically: walk equipped items in order and drop each placed
+ *  augment into the first item with remaining open capacity of the slot color it
+ *  consumed. Capacity feasibility is guaranteed by the solver's per-color bound,
+ *  so a placed augment always finds a home. Returns { byIndex, unplaced }. */
 function assignAugments(chosen, augmentsPlaced) {
-  // Preferred: the per-slot solver (U3) already assigned each augment to a host
-  // (`item`) and the slot color it filled (`slot_color`). Group by that host's
-  // chosen index directly — the authoritative assignment, honoring multi-fit.
-  if ((augmentsPlaced || []).some((a) => a.item)) {
-    const idxOf = new Map();
-    chosen.forEach((c, i) => idxOf.set(c.variant.variant_id, i));
-    const byIndex = new Map();
-    const unplaced = [];
-    for (const aug of augmentsPlaced || []) {
-      const i = idxOf.get(aug.item);
-      if (i == null) { unplaced.push(aug); continue; }
-      if (!byIndex.has(i)) byIndex.set(i, []);
-      byIndex.get(i).push(aug);
-    }
-    return { byIndex, unplaced };
-  }
-  // Fallback (old shape, no `item`): drop each augment into the first equipped
-  // item with remaining open capacity of its exact color.
   const remaining = chosen.map((c) => {
     const m = new Map();
     for (const col of ((c.variant.augment_slots_norm || {}).colors) || []) m.set(col, (m.get(col) || 0) + 1);
@@ -45,10 +32,11 @@ function assignAugments(chosen, augmentsPlaced) {
   const byIndex = new Map();
   const unplaced = [];
   for (const aug of augmentsPlaced || []) {
+    const want = aug.slot_color || aug.color; // the slot color consumed (falls back to own color)
     let placed = false;
     for (let i = 0; i < chosen.length; i++) {
-      if ((remaining[i].get(aug.color) || 0) > 0) {
-        remaining[i].set(aug.color, remaining[i].get(aug.color) - 1);
+      if ((remaining[i].get(want) || 0) > 0) {
+        remaining[i].set(want, remaining[i].get(want) - 1);
         if (!byIndex.has(i)) byIndex.set(i, []);
         byIndex.get(i).push(aug);
         placed = true;

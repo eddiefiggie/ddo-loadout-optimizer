@@ -41,14 +41,17 @@ test("assignAugments respects per-item color capacity", () => {
   assert.strictEqual(out.unplaced.length, 1);
 });
 
-test("assignAugments uses the solver's per-slot item+slot_color assignment (U6)", () => {
-  const chosen = [chosenItem("Cataclysmic", "Weapon"), chosenItem("Ring", "Ring")];
-  // a Red augment the solver placed into the Cataclysmic weapon's Orange slot (multi-fit)
-  const placed = [{ variant_id: "RedStr", item: "Cataclysmic", slot_color: "Orange", color: "Red" }];
+test("assignAugments places a multi-fit augment into a host with the consumed slot color", () => {
+  // The Cataclysmic weapon has an Orange slot; a Ring has only a Blue slot. The
+  // solver reports a Red augment consuming an Orange slot (multi-fit). It must land
+  // on the weapon (the only Orange-slot host), keyed on `slot_color`, not on color.
+  const chosen = [chosenItem("Cataclysmic", "Weapon", ["Orange"]), chosenItem("Ring", "Ring", ["Blue"])];
+  const placed = [{ variant_id: "RedStr", slot_color: "Orange", color: "Red" }];
   const out = R.assignAugments(chosen, placed);
-  assert.strictEqual((out.byIndex.get(0) || []).length, 1, "assigned to the solver-named host (index 0)");
-  assert.strictEqual(out.byIndex.get(0)[0].slot_color, "Orange", "carries the filled slot color");
-  assert.ok(!out.byIndex.has(1), "not assigned to the other item");
+  assert.strictEqual((out.byIndex.get(0) || []).length, 1, "assigned to the Orange-slot host (index 0)");
+  assert.strictEqual(out.byIndex.get(0)[0].slot_color, "Orange", "carries the consumed slot color");
+  assert.ok(!out.byIndex.has(1), "not assigned to the Blue-only item");
+  assert.strictEqual(out.unplaced.length, 0);
 });
 
 test("nearMissSetHints flags a set one piece short that would advance a target", () => {

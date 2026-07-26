@@ -75,7 +75,7 @@ function buildProgram(model) {
   // raw LP constraint bodies that encodeStage injects verbatim.
   const extraVars = [];
   const extraConstraints = [];
-  const augMeta = new Map(); // placement var -> {variant_id, color, wiki_url}
+  const augMeta = new Map(); // placement var -> {variant_id, color, slot_color, wiki_url}
   const setMeta = new Map(); // set_active var -> {set, pieces_required, pieces_label, wiki_url}
   const dinoMeta = new Map(); // dino placement var -> {dino_type, stat, bonus_type, value, wiki_url}
   const ncMeta = new Map(); // nc placement var -> {item, category, stat, bonus_type, value, tier, wiki_url}
@@ -83,16 +83,23 @@ function buildProgram(model) {
   const vikMeta = new Map(); // Viktranium placement var -> {item, slot_type, category, stat, bonus_type, value, unit, tier, wiki_url}
   const sealMeta = new Map(); // seal placement var -> {item, seal_type, category, stat, bonus_type, value, unit, wiki_url}
 
-  // U3 — augment assignment as per-slot compatible choice-slots. Each OPEN augment
-  // slot on an equipped item is a select-one over the augments COMPATIBLE with the
-  // slot's color: the DDO wiki matrix, baked onto each augment as `fits_slots` at
-  // build time, so here it is plain set-membership (slot color ∈ aug.fits_slots).
-  // A Red augment fits Red/Purple/Orange slots; a Colorless augment fits every
-  // colored slot; Moon/Sun fit only their own. Each option's affixes feed the
-  // (stat, bonus_type) buckets, so typed non-stacking is automatic (the bucket-max)
-  // and there is NO used-once constraint — the solver spreads bonus types across
-  // slots on its own. Only Unique-Equipped augments are constrained to one placement.
-  // Precompute each pool augment's best per-bucket value once.
+  // U3 — augment assignment (aggregate compatible-color capacity). Correctness
+  // rests on the bucket-max core: every (stat, bonus_type) bucket is capped at
+  // Σz ≤ 1, so an augment's value is fully realized by placing it in ANY one
+  // compatible slot — extra placements of the same augment add nothing. So rather
+  // than a variable per physical slot (which scaled with the candidate-item count
+  // and blew the program up ~100×), model each augment as: AT MOST ONE placement,
+  // consuming one compatible slot COLOR, with per-color placements bounded by that
+  // color's open-slot supply across equipped items. Slots of a given color are
+  // interchangeable, so this per-color b-matching is exactly the physical-slot
+  // matching, but O(pool) and independent of the candidate count. Multi-fit is the
+  // wiki matrix baked as `fits_slots` (a Red augment fits Red/Purple/Orange slots;
+  // Colorless fits every colored slot; Moon/Sun only their own). The single-
+  // placement cap also means every augment is used at most once — the "own one
+  // copy" invariant — for unique and ordinary augments alike (a second copy would
+  // be objective-neutral under bucket-max anyway). Host attribution (which item
+  // gets which augment) is reconstructed deterministically in results.js, off the
+  // solver's critical path. Precompute each pool augment's best per-bucket value.
   const augBest = new Map(); // aug variant -> Map("stat||type" -> best value)
   for (const aug of model.augments || []) {
     const best = new Map();
@@ -107,37 +114,57 @@ function buildProgram(model) {
     }
     if (best.size) augBest.set(aug, best); // only augments advancing a target
   }
-  let pc = 0;
-  const augByUnique = new Map(); // Unique-Equipped aug id -> [placement vars across all slots]
+  // Open-slot supply per color: Σ over candidate items of (open slots of that
+  // color on the item) · x_item. A color's placements can't exceed its supply.
+  const supplyTerms = new Map(); // slot color -> ["n xName", ...]
   for (const xv of xVars) {
-    const slotColors = ((xv.variant.augment_slots_norm || {}).colors) || [];
-    for (const slotColor of slotColors) {
-      const slotVars = [];
-      for (const [aug, best] of augBest) {
-        if (!(aug.fits_slots || []).includes(slotColor)) continue; // compatibility (baked matrix)
-        const p = "p" + pc++;
-        extraVars.push(p);
-        augMeta.set(p, {
-          variant_id: aug.variant_id, color: (aug.aug_color || {}).color,
-          slot_color: slotColor, item: xv.variant.variant_id, wiki_url: aug.wiki_url,
-        });
-        slotVars.push(p);
-        extraConstraints.push(`${p} - ${xv.name} <= 0`); // the slot exists only when its host is equipped
-        for (const [k, val] of best) {
-          if (!zByBucket.has(k)) zByBucket.set(k, []);
-          zByBucket.get(k).push({ name: "z" + zc++, gates: [p], value: val });
-        }
-        if (aug.unique_equipped) {
-          const id = aug.variant_id;
-          if (!augByUnique.has(id)) augByUnique.set(id, []);
-          augByUnique.get(id).push(p);
-        }
-      }
-      if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // one augment per slot
+    const counts = new Map();
+    for (const c of ((xv.variant.augment_slots_norm || {}).colors) || []) counts.set(c, (counts.get(c) || 0) + 1);
+    for (const [c, n] of counts) {
+      if (!supplyTerms.has(c)) supplyTerms.set(c, []);
+      supplyTerms.get(c).push(`${n} ${xv.name}`);
     }
   }
-  // Unique-Equipped augments: at most one placement across all slots.
-  for (const [, ps] of augByUnique) if (ps.length > 1) extraConstraints.push(`${ps.join(" + ")} <= 1`);
+  const presentColors = new Set(supplyTerms.keys());
+  let pc = 0;
+  const placeByColor = new Map(); // slot color -> [color-placement vars consuming it]
+  const augByUnique = new Map();  // Unique-Equipped id -> [place indicators]
+  for (const [aug, best] of augBest) {
+    const fits = (aug.fits_slots || []).filter((c) => presentColors.has(c));
+    if (!fits.length) continue; // no compatible open slot anywhere -> unplaceable
+    const colorVars = [];       // one placement binary per compatible present color
+    for (const sc of fits) {
+      const p = "p" + pc++;
+      extraVars.push(p);
+      augMeta.set(p, {
+        variant_id: aug.variant_id, color: (aug.aug_color || {}).color,
+        slot_color: sc, wiki_url: aug.wiki_url,
+      });
+      colorVars.push(p);
+      if (!placeByColor.has(sc)) placeByColor.set(sc, []);
+      placeByColor.get(sc).push(p);
+    }
+    // place[aug] = Σ colorVars ∈ {0,1}: consumed in exactly one color when placed.
+    const place = "pu" + pc++;
+    extraVars.push(place);
+    extraConstraints.push(`${colorVars.join(" + ")} - ${place} = 0`); // placed iff one color fires
+    extraConstraints.push(`${place} <= 1`);                           // at most one slot consumed
+    for (const [k, val] of best) {                                    // buckets gated by the placement
+      if (!zByBucket.has(k)) zByBucket.set(k, []);
+      zByBucket.get(k).push({ name: "z" + zc++, gates: [place], value: val });
+    }
+    if (aug.unique_equipped) {
+      const id = aug.variant_id;
+      if (!augByUnique.has(id)) augByUnique.set(id, []);
+      augByUnique.get(id).push(place);
+    }
+  }
+  // Per-color capacity: Σ placements of a color ≤ that color's open slots equipped.
+  for (const [sc, ps] of placeByColor) {
+    extraConstraints.push(`${ps.join(" + ")} - ${supplyTerms.get(sc).join(" - ")} <= 0`);
+  }
+  // Unique-Equipped augments sharing a variant_id across records: one placement total.
+  for (const [, pls] of augByUnique) if (pls.length > 1) extraConstraints.push(`${pls.join(" + ")} <= 1`);
 
   // U4 (Dino) — Isle of Dread Dino crafting. Structurally the augment mechanic
   // with a typed-slot vocabulary, TWO-KEYED by (dino_type, category) (KTD1): a

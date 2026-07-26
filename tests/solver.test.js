@@ -283,6 +283,42 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.strictEqual((r.augmentsPlaced || []).length, 1, "placed at most once");
   });
 
+  await test("U3: same bonus-type across two slots does NOT inflate one bucket (bucket-max)", async () => {
+    // Two Orange slots and two same-typed augments (Con Enhancement 15 and 10).
+    // Both can be placed (capacity allows), but they share the (Constitution,
+    // Enhancement) bucket, so bucket-max keeps only the highest — the invariant the
+    // no-used-once design rests on. A regression that summed slots would give 25.
+    const m = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [host("R", "Ring", [], ["Orange", "Orange"])])],
+      augments: [
+        augment("EnhCon15", "Red", [["Constitution", "Enhancement", 15]]),
+        augment("EnhCon10", "Yellow", [["Constitution", "Enhancement", 10]]),
+      ],
+    };
+    assert.strictEqual((await S.solveLexicographic(m, highs)).effective.Constitution, 15,
+      "max(15,10) across two slots, not 25 — same-type never stacks");
+  });
+
+  await test("U3: an augment cannot be placed on an UNequipped host", async () => {
+    // One Ring slot, two competitors: A carries a Blue augment slot; B has no slot
+    // but wins the slot on the priority-1 target (Strength 20 > A's 10). The Int
+    // augment fits only A's Blue slot, so once B is equipped its supply is 0 and
+    // the augment cannot count. A broken host->capacity gate would leak Int = 5.
+    const m = {
+      targets: ["Strength", "Intelligence"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [
+        host("A", "Ring", [["Strength", "Enhancement", 10]], ["Blue"]),
+        item("B", "Ring", [["Strength", "Enhancement", 20]]),
+      ])],
+      augments: [augment("Int", "Blue", [["Intelligence", "Enhancement", 5]])],
+    };
+    const r = await S.solveLexicographic(m, highs);
+    assert.strictEqual(r.effective.Strength, 20, "B wins the slot on the priority target");
+    assert.strictEqual(r.effective.Intelligence, 0, "augment's host is unequipped -> it cannot be placed");
+    assert.strictEqual((r.augmentsPlaced || []).length, 0, "no placement without an equipped compatible host");
+  });
+
   await test("U5/AE1: set stat counts only at the piece threshold", async () => {
     const tier = [{ n: 2, affixes: [["Strength", "Enhancement", 10]] }];
     const twoPieces = {
