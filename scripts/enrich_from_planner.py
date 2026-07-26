@@ -22,6 +22,8 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
+from src import seal  # noqa: E402  seal-slot host detection
+
 SRC = os.path.join(ROOT, "data", "seed", "compendium", "raw", "gearplanner_items.json")
 
 QUEST_MAP = {
@@ -29,6 +31,10 @@ QUEST_MAP = {
     "u81": ["Terror of Demogorgon", "The Underdark", "Underdark Arena: Ring of Fire"],
     "mythdrannor": ["Ruins of Myth Drannor", "Magic of Myth Drannor"],
     "lamordia": ["Land of Lamordia", "Viktranium Experiment crafting"],
+    # "Threats Old and New" raid drops the Undying Age "Reflections" gear that
+    # carries the Sealed-in-X enchantments; its items are absent from every wiki
+    # batch, so without this key the seal hosts never enter the pipeline.
+    "undyingage": ["Threats Old and New"],
 }
 ENDGAME_ML = 29
 # planner slot vocabulary -> this repo's solver slot names (model.js WORN_SLOTS
@@ -78,6 +84,26 @@ def build_record(it):
         if c.endswith("Augment Slot"):
             enh.append(c)
             aug.append(c.replace(" Augment Slot", ""))
+    # Seal-slot hosts. A "Sealed in X" enchantment is a single-pick choice-slot
+    # (src/seal.py). The gear-planner encodes it in TWO places: Undeath/Mist/Gloom
+    # as `crafting[]` entries, Fire/Amber as `affixes[]` {type:"Bool"} markers
+    # (which affix_to_string drops). Detect both; the pool is keyed by seal_type.
+    # Dedup by (seal_type, category): a seal redundantly encoded in BOTH the
+    # affixes[] Bool marker and a crafting[] string must yield ONE slot, or the
+    # solver's per-slot single-pick would let the item unseal the same seal twice
+    # (an in-game-impossible loadout). Distinct seal types stay distinct slots.
+    seal_slots, _seen_seals = [], set()
+
+    def _add_seal(st):
+        if st and (st, slot) not in _seen_seals:
+            _seen_seals.add((st, slot))
+            seal_slots.append({"seal_type": st, "category": slot})
+
+    for a in it.get("affixes", []):
+        if a.get("type") == "Bool":
+            _add_seal(seal.normalize_seal_type(a.get("name")))
+    for c in it.get("crafting", []) or []:
+        _add_seal(seal.normalize_seal_type(c))
     rec = {
         "name": it["name"], "category": "item", "slot": slot,
         "enhancements": enh, "augment_slots": aug,
@@ -85,6 +111,8 @@ def build_record(it):
         "wiki_url": "https://ddowiki.com" + (it.get("url") or ""),
         "_enriched": True, "_source": "gear-planner",
     }
+    if seal_slots:
+        rec["seal_slots"] = seal_slots
     # weapon / rune-arm solver routing (mirrors the wiki batches)
     ptype = (it.get("type") or "")
     if slot == "Weapon":
@@ -128,7 +156,7 @@ def main(expansion):
         if rec["slot"] not in SOLVER_SLOTS and rec["category"] not in ("weapon", "runearm"):
             print(f"  WARNING unmapped slot {rec['slot']!r} for {rec['name']!r} — "
                   f"add it to SLOT_FIX or it will not reach the solver", file=sys.stderr)
-        if any(not e.endswith("Augment Slot") for e in rec["enhancements"]):
+        if rec.get("seal_slots") or any(not e.endswith("Augment Slot") for e in rec["enhancements"]):
             picked.append(rec)
 
     out = {
@@ -142,7 +170,9 @@ def main(expansion):
     }
     outpath = os.path.join(cdir, f"enriched_batch14_{expansion}_planner.json")
     json.dump(out, open(outpath, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
-    print(f"wrote {len(picked)} {expansion} named items -> {os.path.relpath(outpath, ROOT)}")
+    seal_hosts = sum(1 for r in picked if r.get("seal_slots"))
+    print(f"wrote {len(picked)} {expansion} named items ({seal_hosts} seal hosts) "
+          f"-> {os.path.relpath(outpath, ROOT)}")
     for r in picked:
         print(f"  {r['name']} [{r['slot']}]: {[e for e in r['enhancements'] if not e.endswith('Augment Slot')]}")
 

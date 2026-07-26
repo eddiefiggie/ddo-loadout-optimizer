@@ -1,0 +1,550 @@
+{
+ "metadata": {
+  "layer": "enriched",
+  "batch": "batch14_undyingage_planner",
+  "system": "undyingage named gear (gear-planner import, strict re-parse)",
+  "source": "illusionistpm/ddo-gear-planner items.json (ddowiki-derived)",
+  "harvested": "2026-07-26",
+  "count": 21
+ },
+ "items": [
+  {
+   "name": "Aeon, the Blazing Reign",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Ranged Alacrity +20",
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Aeon,_the_Blazing_Reign",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Fire",
+     "category": "Weapon"
+    }
+   ]
+  },
+  {
+   "name": "Aeon, the Blazing Reign",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Ranged Alacrity +20",
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Aeon,_the_Blazing_Reign",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Fire",
+     "category": "Weapon"
+    }
+   ]
+  },
+  {
+   "name": "Bauble of Draconic Resistance",
+   "category": "item",
+   "slot": "Trinket",
+   "enhancements": [
+    "Dodge +15",
+    "Natural Armor Class +15",
+    "Quality Magical Sheltering +9",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "augment_slots": [
+    "Green",
+    "Yellow",
+    "Sun"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Bauble_of_Draconic_Resistance",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Undeath",
+     "category": "Trinket"
+    }
+   ]
+  },
+  {
+   "name": "Bracers of the Battlerager",
+   "category": "item",
+   "slot": "Bracers",
+   "enhancements": [
+    "Fortification +162",
+    "Insight Fortification +81",
+    "Quality Fortification +40",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "augment_slots": [
+    "Green",
+    "Yellow",
+    "Moon"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_the_Battlerager",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Undeath",
+     "category": "Bracers"
+    }
+   ]
+  },
+  {
+   "name": "Breath of Vitality",
+   "category": "item",
+   "slot": "Necklace",
+   "enhancements": [
+    "Quality Healing Lore +9",
+    "Quality Devotion +40",
+    "Divine Augmentation +9",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Blue Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "augment_slots": [
+    "Green",
+    "Yellow",
+    "Blue",
+    "Moon"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Breath_of_Vitality",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Undeath",
+     "category": "Necklace"
+    }
+   ]
+  },
+  {
+   "name": "Brimstone, the Heart of the Dracolich",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Implement Universal Spell Power +33",
+    "Orb Orb Bonus +15",
+    "Quality Spell Focus Mastery +2",
+    "Equipment Power of the Flames of Darkness +162",
+    "Purple Augment Slot",
+    "Orange Augment Slot"
+   ],
+   "augment_slots": [
+    "Purple",
+    "Orange"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Brimstone,_the_Heart_of_the_Dracolich",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Fire",
+     "category": "Off Hand"
+    }
+   ]
+  },
+  {
+   "name": "Death's Deferral",
+   "category": "item",
+   "slot": "Boots",
+   "enhancements": [
+    "Insight Accuracy +11",
+    "Quality Deadly +3",
+    "Undying +285",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "augment_slots": [
+    "Green",
+    "Yellow",
+    "Moon"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Death%27s_Deferral",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Undeath",
+     "category": "Boots"
+    }
+   ]
+  },
+  {
+   "name": "Dracolich's Eye",
+   "category": "item",
+   "slot": "Necklace",
+   "enhancements": [
+    "Profane Doubleshot +3",
+    "Insight Deception +6",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "augment_slots": [
+    "Green",
+    "Yellow",
+    "Moon"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Dracolich%27s_Eye",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Undeath",
+     "category": "Necklace"
+    }
+   ]
+  },
+  {
+   "name": "Finality, the Fall of the Sun",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Finality,_the_Fall_of_the_Sun",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Fire",
+     "category": "Weapon"
+    }
+   ]
+  },
+  {
+   "name": "Flamefang, the Blazing Bite",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Flamefang,_the_Blazing_Bite",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Fire",
+     "category": "Weapon"
+    }
+   ]
+  },
+  {
+   "name": "Folly, the Thorn of Cormanthyr",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Folly,_the_Thorn_of_Cormanthyr",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Fire",
+     "category": "Weapon"
+    }
+   ]
+  },
+  {
+   "name": "Footfalls of the Dracolich",
+   "category": "item",
+   "slot": "Boots",
+   "enhancements": [
+    "Sheltering +39",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Blue Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "augment_slots": [
+    "Green",
+    "Yellow",
+    "Blue",
+    "Moon"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Footfalls_of_the_Dracolich",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Undeath",
+     "category": "Boots"
+    }
+   ]
+  },
+  {
+   "name": "Kindling, the Twin Flames of the City",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Kindling,_the_Twin_Flames_of_the_City",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Fire",
+     "category": "Weapon"
+    }
+   ]
+  },
+  {
+   "name": "Maw, the Dracolich's Bite",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Legendary Legendary Armor-Piercing +5",
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Maw,_the_Dracolich%27s_Bite",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Fire",
+     "category": "Weapon"
+    }
+   ]
+  },
+  {
+   "name": "Nova, the Wild Star",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Nova,_the_Wild_Star",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Fire",
+     "category": "Weapon"
+    }
+   ]
+  },
+  {
+   "name": "Omen, Herald of the Fall",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Omen,_Herald_of_the_Fall",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Fire",
+     "category": "Weapon"
+    }
+   ]
+  },
+  {
+   "name": "Ophael's Cincture",
+   "category": "item",
+   "slot": "Belt",
+   "enhancements": [
+    "Deception +12",
+    "Insight Deception +6",
+    "Seeker +15",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "augment_slots": [
+    "Green",
+    "Yellow",
+    "Moon"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Ophael%27s_Cincture",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Undeath",
+     "category": "Belt"
+    }
+   ]
+  },
+  {
+   "name": "Palisade, the Ward of Karliath",
+   "category": "item",
+   "slot": "Off Hand",
+   "enhancements": [
+    "Shield Armor Class +38",
+    "Legendary Legendary Conditioning +15",
+    "Purple Augment Slot",
+    "Orange Augment Slot"
+   ],
+   "augment_slots": [
+    "Purple",
+    "Orange"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Palisade,_the_Ward_of_Karliath",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Fire",
+     "category": "Off Hand"
+    }
+   ]
+  },
+  {
+   "name": "Red Wizard's Sight",
+   "category": "item",
+   "slot": "Goggles",
+   "enhancements": [
+    "Quality Potency +27",
+    "Equipment Kinetic Lore +24",
+    "Equipment Spell Focus Mastery +8",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Sun Augment Slot"
+   ],
+   "augment_slots": [
+    "Green",
+    "Yellow",
+    "Sun"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Red_Wizard%27s_Sight",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Undeath",
+     "category": "Goggles"
+    }
+   ]
+  },
+  {
+   "name": "Spur, the Claw of Death",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Spur,_the_Claw_of_Death",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Fire",
+     "category": "Weapon"
+    }
+   ]
+  },
+  {
+   "name": "Thayan Pactmage's Bangle",
+   "category": "item",
+   "slot": "Bracers",
+   "enhancements": [
+    "Equipment Impulse +162",
+    "Equipment Kinetic Lore +24",
+    "Power in Pact +3",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Moon Augment Slot"
+   ],
+   "augment_slots": [
+    "Green",
+    "Yellow",
+    "Moon"
+   ],
+   "minimum_level": 33,
+   "wiki_url": "https://ddowiki.com/page/Item:Thayan_Pactmage%27s_Bangle",
+   "_enriched": true,
+   "_source": "gear-planner",
+   "seal_slots": [
+    {
+     "seal_type": "Undeath",
+     "category": "Bracers"
+    }
+   ]
+  }
+ ]
+}

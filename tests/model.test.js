@@ -197,6 +197,20 @@ test("dominates: an affix item does NOT dominate a Viktranium host it can't matc
   assert.strictEqual(kept.length, 2, "the Viktranium host survives per-slot dominance");
 });
 
+test("dominates: an affix item does NOT dominate a seal host it can't match", () => {
+  // Regression: a seal host's unseal value lives in seal_slots, outside
+  // variantBuckets, so an intrinsically-better rival lacking the seal must NOT
+  // prune the host (the same trap as Dino blanks, NC, and Viktranium hosts).
+  const real = v("Real", "Trinket", [["Charisma", "Enhancement", 12]]);
+  const host = v("Host", "Trinket", [["Charisma", "Enhancement", 8]]);
+  host.seal_slots = [{ seal_type: "Undeath", category: "Trinket" }];
+  const targets = new Set(["Charisma"]);
+  assert.strictEqual(M.dominates(real, host, targets, 34), false,
+    "a rival lacking the seal slot cannot dominate the host");
+  const kept = M.dominanceFilter([real, host], targets, 34, 1);
+  assert.strictEqual(kept.length, 2, "the seal host survives per-slot dominance");
+});
+
 test("dominates: a Viktranium host at a DIFFERENT tier is not matched", () => {
   // Tier is part of the slot key: a heroic host cannot stand in for a legendary
   // host's craft, so it must not dominate it even with identical (type, category).

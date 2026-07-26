@@ -135,4 +135,14 @@ test("coverageNote discloses Viktranium/Lamordia as optimized once hosts exist",
   assert.ok(/194 options/.test(optimized), "discloses the eligible option count");
 });
 
+test("coverageNote discloses Sealed-in-Undeath optimized and Fire/Gloom/Mist pending", () => {
+  const note = R.coverageNote({ metadata: { seal_coverage: {
+    options_eligible: 18, hosts_active: 9, seal_types_pending: ["Fire", "Gloom", "Mist"] } } });
+  const [optimized, rest] = note.split("Coverage:");
+  assert.ok(/Sealed-in-Undeath seal-slot crafting/.test(optimized), "Undeath seal listed under Optimized once hosts exist");
+  assert.ok(/9 item hosts/.test(optimized), "discloses the active seal-host count");
+  assert.ok(/18 options/.test(optimized), "discloses the eligible option count");
+  assert.ok(/Sealed-in-Fire\/Gloom\/Mist seal pools/.test(rest), "pending seal pools disclosed under Pending");
+});
+
 console.log(`\n${passed} passed`);
