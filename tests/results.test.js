@@ -41,6 +41,16 @@ test("assignAugments respects per-item color capacity", () => {
   assert.strictEqual(out.unplaced.length, 1);
 });
 
+test("assignAugments uses the solver's per-slot item+slot_color assignment (U6)", () => {
+  const chosen = [chosenItem("Cataclysmic", "Weapon"), chosenItem("Ring", "Ring")];
+  // a Red augment the solver placed into the Cataclysmic weapon's Orange slot (multi-fit)
+  const placed = [{ variant_id: "RedStr", item: "Cataclysmic", slot_color: "Orange", color: "Red" }];
+  const out = R.assignAugments(chosen, placed);
+  assert.strictEqual((out.byIndex.get(0) || []).length, 1, "assigned to the solver-named host (index 0)");
+  assert.strictEqual(out.byIndex.get(0)[0].slot_color, "Orange", "carries the filled slot color");
+  assert.ok(!out.byIndex.has(1), "not assigned to the other item");
+});
+
 test("nearMissSetHints flags a set one piece short that would advance a target", () => {
   // Two equipped pieces of "Elite"; its 3-piece tier gives Dodge and would help.
   const tiers = [{ set: "Elite", n: 3, affixes: [["Dodge", "Insightful", 3]] }];

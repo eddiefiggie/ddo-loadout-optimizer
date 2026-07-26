@@ -19,7 +19,24 @@ function contributingAffixes(variant, targets) {
  *  drop each placed augment into the first equipped item with remaining open
  *  capacity of its color. Returns { byIndex: Map(chosenIndex -> [aug]), unplaced }. */
 function assignAugments(chosen, augmentsPlaced) {
-  // remaining open capacity per (chosen index, color)
+  // Preferred: the per-slot solver (U3) already assigned each augment to a host
+  // (`item`) and the slot color it filled (`slot_color`). Group by that host's
+  // chosen index directly — the authoritative assignment, honoring multi-fit.
+  if ((augmentsPlaced || []).some((a) => a.item)) {
+    const idxOf = new Map();
+    chosen.forEach((c, i) => idxOf.set(c.variant.variant_id, i));
+    const byIndex = new Map();
+    const unplaced = [];
+    for (const aug of augmentsPlaced || []) {
+      const i = idxOf.get(aug.item);
+      if (i == null) { unplaced.push(aug); continue; }
+      if (!byIndex.has(i)) byIndex.set(i, []);
+      byIndex.get(i).push(aug);
+    }
+    return { byIndex, unplaced };
+  }
+  // Fallback (old shape, no `item`): drop each augment into the first equipped
+  // item with remaining open capacity of its exact color.
   const remaining = chosen.map((c) => {
     const m = new Map();
     for (const col of ((c.variant.augment_slots_norm || {}).colors) || []) m.set(col, (m.get(col) || 0) + 1);
@@ -199,7 +216,12 @@ function renderResults(container, { model, result, query, dataset }) {
     for (const { variant: v, idx } of picks) {
       const contrib = contributingAffixes(v, query.targets).map((a) => `<span class="chip">${affixLabel(a)}</span>`).join(" ") || `<span class="muted">—</span>`;
       const augs = (augAssign.byIndex.get(idx) || [])
-        .map((a) => `<span class="chip aug" title="augment slotted (${a.color})">${a.variant_id} <span class="muted">(${a.color})</span></span>`).join(" ");
+        .map((a) => {
+          // Show which slot color the augment filled (multi-fit: a Red augment can
+          // fill an Orange slot). Fall back to just the augment color for old data.
+          const where = a.slot_color && a.slot_color !== a.color ? `${a.color} in ${a.slot_color} slot` : (a.color || "");
+          return `<span class="chip aug" title="augment slotted (${where})">${a.variant_id} <span class="muted">(${where})</span></span>`;
+        }).join(" ");
       const dinos = (dinoAssign.byIndex.get(idx) || [])
         .map((d) => {
           // A unit may carry several affixes (multi-affix insert, KTD4); render
