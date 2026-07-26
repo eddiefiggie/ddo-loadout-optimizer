@@ -37,6 +37,7 @@ DINO_SEED_PATH = os.path.join(HERE, "data", "seed", "dino_crafting.json")
 NC_SEED_PATH = os.path.join(HERE, "data", "seed", "nearly_complete.json")
 VIK_SEED_PATH = os.path.join(HERE, "data", "seed", "viktranium.json")
 SEAL_SEED_PATH = os.path.join(HERE, "data", "seed", "seal.json")
+AUG_SEED_PATH = os.path.join(HERE, "data", "seed", "augments.json")
 COMPENDIUM_DIR = os.path.join(HERE, "data", "seed", "compendium")
 # Output lands inside web/ so that directory is a self-contained, deployable
 # site root (GitHub Pages serves web/ as the root; the app fetches data/ relatively).
@@ -67,6 +68,14 @@ def load_nc_seed(path: str = NC_SEED_PATH) -> dict:
 
 def load_vik_seed(path: str = VIK_SEED_PATH) -> dict:
     """Load the U81 Viktranium ("Lamordia") seed (freshly sourced; separate from base)."""
+    if not os.path.exists(path):
+        return {}
+    with open(path, "r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def load_augment_seed(path: str = AUG_SEED_PATH) -> dict:
+    """Load the sourced legendary augment pool (gear-planner import; separate from base)."""
     if not os.path.exists(path):
         return {}
     with open(path, "r", encoding="utf-8") as fh:
@@ -127,10 +136,24 @@ def build(seed: dict) -> dict:
         seen_names.add(name)
         deduped.append(it)
     enriched_items = deduped
-    variants = expand_dataset(seed["items"] + enriched_items)  # parse enhancements + expand tiers
+    # Legendary augment pool (gear-planner import). Sourced augments SUPERSEDE a
+    # same-name base-seed augment (richer source wins — opposite of the base-wins
+    # rule for enriched gear), so the incidental base augments don't double-list.
+    aug_pool = (load_augment_seed() or {}).get("items", [])
+    aug_names = {a.get("name") for a in aug_pool}
+    base_items = [it for it in seed["items"]
+                  if not (it.get("category") == "augment" and it.get("name") in aug_names)]
+    variants = expand_dataset(base_items + enriched_items + aug_pool)  # parse enhancements + expand tiers
     for v in variants:                                  # U2 augment-color normalization
         colors_mod.annotate_variant(v)
         set_mod.annotate_variant(v)                     # U4 set-bonus threshold parsing
+        # Bake each augment's compatible slot colors (the wiki matrix, applied once
+        # here) so the JS solver does plain set-membership per slot — the matrix
+        # never crosses into JS (U3). Colored augments fit multiple slot colors;
+        # Colorless fits every colored slot; Moon/Sun fit only their own.
+        if v.get("category") == "augment":
+            ac = (v.get("aug_color") or {}).get("color")
+            v["fits_slots"] = sorted(colors_mod.fits_slots(ac)) if ac else []
     # Expand umbrella ability affixes ("All Ability Scores +15", "Well Rounded")
     # into the six concrete abilities so single-ability targets get credited.
     umbrella_mod.expand_variants(variants)
@@ -208,6 +231,22 @@ def build(seed: dict) -> dict:
     sl["coverage"]["slots_active"] = sum(seal_active.values())
     sl["coverage"]["hosts_pending"] = len(seal_pending)
 
+    # Augment pool coverage: legendary augments by intrinsic color (incl. Lunar/Solar).
+    # The R5 wiki cross-check (augments the wiki has that the gear-planner lacks) is a
+    # deferred harvest; disclosed as an empty delta with a note until it runs.
+    aug_by_color = {}
+    for a in aug_pool:
+        c = colors_mod.normalize_color(a.get("slot")).get("color")
+        if c:
+            aug_by_color[c] = aug_by_color.get(c, 0) + 1
+    augment_coverage = {
+        "legendary_sourced": len(aug_pool),
+        "by_color": dict(sorted(aug_by_color.items())),
+        "source": "gear-planner crafting.json (intrinsic color); compatibility baked per-augment via the wiki matrix",
+        "wiki_crosscheck_delta": [],
+        "wiki_crosscheck_note": "wiki completeness cross-check (R5) is a deferred harvest",
+    }
+
     out = {
         "metadata": {
             "title": "DDO Loadout Optimizer — dataset",
@@ -223,6 +262,7 @@ def build(seed: dict) -> dict:
             "nc_coverage": nc["coverage"],
             "viktranium_coverage": vik["coverage"],
             "seal_coverage": sl["coverage"],
+            "augment_coverage": augment_coverage,
             "compendium_coverage": comp_cov,
             "pipeline_stage": "M4-compendium-roster",
         },

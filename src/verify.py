@@ -17,12 +17,23 @@ def verify_variant(v: dict) -> dict:
         a["eligible"] = True
     eligible_count = len(v["affixes"]) + len(v["scaling"])
     v["eligible_affix_count"] = eligible_count
-    v["verification"] = "verified" if eligible_count > 0 else "quarantined"
-    v["verification_reasons"] = (
-        [] if eligible_count > 0
-        else [f.get("reason", "no parseable magnitude") for f in v["flagged"]]
-        or ["no solver-eligible affixes"]
-    )
+    # An item whose only worth is its open augment slots (e.g. the Legendary
+    # Cataclysmic weapons: just Orange + Purple slots, no base affix) must not be
+    # quarantined — its value is a non-affix dimension the solver fills, exactly
+    # like a Dinosaur Bone blank. Admit it so its slots reach the augment MILP.
+    aug_slots = (v.get("augment_slots_norm") or {}).get("colors") or []
+    if eligible_count > 0:
+        v["verification"] = "verified"
+        v["verification_reasons"] = []
+    elif aug_slots:
+        v["verification"] = "verified"
+        v["verification_reasons"] = ["augment-slot host (no base affixes) — value is its open slots"]
+    else:
+        v["verification"] = "quarantined"
+        v["verification_reasons"] = (
+            [f.get("reason", "no parseable magnitude") for f in v["flagged"]]
+            or ["no solver-eligible affixes"]
+        )
     return v
 
 

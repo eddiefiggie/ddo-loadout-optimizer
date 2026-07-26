@@ -15,11 +15,15 @@ function contributingAffixes(variant, targets) {
 }
 
 /** Reconstruct a concrete augment->item assignment from the solver's aggregate
- *  per-color placements (KTD2). Deterministic: walk equipped items in order and
- *  drop each placed augment into the first equipped item with remaining open
- *  capacity of its color. Returns { byIndex: Map(chosenIndex -> [aug]), unplaced }. */
+ *  per-color-capacity placements. The solver decides WHICH augments are placed and
+ *  which slot COLOR each consumes (`slot_color` — multi-fit: a Red augment may
+ *  consume an Orange slot); it does not pin the host item (that would need the
+ *  per-slot variables we deliberately dropped for program size). Reconstruct the
+ *  host deterministically: walk equipped items in order and drop each placed
+ *  augment into the first item with remaining open capacity of the slot color it
+ *  consumed. Capacity feasibility is guaranteed by the solver's per-color bound,
+ *  so a placed augment always finds a home. Returns { byIndex, unplaced }. */
 function assignAugments(chosen, augmentsPlaced) {
-  // remaining open capacity per (chosen index, color)
   const remaining = chosen.map((c) => {
     const m = new Map();
     for (const col of ((c.variant.augment_slots_norm || {}).colors) || []) m.set(col, (m.get(col) || 0) + 1);
@@ -28,10 +32,11 @@ function assignAugments(chosen, augmentsPlaced) {
   const byIndex = new Map();
   const unplaced = [];
   for (const aug of augmentsPlaced || []) {
+    const want = aug.slot_color || aug.color; // the slot color consumed (falls back to own color)
     let placed = false;
     for (let i = 0; i < chosen.length; i++) {
-      if ((remaining[i].get(aug.color) || 0) > 0) {
-        remaining[i].set(aug.color, remaining[i].get(aug.color) - 1);
+      if ((remaining[i].get(want) || 0) > 0) {
+        remaining[i].set(want, remaining[i].get(want) - 1);
         if (!byIndex.has(i)) byIndex.set(i, []);
         byIndex.get(i).push(aug);
         placed = true;
@@ -199,7 +204,12 @@ function renderResults(container, { model, result, query, dataset }) {
     for (const { variant: v, idx } of picks) {
       const contrib = contributingAffixes(v, query.targets).map((a) => `<span class="chip">${affixLabel(a)}</span>`).join(" ") || `<span class="muted">—</span>`;
       const augs = (augAssign.byIndex.get(idx) || [])
-        .map((a) => `<span class="chip aug" title="augment slotted (${a.color})">${a.variant_id} <span class="muted">(${a.color})</span></span>`).join(" ");
+        .map((a) => {
+          // Show which slot color the augment filled (multi-fit: a Red augment can
+          // fill an Orange slot). Fall back to just the augment color for old data.
+          const where = a.slot_color && a.slot_color !== a.color ? `${a.color} in ${a.slot_color} slot` : (a.color || "");
+          return `<span class="chip aug" title="augment slotted (${where})">${a.variant_id} <span class="muted">(${where})</span></span>`;
+        }).join(" ");
       const dinos = (dinoAssign.byIndex.get(idx) || [])
         .map((d) => {
           // A unit may carry several affixes (multi-affix insert, KTD4); render

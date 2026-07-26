@@ -41,6 +41,19 @@ test("assignAugments respects per-item color capacity", () => {
   assert.strictEqual(out.unplaced.length, 1);
 });
 
+test("assignAugments places a multi-fit augment into a host with the consumed slot color", () => {
+  // The Cataclysmic weapon has an Orange slot; a Ring has only a Blue slot. The
+  // solver reports a Red augment consuming an Orange slot (multi-fit). It must land
+  // on the weapon (the only Orange-slot host), keyed on `slot_color`, not on color.
+  const chosen = [chosenItem("Cataclysmic", "Weapon", ["Orange"]), chosenItem("Ring", "Ring", ["Blue"])];
+  const placed = [{ variant_id: "RedStr", slot_color: "Orange", color: "Red" }];
+  const out = R.assignAugments(chosen, placed);
+  assert.strictEqual((out.byIndex.get(0) || []).length, 1, "assigned to the Orange-slot host (index 0)");
+  assert.strictEqual(out.byIndex.get(0)[0].slot_color, "Orange", "carries the consumed slot color");
+  assert.ok(!out.byIndex.has(1), "not assigned to the Blue-only item");
+  assert.strictEqual(out.unplaced.length, 0);
+});
+
 test("nearMissSetHints flags a set one piece short that would advance a target", () => {
   // Two equipped pieces of "Elite"; its 3-piece tier gives Dodge and would help.
   const tiers = [{ set: "Elite", n: 3, affixes: [["Dodge", "Insightful", 3]] }];

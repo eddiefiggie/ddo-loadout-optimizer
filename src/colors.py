@@ -43,6 +43,44 @@ def normalize_color(raw):
     return {"color": None, "raw": raw, "reason": "unrecognized color"}
 
 
+# --- U2: augment color-compatibility (the DDO wiki matrix) --------------------
+# Which augment colors a slot of a given color accepts. Sourced from the DDO wiki
+# `Augment Slot` page: a secondary slot accepts its two component primaries + its
+# own color + Colorless; a primary slot accepts its own color + Colorless; a
+# Colorless slot accepts Colorless only; Moon/Sun accept only their own (they do
+# not cross-fit with colored augments). Colorless augments fit every COLORED slot
+# (not Moon/Sun). This is the single source of truth; the build bakes its inverse
+# (`fits_slots`) onto each augment so the JS solver only does set-membership.
+SLOT_ACCEPTS = {
+    "Colorless": {"Colorless"},
+    "Red": {"Red", "Colorless"},
+    "Blue": {"Blue", "Colorless"},
+    "Yellow": {"Yellow", "Colorless"},
+    "Purple": {"Red", "Blue", "Purple", "Colorless"},
+    "Orange": {"Red", "Yellow", "Orange", "Colorless"},
+    "Green": {"Blue", "Yellow", "Green", "Colorless"},
+    "Moon": {"Moon"},
+    "Sun": {"Sun"},
+}
+
+
+def accepts(slot_color):
+    """The set of augment colors a slot of this color accepts (empty if unknown)."""
+    return set(SLOT_ACCEPTS.get(slot_color, set()))
+
+
+def fits(augment_color, slot_color):
+    """True if an augment of `augment_color` can be slotted into `slot_color`."""
+    return augment_color in SLOT_ACCEPTS.get(slot_color, set())
+
+
+def fits_slots(augment_color):
+    """The set of slot colors an augment of this color can fill (the inverse of
+    the matrix). Baked onto each augment record at build time so the JS solver
+    does plain set-membership per slot."""
+    return {slot for slot, ok in SLOT_ACCEPTS.items() if augment_color in ok}
+
+
 def normalize_slots(raws):
     """Normalize a list of raw slot colors into {colors, quarantined}."""
     colors, quarantined = [], []

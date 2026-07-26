@@ -202,11 +202,13 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   const runeArm = dominanceFilter(elig.filter((v) => v.category === "runearm"), targetSet, mlCap);
   if (runeArm.length) worn.push({ slot: "Rune Arm", cardinality: 1, variants: runeArm });
 
-  // Augment pool: augments (category augment) as an exact color-capacity source
-  // pool. Each augment used at most once; total per color bounded by open slots
-  // on equipped worn items (encoded in U3). Dominance is per COLOR — augments of
-  // different colors occupy different slots, so one color can never dominate
-  // another (that would wrongly prune the sole source in a color).
+  // Augment pool: augments (category augment) as a compatible-color-capacity
+  // source pool. The solver (U3) places each augment at most once, into one
+  // COMPATIBLE slot color (the baked wiki matrix — multi-fit), with per-color
+  // placements bounded by the open slots on equipped worn items. Dominance is per
+  // intrinsic COLOR — different-colored augments are kept separate so one never
+  // wrongly prunes the sole source in a color (conservative under multi-fit: it
+  // may keep an extra host, never drop a color another slot needs).
   const augByColor = new Map();
   for (const a of elig.filter((v) => v.category === "augment")) {
     const color = (a.aug_color || {}).color;

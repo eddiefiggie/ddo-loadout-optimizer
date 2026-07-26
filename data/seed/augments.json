@@ -1,0 +1,2317 @@
+{
+ "metadata": {
+  "layer": "augment-pool",
+  "system": "legendary augment pool (gear-planner crafting import)",
+  "source": "illusionistpm/ddo-gear-planner crafting.json (ddowiki-derived)",
+  "harvested": "2026-07-26",
+  "count": 207,
+  "note": "augments keyed by intrinsic color; the wiki compatibility matrix (src/colors.py) is baked onto each record at build time (U5)."
+ },
+ "items": [
+  {
+   "name": "A Legendary History of Draconic Interference",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Untyped Dragon Bane +6"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Encyclopedia of the Dead, Vol. 3",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Untyped Undead Bane +6"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Legendary Bestiary of the Planes",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Untyped Magical Beast Bane +6"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Legendary Coalescent Ruby",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Equipment Potency +100"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Legendary Ruby of Implement's Acid",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Equipment Corrosion +146"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Legendary Ruby of Implement's Flame",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Equipment Combustion +146"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Legendary Ruby of Implement's Frost",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Equipment Glaciation +146"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Legendary Ruby of Implement's Wind",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Equipment Magnetism +146"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Ruby of Acid (9d6)",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Untyped Acidic +9"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Ruby of Combustion 153",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Equipment Combustion +153"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Ruby of Corrosion 153",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Equipment Corrosion +153"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Ruby of Devotion 153",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Equipment Devotion +153"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Ruby of Flame (9d6)",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Untyped Flaming +9"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Ruby of Frost (9d6)",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Untyped Frost +9"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Ruby of Glaciation 153",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Equipment Glaciation +153"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Ruby of Impulse 153",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Equipment Impulse +153"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Ruby of Magnetism 153",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Equipment Magnetism +153"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Ruby of Nullification 153",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Equipment Nullification +153"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Ruby of Radiance 153",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Equipment Radiance +153"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Ruby of Reconstruction 153",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Equipment Reconstruction +153"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Ruby of Resonance 153",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Equipment Resonance +153"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Ruby of Shock (9d6)",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Untyped Shock +9"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "The Eye of Dolurrh",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Untyped Unholy +10"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "The Eye of Lamannia",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Equipment Devotion +146",
+    "Equipment Impulse +146"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "The Eye of Mabar",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Untyped Vampirism +5"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "The Infinite Limits of Construction",
+   "category": "augment",
+   "slot": "Red",
+   "enhancements": [
+    "Untyped Construct Bane +6"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "How To Cast Faster",
+   "category": "augment",
+   "slot": "Blue",
+   "enhancements": [
+    "Untyped Efficient Metamagic - Quicken +3"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Legendary Sapphire of Riposte",
+   "category": "augment",
+   "slot": "Blue",
+   "enhancements": [
+    "Insight Riposte +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Legendary Silvertongue Sapphire",
+   "category": "augment",
+   "slot": "Blue",
+   "enhancements": [
+    "Untyped Linguistics +15"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Legendary Undying Sapphire",
+   "category": "augment",
+   "slot": "Blue",
+   "enhancements": [
+    "Undying +225"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Sapphire of Accuracy +22",
+   "category": "augment",
+   "slot": "Blue",
+   "enhancements": [
+    "Competence Accuracy +22"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Sapphire of Defense +36",
+   "category": "augment",
+   "slot": "Blue",
+   "enhancements": [
+    "Sheltering +36"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Sapphire of Dodge +14%",
+   "category": "augment",
+   "slot": "Blue",
+   "enhancements": [
+    "Dodge +14"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Sapphire of False Life +54",
+   "category": "augment",
+   "slot": "Blue",
+   "enhancements": [
+    "False Life +54"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Sapphire of Healing Amplification +57",
+   "category": "augment",
+   "slot": "Blue",
+   "enhancements": [
+    "Competence Healing Amplification +57"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Sapphire of Natural Armor +14",
+   "category": "augment",
+   "slot": "Blue",
+   "enhancements": [
+    "Natural Armor Class +14"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Sapphire of Negative Amplification +57",
+   "category": "augment",
+   "slot": "Blue",
+   "enhancements": [
+    "Profane Negative Amplification +57"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Sapphire of Protection +11",
+   "category": "augment",
+   "slot": "Blue",
+   "enhancements": [
+    "Deflection Armor Class +11"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Sapphire of Repair Amplification +57",
+   "category": "augment",
+   "slot": "Blue",
+   "enhancements": [
+    "Repair Amplification +57"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Sapphire of Resistance +11",
+   "category": "augment",
+   "slot": "Blue",
+   "enhancements": [
+    "Resistance Resistance +11"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Sapphire of Shatter +16",
+   "category": "augment",
+   "slot": "Blue",
+   "enhancements": [
+    "Shatter +16"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Sapphire of Stunning +16",
+   "category": "augment",
+   "slot": "Blue",
+   "enhancements": [
+    "Stunning +16"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Sapphire of Vertigo +16",
+   "category": "augment",
+   "slot": "Blue",
+   "enhancements": [
+    "Vertigo +16"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "The Legendary Book of Defense: Fortitude",
+   "category": "augment",
+   "slot": "Blue",
+   "enhancements": [
+    "Resistance Fortitude Save +12"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "The Legendary Book of Defense: Reflexes",
+   "category": "augment",
+   "slot": "Blue",
+   "enhancements": [
+    "Resistance Reflex Save +12"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "The Legendary Book of Defense: Willpower",
+   "category": "augment",
+   "slot": "Blue",
+   "enhancements": [
+    "Resistance Will Save +12"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Legendary Arrowbound Topaz",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Doubleshot +8"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Legendary Guide to Animal Handling",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Wild Empathy Charges +3"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Legendary Moment to Legendary Moment",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Untyped Action Boost Charges +3"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Legendary Swordcrossed Topaz",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Doublestrike +15"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "The Art of Persuasion, Vol. 3",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Assassinate +16"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "The Art of Sabotage, Vol. 3",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Armor-Piercing +22"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Topaz of Abjuration Power",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Equipment Abjuration Focus +8"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Topaz of Acid Resistance 45",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Acid Resistance +45"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Topaz of Cold Resistance 45",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Cold Resistance +45"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Topaz of Conjured Power",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Equipment Conjuration Focus +8"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Topaz of Damage +11",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Competence Deadly +11"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Topaz of Electric Resistance 45",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Electric Resistance +45"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Topaz of Enchanted Power",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Equipment Enchantment Focus +8"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Topaz of Evocation Power",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Equipment Evocation Focus +8"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Topaz of Fire Resistance 45",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Fire Resistance +45"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Topaz of Illusory Power",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Equipment Illusion Focus +8"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Topaz of Melee Power +12",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Melee Power +12"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Topaz of Necromantic Power",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Equipment Necromancy Focus +8"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Topaz of Ranged Power +12",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Ranged Power +12"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Topaz of Sonic Resistance 45",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Sonic Resistance +45"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Topaz of Spell Penetration +9",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Equipment Spell Penetration +9"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Topaz of Transmuted Power",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Equipment Transmutation Focus +8"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Topaz of Wizardry +294",
+   "category": "augment",
+   "slot": "Yellow",
+   "enhancements": [
+    "Wizardry +294"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "A Treatise on Battle",
+   "category": "augment",
+   "slot": "Orange",
+   "enhancements": [
+    "Combat Mastery +11"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Facet of Psionic Intrusion",
+   "category": "augment",
+   "slot": "Orange",
+   "enhancements": [
+    "Equipment Impulse +153"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Essence of Pomura's Memento",
+   "category": "augment",
+   "slot": "Green",
+   "enhancements": [
+    "Insight Spell Lore +5"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Facet of Condensed Power",
+   "category": "augment",
+   "slot": "Green",
+   "enhancements": [
+    "Magical Efficiency +1"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Legendary Brightbane Emerald",
+   "category": "augment",
+   "slot": "Green",
+   "enhancements": [
+    "Insight Command +7"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "The Blackstone Liturgy",
+   "category": "augment",
+   "slot": "Purple",
+   "enhancements": [
+    "Equipment Nullification +153"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Balance +20",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Competence Balance +20"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Bluff +20",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Competence Bluff +20"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Charisma +14",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Charisma +14"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Concentration +20",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Competence Concentration +20"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Constitution +14",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Constitution +14"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Dexterity +14",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Dexterity +14"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Diplomacy +20",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Competence Diplomacy +20"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Disable Device +20",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Competence Disable Device +20"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Haggle +20",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Competence Haggle +20"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Heal +20",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Competence Heal +20"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Hide +20",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Competence Hide +20"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Intelligence +14",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Intelligence +14"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Intimidate +20",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Competence Intimidate +20"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Jump +20",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Competence Jump +20"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Listen +20",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Competence Listen +20"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Move Silently +20",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Competence Move Silently +20"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Open Lock +20",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Competence Open Lock +20"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Perform +20",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Competence Perform +20"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Repair +20",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Competence Repair +20"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Search +20",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Competence Search +20"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Spellcraft +20",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Competence Spellcraft +20"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Spot +20",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Competence Spot +20"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Strength +14",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Strength +14"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Swim +20",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Competence Swim +20"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Tumble +20",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Competence Tumble +20"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Diamond of Wisdom +14",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Wisdom +14"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Essence of the Epic Litany of the Dead",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Profane Well Rounded +2"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Globe of Cursed Blood",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Well Rounded +8"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Ravil's Book of Legendary Recipes",
+   "category": "augment",
+   "slot": "Colorless",
+   "enhancements": [
+    "Vitality False Life +48"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Abjuration (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Abjuration Focus +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Accuracy (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Accuracy +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Balance and Tumble (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Balance +6",
+    "Profane Tumble +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Blast Dice (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Eldritch Blast Dice +3"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Charisma (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Charisma +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Conjuration (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Conjuration Focus +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Constitution (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Constitution +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Dexterity (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Dexterity +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Disable Device and Open Lock (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Disable Device +6",
+    "Profane Open Lock +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Enchantment (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Enchantment Focus +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Evocation (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Evocation Focus +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Haggle and Perform (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Haggle +6",
+    "Profane Perform +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Heal and Listen (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Heal +6",
+    "Profane Listen +6",
+    "Profane Concentration +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Healing Amplification (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Healing Amplification +30"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Hide and Move Silently (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Hide +6",
+    "Profane Move Silently +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Illusion (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Illusion Focus +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Intelligence (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Intelligence +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Jump and Swim (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Jump +6",
+    "Profane Swim +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Linguistics (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Diplomacy +6",
+    "Profane Intimidate +6",
+    "Profane Bluff +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Magical Protection (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Magical Sheltering +30"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Melee Power (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Melee Power +15"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Natural Armor (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Natural Armor Class +10"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Necromancy (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Necromancy Focus +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Negative Amplification (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Negative Amplification +30"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Pact Dice (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Power in Pact +3"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Physical Protection (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Physical Sheltering +30"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Ranged Power (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Ranged Power +15"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Repair Amplification (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Repair Amplification +30"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Repair and Use Magic Device (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Repair +6",
+    "Profane Use Magic Device +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Search and Spot (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Search +6",
+    "Profane Spot +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Spell Difficulty (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Spell Focus Mastery +3"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Spellpower (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Potency +25"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Strength (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Strength +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Swift Charging (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Rune Arm Charge Rate +15"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Transmutation (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Transmutation Focus +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Weapon Damage (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Deadly +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Lunar Gem of Wisdom (Legendary)",
+   "category": "augment",
+   "slot": "Moon",
+   "enhancements": [
+    "Profane Wisdom +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Abjuration (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Abjuration Focus +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Alignment Absorption (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Alignment Absorption +10"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Arcane Endurance (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Legendary Maximum Spell Points (%) +10"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Armor Layers (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Armor Class (%) +15"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Assassination (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Assassinate +3"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Attack (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Accuracy +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Balance and Tumble (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Balance +6",
+    "Artifact Tumble +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Blast Dice (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Eldritch Blast Dice +3"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Charisma (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Charisma +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Conjuration (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Conjuration Focus +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Constitution (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Constitution +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Critical Confirmation (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Seeker +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Cruelty (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Damage to helpless enemies +15"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Damage (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Deadly +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Dexterity (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Dexterity +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Disable Device and Open Lock (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Disable Device +6",
+    "Artifact Open Lock +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Dodge (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Dodge +10"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Dodge Cap (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Legendary Dodge Cap +3"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Doubleshot (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Doubleshot +15"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Doublestrike (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Doublestrike +15"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Elemental Absorption (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Fire Absorption +10",
+    "Artifact Cold Absorption +10",
+    "Artifact Electric Absorption +10",
+    "Artifact Acid Absorption +10"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Enchantment (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Enchantment Focus +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Enduring (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Legendary False Life (%) +10"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Evocation (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Evocation Focus +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Force Absorption (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Force Absorption +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Fortification Bypass (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Armor-Piercing +30"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Fortitude (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Fortitude Save +3"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Haggle and Perform (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Haggle +6",
+    "Artifact Perform +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Heal and Listen (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Heal +6",
+    "Artifact Listen +6",
+    "Artifact Concentration +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Healing Amplification (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Healing Amplification +30"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Hide and Move Silently (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Hide +6",
+    "Artifact Move Silently +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Illusion (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Illusion Focus +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Imbuement (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Imbue Dice +3"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Intelligence (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Intelligence +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Jump and Swim (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Jump +6",
+    "Artifact Swim +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Linguistics (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Diplomacy +6",
+    "Artifact Intimidate +6",
+    "Artifact Bluff +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of MRR Cap (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Magical Sheltering Cap +30"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Magical Resistance Rating (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Magical Sheltering +30"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Melee Power (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Melee Power +15"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Missile Deflection (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Missile Deflection +10"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Necromancy (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Necromancy Focus +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Negative Amplification (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Negative Amplification +30"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Pact Dice (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Power in Pact +3"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Physical Resistance Rating (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Physical Sheltering +30"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Ranged Power (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Ranged Power +15"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Reflex (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Reflex Save +3"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Repair Amplification (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Repair Amplification +30"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Repair and Use Magic Device (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Repair +6",
+    "Artifact Use Magic Device +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Rune Arm DCs (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Rune Arm DCs +3"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Search and Spot (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Search +6",
+    "Artifact Spot +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Sneak Attack Damage (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Sneak Attack Damage +3"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Sneak Attack Dice (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Sneak Attack Dice +3"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Spell Critical Chance (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Spell Lore +6"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Spell Critical Damage (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Legendary Spell Intensity +15"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Spell DCs (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Spell Focus Mastery +3"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Spell Penetration (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Spell Penetration +10"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Spellpower (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Potency +25"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Strength (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Strength +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Strikethrough (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Strikethrough +15"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Swift Charging (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Rune Arm Charge Rate +15"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Tactical DCs (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Combat Mastery +3"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Threat Decrease (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Diversion +20",
+    "Artifact Distant Diversion +20",
+    "Artifact Mystic Diversion +20"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Threat Increase (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Incite +100"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Transmutation (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Transmutation Focus +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Will (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Will Save +3"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  },
+  {
+   "name": "Solar Gem of Wisdom (Legendary)",
+   "category": "augment",
+   "slot": "Sun",
+   "enhancements": [
+    "Artifact Wisdom +4"
+   ],
+   "minimum_level": 30,
+   "wiki_url": "https://ddowiki.com/page/Augment_Slot",
+   "_source": "gear-planner-crafting"
+  }
+ ]
+}
