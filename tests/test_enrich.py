@@ -247,3 +247,20 @@ def test_build_item_record_shape():
     assert "Test Set (set)" in rec["enhancements"]
     assert rec["augment_slots"] == ["Yellow"]
     assert rec["_enrich_unmapped"] == ["Ghostly"]
+
+
+def test_build_item_record_derives_category_from_slot():
+    # Category routes an item to a solver slot: a weapon reaches Main Hand only as
+    # category "weapon", a rune arm only as "runearm" (model.js routes by category).
+    # The constructor must derive this from slot — the old hardcoded "item" default
+    # silently stranded 43 enriched weapons browse-only. Regression guard.
+    field = _field("{{Stat|STR|15}}")
+    weapon = enrich.build_item_record("Test Sword", "Weapon", field, "u")
+    runearm = enrich.build_item_record("Test Arm", "Rune Arm", field, "u")
+    worn = enrich.build_item_record("Test Ring", "Ring", field, "u")
+    offhand = enrich.build_item_record("Test Shield", "Off Hand", field, "u")
+    assert weapon["category"] == "weapon"
+    assert runearm["category"] == "runearm"
+    assert worn["category"] == "item"
+    # Off Hand has no solver slot yet — shields stay browse-only "item", not weapon.
+    assert offhand["category"] == "item"

@@ -8,7 +8,7 @@
  "items": [
   {
    "name": "Legendary Blight Inferno",
-   "category": "item",
+   "category": "runearm",
    "slot": "Rune Arm",
    "enhancements": [
     "Combustion +142",
@@ -29,7 +29,7 @@
   },
   {
    "name": "Legendary Breaking the Bank",
-   "category": "item",
+   "category": "runearm",
    "slot": "Rune Arm",
    "enhancements": [
     "Potency +98",
@@ -49,7 +49,7 @@
   },
   {
    "name": "Legendary Echoes of Night",
-   "category": "item",
+   "category": "runearm",
    "slot": "Rune Arm",
    "enhancements": [
     "Resonance +156",
@@ -71,7 +71,7 @@
   },
   {
    "name": "Legendary Envenomed Craft",
-   "category": "item",
+   "category": "runearm",
    "slot": "Rune Arm",
    "enhancements": [
     "Insightful Rune Arm Spell Focus +6",
@@ -93,7 +93,7 @@
   },
   {
    "name": "Legendary Forge's Flame",
-   "category": "item",
+   "category": "runearm",
    "slot": "Rune Arm",
    "enhancements": [
     "Insightful Rune Arm Spell Focus +6",
@@ -115,7 +115,7 @@
   },
   {
    "name": "Legendary Frozen Contraption",
-   "category": "item",
+   "category": "runearm",
    "slot": "Rune Arm",
    "enhancements": [
     "Insightful Glaciation +79",
@@ -147,7 +147,7 @@
   },
   {
    "name": "Legendary Alchemical Kama",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Red Augment Slot"
@@ -165,7 +165,7 @@
   },
   {
    "name": "Legendary Calamitous Kama",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
@@ -202,7 +202,7 @@
   },
   {
    "name": "Legendary Cataclysmic Kama",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
@@ -239,7 +239,7 @@
   },
   {
    "name": "Legendary Defiled Reliquary Kama",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
@@ -263,7 +263,7 @@
   },
   {
    "name": "Legendary Alchemical Scimitar",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Red Augment Slot"
@@ -281,7 +281,7 @@
   },
   {
    "name": "Legendary Brigand's Cutlass (level 32)",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Incite +130",
@@ -302,7 +302,7 @@
   },
   {
    "name": "Legendary Calamitous Scimitar",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
@@ -339,7 +339,7 @@
   },
   {
    "name": "Legendary Cataclysmic Scimitar",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
@@ -376,7 +376,7 @@
   },
   {
    "name": "Legendary Alchemical Rapier",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Red Augment Slot"
@@ -394,7 +394,7 @@
   },
   {
    "name": "Legendary Calamitous Rapier",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
@@ -431,7 +431,7 @@
   },
   {
    "name": "Legendary Cataclysmic Rapier",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
@@ -468,7 +468,7 @@
   },
   {
    "name": "Legendary Defiled Reliquary Rapier",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
@@ -677,7 +677,7 @@
   },
   {
    "name": "Legendary Bloody War Bow",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Red Augment Slot",
@@ -700,7 +700,7 @@
   },
   {
    "name": "Legendary Bow of the Elements (Air)",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Lightning Lore +21%",
@@ -725,7 +725,7 @@
   },
   {
    "name": "Legendary Bow of the Silver Flame",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Red Augment Slot"
@@ -747,7 +747,7 @@
   },
   {
    "name": "Legendary Calamitous Longbow",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
@@ -784,7 +784,7 @@
   },
   {
    "name": "Legendary Cataclysmic Longbow",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
@@ -821,7 +821,7 @@
   },
   {
    "name": "Legendary Alchemical Shortsword",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Red Augment Slot"
@@ -839,7 +839,7 @@
   },
   {
    "name": "Legendary Blade of the Clouds",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Red Augment Slot"
@@ -859,7 +859,7 @@
   },
   {
    "name": "Legendary Calamitous Shortsword",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
@@ -896,7 +896,7 @@
   },
   {
    "name": "Legendary Cataclysmic Shortsword",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",

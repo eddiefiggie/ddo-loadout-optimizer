@@ -391,7 +391,7 @@
   },
   {
    "name": "Legendary Bloody Shadow Staff",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Red Augment Slot",
@@ -414,7 +414,7 @@
   },
   {
    "name": "Legendary Broken Oar (level 32)",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Doublestrike +16%",
@@ -435,7 +435,7 @@
   },
   {
    "name": "Legendary Bullywug Priestess' Staff",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Frozen Depths Lore +21%",
@@ -461,7 +461,7 @@
   },
   {
    "name": "Legendary Calamitous Quarterstaff",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
