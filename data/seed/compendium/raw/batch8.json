@@ -1,0 +1,276 @@
+{
+ "metadata": {
+  "layer": "raw-wikitext",
+  "batch": "batch8",
+  "harvested": "2026-07-25",
+  "note": "raw {{template}} fields; regenerable via src.enrich"
+ },
+ "items": [
+  {
+   "name": "Legendary Blight Inferno",
+   "slot": "Rune Arm",
+   "minimum_level": 29,
+   "field": "* [[Corrupted Fire Blast]]\n* {{SpellPower|Combustion|142}}\n* {{SpellPower|Combustion|35|Quality}}\n* {{Spelllore|Fire|21}}\n* {{Tira's Splendor}}\n* {{Augment|Green}}\n* {{Named item sets|Adherent of the Mists Set (Legendary)}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Blight_Inferno"
+  },
+  {
+   "name": "Legendary Breaking the Bank",
+   "slot": "Rune Arm",
+   "minimum_level": 29,
+   "field": "* [[Gold Shot]]\n* {{Spell Power|Potency|98}}\n* {{Skills|Alluring|10|Exceptional}}\n* {{Spell Power|Combustion|142}}\n* {{Immunity|Fear}}\n* {{Augment|green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Breaking_the_Bank"
+  },
+  {
+   "name": "Legendary Echoes of Night",
+   "slot": "Rune Arm",
+   "minimum_level": 33,
+   "field": "* [[Sonic Blast (runearm)|Sonic Blast]]\n* {{SpellPower|Resonance|156}}\n* {{Spelllore|Sonic|23}}\n* {{Spell Focus|Rune Arm|11}}\n* {{Rune Arm Charge Rate|30}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Echoes_of_Night"
+  },
+  {
+   "name": "Legendary Envenomed Craft",
+   "slot": "Rune Arm",
+   "minimum_level": 35,
+   "field": "* [[Acid Shot]]\n* {{Intensity|Acid|24}}\n* {{Spelllore|Spell|V|Insightful}}\n* {{Spell Focus|Rune Arm|6|Insightful}}\n* {{Nearly Complete|Skill|1}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Envenomed_Craft"
+  },
+  {
+   "name": "Legendary Forge's Flame",
+   "slot": "Rune Arm",
+   "minimum_level": 35,
+   "field": "* [[Fire Blast]]\n* {{Intensity|Fire|24}}\n* {{Spelllore|Spell|V|Insightful}}\n* {{Spell Focus|Rune Arm|6|Insightful}}\n* {{Nearly Complete|Skill|1}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Forge's_Flame"
+  },
+  {
+   "name": "Legendary Frozen Contraption",
+   "slot": "Rune Arm",
+   "minimum_level": 34,
+   "field": "* [[Cold Bolts]]\n* {{SpellPower|Glaciation|79|Insightful}}\n* {{Lamordia Slot|Melancholic|Weapon}}\n* {{Lamordia Slot|Dolorous|Weapon}}\n* {{Lamordia Slot|Melancholic|Armor}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Frozen_Contraption"
+  },
+  {
+   "name": "Legendary Alchemical Kama",
+   "slot": "Weapon",
+   "minimum_level": 29,
+   "field": "* {{Enhancement bonus|w|15}}\n* {{CraftingEffects|Legendary Alchemical Crafting (Prototype)}}\n* {{Augment|Red}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Alchemical_Kama",
+   "weapon_type": "Kamas"
+  },
+  {
+   "name": "Legendary Calamitous Kama",
+   "slot": "Weapon",
+   "minimum_level": 34,
+   "field": "* {{Enhancement bonus|w|15}}\n* {{Lamordia Slot|Melancholic|Weapon}}\n* {{Lamordia Slot|Dolorous|Weapon}}\n* {{Lamordia Slot|Miserable|Weapon}}\n* {{Lamordia Slot|Woeful|Weapon}}\n* {{Augment|Orange}}\n* {{Augment|Purple}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Calamitous_Kama",
+   "weapon_type": "Kamas"
+  },
+  {
+   "name": "Legendary Cataclysmic Kama",
+   "slot": "Weapon",
+   "minimum_level": 34,
+   "field": "* {{Enhancement bonus|w|15}}\n* {{Lamordia Slot|Melancholic|Weapon}}\n* {{Lamordia Slot|Dolorous|Weapon}}\n* {{Lamordia Slot|Miserable|Weapon}}\n* {{Lamordia Slot|Woeful|Weapon}}\n* {{Augment|Orange}}\n* {{Augment|Purple}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cataclysmic_Kama",
+   "weapon_type": "Kamas"
+  },
+  {
+   "name": "Legendary Defiled Reliquary Kama",
+   "slot": "Weapon",
+   "minimum_level": 32,
+   "field": "* {{Enhancement bonus|w|15}}\n* {{Destruction|Improved}}\n* {{Unholy|6}}\n* {{Blast|Evil|6}}\n* {{Vile Grip of the Hidden Hand|Legendary}}\n* {{Taint of Evil}}\n* {{Augment|Orange}}\n* {{Augment|Purple}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Defiled_Reliquary_Kama",
+   "weapon_type": "Kamas"
+  },
+  {
+   "name": "Legendary Alchemical Scimitar",
+   "slot": "Weapon",
+   "minimum_level": 29,
+   "field": "* {{Enhancement bonus|w|15}}\n* {{CraftingEffects|Legendary Alchemical Crafting (Prototype)}}\n* {{Augment|Red}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Alchemical_Scimitar",
+   "weapon_type": "Scimitars"
+  },
+  {
+   "name": "Legendary Brigand's Cutlass (level 32)",
+   "slot": "Weapon",
+   "minimum_level": 32,
+   "field": "* {{Enhancement bonus|w|15}}\n* {{Anarchic|6}}\n* {{Vorpal|Greater}}\n* {{Incite|130}}\n* {{Skills|Intimidate|21}}\n* {{Augment|Red}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brigand's_Cutlass_(level_32)",
+   "weapon_type": "Scimitars"
+  },
+  {
+   "name": "Legendary Calamitous Scimitar",
+   "slot": "Weapon",
+   "minimum_level": 34,
+   "field": "* {{Enhancement bonus|w|15}}\n* {{Lamordia Slot|Melancholic|Weapon}}\n* {{Lamordia Slot|Dolorous|Weapon}}\n* {{Lamordia Slot|Miserable|Weapon}}\n* {{Lamordia Slot|Woeful|Weapon}}\n* {{Augment|Orange}}\n* {{Augment|Purple}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Calamitous_Scimitar",
+   "weapon_type": "Scimitars"
+  },
+  {
+   "name": "Legendary Cataclysmic Scimitar",
+   "slot": "Weapon",
+   "minimum_level": 34,
+   "field": "* {{Enhancement bonus|w|15}}\n* {{Lamordia Slot|Melancholic|Weapon}}\n* {{Lamordia Slot|Dolorous|Weapon}}\n* {{Lamordia Slot|Miserable|Weapon}}\n* {{Lamordia Slot|Woeful|Weapon}}\n* {{Augment|Orange}}\n* {{Augment|Purple}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cataclysmic_Scimitar",
+   "weapon_type": "Scimitars"
+  },
+  {
+   "name": "Legendary Alchemical Rapier",
+   "slot": "Weapon",
+   "minimum_level": 29,
+   "field": "* {{Enhancement bonus|w|15}}\n* {{CraftingEffects|Legendary Alchemical Crafting (Prototype)}}\n* {{Augment|Red}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Alchemical_Rapier",
+   "weapon_type": "Rapiers"
+  },
+  {
+   "name": "Legendary Calamitous Rapier",
+   "slot": "Weapon",
+   "minimum_level": 34,
+   "field": "* {{Enhancement bonus|w|15}}\n* {{Lamordia Slot|Melancholic|Weapon}}\n* {{Lamordia Slot|Dolorous|Weapon}}\n* {{Lamordia Slot|Miserable|Weapon}}\n* {{Lamordia Slot|Woeful|Weapon}}\n* {{Augment|Orange}}\n* {{Augment|Purple}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Calamitous_Rapier",
+   "weapon_type": "Rapiers"
+  },
+  {
+   "name": "Legendary Cataclysmic Rapier",
+   "slot": "Weapon",
+   "minimum_level": 34,
+   "field": "* {{Enhancement bonus|w|15}}\n* {{Lamordia Slot|Melancholic|Weapon}}\n* {{Lamordia Slot|Dolorous|Weapon}}\n* {{Lamordia Slot|Miserable|Weapon}}\n* {{Lamordia Slot|Woeful|Weapon}}\n* {{Augment|Orange}}\n* {{Augment|Purple}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cataclysmic_Rapier",
+   "weapon_type": "Rapiers"
+  },
+  {
+   "name": "Legendary Defiled Reliquary Rapier",
+   "slot": "Weapon",
+   "minimum_level": 32,
+   "field": "* {{Enhancement bonus|w|15}}\n* {{Destruction|Improved}}\n* {{Unholy|6}}\n* {{Blast|Evil|6}}\n* {{Vile Grip of the Hidden Hand|Legendary}}\n* {{Taint of Evil}}\n* {{Augment|Orange}}\n* {{Augment|Purple}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Defiled_Reliquary_Rapier",
+   "weapon_type": "Rapiers"
+  },
+  {
+   "name": "Legendary Admiral's Cummerbund",
+   "slot": "Belt",
+   "minimum_level": 31,
+   "field": "* {{Parrying|6}}\n* {{Absorption|Law|23}}\n* {{Absorption|Chaos|23}}\n* {{Dino Slot|Claw|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Admiral's_Cummerbund"
+  },
+  {
+   "name": "Legendary Agarta's Belt",
+   "slot": "Belt",
+   "minimum_level": 33,
+   "field": "* {{Stat|STR|15}}\n* {{Stat|STR|3|Quality}}\n* {{Ram's Might}}\n* {{Save|Fortitude|6|Insightful}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Agarta's_Belt"
+  },
+  {
+   "name": "Legendary Animated Rope",
+   "slot": "Belt",
+   "minimum_level": 28,
+   "field": "* {{Diversion|20}}\n* {{Deception|10}}\n* {{Dodge|13}}\n* {{Tactics|Combat Mastery|10}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Animated_Rope"
+  },
+  {
+   "name": "Legendary Baron Aubrecker's Monogrammed Belt",
+   "slot": "Belt",
+   "minimum_level": 34,
+   "field": "* {{Spell Focus|Enchantment|12}}\n* {{Save|Spell|12}}\n* {{Lamordia Slot|Melancholic|Accessory}}\n* {{Lamordia Slot|Dolorous|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Baron_Aubrecker's_Monogrammed_Belt"
+  },
+  {
+   "name": "Legendary Belt of Bold Brilliance",
+   "slot": "Belt",
+   "minimum_level": 33,
+   "field": "* {{Stat|INT|6|Insightful}}\n* {{Save|Reflex|3|Quality}} \n* {{Stat|Well Rounded|3|Profane}}\n* {{HealingAmp|15|Healing|Exceptional}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Augment|Moon}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Belt_of_Bold_Brilliance"
+  },
+  {
+   "name": "Legendary Belt of Myriad Pockets",
+   "slot": "Belt",
+   "minimum_level": 30,
+   "field": "* {{Stat|Constitution|6|Insightful}}\n* {{Sheltering|34|Enhancement|Physical}}\n* {{Protection|11}}\n* {{Shield Bonus|13}}\n* {{Hp|Legendary Elemental Energy}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Named item sets|Legendary Saltmarsh Explorer}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Belt_of_Myriad_Pockets"
+  },
+  {
+   "name": "Legendary Belt of Sure Strikes",
+   "slot": "Belt",
+   "minimum_level": 29,
+   "field": "* {{Sheltering|33|Enhancement|Magical}}\n* {{Seeker|6|Insight}}\n* {{Tactics|Combat Mastery|3|Quality}}\n* {{Accuracy|4|Quality}}\n* {{Augment|Green}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Belt_of_Sure_Strikes"
+  },
+  {
+   "name": "Legendary Belt of the Black Abishai",
+   "slot": "Belt",
+   "minimum_level": 30,
+   "field": "* {{Stat|DEX|6|Insightful}}\n* {{Sheltering|17|Insightful|Magical}}\n* {{Hp|False Life|54}}\n* {{Hp|Profane Lifeforce|48}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Named item sets|Legendary Might of the Abishai}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Belt_of_the_Black_Abishai"
+  },
+  {
+   "name": "Legendary Bloody War Bow",
+   "slot": "Weapon",
+   "minimum_level": 31,
+   "field": "* {{Enhancement bonus|w|15}}\n* {{Crippling}}\n* {{Bonesplitter}}\n* {{Bane|Monstrous Humanoid|6}}\n* {{Feeding|30}}\n* {{Augment|Red}}\n* {{Augment|Purple}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bloody_War_Bow",
+   "weapon_type": "Long Bows"
+  },
+  {
+   "name": "Legendary Bow of the Elements (Air)",
+   "slot": "Weapon",
+   "minimum_level": 30,
+   "field": "* {{Enhancement bonus|i|15|30}}\n* {{Lightning Strike|Sovereign}}\n* {{Blast|Shocking|6}}\n* {{Spelllore|Lightning|21}}\n* {{SpellPower|Magnetism|146}}\n* {{Absorption|Whirlwind|0|20|5}}\n* {{Named item sets|The Legendary Desert's Writhing Storm}}\n* {{Augment|Colorless}}\n* {{Augment|Red}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bow_of_the_Elements_(Air)",
+   "weapon_type": "Long Bows"
+  },
+  {
+   "name": "Legendary Bow of the Silver Flame",
+   "slot": "Weapon",
+   "minimum_level": 30,
+   "field": "* {{Enhancement bonus|w|15}}\n* {{Burst|Holy|6|14}}\n* {{Bane|Undead|6}}\n* {{Weaken Undead}}\n* {{Blunted Ammunition}}\n* {{Mat|Silver}}, Alchemical\n* {{Augment|Red}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bow_of_the_Silver_Flame",
+   "weapon_type": "Long Bows"
+  },
+  {
+   "name": "Legendary Calamitous Longbow",
+   "slot": "Weapon",
+   "minimum_level": 34,
+   "field": "* {{Enhancement bonus|w|15}}\n* {{Lamordia Slot|Melancholic|Weapon}}\n* {{Lamordia Slot|Dolorous|Weapon}}\n* {{Lamordia Slot|Miserable|Weapon}}\n* {{Lamordia Slot|Woeful|Weapon}}\n* {{Augment|Orange}}\n* {{Augment|Purple}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Calamitous_Longbow",
+   "weapon_type": "Long Bows"
+  },
+  {
+   "name": "Legendary Cataclysmic Longbow",
+   "slot": "Weapon",
+   "minimum_level": 34,
+   "field": "* {{Enhancement bonus|w|15}}\n* {{Lamordia Slot|Melancholic|Weapon}}\n* {{Lamordia Slot|Dolorous|Weapon}}\n* {{Lamordia Slot|Miserable|Weapon}}\n* {{Lamordia Slot|Woeful|Weapon}}\n* {{Augment|Orange}}\n* {{Augment|Purple}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cataclysmic_Longbow",
+   "weapon_type": "Long Bows"
+  },
+  {
+   "name": "Legendary Alchemical Shortsword",
+   "slot": "Weapon",
+   "minimum_level": 29,
+   "field": "* {{Enhancement bonus|w|15}}\n* {{CraftingEffects|Legendary Alchemical Crafting (Prototype)}}\n* {{Augment|Red}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Alchemical_Shortsword",
+   "weapon_type": "Short Swords"
+  },
+  {
+   "name": "Legendary Blade of the Clouds",
+   "slot": "Weapon",
+   "minimum_level": 27,
+   "field": "* {{Enhancement bonus|w|15}}\n* {{Favored Weapon}}\n* {{Cloudburst}}\n* {{Electrifying|6}}\n* {{Augment|Red}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Blade_of_the_Clouds",
+   "weapon_type": "Short Swords"
+  },
+  {
+   "name": "Legendary Calamitous Shortsword",
+   "slot": "Weapon",
+   "minimum_level": 34,
+   "field": "* {{Enhancement bonus|w|15}}\n* {{Lamordia Slot|Melancholic|Weapon}}\n* {{Lamordia Slot|Dolorous|Weapon}}\n* {{Lamordia Slot|Miserable|Weapon}}\n* {{Lamordia Slot|Woeful|Weapon}}\n* {{Augment|Orange}}\n* {{Augment|Purple}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Calamitous_Shortsword",
+   "weapon_type": "Short Swords"
+  },
+  {
+   "name": "Legendary Cataclysmic Shortsword",
+   "slot": "Weapon",
+   "minimum_level": 34,
+   "field": "* {{Enhancement bonus|w|15}}\n* {{Lamordia Slot|Melancholic|Weapon}}\n* {{Lamordia Slot|Dolorous|Weapon}}\n* {{Lamordia Slot|Miserable|Weapon}}\n* {{Lamordia Slot|Woeful|Weapon}}\n* {{Augment|Orange}}\n* {{Augment|Purple}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cataclysmic_Shortsword",
+   "weapon_type": "Short Swords"
+  }
+ ]
+}
