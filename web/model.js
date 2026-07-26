@@ -83,8 +83,26 @@ function dominates(A, B, targetSet, mlCap) {
   // the same category+tier slot, so an intrinsic win must not prune B's craft.
   if (B.nearly_complete && (A.nearly_complete !== B.nearly_complete
       || ncTier(A) !== ncTier(B))) return false;
+  // Roll-group choice-slot: a roll option's value lives in roll_groups, NOT in
+  // variantBuckets, so a choice-slot item looks value-less to the bucket check.
+  // Keep B whenever it offers a target-relevant option A cannot also offer.
+  const rb = rollOptionKeys(B, targetSet);
+  if (rb.size) {
+    const ra = rollOptionKeys(A, targetSet);
+    for (const k of rb) if (!ra.has(k)) return false;
+  }
   // strictly better somewhere, OR keep A as the canonical of an equal pair
   return true;
+}
+
+/** Target-relevant options an item offers via its roll groups (choose-one
+ *  slots). Keyed stat||type||value so an equal option counts as covered. */
+function rollOptionKeys(v, targetSet) {
+  const s = new Set();
+  for (const g of v.roll_groups || [])
+    for (const o of g.options || [])
+      if (targetSet.has(o.stat) && o.value > 0) s.add(`${o.stat}||${o.bonus_type}||${o.value}`);
+  return s;
 }
 
 function countColors(colors) {

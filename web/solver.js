@@ -69,6 +69,7 @@ function buildProgram(model) {
   const setMeta = new Map(); // set_active var -> {set, pieces_required, pieces_label, wiki_url}
   const dinoMeta = new Map(); // dino placement var -> {dino_type, stat, bonus_type, value, wiki_url}
   const ncMeta = new Map(); // nc placement var -> {item, category, stat, bonus_type, value, tier, wiki_url}
+  const rollMeta = new Map(); // roll-group option var -> {item, stat, bonus_type, value, unit}
 
   // U3 — augment assignment. Each augment gets a placement binary p_i; its stat
   // is a contribution gated by [p_i]. Per color, total placements are bounded by
@@ -183,6 +184,33 @@ function buildProgram(model) {
     if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single choice per slot
   }
 
+  // Choice-slots (roll groups). An item's `roll_groups` each offer several
+  // mutually-exclusive options ("Rolls one of: A / B / C"); the solver picks the
+  // one that best advances the ranked targets. Same gated primitive as NC: a
+  // per-option binary gated by the host item (n - x_item <= 0), the option's stat
+  // fed into its (stat, bonus_type) bucket [n], and Sum(n) <= 1 per group.
+  let rgc = 0;
+  for (const xv of xVars) {
+    for (const group of xv.variant.roll_groups || []) {
+      const slotVars = [];
+      for (const opt of group.options || []) {
+        if (!(targetSet.has(opt.stat) && opt.value > 0)) continue;
+        const n = "rg" + rgc++;
+        extraVars.push(n);
+        rollMeta.set(n, {
+          item: xv.variant.variant_id, stat: opt.stat,
+          bonus_type: opt.bonus_type, value: opt.value, unit: opt.unit || "flat",
+        });
+        slotVars.push(n);
+        extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
+        const k = `${opt.stat}||${opt.bonus_type}`;
+        if (!zByBucket.has(k)) zByBucket.set(k, []);
+        zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: opt.value });
+      }
+      if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single choice per group
+    }
+  }
+
   // U5 — set thresholds. A set tier's parsed stats count only when >= N pieces
   // of the set are equipped. Per tier: a binary set_active with the linear
   // indicator  N*set_active - sum(equipped pieces of the set) <= 0  (so it can
@@ -231,7 +259,7 @@ function buildProgram(model) {
 
   return {
     xVars, zByBucket, cappedStats, targetList: model.targets, model,
-    extraVars, extraConstraints, augMeta, setMeta, dinoMeta, ncMeta, _zc: zc,
+    extraVars, extraConstraints, augMeta, setMeta, dinoMeta, ncMeta, rollMeta, _zc: zc,
   };
 }
 
@@ -325,7 +353,9 @@ function readSolution(res, program) {
   for (const [q, meta] of program.dinoMeta || []) if (prim(q) > 0.5) dinoPlaced.push(meta);
   const ncPlaced = [];
   for (const [n, meta] of program.ncMeta || []) if (prim(n) > 0.5) ncPlaced.push(meta);
-  return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced };
+  const rollPlaced = [];
+  for (const [n, meta] of program.rollMeta || []) if (prim(n) > 0.5) rollPlaced.push(meta);
+  return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced };
 }
 
 async function solveLexicographic(model, highs) {
@@ -349,7 +379,7 @@ async function solveLexicographic(model, highs) {
   return {
     status: "optimal", perTarget, effective: sol.effective, chosen: sol.chosen,
     augmentsPlaced: sol.augmentsPlaced, setsActive: sol.setsActive,
-    dinoPlaced: sol.dinoPlaced, ncPlaced: sol.ncPlaced, program,
+    dinoPlaced: sol.dinoPlaced, ncPlaced: sol.ncPlaced, rollPlaced: sol.rollPlaced, program,
   };
 }
 

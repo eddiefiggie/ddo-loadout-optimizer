@@ -69,6 +69,7 @@ main { padding: 1.25rem 1.5rem; max-width: 1100px; margin: 0 auto; }
 .chip.aug { border-color: #3a4a6a; }
 .chip.dino { border-color: #6a5a3a; background: #1a1712; }
 .chip.nc { border-color: #5a3a6a; background: #171220; }
+.chip.roll { border-color: #3a5a4a; background: #121a16; }
 .muted { color: var(--muted); font-size: 0.78rem; }
 .items a { color: var(--accent); }
 .empty { padding: 1.5rem; text-align: center; color: var(--muted); }

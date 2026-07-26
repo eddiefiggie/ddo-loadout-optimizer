@@ -147,6 +147,12 @@ function renderResults(container, { model, result, query, dataset }) {
     if (!ncByItem.has(n.item)) ncByItem.set(n.item, []);
     ncByItem.get(n.item).push(n);
   }
+  // Roll-group choice-slots: show which option the solver selected per item.
+  const rollByItem = new Map();
+  for (const r of result.rollPlaced || []) {
+    if (!rollByItem.has(r.item)) rollByItem.set(r.item, []);
+    rollByItem.get(r.item).push(r);
+  }
   const rowsBySlot = new Map();
   result.chosen.forEach((c, idx) => {
     if (!rowsBySlot.has(c.slot)) rowsBySlot.set(c.slot, []);
@@ -168,12 +174,14 @@ function renderResults(container, { model, result, query, dataset }) {
         .map((d) => `<span class="chip dino" title="Isle of Dread ${d.dino_type} insert">${d.dino_type}: ${affixLabel({ stat: d.stat, bonus_type: d.bonus_type, value: d.value, unit: d.unit || "flat" })}</span>`).join(" ");
       const ncs = (ncByItem.get(v.variant_id) || [])
         .map((n) => `<span class="chip nc" title="U81 Nearly Complete (${n.category}, ${n.tier})">Nearly Complete: ${affixLabel({ stat: n.stat, bonus_type: n.bonus_type, value: n.value, unit: n.unit || "flat" })}</span>`).join(" ");
+      const rolls = (rollByItem.get(v.variant_id) || [])
+        .map((r) => `<span class="chip roll" title="choice-slot: best option selected">Choice: ${affixLabel({ stat: r.stat, bonus_type: r.bonus_type, value: r.value, unit: r.unit || "flat" })}</span>`).join(" ");
       const link = v.wiki_url ? `<a href="${v.wiki_url}" target="_blank" rel="noopener">wiki</a>` : "";
       rows.push(`<tr>
         <td>${slot.slot}</td>
         <td>${v.variant_id}</td>
         <td class="num">${v.minimum_level ?? "—"}</td>
-        <td>${contrib} ${augs} ${dinos} ${ncs}</td>
+        <td>${contrib} ${augs} ${dinos} ${ncs} ${rolls}</td>
         <td>${link}</td>
       </tr>`);
     }
