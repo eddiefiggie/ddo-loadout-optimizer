@@ -46,6 +46,12 @@ A Dinosaur Bone item whose entire value is the typed Dino slots it exposes — i
 ### Nearly Complete slot
 An Update 81 upgrade slot that lets an item gain one extra affix chosen from a fixed **category** menu (Ability Score, Insightful Ability, Quality Ability, Healing Amplification, Skill, Spell Focus) — the category fixes the bonus type, the player picks the stat. Modeled as a **choice-slot**: a select-one over the category's option pool, gated by the item being equipped, so the solver picks whichever option best advances the ranked targets. The in-game choice is irreversible, so at most one option per slot ever applies.
 
+### Roll group (choice-slot)
+An item affix offering several mutually-exclusive options — "Rolls one of: Strength +13 / Dexterity +13 / Constitution +13". The same select-one choice-slot shape as a [[Nearly Complete slot]], but with the options listed inline rather than drawn from a category pool; the solver picks whichever option best advances the ranked targets. An item's whole stat block can be a single roll group.
+
+### Umbrella stat
+An affix that buffs every ability at once — "All Ability Scores +15", "Well Rounded". Expanded into the six concrete ability affixes so a single-ability [[Target]] is credited, since the optimizer matches a target only by exact stat name.
+
 ## Data trust
 
 ### Verified

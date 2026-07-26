@@ -15,6 +15,9 @@ tags:
   - ddo
   - gated-contribution
   - dominance-pruning
+  - roll-group
+  - stat-normalization
+  - silent-value-loss
 applies_when:
   - "Choose-one-per-slot selection where stats stack by bonus-type with caps and ranked priorities"
   - "Turning a provably-optimal requirement into a client-side (in-browser) exact solve"
@@ -51,6 +54,14 @@ All of them feed the same `(stat, bonus_type)` max-buckets from #2, so cross-sou
 
 **5. Client-side HiGHS-WASM.** Vendor `highs.js` + `highs.wasm` (~3.4 MB); init once with `Highs({ locateFile })` (browser global `Module`, or `require` in node); feed a CPLEX **LP-format string** to `highs.solve(lp)`; read `res.Status` (`"Optimal"`), `res.ObjectiveValue`, and `res.Columns[name].Primal`. It runs identically in node, so the same known-answer tests validate browser behavior.
 
+**6. Value silently vanishes three ways, not one — trace every source end-to-end to the objective.** The comparison-surface invariant (#1) covers value lost to *pruning*. Two sibling failure modes lose value that was never pruned, and share the exact signature — green unit tests, a confidently-wrong optimum, caught only by an end-to-end solve that asserts a target *aggregates every real source*:
+
+- **Parsed but never consumed (dead contribution).** `affix_parser` produces `roll_groups` (choose-one option groups, "Rolls one of: Str / Dex / Con +13") and `variants._make_variant` carries them, but the objective builder in `web/solver.js` never read `variant.roll_groups` — so every choice-slot item contributed **nothing** for its options. This was dead data from the original build: 2 base-seed items, plus 10 U81 "Nearly-Finished" items whose *entire* stat block was the choice-slot (so they showed zero affixes). Fix: a roll-group block mirroring the gated-contribution primitive (#2b) — per-option binary gated by the item, `Σ ≤ 1` per group — plus the matching `dominates()` guard, because roll options live in `roll_groups` and are invisible to `variantBuckets`, so a choice-slot item looks value-less to the bucket check and would be pruned (`web/solver.js`, `web/model.js` `rollOptionKeys`; PR [#12](https://github.com/eddiefiggie/ddo-loadout-optimizer/pull/12)). The tell: a source type present in the *data schema* and the *parser* but with zero references in the *objective builder*.
+
+- **Fragmented target-match key.** The objective credits a contribution only when its stat string *exactly* equals a ranked target (`targetSet.has(a.stat)`), so the same stat under different names splits into buckets no single target reads. Two shapes: an **umbrella stat** — "All Ability Scores +15" / "Well Rounded" buff every ability but matched no single-ability target (Ophael's Cincture's +25 Constitution was invisible), fixed by expanding umbrella affixes into the six concrete abilities once at build time, over worn affixes AND set thresholds (`src/umbrella.py`, applied in `build_dataset` before verify; PR [#13](https://github.com/eddiefiggie/ddo-loadout-optimizer/pull/13)); and **alias spellings** — PRR / Physical Sheltering / Physical Resistance Rating are one stat spelled three ways across base seed, enrichment, and set thresholds, so targeting one missed the others, fixed by canonical `STAT_ALIASES` (`src/vocab.py`) that both stat-bearing paths already run through `normalize_stat` (`variants._normalize_affixes`, `set_parser`; PR [#14](https://github.com/eddiefiggie/ddo-loadout-optimizer/pull/14)). Because dominance reads the same buckets, normalizing/expanding at the **data layer** fixes the objective AND the pre-filter in one place.
+
+The unifying rule is broader than #1's superset invariant: **every value a variant can carry must be traced end-to-end to the objective — it is lost to pruning (dominance surface out of date), to non-consumption (the objective builder never reads the field), or to a fragmented match key (one stat under multiple spellings).** All three are invisible to unit tests over a hand-built model or over the parser in isolation; the catch is always the same — an end-to-end solve asserting a target's achieved value accounts for every real source (`tests/solver.test.js`: the roll-group, real-dataset "Diversion", and NC-craft regressions).
+
 ## Why This Matters
 
 The clamp-vs-ceiling distinction (#3) is a silent correctness trap: the naive `effective <= cap` encoding passes casual inspection, produces feasible-looking output, and is *wrong* — it forbids the best item instead of capping its contribution, so a capped target (dodge) with any strong source degrades to 0 and the loadout omits the item. It was caught only by a known-answer test asserting "the dodge item is still equipped." The select-one encoding (#2) is likewise the difference between a solver that respects DDO stacking and one that double-counts same-type bonuses. Getting these two wrong doesn't crash — it produces a confidently-wrong "best-in-slot", the exact failure the tool exists to avoid.
@@ -67,6 +78,8 @@ This bug has now recurred **three times in one development arc** — set-piece t
 2. **Add it to `dominates()`** as a "B has it, A must match it, else A cannot dominate B" guard — mirror the existing `dino_slots_norm` / `nearly_complete` guards. Skipping this silently prunes hosts whose only value is that dimension.
 3. **Add a dominance regression test** — an affix-bearing rival must NOT dominate a variant whose worth is the new dimension. This is the test that would have caught all three (unit tests over an already-built model never do).
 4. **Confirm end-to-end**, not just against a hand-built model — a pruning defect is invisible upstream of the prune.
+5. **Does the objective builder actually READ the source's field?** Grep the contribution code (`web/solver.js` `buildProgram`) for the field name. A parser/schema addition with zero references there is dead data — parsed, carried on the variant, and silently ignored (the `roll_groups` trap, #6).
+6. **Is the source's stat a distinct SPELLING of an existing target stat** (an umbrella that covers several, or an alias of one)? If so, normalize/expand it at the data layer (`src/vocab.py` `STAT_ALIASES`, `src/umbrella.py`) so the exact-match objective and the dominance buckets both credit it (#6). Grep the built `web/data/items.json` for split spellings before shipping.
 
 Better still, make step 2 structurally hard to skip: a single test that asserts every dimension the objective reads (the union of stats/sets/colors/dino-types/nc-categories a variant can carry) is also compared by `dominates()` would fail loudly the next time a fourth source family is added without its guard.
 
