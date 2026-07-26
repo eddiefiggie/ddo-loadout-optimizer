@@ -113,10 +113,11 @@ def test_pieces_required_zero_is_not_a_threshold():
 
 
 def test_prr_mrr_compound_splits_into_both_stats():
-    # "+20 PRR/MRR" (value-first) must expand so PRR and MRR targets both see it.
+    # "+20 PRR/MRR" (value-first) must expand into both stats, canonicalized to
+    # their "Sheltering" affix wording so a target matches every spelling.
     affixes, _ = set_parser.parse_piece_text("+20 PRR/MRR (Artifact)")
     stats = {a["stat"] for a in affixes}
-    assert any("PRR" in s for s in stats) and any("MRR" in s for s in stats), stats
+    assert stats == {"Physical Sheltering", "Magical Sheltering"}, stats
     for a in affixes:
         assert a["value"] == 20 and a["bonus_type"] == "Artifact"
 
