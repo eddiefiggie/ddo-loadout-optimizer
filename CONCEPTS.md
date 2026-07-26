@@ -52,6 +52,9 @@ An item affix offering several mutually-exclusive options — "Rolls one of: Str
 ### Umbrella stat
 An affix that buffs every ability at once — "All Ability Scores +15", "Well Rounded". Expanded into the six concrete ability affixes so a single-ability [[Target]] is credited, since the optimizer matches a target only by exact stat name.
 
+### Viktranium Experiment crafting
+The Update 81 crafting system whose slots the data mislabels "Lamordia" (the `{{Lamordia Slot|...}}` template) — an item carries typed slots (Melancholic / Dolorous / Miserable / Woeful) filled from a documented "Lamordia Augments" pool, plus a Cataclysmic weapon/shield arm. The same insert/[[choice-slot|Roll group (choice-slot)]] shape as a [[Dino insert]] / [[Nearly Complete slot]]; modeled by reusing the [[Gated contribution]] primitive, not new solver code.
+
 ## Data trust
 
 ### Verified
