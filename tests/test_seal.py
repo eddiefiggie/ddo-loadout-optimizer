@@ -66,3 +66,48 @@ def test_normalize_seal_type_folds_prefix_and_case():
     assert seal.normalize_seal_type("Sealed in Fire") == "Fire"
     assert seal.normalize_seal_type("Amber") is None  # excluded from the family
     assert seal.normalize_seal_type("") is None
+
+
+# --- U1: host detection in the gear-planner import ------------------------
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
+from enrich_from_planner import build_record  # noqa: E402
+
+
+def test_build_record_detects_crafting_seal():
+    # Undeath seals live in crafting[]; the augment slot is still captured.
+    it = {"name": "Test Trinket", "slot": "Trinket", "ml": 33,
+          "affixes": [{"name": "Dodge", "type": "Enhancement", "value": 15}],
+          "crafting": ["Sealed in Undeath", "Green Augment Slot"]}
+    rec = build_record(it)
+    assert rec["seal_slots"] == [{"seal_type": "Undeath", "category": "Trinket"}]
+    assert "Green" in rec["augment_slots"]
+
+
+def test_build_record_detects_bool_affix_seal():
+    # Fire seals are affixes[] Bool markers, not crafting[] — proves that path.
+    it = {"name": "Test Sword", "slot": "Weapon", "type": "Longswords", "ml": 33,
+          "affixes": [{"name": "Sealed in Fire", "type": "Bool", "value": 1}],
+          "crafting": []}
+    rec = build_record(it)
+    assert rec["seal_slots"] == [{"seal_type": "Fire", "category": "Weapon"}]
+
+
+def test_build_record_no_seal_yields_no_slots():
+    it = {"name": "Plain Ring", "slot": "Ring", "ml": 33,
+          "affixes": [{"name": "Strength", "type": "Enhancement", "value": 15}],
+          "crafting": ["Yellow Augment Slot"]}
+    rec = build_record(it)
+    assert "seal_slots" not in rec
+
+
+def test_undyingage_batch_reaches_the_undeath_hosts():
+    # Regression for the reachability gap: the 9 Undeath hosts carry
+    # quests=["Threats Old and New"] and are absent from every wiki batch; without
+    # the QUEST_MAP fix the planner import produced zero of them.
+    path = os.path.join(os.path.dirname(__file__), "..", "data", "seed",
+                        "compendium", "enriched_batch14_undyingage_planner.json")
+    items = json.load(open(path, encoding="utf-8"))["items"]
+    undeath = [it for it in items
+               if any(s["seal_type"] == "Undeath" for s in it.get("seal_slots", []))]
+    assert len(undeath) == 9, f"expected 9 reachable Undeath hosts, got {len(undeath)}"
