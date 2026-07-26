@@ -99,6 +99,14 @@ function dominates(A, B, targetSet, mlCap) {
   const va = countColors(lamordiaSlotKeys(A));
   const vb = countColors(lamordiaSlotKeys(B));
   for (const [k, n] of vb) if ((va.get(k) || 0) < n) return false;
+  // Seal ("Sealed in X") single-pick choice-slot: the unseal value lives in
+  // seal_slots (keyed by seal_type), outside variantBuckets — so a sealed host
+  // looks value-less to the bucket check. A must offer at least as many of each
+  // seal_type slot as B, or B's unseal capacity would be wrongly pruned (the same
+  // trap as Dino blanks / Lamordia hosts).
+  const sealA = countColors((A.seal_slots || []).map((s) => s.seal_type));
+  const sealB = countColors((B.seal_slots || []).map((s) => s.seal_type));
+  for (const [k, n] of sealB) if ((sealA.get(k) || 0) < n) return false;
   // strictly better somewhere, OR keep A as the canonical of an equal pair
   return true;
 }
@@ -171,7 +179,7 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1) {
 
 /** Build the abstract model. Returns worn slots (filtered + pruned), the
  *  augment source pool, the Dino insert pool, target list, and the dodge cap. */
-function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = []) {
+function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = []) {
   const targetSet = new Set(query.targets);
   const mlCap = query.mlCap;
   const elig = eligible(variants, query);
@@ -237,9 +245,15 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // attaches them per host via the item's `lamordia_slots` at the host's tier.
   const vikPool = (viktranium || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
 
+  // Seal slots ("Sealed in X"): the single-pick option pool keyed by seal_type.
+  // Keep only options advancing a ranked target; the solver unseals one option
+  // per host seal slot via the item's `seal_slots`.
+  const sealPool = (seal || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
+
   return {
     query, targets: query.targets, worn, augments,
-    dinoInserts: dinoPool, nearlyComplete: ncPool, viktranium: vikPool, dodgeCap, mlCap,
+    dinoInserts: dinoPool, nearlyComplete: ncPool, viktranium: vikPool, seal: sealPool,
+    dodgeCap, mlCap,
   };
 }
 

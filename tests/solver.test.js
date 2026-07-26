@@ -795,5 +795,77 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.ok(armorBlank, "the real Dinosaur Bone Armor blank was equipped to host the insert");
   });
 
+  // ---- Seal ("Sealed in X") single-pick choice-slot ----
+  function sealHost(id, slotName, seals, affixes) {
+    const v = item(id, slotName, affixes || []);
+    v.seal_slots = seals;            // [{seal_type, category}]
+    return v;
+  }
+  function sealOpt(seal_type, stat, bonus_type, value) {
+    return { seal_type, stat, bonus_type, value, unit: "flat" };
+  }
+  const SEAL_POOL = [
+    sealOpt("Undeath", "Constitution", "Enhancement", 15),
+    sealOpt("Undeath", "Strength", "Enhancement", 15),
+    sealOpt("Undeath", "Constitution", "Insightful", 7),
+    sealOpt("Undeath", "Constitution", "Quality", 3),
+  ];
+
+  await test("SEAL/AE1: unseals the option that best advances the ranked targets", async () => {
+    const conFirst = {
+      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [sealHost("H", "Trinket", [{ seal_type: "Undeath", category: "Trinket" }])])],
+      seal: SEAL_POOL,
+    };
+    const a = await S.solveLexicographic(conFirst, highs);
+    assert.strictEqual(a.effective.Constitution, 15, "unseals +15 Con for a Con-first ranking");
+    assert.ok((a.sealPlaced || []).some((n) => n.stat === "Constitution"), "reported as unsealed");
+    const b = await S.solveLexicographic({ ...conFirst, targets: ["Strength", "Constitution"] }, highs);
+    assert.strictEqual(b.effective.Strength, 15, "swapping priority unseals +15 Str instead");
+  });
+
+  await test("SEAL/single-pick: one option per seal slot, mutually exclusive", async () => {
+    const m = {
+      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [sealHost("H", "Trinket", [{ seal_type: "Undeath", category: "Trinket" }])])],
+      seal: SEAL_POOL,
+    };
+    const r = await S.solveLexicographic(m, highs);
+    assert.strictEqual(r.effective.Constitution, 15, "priority-1 unsealed");
+    assert.strictEqual(r.effective.Strength, 0, "one seal slot -> only one option, not both");
+    assert.strictEqual(r.sealPlaced.length, 1, "exactly one unseal placed");
+  });
+
+  await test("SEAL/AE3: single-pick respects bonus-type stacking (picks a different tier)", async () => {
+    // Con Enhancement is already capped by a worn affix; the seal's best move for a
+    // Con-first ranking is the Insightful tier (a different bonus type -> it stacks).
+    const m = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [sealHost("H", "Trinket", [{ seal_type: "Undeath", category: "Trinket" }],
+        [["Constitution", "Enhancement", 15]])])],
+      seal: SEAL_POOL,
+    };
+    const r = await S.solveLexicographic(m, highs);
+    // worn Enhancement 15 + seal Insightful 7 = 22 (different types stack); NOT 30
+    // (two Enhancement values don't stack) and NOT just 15.
+    assert.strictEqual(r.effective.Constitution, 22, "unseals the Insightful tier to stack past the capped Enhancement");
+    assert.strictEqual(r.sealPlaced.length, 1, "still one unseal");
+    assert.strictEqual(r.sealPlaced[0].bonus_type, "Insightful", "chose the stacking tier, not a redundant Enhancement");
+  });
+
+  await test("seal unseals onto a real Undeath host end-to-end (real dataset)", async () => {
+    const fs = require("fs");
+    const { buildModel } = require("../web/model.js");
+    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    assert.ok((data.seal || []).length > 0, "the built dataset exposes the seal pool");
+    // Undeath hosts are clothing/jewelry; targeting abilities the Ritual Table pool
+    // supplies must reach a real Undeath host and generate its unseal options in the
+    // MILP (proves dataset -> variant -> host -> seal machinery, past dominance).
+    const query = { mlCap: 34, targets: ["Wisdom", "Charisma", "Intelligence"], armorType: null, weaponSetup: null, classRace: null };
+    const model = buildModel(data.items, query, data.dino_inserts, data.nearly_complete, data.viktranium, data.seal);
+    const program = S.buildProgram(model);
+    assert.ok(program.sealMeta.size > 0, "a real Undeath host generated seal unseal options in the program");
+  });
+
   console.log(`\n${passed} passed`);
 })();
