@@ -43,13 +43,24 @@
     "Sun"
    ],
    "_enrich_unmapped": [
-    "Sound and Silence",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Sound and Silence"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Accessory"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Accessory"
+    },
+    {
+     "type": "Miserable",
+     "category": "Accessory"
+    }
+   ]
   },
   {
    "name": "Legendary Amethyst Loupe",
@@ -216,12 +227,19 @@
     "Colorless",
     "Moon"
    ],
-   "_enrich_unmapped": [
-    "Lamordia Slot",
-    "Lamordia Slot"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Accessory"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Accessory"
+    }
+   ]
   },
   {
    "name": "Legendary Black Opal Bracers",
@@ -260,12 +278,20 @@
     "Moon"
    ],
    "_enrich_unmapped": [
-    "Undying",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Undying"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Accessory"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Accessory"
+    }
+   ]
   },
   {
    "name": "Legendary Admiral's Gumshoes",
@@ -509,12 +535,19 @@
     "Colorless",
     "Moon"
    ],
-   "_enrich_unmapped": [
-    "Lamordia Slot",
-    "Lamordia Slot"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Accessory"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Accessory"
+    }
+   ]
   },
   {
    "name": "Legendary Birchlore Gauntlets",
@@ -750,12 +783,19 @@
     "Colorless",
     "Moon"
    ],
-   "_enrich_unmapped": [
-    "Lamordia Slot",
-    "Lamordia Slot"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Accessory"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Accessory"
+    }
+   ]
   },
   {
    "name": "Legendary Belt of Bold Brilliance",

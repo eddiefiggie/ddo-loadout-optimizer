@@ -3,7 +3,7 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 
-const { filterVariants, variantStats, affixText, dinoInsertRow, ncRow, compendiumRow, browsableItems } = require("../web/browse.js");
+const { filterVariants, variantStats, affixText, dinoInsertRow, ncRow, vikRow, compendiumRow, browsableItems } = require("../web/browse.js");
 const data = JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")
 );
@@ -64,8 +64,9 @@ test("browsableItems appends the Dino insert pool as display rows", () => {
   // browsable = real variants + every appended display pool (dino inserts,
   // NC options, and the indexed-only compendium index)
   const nc = (data.nearly_complete || []).length;
+  const vik = (data.viktranium || []).length;
   const comp = (data.compendium || []).filter((x) => x.status === "indexed").length;
-  assert.strictEqual(list.length, items.length + inserts.length + nc + comp);
+  assert.strictEqual(list.length, items.length + inserts.length + nc + vik + comp);
 });
 
 test("a Dino insert is findable in the browser by stat", () => {
@@ -113,6 +114,26 @@ test("ncRow tags the tier's ML and renders its value", () => {
   const row = ncRow({ category: "Ability Score", stat: "Constitution", bonus_type: "Enhancement", value: 15, tier: "legendary", wiki_url: "w" });
   assert.strictEqual(row.minimum_level, 35);
   assert.ok(affixText(row).some((t) => /Constitution \+15/.test(t)));
+});
+
+test("browsableItems appends the U81 Viktranium option pool", () => {
+  const list = browsableItems(data);
+  const vik = list.filter((v) => v.vik_option);
+  assert.strictEqual(vik.length, (data.viktranium || []).length);
+  assert.ok(vik.length >= 100, "expected the sourced Viktranium option pool");
+});
+
+test("a Viktranium option is findable in the browser by stat", () => {
+  const list = browsableItems(data);
+  const rows = filterVariants(list, { stat: "Charisma" });
+  assert.ok(rows.some((v) => v.vik_option), "Charisma Lamordia craft options surface under the stat filter");
+});
+
+test("vikRow tags the tier's ML, keys the pool, and renders its value", () => {
+  const row = vikRow({ slot_type: "Melancholic", category: "Accessory", stat: "Charisma", bonus_type: "Enhancement", value: 15, tier: "legendary", wiki_url: "w" });
+  assert.strictEqual(row.minimum_level, 34);
+  assert.ok(/Melancholic/.test(row.slot) && /Accessory/.test(row.slot), "slot names the (type, category) pool");
+  assert.ok(affixText(row).some((t) => /Charisma \+15/.test(t)));
 });
 
 test("browsableItems appends the compendium index (indexed-only entries)", () => {

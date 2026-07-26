@@ -87,6 +87,23 @@ function ncRow(opt) {
   };
 }
 
+/** Display-only pseudo-variant for one U81 Viktranium ("Lamordia") craft option,
+ *  so the typed effect pool is browsable. NOT an equippable item — a host's typed
+ *  slot selects one option; this is inventory visibility only. */
+function vikRow(opt) {
+  return {
+    variant_id: `Lamordia ${opt.slot_type}: ${opt.stat} (${opt.tier})`,
+    source_item: `U81 Viktranium — ${opt.slot_type} (${opt.category})`,
+    slot: `Lamordia (${opt.slot_type} ${opt.category})`,
+    minimum_level: opt.tier === "legendary" ? 34 : 8,
+    verification: "verified",
+    affixes: [{ stat: opt.stat, bonus_type: opt.bonus_type, value: opt.value, unit: opt.unit || "flat" }],
+    scaling: [],
+    wiki_url: opt.wiki_url,
+    vik_option: true,
+  };
+}
+
 /** Display-only pseudo-variant for one compendium roster entry — a named item
  *  the index knows exists (name, slot, wiki link) but whose stats are not yet
  *  sourced. Status "indexed": browse-only, never fed to the solver. Enriched
@@ -115,9 +132,10 @@ function browsableItems(dataset) {
   const items = (dataset && dataset.items) || [];
   const inserts = ((dataset && dataset.dino_inserts) || []).map(dinoInsertRow);
   const nc = ((dataset && dataset.nearly_complete) || []).map(ncRow);
+  const vik = ((dataset && dataset.viktranium) || []).map(vikRow);
   const comp = ((dataset && dataset.compendium) || [])
     .filter((x) => x.status === "indexed").map(compendiumRow);
-  return items.concat(inserts, nc, comp);
+  return items.concat(inserts, nc, vik, comp);
 }
 
 // ---- DOM rendering (browser only) ----
@@ -199,5 +217,5 @@ if (typeof window !== "undefined" && window.App) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { filterVariants, variantStats, affixText, dinoInsertRow, ncRow, compendiumRow, browsableItems };
+  module.exports = { filterVariants, variantStats, affixText, dinoInsertRow, ncRow, vikRow, compendiumRow, browsableItems };
 }

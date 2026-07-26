@@ -157,14 +157,28 @@
     "Purple"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    },
+    {
+     "type": "Miserable",
+     "category": "Weapon"
+    },
+    {
+     "type": "Woeful",
+     "category": "Weapon"
+    }
+   ]
   },
   {
    "name": "Legendary Cataclysmic Greataxe",
@@ -180,14 +194,28 @@
     "Purple"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    },
+    {
+     "type": "Miserable",
+     "category": "Weapon"
+    },
+    {
+     "type": "Woeful",
+     "category": "Weapon"
+    }
+   ]
   },
   {
    "name": "Legendary Bastard Sword of the Fallen Age",
@@ -249,14 +277,28 @@
     "Purple"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    },
+    {
+     "type": "Miserable",
+     "category": "Weapon"
+    },
+    {
+     "type": "Woeful",
+     "category": "Weapon"
+    }
+   ]
   },
   {
    "name": "Legendary Cataclysmic Bastard Sword",
@@ -272,14 +314,28 @@
     "Purple"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    },
+    {
+     "type": "Miserable",
+     "category": "Weapon"
+    },
+    {
+     "type": "Woeful",
+     "category": "Weapon"
+    }
+   ]
   },
   {
    "name": "Legendary Bladed Handwraps",
@@ -318,14 +374,28 @@
     "Purple"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    },
+    {
+     "type": "Miserable",
+     "category": "Weapon"
+    },
+    {
+     "type": "Woeful",
+     "category": "Weapon"
+    }
+   ]
   },
   {
    "name": "Legendary Cataclysmic Handwraps",
@@ -341,14 +411,28 @@
     "Purple"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    },
+    {
+     "type": "Miserable",
+     "category": "Weapon"
+    },
+    {
+     "type": "Woeful",
+     "category": "Weapon"
+    }
+   ]
   },
   {
    "name": "Legendary Crippling Stonedust Wraps",

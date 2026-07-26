@@ -22,8 +22,7 @@
     "CraftingEffects"
    ],
    "_enriched": true,
-   "minimum_level": 29,
-   "offhand_type": "large"
+   "minimum_level": 29
   },
   {
    "name": "Legendary Azure Rotella",
@@ -47,8 +46,7 @@
     "ItemGrantedFeat"
    ],
    "_enriched": true,
-   "minimum_level": 32,
-   "offhand_type": "large"
+   "minimum_level": 32
   },
   {
    "name": "Legendary Breaker of Bodies",
@@ -70,8 +68,7 @@
     "CraftingEffects"
    ],
    "_enriched": true,
-   "minimum_level": 28,
-   "offhand_type": "large"
+   "minimum_level": 28
   },
   {
    "name": "Legendary Cataclysmic Large Shield",
@@ -87,15 +84,28 @@
     "Orange"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
    "minimum_level": 34,
-   "offhand_type": "large"
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    },
+    {
+     "type": "Miserable",
+     "category": "Weapon"
+    },
+    {
+     "type": "Woeful",
+     "category": "Weapon"
+    }
+   ]
   },
   {
    "name": "Legendary Coronation Shield",
@@ -120,8 +130,7 @@
     "Guard"
    ],
    "_enriched": true,
-   "minimum_level": 30,
-   "offhand_type": "large"
+   "minimum_level": 30
   },
   {
    "name": "Legendary Crystalline Ward",
@@ -142,8 +151,7 @@
     "Arcane Casting Dexterity"
    ],
    "_enriched": true,
-   "minimum_level": 29,
-   "offhand_type": "large"
+   "minimum_level": 29
   },
   {
    "name": "Legendary Aegis of Aosu'riel",
@@ -164,8 +172,7 @@
     "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 29,
-   "offhand_type": "tower"
+   "minimum_level": 29
   },
   {
    "name": "Legendary Alchemical Tower Shield",
@@ -183,8 +190,7 @@
     "CraftingEffects"
    ],
    "_enriched": true,
-   "minimum_level": 29,
-   "offhand_type": "tower"
+   "minimum_level": 29
   },
   {
    "name": "Legendary Azure Tower",
@@ -208,8 +214,7 @@
     "ItemGrantedFeat"
    ],
    "_enriched": true,
-   "minimum_level": 32,
-   "offhand_type": "tower"
+   "minimum_level": 32
   },
   {
    "name": "Legendary Bulwark of Snow",
@@ -232,8 +237,7 @@
     "Mat"
    ],
    "_enriched": true,
-   "minimum_level": 29,
-   "offhand_type": "tower"
+   "minimum_level": 29
   },
   {
    "name": "Legendary Cataclysmic Tower Shield",
@@ -249,15 +253,28 @@
     "Orange"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
    "minimum_level": 34,
-   "offhand_type": "tower"
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    },
+    {
+     "type": "Miserable",
+     "category": "Weapon"
+    },
+    {
+     "type": "Woeful",
+     "category": "Weapon"
+    }
+   ]
   },
   {
    "name": "Legendary Defiled Azure Tower",
@@ -282,8 +299,7 @@
     "Taint of Evil"
    ],
    "_enriched": true,
-   "minimum_level": 32,
-   "offhand_type": "tower"
+   "minimum_level": 32
   },
   {
    "name": "Legendary Alchemical Buckler",
@@ -301,8 +317,7 @@
     "CraftingEffects"
    ],
    "_enriched": true,
-   "minimum_level": 29,
-   "offhand_type": "buckler"
+   "minimum_level": 29
   },
   {
    "name": "Legendary Azure Buckler",
@@ -326,8 +341,7 @@
     "ItemGrantedFeat"
    ],
    "_enriched": true,
-   "minimum_level": 32,
-   "offhand_type": "buckler"
+   "minimum_level": 32
   },
   {
    "name": "Legendary Buckler of the Fallen Age",
@@ -350,8 +364,7 @@
     "Conditioning"
    ],
    "_enriched": true,
-   "minimum_level": 33,
-   "offhand_type": "buckler"
+   "minimum_level": 33
   },
   {
    "name": "Legendary Buckler of the Golden Age",
@@ -374,8 +387,7 @@
     "Guardbreaking"
    ],
    "_enriched": true,
-   "minimum_level": 33,
-   "offhand_type": "buckler"
+   "minimum_level": 33
   },
   {
    "name": "Legendary Bloody Shadow Staff",
@@ -461,14 +473,28 @@
     "Purple"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    },
+    {
+     "type": "Miserable",
+     "category": "Weapon"
+    },
+    {
+     "type": "Woeful",
+     "category": "Weapon"
+    }
+   ]
   }
  ]
 }

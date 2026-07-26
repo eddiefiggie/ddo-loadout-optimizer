@@ -341,12 +341,20 @@
     "Moon"
    ],
    "_enrich_unmapped": [
-    "Power in Pact",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Power in Pact"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Accessory"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Accessory"
+    }
+   ]
   }
  ]
 }

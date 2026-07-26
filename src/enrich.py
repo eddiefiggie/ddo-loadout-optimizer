@@ -230,6 +230,15 @@ NC_CATEGORIES = {
     "Healing Amplification", "Skill", "Spell Focus",
 }
 
+# U81 Viktranium Experiment ("Lamordia") typed slots. {{Lamordia Slot|<type>|
+# <category>}} marks an item that carries a craftable typed augment slot — the
+# host the solver's Viktranium machinery attaches to. The option pool depends on
+# BOTH the slot type and the item category (data/seed/viktranium.json), so both
+# are captured. Slot type validated against the sourced pool's types; category
+# normalized to the singular pool key.
+from src.viktranium import SLOT_TYPES as _VIK_SLOT_TYPES  # noqa: E402
+from src.viktranium import normalize_category as _vik_normalize_category  # noqa: E402
+
 
 def _split_top_level(inner: str):
     """Split template inner text on top-level '|', ignoring '|' inside nested
@@ -258,6 +267,7 @@ def parse_enhancement_field(field: str) -> dict:
     """
     enh, augs, sets, unmapped = [], [], [], []
     nearly_complete = None
+    lamordia_slots = []
     for raw in (field or "").split("\n"):
         line = raw.strip()
         if not line.startswith("*"):
@@ -319,6 +329,17 @@ def parse_enhancement_field(field: str) -> dict:
             else:
                 unmapped.append(name)
             continue
+        if key == "lamordia slot":
+            # open Viktranium typed slot: capture (slot_type, category) as the host
+            # marker; the solver's Viktranium machinery crafts the best option from
+            # this (type, category) pool (tier derived from ML at solve time).
+            slot_type = args[0] if args else ""
+            category = _vik_normalize_category(args[1]) if len(args) > 1 else None
+            if slot_type in _VIK_SLOT_TYPES and category is not None:
+                lamordia_slots.append({"type": slot_type, "category": category})
+            else:
+                unmapped.append(name)
+            continue
         renderer = RENDERERS.get(key)
         if renderer:
             lines = renderer(args)
@@ -329,7 +350,8 @@ def parse_enhancement_field(field: str) -> dict:
         else:
             unmapped.append(name)
     return {"enhancements": enh, "augment_slots": augs, "sets": sets,
-            "unmapped": unmapped, "nearly_complete": nearly_complete}
+            "unmapped": unmapped, "nearly_complete": nearly_complete,
+            "lamordia_slots": lamordia_slots}
 
 
 def build_item_record(name, slot, field, wiki_url, minimum_level=None,
@@ -365,4 +387,8 @@ def build_item_record(name, slot, field, wiki_url, minimum_level=None,
         # activates the item as a U81 Nearly-Complete host; the solver crafts the
         # best option from this category's pool (tier derived from ML at solve time)
         rec["nearly_complete"] = parsed["nearly_complete"]
+    if parsed["lamordia_slots"]:
+        # activates the item as a U81 Viktranium host; the solver crafts the best
+        # option per typed slot from its (type, category) pool (tier from ML).
+        rec["lamordia_slots"] = parsed["lamordia_slots"]
     return rec

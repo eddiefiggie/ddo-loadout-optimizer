@@ -23,15 +23,29 @@
     "Sun"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
    "minimum_level": 34,
-   "armor_type": "cloth"
+   "armor_type": "cloth",
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Armor"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Armor"
+    },
+    {
+     "type": "Miserable",
+     "category": "Accessory"
+    },
+    {
+     "type": "Woeful",
+     "category": "Accessory"
+    }
+   ]
   },
   {
    "name": "Legendary Downcast Robe",
@@ -50,15 +64,29 @@
     "Sun"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
    "minimum_level": 34,
-   "armor_type": "cloth"
+   "armor_type": "cloth",
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Armor"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Armor"
+    },
+    {
+     "type": "Miserable",
+     "category": "Accessory"
+    },
+    {
+     "type": "Woeful",
+     "category": "Accessory"
+    }
+   ]
   },
   {
    "name": "Legendary Drow Priestess' Mantle",
@@ -228,15 +256,29 @@
     "Sun"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
    "minimum_level": 34,
-   "armor_type": "light"
+   "armor_type": "light",
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Armor"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Armor"
+    },
+    {
+     "type": "Miserable",
+     "category": "Accessory"
+    },
+    {
+     "type": "Woeful",
+     "category": "Accessory"
+    }
+   ]
   },
   {
    "name": "Legendary Drow Outrunner Armor",

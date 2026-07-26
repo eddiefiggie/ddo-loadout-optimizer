@@ -536,5 +536,159 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.strictEqual((await S.solveLexicographic(str, highs)).effective.Strength, 13);
   });
 
+  // ---- U81 Viktranium ("Lamordia") typed choice-slot ----
+  // a worn host carrying typed Lamordia slots; tier derives from ML (>=35 legendary),
+  // matching the solver's derivation — no explicit tier field on the host.
+  function vikHost(id, slotName, slots, ml, affixes) {
+    const v = item(id, slotName, affixes || []);
+    v.lamordia_slots = slots;        // [{type, category}]
+    v.minimum_level = ml == null ? 35 : ml;
+    return v;
+  }
+  function vikOpt(slot_type, category, stat, bonus_type, value, tier) {
+    return { slot_type, category, stat, bonus_type, value, tier: tier || "legendary", unit: "flat" };
+  }
+  const VIK_POOL = [
+    vikOpt("Melancholic", "Accessory", "Constitution", "Enhancement", 15, "legendary"),
+    vikOpt("Melancholic", "Accessory", "Strength", "Enhancement", 15, "legendary"),
+    vikOpt("Melancholic", "Accessory", "Constitution", "Enhancement", 5, "heroic"),
+    vikOpt("Melancholic", "Accessory", "Strength", "Enhancement", 5, "heroic"),
+  ];
+
+  await test("VIK/AE1: crafts the option that best advances the ranked targets", async () => {
+    const conFirst = {
+      targets: ["Constitution", "Strength"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Neck", [vikHost("H", "Neck", [{ type: "Melancholic", category: "Accessory" }])])],
+      viktranium: VIK_POOL,
+    };
+    const a = await S.solveLexicographic(conFirst, highs);
+    assert.strictEqual(a.effective.Constitution, 15, "crafts +15 Con for a Con-first ranking");
+    assert.ok((a.vikPlaced || []).some((n) => n.stat === "Constitution"), "reported as crafted");
+    const b = await S.solveLexicographic({ ...conFirst, targets: ["Strength", "Constitution"] }, highs);
+    assert.strictEqual(b.effective.Strength, 15, "swapping priority crafts +15 Str instead");
+  });
+
+  await test("VIK/AE2: at most one option per slot (single irreversible choice)", async () => {
+    const m = {
+      targets: ["Constitution", "Strength"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Neck", [vikHost("H", "Neck", [{ type: "Melancholic", category: "Accessory" }])])],
+      viktranium: VIK_POOL,
+    };
+    const r = await S.solveLexicographic(m, highs);
+    assert.strictEqual(r.effective.Constitution, 15, "priority-1 crafted");
+    assert.strictEqual(r.effective.Strength, 0, "one slot -> only one option, not both");
+    assert.strictEqual(r.vikPlaced.length, 1, "exactly one craft placed");
+  });
+
+  await test("VIK/two-slots: two Lamordia slots on one item craft independently", async () => {
+    // Σn<=1 is PER SLOT, so an item with two slots gets two independent choices.
+    const m = {
+      targets: ["Constitution", "Strength"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Neck", [vikHost("H", "Neck", [
+        { type: "Melancholic", category: "Accessory" },
+        { type: "Melancholic", category: "Accessory" },
+      ])])],
+      viktranium: VIK_POOL,
+    };
+    const r = await S.solveLexicographic(m, highs);
+    assert.strictEqual(r.effective.Constitution, 15, "slot 1 crafts Con");
+    assert.strictEqual(r.effective.Strength, 15, "slot 2 crafts Str");
+    assert.strictEqual(r.vikPlaced.length, 2, "two slots -> two crafts");
+  });
+
+  await test("VIK/AE3: crafted option obeys bonus-type stacking with worn", async () => {
+    const sameType = {
+      targets: ["Constitution"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Neck", [vikHost("H", "Neck", [{ type: "Melancholic", category: "Accessory" }], 35,
+        [["Constitution", "Enhancement", 10]])])],
+      viktranium: [vikOpt("Melancholic", "Accessory", "Constitution", "Enhancement", 15, "legendary")],
+    };
+    assert.strictEqual((await S.solveLexicographic(sameType, highs)).effective.Constitution, 15,
+      "same type -> max(worn 10, craft 15), not 25");
+    const diffType = {
+      targets: ["Constitution"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Neck", [vikHost("H", "Neck", [{ type: "Melancholic", category: "Accessory" }], 35,
+        [["Constitution", "Enhancement", 10]])])],
+      viktranium: [vikOpt("Melancholic", "Accessory", "Constitution", "Quality", 7, "legendary")],
+    };
+    assert.strictEqual((await S.solveLexicographic(diffType, highs)).effective.Constitution, 17,
+      "different types -> worn Enhancement 10 + craft Quality 7");
+  });
+
+  await test("VIK/tier: tier follows host ML — ML34 is legendary, a low-ML host is heroic", async () => {
+    // Regression guard for the tier-boundary bug: EVERY real Lamordia host is
+    // ML34 (a Legendary item), so an ML34 host must pull the LEGENDARY magnitude.
+    const legendary = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Neck", [vikHost("H", "Neck", [{ type: "Melancholic", category: "Accessory" }], 34)])],
+      viktranium: VIK_POOL,
+    };
+    assert.strictEqual((await S.solveLexicographic(legendary, highs)).effective.Constitution, 15,
+      "ML34 legendary host -> +15 (legendary), not the heroic +5");
+    // A genuinely heroic host (Viktranium heroic recipes are ML8/11) pulls +5.
+    const heroic = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Neck", [vikHost("H", "Neck", [{ type: "Melancholic", category: "Accessory" }], 11)])],
+      viktranium: VIK_POOL,
+    };
+    assert.strictEqual((await S.solveLexicographic(heroic, highs)).effective.Constitution, 5,
+      "ML11 heroic host -> +5 (heroic), not the legendary +15");
+  });
+
+  await test("VIK/host-gating: an unequipped host cannot craft (n <= x_item)", async () => {
+    // The intrinsically weaker Lamordia host loses its slot to a stronger rival, so
+    // its craft must NOT apply — the constraint dominates() must also not prune.
+    const m = {
+      targets: ["Constitution"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Ring", [
+        vikHost("H", "Ring", [{ type: "Melancholic", category: "Accessory" }]),   // craftable +15, no base
+        item("R", "Ring", [["Constitution", "Enhancement", 30]]),                  // strictly better intrinsically
+      ])],
+      viktranium: VIK_POOL,
+    };
+    const r = await S.solveLexicographic(m, highs);
+    assert.strictEqual(r.effective.Constitution, 30, "the better rival is equipped");
+    assert.strictEqual(r.vikPlaced.length, 0, "the unequipped host cannot craft");
+  });
+
+  await test("VIK/pool-key: an option is placed only into a slot of its (type, category)", async () => {
+    // The host's slot is Dolorous/Weapon; a Melancholic/Accessory option must not fit.
+    const m = {
+      targets: ["Constitution"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Main Hand", [vikHost("W", "Main Hand", [{ type: "Dolorous", category: "Weapon" }])])],
+      viktranium: [vikOpt("Melancholic", "Accessory", "Constitution", "Enhancement", 15, "legendary")],
+    };
+    const r = await S.solveLexicographic(m, highs);
+    assert.strictEqual(r.effective.Constitution, 0, "wrong (type, category) pool -> no craft");
+    assert.strictEqual((r.vikPlaced || []).length, 0);
+  });
+
+  await test("U81 Viktranium crafts onto a real host end-to-end (real dataset)", async () => {
+    const fs = require("fs");
+    const { buildModel } = require("../web/model.js");
+    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    // Acid Spellpower is supplied by the Viktranium pool; targeting it must craft a
+    // Lamordia augment onto one of the real hosts (proves the host survived the
+    // dominance filter and the pool was consumed — the load-bearing checks).
+    const query = { mlCap: 36, targets: ["Acid Spellpower"], armorType: null, weaponSetup: null, classRace: null };
+    const model = buildModel(data.items, query, data.dino_inserts, data.nearly_complete, data.viktranium);
+    const res = await S.solveLexicographic(model, highs);
+    assert.strictEqual(res.status, "optimal");
+    assert.ok((res.vikPlaced || []).length > 0, "at least one Viktranium craft was placed onto a host");
+    const craft = res.vikPlaced.find((n) => n.stat === "Acid Spellpower");
+    assert.ok(craft && craft.value > 0, "a Lamordia host crafted an Acid Spellpower option from its pool");
+    assert.ok(craft.item, "the craft names its host item");
+    // Every real host is a Legendary (ML34) item, so the craft MUST pull the
+    // legendary magnitude (regression guard for the ML>=35 mis-tier bug: a heroic
+    // value here would mean the legendary pool went unreachable). Assert the exact
+    // legendary value for the chosen (slot_type, category), derived from the data.
+    assert.strictEqual(craft.tier, "legendary", "an ML34 host crafts at the legendary tier");
+    const expected = data.viktranium.find((o) => o.stat === "Acid Spellpower"
+      && o.slot_type === craft.slot_type && o.category === craft.category && o.tier === "legendary");
+    assert.ok(expected && craft.value === expected.value,
+      `craft value ${craft.value} matches the legendary pool value ${expected && expected.value}`);
+    assert.ok(craft.value > 35, "legendary magnitude exceeds the heroic one (would have been ~35)");
+  });
+
   console.log(`\n${passed} passed`);
 })();
