@@ -52,6 +52,49 @@ def normalize_category(cat):
     return _CATEGORY_ALIASES.get((cat or "").strip().lower())
 
 
+# The base seed (data/seed/ddo_items.json) predates the {{Lamordia Slot}}
+# template and encodes host slots as human-readable enhancement strings. These
+# flow through the affix parser (not enrich.py), where they would otherwise be
+# dropped as noise — so a base-seed Lamordia host would look slot-less (the
+# silent value-loss trap). ``parse_base_lamordia`` recovers them. Three shapes:
+#   "Lamordia: <Type> Slot (<Category>)"
+#   "Lamordia: <T1> / <T2> / <T3> Slots (<Category>)"
+#   "Lamordia weapon slots: <T1> / <T2> / ..."   (category implied Weapon)
+import re as _re  # noqa: E402
+_BASE_WEAPON = _re.compile(r"^Lamordia\s+weapon\s+slots?\s*:\s*(.+)$", _re.I)
+_BASE_TYPED = _re.compile(r"^Lamordia\s*:\s*(.+?)\s+Slots?\s*\(([^)]+)\)\s*$", _re.I)
+
+
+def is_base_lamordia_line(line):
+    """True if an enhancement string is a base-seed Lamordia slot marker."""
+    s = str(line).strip()
+    return bool(_BASE_WEAPON.match(s) or _BASE_TYPED.match(s))
+
+
+def parse_base_lamordia(enhancements):
+    """Parse base-seed Lamordia slot markers into ``lamordia_slots`` records
+    ``[{type, category}]``. Unknown slot types / categories are skipped, never
+    inferred (strict provenance)."""
+    slots = []
+    for line in enhancements or []:
+        s = str(line).strip()
+        m = _BASE_WEAPON.match(s)
+        if m:
+            for t in _re.split(r"\s*/\s*", m.group(1).strip()):
+                if t.strip() in SLOT_TYPES:
+                    slots.append({"type": t.strip(), "category": "Weapon"})
+            continue
+        m = _BASE_TYPED.match(s)
+        if m:
+            category = normalize_category(m.group(2))
+            if category is None:
+                continue
+            for t in _re.split(r"\s*/\s*", m.group(1).strip()):
+                if t.strip() in SLOT_TYPES:
+                    slots.append({"type": t.strip(), "category": category})
+    return slots
+
+
 # ---------------------------------------------------------------------------
 # Regeneration path: raw harvested effect text -> structured seed (U5).
 # ---------------------------------------------------------------------------

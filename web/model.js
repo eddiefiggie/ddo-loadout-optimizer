@@ -91,6 +91,14 @@ function dominates(A, B, targetSet, mlCap) {
     const ra = rollOptionKeys(A, targetSet);
     for (const k of rb) if (!ra.has(k)) return false;
   }
+  // Viktranium ("Lamordia") typed choice-slot: the craftable value lives in
+  // lamordia_slots (a (type, category) pool at the host's tier), outside
+  // variantBuckets — so a slotted host looks value-less to the bucket check.
+  // A must offer at least as many of each (type, category, tier) slot as B, or
+  // B's craft capacity would be wrongly pruned (the same trap as Dino blanks).
+  const va = countColors(lamordiaSlotKeys(A));
+  const vb = countColors(lamordiaSlotKeys(B));
+  for (const [k, n] of vb) if ((va.get(k) || 0) < n) return false;
   // strictly better somewhere, OR keep A as the canonical of an equal pair
   return true;
 }
@@ -115,6 +123,19 @@ function countColors(colors) {
  *  (Legendary only at ML>=35). Matches the solver's derivation. */
 function ncTier(v) {
   return v.nc_tier || ((v.minimum_level || 0) >= 35 ? "legendary" : "heroic");
+}
+
+/** A Viktranium ("Lamordia") host's tier, derived from ML (Legendary at
+ *  ML>=35, matching the wiki's ML34-legendary recipes). Mirrors ncTier. */
+function lamordiaTier(v) {
+  return (v.minimum_level || 0) >= 35 ? "legendary" : "heroic";
+}
+
+/** A host's typed Lamordia slots as a `type||category||tier` multiset key list,
+ *  so the dominance guard and the solver agree on which pool a slot draws from. */
+function lamordiaSlotKeys(v) {
+  const tier = lamordiaTier(v);
+  return (v.lamordia_slots || []).map((s) => `${s.type}||${s.category}||${tier}`);
 }
 
 /** Per-slot Pareto filter: keep only non-dominated variants for these targets.
@@ -145,7 +166,7 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1) {
 
 /** Build the abstract model. Returns worn slots (filtered + pruned), the
  *  augment source pool, the Dino insert pool, target list, and the dodge cap. */
-function buildModel(variants, query, dinoInserts = [], nearlyComplete = []) {
+function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = []) {
   const targetSet = new Set(query.targets);
   const mlCap = query.mlCap;
   const elig = eligible(variants, query);
@@ -199,9 +220,14 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = []) {
   // `nearly_complete` category + tier.
   const ncPool = (nearlyComplete || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
 
+  // U81 Viktranium ("Lamordia"): the typed option pool keyed by (slot_type,
+  // category, tier). Keep only options advancing a ranked target; the solver
+  // attaches them per host via the item's `lamordia_slots` at the host's tier.
+  const vikPool = (viktranium || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
+
   return {
     query, targets: query.targets, worn, augments,
-    dinoInserts: dinoPool, nearlyComplete: ncPool, dodgeCap, mlCap,
+    dinoInserts: dinoPool, nearlyComplete: ncPool, viktranium: vikPool, dodgeCap, mlCap,
   };
 }
 
@@ -209,7 +235,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = []) {
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     buildModel, eligible, dominanceFilter, dominates,
-    variantBuckets, variantSets, scaledValue,
+    variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys,
     WORN_SLOTS, SLOT_CARDINALITY, ARMOR_DODGE_CAP,
   };
 }

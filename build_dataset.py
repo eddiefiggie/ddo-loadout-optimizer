@@ -24,6 +24,7 @@ from src import colors as colors_mod
 from src import set_parser as set_mod
 from src import dino as dino_mod
 from src import nearly_complete as nc_mod
+from src import viktranium as vik_mod
 from src import compendium as compendium_mod
 from src import umbrella as umbrella_mod
 
@@ -33,6 +34,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SEED_PATH = os.path.join(HERE, "data", "seed", "ddo_items.json")
 DINO_SEED_PATH = os.path.join(HERE, "data", "seed", "dino_crafting.json")
 NC_SEED_PATH = os.path.join(HERE, "data", "seed", "nearly_complete.json")
+VIK_SEED_PATH = os.path.join(HERE, "data", "seed", "viktranium.json")
 COMPENDIUM_DIR = os.path.join(HERE, "data", "seed", "compendium")
 # Output lands inside web/ so that directory is a self-contained, deployable
 # site root (GitHub Pages serves web/ as the root; the app fetches data/ relatively).
@@ -55,6 +57,14 @@ def load_dino_seed(path: str = DINO_SEED_PATH) -> dict:
 
 def load_nc_seed(path: str = NC_SEED_PATH) -> dict:
     """Load the U81 Nearly-Complete seed (freshly sourced; separate from the base seed)."""
+    if not os.path.exists(path):
+        return {}
+    with open(path, "r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def load_vik_seed(path: str = VIK_SEED_PATH) -> dict:
+    """Load the U81 Viktranium ("Lamordia") seed (freshly sourced; separate from base)."""
     if not os.path.exists(path):
         return {}
     with open(path, "r", encoding="utf-8") as fh:
@@ -122,6 +132,11 @@ def build(seed: dict) -> dict:
     # items pending wiki; the pool + machinery ship now).
     nc = nc_mod.parse_nearly_complete(load_nc_seed())
 
+    # U81 Viktranium ("Lamordia") crafting: expose the typed choice-slot pool
+    # keyed by (slot_type, item-category). Items carrying `lamordia_slots` draw
+    # one option per slot from the matching pool (tier from host ML at solve time).
+    vik = vik_mod.parse_viktranium(load_vik_seed())
+
     # Compendium roster: the complete named-item INDEX (name + slot + wiki link
     # for every named item on the wiki, harvested by category). Roster entries
     # are browse-only ("indexed") until their stats are enriched into real item
@@ -138,6 +153,16 @@ def build(seed: dict) -> dict:
     # NC 4th-affix slot the solver crafts into).
     nc["coverage"]["hosts_activated"] = sum(
         1 for it in enriched_items if it.get("nearly_complete"))
+    # U81 Viktranium hosts activated across the whole item pipeline — enriched
+    # items (via the {{Lamordia Slot}} template) AND base-seed items (via their
+    # human-readable Lamordia strings). Counted from the final variants, deduped
+    # by source item so tier variants of one host count once. Honest disclosure.
+    vik_host_slots = {}
+    for v in variants:
+        if v.get("lamordia_slots"):
+            vik_host_slots[v["source_item"]] = len(v["lamordia_slots"])
+    vik["coverage"]["hosts_active"] = len(vik_host_slots)
+    vik["coverage"]["slots_active"] = sum(vik_host_slots.values())
 
     out = {
         "metadata": {
@@ -152,12 +177,14 @@ def build(seed: dict) -> dict:
             "set_coverage": set_mod.set_coverage(variants),
             "dino_coverage": dino_cov,
             "nc_coverage": nc["coverage"],
+            "viktranium_coverage": vik["coverage"],
             "compendium_coverage": comp_cov,
             "pipeline_stage": "M4-compendium-roster",
         },
         "items": variants,
         "dino_inserts": dino_inserts,
         "nearly_complete": nc["records"],
+        "viktranium": vik["records"],
         "compendium": comp_records,
     }
     return out

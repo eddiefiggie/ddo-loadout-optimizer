@@ -70,6 +70,7 @@ function buildProgram(model) {
   const dinoMeta = new Map(); // dino placement var -> {dino_type, stat, bonus_type, value, wiki_url}
   const ncMeta = new Map(); // nc placement var -> {item, category, stat, bonus_type, value, tier, wiki_url}
   const rollMeta = new Map(); // roll-group option var -> {item, stat, bonus_type, value, unit}
+  const vikMeta = new Map(); // Viktranium placement var -> {item, slot_type, category, stat, bonus_type, value, unit, tier, wiki_url}
 
   // U3 — augment assignment. Each augment gets a placement binary p_i; its stat
   // is a contribution gated by [p_i]. Per color, total placements are bounded by
@@ -211,6 +212,40 @@ function buildProgram(model) {
     }
   }
 
+  // U81 Viktranium ("Lamordia") — a typed choice-slot on an item. Each entry in
+  // `lamordia_slots` is an independent slot of a (type, category); it may craft
+  // one option from the matching pool at the host's tier. Same gated select-one
+  // primitive as Nearly Complete: a per-option binary n gated by the host item
+  // (n - x_item <= 0), its stat fed into the (stat, bonus_type) bucket [n], and
+  // Σ n <= 1 PER SLOT — so an item with two Lamordia slots gets two independent
+  // choices. Tier from the host's ML (ML>=35 Legendary), matching lamordiaTier.
+  let vkc = 0;
+  for (const xv of xVars) {
+    const slots = xv.variant.lamordia_slots || [];
+    if (!slots.length) continue;
+    const tier = (xv.variant.minimum_level || 0) >= 35 ? "legendary" : "heroic";
+    for (const slot of slots) {
+      const slotVars = [];
+      for (const opt of model.viktranium || []) {
+        if (opt.slot_type !== slot.type || opt.category !== slot.category || opt.tier !== tier) continue;
+        if (!(targetSet.has(opt.stat) && opt.value > 0)) continue;
+        const n = "vk" + vkc++;
+        extraVars.push(n);
+        vikMeta.set(n, {
+          item: xv.variant.variant_id, slot_type: slot.type, category: slot.category,
+          stat: opt.stat, bonus_type: opt.bonus_type, value: opt.value,
+          unit: opt.unit || "flat", tier, wiki_url: opt.wiki_url,
+        });
+        slotVars.push(n);
+        extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
+        const k = `${opt.stat}||${opt.bonus_type}`;
+        if (!zByBucket.has(k)) zByBucket.set(k, []);
+        zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: opt.value });
+      }
+      if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single choice per slot
+    }
+  }
+
   // U5 — set thresholds. A set tier's parsed stats count only when >= N pieces
   // of the set are equipped. Per tier: a binary set_active with the linear
   // indicator  N*set_active - sum(equipped pieces of the set) <= 0  (so it can
@@ -259,7 +294,7 @@ function buildProgram(model) {
 
   return {
     xVars, zByBucket, cappedStats, targetList: model.targets, model,
-    extraVars, extraConstraints, augMeta, setMeta, dinoMeta, ncMeta, rollMeta, _zc: zc,
+    extraVars, extraConstraints, augMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, _zc: zc,
   };
 }
 
@@ -355,7 +390,9 @@ function readSolution(res, program) {
   for (const [n, meta] of program.ncMeta || []) if (prim(n) > 0.5) ncPlaced.push(meta);
   const rollPlaced = [];
   for (const [n, meta] of program.rollMeta || []) if (prim(n) > 0.5) rollPlaced.push(meta);
-  return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced };
+  const vikPlaced = [];
+  for (const [n, meta] of program.vikMeta || []) if (prim(n) > 0.5) vikPlaced.push(meta);
+  return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced };
 }
 
 async function solveLexicographic(model, highs) {
@@ -379,7 +416,8 @@ async function solveLexicographic(model, highs) {
   return {
     status: "optimal", perTarget, effective: sol.effective, chosen: sol.chosen,
     augmentsPlaced: sol.augmentsPlaced, setsActive: sol.setsActive,
-    dinoPlaced: sol.dinoPlaced, ncPlaced: sol.ncPlaced, rollPlaced: sol.rollPlaced, program,
+    dinoPlaced: sol.dinoPlaced, ncPlaced: sol.ncPlaced, rollPlaced: sol.rollPlaced,
+    vikPlaced: sol.vikPlaced, program,
   };
 }
 

@@ -182,4 +182,52 @@ test("buildModel exposes a target-filtered Nearly-Complete pool", () => {
   assert.strictEqual(model.nearlyComplete[0].stat, "Constitution");
 });
 
+test("dominates: an affix item does NOT dominate a Viktranium host it can't match", () => {
+  // Regression: a Lamordia host's craftable value lives in lamordia_slots, outside
+  // variantBuckets, so an intrinsically-better rival lacking that typed slot must
+  // NOT prune the host (the same trap as Dino blanks and NC hosts).
+  const real = v("Real", "Neck", [["Strength", "Enhancement", 12]]);
+  const host = v("Host", "Neck", [["Strength", "Enhancement", 8]]);
+  host.lamordia_slots = [{ type: "Melancholic", category: "Accessory" }];
+  host.minimum_level = 35;
+  const targets = new Set(["Strength"]);
+  assert.strictEqual(M.dominates(real, host, targets, 36), false,
+    "a rival lacking the Lamordia slot cannot dominate the host");
+  const kept = M.dominanceFilter([real, host], targets, 36, 1);
+  assert.strictEqual(kept.length, 2, "the Viktranium host survives per-slot dominance");
+});
+
+test("dominates: a Viktranium host at a DIFFERENT tier is not matched", () => {
+  // Tier is part of the slot key: a heroic host cannot stand in for a legendary
+  // host's craft, so it must not dominate it even with identical (type, category).
+  const heroic = v("Heroic", "Neck", []);
+  heroic.lamordia_slots = [{ type: "Melancholic", category: "Accessory" }];
+  heroic.minimum_level = 30; // heroic
+  const legendary = v("Legendary", "Neck", []);
+  legendary.lamordia_slots = [{ type: "Melancholic", category: "Accessory" }];
+  legendary.minimum_level = 35; // legendary
+  const targets = new Set(["Constitution"]);
+  assert.strictEqual(M.dominates(heroic, legendary, targets, 36), false,
+    "heroic slot cannot match a legendary slot (tier is part of the key)");
+});
+
+test("buildModel exposes a target-filtered Viktranium pool", () => {
+  const model = M.buildModel([], { mlCap: 36, targets: ["Constitution"] }, [], [], [
+    { slot_type: "Melancholic", category: "Accessory", stat: "Constitution", bonus_type: "Enhancement", value: 15, tier: "legendary" },
+    { slot_type: "Dolorous", category: "Weapon", stat: "Attack", bonus_type: "Competence", value: 23, tier: "legendary" }, // not a target
+  ]);
+  assert.strictEqual(model.viktranium.length, 1, "only target-relevant options kept");
+  assert.strictEqual(model.viktranium[0].stat, "Constitution");
+});
+
+test("lamordiaTier + lamordiaSlotKeys derive tier from ML and key by type/category/tier", () => {
+  assert.strictEqual(M.lamordiaTier({ minimum_level: 35 }), "legendary");
+  assert.strictEqual(M.lamordiaTier({ minimum_level: 34 }), "heroic");
+  const keys = M.lamordiaSlotKeys({
+    minimum_level: 35,
+    lamordia_slots: [{ type: "Melancholic", category: "Accessory" }],
+  });
+  assert.deepStrictEqual(keys, ["Melancholic||Accessory||legendary"]);
+});
+
 console.log(`\n${passed} passed`);

@@ -17,6 +17,7 @@ import re
 
 from src.affix_parser import parse_enhancements
 from src import vocab
+from src.viktranium import parse_base_lamordia, is_base_lamordia_line
 
 _TIER_PREFIX = re.compile(r"^(ML\d+[^:]*):\s*(.*)$")
 _ML_LIST = re.compile(r"ML\s*([\d/]+)")
@@ -79,6 +80,13 @@ def _combine(base, extra):
 
 def expand_item(item) -> list:
     lines = item.get("enhancements", [])
+    # Base-seed Lamordia host markers are human-readable enhancement strings (the
+    # enriched path uses the {{Lamordia Slot}} template instead). Recover them into
+    # lamordia_slots and drop them from the affix lines so they neither pollute
+    # `flagged` nor get silently lost. An explicit `lamordia_slots` field (from the
+    # enriched pipeline) always wins over string parsing.
+    lamordia_slots = item.get("lamordia_slots") or parse_base_lamordia(lines) or None
+    lines = [l for l in lines if not is_base_lamordia_line(l)]
     tier_lines = [l for l in lines if _TIER_PREFIX.match(l)]
     base_lines = [l for l in lines if not _TIER_PREFIX.match(l)]
     base_parsed = parse_enhancements(base_lines)
@@ -93,15 +101,18 @@ def expand_item(item) -> list:
             variants.append(_make_variant(
                 item, ml=ml, tier_label=prefix,
                 parsed=_combine(base_parsed, tier_parsed)))
-        return variants
+    else:
+        var = _make_variant(item, ml=item.get("minimum_level"), tier_label=None,
+                            parsed=base_parsed)
+        ml_list = _parse_tier_ml_list(item.get("upgradeable", ""))
+        if ml_list and len(ml_list) > 1:
+            var["tier_values_incomplete"] = True
+            var["tier_ml_list"] = ml_list
+        variants = [var]
 
-    var = _make_variant(item, ml=item.get("minimum_level"), tier_label=None,
-                        parsed=base_parsed)
-    ml_list = _parse_tier_ml_list(item.get("upgradeable", ""))
-    if ml_list and len(ml_list) > 1:
-        var["tier_values_incomplete"] = True
-        var["tier_ml_list"] = ml_list
-    return [var]
+    for v in variants:
+        v["lamordia_slots"] = lamordia_slots
+    return variants
 
 
 def expand_dataset(items) -> list:
