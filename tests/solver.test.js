@@ -29,11 +29,18 @@ function host(id, slotName, affixes, colors) {
   v.augment_slots_norm = { colors: colors || [], quarantined: [] };
   return v;
 }
-// an augment record: its color lives in aug_color (U2-normalized)
+// the compatibility matrix inverse the build bakes onto each augment (mirrors src/colors.fits_slots)
+const AUG_FITS_SLOTS = {
+  Red: ["Red", "Purple", "Orange"], Blue: ["Blue", "Purple", "Green"], Yellow: ["Yellow", "Orange", "Green"],
+  Orange: ["Orange"], Green: ["Green"], Purple: ["Purple"],
+  Colorless: ["Colorless", "Red", "Blue", "Yellow", "Orange", "Green", "Purple"],
+  Moon: ["Moon"], Sun: ["Sun"],
+};
+// an augment record: its color lives in aug_color (U2-normalized); fits_slots is baked (U5)
 function augment(id, color, affixes) {
   return {
     variant_id: id, source_item: id, category: "augment", slot: color,
-    aug_color: { color, raw: color, reason: null },
+    aug_color: { color, raw: color, reason: null }, fits_slots: AUG_FITS_SLOTS[color] || [],
     affixes: affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, value, unit: "flat" })),
     scaling: [], set_bonus: [], augment_slots: [],
   };
@@ -228,6 +235,52 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     };
     assert.strictEqual((await S.solveLexicographic(blueSlot, highs)).effective.Resistance, 0,
       "a Moon augment cannot go in a Blue slot");
+  });
+
+  await test("U3/AE1: a Red augment fits an Orange slot (multi-fit)", async () => {
+    const m = {
+      targets: ["Strength"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [host("R", "Ring", [], ["Orange"])])], // only an Orange slot
+      augments: [augment("RedStr", "Red", [["Strength", "Enhancement", 15]])], // a Red augment
+    };
+    assert.strictEqual((await S.solveLexicographic(m, highs)).effective.Strength, 15,
+      "a Red augment legally fills an Orange slot");
+  });
+
+  await test("U3/AE2: a Colorless augment fits a colored (Blue) slot", async () => {
+    const m = {
+      targets: ["Strength"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [host("R", "Ring", [], ["Blue"])])],
+      augments: [augment("DiamondStr", "Colorless", [["Strength", "Enhancement", 15]])],
+    };
+    assert.strictEqual((await S.solveLexicographic(m, highs)).effective.Strength, 15,
+      "Colorless fits any colored slot");
+  });
+
+  await test("U3/AE3: two slots take two different bonus types (stack), not two same-type", async () => {
+    const m = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [host("R", "Ring", [], ["Orange", "Orange"])])], // two Orange slots
+      augments: [
+        augment("EnhCon", "Red", [["Constitution", "Enhancement", 15]]),   // Red fits Orange
+        augment("InsCon", "Yellow", [["Constitution", "Insightful", 7]]),  // Yellow fits Orange
+      ],
+    };
+    assert.strictEqual((await S.solveLexicographic(m, highs)).effective.Constitution, 22,
+      "Enhancement 15 + Insightful 7 stack across the two slots (not two same-type)");
+  });
+
+  await test("U3: a Unique-Equipped augment is placed at most once across slots", async () => {
+    const uniq = augment("UniqStr", "Red", [["Strength", "Enhancement", 15]]);
+    uniq.unique_equipped = true;
+    const m = {
+      targets: ["Strength"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [host("R", "Ring", [], ["Orange", "Orange"])])], // two compatible slots
+      augments: [uniq],
+    };
+    const r = await S.solveLexicographic(m, highs);
+    assert.strictEqual(r.effective.Strength, 15, "unique-equipped counts once even with two open slots");
+    assert.strictEqual((r.augmentsPlaced || []).length, 1, "placed at most once");
   });
 
   await test("U5/AE1: set stat counts only at the piece threshold", async () => {
