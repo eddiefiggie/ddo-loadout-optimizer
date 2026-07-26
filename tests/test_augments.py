@@ -45,3 +45,19 @@ def test_moon_and_sun_augments_are_present():
     items = _pool()
     assert any(it["slot"] == "Moon" for it in items), "Lunar (Moon) augments sourced"
     assert any(it["slot"] == "Sun" for it in items), "Solar (Sun) augments sourced"
+
+
+# --- U5: build wiring + fits_slots bake ---------------------------------------
+
+import build_dataset  # noqa: E402
+
+
+def test_build_bakes_fits_slots_and_exposes_coverage():
+    out = build_dataset.build({"metadata": {}, "items": []})
+    augs = [v for v in out["items"] if v.get("category") == "augment"]
+    assert augs, "augment pool loaded into the build"
+    red = next((v for v in augs if (v.get("aug_color") or {}).get("color") == "Red"), None)
+    assert red and set(red["fits_slots"]) == {"Red", "Purple", "Orange"}, "Red augment baked with matrix inverse"
+    cov = out["metadata"]["augment_coverage"]
+    assert cov["legendary_sourced"] >= 200
+    assert "Moon" in cov["by_color"] and "Sun" in cov["by_color"], "Lunar/Solar disclosed"
