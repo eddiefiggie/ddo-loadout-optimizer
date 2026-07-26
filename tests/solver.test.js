@@ -520,5 +520,21 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.ok(craft && craft.value > 0, "an NC host crafted a Constitution option from its category pool");
   });
 
+  await test("roll-group choice-slot: solver picks the best option, exactly one", async () => {
+    const rg = item("RG", "Ring", []);
+    rg.roll_groups = [{ options: [
+      { stat: "Constitution", bonus_type: "Enhancement", value: 13, unit: "flat" },
+      { stat: "Strength", bonus_type: "Enhancement", value: 13, unit: "flat" },
+    ] }];
+    const con = { targets: ["Constitution"], mlCap: 34, dodgeCap: null, worn: [slot("Ring", [rg])] };
+    const r = await S.solveLexicographic(con, highs);
+    assert.strictEqual(r.effective.Constitution, 13, "crafts the Con option for a Con target");
+    assert.strictEqual((r.rollPlaced || []).length, 1, "exactly one option placed (Sum<=1 per group)");
+    assert.strictEqual(r.rollPlaced[0].stat, "Constitution");
+    // the same item pivots to Strength when that is the target
+    const str = { targets: ["Strength"], mlCap: 34, dodgeCap: null, worn: [slot("Ring", [rg])] };
+    assert.strictEqual((await S.solveLexicographic(str, highs)).effective.Strength, 13);
+  });
+
   console.log(`\n${passed} passed`);
 })();
