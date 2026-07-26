@@ -117,4 +117,12 @@ test("coverageNote discloses Nearly Complete as optimized once item hosts exist"
   assert.ok(!/no U81 item hosts are published/.test(note), "no longer claims hosts are pending");
 });
 
+test("coverageNote discloses Viktranium/Lamordia as optimized once hosts exist", () => {
+  const note = R.coverageNote({ metadata: { viktranium_coverage: { options_eligible: 194, hosts_active: 43 } } });
+  const optimized = note.split("Coverage:")[0];
+  assert.ok(/U81 Viktranium \/ Lamordia crafting/.test(optimized), "Viktranium is listed under Optimized once hosts exist");
+  assert.ok(/43 item hosts/.test(optimized), "discloses the active host count");
+  assert.ok(/194 options/.test(optimized), "discloses the eligible option count");
+});
+
 console.log(`\n${passed} passed`);

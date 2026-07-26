@@ -111,14 +111,19 @@ function coverageNote(dataset) {
   const nc = m.nc_coverage || {};
   const ncElig = nc.options_eligible;
   const ncHosts = nc.hosts_activated;
+  const vik = m.viktranium_coverage || {};
+  const vikElig = vik.options_eligible;
+  const vikHosts = vik.hosts_active;
   const comp = m.compendium_coverage || {};
   const parts = [
     "<strong>Optimized:</strong> worn affixes, augments" +
       (aug != null ? ` (${aug} placeable)` : "") +
       ", set bonuses" + (setAff != null ? ` (${setAff} threshold effects)` : "") +
       ", Isle of Dread Dino crafting" + (dinoElig != null ? ` (${dinoElig} Accessory inserts)` : "") +
-      ", and U81 Nearly Complete crafting" +
-      (ncHosts ? ` (${ncHosts} item hosts, ${ncElig != null ? ncElig + " options" : "sourced pool"})` : ""),
+      ", U81 Nearly Complete crafting" +
+      (ncHosts ? ` (${ncHosts} item hosts, ${ncElig != null ? ncElig + " options" : "sourced pool"})` : "") +
+      ", and U81 Viktranium / Lamordia crafting" +
+      (vikHosts ? ` (${vikHosts} item hosts, ${vikElig != null ? vikElig + " options" : "sourced pool"})` : ""),
     "<strong>Coverage:</strong> results reflect only verified, wiki-sourced data; ambiguous effects are quarantined and excluded",
     "<strong>Pending:</strong> the Dino Weapon/Armor/Raid/Set-Bonus pools and other expansion crafting systems",
     "<strong>Compendium:</strong> " +
@@ -153,6 +158,12 @@ function renderResults(container, { model, result, query, dataset }) {
     if (!rollByItem.has(r.item)) rollByItem.set(r.item, []);
     rollByItem.get(r.item).push(r);
   }
+  // U81 Viktranium ("Lamordia"): each placed craft already names its host item.
+  const vikByItem = new Map();
+  for (const n of result.vikPlaced || []) {
+    if (!vikByItem.has(n.item)) vikByItem.set(n.item, []);
+    vikByItem.get(n.item).push(n);
+  }
   const rowsBySlot = new Map();
   result.chosen.forEach((c, idx) => {
     if (!rowsBySlot.has(c.slot)) rowsBySlot.set(c.slot, []);
@@ -176,12 +187,14 @@ function renderResults(container, { model, result, query, dataset }) {
         .map((n) => `<span class="chip nc" title="U81 Nearly Complete (${n.category}, ${n.tier})">Nearly Complete: ${affixLabel({ stat: n.stat, bonus_type: n.bonus_type, value: n.value, unit: n.unit || "flat" })}</span>`).join(" ");
       const rolls = (rollByItem.get(v.variant_id) || [])
         .map((r) => `<span class="chip roll" title="choice-slot: best option selected">Choice: ${affixLabel({ stat: r.stat, bonus_type: r.bonus_type, value: r.value, unit: r.unit || "flat" })}</span>`).join(" ");
+      const viks = (vikByItem.get(v.variant_id) || [])
+        .map((n) => `<span class="chip lamordia" title="U81 Viktranium / Lamordia (${n.slot_type} ${n.category}, ${n.tier})">Lamordia ${n.slot_type}: ${affixLabel({ stat: n.stat, bonus_type: n.bonus_type, value: n.value, unit: n.unit || "flat" })}</span>`).join(" ");
       const link = v.wiki_url ? `<a href="${v.wiki_url}" target="_blank" rel="noopener">wiki</a>` : "";
       rows.push(`<tr>
         <td>${slot.slot}</td>
         <td>${v.variant_id}</td>
         <td class="num">${v.minimum_level ?? "—"}</td>
-        <td>${contrib} ${augs} ${dinos} ${ncs} ${rolls}</td>
+        <td>${contrib} ${augs} ${dinos} ${ncs} ${rolls} ${viks}</td>
         <td>${link}</td>
       </tr>`);
     }
