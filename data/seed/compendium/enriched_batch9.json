@@ -225,6 +225,7 @@
    "category": "item",
    "slot": "Trinket",
    "enhancements": [
+    "Armor-Piercing +21",
     "Accuracy +21",
     "Insightful Accuracy +10",
     "Green Augment Slot",
@@ -237,8 +238,7 @@
     "Yellow"
    ],
    "_enrich_unmapped": [
-    "Crippling",
-    "Armor-Piercing"
+    "Crippling"
    ],
    "_enriched": true,
    "minimum_level": 30
@@ -268,6 +268,7 @@
    "category": "item",
    "slot": "Trinket",
    "enhancements": [
+    "Insight Negative Healing Amplification +27",
     "Insightful Light Resistance +24",
     "Vitality +44",
     "Green Augment Slot",
@@ -278,7 +279,6 @@
     "Green"
    ],
    "_enrich_unmapped": [
-    "HealingAmp",
     "Magical Efficiency"
    ],
    "_enriched": true,
@@ -290,6 +290,8 @@
    "slot": "Trinket",
    "enhancements": [
     "Quality Intelligence +3",
+    "Insightful Negative Healing Amplification +27",
+    "Quality Negative Healing Amplification +14",
     "False Life +50",
     "Blue Augment Slot"
    ],
@@ -297,10 +299,7 @@
    "augment_slots": [
     "Blue"
    ],
-   "_enrich_unmapped": [
-    "HealingAmp",
-    "HealingAmp"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
    "minimum_level": 29
   },
@@ -570,6 +569,7 @@
    "category": "item",
    "slot": "Necklace",
    "enhancements": [
+    "Armor-Piercing +20",
     "Deadly +10",
     "Yellow Augment Slot",
     "Legendary Part of the Family (set)"
@@ -580,7 +580,6 @@
    ],
    "_enrich_unmapped": [
     "TrueSeeing",
-    "Armor-Piercing",
     "RelentlessFury"
    ],
    "_enriched": true,
@@ -761,6 +760,7 @@
     "Linguistics +10",
     "Intimidate +20",
     "Insight Intimidate +10",
+    "Quality Incite +26",
     "Green Augment Slot",
     "Knight of the Shadows Set (Legendary) (set)"
    ],
@@ -768,9 +768,7 @@
    "augment_slots": [
     "Green"
    ],
-   "_enrich_unmapped": [
-    "Incite"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
    "minimum_level": 29
   },

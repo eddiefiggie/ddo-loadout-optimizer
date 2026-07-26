@@ -316,6 +316,7 @@
    "slot": "Armor",
    "enhancements": [
     "Fortification +142",
+    "Repair Amplification +53",
     "Enhancement Physical Sheltering +33",
     "Parrying +6",
     "Blue Augment Slot",
@@ -328,8 +329,7 @@
     "Green"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "HealingAmp"
+    "Enhancement bonus"
    ],
    "_enriched": true,
    "minimum_level": 29,
@@ -391,6 +391,7 @@
    "slot": "Armor",
    "enhancements": [
     "Fortification +142",
+    "Repair Amplification +53",
     "Reflex Save +11",
     "Enhancement Dodge +13%",
     "Blue Augment Slot",
@@ -403,8 +404,7 @@
     "Green"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "HealingAmp"
+    "Enhancement bonus"
    ],
    "_enriched": true,
    "minimum_level": 29,

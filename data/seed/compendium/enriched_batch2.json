@@ -82,6 +82,7 @@
    "enhancements": [
     "Quality Constitution +3",
     "Enhancement Physical Sheltering +35",
+    "Incite +127",
     "False Life +53",
     "Blue Augment Slot",
     "Legendary Temple's Monolith (set)"
@@ -90,9 +91,7 @@
    "augment_slots": [
     "Blue"
    ],
-   "_enrich_unmapped": [
-    "Incite"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
    "minimum_level": 31
   },
@@ -141,6 +140,7 @@
    "category": "item",
    "slot": "Bracers",
    "enhancements": [
+    "Armor-Piercing +21",
     "Accuracy +21",
     "Deadly +11",
     "Green Augment Slot",
@@ -153,7 +153,6 @@
     "Colorless"
    ],
    "_enrich_unmapped": [
-    "Armor-Piercing",
     "Dino Slot"
    ],
    "_enriched": true,
@@ -391,6 +390,7 @@
    "enhancements": [
     "Quality Physical Sheltering +8",
     "Insight Physical Sheltering +16",
+    "Insight Incite +52",
     "Fortification +142",
     "Blue Augment Slot"
    ],
@@ -398,9 +398,7 @@
    "augment_slots": [
     "Blue"
    ],
-   "_enrich_unmapped": [
-    "Incite"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
    "minimum_level": 29
   },
@@ -724,15 +722,14 @@
     "Diversion +20",
     "Deception +10",
     "Dodge +13%",
+    "Combat Mastery +10",
     "Green Augment Slot"
    ],
    "wiki_url": "https://ddowiki.com/page/Item:Legendary_Animated_Rope",
    "augment_slots": [
     "Green"
    ],
-   "_enrich_unmapped": [
-    "Tactics"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
    "minimum_level": 28
   },
@@ -768,6 +765,7 @@
     "Insightful Intelligence +6",
     "Quality Reflex Save +3",
     "Profane Well Rounded +3",
+    "Exceptional Positive Healing Amplification +15",
     "Green Augment Slot",
     "Colorless Augment Slot",
     "Moon Augment Slot"
@@ -778,9 +776,7 @@
     "Colorless",
     "Moon"
    ],
-   "_enrich_unmapped": [
-    "HealingAmp"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
    "minimum_level": 33
   },

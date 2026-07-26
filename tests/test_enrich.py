@@ -111,6 +111,23 @@ def test_resistance_and_absorption_units():
     assert _affixes(_field("{{Absorption|Poison|39}}")) == ["Poison Absorption +39%"]
 
 
+def test_healamp_kinds_and_types():
+    assert _affixes(_field("{{HealingAmp|14|N|Quality}}")) == ["Quality Negative Healing Amplification +14"]
+    assert _affixes(_field("{{HealingAmp|15|Healing|Exceptional}}")) == ["Exceptional Positive Healing Amplification +15"]
+    assert _affixes(_field("{{HealingAmp|15|Repair|Quality}}")) == ["Quality Repair Amplification +15"]
+    # unknown kind is not guessed
+    assert enrich.parse_enhancement_field(_field("{{HealingAmp|10|Bogus}}"))["enhancements"] == []
+
+
+def test_armor_piercing_tactics_incite():
+    assert _affixes(_field("{{Armor-Piercing|21}}")) == ["Armor-Piercing +21"]
+    assert _affixes(_field("{{Armor-Piercing|11|Insightful}}")) == ["Insightful Armor-Piercing +11"]
+    assert _affixes(_field("{{Tactics|Combat Mastery|10}}")) == ["Combat Mastery +10"]
+    assert _affixes(_field("{{Incite|124}}")) == ["Incite +124"]
+    # non-numeric value (roman numeral) is rejected, not fabricated
+    assert enrich.parse_enhancement_field(_field("{{Speed|XIV}}"))["enhancements"] == []
+
+
 def test_named_value_family():
     assert _affixes(_field("{{Fortification|156}}")) == ["Fortification +156"]
     assert _affixes(_field("{{Deadly|3|Quality}}")) == ["Quality Deadly +3"]
