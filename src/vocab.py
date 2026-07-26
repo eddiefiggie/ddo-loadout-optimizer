@@ -24,16 +24,27 @@ CORE_STATS = {
     "Armor-Piercing", "Vitality", "Devotion", "Nullification", "Potency",
 }
 
-# Common shorthand -> canonical stat name.
+# Common shorthand -> canonical stat name. Unify names that mean the SAME stat
+# but are spelled differently across sources (base seed, enrichment, set
+# bonuses), so a target matches every affix regardless of spelling.
 STAT_ALIASES = {
     "Str": "Strength", "Dex": "Dexterity", "Con": "Constitution",
     "Int": "Intelligence", "Wis": "Wisdom", "Cha": "Charisma",
     "All Abilities": "All Ability Scores",
+    # PRR / MRR: the resistance-rating stats == their "Sheltering" affix wording.
+    # Canonicalize to the affix name (the dominant spelling on real gear).
+    "PRR": "Physical Sheltering",
+    "MRR": "Magical Sheltering",
+    "Physical Resistance Rating": "Physical Sheltering",
+    "Magical Resistance Rating": "Magical Sheltering",
+    # Fortification Bypass is the same stat as Armor-Piercing.
+    "Fortification Bypass": "Armor-Piercing",
+    "Fortification Bypass (Armor-Piercing)": "Armor-Piercing",
 }
 
 
 def normalize_stat(stat: str) -> str:
-    return STAT_ALIASES.get(stat, stat)
+    return STAT_ALIASES.get((stat or "").strip(), stat)
 
 
 def is_core_stat(stat: str) -> bool:

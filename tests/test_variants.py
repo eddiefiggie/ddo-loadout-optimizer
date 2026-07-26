@@ -94,6 +94,11 @@ def test_vocab_core_stats_and_aliases():
     assert not vocab.is_known_bonus_type("Bogus")
     assert vocab.normalize_stat("Con") == "Constitution"
     assert vocab.normalize_stat("Intelligence") == "Intelligence"
+    # same-stat spellings unify so a target matches every source
+    assert vocab.normalize_stat("PRR") == "Physical Sheltering"
+    assert vocab.normalize_stat("MRR") == "Magical Sheltering"
+    assert vocab.normalize_stat("Physical Resistance Rating") == "Physical Sheltering"
+    assert vocab.normalize_stat("Fortification Bypass") == "Armor-Piercing"
 
 
 def test_expand_item_canonicalizes_alias_stats():
