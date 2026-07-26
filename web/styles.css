@@ -71,6 +71,7 @@ main { padding: 1.25rem 1.5rem; max-width: 1100px; margin: 0 auto; }
 .chip.nc { border-color: #5a3a6a; background: #171220; }
 .chip.roll { border-color: #3a5a4a; background: #121a16; }
 .chip.lamordia { border-color: #6a3a4a; background: #1a1216; }
+.chip.seal { border-color: #3a5a6a; background: #121a1e; }
 .muted { color: var(--muted); font-size: 0.78rem; }
 .items a { color: var(--accent); }
 .empty { padding: 1.5rem; text-align: center; color: var(--muted); }

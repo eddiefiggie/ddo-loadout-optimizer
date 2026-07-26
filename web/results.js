@@ -119,6 +119,10 @@ function coverageNote(dataset) {
   const vik = m.viktranium_coverage || {};
   const vikElig = vik.options_eligible;
   const vikHosts = vik.hosts_active;
+  const sl = m.seal_coverage || {};
+  const sealElig = sl.options_eligible;
+  const sealHosts = sl.hosts_active;
+  const sealPending = (sl.seal_types_pending || []).join("/");
   const comp = m.compendium_coverage || {};
   const parts = [
     "<strong>Optimized:</strong> worn affixes, augments" +
@@ -127,10 +131,14 @@ function coverageNote(dataset) {
       ", Isle of Dread Dino crafting" + (dinoElig != null ? ` (${dinoElig} inserts across Accessory/Armor/Weapon/Raid slots, ${dc.blank_hosts != null ? dc.blank_hosts + " hosts" : "typed"})` : "") +
       ", U81 Nearly Complete crafting" +
       (ncHosts ? ` (${ncHosts} item hosts, ${ncElig != null ? ncElig + " options" : "sourced pool"})` : "") +
-      ", and U81 Viktranium / Lamordia crafting" +
-      (vikHosts ? ` (${vikHosts} item hosts, ${vikElig != null ? vikElig + " options" : "sourced pool"})` : ""),
+      ", U81 Viktranium / Lamordia crafting" +
+      (vikHosts ? ` (${vikHosts} item hosts, ${vikElig != null ? vikElig + " options" : "sourced pool"})` : "") +
+      ", and Sealed-in-Undeath seal-slot crafting" +
+      (sealHosts ? ` (${sealHosts} item hosts, ${sealElig != null ? sealElig + " options" : "sourced pool"})` : ""),
     "<strong>Coverage:</strong> results reflect only verified, wiki-sourced data; ambiguous effects are quarantined and excluded",
-    "<strong>Pending:</strong> the Dino Set-Bonus pool (crafted set-membership; sourced + browsable, activation awaits intrinsic named/raid set pieces) and other expansion crafting systems",
+    "<strong>Pending:</strong> the Dino Set-Bonus pool (crafted set-membership; sourced + browsable, activation awaits intrinsic named/raid set pieces)" +
+      (sealPending ? `, the Sealed-in-${sealPending} seal pools (hosts identified, option pools awaiting harvest)` : "") +
+      ", and other expansion crafting systems",
     "<strong>Compendium:</strong> " +
       (comp.total_indexed != null ? `${comp.total_indexed} named items indexed across the game` : "named-item index in progress") +
       (comp.enriched_matched != null ? `, of which ${comp.enriched_matched} are enriched and solver-active` : "") +
@@ -169,6 +177,12 @@ function renderResults(container, { model, result, query, dataset }) {
     if (!vikByItem.has(n.item)) vikByItem.set(n.item, []);
     vikByItem.get(n.item).push(n);
   }
+  // Seal slots ("Sealed in X"): each unsealed option already names its host item.
+  const sealByItem = new Map();
+  for (const n of result.sealPlaced || []) {
+    if (!sealByItem.has(n.item)) sealByItem.set(n.item, []);
+    sealByItem.get(n.item).push(n);
+  }
   const rowsBySlot = new Map();
   result.chosen.forEach((c, idx) => {
     if (!rowsBySlot.has(c.slot)) rowsBySlot.set(c.slot, []);
@@ -203,12 +217,14 @@ function renderResults(container, { model, result, query, dataset }) {
         .map((r) => `<span class="chip roll" title="choice-slot: best option selected">Choice: ${affixLabel({ stat: r.stat, bonus_type: r.bonus_type, value: r.value, unit: r.unit || "flat" })}</span>`).join(" ");
       const viks = (vikByItem.get(v.variant_id) || [])
         .map((n) => `<span class="chip lamordia" title="U81 Viktranium / Lamordia (${n.slot_type} ${n.category}, ${n.tier})">Lamordia ${n.slot_type}: ${affixLabel({ stat: n.stat, bonus_type: n.bonus_type, value: n.value, unit: n.unit || "flat" })}</span>`).join(" ");
+      const seals = (sealByItem.get(v.variant_id) || [])
+        .map((n) => `<span class="chip seal" title="Sealed in ${n.seal_type} — unseal one effect at the crafting table">Sealed in ${n.seal_type}: ${affixLabel({ stat: n.stat, bonus_type: n.bonus_type, value: n.value, unit: n.unit || "flat" })}</span>`).join(" ");
       const link = v.wiki_url ? `<a href="${v.wiki_url}" target="_blank" rel="noopener">wiki</a>` : "";
       rows.push(`<tr>
         <td>${slot.slot}</td>
         <td>${v.variant_id}</td>
         <td class="num">${v.minimum_level ?? "—"}</td>
-        <td>${contrib} ${augs} ${dinos} ${ncs} ${rolls} ${viks}</td>
+        <td>${contrib} ${augs} ${dinos} ${ncs} ${rolls} ${viks} ${seals}</td>
         <td>${link}</td>
       </tr>`);
     }
