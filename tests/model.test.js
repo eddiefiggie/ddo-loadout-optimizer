@@ -202,10 +202,10 @@ test("dominates: a Viktranium host at a DIFFERENT tier is not matched", () => {
   // host's craft, so it must not dominate it even with identical (type, category).
   const heroic = v("Heroic", "Neck", []);
   heroic.lamordia_slots = [{ type: "Melancholic", category: "Accessory" }];
-  heroic.minimum_level = 30; // heroic
+  heroic.minimum_level = 11; // heroic (Viktranium heroic recipe ML11)
   const legendary = v("Legendary", "Neck", []);
   legendary.lamordia_slots = [{ type: "Melancholic", category: "Accessory" }];
-  legendary.minimum_level = 35; // legendary
+  legendary.minimum_level = 34; // legendary (real host ML)
   const targets = new Set(["Constitution"]);
   assert.strictEqual(M.dominates(heroic, legendary, targets, 36), false,
     "heroic slot cannot match a legendary slot (tier is part of the key)");
@@ -221,10 +221,15 @@ test("buildModel exposes a target-filtered Viktranium pool", () => {
 });
 
 test("lamordiaTier + lamordiaSlotKeys derive tier from ML and key by type/category/tier", () => {
+  // ML34 is the real-host case: every Lamordia host is a Legendary (ML34) item,
+  // so ML34 MUST resolve legendary. The boundary sits at DDO's Heroic->Legendary
+  // split (ML30), not NC's ML35 — a heroic Viktranium host is ML8/11.
+  assert.strictEqual(M.lamordiaTier({ minimum_level: 34 }), "legendary", "ML34 host is legendary");
   assert.strictEqual(M.lamordiaTier({ minimum_level: 35 }), "legendary");
-  assert.strictEqual(M.lamordiaTier({ minimum_level: 34 }), "heroic");
+  assert.strictEqual(M.lamordiaTier({ minimum_level: 30 }), "legendary", "boundary: ML30 legendary");
+  assert.strictEqual(M.lamordiaTier({ minimum_level: 11 }), "heroic", "heroic recipe ML11 is heroic");
   const keys = M.lamordiaSlotKeys({
-    minimum_level: 35,
+    minimum_level: 34,
     lamordia_slots: [{ type: "Melancholic", category: "Accessory" }],
   });
   assert.deepStrictEqual(keys, ["Melancholic||Accessory||legendary"]);

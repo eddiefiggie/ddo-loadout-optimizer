@@ -21,6 +21,16 @@ function scaleAt(s, mlCap) {
   return Math.round(s.val_lo + (s.val_hi - s.val_lo) * (mlCap - s.ml_lo) / (s.ml_hi - s.ml_lo));
 }
 
+// Share model.js's Viktranium tier derivation as the SINGLE source of truth, so
+// the solver's option-match predicate can never diverge from the dominance
+// guard's slot key (the documented fragmented-key trap). In the browser model.js
+// loads first and lamordiaTier is a global; under Node/CommonJS (tests) it is not
+// in scope, so pull it from the module.
+const _lamordiaTier = (typeof lamordiaTier !== "undefined")
+  ? lamordiaTier
+  // eslint-disable-next-line global-require
+  : require("./model.js").lamordiaTier;
+
 function buildProgram(model) {
   const targetSet = new Set(model.targets);
   const mlCap = model.mlCap;
@@ -223,7 +233,7 @@ function buildProgram(model) {
   for (const xv of xVars) {
     const slots = xv.variant.lamordia_slots || [];
     if (!slots.length) continue;
-    const tier = (xv.variant.minimum_level || 0) >= 35 ? "legendary" : "heroic";
+    const tier = _lamordiaTier(xv.variant);  // single source of truth (model.js)
     for (const slot of slots) {
       const slotVars = [];
       for (const opt of model.viktranium || []) {

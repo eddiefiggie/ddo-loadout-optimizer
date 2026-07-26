@@ -95,6 +95,21 @@ def test_structure_from_raw_quarantines_procs_and_multiaffix():
     assert any("Flames" in q["raw"] for q in quar)
 
 
+def test_structure_from_raw_quarantines_genuine_multiaffix():
+    # A single option whose effect lists two clean stat lines must hit the
+    # multi-affix quarantine branch (len(affixes) > 1), never leak one affix.
+    raw = [{"heading": "Melancholic (Armor)", "count": 1, "rows": [
+        {"name": "Melancholic Converter",
+         "heroic": "+19 Competence bonus to Positive Healing Amplification\n"
+                   "+19 Enhancement bonus to Repair Amplification",
+         "legendary": "+61 Competence bonus to Positive Healing Amplification\n"
+                      "+61 Enhancement bonus to Repair Amplification"},
+    ]}]
+    seed, quar = viktranium.structure_from_raw(raw, WIKI)
+    assert all(not p["options"] for p in seed["pools"]) or seed["pools"] == []
+    assert any("multi-affix" in q["reason"] for q in quar)
+
+
 def test_structure_from_raw_quarantines_cross_tier_mismatch():
     # a wiki inconsistency where the bonus type changes between tiers must NOT be
     # silently reconciled — it is quarantined.
@@ -113,6 +128,60 @@ def test_committed_seed_regenerates_from_raw():
     raw = json.load(open(RAW, encoding="utf-8"))["tables"]
     regen, _ = viktranium.structure_from_raw(raw, WIKI)
     assert regen == _seed()
+
+
+def test_parse_base_lamordia_all_three_string_shapes():
+    # The base seed encodes host slots as human-readable strings (not the
+    # template). All three documented shapes must parse to lamordia_slots.
+    single = viktranium.parse_base_lamordia(["Lamordia: Melancholic Slot (Accessory)"])
+    assert single == [{"type": "Melancholic", "category": "Accessory"}]
+    multi = viktranium.parse_base_lamordia(
+        ["Lamordia: Melancholic / Dolorous / Miserable Slots (Accessory)"])
+    assert multi == [
+        {"type": "Melancholic", "category": "Accessory"},
+        {"type": "Dolorous", "category": "Accessory"},
+        {"type": "Miserable", "category": "Accessory"},
+    ]
+    weapon = viktranium.parse_base_lamordia(
+        ["Lamordia weapon slots: Melancholic / Dolorous / Miserable / Woeful"])
+    assert weapon == [
+        {"type": "Melancholic", "category": "Weapon"},
+        {"type": "Dolorous", "category": "Weapon"},
+        {"type": "Miserable", "category": "Weapon"},
+        {"type": "Woeful", "category": "Weapon"},
+    ]
+
+
+def test_parse_base_lamordia_skips_unknown_type_and_category():
+    # Strict provenance: an unrecognized slot type or category is skipped, never
+    # inferred into a bogus slot.
+    assert viktranium.parse_base_lamordia(["Lamordia: Bogus Slot (Accessory)"]) == []
+    assert viktranium.parse_base_lamordia(["Lamordia: Melancholic Slot (Nonsense)"]) == []
+    assert viktranium.parse_base_lamordia(["Wizardry +269", "Seeker +8"]) == []
+
+
+def test_is_base_lamordia_line_matches_only_markers():
+    assert viktranium.is_base_lamordia_line("Lamordia: Melancholic Slot (Accessory)")
+    assert viktranium.is_base_lamordia_line(
+        "Lamordia weapon slots: Melancholic / Dolorous")
+    assert not viktranium.is_base_lamordia_line("Wizardry +269")
+
+
+def test_base_lamordia_line_stripped_from_affixes_not_leaked():
+    # An enriched base-seed host: the Lamordia marker becomes a slot AND is
+    # removed from affix parsing (not left in `flagged`).
+    item = {
+        "name": "Base Host", "category": "item", "slot": "Ring", "minimum_level": 34,
+        "enhancements": ["Lamordia: Melancholic Slot (Accessory)", "Wizardry +269"],
+        "binding": None, "location_quest": "", "wiki_url": WIKI,
+    }
+    v = expand_item(item)[0]
+    assert v["lamordia_slots"] == [{"type": "Melancholic", "category": "Accessory"}]
+    # the marker did not leak into affixes or flagged
+    assert not any("amordia" in str(a.get("stat", "")).lower() for a in v["affixes"])
+    assert not any("amordia" in str(f).lower() for f in v["flagged"])
+    # the real affix still parsed
+    assert any(a["stat"] == "Wizardry" for a in v["affixes"])
 
 
 def test_normalize_category_folds_plural_and_singular():

@@ -125,10 +125,15 @@ function ncTier(v) {
   return v.nc_tier || ((v.minimum_level || 0) >= 35 ? "legendary" : "heroic");
 }
 
-/** A Viktranium ("Lamordia") host's tier, derived from ML (Legendary at
- *  ML>=35, matching the wiki's ML34-legendary recipes). Mirrors ncTier. */
+/** A Viktranium ("Lamordia") host's tier, derived from host ML. Viktranium's two
+ *  documented tiers are Heroic (recipe ML8/11) and Legendary (recipe ML34) — so
+ *  the boundary sits at DDO's Heroic->Legendary split (ML30), NOT NC's ML35: a
+ *  legendary Viktranium host is ML34, and gating legendary on ML>=35 would
+ *  mis-tier every real host heroic and make the entire legendary pool
+ *  unreachable. This is the SINGLE source of truth — the solver and browse layers
+ *  derive tier from this function, never a re-inlined threshold. */
 function lamordiaTier(v) {
-  return (v.minimum_level || 0) >= 35 ? "legendary" : "heroic";
+  return (v.minimum_level || 0) >= 30 ? "legendary" : "heroic";
 }
 
 /** A host's typed Lamordia slots as a `type||category||tier` multiset key list,

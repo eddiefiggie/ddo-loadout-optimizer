@@ -615,14 +615,24 @@ function setPiece(id, slotName, affixes, setName, tiers) {
       "different types -> worn Enhancement 10 + craft Quality 7");
   });
 
-  await test("VIK/tier: a heroic host pulls the heroic magnitude, not legendary", async () => {
-    const m = {
+  await test("VIK/tier: tier follows host ML — ML34 is legendary, a low-ML host is heroic", async () => {
+    // Regression guard for the tier-boundary bug: EVERY real Lamordia host is
+    // ML34 (a Legendary item), so an ML34 host must pull the LEGENDARY magnitude.
+    const legendary = {
       targets: ["Constitution"], mlCap: 34, dodgeCap: null,
       worn: [slot("Neck", [vikHost("H", "Neck", [{ type: "Melancholic", category: "Accessory" }], 34)])],
       viktranium: VIK_POOL,
     };
-    assert.strictEqual((await S.solveLexicographic(m, highs)).effective.Constitution, 5,
-      "ML34 heroic host -> +5, not the legendary +15");
+    assert.strictEqual((await S.solveLexicographic(legendary, highs)).effective.Constitution, 15,
+      "ML34 legendary host -> +15 (legendary), not the heroic +5");
+    // A genuinely heroic host (Viktranium heroic recipes are ML8/11) pulls +5.
+    const heroic = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Neck", [vikHost("H", "Neck", [{ type: "Melancholic", category: "Accessory" }], 11)])],
+      viktranium: VIK_POOL,
+    };
+    assert.strictEqual((await S.solveLexicographic(heroic, highs)).effective.Constitution, 5,
+      "ML11 heroic host -> +5 (heroic), not the legendary +15");
   });
 
   await test("VIK/host-gating: an unequipped host cannot craft (n <= x_item)", async () => {
@@ -668,6 +678,16 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     const craft = res.vikPlaced.find((n) => n.stat === "Acid Spellpower");
     assert.ok(craft && craft.value > 0, "a Lamordia host crafted an Acid Spellpower option from its pool");
     assert.ok(craft.item, "the craft names its host item");
+    // Every real host is a Legendary (ML34) item, so the craft MUST pull the
+    // legendary magnitude (regression guard for the ML>=35 mis-tier bug: a heroic
+    // value here would mean the legendary pool went unreachable). Assert the exact
+    // legendary value for the chosen (slot_type, category), derived from the data.
+    assert.strictEqual(craft.tier, "legendary", "an ML34 host crafts at the legendary tier");
+    const expected = data.viktranium.find((o) => o.stat === "Acid Spellpower"
+      && o.slot_type === craft.slot_type && o.category === craft.category && o.tier === "legendary");
+    assert.ok(expected && craft.value === expected.value,
+      `craft value ${craft.value} matches the legendary pool value ${expected && expected.value}`);
+    assert.ok(craft.value > 35, "legendary magnitude exceeds the heroic one (would have been ~35)");
   });
 
   console.log(`\n${passed} passed`);

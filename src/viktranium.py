@@ -30,6 +30,8 @@ seed via ``affix_parser``, so ``viktranium.json`` is reproducible from raw (U5).
 """
 from __future__ import annotations
 
+import re
+
 from src.affix_parser import BONUS_TYPES, parse_line
 from src import vocab
 
@@ -60,9 +62,8 @@ def normalize_category(cat):
 #   "Lamordia: <Type> Slot (<Category>)"
 #   "Lamordia: <T1> / <T2> / <T3> Slots (<Category>)"
 #   "Lamordia weapon slots: <T1> / <T2> / ..."   (category implied Weapon)
-import re as _re  # noqa: E402
-_BASE_WEAPON = _re.compile(r"^Lamordia\s+weapon\s+slots?\s*:\s*(.+)$", _re.I)
-_BASE_TYPED = _re.compile(r"^Lamordia\s*:\s*(.+?)\s+Slots?\s*\(([^)]+)\)\s*$", _re.I)
+_BASE_WEAPON = re.compile(r"^Lamordia\s+weapon\s+slots?\s*:\s*(.+)$", re.I)
+_BASE_TYPED = re.compile(r"^Lamordia\s*:\s*(.+?)\s+Slots?\s*\(([^)]+)\)\s*$", re.I)
 
 
 def is_base_lamordia_line(line):
@@ -80,7 +81,7 @@ def parse_base_lamordia(enhancements):
         s = str(line).strip()
         m = _BASE_WEAPON.match(s)
         if m:
-            for t in _re.split(r"\s*/\s*", m.group(1).strip()):
+            for t in re.split(r"\s*/\s*", m.group(1).strip()):
                 if t.strip() in SLOT_TYPES:
                     slots.append({"type": t.strip(), "category": "Weapon"})
             continue
@@ -89,7 +90,7 @@ def parse_base_lamordia(enhancements):
             category = normalize_category(m.group(2))
             if category is None:
                 continue
-            for t in _re.split(r"\s*/\s*", m.group(1).strip()):
+            for t in re.split(r"\s*/\s*", m.group(1).strip()):
                 if t.strip() in SLOT_TYPES:
                     slots.append({"type": t.strip(), "category": category})
     return slots
@@ -139,8 +140,6 @@ def structure_from_raw(raw, wiki_url):
     not both parse to the same single affix are dropped from the seed and land
     in the returned ``quarantined`` list with a reason.
     """
-    import re
-
     pools = {}
     quarantined = []
     for table in raw or []:
