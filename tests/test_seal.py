@@ -111,3 +111,41 @@ def test_undyingage_batch_reaches_the_undeath_hosts():
     undeath = [it for it in items
                if any(s["seal_type"] == "Undeath" for s in it.get("seal_slots", []))]
     assert len(undeath) == 9, f"expected 9 reachable Undeath hosts, got {len(undeath)}"
+
+
+# --- U3: dataset wiring ---------------------------------------------------
+
+from src.variants import expand_dataset  # noqa: E402
+import build_dataset  # noqa: E402
+
+
+def test_seal_slots_flow_through_expand_dataset_onto_variant():
+    item = {"name": "Seal Trinket", "category": "item", "slot": "Trinket", "enhancements": ["Dodge +15"],
+            "seal_slots": [{"seal_type": "Undeath", "category": "Trinket"}],
+            "_enriched": True, "minimum_level": 33}
+    variants = expand_dataset([item])
+    assert variants and all(
+        v.get("seal_slots") == [{"seal_type": "Undeath", "category": "Trinket"}]
+        for v in variants)
+
+
+def test_build_exposes_seal_pool_and_counts_hosts():
+    seed = {"metadata": {}, "items": [
+        {"name": "Seal Test Trinket", "category": "item", "slot": "Trinket", "enhancements": ["Dodge +15"],
+         "seal_slots": [{"seal_type": "Undeath", "category": "Trinket"}],
+         "minimum_level": 33}]}
+    out = build_dataset.build(seed)
+    assert len(out["seal"]) == 18                       # Undeath pool exposed
+    assert out["metadata"]["seal_coverage"]["hosts_active"] >= 1
+    assert out["metadata"]["seal_coverage"]["seal_types_sourced"] == ["Undeath"]
+
+
+def test_base_seed_sealed_item_keeps_its_seal_after_dedup():
+    # A base-seed item whose gear-planner twin carries a seal must not lose it to
+    # the base-wins dedup (regression for Ophael's Cincture).
+    seed = {"metadata": {}, "items": [
+        {"name": "Ophael's Cincture", "category": "item", "slot": "Belt", "enhancements": ["Seeker +15"],
+         "minimum_level": 33}]}
+    out = build_dataset.build(seed)
+    host = next(v for v in out["items"] if v.get("source_item") == "Ophael's Cincture")
+    assert host.get("seal_slots"), "base-seed sealed item lost its seal in dedup"

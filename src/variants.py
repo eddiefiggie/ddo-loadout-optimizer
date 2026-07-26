@@ -66,6 +66,9 @@ def _make_variant(item, ml, tier_label, parsed):
         # U81 Viktranium ("Lamordia") typed-slot host markers [{type, category}] —
         # propagated so the solver crafts the best option per slot from its pool.
         "lamordia_slots": item.get("lamordia_slots"),
+        # Seal-slot host markers [{seal_type, category}] — propagated so the solver
+        # unseals the best option from the seal_type's pool (single-pick).
+        "seal_slots": item.get("seal_slots"),
     }
 
 

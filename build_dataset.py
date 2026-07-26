@@ -25,6 +25,7 @@ from src import set_parser as set_mod
 from src import dino as dino_mod
 from src import nearly_complete as nc_mod
 from src import viktranium as vik_mod
+from src import seal as seal_mod
 from src import compendium as compendium_mod
 from src import umbrella as umbrella_mod
 
@@ -35,6 +36,7 @@ SEED_PATH = os.path.join(HERE, "data", "seed", "ddo_items.json")
 DINO_SEED_PATH = os.path.join(HERE, "data", "seed", "dino_crafting.json")
 NC_SEED_PATH = os.path.join(HERE, "data", "seed", "nearly_complete.json")
 VIK_SEED_PATH = os.path.join(HERE, "data", "seed", "viktranium.json")
+SEAL_SEED_PATH = os.path.join(HERE, "data", "seed", "seal.json")
 COMPENDIUM_DIR = os.path.join(HERE, "data", "seed", "compendium")
 # Output lands inside web/ so that directory is a self-contained, deployable
 # site root (GitHub Pages serves web/ as the root; the app fetches data/ relatively).
@@ -71,6 +73,14 @@ def load_vik_seed(path: str = VIK_SEED_PATH) -> dict:
         return json.load(fh)
 
 
+def load_seal_seed(path: str = SEAL_SEED_PATH) -> dict:
+    """Load the seal-slot ("Sealed in X") pool seed (wiki-sourced; separate from base)."""
+    if not os.path.exists(path):
+        return {}
+    with open(path, "r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
 def load_enriched_items(dirpath: str = COMPENDIUM_DIR) -> list:
     """Load stat-enriched compendium items (data/seed/compendium/enriched_*.json).
 
@@ -101,11 +111,18 @@ def build(seed: dict) -> dict:
     # browse and put two identities of one item into the solver). Also drops any
     # cross-batch name collision.
     enriched_items = load_enriched_items()
-    seen_names = {it.get("name") for it in seed["items"]}
+    base_by_name = {it.get("name"): it for it in seed["items"]}
+    seen_names = set(base_by_name)
     deduped = []
     for it in enriched_items:
         name = it.get("name")
         if name in seen_names:
+            # Base seed wins, but carry over a seal slot the base record lacks: the
+            # gear-planner marks "Sealed in X" enchantments the hand-verified base
+            # seed predates, so a base-seed sealed item would otherwise be stranded.
+            base_it = base_by_name.get(name)
+            if base_it is not None and it.get("seal_slots") and not base_it.get("seal_slots"):
+                base_it["seal_slots"] = it["seal_slots"]
             continue
         seen_names.add(name)
         deduped.append(it)
@@ -137,6 +154,11 @@ def build(seed: dict) -> dict:
     # one option per slot from the matching pool (tier from host ML at solve time).
     vik = vik_mod.parse_viktranium(load_vik_seed())
 
+    # Seal-slot crafting ("Sealed in X"): expose the single-pick choice-slot pool
+    # keyed by seal_type. Items carrying `seal_slots` unseal one option from the
+    # matching pool. Undeath sourced (Ritual Table); Fire/Gloom/Mist pending.
+    sl = seal_mod.parse_seal(load_seal_seed())
+
     # Compendium roster: the complete named-item INDEX (name + slot + wiki link
     # for every named item on the wiki, harvested by category). Roster entries
     # are browse-only ("indexed") until their stats are enriched into real item
@@ -164,6 +186,15 @@ def build(seed: dict) -> dict:
     vik["coverage"]["hosts_active"] = len(vik_host_slots)
     vik["coverage"]["slots_active"] = sum(vik_host_slots.values())
 
+    # Seal-slot hosts activated across the item pipeline (items carrying seal_slots),
+    # deduped by source item so tier variants count once. Honest disclosure.
+    seal_host_slots = {}
+    for v in variants:
+        if v.get("seal_slots"):
+            seal_host_slots[v["source_item"]] = len(v["seal_slots"])
+    sl["coverage"]["hosts_active"] = len(seal_host_slots)
+    sl["coverage"]["slots_active"] = sum(seal_host_slots.values())
+
     out = {
         "metadata": {
             "title": "DDO Loadout Optimizer — dataset",
@@ -178,6 +209,7 @@ def build(seed: dict) -> dict:
             "dino_coverage": dino_cov,
             "nc_coverage": nc["coverage"],
             "viktranium_coverage": vik["coverage"],
+            "seal_coverage": sl["coverage"],
             "compendium_coverage": comp_cov,
             "pipeline_stage": "M4-compendium-roster",
         },
@@ -186,6 +218,7 @@ def build(seed: dict) -> dict:
         "dino_sets": dino_sets,
         "nearly_complete": nc["records"],
         "viktranium": vik["records"],
+        "seal": sl["records"],
         "compendium": comp_records,
     }
     return out
