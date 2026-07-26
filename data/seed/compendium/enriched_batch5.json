@@ -90,12 +90,20 @@
     "Moon"
    ],
    "_enrich_unmapped": [
-    "Power in Pact",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Power in Pact"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Accessory"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Accessory"
+    }
+   ]
   },
   {
    "name": "Legendary Beads of Winter",
@@ -114,12 +122,19 @@
     "Colorless",
     "Moon"
    ],
-   "_enrich_unmapped": [
-    "Lamordia Slot",
-    "Lamordia Slot"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Accessory"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Accessory"
+    }
+   ]
   },
   {
    "name": "Legendary Black Dynamo",
@@ -138,12 +153,19 @@
     "Colorless",
     "Moon"
    ],
-   "_enrich_unmapped": [
-    "Lamordia Slot",
-    "Lamordia Slot"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Accessory"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Accessory"
+    }
+   ]
   },
   {
    "name": "Legendary Blademark Amulet",
@@ -225,13 +247,23 @@
     "Colorless",
     "Moon"
    ],
-   "_enrich_unmapped": [
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Accessory"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Accessory"
+    },
+    {
+     "type": "Miserable",
+     "category": "Accessory"
+    }
+   ]
   },
   {
    "name": "Legendary Corroded Iron Lenses",
@@ -795,8 +827,7 @@
     "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 28,
-   "offhand_type": "orb"
+   "minimum_level": 28
   },
   {
    "name": "Legendary Alchemical Orb",
@@ -814,8 +845,7 @@
     "CraftingEffects"
    ],
    "_enriched": true,
-   "minimum_level": 29,
-   "offhand_type": "orb"
+   "minimum_level": 29
   },
   {
    "name": "Legendary Arcane Contraption",
@@ -833,13 +863,20 @@
     "Orange"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
    "minimum_level": 34,
-   "offhand_type": "orb"
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    }
+   ]
   },
   {
    "name": "Legendary Bolt Sphere",
@@ -860,8 +897,7 @@
     "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 28,
-   "offhand_type": "orb"
+   "minimum_level": 28
   },
   {
    "name": "Legendary Concentrated Chaos",
@@ -882,8 +918,7 @@
     "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 29,
-   "offhand_type": "orb"
+   "minimum_level": 29
   },
   {
    "name": "Legendary Core of a War Machine",
@@ -907,8 +942,7 @@
     "Impactful"
    ],
    "_enriched": true,
-   "minimum_level": 32,
-   "offhand_type": "orb"
+   "minimum_level": 32
   },
   {
    "name": "Legendary Cursed Skull",
@@ -930,8 +964,7 @@
     "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 29,
-   "offhand_type": "orb"
+   "minimum_level": 29
   },
   {
    "name": "Legendary Death's Anchor",
@@ -949,13 +982,20 @@
     "Orange"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
    "minimum_level": 34,
-   "offhand_type": "orb"
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    }
+   ]
   }
  ]
 }

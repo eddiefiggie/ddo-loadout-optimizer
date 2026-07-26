@@ -62,6 +62,9 @@ def _make_variant(item, ml, tier_label, parsed):
         # NC machinery can attach a craftable 4th affix to this item.
         "nearly_complete": item.get("nearly_complete"),
         "nc_tier": item.get("nc_tier"),
+        # U81 Viktranium ("Lamordia") typed-slot host markers [{type, category}] —
+        # propagated so the solver crafts the best option per slot from its pool.
+        "lamordia_slots": item.get("lamordia_slots"),
     }
 
 

@@ -583,12 +583,20 @@
     "Moon"
    ],
    "_enrich_unmapped": [
-    "Marksmanship",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Marksmanship"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Accessory"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Accessory"
+    }
+   ]
   },
   {
    "name": "Legendary Blood-Stained Doctor's Gloves",

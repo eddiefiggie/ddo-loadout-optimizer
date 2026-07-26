@@ -61,13 +61,24 @@
     "Colorless"
    ],
    "_enrich_unmapped": [
-    "Speed",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Speed"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Accessory"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Accessory"
+    },
+    {
+     "type": "Miserable",
+     "category": "Accessory"
+    }
+   ]
   },
   {
    "name": "Legendary Cursebane Ring",
@@ -104,13 +115,24 @@
     "Colorless"
    ],
    "_enrich_unmapped": [
-    "Action Boost Enhancement",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Action Boost Enhancement"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Accessory"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Accessory"
+    },
+    {
+     "type": "Miserable",
+     "category": "Accessory"
+    }
+   ]
   },
   {
    "name": "Legendary Deathwarden",

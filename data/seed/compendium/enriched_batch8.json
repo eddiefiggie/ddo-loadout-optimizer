@@ -127,13 +127,23 @@
     "Green",
     "Yellow"
    ],
-   "_enrich_unmapped": [
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    },
+    {
+     "type": "Melancholic",
+     "category": "Armor"
+    }
+   ]
   },
   {
    "name": "Legendary Alchemical Kama",
@@ -167,14 +177,28 @@
     "Purple"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    },
+    {
+     "type": "Miserable",
+     "category": "Weapon"
+    },
+    {
+     "type": "Woeful",
+     "category": "Weapon"
+    }
+   ]
   },
   {
    "name": "Legendary Cataclysmic Kama",
@@ -190,14 +214,28 @@
     "Purple"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    },
+    {
+     "type": "Miserable",
+     "category": "Weapon"
+    },
+    {
+     "type": "Woeful",
+     "category": "Weapon"
+    }
+   ]
   },
   {
    "name": "Legendary Defiled Reliquary Kama",
@@ -276,14 +314,28 @@
     "Purple"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    },
+    {
+     "type": "Miserable",
+     "category": "Weapon"
+    },
+    {
+     "type": "Woeful",
+     "category": "Weapon"
+    }
+   ]
   },
   {
    "name": "Legendary Cataclysmic Scimitar",
@@ -299,14 +351,28 @@
     "Purple"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    },
+    {
+     "type": "Miserable",
+     "category": "Weapon"
+    },
+    {
+     "type": "Woeful",
+     "category": "Weapon"
+    }
+   ]
   },
   {
    "name": "Legendary Alchemical Rapier",
@@ -340,14 +406,28 @@
     "Purple"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    },
+    {
+     "type": "Miserable",
+     "category": "Weapon"
+    },
+    {
+     "type": "Woeful",
+     "category": "Weapon"
+    }
+   ]
   },
   {
    "name": "Legendary Cataclysmic Rapier",
@@ -363,14 +443,28 @@
     "Purple"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    },
+    {
+     "type": "Miserable",
+     "category": "Weapon"
+    },
+    {
+     "type": "Woeful",
+     "category": "Weapon"
+    }
+   ]
   },
   {
    "name": "Legendary Defiled Reliquary Rapier",
@@ -479,12 +573,19 @@
     "Colorless",
     "Moon"
    ],
-   "_enrich_unmapped": [
-    "Lamordia Slot",
-    "Lamordia Slot"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Accessory"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Accessory"
+    }
+   ]
   },
   {
    "name": "Legendary Belt of Bold Brilliance",
@@ -658,14 +759,28 @@
     "Purple"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    },
+    {
+     "type": "Miserable",
+     "category": "Weapon"
+    },
+    {
+     "type": "Woeful",
+     "category": "Weapon"
+    }
+   ]
   },
   {
    "name": "Legendary Cataclysmic Longbow",
@@ -681,14 +796,28 @@
     "Purple"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    },
+    {
+     "type": "Miserable",
+     "category": "Weapon"
+    },
+    {
+     "type": "Woeful",
+     "category": "Weapon"
+    }
+   ]
   },
   {
    "name": "Legendary Alchemical Shortsword",
@@ -742,14 +871,28 @@
     "Purple"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    },
+    {
+     "type": "Miserable",
+     "category": "Weapon"
+    },
+    {
+     "type": "Woeful",
+     "category": "Weapon"
+    }
+   ]
   },
   {
    "name": "Legendary Cataclysmic Shortsword",
@@ -765,14 +908,28 @@
     "Purple"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot",
-    "Lamordia Slot"
+    "Enhancement bonus"
    ],
    "_enriched": true,
-   "minimum_level": 34
+   "minimum_level": 34,
+   "lamordia_slots": [
+    {
+     "type": "Melancholic",
+     "category": "Weapon"
+    },
+    {
+     "type": "Dolorous",
+     "category": "Weapon"
+    },
+    {
+     "type": "Miserable",
+     "category": "Weapon"
+    },
+    {
+     "type": "Woeful",
+     "category": "Weapon"
+    }
+   ]
   }
  ]
 }
