@@ -127,6 +127,7 @@
    "slot": "Necklace",
    "enhancements": [
     "Insightful Constitution +7",
+    "Insightful Armor-Piercing +11",
     "Green Augment Slot",
     "Colorless Augment Slot",
     "Moon Augment Slot"
@@ -138,7 +139,6 @@
     "Moon"
    ],
    "_enrich_unmapped": [
-    "Armor-Piercing",
     "Lamordia Slot",
     "Lamordia Slot"
    ],
@@ -153,6 +153,7 @@
     "Fortitude Save +12",
     "Profane Lifeforce +48",
     "Insightful Physical Sheltering +17",
+    "Repair Amplification +57",
     "Green Augment Slot",
     "Colorless Augment Slot",
     "Legendary Forbidden Knowledge (set)"
@@ -162,9 +163,7 @@
     "Green",
     "Colorless"
    ],
-   "_enrich_unmapped": [
-    "HealingAmp"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
    "minimum_level": 32
   },
@@ -192,6 +191,7 @@
    "slot": "Necklace",
    "enhancements": [
     "Quality Accuracy +5",
+    "Incite +140",
     "Green Augment Slot",
     "Colorless Augment Slot",
     "Moon Augment Slot"
@@ -204,7 +204,6 @@
    ],
    "_enrich_unmapped": [
     "Bloodrage",
-    "Incite",
     "Conditioning"
    ],
    "_enriched": true,
@@ -519,6 +518,7 @@
    "slot": "Ring",
    "enhancements": [
     "Rolls one of: Strength +13 / Intelligence +13 / Charisma +13",
+    "Insightful Repair Amplification +27",
     "Repair +20",
     "Green Augment Slot"
    ],
@@ -527,8 +527,7 @@
     "Green"
    ],
    "_enrich_unmapped": [
-    "Auto-Repair",
-    "HealingAmp"
+    "Auto-Repair"
    ],
    "_enriched": true,
    "minimum_level": 29
@@ -539,6 +538,7 @@
    "slot": "Ring",
    "enhancements": [
     "Rolls one of: Constitution +13 / Strength +13 / Wisdom +13",
+    "Insightful Incite +52",
     "Insight Intimidate +10",
     "Linguistics +10",
     "Blue Augment Slot"
@@ -547,9 +547,7 @@
    "augment_slots": [
     "Blue"
    ],
-   "_enrich_unmapped": [
-    "Incite"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
    "minimum_level": 29
   },
@@ -698,6 +696,7 @@
    "slot": "Trinket",
    "enhancements": [
     "Intimidate +20",
+    "Incite +124",
     "Insightful Strength +6",
     "Insightful Constitution +6",
     "Green Augment Slot"
@@ -708,7 +707,6 @@
    ],
    "_enrich_unmapped": [
     "Clicky",
-    "Incite",
     "Cursed",
     "Cursed"
    ],
@@ -723,6 +721,7 @@
     "Doublestrike +16%",
     "Insightful Doublestrike +7%",
     "Accuracy +23",
+    "Armor-Piercing +23",
     "Green Augment Slot",
     "Colorless Augment Slot",
     "Sun Augment Slot"
@@ -733,9 +732,7 @@
     "Colorless",
     "Sun"
    ],
-   "_enrich_unmapped": [
-    "Armor-Piercing"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
    "minimum_level": 33
   },
@@ -744,6 +741,8 @@
    "category": "item",
    "slot": "Trinket",
    "enhancements": [
+    "Incite +120",
+    "Insightful Incite +52",
     "Enhancement Magical Sheltering +33",
     "Parrying +6",
     "Green Augment Slot"
@@ -752,10 +751,7 @@
    "augment_slots": [
     "Green"
    ],
-   "_enrich_unmapped": [
-    "Incite",
-    "Incite"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
    "minimum_level": 29
   },
@@ -922,6 +918,7 @@
     "Insight Nullification +71",
     "Void Lore +21%",
     "Necromancy Spell Focus +7",
+    "Profane Negative Healing Amplification +53",
     "Purple Augment Slot",
     "Curse Necromancer (Legendary) (set)"
    ],
@@ -930,8 +927,7 @@
     "Purple"
    ],
    "_enrich_unmapped": [
-    "Enhancement bonus",
-    "HealingAmp"
+    "Enhancement bonus"
    ],
    "_enriched": true,
    "minimum_level": 29,

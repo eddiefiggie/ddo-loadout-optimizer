@@ -146,6 +146,31 @@ def _r_hp(a):
     return [_typed(_opt_type(a, vi + 1), stat, a[vi])]
 
 
+_HEALAMP_KIND = {
+    "healing": "Positive", "p": "Positive", "positive": "Positive",
+    "n": "Negative", "negative": "Negative",
+    "repair": "Repair", "r": "Repair",
+}
+
+
+def _r_healamp(a):
+    # {{HealingAmp|<val>|<kind>|<type>}} -> "<type> <Positive/Negative/Repair> Healing Amplification +val"
+    if not a or not _num(a[0]):
+        return []
+    kind = _HEALAMP_KIND.get(a[1].strip().lower()) if len(a) >= 2 else "Positive"
+    if not kind:
+        return []
+    suffix = "Amplification" if kind == "Repair" else "Healing Amplification"
+    return [_typed(_opt_type(a, 2), f"{kind} {suffix}", a[0])]
+
+
+def _r_tactics(a):
+    # {{Tactics|Combat Mastery|<val>|<type?>}} -> "<type> Combat Mastery +val"
+    if len(a) < 2 or not _num(a[1]):
+        return []
+    return [_typed(_opt_type(a, 2), a[0].strip(), a[1])]
+
+
 def _named_value(stat, pct=False):
     """A template whose NAME is the stat and whose args are [value, type?]."""
     def render(a):
@@ -168,6 +193,8 @@ RENDERERS = {
     "spell lore": _r_spelllore,          # armor uses the spaced form
     "save": _r_save,
     "hp": _r_hp,
+    "healingamp": _r_healamp,
+    "tactics": _r_tactics,
     # name-is-the-stat templates: {{Name|value|type?}}
     "fortification": _named_value("Fortification"),
     "seeker": _named_value("Seeker"),
@@ -182,6 +209,8 @@ RENDERERS = {
     "spellpen": _named_value("Spell Penetration"),
     "deception": _named_value("Deception"),
     "good luck": _named_value("Good Luck"),
+    "armor-piercing": _named_value("Armor-Piercing"),
+    "incite": _named_value("Incite"),
     "dodge": _named_value("Dodge", pct=True),
     "doublestrike": _named_value("Doublestrike", pct=True),
     "doubleshot": _named_value("Doubleshot", pct=True),

@@ -279,6 +279,9 @@
    "category": "item",
    "slot": "Bracers",
    "enhancements": [
+    "Insightful Combat Mastery +6",
+    "Combat Mastery +12",
+    "Armor-Piercing +24",
     "Green Augment Slot",
     "Colorless Augment Slot",
     "Moon Augment Slot"
@@ -289,11 +292,7 @@
     "Colorless",
     "Moon"
    ],
-   "_enrich_unmapped": [
-    "Tactics",
-    "Tactics",
-    "Armor-Piercing"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
    "minimum_level": 35,
    "nearly_complete": "Quality Ability Score"
@@ -391,6 +390,7 @@
    "category": "item",
    "slot": "Bracers",
    "enhancements": [
+    "Combat Mastery +11",
     "Strength +14",
     "Blue Augment Slot",
     "Green Augment Slot",
@@ -404,8 +404,7 @@
    "_enrich_unmapped": [
     "Demonic Curse",
     "Demonic Shield",
-    "Guard",
-    "Tactics"
+    "Guard"
    ],
    "_enriched": true,
    "minimum_level": 30
@@ -461,6 +460,8 @@
    "category": "item",
    "slot": "Boots",
    "enhancements": [
+    "Repair Amplification +59",
+    "Quality Repair Amplification +15",
     "Repair +21",
     "Quality Reconstruction +38",
     "Green Augment Slot",
@@ -473,10 +474,7 @@
     "Colorless",
     "Moon"
    ],
-   "_enrich_unmapped": [
-    "HealingAmp",
-    "HealingAmp"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
    "minimum_level": 33
   },
@@ -486,6 +484,7 @@
    "slot": "Boots",
    "enhancements": [
     "Deadly +12",
+    "Combat Mastery +12",
     "Green Augment Slot",
     "Colorless Augment Slot",
     "Moon Augment Slot"
@@ -498,8 +497,7 @@
    ],
    "_enrich_unmapped": [
     "Enhanced Ki",
-    "Crippling",
-    "Tactics"
+    "Crippling"
    ],
    "_enriched": true,
    "minimum_level": 33
@@ -685,6 +683,7 @@
    "category": "item",
    "slot": "Gloves",
    "enhancements": [
+    "Quality Armor-Piercing +5",
     "Seeker +15",
     "Insightful Seeker +7",
     "Green Augment Slot",
@@ -697,9 +696,7 @@
     "Colorless",
     "Moon"
    ],
-   "_enrich_unmapped": [
-    "Armor-Piercing"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
    "minimum_level": 35,
    "nearly_complete": "Ability Score"

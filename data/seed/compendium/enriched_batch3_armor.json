@@ -308,6 +308,7 @@
    "slot": "Armor",
    "enhancements": [
     "Profane Lifeforce +54",
+    "Quality Combat Mastery +3",
     "Green Augment Slot",
     "Colorless Augment Slot",
     "Sun Augment Slot"
@@ -320,8 +321,7 @@
    ],
    "_enrich_unmapped": [
     "Enhancement bonus",
-    "Demonic Shield",
-    "Tactics"
+    "Demonic Shield"
    ],
    "_enriched": true,
    "minimum_level": 35,
@@ -381,6 +381,7 @@
    "enhancements": [
     "Accuracy +23",
     "Deadly +12",
+    "Incite +133",
     "Green Augment Slot",
     "Colorless Augment Slot",
     "Sun Augment Slot"
@@ -393,7 +394,6 @@
    ],
    "_enrich_unmapped": [
     "Enhancement bonus",
-    "Incite",
     "Protection"
    ],
    "_enriched": true,

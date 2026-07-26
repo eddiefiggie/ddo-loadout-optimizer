@@ -286,6 +286,7 @@
    "category": "item",
    "slot": "Weapon",
    "enhancements": [
+    "Armor-Piercing +21",
     "Insightful Doublestrike +7%",
     "Red Augment Slot",
     "Purple Augment Slot"
@@ -298,8 +299,7 @@
    "_enrich_unmapped": [
     "Enhancement bonus",
     "Impact",
-    "Maiming",
-    "Armor-Piercing"
+    "Maiming"
    ],
    "_enriched": true,
    "minimum_level": 31

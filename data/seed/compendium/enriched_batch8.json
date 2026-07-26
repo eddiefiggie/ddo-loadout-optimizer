@@ -246,6 +246,7 @@
    "category": "item",
    "slot": "Weapon",
    "enhancements": [
+    "Incite +130",
     "Intimidate +21",
     "Red Augment Slot"
    ],
@@ -256,8 +257,7 @@
    "_enrich_unmapped": [
     "Enhancement bonus",
     "Anarchic",
-    "Vorpal",
-    "Incite"
+    "Vorpal"
    ],
    "_enriched": true,
    "minimum_level": 32
@@ -451,15 +451,14 @@
     "Diversion +20",
     "Deception +10",
     "Dodge +13%",
+    "Combat Mastery +10",
     "Green Augment Slot"
    ],
    "wiki_url": "https://ddowiki.com/page/Item:Legendary_Animated_Rope",
    "augment_slots": [
     "Green"
    ],
-   "_enrich_unmapped": [
-    "Tactics"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
    "minimum_level": 28
   },
@@ -495,6 +494,7 @@
     "Insightful Intelligence +6",
     "Quality Reflex Save +3",
     "Profane Well Rounded +3",
+    "Exceptional Positive Healing Amplification +15",
     "Green Augment Slot",
     "Colorless Augment Slot",
     "Moon Augment Slot"
@@ -505,9 +505,7 @@
     "Colorless",
     "Moon"
    ],
-   "_enrich_unmapped": [
-    "HealingAmp"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
    "minimum_level": 33
   },
@@ -542,6 +540,7 @@
    "enhancements": [
     "Enhancement Magical Sheltering +33",
     "Insight Seeker +6",
+    "Quality Combat Mastery +3",
     "Quality Accuracy +4",
     "Green Augment Slot"
    ],
@@ -549,9 +548,7 @@
    "augment_slots": [
     "Green"
    ],
-   "_enrich_unmapped": [
-    "Tactics"
-   ],
+   "_enrich_unmapped": [],
    "_enriched": true,
    "minimum_level": 29
   },
