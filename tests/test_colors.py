@@ -62,3 +62,42 @@ def test_annotate_variant_sets_host_and_augment_color():
     aug = {"category": "augment", "slot": "Moon", "augment_slots": []}
     colors.annotate_variant(aug)
     assert aug["aug_color"]["color"] == "Moon"
+
+
+# --- U2: augment color-compatibility matrix -----------------------------------
+
+def test_secondary_slot_accepts_component_primaries():
+    assert colors.accepts("Orange") == {"Red", "Yellow", "Orange", "Colorless"}
+    assert colors.accepts("Green") == {"Blue", "Yellow", "Green", "Colorless"}
+    assert colors.accepts("Purple") == {"Red", "Blue", "Purple", "Colorless"}
+
+
+def test_primary_slot_accepts_own_plus_colorless():
+    assert colors.accepts("Red") == {"Red", "Colorless"}
+    assert colors.accepts("Colorless") == {"Colorless"}
+
+
+def test_fits_multi_fit_and_negatives():
+    assert colors.fits("Red", "Orange") and colors.fits("Red", "Purple")
+    assert not colors.fits("Red", "Green")
+
+
+def test_colorless_fits_colored_slots_only_not_lunar_solar():
+    for s in ("Red", "Blue", "Yellow", "Orange", "Green", "Purple"):
+        assert colors.fits("Colorless", s), s
+    assert not colors.fits("Colorless", "Moon")
+    assert not colors.fits("Colorless", "Sun")
+
+
+def test_lunar_solar_do_not_cross_fit():
+    assert colors.fits("Moon", "Moon") and colors.fits("Sun", "Sun")
+    assert not colors.fits("Moon", "Sun")
+    assert not colors.fits("Red", "Moon")
+
+
+def test_fits_slots_is_the_inverse():
+    assert colors.fits_slots("Red") == {"Red", "Purple", "Orange"}
+    # Colorless fits every non-Lunar/Solar slot (its own Colorless slot + all colored), never Moon/Sun.
+    assert colors.fits_slots("Colorless") == {"Colorless", "Red", "Blue", "Yellow", "Orange", "Green", "Purple"}
+    assert "Moon" not in colors.fits_slots("Colorless") and "Sun" not in colors.fits_slots("Colorless")
+    assert colors.fits_slots("Moon") == {"Moon"}
