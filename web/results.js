@@ -44,9 +44,13 @@ function assignAugments(chosen, augmentsPlaced) {
 }
 
 /** Reconstruct a concrete Dino-insert -> item assignment from the solver's
- *  aggregate per-type placements (mirrors assignAugments). Walk equipped items
- *  in order and drop each placed insert into the first equipped item with a
- *  remaining open Dino slot of its type. */
+ *  aggregate per-key placements (mirrors assignAugments). Slots are keyed by
+ *  `dino_type||category` (KTD1). Walk equipped items in order and drop each
+ *  placed insert unit into the first equipped item with a remaining open Dino
+ *  slot matching the unit's (type, category). */
+function dinoInsertKey(ins) {
+  return `${ins.dino_type}||${ins.category || "Accessory"}`;
+}
 function assignDinoInserts(chosen, dinoPlaced) {
   const remaining = chosen.map((c) => {
     const m = new Map();
@@ -56,10 +60,11 @@ function assignDinoInserts(chosen, dinoPlaced) {
   const byIndex = new Map();
   const unplaced = [];
   for (const ins of dinoPlaced || []) {
+    const key = dinoInsertKey(ins);
     let placed = false;
     for (let i = 0; i < chosen.length; i++) {
-      if ((remaining[i].get(ins.dino_type) || 0) > 0) {
-        remaining[i].set(ins.dino_type, remaining[i].get(ins.dino_type) - 1);
+      if ((remaining[i].get(key) || 0) > 0) {
+        remaining[i].set(key, remaining[i].get(key) - 1);
         if (!byIndex.has(i)) byIndex.set(i, []);
         byIndex.get(i).push(ins);
         placed = true;
@@ -119,13 +124,13 @@ function coverageNote(dataset) {
     "<strong>Optimized:</strong> worn affixes, augments" +
       (aug != null ? ` (${aug} placeable)` : "") +
       ", set bonuses" + (setAff != null ? ` (${setAff} threshold effects)` : "") +
-      ", Isle of Dread Dino crafting" + (dinoElig != null ? ` (${dinoElig} Accessory inserts)` : "") +
+      ", Isle of Dread Dino crafting" + (dinoElig != null ? ` (${dinoElig} inserts across Accessory/Armor/Weapon/Raid slots, ${dc.blank_hosts != null ? dc.blank_hosts + " hosts" : "typed"})` : "") +
       ", U81 Nearly Complete crafting" +
       (ncHosts ? ` (${ncHosts} item hosts, ${ncElig != null ? ncElig + " options" : "sourced pool"})` : "") +
       ", and U81 Viktranium / Lamordia crafting" +
       (vikHosts ? ` (${vikHosts} item hosts, ${vikElig != null ? vikElig + " options" : "sourced pool"})` : ""),
     "<strong>Coverage:</strong> results reflect only verified, wiki-sourced data; ambiguous effects are quarantined and excluded",
-    "<strong>Pending:</strong> the Dino Weapon/Armor/Raid/Set-Bonus pools and other expansion crafting systems",
+    "<strong>Pending:</strong> the Dino Set-Bonus pool (crafted set-membership; sourced + browsable, activation awaits intrinsic named/raid set pieces) and other expansion crafting systems",
     "<strong>Compendium:</strong> " +
       (comp.total_indexed != null ? `${comp.total_indexed} named items indexed across the game` : "named-item index in progress") +
       (comp.enriched_matched != null ? `, of which ${comp.enriched_matched} are enriched and solver-active` : "") +
@@ -182,7 +187,16 @@ function renderResults(container, { model, result, query, dataset }) {
       const augs = (augAssign.byIndex.get(idx) || [])
         .map((a) => `<span class="chip aug" title="augment slotted (${a.color})">${a.variant_id} <span class="muted">(${a.color})</span></span>`).join(" ");
       const dinos = (dinoAssign.byIndex.get(idx) || [])
-        .map((d) => `<span class="chip dino" title="Isle of Dread ${d.dino_type} insert">${d.dino_type}: ${affixLabel({ stat: d.stat, bonus_type: d.bonus_type, value: d.value, unit: d.unit || "flat" })}</span>`).join(" ");
+        .map((d) => {
+          // A unit may carry several affixes (multi-affix insert, KTD4); render
+          // them all on one chip. Fall back to the flat single-affix shape.
+          const affixes = (d.affixes && d.affixes.length)
+            ? d.affixes
+            : [{ stat: d.stat, bonus_type: d.bonus_type, value: d.value, unit: d.unit || "flat" }];
+          const label = affixes.map((a) => affixLabel({ stat: a.stat, bonus_type: a.bonus_type, value: a.value, unit: a.unit || "flat" })).join(", ");
+          const name = d.name ? `${d.name} — ` : "";
+          return `<span class="chip dino" title="Isle of Dread ${d.dino_type} (${d.category || "Accessory"}) insert">${d.dino_type}: ${name}${label}</span>`;
+        }).join(" ");
       const ncs = (ncByItem.get(v.variant_id) || [])
         .map((n) => `<span class="chip nc" title="U81 Nearly Complete (${n.category}, ${n.tier})">Nearly Complete: ${affixLabel({ stat: n.stat, bonus_type: n.bonus_type, value: n.value, unit: n.unit || "flat" })}</span>`).join(" ");
       const rolls = (rollByItem.get(v.variant_id) || [])

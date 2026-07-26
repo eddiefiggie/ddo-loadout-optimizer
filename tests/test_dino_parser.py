@@ -1,7 +1,9 @@
-"""U1 — Isle of Dread Dino-crafting parser tests (strict provenance).
+"""U1/U2 — Isle of Dread Dino-crafting parser tests (strict provenance).
 
-Insert fixtures are synthetic (the shipped seed's insert pool is sourced in U2),
-but exercise the exact provenance gate that governs real records.
+Covers the M2 contract: insert UNITS (one unit may carry several affixes,
+KTD4), two-key `(category, dino_type)` slot typing (KTD1), weapon/armor/raid
+crafted hosts (KTD3), and the strict multi-line clause gate that rejects
+conditional/proc/flavor text so a greedy parse never mints a false affix.
 """
 import json
 import os
@@ -12,92 +14,160 @@ sys.path.insert(0, ROOT)
 
 from src import dino_parser  # noqa: E402
 
-_WIKI = "https://ddowiki.com/page/Update_55_named_items"
+_WIKI = "https://ddowiki.com/page/Dinosaur_Bone_crafting"
 
 
-def test_happy_scale_insert_parses_to_eligible_record():
-    records, quarantined = dino_parser.parse_inserts([
+# --- Accessory insert units (single-affix) -----------------------------------
+
+def test_happy_scale_insert_parses_to_eligible_unit():
+    units, quarantined = dino_parser.parse_inserts([
         {"type": "Scale", "effect": "+14 Constitution", "wiki_url": _WIKI},
     ])
     assert quarantined == []
-    assert len(records) == 1
-    r = records[0]
-    assert r["dino_type"] == "Scale"
-    assert r["stat"] == "Constitution"
-    assert r["value"] == 14
-    assert r["bonus_type"] == "Enhancement"
-    assert r["wiki_url"] == _WIKI
+    assert len(units) == 1
+    u = units[0]
+    assert u["dino_type"] == "Scale"
+    assert u["category"] == "Accessory"
+    assert len(u["affixes"]) == 1
+    assert u["affixes"][0]["stat"] == "Constitution"
+    assert u["affixes"][0]["value"] == 14
+    assert u["affixes"][0]["bonus_type"] == "Enhancement"
+    assert u["wiki_url"] == _WIKI
 
 
 def test_typed_effect_keeps_its_bonus_type():
-    records, _ = dino_parser.parse_inserts([
+    units, _ = dino_parser.parse_inserts([
         {"type": "Fang", "effect": "Insightful Constitution +7", "wiki_url": _WIKI},
     ])
-    assert len(records) == 1
-    assert records[0]["bonus_type"] == "Insightful"
-    assert records[0]["value"] == 7
-    assert records[0]["dino_type"] == "Fang"
+    assert len(units) == 1
+    assert units[0]["affixes"][0]["bonus_type"] == "Insightful"
+    assert units[0]["affixes"][0]["value"] == 7
+    assert units[0]["dino_type"] == "Fang"
 
 
 def test_missing_wiki_url_is_quarantined_not_emitted():
-    # AE5 — provenance gate. No wiki_url => never solver-eligible.
-    records, quarantined = dino_parser.parse_inserts([
+    units, quarantined = dino_parser.parse_inserts([
         {"type": "Scale", "effect": "+14 Constitution", "wiki_url": ""},
     ])
-    assert records == []
-    assert len(quarantined) == 1
+    assert units == []
     assert quarantined[0]["reason"] == "missing wiki_url"
 
 
 def test_unparseable_effect_is_quarantined():
-    # AE5 — magnitude gate. Non-magnitude text is never minted into a value.
-    records, quarantined = dino_parser.parse_inserts([
+    units, quarantined = dino_parser.parse_inserts([
         {"type": "Claw", "effect": "Ghostly", "wiki_url": _WIKI},
     ])
-    assert records == []
+    assert units == []
     assert len(quarantined) == 1
 
 
-def test_multi_affix_insert_is_quarantined():
-    # Fang: Deception packs two affixes into one augment; the per-record model
-    # can't represent "both apply from one slot", so it is quarantined.
-    records, quarantined = dino_parser.parse_inserts([
-        {"type": "Fang",
-         "effect": "+11 Enhancement bonus to Sneak Attacks, "
-                   "+17 Enhancement bonus to Sneak Attack Damage",
-         "wiki_url": _WIKI},
-    ])
-    assert records == []
-    assert quarantined[0]["reason"] == "multi-affix insert (unsupported)"
-
-
-def test_compound_and_stat_stays_single_affix():
-    # "Critical Confirmation and Critical Damage" is one bonus over a compound
-    # stat (one value) — eligible, not multi-affix.
-    records, quarantined = dino_parser.parse_inserts([
-        {"type": "Fang", "effect": "+14 Enhancement bonus to Critical Confirmation and Critical Damage",
-         "wiki_url": _WIKI},
-    ])
-    assert quarantined == []
-    assert len(records) == 1
-    assert records[0]["value"] == 14
-
-
 def test_unrecognized_dino_type_is_quarantined():
-    records, quarantined = dino_parser.parse_inserts([
+    units, quarantined = dino_parser.parse_inserts([
         {"type": "Tooth", "effect": "+14 Constitution", "wiki_url": _WIKI},
     ])
-    assert records == []
+    assert units == []
     assert quarantined[0]["reason"] == "unrecognized dino type"
 
 
 def test_dino_type_is_case_insensitive():
-    records, _ = dino_parser.parse_inserts([
+    units, _ = dino_parser.parse_inserts([
         {"type": "horn", "effect": "+30 Physical Resistance Rating", "wiki_url": _WIKI},
     ])
-    assert len(records) == 1
-    assert records[0]["dino_type"] == "Horn"
+    assert len(units) == 1
+    assert units[0]["dino_type"] == "Horn"
 
+
+# --- Multi-affix inserts are now KEPT as one unit (KTD4) ----------------------
+
+def test_multi_affix_insert_parses_to_one_unit_with_two_affixes():
+    # "Fang: Deception" packs two affixes into one insert; the unit model keeps
+    # both, gated all-or-nothing by the solver.
+    units, quarantined = dino_parser.parse_typed_inserts([
+        {"category": "Accessory", "dino_type": "Fang", "name": "Deception",
+         "effect": "+11 Enhancement bonus to Sneak Attacks, "
+                   "+17 Enhancement bonus to Sneak Attack Damage",
+         "wiki_url": _WIKI},
+    ])
+    assert quarantined == []
+    assert len(units) == 1
+    affixes = units[0]["affixes"]
+    assert len(affixes) == 2
+    assert (affixes[0]["stat"], affixes[0]["value"]) == ("Sneak Attacks", 11)
+    assert (affixes[1]["stat"], affixes[1]["value"]) == ("Sneak Attack Damage", 17)
+
+
+def test_compound_and_stat_stays_single_affix():
+    # A compound stat with ONE value ("Critical Confirmation and Critical
+    # Damage") is one affix, not two.
+    units, _ = dino_parser.parse_inserts([
+        {"type": "Fang", "effect": "+14 Enhancement bonus to Critical Confirmation and Critical Damage",
+         "wiki_url": _WIKI},
+    ])
+    assert len(units) == 1
+    assert len(units[0]["affixes"]) == 1
+    assert units[0]["affixes"][0]["value"] == 14
+
+
+def test_stat_with_internal_comma_not_split():
+    # "Positive, Negative and Repair Amplification" has a mid-stat comma; the
+    # signed-number split must NOT break it into fragments.
+    units, _ = dino_parser.parse_typed_inserts([
+        {"category": "Armor", "dino_type": "Scale", "name": "X",
+         "effect": "+30 Artifact bonus to Positive, Negative and Repair Amplification",
+         "wiki_url": _WIKI},
+    ])
+    assert len(units) == 1
+    assert len(units[0]["affixes"]) == 1
+    assert units[0]["affixes"][0]["value"] == 30
+
+
+def test_conditional_line_is_rejected_but_clean_line_kept():
+    # A clean first line + a conditional ("If this is slotted…") second line:
+    # keep the clean affix, drop the conditional grant.
+    units, _ = dino_parser.parse_typed_inserts([
+        {"category": "Weapon", "dino_type": "Fang", "name": "Iridescent Fang",
+         "effect": "+7 Equipment bonus to all Spell DCs.\n"
+                   "If this is slotted in a Quarterstaff, it also grants +2 Exceptional bonus to Spell DCs.",
+         "wiki_url": _WIKI},
+    ])
+    assert len(units) == 1
+    affixes = units[0]["affixes"]
+    assert len(affixes) == 1
+    assert affixes[0]["stat"] == "all Spell DCs"
+    assert affixes[0]["value"] == 7
+    assert affixes[0]["bonus_type"] == "Equipment"
+
+
+def test_material_type_and_proc_weapon_insert_quarantines():
+    units, quarantined = dino_parser.parse_typed_inserts([
+        {"category": "Weapon", "dino_type": "Scale", "name": "Flamescale",
+         "effect": "Adds Adamantine material type. On hit: 15d6 Fire Damage.",
+         "wiki_url": _WIKI},
+    ])
+    assert units == []
+    assert "no parseable affix" in quarantined[0]["reason"]
+
+
+def test_partial_garbage_keeps_parseable_affix_with_note():
+    units, _ = dino_parser.parse_typed_inserts([
+        {"category": "Weapon", "dino_type": "Claw", "name": "Mixed",
+         "effect": "+2 Exceptional bonus to Strength.\nOn hit: 10d6 Fire Damage.",
+         "wiki_url": _WIKI},
+    ])
+    assert len(units) == 1
+    assert units[0]["affixes"][0]["stat"] == "Strength"
+    assert units[0]["affixes"][0]["value"] == 2
+
+
+def test_typed_insert_bad_category_quarantined():
+    units, quarantined = dino_parser.parse_typed_inserts([
+        {"category": "Trinket", "dino_type": "Scale", "effect": "+14 Constitution", "wiki_url": _WIKI},
+    ])
+    assert units == []
+    assert "unrecognized category" in quarantined[0]["reason"]
+
+
+# --- Slot layouts now carry type||category keys ------------------------------
 
 def test_accessory_layout_parses_four_typed_slots():
     layouts, quarantined = dino_parser.parse_slot_layouts([
@@ -107,17 +177,8 @@ def test_accessory_layout_parses_four_typed_slots():
          "wiki_url": _WIKI},
     ])
     assert quarantined == []
-    assert layouts[0]["dino_slots"] == ["Scale", "Fang", "Claw", "Horn"]
-    assert layouts[0]["slot"] == "accessory"
-
-
-def test_weapon_layout_parses_single_scale_slot():
-    layouts, _ = dino_parser.parse_slot_layouts([
-        {"item": "Legendary Bottle o' Rum", "slot": "weapon",
-         "dino_slots": [{"type": "Scale"}], "wiki_url": _WIKI},
-    ])
-    assert layouts[0]["dino_slots"] == ["Scale"]
-    assert layouts[0]["slot"] == "weapon"
+    assert layouts[0]["dino_slots"] == [
+        "Scale||Accessory", "Fang||Accessory", "Claw||Accessory", "Horn||Accessory"]
 
 
 def test_item_without_wiki_url_is_quarantined_whole():
@@ -130,22 +191,11 @@ def test_item_without_wiki_url_is_quarantined_whole():
 
 
 def test_slot_multiplicity_preserved():
-    # Two Scale slots on one item => "Scale" appears twice (KTD3: capacity from data).
     layouts, _ = dino_parser.parse_slot_layouts([
         {"item": "Twin Scale Item", "slot": "accessory",
          "dino_slots": [{"type": "Scale"}, {"type": "Scale"}], "wiki_url": _WIKI},
     ])
-    assert layouts[0]["dino_slots"] == ["Scale", "Scale"]
-
-
-def test_value_last_multi_affix_is_quarantined():
-    # An unsigned second magnitude (value-last) must still be caught, not minted
-    # into one wrong-value record.
-    records, quarantined = dino_parser.parse_inserts([
-        {"type": "Fang", "effect": "Sneak Attacks 11, Sneak Attack Damage 17", "wiki_url": _WIKI},
-    ])
-    assert records == []
-    assert quarantined[0]["reason"] == "multi-affix insert (unsupported)"
+    assert layouts[0]["dino_slots"] == ["Scale||Accessory", "Scale||Accessory"]
 
 
 def test_unrecognized_slot_type_dropped_and_quarantined():
@@ -153,31 +203,94 @@ def test_unrecognized_slot_type_dropped_and_quarantined():
         {"item": "Weird Boots", "slot": "accessory",
          "dino_slots": [{"type": "Scale"}, {"type": "Tooth"}], "wiki_url": _WIKI},
     ])
-    assert layouts[0]["dino_slots"] == ["Scale"]      # bad slot dropped, item kept
+    assert layouts[0]["dino_slots"] == ["Scale||Accessory"]
     assert any(q["reason"].startswith("unrecognized dino slot type") for q in quarantined)
 
 
+# --- Crafted-host templates (KTD1 two-key, KTD3 hosts) -----------------------
+
+def test_crafted_host_expands_named_items_with_mixed_typing():
+    layouts, _ = dino_parser.parse_crafted_hosts([
+        {"host_category": "Armors", "items": ["Robe", "Docent"],
+         "iod_slots": [{"type": "Scale", "category": "Armor"},
+                       {"type": "Fang", "category": "Armor"},
+                       {"type": "Claw", "category": "Accessory"},
+                       {"type": "Horn", "category": "Accessory"}],
+         "set_bonus_slot": True},
+    ], _WIKI)
+    assert {l["item"] for l in layouts} == {"Robe", "Docent"}
+    robe = next(l for l in layouts if l["item"] == "Robe")
+    assert robe["dino_slots"] == [
+        "Scale||Armor", "Fang||Armor", "Claw||Accessory", "Horn||Accessory"]
+    assert robe["set_bonus_slot"] is True
+
+
+def test_crafted_host_without_items_yields_generic_layout():
+    layouts, _ = dino_parser.parse_crafted_hosts([
+        {"host_category": "Weapons", "items": [],
+         "iod_slots": [{"type": "Scale", "category": "Weapon"}],
+         "set_bonus_slot": False},
+    ], _WIKI)
+    assert len(layouts) == 1
+    assert layouts[0]["item"] == "Weapons"
+    assert layouts[0]["dino_slots"] == ["Scale||Weapon"]
+
+
+# --- Set augments (deferred activation; sourced + browsable) -----------------
+
+def test_flavor_bleed_truncated_at_lost_separator():
+    # A stat with flavor concatenated (no separator) — "Attack and DamageThe Isle
+    # of Dread beckons you" — is truncated at the lowercase->uppercase boundary so
+    # only the real stat survives; never mint the flavor into a stat name.
+    sets = dino_parser.parse_set_augments([
+        {"set_name": "Curse", "threshold": 5,
+         "tier_text": "+4 Profane bonus to Attack and DamageThe Isle of Dread beckons you...",
+         "wiki_url": _WIKI},
+    ])
+    stats = [a["stat"] for a in sets[0]["affixes"]]
+    assert stats == ["Attack and Damage"], stats
+
+
+def test_set_augment_splits_concatenated_tier_text():
+    sets = dino_parser.parse_set_augments([
+        {"set_name": "Dread Stalker", "threshold": 3,
+         "tier_text": "+3 Artifact bonus to Sneak Attack Dice"
+                      "+15 Artifact bonus to Melee and Ranged Power",
+         "wiki_url": _WIKI},
+    ])
+    assert len(sets) == 1
+    assert sets[0]["set"] == "Dread Stalker"
+    assert sets[0]["pieces_required"] == 3
+    stats = {(a["stat"], a["value"]) for a in sets[0]["affixes"]}
+    assert ("Sneak Attack Dice", 3) in stats
+    assert ("Melee and Ranged Power", 15) in stats
+
+
+# --- End-to-end on the shipped seed ------------------------------------------
+
 def test_shipped_seed_parses_clean_and_pins_the_pool():
-    # The committed Accessory seed: item layouts + the real sourced insert pool.
     seed_path = os.path.join(ROOT, "data", "seed", "dino_crafting.json")
     with open(seed_path, encoding="utf-8") as fh:
         seed = json.load(fh)
     result = dino_parser.parse_dino_crafting(seed)
     cov = result["coverage"]
-    assert result["quarantined"]["items"] == []      # every shipped item has a wiki_url
-    assert cov["items_sourced"] >= 1
-    # Regression pin on the real sourced data (not just synthetic fixtures):
-    assert cov["inserts_eligible"] >= 50, cov
-    assert cov["inserts_quarantined"] == 3, cov
+    assert result["quarantined"]["items"] == []
+    # Two-key pool present with weapon + armor keys (M2 lifted the Accessory-only
+    # limitation).
+    assert "Scale||Weapon" in cov["by_key"], cov["by_key"]
+    assert "Scale||Armor" in cov["by_key"], cov["by_key"]
+    assert cov["inserts_eligible"] >= 60, cov
+    assert cov["set_records"] == 6, cov
     for t in ("Scale", "Fang", "Claw", "Horn"):
         assert cov["by_type"][t] > 0, f"no eligible {t} inserts"
-    reasons = {q["reason"] for q in result["quarantined"]["inserts"]}
-    assert "multi-affix insert (unsupported)" in reasons
-    # Every eligible record carries a wiki_url (strict provenance, KTD2).
-    for r in result["insert_records"]:
-        assert r["wiki_url"]
-    # Every shipped item layout carries only canonical Dino slot types.
+    # Every eligible unit carries a wiki_url and at least one affix (KTD5).
+    for u in result["insert_records"]:
+        assert u["wiki_url"]
+        assert len(u["affixes"]) >= 1
+    # Every layout slot is a canonical type||category key.
     for layout in result["slot_layouts"]:
-        for t in layout["dino_slots"]:
+        for k in layout["dino_slots"]:
+            t, _, c = k.partition("||")
             assert t in dino_parser.DINO_TYPES
+            assert c in dino_parser.DINO_CATEGORIES
         assert layout["wiki_url"]

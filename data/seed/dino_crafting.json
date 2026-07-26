@@ -1,11 +1,11 @@
 {
  "metadata": {
-  "system": "Isle of Dread — Dino crafting (Accessory slice)",
+  "system": "Isle of Dread — Dino crafting (Accessory + Weapon/Armor/Raid typed pools; Set-Bonus sourced)",
   "note": "Sourced from ddowiki.com/page/Dinosaur_Bone_crafting (§ Accessories) via Claude-in-Chrome; plain fetch returns empty for ddowiki. Insert 'effect' strings are VERBATIM; documented base value only (the undocumented Minor-Artifact +N bump is not encoded). The strict parser decides eligibility; nothing here is inferred (KTD2).",
   "source_pages": [
    "https://ddowiki.com/page/Dinosaur_Bone_crafting"
   ],
-  "sourcing_status": "Accessory pools complete (Scale/Fang/Claw/Horn Accessory; original inserts/items keys). M2 SOURCED (raw at data/seed/compendium/raw/dino_crafting.json): Weapon (Scale/Fang/Claw/Horn), Armor (Scale/Fang), Raid augments, and Set-Bonus augments — in inserts_typed / set_augments / crafted_hosts. Slot typing is (category, dino_type): a 'Scale (Weapon)' augment fits only a 'Scale Slot (Weapon)'. Host layouts carry MIXED typing (Armor blanks: Scale/Fang as Armor, Claw/Horn as Accessory, + a Set Bonus slot; Shields: Weapon+Armor types). Multi-affix inserts are KEPT (e.g. Silverscale, Fang: Deception) for U2 multi-contribution modeling. Effects verbatim; the undocumented Minor-Artifact +1 bump is NOT applied (documented base value only)."
+  "sourcing_status": "M2 COMPLETE (parser+solver+surface shipped). Pools active: Accessory + typed Weapon/Armor/Raid inserts, keyed by (dino_type, category) — a \"Scale (Weapon)\" insert fits only a \"Scale Slot (Weapon)\". Multi-affix inserts (Silverscale, Fang: Deception) are single all-or-nothing placement UNITS. Blank hosts materialized per worn slot (8 accessory + Armor + Main Hand weapon + Rune Arm); shields/orbs deferred (no Off Hand slot in solver). Weapon inserts that are on-hit procs / material types / DOTs are strictly quarantined (no parseable magnitude — never inferred). Dino Set-Bonus: 6 sets sourced + browsable, but solver activation DEFERRED — it is a crafted set-membership choice-slot (only Armor/Helmet/Cloak carry a set-bonus slot, <=3 crafted slots; one set needs 5 pieces), so completion needs intrinsic named/raid set pieces from the IoD named-gear sweep. Raw harvest at data/seed/compendium/raw/dino_crafting.json (reproducibility). Effects verbatim; documented base value only."
  },
  "items": [
   {

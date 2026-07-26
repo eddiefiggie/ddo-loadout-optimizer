@@ -279,14 +279,27 @@ function setPiece(id, slotName, affixes, setName, tiers) {
 
   // ---- U4: Isle of Dread Dino crafting (typed slot-pools) ----
   // a Dinosaur Bone blank host: worn item with typed Dino slots, no base affixes
+  // Slots are keyed `type||category`; a bare "Scale" is treated as Accessory so
+  // the pre-M2 tests read naturally.
   function dinoHost(id, slotName, dinoTypes, affixes) {
     const v = item(id, slotName, affixes || []);
-    v.dino_slots_norm = dinoTypes || [];
+    v.dino_slots_norm = (dinoTypes || []).map((t) => (t.includes("||") ? t : `${t}||Accessory`));
     return v;
   }
-  // a Dino insert record (one (dino_type, stat, bonus_type, value))
-  function dinoIns(dino_type, stat, bonus_type, value) {
-    return { dino_type, stat, bonus_type, value, wiki_url: "wiki" };
+  // a Dino insert UNIT (one (dino_type, category) carrying >=1 affix)
+  function dinoIns(dino_type, stat, bonus_type, value, category) {
+    return {
+      dino_type, category: category || "Accessory",
+      affixes: [{ stat, bonus_type, value, unit: "flat" }], wiki_url: "wiki",
+    };
+  }
+  // a multi-affix Dino insert UNIT (KTD4): several affixes from one placement
+  function dinoMulti(dino_type, affixes, category) {
+    return {
+      dino_type, category: category || "Accessory",
+      affixes: affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, value, unit: "flat" })),
+      wiki_url: "wiki",
+    };
   }
 
   await test("Dino/AE1: insert counts only when its host is equipped + placed", async () => {
@@ -362,6 +375,59 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     };
     const d = await S.solveLexicographic(diffType, highs);
     assert.strictEqual(d.effective.Constitution, 17, "different types -> worn 10 + dino 7");
+  });
+
+  await test("Dino/KTD4: a multi-affix insert applies ALL affixes from one placement", async () => {
+    const m = {
+      targets: ["Sneak Attacks", "Sneak Attack Damage"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Boots", [dinoHost("B", "Boots", ["Fang"])])], // one Fang slot
+      dinoInserts: [dinoMulti("Fang", [
+        ["Sneak Attacks", "Enhancement", 11],
+        ["Sneak Attack Damage", "Enhancement", 17],
+      ])],
+    };
+    const r = await S.solveLexicographic(m, highs);
+    assert.strictEqual(r.effective["Sneak Attacks"], 11, "first affix applied");
+    assert.strictEqual(r.effective["Sneak Attack Damage"], 17, "second affix applied from the SAME placement");
+  });
+
+  await test("Dino/KTD4: a multi-affix insert is all-or-nothing (never half-placed)", async () => {
+    // Only the FIRST affix is a target; the unit must still bring both or neither.
+    // With a single Fang slot and a rival single-affix insert that scores the
+    // same on the priority target, the multi-affix unit is not preferred, but if
+    // placed it brings both — verify it never contributes only one affix.
+    const m = {
+      targets: ["Sneak Attacks"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Boots", [dinoHost("B", "Boots", ["Fang"])])],
+      dinoInserts: [dinoMulti("Fang", [
+        ["Sneak Attacks", "Enhancement", 11],
+        ["Sneak Attack Damage", "Enhancement", 17],
+      ])],
+    };
+    const r = await S.solveLexicographic(m, highs);
+    const placed = r.dinoPlaced.find((d) => d.affixes.some((a) => a.stat === "Sneak Attacks"));
+    assert.ok(placed, "the multi-affix unit is placed for the target");
+    assert.strictEqual(placed.affixes.length, 2, "and it carries BOTH affixes (all-or-nothing)");
+  });
+
+  await test("Dino/KTD1: a Weapon-typed insert cannot fill an Accessory slot", async () => {
+    const q = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Boots", [dinoHost("B", "Boots", ["Scale||Accessory"])])],
+      dinoInserts: [dinoIns("Scale", "Constitution", "Enhancement", 14, "Weapon")],
+    };
+    const r = await S.solveLexicographic(q, highs);
+    assert.strictEqual(r.effective.Constitution, 0, "Scale(Weapon) insert cannot fill a Scale(Accessory) slot");
+  });
+
+  await test("Dino/KTD1: a Weapon-typed insert fills a matching Weapon slot", async () => {
+    const q = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Main Hand", [dinoHost("W", "Main Hand", ["Scale||Weapon"])])],
+      dinoInserts: [dinoIns("Scale", "Constitution", "Enhancement", 14, "Weapon")],
+    };
+    const r = await S.solveLexicographic(q, highs);
+    assert.strictEqual(r.effective.Constitution, 14, "Scale(Weapon) insert fills a Scale(Weapon) slot");
   });
 
   // ---- U81 Nearly Complete (parametric choice-slot) ----
@@ -688,6 +754,45 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.ok(expected && craft.value === expected.value,
       `craft value ${craft.value} matches the legendary pool value ${expected && expected.value}`);
     assert.ok(craft.value > 35, "legendary magnitude exceeds the heroic one (would have been ~35)");
+  });
+
+  await test("Dino crafts a multi-affix insert onto a real host end-to-end (real dataset)", async () => {
+    const fs = require("fs");
+    const { buildModel } = require("../web/model.js");
+    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    // "Sneak Attack Damage" is supplied ONLY by the multi-affix Fang insert
+    // (Accessory). Targeting it must select a real Dino blank host and place the
+    // multi-affix unit (proves the blank survived dominance + the pool was
+    // consumed all-or-nothing — the load-bearing checks).
+    const query = { mlCap: 34, targets: ["Sneak Attack Damage"], armorType: null, weaponSetup: null, classRace: null };
+    const model = buildModel(data.items, query, data.dino_inserts, data.nearly_complete, data.viktranium);
+    const res = await S.solveLexicographic(model, highs);
+    assert.strictEqual(res.status, "optimal");
+    assert.ok(res.effective["Sneak Attack Damage"] > 0, "the crafted insert advances the target");
+    const unit = (res.dinoPlaced || []).find((d) => (d.affixes || []).some((a) => a.stat === "Sneak Attack Damage"));
+    assert.ok(unit, "a Dino insert supplying Sneak Attack Damage was placed onto a real host");
+    assert.ok(unit.affixes.length >= 2, "the placed unit is the multi-affix insert (both affixes ride one placement)");
+  });
+
+  await test("Dino crafts an Armor-typed multi-affix insert onto the real armor blank end-to-end (real dataset)", async () => {
+    const fs = require("fs");
+    const { buildModel } = require("../web/model.js");
+    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    // "Repair Healing Amplification" is supplied ONLY by the Armor-typed
+    // multi-affix "Silverscale" insert (Scale). Targeting it must select the real
+    // Dinosaur Bone Armor blank and place an ARMOR-typed insert — proving two-key
+    // (category) routing AND multi-affix placement end-to-end on the real data.
+    const query = { mlCap: 34, targets: ["Repair Healing Amplification"], armorType: null, weaponSetup: null, classRace: null };
+    const model = buildModel(data.items, query, data.dino_inserts, data.nearly_complete, data.viktranium);
+    const res = await S.solveLexicographic(model, highs);
+    assert.strictEqual(res.status, "optimal");
+    const unit = (res.dinoPlaced || []).find((d) => (d.affixes || []).some((a) => a.stat === "Repair Healing Amplification"));
+    assert.ok(unit, "an Armor-typed Dino insert supplying Repair Healing Amplification was placed");
+    assert.strictEqual(unit.category, "Armor", "the placed insert is Armor-category (two-key routing held)");
+    assert.ok(unit.affixes.length >= 2, "the placed unit is the multi-affix Silverscale insert");
+    assert.ok(res.effective["Repair Healing Amplification"] > 0, "the crafted armor insert advances the target");
+    const armorBlank = res.chosen.find((c) => c.variant.source === "dino_crafting_blank" && c.slot === "Armor");
+    assert.ok(armorBlank, "the real Dinosaur Bone Armor blank was equipped to host the insert");
   });
 
   console.log(`\n${passed} passed`);

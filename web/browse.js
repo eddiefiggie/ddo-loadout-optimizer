@@ -57,13 +57,20 @@ function affixText(v) {
  *  browsable alongside items. NOT an equippable item — the solver reads the
  *  separate dino_inserts pool; this is inventory visibility only. */
 function dinoInsertRow(ins) {
+  // An insert is a UNIT keyed by (dino_type, category) that may carry several
+  // affixes (KTD4). Fall back to a flat single-affix record for back-compat.
+  const affixes = (ins.affixes && ins.affixes.length)
+    ? ins.affixes.map((a) => ({ stat: a.stat, bonus_type: a.bonus_type, value: a.value, unit: a.unit || "flat" }))
+    : [{ stat: ins.stat, bonus_type: ins.bonus_type, value: ins.value, unit: ins.unit || "flat" }];
+  const category = ins.category || "Accessory";
+  const title = ins.name ? `${ins.name} — ${ins.dino_type}` : `${ins.dino_type}: ${affixes[0].stat}`;
   return {
-    variant_id: `${ins.dino_type}: ${ins.stat}`,
-    source_item: "Isle of Dread Dino insert",
-    slot: `Dino Insert (${ins.dino_type})`,
+    variant_id: title,
+    source_item: `Isle of Dread Dino insert (${category})`,
+    slot: `Dino Insert (${ins.dino_type} / ${category})`,
     minimum_level: 31,
     verification: "verified",
-    affixes: [{ stat: ins.stat, bonus_type: ins.bonus_type, value: ins.value, unit: ins.unit || "flat" }],
+    affixes,
     scaling: [],
     wiki_url: ins.wiki_url,
     dino_insert: true,
