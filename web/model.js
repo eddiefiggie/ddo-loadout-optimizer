@@ -214,11 +214,18 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   const dodgeCap = query.armorType && targetSet.has("Dodge")
     ? (ARMOR_DODGE_CAP[query.armorType] ?? null) : null;
 
-  // Dino insert pool: each record is a single (dino_type, stat, bonus_type,
-  // value) placeable into a matching typed slot. Keep only inserts that advance
-  // a ranked target — the rest add solver vars with no benefit. The solver caps
-  // total placements per type by the open typed slots on equipped items.
-  const dinoPool = (dinoInserts || []).filter((i) => i && targetSet.has(i.stat) && i.value > 0);
+  // Dino insert pool: each record is an insert UNIT keyed by (dino_type,
+  // category) carrying one or more affixes (KTD4). Keep a unit when ANY of its
+  // affixes advances a ranked target — the rest add solver vars with no benefit.
+  // The solver caps total placements per (type, category) key by the open typed
+  // slots on equipped items, and gates a multi-affix unit all-or-nothing.
+  const dinoAdvances = (i) => {
+    const affixes = (i.affixes && i.affixes.length)
+      ? i.affixes
+      : (i.stat ? [{ stat: i.stat, value: i.value }] : []);
+    return affixes.some((a) => targetSet.has(a.stat) && a.value > 0);
+  };
+  const dinoPool = (dinoInserts || []).filter((i) => i && dinoAdvances(i));
 
   // U81 Nearly Complete: the parametric option pool. Keep only options that
   // advance a ranked target; the solver attaches them per item via the item's

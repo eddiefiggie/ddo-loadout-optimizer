@@ -126,36 +126,50 @@ function buildProgram(model) {
   }
 
   // U4 (Dino) — Isle of Dread Dino crafting. Structurally the augment mechanic
-  // with a typed-slot vocabulary: each insert gets a placement binary q; its stat
-  // is a contribution gated by [q]. Per Dino type (Scale/Fang/Claw/Horn), total
-  // placements are bounded by the open typed slots across equipped worn items
+  // with a typed-slot vocabulary, TWO-KEYED by (dino_type, category) (KTD1): a
+  // "Scale (Weapon)" insert fits only a "Scale Slot (Weapon)". Each insert UNIT
+  // gets ONE placement binary q; each of the unit's affixes is a contribution
+  // gated by [q] into its own (stat, bonus_type) bucket — so a multi-affix insert
+  // (KTD4) applies ALL its affixes together or none. Per (type, category) key,
+  // total placements are bounded by the open typed slots across equipped items
   // (aggregate capacity, mirroring the augment color model). A blank host carries
-  // dino_slots_norm — the list of typed slots it exposes. An insert advancing no
-  // ranked target is left out; an insert whose type has no open slot on any
-  // equipped item is forced to 0 by an empty-capacity constraint (AE2).
-  const dinoByType = new Map(); // dino_type -> [placement var names]
+  // dino_slots_norm — the list of `type||category` slots it exposes. A unit none
+  // of whose affixes advances a ranked target is left out; a unit whose key has no
+  // open slot on any equipped item is forced to 0 by an empty-capacity constraint.
+  const dinoSlotKey = (ins) => `${ins.dino_type}||${ins.category || "Accessory"}`;
+  const dinoByKey = new Map(); // "type||category" -> [placement var names]
   let qc = 0;
   for (const ins of model.dinoInserts || []) {
-    const type = ins.dino_type;
-    if (!type || !(targetSet.has(ins.stat) && ins.value > 0)) continue;
+    const affixes = (ins.affixes && ins.affixes.length)
+      ? ins.affixes
+      // back-compat: a flat single-affix record (older shape)
+      : (ins.stat ? [{ stat: ins.stat, bonus_type: ins.bonus_type, value: ins.value, unit: ins.unit }] : []);
+    const onTarget = affixes.filter((a) => targetSet.has(a.stat) && a.value > 0);
+    if (!ins.dino_type || onTarget.length === 0) continue;
     const q = "q" + qc++;
     extraVars.push(q);
     dinoMeta.set(q, {
-      dino_type: type, stat: ins.stat, bonus_type: ins.bonus_type,
-      value: ins.value, unit: ins.unit || "flat", wiki_url: ins.wiki_url,
+      dino_type: ins.dino_type, category: ins.category || "Accessory",
+      name: ins.name, affixes, wiki_url: ins.wiki_url,
     });
-    if (!dinoByType.has(type)) dinoByType.set(type, []);
-    dinoByType.get(type).push(q);
-    const k = `${ins.stat}||${ins.bonus_type}`;
-    if (!zByBucket.has(k)) zByBucket.set(k, []);
-    zByBucket.get(k).push({ name: "z" + zc++, gates: [q], value: ins.value });
+    const key = dinoSlotKey(ins);
+    if (!dinoByKey.has(key)) dinoByKey.set(key, []);
+    dinoByKey.get(key).push(q);
+    // Gate ONLY the on-target affixes into buckets (off-target affixes of the same
+    // unit ride along physically but add no objective terms); one shared gate [q]
+    // keeps the multi-affix placement all-or-nothing.
+    for (const a of onTarget) {
+      const k = `${a.stat}||${a.bonus_type}`;
+      if (!zByBucket.has(k)) zByBucket.set(k, []);
+      zByBucket.get(k).push({ name: "z" + zc++, gates: [q], value: a.value });
+    }
   }
-  // capacity: sum(q of type) - sum(open_dino_slots_of_type(item) * x_item) <= 0
-  for (const [type, qs] of dinoByType) {
+  // capacity: sum(q of key) - sum(open_dino_slots_of_key(item) * x_item) <= 0
+  for (const [key, qs] of dinoByKey) {
     const capTerms = [];
     for (const xv of xVars) {
       const slots = xv.variant.dino_slots_norm || [];
-      const n = slots.filter((t) => t === type).length;
+      const n = slots.filter((t) => t === key).length;
       if (n > 0) capTerms.push(`${n} ${xv.name}`);
     }
     const rhs = capTerms.length ? " - " + capTerms.join(" - ") : "";

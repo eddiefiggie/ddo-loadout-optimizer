@@ -8,7 +8,7 @@
  "items": [
   {
    "name": "Legendary Alchemical Longsword",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Red Augment Slot"
@@ -26,7 +26,7 @@
   },
   {
    "name": "Legendary Blessed Longsword of the Fallen Age",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Devotion +156",
@@ -50,7 +50,7 @@
   },
   {
    "name": "Legendary Blessed Longsword of the Golden Age",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Insightful Devotion +78",
@@ -74,7 +74,7 @@
   },
   {
    "name": "Legendary Booming Longsword of the Fallen Age",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Resonance +156",
@@ -98,7 +98,7 @@
   },
   {
    "name": "Legendary Antique Greataxe",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Red Augment Slot",
@@ -122,7 +122,7 @@
   },
   {
    "name": "Legendary Bloody War Axe",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Red Augment Slot",
@@ -145,7 +145,7 @@
   },
   {
    "name": "Legendary Calamitous Greataxe",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
@@ -182,7 +182,7 @@
   },
   {
    "name": "Legendary Cataclysmic Greataxe",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
@@ -219,7 +219,7 @@
   },
   {
    "name": "Legendary Bastard Sword of the Fallen Age",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
@@ -242,7 +242,7 @@
   },
   {
    "name": "Legendary Bastard Sword of the Golden Age",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
@@ -265,7 +265,7 @@
   },
   {
    "name": "Legendary Calamitous Bastard Sword",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
@@ -302,7 +302,7 @@
   },
   {
    "name": "Legendary Cataclysmic Bastard Sword",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
@@ -339,7 +339,7 @@
   },
   {
    "name": "Legendary Bladed Handwraps",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Armor-Piercing +21",
@@ -362,7 +362,7 @@
   },
   {
    "name": "Legendary Calamitous Handwraps",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
@@ -399,7 +399,7 @@
   },
   {
    "name": "Legendary Cataclysmic Handwraps",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
@@ -436,7 +436,7 @@
   },
   {
    "name": "Legendary Crippling Stonedust Wraps",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Red Augment Slot",
@@ -459,7 +459,7 @@
   },
   {
    "name": "Legendary Alchemical Dagger",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Red Augment Slot"
@@ -477,7 +477,7 @@
   },
   {
    "name": "Legendary Ancient Vulkoorim Dagger",
-   "category": "item",
+   "category": "weapon",
    "slot": "Weapon",
    "enhancements": [
     "Purple Augment Slot",

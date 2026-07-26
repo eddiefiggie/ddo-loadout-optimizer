@@ -124,7 +124,7 @@ def build(seed: dict) -> dict:
     # the solver places into those slots. Blanks are added AFTER verify so their
     # empty affix list does not quarantine them.
     dino_seed = load_dino_seed()
-    dino_blanks, dino_inserts, dino_cov = dino_mod.build_dino(dino_seed)
+    dino_blanks, dino_inserts, dino_sets, dino_cov = dino_mod.build_dino(dino_seed)
     variants = variants + dino_blanks
 
     # U81 Nearly Complete: expose the parametric choice-slot effect pool. Items
@@ -183,6 +183,7 @@ def build(seed: dict) -> dict:
         },
         "items": variants,
         "dino_inserts": dino_inserts,
+        "dino_sets": dino_sets,
         "nearly_complete": nc["records"],
         "viktranium": vik["records"],
         "compendium": comp_records,

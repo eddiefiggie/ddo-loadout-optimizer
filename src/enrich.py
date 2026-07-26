@@ -369,9 +369,16 @@ def build_item_record(name, slot, field, wiki_url, minimum_level=None,
         enhancements.append(f"{col} Augment Slot")
     for s in parsed["sets"]:
         enhancements.append(f"{s} (set)")
+    # Category is what routes an item to a solver slot: a weapon reaches the
+    # solver's Main Hand only as category "weapon", a rune arm only as "runearm"
+    # (model.js routes by category, not slot). Derive it from the slot here so
+    # every batch built through this constructor is routed correctly — the
+    # historical default of "item" silently stranded weapons in browse-only.
+    _slot_key = (slot or "").strip().lower()
+    category = {"weapon": "weapon", "rune arm": "runearm"}.get(_slot_key, "item")
     rec = {
         "name": name,
-        "category": "item",
+        "category": category,
         "slot": slot,
         "enhancements": enhancements,
         "wiki_url": wiki_url,
