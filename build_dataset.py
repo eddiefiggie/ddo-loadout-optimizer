@@ -186,6 +186,15 @@ def build(seed: dict) -> dict:
     if _set_problems:
         raise SystemExit("set-name reconciliation failed (unresolved drift): "
                          + "; ".join(p["canonical"] for p in _set_problems))
+    _distinct_enriched_sets = {set_catalog_mod.canonical(s["set"])
+                               for it in enriched_items for s in it.get("set_bonus") or []}
+    _set_enrichment_coverage = {
+        "enriched_members_with_set_bonus": sum(1 for it in enriched_items if it.get("set_bonus")),
+        "distinct_enriched_sets": len(_distinct_enriched_sets),
+        **set_catalog_mod.parse_rate(
+            _set_catalog, [set_catalog_mod.canonical(n) for n in _enriched_set_names]),
+        "known_undefined_sets": _KNOWN_UNDEFINED_SETS,
+    }
 
     # Legendary augment pool (gear-planner import). Sourced augments SUPERSEDE a
     # same-name base-seed augment (richer source wins — opposite of the base-wins
@@ -315,6 +324,7 @@ def build(seed: dict) -> dict:
             "coverage": cov,
             "color_coverage": colors_mod.color_coverage(variants),
             "set_coverage": set_mod.set_coverage(variants),
+            "set_enrichment_coverage": _set_enrichment_coverage,
             "dino_coverage": dino_cov,
             "nc_coverage": nc["coverage"],
             "viktranium_coverage": vik["coverage"],

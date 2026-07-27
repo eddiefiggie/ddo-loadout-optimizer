@@ -989,5 +989,28 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.ok(r.effective.Corrosion >= corr.value, "its Corrosion reaches the loadout total");
   });
 
+  await test("Sets/U4: enriched set members activate a set threshold via HiGHS (>=N, not below)", async () => {
+    // End-to-end proof that enriched gear now counts toward set bonuses: equip real
+    // enriched Dread Isle's Curse members from the built dataset and confirm the
+    // 5-piece bonus activates at 5 pieces and not at 4.
+    const fs = require("fs");
+    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    const SET = "The Legendary Dread Isle's Curse";
+    const members = data.items.filter(it => (it.set_bonus || []).some(s => s.set === SET));
+    const bySlot = {};
+    for (const it of members) if (!bySlot[it.slot]) bySlot[it.slot] = it;
+    const pieces = Object.values(bySlot)
+      .filter(v => ["Bracers", "Boots", "Gloves", "Belt", "Necklace", "Trinket", "Goggles", "Cloak", "Helmet"].includes(v.slot))
+      .slice(0, 5);
+    assert.ok(pieces.length === 5, "need 5 enriched Dread Isle members in distinct slots");
+    const mk = vs => ({ targets: ["Universal Spell Power"], mlCap: 34, dodgeCap: null,
+      worn: vs.map(v => ({ slot: v.slot, cardinality: 1, variants: [v] })) });
+    const r5 = await S.solveLexicographic(mk(pieces), highs);
+    const r4 = await S.solveLexicographic(mk(pieces.slice(0, 4)), highs);
+    assert.ok(r5.setsActive.some(s => s.set === SET), "5 enriched pieces activate the set");
+    assert.ok(r5.effective["Universal Spell Power"] >= 25, "the set's Universal Spell Power reaches the total");
+    assert.ok(!r4.setsActive.some(s => s.set === SET), "4 pieces do NOT activate the set (threshold honored)");
+  });
+
   console.log(`\n${passed} passed`);
 })();

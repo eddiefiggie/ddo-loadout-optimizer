@@ -131,6 +131,17 @@ test("coverageNote discloses Dino crafting with all pools optimized and Set-Bonu
   assert.ok(/Set-Bonus/.test(note), "discloses the deferred Set-Bonus pool honestly");
 });
 
+test("coverageNote discloses set bonuses now applying to enriched gear", () => {
+  const note = R.coverageNote({ metadata: { set_enrichment_coverage: {
+    enriched_members_with_set_bonus: 602, distinct_enriched_sets: 79,
+    membership_only_sets: ["One with the Swarm", "Legendary Deadly Diabolist"],
+    known_undefined_sets: ["Legendary Cooking By the Book"],
+  } } });
+  assert.ok(/Set bonuses on enriched gear/.test(note), "labels the enriched set-bonus coverage");
+  assert.ok(/602 enriched set members/.test(note), "reports the covered count");
+  assert.ok(/membership only/.test(note), "discloses membership-only sets honestly");
+});
+
 test("coverageNote discloses the ML30-36 endgame band coverage per expansion", () => {
   const note = R.coverageNote({ metadata: { band_coverage: { by_slot: {
     "isle_of_dread/Ring": { band_total: 4, enriched: 4, quarantined: 0, pending: 0 },

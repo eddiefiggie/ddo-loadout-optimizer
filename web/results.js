@@ -173,6 +173,15 @@ function coverageNote(dataset) {
     parts.push("<strong>Endgame band (ML30-36):</strong> " + bandParts.join(", ") +
       " — the exhaustive named + raid gear of these expansions, each item enriched or quarantined (none silently missing)");
   }
+  const sec = m.set_enrichment_coverage;
+  if (sec && sec.enriched_members_with_set_bonus) {
+    let s = `<strong>Set bonuses on enriched gear:</strong> ${sec.enriched_members_with_set_bonus} enriched set members now count toward set thresholds across ${sec.distinct_enriched_sets} sets`;
+    const membershipOnly = (sec.membership_only_sets || []).length + (sec.known_undefined_sets || []).length;
+    if (membershipOnly) {
+      s += `; ${membershipOnly} set${membershipOnly === 1 ? "" : "s"} contribute membership only (non-rankable or undefined bonus, disclosed)`;
+    }
+    parts.push(s);
+  }
   return `<p class="scope-note">${parts.join(". ")}. All optimized values are wiki-traceable.</p>`;
 }
 
