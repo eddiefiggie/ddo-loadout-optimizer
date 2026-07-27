@@ -59,15 +59,25 @@ def _clause(affix: dict):
     if ty == "Bool":
         return None, f"proc/flag, not a magnitude (Bool {name})"
     try:
-        int(str(val))
+        n = int(str(val))
     except (TypeError, ValueError):
         return None, f"non-numeric value ({ty} {name} = {val!r})"
     if not name:
         return None, "empty stat name"
-    if ty in (None, "", "Enhancement"):
-        return f"+{val} bonus to {name}", None          # untyped -> parser defaults to Enhancement
+    # Percent stats: the catalog marks them "Stat (%)". Render as "+N% Stat" (the
+    # base-seed form) so the % survives and the stat matches a real target — else the
+    # parser reads a flat bonus to a phantom "Stat (%)" that credits nothing.
+    pct = ""
+    if name.endswith("(%)"):
+        name = name[:-3].strip()
+        pct = "%"
+    val_s = f"{n:+d}"                                    # signed; also normalizes "+5"-string values
+    # "Untyped" is the catalog's explicit no-type marker (stacks like Enhancement to
+    # the parser). Treat it as untyped rather than flagging it away.
+    if ty in (None, "", "Enhancement", "Untyped"):
+        return f"{val_s}{pct} bonus to {name}", None
     if ty in BONUS_TYPES:
-        return f"+{val} {ty} bonus to {name}", None
+        return f"{val_s}{pct} {ty} bonus to {name}", None
     return None, f"unknown bonus type {ty!r} (would fold into the stat)"
 
 

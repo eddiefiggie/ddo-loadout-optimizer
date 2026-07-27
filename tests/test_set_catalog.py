@@ -48,6 +48,20 @@ def test_unknown_bonus_type_is_flagged_not_minted():
     assert text3 == "+15 Profane bonus to Melee Power"
 
 
+def test_percent_untyped_and_signed_rendering():
+    # Percent stats ("Stat (%)") render as +N% Stat and parse to unit=pct on the real stat.
+    text, _ = SC._clause({"name": "Armor Class (%)", "type": "Artifact", "value": "15"})
+    assert text == "+15% Artifact bonus to Armor Class"
+    parsed, flagged = set_parser.parse_piece_text(text)
+    assert not flagged and parsed[0]["stat"] == "Armor Class" and parsed[0]["unit"] == "pct"
+    # "Untyped" is the catalog's no-type marker -> rendered untyped, not flagged.
+    text2, reason2 = SC._clause({"name": "Doublestrike", "type": "Untyped", "value": "5"})
+    assert text2 == "+5 bonus to Doublestrike" and reason2 is None
+    # negative values keep their sign
+    text3, _ = SC._clause({"name": "Threat", "type": "Enhancement", "value": -5})
+    assert text3 == "-5 bonus to Threat"
+
+
 def test_definition_for_base_wins_on_canonical_key():
     seed = json.load(open(os.path.join(ROOT, "data", "seed", "ddo_items.json"), encoding="utf-8"))["items"]
     base = SC.base_defs_from_seed(seed)

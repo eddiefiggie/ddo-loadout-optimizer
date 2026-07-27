@@ -179,7 +179,11 @@ def build(seed: dict) -> dict:
             if d is not None:
                 defs.append(d)
         if defs:
-            it["set_bonus"] = defs
+            # Copy: definition_for may return the base-seed def by reference; never
+            # share a mutable dict across the base item, co-members, and tier variants
+            # (mirrors the seal-slot graft copy). Deep-copy piece_bonuses too.
+            it["set_bonus"] = [{**d, "piece_bonuses": dict(d.get("piece_bonuses") or {})}
+                               for d in defs]
     # Fail loudly on unresolved name drift (KTD4) rather than silently splitting a set.
     _set_problems = set_catalog_mod.reconciliation_audit(
         _set_base_defs, _set_catalog, _enriched_set_names, known_undefined=_KNOWN_UNDEFINED_SETS)
