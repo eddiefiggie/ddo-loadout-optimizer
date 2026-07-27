@@ -15,12 +15,13 @@ def _shard():
     return json.load(open(SHARD, encoding="utf-8"))
 
 
-def test_bulk_shard_exists_and_is_ml29_plus():
+def test_bulk_shard_exists_and_spans_all_levels():
+    # Full-import (all levels): the bulk shard now covers every ML, not just endgame.
     d = _shard()
     real = [x for x in d["items"] if not x.get("_seal_carrier")]
-    assert len(real) > 1000, f"expected the bulk import, got {len(real)}"
-    for it in real:
-        assert it.get("minimum_level", 0) >= 29, f"{it['name']} below ML29"
+    assert len(real) > 4000, f"expected the full all-levels import, got {len(real)}"
+    mls = [it.get("minimum_level", 0) for it in real]
+    assert min(mls) < 29 and max(mls) >= 29, "the shard should span sub-endgame and endgame MLs"
 
 
 def test_no_planner_name_collides_with_prior_shards():

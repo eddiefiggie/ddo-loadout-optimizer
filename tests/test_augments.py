@@ -34,9 +34,11 @@ def test_pool_has_legendary_augments_across_colors_and_lunar_solar():
     assert len(items) > 49, "the sourced pool must exceed the old incidental 49"
 
 
-def test_every_pooled_augment_is_legendary_and_typed():
+def test_every_pooled_augment_is_typed():
+    # Full-import (all levels): the pool spans every ML, but every entry must be a
+    # rankable typed augment (procs/untyped are dropped at import).
     for it in _pool():
-        assert (it.get("minimum_level") or 0) >= 29, it["name"]
+        assert (it.get("minimum_level") or 0) >= 1, it["name"]
         assert it["category"] == "augment"
         assert it["enhancements"], it["name"]  # at least one parseable typed affix
 
