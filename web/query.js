@@ -121,5 +121,28 @@ window.App && window.App.ready((dataset) => {
     }
   });
 
+  // On load the results area is empty, which made the page read like a plain
+  // form over a table. Show the data-forward design language up front (the solve
+  // banner + a preview of the readout/paperdoll) so the new UI is visible before
+  // the first solve, with a clear call to action.
+  function renderEmptyState() {
+    const n = (dataset.items || []).length;
+    $("q-results").innerHTML = `
+      <div class="readout-intro">
+        <div class="solve-banner ghost">
+          <div class="solve-verdict"><span class="dot"></span><span class="label">READY</span><span class="sub">· exact MILP solver — provably optimal, not a heuristic</span></div>
+          <div class="solve-scale">
+            <div class="scale-item"><span class="n">${n.toLocaleString()}</span><span class="k">items indexed</span></div>
+            <div class="scale-item"><span class="n">exact</span><span class="k">MILP solve</span></div>
+          </div>
+        </div>
+        <div class="intro-cta">
+          <strong>Add target affixes above, in priority order, then Solve.</strong>
+          <span class="muted">Your provably-optimal build renders here as a live ranked-target readout — each value broken down by bonus type with set contributions folded in — beside a paperdoll of the chosen loadout.</span>
+        </div>
+      </div>`;
+  }
+
   renderRanked();
+  renderEmptyState();
 });
