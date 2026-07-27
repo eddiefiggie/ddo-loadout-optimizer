@@ -1,0 +1,2126 @@
+{
+ "metadata": {
+  "layer": "band-frontier",
+  "band": "ML 30-36",
+  "target_updates": {
+   "55": "isle_of_dread",
+   "69": "myth_drannor",
+   "81": "u81"
+  },
+  "source": "data/seed/compendium/band_categories/ml30_36_attribution.json",
+  "harvested": "2026-07-27",
+  "total": 188,
+  "pending": 33
+ },
+ "coverage": {
+  "isle_of_dread/Gloves": {
+   "band_total": 6,
+   "already_enriched": 3,
+   "pending": 3
+  },
+  "u81/Ring": {
+   "band_total": 7,
+   "already_enriched": 7,
+   "pending": 0
+  },
+  "myth_drannor/Trinket": {
+   "band_total": 7,
+   "already_enriched": 7,
+   "pending": 0
+  },
+  "myth_drannor/Bracers": {
+   "band_total": 5,
+   "already_enriched": 5,
+   "pending": 0
+  },
+  "myth_drannor/Necklace": {
+   "band_total": 5,
+   "already_enriched": 5,
+   "pending": 0
+  },
+  "myth_drannor/Boots": {
+   "band_total": 5,
+   "already_enriched": 5,
+   "pending": 0
+  },
+  "u81/Trinket": {
+   "band_total": 8,
+   "already_enriched": 8,
+   "pending": 0
+  },
+  "isle_of_dread/Belt": {
+   "band_total": 5,
+   "already_enriched": 3,
+   "pending": 2
+  },
+  "isle_of_dread/Boots": {
+   "band_total": 5,
+   "already_enriched": 3,
+   "pending": 2
+  },
+  "isle_of_dread/Bracers": {
+   "band_total": 4,
+   "already_enriched": 3,
+   "pending": 1
+  },
+  "isle_of_dread/Cloak": {
+   "band_total": 6,
+   "already_enriched": 3,
+   "pending": 3
+  },
+  "isle_of_dread/Helmet": {
+   "band_total": 6,
+   "already_enriched": 2,
+   "pending": 4
+  },
+  "isle_of_dread/Necklace": {
+   "band_total": 4,
+   "already_enriched": 1,
+   "pending": 3
+  },
+  "isle_of_dread/Ring": {
+   "band_total": 4,
+   "already_enriched": 1,
+   "pending": 3
+  },
+  "isle_of_dread/Trinket": {
+   "band_total": 3,
+   "already_enriched": 0,
+   "pending": 3
+  },
+  "u81/Boots": {
+   "band_total": 7,
+   "already_enriched": 7,
+   "pending": 0
+  },
+  "u81/Goggles": {
+   "band_total": 5,
+   "already_enriched": 4,
+   "pending": 1
+  },
+  "u81/Belt": {
+   "band_total": 7,
+   "already_enriched": 7,
+   "pending": 0
+  },
+  "u81/Necklace": {
+   "band_total": 8,
+   "already_enriched": 8,
+   "pending": 0
+  },
+  "u81/Gloves": {
+   "band_total": 5,
+   "already_enriched": 5,
+   "pending": 0
+  },
+  "myth_drannor/Ring": {
+   "band_total": 20,
+   "already_enriched": 12,
+   "pending": 8
+  },
+  "myth_drannor/Belt": {
+   "band_total": 4,
+   "already_enriched": 4,
+   "pending": 0
+  },
+  "u81/Bracers": {
+   "band_total": 5,
+   "already_enriched": 5,
+   "pending": 0
+  },
+  "myth_drannor/Cloak": {
+   "band_total": 7,
+   "already_enriched": 7,
+   "pending": 0
+  },
+  "u81/Helmet": {
+   "band_total": 13,
+   "already_enriched": 13,
+   "pending": 0
+  },
+  "myth_drannor/Helmet": {
+   "band_total": 8,
+   "already_enriched": 8,
+   "pending": 0
+  },
+  "u81/Cloak": {
+   "band_total": 10,
+   "already_enriched": 10,
+   "pending": 0
+  },
+  "myth_drannor/Goggles": {
+   "band_total": 6,
+   "already_enriched": 6,
+   "pending": 0
+  },
+  "myth_drannor/Gloves": {
+   "band_total": 3,
+   "already_enriched": 3,
+   "pending": 0
+  }
+ },
+ "worklist": [
+  {
+   "name": "Alaric's Grim Gauntlets",
+   "slot": "Gloves",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Alaric's_Grim_Gauntlets",
+   "status": "pending"
+  },
+  {
+   "name": "Baphomet's Reign",
+   "slot": "Ring",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Baphomet's_Reign",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Bauble of Draconic Resistance",
+   "slot": "Trinket",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Bauble_of_Draconic_Resistance",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Bracers of the Battlerager",
+   "slot": "Bracers",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_the_Battlerager",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Breath of Vitality",
+   "slot": "Necklace",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Breath_of_Vitality",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Death's Deferral",
+   "slot": "Boots",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Death's_Deferral",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Demogorgon's Reign",
+   "slot": "Trinket",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Demogorgon's_Reign",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Dinosaur Bone Belt",
+   "slot": "Belt",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Dinosaur_Bone_Belt",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Dinosaur Bone Boots",
+   "slot": "Boots",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Dinosaur_Bone_Boots",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Dinosaur Bone Bracers",
+   "slot": "Bracers",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Dinosaur_Bone_Bracers",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Dinosaur Bone Cloak",
+   "slot": "Cloak",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Dinosaur_Bone_Cloak",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Dinosaur Bone Gloves",
+   "slot": "Gloves",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Dinosaur_Bone_Gloves",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Dinosaur Bone Helmet",
+   "slot": "Helmet",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Dinosaur_Bone_Helmet",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Dinosaur Bone Necklace",
+   "slot": "Necklace",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Dinosaur_Bone_Necklace",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Dinosaur Bone Ring",
+   "slot": "Ring",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Dinosaur_Bone_Ring",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Doctor Lifestone's Hunting Horn",
+   "slot": "Trinket",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Doctor_Lifestone's_Hunting_Horn",
+   "status": "pending"
+  },
+  {
+   "name": "Dracolich's Eye",
+   "slot": "Necklace",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Dracolich's_Eye",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Footfalls of the Dracolich",
+   "slot": "Boots",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Footfalls_of_the_Dracolich",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Fraz-Urb'luu's Reign",
+   "slot": "Boots",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Fraz-Urb'luu's_Reign",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Gorth's Mage Hand",
+   "slot": "Gloves",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Gorth's_Mage_Hand",
+   "status": "pending"
+  },
+  {
+   "name": "Graz'zt's Reign",
+   "slot": "Goggles",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Graz'zt's_Reign",
+   "status": "pending"
+  },
+  {
+   "name": "Juiblex's Reign",
+   "slot": "Belt",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Juiblex's_Reign",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Abyssal Compass",
+   "slot": "Trinket",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Abyssal_Compass",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Admiral's Cummerbund",
+   "slot": "Belt",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Admiral's_Cummerbund",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Admiral's Gloves",
+   "slot": "Gloves",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Admiral's_Gloves",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Admiral's Gumshoes",
+   "slot": "Boots",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Admiral's_Gumshoes",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Admiral's Wristwatch",
+   "slot": "Bracers",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Admiral's_Wristwatch",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Astral Spore Pendant",
+   "slot": "Necklace",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Astral_Spore_Pendant",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Balorskin Gauntlets",
+   "slot": "Gloves",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Balorskin_Gauntlets",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Band of Acrobatics",
+   "slot": "Ring",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_Acrobatics",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Band of Faith and Fortress",
+   "slot": "Ring",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_Faith_and_Fortress",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Band of Manifest Magic",
+   "slot": "Ring",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_Manifest_Magic",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Band of Mental Magic",
+   "slot": "Ring",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_Mental_Magic",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Band of Seasons' Warding",
+   "slot": "Ring",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_Seasons'_Warding",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Band of the Holy Way",
+   "slot": "Ring",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_the_Holy_Way",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Band of the Imprisoned One",
+   "slot": "Ring",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_the_Imprisoned_One",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Beachcombers",
+   "slot": "Boots",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Beachcombers",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Belt of Bold Brilliance",
+   "slot": "Belt",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Belt_of_Bold_Brilliance",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Belt of the Black Sands",
+   "slot": "Belt",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Belt_of_the_Black_Sands",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Belt of the Burrower",
+   "slot": "Belt",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Belt_of_the_Burrower",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Birchlore Gauntlets",
+   "slot": "Gloves",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Birchlore_Gauntlets",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Blue Raptor Feather",
+   "slot": "Trinket",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Blue_Raptor_Feather",
+   "status": "pending"
+  },
+  {
+   "name": "Legendary Boots of Fleet and Fortune",
+   "slot": "Boots",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Boots_of_Fleet_and_Fortune",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Boots of Uncanny Mending",
+   "slot": "Boots",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Boots_of_Uncanny_Mending",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Bracelets of Flourishing Fauna",
+   "slot": "Bracers",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracelets_of_Flourishing_Fauna",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Bracers of Baphomet",
+   "slot": "Bracers",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_Baphomet",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Bracers of the Spider Queen",
+   "slot": "Bracers",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_the_Spider_Queen",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Bracers of the Unseen Assassin",
+   "slot": "Bracers",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_the_Unseen_Assassin",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Bronzed Bracers",
+   "slot": "Bracers",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bronzed_Bracers",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Bulette-Armored Boots",
+   "slot": "Boots",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bulette-Armored_Boots",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Burrowing Claws",
+   "slot": "Gloves",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Burrowing_Claws",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Cavernous Chill",
+   "slot": "Belt",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cavernous_Chill",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Chains of Yeenoghu",
+   "slot": "Necklace",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Chains_of_Yeenoghu",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Cloak of Moonlight",
+   "slot": "Cloak",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_Moonlight",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Cloak of Sunlight",
+   "slot": "Cloak",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_Sunlight",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Cloak of the Artblade",
+   "slot": "Cloak",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_the_Artblade",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Cloak of the Crownblade",
+   "slot": "Cloak",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_the_Crownblade",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Cloak of the Forest's Arrow",
+   "slot": "Cloak",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_the_Forest's_Arrow",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Cloak of the Forest's Blade",
+   "slot": "Cloak",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_the_Forest's_Blade",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Cloak of the Warblade",
+   "slot": "Cloak",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_the_Warblade",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Cowl of the Drow Devotee",
+   "slot": "Helmet",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cowl_of_the_Drow_Devotee",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Cracked Symbol of Lolth",
+   "slot": "Necklace",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cracked_Symbol_of_Lolth",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Crown of Evening's Rise",
+   "slot": "Helmet",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Crown_of_Evening's_Rise",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Crown of Ioun",
+   "slot": "Helmet",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Crown_of_Ioun",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Crown of Morning's Glory",
+   "slot": "Helmet",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Crown_of_Morning's_Glory",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Cuffs of the Forbidden",
+   "slot": "Bracers",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cuffs_of_the_Forbidden",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Defender's Cloak",
+   "slot": "Cloak",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "Defender of Tanaroa"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Defender's_Cloak",
+   "status": "pending"
+  },
+  {
+   "name": "Legendary Defender's Masque",
+   "slot": "Helmet",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "Defender of Tanaroa"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Defender's_Masque",
+   "status": "pending"
+  },
+  {
+   "name": "Legendary Demonic Rush",
+   "slot": "Boots",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Demonic_Rush",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Dread Stalker's Cloak",
+   "slot": "Cloak",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "Dread Stalker"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dread_Stalker's_Cloak",
+   "status": "pending"
+  },
+  {
+   "name": "Legendary Dread Stalker's Skullcap",
+   "slot": "Helmet",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "Dread Stalker"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dread_Stalker's_Skullcap",
+   "status": "pending"
+  },
+  {
+   "name": "Legendary Dream of the Worldshaper",
+   "slot": "Cloak",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dream_of_the_Worldshaper",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Drider's Vision",
+   "slot": "Goggles",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Drider's_Vision",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Drow Captain's Mask",
+   "slot": "Helmet",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Drow_Captain's_Mask",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Drow Wizard's Greaves",
+   "slot": "Boots",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Drow_Wizard's_Greaves",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Duergarcraft Cloak",
+   "slot": "Cloak",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Duergarcraft_Cloak",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Duergarcraft Cowl",
+   "slot": "Helmet",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Duergarcraft_Cowl",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Duergarcraft Helm",
+   "slot": "Helmet",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Duergarcraft_Helm",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Duergarcraft Shroud",
+   "slot": "Cloak",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Duergarcraft_Shroud",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Firemouth's Cloak",
+   "slot": "Cloak",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "Devotion of the Firemouth"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Firemouth's_Cloak",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Firemouth's Diving Helmet",
+   "slot": "Helmet",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "Devotion of the Firemouth"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Firemouth's_Diving_Helmet",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Flamewhip Belt",
+   "slot": "Belt",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Flamewhip_Belt",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Gauntlets of Devoured Divinity",
+   "slot": "Gloves",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Gauntlets_of_Devoured_Divinity",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Glabrezu Claw Pendant",
+   "slot": "Necklace",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Glabrezu_Claw_Pendant",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Glasses of the Meditative Mind",
+   "slot": "Goggles",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Glasses_of_the_Meditative_Mind",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Glasses of the Studious Mage",
+   "slot": "Goggles",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Glasses_of_the_Studious_Mage",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Gloves of the Nimble",
+   "slot": "Gloves",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Gloves_of_the_Nimble",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Gloves of the Resilient",
+   "slot": "Gloves",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Gloves_of_the_Resilient",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Gloves of the Strong",
+   "slot": "Gloves",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Gloves_of_the_Strong",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Goggles of the Archer",
+   "slot": "Goggles",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Goggles_of_the_Archer",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Goggles of the Berserker",
+   "slot": "Goggles",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Goggles_of_the_Berserker",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Goggles of the Warrior",
+   "slot": "Goggles",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Goggles_of_the_Warrior",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Goristro-Hide Bracers",
+   "slot": "Bracers",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Goristro-Hide_Bracers",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Great Forge Cloak",
+   "slot": "Cloak",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Great_Forge_Cloak",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Great Forge Cowl",
+   "slot": "Helmet",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Great_Forge_Cowl",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Great Forge Helm",
+   "slot": "Helmet",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Great_Forge_Helm",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Great Forge Shroud",
+   "slot": "Cloak",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Great_Forge_Shroud",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Greaves of Seasons' Warding",
+   "slot": "Boots",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Greaves_of_Seasons'_Warding",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Greenpine Gauntlets",
+   "slot": "Gloves",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Greenpine_Gauntlets",
+   "status": "pending"
+  },
+  {
+   "name": "Legendary Grip of the Marilith",
+   "slot": "Gloves",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Grip_of_the_Marilith",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Helm of Eternal Day",
+   "slot": "Helmet",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Helm_of_Eternal_Day",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Helm of Eternal Night",
+   "slot": "Helmet",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Helm_of_Eternal_Night",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Helm of the Artblade",
+   "slot": "Helmet",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Helm_of_the_Artblade",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Helm of the Crownblade",
+   "slot": "Helmet",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Helm_of_the_Crownblade",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Helm of the Sun's Wrath",
+   "slot": "Helmet",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Helm_of_the_Sun's_Wrath",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Helm of the Warblade",
+   "slot": "Helmet",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Helm_of_the_Warblade",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Hooves of Orcus",
+   "slot": "Boots",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Hooves_of_Orcus",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Jellysight",
+   "slot": "Goggles",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Jellysight",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Karazikar's Cube",
+   "slot": "Trinket",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Karazikar's_Cube",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Kopru Bracers",
+   "slot": "Bracers",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Kopru_Bracers",
+   "status": "pending"
+  },
+  {
+   "name": "Legendary Lantern of the Abyss",
+   "slot": "Ring",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Lantern_of_the_Abyss",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Lenses of Logic",
+   "slot": "Goggles",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Lenses_of_Logic",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Lightning Soles",
+   "slot": "Boots",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Lightning_Soles",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Lolth's Protection",
+   "slot": "Helmet",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Lolth's_Protection",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Mad Angels' Manacles",
+   "slot": "Bracers",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Mad_Angels'_Manacles",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Mad Brew Bottle",
+   "slot": "Necklace",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Mad_Brew_Bottle",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Magma Waders",
+   "slot": "Boots",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Magma_Waders",
+   "status": "pending"
+  },
+  {
+   "name": "Legendary Marilithskin Boots",
+   "slot": "Boots",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Marilithskin_Boots",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Minotaur Calling Horn",
+   "slot": "Trinket",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Minotaur_Calling_Horn",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Occultic Circlet",
+   "slot": "Helmet",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Occultic_Circlet",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Pendant of Crippling Strikes",
+   "slot": "Necklace",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Pendant_of_Crippling_Strikes",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Pendant of Hardy Presence",
+   "slot": "Necklace",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Pendant_of_Hardy_Presence",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Pendant of Silence",
+   "slot": "Necklace",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Pendant_of_Silence",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Pendant of the Earth",
+   "slot": "Necklace",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Pendant_of_the_Earth",
+   "status": "pending"
+  },
+  {
+   "name": "Legendary Pendant of the Sea",
+   "slot": "Necklace",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Pendant_of_the_Sea",
+   "status": "pending"
+  },
+  {
+   "name": "Legendary Pendant of the Sky",
+   "slot": "Necklace",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Pendant_of_the_Sky",
+   "status": "pending"
+  },
+  {
+   "name": "Legendary Periapt of Charisma",
+   "slot": "Trinket",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Periapt_of_Charisma",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Periapt of Constitution",
+   "slot": "Trinket",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Periapt_of_Constitution",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Periapt of Dexterity",
+   "slot": "Trinket",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Periapt_of_Dexterity",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Periapt of Intelligence",
+   "slot": "Trinket",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Periapt_of_Intelligence",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Periapt of Strength",
+   "slot": "Trinket",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Periapt_of_Strength",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Periapt of Wisdom",
+   "slot": "Trinket",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Periapt_of_Wisdom",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Piwafwi of the Drow Assassin",
+   "slot": "Cloak",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Piwafwi_of_the_Drow_Assassin",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Planar Lariat",
+   "slot": "Belt",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Planar_Lariat",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Purple Chiton Pouch",
+   "slot": "Trinket",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Purple_Chiton_Pouch",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Red Raptor Feather",
+   "slot": "Trinket",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Red_Raptor_Feather",
+   "status": "pending"
+  },
+  {
+   "name": "Legendary Ring of Mystic Charisma",
+   "slot": "Ring",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Mystic_Charisma",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Ring of Mystic Constitution",
+   "slot": "Ring",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Mystic_Constitution",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Ring of Mystic Dexterity",
+   "slot": "Ring",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Mystic_Dexterity",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Ring of Mystic Intelligence",
+   "slot": "Ring",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Mystic_Intelligence",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Ring of Mystic Strength",
+   "slot": "Ring",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Mystic_Strength",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Ring of Mystic Wisdom",
+   "slot": "Ring",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Mystic_Wisdom",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Ruler of Ruin",
+   "slot": "Ring",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ruler_of_Ruin",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Sacrarium Cloak",
+   "slot": "Cloak",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "Deacon of the Auricular Sacrarium"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Sacrarium_Cloak",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Sacrarium Suncatcher",
+   "slot": "Helmet",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "Deacon of the Auricular Sacrarium"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Sacrarium_Suncatcher",
+   "status": "pending"
+  },
+  {
+   "name": "Legendary Seaweed-woven Belt",
+   "slot": "Belt",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Seaweed-woven_Belt",
+   "status": "pending"
+  },
+  {
+   "name": "Legendary Shaped Duergarcraft Cowl",
+   "slot": "Helmet",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Shaped_Duergarcraft_Cowl",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Shaped Duergarcraft Helm",
+   "slot": "Helmet",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Shaped_Duergarcraft_Helm",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Shaped Great Forge Cowl",
+   "slot": "Helmet",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Shaped_Great_Forge_Cowl",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Shaped Great Forge Helm",
+   "slot": "Helmet",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Shaped_Great_Forge_Helm",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Shard of the Mad Gem",
+   "slot": "Trinket",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Shard_of_the_Mad_Gem",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Signet Ring of the Earth",
+   "slot": "Ring",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Signet_Ring_of_the_Earth",
+   "status": "pending"
+  },
+  {
+   "name": "Legendary Signet Ring of the Sea",
+   "slot": "Ring",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Signet_Ring_of_the_Sea",
+   "status": "pending"
+  },
+  {
+   "name": "Legendary Signet Ring of the Sky",
+   "slot": "Ring",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Signet_Ring_of_the_Sky",
+   "status": "pending"
+  },
+  {
+   "name": "Legendary Signet of the Prince of Pleasure",
+   "slot": "Ring",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Signet_of_the_Prince_of_Pleasure",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Six-Blade Belt",
+   "slot": "Belt",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Six-Blade_Belt",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Stitched Duergarcraft Cloak",
+   "slot": "Cloak",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Stitched_Duergarcraft_Cloak",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Stitched Duergarcraft Shroud",
+   "slot": "Cloak",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Stitched_Duergarcraft_Shroud",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Stitched Great Forge Cloak",
+   "slot": "Cloak",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Stitched_Great_Forge_Cloak",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Stitched Great Forge Shroud",
+   "slot": "Cloak",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Stitched_Great_Forge_Shroud",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Strap of Savviness",
+   "slot": "Belt",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Strap_of_Savviness",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Tail of the Demogorgon",
+   "slot": "Trinket",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Tail_of_the_Demogorgon",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary The Blood of Demons",
+   "slot": "Necklace",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_The_Blood_of_Demons",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary The Bloody Boulder",
+   "slot": "Trinket",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_The_Bloody_Boulder",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Torc of the Lords of the Abyss",
+   "slot": "Necklace",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Torc_of_the_Lords_of_the_Abyss",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Visor of Fraz-Urb'luu",
+   "slot": "Goggles",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Visor_of_Fraz-Urb'luu",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Vizeran's Band",
+   "slot": "Ring",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Vizeran's_Band",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Waistwrap of Wild Wisdom",
+   "slot": "Belt",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Waistwrap_of_Wild_Wisdom",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Legendary Walking Ancestor's Helmet",
+   "slot": "Helmet",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "Echoes of the Walking Ancestors"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Walking_Ancestor's_Helmet",
+   "status": "pending"
+  },
+  {
+   "name": "Legendary Walking Ancestor's Shroud",
+   "slot": "Cloak",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "Echoes of the Walking Ancestors"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Walking_Ancestor's_Shroud",
+   "status": "pending"
+  },
+  {
+   "name": "Legendary Wormwrithe Ring",
+   "slot": "Ring",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Wormwrithe_Ring",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Lindal's Mighty Belt",
+   "slot": "Belt",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Lindal's_Mighty_Belt",
+   "status": "pending"
+  },
+  {
+   "name": "Lolth's Reign",
+   "slot": "Gloves",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Lolth's_Reign",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Ophael's Cincture",
+   "slot": "Belt",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Ophael's_Cincture",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Orcus' Reign",
+   "slot": "Belt",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Orcus'_Reign",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Osfield's Lightning Boots",
+   "slot": "Boots",
+   "expansion": "isle_of_dread",
+   "update": 55,
+   "ml": 31,
+   "sets": [
+    "The Legendary Dread Isle's Curse"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Osfield's_Lightning_Boots",
+   "status": "pending"
+  },
+  {
+   "name": "Red Wizard's Sight",
+   "slot": "Goggles",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Red_Wizard's_Sight",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Thayan Pactmage's Bangle",
+   "slot": "Bracers",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Thayan_Pactmage's_Bangle",
+   "status": "already_enriched"
+  },
+  {
+   "name": "The Autumn Equinox",
+   "slot": "Ring",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:The_Autumn_Equinox",
+   "status": "pending"
+  },
+  {
+   "name": "The Spring Equinox",
+   "slot": "Ring",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:The_Spring_Equinox",
+   "status": "pending"
+  },
+  {
+   "name": "The Summer Solstice",
+   "slot": "Ring",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:The_Summer_Solstice",
+   "status": "pending"
+  },
+  {
+   "name": "The Theurgy of Autumn",
+   "slot": "Ring",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:The_Theurgy_of_Autumn",
+   "status": "pending"
+  },
+  {
+   "name": "The Theurgy of Spring",
+   "slot": "Ring",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:The_Theurgy_of_Spring",
+   "status": "pending"
+  },
+  {
+   "name": "The Theurgy of Summer",
+   "slot": "Ring",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:The_Theurgy_of_Summer",
+   "status": "pending"
+  },
+  {
+   "name": "The Theurgy of Winter",
+   "slot": "Ring",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:The_Theurgy_of_Winter",
+   "status": "pending"
+  },
+  {
+   "name": "The Winter Solstice",
+   "slot": "Ring",
+   "expansion": "myth_drannor",
+   "update": 69,
+   "ml": 33,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:The_Winter_Solstice",
+   "status": "pending"
+  },
+  {
+   "name": "Yeenoghu's Reign",
+   "slot": "Bracers",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Yeenoghu's_Reign",
+   "status": "already_enriched"
+  },
+  {
+   "name": "Zuggtmoy's Reign",
+   "slot": "Necklace",
+   "expansion": "u81",
+   "update": 81,
+   "ml": 35,
+   "sets": [],
+   "wiki_url": "https://ddowiki.com/page/Item:Zuggtmoy's_Reign",
+   "status": "already_enriched"
+  }
+ ]
+}

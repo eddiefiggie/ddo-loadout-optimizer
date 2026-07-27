@@ -1,0 +1,213 @@
+{
+ "metadata": {
+  "layer": "enriched",
+  "batch": "batch_r4_myth_drannor",
+  "system": "R4 ML30-36 band — myth_drannor",
+  "harvested": "2026-07-27",
+  "count": 8
+ },
+ "items": [
+  {
+   "name": "The Autumn Equinox",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Insightful Resistance +6",
+    "Insightful Doublestrike +8%",
+    "Insightful Doubleshot +5%",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Blue Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:The_Autumn_Equinox",
+   "augment_slots": [
+    "Green",
+    "Yellow",
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Alchemical Attunement",
+    "Bloody Thorns"
+   ],
+   "_enriched": true,
+   "minimum_level": 33,
+   "expansion": "myth_drannor"
+  },
+  {
+   "name": "The Spring Equinox",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Insightful Resistance +6",
+    "Insightful Doublestrike +8%",
+    "Insightful Doubleshot +5%",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Blue Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:The_Spring_Equinox",
+   "augment_slots": [
+    "Green",
+    "Yellow",
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Alchemical Attunement",
+    "Thorn of the Rose"
+   ],
+   "_enriched": true,
+   "minimum_level": 33,
+   "expansion": "myth_drannor"
+  },
+  {
+   "name": "The Summer Solstice",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Insightful Resistance +6",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Blue Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:The_Summer_Solstice",
+   "augment_slots": [
+    "Green",
+    "Yellow",
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Alchemical Attunement",
+    "MonkEffect",
+    "Brazen Brilliance"
+   ],
+   "_enriched": true,
+   "minimum_level": 33,
+   "expansion": "myth_drannor"
+  },
+  {
+   "name": "The Theurgy of Autumn",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Corrosion +168",
+    "Insightful Corrosion +84",
+    "Insightful Resistance +6",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Blue Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:The_Theurgy_of_Autumn",
+   "augment_slots": [
+    "Green",
+    "Yellow",
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Alchemical Attunement"
+   ],
+   "_enriched": true,
+   "minimum_level": 33,
+   "expansion": "myth_drannor"
+  },
+  {
+   "name": "The Theurgy of Spring",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Magnetism +168",
+    "Insight Magnetism +84",
+    "Insightful Resistance +6",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Blue Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:The_Theurgy_of_Spring",
+   "augment_slots": [
+    "Green",
+    "Yellow",
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Alchemical Attunement"
+   ],
+   "_enriched": true,
+   "minimum_level": 33,
+   "expansion": "myth_drannor"
+  },
+  {
+   "name": "The Theurgy of Summer",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Combustion +168",
+    "Insight Combustion +84",
+    "Insightful Resistance +6",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Blue Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:The_Theurgy_of_Summer",
+   "augment_slots": [
+    "Green",
+    "Yellow",
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Alchemical Attunement"
+   ],
+   "_enriched": true,
+   "minimum_level": 33,
+   "expansion": "myth_drannor"
+  },
+  {
+   "name": "The Theurgy of Winter",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Glaciation +168",
+    "Insight Glaciation +84",
+    "Insightful Resistance +6",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Blue Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:The_Theurgy_of_Winter",
+   "augment_slots": [
+    "Green",
+    "Yellow",
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Alchemical Attunement"
+   ],
+   "_enriched": true,
+   "minimum_level": 33,
+   "expansion": "myth_drannor"
+  },
+  {
+   "name": "The Winter Solstice",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Insightful Resistance +6",
+    "Deception +22",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "Blue Augment Slot"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:The_Winter_Solstice",
+   "augment_slots": [
+    "Green",
+    "Yellow",
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Alchemical Attunement",
+    "Freezing Gale"
+   ],
+   "_enriched": true,
+   "minimum_level": 33,
+   "expansion": "myth_drannor"
+  }
+ ]
+}

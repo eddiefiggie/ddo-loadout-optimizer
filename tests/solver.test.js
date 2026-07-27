@@ -967,5 +967,27 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.strictEqual(program.sealMeta.size, 0, "no unseal option is generated for a seal_type absent from the pool");
   });
 
+  await test("R4: a real enriched band item is selected by HiGHS over a weaker rival", async () => {
+    // Pull an actual R4-enriched variant from the built dataset and prove it flows
+    // through the real engine and wins on its own stat (past dominance) — the U5
+    // end-to-end proof that the ML30-36 band is genuinely solver-active.
+    const fs = require("fs");
+    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    const r4 = data.items.find(v => (v.source_item || v.variant_id) === "The Theurgy of Autumn");
+    assert.ok(r4, "The Theurgy of Autumn is solver-active in the dataset");
+    const corr = (r4.affixes || []).find(a => a.stat === "Corrosion");
+    assert.ok(corr && corr.value > 0, "it carries a parsed Corrosion spellpower affix");
+    const weak = item("WeakRing", r4.slot, [["Corrosion", corr.bonus_type, Math.max(1, corr.value - 50)]]);
+    const model = {
+      targets: ["Corrosion"], mlCap: 34, dodgeCap: null,
+      worn: [slot(r4.slot, [r4, weak])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.ok(r.chosen.some(c => c.variant && (c.variant.source_item || c.variant.variant_id) === "The Theurgy of Autumn"),
+      "HiGHS equips the enriched R4 item, not the weaker rival");
+    assert.ok(r.effective.Corrosion >= corr.value, "its Corrosion reaches the loadout total");
+  });
+
   console.log(`\n${passed} passed`);
 })();

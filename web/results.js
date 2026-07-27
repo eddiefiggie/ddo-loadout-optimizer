@@ -129,6 +129,26 @@ function coverageNote(dataset) {
   const sealHosts = sl.hosts_active;
   const sealPending = (sl.seal_types_pending || []).join("/");
   const comp = m.compendium_coverage || {};
+  const band = m.band_coverage || {};
+  const bandParts = [];
+  if (band.by_slot) {
+    const roll = {};
+    for (const key of Object.keys(band.by_slot)) {
+      const exp = key.split("/")[0];
+      const c = band.by_slot[key];
+      const r = roll[exp] || (roll[exp] = { band_total: 0, enriched: 0, quarantined: 0, pending: 0 });
+      r.band_total += c.band_total; r.enriched += c.enriched;
+      r.quarantined += c.quarantined; r.pending += c.pending;
+    }
+    const label = { isle_of_dread: "Isle of Dread", myth_drannor: "Myth Drannor", u81: "U81" };
+    for (const exp of Object.keys(roll).sort()) {
+      const r = roll[exp];
+      let s = `${label[exp] || exp} ${r.enriched}/${r.band_total} enriched`;
+      if (r.quarantined) s += `, ${r.quarantined} quarantined`;
+      if (r.pending) s += `, ${r.pending} pending`;
+      bandParts.push(s);
+    }
+  }
   const parts = [
     "<strong>Optimized:</strong> worn affixes, augments" +
       (aug != null ? ` (${aug} placeable)` : "") +
@@ -149,6 +169,10 @@ function coverageNote(dataset) {
       (comp.enriched_matched != null ? `, of which ${comp.enriched_matched} are enriched and solver-active` : "") +
       " — indexed-only items are browsable (name, slot, wiki link) but not yet stat-sourced, so the solver ranges over the enriched set; stat enrichment proceeds in batches",
   ];
+  if (bandParts.length) {
+    parts.push("<strong>Endgame band (ML30-36):</strong> " + bandParts.join(", ") +
+      " — the exhaustive named + raid gear of these expansions, each item enriched or quarantined (none silently missing)");
+  }
   return `<p class="scope-note">${parts.join(". ")}. All optimized values are wiki-traceable.</p>`;
 }
 
