@@ -1,0 +1,590 @@
+{
+ "metadata": {
+  "layer": "enriched",
+  "batch": "batch_r4_isle_of_dread",
+  "system": "R4 ML30-36 band — isle_of_dread",
+  "harvested": "2026-07-27",
+  "count": 24
+ },
+ "items": [
+  {
+   "name": "Alaric's Grim Gauntlets",
+   "category": "item",
+   "slot": "Gloves",
+   "enhancements": [
+    "Wisdom +14",
+    "Dark Restoration Lore +23%",
+    "Power of the Dark Restoration +155",
+    "Green Augment Slot",
+    "Blue Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Alaric's_Grim_Gauntlets",
+   "augment_slots": [
+    "Green",
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Bonus Turning",
+    "Bonus Turning"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Doctor Lifestone's Hunting Horn",
+   "category": "item",
+   "slot": "Trinket",
+   "enhancements": [
+    "Constitution +14",
+    "Physical Sheltering +35",
+    "Deception +11",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Doctor_Lifestone's_Hunting_Horn",
+   "augment_slots": [
+    "Green",
+    "Yellow"
+   ],
+   "_enrich_unmapped": [
+    "Clicky",
+    "Speed",
+    "Spell: Summon Raptor"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Gorth's Mage Hand",
+   "category": "item",
+   "slot": "Gloves",
+   "enhancements": [
+    "Illusion Spell Focus +10",
+    "Kinetic Lore +23%",
+    "Impulse +155",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Gorth's_Mage_Hand",
+   "augment_slots": [
+    "Green",
+    "Yellow"
+   ],
+   "_enrich_unmapped": [
+    "ItemGrantedFeat"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Legendary Blue Raptor Feather",
+   "category": "item",
+   "slot": "Trinket",
+   "enhancements": [
+    "Physical Sheltering +35",
+    "Resistance +11",
+    "Good Luck +3",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Blue_Raptor_Feather",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Dino Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Legendary Defender's Cloak",
+   "category": "item",
+   "slot": "Cloak",
+   "enhancements": [
+    "Wisdom +14",
+    "Natural Armor +14",
+    "Equipped Positive Healing Amplification +28",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Defender of Tanaroa (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Defender's_Cloak",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Deathblock"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Legendary Defender's Masque",
+   "category": "item",
+   "slot": "Helmet",
+   "enhancements": [
+    "Insightful Wisdom +6",
+    "Healing Lore +22%",
+    "Devotion +149",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Defender of Tanaroa (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Defender's_Masque",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Immunity"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Legendary Dread Stalker's Cloak",
+   "category": "item",
+   "slot": "Cloak",
+   "enhancements": [
+    "Dexterity +14",
+    "Insightful Deception +5",
+    "Insightful Seeker +6",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Dread Stalker (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dread_Stalker's_Cloak",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Ghostly"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Legendary Dread Stalker's Skullcap",
+   "category": "item",
+   "slot": "Helmet",
+   "enhancements": [
+    "Insightful Dexterity +6",
+    "Parrying +6",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Dread Stalker (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dread_Stalker's_Skullcap",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "True Seeing",
+    "Shield Bonus"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Legendary Greenpine Gauntlets",
+   "category": "item",
+   "slot": "Gloves",
+   "enhancements": [
+    "Natural Armor +14",
+    "Fort Save +12",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Greenpine_Gauntlets",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Shield Bonus",
+    "Dino Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Legendary Kopru Bracers",
+   "category": "item",
+   "slot": "Bracers",
+   "enhancements": [
+    "Necromancy Spell Focus +9",
+    "Illusion Spell Focus +9",
+    "Profane Lifeforce +47",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Kopru_Bracers",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Dino Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Legendary Magma Waders",
+   "category": "item",
+   "slot": "Boots",
+   "enhancements": [
+    "Fire Absorption +36%",
+    "Fire Resistance +53",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Magma_Waders",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Speed",
+    "Dino Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Legendary Pendant of the Earth",
+   "category": "item",
+   "slot": "Necklace",
+   "enhancements": [
+    "insight Corrosion +74",
+    "insight Impulse +74",
+    "insight Combustion +74",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Pendant_of_the_Earth",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Dino Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Legendary Pendant of the Sea",
+   "category": "item",
+   "slot": "Necklace",
+   "enhancements": [
+    "Insight Resonance +74",
+    "Insight Glaciation +74",
+    "Insight Magnetism +74",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Pendant_of_the_Sea",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Dino Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Legendary Pendant of the Sky",
+   "category": "item",
+   "slot": "Necklace",
+   "enhancements": [
+    "Insightful Devotion +74",
+    "Insightful Radiance +74",
+    "Insightful Nullification +74",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Pendant_of_the_Sky",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Dino Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Legendary Red Raptor Feather",
+   "category": "item",
+   "slot": "Trinket",
+   "enhancements": [
+    "Insightful Deception +5",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Red_Raptor_Feather",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Assassinate",
+    "Concealment",
+    "Dino Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Legendary Sacrarium Suncatcher",
+   "category": "item",
+   "slot": "Helmet",
+   "enhancements": [
+    "Insightful Intelligence +6",
+    "Profane Lifeforce +47",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Deacon of the Auricular Sacrarium (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Sacrarium_Suncatcher",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Proof",
+    "Spell Focus"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Legendary Seaweed-woven Belt",
+   "category": "item",
+   "slot": "Belt",
+   "enhancements": [
+    "Spell Resistance +40",
+    "Spell Save +11",
+    "Potency +103",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Seaweed-woven_Belt",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Dino Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Legendary Signet Ring of the Earth",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Corrosion +149",
+    "Impulse +149",
+    "Combustion +149",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Signet_Ring_of_the_Earth",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Dino Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Legendary Signet Ring of the Sea",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Resonance +149",
+    "Glaciation +149",
+    "Magnetism +149",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Signet_Ring_of_the_Sea",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Dino Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Legendary Signet Ring of the Sky",
+   "category": "item",
+   "slot": "Ring",
+   "enhancements": [
+    "Devotion +149",
+    "Radiance +149",
+    "Nullification +149",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Signet_Ring_of_the_Sky",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Dino Slot"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Legendary Walking Ancestor's Helmet",
+   "category": "item",
+   "slot": "Helmet",
+   "enhancements": [
+    "Curse Save +11",
+    "Insightful Charisma +6",
+    "Wizardry +286",
+    "Potency +103",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Echoes of the Walking Ancestors (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Walking_Ancestor's_Helmet",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Legendary Walking Ancestor's Shroud",
+   "category": "item",
+   "slot": "Cloak",
+   "enhancements": [
+    "Charisma +14",
+    "Spell Focus Mastery Spell Focus +7",
+    "Insightful Spell Focus Mastery Spell Focus +3",
+    "Green Augment Slot",
+    "Colorless Augment Slot",
+    "Echoes of the Walking Ancestors (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Walking_Ancestor's_Shroud",
+   "augment_slots": [
+    "Green",
+    "Colorless"
+   ],
+   "_enrich_unmapped": [
+    "Guard"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Lindal's Mighty Belt",
+   "category": "item",
+   "slot": "Belt",
+   "enhancements": [
+    "Strength +14",
+    "Insightful Physical Sheltering +19",
+    "Green Augment Slot",
+    "Blue Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Lindal's_Mighty_Belt",
+   "augment_slots": [
+    "Green",
+    "Blue"
+   ],
+   "_enrich_unmapped": [
+    "Extra Lay on Hands",
+    "Extra Smites"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  },
+  {
+   "name": "Osfield's Lightning Boots",
+   "category": "item",
+   "slot": "Boots",
+   "enhancements": [
+    "Charisma +14",
+    "Thunderstorm Lore +23%",
+    "Power of the Thunderstorm +155",
+    "Green Augment Slot",
+    "Yellow Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "wiki_url": "https://ddowiki.com/page/Item:Osfield's_Lightning_Boots",
+   "augment_slots": [
+    "Green",
+    "Yellow"
+   ],
+   "_enrich_unmapped": [
+    "Sound and Silence",
+    "Soundproof"
+   ],
+   "_enriched": true,
+   "minimum_level": 31,
+   "expansion": "isle_of_dread"
+  }
+ ]
+}

@@ -1,0 +1,217 @@
+{
+ "metadata": {
+  "layer": "raw",
+  "batch": "batch_r4",
+  "system": "R4 ML30-36 band delta (IoD/MD/U81)",
+  "harvested": "2026-07-27",
+  "source": "ddowiki.com api.php prop=revisions (Item namespace) enhancements field",
+  "count": 41
+ },
+ "items": {
+  "Alaric's Grim Gauntlets": {
+   "enh": "* {{Stat|Wisdom|14}}\n* {{Spelllore|Dark Restoration|23}}\n* {{SpellPower|Power of the Dark Restoration|155}}\n* {{Bonus Turning|Hallowed|14}}\n* {{Bonus Turning|Sacred|14}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}\n* {{Augment|Green}}\n* {{Augment|Blue}}",
+   "ml": "31",
+   "type": "Gloves"
+  },
+  "Dinosaur Bone Belt": {
+   "enh": "* {{Dino Slot|Scale|Accessory}}\n* {{Dino Slot|Fang|Accessory}}\n* {{Dino Slot|Claw|Accessory}}\n* {{Dino Slot|Horn|Accessory}}\n* {{Augment|Blue}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "ml": "31",
+   "type": "Belt"
+  },
+  "Dinosaur Bone Boots": {
+   "enh": "* {{Dino Slot|Scale|Accessory}}\n* {{Dino Slot|Fang|Accessory}}\n* {{Dino Slot|Claw|Accessory}}\n* {{Dino Slot|Horn|Accessory}}\n* {{Augment|Blue}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "ml": "31",
+   "type": "Boots"
+  },
+  "Dinosaur Bone Bracers": {
+   "enh": "* {{Dino Slot|Scale|Accessory}}\n* {{Dino Slot|Fang|Accessory}}\n* {{Dino Slot|Claw|Accessory}}\n* {{Dino Slot|Horn|Accessory}}\n* {{Augment|Blue}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "ml": "31",
+   "type": "Bracers"
+  },
+  "Dinosaur Bone Cloak": {
+   "enh": "* {{Dino Slot|Scale|Accessory}}\n* {{Dino Slot|Fang|Accessory}}\n* {{Dino Slot|Claw|Accessory}}\n* {{Dino Slot|Horn|Accessory}}\n* {{Dino Slot|Set}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}",
+   "ml": "31",
+   "type": "Cloak"
+  },
+  "Dinosaur Bone Gloves": {
+   "enh": "* {{Dino Slot|Scale|Accessory}}\n* {{Dino Slot|Fang|Accessory}}\n* {{Dino Slot|Claw|Accessory}}\n* {{Dino Slot|Horn|Accessory}}\n* {{Augment|Blue}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "ml": "31",
+   "type": "Gloves"
+  },
+  "Dinosaur Bone Helmet": {
+   "enh": "* {{Dino Slot|Scale|Accessory}}\n* {{Dino Slot|Fang|Accessory}}\n* {{Dino Slot|Claw|Accessory}}\n* {{Dino Slot|Horn|Accessory}}\n* {{Dino Slot|Set}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}",
+   "ml": "31",
+   "type": "Helmet"
+  },
+  "Dinosaur Bone Necklace": {
+   "enh": "* {{Dino Slot|Scale|Accessory}}\n* {{Dino Slot|Fang|Accessory}}\n* {{Dino Slot|Claw|Accessory}}\n* {{Dino Slot|Horn|Accessory}}\n* {{Augment|Blue}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "ml": "31",
+   "type": "Necklace"
+  },
+  "Dinosaur Bone Ring": {
+   "enh": "* {{Dino Slot|Scale|Accessory}}\n* {{Dino Slot|Fang|Accessory}}\n* {{Dino Slot|Claw|Accessory}}\n* {{Dino Slot|Horn|Accessory}}\n* {{Augment|Blue}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "ml": "31",
+   "type": "Ring"
+  },
+  "Doctor Lifestone's Hunting Horn": {
+   "enh": "* {{Clicky|Summon Legendary Dinosaur||1|1}}\n* {{Stat|Constitution|14}}\n* {{Sheltering|35}}\n* {{Deception|11}}\n* {{Speed|30}}\n* {{Spell: Summon Raptor}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}",
+   "ml": "31",
+   "type": "Trinket"
+  },
+  "Gorth's Mage Hand": {
+   "enh": "* {{Spell Focus|Illusion|10}}\n* {{Spelllore|Kinetic|23}}\n* {{SpellPower|Impulse|155}}\n* {{ItemGrantedFeat|Elusive Target}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}",
+   "ml": "31",
+   "type": "Gloves"
+  },
+  "Graz'zt's Reign": {
+   "enh": "* {{Skills|Linguistics|15}}\n* {{Winged Allure}}\n* {{Notable Target}}\n* {{NaturalArmor|17}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Augment|Blue}}\n* {{Augment|Sun}}",
+   "ml": "35",
+   "type": "Goggles"
+  },
+  "Legendary Blue Raptor Feather": {
+   "enh": "* {{Sheltering|35}}\n* {{Resistance|11}}\n* {{Good Luck|3}}\n* {{Dino Slot|Fang|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "ml": "31",
+   "type": "Trinket"
+  },
+  "Legendary Defender's Cloak": {
+   "enh": "* {{Deathblock}}\n* {{Stat|WIS|14}}\n* {{NaturalArmor|14}}\n* {{HealingAmp|28|Healing|Equipped}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|Defender of Tanaroa}}",
+   "ml": "31",
+   "type": "Cloak"
+  },
+  "Legendary Defender's Masque": {
+   "enh": "* {{Immunity|Fear}}\n* {{Stat|WIS|6|Insightful}}\n* {{Spelllore|Healing|22}}\n* {{SpellPower|Devotion|149}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|Defender of Tanaroa}}",
+   "ml": "31",
+   "type": "Helm"
+  },
+  "Legendary Dread Stalker's Cloak": {
+   "enh": "* {{Ghostly}}\n* {{Stat|DEX|14}}\n* {{Deception|5|Insightful}}\n* {{Seeker|6|Insightful}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|Dread Stalker}}",
+   "ml": "31",
+   "type": "Cloak"
+  },
+  "Legendary Dread Stalker's Skullcap": {
+   "enh": "* {{True Seeing}}\n* {{Stat|Dexterity|6|Insightful}}\n* {{Parrying|6}}\n* {{Shield Bonus|14}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|Dread Stalker}}",
+   "ml": "31",
+   "type": "Helmet"
+  },
+  "Legendary Greenpine Gauntlets": {
+   "enh": "* {{NaturalArmor|14}}\n* {{Shield Bonus|14}}\n* {{Save|fort|12}}\n* {{Dino Slot|Scale|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "ml": "31",
+   "type": "Gloves"
+  },
+  "Legendary Kopru Bracers": {
+   "enh": "* {{Spell Focus|Necromancy|9}}\n* {{Spell Focus|Illusion|9}}\n* {{Hp|Profane Lifeforce|47}}\n* {{Dino Slot|Scale|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "ml": "31",
+   "type": "Bracers"
+  },
+  "Legendary Magma Waders": {
+   "enh": "* {{Speed|30}}\n* {{Absorption|Fire|36}}\n* {{Elemental Resistance|Fire|53}}\n* {{Dino Slot|Scale|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "ml": "31",
+   "type": "Boots"
+  },
+  "Legendary Pendant of the Earth": {
+   "enh": "* {{SpellPower|Corrosion|74|insight}}\n* {{SpellPower|Impulse|74|insight}}\n* {{SpellPower|Combustion|74|insight}}\n* {{Dino Slot|Fang|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "ml": "31",
+   "type": "Necklace"
+  },
+  "Legendary Pendant of the Sea": {
+   "enh": "* {{SpellPower|Resonance|74|Insight}}\n* {{SpellPower|Glaciation|74|Insight}}\n* {{SpellPower|Magnetism|74|Insight}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}\n* {{Dino Slot|Fang|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "ml": "31",
+   "type": "Necklace"
+  },
+  "Legendary Pendant of the Sky": {
+   "enh": "* {{Spell Power|Devotion|74|Insightful}}\n* {{Spell Power|Radiance|74|Insightful}}\n* {{Spell Power|Nullification|74|Insightful}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}\n* {{Dino Slot|Fang|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "ml": "31",
+   "type": "Necklace"
+  },
+  "Legendary Red Raptor Feather": {
+   "enh": "* {{Deception|5|Insightful}}\n* {{Assassinate|3|Quality}}\n* {{Concealment|Lesser Displacement}}\n* {{Dino Slot|Fang|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "ml": "31",
+   "type": "Trinket"
+  },
+  "Legendary Sacrarium Suncatcher": {
+   "enh": "* {{Proof|Poison|11}}\n* {{Stat|Intelligence|6|Insightful}}\n* {{Hp|Profane Lifeforce|47}}\n* {{Spell Focus|Spell Focus Mastery|II|Profane}}\n* {{Named item sets|Deacon of the Auricular Sacrarium}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "ml": "31",
+   "type": "Helmet"
+  },
+  "Legendary Seaweed-woven Belt": {
+   "enh": "* {{Spell Resistance|40}}\n* {{Save|Spell|11}}\n* {{SpellPower|Potency|103}}\n* {{Dino Slot|Claw|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "ml": "31",
+   "type": "Belt"
+  },
+  "Legendary Signet Ring of the Earth": {
+   "enh": "* {{Spell Power|Corrosion|149}}\n* {{Spell Power|Impulse|149}}\n* {{Spell Power|Combustion|149}}\n* {{Dino Slot|Claw|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "ml": "31",
+   "type": "Ring"
+  },
+  "Legendary Signet Ring of the Sea": {
+   "enh": "* {{Spell Power|Resonance|149}}\n* {{Spell Power|Glaciation|149}}\n* {{Spell Power|Magnetism|149}}\n* {{Dino Slot|Claw|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "ml": "31",
+   "type": "Ring"
+  },
+  "Legendary Signet Ring of the Sky": {
+   "enh": "* {{Spell Power|Devotion|149}}\n* {{Spell Power|Radiance|149}}\n* {{Spell Power|Nullification|149}}\n* {{Dino Slot|Claw|Accessory}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}",
+   "ml": "31",
+   "type": "Ring"
+  },
+  "Legendary Walking Ancestor's Helmet": {
+   "enh": "* {{Save|Curse|11}}\n* {{Stat|Charisma|6|Insightful}}\n* {{Wizardry|286}}\n* {{Spell Power|Potency|103}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}\n* {{Named item sets|Echoes of the Walking Ancestors}}",
+   "ml": "31",
+   "type": "Helm"
+  },
+  "Legendary Walking Ancestor's Shroud": {
+   "enh": "* {{Guard|Legendary Nightmare}}\n* {{Stat|Charisma|14}}\n* {{Spell Focus|Spell Focus Mastery|7}}\n* {{Spell Focus|Spell Focus Mastery|3|Insightful}}\n* {{Named item sets|Echoes of the Walking Ancestors}}\n* {{Augment|Green}}\n* {{Augment|Colorless}}",
+   "ml": "31",
+   "type": "Cloak"
+  },
+  "Lindal's Mighty Belt": {
+   "enh": "* {{Extra Lay on Hands|3}}\n* {{Extra Smites|3}}\n* {{Stat|Strength|14}}\n* {{Sheltering|19|Insightful}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}\n* {{Augment|Green}}\n* {{Augment|Blue}}",
+   "ml": "31",
+   "type": "Belt"
+  },
+  "Osfield's Lightning Boots": {
+   "enh": "* {{Stat|Charisma|14}}\n* {{Spelllore|Thunderstorm|23}}\n* {{SpellPower|Power of the Thunderstorm|155}}\n* {{Sound and Silence}}\n* {{Soundproof}}\n* {{Named item sets|The Legendary Dread Isle's Curse}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}",
+   "ml": "31",
+   "type": "Boots"
+  },
+  "The Autumn Equinox": {
+   "enh": "* {{Alchemical Attunement|Earth}}\n* {{Bloody Thorns}}\n* {{Resistance|6|Insightful}}\n* {{Doublestrike|8|Insightful}}\n* {{Doubleshot|5|Insightful}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Augment|Blue}}",
+   "ml": "33",
+   "type": "Ring"
+  },
+  "The Spring Equinox": {
+   "enh": "* {{Alchemical Attunement|Air}}\n* {{Thorn of the Rose}}\n* {{Resistance|6|Insightful}}\n* {{Doublestrike|8|Insightful}}\n* {{Doubleshot|5|Insightful}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Augment|Blue}}",
+   "ml": "33",
+   "type": "Ring"
+  },
+  "The Summer Solstice": {
+   "enh": "* {{Alchemical Attunement|Fire}}\n* {{MonkEffect|Soul of the Elements}}\n* {{Resistance|6|Insightful}}\n* {{Brazen Brilliance}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Augment|Blue}}",
+   "ml": "33",
+   "type": "Ring"
+  },
+  "The Theurgy of Autumn": {
+   "enh": "* {{Alchemical Attunement|Earth}}\n* {{SpellPower|Corrosion|168}}\n* {{SpellPower|Corrosion|84|Insightful}}\n* {{Resistance|6|Insightful}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Augment|Blue}}",
+   "ml": "33",
+   "type": "Ring"
+  },
+  "The Theurgy of Spring": {
+   "enh": "* {{Alchemical Attunement|Air}}\n* {{SpellPower|Magnetism|168}}\n* {{SpellPower|Magnetism|84|Insight}}\n* {{Resistance|6|Insightful}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Augment|Blue}}",
+   "ml": "33",
+   "type": "Ring"
+  },
+  "The Theurgy of Summer": {
+   "enh": "* {{Alchemical Attunement|Fire}}\n* {{SpellPower|Combustion|168}}\n* {{SpellPower|Combustion|84|Insight}}\n* {{Resistance|6|Insightful}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Augment|Blue}}",
+   "ml": "33",
+   "type": "Ring"
+  },
+  "The Theurgy of Winter": {
+   "enh": "* {{Alchemical Attunement|Water}}\n* {{SpellPower|Glaciation|168}}\n* {{SpellPower|Glaciation|84|Insight}}\n* {{Resistance|6|Insightful}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Augment|Blue}}",
+   "ml": "33",
+   "type": "Ring"
+  },
+  "The Winter Solstice": {
+   "enh": "* {{Alchemical Attunement|Water}}\n* {{Freezing Gale|Legendary}}\n* {{Resistance|6|Insightful}}\n* {{Deception|22|Bluff=Improved}}\n* {{Augment|Green}}\n* {{Augment|Yellow}}\n* {{Augment|Blue}}",
+   "ml": "33",
+   "type": "Ring"
+  }
+ }
+}

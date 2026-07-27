@@ -172,6 +172,10 @@ The four sources feed one work-list; each item reaches exactly one terminal stat
 - Browser visual pass via localhost http server + Claude-in-Chrome (localhost permission granted): coverage disclosure reads honestly.
 - Solve-time benchmark for an ML34 band-populated query recorded and within the interactive bar.
 
+## Status — SHIPPED 2026-07-27
+
+All units landed. **188/188 band items terminal** across the three sets (Isle of Dread 43, Myth Drannor 70, U81 75): **33 newly enriched** (IoD 24, MD 8, U81 1), **8 already-active** (Dinosaur Bone Dino-host blanks), **0 quarantined, 0 pending**. Update→expansion resolved (U55/U69/U81; roadmap-006 OQ6 closed). A real HiGHS solve selects an enriched band ring over a weaker rival; browser coverage note renders per-expansion band coverage. **318 tests pass** (205 Python + 113 JS). Files: `src/band_frontier.py`, `scripts/enrich_batch_r4.py`, `scripts/snapshot_baseline.py`, `data/seed/compendium/{band_categories/,raw/batch_r4.json,band_worklist.json,enriched_r4_*.json}`, `build_dataset.py` + `web/results.js` (band coverage), 3 new test files, `docs/solutions/design-patterns/r4-endgame-band-enrichment.md`.
+
 ## Definition of Done
 
 - **Every** ML 30-36 named + raid item in U81, Isle of Dread, and Myth Drannor is terminal — newly enriched, already enriched in a prior batch, or quarantined (reason + `wiki_url`) — none silently missing; the reconciliation gate proves it over the full `enriched_*.json` corpus.

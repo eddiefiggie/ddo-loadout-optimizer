@@ -27,6 +27,7 @@ from src import nearly_complete as nc_mod
 from src import viktranium as vik_mod
 from src import seal as seal_mod
 from src import compendium as compendium_mod
+from src import band_frontier as band_mod
 from src import umbrella as umbrella_mod
 
 import glob
@@ -194,6 +195,12 @@ def build(seed: dict) -> dict:
     # as unmapped (never guessed) across the enriched batches.
     comp_cov["enriched_unmapped_effects"] = sum(
         len(it.get("_enrich_unmapped", [])) for it in enriched_items)
+    # R4 ML30-36 endgame-band coverage (U4): per (expansion, slot) enriched /
+    # quarantined / pending across U81, Isle of Dread, Myth Drannor — honest
+    # disclosure driven by the solver-active names in this very build.
+    band_active = {(v.get("source_item") or v.get("variant_id") or v.get("name")) for v in variants}
+    band_active.discard(None)
+    band_cov = band_mod.band_coverage(band_active)
     # U81 Nearly-Complete hosts activated via enrichment (items carrying an open
     # NC 4th-affix slot the solver crafts into).
     nc["coverage"]["hosts_activated"] = sum(
@@ -264,6 +271,7 @@ def build(seed: dict) -> dict:
             "seal_coverage": sl["coverage"],
             "augment_coverage": augment_coverage,
             "compendium_coverage": comp_cov,
+            "band_coverage": band_cov,
             "pipeline_stage": "M4-compendium-roster",
         },
         "items": variants,

@@ -131,6 +131,18 @@ test("coverageNote discloses Dino crafting with all pools optimized and Set-Bonu
   assert.ok(/Set-Bonus/.test(note), "discloses the deferred Set-Bonus pool honestly");
 });
 
+test("coverageNote discloses the ML30-36 endgame band coverage per expansion", () => {
+  const note = R.coverageNote({ metadata: { band_coverage: { by_slot: {
+    "isle_of_dread/Ring": { band_total: 4, enriched: 4, quarantined: 0, pending: 0 },
+    "myth_drannor/Ring": { band_total: 20, enriched: 18, quarantined: 0, pending: 2 },
+    "u81/Belt": { band_total: 7, enriched: 6, quarantined: 1, pending: 0 },
+  } } } });
+  assert.ok(/Endgame band \(ML30-36\)/.test(note), "labels the endgame band");
+  assert.ok(/Isle of Dread 4\/4 enriched/.test(note), "rolls up IoD per expansion");
+  assert.ok(/Myth Drannor 18\/20 enriched, 2 pending/.test(note), "discloses pending honestly");
+  assert.ok(/U81 6\/7 enriched, 1 quarantined/.test(note), "discloses quarantined honestly");
+});
+
 test("coverageNote discloses Nearly Complete as optimized once item hosts exist", () => {
   const note = R.coverageNote({ metadata: { nc_coverage: { options_eligible: 68, hosts_activated: 17 } } });
   const optimized = note.split("Coverage:")[0];
