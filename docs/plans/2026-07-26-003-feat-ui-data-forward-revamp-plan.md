@@ -7,9 +7,14 @@ artifact_contract: ce-unified-plan/v1
 artifact_readiness: implementation-ready
 product_contract_source: ce-brainstorm
 execution: code
+status: shipped
+shipped_ref: "PR #21 (merge debae94)"
+followed_up_by: docs/plans/2026-07-27-004-feat-ui-refinement-paperdoll-trust-plan.md
 ---
 
 # Data-Forward UI Revamp - Plan
+
+> **✅ SHIPPED (2026-07-26, PR #21, merge `debae94`).** This plan was executed and is live: data-forward readout hero, per-target bonus-type breakdown, paperdoll inset, OPTIMAL/compute-scale banner, responsive query/browser, mobile-first. **Followed up by [`2026-07-27-004-feat-ui-refinement-paperdoll-trust-plan.md`](2026-07-27-004-feat-ui-refinement-paperdoll-trust-plan.md)** — a next iteration on the shipped UI (tabbed item browser, uniform selectors, stepper feedback, full proof/trust panel, attribution-over-progress-bars, and upgrading the paperdoll inset to a prominent character figure).
 
 ## Goal Capsule
 
