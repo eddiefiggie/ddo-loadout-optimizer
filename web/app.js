@@ -27,19 +27,107 @@ const App = {
   },
 };
 
-window.App = App;
+// --- Tabs (Solver | Item Browser) --------------------------------------------
+// Pure helpers, unit-tested in tests/tabs.test.js. The DOM wiring below consumes
+// them; keeping the transition logic pure means it can be verified without a DOM.
+const TAB_IDS = ["solver", "browse"];
 
-loadDataset()
-  .then((dataset) => {
-    const info = document.getElementById("dataset-info");
-    if (info) {
-      const m = dataset.metadata || {};
-      info.textContent = `${m.item_count ?? dataset.items.length} items`;
-    }
-    App._resolve(dataset);
-  })
-  .catch((err) => {
-    const status = document.getElementById("browse-status");
-    if (status) status.textContent = `Error loading dataset: ${err.message}`;
-    console.error(err);
-  });
+/** The tab that should be active after clicking `clickedId`. Idempotent; an
+ *  unknown id leaves the current tab active. */
+function activeTab(currentId, clickedId, tabIds = TAB_IDS) {
+  return tabIds.includes(clickedId) ? clickedId : currentId;
+}
+
+/** Roving-focus target for an arrow/Home/End keypress on the tablist (WAI-ARIA
+ *  tabs pattern, automatic activation). Non-navigation keys return currentId. */
+function nextTab(currentId, key, tabIds = TAB_IDS) {
+  const i = tabIds.indexOf(currentId);
+  if (i < 0) return currentId;
+  const last = tabIds.length - 1;
+  switch (key) {
+    case "ArrowRight":
+    case "ArrowDown":
+      return tabIds[i === last ? 0 : i + 1];
+    case "ArrowLeft":
+    case "ArrowUp":
+      return tabIds[i === 0 ? last : i - 1];
+    case "Home":
+      return tabIds[0];
+    case "End":
+      return tabIds[last];
+    default:
+      return currentId;
+  }
+}
+
+// Browser-only wiring. Guarded so Node test `require` of this file exercises the
+// pure helpers above without touching fetch/document.
+if (typeof window !== "undefined" && typeof document !== "undefined") {
+  window.App = App;
+
+  const initTabs = () => {
+    const tablist = document.querySelector('[role="tablist"]');
+    if (!tablist) return;
+    const tabs = Array.from(tablist.querySelectorAll('[role="tab"]'));
+    const panel = (id) => document.getElementById(id);
+
+    // Activate a tab id: set aria-selected + roving tabindex, hide the other
+    // panel so AT and Tab order don't reach it, optionally move focus.
+    const activate = (id, moveFocus) => {
+      tabs.forEach((t) => {
+        const on = t.getAttribute("aria-controls") === id;
+        t.setAttribute("aria-selected", on ? "true" : "false");
+        t.tabIndex = on ? 0 : -1;
+        if (on && moveFocus) t.focus();
+        const p = panel(t.getAttribute("aria-controls"));
+        if (p) p.hidden = !on;
+      });
+    };
+
+    tablist.addEventListener("click", (e) => {
+      const tab = e.target.closest('[role="tab"]');
+      if (!tab) return;
+      const current = tabs.find((t) => t.getAttribute("aria-selected") === "true");
+      const currentId = current && current.getAttribute("aria-controls");
+      activate(activeTab(currentId, tab.getAttribute("aria-controls")), false);
+    });
+
+    tablist.addEventListener("keydown", (e) => {
+      const current = tabs.find((t) => t.getAttribute("aria-selected") === "true");
+      const currentId = current && current.getAttribute("aria-controls");
+      const target = nextTab(currentId, e.key);
+      if (target !== currentId) {
+        e.preventDefault();
+        activate(target, true);
+      }
+    });
+
+    // Initial state: first tab active, others' panels hidden.
+    activate(TAB_IDS[0], false);
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initTabs);
+  } else {
+    initTabs();
+  }
+
+  loadDataset()
+    .then((dataset) => {
+      const info = document.getElementById("dataset-info");
+      if (info) {
+        const m = dataset.metadata || {};
+        info.textContent = `${m.item_count ?? dataset.items.length} items`;
+      }
+      App._resolve(dataset);
+    })
+    .catch((err) => {
+      const status = document.getElementById("browse-status");
+      if (status) status.textContent = `Error loading dataset: ${err.message}`;
+      console.error(err);
+    });
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { activeTab, nextTab, TAB_IDS, App };
+}
