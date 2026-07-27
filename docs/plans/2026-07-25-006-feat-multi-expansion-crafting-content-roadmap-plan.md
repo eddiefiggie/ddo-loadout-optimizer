@@ -15,6 +15,26 @@ title: Multi-Expansion Crafting-First Content Roadmap - Plan
 
 **Product authority.** The Product Contract below is the source of truth for WHAT; `/ce-plan` adds HOW per milestone.
 
+---
+
+## Status Update — 2026-07-27 (crafting-reuse program closed)
+
+**The crafting-reuse program is complete.** The two data-confirmed reuse-shape systems shipped, plus two more that fit the same primitive:
+- **M1 — Viktranium/Lamordia** ✅ shipped (PR #17): 43 hosts solver-active + 65 enriched items (Cataclysmic weapons/shields + Lamordian clothing).
+- **M2 — IoD Dino** ✅ shipped (PR #18): weapon/armor/set-bonus/raid pools with typed multi-affix inserts.
+- Also shipped on the same primitive: **Seal-slot crafting** (PR #19) and **U81 Nearly-Complete / Nearly-Finished** (#4/#9/#10).
+
+**M3 — Essence Crafting: DEFERRED to its own brainstorm (resolves Open Question 3).** A fail-fast Claude-in-Chrome data check (`https://ddowiki.com/page/Essence_Crafting`, 2026-07-27) confirms the system is **fully documented** but is an **item-fabrication** mechanic, *not* the choice-slot / typed-insert shape this program reuses:
+- You disjunct a random-loot item into a **blank** (all effects stripped), craft a Minimum-Level shard (sets ML + auto enhancement bonus), then craft **one prefix effect + one suffix effect** (+ an optional 3rd slot via Mark of House Cannith at ML 10+) chosen from large scaling/non-scaling pools; scaling effects grow with ML, and prefix/suffix placement exclusivity applies.
+- Named items are **not** generally essence-craftable — only a tiny exception list is (craftable +5 items, craftable rune arms, Gem of Many Facets / Epic / Legendary, Mysterious Ring, Trinket).
+- The "Combined prefixes" recipes are **deactivated since Update 80** (not currently craftable).
+
+**Why deferred, not folded into R4 like Catalyst:** Catalyst produces a *fixed roster of named items* → sourced as named gear. Essence produces **arbitrary custom items** (any prefix + any suffix, ML-scaled) — there is no fixed roster to source, and modeling it means a **new per-slot "wildcard crafted item" solver primitive** (a filler that can supply missing effects up to cap value). Per **R5** and the out-of-scope boundary ("a genuinely new mechanic is a separate brainstorm"), this is out of the reuse program and gets its own `/ce-brainstorm`.
+
+**Next phase:** **R4 — exhaustive named + raid gear** per expansion (U81, IoD, Myth Drannor), the roadmap's own successor to the crafting milestones. The Essence "wildcard item" primitive is a parallel future brainstorm, independent of R4.
+
+---
+
 **Why crafting-first.** The crafting systems are the highest solver-value-per-effort: they reuse machinery already built and battle-tested (augments → Dino inserts → Nearly-Complete → roll-groups), and one of them (Viktranium/Lamordia) has **127 host slots already sitting unused in the enriched data**. Sourcing an option pool + host-slot detection + reusing the primitive is a small, repeatable unit — no new solver mechanics.
 
 **Grounding — data-availability sweep run this session (Claude-in-Chrome; server-side access blocked).** The user chose "block until fully documented," so the roadmap commits only confirmed-sourceable systems:
@@ -41,7 +61,7 @@ A DDO player theorycrafting an endgame build gets optimizer results that account
 - **R1 — Crafting systems first, three confirmed.** Model, in order, the three data-confirmed crafting systems, each reusing the existing gated-contribution primitive (no new solver mechanics):
   - **M1 — Viktranium Experiment crafting** (U81; a.k.a. the "Lamordia" slots): source the Lamordia-augment option pool + the Cataclysmic weapon/shield crafting on the same page; detect the host slots (already 127 in-data); the solver crafts the best insert per typed slot.
   - **M2 — IoD Dino Weapon / Armor / Set-Bonus pools**: extend the shipped Accessory-insert work with the three deferred pools + variant-aware slot typing.
-  - **M3 — Essence Crafting**: model the documented Essence crafting mechanic (reconciling "split-prefix" to the wiki's actual system).
+  - **M3 — Essence Crafting**: ~~model the documented Essence crafting mechanic (reconciling "split-prefix" to the wiki's actual system).~~ **DEFERRED 2026-07-27** — the data check found it is item-fabrication (a new solver primitive), not the reuse shape; moved to its own brainstorm. See the Status Update above.
 - **R2 — "Done" per crafting system** (the Nearly-Complete precedent): option pool sourced under strict provenance → `enrich.py` detects the host-slot marker → the **existing** choice-slot / typed-insert solver primitive attaches it → verified end-to-end by a real solve → honest per-system coverage disclosure (N hosts active). Host *population* rides along with named-item enrichment (R4), exactly as U81 Nearly-Complete hosts activated.
 - **R3 — Strict provenance, block-until-documented.** Only wiki-documented pools are committed; each milestone opens with a fail-fast Claude-in-Chrome data check and does not ship a system whose pool is not fully documented. Explicit values only; ambiguous → quarantined, never inferred; every value carries a `wiki_url`.
 - **R4 — Exhaustive named + raid gear, per expansion (M4+).** After the crafting systems, source **every viable named item per slot** (per the exhaustive-per-slot standard) for U81, IoD, and Myth Drannor — **including raid named gear AND the Catalyst-crafted item roster** (item-creation output, not a solver primitive) — via the established harvest → `enrich.py` → verify pipeline. Raid gear and Catalyst-crafted gear are named gear; no separate path.
@@ -75,7 +95,7 @@ A DDO player theorycrafting an endgame build gets optimizer results that account
 
 1. **Viktranium slot typing** — are the Lamordia-augment slots *typed* (like Dino Scale/Fang/Claw/Horn) or a single select-one per slot? Determines whether M1 reuses the typed-insert model (Dino) or the category choice-slot model (Nearly-Complete). Source from the Viktranium page's slot/recipe tables.
 2. **Cataclysmic within Viktranium** — is "Legendary Cataclysmic Weapons and Shields" a separate pool or the weapon/shield arm of the same system? Confirms whether "Catalyst" fully folds into M1.
-3. **Essence "split-prefix"** — reconcile the user's framing to the documented Essence Crafting mechanic; confirm it's a choice-slot/gated shape and not a stat-transform that needs new modeling (if the latter, it may move out of scope per R5).
+3. **Essence "split-prefix"** — ~~reconcile the user's framing to the documented Essence Crafting mechanic; confirm it's a choice-slot/gated shape and not a stat-transform that needs new modeling (if the latter, it may move out of scope per R5).~~ **RESOLVED 2026-07-27:** it is item-fabrication (build a custom item from a blank with any prefix + any suffix, ML-scaled) → a new solver primitive, out of scope per R5, deferred to its own brainstorm. See the Status Update above.
 4. **IoD Dino variant-aware typing** — the deferred Weapon/Armor pools may type slots differently than Accessory; confirm from the Dino page's Weapons/Armors sections.
 5. **Raid crafting existence** — during R4 raid-gear sourcing, watch for any raid-*specific* crafting mechanic; if found, spin a milestone under R2 rather than forcing it into named gear.
 6. **Named-gear frontier per expansion** — which wiki pages enumerate each expansion's exhaustive named + raid item set (for the R4 "done = exhaustive per slot" claim).
