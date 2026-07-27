@@ -223,6 +223,17 @@ button.primary:hover { filter: brightness(1.08); }
 /* readout layout */
 .readout-grid { display: flex; flex-direction: column; gap: var(--sp-5); }
 
+/* on-load intro state (before the first solve) — shows the data-forward design */
+.readout-intro { display: flex; flex-direction: column; gap: var(--sp-4); }
+.solve-banner.ghost { border-color: rgba(76,194,255,0.3); background: linear-gradient(135deg, rgba(76,194,255,0.08), rgba(167,139,250,0.05)); }
+.solve-banner.ghost .solve-verdict .dot { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+.solve-banner.ghost .solve-verdict .label { color: var(--accent); }
+.intro-cta {
+  display: flex; flex-direction: column; gap: var(--sp-2);
+  padding: var(--sp-4); border: 1px dashed var(--border-2); border-radius: var(--radius);
+}
+.intro-cta strong { font-size: var(--fs-lg); }
+
 .section-title {
   margin: 0 0 var(--sp-3); font-size: var(--fs-sm); color: var(--muted);
   text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700;
