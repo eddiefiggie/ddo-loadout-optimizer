@@ -29,7 +29,9 @@ window.App && window.App.ready((dataset) => {
       </label>
     </div>
     <div class="controls q-actions">
-      <input id="q-add" list="q-stats" placeholder="Add a target affix…" aria-label="Add a target affix">
+      <label class="field grow"><span>Target affix</span>
+        <input id="q-add" list="q-stats" placeholder="Add a target affix…" aria-label="Add a target affix">
+      </label>
       <datalist id="q-stats">${allStats.map((s) => `<option value="${esc(s)}">`).join("")}</datalist>
       <button id="q-add-btn" type="button">Add</button>
       <button id="q-solve" type="button" class="primary">Solve</button>
@@ -39,6 +41,18 @@ window.App && window.App.ready((dataset) => {
     <div id="q-results"></div>`;
 
   const $ = (id) => document.getElementById(id);
+
+  // U3: an unmistakable, immediate confirmation that a stepper/reorder registered
+  // (the up/down arrows previously gave no visible sign a click worked). Restart
+  // the cue on every change so rapid repeated clicks each read clearly; the CSS
+  // falls back to a static highlight under prefers-reduced-motion.
+  function bump(el) {
+    if (!el) return;
+    el.classList.remove("bumped");
+    void el.offsetWidth; // reflow so the animation restarts on a repeat click
+    el.classList.add("bumped");
+    setTimeout(() => el.classList.remove("bumped"), 500);
+  }
 
   function renderRanked() {
     const ol = $("q-ranked");
@@ -64,16 +78,26 @@ window.App && window.App.ready((dataset) => {
     $("q-add").value = "";
     $("q-status").textContent = "";
     renderRanked();
+    // confirm the add landed at the bottom of the priority list
+    bump($("q-ranked").lastElementChild && $("q-ranked").lastElementChild.querySelector(".rank-item"));
   }
+
+  // reflect a stepper change on the ML cap immediately (U3)
+  $("q-ml").addEventListener("input", () => bump($("q-ml")));
 
   $("q-add-btn").addEventListener("click", () => addTarget($("q-add").value));
   $("q-add").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addTarget($("q-add").value); } });
   $("q-ranked").addEventListener("click", (e) => {
     const b = e.target.closest("button"); if (!b) return;
+    let flashIdx = null;
     if (b.dataset.del != null) ranked.splice(+b.dataset.del, 1);
-    else if (b.dataset.up != null) { const i = +b.dataset.up;[ranked[i - 1], ranked[i]] = [ranked[i], ranked[i - 1]]; }
-    else if (b.dataset.down != null) { const i = +b.dataset.down;[ranked[i + 1], ranked[i]] = [ranked[i], ranked[i + 1]]; }
+    else if (b.dataset.up != null) { const i = +b.dataset.up;[ranked[i - 1], ranked[i]] = [ranked[i], ranked[i - 1]]; flashIdx = i - 1; }
+    else if (b.dataset.down != null) { const i = +b.dataset.down;[ranked[i + 1], ranked[i]] = [ranked[i], ranked[i + 1]]; flashIdx = i + 1; }
     renderRanked();
+    // flash the row that moved so the reorder is unmistakable
+    if (flashIdx != null && $("q-ranked").children[flashIdx]) {
+      bump($("q-ranked").children[flashIdx].querySelector(".rank-item"));
+    }
   });
 
   let highs = null;

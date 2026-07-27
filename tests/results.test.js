@@ -197,34 +197,140 @@ test("coverageNote discloses Sealed-in-Undeath optimized and Fire/Gloom/Mist pen
   assert.ok(/Sealed-in-Fire\/Gloom\/Mist seal pools/.test(rest), "pending seal pools disclosed under Pending");
 });
 
-// ---- U4: paperdoll slot-position mapping (KTD2) ----
-test("slotPosition maps every worn slot; Ring splits by index; unknown -> misc", () => {
-  const WORN = ["Armor", "Helmet", "Goggles", "Necklace", "Trinket", "Cloak",
+// ---- U7: paperdoll slot-position mapping + inline set tag (KTD2, KTD10) ----
+test("slotPosition maps every model-produced slot; Ring splits; unknown -> misc", () => {
+  // Every slot the model can produce: WORN_SLOTS + the separately-pushed weapon
+  // slots (Main Hand, Rune Arm). Not just WORN_SLOTS — that omits the weapons.
+  const PRODUCED = ["Armor", "Helmet", "Goggles", "Necklace", "Trinket", "Cloak",
     "Belt", "Ring", "Gloves", "Boots", "Bracers", "Quiver", "Main Hand", "Rune Arm"];
-  for (const s of WORN) {
+  for (const s of PRODUCED) {
     const pos = R.slotPosition(s, 0);
     assert.ok(pos && pos !== "misc", `${s} maps to a real paperdoll position (got ${pos})`);
   }
   assert.strictEqual(R.slotPosition("Ring", 0), "ring1", "first ring -> ring1");
   assert.strictEqual(R.slotPosition("Ring", 1), "ring2", "second ring -> ring2");
+  // the weapon-row trio
   assert.strictEqual(R.slotPosition("Main Hand", 0), "mainhand");
-  assert.strictEqual(R.slotPosition("Rune Arm", 0), "offhand", "rune arm shares the off-hand cell");
+  assert.strictEqual(R.slotPosition("Quiver", 0), "quiver");
+  assert.strictEqual(R.slotPosition("Rune Arm", 0), "offhand", "a chosen Rune Arm fills the adaptive Off Hand cell, never dropped");
   assert.strictEqual(R.slotPosition("Some New Slot", 0), "misc", "unknown slot falls to misc, never dropped");
 });
 
-test("breakdownBars attributes a set contribution and marks it (R7)", () => {
-  const html = R.breakdownBars(
-    [{ bonus_type: "Insightful", value: 2, source: "Legendary Set", sourceKind: "set" }], 2);
-  assert.ok(/set: Legendary Set/.test(html), "set source is attributed with a 'set:' prefix");
-  assert.ok(/is-set/.test(html), "set contribution carries the is-set styling hook");
-  assert.ok(/\+2/.test(html), "shows the folded value");
+test("paperdollSlot states set membership inline for a set member (R15)", () => {
+  const v = { variant_id: "Kopru Bracers", minimum_level: 31, set_bonus: [{ set: "Dread Isle's Curse" }], affixes: [] };
+  const maps = { augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
+    ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(), jokerByHost: new Map() };
+  const html = R.paperdollSlot("Bracers", "bracers", { variant: v, idx: 0 }, { targets: [] }, maps);
+  assert.ok(html.includes("pd-set"), "renders an inline set tag");
+  assert.ok(html.includes("Dread Isle&#39;s Curse"), "names the set (escaped)");
+  assert.ok(html.includes("setpip"), "shows the set pip");
+  // a non-member slot carries no set tag
+  const plain = R.paperdollSlot("Boots", "boots", { variant: { variant_id: "X", minimum_level: 1, set_bonus: [], affixes: [] }, idx: 0 }, { targets: [] }, maps);
+  assert.ok(!plain.includes("pd-set"), "no set tag on a non-member");
 });
 
-test("breakdownBars escapes hostile source text (no raw HTML injection)", () => {
-  const html = R.breakdownBars(
-    [{ bonus_type: "Enhancement", value: 5, source: "<img src=x>", sourceKind: "worn" }], 5);
+test("attributionList shows a set contributor with its yielding slots, no bar (R11,R12)", () => {
+  const html = R.attributionList(
+    [{ bonus_type: "Insightful", value: 2, source: "Legendary Set", sourceKind: "set", isSet: true, slots: ["Necklace", "Trinket"] }]);
+  assert.ok(/set: Legendary Set/.test(html), "set is attributed with a 'set:' prefix");
+  assert.ok(/via Necklace, Trinket/.test(html), "lists the equipped slots yielding the set");
+  assert.ok(/is-set/.test(html), "carries the is-set styling hook");
+  assert.ok(/\+2/.test(html), "states the value");
+  assert.ok(!/bar-fill|bar-track/.test(html), "no progress-bar element is emitted");
+});
+
+test("attributionList shows a worn contributor with its slot", () => {
+  const html = R.attributionList(
+    [{ bonus_type: "Enhancement", value: 10, source: "Legendary Ring", sourceKind: "worn", isSet: false, slots: ["Ring"] }]);
+  assert.ok(/Ring/.test(html), "names the equipped slot");
+  assert.ok(/\+10/.test(html));
+});
+
+test("attributionList escapes hostile source text (no raw HTML injection)", () => {
+  const html = R.attributionList(
+    [{ bonus_type: "Enhancement", value: 5, source: "<img src=x>", sourceKind: "worn", isSet: false, slots: ["<b>x</b>"] }]);
   assert.ok(!/<img/.test(html), "raw tag is escaped");
   assert.ok(/&lt;img/.test(html), "escaped form present");
+  assert.ok(!/<b>x<\/b>/.test(html), "slot text is escaped too");
+});
+
+// ---- U6: trust story (why-this line + proof panel) ----
+function whyResult() {
+  return {
+    effective: { Constitution: 15 }, perTarget: { Constitution: 15 },
+    chosen: [{ slot: "Ring", variant: { variant_id: "R", set_bonus: [], parsed_set_bonuses: [] } }],
+    augmentsPlaced: [], setsActive: [],
+    breakdown: { Constitution: [{ bonus_type: "Enhancement", value: 15, source: "R", sourceKind: "worn", slot: "Ring", setYieldingSlots: null, hostIds: ["R"] }] },
+    computeScale: { variants: 42 }, solveMs: 7,
+  };
+}
+
+test("whyThisLine names the ranked target an item wins (R8, R9)", () => {
+  const html = R.whyThisLine(whyResult(), { slot: "Ring", variant_id: "R" });
+  assert.ok(/wins/.test(html) && /Constitution \+15/.test(html), "states the winning target and value");
+});
+
+test("whyThisLine has an explicit empty state for a filler pick", () => {
+  const html = R.whyThisLine(whyResult(), { slot: "Boots", variant_id: "ZZ" });
+  assert.ok(/complete the loadout/.test(html), "a pick winning no target reads as filler, not blank");
+});
+
+test("proofPanel explains the method, lists the ranked order, and breaks down each value (R10)", () => {
+  const res = whyResult();
+  const html = R.proofPanel(res, { targets: ["Constitution"] }, R.attributionByTarget(res));
+  assert.ok(/provably/i.test(html), "states the result is provably optimal");
+  assert.ok(/MILP/.test(html), "explains the MILP method");
+  assert.ok(/42 candidate items/.test(html), "cites the compute scale");
+  assert.ok(/7 ms/.test(html), "shows the solve time");
+  assert.ok(/proof-order/.test(html) && /Constitution/.test(html), "lists the ranked priority order");
+  assert.ok(/proof-target/.test(html), "includes the per-target contribution breakdown");
+});
+
+test("whyThis does not cross-attribute a set win between the two rings (host-id match)", () => {
+  // Set "Alpha" is yielded by Ring1 + Necklace only; Ring2 is a non-member.
+  const result = {
+    effective: { Constitution: 15 }, perTarget: { Constitution: 15 },
+    chosen: [
+      { slot: "Ring", variant: { variant_id: "R1", set_bonus: [{ set: "Alpha" }], parsed_set_bonuses: [] } },
+      { slot: "Ring", variant: { variant_id: "R2", set_bonus: [], parsed_set_bonuses: [] } },
+      { slot: "Necklace", variant: { variant_id: "N", set_bonus: [{ set: "Alpha" }], parsed_set_bonuses: [] } },
+    ],
+    augmentsPlaced: [], setsActive: [],
+    breakdown: { Constitution: [
+      { bonus_type: "Enhancement", value: 10, source: "R1", sourceKind: "worn", slot: "Ring", setYieldingSlots: null, hostIds: ["R1"] },
+      { bonus_type: "Insightful", value: 5, source: "Alpha", sourceKind: "set", setYieldingSlots: ["Ring", "Necklace"], hostIds: ["R1", "N"] },
+    ] },
+  };
+  assert.deepStrictEqual(R.whyThis(result, { slot: "Ring", variant_id: "R2" }), [],
+    "the non-member ring must NOT claim the set win that only Ring1 yields");
+  const r1 = R.whyThis(result, { slot: "Ring", variant_id: "R1" });
+  assert.strictEqual(r1[0].value, 15, "Ring1: worn 10 + set 5");
+  assert.strictEqual(r1[0].viaSet, true);
+  const n = R.whyThis(result, { slot: "Necklace", variant_id: "N" });
+  assert.strictEqual(n[0].value, 5, "the necklace contributes via the set only");
+});
+
+test("activeSetDetail reports granted stats + yielding slots per active set (R16)", () => {
+  const result = {
+    setsActive: [{ set: "Alpha", pieces_required: 2 }, { set: "Beta", pieces_required: 3 }],
+    chosen: [
+      { slot: "Necklace", variant: { set_bonus: [{ set: "Alpha" }], parsed_set_bonuses: [{ set: "Alpha", pieces_required: 2, affixes: [{ stat: "Constitution", bonus_type: "Insightful", value: 2, unit: "flat" }] }] } },
+      { slot: "Trinket", variant: { set_bonus: [{ set: "Alpha" }], parsed_set_bonuses: [] } },
+    ],
+  };
+  const d = R.activeSetDetail(result);
+  const alpha = d.find((s) => s.set === "Alpha");
+  assert.deepStrictEqual([...alpha.slots].sort(), ["Necklace", "Trinket"], "yielding slots are both Alpha members");
+  assert.strictEqual(alpha.affixes.length, 1, "resolves the 2-piece tier affixes");
+  assert.strictEqual(alpha.affixes[0].stat, "Constitution");
+  const beta = d.find((s) => s.set === "Beta");
+  assert.deepStrictEqual(beta.affixes, [], "an active set with no parsed tier affixes yields []");
+});
+
+test("attributionList renders the empty state and the is-augment class", () => {
+  assert.ok(/stat-empty|no contributing gear/.test(R.attributionList([])), "empty contributor list shows the no-gear affordance");
+  const aug = R.attributionList([{ bonus_type: "Quality", value: 3, source: "Topaz", sourceKind: "augment", isSet: false, slots: ["Ring"] }]);
+  assert.ok(/is-augment/.test(aug), "an augment contributor carries the is-augment styling hook");
 });
 
 test("safeUrl passes http(s) but neutralizes hostile schemes", () => {
