@@ -1012,5 +1012,37 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.ok(!r4.setsActive.some(s => s.set === SET), "4 pieces do NOT activate the set (threshold honored)");
   });
 
+  await test("Joker/U3: the Gem completes a pool set via the wildcard, load-bearing only", async () => {
+    // Real dataset: Legendary Azure Necklace of Prophecy carries a 2-piece Legendary
+    // Draconic Prophecy (a group-1 pool set). 1 real piece + the Gem's joker = 2 pieces.
+    const fs = require("fs");
+    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    const key = it => it.source_item || it.variant_id;
+    const nk = data.items.find(it => key(it) === "Legendary Azure Necklace of Prophecy");
+    const gem = data.items.find(it => key(it) === "Legendary Gem of Many Facets");
+    assert.ok(nk && gem && gem.joker_set_groups, "fixtures present");
+    const SET = "Legendary Draconic Prophecy";
+    const mk = vs => ({ targets: ["Universal Spell Power"], mlCap: 34, dodgeCap: null,
+      worn: vs.map(v => ({ slot: v.slot, cardinality: 1, variants: [v] })) });
+
+    const withGem = await S.solveLexicographic(mk([nk, gem]), highs);
+    assert.ok(withGem.setsActive.some(s => s.set === SET), "the joker completes Draconic Prophecy at 2 pieces");
+    assert.ok(withGem.jokerPlaced.some(j => j.set === SET && j.group === 0), "the Gem's group-0 pick is reported");
+
+    const noGem = await S.solveLexicographic(mk([nk]), highs);
+    assert.ok(!noGem.setsActive.some(s => s.set === SET), "without the Gem the set is below threshold");
+
+    // No fabrication: the Gem alone (no other pool piece) completes nothing.
+    const gemOnly = await S.solveLexicographic(mk([gem]), highs);
+    assert.strictEqual((gemOnly.jokerPlaced || []).length, 0, "the Gem alone fabricates no set assignment");
+
+    // At most one pick per group; determinism across runs.
+    const byGroup = {};
+    for (const j of withGem.jokerPlaced) byGroup[j.group] = (byGroup[j.group] || 0) + 1;
+    assert.ok(Object.values(byGroup).every(n => n <= 1), "at most one joker pick per group");
+    const again = await S.solveLexicographic(mk([nk, gem]), highs);
+    assert.deepStrictEqual(again.jokerPlaced, withGem.jokerPlaced, "joker assignment is deterministic");
+  });
+
   console.log(`\n${passed} passed`);
 })();

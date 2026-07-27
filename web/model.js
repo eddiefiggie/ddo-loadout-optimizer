@@ -107,6 +107,14 @@ function dominates(A, B, targetSet, mlCap) {
   const sealA = countColors((A.seal_slots || []).map((s) => s.seal_type));
   const sealB = countColors((B.seal_slots || []).map((s) => s.seal_type));
   for (const [k, n] of sealB) if ((sealA.get(k) || 0) < n) return false;
+  // Wildcard set-piece (Gem of Many Facets) joker: its set-completion value lives in
+  // joker_set_groups (pools of sets it can complete toward a threshold), outside
+  // variantBuckets AND outside set_bonus (the build clears the Gem's fixed set). So a
+  // plain-affix item looks strictly better and would prune the Gem, silently killing
+  // the wildcard. Keep B whenever it offers joker set-options A does not also offer.
+  const jokerA = countColors((A.joker_set_groups || []).flat());
+  const jokerB = countColors((B.joker_set_groups || []).flat());
+  for (const [k, n] of jokerB) if ((jokerA.get(k) || 0) < n) return false;
   // strictly better somewhere, OR keep A as the canonical of an equal pair
   return true;
 }

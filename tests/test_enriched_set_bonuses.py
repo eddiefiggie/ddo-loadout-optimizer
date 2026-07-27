@@ -36,10 +36,15 @@ def test_base_seed_set_bonuses_are_byte_identical():
     seed = B.load_seed()
     base_before = {it["name"]: it.get("set_bonus")
                    for it in seed["items"] if it.get("set_bonus")}
+    # Wildcard items deliberately have their stale fixed set_bonus cleared (joker
+    # feature, R5) — exempt them from the byte-identical check.
+    joker_items = set(B.load_joker_seed())
     ds = _build()
     # base items keep source_item == name; their set_bonus must be untouched
     for it in ds["items"]:
         name = _key(it)
+        if name in joker_items:
+            continue
         if name in base_before and it.get("tier_label") in (None, "",):
             assert it.get("set_bonus") == base_before[name], f"base set_bonus changed for {name}"
     # and every base set is still present
