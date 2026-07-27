@@ -112,6 +112,60 @@ function nearMissSetHints(chosen, targets) {
   return hints;
 }
 
+/** Per-target contributor attribution for the achieved-priority view (R11, R12,
+ *  R16). Reads the solver's already-computed breakdown (which now carries the
+ *  host slot for worn + item-crafts and the yielding slots for sets, KTD6) and
+ *  fills the remaining augment host slot from the augment reconstruction. Returns
+ *  { stat: [{ bonus_type, value, source, sourceKind, slots:[...], isSet }], ... },
+ *  highest-value first — presentation only, no solve. */
+function attributionByTarget(result) {
+  const breakdown = result.breakdown || {};
+  // augment variant_id -> host slot, from the same reconstruction the paperdoll uses
+  const augAssign = assignAugments(result.chosen, result.augmentsPlaced);
+  const augSlot = new Map();
+  for (const [idx, augs] of augAssign.byIndex) {
+    const slot = result.chosen[idx] && result.chosen[idx].slot;
+    for (const a of augs) augSlot.set(a.variant_id, slot);
+  }
+  const out = {};
+  for (const stat of Object.keys(breakdown)) {
+    out[stat] = breakdown[stat].map((p) => {
+      let slots = [];
+      if (p.setYieldingSlots && p.setYieldingSlots.length) slots = p.setYieldingSlots.slice();
+      else if (p.slot) slots = [p.slot];
+      else if (p.sourceKind === "augment" && augSlot.has(p.source)) slots = [augSlot.get(p.source)];
+      return {
+        bonus_type: p.bonus_type, value: p.value, source: p.source,
+        sourceKind: p.sourceKind, slots, isSet: p.sourceKind === "set",
+      };
+    });
+  }
+  return out;
+}
+
+/** Which ranked targets a specific equipped item wins, and by how much (R8, R9)
+ *  — the justification for a pick, especially a surprising low-ML one. `item` is
+ *  { slot, variant_id }. Worn contributions match on variant_id (so the two rings
+ *  stay distinct); set and craft contributions match on the host slot. Returns
+ *  [{ stat, value, viaSet }], highest-value first; empty when the item wins no
+ *  ranked target (a filler/tie-break pick). */
+function whyThis(result, item) {
+  const attr = attributionByTarget(result);
+  const wins = [];
+  for (const stat of Object.keys(attr)) {
+    let val = 0, viaSet = false;
+    for (const p of attr[stat]) {
+      const mine = p.sourceKind === "worn"
+        ? p.source === item.variant_id
+        : (p.slots || []).includes(item.slot);
+      if (mine) { val += p.value; if (p.isSet) viaSet = true; }
+    }
+    if (val > 0) wins.push({ stat, value: val, viaSet });
+  }
+  wins.sort((a, b) => b.value - a.value);
+  return wins;
+}
+
 function coverageNote(dataset) {
   const m = (dataset && dataset.metadata) || {};
   const aug = (m.color_coverage || {}).augments_placeable;
@@ -402,5 +456,5 @@ function renderResults(container, { model, result, query, dataset }) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, coverageNote, slotPosition, breakdownBars, slotDetailChips, esc, safeUrl };
+  module.exports = { renderResults, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, attributionByTarget, whyThis, coverageNote, slotPosition, breakdownBars, slotDetailChips, esc, safeUrl };
 }

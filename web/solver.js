@@ -523,15 +523,33 @@ function encodeStage(program, { objectiveStat, sense, locks, tieBreak }) {
  *  source, sourceKind}], ... }, each list highest-value first. */
 function breakdownByTarget(program, prim) {
   const xByName = new Map(program.xVars.map((xv) => [xv.name, xv]));
+  // Equipped item identity -> its worn slot, so an item-craft (nc/roll/vik/seal)
+  // whose meta carries `item` can be attributed back to the slot it sits in (KTD6).
+  const slotOfItem = new Map();
+  for (const xv of program.xVars) {
+    if (prim(xv.name) > 0.5) {
+      const v = xv.variant || {};
+      if (v.variant_id != null) slotOfItem.set(v.variant_id, xv.slot);
+      if (v.source_item != null && !slotOfItem.has(v.source_item)) slotOfItem.set(v.source_item, xv.slot);
+    }
+  }
   const sourceOf = (gate) => {
-    if (xByName.has(gate)) return { kind: "worn", label: xByName.get(gate).variant.variant_id };
+    if (xByName.has(gate)) { const xv = xByName.get(gate); return { kind: "worn", label: xv.variant.variant_id, slot: xv.slot }; }
     const meta = program.setMeta;
-    if (meta && meta.has(gate)) return { kind: "set", label: meta.get(gate).set };
-    if (program.sealMeta && program.sealMeta.has(gate)) return { kind: "seal", label: `Sealed in ${program.sealMeta.get(gate).seal_type}` };
+    if (meta && meta.has(gate)) {
+      const m = meta.get(gate);
+      // The equipped pieces currently yielding this set (real, non-joker, worn).
+      const slots = (m.realPieces || [])
+        .filter((pn) => prim(pn) > 0.5)
+        .map((pn) => (xByName.get(pn) ? xByName.get(pn).slot : null))
+        .filter((s) => s != null);
+      return { kind: "set", label: m.set, setYieldingSlots: slots };
+    }
+    if (program.sealMeta && program.sealMeta.has(gate)) { const m = program.sealMeta.get(gate); return { kind: "seal", label: `Sealed in ${m.seal_type}`, slot: slotOfItem.get(m.item) || null }; }
     if (program.dinoMeta && program.dinoMeta.has(gate)) return { kind: "dino", label: `${program.dinoMeta.get(gate).dino_type} insert` };
-    if (program.ncMeta && program.ncMeta.has(gate)) return { kind: "nc", label: "Nearly Complete" };
-    if (program.rollMeta && program.rollMeta.has(gate)) return { kind: "roll", label: "choice slot" };
-    if (program.vikMeta && program.vikMeta.has(gate)) return { kind: "vik", label: `Lamordia ${program.vikMeta.get(gate).slot_type}` };
+    if (program.ncMeta && program.ncMeta.has(gate)) { const m = program.ncMeta.get(gate); return { kind: "nc", label: "Nearly Complete", slot: slotOfItem.get(m.item) || null }; }
+    if (program.rollMeta && program.rollMeta.has(gate)) { const m = program.rollMeta.get(gate); return { kind: "roll", label: "choice slot", slot: slotOfItem.get(m.item) || null }; }
+    if (program.vikMeta && program.vikMeta.has(gate)) { const m = program.vikMeta.get(gate); return { kind: "vik", label: `Lamordia ${m.slot_type}`, slot: slotOfItem.get(m.item) || null }; }
     if (program.placeMeta && program.placeMeta.has(gate)) return { kind: "augment", label: program.placeMeta.get(gate).variant_id };
     return { kind: "other", label: gate };
   };
@@ -544,7 +562,11 @@ function breakdownByTarget(program, prim) {
       for (const z of zs) {
         if (prim(z.name) > 0.5) {
           const src = sourceOf(z.gates[0]);
-          parts.push({ bonus_type: bonusType, value: z.value, source: src.label, sourceKind: src.kind });
+          parts.push({
+            bonus_type: bonusType, value: z.value, source: src.label, sourceKind: src.kind,
+            slot: src.slot != null ? src.slot : null,
+            setYieldingSlots: src.setYieldingSlots || null,
+          });
         }
       }
     }
