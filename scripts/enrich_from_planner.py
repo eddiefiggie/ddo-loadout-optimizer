@@ -36,7 +36,7 @@ QUEST_MAP = {
     # batch, so without this key the seal hosts never enter the pipeline.
     "undyingage": ["Threats Old and New"],
 }
-ENDGAME_ML = 29
+MIN_ML = 1  # all levels (full-import; was 29 for endgame-only)
 # planner slot vocabulary -> this repo's solver slot names (model.js WORN_SLOTS
 # + Main Hand / Rune Arm). Any planner slot NOT normalized here that also isn't a
 # WORN_SLOT would land an item outside every solver slot and silently drop it, so
@@ -144,7 +144,7 @@ def _solver_active_names():
 
 
 def main_all():
-    """Import EVERY ML>=29 gear-planner item (all slots), deduped against the built
+    """Import EVERY gear-planner item (all MLs; MIN_ML) (all slots), deduped against the built
     dataset, into one bulk shard. Weapons/rune-arms route to the solver; worn gear
     is solver-active; Off Hand items enter browse-only (no solver slot yet)."""
     data = json.load(open(SRC, encoding="utf-8"))
@@ -159,7 +159,7 @@ def main_all():
                 skip.discard(it.get("name"))
     picked, carriers, unmapped_slots, dropped_no_affix = [], [], set(), 0
     for it in data:
-        if (it.get("ml") or 0) < ENDGAME_ML:
+        if (it.get("ml") or 0) < MIN_ML:
             continue
         if it["name"].startswith("Dinosaur Bone"):
             continue  # modeled via the Dino crafting pipeline
@@ -192,7 +192,7 @@ def main_all():
     out = {
         "metadata": {
             "layer": "enriched", "batch": "planner_ml29",
-            "system": "all ML>=29 named gear (gear-planner bulk import, strict re-parse)",
+            "system": "all-levels named gear (gear-planner bulk import, strict re-parse)",
             "source": "illusionistpm/ddo-gear-planner items.json (ddowiki-derived)",
             "harvested": "2026-07-27", "count": len(picked), "seal_carriers": len(carriers),
         },
@@ -203,7 +203,7 @@ def main_all():
     from collections import Counter
     by_slot = Counter(r["slot"] if r["category"] not in ("weapon", "runearm") else r["category"].title() for r in picked)
     seal_hosts = sum(1 for r in picked if r.get("seal_slots"))
-    print(f"wrote {len(picked)} ML>=29 planner items ({seal_hosts} seal hosts, "
+    print(f"wrote {len(picked)} planner items (all MLs) ({seal_hosts} seal hosts, "
           f"{dropped_no_affix} dropped as augment/proc-only) -> {os.path.relpath(outpath, ROOT)}")
     print("  by slot:", dict(by_slot.most_common()))
     if unmapped_slots:
@@ -233,7 +233,7 @@ def main(expansion):
     for it in data:
         if not (set(it.get("quests") or []) & set(quests)):
             continue
-        if (it.get("ml") or 0) < ENDGAME_ML:
+        if (it.get("ml") or 0) < MIN_ML:
             continue
         if it["name"].startswith("Dinosaur Bone"):
             continue  # modeled via the Dino crafting pipeline

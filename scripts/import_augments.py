@@ -22,7 +22,7 @@ sys.path.insert(0, ROOT)
 
 SRC = os.path.join(ROOT, "data", "seed", "compendium", "raw", "gearplanner_crafting.json")
 OUT = os.path.join(ROOT, "data", "seed", "augments.json")
-ENDGAME_ML = 29
+MIN_ML = 1  # all levels (full-import; was 29 for endgame-only)
 
 # "<Color> Augment Slot" key -> the intrinsic augment color (annotate_variant reads
 # the record's `slot` to set aug_color). Moon/Sun map to the Lunar/Solar colors.
@@ -58,7 +58,7 @@ def main():
     by_color = {}
     for key, color in SLOT_KEY_COLOR.items():
         for a in (raw.get(key, {}) or {}).get("*", []) or []:
-            if (a.get("ml") or 0) < ENDGAME_ML:
+            if (a.get("ml") or 0) < MIN_ML:
                 continue
             enh = [s for s in (affix_to_string(x) for x in a.get("affixes", [])) if s]
             if not enh:
