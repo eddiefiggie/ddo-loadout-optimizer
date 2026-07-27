@@ -5,7 +5,7 @@
   "system": "all ML>=29 named gear (gear-planner bulk import, strict re-parse)",
   "source": "illusionistpm/ddo-gear-planner items.json (ddowiki-derived)",
   "harvested": "2026-07-27",
-  "count": 1450,
+  "count": 1498,
   "seal_carriers": 2
  },
  "items": [
@@ -84,7 +84,8 @@
    "enhancements": [
     "Repair Amplification +53",
     "Adamantine DR +30",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Winter (set)"
    ],
    "augment_slots": [
     "Green"
@@ -257,7 +258,8 @@
     "Insight Doublestrike +7",
     "Elemental Resistance +45",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Eminence of Summer (set)"
    ],
    "augment_slots": [
     "Green",
@@ -265,6 +267,726 @@
    ],
    "minimum_level": 29,
    "wiki_url": "https://ddowiki.com/page/Item:Aspect_of_the_Wild_Hunt",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Bastard Sword",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Bastard_Sword",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Battle Axe",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Battle_Axe",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Club",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Club",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Dagger",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Dagger",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Dart",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Dart",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Dwarven Waraxe",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Dwarven_Waraxe",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Falchion",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Falchion",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Great Crossbow",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Great_Crossbow",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Greataxe",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Greataxe",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Greatclub",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Greatclub",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Greatsword",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Greatsword",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Hand Axe",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Hand_Axe",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Handwraps",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Handwraps",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Heavy Crossbow",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Heavy_Crossbow",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Heavy Mace",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Heavy_Mace",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Heavy Pick",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Heavy_Pick",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Kama",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Kama",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Khopesh",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Khopesh",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Kukri",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Kukri",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Light Crossbow",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Light_Crossbow",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Light Hammer",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Light_Hammer",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Light Mace",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Light_Mace",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Light Pick",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Light_Pick",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Longbow",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Longbow",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Longsword",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Longsword",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Maul",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Maul",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Morningstar",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Morningstar",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Quarterstaff",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Quarterstaff",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Rapier",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Rapier",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Repeating Heavy Crossbow",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Repeating_Heavy_Crossbow",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Repeating Light Crossbow",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Repeating_Light_Crossbow",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Scimitar",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Scimitar",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Shortbow",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Shortbow",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Shortsword",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Shortsword",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Shuriken",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Shuriken",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Sickle",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Sickle",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Throwing Axe",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Throwing_Axe",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Throwing Dagger",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Throwing_Dagger",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Throwing Hammer",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Throwing_Hammer",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Attuned Bone Warhammer",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Attuned_Bone_Warhammer",
    "_enriched": true,
    "_source": "gear-planner"
   },
@@ -277,7 +999,8 @@
     "Insight Spell Focus Mastery +3",
     "Efficient Metamagic - Embolden +2",
     "Blue Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Esoteric Initiate (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -439,7 +1162,8 @@
     "Insight Doubleshot +5",
     "Green Augment Slot",
     "Yellow Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -461,7 +1185,8 @@
     "Equipment Power of the Frozen Depths +154",
     "Yellow Augment Slot",
     "Green Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -483,7 +1208,8 @@
     "Quality Physical Sheltering +9",
     "Green Augment Slot",
     "Yellow Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -556,7 +1282,8 @@
     "Insight Wisdom +6",
     "Sheltering +35",
     "Blue Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Spring (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -575,7 +1302,8 @@
     "Raging Strength +3",
     "Speed +30",
     "Quality Doublestrike +3",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Spring (set)"
    ],
    "augment_slots": [
     "Green"
@@ -621,7 +1349,8 @@
     "Quality Power of the Frozen Storm +36",
     "Fire Resistance +52",
     "Blue Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Autumn (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -641,7 +1370,8 @@
     "Equipment Corrosion +148",
     "Equipment Spell Penetration +9",
     "Yellow Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Chained Elementals (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -661,7 +1391,8 @@
     "Equipment Combustion +148",
     "Arcane Augmentation +9",
     "Yellow Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Chained Elementals (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -680,7 +1411,8 @@
     "Equipment Ice Lore +22",
     "Equipment Glaciation +148",
     "Green Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Chained Elementals (set)"
    ],
    "augment_slots": [
     "Green",
@@ -700,7 +1432,8 @@
     "Equipment Magnetism +148",
     "Equipment Spell Focus Mastery +7",
     "Blue Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Chained Elementals (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -873,7 +1606,8 @@
     "Insight Doublestrike +8",
     "Green Augment Slot",
     "Yellow Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -993,7 +1727,8 @@
     "Competence Healing Amplification +53",
     "Quality Constitution +3",
     "Quality Physical Sheltering +8",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Autumn (set)"
    ],
    "augment_slots": [
     "Green"
@@ -1059,7 +1794,8 @@
     "Physical Sheltering +33",
     "Competence Healing Amplification +53",
     "False Life +50",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Winter (set)"
    ],
    "augment_slots": [
     "Green"
@@ -1079,7 +1815,9 @@
     "Physical Sheltering +35",
     "Quality Resistance +2",
     "Purple Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legacy of Lorikk (set)",
+    "Legacy of Levikk (set)"
    ],
    "augment_slots": [
     "Purple",
@@ -1087,6 +1825,24 @@
    ],
    "minimum_level": 29,
    "wiki_url": "https://ddowiki.com/page/Item:Champion_of_the_Twins",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Char, the Hellstorm's Edge",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Item:Char,_the_Hellstorm%27s_Edge",
    "_enriched": true,
    "_source": "gear-planner"
   },
@@ -1140,7 +1896,8 @@
     "Competence Intimidate +20",
     "Insight Command +7",
     "Blue Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Guardian of the Gates (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -1161,7 +1918,8 @@
     "Exceptional Universal Spell Power +15",
     "Physical Sheltering +33",
     "Insight Parrying +6",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Autumn (set)"
    ],
    "augment_slots": [
     "Green"
@@ -1351,7 +2109,8 @@
     "Quality Deception +2",
     "Quality Seeker +3",
     "Blue Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Huntmaster's Favor (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -1457,6 +2216,24 @@
    "_source": "gear-planner"
   },
   {
+   "name": "Collapse, the Crusher of Souls",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Item:Collapse,_the_Crusher_of_Souls",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
    "name": "Collision, the Unstoppable Arcana",
    "category": "weapon",
    "slot": "Weapon",
@@ -1492,7 +2269,8 @@
     "Bashing +7",
     "Shield Bashing +23",
     "Purple Augment Slot",
-    "Orange Augment Slot"
+    "Orange Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Purple",
@@ -1596,7 +2374,8 @@
     "Insight Magical Sheltering +17",
     "Quality Potency +25",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Hruit's Influence (set)"
    ],
    "augment_slots": [
     "Green",
@@ -1725,6 +2504,24 @@
    ]
   },
   {
+   "name": "Demise, the Beginning of the Fall",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Item:Demise,_the_Beginning_of_the_Fall",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
    "name": "Demogorgon's Reign",
    "category": "item",
    "slot": "Trinket",
@@ -1758,7 +2555,8 @@
     "Insight Spell Lore +5",
     "Green Augment Slot",
     "Yellow Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -1779,7 +2577,8 @@
     "Insight Assassinate +7",
     "Deception +11",
     "Yellow Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Mantle of Suulomades (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -1834,7 +2633,8 @@
     "Deception +10",
     "Insight Seeker +6",
     "Shield Armor Class +13",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Winter (set)"
    ],
    "augment_slots": [
     "Green"
@@ -2101,7 +2901,8 @@
     "Quality Impulse +36",
     "Natural Armor Class +13",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Eminence of Autumn (set)"
    ],
    "augment_slots": [
     "Green",
@@ -2250,7 +3051,8 @@
     "Cold Absorption +37",
     "Yellow Augment Slot",
     "Green Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -2272,7 +3074,8 @@
     "Insight Spell Lore +5",
     "Green Augment Slot",
     "Yellow Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -2292,7 +3095,8 @@
     "Illusory Death +3",
     "Quality Wizardry +67",
     "Magical Efficiency +10",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Autumn (set)"
    ],
    "augment_slots": [
     "Green"
@@ -2359,7 +3163,8 @@
     "Competence Healing Amplification +53",
     "False Life +50",
     "Blue Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Summer (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -2440,7 +3245,8 @@
     "Equipment Healing Lore +21",
     "Quality Devotion +35",
     "Elemental Resistance +45",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Spring (set)"
    ],
    "augment_slots": [
     "Green"
@@ -2634,7 +3440,8 @@
     "Sacred Spell Focus Mastery +2",
     "Equipment Power of the Silver Flame +142",
     "Quality Resistance +2",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Autumn (set)"
    ],
    "augment_slots": [
     "Green"
@@ -2856,7 +3663,8 @@
    "enhancements": [
     "Acid Blast +6",
     "Red Augment Slot",
-    "Orange Augment Slot"
+    "Orange Augment Slot",
+    "One with the Swarm (set)"
    ],
    "augment_slots": [
     "Red",
@@ -3036,7 +3844,8 @@
    "enhancements": [
     "Quality Combat Mastery +3",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Huntmaster's Favor (set)"
    ],
    "augment_slots": [
     "Green",
@@ -3057,7 +3866,8 @@
     "Dodge +13",
     "Spell Resistance +40",
     "Green Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Huntmaster's Favor (set)"
    ],
    "augment_slots": [
     "Green",
@@ -3095,7 +3905,9 @@
     "Insight Resonance +77",
     "Quality Resonance +38",
     "Purple Augment Slot",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Eminence of Spring (set)",
+    "Eminence of Winter (set)"
    ],
    "augment_slots": [
     "Purple",
@@ -3139,7 +3951,8 @@
     "Exceptional Alluring Skills Bonus +10",
     "Incite +126",
     "Yellow Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Winter (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -3177,7 +3990,8 @@
    "enhancements": [
     "Flaming Blast +7",
     "Orange Augment Slot",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Orange",
@@ -3265,7 +4079,8 @@
    "enhancements": [
     "Orb Orb Bonus +15",
     "Orange Augment Slot",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
    ],
    "augment_slots": [
     "Orange",
@@ -3328,7 +4143,8 @@
    "slot": "Weapon",
    "enhancements": [
     "Orange Augment Slot",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Last Line of Defense (set)"
    ],
    "augment_slots": [
     "Orange",
@@ -3538,7 +4354,8 @@
     "Fortification +153",
     "Insight Physical Sheltering +17",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Remodeling Renegade (set)"
    ],
    "augment_slots": [
     "Green",
@@ -3579,7 +4396,8 @@
     "Shield Bashing +22",
     "Insight Diversion +10",
     "Purple Augment Slot",
-    "Orange Augment Slot"
+    "Orange Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Purple",
@@ -3634,7 +4452,8 @@
    "enhancements": [
     "Impactful +6",
     "Insight Armor-Piercing +9",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Heavy Warfare (Legendary) (set)"
    ],
    "augment_slots": [
     "Red"
@@ -3651,7 +4470,8 @@
    "enhancements": [
     "Reverberating +6",
     "Armor-Piercing +20",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Heavy Warfare (Legendary) (set)"
    ],
    "augment_slots": [
     "Red"
@@ -3671,7 +4491,8 @@
     "Equipment Devotion +146",
     "Equipment Resonance +146",
     "Efficient Metamagic - Empower Healing +2",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Legendary Oasis of Morality (set)"
    ],
    "augment_slots": [
     "Red"
@@ -3709,7 +4530,8 @@
    "enhancements": [
     "Constitution +14",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
    ],
    "augment_slots": [
     "Green",
@@ -3730,7 +4552,8 @@
     "False Life +54",
     "Profane False Life +48",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Might of the Abishai (set)"
    ],
    "augment_slots": [
     "Green",
@@ -3751,7 +4574,8 @@
     "False Life +54",
     "Profane False Life +48",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Might of the Abishai (set)"
    ],
    "augment_slots": [
     "Green",
@@ -3771,7 +4595,8 @@
     "Fortification +151",
     "Vitality False Life +48",
     "Deflection Armor Class +11",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Mroranon's Might (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -3789,7 +4614,8 @@
     "Speed +30",
     "Quality Strength +3",
     "Constitution +13",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Summer (set)"
    ],
    "augment_slots": [
     "Green"
@@ -3809,7 +4635,8 @@
     "False Life +54",
     "Profane False Life +48",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Might of the Abishai (set)"
    ],
    "augment_slots": [
     "Green",
@@ -3830,7 +4657,8 @@
     "False Life +54",
     "Profane False Life +48",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Might of the Abishai (set)"
    ],
    "augment_slots": [
     "Green",
@@ -3848,7 +4676,8 @@
    "enhancements": [
     "Armor-Piercing +20",
     "Acid Resistance +50",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Spring (set)"
    ],
    "augment_slots": [
     "Green"
@@ -3917,7 +4746,8 @@
     "Quality Physical Sheltering +8",
     "Vitality False Life +48",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -3938,7 +4768,8 @@
     "Competence Accuracy +21",
     "Competence Deadly +11",
     "Yellow Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Vulkoor's Chosen (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -3999,7 +4830,8 @@
     "Dodge +14",
     "Speed +30",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -4017,7 +4849,8 @@
    "enhancements": [
     "Bleeding +6",
     "Tendon Slice +11",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
    ],
    "augment_slots": [
     "Red"
@@ -4036,7 +4869,8 @@
     "Insight Constitution +6",
     "Stunning +15",
     "Quality Physical Sheltering +8",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Green"
@@ -4055,7 +4889,8 @@
     "Wizardry +283",
     "Cold Absorption +35",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Anger of the Avalanche (set)"
    ],
    "augment_slots": [
     "Green",
@@ -4076,7 +4911,8 @@
     "Distant Diversion +21",
     "Resistance Reflex Save +12",
     "Colorless Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "The Legendary Desert's Burning Sun (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -4095,7 +4931,8 @@
     "Quality Dodge +3",
     "Dexterity +13",
     "Quality Dexterity +3",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Silent Avenger Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Green"
@@ -4134,7 +4971,8 @@
     "Physical Sheltering +33",
     "Competence Healing Amplification +53",
     "False Life +50",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Hruit's Influence (set)"
    ],
    "augment_slots": [
     "Green"
@@ -4194,7 +5032,8 @@
     "Insight Doublestrike +7",
     "Insight Deadly +5",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -4277,7 +5116,8 @@
     "Equipment Combustion +142",
     "Equipment Acid Lore +21",
     "Equipment Fire Lore +21",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Beacon of Magic Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Green"
@@ -4296,7 +5136,8 @@
     "Insight Strength +6",
     "Speed +30",
     "Blue Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Windlasher's Ferocity (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -4334,7 +5175,8 @@
     "Equipment Potency +103",
     "Competence Spot +21",
     "Luck Good Luck +4",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
    ],
    "augment_slots": [
     "Red"
@@ -4410,7 +5252,8 @@
     "Anarchic Blast +6",
     "Vampirism +3",
     "Chaos Absorption +23",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Legendary Windlasher's Ferocity (set)"
    ],
    "augment_slots": [
     "Red"
@@ -4429,7 +5272,8 @@
     "Resistance Enchantment Save +11",
     "Exceptional Universal Spell Lore +5",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Date With a Mind Flayer (set)"
    ],
    "augment_slots": [
     "Green",
@@ -4508,7 +5352,8 @@
     "Cold Absorption +34",
     "False Life +50",
     "Negative Energy Absorption +34",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Winter (set)"
    ],
    "augment_slots": [
     "Green"
@@ -4546,7 +5391,8 @@
     "Competence Haggle +21",
     "Competence Diplomacy +21",
     "Exceptional Alluring Skills Bonus +10",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Silver Concord's Subtlety (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -4564,7 +5410,8 @@
     "Equipment Lightning Lore +22",
     "Equipment Magnetism +151",
     "Blue Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "The Legendary Desert's Writhing Storm (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -4583,7 +5430,8 @@
     "Deflection Armor Class +10",
     "Vitality False Life +44",
     "Quality False Life +12",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Winter (set)"
    ],
    "augment_slots": [
     "Green"
@@ -4604,7 +5452,8 @@
     "Competence Tumble +20",
     "Competence Swim +20",
     "Colorless Augment Slot",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Legendary Vulkoor's Chosen (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -4779,7 +5628,8 @@
     "Shocking Blast +6",
     "Insight Riposte +6",
     "Dodge +14",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
    ],
    "augment_slots": [
     "Red"
@@ -4817,7 +5667,8 @@
     "Repair Amplification +53",
     "Equipment Reconstruction +142",
     "Competence Deadly +10",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Renegade Champion (Legendary) (set)"
    ],
    "augment_slots": [
     "Green"
@@ -4856,7 +5707,8 @@
     "Quality Spell Resistance +11",
     "Insight Use Magic Device +2",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -5205,7 +6057,8 @@
     "Acid Absorption +35",
     "Cold Absorption +35",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Green",
@@ -5223,7 +6076,8 @@
    "enhancements": [
     "Equipment Enchantment Focus +7",
     "Magical Sheltering +33",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Spring (set)"
    ],
    "augment_slots": [
     "Green"
@@ -5242,7 +6096,8 @@
     "Equipment Devotion +142",
     "Insight Resistance +4",
     "Insight Magical Sheltering +16",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Summer (set)"
    ],
    "augment_slots": [
     "Green"
@@ -5260,7 +6115,8 @@
     "Profane Well Rounded +2",
     "Competence Accuracy +20",
     "Competence Deadly +10",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Autumn (set)"
    ],
    "augment_slots": [
     "Green"
@@ -5277,7 +6133,8 @@
    "enhancements": [
     "Equipment Spell Focus Mastery +6",
     "Insight Spell Focus Mastery +3",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Winter (set)"
    ],
    "augment_slots": [
     "Green"
@@ -5332,7 +6189,8 @@
     "Quality Intelligence +3",
     "Shatter +15",
     "Insight Physical Sheltering +16",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -5370,7 +6228,8 @@
     "Quality Will Save +3",
     "Poison Resistance +54",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -5473,7 +6332,8 @@
     "Equipment Spell Penetration +8",
     "Wizardry +269",
     "Insight Wizardry +134",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Autumn (set)"
    ],
    "augment_slots": [
     "Green"
@@ -5516,7 +6376,8 @@
     "Unholy +6",
     "Insight Diversion +10",
     "Purple Augment Slot",
-    "Orange Augment Slot"
+    "Orange Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Purple",
@@ -5538,7 +6399,8 @@
     "Unholy +6",
     "Insight Diversion +10",
     "Purple Augment Slot",
-    "Orange Augment Slot"
+    "Orange Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Purple",
@@ -5560,7 +6422,8 @@
     "Unholy +6",
     "Insight Diversion +10",
     "Purple Augment Slot",
-    "Orange Augment Slot"
+    "Orange Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Purple",
@@ -6513,7 +7376,8 @@
     "Insight Spell Penetration +4",
     "Equipment Conjuration Focus +7",
     "Mystic Diversion +20",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Feywild Dreamer (set)"
    ],
    "augment_slots": [
     "Green"
@@ -6531,7 +7395,8 @@
     "Force Blast +6",
     "Construct Bane +6",
     "Orange Augment Slot",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Legendary Remodeling Renegade (set)"
    ],
    "augment_slots": [
     "Orange",
@@ -6646,7 +7511,8 @@
     "Insight Sheltering +17",
     "Primal Natural Armor Class +5",
     "Natural Armor Class +13",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Winter (set)"
    ],
    "augment_slots": [
     "Green"
@@ -6684,7 +7550,8 @@
    "enhancements": [
     "Resistance Resistance +11",
     "Acid Absorption +36",
-    "Fortification +149"
+    "Fortification +149",
+    "Legendary Temple's Monolith (set)"
    ],
    "augment_slots": [],
    "minimum_level": 31,
@@ -6699,7 +7566,8 @@
    "enhancements": [
     "Resistance Resistance +11",
     "Cold Absorption +36",
-    "Fortification +149"
+    "Fortification +149",
+    "Legendary Temple's Tide (set)"
    ],
    "augment_slots": [],
    "minimum_level": 31,
@@ -6714,7 +7582,8 @@
    "enhancements": [
     "Resistance Resistance +11",
     "Fire Absorption +36",
-    "Fortification +149"
+    "Fortification +149",
+    "Legendary Temple's Inferno (set)"
    ],
    "augment_slots": [],
    "minimum_level": 31,
@@ -6729,7 +7598,8 @@
    "enhancements": [
     "Resistance Resistance +11",
     "Electric Absorption +36",
-    "Fortification +149"
+    "Fortification +149",
+    "Legendary Temple's Tempest (set)"
    ],
    "augment_slots": [],
    "minimum_level": 31,
@@ -6747,7 +7617,9 @@
     "Quality Dodge +3",
     "Insight Fortification +74",
     "Blue Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Echoes of the Walking Ancestors (set)",
+    "Deacon of the Auricular Sacrarium (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -7176,7 +8048,8 @@
     "Speed +30",
     "Competence Move Silently +21",
     "Yellow Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Windlasher's Ferocity (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -7195,7 +8068,8 @@
     "Axiomatic Blast +6",
     "Good Blast +6",
     "Doublestrike +15",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Legendary Menechtarun Scavenger (set)"
    ],
    "augment_slots": [
     "Red"
@@ -7271,7 +8145,8 @@
     "Competence Concentration +20",
     "Resistance Spell Save +11",
     "Yellow Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Elder's Knowledge (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -7314,7 +8189,8 @@
     "Physical Sheltering +33",
     "Competence Healing Amplification +53",
     "False Life +50",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Part of the Family (set)"
    ],
    "augment_slots": [
     "Green"
@@ -7334,7 +8210,8 @@
     "Physical Sheltering +33",
     "Competence Healing Amplification +53",
     "False Life +50",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Part of the Family (set)"
    ],
    "augment_slots": [
     "Green"
@@ -7353,7 +8230,8 @@
     "Physical Sheltering +33",
     "Exceptional Universal Spell Lore +5",
     "Exceptional Universal Spell Power +15",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Esoteric Initiate (set)"
    ],
    "augment_slots": [
     "Green"
@@ -7388,7 +8266,8 @@
     "Constitution +14",
     "Resistance Resistance +11",
     "Proof Against Poison +11",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Might of the Abishai (set)"
    ],
    "augment_slots": [
     "Green"
@@ -7408,7 +8287,8 @@
     "Physical Sheltering +33",
     "Exceptional Universal Spell Power +15",
     "Exceptional Universal Spell Lore +5",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Profane Experiment (set)"
    ],
    "augment_slots": [
     "Green"
@@ -7426,7 +8306,8 @@
     "Incite +126",
     "Competence Deadly +11",
     "Yellow Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Fastidious Fabricator (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -7446,7 +8327,8 @@
     "Resistance Resistance +11",
     "Fortification +148",
     "Blue Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Fastidious Fabricator (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -7486,7 +8368,8 @@
     "Wizardry +294",
     "Exceptional Charisma Skills +6",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Date With a Mind Flayer (set)"
    ],
    "augment_slots": [
     "Green",
@@ -7508,7 +8391,8 @@
     "Equipment Potency +106",
     "Exceptional Alluring Skills Bonus +10",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Date With a Mind Flayer (set)"
    ],
    "augment_slots": [
     "Green",
@@ -7529,7 +8413,8 @@
     "Equipment Spell Penetration +9",
     "Quality Spell Penetration +3",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Date With a Mind Flayer (set)"
    ],
    "augment_slots": [
     "Green",
@@ -8116,7 +9001,8 @@
     "Shield Bashing +20",
     "Entropic +6",
     "Quality Magical Sheltering +8",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Eminence of Summer (set)"
    ],
    "augment_slots": [
     "Purple"
@@ -8272,7 +9158,8 @@
     "Physical Sheltering +33",
     "Competence Healing Amplification +53",
     "False Life +50",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Feywild Dreamer (set)"
    ],
    "augment_slots": [
     "Green"
@@ -8292,7 +9179,8 @@
     "Physical Sheltering +33",
     "Exceptional Universal Spell Power +15",
     "Exceptional Universal Spell Lore +5",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Feywild Dreamer (set)"
    ],
    "augment_slots": [
     "Green"
@@ -8309,7 +9197,8 @@
    "enhancements": [
     "Axiomatic Blast +6",
     "Holy +6",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
    ],
    "augment_slots": [
     "Red"
@@ -8330,7 +9219,9 @@
     "Quality Dodge +3",
     "Insight Fortification +74",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Devotion of the Firemouth (set)",
+    "Defender of Tanaroa (set)"
    ],
    "augment_slots": [
     "Green",
@@ -8350,7 +9241,8 @@
     "Fire Resistance +53",
     "Speed +30",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Devotion of the Firemouth (set)"
    ],
    "augment_slots": [
     "Green",
@@ -8372,7 +9264,8 @@
     "Competence Deadly +11",
     "Competence Underwater Action +21",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Devotion of the Firemouth (set)"
    ],
    "augment_slots": [
     "Green",
@@ -8390,7 +9283,8 @@
    "enhancements": [
     "Flaming Blast +6",
     "Fire Absorption +36",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
    ],
    "augment_slots": [
     "Red"
@@ -8410,7 +9304,9 @@
     "Quality Dodge +3",
     "Insight Fortification +74",
     "Blue Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Dread Stalker (set)",
+    "Devotion of the Firemouth (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -8455,7 +9351,8 @@
     "Magical Sheltering +34",
     "Speed +30",
     "Colorless Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "The Legendary Desert's Burning Sun (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -8516,7 +9413,8 @@
     "Equipment Potency +103",
     "Insight Seeker +6",
     "Insight Combat Mastery +6",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Temple's Inferno (set)"
    ],
    "augment_slots": [
     "Green"
@@ -9314,7 +10212,8 @@
     "Speed +30",
     "Natural Armor Class +13",
     "Resistance Reflex Save +11",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -9333,7 +10232,8 @@
     "Shocking Blast +6",
     "Equipment Lightning Lore +21",
     "Equipment Magnetism +146",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Desert's Writhing Storm (set)"
    ],
    "augment_slots": [
     "Red"
@@ -9371,7 +10271,8 @@
     "Mystic Diversion +22",
     "Energy Siphon +12",
     "Purple Augment Slot",
-    "Orange Augment Slot"
+    "Orange Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Purple",
@@ -9436,7 +10337,8 @@
     "Fiery +6",
     "Flaming +15",
     "Orange Augment Slot",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Legendary Fried & Frozen Frenzy (set)"
    ],
    "augment_slots": [
     "Orange",
@@ -9655,7 +10557,8 @@
     "Chilling +6",
     "Freezing +15",
     "Orange Augment Slot",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Legendary Fried & Frozen Frenzy (set)"
    ],
    "augment_slots": [
     "Orange",
@@ -9814,7 +10717,8 @@
     "Resistance Reflex Save +11",
     "Dodge +13",
     "Blue Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Spring (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -9873,7 +10777,8 @@
     "Equipment Evocation Focus +7",
     "Quality Charisma +3",
     "Wizardry +269",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -9893,7 +10798,9 @@
     "Natural Armor Class +13",
     "Vitality False Life +44",
     "Deflection Armor Class +10",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Wayward Warrior (Legendary) (set)",
+    "Seasons of Change (Legendary) (set)"
    ],
    "augment_slots": [
     "Purple"
@@ -10047,7 +10954,8 @@
     "Physical Sheltering +33",
     "Exceptional Universal Spell Lore +5",
     "Exceptional Universal Spell Power +15",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Feywild Dreamer (set)"
    ],
    "augment_slots": [
     "Green"
@@ -10103,7 +11011,8 @@
    "slot": "Gloves",
    "enhancements": [
     "Insight Magical Sheltering +16",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Spring (set)"
    ],
    "augment_slots": [
     "Green"
@@ -10123,7 +11032,8 @@
     "Competence Healing Amplification +54",
     "Natural Armor Class +13",
     "Yellow Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Vulkoor's Might (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -10143,7 +11053,8 @@
     "Competence Spot +20",
     "Insight Heightened Awareness +6",
     "Colorless Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "The Legendary Desert's Writhing Storm (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -10164,7 +11075,8 @@
     "Efficient Metamagic - Maximize +2",
     "Efficient Metamagic - Extend +2",
     "Blue Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Anger of the Avalanche (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -10207,7 +11119,8 @@
     "Physical Sheltering +34",
     "Competence Use Magic Device +5",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Green",
@@ -10327,7 +11240,8 @@
     "Proof Against Poison +11",
     "- DR +15",
     "Blue Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "The Legendary Desert's Writhing Storm (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -10404,7 +11318,8 @@
     "Equipment Illusion Focus +7",
     "Spell Resistance +38",
     "Equipment Spell Penetration +8",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Feywild Dreamer (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -10783,7 +11698,8 @@
     "Equipment Kinetic Lore +22",
     "Equipment Impulse +151",
     "Equipment Illusion Focus +9",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Desert's Biting Sands (set)"
    ],
    "augment_slots": [
     "Red"
@@ -10801,7 +11717,8 @@
     "Insight Resistance +4",
     "Vitality False Life +44",
     "Poison Resistance +50",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Autumn (set)"
    ],
    "augment_slots": [
     "Green"
@@ -10896,7 +11813,8 @@
     "Equipment Healing Lore +21",
     "Insight Sheltering +17",
     "Efficient Metamagic - Empower Healing +2",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Flamecleansed Fury (set)"
    ],
    "augment_slots": [
     "Green"
@@ -10915,7 +11833,8 @@
     "Equipment Radiance Lore +21",
     "Equipment Evocation Focus +7",
     "Quality Spell Penetration +2",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Flamecleansed Fury (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -10936,7 +11855,8 @@
     "Illusory Death +3",
     "Insight Nullification +71",
     "Insight Impulse +71",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Eminence of Autumn (set)"
    ],
    "augment_slots": [
     "Purple"
@@ -10971,7 +11891,8 @@
     "Insight Doublestrike +6",
     "Seeker +13",
     "Insight Deadly +4",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Part of the Family (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -11073,7 +11994,8 @@
     "Resistance Resistance +11",
     "Acid Absorption +36",
     "Fortification +149",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Temple's Monolith (set)"
    ],
    "augment_slots": [
     "Green"
@@ -11092,7 +12014,8 @@
     "Resistance Resistance +11",
     "Cold Absorption +36",
     "Fortification +149",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Temple's Tide (set)"
    ],
    "augment_slots": [
     "Green"
@@ -11111,7 +12034,8 @@
     "Resistance Resistance +11",
     "Fire Absorption +36",
     "Fortification +149",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Temple's Inferno (set)"
    ],
    "augment_slots": [
     "Green"
@@ -11130,7 +12054,8 @@
     "Resistance Resistance +11",
     "Electric Absorption +36",
     "Fortification +149",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Temple's Tempest (set)"
    ],
    "augment_slots": [
     "Green"
@@ -11187,7 +12112,8 @@
     "Charisma +14",
     "Magical Sheltering +36",
     "Cold Resistance +54",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Might of the Abishai (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -11229,7 +12155,8 @@
     "Competence Intimidate +21",
     "Incite +129",
     "Insight Command +7",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Mroranon's Might (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -11247,7 +12174,8 @@
     "Strength +14",
     "Improved Fire Augmentation +9",
     "Fortification +151",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Soul of the Red Dragon (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -11286,7 +12214,8 @@
     "Shield Armor Class +20",
     "Resistance Spell Save +10",
     "Spell Resistance +38",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Eminence of Spring (set)"
    ],
    "augment_slots": [
     "Purple"
@@ -11306,7 +12235,8 @@
     "Quality Seeker +3",
     "Physical Sheltering +36",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Remodeling Renegade (set)"
    ],
    "augment_slots": [
     "Green",
@@ -11367,7 +12297,8 @@
     "Poison Resistance +51",
     "Profane False Life +45",
     "Blue Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "The Legendary Desert's Starless Nights (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -11441,7 +12372,8 @@
     "Quality Combat Mastery +3",
     "Seeker +14",
     "Speed +30",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Temple's Tempest (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -11461,7 +12393,8 @@
     "Vitality False Life +45",
     "Incite +124",
     "Colorless Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Windlasher's Ferocity (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -11602,7 +12535,8 @@
     "Orb Orb Bonus +15",
     "Elemental Resistance +45",
     "Equipment Spell Penetration +9",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Purple"
@@ -11950,7 +12884,8 @@
     "Physical Sheltering +33",
     "Repair Amplification +53",
     "False Life +50",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Guardian of the Gates (set)"
    ],
    "augment_slots": [
     "Green"
@@ -12148,7 +13083,9 @@
     "Magical Sheltering +35",
     "Resistance Will Save +12",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Wrath of Sora Kell (set)",
+    "Legendary Perfected Wrath (set)"
    ],
    "augment_slots": [
     "Green",
@@ -12169,7 +13106,8 @@
     "Magical Sheltering +35",
     "Resistance Will Save +12",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Wrath of Sora Kell (set)"
    ],
    "augment_slots": [
     "Green",
@@ -12189,7 +13127,8 @@
     "Competence Open Lock +20",
     "Competence Search +20",
     "Competence Spot +20",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -12207,7 +13146,8 @@
     "Charisma +13",
     "Equipment Enchantment Focus +7",
     "Insight Enchantment Focus +3",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -12266,7 +13206,8 @@
     "Competence Bluff +20",
     "Competence Deadly +10",
     "Insight Diversion +9",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -12303,7 +13244,8 @@
     "Speed +30",
     "Dexterity +14",
     "Exceptional Nimble Skills Bonus +10",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Kundarak Delving Equipment (set)"
    ],
    "augment_slots": [
     "Colorless"
@@ -12322,7 +13264,8 @@
     "Competence Open Lock +21",
     "Competence Search +21",
     "Competence Spot +21",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Kundarak Delving Equipment (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -12343,7 +13286,8 @@
     "Insight Spot +10",
     "Resistance Reflex Save +12",
     "Colorless Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Kundarak Delving Equipment (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -12363,7 +13307,8 @@
     "Resistance Resistance +11",
     "Deflection Armor Class +11",
     "Magical Sheltering +36",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Wards of House Kundarak (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -12384,7 +13329,8 @@
     "Vitality False Life +48",
     "False Life +54",
     "Blue Augment Slot",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Legendary Wards of House Kundarak (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -12426,7 +13372,8 @@
     "Insight Dodge +6",
     "Competence Use Magic Device +5",
     "Speed +30",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Profane Experiment (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -12468,7 +13415,8 @@
     "Vitality False Life +46",
     "False Life +52",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legacy of Levikk (set)"
    ],
    "augment_slots": [
     "Green",
@@ -12510,7 +13458,8 @@
     "Insight Combat Mastery +6",
     "Rune Arm Charge Rate +30",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -12530,7 +13479,8 @@
     "Resistance Resistance +11",
     "Acid Absorption +36",
     "Fortification +149",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Temple's Monolith (set)"
    ],
    "augment_slots": [
     "Green"
@@ -12549,7 +13499,8 @@
     "Resistance Resistance +11",
     "Cold Absorption +36",
     "Fortification +149",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Temple's Tide (set)"
    ],
    "augment_slots": [
     "Green"
@@ -12568,7 +13519,8 @@
     "Resistance Resistance +11",
     "Fire Absorption +36",
     "Fortification +149",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Temple's Inferno (set)"
    ],
    "augment_slots": [
     "Green"
@@ -12587,7 +13539,8 @@
     "Resistance Resistance +11",
     "Electric Absorption +36",
     "Fortification +149",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Temple's Tempest (set)"
    ],
    "augment_slots": [
     "Green"
@@ -12607,7 +13560,8 @@
     "Electric Absorption +36",
     "Elemental Resistance +45",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -12646,7 +13600,8 @@
     "Strength +14",
     "Constitution +14",
     "Yellow Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "The Legendary Desert's Burning Sun (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -12666,7 +13621,8 @@
     "Action Boost Charges +3",
     "Insight Armor-Piercing +9",
     "Insight Constitution +6",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Summer (set)"
    ],
    "augment_slots": [
     "Green"
@@ -12687,7 +13643,8 @@
     "Insight Devotion +76",
     "Equipment Evocation Focus +10",
     "Purple Augment Slot",
-    "Orange Augment Slot"
+    "Orange Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Purple",
@@ -12708,7 +13665,8 @@
     "Melee Alacrity +15",
     "Insight Seeker +6",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Green",
@@ -12747,7 +13705,8 @@
     "Insight Constitution +6",
     "Physical Sheltering +33",
     "Insight Doublestrike +6",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Green"
@@ -12767,7 +13726,8 @@
     "Efficient Metamagic - Empower Healing +2",
     "Exceptional Healing Amplification +14",
     "Blue Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legacy of Lorikk (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -12885,7 +13845,8 @@
     "Physical Sheltering +35",
     "Resistance Fortitude Save +12",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Wrath of Sora Kell (set)"
    ],
    "augment_slots": [
     "Green",
@@ -12906,7 +13867,9 @@
     "Physical Sheltering +35",
     "Resistance Fortitude Save +12",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Wrath of Sora Kell (set)",
+    "Legendary Perfected Wrath (set)"
    ],
    "augment_slots": [
     "Green",
@@ -12926,7 +13889,8 @@
     "Equipment Enchantment Focus +8",
     "Insight Enchantment Focus +4",
     "Blue Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Masterful Magewright (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -12946,7 +13910,8 @@
     "Equipment Illusion Focus +8",
     "Insight Illusion Focus +4",
     "Green Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Masterful Magewright (set)"
    ],
    "augment_slots": [
     "Green",
@@ -13320,7 +14285,9 @@
     "Quality Dodge +3",
     "Insight Fortification +74",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Echoes of the Walking Ancestors (set)",
+    "Deacon of the Auricular Sacrarium (set)"
    ],
    "augment_slots": [
     "Green",
@@ -13358,7 +14325,8 @@
     "Constitution +13",
     "Doublestrike +15",
     "Dodge +13",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Green"
@@ -13380,7 +14348,8 @@
     "Lawful DR +30",
     "Good DR +30",
     "Green Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Windlasher's Ferocity (set)"
    ],
    "augment_slots": [
     "Green",
@@ -13422,7 +14391,8 @@
     "Competence Hide +20",
     "Assassinate +15",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Green",
@@ -13503,13 +14473,30 @@
     "Equipment Reconstruction +142",
     "Equipment Repair Lore +21",
     "Equipment Evocation Focus +7",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Arcsteel Battlemage (set)"
    ],
    "augment_slots": [
     "Green"
    ],
    "minimum_level": 29,
    "wiki_url": "https://ddowiki.com/page/Item:Legendary_Mastermaker%27s_Fingers",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Legendary Masthead",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Red Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
+   ],
+   "augment_slots": [
+    "Red"
+   ],
+   "minimum_level": 31,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Masthead",
    "_enriched": true,
    "_source": "gear-planner"
   },
@@ -13522,7 +14509,8 @@
     "Resistance Resistance +11",
     "Acid Absorption +36",
     "Fortification +149",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Temple's Monolith (set)"
    ],
    "augment_slots": [
     "Green"
@@ -13541,7 +14529,8 @@
     "Resistance Resistance +11",
     "Cold Absorption +36",
     "Fortification +149",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Temple's Tide (set)"
    ],
    "augment_slots": [
     "Green"
@@ -13560,7 +14549,8 @@
     "Resistance Resistance +11",
     "Fire Absorption +36",
     "Fortification +149",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Temple's Inferno (set)"
    ],
    "augment_slots": [
     "Green"
@@ -13579,7 +14569,8 @@
     "Resistance Resistance +11",
     "Electric Absorption +36",
     "Fortification +149",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Temple's Tempest (set)"
    ],
    "augment_slots": [
     "Green"
@@ -13620,7 +14611,8 @@
     "Exceptional Universal Spell Power +15",
     "Fortification +142",
     "Shield Armor Class +13",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Beacon of Magic Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Green"
@@ -13639,7 +14631,8 @@
     "Insight Parrying +6",
     "Physical Sheltering +33",
     "Profane Well Rounded +2",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Silent Avenger Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Green"
@@ -13739,7 +14732,8 @@
     "Deception +11",
     "Seeker +13",
     "Purple Augment Slot",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Legendary Windlasher's Ferocity (set)"
    ],
    "augment_slots": [
     "Purple",
@@ -13758,7 +14752,8 @@
     "Shield Armor Class +27",
     "Resistance Spell Save +10",
     "Quality Magical Sheltering +8",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Purple"
@@ -13778,7 +14773,8 @@
     "Insight Parrying +6",
     "Physical Sheltering +33",
     "Profane Well Rounded +2",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Silent Avenger Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Green"
@@ -13905,7 +14901,8 @@
     "Luck Good Luck +5",
     "Competence Move Silently +21",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -13926,7 +14923,8 @@
     "Profane False Life +45",
     "Physical Sheltering +34",
     "Colorless Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "The Legendary Desert's Starless Nights (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -13947,7 +14945,8 @@
     "Competence Use Magic Device +5",
     "Exceptional Alluring Skills Bonus +10",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -13965,7 +14964,8 @@
    "enhancements": [
     "Stabbing +15",
     "Anarchic +6",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
    ],
    "augment_slots": [
     "Red"
@@ -13982,7 +14982,8 @@
    "enhancements": [
     "Charisma +13",
     "Competence Healing Amplification +53",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Summer (set)"
    ],
    "augment_slots": [
     "Green"
@@ -14002,7 +15003,8 @@
     "Deflection Armor Class +11",
     "Insight Assassinate +7",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Vulkoor's Cunning (set)"
    ],
    "augment_slots": [
     "Green",
@@ -14022,7 +15024,8 @@
     "Equipment Void Lore +21",
     "Insight Parrying +6",
     "Insight Physical Sheltering +16",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Dreadkeeper (set)"
    ],
    "augment_slots": [
     "Green"
@@ -14041,7 +15044,8 @@
     "Rune Arm Imbue: Evil Shot +6",
     "Insight Shatter +6",
     "Profane False Life +44",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Winter (set)"
    ],
    "augment_slots": [
     "Green"
@@ -14079,7 +15083,8 @@
     "Linguistics +10",
     "Competence Diplomacy +20",
     "Quality Diplomacy +5",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Green"
@@ -14100,7 +15105,9 @@
     "Efficient Metamagic - Embolden +2",
     "Blue Augment Slot",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Wrath of Sora Kell (set)",
+    "Legendary Perfected Wrath (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -14156,7 +15163,8 @@
     "Insight Command +7",
     "Insight Incite +52",
     "Insight Fortification +71",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Winter (set)"
    ],
    "augment_slots": [
     "Green"
@@ -14239,7 +15247,8 @@
     "Deflection Armor Class +11",
     "Physical Sheltering +35",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
    ],
    "augment_slots": [
     "Green",
@@ -14258,7 +15267,8 @@
     "Force Blast +6",
     "Melee Alacrity +15",
     "Human Bane +6",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
    ],
    "augment_slots": [
     "Red"
@@ -14278,7 +15288,8 @@
     "Resistance Resistance +11",
     "Fortification +148",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Mind and Matter (set)"
    ],
    "augment_slots": [
     "Green",
@@ -14299,7 +15310,8 @@
     "Physical Sheltering +33",
     "Exceptional Universal Spell Power +15",
     "Exceptional Universal Spell Lore +5",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Esoteric Initiate (set)"
    ],
    "augment_slots": [
     "Green"
@@ -14361,7 +15373,8 @@
     "Competence Search +21",
     "Competence Spot +21",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Date With a Mind Flayer (set)"
    ],
    "augment_slots": [
     "Green",
@@ -14489,7 +15502,8 @@
     "Distant Diversion +21",
     "Mystic Diversion +21",
     "Armor-Piercing +21",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Temple's Monolith (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -14507,7 +15521,8 @@
     "Equipment Glaciation +142",
     "Equipment Ice Lore +21",
     "Magical Efficiency +10",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Hruit's Influence (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -14525,7 +15540,8 @@
     "Equipment Combustion +142",
     "Equipment Fire Lore +21",
     "Magical Efficiency +10",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Hruit's Influence (set)"
    ],
    "augment_slots": [
     "Green"
@@ -14545,7 +15561,8 @@
     "Assassinate +16",
     "Deception +11",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Might of the Abishai (set)"
    ],
    "augment_slots": [
     "Green",
@@ -14566,7 +15583,8 @@
     "Stunning +16",
     "Competence Deadly +11",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Might of the Abishai (set)"
    ],
    "augment_slots": [
     "Green",
@@ -14587,7 +15605,8 @@
     "Shatter +16",
     "Competence Accuracy +22",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Might of the Abishai (set)"
    ],
    "augment_slots": [
     "Green",
@@ -14608,7 +15627,8 @@
     "Insight Combat Mastery +6",
     "Ki +4",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Might of the Abishai (set)"
    ],
    "augment_slots": [
     "Green",
@@ -14648,7 +15668,8 @@
     "Vertigo +16",
     "Seeker +14",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Might of the Abishai (set)"
    ],
    "augment_slots": [
     "Green",
@@ -14666,7 +15687,8 @@
    "enhancements": [
     "Competence Deadly +10",
     "Stunning +15",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -14836,7 +15858,8 @@
     "Physical Sheltering +33",
     "Repair Amplification +53",
     "False Life +50",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Arcsteel Battlemage (set)"
    ],
    "augment_slots": [
     "Green"
@@ -14856,7 +15879,8 @@
     "Quality Seeker +3",
     "Physical Sheltering +33",
     "Insight Parrying +6",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Summer (set)"
    ],
    "augment_slots": [
     "Green"
@@ -14876,7 +15900,8 @@
     "Competence Healing Amplification +53",
     "Physical Sheltering +33",
     "Insight Parrying +6",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Winter (set)"
    ],
    "augment_slots": [
     "Green"
@@ -14896,7 +15921,8 @@
     "Insight Parrying +6",
     "Physical Sheltering +33",
     "Profane Well Rounded +2",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Knight of the Shadows Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -14915,7 +15941,8 @@
     "Incite +120",
     "Constitution +13",
     "Insight Incite +52",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Knight of the Shadows Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -14932,7 +15959,8 @@
    "enhancements": [
     "Seeker +13",
     "Doublestrike +15",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Legendary Part of the Family (set)"
    ],
    "augment_slots": [
     "Red"
@@ -14970,7 +15998,8 @@
     "Competence Healing Amplification +57",
     "Competence Heal +21",
     "Yellow Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Vulkoor's Chosen (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -14993,7 +16022,8 @@
     "Equipment Combustion +149",
     "Equipment Impulse +149",
     "Quality Charisma +3",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
    ],
    "augment_slots": [
     "Purple"
@@ -15031,7 +16061,8 @@
     "Magical Sheltering +34",
     "Spell Resistance +39",
     "Resistance Spell Save +11",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -15053,7 +16084,8 @@
     "Equipment Rune Arm Focus +10",
     "Efficient Metamagic - Empower +2",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -15076,7 +16108,8 @@
     "Equipment Rune Arm Focus +10",
     "Efficient Metamagic - Empower +2",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -15099,7 +16132,8 @@
     "Equipment Rune Arm Focus +10",
     "Efficient Metamagic - Empower +2",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -15122,7 +16156,8 @@
     "Equipment Rune Arm Focus +10",
     "Efficient Metamagic - Empower +2",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -15145,7 +16180,8 @@
     "Equipment Rune Arm Focus +10",
     "Efficient Metamagic - Empower +2",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -15168,7 +16204,8 @@
     "Equipment Rune Arm Focus +10",
     "Efficient Metamagic - Empower +2",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -15191,7 +16228,8 @@
     "Equipment Rune Arm Focus +10",
     "Efficient Metamagic - Empower +2",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -15233,7 +16271,8 @@
     "Equipment Glaciation +142",
     "Equipment Evocation Focus +7",
     "Natural Armor Class +13",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Renegade Champion (Legendary) (set)"
    ],
    "augment_slots": [
     "Green"
@@ -15305,7 +16344,8 @@
     "Resistance Will Save +12",
     "Competence Accuracy +21",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Raven's Eye (set)"
    ],
    "augment_slots": [
     "Green",
@@ -15326,7 +16366,8 @@
     "Seeker +13",
     "Deception +11",
     "Yellow Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Raven's Eye (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -15348,7 +16389,8 @@
     "Fire Resistance +54",
     "Fire Guard +10",
     "Colorless Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Soul of the Red Dragon (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -15370,7 +16412,8 @@
     "Fire Resistance +54",
     "Fire Guard +10",
     "Colorless Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Soul of the Red Dragon (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -15392,7 +16435,8 @@
     "Fire Resistance +54",
     "Fire Guard +10",
     "Colorless Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Soul of the Red Dragon (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -15411,7 +16455,8 @@
     "Seeker +13",
     "Combat Mastery +10",
     "Deflection Armor Class +10",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Summer (set)"
    ],
    "augment_slots": [
     "Green"
@@ -15432,7 +16477,8 @@
     "Fire Guard +2",
     "Insight Fortification +10",
     "Colorless Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Soul of the Red Dragon (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -15454,7 +16500,8 @@
     "Fire Resistance +54",
     "Fire Guard +10",
     "Colorless Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Soul of the Red Dragon (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -15474,7 +16521,8 @@
     "Quality Illusion Focus +1",
     "Equipment Spell Penetration +8",
     "Magical Sheltering +33",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -15494,7 +16542,8 @@
     "Seeker +14",
     "Speed +30",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Remodeling Renegade (set)"
    ],
    "augment_slots": [
     "Green",
@@ -15515,7 +16564,8 @@
     "Physical Sheltering +33",
     "Competence Healing Amplification +53",
     "False Life +50",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Profane Experiment (set)"
    ],
    "augment_slots": [
     "Green"
@@ -15553,7 +16603,8 @@
     "Physical Sheltering +34",
     "Alignment Absorption +22",
     "Blue Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "The Legendary Desert's Starless Nights (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -15612,7 +16663,8 @@
     "Equipment Corrosion +142",
     "Equipment Void Lore +21",
     "Equipment Nullification +142",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Autumn (set)"
    ],
    "augment_slots": [
     "Green"
@@ -15650,7 +16702,8 @@
     "Insight Deadly +4",
     "Resistance Reflex Save +11",
     "Physical Sheltering +33",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Green"
@@ -15669,7 +16722,8 @@
     "Equipment Magnetism +142",
     "Equipment Sonic Lore +21",
     "Equipment Resonance +142",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Spring (set)"
    ],
    "augment_slots": [
     "Green"
@@ -15688,7 +16742,8 @@
     "Equipment Combustion +142",
     "Equipment Radiance Lore +21",
     "Equipment Radiance +142",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Summer (set)"
    ],
    "augment_slots": [
     "Green"
@@ -15708,7 +16763,8 @@
     "Efficient Metamagic - Empower +2",
     "Magical Efficiency +10",
     "Yellow Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Mind and Matter (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -15770,7 +16826,8 @@
     "Vitality False Life +45",
     "Poison Resistance +51",
     "Yellow Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Vulkoor's Cunning (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -15790,7 +16847,8 @@
     "Equipment Glaciation +142",
     "Equipment Kinetic Lore +21",
     "Equipment Impulse +142",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Winter (set)"
    ],
    "augment_slots": [
     "Green"
@@ -15831,7 +16889,8 @@
     "Equipment Conjuration Focus +9",
     "Efficient Metamagic - Extend +2",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Might of the Abishai (set)"
    ],
    "augment_slots": [
     "Green",
@@ -15852,7 +16911,8 @@
     "Equipment Evocation Focus +9",
     "Efficient Metamagic - Enlarge +2",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Might of the Abishai (set)"
    ],
    "augment_slots": [
     "Green",
@@ -15907,7 +16967,8 @@
     "Quality Nullification +37",
     "Equipment Necromancy Focus +9",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Might of the Abishai (set)"
    ],
    "augment_slots": [
     "Green",
@@ -15927,7 +16988,8 @@
     "Resistance Resistance +11",
     "Deflection Armor Class +11",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Marshwalker (set)"
    ],
    "augment_slots": [
     "Green",
@@ -15948,7 +17010,8 @@
     "Equipment Evocation Focus +9",
     "Efficient Metamagic - Maximize +2",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Might of the Abishai (set)"
    ],
    "augment_slots": [
     "Green",
@@ -15968,7 +17031,8 @@
     "Deflection Armor Class +11",
     "Insight Command +7",
     "Insight Parrying +6",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Silver Concord's Subtlety (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -16030,7 +17094,8 @@
     "Equipment Evocation Focus +9",
     "Efficient Metamagic - Empower +2",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Might of the Abishai (set)"
    ],
    "augment_slots": [
     "Green",
@@ -16090,7 +17155,8 @@
     "Fire Absorption +35",
     "Fire Resistance +51",
     "Quality Combustion +36",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "The Legendary Desert's Burning Sun (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -16111,7 +17177,8 @@
     "Physical Sheltering +33",
     "Insight Parrying +6",
     "Blue Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Autumn (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -16133,7 +17200,9 @@
     "Quality Dodge +3",
     "Insight Fortification +74",
     "Blue Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Echoes of the Walking Ancestors (set)",
+    "Deacon of the Auricular Sacrarium (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -16153,7 +17222,8 @@
     "Resistance Resistance +11",
     "Acid Absorption +36",
     "Fortification +149",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Temple's Monolith (set)"
    ],
    "augment_slots": [
     "Green"
@@ -16172,7 +17242,8 @@
     "Resistance Resistance +11",
     "Cold Absorption +36",
     "Fortification +149",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Temple's Tide (set)"
    ],
    "augment_slots": [
     "Green"
@@ -16192,7 +17263,8 @@
     "Physical Sheltering +33",
     "Exceptional Universal Spell Power +15",
     "Exceptional Universal Spell Lore +5",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Dreadkeeper (set)"
    ],
    "augment_slots": [
     "Green"
@@ -16211,7 +17283,8 @@
     "Resistance Resistance +11",
     "Fire Absorption +36",
     "Fortification +149",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Temple's Inferno (set)"
    ],
    "augment_slots": [
     "Green"
@@ -16230,7 +17303,8 @@
     "Resistance Resistance +11",
     "Electric Absorption +36",
     "Fortification +149",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Temple's Tempest (set)"
    ],
    "augment_slots": [
     "Green"
@@ -16248,7 +17322,8 @@
     "Shatter +15",
     "Insight Dexterity +6",
     "Insight Combat Mastery +5",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Spring (set)"
    ],
    "augment_slots": [
     "Green"
@@ -16282,7 +17357,8 @@
    "slot": "Weapon",
    "enhancements": [
     "Icy Blast +6",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
    ],
    "augment_slots": [
     "Red"
@@ -16321,7 +17397,9 @@
     "Quality Dodge +3",
     "Insight Fortification +74",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Devotion of the Firemouth (set)",
+    "Defender of Tanaroa (set)"
    ],
    "augment_slots": [
     "Green",
@@ -16400,7 +17478,8 @@
     "Quality Fortitude Save +3",
     "Resistance Spell Save +10",
     "Deflection Protection from Evil +6",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Knight of the Shadows Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -16440,7 +17519,8 @@
     "Equipment Potency +103",
     "Insight Potency +51",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Deacon of the Auricular Sacrarium (set)"
    ],
    "augment_slots": [
     "Green",
@@ -16461,7 +17541,8 @@
     "Equipment Power of the Silver Flame +146",
     "Competence Heal +20",
     "Yellow Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Divine Blessing (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -16480,7 +17561,8 @@
     "Negative Energy Absorption +35",
     "Hallowed +13",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Divine Blessing (set)"
    ],
    "augment_slots": [
     "Green",
@@ -16501,7 +17583,8 @@
     "Competence Accuracy +21",
     "Competence Deadly +11",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Green",
@@ -16522,7 +17605,8 @@
     "Equipment Resonance +146",
     "Equipment Enchantment Focus +8",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Green",
@@ -16543,7 +17627,8 @@
     "Resistance Fortitude Save +12",
     "Vitality False Life +45",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Green",
@@ -16563,7 +17648,8 @@
     "Resistance Resistance +11",
     "Dodge +13",
     "Blue Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -16584,7 +17670,8 @@
     "Sheltering +34",
     "Deflection Armor Class +11",
     "Shield Armor Class +13",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -16604,7 +17691,8 @@
     "Equipment Healing Lore +21",
     "Equipment Devotion +146",
     "Competence Healing Amplification +54",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Red"
@@ -16623,7 +17711,8 @@
     "Competence Search +21",
     "Competence Spot +21",
     "Blue Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Menechtarun Scavenger (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -16708,7 +17797,8 @@
     "Insight Parrying +6",
     "Insight Wisdom +6",
     "Insight Constitution +6",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Wayward Warrior (Legendary) (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -16748,7 +17838,8 @@
     "Insight Evocation Focus +3",
     "Competence Spellcraft +20",
     "Quality Constitution +3",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -16899,7 +17990,8 @@
     "Armor Armor Class +14",
     "Physical Sheltering +36",
     "Fire Resistance +54",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Might of the Abishai (set)"
    ],
    "augment_slots": [
     "Green"
@@ -16936,7 +18028,8 @@
     "Natural Armor Class +14",
     "Acid Resistance +54",
     "Yellow Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Menechtarun Scavenger (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -17082,7 +18175,8 @@
     "Insight Dodge +6",
     "Doubleshot +8",
     "Distant Diversion +20",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -17100,7 +18194,8 @@
     "Competence Hide +20",
     "Competence Move Silently +20",
     "Deception +10",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Silent Avenger Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Green"
@@ -17120,7 +18215,8 @@
     "Armor Armor Class +13",
     "Resistance Reflex Save +12",
     "Yellow Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Shaman's Fury (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -17142,7 +18238,8 @@
     "Efficient Metamagic - Intensify +2",
     "Efficient Metamagic - Maximize +2",
     "Yellow Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Shaman's Fury (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -17163,7 +18260,8 @@
     "Insight Devotion +73",
     "Wizardry +277",
     "Yellow Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "The Legendary Desert's Burning Sun (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -17226,7 +18324,8 @@
     "Insight Spell Resistance +20",
     "Quality Sheltering +9",
     "Blue Augment Slot",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Legendary Vulkoor's Chosen (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -17265,7 +18364,8 @@
     "Equipment Power of the Silver Flame +151",
     "Light Absorption +23",
     "Blue Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Oasis of Morality (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -18324,7 +19424,8 @@
     "Wizardry +277",
     "Profane False Life +45",
     "Blue Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -18360,7 +19461,8 @@
     "Construct Bane +6",
     "Fiery +6",
     "Acidic +6",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
    ],
    "augment_slots": [
     "Red"
@@ -18546,7 +19648,8 @@
     "Exceptional Nimble Skills Bonus +10",
     "Axeblock +10",
     "Colorless Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Vulkoor's Chosen (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -18583,7 +19686,8 @@
     "Equipment Glaciation +151",
     "Cold Absorption +36",
     "Cold Resistance +54",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Draconic Prophecy (set)"
    ],
    "augment_slots": [
     "Green"
@@ -18603,7 +19707,8 @@
     "Diversion +21",
     "Vertigo +15",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Green",
@@ -18640,7 +19745,8 @@
     "Equipment Nullification +142",
     "Equipment Healing Lore +21",
     "Equipment Void Lore +21",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Beacon of Magic Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -18659,7 +19765,8 @@
     "Insight Evocation Focus +3",
     "Fortification +142",
     "Physical Sheltering +33",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -18678,7 +19785,8 @@
     "Physical Sheltering +33",
     "Exceptional Universal Spell Lore +5",
     "Exceptional Universal Spell Power +15",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Dreadkeeper (set)"
    ],
    "augment_slots": [
     "Green"
@@ -18698,7 +19806,8 @@
     "Shield Armor Class +13",
     "Proof Against Disease +6",
     "Yellow Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Siren's Ward (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -18719,7 +19828,8 @@
     "Equipment Sonic Lore +21",
     "Equipment Resonance +146",
     "Yellow Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Siren's Ward (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -18737,7 +19847,8 @@
    "enhancements": [
     "Force Blast +6",
     "Purple Augment Slot",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Desert's Biting Sands (set)"
    ],
    "augment_slots": [
     "Purple",
@@ -18775,7 +19886,8 @@
     "Vitality False Life +44",
     "Spell Resistance +38",
     "Quality Physical Sheltering +8",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Dreadkeeper (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -18792,7 +19904,8 @@
    "enhancements": [
     "Shield Armor Class +25",
     "Shield Bashing +21",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Red"
@@ -18811,7 +19924,8 @@
     "Quality Necromancy Focus +2",
     "Wizardry +269",
     "Exceptional Nullification +15",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Green"
@@ -18831,7 +19945,8 @@
     "Diversion +22",
     "Distant Diversion +22",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -18852,7 +19967,8 @@
     "Bludgeoning +6",
     "Insight Riposte +6",
     "Insight Parrying +6",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Red"
@@ -18872,7 +19988,8 @@
     "Deception +11",
     "Seeker +13",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Green",
@@ -18892,7 +20009,8 @@
     "Fortification +146",
     "Physical Sheltering +34",
     "Resistance Reflex Save +12",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Green"
@@ -18912,7 +20030,8 @@
     "Seeker +13",
     "Competence Underwater Action +20",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Green",
@@ -18954,7 +20073,8 @@
     "Competence Healing Amplification +53",
     "Physical Sheltering +33",
     "Insight Parrying +6",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Winter (set)"
    ],
    "augment_slots": [
     "Green"
@@ -19011,7 +20131,8 @@
    "enhancements": [
     "Competence Perform +20",
     "Insight Charisma +6",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Green"
@@ -19050,7 +20171,8 @@
     "Insight Magical Sheltering +17",
     "Resistance Will Save +12",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -19114,7 +20236,8 @@
     "Electric Absorption +35",
     "Electric Resistance +51",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Green",
@@ -19133,7 +20256,8 @@
     "Animal Bane +6",
     "Tidal +6",
     "Competence Underwater Action +21",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
    ],
    "augment_slots": [
     "Red"
@@ -19153,7 +20277,8 @@
     "Resistance Spell Save +11",
     "Spell Resistance +39",
     "Yellow Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "The Legendary Desert's Starless Nights (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -19173,7 +20298,8 @@
     "Competence Accuracy +21",
     "Deception +11",
     "Yellow Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Vulkoor's Chosen (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -19192,7 +20318,8 @@
     "Doubleshot +8",
     "Doublestrike +15",
     "Seeker +13",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Profane Experiment (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -19229,7 +20356,8 @@
     "Resistance Resistance +11",
     "Physical Sheltering +34",
     "Yellow Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "The Legendary Desert's Writhing Storm (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -19273,7 +20401,8 @@
     "Efficient Metamagic - Enlarge +2",
     "Efficient Metamagic - Extend +2",
     "Luck Good Luck +3",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "The Legendary Desert's Biting Sands (set)"
    ],
    "augment_slots": [
     "Purple"
@@ -19296,7 +20425,8 @@
     "Equipment Potency +100",
     "Insight Potency +50",
     "Colorless Augment Slot",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "The Legendary Desert's Biting Sands (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -19358,7 +20488,8 @@
     "Quality Dodge +3",
     "Insight Fortification +74",
     "Blue Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Dread Stalker (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -19378,7 +20509,8 @@
     "Competence Intimidate +20",
     "Insight Physical Sheltering +16",
     "Natural Armor Class +13",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Guardian of the Gates (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -19397,7 +20529,8 @@
     "Deflection Armor Class +10",
     "Resistance Spell Save +10",
     "Insight Parrying +6",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Guardian of the Gates (set)"
    ],
    "augment_slots": [
     "Green"
@@ -19416,7 +20549,8 @@
     "Quality Combat Mastery +3",
     "Speed +30",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -19436,7 +20570,8 @@
     "Critical Wounding +3",
     "Proof Against Poison +11",
     "Purple Augment Slot",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Legendary Vulkoor's Chosen (set)"
    ],
    "augment_slots": [
     "Purple",
@@ -19458,7 +20593,8 @@
     "Poison Resistance +51",
     "Resistance Reflex Save +12",
     "Colorless Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Menechtarun Scavenger (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -19556,7 +20692,8 @@
     "Equipment Thunderstorm Lore +22",
     "Equipment Power of the Thunderstorm +151",
     "Colorless Augment Slot",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Desert's Writhing Storm (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -19596,7 +20733,8 @@
     "Chilling +6",
     "Armor-Piercing +20",
     "Bleeding +6",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Renegade Champion (Legendary) (set)"
    ],
    "augment_slots": [
     "Red"
@@ -19614,7 +20752,8 @@
     "Armor-Piercing +20",
     "Impactful +6",
     "Crushing +14",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Renegade Champion (Legendary) (set)"
    ],
    "augment_slots": [
     "Red"
@@ -19631,7 +20770,8 @@
    "enhancements": [
     "Chilling +6",
     "Crushing +14",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Renegade Champion (Legendary) (set)"
    ],
    "augment_slots": [
     "Red"
@@ -19711,7 +20851,8 @@
     "Quality Potency +26",
     "Insight Spellcraft +10",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -19769,7 +20910,8 @@
     "Quality Conjuration Focus +1",
     "Equipment Spell Penetration +8",
     "Quality Mystic Diversion +4",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Green"
@@ -19907,7 +21049,8 @@
     "Quality Seeker +3",
     "Physical Sheltering +33",
     "Insight Parrying +6",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Summer (set)"
    ],
    "augment_slots": [
     "Green"
@@ -19944,7 +21087,8 @@
     "Equipment Devotion +142",
     "Equipment Healing Lore +21",
     "Wizardry +269",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Hruit's Influence (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -20021,7 +21165,8 @@
    "enhancements": [
     "Charisma +13",
     "Competence Perform +20",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -20757,7 +21902,8 @@
    "slot": "Weapon",
    "enhancements": [
     "Poisonous +6",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Wayward Warrior (Legendary) (set)"
    ],
    "augment_slots": [
     "Red"
@@ -20798,7 +21944,9 @@
     "Quality Dodge +3",
     "Insight Fortification +74",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Dread Stalker (set)",
+    "Defender of Tanaroa (set)"
    ],
    "augment_slots": [
     "Green",
@@ -20949,7 +22097,9 @@
     "Quality Potency +25",
     "Resistance Reflex Save +12",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Wrath of Sora Kell (set)",
+    "Legendary Perfected Wrath (set)"
    ],
    "augment_slots": [
     "Green",
@@ -20970,7 +22120,8 @@
     "Quality Potency +25",
     "Resistance Reflex Save +12",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Wrath of Sora Kell (set)"
    ],
    "augment_slots": [
     "Green",
@@ -20991,7 +22142,8 @@
     "Insight Parrying +6",
     "Deflection Armor Class +11",
     "Blue Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legacy of Tharne (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -21010,7 +22162,8 @@
     "Deception +11",
     "Diversion +21",
     "Yellow Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legacy of Tharne (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -21053,7 +22206,8 @@
     "Equipment Enchantment Focus +10",
     "Profane False Life +48",
     "Purple Augment Slot",
-    "Orange Augment Slot"
+    "Orange Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Purple",
@@ -21093,7 +22247,8 @@
    "enhancements": [
     "Smite Evil Charges +3",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -21151,7 +22306,9 @@
     "Acid Resistance +53",
     "Electric Resistance +53",
     "Insight Physical Sheltering +17",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Temple's Monolith (set)",
+    "Legendary Temple's Tempest (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -21170,7 +22327,9 @@
     "Cold Resistance +53",
     "Dodge +14",
     "Insight Magical Sheltering +17",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Temple's Inferno (set)",
+    "Legendary Temple's Tide (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -21188,7 +22347,8 @@
     "Force Blast +6",
     "Construct Bane +6",
     "Orange Augment Slot",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Legendary Remodeling Renegade (set)"
    ],
    "augment_slots": [
     "Orange",
@@ -21227,7 +22387,8 @@
     "Wisdom +13",
     "Primal Natural Armor Class +5",
     "Natural Armor Class +13",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Spring (set)"
    ],
    "augment_slots": [
     "Green"
@@ -21247,7 +22408,8 @@
     "Insight Doubleshot +4",
     "Insight Distant Diversion +10",
     "Purple Augment Slot",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Legendary Menechtarun Scavenger (set)"
    ],
    "augment_slots": [
     "Purple",
@@ -21288,7 +22450,8 @@
     "Equipment Glaciation +142",
     "Equipment Lightning Lore +21",
     "Equipment Ice Lore +21",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Beacon of Magic Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -21362,7 +22525,8 @@
     "Equipment Fire Lore +21",
     "Equipment Combustion +146",
     "Purple Augment Slot",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Desert's Burning Sun (set)"
    ],
    "augment_slots": [
     "Purple",
@@ -21382,7 +22546,8 @@
     "Insight Seeker +6",
     "Quality Seeker +3",
     "Green Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Tyrannical Tinkerer (set)"
    ],
    "augment_slots": [
     "Green",
@@ -21402,7 +22567,8 @@
     "Insight Deception +5",
     "Quality Deception +2",
     "Yellow Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Tyrannical Tinkerer (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -21443,7 +22609,8 @@
     "Equipment Spell Penetration +9",
     "Wizardry +291",
     "Blue Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "The Legendary Desert's Biting Sands (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -21465,7 +22632,8 @@
     "Insight Parrying +6",
     "Adamantine DR +30",
     "Colorless Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Menechtarun Scavenger (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -21485,7 +22653,8 @@
     "Rune Arm Imbue: Electrical +6",
     "Insight Intelligence +6",
     "Rune Arm Charge Rate +30",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Conduit of the Titans (set)"
    ],
    "augment_slots": [
     "Green"
@@ -21610,7 +22779,8 @@
     "Competence Accuracy +21",
     "Competence Deadly +11",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Mind and Matter (set)"
    ],
    "augment_slots": [
     "Green",
@@ -21654,7 +22824,8 @@
     "Physical Sheltering +33",
     "Competence Healing Amplification +53",
     "False Life +50",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Part of the Family (set)"
    ],
    "augment_slots": [
     "Green"
@@ -21671,7 +22842,8 @@
    "enhancements": [
     "Doublestrike +15",
     "Insight Doublestrike +7",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
    ],
    "augment_slots": [
     "Red"
@@ -21745,7 +22917,8 @@
     "Quality Transmutation Focus +1",
     "Equipment Spell Penetration +8",
     "Natural Armor Class +13",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -21782,7 +22955,8 @@
     "Physical Sheltering +33",
     "Repair Amplification +53",
     "False Life +50",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Part of the Family (set)"
    ],
    "augment_slots": [
     "Green"
@@ -22261,7 +23435,8 @@
    "enhancements": [
     "Bleeding +6",
     "Fracturing +6",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Legendary Windlasher's Ferocity (set)"
    ],
    "augment_slots": [
     "Red"
@@ -22299,7 +23474,8 @@
     "Insight Seeker +6",
     "Insight Doublestrike +6",
     "Charisma +13",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Summer (set)"
    ],
    "augment_slots": [
     "Green"
@@ -22320,7 +23496,8 @@
     "Constitution +13",
     "Equipment Radiance +146",
     "Colorless Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Oasis of Morality (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -22572,7 +23749,8 @@
     "Quality Deception +2",
     "Doubleshot +8",
     "Insight Dodge +6",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Spring (set)"
    ],
    "augment_slots": [
     "Green"
@@ -22612,7 +23790,8 @@
     "Vertigo +15",
     "Vitality False Life +44",
     "Competence Deadly +10",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -22628,7 +23807,8 @@
    "slot": "Weapon",
    "enhancements": [
     "Poisonous +6",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Wayward Warrior (Legendary) (set)"
    ],
    "augment_slots": [
     "Red"
@@ -22648,7 +23828,8 @@
     "Exceptional Universal Spell Power +15",
     "Efficient Metamagic - Maximize +2",
     "Efficient Metamagic - Intensify +2",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Vulkoor's Chosen (set)"
    ],
    "augment_slots": [
     "Blue"
@@ -22670,7 +23851,8 @@
     "Insight Deception +5",
     "Exceptional Nimble Skills Bonus +10",
     "Colorless Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Vulkoor's Chosen (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -22691,7 +23873,8 @@
     "Equipment Devotion +146",
     "Equipment Nullification +146",
     "Yellow Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Vulkoor's Chosen (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -22712,7 +23895,8 @@
     "Armor-Piercing +22",
     "Resistance Reflex Save +12",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -22732,7 +23916,8 @@
     "Flaming Blast +6",
     "Undead Bane +6",
     "Red Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Oasis of Morality (set)"
    ],
    "augment_slots": [
     "Red",
@@ -22752,7 +23937,8 @@
     "Competence Deadly +10",
     "Constitution +13",
     "Natural Armor Class +13",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Crypt Raider Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Yellow"
@@ -22811,7 +23997,8 @@
     "Insight Magical Sheltering +16",
     "Incite +120",
     "Insight Riposte +6",
-    "Orange Augment Slot"
+    "Orange Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Orange"
@@ -22831,7 +24018,8 @@
     "Physical Sheltering +33",
     "Competence Healing Amplification +53",
     "False Life +50",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Guardian of the Gates (set)"
    ],
    "augment_slots": [
     "Green"
@@ -22852,7 +24040,8 @@
     "Insight Magical Sheltering +16",
     "Quality Magical Sheltering +8",
     "Purple Augment Slot",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Legendary Menechtarun Scavenger (set)"
    ],
    "augment_slots": [
     "Purple",
@@ -22872,7 +24061,8 @@
     "Insight Physical Sheltering +17",
     "Resistance Spell Save +11",
     "Quality Wisdom +3",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
    ],
    "augment_slots": [
     "Red"
@@ -22890,7 +24080,8 @@
     "Shocking Blast +6",
     "Doublestrike +15",
     "Colorless Augment Slot",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Desert's Writhing Storm (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -22911,7 +24102,8 @@
     "Insight Combustion +71",
     "Equipment Fire Lore +21",
     "Equipment Evocation Focus +7",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Seasons of Change (Legendary) (set)"
    ],
    "augment_slots": [
     "Red"
@@ -22931,7 +24123,8 @@
     "Insight Glaciation +71",
     "Equipment Ice Lore +21",
     "Equipment Conjuration Focus +7",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Seasons of Change (Legendary) (set)"
    ],
    "augment_slots": [
     "Red"
@@ -22951,7 +24144,8 @@
     "Physical Sheltering +33",
     "Competence Healing Amplification +53",
     "False Life +50",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Part of the Family (set)"
    ],
    "augment_slots": [
     "Green"
@@ -22971,7 +24165,8 @@
     "Physical Sheltering +33",
     "Competence Healing Amplification +53",
     "False Life +50",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Wallwatch (set)"
    ],
    "augment_slots": [
     "Green"
@@ -23012,7 +24207,8 @@
     "Equipment Radiance +146",
     "Light Absorption +22",
     "Exceptional Charisma +1",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Red"
@@ -23029,7 +24225,8 @@
    "enhancements": [
     "Speed +30",
     "Dodge +13",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Autumn (set)"
    ],
    "augment_slots": [
     "Green"
@@ -23067,7 +24264,8 @@
     "Profane Negative Amplification +53",
     "Profane Spell Focus Mastery +2",
     "Profane False Life +44",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Winter (set)"
    ],
    "augment_slots": [
     "Green"
@@ -23107,7 +24305,8 @@
     "Resistance Reflex Save +12",
     "Proof Against Disease +11",
     "Colorless Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Windlasher's Ferocity (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -23146,7 +24345,8 @@
     "Quality Fortitude Save +3",
     "Curse Resistance +11",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -23165,7 +24365,8 @@
     "Shield Armor Class +22",
     "Bashing +6",
     "Quality Strength +3",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
    ],
    "augment_slots": [
     "Red"
@@ -23185,7 +24386,8 @@
     "Profane False Life +47",
     "Profane Negative Amplification +56",
     "Quality Intelligence +3",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
    ],
    "augment_slots": [
     "Red"
@@ -23204,7 +24406,8 @@
     "Armor-Piercing +21",
     "Doublestrike +15",
     "Quality Dexterity +3",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
    ],
    "augment_slots": [
     "Red"
@@ -23224,7 +24427,8 @@
     "Quality Reflex Save +3",
     "Magical Efficiency +10",
     "Green Augment Slot",
-    "Colorless Augment Slot"
+    "Colorless Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -23245,7 +24449,8 @@
     "Equipment Fire Lore +21",
     "Equipment Combustion +146",
     "Colorless Augment Slot",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "The Legendary Desert's Burning Sun (set)"
    ],
    "augment_slots": [
     "Colorless",
@@ -23263,7 +24468,8 @@
    "enhancements": [
     "Shocking Blast +6",
     "Doublestrike +15",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Desert's Writhing Storm (set)"
    ],
    "augment_slots": [
     "Red"
@@ -23532,7 +24738,9 @@
     "Competence Deadly +11",
     "Blue Augment Slot",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Eminence of Spring (set)",
+    "Eminence of Summer (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -23596,7 +24804,8 @@
     "Efficient Metamagic - Embolden +2",
     "Efficient Metamagic - Intensify +2",
     "Orange Augment Slot",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Orange",
@@ -23616,7 +24825,8 @@
     "Quality Assassinate +3",
     "Exceptional Dexterity Skills +6",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -23847,7 +25057,8 @@
     "Insight Spell Lore +5",
     "Green Augment Slot",
     "Yellow Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -25479,6 +26690,24 @@
    "_source": "gear-planner"
   },
   {
+   "name": "Outburst, the Electric End",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Item:Outburst,_the_Electric_End",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
    "name": "Outfit of the Artblade's Reflection",
    "category": "item",
    "slot": "Armor",
@@ -25661,7 +26890,8 @@
     "Enchanting Death +3",
     "Equipment Spell Penetration +8",
     "Insight Spell Penetration +4",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Summer (set)"
    ],
    "augment_slots": [
     "Green"
@@ -25682,7 +26912,8 @@
     "Competence Deadly +12",
     "Yellow Augment Slot",
     "Green Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Vulkoor's Chosen (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -25704,7 +26935,8 @@
     "Evil DR +50",
     "Yellow Augment Slot",
     "Green Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "The Legendary Desert's Starless Nights (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -25726,7 +26958,8 @@
     "Electric Resistance +56",
     "Yellow Augment Slot",
     "Green Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Might of the Abishai (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -25749,7 +26982,8 @@
     "Resistance Resistance +12",
     "Yellow Augment Slot",
     "Green Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -25797,7 +27031,8 @@
     "Exceptional Universal Spell Lore +5",
     "Yellow Augment Slot",
     "Green Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Draconic Prophecy (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -25867,7 +27102,8 @@
     "Insight Armor-Piercing +11",
     "Yellow Augment Slot",
     "Green Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Soul of the Red Dragon (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -25939,7 +27175,8 @@
     "Equipment Enchantment Focus +11",
     "Yellow Augment Slot",
     "Green Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -25961,7 +27198,8 @@
     "Wizardry +305",
     "Yellow Augment Slot",
     "Green Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "The Legendary Desert's Biting Sands (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -26009,7 +27247,8 @@
     "Profane Negative Amplification +59",
     "Yellow Augment Slot",
     "Green Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Vulkoor's Chosen (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -26018,6 +27257,24 @@
    ],
    "minimum_level": 30,
    "wiki_url": "https://ddowiki.com/page/Item:Perfected_Vulkoorim_Pendant",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "Pestle, the Crucible of Bones",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Item:Pestle,_the_Crucible_of_Bones",
    "_enriched": true,
    "_source": "gear-planner"
   },
@@ -26450,7 +27707,8 @@
     "Energy Siphon +12",
     "Yellow Augment Slot",
     "Green Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -26636,7 +27894,9 @@
     "Competence Bluff +21",
     "Blue Augment Slot",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Eminence of Spring (set)",
+    "Eminence of Autumn (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -26656,7 +27916,8 @@
     "Resistance Spell Save +11",
     "Blue Augment Slot",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Eminence of Winter (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -26678,7 +27939,8 @@
     "Assassinate +16",
     "Yellow Augment Slot",
     "Green Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -26780,7 +28042,8 @@
     "Doublestrike +16",
     "Armor-Piercing +22",
     "Red Augment Slot",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Huntmaster's Favor (set)"
    ],
    "augment_slots": [
     "Red",
@@ -27026,7 +28289,8 @@
     "Cold Resistance +51",
     "Spell Resistance +39",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Green",
@@ -27046,7 +28310,8 @@
     "Equipment Firestorm Lore +23",
     "Spell Resistance +43",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -27090,7 +28355,8 @@
    "enhancements": [
     "Bleeding +6",
     "Red Augment Slot",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Huntmaster's Favor (set)"
    ],
    "augment_slots": [
     "Red",
@@ -27225,7 +28491,8 @@
     "Insight Parrying +6",
     "Doublestrike +15",
     "Blue Augment Slot",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Arcsteel Battlemage (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -27329,7 +28596,8 @@
     "Physical Sheltering +33",
     "Competence Healing Amplification +53",
     "False Life +50",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Spring (set)"
    ],
    "augment_slots": [
     "Green"
@@ -27350,7 +28618,9 @@
     "Magical Efficiency +10",
     "Blue Augment Slot",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Eminence of Autumn (set)",
+    "Eminence of Winter (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -27398,7 +28668,8 @@
     "Magical Sheltering +35",
     "Insight Sheltering +18",
     "Yellow Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Flamecleansed Fury (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -27445,7 +28716,8 @@
     "Thorny Crown of Madness +7",
     "Ranged Alacrity +20",
     "Orange Augment Slot",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Orange",
@@ -27464,7 +28736,8 @@
     "Thorny Crown of Madness +7",
     "Ranged Alacrity +20",
     "Orange Augment Slot",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Orange",
@@ -27540,7 +28813,8 @@
     "Tendon Slice +11",
     "Yellow Augment Slot",
     "Green Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -27549,6 +28823,42 @@
    ],
    "minimum_level": 29,
    "wiki_url": "https://ddowiki.com/page/Item:The_Brass_Admiral",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "The Changestone",
+   "category": "item",
+   "slot": "Trinket",
+   "enhancements": [
+    "Yellow Augment Slot",
+    "Green Augment Slot",
+    "Eminence of Summer (set)"
+   ],
+   "augment_slots": [
+    "Yellow",
+    "Green"
+   ],
+   "minimum_level": 29,
+   "wiki_url": "https://ddowiki.com/page/Item:The_Changestone",
+   "_enriched": true,
+   "_source": "gear-planner"
+  },
+  {
+   "name": "The Claws of the Balor",
+   "category": "weapon",
+   "slot": "Weapon",
+   "enhancements": [
+    "Orange Augment Slot",
+    "Purple Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
+   ],
+   "augment_slots": [
+    "Orange",
+    "Purple"
+   ],
+   "minimum_level": 32,
+   "wiki_url": "https://ddowiki.com/page/Item:The_Claws_of_the_Balor",
    "_enriched": true,
    "_source": "gear-planner"
   },
@@ -27626,7 +28936,8 @@
     "Insight Combustion +79",
     "Equipment Firestorm Lore +23",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -27648,7 +28959,8 @@
     "Quality Intimidate +5",
     "Green Augment Slot",
     "Yellow Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -27725,7 +29037,8 @@
     "Competence Deadly +11",
     "Doublestrike +15",
     "Yellow Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Part of the Family (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -27746,7 +29059,8 @@
     "Hound's Bones +23",
     "Blue Augment Slot",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "One with the Swarm (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -27768,7 +29082,8 @@
     "Profane Combat Mastery +3",
     "Green Augment Slot",
     "Yellow Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -27812,7 +29127,8 @@
     "Devil's Bones +23",
     "Blue Augment Slot",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Mantle of Suulomades (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -27835,7 +29151,8 @@
     "Profane Negative Amplification +53",
     "Constitution +13",
     "Energy Siphon +10",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Eminence of Winter (set)"
    ],
    "augment_slots": [
     "Purple"
@@ -27986,7 +29303,8 @@
     "Insight Combustion +74",
     "Insight Evocation Focus +4",
     "Red Augment Slot",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "The Labyrinthian Inferno (set)"
    ],
    "augment_slots": [
     "Red",
@@ -28006,7 +29324,8 @@
     "Equipment Fire Lore +22",
     "Equipment Combustion +148",
     "Red Augment Slot",
-    "Orange Augment Slot"
+    "Orange Augment Slot",
+    "The Labyrinthian Inferno (set)"
    ],
    "augment_slots": [
     "Red",
@@ -28028,7 +29347,8 @@
     "Insight Armor-Piercing +11",
     "Green Augment Slot",
     "Yellow Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -28048,7 +29368,8 @@
     "Shield Armor Class +23",
     "Fiery +6",
     "Shield Bashing +20",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Purple"
@@ -28068,7 +29389,8 @@
     "Physical Sheltering +33",
     "Profane Negative Amplification +53",
     "False Life +50",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Dreadkeeper (set)"
    ],
    "augment_slots": [
     "Green"
@@ -28084,7 +29406,8 @@
    "slot": "Weapon",
    "enhancements": [
     "Bleeding +6",
-    "Red Augment Slot"
+    "Red Augment Slot",
+    "The Legendary Dread Isle's Curse (set)"
    ],
    "augment_slots": [
     "Red"
@@ -28164,7 +29487,8 @@
     "Physical Sheltering +33",
     "Profane Negative Amplification +53",
     "False Life +50",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Dreadkeeper (set)"
    ],
    "augment_slots": [
     "Green"
@@ -28260,7 +29584,8 @@
     "Exceptional Universal Spell Power +15",
     "Physical Sheltering +33",
     "Insight Parrying +6",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Autumn (set)"
    ],
    "augment_slots": [
     "Green"
@@ -28280,7 +29605,8 @@
     "Competence Healing Amplification +53",
     "Resistance Reflex Save +11",
     "Dodge +13",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Spring (set)"
    ],
    "augment_slots": [
     "Green"
@@ -28318,7 +29644,8 @@
     "Physical Sheltering +33",
     "Repair Amplification +53",
     "False Life +50",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Legendary Arcsteel Battlemage (set)"
    ],
    "augment_slots": [
     "Green"
@@ -28338,7 +29665,8 @@
     "Insight Spell Focus Mastery +3",
     "Illusory Death +3",
     "Efficient Metamagic - Empower +2",
-    "Purple Augment Slot"
+    "Purple Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Purple"
@@ -28490,7 +29818,8 @@
     "Quality Magical Sheltering +9",
     "Green Augment Slot",
     "Yellow Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -28567,7 +29896,9 @@
     "Quality Sheltering +9",
     "Blue Augment Slot",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Eminence of Summer (set)",
+    "Eminence of Winter (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -28609,7 +29940,8 @@
     "Insight Armor-Piercing +11",
     "Green Augment Slot",
     "Yellow Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -28692,7 +30024,8 @@
     "Competence Perform +22",
     "Green Augment Slot",
     "Yellow Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Forbidden Knowledge (set)"
    ],
    "augment_slots": [
     "Green",
@@ -28713,7 +30046,8 @@
     "Luck Good Luck +5",
     "Yellow Augment Slot",
     "Green Augment Slot",
-    "Blue Augment Slot"
+    "Blue Augment Slot",
+    "Legendary Saltmarsh Explorer (set)"
    ],
    "augment_slots": [
     "Yellow",
@@ -28897,7 +30231,8 @@
     "Quality Magical Sheltering +8",
     "Blue Augment Slot",
     "Green Augment Slot",
-    "Yellow Augment Slot"
+    "Yellow Augment Slot",
+    "Conduit of the Titans (set)"
    ],
    "augment_slots": [
     "Blue",
@@ -28916,7 +30251,8 @@
    "enhancements": [
     "Smite Evil Charges +2",
     "Hallowed +13",
-    "Green Augment Slot"
+    "Green Augment Slot",
+    "Eminence of Summer (set)"
    ],
    "augment_slots": [
     "Green"
@@ -29018,7 +30354,8 @@
     "Insight Riposte +6",
     "Shield Bashing +20",
     "Undead Bane +6",
-    "Orange Augment Slot"
+    "Orange Augment Slot",
+    "Adherent of the Mists Set (Legendary) (set)"
    ],
    "augment_slots": [
     "Orange"

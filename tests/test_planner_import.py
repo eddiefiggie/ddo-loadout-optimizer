@@ -51,6 +51,21 @@ def test_real_records_carry_a_rankable_affix_or_seal():
         assert real or it.get("seal_slots"), f"{it['name']} has neither a rankable affix nor a seal"
 
 
+def test_set_members_carry_a_set_marker():
+    # U2: a gear-planner set member gets the same "X (set)" marker enrich.py emits, so
+    # build_dataset can attach its set_bonus; a non-member gets none.
+    items = [x for x in _shard()["items"] if not x.get("_seal_carrier")]
+    def markers(it):
+        return [e for e in it.get("enhancements", []) if str(e).endswith("(set)")]
+    with_marker = [it for it in items if markers(it)]
+    assert len(with_marker) > 100, "expected many gear-planner set members to carry a (set) marker"
+    adam = next((it for it in items if it["name"] == "Adamantine Bracers"), None)
+    assert adam and "Eminence of Winter (set)" in adam["enhancements"]
+    memento = next((it for it in items if it["name"] == "A Memento of Mori"), None)
+    if memento:
+        assert not markers(memento), "a non-set item should carry no (set) marker"
+
+
 def test_seal_carriers_are_seal_only_stubs():
     for it in _shard()["items"]:
         if it.get("_seal_carrier"):

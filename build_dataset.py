@@ -28,7 +28,9 @@ from src import viktranium as vik_mod
 from src import seal as seal_mod
 from src import compendium as compendium_mod
 from src import band_frontier as band_mod
+from src import set_catalog as set_catalog_mod
 from src import umbrella as umbrella_mod
+import re as _re
 
 import glob
 
@@ -147,6 +149,57 @@ def build(seed: dict) -> dict:
         if winner is not None and it.get("seal_slots") and not winner.get("seal_slots"):
             winner["seal_slots"] = [dict(s) for s in it["seal_slots"]]  # copy: no shared ref across base + tier variants
     enriched_items = deduped
+
+    # Set bonuses for enriched members (U3). Only the 67 base-seed items carry a
+    # set_bonus field, so the solver (which reads membership from set_bonus[].set)
+    # ignores every enriched set member. Attach the authoritative definition — base
+    # def wins, else the gear-planner catalog — to each enriched record carrying an
+    # "X (set)" marker, matched on the canonical name so cross-source spelling drift
+    # (the " Set" infix) resolves. Base-seed items are never touched (they already
+    # have set_bonus and never enter enriched_items).
+    _set_base_defs = set_catalog_mod.base_defs_from_seed(seed["items"])
+    _set_catalog = set_catalog_mod.load_catalog()
+    _KNOWN_UNDEFINED_SETS = ["Legendary Cooking By the Book"]  # novelty set, no catalog def
+    _enriched_set_names = set()
+    for it in enriched_items:
+        if it.get("set_bonus"):
+            continue  # already defined (shouldn't happen for enriched, but never override)
+        seen_sets, defs = set(), []
+        for e in it.get("enhancements", []):
+            m = _re.match(r"^(.*) \(set\)$", str(e))
+            if not m:
+                continue
+            name = m.group(1)
+            _enriched_set_names.add(name)
+            ckey = set_catalog_mod.canonical(name)
+            if ckey in seen_sets:
+                continue
+            seen_sets.add(ckey)
+            d = set_catalog_mod.definition_for(name, _set_base_defs, _set_catalog)
+            if d is not None:
+                defs.append(d)
+        if defs:
+            # Copy: definition_for may return the base-seed def by reference; never
+            # share a mutable dict across the base item, co-members, and tier variants
+            # (mirrors the seal-slot graft copy). Deep-copy piece_bonuses too.
+            it["set_bonus"] = [{**d, "piece_bonuses": dict(d.get("piece_bonuses") or {})}
+                               for d in defs]
+    # Fail loudly on unresolved name drift (KTD4) rather than silently splitting a set.
+    _set_problems = set_catalog_mod.reconciliation_audit(
+        _set_base_defs, _set_catalog, _enriched_set_names, known_undefined=_KNOWN_UNDEFINED_SETS)
+    if _set_problems:
+        raise SystemExit("set-name reconciliation failed (unresolved drift): "
+                         + "; ".join(p["canonical"] for p in _set_problems))
+    _distinct_enriched_sets = {set_catalog_mod.canonical(s["set"])
+                               for it in enriched_items for s in it.get("set_bonus") or []}
+    _set_enrichment_coverage = {
+        "enriched_members_with_set_bonus": sum(1 for it in enriched_items if it.get("set_bonus")),
+        "distinct_enriched_sets": len(_distinct_enriched_sets),
+        **set_catalog_mod.parse_rate(
+            _set_catalog, [set_catalog_mod.canonical(n) for n in _enriched_set_names]),
+        "known_undefined_sets": _KNOWN_UNDEFINED_SETS,
+    }
+
     # Legendary augment pool (gear-planner import). Sourced augments SUPERSEDE a
     # same-name base-seed augment (richer source wins — opposite of the base-wins
     # rule for enriched gear), so the incidental base augments don't double-list.
@@ -275,6 +328,7 @@ def build(seed: dict) -> dict:
             "coverage": cov,
             "color_coverage": colors_mod.color_coverage(variants),
             "set_coverage": set_mod.set_coverage(variants),
+            "set_enrichment_coverage": _set_enrichment_coverage,
             "dino_coverage": dino_cov,
             "nc_coverage": nc["coverage"],
             "viktranium_coverage": vik["coverage"],
