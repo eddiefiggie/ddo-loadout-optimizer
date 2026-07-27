@@ -78,6 +78,7 @@ function buildProgram(model) {
   const augMeta = new Map(); // color-placement var -> {variant_id, color, slot_color, wiki_url}
   const placeMeta = new Map(); // augment place indicator (pu) -> {variant_id, color, wiki_url}
   const setMeta = new Map(); // set_active var -> {set, pieces_required, pieces_label, wiki_url}
+  const jokerMeta = new Map(); // joker option var -> {host, group, set} (wildcard set piece)
   const dinoMeta = new Map(); // dino placement var -> {dino_type, stat, bonus_type, value, wiki_url}
   const ncMeta = new Map(); // nc placement var -> {item, category, stat, bonus_type, value, tier, wiki_url}
   const rollMeta = new Map(); // roll-group option var -> {item, stat, bonus_type, value, unit}
@@ -370,6 +371,32 @@ function buildProgram(model) {
       if (!byLabel.has(tier.pieces_label)) byLabel.set(tier.pieces_label, tier);
     }
   }
+  // Wildcard set piece (Gem of Many Facets) — a joker that rolls one set from each of
+  // its pools (rerollable, so theoretical-BiS picks the best per group). Per group, one
+  // select-one option binary per pool set that HAS a threshold this loadout can reach
+  // (setTiers): j <= x(Gem) (only when the Gem is equipped), sum(group) <= 1 (one pick
+  // per group), and each j is appended to setPieces[set] so the existing threshold
+  // constraint counts it. Options for sets with no threshold are skipped — they would be
+  // free vars the solver could set arbitrarily, fabricating an assignment. The tie-break
+  // (encodeStage) minimizes joker vars so one is set to 1 only when it is load-bearing.
+  let jc = 0;
+  const jokerVars = [];
+  for (const xv of xVars) {
+    (xv.variant.joker_set_groups || []).forEach((group, gi) => {
+      const opts = [];
+      for (const setName of group) {
+        if (!setTiers.has(setName) || !setPieces.has(setName)) continue; // no reachable threshold
+        const j = "k" + jc++;
+        extraVars.push(j);
+        jokerVars.push(j);
+        opts.push(j);
+        extraConstraints.push(`${j} - ${xv.name} <= 0`);       // only if the Gem is equipped
+        setPieces.get(setName).push(j);                        // counts toward the set's threshold
+        jokerMeta.set(j, { host: xv.variant.variant_id, group: gi, set: setName });
+      }
+      if (opts.length) extraConstraints.push(`${opts.join(" + ")} <= 1`); // at most one per group
+    });
+  }
   let sc = 0;
   for (const [setName, byLabel] of setTiers) {
     const pieceVars = setPieces.get(setName) || [];
@@ -397,7 +424,7 @@ function buildProgram(model) {
 
   return {
     xVars, zByBucket, cappedStats, targetList: model.targets, model,
-    extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, _zc: zc,
+    extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, jokerMeta, jokerVars, _zc: zc,
   };
 }
 
@@ -426,7 +453,15 @@ function encodeStage(program, { objectiveStat, sense, locks, tieBreak }) {
   const fb = program.xVars[0].name;
   const L = [sense === "min" ? "Minimize" : "Maximize"];
   if (tieBreak) {
-    L.push(" obj: " + program.xVars.map((xv, i) => `+ ${i + 1} ${xv.name}`).join(" "));
+    // Minimize (sense === "min"): summing (i+1)*x deterministically breaks ties among
+    // equal-value loadouts. Joker option vars are appended with continuing positive
+    // coefficients so a joker is set to 1 only when a locked constraint forces it (it
+    // is the load-bearing Nth piece of a completed set), and ties among equally-good
+    // pool sets resolve deterministically by option order.
+    const n = program.xVars.length;
+    const terms = program.xVars.map((xv, i) => `+ ${i + 1} ${xv.name}`)
+      .concat((program.jokerVars || []).map((j, i) => `+ ${n + 1 + i} ${j}`));
+    L.push(" obj: " + terms.join(" "));
   } else {
     L.push(" obj: " + fmtExpr(effectiveExpr(program, objectiveStat), fb));
   }
@@ -545,7 +580,14 @@ function readSolution(res, program) {
   for (const [n, meta] of program.vikMeta || []) if (prim(n) > 0.5) vikPlaced.push(meta);
   const sealPlaced = [];
   for (const [n, meta] of program.sealMeta || []) if (prim(n) > 0.5) sealPlaced.push(meta);
-  return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced };
+  // Wildcard joker picks — report a group's chosen set only when it is load-bearing
+  // (the set actually activated), so the Gem never claims a set it did not complete.
+  const activeSetNames = new Set(setsActive.map((m) => m.set));
+  const jokerPlaced = [];
+  for (const [j, meta] of program.jokerMeta || []) {
+    if (prim(j) > 0.5 && activeSetNames.has(meta.set)) jokerPlaced.push(meta);
+  }
+  return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, jokerPlaced };
 }
 
 async function solveLexicographic(model, highs) {
@@ -571,7 +613,7 @@ async function solveLexicographic(model, highs) {
     status: "optimal", perTarget, effective: sol.effective, chosen: sol.chosen,
     augmentsPlaced: sol.augmentsPlaced, setsActive: sol.setsActive,
     dinoPlaced: sol.dinoPlaced, ncPlaced: sol.ncPlaced, rollPlaced: sol.rollPlaced,
-    vikPlaced: sol.vikPlaced, sealPlaced: sol.sealPlaced,
+    vikPlaced: sol.vikPlaced, sealPlaced: sol.sealPlaced, jokerPlaced: sol.jokerPlaced,
     breakdown: breakdownByTarget(program, prim), computeScale: computeScale(program),
     capped: { ...program.cappedStats }, program,
   };
