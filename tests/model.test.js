@@ -40,6 +40,24 @@ test("dominanceFilter prunes the dominated variant", () => {
   assert.deepStrictEqual(kept.map((x) => x.source_item), ["A"]);
 });
 
+test("dominanceFilter keeps the Gem (joker set piece) against a stronger plain Trinket", () => {
+  // The Gem's value lives in joker_set_groups (outside buckets and set_bonus). A
+  // stronger plain-affix Trinket must NOT prune it, or the wildcard is silently lost.
+  const strong = v("StrongTrinket", "Trinket", [["Intelligence", "Enhancement", 20]]);
+  const gem = v("Legendary Gem of Many Facets", "Trinket", []);
+  gem.joker_set_groups = [["Set A", "Set B"], ["Set C"]];
+  const targets = new Set(["Intelligence"]);
+  assert.ok(!M.dominates(strong, gem, targets, 34), "the Gem's joker capacity must not be dominated");
+  const kept = M.dominanceFilter([strong, gem], targets, 34);
+  assert.ok(kept.some((x) => x.source_item === "Legendary Gem of Many Facets"), "the Gem survives the filter");
+});
+
+test("dominates: a plain Trinket without joker groups is unaffected by the joker guard", () => {
+  const A = v("A", "Trinket", [["Intelligence", "Enhancement", 10]]);
+  const B = v("B", "Trinket", [["Intelligence", "Enhancement", 5]]);
+  assert.ok(M.dominates(A, B, new Set(["Intelligence"]), 30), "normal dominance still applies to non-joker items");
+});
+
 test("dominanceFilter keeps a dominated set-member in a multi-pick slot", () => {
   // Two Rings of the same set: A dominates B on the target, but in a cardinality-2
   // slot both count as set pieces toward a threshold, so B must NOT be pruned.
