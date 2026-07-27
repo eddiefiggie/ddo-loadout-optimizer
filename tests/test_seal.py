@@ -125,15 +125,18 @@ def test_build_record_no_seal_yields_no_slots():
 
 
 def test_undyingage_batch_reaches_the_undeath_hosts():
-    # Regression for the reachability gap: the 9 Undeath hosts carry
-    # quests=["Threats Old and New"] and are absent from every wiki batch; without
-    # the QUEST_MAP fix the planner import produced zero of them.
-    path = os.path.join(os.path.dirname(__file__), "..", "data", "seed",
-                        "compendium", "enriched_batch14_undyingage_planner.json")
-    items = json.load(open(path, encoding="utf-8"))["items"]
-    undeath = [it for it in items
-               if any(s["seal_type"] == "Undeath" for s in it.get("seal_slots", []))]
-    assert len(undeath) == 9, f"expected 9 reachable Undeath hosts, got {len(undeath)}"
+    # Regression for the reachability gap: the 9 Undeath hosts (Threats Old and New
+    # drops) are absent from every wiki batch. The bulk gear-planner import supplies
+    # them; where one collides with an already-active item (e.g. Ophael's Cincture),
+    # a seal-carrier stub grafts the seal onto the winner (order-independent). The
+    # invariant is the end state: 9 Undeath seal hosts solver-active in the dataset.
+    import build_dataset
+    ds = build_dataset.build(build_dataset.load_seed())
+    def key(it):
+        return it.get("source_item") or it.get("variant_id") or it.get("name")
+    undeath = {key(it) for it in ds["items"]
+               if any(s.get("seal_type") == "Undeath" for s in (it.get("seal_slots") or []))}
+    assert len(undeath) == 9, f"expected 9 solver-active Undeath hosts, got {len(undeath)}: {sorted(undeath)}"
 
 
 # --- U3: dataset wiring ---------------------------------------------------
