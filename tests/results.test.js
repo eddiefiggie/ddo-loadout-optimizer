@@ -197,19 +197,36 @@ test("coverageNote discloses Sealed-in-Undeath optimized and Fire/Gloom/Mist pen
   assert.ok(/Sealed-in-Fire\/Gloom\/Mist seal pools/.test(rest), "pending seal pools disclosed under Pending");
 });
 
-// ---- U4: paperdoll slot-position mapping (KTD2) ----
-test("slotPosition maps every worn slot; Ring splits by index; unknown -> misc", () => {
-  const WORN = ["Armor", "Helmet", "Goggles", "Necklace", "Trinket", "Cloak",
+// ---- U7: paperdoll slot-position mapping + inline set tag (KTD2, KTD10) ----
+test("slotPosition maps every model-produced slot; Ring splits; unknown -> misc", () => {
+  // Every slot the model can produce: WORN_SLOTS + the separately-pushed weapon
+  // slots (Main Hand, Rune Arm). Not just WORN_SLOTS — that omits the weapons.
+  const PRODUCED = ["Armor", "Helmet", "Goggles", "Necklace", "Trinket", "Cloak",
     "Belt", "Ring", "Gloves", "Boots", "Bracers", "Quiver", "Main Hand", "Rune Arm"];
-  for (const s of WORN) {
+  for (const s of PRODUCED) {
     const pos = R.slotPosition(s, 0);
     assert.ok(pos && pos !== "misc", `${s} maps to a real paperdoll position (got ${pos})`);
   }
   assert.strictEqual(R.slotPosition("Ring", 0), "ring1", "first ring -> ring1");
   assert.strictEqual(R.slotPosition("Ring", 1), "ring2", "second ring -> ring2");
+  // the weapon-row trio
   assert.strictEqual(R.slotPosition("Main Hand", 0), "mainhand");
-  assert.strictEqual(R.slotPosition("Rune Arm", 0), "offhand", "rune arm shares the off-hand cell");
+  assert.strictEqual(R.slotPosition("Quiver", 0), "quiver");
+  assert.strictEqual(R.slotPosition("Rune Arm", 0), "offhand", "a chosen Rune Arm fills the adaptive Off Hand cell, never dropped");
   assert.strictEqual(R.slotPosition("Some New Slot", 0), "misc", "unknown slot falls to misc, never dropped");
+});
+
+test("paperdollSlot states set membership inline for a set member (R15)", () => {
+  const v = { variant_id: "Kopru Bracers", minimum_level: 31, set_bonus: [{ set: "Dread Isle's Curse" }], affixes: [] };
+  const maps = { augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
+    ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(), jokerByHost: new Map() };
+  const html = R.paperdollSlot("Bracers", "bracers", { variant: v, idx: 0 }, { targets: [] }, maps);
+  assert.ok(html.includes("pd-set"), "renders an inline set tag");
+  assert.ok(html.includes("Dread Isle&#39;s Curse"), "names the set (escaped)");
+  assert.ok(html.includes("setpip"), "shows the set pip");
+  // a non-member slot carries no set tag
+  const plain = R.paperdollSlot("Boots", "boots", { variant: { variant_id: "X", minimum_level: 1, set_bonus: [], affixes: [] }, idx: 0 }, { targets: [] }, maps);
+  assert.ok(!plain.includes("pd-set"), "no set tag on a non-member");
 });
 
 test("breakdownBars attributes a set contribution and marks it (R7)", () => {

@@ -295,19 +295,48 @@ function slotDetailChips(v, idx, query, maps) {
   return `<div>${chips || '<span class="muted">— no target-relevant affixes —</span>'}</div>${link ? `<div class="pd-craftline">${link}</div>` : ""}`;
 }
 
+// The set(s) an equipped piece belongs to, stated inline on its slot (R15).
+function slotSetNames(v) {
+  return [...new Set((v.set_bonus || []).map((s) => s.set).filter(Boolean))];
+}
+
 // One paperdoll slot cell. `pick` is {variant, idx} or null for an empty slot.
-function paperdollSlot(slotName, pos, pick, query, maps) {
+// `label` is the displayed slot name (lets the weapon cell read "Off Hand" when
+// empty but "Rune Arm" when the solver equips one — KTD10). `extra` is optional
+// trailing markup inside the summary (e.g. the per-item "why this?" affordance).
+function paperdollSlot(label, pos, pick, query, maps, extra) {
   if (!pick) {
-    return `<div class="pd-slot empty pos-${pos}"><div class="pd-label">${esc(slotName)}</div><div class="pd-item"><span class="muted">— empty —</span></div></div>`;
+    return `<div class="pd-slot empty pos-${pos}"><div class="pd-label">${esc(label)}</div><div class="pd-item"><span class="muted">— empty —</span></div></div>`;
   }
   const v = pick.variant;
+  const sets = slotSetNames(v);
+  const setTag = sets.length
+    ? `<div class="pd-set" title="set member">${sets.map((s) => `<span class="setpip"></span>${esc(s)}`).join(" · ")}</div>` : "";
   return `<details class="pd-slot occupied pos-${pos}">
     <summary>
-      <div class="pd-label">${esc(slotName)}</div>
+      <div class="pd-label">${esc(label)}</div>
       <div class="pd-item"><span>${esc(v.variant_id)}</span><span class="ml">ML ${esc(v.minimum_level ?? "—")}</span></div>
+      ${setTag}
+      ${extra || ""}
     </summary>
     <div class="pd-detail">${slotDetailChips(v, pick.idx, query, maps)}</div>
   </details>`;
+}
+
+// Front-facing armored-adventurer silhouette for the paperdoll centre (decorative).
+function paperdollFigure() {
+  return `<div class="pd-figure" aria-hidden="true"><svg viewBox="0 0 120 300" preserveAspectRatio="xMidYMid meet">
+    <path d="M60 34 C40 46 39 210 46 250 L60 238 L74 250 C81 210 80 46 60 34 Z" fill="var(--panel-2)" stroke="var(--border-2)"/>
+    <circle cx="60" cy="26" r="15" fill="var(--elev)" stroke="var(--border-2)"/>
+    <path d="M46 25 a14 14 0 0 1 28 0 l-4 2 a10 10 0 0 0 -20 0 Z" fill="var(--border-2)"/>
+    <path d="M45 48 L75 48 L82 132 L38 132 Z" fill="var(--elev)" stroke="var(--border-2)"/>
+    <rect x="40" y="130" width="40" height="8" rx="2" fill="var(--set)" opacity="0.5"/>
+    <path d="M42 140 L58 140 L54 250 L46 250 Z" fill="var(--panel-2)" stroke="var(--border)"/>
+    <path d="M62 140 L78 140 L74 250 L66 250 Z" fill="var(--panel-2)" stroke="var(--border)"/>
+    <path d="M45 52 L30 66 L24 128 L34 130 L44 74 Z" fill="var(--elev)" stroke="var(--border-2)"/>
+    <path d="M75 52 L90 66 L96 128 L86 130 L76 74 Z" fill="var(--elev)" stroke="var(--border-2)"/>
+    <path d="M44 250 h16 v14 h-20 z" fill="var(--border-2)"/><path d="M64 250 h16 v14 h-20 z" fill="var(--border-2)"/>
+  </svg></div>`;
 }
 
 // Bonus-type/source breakdown bars for one target (R2, R7).
@@ -413,16 +442,29 @@ function renderResults(container, { model, result, query, dataset }) {
     </div>`;
   }).join("");
 
-  // --- paperdoll (R4, R5) ---
-  const cells = [];
+  // --- paperdoll (R4, R5, R14, R15) — symmetric figure + a 3-cell weapon row ---
+  const WEAPON_POS = { mainhand: 0, offhand: 1, quiver: 2 };
+  const paired = [];
+  const weapon = [null, null, null]; // [Main Hand, Off Hand/Rune Arm, Quiver]
   for (const slot of model.worn) {
     const picks = picksBySlot.get(slot.slot) || [];
     const cardinality = slot.cardinality || 1;
     for (let r = 0; r < cardinality; r++) {
       const pos = slotPosition(slot.slot, r);
-      cells.push(paperdollSlot(slot.slot, pos, picks[r] || null, query, maps));
+      const pick = picks[r] || null;
+      // Adaptive weapon-middle label (KTD10): the model has no "Off Hand" slot,
+      // so the Rune-Arm cell reads "Off Hand" when empty and "Rune Arm" when the
+      // solver actually equips one — a chosen Rune Arm is shown, never dropped.
+      const label = pos === "offhand" && !pick ? "Off Hand" : slot.slot;
+      const cell = paperdollSlot(label, pos, pick, query, maps);
+      if (pos in WEAPON_POS) weapon[WEAPON_POS[pos]] = cell;
+      else paired.push(cell);
     }
   }
+  const emptyWeapon = [["Main Hand", "mainhand"], ["Off Hand", "offhand"], ["Quiver", "quiver"]];
+  const weaponCells = weapon
+    .map((c, i) => c || paperdollSlot(emptyWeapon[i][0], emptyWeapon[i][1], null, query, maps))
+    .join("");
 
   // --- sets (R6, R7, R8) ---
   const active = (result.setsActive || []).map((s) =>
@@ -446,7 +488,8 @@ function renderResults(container, { model, result, query, dataset }) {
         </div>
         <div class="readout-doll">
           <h3 class="section-title">Loadout</h3>
-          <div class="paperdoll">${cells.join("")}</div>
+          <div class="paperdoll">${paperdollFigure()}${paired.join("")}</div>
+          <div class="pd-weapons">${weaponCells}</div>
         </div>
       </div>
     </div>
@@ -456,5 +499,5 @@ function renderResults(container, { model, result, query, dataset }) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, attributionByTarget, whyThis, coverageNote, slotPosition, breakdownBars, slotDetailChips, esc, safeUrl };
+  module.exports = { renderResults, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, attributionByTarget, whyThis, coverageNote, slotPosition, paperdollSlot, breakdownBars, slotDetailChips, esc, safeUrl };
 }

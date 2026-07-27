@@ -313,6 +313,16 @@ button.primary:hover { filter: brightness(1.08); }
 .paperdoll {
   display: grid; grid-template-columns: 1fr; gap: var(--sp-2);
 }
+/* the character figure sits in the centre column on wide screens; hidden on the
+   single-column phone layout where the slots simply stack. */
+.pd-figure { display: none; grid-area: fig; align-self: stretch; justify-self: center; }
+.pd-figure svg { width: 100%; max-width: 140px; height: 100%; max-height: 320px; }
+/* weapon row: Main Hand · [Off Hand/Rune Arm] · Quiver, beneath the figure */
+.pd-weapons { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); margin-top: var(--sp-2); }
+/* inline set-membership tag on a slot (R15) */
+.pd-set { font-size: var(--fs-xs); color: var(--set); display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 2px; }
+.setpip { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--set); flex: none; }
+.chip.joker { border-color: var(--accent-2); color: var(--accent-2); }
 .pd-slot {
   border: 1px solid var(--border); border-radius: var(--radius-sm);
   background: var(--bg-2); padding: var(--sp-2) var(--sp-3);
@@ -399,38 +409,41 @@ details.pd-slot > .pd-detail { padding: 0 var(--sp-3) var(--sp-3); }
   .targets { grid-template-columns: repeat(2, 1fr); }
 }
 
-@media (min-width: 900px) {
-  /* readout hero beside the paperdoll inset (Option C) */
-  .readout-main { display: grid; grid-template-columns: 1fr minmax(280px, 360px); gap: var(--sp-5); align-items: start; }
+/* Option-B character paperdoll: symmetric paired rows flanking the figure.
+   Applies from tablet up; the phone base stacks the slots single-column. */
+@media (min-width: 700px) {
   .paperdoll {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: 1fr minmax(64px, 92px) 1fr;
     grid-template-areas:
-      "helmet   armor    goggles"
-      "necklace armor    trinket"
-      "cloak    armor    belt"
-      "gloves   quiver   bracers"
-      "ring1    quiver   ring2"
-      "mainhand boots    offhand";
+      "helmet  fig necklace"
+      "goggles fig trinket"
+      "armor   fig cloak"
+      "bracers fig belt"
+      "ring1   fig ring2"
+      "boots   fig gloves";
+    align-items: center; gap: var(--sp-2) var(--sp-3);
   }
+  .pd-figure { display: block; }
   .pd-slot.pos-helmet { grid-area: helmet; }
   .pd-slot.pos-goggles { grid-area: goggles; }
   .pd-slot.pos-necklace { grid-area: necklace; }
   .pd-slot.pos-trinket { grid-area: trinket; }
-  .pd-slot.pos-cloak { grid-area: cloak; }
-  .pd-slot.pos-belt { grid-area: belt; }
   .pd-slot.pos-armor { grid-area: armor; }
-  .pd-slot.pos-gloves { grid-area: gloves; }
+  .pd-slot.pos-cloak { grid-area: cloak; }
   .pd-slot.pos-bracers { grid-area: bracers; }
-  .pd-slot.pos-boots { grid-area: boots; }
-  .pd-slot.pos-quiver { grid-area: quiver; }
+  .pd-slot.pos-belt { grid-area: belt; }
   .pd-slot.pos-ring1 { grid-area: ring1; }
   .pd-slot.pos-ring2 { grid-area: ring2; }
-  .pd-slot.pos-mainhand { grid-area: mainhand; }
-  .pd-slot.pos-offhand { grid-area: offhand; }
-  .pd-slot.pos-armor { display: grid; align-content: center; }
-  /* a fallback cell for an unmapped future slot spans its own row instead of
-     auto-placing into an empty named area (which would misrepresent its slot). */
+  .pd-slot.pos-boots { grid-area: boots; }
+  .pd-slot.pos-gloves { grid-area: gloves; }
+  /* an unmapped future slot spans its own row rather than mis-placing into a
+     named area, so a new slot is surfaced, never silently dropped. */
   .pd-slot.pos-misc { grid-column: 1 / -1; }
+}
+
+@media (min-width: 900px) {
+  /* readout hero beside the paperdoll inset */
+  .readout-main { display: grid; grid-template-columns: 1fr minmax(320px, 400px); gap: var(--sp-5); align-items: start; }
 }
 
 /* accessibility: respect reduced motion (JS also checks this) */
