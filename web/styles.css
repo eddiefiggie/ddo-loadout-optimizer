@@ -204,8 +204,26 @@ button.primary:hover { filter: brightness(1.08); }
    Solver: query + readout
    ========================================================================== */
 #solver .query-controls { gap: var(--sp-3); margin-bottom: var(--sp-3); }
-.q-actions { display: flex; gap: var(--sp-2); flex: 1 1 auto; }
-.q-actions input[list] { flex: 1 1 auto; }
+/* U2: one field system — every control shares .field; the target adder now has a
+   visible label like the rest, and its row baseline-aligns its buttons. */
+.q-actions { display: flex; gap: var(--sp-2); flex: 1 1 auto; align-items: flex-end; }
+.field.grow { flex: 1 1 220px; }
+.field.grow > input { width: 100%; }
+
+/* U3: change-confirmation cue for numeric steppers and reorders. A one-shot
+   pulse under normal motion; a static highlight under reduced-motion. */
+@keyframes bump-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(76,194,255,0.55); }
+  100% { box-shadow: 0 0 0 7px rgba(76,194,255,0); }
+}
+.bumped { animation: bump-pulse 0.5s ease-out; }
+input.bumped { background: rgba(76,194,255,0.16); border-color: var(--accent); }
+.rank-item.bumped { outline: 2px solid var(--accent); outline-offset: 1px; }
+@media (prefers-reduced-motion: reduce) {
+  .bumped { animation: none; }
+  input.bumped { background: rgba(76,194,255,0.24); border-color: var(--accent); }
+  .rank-item.bumped { outline: 2px solid var(--accent); }
+}
 
 .ranked { list-style: none; margin: var(--sp-3) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
 .ranked > li.hint { color: var(--muted); font-size: var(--fs-sm); padding: var(--sp-2) 0; }
