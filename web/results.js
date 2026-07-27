@@ -424,20 +424,27 @@ function proofPanel(result, query, attr) {
 // set, the correct result is always readable immediately, never gated on motion.
 function animateCounters(container) {
   const reduce = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const hidden = typeof document !== "undefined" && document.visibilityState === "hidden";
   container.querySelectorAll(".stat-value").forEach((el) => {
     const final = Number(el.getAttribute("data-final")) || 0;
     el.firstChild.textContent = String(final);              // final value in place first
-    if (reduce || final <= 0 || typeof requestAnimationFrame !== "function") return;
+    if (reduce || hidden || final <= 0 || typeof requestAnimationFrame !== "function") return;
     const dur = 520;
-    let started = null;
+    let started = null, done = false;
+    const settle = () => { if (!done) { done = true; el.firstChild.textContent = String(final); } };
     const tick = (now) => {
+      if (done) return;
       if (started === null) started = now;                  // anchor on the FIRST real frame
       const p = Math.min(1, (now - started) / dur);
       el.firstChild.textContent = String(Math.round(final * (1 - Math.pow(1 - p, 3))));
       if (p < 1) requestAnimationFrame(tick);
-      else el.firstChild.textContent = String(final);
+      else settle();
     };
     requestAnimationFrame(tick);                            // only dips low once a frame runs
+    // Safety net: rAF pauses entirely in a backgrounded/throttled tab and can fire
+    // once then stall, freezing the counter at a wrong intermediate value. setTimeout
+    // still fires there, so force the final value shortly after the animation window.
+    setTimeout(settle, dur + 400);
   });
 }
 
