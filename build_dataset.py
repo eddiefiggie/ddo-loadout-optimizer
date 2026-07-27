@@ -41,6 +41,7 @@ NC_SEED_PATH = os.path.join(HERE, "data", "seed", "nearly_complete.json")
 VIK_SEED_PATH = os.path.join(HERE, "data", "seed", "viktranium.json")
 SEAL_SEED_PATH = os.path.join(HERE, "data", "seed", "seal.json")
 AUG_SEED_PATH = os.path.join(HERE, "data", "seed", "augments.json")
+JOKER_SEED_PATH = os.path.join(HERE, "data", "seed", "joker_sets.json")
 COMPENDIUM_DIR = os.path.join(HERE, "data", "seed", "compendium")
 # Output lands inside web/ so that directory is a self-contained, deployable
 # site root (GitHub Pages serves web/ as the root; the app fetches data/ relatively).
@@ -83,6 +84,14 @@ def load_augment_seed(path: str = AUG_SEED_PATH) -> dict:
         return {}
     with open(path, "r", encoding="utf-8") as fh:
         return json.load(fh)
+
+
+def load_joker_seed(path: str = JOKER_SEED_PATH) -> dict:
+    """Load the wildcard-set-piece pools (Gem of Many Facets family); {item_name: spec}."""
+    if not os.path.exists(path):
+        return {}
+    with open(path, "r", encoding="utf-8") as fh:
+        return json.load(fh).get("items", {})
 
 
 def load_seal_seed(path: str = SEAL_SEED_PATH) -> dict:
@@ -208,6 +217,23 @@ def build(seed: dict) -> dict:
     base_items = [it for it in seed["items"]
                   if not (it.get("category") == "augment" and it.get("name") in aug_names)]
     variants = expand_dataset(base_items + enriched_items + aug_pool)  # parse enhancements + expand tiers
+
+    # Wildcard set pieces (U1) — the Gem of Many Facets rolls one set from each of two
+    # pools (rerollable; theoretical-BiS picks the best per group). Attach the pools to
+    # the item's variants here, AFTER expand_dataset: src.variants._make_variant rebuilds
+    # each variant from a fixed field list, so a joker_set_groups field on the base seed
+    # item would be dropped. Clear the item's stale fixed set_bonus (the base seed
+    # mis-modeled it as one fixed set) BEFORE set_mod.annotate_variant runs below, so no
+    # lingering parsed_set_bonuses remains — the joker is the item's only set contribution.
+    _joker = load_joker_seed()
+    for v in variants:
+        spec = _joker.get(v.get("source_item"))
+        if spec is None:
+            continue
+        v["joker_set_groups"] = [[set_catalog_mod.canonical(s) for s in group]
+                                 for group in spec.get("groups", [])]
+        v["set_bonus"] = []
+
     for v in variants:                                  # U2 augment-color normalization
         colors_mod.annotate_variant(v)
         set_mod.annotate_variant(v)                     # U4 set-bonus threshold parsing
