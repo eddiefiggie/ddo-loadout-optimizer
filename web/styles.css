@@ -294,18 +294,27 @@ button.primary:hover { filter: brightness(1.08); }
 }
 .stat-value .plus { font-size: 0.5em; color: var(--muted); -webkit-text-fill-color: var(--muted); }
 .stat-cap { display: inline-block; margin-top: var(--sp-1); font-size: var(--fs-xs); color: var(--quarantined); }
-.stat-bars { margin-top: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-1); }
-.stat-bar { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--sp-2); font-size: var(--fs-xs); }
-.bar-track { grid-column: 1 / -1; height: 6px; border-radius: 999px; background: var(--bg-2); overflow: hidden; }
-.bar-fill { height: 100%; border-radius: 999px; background: var(--accent); }
-.bar-fill.is-set { background: var(--set); }
-.bar-fill.is-augment { background: var(--accent-2); }
-.bar-meta { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
-.bar-type { color: var(--text); }
-.bar-src { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bar-src.is-set { color: var(--set); }
-.bar-val { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 700; }
+/* attribution list (replaces the old progress bars): which slot(s)/set drive
+   each ranked target, value stated as text. */
+.attrib { list-style: none; margin: var(--sp-3) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-1); }
+.attrib-row {
+  display: grid; grid-template-columns: auto auto 1fr; align-items: baseline;
+  gap: var(--sp-1) var(--sp-2); font-size: var(--fs-xs);
+  border-left: 2px solid var(--border-2); padding-left: var(--sp-2);
+}
+.attrib-row.is-set { border-left-color: var(--set); }
+.attrib-row.is-augment { border-left-color: var(--accent-2); }
+.attrib-type { color: var(--muted); }
+.attrib-val { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 700; }
+.attrib-where { color: var(--faint); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.attrib-slots { color: var(--text); }
+.attrib-set { color: var(--set); }
+.attrib-row.is-set .attrib-slots { color: var(--set); }
+.attrib-src { color: var(--muted); }
 .stat-empty { color: var(--faint); font-size: var(--fs-xs); margin-top: var(--sp-2); }
+/* active-set detail: granted stats + yielding slots */
+.set-grants { color: var(--text); font-size: var(--fs-xs); margin-top: 2px; }
+.set-via { color: var(--set); font-size: var(--fs-xs); margin-top: 2px; }
 
 /* ============================================================================
    Paperdoll

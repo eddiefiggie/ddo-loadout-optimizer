@@ -229,19 +229,29 @@ test("paperdollSlot states set membership inline for a set member (R15)", () => 
   assert.ok(!plain.includes("pd-set"), "no set tag on a non-member");
 });
 
-test("breakdownBars attributes a set contribution and marks it (R7)", () => {
-  const html = R.breakdownBars(
-    [{ bonus_type: "Insightful", value: 2, source: "Legendary Set", sourceKind: "set" }], 2);
-  assert.ok(/set: Legendary Set/.test(html), "set source is attributed with a 'set:' prefix");
-  assert.ok(/is-set/.test(html), "set contribution carries the is-set styling hook");
-  assert.ok(/\+2/.test(html), "shows the folded value");
+test("attributionList shows a set contributor with its yielding slots, no bar (R11,R12)", () => {
+  const html = R.attributionList(
+    [{ bonus_type: "Insightful", value: 2, source: "Legendary Set", sourceKind: "set", isSet: true, slots: ["Necklace", "Trinket"] }]);
+  assert.ok(/set: Legendary Set/.test(html), "set is attributed with a 'set:' prefix");
+  assert.ok(/via Necklace, Trinket/.test(html), "lists the equipped slots yielding the set");
+  assert.ok(/is-set/.test(html), "carries the is-set styling hook");
+  assert.ok(/\+2/.test(html), "states the value");
+  assert.ok(!/bar-fill|bar-track/.test(html), "no progress-bar element is emitted");
 });
 
-test("breakdownBars escapes hostile source text (no raw HTML injection)", () => {
-  const html = R.breakdownBars(
-    [{ bonus_type: "Enhancement", value: 5, source: "<img src=x>", sourceKind: "worn" }], 5);
+test("attributionList shows a worn contributor with its slot", () => {
+  const html = R.attributionList(
+    [{ bonus_type: "Enhancement", value: 10, source: "Legendary Ring", sourceKind: "worn", isSet: false, slots: ["Ring"] }]);
+  assert.ok(/Ring/.test(html), "names the equipped slot");
+  assert.ok(/\+10/.test(html));
+});
+
+test("attributionList escapes hostile source text (no raw HTML injection)", () => {
+  const html = R.attributionList(
+    [{ bonus_type: "Enhancement", value: 5, source: "<img src=x>", sourceKind: "worn", isSet: false, slots: ["<b>x</b>"] }]);
   assert.ok(!/<img/.test(html), "raw tag is escaped");
   assert.ok(/&lt;img/.test(html), "escaped form present");
+  assert.ok(!/<b>x<\/b>/.test(html), "slot text is escaped too");
 });
 
 test("safeUrl passes http(s) but neutralizes hostile schemes", () => {
