@@ -539,17 +539,23 @@ function breakdownByTarget(program, prim) {
     if (meta && meta.has(gate)) {
       const m = meta.get(gate);
       // The equipped pieces currently yielding this set (real, non-joker, worn).
-      const slots = (m.realPieces || [])
+      // Carry both the slot names (for display) AND the host variant_ids (so the
+      // per-item "why this" can tell the two Rings apart — they share a slot name).
+      const pieces = (m.realPieces || [])
         .filter((pn) => prim(pn) > 0.5)
-        .map((pn) => (xByName.get(pn) ? xByName.get(pn).slot : null))
-        .filter((s) => s != null);
-      return { kind: "set", label: m.set, setYieldingSlots: slots };
+        .map((pn) => xByName.get(pn))
+        .filter(Boolean);
+      return {
+        kind: "set", label: m.set,
+        setYieldingSlots: pieces.map((x) => x.slot),
+        hostIds: pieces.map((x) => x.variant.variant_id),
+      };
     }
-    if (program.sealMeta && program.sealMeta.has(gate)) { const m = program.sealMeta.get(gate); return { kind: "seal", label: `Sealed in ${m.seal_type}`, slot: slotOfItem.get(m.item) || null }; }
+    if (program.sealMeta && program.sealMeta.has(gate)) { const m = program.sealMeta.get(gate); return { kind: "seal", label: `Sealed in ${m.seal_type}`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.dinoMeta && program.dinoMeta.has(gate)) return { kind: "dino", label: `${program.dinoMeta.get(gate).dino_type} insert` };
-    if (program.ncMeta && program.ncMeta.has(gate)) { const m = program.ncMeta.get(gate); return { kind: "nc", label: "Nearly Complete", slot: slotOfItem.get(m.item) || null }; }
-    if (program.rollMeta && program.rollMeta.has(gate)) { const m = program.rollMeta.get(gate); return { kind: "roll", label: "choice slot", slot: slotOfItem.get(m.item) || null }; }
-    if (program.vikMeta && program.vikMeta.has(gate)) { const m = program.vikMeta.get(gate); return { kind: "vik", label: `Lamordia ${m.slot_type}`, slot: slotOfItem.get(m.item) || null }; }
+    if (program.ncMeta && program.ncMeta.has(gate)) { const m = program.ncMeta.get(gate); return { kind: "nc", label: "Nearly Complete", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
+    if (program.rollMeta && program.rollMeta.has(gate)) { const m = program.rollMeta.get(gate); return { kind: "roll", label: "choice slot", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
+    if (program.vikMeta && program.vikMeta.has(gate)) { const m = program.vikMeta.get(gate); return { kind: "vik", label: `Lamordia ${m.slot_type}`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.placeMeta && program.placeMeta.has(gate)) return { kind: "augment", label: program.placeMeta.get(gate).variant_id };
     return { kind: "other", label: gate };
   };
@@ -566,6 +572,9 @@ function breakdownByTarget(program, prim) {
             bonus_type: bonusType, value: z.value, source: src.label, sourceKind: src.kind,
             slot: src.slot != null ? src.slot : null,
             setYieldingSlots: src.setYieldingSlots || null,
+            // host variant_id(s) driving this contribution — worn is its own item;
+            // sets/crafts carry their hosts; augment/dino are resolved in results.js.
+            hostIds: src.hostIds || (src.kind === "worn" ? [src.label] : null),
           });
         }
       }

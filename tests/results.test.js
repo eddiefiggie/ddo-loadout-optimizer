@@ -260,7 +260,7 @@ function whyResult() {
     effective: { Constitution: 15 }, perTarget: { Constitution: 15 },
     chosen: [{ slot: "Ring", variant: { variant_id: "R", set_bonus: [], parsed_set_bonuses: [] } }],
     augmentsPlaced: [], setsActive: [],
-    breakdown: { Constitution: [{ bonus_type: "Enhancement", value: 15, source: "R", sourceKind: "worn", slot: "Ring", setYieldingSlots: null }] },
+    breakdown: { Constitution: [{ bonus_type: "Enhancement", value: 15, source: "R", sourceKind: "worn", slot: "Ring", setYieldingSlots: null, hostIds: ["R"] }] },
     computeScale: { variants: 42 }, solveMs: 7,
   };
 }
@@ -284,6 +284,53 @@ test("proofPanel explains the method, lists the ranked order, and breaks down ea
   assert.ok(/7 ms/.test(html), "shows the solve time");
   assert.ok(/proof-order/.test(html) && /Constitution/.test(html), "lists the ranked priority order");
   assert.ok(/proof-target/.test(html), "includes the per-target contribution breakdown");
+});
+
+test("whyThis does not cross-attribute a set win between the two rings (host-id match)", () => {
+  // Set "Alpha" is yielded by Ring1 + Necklace only; Ring2 is a non-member.
+  const result = {
+    effective: { Constitution: 15 }, perTarget: { Constitution: 15 },
+    chosen: [
+      { slot: "Ring", variant: { variant_id: "R1", set_bonus: [{ set: "Alpha" }], parsed_set_bonuses: [] } },
+      { slot: "Ring", variant: { variant_id: "R2", set_bonus: [], parsed_set_bonuses: [] } },
+      { slot: "Necklace", variant: { variant_id: "N", set_bonus: [{ set: "Alpha" }], parsed_set_bonuses: [] } },
+    ],
+    augmentsPlaced: [], setsActive: [],
+    breakdown: { Constitution: [
+      { bonus_type: "Enhancement", value: 10, source: "R1", sourceKind: "worn", slot: "Ring", setYieldingSlots: null, hostIds: ["R1"] },
+      { bonus_type: "Insightful", value: 5, source: "Alpha", sourceKind: "set", setYieldingSlots: ["Ring", "Necklace"], hostIds: ["R1", "N"] },
+    ] },
+  };
+  assert.deepStrictEqual(R.whyThis(result, { slot: "Ring", variant_id: "R2" }), [],
+    "the non-member ring must NOT claim the set win that only Ring1 yields");
+  const r1 = R.whyThis(result, { slot: "Ring", variant_id: "R1" });
+  assert.strictEqual(r1[0].value, 15, "Ring1: worn 10 + set 5");
+  assert.strictEqual(r1[0].viaSet, true);
+  const n = R.whyThis(result, { slot: "Necklace", variant_id: "N" });
+  assert.strictEqual(n[0].value, 5, "the necklace contributes via the set only");
+});
+
+test("activeSetDetail reports granted stats + yielding slots per active set (R16)", () => {
+  const result = {
+    setsActive: [{ set: "Alpha", pieces_required: 2 }, { set: "Beta", pieces_required: 3 }],
+    chosen: [
+      { slot: "Necklace", variant: { set_bonus: [{ set: "Alpha" }], parsed_set_bonuses: [{ set: "Alpha", pieces_required: 2, affixes: [{ stat: "Constitution", bonus_type: "Insightful", value: 2, unit: "flat" }] }] } },
+      { slot: "Trinket", variant: { set_bonus: [{ set: "Alpha" }], parsed_set_bonuses: [] } },
+    ],
+  };
+  const d = R.activeSetDetail(result);
+  const alpha = d.find((s) => s.set === "Alpha");
+  assert.deepStrictEqual([...alpha.slots].sort(), ["Necklace", "Trinket"], "yielding slots are both Alpha members");
+  assert.strictEqual(alpha.affixes.length, 1, "resolves the 2-piece tier affixes");
+  assert.strictEqual(alpha.affixes[0].stat, "Constitution");
+  const beta = d.find((s) => s.set === "Beta");
+  assert.deepStrictEqual(beta.affixes, [], "an active set with no parsed tier affixes yields []");
+});
+
+test("attributionList renders the empty state and the is-augment class", () => {
+  assert.ok(/stat-empty|no contributing gear/.test(R.attributionList([])), "empty contributor list shows the no-gear affordance");
+  const aug = R.attributionList([{ bonus_type: "Quality", value: 3, source: "Topaz", sourceKind: "augment", isSet: false, slots: ["Ring"] }]);
+  assert.ok(/is-augment/.test(aug), "an augment contributor carries the is-augment styling hook");
 });
 
 test("safeUrl passes http(s) but neutralizes hostile schemes", () => {

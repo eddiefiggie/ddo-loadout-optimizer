@@ -118,25 +118,32 @@ function nearMissSetHints(chosen, targets) {
  *  fills the remaining augment host slot from the augment reconstruction. Returns
  *  { stat: [{ bonus_type, value, source, sourceKind, slots:[...], isSet }], ... },
  *  highest-value first — presentation only, no solve. */
-function attributionByTarget(result) {
+function attributionByTarget(result, augAssign) {
   const breakdown = result.breakdown || {};
-  // augment variant_id -> host slot, from the same reconstruction the paperdoll uses
-  const augAssign = assignAugments(result.chosen, result.augmentsPlaced);
-  const augSlot = new Map();
+  // augment host reconstruction (the paperdoll uses the same assignment). Map each
+  // placed augment to both its host slot (for display) and host variant_id (for
+  // precise per-item matching). Accept a precomputed assignment to avoid re-running it.
+  augAssign = augAssign || assignAugments(result.chosen, result.augmentsPlaced);
+  const augSlot = new Map(), augHost = new Map();
   for (const [idx, augs] of augAssign.byIndex) {
-    const slot = result.chosen[idx] && result.chosen[idx].slot;
-    for (const a of augs) augSlot.set(a.variant_id, slot);
+    const host = result.chosen[idx];
+    for (const a of augs) {
+      augSlot.set(a.variant_id, host && host.slot);
+      augHost.set(a.variant_id, host && host.variant && host.variant.variant_id);
+    }
   }
   const out = {};
   for (const stat of Object.keys(breakdown)) {
     out[stat] = breakdown[stat].map((p) => {
       let slots = [];
+      let hostIds = p.hostIds ? p.hostIds.slice() : [];
       if (p.setYieldingSlots && p.setYieldingSlots.length) slots = p.setYieldingSlots.slice();
       else if (p.slot) slots = [p.slot];
       else if (p.sourceKind === "augment" && augSlot.has(p.source)) slots = [augSlot.get(p.source)];
+      if (!hostIds.length && p.sourceKind === "augment" && augHost.has(p.source)) hostIds = [augHost.get(p.source)];
       return {
         bonus_type: p.bonus_type, value: p.value, source: p.source,
-        sourceKind: p.sourceKind, slots, isSet: p.sourceKind === "set",
+        sourceKind: p.sourceKind, slots, hostIds, isSet: p.sourceKind === "set",
       };
     });
   }
@@ -145,20 +152,18 @@ function attributionByTarget(result) {
 
 /** Which ranked targets a specific equipped item wins, and by how much (R8, R9)
  *  — the justification for a pick, especially a surprising low-ML one. `item` is
- *  { slot, variant_id }. Worn contributions match on variant_id (so the two rings
- *  stay distinct); set and craft contributions match on the host slot. Returns
- *  [{ stat, value, viaSet }], highest-value first; empty when the item wins no
- *  ranked target (a filler/tie-break pick). */
-function whyThis(result, item) {
-  const attr = attributionByTarget(result);
+ *  { slot, variant_id }. Matches every contribution by HOST variant_id (worn, set,
+ *  craft, and augment all carry their host id) so the two Rings — which share the
+ *  slot name "Ring" — never claim each other's set/craft/augment wins. Pass the
+ *  precomputed `attr` from renderResults to avoid re-deriving it per slot. Returns
+ *  [{ stat, value, viaSet }], highest first; empty for a filler/tie-break pick. */
+function whyThis(result, item, attr) {
+  attr = attr || attributionByTarget(result);
   const wins = [];
   for (const stat of Object.keys(attr)) {
     let val = 0, viaSet = false;
     for (const p of attr[stat]) {
-      const mine = p.sourceKind === "worn"
-        ? p.source === item.variant_id
-        : (p.slots || []).includes(item.slot);
-      if (mine) { val += p.value; if (p.isSet) viaSet = true; }
+      if ((p.hostIds || []).includes(item.variant_id)) { val += p.value; if (p.isSet) viaSet = true; }
     }
     if (val > 0) wins.push({ stat, value: val, viaSet });
   }
@@ -386,8 +391,8 @@ function activeSetDetail(result) {
 // The "why this?" line for an equipped item (R8, R9): the ranked target(s) it
 // wins and by how much. Empty-state (a filler/tie-break pick that wins nothing)
 // reads as such rather than blank. `item` is { slot, variant_id }.
-function whyThisLine(result, item) {
-  const wins = whyThis(result, item);
+function whyThisLine(result, item, attr) {
+  const wins = whyThis(result, item, attr);
   if (!wins.length) return `<div class="pd-why muted">included to complete the loadout</div>`;
   const txt = wins.slice(0, 3).map((w) => `${esc(w.stat)} +${esc(w.value)}${w.viaSet ? " (set)" : ""}`).join(", ");
   return `<div class="pd-why" title="why this item is best-in-slot here">wins ${txt}</div>`;
@@ -499,7 +504,7 @@ function renderResults(container, { model, result, query, dataset }) {
       </div>
     </div>`;
 
-  const attr = attributionByTarget(result);
+  const attr = attributionByTarget(result, augAssign);
   const cards = query.targets.map((stat, i) => {
     const total = result.effective[stat] ?? 0;
     const contribs = attr[stat] || [];
@@ -519,7 +524,9 @@ function renderResults(container, { model, result, query, dataset }) {
   }).join("");
 
   // --- paperdoll (R4, R5, R14, R15) — symmetric figure + a 3-cell weapon row ---
-  const WEAPON_POS = { mainhand: 0, offhand: 1, quiver: 2 };
+  // One ordered table drives both the weapon-cell indexing and the empty-cell labels.
+  const WEAPONS = [{ pos: "mainhand", label: "Main Hand" }, { pos: "offhand", label: "Off Hand" }, { pos: "quiver", label: "Quiver" }];
+  const WEAPON_POS = Object.fromEntries(WEAPONS.map((w, i) => [w.pos, i]));
   const paired = [];
   const weapon = [null, null, null]; // [Main Hand, Off Hand/Rune Arm, Quiver]
   for (const slot of model.worn) {
@@ -532,15 +539,14 @@ function renderResults(container, { model, result, query, dataset }) {
       // so the Rune-Arm cell reads "Off Hand" when empty and "Rune Arm" when the
       // solver actually equips one — a chosen Rune Arm is shown, never dropped.
       const label = pos === "offhand" && !pick ? "Off Hand" : slot.slot;
-      const extra = pick ? whyThisLine(result, { slot: slot.slot, variant_id: pick.variant.variant_id }) : "";
+      const extra = pick ? whyThisLine(result, { slot: slot.slot, variant_id: pick.variant.variant_id }, attr) : "";
       const cell = paperdollSlot(label, pos, pick, query, maps, extra);
       if (pos in WEAPON_POS) weapon[WEAPON_POS[pos]] = cell;
       else paired.push(cell);
     }
   }
-  const emptyWeapon = [["Main Hand", "mainhand"], ["Off Hand", "offhand"], ["Quiver", "quiver"]];
   const weaponCells = weapon
-    .map((c, i) => c || paperdollSlot(emptyWeapon[i][0], emptyWeapon[i][1], null, query, maps))
+    .map((c, i) => c || paperdollSlot(WEAPONS[i].label, WEAPONS[i].pos, null, query, maps))
     .join("");
 
   // --- sets (R6, R12, R16): state the granted stats + which slots yield them ---
