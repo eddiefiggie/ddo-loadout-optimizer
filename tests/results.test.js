@@ -158,4 +158,45 @@ test("coverageNote discloses Sealed-in-Undeath optimized and Fire/Gloom/Mist pen
   assert.ok(/Sealed-in-Fire\/Gloom\/Mist seal pools/.test(rest), "pending seal pools disclosed under Pending");
 });
 
+// ---- U4: paperdoll slot-position mapping (KTD2) ----
+test("slotPosition maps every worn slot; Ring splits by index; unknown -> misc", () => {
+  const WORN = ["Armor", "Helmet", "Goggles", "Necklace", "Trinket", "Cloak",
+    "Belt", "Ring", "Gloves", "Boots", "Bracers", "Quiver", "Main Hand", "Rune Arm"];
+  for (const s of WORN) {
+    const pos = R.slotPosition(s, 0);
+    assert.ok(pos && pos !== "misc", `${s} maps to a real paperdoll position (got ${pos})`);
+  }
+  assert.strictEqual(R.slotPosition("Ring", 0), "ring1", "first ring -> ring1");
+  assert.strictEqual(R.slotPosition("Ring", 1), "ring2", "second ring -> ring2");
+  assert.strictEqual(R.slotPosition("Main Hand", 0), "mainhand");
+  assert.strictEqual(R.slotPosition("Rune Arm", 0), "offhand", "rune arm shares the off-hand cell");
+  assert.strictEqual(R.slotPosition("Some New Slot", 0), "misc", "unknown slot falls to misc, never dropped");
+});
+
+test("breakdownBars attributes a set contribution and marks it (R7)", () => {
+  const html = R.breakdownBars(
+    [{ bonus_type: "Insightful", value: 2, source: "Legendary Set", sourceKind: "set" }], 2);
+  assert.ok(/set: Legendary Set/.test(html), "set source is attributed with a 'set:' prefix");
+  assert.ok(/is-set/.test(html), "set contribution carries the is-set styling hook");
+  assert.ok(/\+2/.test(html), "shows the folded value");
+});
+
+test("breakdownBars escapes hostile source text (no raw HTML injection)", () => {
+  const html = R.breakdownBars(
+    [{ bonus_type: "Enhancement", value: 5, source: "<img src=x>", sourceKind: "worn" }], 5);
+  assert.ok(!/<img/.test(html), "raw tag is escaped");
+  assert.ok(/&lt;img/.test(html), "escaped form present");
+});
+
+test("safeUrl passes http(s) but neutralizes hostile schemes", () => {
+  assert.strictEqual(R.safeUrl("https://ddowiki.com/page/Item"), "https://ddowiki.com/page/Item");
+  assert.strictEqual(R.safeUrl("http://example.com"), "http://example.com");
+  assert.strictEqual(R.safeUrl("javascript:alert(1)"), "#", "javascript: scheme blocked");
+  assert.strictEqual(R.safeUrl("data:text/html,<script>"), "#", "data: scheme blocked");
+  assert.strictEqual(R.safeUrl(""), "#");
+  assert.strictEqual(R.safeUrl(null), "#");
+  // an http(s) url carrying a quote is still escaped (no attribute breakout)
+  assert.ok(!/[<>"]/.test(R.safeUrl('https://x/"onmouseover=alert(1)')), "quotes/brackets escaped");
+});
+
 console.log(`\n${passed} passed`);

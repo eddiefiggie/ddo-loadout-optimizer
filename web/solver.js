@@ -75,7 +75,8 @@ function buildProgram(model) {
   // raw LP constraint bodies that encodeStage injects verbatim.
   const extraVars = [];
   const extraConstraints = [];
-  const augMeta = new Map(); // placement var -> {variant_id, color, slot_color, wiki_url}
+  const augMeta = new Map(); // color-placement var -> {variant_id, color, slot_color, wiki_url}
+  const placeMeta = new Map(); // augment place indicator (pu) -> {variant_id, color, wiki_url}
   const setMeta = new Map(); // set_active var -> {set, pieces_required, pieces_label, wiki_url}
   const dinoMeta = new Map(); // dino placement var -> {dino_type, stat, bonus_type, value, wiki_url}
   const ncMeta = new Map(); // nc placement var -> {item, category, stat, bonus_type, value, tier, wiki_url}
@@ -147,6 +148,7 @@ function buildProgram(model) {
     // place[aug] = Σ colorVars ∈ {0,1}: consumed in exactly one color when placed.
     const place = "pu" + pc++;
     extraVars.push(place);
+    placeMeta.set(place, { variant_id: aug.variant_id, color: (aug.aug_color || {}).color, wiki_url: aug.wiki_url });
     extraConstraints.push(`${colorVars.join(" + ")} - ${place} = 0`); // placed iff one color fires
     extraConstraints.push(`${place} <= 1`);                           // at most one slot consumed
     for (const [k, val] of best) {                                    // buckets gated by the placement
@@ -395,7 +397,7 @@ function buildProgram(model) {
 
   return {
     xVars, zByBucket, cappedStats, targetList: model.targets, model,
-    extraVars, extraConstraints, augMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, _zc: zc,
+    extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, _zc: zc,
   };
 }
 
@@ -473,6 +475,54 @@ function encodeStage(program, { objectiveStat, sense, locks, tieBreak }) {
   return L.join("\n");
 }
 
+/** Per-target contribution breakdown, derived from the final solution — which
+ *  bonus-type stack and which source (worn item / set / augment / craft) produced
+ *  each target's achieved value. Reads already-computed internal state (the active
+ *  z per bucket + its gate's source meta); it does NOT change the optimization, so
+ *  the "presentation only" contract holds. Returns { stat: [{bonus_type, value,
+ *  source, sourceKind}], ... }, each list highest-value first. */
+function breakdownByTarget(program, prim) {
+  const xByName = new Map(program.xVars.map((xv) => [xv.name, xv]));
+  const sourceOf = (gate) => {
+    if (xByName.has(gate)) return { kind: "worn", label: xByName.get(gate).variant.variant_id };
+    const meta = program.setMeta;
+    if (meta && meta.has(gate)) return { kind: "set", label: meta.get(gate).set };
+    if (program.sealMeta && program.sealMeta.has(gate)) return { kind: "seal", label: `Sealed in ${program.sealMeta.get(gate).seal_type}` };
+    if (program.dinoMeta && program.dinoMeta.has(gate)) return { kind: "dino", label: `${program.dinoMeta.get(gate).dino_type} insert` };
+    if (program.ncMeta && program.ncMeta.has(gate)) return { kind: "nc", label: "Nearly Complete" };
+    if (program.rollMeta && program.rollMeta.has(gate)) return { kind: "roll", label: "choice slot" };
+    if (program.vikMeta && program.vikMeta.has(gate)) return { kind: "vik", label: `Lamordia ${program.vikMeta.get(gate).slot_type}` };
+    if (program.placeMeta && program.placeMeta.has(gate)) return { kind: "augment", label: program.placeMeta.get(gate).variant_id };
+    return { kind: "other", label: gate };
+  };
+  const out = {};
+  for (const stat of program.targetList) {
+    const parts = [];
+    for (const [key, zs] of program.zByBucket) {
+      if (key.split("||")[0] !== stat) continue;
+      const bonusType = key.split("||")[1];
+      for (const z of zs) {
+        if (prim(z.name) > 0.5) {
+          const src = sourceOf(z.gates[0]);
+          parts.push({ bonus_type: bonusType, value: z.value, source: src.label, sourceKind: src.kind });
+        }
+      }
+    }
+    parts.sort((a, b) => b.value - a.value);
+    out[stat] = parts;
+  }
+  return out;
+}
+
+/** Compute-scale stats for the "what the engine did" readout (R3). */
+function computeScale(program) {
+  const crafts = (program.augMeta ? program.augMeta.size : 0)
+    + (program.dinoMeta ? program.dinoMeta.size : 0) + (program.ncMeta ? program.ncMeta.size : 0)
+    + (program.rollMeta ? program.rollMeta.size : 0) + (program.vikMeta ? program.vikMeta.size : 0)
+    + (program.sealMeta ? program.sealMeta.size : 0);
+  return { variants: program.xVars.length, crafts, stages: (program.targetList || []).length + 1 };
+}
+
 function readSolution(res, program) {
   const prim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
   const chosen = program.xVars.filter((xv) => prim(xv.name) > 0.5).map((xv) => ({ slot: xv.slot, variant: xv.variant }));
@@ -513,17 +563,20 @@ async function solveLexicographic(model, highs) {
   }
 
   const tb = highs.solve(encodeStage(program, { sense: "min", tieBreak: true, locks }));
-  const finalRes = tb.Status === "Optimal" ? tb : null;
-  const sol = readSolution(finalRes || highs.solve(encodeStage(program, { objectiveStat: program.targetList.at(-1), sense: "max", locks })), program);
+  const finalRes = tb.Status === "Optimal" ? tb : highs.solve(encodeStage(program, { objectiveStat: program.targetList.at(-1), sense: "max", locks }));
+  const sol = readSolution(finalRes, program);
+  const prim = (name) => (finalRes.Columns[name] ? finalRes.Columns[name].Primal : 0);
 
   return {
     status: "optimal", perTarget, effective: sol.effective, chosen: sol.chosen,
     augmentsPlaced: sol.augmentsPlaced, setsActive: sol.setsActive,
     dinoPlaced: sol.dinoPlaced, ncPlaced: sol.ncPlaced, rollPlaced: sol.rollPlaced,
-    vikPlaced: sol.vikPlaced, sealPlaced: sol.sealPlaced, program,
+    vikPlaced: sol.vikPlaced, sealPlaced: sol.sealPlaced,
+    breakdown: breakdownByTarget(program, prim), computeScale: computeScale(program),
+    capped: { ...program.cappedStats }, program,
   };
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, solveLexicographic, scaleAt };
+  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, solveLexicographic, scaleAt, breakdownByTarget, computeScale };
 }
