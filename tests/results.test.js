@@ -131,6 +131,22 @@ test("coverageNote discloses Dino crafting with all pools optimized and Set-Bonu
   assert.ok(/Set-Bonus/.test(note), "discloses the deferred Set-Bonus pool honestly");
 });
 
+test("slotDetailChips renders the Gem's wildcard set assignment, load-bearing only", () => {
+  const gem = { variant_id: "Legendary Gem of Many Facets", wiki_url: "https://ddowiki.com/x" };
+  const maps = {
+    augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
+    ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(),
+    jokerByHost: new Map([["Legendary Gem of Many Facets",
+      [{ host: "Legendary Gem of Many Facets", group: 0, set: "Legendary Draconic Prophecy" }]]]),
+  };
+  const html = R.slotDetailChips(gem, 0, { targets: ["Universal Spell Power"] }, maps);
+  assert.ok(/Wildcard set: Legendary Draconic Prophecy/.test(html), "renders the assigned set");
+  // A non-Gem item with no joker pick renders no wildcard chip.
+  const other = { variant_id: "Some Ring" };
+  const html2 = R.slotDetailChips(other, 1, { targets: ["Universal Spell Power"] }, maps);
+  assert.ok(!/Wildcard set/.test(html2), "no wildcard chip for a non-joker item");
+});
+
 test("coverageNote discloses set bonuses now applying to enriched gear", () => {
   const note = R.coverageNote({ metadata: { set_enrichment_coverage: {
     enriched_members_with_set_bonus: 602, distinct_enriched_sets: 79,

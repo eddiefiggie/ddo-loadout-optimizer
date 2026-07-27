@@ -234,8 +234,10 @@ function slotDetailChips(v, idx, query, maps) {
     .map((n) => `<span class="chip lamordia" title="U81 Viktranium / Lamordia (${esc(n.slot_type)} ${esc(n.category)}, ${esc(n.tier)})">Lamordia ${esc(n.slot_type)}: ${esc(affixLabel({ stat: n.stat, bonus_type: n.bonus_type, value: n.value, unit: n.unit || "flat" }))}</span>`).join(" ");
   const seals = (maps.sealByItem.get(v.variant_id) || [])
     .map((n) => `<span class="chip seal" title="Sealed in ${esc(n.seal_type)} — unseal one effect at the crafting table">Sealed in ${esc(n.seal_type)}: ${esc(affixLabel({ stat: n.stat, bonus_type: n.bonus_type, value: n.value, unit: n.unit || "flat" }))}</span>`).join(" ");
+  const jokers = (maps.jokerByHost && maps.jokerByHost.get(v.variant_id) || [])
+    .map((j) => `<span class="chip joker" title="wildcard set piece — assigned to the set it best completes">Wildcard set: ${esc(j.set)}</span>`).join(" ");
   const link = v.wiki_url ? `<a href="${safeUrl(v.wiki_url)}" target="_blank" rel="noopener">wiki ↗</a>` : "";
-  const chips = [contrib, augs, dinos, ncs, rolls, viks, seals].filter(Boolean).join(" ");
+  const chips = [contrib, augs, dinos, ncs, rolls, viks, seals, jokers].filter(Boolean).join(" ");
   return `<div>${chips || '<span class="muted">— no target-relevant affixes —</span>'}</div>${link ? `<div class="pd-craftline">${link}</div>` : ""}`;
 }
 
@@ -307,10 +309,16 @@ function renderResults(container, { model, result, query, dataset }) {
     for (const n of list || []) { if (!m.has(n.item)) m.set(n.item, []); m.get(n.item).push(n); }
     return m;
   };
+  const jokerByHost = new Map();  // wildcard picks are keyed by host (the Gem's variant_id)
+  for (const j of result.jokerPlaced || []) {
+    if (!jokerByHost.has(j.host)) jokerByHost.set(j.host, []);
+    jokerByHost.get(j.host).push(j);
+  }
   const maps = {
     augAssign, dinoAssign,
     ncByItem: byItemMap(result.ncPlaced), rollByItem: byItemMap(result.rollPlaced),
     vikByItem: byItemMap(result.vikPlaced), sealByItem: byItemMap(result.sealPlaced),
+    jokerByHost,
   };
 
   // group equipped picks by slot (preserving the flat index augment assignment used)
@@ -394,5 +402,5 @@ function renderResults(container, { model, result, query, dataset }) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, coverageNote, slotPosition, breakdownBars, esc, safeUrl };
+  module.exports = { renderResults, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, coverageNote, slotPosition, breakdownBars, slotDetailChips, esc, safeUrl };
 }
