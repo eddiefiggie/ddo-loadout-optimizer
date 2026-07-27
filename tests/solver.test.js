@@ -399,7 +399,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     };
     const a = await S.solveLexicographic(withHost, highs);
     assert.strictEqual(a.effective.Constitution, 14, "placed into the open Scale slot");
-    assert.ok(a.dinoPlaced.some((d) => d.stat === "Constitution"), "reported as placed");
+    assert.ok(a.dinoPlaced.some((d) => d.affixes.some((x) => x.stat === "Constitution")), "reported as placed");
 
     const noHost = {
       targets: ["Constitution"], mlCap: 34, dodgeCap: null,
