@@ -382,10 +382,14 @@ function buildProgram(model) {
   let jc = 0;
   const jokerVars = [];
   for (const xv of xVars) {
+    const hostSets = new Set();  // a wildcard contributes at most one piece to a given set,
+                                 // even if the pools ever overlap (guard the disjoint-pool invariant)
     (xv.variant.joker_set_groups || []).forEach((group, gi) => {
       const opts = [];
       for (const setName of group) {
         if (!setTiers.has(setName) || !setPieces.has(setName)) continue; // no reachable threshold
+        if (hostSets.has(setName)) continue;                   // already fed by another group — no double-count
+        hostSets.add(setName);
         const j = "k" + jc++;
         extraVars.push(j);
         jokerVars.push(j);
@@ -413,6 +417,7 @@ function buildProgram(model) {
       setMeta.set(sa, {
         set: setName, pieces_required: tier.pieces_required,
         pieces_label: tier.pieces_label, wiki_url: tier.wiki_url,
+        realPieces: pieceVars.filter((p) => !p.startsWith("k")),  // non-joker pieces, for the joker load-bearing check
       });
       extraConstraints.push(`${tier.pieces_required} ${sa} - ${pieceVars.join(" - ")} <= 0`);
       for (const [k, val] of best) {
@@ -580,12 +585,19 @@ function readSolution(res, program) {
   for (const [n, meta] of program.vikMeta || []) if (prim(n) > 0.5) vikPlaced.push(meta);
   const sealPlaced = [];
   for (const [n, meta] of program.sealMeta || []) if (prim(n) > 0.5) sealPlaced.push(meta);
-  // Wildcard joker picks — report a group's chosen set only when it is load-bearing
-  // (the set actually activated), so the Gem never claims a set it did not complete.
-  const activeSetNames = new Set(setsActive.map((m) => m.set));
+  // Wildcard joker picks — report a group's chosen set only when the joker is truly
+  // load-bearing: the set is active AND its real (non-joker) equipped pieces fall short
+  // of the threshold, so the Gem is the completing piece. This holds regardless of solve
+  // path (not only the tie-break), so the Gem never claims a set it did not complete.
+  const realShort = new Map();  // set name -> was it short on real pieces for some active tier
+  for (const [s, meta] of program.setMeta || []) {
+    if (prim(s) <= 0.5) continue;
+    const realCount = (meta.realPieces || []).reduce((n, p) => n + (prim(p) > 0.5 ? 1 : 0), 0);
+    if (realCount < meta.pieces_required) realShort.set(meta.set, true);
+  }
   const jokerPlaced = [];
   for (const [j, meta] of program.jokerMeta || []) {
-    if (prim(j) > 0.5 && activeSetNames.has(meta.set)) jokerPlaced.push(meta);
+    if (prim(j) > 0.5 && realShort.has(meta.set)) jokerPlaced.push(meta);
   }
   return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, jokerPlaced };
 }
