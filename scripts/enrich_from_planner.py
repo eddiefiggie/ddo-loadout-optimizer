@@ -84,6 +84,10 @@ def build_record(it):
         if c.endswith("Augment Slot"):
             enh.append(c)
             aug.append(c.replace(" Augment Slot", ""))
+    # Set membership: the gear-planner records it in a `sets` field. Emit the same
+    # "X (set)" marker enrich.py uses so build_dataset can attach the set_bonus (U3).
+    for s in it.get("sets", []) or []:
+        enh.append(f"{s} (set)")
     # Seal-slot hosts. A "Sealed in X" enchantment is a single-pick choice-slot
     # (src/seal.py). The gear-planner encodes it in TWO places: Undeath/Mist/Gloom
     # as `crafting[]` entries, Fire/Amber as `affixes[]` {type:"Bool"} markers

@@ -22,12 +22,16 @@ def verify_variant(v: dict) -> dict:
     # quarantined — its value is a non-affix dimension the solver fills, exactly
     # like a Dinosaur Bone blank. Admit it so its slots reach the augment MILP.
     aug_slots = (v.get("augment_slots_norm") or {}).get("colors") or []
+    set_member = bool(v.get("parsed_set_bonuses"))
     if eligible_count > 0:
         v["verification"] = "verified"
         v["verification_reasons"] = []
     elif aug_slots:
         v["verification"] = "verified"
         v["verification_reasons"] = ["augment-slot host (no base affixes) — value is its open slots"]
+    elif set_member:
+        v["verification"] = "verified"
+        v["verification_reasons"] = ["set-bonus piece (no base affixes) — value is its set-threshold contribution"]
     else:
         v["verification"] = "quarantined"
         v["verification_reasons"] = (
