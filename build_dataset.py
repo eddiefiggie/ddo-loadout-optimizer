@@ -120,22 +120,32 @@ def build(seed: dict) -> dict:
     # is the hand-verified source; a same-name enriched copy would double-list in
     # browse and put two identities of one item into the solver). Also drops any
     # cross-batch name collision.
-    enriched_items = load_enriched_items()
+    all_enriched = load_enriched_items()
     base_by_name = {it.get("name"): it for it in seed["items"]}
+    # Pass 1 — pick the winning record per name (base seed, else first enriched shard
+    # to claim it). `_seal_carrier` records are seal-only stubs (an already-active
+    # item's gear-planner seal slot); they never win a body and are excluded here.
+    kept_by_name = dict(base_by_name)
     seen_names = set(base_by_name)
     deduped = []
-    for it in enriched_items:
+    for it in all_enriched:
+        if it.get("_seal_carrier"):
+            continue
         name = it.get("name")
         if name in seen_names:
-            # Base seed wins, but carry over a seal slot the base record lacks: the
-            # gear-planner marks "Sealed in X" enchantments the hand-verified base
-            # seed predates, so a base-seed sealed item would otherwise be stranded.
-            base_it = base_by_name.get(name)
-            if base_it is not None and it.get("seal_slots") and not base_it.get("seal_slots"):
-                base_it["seal_slots"] = [dict(s) for s in it["seal_slots"]]  # copy: no shared ref across base + tier variants
             continue
         seen_names.add(name)
+        kept_by_name[name] = it
         deduped.append(it)
+    # Pass 2 — graft any "Sealed in X" slot onto the winner that lacks it, from ANY
+    # loaded record (real or seal-carrier), independent of shard order. The gear-planner
+    # marks seals the hand-verified base seed and older wiki batches predate, so a sealed
+    # item would otherwise be stranded whichever source won its body.
+    for it in all_enriched:
+        name = it.get("name")
+        winner = kept_by_name.get(name)
+        if winner is not None and it.get("seal_slots") and not winner.get("seal_slots"):
+            winner["seal_slots"] = [dict(s) for s in it["seal_slots"]]  # copy: no shared ref across base + tier variants
     enriched_items = deduped
     # Legendary augment pool (gear-planner import). Sourced augments SUPERSEDE a
     # same-name base-seed augment (richer source wins — opposite of the base-wins

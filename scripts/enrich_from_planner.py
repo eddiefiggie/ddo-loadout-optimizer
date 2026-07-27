@@ -123,7 +123,92 @@ def build_record(it):
     return rec
 
 
+def _solver_active_names():
+    """Names already solver-active in the *built* dataset — the KTD6-safe skip set.
+    Spans every pipeline (base seed, wiki batches, R4, and host blanks like Dino /
+    Viktranium / Nearly Complete / seal that never appear in enriched_*.json), so a
+    planner item that merely re-states one of them is skipped, never double-listed.
+    Requires web/data/items.json built WITHOUT the bulk planner shard (remove
+    enriched_planner_ml29.json and rebuild before regenerating)."""
+    ds = os.path.join(ROOT, "web", "data", "items.json")
+    names = set()
+    if os.path.exists(ds):
+        for it in json.load(open(ds, encoding="utf-8")).get("items", []):
+            names.add(it.get("source_item") or it.get("variant_id") or it.get("name"))
+    names.discard(None)
+    return names
+
+
+def main_all():
+    """Import EVERY ML>=29 gear-planner item (all slots), deduped against the built
+    dataset, into one bulk shard. Weapons/rune-arms route to the solver; worn gear
+    is solver-active; Off Hand items enter browse-only (no solver slot yet)."""
+    data = json.load(open(SRC, encoding="utf-8"))
+    skip = _solver_active_names()
+    # Idempotent re-run: the built dataset may already include THIS import's prior
+    # output. Subtract those names so we don't self-exclude (the whole point of a
+    # re-import is to regenerate them). Only names unique to our shard are removed.
+    outpath = os.path.join(ROOT, "data", "seed", "compendium", "enriched_planner_ml29.json")
+    if os.path.exists(outpath):
+        for it in json.load(open(outpath, encoding="utf-8")).get("items", []):
+            if not it.get("_seal_carrier"):
+                skip.discard(it.get("name"))
+    picked, carriers, unmapped_slots, dropped_no_affix = [], [], set(), 0
+    for it in data:
+        if (it.get("ml") or 0) < ENDGAME_ML:
+            continue
+        if it["name"].startswith("Dinosaur Bone"):
+            continue  # modeled via the Dino crafting pipeline
+        if it["name"] in skip:
+            # Already solver-active from another pipeline. Skip its body, but if the
+            # planner records a "Sealed in X" slot the active version may lack, emit a
+            # seal-carrier stub so build_dataset can graft the seal onto the winner.
+            rec = build_record(it)
+            if rec.get("seal_slots"):
+                carriers.append({"name": rec["name"], "slot": rec["slot"],
+                                 "seal_slots": rec["seal_slots"], "_seal_carrier": True,
+                                 "_source": "gear-planner"})
+            continue
+        rec = build_record(it)
+        if rec["slot"] not in SOLVER_SLOTS and rec["category"] not in ("weapon", "runearm"):
+            unmapped_slots.add(rec["slot"])
+        if rec.get("seal_slots") or any(not e.endswith("Augment Slot") for e in rec["enhancements"]):
+            picked.append(rec)
+        else:
+            dropped_no_affix += 1  # augment-slots-only after strict conversion
+    # Dedup within the import (planner has ML-variant rows sharing a name).
+    seen, deduped = set(), []
+    for r in picked:
+        if r["name"] in seen:
+            continue
+        seen.add(r["name"])
+        deduped.append(r)
+    picked = deduped
+
+    out = {
+        "metadata": {
+            "layer": "enriched", "batch": "planner_ml29",
+            "system": "all ML>=29 named gear (gear-planner bulk import, strict re-parse)",
+            "source": "illusionistpm/ddo-gear-planner items.json (ddowiki-derived)",
+            "harvested": "2026-07-27", "count": len(picked), "seal_carriers": len(carriers),
+        },
+        "items": picked + carriers,
+    }
+    outpath = os.path.join(ROOT, "data", "seed", "compendium", "enriched_planner_ml29.json")
+    json.dump(out, open(outpath, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+    from collections import Counter
+    by_slot = Counter(r["slot"] if r["category"] not in ("weapon", "runearm") else r["category"].title() for r in picked)
+    seal_hosts = sum(1 for r in picked if r.get("seal_slots"))
+    print(f"wrote {len(picked)} ML>=29 planner items ({seal_hosts} seal hosts, "
+          f"{dropped_no_affix} dropped as augment/proc-only) -> {os.path.relpath(outpath, ROOT)}")
+    print("  by slot:", dict(by_slot.most_common()))
+    if unmapped_slots:
+        print("  WARNING unmapped slots (won't reach solver):", unmapped_slots, file=sys.stderr)
+
+
 def main(expansion):
+    if expansion == "all":
+        return main_all()
     quests = QUEST_MAP[expansion]
     data = json.load(open(SRC, encoding="utf-8"))
     # already enriched from wiki batches -> skip to avoid duplicate work
