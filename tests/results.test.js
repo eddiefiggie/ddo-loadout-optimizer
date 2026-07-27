@@ -254,6 +254,38 @@ test("attributionList escapes hostile source text (no raw HTML injection)", () =
   assert.ok(!/<b>x<\/b>/.test(html), "slot text is escaped too");
 });
 
+// ---- U6: trust story (why-this line + proof panel) ----
+function whyResult() {
+  return {
+    effective: { Constitution: 15 }, perTarget: { Constitution: 15 },
+    chosen: [{ slot: "Ring", variant: { variant_id: "R", set_bonus: [], parsed_set_bonuses: [] } }],
+    augmentsPlaced: [], setsActive: [],
+    breakdown: { Constitution: [{ bonus_type: "Enhancement", value: 15, source: "R", sourceKind: "worn", slot: "Ring", setYieldingSlots: null }] },
+    computeScale: { variants: 42 }, solveMs: 7,
+  };
+}
+
+test("whyThisLine names the ranked target an item wins (R8, R9)", () => {
+  const html = R.whyThisLine(whyResult(), { slot: "Ring", variant_id: "R" });
+  assert.ok(/wins/.test(html) && /Constitution \+15/.test(html), "states the winning target and value");
+});
+
+test("whyThisLine has an explicit empty state for a filler pick", () => {
+  const html = R.whyThisLine(whyResult(), { slot: "Boots", variant_id: "ZZ" });
+  assert.ok(/complete the loadout/.test(html), "a pick winning no target reads as filler, not blank");
+});
+
+test("proofPanel explains the method, lists the ranked order, and breaks down each value (R10)", () => {
+  const res = whyResult();
+  const html = R.proofPanel(res, { targets: ["Constitution"] }, R.attributionByTarget(res));
+  assert.ok(/provably/i.test(html), "states the result is provably optimal");
+  assert.ok(/MILP/.test(html), "explains the MILP method");
+  assert.ok(/42 candidate items/.test(html), "cites the compute scale");
+  assert.ok(/7 ms/.test(html), "shows the solve time");
+  assert.ok(/proof-order/.test(html) && /Constitution/.test(html), "lists the ranked priority order");
+  assert.ok(/proof-target/.test(html), "includes the per-target contribution breakdown");
+});
+
 test("safeUrl passes http(s) but neutralizes hostile schemes", () => {
   assert.strictEqual(R.safeUrl("https://ddowiki.com/page/Item"), "https://ddowiki.com/page/Item");
   assert.strictEqual(R.safeUrl("http://example.com"), "http://example.com");

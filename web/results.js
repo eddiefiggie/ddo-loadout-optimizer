@@ -383,6 +383,41 @@ function activeSetDetail(result) {
   }));
 }
 
+// The "why this?" line for an equipped item (R8, R9): the ranked target(s) it
+// wins and by how much. Empty-state (a filler/tie-break pick that wins nothing)
+// reads as such rather than blank. `item` is { slot, variant_id }.
+function whyThisLine(result, item) {
+  const wins = whyThis(result, item);
+  if (!wins.length) return `<div class="pd-why muted">included to complete the loadout</div>`;
+  const txt = wins.slice(0, 3).map((w) => `${esc(w.stat)} +${esc(w.value)}${w.viaSet ? " (set)" : ""}`).join(", ");
+  return `<div class="pd-why" title="why this item is best-in-slot here">wins ${txt}</div>`;
+}
+
+// The expandable proof panel (R10): plain-language method + the ranked-priority
+// order the solve optimized + a per-target contribution breakdown. `attr` is the
+// attributionByTarget map, reused so the breakdown matches the achieved readout.
+function proofPanel(result, query, attr) {
+  const cs = result.computeScale || {};
+  const ms = result.solveMs;
+  const order = query.targets.map((stat, i) => {
+    const v = (result.perTarget && result.perTarget[stat] != null) ? result.perTarget[stat] : (result.effective[stat] ?? 0);
+    return `<li><span class="proof-rank">${i + 1}</span><span class="proof-stat">${esc(stat)}</span><span class="proof-val">${esc(v)}</span></li>`;
+  }).join("");
+  const breakdown = query.targets.map((stat) => `
+    <div class="proof-target">
+      <div class="proof-target-head">${esc(stat)} = ${esc(result.effective[stat] ?? 0)}</div>
+      ${attributionList(attr[stat] || [])}
+    </div>`).join("");
+  return `<details class="proof-panel" id="proof-panel">
+    <summary>How do we know this is optimal?</summary>
+    <div class="proof-body">
+      <p class="proof-method">This isn't a guess. The optimizer models your gear as an <strong>exact integer program</strong> and effectively checks <strong>every legal combination</strong>${cs.variants ? ` of ${esc(cs.variants)} candidate items` : ""}, then returns the loadout that is <strong>provably the best</strong> for your ranked priorities${ms != null ? `, solved in ${esc(ms)} ms` : ""}. <em>MILP</em> is the method — a mixed-integer linear program; <em>provable</em> means no other legal loadout scores better on these priorities. A low-level item can still win a slot when its bonus genuinely beats every higher-level option for a target you ranked.</p>
+      <div class="proof-section"><h4>Your priorities, in the order they were maximized</h4><ol class="proof-order">${order}</ol></div>
+      <div class="proof-section"><h4>What builds each value</h4>${breakdown}</div>
+    </div>
+  </details>`;
+}
+
 // Count-up motion (KTD4), robust to motion NOT running (AE4). The final value is
 // written into the DOM first and stays there unless an animation frame actually
 // fires — so if requestAnimationFrame is throttled/absent, or reduced-motion is
@@ -441,9 +476,14 @@ function renderResults(container, { model, result, query, dataset }) {
 
   // --- hero: ranked-target readout (R1, R2, R3, R7) ---
   const cs = result.computeScale || { variants: 0, crafts: 0, stages: 0 };
+  // The verdict is a tap/keyboard-openable explanation (R7) — native <details>,
+  // so it works on touch (no hover) and via keyboard, not a hover-only tooltip.
   const banner = `
     <div class="solve-banner">
-      <div class="solve-verdict"><span class="dot"></span><span class="label">OPTIMAL</span><span class="sub">· exact MILP, provably best</span></div>
+      <details class="solve-explain">
+        <summary class="solve-verdict"><span class="dot"></span><span class="label">OPTIMAL</span><span class="sub">· exact MILP, provably best</span><span class="explain-hint" aria-hidden="true">ⓘ</span></summary>
+        <div class="solve-explain-body">Every legal combination of your gear was checked as an exact math problem — this loadout is <strong>provably the best</strong> for your ranked priorities, not a guess or estimate. Open “How do we know this is optimal?” below for the full proof.</div>
+      </details>
       <div class="solve-scale">
         <div class="scale-item"><span class="n">${esc(cs.variants)}</span><span class="k">variants</span></div>
         <div class="scale-item"><span class="n">${esc(cs.crafts)}</span><span class="k">craft options</span></div>
@@ -485,7 +525,8 @@ function renderResults(container, { model, result, query, dataset }) {
       // so the Rune-Arm cell reads "Off Hand" when empty and "Rune Arm" when the
       // solver actually equips one — a chosen Rune Arm is shown, never dropped.
       const label = pos === "offhand" && !pick ? "Off Hand" : slot.slot;
-      const cell = paperdollSlot(label, pos, pick, query, maps);
+      const extra = pick ? whyThisLine(result, { slot: slot.slot, variant_id: pick.variant.variant_id }) : "";
+      const cell = paperdollSlot(label, pos, pick, query, maps, extra);
       if (pos in WEAPON_POS) weapon[WEAPON_POS[pos]] = cell;
       else paired.push(cell);
     }
@@ -513,6 +554,7 @@ function renderResults(container, { model, result, query, dataset }) {
 
   container.innerHTML = `
     ${banner}
+    ${proofPanel(result, query, attr)}
     <div class="readout-grid">
       <div class="readout-main">
         <div class="readout-hero">
@@ -533,5 +575,5 @@ function renderResults(container, { model, result, query, dataset }) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, attributionByTarget, whyThis, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, slotDetailChips, esc, safeUrl };
+  module.exports = { renderResults, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, attributionByTarget, whyThis, whyThisLine, proofPanel, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, slotDetailChips, esc, safeUrl };
 }

@@ -246,6 +246,49 @@ button.primary:hover { filter: brightness(1.08); }
 .scale-item .n { font-size: var(--fs-lg); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
 .scale-item .k { font-size: var(--fs-xs); color: var(--faint); text-transform: uppercase; letter-spacing: 0.05em; }
 
+/* --- trust story: openable badge explanation + proof panel (R7, R10) ------- */
+.solve-explain { min-width: 0; }
+.solve-explain > summary { list-style: none; cursor: pointer; border-radius: var(--radius-sm); }
+.solve-explain > summary::-webkit-details-marker { display: none; }
+.solve-explain > summary:focus-visible { outline: none; box-shadow: var(--ring); }
+.solve-verdict .explain-hint { color: var(--optimal); font-weight: 400; }
+.solve-explain-body {
+  margin-top: var(--sp-2); max-width: 56ch; font-size: var(--fs-sm);
+  color: var(--text); line-height: 1.5;
+}
+
+.proof-panel {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--panel); margin-bottom: var(--sp-4);
+}
+.proof-panel > summary {
+  list-style: none; cursor: pointer; padding: var(--sp-3) var(--sp-4);
+  min-height: var(--tap); display: flex; align-items: center; gap: var(--sp-2);
+  font-weight: 600; color: var(--accent);
+}
+.proof-panel > summary::-webkit-details-marker { display: none; }
+.proof-panel > summary::before { content: "▸"; color: var(--faint); transition: transform 0.15s; }
+.proof-panel[open] > summary::before { transform: rotate(90deg); }
+.proof-panel > summary:focus-visible { outline: none; box-shadow: var(--ring); }
+.proof-body { padding: 0 var(--sp-4) var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-4); }
+.proof-method { margin: 0; color: var(--text); font-size: var(--fs-sm); line-height: 1.6; max-width: 72ch; }
+.proof-method em { color: var(--accent); font-style: normal; font-weight: 600; }
+.proof-section h4 { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); color: var(--muted); }
+.proof-order { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-1); }
+.proof-order li { display: flex; align-items: baseline; gap: var(--sp-2); font-size: var(--fs-sm); }
+.proof-rank {
+  flex: none; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--elev);
+  color: var(--muted); font-size: var(--fs-xs); display: inline-flex; align-items: center; justify-content: center;
+}
+.proof-stat { color: var(--text); flex: 1; }
+.proof-val { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
+.proof-target { border-top: 1px solid var(--border); padding-top: var(--sp-2); }
+.proof-target-head { font-size: var(--fs-sm); font-weight: 600; color: var(--text); }
+
+/* per-item "why this?" line inside a paperdoll slot (R8, R9) */
+.pd-why { font-size: var(--fs-xs); color: var(--optimal); margin-top: 2px; }
+.pd-why.muted { color: var(--faint); }
+
 /* readout layout */
 .readout-grid { display: flex; flex-direction: column; gap: var(--sp-5); }
 
