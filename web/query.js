@@ -144,7 +144,7 @@ window.App && window.App.ready((dataset) => {
         classRace: $("q-class").value.trim() || null,
       };
       // eslint-disable-next-line no-undef
-      const model = buildModel(dataset.items, query, dataset.dino_inserts, dataset.nearly_complete, dataset.viktranium, dataset.seal);
+      const model = buildModel(dataset.items, query, dataset.dino_inserts, dataset.nearly_complete, dataset.viktranium, dataset.seal, dataset.membership_set_defs);
       const t0 = performance.now();
       // eslint-disable-next-line no-undef
       const result = await solveLexicographic(model, h);

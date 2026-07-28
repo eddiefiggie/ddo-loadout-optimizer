@@ -35,6 +35,13 @@ def _expand_list(affixes):
     return out
 
 
+def expand_affixes(affixes):
+    """Public: expand umbrella affixes in a standalone affix list (e.g. a
+    membership set-def tier), returning a new list. Same rule as expand_variants
+    applies to worn/set affixes."""
+    return _expand_list(affixes)
+
+
 def expand_variants(variants):
     """In place: expand umbrella affixes in each variant's worn affixes and in its
     parsed set-bonus threshold affixes. Returns the same list."""

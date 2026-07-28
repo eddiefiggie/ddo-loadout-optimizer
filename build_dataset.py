@@ -26,6 +26,7 @@ from src import dino as dino_mod
 from src import nearly_complete as nc_mod
 from src import viktranium as vik_mod
 from src import seal as seal_mod
+from src import membership as membership_mod
 from src import compendium as compendium_mod
 from src import band_frontier as band_mod
 from src import set_catalog as set_catalog_mod
@@ -272,6 +273,12 @@ def build(seed: dict) -> dict:
     # matching pool. Undeath sourced (Ritual Table); Fire/Gloom/Mist pending.
     sl = seal_mod.parse_seal(load_seal_seed())
 
+    # Chosen set-membership defs (Vecna Unleashed / Cannith Repurposing Station):
+    # the runtime table the solver self-seeds awaken-only set thresholds from. Unlike
+    # intrinsic sets (baked onto member items), an awaken-only set has no equipped
+    # member to register its threshold, so its tier definition is exported here (KTD4).
+    membership_defs = membership_mod.build_membership_set_defs(membership_mod.load_seed())
+
     # Compendium roster: the complete named-item INDEX (name + slot + wiki link
     # for every named item on the wiki, harvested by category). Roster entries
     # are browse-only ("indexed") until their stats are enriched into real item
@@ -359,6 +366,7 @@ def build(seed: dict) -> dict:
             "nc_coverage": nc["coverage"],
             "viktranium_coverage": vik["coverage"],
             "seal_coverage": sl["coverage"],
+            "membership_coverage": membership_mod.coverage(membership_defs),
             "augment_coverage": augment_coverage,
             "compendium_coverage": comp_cov,
             "band_coverage": band_cov,
@@ -370,6 +378,7 @@ def build(seed: dict) -> dict:
         "nearly_complete": nc["records"],
         "viktranium": vik["records"],
         "seal": sl["records"],
+        "membership_set_defs": membership_defs,
         "compendium": comp_records,
     }
     return out

@@ -1136,5 +1136,28 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.strictEqual((r.membershipPlaced || []).length, 0, "a non-load-bearing awaken is not fabricated");
   });
 
+  await test("MEMBERSHIP/end-to-end: real exported set defs self-seed an awaken-only completion", async () => {
+    // The full path: build_dataset exported membership_set_defs -> the solver
+    // self-seeds a threshold with NO fixed member equipped -> 3 Lost Purpose hosts
+    // awaken Legendary Vol's Influence and complete its 3-piece Artifact bonus.
+    const fs = require("fs");
+    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    const defs = data.membership_set_defs || {};
+    assert.ok(Object.keys(defs).length === 22, "items.json exports all 22 membership set defs");
+    const SET = "Legendary Vol's Influence";
+    assert.ok(defs[SET], "the real Legendary Vol's Influence def is present");
+    const lp = (slotName) => memberHost(`LP-${slotName}`, slotName, [SET]);
+    const model = {
+      targets: ["Universal Spell Power"], mlCap: 34, dodgeCap: null,
+      membershipSetDefs: defs,
+      worn: [slot("Helmet", [lp("Helmet")]), slot("Cloak", [lp("Cloak")]), slot("Gloves", [lp("Gloves")])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.ok(r.setsActive.some((s) => s.set === SET), "the real def self-seeds and the set activates from 3 awakened pieces");
+    assert.strictEqual(r.effective["Universal Spell Power"], 25, "the set's real +25 Artifact USP reaches the total");
+    assert.strictEqual((r.membershipPlaced || []).length, 3, "three awakens prescribed");
+    assert.ok(r.membershipPlaced.every((m) => m.station === "Cannith Repurposing Station"), "prescriptions name the station");
+  });
+
   console.log(`\n${passed} passed`);
 })();
