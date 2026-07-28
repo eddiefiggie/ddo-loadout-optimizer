@@ -1136,16 +1136,17 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.strictEqual((r.membershipPlaced || []).length, 0, "a non-load-bearing awaken is not fabricated");
   });
 
-  await test("MEMBERSHIP/real items: a spellpower build awakens a Vecna set on real Lost Purpose gear", async () => {
-    // The full feature: real dataset + real buildModel. Legendary University Lost
-    // Purpose armor/helm/cloak hosts awaken a spellpower Vecna set (Vol's Influence /
-    // Delight / Shadow's Emptiness) to complete its 3-piece Universal Spell Power tier.
+  await test("MEMBERSHIP/real items: an awaken-only set is awakened on real Lost Purpose gear", async () => {
+    // The full feature: real dataset + real buildModel. When an awaken-only Vecna set
+    // (no intrinsic members) is genuinely the best path for the ranked targets, real
+    // Legendary University Lost Purpose armor/helm/cloak hosts awaken it. Delight of
+    // the Devourer gives both these stats, so completing its 3-piece tier wins.
     const fs = require("fs");
     const { buildModel } = require("../web/model.js");
     const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
     const lp = data.items.filter((v) => v.set_membership_slot);
     assert.ok(lp.length === 44, "all 44 Lost Purpose items carry a membership slot");
-    const query = { mlCap: 32, targets: ["Universal Spell Power", "Spell Critical Chance", "Spell DCs"], armorType: null, weaponSetup: null, classRace: null };
+    const query = { mlCap: 32, targets: ["Additional Damage to Helpless Targets", "Melee and Ranged Power"], armorType: null, weaponSetup: null, classRace: null };
     const model = buildModel(data.items, query, data.dino_inserts, data.nearly_complete, data.viktranium, data.seal, data.membership_set_defs);
     const r = await S.solveLexicographic(model, highs);
     assert.strictEqual(r.status, "optimal");
