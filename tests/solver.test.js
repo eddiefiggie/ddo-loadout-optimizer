@@ -1136,6 +1136,24 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.strictEqual((r.membershipPlaced || []).length, 0, "a non-load-bearing awaken is not fabricated");
   });
 
+  await test("MEMBERSHIP/no over-report on tieBreak:false (alternatives path)", async () => {
+    // A Lost Purpose host equipped for its plain worn affix, but its 3-piece set
+    // cannot complete (only one such host). On a tieBreak:false solve (the path every
+    // alternative re-solve takes) the member var may float to 1 for free — but the set
+    // is inactive, so no awaken must be prescribed (it would buy nothing).
+    const SET = "Legendary Vol's Influence";
+    const DEFS = { [SET]: memberDef([{ n: 3, affixes: [["Universal Spell Power", "Artifact", 25]] }]) };
+    const host = memberHost("LP", "Helmet", [SET], [["Constitution", "Enhancement", 12]]);
+    const model = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null, membershipSetDefs: DEFS,
+      worn: [slot("Helmet", [host])],
+    };
+    const program = S.buildProgram(model);
+    const r = S.solveConstrained(program, highs, { objectiveStat: "Constitution", sense: "max", tieBreak: false });
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual((r.membershipPlaced || []).length, 0, "no awaken reported when the set is inactive on a tieBreak:false solve");
+  });
+
   await test("MEMBERSHIP/end-to-end: real exported set defs self-seed an awaken-only completion", async () => {
     // The full path: build_dataset exported membership_set_defs -> the solver
     // self-seeds a threshold with NO fixed member equipped -> 3 Lost Purpose hosts

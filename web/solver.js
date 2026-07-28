@@ -700,11 +700,17 @@ function readSolution(res, program) {
   for (const [j, meta] of program.jokerMeta || []) {
     if (prim(j) > 0.5 && realShort.has(meta.set)) jokerPlaced.push(meta);
   }
-  // Awakened set-membership picks (Cannith Repurposing Station / Dino Set-Bonus). The
-  // tie-break minimizes member vars, so a pick set to 1 is load-bearing by construction
-  // (it is a piece a completed set actually needed) — report each such awaken.
+  // Awakened set-membership picks (Cannith Repurposing Station / Dino Set-Bonus).
+  // Guard on the set being ACTIVE, mirroring the joker's load-bearing guard: on a
+  // tieBreak:false solve (every alternatives re-solve) a member var can float to 1
+  // for free even when its set never activates, which would prescribe an awaken that
+  // buys nothing. The optimum path minimizes member vars, but the guard must hold on
+  // all solve paths — report an awaken only when its set is actually active.
+  const activeSetNames = new Set(setsActive.map((m) => m.set));
   const membershipPlaced = [];
-  for (const [m, meta] of program.memberMeta || []) if (prim(m) > 0.5) membershipPlaced.push(meta);
+  for (const [m, meta] of program.memberMeta || []) {
+    if (prim(m) > 0.5 && activeSetNames.has(meta.set)) membershipPlaced.push(meta);
+  }
   return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, jokerPlaced, membershipPlaced };
 }
 
