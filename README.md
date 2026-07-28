@@ -36,7 +36,8 @@ Coverage that's live today:
 | **Vecna Unleashed set crafting** (Lost Purpose → awaken 1 of 11 sets) | ✅ |
 | **Dino Set-Bonus** (Isle of Dread, awaken 1 of 6 sets) | ✅ |
 | Sealed in X (Ritual Table) | ✅ Undeath sourced; Fire/Gloom/Mist pending |
-| Nearly Complete + Viktranium/Lamordia (U81) | ✅ |
+| Nearly Complete (Terror of Demogorgon, U81) | ✅ |
+| Viktranium / Lamordia experiment (Chill of Ravenloft, U75) | ✅ |
 | Dinosaur Bone inserts (Isle of Dread) | ✅ |
 | Endgame band ML 30–36 (U81 / Isle of Dread / Myth Drannor) | ✅ named + raid gear solver-active |
 | Filigrees, Green Steel, Thunder-Forged, Essence crafting | ⏳ not yet |
