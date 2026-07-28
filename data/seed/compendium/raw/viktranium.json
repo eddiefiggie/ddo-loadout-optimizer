@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "system": "Update 81 — Viktranium Experiment crafting (raw harvest)",
+    "system": "Update 75 (The Chill of Ravenloft) — Viktranium Experiment crafting (raw harvest)",
     "note": "Raw effect text harvested from the Viktranium Experiment crafting wiki page via Claude-in-Chrome. structure_from_raw() reduces this to data/seed/viktranium.json.",
     "wiki_url": "https://ddowiki.com/page/Viktranium_Experiment_crafting"
   },

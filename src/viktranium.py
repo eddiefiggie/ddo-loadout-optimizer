@@ -1,6 +1,6 @@
 """U1/U2 — Viktranium Experiment ("Lamordia") crafting parser (strict provenance).
 
-Viktranium Experiment crafting (Update 81) is the system whose in-data slots the
+Viktranium Experiment crafting (Update 75, The Chill of Ravenloft) is the system whose in-data slots the
 enrichment mislabels "Lamordia" (the ``{{Lamordia Slot|<type>|<category>}}``
 template). An item carries **typed** slots — Melancholic / Dolorous / Miserable /
 Woeful — and each typed slot is filled from an option pool that depends on BOTH
@@ -185,8 +185,9 @@ def structure_from_raw(raw, wiki_url):
     ]
     seed = {
         "metadata": {
-            "system": "Update 81 — Viktranium Experiment crafting "
-                      "(the in-data \"Lamordia\" typed slots)",
+            "system": "Update 75 (The Chill of Ravenloft) — Viktranium Experiment crafting "
+                      "(the in-data \"Lamordia\" typed slots; Lamordia is the Ravenloft domain "
+                      "these augments are themed on)",
             "note": "Sourced from ddowiki.com/page/Viktranium_Experiment_crafting "
                     "via Claude-in-Chrome (plain fetch returns empty for ddowiki). "
                     "Typed choice-slot: pool keyed by (slot_type, item-category); "

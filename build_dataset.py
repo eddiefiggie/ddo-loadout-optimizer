@@ -72,7 +72,7 @@ def load_nc_seed(path: str = NC_SEED_PATH) -> dict:
 
 
 def load_vik_seed(path: str = VIK_SEED_PATH) -> dict:
-    """Load the U81 Viktranium ("Lamordia") seed (freshly sourced; separate from base)."""
+    """Load the U75 (Chill of Ravenloft) Viktranium ("Lamordia") seed (freshly sourced; separate from base)."""
     if not os.path.exists(path):
         return {}
     with open(path, "r", encoding="utf-8") as fh:
@@ -281,7 +281,7 @@ def build(seed: dict) -> dict:
     # items pending wiki; the pool + machinery ship now).
     nc = nc_mod.parse_nearly_complete(load_nc_seed())
 
-    # U81 Viktranium ("Lamordia") crafting: expose the typed choice-slot pool
+    # U75 (Chill of Ravenloft) Viktranium ("Lamordia") crafting: expose the typed choice-slot pool
     # keyed by (slot_type, item-category). Items carrying `lamordia_slots` draw
     # one option per slot from the matching pool (tier from host ML at solve time).
     vik = vik_mod.parse_viktranium(load_vik_seed())
@@ -313,7 +313,7 @@ def build(seed: dict) -> dict:
     # NC 4th-affix slot the solver crafts into).
     nc["coverage"]["hosts_activated"] = sum(
         1 for it in enriched_items if it.get("nearly_complete"))
-    # U81 Viktranium hosts activated across the whole item pipeline — enriched
+    # U75 (Chill of Ravenloft) Viktranium hosts activated across the whole item pipeline — enriched
     # items (via the {{Lamordia Slot}} template) AND base-seed items (via their
     # human-readable Lamordia strings). Counted from the final variants, deduped
     # by source item so tier variants of one host count once. Honest disclosure.
