@@ -454,7 +454,7 @@ function fmtExpr(terms, fallbackVar) {
   return terms.map((t) => `${t.coef >= 0 ? "+" : "-"} ${Math.abs(t.coef)} ${t.name}`).join(" ");
 }
 
-function encodeStage(program, { objectiveStat, sense, locks, tieBreak }) {
+function encodeStage(program, { objectiveStat, objTerms, sense, locks, tieBreak, extra }) {
   const fb = program.xVars[0].name;
   const L = [sense === "min" ? "Minimize" : "Maximize"];
   if (tieBreak) {
@@ -467,6 +467,10 @@ function encodeStage(program, { objectiveStat, sense, locks, tieBreak }) {
     const terms = program.xVars.map((xv, i) => `+ ${i + 1} ${xv.name}`)
       .concat((program.jokerVars || []).map((j, i) => `+ ${n + 1 + i} ${j}`));
     L.push(" obj: " + terms.join(" "));
+  } else if (objTerms) {
+    // Arbitrary linear objective (e.g. the fewer-crafts generator minimizes the sum
+    // of the placement binaries). Alternatives-only; the optimum path never sets this.
+    L.push(" obj: " + fmtExpr(objTerms, fb));
   } else {
     L.push(" obj: " + fmtExpr(effectiveExpr(program, objectiveStat), fb));
   }
@@ -490,6 +494,9 @@ function encodeStage(program, { objectiveStat, sense, locks, tieBreak }) {
   // Structural constraints backing extra binaries (U3 capacity, U5 thresholds,
   // U7 per-track select-one). Raw LP bodies, injected verbatim.
   for (const body of program.extraConstraints || []) L.push(` c${c++}: ${body}`);
+  // Per-solve forced constraints (alternatives: a forced set-active binary, a
+  // pinned gain value). Raw LP bodies, injected verbatim; empty for the optimum.
+  for (const body of extra || []) L.push(` c${c++}: ${body}`);
 
   // capped stats: d <= raw (bound d <= cap is in Bounds). With no sources, pin
   // d <= 0 so the cap var cannot float up to its bound under the maximizing objective.
@@ -501,7 +508,13 @@ function encodeStage(program, { objectiveStat, sense, locks, tieBreak }) {
 
   for (const lock of locks || []) {
     const terms = effectiveExpr(program, lock.stat);
-    if (terms.length) L.push(` c${c++}: ${fmtExpr(terms, fb)} = ${lock.value}`);
+    // A relaxed lock (`give` set, alternatives-only) allows the value to fall by up
+    // to `give` (`>= value - give`); an exact lock (the optimum path) pins `= value`.
+    if (terms.length) {
+      L.push(lock.give != null
+        ? ` c${c++}: ${fmtExpr(terms, fb)} >= ${lock.value - lock.give}`
+        : ` c${c++}: ${fmtExpr(terms, fb)} = ${lock.value}`);
+    }
   }
 
   L.push("Bounds");
@@ -662,6 +675,38 @@ async function solveLexicographic(model, highs) {
   };
 }
 
+// U1 (alternatives) — solve the existing program with relaxed locks + forced
+// constraints + a chosen gain objective, then a second tie-break minimize to pin
+// the chosen build deterministically (the gain optimize alone is degenerate). Returns
+// the same enriched shape solveLexicographic produces (readSolution fields + breakdown
+// + capped) so a selected alternative drives the shared renderers unchanged.
+// `locks` entries may carry `give` (relaxed: `>= value - give`); `extra` are raw LP
+// constraint bodies (e.g. a forced `set_active = 1`); the gain is `objectiveStat`
+// (a stat, maximized) or `objTerms` (an arbitrary linear expression, e.g. minimized
+// craft-placement binaries).
+function solveConstrained(program, highs, { objectiveStat, objTerms, sense = "max", locks = [], extra = [] }) {
+  const fb = program.xVars[0].name;
+  // Phase 1: optimize the gain under the relaxed/forced constraints.
+  const r1 = highs.solve(encodeStage(program, { objectiveStat, objTerms, sense, locks, extra }));
+  if (r1.Status !== "Optimal") return { status: "infeasible" };
+  const prim1 = (name) => (r1.Columns[name] ? r1.Columns[name].Primal : 0);
+  // Pin the achieved gain, then tie-break so the item set (not just the objective
+  // value) is deterministic — mirroring solveLexicographic's final tie-break stage.
+  let locks2 = locks, pin = [];
+  if (objTerms) {
+    const gainVal = Math.round(objTerms.reduce((s, t) => s + t.coef * prim1(t.name), 0));
+    pin = [`${fmtExpr(objTerms, fb)} = ${gainVal}`];
+  } else {
+    const gainVal = readSolution(r1, program).effective[objectiveStat] ?? 0;
+    locks2 = [...locks, { stat: objectiveStat, value: gainVal }];
+  }
+  const r2 = highs.solve(encodeStage(program, { tieBreak: true, sense: "min", locks: locks2, extra: [...extra, ...pin] }));
+  const res = r2.Status === "Optimal" ? r2 : r1;
+  const prim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
+  const sol = readSolution(res, program);
+  return { status: "optimal", ...sol, breakdown: breakdownByTarget(program, prim), capped: { ...program.cappedStats } };
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, solveLexicographic, scaleAt, breakdownByTarget, computeScale };
+  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, solveLexicographic, solveConstrained, scaleAt, breakdownByTarget, computeScale };
 }
