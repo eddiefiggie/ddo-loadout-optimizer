@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "system": "Update 81 — Viktranium Experiment crafting (the in-data \"Lamordia\" typed slots)",
+    "system": "Update 75 (The Chill of Ravenloft) — Viktranium Experiment crafting (the in-data \"Lamordia\" typed slots; Lamordia is the Ravenloft domain these augments are themed on)",
     "note": "Sourced from ddowiki.com/page/Viktranium_Experiment_crafting via Claude-in-Chrome (plain fetch returns empty for ddowiki). Typed choice-slot: pool keyed by (slot_type, item-category); Heroic ML8 / Legendary ML34 magnitudes. Regenerable from data/seed/compendium/raw/viktranium.json via src.viktranium.structure_from_raw.",
     "wiki_url": "https://ddowiki.com/page/Viktranium_Experiment_crafting"
   },
