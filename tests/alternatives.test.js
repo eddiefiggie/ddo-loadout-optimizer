@@ -5,6 +5,7 @@ const assert = require("assert");
 const path = require("path");
 const S = require("../web/solver.js");
 const A = require("../web/alternatives.js");
+const R = require("../web/results.js");
 const vendor = path.join(__dirname, "..", "web", "vendor") + "/";
 const Highs = require(vendor + "highs.js");
 
@@ -172,6 +173,17 @@ const tradeModel = () => ({
     // ranking is deterministic across runs
     const again = A.rankAlternatives([dup, near, far], optimum, { n: 5, k: 2 });
     assert.deepStrictEqual(again.map((a) => a.key), ranked.map((a) => a.key));
+  });
+
+  // ---- U4: card rendering (a11y) ----
+
+  await test("renderAltCards renders a keyboard listbox with tags, gain, and cost", () => {
+    const ranked = [{ tags: ["set bonus", "cheaper crafting"], gainText: "activates Alpha", costText: "-7 Constitution" }];
+    const html = R.renderAltCards(ranked);
+    assert.ok(/role="listbox"/.test(html) && /role="option"/.test(html), "listbox + option roles");
+    assert.ok(/aria-selected="false"/.test(html) && /tabindex="0"/.test(html), "single-select a11y state");
+    assert.ok(/activates Alpha/.test(html) && /-7 Constitution/.test(html), "shows the gain and the cost");
+    assert.ok(/set bonus/.test(html) && /cheaper crafting/.test(html), "shows the gain tags");
   });
 
   console.log(`\n${passed} passed`);

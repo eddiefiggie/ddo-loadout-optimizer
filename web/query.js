@@ -152,7 +152,7 @@ window.App && window.App.ready((dataset) => {
       if (result.status === "optimal") result.solveMs = ms;
       $("q-status").textContent = result.status === "optimal" ? `Solved in ${ms} ms.` : "";
       // eslint-disable-next-line no-undef
-      renderResults($("q-results"), { model, result, query, dataset });
+      renderResults($("q-results"), { model, result, query, dataset, highs: h });
       // Roll up the query panel so the paperdoll + results are front and centre.
       if (result.status === "optimal") collapseSolver(query);
     } catch (err) {

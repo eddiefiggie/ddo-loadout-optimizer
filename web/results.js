@@ -446,38 +446,11 @@ function renderResults(container, { model, result, query, dataset }) {
     return;
   }
 
-  // group equipped picks by slot, preserving a flat index for augment assignment
-  const augAssign = assignAugments(result.chosen, result.augmentsPlaced);
-  const dinoAssign = assignDinoInserts(result.chosen, result.dinoPlaced);
-  const byItemMap = (list) => {
-    const m = new Map();
-    for (const n of list || []) { if (!m.has(n.item)) m.set(n.item, []); m.get(n.item).push(n); }
-    return m;
-  };
-  const jokerByHost = new Map();  // wildcard picks are keyed by host (the Gem's variant_id)
-  for (const j of result.jokerPlaced || []) {
-    if (!jokerByHost.has(j.host)) jokerByHost.set(j.host, []);
-    jokerByHost.get(j.host).push(j);
-  }
-  const maps = {
-    augAssign, dinoAssign,
-    ncByItem: byItemMap(result.ncPlaced), rollByItem: byItemMap(result.rollPlaced),
-    vikByItem: byItemMap(result.vikPlaced), sealByItem: byItemMap(result.sealPlaced),
-    jokerByHost,
-  };
-
-  // group equipped picks by slot (preserving the flat index augment assignment used)
-  const picksBySlot = new Map();
-  result.chosen.forEach((c, idx) => {
-    if (!picksBySlot.has(c.slot)) picksBySlot.set(c.slot, []);
-    picksBySlot.get(c.slot).push({ variant: c.variant, idx });
-  });
-
-  // --- hero: ranked-target readout (R1, R2, R3, R7) ---
-  const cs = result.computeScale || { variants: 0, crafts: 0, stages: 0 };
+  const optimum = result;
+  const cs = optimum.computeScale || { variants: 0, crafts: 0, stages: 0 };
   // The verdict is a tap/keyboard-openable explanation (R7): native <details>, so
   // it works on touch (no hover) and via keyboard. Explains MILP plainly + links
-  // an academic source for readers who want the real math.
+  // an academic source for readers who want the real math. Always the OPTIMUM.
   const banner = `
     <div class="solve-banner">
       <details class="solve-explain">
@@ -492,18 +465,121 @@ function renderResults(container, { model, result, query, dataset }) {
         <div class="scale-item" title="Candidate item variants the solver weighed across your slots"><span class="n">${esc(cs.variants)}</span><span class="k">gear considered</span></div>
         <div class="scale-item" title="Augment and expansion-crafting options considered"><span class="n">${esc(cs.crafts)}</span><span class="k">craft choices</span></div>
         <div class="scale-item" title="One optimization pass per ranked priority, plus a final tie-break"><span class="n">${esc(cs.stages)}</span><span class="k">priority passes</span></div>
-        <div class="scale-item" title="Wall-clock solve time"><span class="n">${esc(result.solveMs ?? "?")}</span><span class="k">solve ms</span></div>
+        <div class="scale-item" title="Wall-clock solve time"><span class="n">${esc(optimum.solveMs ?? "?")}</span><span class="k">solve ms</span></div>
       </div>
     </div>`;
 
-  const attr = attributionByTarget(result, augAssign);
+  container.innerHTML = `
+    ${banner}
+    <div class="active-build-bar" hidden>
+      <span class="active-build-msg"></span>
+      <button class="return-optimum" type="button">Return to optimum</button>
+    </div>
+    <div class="readout-doll">
+      <div class="paperdoll" id="rp-doll"></div>
+      <div class="pd-weapons" id="rp-weapons"></div>
+    </div>
+    <div class="readout-analysis">
+      <div class="result-tabs" role="tablist" aria-label="Result details">
+        <button class="rtab" role="tab" id="rt-ranked" aria-controls="rp-ranked" aria-selected="true" tabindex="0" type="button">Ranked Priorities</button>
+        <button class="rtab" role="tab" id="rt-sets" aria-controls="rp-sets" aria-selected="false" tabindex="-1" type="button">Set Bonuses</button>
+        <button class="rtab" role="tab" id="rt-deep" aria-controls="rp-deep" aria-selected="false" tabindex="-1" type="button">Loadout Deep Dive</button>
+        <button class="rtab" role="tab" id="rt-alts" aria-controls="rp-alts" aria-selected="false" tabindex="-1" type="button">Alternatives</button>
+      </div>
+      <section id="rp-ranked" class="rpanel" role="tabpanel" aria-labelledby="rt-ranked" tabindex="0"><div class="targets" id="rp-cards"></div></section>
+      <section id="rp-sets" class="rpanel" role="tabpanel" aria-labelledby="rt-sets" tabindex="0" hidden><div id="rp-setspanel"></div></section>
+      <section id="rp-deep" class="rpanel" role="tabpanel" aria-labelledby="rt-deep" tabindex="0" hidden><div id="rp-deeppanel"></div></section>
+      <section id="rp-alts" class="rpanel" role="tabpanel" aria-labelledby="rt-alts" tabindex="0" hidden><div id="rp-altspanel"></div></section>
+    </div>
+    <div class="sr-only" aria-live="polite" id="rp-live"></div>`;
+
+  const q = (s) => container.querySelector(s);
+  // Render the paperdoll + Ranked/Sets/Deep-Dive panels from ANY build (the optimum
+  // or a selected alternative) — the alternative's solution has the same shape.
+  function renderBuild(build) {
+    const v = buildViews(build, model, query);
+    q("#rp-doll").innerHTML = v.paperdoll;
+    q("#rp-weapons").innerHTML = v.weapons;
+    q("#rp-cards").innerHTML = v.cards;
+    q("#rp-setspanel").innerHTML = v.setsPanel;
+    q("#rp-deeppanel").innerHTML = v.deepDive;
+    animateCounters(container);
+  }
+  function setActive(build, isAlt, label) {
+    renderBuild(build);
+    q(".active-build-bar").hidden = !isAlt;
+    if (isAlt) q(".active-build-msg").textContent = `Viewing alternative — ${label}`;
+    q("#rp-live").textContent = isAlt ? `Now viewing alternative: ${label}` : "Now viewing the optimal build";
+  }
+  q(".return-optimum").addEventListener("click", () => setActive(optimum, false));
+  renderBuild(optimum);
+
+  // Alternatives tab (U4): generate on first open so the base solve stays instant (KTD2).
+  const altState = { list: null, computing: false };
+  function ensureAlternatives() {
+    const panel = q("#rp-altspanel");
+    if (altState.list !== null || altState.computing) return;
+    if (typeof generateAlternatives !== "function" || !highs) {
+      panel.innerHTML = `<p class="dd-none muted">Alternatives are unavailable (the solver did not load).</p>`;
+      altState.list = []; return;
+    }
+    altState.computing = true;
+    panel.innerHTML = `<p class="dd-none muted">Computing alternatives…</p>`;
+    // Defer so the "computing" state paints before the synchronous re-solves run.
+    setTimeout(() => {
+      try {
+        const raw = generateAlternatives(optimum, model, highs);
+        const analyzed = raw.map((c) => analyzeAlternative(optimum, c, query));
+        const ranked = rankAlternatives(analyzed, optimum, {});
+        altState.list = ranked;
+        panel.innerHTML = ranked.length ? renderAltCards(ranked)
+          : `<p class="dd-none muted">No worthwhile trade-off build was found — the optimum is hard to beat for these priorities.</p>`;
+        if (ranked.length) wireAltCards(panel, ranked, setActive);
+      } catch (e) {
+        console.error(e);
+        panel.innerHTML = `<p class="dd-none muted">Could not compute alternatives.</p><button class="q-edit alt-retry" type="button">Retry</button>`;
+        const retry = panel.querySelector(".alt-retry");
+        if (retry) retry.addEventListener("click", () => { altState.list = null; ensureAlternatives(); });
+      }
+      altState.computing = false;
+    }, 20);
+  }
+  wireResultTabs(container, (id) => { if (id === "rp-alts") ensureAlternatives(); });
+}
+
+// Compute the per-build view HTML (paperdoll, weapon row, ranked cards, set panel,
+// deep dive) for ANY result-shaped build — the optimum or a selected alternative,
+// which carry the same fields (chosen, effective, breakdown, capped, setsActive,
+// the *Placed lists). Reused by renderBuild for select-to-inspect (U5).
+function buildViews(build, model, query) {
+  const augAssign = assignAugments(build.chosen, build.augmentsPlaced);
+  const dinoAssign = assignDinoInserts(build.chosen, build.dinoPlaced);
+  const byItemMap = (list) => {
+    const m = new Map();
+    for (const n of list || []) { if (!m.has(n.item)) m.set(n.item, []); m.get(n.item).push(n); }
+    return m;
+  };
+  const jokerByHost = new Map();
+  for (const j of build.jokerPlaced || []) {
+    if (!jokerByHost.has(j.host)) jokerByHost.set(j.host, []);
+    jokerByHost.get(j.host).push(j);
+  }
+  const maps = {
+    augAssign, dinoAssign,
+    ncByItem: byItemMap(build.ncPlaced), rollByItem: byItemMap(build.rollPlaced),
+    vikByItem: byItemMap(build.vikPlaced), sealByItem: byItemMap(build.sealPlaced), jokerByHost,
+  };
+  const picksBySlot = new Map();
+  build.chosen.forEach((c, idx) => {
+    if (!picksBySlot.has(c.slot)) picksBySlot.set(c.slot, []);
+    picksBySlot.get(c.slot).push({ variant: c.variant, idx });
+  });
+
+  const attr = attributionByTarget(build, augAssign);
   const cards = query.targets.map((stat, i) => {
-    const total = result.effective[stat] ?? 0;
+    const total = build.effective[stat] ?? 0;
     const contribs = attr[stat] || [];
-    // A capped stat (e.g. Dodge under an armor cap) shows the CAPPED achieved
-    // value as the headline, but the raw contributions can sum higher. Disclose
-    // the cap so the headline and the attribution don't read as a contradiction.
-    const cap = result.capped ? result.capped[stat] : null;
+    const cap = build.capped ? build.capped[stat] : null;
     const rawSum = contribs.reduce((s, p) => s + p.value, 0);
     const capNote = (cap != null && rawSum > total)
       ? `<span class="stat-cap" title="raw ${esc(rawSum)} exceeds the cap for this stat">capped at ${esc(total)} · raw ${esc(rawSum)}</span>` : "";
@@ -515,86 +591,89 @@ function renderResults(container, { model, result, query, dataset }) {
     </div>`;
   }).join("");
 
-  // --- paperdoll (R4, R5, R14, R15) — symmetric figure + a 3-cell weapon row ---
-  // One ordered table drives both the weapon-cell indexing and the empty-cell labels.
   const WEAPONS = [{ pos: "mainhand", label: "Main Hand" }, { pos: "offhand", label: "Off Hand" }, { pos: "quiver", label: "Quiver" }];
   const WEAPON_POS = Object.fromEntries(WEAPONS.map((w, i) => [w.pos, i]));
   const paired = [];
-  const weapon = [null, null, null]; // [Main Hand, Off Hand/Rune Arm, Quiver]
+  const weapon = [null, null, null];
   for (const slot of model.worn) {
     const picks = picksBySlot.get(slot.slot) || [];
     const cardinality = slot.cardinality || 1;
     for (let r = 0; r < cardinality; r++) {
       const pos = slotPosition(slot.slot, r);
       const pick = picks[r] || null;
-      // Adaptive weapon-middle label (KTD10): the model has no "Off Hand" slot,
-      // so the Rune-Arm cell reads "Off Hand" when empty and "Rune Arm" when the
-      // solver actually equips one — a chosen Rune Arm is shown, never dropped.
       const label = pos === "offhand" && !pick ? "Off Hand" : slot.slot;
       const cell = paperdollSlot(label, pos, pick);
       if (pos in WEAPON_POS) weapon[WEAPON_POS[pos]] = cell;
       else paired.push(cell);
     }
   }
-  const weaponCells = weapon
-    .map((c, i) => c || paperdollSlot(WEAPONS[i].label, WEAPONS[i].pos, null))
-    .join("");
+  const weapons = weapon.map((c, i) => c || paperdollSlot(WEAPONS[i].label, WEAPONS[i].pos, null)).join("");
 
-  // --- Set Bonuses tab (R6, R12, R16): granted stats + which slots yield them ---
-  const active = activeSetDetail(result).map((s) => {
+  const activeSets = activeSetDetail(build).map((s) => {
     const grants = s.affixes.length ? esc(s.affixes.map(affixLabel).join(", ")) : "bonus active";
     const via = s.slots.length ? `<div class="set-via">yielded by ${esc(s.slots.join(", "))}</div>` : "";
-    return `<li class="set-card">
-      <strong>${esc(s.set)}</strong> <span class="meta">${esc(s.pieces)} pieces</span>
-      <div class="set-grants">${grants}</div>${via}</li>`;
+    return `<li class="set-card"><strong>${esc(s.set)}</strong> <span class="meta">${esc(s.pieces)} pieces</span><div class="set-grants">${grants}</div>${via}</li>`;
   }).join("");
-  const nearMiss = nearMissSetHints(result.chosen, query.targets).map((h) =>
+  const nearMiss = nearMissSetHints(build.chosen, query.targets).map((h) =>
     `<li class="set-card near"><strong>${esc(h.set)}</strong> <span class="meta">(${esc(h.have)}/${esc(h.need)})</span><div class="set-via">one more piece adds ${esc(h.affixes.map(affixLabel).join(", "))}</div></li>`).join("");
-  const setsPanel = (active || nearMiss)
-    ? `<ul class="sets">${active}${nearMiss}</ul>`
+  const setsPanel = (activeSets || nearMiss)
+    ? `<ul class="sets">${activeSets}${nearMiss}</ul>`
     : `<p class="dd-none muted">No set bonuses are active for this build.</p>`;
 
-  // Result tabs beneath the paperdoll: Ranked Priorities | Set Bonuses | Deep Dive.
-  container.innerHTML = `
-    ${banner}
-    <div class="readout-doll">
-      <div class="paperdoll">${paperdollFigure()}${paired.join("")}</div>
-      <div class="pd-weapons">${weaponCells}</div>
-    </div>
-    <div class="readout-analysis">
-      <div class="result-tabs" role="tablist" aria-label="Result details">
-        <button class="rtab" role="tab" id="rt-ranked" aria-controls="rp-ranked" aria-selected="true" tabindex="0" type="button">Ranked Priorities</button>
-        <button class="rtab" role="tab" id="rt-sets" aria-controls="rp-sets" aria-selected="false" tabindex="-1" type="button">Set Bonuses</button>
-        <button class="rtab" role="tab" id="rt-deep" aria-controls="rp-deep" aria-selected="false" tabindex="-1" type="button">Loadout Deep Dive</button>
-      </div>
-      <section id="rp-ranked" class="rpanel" role="tabpanel" aria-labelledby="rt-ranked" tabindex="0">
-        <div class="targets">${cards}</div>
-      </section>
-      <section id="rp-sets" class="rpanel" role="tabpanel" aria-labelledby="rt-sets" tabindex="0" hidden>
-        ${setsPanel}
-      </section>
-      <section id="rp-deep" class="rpanel" role="tabpanel" aria-labelledby="rt-deep" tabindex="0" hidden>
-        ${loadoutDeepDive(result, query, maps, attr)}
-      </section>
-    </div>`;
+  return { paperdoll: paperdollFigure() + paired.join(""), weapons, cards, setsPanel, deepDive: loadoutDeepDive(build, query, maps, attr) };
+}
 
-  wireResultTabs(container);
-  animateCounters(container);
+// Alternative cards (U4): compact trade-off summary + gain tags, as a single-select
+// listbox (R10, card a11y).
+function renderAltCards(ranked) {
+  return `<ul class="alt-list" role="listbox" aria-label="Alternative loadouts">${ranked.map((a, i) => `
+    <li class="alt-card" role="option" id="alt-opt-${i}" aria-selected="false" tabindex="${i === 0 ? 0 : -1}" data-idx="${i}">
+      <div class="alt-tags">${a.tags.map((t) => `<span class="alt-tag">${esc(t)}</span>`).join("")}</div>
+      <div class="alt-gain">${esc(a.gainText)}</div>
+      <div class="alt-cost">${esc(a.costText)}</div>
+    </li>`).join("")}</ul>`;
+}
+
+// Wire the alternative cards as a keyboard-operable listbox (U5): arrows rove focus,
+// Enter/Space or click selects, selection loads the build into the shared surfaces.
+function wireAltCards(panel, ranked, setActive) {
+  const cards = [...panel.querySelectorAll('[role="option"]')];
+  const rove = (idx) => cards.forEach((c, i) => { c.tabIndex = i === idx ? 0 : -1; if (i === idx) c.focus(); });
+  const select = (idx) => {
+    cards.forEach((c, i) => c.setAttribute("aria-selected", i === idx ? "true" : "false"));
+    rove(idx);
+    setActive(ranked[idx].sol, true, ranked[idx].gainText);
+  };
+  panel.addEventListener("click", (e) => { const c = e.target.closest('[role="option"]'); if (c) select(+c.dataset.idx); });
+  panel.addEventListener("keydown", (e) => {
+    const focused = cards.findIndex((c) => c === document.activeElement);
+    const base = focused >= 0 ? focused : 0;
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(base); return; }
+    let j = null;
+    if (e.key === "ArrowDown" || e.key === "ArrowRight") j = (base + 1) % cards.length;
+    else if (e.key === "ArrowUp" || e.key === "ArrowLeft") j = (base - 1 + cards.length) % cards.length;
+    else if (e.key === "Home") j = 0;
+    else if (e.key === "End") j = cards.length - 1;
+    if (j != null) { e.preventDefault(); rove(j); }
+  });
 }
 
 // Wire the result sub-tabs (Ranked / Sets / Deep Dive). Re-run on every render.
-function wireResultTabs(container) {
+function wireResultTabs(container, onShow) {
   const tablist = container.querySelector(".result-tabs");
   if (!tablist) return;
   const tabs = [...tablist.querySelectorAll('[role="tab"]')];
-  const show = (id, focus) => tabs.forEach((t) => {
-    const on = t.getAttribute("aria-controls") === id;
-    t.setAttribute("aria-selected", on ? "true" : "false");
-    t.tabIndex = on ? 0 : -1;
-    if (on && focus) t.focus();
-    const p = container.querySelector("#" + t.getAttribute("aria-controls"));
-    if (p) p.hidden = !on;
-  });
+  const show = (id, focus) => {
+    tabs.forEach((t) => {
+      const on = t.getAttribute("aria-controls") === id;
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      t.tabIndex = on ? 0 : -1;
+      if (on && focus) t.focus();
+      const p = container.querySelector("#" + t.getAttribute("aria-controls"));
+      if (p) p.hidden = !on;
+    });
+    if (typeof onShow === "function") onShow(id);
+  };
   tablist.addEventListener("click", (e) => {
     const t = e.target.closest('[role="tab"]');
     if (t) show(t.getAttribute("aria-controls"), false);
@@ -613,5 +692,5 @@ function wireResultTabs(container) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, craftChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, craftChips, loadoutDeepDive, esc, safeUrl };
 }
