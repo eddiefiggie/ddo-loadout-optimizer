@@ -454,7 +454,7 @@ function fmtExpr(terms, fallbackVar) {
   return terms.map((t) => `${t.coef >= 0 ? "+" : "-"} ${Math.abs(t.coef)} ${t.name}`).join(" ");
 }
 
-function encodeStage(program, { objectiveStat, sense, locks, tieBreak }) {
+function encodeStage(program, { objectiveStat, objTerms, sense, locks, tieBreak, extra }) {
   const fb = program.xVars[0].name;
   const L = [sense === "min" ? "Minimize" : "Maximize"];
   if (tieBreak) {
@@ -467,6 +467,10 @@ function encodeStage(program, { objectiveStat, sense, locks, tieBreak }) {
     const terms = program.xVars.map((xv, i) => `+ ${i + 1} ${xv.name}`)
       .concat((program.jokerVars || []).map((j, i) => `+ ${n + 1 + i} ${j}`));
     L.push(" obj: " + terms.join(" "));
+  } else if (objTerms) {
+    // Arbitrary linear objective (e.g. the fewer-crafts generator minimizes the sum
+    // of the placement binaries). Alternatives-only; the optimum path never sets this.
+    L.push(" obj: " + fmtExpr(objTerms, fb));
   } else {
     L.push(" obj: " + fmtExpr(effectiveExpr(program, objectiveStat), fb));
   }
@@ -490,6 +494,9 @@ function encodeStage(program, { objectiveStat, sense, locks, tieBreak }) {
   // Structural constraints backing extra binaries (U3 capacity, U5 thresholds,
   // U7 per-track select-one). Raw LP bodies, injected verbatim.
   for (const body of program.extraConstraints || []) L.push(` c${c++}: ${body}`);
+  // Per-solve forced constraints (alternatives: a forced set-active binary, a
+  // pinned gain value). Raw LP bodies, injected verbatim; empty for the optimum.
+  for (const body of extra || []) L.push(` c${c++}: ${body}`);
 
   // capped stats: d <= raw (bound d <= cap is in Bounds). With no sources, pin
   // d <= 0 so the cap var cannot float up to its bound under the maximizing objective.
@@ -501,7 +508,13 @@ function encodeStage(program, { objectiveStat, sense, locks, tieBreak }) {
 
   for (const lock of locks || []) {
     const terms = effectiveExpr(program, lock.stat);
-    if (terms.length) L.push(` c${c++}: ${fmtExpr(terms, fb)} = ${lock.value}`);
+    // A relaxed lock (`give` set, alternatives-only) allows the value to fall by up
+    // to `give` (`>= value - give`); an exact lock (the optimum path) pins `= value`.
+    if (terms.length) {
+      L.push(lock.give != null
+        ? ` c${c++}: ${fmtExpr(terms, fb)} >= ${lock.value - lock.give}`
+        : ` c${c++}: ${fmtExpr(terms, fb)} = ${lock.value}`);
+    }
   }
 
   L.push("Bounds");
@@ -599,8 +612,12 @@ function readSolution(res, program) {
   const chosen = program.xVars.filter((xv) => prim(xv.name) > 0.5).map((xv) => ({ slot: xv.slot, variant: xv.variant }));
   const effective = {};
   for (const stat of program.targetList) {
-    if (program.cappedStats[stat] != null) effective[stat] = Math.round(prim("d_" + stat));
-    else effective[stat] = rawExpr(program, stat).reduce((sum, t) => sum + (prim(t.name) > 0.5 ? t.coef : 0), 0);
+    const raw = rawExpr(program, stat).reduce((sum, t) => sum + (prim(t.name) > 0.5 ? t.coef : 0), 0);
+    // For a capped stat, the achieved value is min(cap, raw) — NOT the d_ variable.
+    // In the optimum solve d_ is maximized so d_ == min(cap, raw), but an alternative
+    // relaxes the lock and leaves d_ floating at its lower bound, which would misreport
+    // the true (capped) value and invent a phantom cost. min(cap, raw) is right for both.
+    effective[stat] = program.cappedStats[stat] != null ? Math.min(program.cappedStats[stat], raw) : raw;
   }
   const augmentsPlaced = [];
   for (const [p, meta] of program.augMeta || []) if (prim(p) > 0.5) augmentsPlaced.push(meta);
@@ -662,6 +679,168 @@ async function solveLexicographic(model, highs) {
   };
 }
 
+// U1 (alternatives) — solve the existing program with relaxed locks + forced
+// constraints + a chosen gain objective, then a second tie-break minimize to pin
+// the chosen build deterministically (the gain optimize alone is degenerate). Returns
+// the same enriched shape solveLexicographic produces (readSolution fields + breakdown
+// + capped) so a selected alternative drives the shared renderers unchanged.
+// `locks` entries may carry `give` (relaxed: `>= value - give`); `extra` are raw LP
+// constraint bodies (e.g. a forced `set_active = 1`); the gain is `objectiveStat`
+// (a stat, maximized) or `objTerms` (an arbitrary linear expression, e.g. minimized
+// craft-placement binaries).
+function solveConstrained(program, highs, { objectiveStat, objTerms, sense = "max", locks = [], extra = [], tieBreak = true }) {
+  const fb = program.xVars[0].name;
+  // Phase 1: optimize the gain under the relaxed/forced constraints.
+  const r1 = highs.solve(encodeStage(program, { objectiveStat, objTerms, sense, locks, extra }));
+  if (r1.Status !== "Optimal") return { status: "infeasible" };
+  // The tie-break is a second full solve. It canonicalizes the build among equal-objective
+  // vertices, but HiGHS is already deterministic for identical input, so the optimum path
+  // keeps it (stable display) while on-demand alternatives skip it to halve solve count.
+  if (!tieBreak) {
+    const prim1 = (name) => (r1.Columns[name] ? r1.Columns[name].Primal : 0);
+    return { status: "optimal", ...readSolution(r1, program), breakdown: breakdownByTarget(program, prim1), capped: { ...program.cappedStats } };
+  }
+  const prim1 = (name) => (r1.Columns[name] ? r1.Columns[name].Primal : 0);
+  // Pin the achieved gain, then tie-break so the item set (not just the objective
+  // value) is deterministic — mirroring solveLexicographic's final tie-break stage.
+  let locks2 = locks, pin = [];
+  if (objTerms) {
+    const gainVal = Math.round(objTerms.reduce((s, t) => s + t.coef * prim1(t.name), 0));
+    pin = [`${fmtExpr(objTerms, fb)} = ${gainVal}`];
+  } else {
+    const gainVal = readSolution(r1, program).effective[objectiveStat] ?? 0;
+    locks2 = [...locks, { stat: objectiveStat, value: gainVal }];
+  }
+  const r2 = highs.solve(encodeStage(program, { tieBreak: true, sense: "min", locks: locks2, extra: [...extra, ...pin] }));
+  const res = r2.Status === "Optimal" ? r2 : r1;
+  const prim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
+  const sol = readSolution(res, program);
+  return { status: "optimal", ...sol, breakdown: breakdownByTarget(program, prim), capped: { ...program.cappedStats } };
+}
+
+// The bounded give allowed on a priority for an alternative: 10% or at least 2, so
+// the tolerance scales with the stat (Constitution ~40 vs Physical Sheltering ~150).
+function alternativeGive(value) { return Math.max(2, Math.round(0.10 * Math.abs(value))); }
+// Set activation is a categorical, high-value gain worth a more generous give, but
+// still bounded so it doesn't crater the other priorities (an unbounded set trade
+// produced -144 builds). 50% keeps it a real trade and drops the garbage ones fast.
+function setGive(value) { return Math.max(3, Math.round(0.50 * Math.abs(value))); }
+
+// Do two solutions equip the same item set? (build-equality for the zero-cost check.)
+function sameChosen(a, b) {
+  const key = (s) => s.chosen.map((c) => `${c.slot}:${c.variant.variant_id}`).sort().join("|");
+  return key(a) === key(b);
+}
+
+// Distinct affix/scaling stats an item can carry (for unranked-stat candidates).
+function modelStats(model) {
+  const s = new Set();
+  const add = (v) => {
+    for (const a of v.affixes || []) if (a.value > 0) s.add(a.stat);
+    for (const sc of v.scaling || []) s.add(sc.stat);
+  };
+  for (const slot of model.worn || []) for (const v of slot.variants || []) add(v);
+  for (const a of model.augments || []) add(a);
+  return s;
+}
+
+// U2 (alternatives) — produce candidate trade-off builds, one family per gain axis,
+// each a re-solve over the optimum's program (or, for unranked stats, a program
+// rebuilt to model that stat, since `buildProgram` only tracks the ranked targets).
+// Returns raw candidates `{ sol, gainAxis, meta }`; dedupe/analysis/ranking is U3.
+// `opts.cap` bounds the per-axis re-solve budget so on-demand generation stays fast.
+function generateAlternatives(optimum, model, highs, opts = {}) {
+  const program = optimum.program;
+  const targets = program.targetList;              // ranked priorities, in order
+  const per = optimum.perTarget || optimum.effective;
+  // Caps bound the on-demand generation latency: each candidate is a full MILP solve
+  // (~1s cold on a real dataset), so the generators are capped and skip the tie-break
+  // second solve (tieBreak:false) — HiGHS is deterministic without it.
+  const cap = { sets: 2, unranked: 2, rebalance: 6, ...(opts.cap || {}) };
+  const out = [];
+
+  // (a) set-activation — force each not-yet-active set active and maximize the top
+  // priority, but keep the other priorities within a generous-yet-bounded give
+  // (setGive) so completing a set stays a real trade instead of cratering the build.
+  // A set that cannot fit inside that give is proven infeasible fast and dropped.
+  const active = new Set((optimum.setsActive || []).map((s) => s.set));
+  const setLocks = targets.map((s) => ({ stat: s, value: per[s], give: setGive(per[s]) }));
+  const seenSets = new Set();
+  let sCount = 0, sTries = 0;
+  for (const [setVar, meta] of program.setMeta || []) {
+    if (sCount >= cap.sets || sTries >= cap.sets * 3) break;   // bound both hits and infeasible probes
+    if (active.has(meta.set) || seenSets.has(meta.set)) continue;
+    seenSets.add(meta.set);
+    sTries++;
+    const sol = solveConstrained(program, highs, { objectiveStat: targets[0], locks: setLocks, extra: [`${setVar} = 1`], tieBreak: false });
+    if (sol.status === "optimal" && !sameChosen(sol, optimum)) { out.push({ sol, gainAxis: "set", meta: { set: meta.set } }); sCount++; }
+  }
+
+  // (b) rebalance — relax ONLY the higher priority being traded from (by its give),
+  // keep the priorities ABOVE the maximized one pinned at optimum, and maximize a
+  // lower priority (which must be left unlocked so it can rise). Bounded: the pair
+  // space is C(n,2), so with many targets it is capped to keep generation interactive.
+  let rCount = 0;
+  outer:
+  for (let i = 0; i < targets.length; i++) {
+    for (let j = i + 1; j < targets.length; j++) {
+      if (rCount >= cap.rebalance) break outer;
+      rCount++;
+      const locks = targets.slice(0, j).map((s, k) => (k === i
+        ? { stat: s, value: per[s], give: alternativeGive(per[s]) }
+        : { stat: s, value: per[s] }));
+      const sol = solveConstrained(program, highs, { objectiveStat: targets[j], locks, tieBreak: false });
+      // Only a real trade: the traded-to priority must actually rise above the optimum.
+      if (sol.status === "optimal" && !sameChosen(sol, optimum) && (sol.effective[targets[j]] ?? 0) > (per[targets[j]] ?? 0))
+        out.push({ sol, gainAxis: "rebalance", meta: { from: targets[i], to: targets[j] } });
+    }
+  }
+
+  // (c) unranked-stat — the program does not model non-target stats, so rebuild it with
+  // the candidate stat appended as a target, lock the original targets at optimum, and
+  // maximize the stat (a zero-cost strict improvement); if that just re-finds the
+  // optimum, relax the lowest priority and try once more.
+  const targetSet = new Set(targets);
+  const unrankedCandidates = [...modelStats(model)].filter((s) => !targetSet.has(s)).slice(0, cap.unranked);
+  const originalExact = targets.map((s) => ({ stat: s, value: per[s] }));
+  for (const u of unrankedCandidates) {
+    const p2 = buildProgram({ ...model, targets: [...model.targets, u] });
+    if (!p2.xVars.length) continue;
+    let sol = solveConstrained(p2, highs, { objectiveStat: u, locks: originalExact, tieBreak: false });
+    let zeroCost = true;
+    if (sol.status === "optimal" && sameChosen(sol, optimum) && targets.length) {
+      zeroCost = false;
+      const relaxLowest = originalExact.map((l, k) => (k === originalExact.length - 1 ? { ...l, give: alternativeGive(l.value) } : l));
+      sol = solveConstrained(p2, highs, { objectiveStat: u, locks: relaxLowest, tieBreak: false });
+    }
+    if (sol.status === "optimal" && !sameChosen(sol, optimum)) out.push({ sol, gainAxis: "unranked", meta: { stat: u, zeroCost } });
+  }
+
+  // (d) fewer-crafts — minimize the sum of craft-placement binaries, allowing a bounded
+  // give on the priorities (only when the optimum actually uses crafts).
+  const craftVars = [
+    ...(program.augMeta ? program.augMeta.keys() : []), ...(program.dinoMeta ? program.dinoMeta.keys() : []),
+    ...(program.ncMeta ? program.ncMeta.keys() : []), ...(program.vikMeta ? program.vikMeta.keys() : []),
+    ...(program.sealMeta ? program.sealMeta.keys() : []),
+  ];
+  const optCrafts = (optimum.augmentsPlaced || []).length + (optimum.dinoPlaced || []).length
+    + (optimum.ncPlaced || []).length + (optimum.vikPlaced || []).length + (optimum.sealPlaced || []).length;
+  if (craftVars.length && optCrafts > 0) {
+    const relaxedAll = targets.map((s) => ({ stat: s, value: per[s], give: alternativeGive(per[s]) }));
+    const objTerms = craftVars.map((name) => ({ coef: 1, name }));
+    const sol = solveConstrained(program, highs, { objTerms, sense: "min", locks: relaxedAll, tieBreak: false });
+    const solCrafts = sol.status === "optimal"
+      ? (sol.augmentsPlaced || []).length + (sol.dinoPlaced || []).length
+        + (sol.ncPlaced || []).length + (sol.vikPlaced || []).length + (sol.sealPlaced || []).length
+      : optCrafts;
+    // Only surface when it genuinely uses fewer crafts (a same-count different build
+    // would headline "0 fewer crafting steps").
+    if (sol.status === "optimal" && !sameChosen(sol, optimum) && solCrafts < optCrafts) out.push({ sol, gainAxis: "crafts", meta: { optCrafts } });
+  }
+
+  return out;
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, solveLexicographic, scaleAt, breakdownByTarget, computeScale };
+  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, computeScale };
 }

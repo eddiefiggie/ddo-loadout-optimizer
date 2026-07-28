@@ -452,6 +452,35 @@ input.bumped { background: rgba(76,194,255,0.16); border-color: var(--accent); }
 .dd-chips { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
 .dd-none { font-size: var(--fs-sm); }
 
+/* alternatives (U4/U5): active-build banner + trade-off cards */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.active-build-bar[hidden] { display: none; }  /* class selector otherwise overrides the [hidden] attribute */
+.active-build-bar {
+  display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap;
+  padding: var(--sp-2) var(--sp-3); margin-bottom: var(--sp-3);
+  border: 1px solid var(--accent-2); border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, rgba(167,139,250,0.12), rgba(167,139,250,0.04));
+}
+.active-build-msg { color: var(--accent-2); font-size: var(--fs-sm); font-weight: 600; flex: 1 1 auto; }
+.return-optimum { min-height: 2.4rem; padding: 0 var(--sp-4); flex: none; }
+
+.alt-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: var(--sp-2); }
+.alt-card {
+  border: 1px solid var(--border-2); border-radius: var(--radius-sm);
+  background: var(--panel-2); padding: var(--sp-3); cursor: pointer;
+  display: flex; flex-direction: column; gap: var(--sp-1);
+}
+.alt-card:hover { border-color: var(--accent); }
+.alt-card[aria-selected="true"] { border-color: var(--accent-2); box-shadow: 0 0 0 1px var(--accent-2); }
+.alt-card:focus-visible { outline: none; box-shadow: var(--ring); }
+.alt-tags { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
+.alt-tag {
+  font-size: var(--fs-xs); color: var(--accent-2); background: rgba(167,139,250,0.12);
+  border: 1px solid rgba(167,139,250,0.35); border-radius: 999px; padding: 1px var(--sp-2);
+}
+.alt-gain { color: var(--optimal); font-size: var(--fs-sm); font-weight: 600; }
+.alt-cost { color: var(--muted); font-size: var(--fs-xs); }
+
 /* ============================================================================
    Sets
    ========================================================================== */
@@ -510,6 +539,7 @@ input.bumped { background: rgba(76,194,255,0.16); border-color: var(--accent); }
   main { padding: var(--sp-5); }
   .targets { grid-template-columns: repeat(2, 1fr); }
   .deepdive { grid-template-columns: repeat(2, 1fr); }
+  .alt-list { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* Option-B character paperdoll, front and centre: a large figure with the slots
