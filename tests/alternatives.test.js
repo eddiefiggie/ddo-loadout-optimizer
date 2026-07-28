@@ -4,6 +4,7 @@
 const assert = require("assert");
 const path = require("path");
 const S = require("../web/solver.js");
+const A = require("../web/alternatives.js");
 const vendor = path.join(__dirname, "..", "web", "vendor") + "/";
 const Highs = require(vendor + "highs.js");
 
@@ -141,6 +142,36 @@ const tradeModel = () => ({
     assert.strictEqual(un.meta.zeroCost, true, "the Fortitude gain costs no Strength");
     assert.strictEqual(un.sol.effective.Strength, 10, "Strength is unchanged");
     assert.ok(un.sol.chosen.some((c) => c.variant.variant_id === "Boots High"), "equips the higher-Fortitude boots");
+  });
+
+  // ---- U3: trade-off analysis, dedupe, ranking ----
+
+  await test("analyzeAlternative states the cost and the gain with tags", async () => {
+    const opt = await S.solveLexicographic(tradeModel(), highs);
+    const alts = S.generateAlternatives(opt, tradeModel(), highs);
+    const setCand = alts.find((a) => a.gainAxis === "set");
+    const an = A.analyzeAlternative(opt, setCand, { targets: ["Constitution"] });
+    assert.ok(an.tags.includes("set bonus"), "tagged as a set-bonus trade");
+    assert.deepStrictEqual(an.cost, [{ stat: "Constitution", delta: -7 }], "costs 7 Constitution");
+    assert.strictEqual(an.costText, "-7 Constitution");
+    assert.ok(/activates Alpha/.test(an.gainText), "names the gained set");
+  });
+
+  await test("rankAlternatives dedupes, drops within-K of the optimum, and caps to N", () => {
+    const optimum = { chosen: [{ slot: "Ring", variant: { variant_id: "R1" } }, { slot: "Neck", variant: { variant_id: "N1" } }, { slot: "Boots", variant: { variant_id: "B1" } }],
+      setsActive: [], augmentsPlaced: [], effective: {} };
+    const mk = (ids, axis, extra = {}) => A.analyzeAlternative(optimum,
+      { sol: { chosen: ids.map(([slot, id]) => ({ slot, variant: { variant_id: id } })), setsActive: [], augmentsPlaced: [], effective: {} }, gainAxis: axis, meta: extra },
+      { targets: [] });
+    const far = mk([["Ring", "R2"], ["Neck", "N2"], ["Boots", "B1"]], "set", { set: "X" });     // 2 slots differ -> kept
+    const near = mk([["Ring", "R2"], ["Neck", "N1"], ["Boots", "B1"]], "rebalance");             // 1 slot differs -> dropped (K=2)
+    const dup = mk([["Ring", "R2"], ["Neck", "N2"], ["Boots", "B1"]], "set", { set: "Y" });      // same build as `far`
+    const ranked = A.rankAlternatives([far, near, dup], optimum, { n: 5, k: 2 });
+    assert.strictEqual(ranked.length, 1, "near dropped (within K), dup deduped, far kept");
+    assert.strictEqual(ranked[0].key, far.key);
+    // ranking is deterministic across runs
+    const again = A.rankAlternatives([dup, near, far], optimum, { n: 5, k: 2 });
+    assert.deepStrictEqual(again.map((a) => a.key), ranked.map((a) => a.key));
   });
 
   console.log(`\n${passed} passed`);
