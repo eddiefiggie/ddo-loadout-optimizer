@@ -254,12 +254,13 @@ def build(seed: dict) -> dict:
     # Expand umbrella ability affixes ("All Ability Scores +15", "Well Rounded")
     # into the six concrete abilities so single-ability targets get credited.
     umbrella_mod.expand_variants(variants)
-    # Vecna "Lost Purpose": attach the chosen-set-membership slot (pool = the 11
-    # same-tier Vecna sets) to every item carrying a `lost_purpose` tier marker, so
-    # the solver can awaken one set on it at the Cannith Repurposing Station. The pool
-    # lives once in the set seed, not repeated on 44 items.
-    _vecna_seed = membership_mod.load_seed()
-    membership_mod.attach_lost_purpose_slots(variants, _vecna_seed)
+    # Vecna "Lost Purpose": the awaken defs come from the SAME set catalog that feeds
+    # intrinsic set members (single source of truth), so an awakened set gives the
+    # identical bonus + stat vocabulary as an intrinsically-completed one. Attach the
+    # chosen-set-membership slot (pool = same-tier Vecna sets that resolve to a def)
+    # to every item carrying a `lost_purpose` tier marker.
+    membership_defs = membership_mod.build_membership_set_defs(_set_catalog)  # reuse the catalog loaded above
+    membership_mod.attach_lost_purpose_slots(variants, membership_defs)
     variants, cov = verify_mod.apply(variants)          # per-affix verification gate
 
     # U3 — Isle of Dread Dino crafting: append pre-verified blank host variants
@@ -269,6 +270,11 @@ def build(seed: dict) -> dict:
     dino_seed = load_dino_seed()
     dino_blanks, dino_inserts, dino_sets, dino_cov = dino_mod.build_dino(dino_seed)
     variants = variants + dino_blanks
+    # U4 — Dino Set-Bonus: activate the chosen-set-membership slot on the Dinosaur
+    # Bone Armor/Helmet/Cloak Set-Bonus hosts (added here, after verify, since the
+    # blanks carry no base affixes). Same primitive as Vecna Lost Purpose; the 6 Dino
+    # sets are self-seeded from the same catalog, crafted at the Dinosaur Bone station.
+    membership_mod.attach_dino_set_bonus_slots(dino_blanks, membership_defs)
 
     # U81 Nearly Complete: expose the parametric choice-slot effect pool. Items
     # carrying a `nearly_complete: <category>` field draw one option from it (host
@@ -284,12 +290,6 @@ def build(seed: dict) -> dict:
     # keyed by seal_type. Items carrying `seal_slots` unseal one option from the
     # matching pool. Undeath sourced (Ritual Table); Fire/Gloom/Mist pending.
     sl = seal_mod.parse_seal(load_seal_seed())
-
-    # Chosen set-membership defs (Vecna Unleashed / Cannith Repurposing Station):
-    # the runtime table the solver self-seeds awaken-only set thresholds from. Unlike
-    # intrinsic sets (baked onto member items), an awaken-only set has no equipped
-    # member to register its threshold, so its tier definition is exported here (KTD4).
-    membership_defs = membership_mod.build_membership_set_defs(_vecna_seed)
 
     # Compendium roster: the complete named-item INDEX (name + slot + wiki link
     # for every named item on the wiki, harvested by category). Roster entries
