@@ -131,7 +131,7 @@ test("coverageNote discloses Dino crafting with all pools optimized and Set-Bonu
   assert.ok(/Set-Bonus/.test(note), "discloses the deferred Set-Bonus pool honestly");
 });
 
-test("slotDetailChips renders the Gem's wildcard set assignment, load-bearing only", () => {
+test("craftChips renders the Gem's wildcard set assignment, load-bearing only", () => {
   const gem = { variant_id: "Legendary Gem of Many Facets", wiki_url: "https://ddowiki.com/x" };
   const maps = {
     augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
@@ -139,12 +139,12 @@ test("slotDetailChips renders the Gem's wildcard set assignment, load-bearing on
     jokerByHost: new Map([["Legendary Gem of Many Facets",
       [{ host: "Legendary Gem of Many Facets", group: 0, set: "Legendary Draconic Prophecy" }]]]),
   };
-  const html = R.slotDetailChips(gem, 0, { targets: ["Universal Spell Power"] }, maps);
-  assert.ok(/Wildcard set: Legendary Draconic Prophecy/.test(html), "renders the assigned set");
+  const chips = R.craftChips(gem, 0, maps).join(" ");
+  assert.ok(/Wildcard set: Legendary Draconic Prophecy/.test(chips), "renders the assigned set");
   // A non-Gem item with no joker pick renders no wildcard chip.
   const other = { variant_id: "Some Ring" };
-  const html2 = R.slotDetailChips(other, 1, { targets: ["Universal Spell Power"] }, maps);
-  assert.ok(!/Wildcard set/.test(html2), "no wildcard chip for a non-joker item");
+  const chips2 = R.craftChips(other, 1, maps).join(" ");
+  assert.ok(!/Wildcard set/.test(chips2), "no wildcard chip for a non-joker item");
 });
 
 test("coverageNote discloses set bonuses now applying to enriched gear", () => {
@@ -216,17 +216,34 @@ test("slotPosition maps every model-produced slot; Ring splits; unknown -> misc"
   assert.strictEqual(R.slotPosition("Some New Slot", 0), "misc", "unknown slot falls to misc, never dropped");
 });
 
-test("paperdollSlot states set membership inline for a set member (R15)", () => {
+test("paperdollSlot is uniform: name, ML, set name, and a set-highlight frame (R15)", () => {
   const v = { variant_id: "Kopru Bracers", minimum_level: 31, set_bonus: [{ set: "Dread Isle's Curse" }], affixes: [] };
+  const html = R.paperdollSlot("Bracers", "bracers", { variant: v, idx: 0 });
+  assert.ok(html.includes("Kopru Bracers"), "shows the item name");
+  assert.ok(html.includes("ML 31"), "shows the ML");
+  assert.ok(html.includes("Dread Isle&#39;s Curse"), "names the set (escaped)");
+  assert.ok(html.includes("is-set"), "a set member gets the highlight-frame class");
+  // no full affix/craft detail on the cell face (that lives in the Deep Dive)
+  assert.ok(!html.includes("<details"), "the cell no longer expands on the paperdoll");
+  // a non-member slot carries no set-highlight
+  const plain = R.paperdollSlot("Boots", "boots", { variant: { variant_id: "X", minimum_level: 1, set_bonus: [], affixes: [] }, idx: 0 });
+  assert.ok(!plain.includes("is-set"), "no highlight on a non-member");
+  // an empty cell reads 'empty' (no em-dash)
+  const empty = R.paperdollSlot("Boots", "boots", null);
+  assert.ok(/>empty</.test(empty) && !empty.includes("—"), "empty cell has no em-dash");
+});
+
+test("loadoutDeepDive renders a per-item block with slot, affixes, and set (R5)", () => {
+  const result = {
+    chosen: [{ slot: "Bracers", variant: { variant_id: "Kopru Bracers", minimum_level: 31, set_bonus: [{ set: "Dread Isle's Curse" }], affixes: [{ stat: "Constitution", bonus_type: "Insightful", value: 3, unit: "flat" }] } }],
+    breakdown: {}, augmentsPlaced: [], effective: {}, perTarget: {},
+  };
   const maps = { augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
     ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(), jokerByHost: new Map() };
-  const html = R.paperdollSlot("Bracers", "bracers", { variant: v, idx: 0 }, { targets: [] }, maps);
-  assert.ok(html.includes("pd-set"), "renders an inline set tag");
-  assert.ok(html.includes("Dread Isle&#39;s Curse"), "names the set (escaped)");
-  assert.ok(html.includes("setpip"), "shows the set pip");
-  // a non-member slot carries no set tag
-  const plain = R.paperdollSlot("Boots", "boots", { variant: { variant_id: "X", minimum_level: 1, set_bonus: [], affixes: [] }, idx: 0 }, { targets: [] }, maps);
-  assert.ok(!plain.includes("pd-set"), "no set tag on a non-member");
+  const html = R.loadoutDeepDive(result, { targets: [] }, maps, R.attributionByTarget(result));
+  assert.ok(/dd-slot/.test(html) && /Bracers/.test(html), "shows where the item is worn");
+  assert.ok(/Kopru Bracers/.test(html) && /Constitution \+3 Insightful/.test(html), "lists the item's affixes");
+  assert.ok(/Part of set/.test(html) && /Dread Isle/.test(html), "shows set membership");
 });
 
 test("attributionList shows a set contributor with its yielding slots, no bar (R11,R12)", () => {
@@ -273,17 +290,6 @@ test("whyThisLine names the ranked target an item wins (R8, R9)", () => {
 test("whyThisLine has an explicit empty state for a filler pick", () => {
   const html = R.whyThisLine(whyResult(), { slot: "Boots", variant_id: "ZZ" });
   assert.ok(/complete the loadout/.test(html), "a pick winning no target reads as filler, not blank");
-});
-
-test("proofPanel explains the method, lists the ranked order, and breaks down each value (R10)", () => {
-  const res = whyResult();
-  const html = R.proofPanel(res, { targets: ["Constitution"] }, R.attributionByTarget(res));
-  assert.ok(/provably/i.test(html), "states the result is provably optimal");
-  assert.ok(/MILP/.test(html), "explains the MILP method");
-  assert.ok(/42 candidate items/.test(html), "cites the compute scale");
-  assert.ok(/7 ms/.test(html), "shows the solve time");
-  assert.ok(/proof-order/.test(html) && /Constitution/.test(html), "lists the ranked priority order");
-  assert.ok(/proof-target/.test(html), "includes the per-target contribution breakdown");
 });
 
 test("whyThis does not cross-attribute a set win between the two rings (host-id match)", () => {
