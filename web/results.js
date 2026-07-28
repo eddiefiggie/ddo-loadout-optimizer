@@ -509,6 +509,12 @@ function renderResults(container, { model, result, query, dataset, highs }) {
     renderBuild(build);
     q(".active-build-bar").hidden = !isAlt;
     if (isAlt) q(".active-build-msg").textContent = `Viewing alternative — ${label}`;
+    // Returning to the optimum: clear any card's selected state so the listbox does not
+    // report a selection while the optimum (not that alternative) is shown.
+    if (!isAlt) {
+      q("#rp-altspanel").querySelectorAll('.alt-card[aria-selected="true"]')
+        .forEach((c) => c.setAttribute("aria-selected", "false"));
+    }
     q("#rp-live").textContent = isAlt ? `Now viewing alternative: ${label}` : "Now viewing the optimal build";
   }
   q(".return-optimum").addEventListener("click", () => setActive(optimum, false));
@@ -525,6 +531,7 @@ function renderResults(container, { model, result, query, dataset, highs }) {
     }
     altState.computing = true;
     panel.innerHTML = `<p class="dd-none muted">Computing alternatives…</p>`;
+    q("#rp-live").textContent = "Computing alternative loadouts…";
     // Defer so the "computing" state paints before the synchronous re-solves run.
     setTimeout(() => {
       try {
@@ -535,9 +542,13 @@ function renderResults(container, { model, result, query, dataset, highs }) {
         panel.innerHTML = ranked.length ? renderAltCards(ranked)
           : `<p class="dd-none muted">No worthwhile trade-off build was found — the optimum is hard to beat for these priorities.</p>`;
         if (ranked.length) wireAltCards(panel, ranked, setActive);
+        q("#rp-live").textContent = ranked.length
+          ? `${ranked.length} alternative loadout${ranked.length === 1 ? "" : "s"} found.`
+          : "No worthwhile alternative loadouts were found.";
       } catch (e) {
         console.error(e);
         panel.innerHTML = `<p class="dd-none muted">Could not compute alternatives.</p><button class="q-edit alt-retry" type="button">Retry</button>`;
+        q("#rp-live").textContent = "Could not compute alternative loadouts.";
         const retry = panel.querySelector(".alt-retry");
         if (retry) retry.addEventListener("click", () => { altState.list = null; ensureAlternatives(); });
       }

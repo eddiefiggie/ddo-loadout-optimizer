@@ -612,8 +612,12 @@ function readSolution(res, program) {
   const chosen = program.xVars.filter((xv) => prim(xv.name) > 0.5).map((xv) => ({ slot: xv.slot, variant: xv.variant }));
   const effective = {};
   for (const stat of program.targetList) {
-    if (program.cappedStats[stat] != null) effective[stat] = Math.round(prim("d_" + stat));
-    else effective[stat] = rawExpr(program, stat).reduce((sum, t) => sum + (prim(t.name) > 0.5 ? t.coef : 0), 0);
+    const raw = rawExpr(program, stat).reduce((sum, t) => sum + (prim(t.name) > 0.5 ? t.coef : 0), 0);
+    // For a capped stat, the achieved value is min(cap, raw) — NOT the d_ variable.
+    // In the optimum solve d_ is maximized so d_ == min(cap, raw), but an alternative
+    // relaxes the lock and leaves d_ floating at its lower bound, which would misreport
+    // the true (capped) value and invent a phantom cost. min(cap, raw) is right for both.
+    effective[stat] = program.cappedStats[stat] != null ? Math.min(program.cappedStats[stat], raw) : raw;
   }
   const augmentsPlaced = [];
   for (const [p, meta] of program.augMeta || []) if (prim(p) > 0.5) augmentsPlaced.push(meta);
@@ -752,7 +756,7 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
   // Caps bound the on-demand generation latency: each candidate is a full MILP solve
   // (~1s cold on a real dataset), so the generators are capped and skip the tie-break
   // second solve (tieBreak:false) — HiGHS is deterministic without it.
-  const cap = { sets: 2, unranked: 2, ...(opts.cap || {}) };
+  const cap = { sets: 2, unranked: 2, rebalance: 6, ...(opts.cap || {}) };
   const out = [];
 
   // (a) set-activation — force each not-yet-active set active and maximize the top
@@ -774,14 +778,21 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
 
   // (b) rebalance — relax ONLY the higher priority being traded from (by its give),
   // keep the priorities ABOVE the maximized one pinned at optimum, and maximize a
-  // lower priority (which must be left unlocked so it can rise).
+  // lower priority (which must be left unlocked so it can rise). Bounded: the pair
+  // space is C(n,2), so with many targets it is capped to keep generation interactive.
+  let rCount = 0;
+  outer:
   for (let i = 0; i < targets.length; i++) {
     for (let j = i + 1; j < targets.length; j++) {
+      if (rCount >= cap.rebalance) break outer;
+      rCount++;
       const locks = targets.slice(0, j).map((s, k) => (k === i
         ? { stat: s, value: per[s], give: alternativeGive(per[s]) }
         : { stat: s, value: per[s] }));
       const sol = solveConstrained(program, highs, { objectiveStat: targets[j], locks, tieBreak: false });
-      if (sol.status === "optimal" && !sameChosen(sol, optimum)) out.push({ sol, gainAxis: "rebalance", meta: { from: targets[i], to: targets[j] } });
+      // Only a real trade: the traded-to priority must actually rise above the optimum.
+      if (sol.status === "optimal" && !sameChosen(sol, optimum) && (sol.effective[targets[j]] ?? 0) > (per[targets[j]] ?? 0))
+        out.push({ sol, gainAxis: "rebalance", meta: { from: targets[i], to: targets[j] } });
     }
   }
 
@@ -818,7 +829,13 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
     const relaxedAll = targets.map((s) => ({ stat: s, value: per[s], give: alternativeGive(per[s]) }));
     const objTerms = craftVars.map((name) => ({ coef: 1, name }));
     const sol = solveConstrained(program, highs, { objTerms, sense: "min", locks: relaxedAll, tieBreak: false });
-    if (sol.status === "optimal" && !sameChosen(sol, optimum)) out.push({ sol, gainAxis: "crafts", meta: { optCrafts } });
+    const solCrafts = sol.status === "optimal"
+      ? (sol.augmentsPlaced || []).length + (sol.dinoPlaced || []).length
+        + (sol.ncPlaced || []).length + (sol.vikPlaced || []).length + (sol.sealPlaced || []).length
+      : optCrafts;
+    // Only surface when it genuinely uses fewer crafts (a same-count different build
+    // would headline "0 fewer crafting steps").
+    if (sol.status === "optimal" && !sameChosen(sol, optimum) && solCrafts < optCrafts) out.push({ sol, gainAxis: "crafts", meta: { optCrafts } });
   }
 
   return out;
