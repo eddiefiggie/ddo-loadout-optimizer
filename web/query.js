@@ -37,6 +37,10 @@ window.App && window.App.ready((dataset) => {
       <button id="q-solve" type="button" class="primary">Solve</button>
     </div>
     <ol id="q-ranked" class="ranked"></ol>
+    <div id="q-summary" class="q-summary" hidden>
+      <span class="q-summary-text"></span>
+      <button id="q-edit" type="button" class="q-edit">Edit</button>
+    </div>
     <p id="q-status" class="status"></p>
     <div id="q-results"></div>`;
 
@@ -81,6 +85,19 @@ window.App && window.App.ready((dataset) => {
     // confirm the add landed at the bottom of the priority list
     bump($("q-ranked").lastElementChild && $("q-ranked").lastElementChild.querySelector(".rank-item"));
   }
+
+  // Collapse the query inputs into a one-line summary after a solve, so the
+  // paperdoll and results are front and centre; Edit expands them again.
+  function collapseSolver(q) {
+    root.querySelector(".q-summary-text").textContent =
+      `Solved for ${q.targets.join(", ")} at ML ${q.mlCap}`;
+    $("q-summary").hidden = false;
+    root.classList.add("q-collapsed");
+  }
+  $("q-edit").addEventListener("click", () => {
+    root.classList.remove("q-collapsed");
+    $("q-summary").hidden = true;
+  });
 
   // reflect a stepper change on the ML cap immediately (U3)
   $("q-ml").addEventListener("input", () => bump($("q-ml")));
@@ -136,6 +153,8 @@ window.App && window.App.ready((dataset) => {
       $("q-status").textContent = result.status === "optimal" ? `Solved in ${ms} ms.` : "";
       // eslint-disable-next-line no-undef
       renderResults($("q-results"), { model, result, query, dataset });
+      // Roll up the query panel so the paperdoll + results are front and centre.
+      if (result.status === "optimal") collapseSolver(query);
     } catch (err) {
       $("q-status").textContent = `Solver error: ${err.message}`;
       console.error(err);

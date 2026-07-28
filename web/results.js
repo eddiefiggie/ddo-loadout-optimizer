@@ -271,61 +271,73 @@ function safeUrl(u) {
   return /^https?:\/\//i.test(String(u || "")) ? esc(u) : "#";
 }
 
-// Build the per-slot detail chips (contributing affixes + every craft prescription).
-function slotDetailChips(v, idx, query, maps) {
-  const contrib = contributingAffixes(v, query.targets)
-    .map((a) => `<span class="chip">${esc(affixLabel(a))}</span>`).join(" ");
+// Craft/augment prescriptions applied to an equipped item (augments, Dino inserts,
+// Nearly Complete, choice slots, Viktranium, seals, wildcard), as labeled chips.
+// Used by the Loadout Deep Dive so every applied bonus is visible. Returns an array.
+function craftChips(v, idx, maps) {
+  const lbl = (o) => esc(affixLabel({ stat: o.stat, bonus_type: o.bonus_type, value: o.value, unit: o.unit || "flat" }));
   const augs = (maps.augAssign.byIndex.get(idx) || []).map((a) => {
     const where = a.slot_color && a.slot_color !== a.color ? `${a.color} in ${a.slot_color} slot` : (a.color || "");
-    return `<span class="chip aug" title="augment slotted (${esc(where)})">${esc(a.variant_id)} <span class="muted">(${esc(where)})</span></span>`;
-  }).join(" ");
+    return `<span class="chip aug" title="augment slotted">${esc(a.variant_id)} <span class="muted">(${esc(where)})</span></span>`;
+  });
   const dinos = (maps.dinoAssign.byIndex.get(idx) || []).map((d) => {
-    const affixes = (d.affixes && d.affixes.length) ? d.affixes
-      : [{ stat: d.stat, bonus_type: d.bonus_type, value: d.value, unit: d.unit || "flat" }];
-    const label = affixes.map((a) => affixLabel({ stat: a.stat, bonus_type: a.bonus_type, value: a.value, unit: a.unit || "flat" })).join(", ");
-    return `<span class="chip dino" title="Isle of Dread ${esc(d.dino_type)} insert">${esc(d.dino_type)}: ${d.name ? esc(d.name) + " — " : ""}${esc(label)}</span>`;
-  }).join(" ");
-  const ncs = (maps.ncByItem.get(v.variant_id) || [])
-    .map((n) => `<span class="chip nc" title="U81 Nearly Complete (${esc(n.category)}, ${esc(n.tier)})">Nearly Complete: ${esc(affixLabel({ stat: n.stat, bonus_type: n.bonus_type, value: n.value, unit: n.unit || "flat" }))}</span>`).join(" ");
-  const rolls = (maps.rollByItem.get(v.variant_id) || [])
-    .map((r) => `<span class="chip roll" title="choice-slot: best option selected">Choice: ${esc(affixLabel({ stat: r.stat, bonus_type: r.bonus_type, value: r.value, unit: r.unit || "flat" }))}</span>`).join(" ");
-  const viks = (maps.vikByItem.get(v.variant_id) || [])
-    .map((n) => `<span class="chip lamordia" title="U81 Viktranium / Lamordia (${esc(n.slot_type)} ${esc(n.category)}, ${esc(n.tier)})">Lamordia ${esc(n.slot_type)}: ${esc(affixLabel({ stat: n.stat, bonus_type: n.bonus_type, value: n.value, unit: n.unit || "flat" }))}</span>`).join(" ");
-  const seals = (maps.sealByItem.get(v.variant_id) || [])
-    .map((n) => `<span class="chip seal" title="Sealed in ${esc(n.seal_type)} — unseal one effect at the crafting table">Sealed in ${esc(n.seal_type)}: ${esc(affixLabel({ stat: n.stat, bonus_type: n.bonus_type, value: n.value, unit: n.unit || "flat" }))}</span>`).join(" ");
-  const jokers = (maps.jokerByHost && maps.jokerByHost.get(v.variant_id) || [])
-    .map((j) => `<span class="chip joker" title="wildcard set piece — assigned to the set it best completes">Wildcard set: ${esc(j.set)}</span>`).join(" ");
-  const link = v.wiki_url ? `<a href="${safeUrl(v.wiki_url)}" target="_blank" rel="noopener">wiki ↗</a>` : "";
-  const chips = [contrib, augs, dinos, ncs, rolls, viks, seals, jokers].filter(Boolean).join(" ");
-  return `<div>${chips || '<span class="muted">— no target-relevant affixes —</span>'}</div>${link ? `<div class="pd-craftline">${link}</div>` : ""}`;
+    const affixes = (d.affixes && d.affixes.length) ? d.affixes : [d];
+    const label = affixes.map(lbl).join(", ");
+    return `<span class="chip dino" title="Isle of Dread insert">${esc(d.dino_type)}: ${d.name ? esc(d.name) + ", " : ""}${label}</span>`;
+  });
+  const ncs = (maps.ncByItem.get(v.variant_id) || []).map((n) => `<span class="chip nc" title="U81 Nearly Complete">Nearly Complete: ${lbl(n)}</span>`);
+  const rolls = (maps.rollByItem.get(v.variant_id) || []).map((r) => `<span class="chip roll" title="choice slot, best option selected">Choice: ${lbl(r)}</span>`);
+  const viks = (maps.vikByItem.get(v.variant_id) || []).map((n) => `<span class="chip lamordia" title="U81 Viktranium / Lamordia">Lamordia ${esc(n.slot_type)}: ${lbl(n)}</span>`);
+  const seals = (maps.sealByItem.get(v.variant_id) || []).map((n) => `<span class="chip seal" title="unseal one effect at the crafting table">Sealed in ${esc(n.seal_type)}: ${lbl(n)}</span>`);
+  const jokers = ((maps.jokerByHost && maps.jokerByHost.get(v.variant_id)) || []).map((j) => `<span class="chip joker" title="wildcard set piece">Wildcard set: ${esc(j.set)}</span>`);
+  return [...augs, ...dinos, ...ncs, ...rolls, ...viks, ...seals, ...jokers];
 }
 
-// The set(s) an equipped piece belongs to, stated inline on its slot (R15).
+// The set(s) an equipped piece belongs to, stated on its slot (R15).
 function slotSetNames(v) {
   return [...new Set((v.set_bonus || []).map((s) => s.set).filter(Boolean))];
 }
 
-// One paperdoll slot cell. `pick` is {variant, idx} or null for an empty slot.
-// `label` is the displayed slot name (lets the weapon cell read "Off Hand" when
-// empty but "Rune Arm" when the solver equips one — KTD10). `extra` is optional
-// trailing markup inside the summary (e.g. the per-item "why this?" affordance).
-function paperdollSlot(label, pos, pick, query, maps, extra) {
+// One paperdoll slot cell: uniform, fixed-size, showing only the item name, ML,
+// and the set it belongs to. A set piece gets a themed highlight frame (.is-set).
+// Full affixes/crafts live in the Loadout Deep Dive tab, not on the cell.
+function paperdollSlot(label, pos, pick) {
   if (!pick) {
-    return `<div class="pd-slot empty pos-${pos}"><div class="pd-label">${esc(label)}</div><div class="pd-item"><span class="muted">— empty —</span></div></div>`;
+    return `<div class="pd-slot empty pos-${pos}"><div class="pd-label">${esc(label)}</div><div class="pd-item muted">empty</div></div>`;
   }
   const v = pick.variant;
   const sets = slotSetNames(v);
-  const setTag = sets.length
-    ? `<div class="pd-set" title="set member">${sets.map((s) => `<span class="setpip"></span>${esc(s)}`).join(" · ")}</div>` : "";
-  return `<details class="pd-slot occupied pos-${pos}">
-    <summary>
-      <div class="pd-label">${esc(label)}</div>
-      <div class="pd-item"><span>${esc(v.variant_id)}</span><span class="ml">ML ${esc(v.minimum_level ?? "—")}</span></div>
-      ${setTag}
-      ${extra || ""}
-    </summary>
-    <div class="pd-detail">${slotDetailChips(v, pick.idx, query, maps)}</div>
-  </details>`;
+  const setLine = sets.length ? `<div class="pd-setname" title="part of a set bonus">${esc(sets.join(", "))}</div>` : "";
+  return `<div class="pd-slot occupied pos-${pos}${sets.length ? " is-set" : ""}">
+    <div class="pd-label">${esc(label)}</div>
+    <div class="pd-item" title="${esc(v.variant_id)}">${esc(v.variant_id)}</div>
+    <div class="pd-foot"><span class="pd-ml">ML ${esc(v.minimum_level ?? "?")}</span>${setLine}</div>
+  </div>`;
+}
+
+// Loadout Deep Dive: one block per equipped item showing where it is worn, its
+// affixes, its set membership, and every applied craft/augment (R5 detail moved
+// off the paperdoll cell into this tab).
+function loadoutDeepDive(result, query, maps, attr) {
+  if (!result.chosen.length) return `<p class="dd-none muted">No items equipped for this build.</p>`;
+  return `<div class="deepdive">${result.chosen.map((c, idx) => {
+    const v = c.variant;
+    const sets = slotSetNames(v);
+    const affixes = (v.affixes || []).length
+      ? `<ul class="dd-list">${v.affixes.map((a) => `<li>${esc(affixLabel(a))}</li>`).join("")}</ul>`
+      : `<p class="dd-none muted">No parsed affixes on this item.</p>`;
+    const crafts = craftChips(v, idx, maps);
+    const craftBlock = crafts.length
+      ? `<div class="dd-crafts"><h5>Applied crafting &amp; augments</h5><div class="dd-chips">${crafts.join(" ")}</div></div>` : "";
+    const wiki = v.wiki_url ? `<a class="dd-wiki" href="${safeUrl(v.wiki_url)}" target="_blank" rel="noopener">wiki</a>` : "";
+    return `<div class="dd-item${sets.length ? " is-set" : ""}">
+      <div class="dd-head"><span class="dd-slot">${esc(c.slot)}</span><span class="dd-name">${esc(v.variant_id)}</span><span class="dd-ml">ML ${esc(v.minimum_level ?? "?")}</span>${wiki}</div>
+      ${whyThisLine(result, { slot: c.slot, variant_id: v.variant_id }, attr)}
+      ${sets.length ? `<div class="dd-set"><span class="setpip"></span>Part of set: ${esc(sets.join(", "))}</div>` : ""}
+      <div class="dd-affixes"><h5>Affixes</h5>${affixes}</div>
+      ${craftBlock}
+    </div>`;
+  }).join("")}</div>`;
 }
 
 // Front-facing armored-adventurer silhouette for the paperdoll centre (decorative).
@@ -463,19 +475,24 @@ function renderResults(container, { model, result, query, dataset }) {
 
   // --- hero: ranked-target readout (R1, R2, R3, R7) ---
   const cs = result.computeScale || { variants: 0, crafts: 0, stages: 0 };
-  // The verdict is a tap/keyboard-openable explanation (R7) — native <details>,
-  // so it works on touch (no hover) and via keyboard, not a hover-only tooltip.
+  // The verdict is a tap/keyboard-openable explanation (R7): native <details>, so
+  // it works on touch (no hover) and via keyboard. Explains MILP plainly + links
+  // an academic source for readers who want the real math.
   const banner = `
     <div class="solve-banner">
       <details class="solve-explain">
-        <summary class="solve-verdict"><span class="dot"></span><span class="label">OPTIMAL</span><span class="sub">· exact MILP, provably best</span><span class="explain-hint" aria-hidden="true">ⓘ</span></summary>
-        <div class="solve-explain-body">Every legal combination of your gear was checked as an exact math problem — this loadout is <strong>provably the best</strong> for your ranked priorities, not a guess or estimate. Each equipped item below shows exactly what it wins.</div>
+        <summary class="solve-verdict"><span class="dot"></span><span class="label">OPTIMAL</span><span class="sub">provably the best build, not a guess</span><span class="explain-hint" aria-hidden="true">ⓘ</span></summary>
+        <div class="solve-explain-body">
+          <p><strong>What "MILP" means.</strong> It stands for Mixed-Integer Linear Program. In plain terms: the optimizer turns your whole loadout into a math problem where equipping each item is a yes-or-no switch, then finds the one combination of switches that scores highest on your ranked priorities. It does not sample or guess. It effectively checks every legal combination and proves that none does better, so the result is <strong>provably optimal</strong>.</p>
+          <p>A low-level item can still win a slot when its bonus genuinely beats every higher-level option for something you ranked.</p>
+          <p class="learn-more">Curious about the real math? See UC Berkeley's free <a href="https://people.eecs.berkeley.edu/~vazirani/algorithms/chap7.pdf" target="_blank" rel="noopener">Algorithms textbook chapter on Linear Programming</a>.</p>
+        </div>
       </details>
       <div class="solve-scale">
         <div class="scale-item" title="Candidate item variants the solver weighed across your slots"><span class="n">${esc(cs.variants)}</span><span class="k">gear considered</span></div>
         <div class="scale-item" title="Augment and expansion-crafting options considered"><span class="n">${esc(cs.crafts)}</span><span class="k">craft choices</span></div>
         <div class="scale-item" title="One optimization pass per ranked priority, plus a final tie-break"><span class="n">${esc(cs.stages)}</span><span class="k">priority passes</span></div>
-        <div class="scale-item" title="Wall-clock solve time"><span class="n">${esc(result.solveMs ?? "—")}</span><span class="k">solve ms</span></div>
+        <div class="scale-item" title="Wall-clock solve time"><span class="n">${esc(result.solveMs ?? "?")}</span><span class="k">solve ms</span></div>
       </div>
     </div>`;
 
@@ -514,32 +531,30 @@ function renderResults(container, { model, result, query, dataset }) {
       // so the Rune-Arm cell reads "Off Hand" when empty and "Rune Arm" when the
       // solver actually equips one — a chosen Rune Arm is shown, never dropped.
       const label = pos === "offhand" && !pick ? "Off Hand" : slot.slot;
-      const extra = pick ? whyThisLine(result, { slot: slot.slot, variant_id: pick.variant.variant_id }, attr) : "";
-      const cell = paperdollSlot(label, pos, pick, query, maps, extra);
+      const cell = paperdollSlot(label, pos, pick);
       if (pos in WEAPON_POS) weapon[WEAPON_POS[pos]] = cell;
       else paired.push(cell);
     }
   }
   const weaponCells = weapon
-    .map((c, i) => c || paperdollSlot(WEAPONS[i].label, WEAPONS[i].pos, null, query, maps))
+    .map((c, i) => c || paperdollSlot(WEAPONS[i].label, WEAPONS[i].pos, null))
     .join("");
 
-  // --- sets (R6, R12, R16): state the granted stats + which slots yield them ---
+  // --- Set Bonuses tab (R6, R12, R16): granted stats + which slots yield them ---
   const active = activeSetDetail(result).map((s) => {
     const grants = s.affixes.length ? esc(s.affixes.map(affixLabel).join(", ")) : "bonus active";
     const via = s.slots.length ? `<div class="set-via">yielded by ${esc(s.slots.join(", "))}</div>` : "";
     return `<li class="set-card">
-      <strong>${esc(s.set)}</strong> <span class="meta">— ${esc(s.pieces)} pieces</span>
+      <strong>${esc(s.set)}</strong> <span class="meta">${esc(s.pieces)} pieces</span>
       <div class="set-grants">${grants}</div>${via}</li>`;
   }).join("");
   const nearMiss = nearMissSetHints(result.chosen, query.targets).map((h) =>
-    `<li class="set-card near"><strong>${esc(h.set)}</strong> <span class="meta">(${esc(h.have)}/${esc(h.need)}) — one more piece adds ${esc(h.affixes.map(affixLabel).join(", "))}</span></li>`).join("");
-  const setsBlock = (active || nearMiss) ? `
-    <div class="sets-section">
-      <h3 class="section-title">Set bonuses</h3>
-      <ul class="sets">${active}${nearMiss}</ul>
-    </div>` : "";
+    `<li class="set-card near"><strong>${esc(h.set)}</strong> <span class="meta">(${esc(h.have)}/${esc(h.need)})</span><div class="set-via">one more piece adds ${esc(h.affixes.map(affixLabel).join(", "))}</div></li>`).join("");
+  const setsPanel = (active || nearMiss)
+    ? `<ul class="sets">${active}${nearMiss}</ul>`
+    : `<p class="dd-none muted">No set bonuses are active for this build.</p>`;
 
+  // Result tabs beneath the paperdoll: Ranked Priorities | Set Bonuses | Deep Dive.
   container.innerHTML = `
     ${banner}
     <div class="readout-doll">
@@ -547,16 +562,56 @@ function renderResults(container, { model, result, query, dataset }) {
       <div class="pd-weapons">${weaponCells}</div>
     </div>
     <div class="readout-analysis">
-      <div class="readout-hero">
-        <h3 class="section-title">Achieved — ranked priority</h3>
-        <div class="targets">${cards}</div>
-        ${setsBlock}
+      <div class="result-tabs" role="tablist" aria-label="Result details">
+        <button class="rtab" role="tab" id="rt-ranked" aria-controls="rp-ranked" aria-selected="true" tabindex="0" type="button">Ranked Priorities</button>
+        <button class="rtab" role="tab" id="rt-sets" aria-controls="rp-sets" aria-selected="false" tabindex="-1" type="button">Set Bonuses</button>
+        <button class="rtab" role="tab" id="rt-deep" aria-controls="rp-deep" aria-selected="false" tabindex="-1" type="button">Loadout Deep Dive</button>
       </div>
+      <section id="rp-ranked" class="rpanel" role="tabpanel" aria-labelledby="rt-ranked" tabindex="0">
+        <div class="targets">${cards}</div>
+      </section>
+      <section id="rp-sets" class="rpanel" role="tabpanel" aria-labelledby="rt-sets" tabindex="0" hidden>
+        ${setsPanel}
+      </section>
+      <section id="rp-deep" class="rpanel" role="tabpanel" aria-labelledby="rt-deep" tabindex="0" hidden>
+        ${loadoutDeepDive(result, query, maps, attr)}
+      </section>
     </div>`;
 
+  wireResultTabs(container);
   animateCounters(container);
 }
 
+// Wire the result sub-tabs (Ranked / Sets / Deep Dive). Re-run on every render.
+function wireResultTabs(container) {
+  const tablist = container.querySelector(".result-tabs");
+  if (!tablist) return;
+  const tabs = [...tablist.querySelectorAll('[role="tab"]')];
+  const show = (id, focus) => tabs.forEach((t) => {
+    const on = t.getAttribute("aria-controls") === id;
+    t.setAttribute("aria-selected", on ? "true" : "false");
+    t.tabIndex = on ? 0 : -1;
+    if (on && focus) t.focus();
+    const p = container.querySelector("#" + t.getAttribute("aria-controls"));
+    if (p) p.hidden = !on;
+  });
+  tablist.addEventListener("click", (e) => {
+    const t = e.target.closest('[role="tab"]');
+    if (t) show(t.getAttribute("aria-controls"), false);
+  });
+  tablist.addEventListener("keydown", (e) => {
+    const i = tabs.findIndex((t) => t.getAttribute("aria-selected") === "true");
+    let j = null;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") j = (i + 1) % tabs.length;
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") j = (i - 1 + tabs.length) % tabs.length;
+    else if (e.key === "Home") j = 0;
+    else if (e.key === "End") j = tabs.length - 1;
+    if (j != null) { e.preventDefault(); show(tabs[j].getAttribute("aria-controls"), true); }
+  });
+  // Enforce the initial active panel deterministically (Ranked Priorities first).
+  show(tabs[0].getAttribute("aria-controls"), false);
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, slotDetailChips, esc, safeUrl };
+  module.exports = { renderResults, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, craftChips, loadoutDeepDive, esc, safeUrl };
 }
