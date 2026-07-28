@@ -32,7 +32,10 @@ def test_no_planner_name_collides_with_prior_shards():
         if os.path.basename(f) == "enriched_planner_ml29.json":
             continue
         for it in json.load(open(f, encoding="utf-8")).get("items", []):
-            if it.get("name"):
+            # Marker-only carriers (seal / Lost Purpose) intentionally share a name with
+            # the item they annotate — they never claim a body, so they are not a
+            # colliding record. Only real bodies count toward a collision.
+            if it.get("name") and not it.get("_seal_carrier") and not it.get("_lost_purpose_carrier"):
                 prior.add(it["name"])
     seen = set()
     for it in _shard()["items"]:

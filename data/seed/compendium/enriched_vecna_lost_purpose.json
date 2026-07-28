@@ -1,0 +1,274 @@
+{
+ "metadata": {
+  "system": "Vecna Unleashed 'Lost Purpose' items (Cannith Repurposing Station chosen-set-membership hosts)",
+  "note": "44 Lost Purpose marker carriers (40 University items from Update 61 + 4 Page Regalia raid cloaks). Each item's stat body already ships solver-active via other shards; these records carry ONLY the `lost_purpose: heroic|legendary` tier marker, grafted onto the winning record in build_dataset Pass 2 (KTD6 — never claim a body, never double-list). The build then attaches set_membership_slot (pool = same-tier Vecna sets) so the item awakens one set at the Cannith Repurposing Station. Roster sourced from ddowiki via Claude-in-Chrome.",
+  "harvested": "2026-07-28",
+  "count": 44
+ },
+ "items": [
+  {
+   "name": "Legendary University Bulwark's Outfit",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_University_Bulwark%27s_Outfit"
+  },
+  {
+   "name": "Legendary University Bulwark's Robe",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_University_Bulwark%27s_Robe"
+  },
+  {
+   "name": "Legendary University Spellshield's Outfit",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_University_Spellshield%27s_Outfit"
+  },
+  {
+   "name": "Legendary University Spellshield's Robe",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_University_Spellshield%27s_Robe"
+  },
+  {
+   "name": "University Bulwark's Outfit",
+   "lost_purpose": "heroic",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:University_Bulwark%27s_Outfit"
+  },
+  {
+   "name": "University Bulwark's Robe",
+   "lost_purpose": "heroic",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:University_Bulwark%27s_Robe"
+  },
+  {
+   "name": "University Spellshield's Outfit",
+   "lost_purpose": "heroic",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:University_Spellshield%27s_Outfit"
+  },
+  {
+   "name": "University Spellshield's Robe",
+   "lost_purpose": "heroic",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:University_Spellshield%27s_Robe"
+  },
+  {
+   "name": "Legendary University Bulwark's Docent",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_University_Bulwark%27s_Docent"
+  },
+  {
+   "name": "Legendary University Spellshield's Docent",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_University_Spellshield%27s_Docent"
+  },
+  {
+   "name": "University Bulwark's Docent",
+   "lost_purpose": "heroic",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:University_Bulwark%27s_Docent"
+  },
+  {
+   "name": "University Spellshield's Docent",
+   "lost_purpose": "heroic",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:University_Spellshield%27s_Docent"
+  },
+  {
+   "name": "Legendary University Bulwark's Platemail",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_University_Bulwark%27s_Platemail"
+  },
+  {
+   "name": "Legendary University Spellshield's Platemail",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_University_Spellshield%27s_Platemail"
+  },
+  {
+   "name": "University Bulwark's Platemail",
+   "lost_purpose": "heroic",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:University_Bulwark%27s_Platemail"
+  },
+  {
+   "name": "University Spellshield's Platemail",
+   "lost_purpose": "heroic",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:University_Spellshield%27s_Platemail"
+  },
+  {
+   "name": "Legendary University Bulwark's Reinforced Shirt",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_University_Bulwark%27s_Reinforced_Shirt"
+  },
+  {
+   "name": "Legendary University Spellshield's Reinforced Shirt",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_University_Spellshield%27s_Reinforced_Shirt"
+  },
+  {
+   "name": "University Bulwark's Reinforced Shirt",
+   "lost_purpose": "heroic",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:University_Bulwark%27s_Reinforced_Shirt"
+  },
+  {
+   "name": "University Spellshield's Reinforced Shirt",
+   "lost_purpose": "heroic",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:University_Spellshield%27s_Reinforced_Shirt"
+  },
+  {
+   "name": "Legendary University Bulwark's Coat",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_University_Bulwark%27s_Coat"
+  },
+  {
+   "name": "Legendary University Spellshield's Coat",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_University_Spellshield%27s_Coat"
+  },
+  {
+   "name": "University Bulwark's Coat",
+   "lost_purpose": "heroic",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:University_Bulwark%27s_Coat"
+  },
+  {
+   "name": "University Spellshield's Coat",
+   "lost_purpose": "heroic",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:University_Spellshield%27s_Coat"
+  },
+  {
+   "name": "Legendary University Defender's Cloak",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_University_Defender%27s_Cloak"
+  },
+  {
+   "name": "University Defender's Cloak",
+   "lost_purpose": "heroic",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:University_Defender%27s_Cloak"
+  },
+  {
+   "name": "Legendary University Duelist's Cloak",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_University_Duelist%27s_Cloak"
+  },
+  {
+   "name": "University Duelist's Cloak",
+   "lost_purpose": "heroic",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:University_Duelist%27s_Cloak"
+  },
+  {
+   "name": "Legendary University Archer's Cloak",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_University_Archer%27s_Cloak"
+  },
+  {
+   "name": "University Archer's Cloak",
+   "lost_purpose": "heroic",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:University_Archer%27s_Cloak"
+  },
+  {
+   "name": "Legendary University Sentry's Helm",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_University_Sentry%27s_Helm"
+  },
+  {
+   "name": "University Sentry's Helm",
+   "lost_purpose": "heroic",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:University_Sentry%27s_Helm"
+  },
+  {
+   "name": "University Investigator's Hat",
+   "lost_purpose": "heroic",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:University_Investigator%27s_Hat"
+  },
+  {
+   "name": "Legendary University Investigator's Hat",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_University_Investigator%27s_Hat"
+  },
+  {
+   "name": "University Champion's Helm",
+   "lost_purpose": "heroic",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:University_Champion%27s_Helm"
+  },
+  {
+   "name": "Legendary University Champion's Helm",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_University_Champion%27s_Helm"
+  },
+  {
+   "name": "University Mage's Hat",
+   "lost_purpose": "heroic",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:University_Mage%27s_Hat"
+  },
+  {
+   "name": "Legendary University Mage's Hat",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_University_Mage%27s_Hat"
+  },
+  {
+   "name": "University Researcher's Cloak",
+   "lost_purpose": "heroic",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:University_Researcher%27s_Cloak"
+  },
+  {
+   "name": "Legendary University Researcher's Cloak",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_University_Researcher%27s_Cloak"
+  },
+  {
+   "name": "Page Regalia: Blasphemer's Manuscript",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Page_Regalia%3A_Blasphemer%27s_Manuscript"
+  },
+  {
+   "name": "Page Regalia: Divinity's Hand",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Page_Regalia%3A_Divinity%27s_Hand"
+  },
+  {
+   "name": "Page Regalia: Exiled Tactica",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Page_Regalia%3A_Exiled_Tactica"
+  },
+  {
+   "name": "Page Regalia: Unsanctioned Arcana",
+   "lost_purpose": "legendary",
+   "_lost_purpose_carrier": true,
+   "wiki_url": "https://ddowiki.com/page/Item:Page_Regalia%3A_Unsanctioned_Arcana"
+  }
+ ]
+}
