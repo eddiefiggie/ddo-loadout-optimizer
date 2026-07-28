@@ -229,6 +229,32 @@ test("dominates: an affix item does NOT dominate a seal host it can't match", ()
   assert.strictEqual(kept.length, 2, "the seal host survives per-slot dominance");
 });
 
+test("dominates: an affix item does NOT dominate a chosen set-membership host it can't match", () => {
+  // Regression: a Lost Purpose / Dino Set-Bonus host's value lives in
+  // set_membership_slot.pool (which sets it can awaken toward a threshold), outside
+  // variantBuckets AND set_bonus. A stronger plain-affix rival lacking the slot must
+  // NOT prune it (the same trap as Dino blanks / seal / joker hosts).
+  const real = v("Real", "Helmet", [["Constitution", "Enhancement", 12]]);
+  const host = v("Host", "Helmet", [["Constitution", "Enhancement", 8]]);
+  host.set_membership_slot = { pool: ["Legendary Vol's Influence"], station: "Cannith Repurposing Station" };
+  const targets = new Set(["Constitution"]);
+  assert.strictEqual(M.dominates(real, host, targets, 34), false,
+    "a rival lacking the membership slot cannot dominate the host");
+  const kept = M.dominanceFilter([real, host], targets, 34, 1);
+  assert.strictEqual(kept.length, 2, "the membership host survives per-slot dominance");
+});
+
+test("dominanceFilter keeps a dominated membership host in a multi-pick slot", () => {
+  // Two Rings that can both awaken the same set: A dominates B on the target, but in a
+  // cardinality-2 slot both are needed to reach a piece threshold, so neither is pruned.
+  const A = v("RingA", "Ring", [["Strength", "Enhancement", 10]]);
+  const B = v("RingB", "Ring", [["Strength", "Enhancement", 6]]);
+  B.set_membership_slot = { pool: ["Legendary Vol's Influence"] };
+  A.set_membership_slot = { pool: ["Legendary Vol's Influence"] };
+  const kept2 = M.dominanceFilter([A, B], new Set(["Strength"]), 30, 2);
+  assert.strictEqual(kept2.length, 2, "both membership hosts survive in a cardinality-2 slot");
+});
+
 test("dominates: a Viktranium host at a DIFFERENT tier is not matched", () => {
   // Tier is part of the slot key: a heroic host cannot stand in for a legendary
   // host's craft, so it must not dominate it even with identical (type, category).
