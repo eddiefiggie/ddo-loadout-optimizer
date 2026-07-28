@@ -1,0 +1,168 @@
+{
+  "metadata": {
+    "system": "Vecna Unleashed chosen-set-membership sets (Cannith Repurposing Station / Lost Purpose)",
+    "note": "The 44 Lost Purpose items awaken ONE of these 11 sets at the Cannith Repurposing Station (single-pick, mutually exclusive). Each set has a Heroic (ML18) and a Legendary (ML32) variant. Forbidden Knowledge is Profane and ALSO has fixed intrinsic members (Fire Over Morgrave raid weapons/shields + named orbs/trinkets/etc.), plus a multi-threshold 3/4/5 structure; the other 10 are Artifact, awaken-only, single 3-piece threshold. A few lines are a distinct 'Legendary' bonus type (Spell Critical Damage / Maximum Hit Points). Sourced verbatim from ddowiki 'Named item sets' section 'Vecna Unleashed sets' (pageid 9371, {{HELstats|Heroic|L=Legendary}}) via the same-origin MediaWiki parse API. piece_bonuses free text is parsed by src/set_parser.py under strict provenance; nothing inferred.",
+    "wiki_url": "https://ddowiki.com/page/Named_item_sets#Vecna_Unleashed_sets",
+    "harvested": "2026-07-28"
+  },
+  "sets": {
+    "Forbidden Knowledge": {
+      "tier": "heroic", "ml": 18, "has_intrinsic_members": true,
+      "piece_bonuses": {
+        "3 Pieces": "+10 Profane Bonus to Physical Resistance Rating",
+        "4 Pieces": "+1 Profane Bonus to all Ability Scores; +1 Profane Bonus to Attack and Damage",
+        "5 Pieces": "+5 Profane Bonus to Melee and Ranged Power; +10 Profane Bonus to Universal Spell Power; +1 Profane Bonus to Spell DCs"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#Forbidden_Knowledge"
+    },
+    "Legendary Forbidden Knowledge": {
+      "tier": "legendary", "ml": 32, "has_intrinsic_members": true,
+      "piece_bonuses": {
+        "3 Pieces": "+30 Profane Bonus to Physical Resistance Rating",
+        "4 Pieces": "+3 Profane Bonus to all Ability Scores; +4 Profane Bonus to Attack and Damage",
+        "5 Pieces": "+15 Profane Bonus to Melee and Ranged Power; +25 Profane Bonus to Universal Spell Power; +3 Profane Bonus to Spell DCs"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#Legendary_Forbidden_Knowledge"
+    },
+    "Armaments of the Archons": {
+      "tier": "heroic", "ml": 18,
+      "piece_bonuses": {
+        "3 Pieces": "+10 Artifact Bonus to Physical Resistance Rating; +10 Artifact Bonus to Magical Resistance Rating; +5% Artifact Bonus to Armor Class; +5% Legendary Bonus to Maximum Hit Points"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#Armaments_of_the_Archons"
+    },
+    "Legendary Armaments of the Archons": {
+      "tier": "legendary", "ml": 32,
+      "piece_bonuses": {
+        "3 Pieces": "+30 Artifact Bonus to Physical Resistance Rating; +30 Artifact Bonus to Magical Resistance Rating; +15% Artifact Bonus to Armor Class; +10% Legendary Bonus to Maximum Hit Points"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#Legendary_Armaments_of_the_Archons"
+    },
+    "Delight of the Devourer": {
+      "tier": "heroic", "ml": 18,
+      "piece_bonuses": {
+        "3 Pieces": "+20 Artifact Bonus to Universal Spell Power; +2% Artifact Bonus to Spell Critical Chance; +5% Legendary Bonus to Spell Critical Damage; +5% Artifact Bonus to Additional Damage to Helpless Targets"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#Delight_of_the_Devourer"
+    },
+    "Legendary Delight of the Devourer": {
+      "tier": "legendary", "ml": 32,
+      "piece_bonuses": {
+        "3 Pieces": "+25 Artifact Bonus to Universal Spell Power; +6% Artifact Bonus to Spell Critical Chance; +15% Legendary Bonus to Spell Critical Damage; +15% Artifact Bonus to Additional Damage to Helpless Targets"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#Legendary_Delight_of_the_Devourer"
+    },
+    "Devils' Infernal Dance": {
+      "tier": "heroic", "ml": 18,
+      "piece_bonuses": {
+        "3 Pieces": "+1 Artifact Bonus to all Ability Scores; +5% Artifact Bonus to Doublestrike and Doubleshot; +10% Artifact Bonus to Fortification Bypass; +5 Artifact Bonus to Melee and Ranged Power"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#Devils'_Infernal_Dance"
+    },
+    "Legendary Devils' Infernal Dance": {
+      "tier": "legendary", "ml": 32,
+      "piece_bonuses": {
+        "3 Pieces": "+3 Artifact Bonus to all Ability Scores; +15% Artifact Bonus to Doublestrike and Doubleshot; +30% Artifact Bonus to Fortification Bypass; +15 Artifact Bonus to Melee and Ranged Power"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#Legendary_Devils'_Infernal_Dance"
+    },
+    "The Fury's Rage": {
+      "tier": "heroic", "ml": 18,
+      "piece_bonuses": {
+        "3 Pieces": "+10 Artifact Bonus to Physical Resistance Rating; +50% Artifact Bonus to Threat from Melee Attacks; +5% Artifact Bonus to Additional Damage to Helpless Targets; +5 Artifact Bonus to Melee and Ranged Power"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#The_Fury's_Rage"
+    },
+    "Legendary The Fury's Rage": {
+      "tier": "legendary", "ml": 32,
+      "piece_bonuses": {
+        "3 Pieces": "+30 Artifact Bonus to Physical Resistance Rating; +100% Artifact Bonus to Threat from Melee Attacks; +15% Artifact Bonus to Additional Damage to Helpless Targets; +15 Artifact Bonus to Melee and Ranged Power"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#Legendary_The_Fury's_Rage"
+    },
+    "Heart of Blades": {
+      "tier": "heroic", "ml": 18,
+      "piece_bonuses": {
+        "3 Pieces": "+10 Artifact Bonus to Positive and Repair Amplification; +10 Artifact Bonus to Repair Spell Power; +5% Artifact Bonus to Strikethrough Chance; +5 Artifact Bonus to Melee and Ranged Power"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#Heart_of_Blades"
+    },
+    "Legendary Heart of Blades": {
+      "tier": "legendary", "ml": 32,
+      "piece_bonuses": {
+        "3 Pieces": "+30 Artifact Bonus to Positive and Repair Amplification; +30 Artifact Bonus to Repair Spell Power; +15% Artifact Bonus to Strikethrough Chance; +15 Artifact Bonus to Melee and Ranged Power"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#Legendary_Heart_of_Blades"
+    },
+    "The Keeper's Coffin": {
+      "tier": "heroic", "ml": 18,
+      "piece_bonuses": {
+        "3 Pieces": "+1 Artifact Bonus to Spell DCs; +3 Artifact Bonus to Spell Penetration; +10 Artifact Bonus to Positive and Negative Amplification; +1 Artifact Bonus to all Ability Scores"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#The_Keeper's_Coffin"
+    },
+    "Legendary The Keeper's Coffin": {
+      "tier": "legendary", "ml": 32,
+      "piece_bonuses": {
+        "3 Pieces": "+3 Artifact Bonus to Spell DCs; +10 Artifact Bonus to Spell Penetration; +30 Artifact Bonus to Positive and Negative Amplification; +3 Artifact Bonus to all Ability Scores"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#Legendary_The_Keeper's_Coffin"
+    },
+    "Minion of the Mockery": {
+      "tier": "heroic", "ml": 18,
+      "piece_bonuses": {
+        "3 Pieces": "+5 Artifact Bonus to Melee and Ranged Power; +1 Artifact Bonus to Assassinate DCs; +3% Artifact Bonus to Dodge; +1 Artifact Bonus to Sneak Attack Damage"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#Minion_of_the_Mockery"
+    },
+    "Legendary Minion of the Mockery": {
+      "tier": "legendary", "ml": 32,
+      "piece_bonuses": {
+        "3 Pieces": "+15 Artifact Bonus to Melee and Ranged Power; +3 Artifact Bonus to Assassinate DCs; +10% Artifact Bonus to Dodge; +3 Artifact Bonus to Sneak Attack Damage"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#Legendary_Minion_of_the_Mockery"
+    },
+    "The Shadow's Emptiness": {
+      "tier": "heroic", "ml": 18,
+      "piece_bonuses": {
+        "3 Pieces": "+5% Artifact Bonus to Doublestrike and Doubleshot; +1 Artifact Bonus to Imbue Dice; +20 Artifact Bonus to Universal Spell Power; +10 Artifact Bonus to Magical Resistance Rating"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#The_Shadow's_Emptiness"
+    },
+    "Legendary The Shadow's Emptiness": {
+      "tier": "legendary", "ml": 32,
+      "piece_bonuses": {
+        "3 Pieces": "+15% Artifact Bonus to Doublestrike and Doubleshot; +3 Artifact Bonus to Imbue Dice; +25 Artifact Bonus to Universal Spell Power; +30 Artifact Bonus to Magical Resistance Rating"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#Legendary_The_Shadow's_Emptiness"
+    },
+    "The Traveler's Guidance": {
+      "tier": "heroic", "ml": 18,
+      "piece_bonuses": {
+        "3 Pieces": "+1 Artifact Bonus to all Saving Throws; +1 Artifact Bonus to Tactical Feat DCs; +5 Artifact Bonus to Melee and Ranged Power; +5% Artifact Bonus to Additional Damage to Helpless Targets"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#The_Traveler's_Guidance"
+    },
+    "Legendary The Traveler's Guidance": {
+      "tier": "legendary", "ml": 32,
+      "piece_bonuses": {
+        "3 Pieces": "+3 Artifact Bonus to all Saving Throws; +3 Artifact Bonus to Tactical Feat DCs; +15 Artifact Bonus to Melee and Ranged Power; +15% Artifact Bonus to Additional Damage to Helpless Targets"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#Legendary_The_Traveler's_Guidance"
+    },
+    "Vol's Influence": {
+      "tier": "heroic", "ml": 18,
+      "piece_bonuses": {
+        "3 Pieces": "+20 Artifact Bonus to Universal Spell Power; +2% Artifact Bonus to Spell Critical Chance; +5% Legendary Bonus to Spell Critical Damage; +1 Artifact Bonus to Spell DCs"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#Vol's_Influence"
+    },
+    "Legendary Vol's Influence": {
+      "tier": "legendary", "ml": 32,
+      "piece_bonuses": {
+        "3 Pieces": "+25 Artifact Bonus to Universal Spell Power; +6% Artifact Bonus to Spell Critical Chance; +15% Legendary Bonus to Spell Critical Damage; +3 Artifact Bonus to Spell DCs"
+      },
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets#Legendary_Vol's_Influence"
+    }
+  }
+}
