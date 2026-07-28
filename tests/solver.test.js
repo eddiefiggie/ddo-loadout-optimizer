@@ -1044,5 +1044,97 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.deepStrictEqual(again.jokerPlaced, withGem.jokerPlaced, "joker assignment is deterministic");
   });
 
+  // ---- Chosen set-membership slot (Cannith Repurposing Station / Dino Set-Bonus) ----
+  function memberHost(id, slotName, pool, affixes, station) {
+    const v = item(id, slotName, affixes || []);
+    v.set_membership_slot = { pool, station: station || "Cannith Repurposing Station" };
+    return v;
+  }
+  function memberDef(tiers) {
+    return { tiers: tiers.map((t) => ({
+      pieces_required: t.n, pieces_label: `${t.n} Pieces`,
+      affixes: t.affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, value, unit: "flat" })),
+    })) };
+  }
+
+  await test("MEMBERSHIP/awaken-only: 3 Lost Purpose items awaken one set to hit a 3-piece threshold (no intrinsic member)", async () => {
+    // The case the joker structurally CANNOT do: complete a set with zero fixed
+    // members equipped, purely from awakened pieces (self-seeded threshold).
+    const SET = "Legendary Vol's Influence";
+    const DEFS = { [SET]: memberDef([{ n: 3, affixes: [["Constitution", "Profane", 8]] }]) };
+    const pool = [SET];
+    const model = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null, membershipSetDefs: DEFS,
+      worn: [
+        slot("Helmet", [memberHost("H1", "Helmet", pool)]),
+        slot("Cloak", [memberHost("H2", "Cloak", pool)]),
+        slot("Gloves", [memberHost("H3", "Gloves", pool)]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.ok(r.setsActive.some((s) => s.set === SET), "awaken-only completion activates the set (joker cannot do this)");
+    assert.strictEqual(r.effective.Constitution, 8, "the set's 3-piece bonus reaches the total");
+    assert.strictEqual((r.membershipPlaced || []).length, 3, "three awakens reported");
+    // determinism
+    const again = await S.solveLexicographic(model, highs);
+    assert.deepStrictEqual(again.membershipPlaced, r.membershipPlaced, "awaken assignment is deterministic");
+  });
+
+  await test("MEMBERSHIP/below-threshold: 2 of 3 do not activate", async () => {
+    const SET = "Legendary Vol's Influence";
+    const DEFS = { [SET]: memberDef([{ n: 3, affixes: [["Constitution", "Profane", 8]] }]) };
+    const model = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null, membershipSetDefs: DEFS,
+      worn: [slot("Helmet", [memberHost("H1", "Helmet", [SET])]),
+             slot("Cloak", [memberHost("H2", "Cloak", [SET])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.ok(!r.setsActive.some((s) => s.set === SET), "2 pieces below the 3-piece threshold do not activate");
+  });
+
+  await test("MEMBERSHIP/single-pick: one host awakens exactly one set", async () => {
+    const DEFS = {
+      SetA: memberDef([{ n: 1, affixes: [["Strength", "Profane", 5]] }]),
+      SetB: memberDef([{ n: 1, affixes: [["Constitution", "Profane", 5]] }]),
+    };
+    const model = {
+      targets: ["Strength", "Constitution"], mlCap: 34, dodgeCap: null, membershipSetDefs: DEFS,
+      worn: [slot("Helmet", [memberHost("H1", "Helmet", ["SetA", "SetB"])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual((r.membershipPlaced || []).length, 1, "one host awakens exactly one set, not both");
+    assert.strictEqual(r.effective.Strength, 5, "the priority-1 set is the one awakened");
+    assert.strictEqual(r.effective.Constitution, 0, "the second set is not awakened on the same host");
+  });
+
+  await test("MEMBERSHIP/fixed+awakened mix: a fixed Forbidden Knowledge weapon + 1 awakened piece complete a 2-piece tier", async () => {
+    const SET = "Legendary Forbidden Knowledge";
+    const tier = [{ n: 2, affixes: [["Constitution", "Profane", 10]] }];
+    const DEFS = { [SET]: memberDef(tier) };
+    const weapon = setPiece("FKWeapon", "Main Hand", [["Constitution", "Enhancement", 1]], SET,
+      [{ n: 2, affixes: [["Constitution", "Profane", 10]] }]);
+    const model = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null, membershipSetDefs: DEFS,
+      worn: [slot("Main Hand", [weapon]),
+             slot("Helmet", [memberHost("LP", "Helmet", [SET])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.ok(r.setsActive.some((s) => s.set === SET), "fixed weapon piece + 1 awakened piece complete the 2-piece tier");
+    assert.strictEqual((r.membershipPlaced || []).length, 1, "one awaken reported (the weapon is intrinsic, not an awaken)");
+  });
+
+  await test("MEMBERSHIP/no-fabrication: an awaken with no set benefit is not placed", async () => {
+    const SET = "Legendary Vol's Influence";
+    const DEFS = { [SET]: memberDef([{ n: 3, affixes: [["Constitution", "Profane", 8]] }]) };
+    // only one host -> a 3-piece set can never complete -> no awaken fired
+    const model = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null, membershipSetDefs: DEFS,
+      worn: [slot("Helmet", [memberHost("H1", "Helmet", [SET])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual((r.membershipPlaced || []).length, 0, "a non-load-bearing awaken is not fabricated");
+  });
+
   console.log(`\n${passed} passed`);
 })();

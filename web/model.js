@@ -115,6 +115,15 @@ function dominates(A, B, targetSet, mlCap) {
   const jokerA = countColors((A.joker_set_groups || []).flat());
   const jokerB = countColors((B.joker_set_groups || []).flat());
   for (const [k, n] of jokerB) if ((jokerA.get(k) || 0) < n) return false;
+  // Chosen set-membership slot (Vecna "Lost Purpose" / Dino Set-Bonus): the awaken
+  // value lives in set_membership_slot.pool (which sets the host can join toward a
+  // threshold), outside variantBuckets AND set_bonus — so a plain-affix item looks
+  // strictly better and would prune a slot-only Lost Purpose host, silently losing its
+  // awaken capacity (the same trap as Dino blanks / the Gem joker). Keep B whenever it
+  // can awaken a set A cannot also awaken.
+  const memA = countColors(((A.set_membership_slot || {}).pool) || []);
+  const memB = countColors(((B.set_membership_slot || {}).pool) || []);
+  for (const [k, n] of memB) if ((memA.get(k) || 0) < n) return false;
   // strictly better somewhere, OR keep A as the canonical of an equal pair
   return true;
 }
@@ -164,12 +173,16 @@ function lamordiaSlotKeys(v) {
  *  can add a piece toward a set THRESHOLD even when another variant dominates it
  *  on the target buckets — set bonuses count pieces, so dominance (which is only
  *  sound for max-buckets) must never prune a set member there, or a piece-count
- *  tier can become silently unreachable. */
+ *  tier can become silently unreachable. A chosen set-membership host (Lost Purpose /
+ *  Dino Set-Bonus) is a set-piece contributor for the same reason, so it gets the same
+ *  multi-pick exemption. */
 function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1) {
   const kept = [];
   for (let i = 0; i < slotVariants.length; i++) {
     const A = slotVariants[i];
-    if (cardinality > 1 && (A.set_bonus || []).length) { kept.push(A); continue; }
+    const isSetContributor = (A.set_bonus || []).length
+      || ((A.set_membership_slot || {}).pool || []).length;
+    if (cardinality > 1 && isSetContributor) { kept.push(A); continue; }
     let dominated = false;
     for (let j = 0; j < slotVariants.length; j++) {
       if (i === j) continue;
@@ -187,7 +200,7 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1) {
 
 /** Build the abstract model. Returns worn slots (filtered + pruned), the
  *  augment source pool, the Dino insert pool, target list, and the dodge cap. */
-function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = []) {
+function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}) {
   const targetSet = new Set(query.targets);
   const mlCap = query.mlCap;
   const elig = eligible(variants, query);
@@ -263,6 +276,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   return {
     query, targets: query.targets, worn, augments,
     dinoInserts: dinoPool, nearlyComplete: ncPool, viktranium: vikPool, seal: sealPool,
+    membershipSetDefs: membershipSetDefs || {},
     dodgeCap, mlCap,
   };
 }

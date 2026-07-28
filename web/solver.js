@@ -84,6 +84,7 @@ function buildProgram(model) {
   const rollMeta = new Map(); // roll-group option var -> {item, stat, bonus_type, value, unit}
   const vikMeta = new Map(); // Viktranium placement var -> {item, slot_type, category, stat, bonus_type, value, unit, tier, wiki_url}
   const sealMeta = new Map(); // seal placement var -> {item, seal_type, category, stat, bonus_type, value, unit, wiki_url}
+  const memberMeta = new Map(); // membership pick var -> {host, set, station} (chosen set-membership: Cannith / Dino Set-Bonus)
 
   // U3 — augment assignment (aggregate compatible-color capacity). Correctness
   // rests on the bucket-max core: every (stat, bonus_type) bucket is capped at
@@ -401,6 +402,54 @@ function buildProgram(model) {
       if (opts.length) extraConstraints.push(`${opts.join(" + ")} <= 1`); // at most one per group
     });
   }
+
+  // Chosen set-membership slot (Vecna "Lost Purpose" / Cannith Repurposing Station,
+  // and Dino Set-Bonus). A host with `set_membership_slot: {pool:[...sets], station}`
+  // may AWAKEN exactly one set from its pool. Unlike the joker — which only feeds a set
+  // already registered by an equipped FIXED member (the set/joker blocks above) — a
+  // membership slot SELF-SEEDS the set threshold from the runtime membershipSetDefs
+  // table, so an awaken-only set (no intrinsic member equipped, e.g. every Vecna Lost
+  // Purpose set) is reachable purely from awakened pieces. Per host: one pick binary
+  // per pool set that has a def, gated by the host (m - x_host <= 0), appended to
+  // setPieces[set]; Σ m <= 1 per host (single, mutually-exclusive awaken). The tie-break
+  // minimizes member vars (like jokers) so a pick is 1 only when it is a load-bearing
+  // piece. For an intrinsic-anchored set (Dino, Forbidden Knowledge) the fixed pieces
+  // still register and sum in normally — self-seeding is idempotent with fixed members.
+  const membershipDefs = model.membershipSetDefs || {};
+  let mmc = 0;
+  const memberVars = [];
+  for (const xv of xVars) {
+    const mslot = xv.variant.set_membership_slot;
+    if (!mslot || !(mslot.pool || []).length) continue;
+    const opts = [];
+    const hostSets = new Set(); // one awaken per host, even if a set repeats in the pool
+    for (const setName of mslot.pool) {
+      if (hostSets.has(setName)) continue;
+      // self-seed: register the set's tiers from the def even with no fixed member.
+      if (!setTiers.has(setName)) {
+        const def = membershipDefs[setName];
+        if (!def) continue; // no runtime def -> cannot value this awaken (strict: never fabricate)
+        const byLabel = new Map();
+        for (const tier of def.tiers || []) {
+          if (tier.pieces_required == null || !(tier.affixes || []).length) continue;
+          if (!byLabel.has(tier.pieces_label)) byLabel.set(tier.pieces_label, tier);
+        }
+        if (!byLabel.size) continue;
+        setTiers.set(setName, byLabel);
+      }
+      hostSets.add(setName);
+      if (!setPieces.has(setName)) setPieces.set(setName, []);
+      const m = "m" + mmc++;
+      extraVars.push(m);
+      memberVars.push(m);
+      opts.push(m);
+      extraConstraints.push(`${m} - ${xv.name} <= 0`);   // only when the host item is equipped
+      setPieces.get(setName).push(m);                     // counts toward the set's threshold
+      memberMeta.set(m, { host: xv.variant.variant_id, set: setName, station: mslot.station || null });
+    }
+    if (opts.length) extraConstraints.push(`${opts.join(" + ")} <= 1`); // single awaken per host
+  }
+
   let sc = 0;
   for (const [setName, byLabel] of setTiers) {
     const pieceVars = setPieces.get(setName) || [];
@@ -429,7 +478,7 @@ function buildProgram(model) {
 
   return {
     xVars, zByBucket, cappedStats, targetList: model.targets, model,
-    extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, jokerMeta, jokerVars, _zc: zc,
+    extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, jokerMeta, jokerVars, memberMeta, memberVars, _zc: zc,
   };
 }
 
@@ -464,8 +513,12 @@ function encodeStage(program, { objectiveStat, objTerms, sense, locks, tieBreak,
     // is the load-bearing Nth piece of a completed set), and ties among equally-good
     // pool sets resolve deterministically by option order.
     const n = program.xVars.length;
+    // Joker AND membership (awaken) vars are both minimized here so a wildcard pick or
+    // a Cannith/Dino awaken is set to 1 only when a locked constraint forces it (it is
+    // the load-bearing Nth piece of a completed set), resolving ties deterministically.
+    const minVars = [...(program.jokerVars || []), ...(program.memberVars || [])];
     const terms = program.xVars.map((xv, i) => `+ ${i + 1} ${xv.name}`)
-      .concat((program.jokerVars || []).map((j, i) => `+ ${n + 1 + i} ${j}`));
+      .concat(minVars.map((v, i) => `+ ${n + 1 + i} ${v}`));
     L.push(" obj: " + terms.join(" "));
   } else if (objTerms) {
     // Arbitrary linear objective (e.g. the fewer-crafts generator minimizes the sum
@@ -603,7 +656,7 @@ function computeScale(program) {
   const crafts = (program.augMeta ? program.augMeta.size : 0)
     + (program.dinoMeta ? program.dinoMeta.size : 0) + (program.ncMeta ? program.ncMeta.size : 0)
     + (program.rollMeta ? program.rollMeta.size : 0) + (program.vikMeta ? program.vikMeta.size : 0)
-    + (program.sealMeta ? program.sealMeta.size : 0);
+    + (program.sealMeta ? program.sealMeta.size : 0) + (program.memberMeta ? program.memberMeta.size : 0);
   return { variants: program.xVars.length, crafts, stages: (program.targetList || []).length + 1 };
 }
 
@@ -647,7 +700,12 @@ function readSolution(res, program) {
   for (const [j, meta] of program.jokerMeta || []) {
     if (prim(j) > 0.5 && realShort.has(meta.set)) jokerPlaced.push(meta);
   }
-  return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, jokerPlaced };
+  // Awakened set-membership picks (Cannith Repurposing Station / Dino Set-Bonus). The
+  // tie-break minimizes member vars, so a pick set to 1 is load-bearing by construction
+  // (it is a piece a completed set actually needed) — report each such awaken.
+  const membershipPlaced = [];
+  for (const [m, meta] of program.memberMeta || []) if (prim(m) > 0.5) membershipPlaced.push(meta);
+  return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, jokerPlaced, membershipPlaced };
 }
 
 async function solveLexicographic(model, highs) {
@@ -674,6 +732,7 @@ async function solveLexicographic(model, highs) {
     augmentsPlaced: sol.augmentsPlaced, setsActive: sol.setsActive,
     dinoPlaced: sol.dinoPlaced, ncPlaced: sol.ncPlaced, rollPlaced: sol.rollPlaced,
     vikPlaced: sol.vikPlaced, sealPlaced: sol.sealPlaced, jokerPlaced: sol.jokerPlaced,
+    membershipPlaced: sol.membershipPlaced,
     breakdown: breakdownByTarget(program, prim), computeScale: computeScale(program),
     capped: { ...program.cappedStats }, program,
   };
