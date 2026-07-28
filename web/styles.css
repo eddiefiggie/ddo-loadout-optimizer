@@ -454,6 +454,7 @@ input.bumped { background: rgba(76,194,255,0.16); border-color: var(--accent); }
 
 /* alternatives (U4/U5): active-build banner + trade-off cards */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.active-build-bar[hidden] { display: none; }  /* class selector otherwise overrides the [hidden] attribute */
 .active-build-bar {
   display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap;
   padding: var(--sp-2) var(--sp-3); margin-bottom: var(--sp-3);

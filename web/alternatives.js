@@ -29,12 +29,13 @@ function analyzeAlternative(optimum, candidate, query) {
   if (gainAxis === "rebalance") addTag("rebalance");
   if (gainAxis === "unranked") addTag(meta.zeroCost ? "free upgrade" : "unranked stat");
   if (gainAxis === "crafts") addTag("cheaper crafting");
-  // derivable extra tags
+  // derivable extra tags — only meaningful secondary gains, so a build does not pick up
+  // a spurious "cheaper crafting" from a one-step difference or a "rebalance" from an
+  // incidental point on another priority (every different build shuffles these a little).
   const optSets = new Set((optimum.setsActive || []).map((s) => s.set));
   const newSets = (sol.setsActive || []).filter((s) => !optSets.has(s.set)).map((s) => s.set);
   if (newSets.length) addTag("set bonus");
-  if (craftCount(sol) < craftCount(optimum)) addTag("cheaper crafting");
-  if (gains.length && gainAxis !== "rebalance") addTag("rebalance");
+  if (gainAxis !== "crafts" && craftCount(optimum) - craftCount(sol) >= 2) addTag("cheaper crafting");
 
   // headline gain text
   let gainText;

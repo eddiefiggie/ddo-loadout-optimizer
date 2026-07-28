@@ -440,7 +440,7 @@ function animateCounters(container) {
   });
 }
 
-function renderResults(container, { model, result, query, dataset }) {
+function renderResults(container, { model, result, query, dataset, highs }) {
   if (result.status !== "optimal") {
     container.innerHTML = `<div class="empty">No set satisfies these constraints${result.reason ? ` — ${esc(result.reason)}` : ""}.<br><span class="muted">Loosen the ML cap, armor/class filters, or targets.</span></div>`;
     return;

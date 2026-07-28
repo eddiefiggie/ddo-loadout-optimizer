@@ -684,11 +684,18 @@ async function solveLexicographic(model, highs) {
 // constraint bodies (e.g. a forced `set_active = 1`); the gain is `objectiveStat`
 // (a stat, maximized) or `objTerms` (an arbitrary linear expression, e.g. minimized
 // craft-placement binaries).
-function solveConstrained(program, highs, { objectiveStat, objTerms, sense = "max", locks = [], extra = [] }) {
+function solveConstrained(program, highs, { objectiveStat, objTerms, sense = "max", locks = [], extra = [], tieBreak = true }) {
   const fb = program.xVars[0].name;
   // Phase 1: optimize the gain under the relaxed/forced constraints.
   const r1 = highs.solve(encodeStage(program, { objectiveStat, objTerms, sense, locks, extra }));
   if (r1.Status !== "Optimal") return { status: "infeasible" };
+  // The tie-break is a second full solve. It canonicalizes the build among equal-objective
+  // vertices, but HiGHS is already deterministic for identical input, so the optimum path
+  // keeps it (stable display) while on-demand alternatives skip it to halve solve count.
+  if (!tieBreak) {
+    const prim1 = (name) => (r1.Columns[name] ? r1.Columns[name].Primal : 0);
+    return { status: "optimal", ...readSolution(r1, program), breakdown: breakdownByTarget(program, prim1), capped: { ...program.cappedStats } };
+  }
   const prim1 = (name) => (r1.Columns[name] ? r1.Columns[name].Primal : 0);
   // Pin the achieved gain, then tie-break so the item set (not just the objective
   // value) is deterministic — mirroring solveLexicographic's final tie-break stage.
@@ -710,6 +717,10 @@ function solveConstrained(program, highs, { objectiveStat, objTerms, sense = "ma
 // The bounded give allowed on a priority for an alternative: 10% or at least 2, so
 // the tolerance scales with the stat (Constitution ~40 vs Physical Sheltering ~150).
 function alternativeGive(value) { return Math.max(2, Math.round(0.10 * Math.abs(value))); }
+// Set activation is a categorical, high-value gain worth a more generous give, but
+// still bounded so it doesn't crater the other priorities (an unbounded set trade
+// produced -144 builds). 50% keeps it a real trade and drops the garbage ones fast.
+function setGive(value) { return Math.max(3, Math.round(0.50 * Math.abs(value))); }
 
 // Do two solutions equip the same item set? (build-equality for the zero-cost check.)
 function sameChosen(a, b) {
@@ -738,17 +749,26 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
   const program = optimum.program;
   const targets = program.targetList;              // ranked priorities, in order
   const per = optimum.perTarget || optimum.effective;
-  const cap = { sets: 6, unranked: 6, ...(opts.cap || {}) };
+  // Caps bound the on-demand generation latency: each candidate is a full MILP solve
+  // (~1s cold on a real dataset), so the generators are capped and skip the tie-break
+  // second solve (tieBreak:false) — HiGHS is deterministic without it.
+  const cap = { sets: 2, unranked: 2, ...(opts.cap || {}) };
   const out = [];
 
   // (a) set-activation — force each not-yet-active set active and maximize the top
-  // priority (no priority floor: completing a set can cost more than the rebalance
-  // give; U3 reports the real cost and ranking cuts overly-costly ones).
+  // priority, but keep the other priorities within a generous-yet-bounded give
+  // (setGive) so completing a set stays a real trade instead of cratering the build.
+  // A set that cannot fit inside that give is proven infeasible fast and dropped.
   const active = new Set((optimum.setsActive || []).map((s) => s.set));
-  let sCount = 0;
+  const setLocks = targets.map((s) => ({ stat: s, value: per[s], give: setGive(per[s]) }));
+  const seenSets = new Set();
+  let sCount = 0, sTries = 0;
   for (const [setVar, meta] of program.setMeta || []) {
-    if (active.has(meta.set) || sCount >= cap.sets) continue;
-    const sol = solveConstrained(program, highs, { objectiveStat: targets[0], locks: [], extra: [`${setVar} = 1`] });
+    if (sCount >= cap.sets || sTries >= cap.sets * 3) break;   // bound both hits and infeasible probes
+    if (active.has(meta.set) || seenSets.has(meta.set)) continue;
+    seenSets.add(meta.set);
+    sTries++;
+    const sol = solveConstrained(program, highs, { objectiveStat: targets[0], locks: setLocks, extra: [`${setVar} = 1`], tieBreak: false });
     if (sol.status === "optimal" && !sameChosen(sol, optimum)) { out.push({ sol, gainAxis: "set", meta: { set: meta.set } }); sCount++; }
   }
 
@@ -760,7 +780,7 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
       const locks = targets.slice(0, j).map((s, k) => (k === i
         ? { stat: s, value: per[s], give: alternativeGive(per[s]) }
         : { stat: s, value: per[s] }));
-      const sol = solveConstrained(program, highs, { objectiveStat: targets[j], locks });
+      const sol = solveConstrained(program, highs, { objectiveStat: targets[j], locks, tieBreak: false });
       if (sol.status === "optimal" && !sameChosen(sol, optimum)) out.push({ sol, gainAxis: "rebalance", meta: { from: targets[i], to: targets[j] } });
     }
   }
@@ -775,12 +795,12 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
   for (const u of unrankedCandidates) {
     const p2 = buildProgram({ ...model, targets: [...model.targets, u] });
     if (!p2.xVars.length) continue;
-    let sol = solveConstrained(p2, highs, { objectiveStat: u, locks: originalExact });
+    let sol = solveConstrained(p2, highs, { objectiveStat: u, locks: originalExact, tieBreak: false });
     let zeroCost = true;
     if (sol.status === "optimal" && sameChosen(sol, optimum) && targets.length) {
       zeroCost = false;
       const relaxLowest = originalExact.map((l, k) => (k === originalExact.length - 1 ? { ...l, give: alternativeGive(l.value) } : l));
-      sol = solveConstrained(p2, highs, { objectiveStat: u, locks: relaxLowest });
+      sol = solveConstrained(p2, highs, { objectiveStat: u, locks: relaxLowest, tieBreak: false });
     }
     if (sol.status === "optimal" && !sameChosen(sol, optimum)) out.push({ sol, gainAxis: "unranked", meta: { stat: u, zeroCost } });
   }
@@ -797,7 +817,7 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
   if (craftVars.length && optCrafts > 0) {
     const relaxedAll = targets.map((s) => ({ stat: s, value: per[s], give: alternativeGive(per[s]) }));
     const objTerms = craftVars.map((name) => ({ coef: 1, name }));
-    const sol = solveConstrained(program, highs, { objTerms, sense: "min", locks: relaxedAll });
+    const sol = solveConstrained(program, highs, { objTerms, sense: "min", locks: relaxedAll, tieBreak: false });
     if (sol.status === "optimal" && !sameChosen(sol, optimum)) out.push({ sol, gainAxis: "crafts", meta: { optCrafts } });
   }
 
