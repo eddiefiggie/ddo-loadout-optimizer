@@ -1144,8 +1144,8 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     const fs = require("fs");
     const { buildModel } = require("../web/model.js");
     const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
-    const lp = data.items.filter((v) => v.set_membership_slot);
-    assert.ok(lp.length === 44, "all 44 Lost Purpose items carry a membership slot");
+    const lp = data.items.filter((v) => (v.set_membership_slot || {}).station === "Cannith Repurposing Station");
+    assert.ok(lp.length === 44, "all 44 Lost Purpose items carry a Cannith membership slot");
     const query = { mlCap: 32, targets: ["Additional Damage to Helpless Targets", "Melee and Ranged Power"], armorType: null, weaponSetup: null, classRace: null };
     const model = buildModel(data.items, query, data.dino_inserts, data.nearly_complete, data.viktranium, data.seal, data.membership_set_defs);
     const r = await S.solveLexicographic(model, highs);
@@ -1157,6 +1157,28 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     // whatever set was awakened is genuinely active (load-bearing guard holds on real data)
     const active = new Set((r.setsActive || []).map((s) => s.set));
     for (const s of awakened) assert.ok(active.has(s), `${s} is active where awakened`);
+  });
+
+  await test("MEMBERSHIP/dino: a Dinosaur Bone Set-Bonus host awakens a Dino set at its own station", async () => {
+    // U4: the shared primitive also drives Dino Set-Bonus. 3 Dinosaur Bone Armor/Helmet/
+    // Cloak hosts awaken the same 3-piece Dino set (Dread Stalker) — reported at the
+    // Dinosaur Bone crafting station, not the Cannith one.
+    const SET = "Dread Stalker";
+    const DEFS = { [SET]: memberDef([{ n: 3, affixes: [["Melee Power", "Artifact", 15]] }]) };
+    const dinoHost = (id, slotName) => {
+      const v = item(id, slotName, []);
+      v.set_membership_slot = { pool: [SET], station: "Dinosaur Bone crafting" };
+      return v;
+    };
+    const model = {
+      targets: ["Melee Power"], mlCap: 32, dodgeCap: null, membershipSetDefs: DEFS,
+      worn: [slot("Armor", [dinoHost("DA", "Armor")]), slot("Helmet", [dinoHost("DH", "Helmet")]),
+             slot("Cloak", [dinoHost("DC", "Cloak")])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.ok(r.setsActive.some((s) => s.set === SET), "the Dino set activates from 3 awakened Set-Bonus slots");
+    assert.strictEqual((r.membershipPlaced || []).length, 3, "three Dino awakens reported");
+    assert.ok(r.membershipPlaced.every((m) => m.station === "Dinosaur Bone crafting"), "reported at the Dino station");
   });
 
   await test("MEMBERSHIP/no over-report on tieBreak:false (alternatives path)", async () => {
@@ -1184,7 +1206,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     const fs = require("fs");
     const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
     const defs = data.membership_set_defs || {};
-    assert.ok(Object.keys(defs).length === 22, "items.json exports all 22 membership set defs");
+    assert.ok(Object.keys(defs).length === 28, "items.json exports all 28 membership set defs (22 Vecna + 6 Dino)");
     const SET = "Legendary Vol's Influence";
     assert.ok(defs[SET], "the real Legendary Vol's Influence def is present");
     const lp = (slotName) => memberHost(`LP-${slotName}`, slotName, [SET]);

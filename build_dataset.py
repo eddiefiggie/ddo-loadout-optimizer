@@ -259,8 +259,7 @@ def build(seed: dict) -> dict:
     # identical bonus + stat vocabulary as an intrinsically-completed one. Attach the
     # chosen-set-membership slot (pool = same-tier Vecna sets that resolve to a def)
     # to every item carrying a `lost_purpose` tier marker.
-    _set_catalog = set_catalog_mod.load_catalog()
-    membership_defs = membership_mod.build_membership_set_defs(_set_catalog)
+    membership_defs = membership_mod.build_membership_set_defs(_set_catalog)  # reuse the catalog loaded above
     membership_mod.attach_lost_purpose_slots(variants, membership_defs)
     variants, cov = verify_mod.apply(variants)          # per-affix verification gate
 
@@ -271,6 +270,11 @@ def build(seed: dict) -> dict:
     dino_seed = load_dino_seed()
     dino_blanks, dino_inserts, dino_sets, dino_cov = dino_mod.build_dino(dino_seed)
     variants = variants + dino_blanks
+    # U4 — Dino Set-Bonus: activate the chosen-set-membership slot on the Dinosaur
+    # Bone Armor/Helmet/Cloak Set-Bonus hosts (added here, after verify, since the
+    # blanks carry no base affixes). Same primitive as Vecna Lost Purpose; the 6 Dino
+    # sets are self-seeded from the same catalog, crafted at the Dinosaur Bone station.
+    membership_mod.attach_dino_set_bonus_slots(dino_blanks, membership_defs)
 
     # U81 Nearly Complete: expose the parametric choice-slot effect pool. Items
     # carrying a `nearly_complete: <category>` field draw one option from it (host

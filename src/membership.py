@@ -23,6 +23,21 @@ from src import umbrella
 from src import set_catalog
 
 STATION = "Cannith Repurposing Station"
+DINO_STATION = "Dinosaur Bone crafting"
+
+# The 6 Isle of Dread "Dino Set-Bonus" sets. A Dinosaur Bone Armor/Helmet/Cloak host
+# with a Set-Bonus slot can be crafted to count toward ONE of these (chosen membership,
+# same primitive as Vecna Lost Purpose). All 6 are defined in the gear-planner catalog,
+# so they share the single-source-of-truth path. Completion mixes these crafted slots
+# with intrinsic Isle of Dread named/raid members.
+_DINO_SETS = [
+    "Dread Stalker",
+    "Devotion of the Firemouth",
+    "Defender of Tanaroa",
+    "Deacon of the Auricular Sacrarium",
+    "Echoes of the Walking Ancestors",
+    "The Legendary Dread Isle's Curse",
+]
 
 # The 11 Vecna Unleashed sets, base (Heroic, ML18) names. Each also has a
 # "Legendary <name>" (ML32) variant. Lost Purpose items awaken one of these at the
@@ -53,7 +68,16 @@ def set_names_for_tier(tier: str) -> list:
 
 
 def all_set_names() -> list:
-    return set_names_for_tier("heroic") + set_names_for_tier("legendary")
+    """Every set the chosen-membership primitive can awaken: the 22 Vecna (Heroic +
+    Legendary) plus the 6 Isle of Dread Dino sets."""
+    return set_names_for_tier("heroic") + set_names_for_tier("legendary") + list(_DINO_SETS)
+
+
+def dino_pool(defs: dict = None) -> list:
+    """The Dino sets a Set-Bonus host can awaken; restricted to resolved defs when given."""
+    if defs is None:
+        return list(_DINO_SETS)
+    return [n for n in _DINO_SETS if n in defs]
 
 
 def build_membership_set_defs(catalog: dict = None) -> dict:
@@ -105,6 +129,21 @@ def attach_lost_purpose_slots(variants, defs: dict = None) -> int:
         if tier not in ("heroic", "legendary"):
             continue
         v["set_membership_slot"] = membership_slot_for(tier, defs)
+        n += 1
+    return n
+
+
+def attach_dino_set_bonus_slots(variants, defs: dict = None) -> int:
+    """In place: every Dinosaur Bone host with a Set-Bonus slot (`dino_set_bonus_slot`,
+    Armor/Helmet/Cloak only) gets a set_membership_slot over the 6 Dino sets, crafted
+    at the Dinosaur Bone crafting station. Same primitive as Lost Purpose, different
+    pool + station. A host that already carries a Vecna slot is left as-is (a real item
+    is not both a Lost Purpose item and a Dinosaur Bone blank)."""
+    n = 0
+    for v in variants:
+        if not v.get("dino_set_bonus_slot") or v.get("set_membership_slot"):
+            continue
+        v["set_membership_slot"] = {"pool": dino_pool(defs), "station": DINO_STATION}
         n += 1
     return n
 

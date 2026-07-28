@@ -15,7 +15,7 @@ ITEMS = os.path.join(os.path.dirname(__file__), "..", "web", "data", "items.json
 
 def test_build_membership_set_defs_shape():
     defs = membership.build_membership_set_defs()
-    assert len(defs) == 22, f"expected 22 set defs, got {len(defs)}"
+    assert len(defs) == 28, f"expected 28 set defs (22 Vecna + 6 Dino), got {len(defs)}"
     vol = defs["Legendary Vol's Influence"]
     assert vol["tier"] == "legendary"
     stats = {(a["stat"], a["bonus_type"], a["value"]) for t in vol["tiers"] for a in t["affixes"]}
@@ -84,9 +84,9 @@ def test_items_json_exports_membership_set_defs():
     with open(ITEMS, encoding="utf-8") as fh:
         data = json.load(fh)
     m = data.get("membership_set_defs")
-    assert m and len(m) == 22, "items.json exports all 22 membership set defs"
+    assert m and len(m) == 28, "items.json exports all 28 membership set defs (22 Vecna + 6 Dino)"
     cov = data["metadata"].get("membership_coverage")
-    assert cov and cov["sets"] == 22 and cov["tiers"] >= 26
+    assert cov and cov["sets"] == 28 and cov["tiers"] >= 26
 
 
 def test_fire_over_morgrave_raid_gear_are_forbidden_knowledge_members():
@@ -112,8 +112,20 @@ def test_fire_over_morgrave_raid_gear_are_forbidden_knowledge_members():
 def test_items_json_has_44_lost_purpose_hosts():
     with open(ITEMS, encoding="utf-8") as fh:
         data = json.load(fh)
-    hosts = [v for v in data["items"] if v.get("set_membership_slot")]
+    hosts = [v for v in data["items"]
+             if (v.get("set_membership_slot") or {}).get("station") == "Cannith Repurposing Station"]
     assert len(hosts) == 44, f"expected 44 Lost Purpose hosts, got {len(hosts)}"
     assert all(v.get("verification") == "verified" for v in hosts)
     assert all(len(v["set_membership_slot"]["pool"]) == 11 for v in hosts)
-    assert all(v["set_membership_slot"]["station"] == "Cannith Repurposing Station" for v in hosts)
+
+
+def test_items_json_has_dino_set_bonus_hosts():
+    # U4: the Dinosaur Bone Armor/Helmet/Cloak Set-Bonus hosts awaken one of the 6
+    # Dino sets at the Dinosaur Bone crafting station (same primitive, different pool).
+    with open(ITEMS, encoding="utf-8") as fh:
+        data = json.load(fh)
+    dino = [v for v in data["items"]
+            if (v.get("set_membership_slot") or {}).get("station") == "Dinosaur Bone crafting"]
+    assert len(dino) >= 3, f"expected the 3 Dino Set-Bonus hosts, got {len(dino)}"
+    assert all(v["slot"] in ("Armor", "Helmet", "Cloak") for v in dino), "only Armor/Helmet/Cloak carry a Set-Bonus slot"
+    assert all(len(v["set_membership_slot"]["pool"]) == 6 for v in dino), "6 Dino sets in the pool"
