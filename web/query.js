@@ -22,10 +22,10 @@ window.App && window.App.ready((dataset) => {
       <label class="field"><span>ML cap</span><input id="q-ml" type="number" min="1" max="40" value="34"></label>
       <label class="field"><span>Class / race</span><input id="q-class" type="text" placeholder="(optional)"></label>
       <label class="field"><span>Armor</span>
-        <select id="q-armor"><option value="">any</option><option>cloth</option><option>light</option><option>medium</option><option>heavy</option></select>
+        <select id="q-armor"><option value="">Any</option><option value="cloth">Cloth</option><option value="light">Light</option><option value="medium">Medium</option><option value="heavy">Heavy</option></select>
       </label>
       <label class="field"><span>Weapon</span>
-        <select id="q-weapon"><option value="">any</option><option value="2h">two-handed</option><option value="swordboard">sword &amp; board</option><option value="twf">two-weapon</option></select>
+        <select id="q-weapon"><option value="">Any</option><option value="2h">Two-handed</option><option value="swordboard">One-hand + shield</option><option value="twf">Two-weapon (dual-wield)</option></select>
       </label>
     </div>
     <div class="controls q-actions">

@@ -148,6 +148,15 @@ input, select, button, textarea { font: inherit; }
   color: var(--muted); font-size: var(--fs-xs);
 }
 .field > span { padding-left: 2px; }
+/* A control inside a .field must not inherit a row-oriented flex-basis (e.g.
+   `flex: 1 1 8rem` on selects, `1 1 200px` on the affix input): the .field is a
+   COLUMN, so that basis lands on the vertical axis and blows the control up to
+   128px / 200px tall. Pin every field control flat at one tap height, full width.
+   The `.controls` prefix outranks the later `.controls select` / `input[list]`
+   rules so this wins regardless of source order. */
+.controls .field > input, .controls .field > select, .controls .field > textarea {
+  flex: none; width: 100%; height: var(--tap); min-height: var(--tap);
+}
 input, select {
   background: var(--bg-2); color: var(--text);
   border: 1px solid var(--border-2); border-radius: var(--radius-sm);
@@ -203,12 +212,16 @@ button.primary:hover { filter: brightness(1.08); }
 /* ============================================================================
    Solver: query + readout
    ========================================================================== */
-#solver .query-controls { gap: var(--sp-3); margin-bottom: var(--sp-3); }
-/* U2: one field system — every control shares .field; the target adder now has a
-   visible label like the rest, and its row baseline-aligns its buttons. */
-.q-actions { display: flex; gap: var(--sp-2); flex: 1 1 auto; align-items: flex-end; }
-.field.grow { flex: 1 1 220px; }
-.field.grow > input { width: 100%; }
+/* Uniform control grid: every solver field is the same width and height, so the
+   size variability (tall selects vs short inputs) is gone. */
+#solver .query-controls {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--sp-3); margin-bottom: var(--sp-3); align-items: end;
+}
+/* target adder + Add/Solve: the affix input is capped to a sensible width (a short
+   affix name doesn't need a full-width box) and the buttons baseline-align to it. */
+.q-actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; align-items: flex-end; }
+.field.grow { flex: 0 1 18rem; }
 
 /* U3: change-confirmation cue for numeric steppers and reorders. A one-shot
    pulse under normal motion; a static highlight under reduced-motion. */
@@ -264,7 +277,7 @@ input.bumped { background: rgba(76,194,255,0.16); border-color: var(--accent); }
 .scale-item .n { font-size: var(--fs-lg); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
 .scale-item .k { font-size: var(--fs-xs); color: var(--faint); text-transform: uppercase; letter-spacing: 0.05em; }
 
-/* --- trust story: openable badge explanation + proof panel (R7, R10) ------- */
+/* --- trust story: tap/keyboard-openable badge explanation (R7) ------------- */
 .solve-explain { min-width: 0; }
 .solve-explain > summary { list-style: none; cursor: pointer; border-radius: var(--radius-sm); }
 .solve-explain > summary::-webkit-details-marker { display: none; }
@@ -275,40 +288,14 @@ input.bumped { background: rgba(76,194,255,0.16); border-color: var(--accent); }
   color: var(--text); line-height: 1.5;
 }
 
-.proof-panel {
-  border: 1px solid var(--border); border-radius: var(--radius);
-  background: var(--panel); margin-bottom: var(--sp-4);
-}
-.proof-panel > summary {
-  list-style: none; cursor: pointer; padding: var(--sp-3) var(--sp-4);
-  min-height: var(--tap); display: flex; align-items: center; gap: var(--sp-2);
-  font-weight: 600; color: var(--accent);
-}
-.proof-panel > summary::-webkit-details-marker { display: none; }
-.proof-panel > summary::before { content: "▸"; color: var(--faint); transition: transform 0.15s; }
-.proof-panel[open] > summary::before { transform: rotate(90deg); }
-.proof-panel > summary:focus-visible { outline: none; box-shadow: var(--ring); }
-.proof-body { padding: 0 var(--sp-4) var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-4); }
-.proof-method { margin: 0; color: var(--text); font-size: var(--fs-sm); line-height: 1.6; max-width: 72ch; }
-.proof-method em { color: var(--accent); font-style: normal; font-weight: 600; }
-.proof-section h4 { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); color: var(--muted); }
-.proof-order { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-1); }
-.proof-order li { display: flex; align-items: baseline; gap: var(--sp-2); font-size: var(--fs-sm); }
-.proof-rank {
-  flex: none; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--elev);
-  color: var(--muted); font-size: var(--fs-xs); display: inline-flex; align-items: center; justify-content: center;
-}
-.proof-stat { color: var(--text); flex: 1; }
-.proof-val { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
-.proof-target { border-top: 1px solid var(--border); padding-top: var(--sp-2); }
-.proof-target-head { font-size: var(--fs-sm); font-weight: 600; color: var(--text); }
-
 /* per-item "why this?" line inside a paperdoll slot (R8, R9) */
 .pd-why { font-size: var(--fs-xs); color: var(--optimal); margin-top: 2px; }
 .pd-why.muted { color: var(--faint); }
 
-/* readout layout */
-.readout-grid { display: flex; flex-direction: column; gap: var(--sp-5); }
+/* readout layout: the paperdoll is the hero (front and centre), the ranked-target
+   analysis sits below it. */
+.readout-analysis { margin-top: var(--sp-5); }
+.readout-doll { display: flex; flex-direction: column; align-items: center; }
 
 /* on-load intro state (before the first solve) — shows the data-forward design */
 .readout-intro { display: flex; flex-direction: column; gap: var(--sp-4); }
@@ -479,11 +466,14 @@ details.pd-slot > .pd-detail { padding: 0 var(--sp-3) var(--sp-3); }
   .targets { grid-template-columns: repeat(2, 1fr); }
 }
 
-/* Option-B character paperdoll: symmetric paired rows flanking the figure.
-   Applies from tablet up; the phone base stacks the slots single-column. */
-@media (min-width: 700px) {
+/* Option-B character paperdoll, front and centre: a large figure with the slots
+   in paired anatomy rows around the body, the columns bowed into an arc (head and
+   feet tuck inward, the torso pushes out). The grid keeps it robust — a tall slot
+   just grows its row, never overlaps. Phone base stacks the slots single-column. */
+@media (min-width: 760px) {
+  .readout-doll { width: 100%; max-width: 780px; }
   .paperdoll {
-    grid-template-columns: 1fr minmax(64px, 92px) 1fr;
+    grid-template-columns: 1fr minmax(150px, 190px) 1fr;
     grid-template-areas:
       "helmet  fig necklace"
       "goggles fig trinket"
@@ -491,9 +481,10 @@ details.pd-slot > .pd-detail { padding: 0 var(--sp-3) var(--sp-3); }
       "bracers fig belt"
       "ring1   fig ring2"
       "boots   fig gloves";
-    align-items: center; gap: var(--sp-2) var(--sp-3);
+    align-items: center; gap: var(--sp-3) var(--sp-3);
   }
   .pd-figure { display: block; }
+  .pd-figure svg { max-width: 180px; max-height: 560px; }
   .pd-slot.pos-helmet { grid-area: helmet; }
   .pd-slot.pos-goggles { grid-area: goggles; }
   .pd-slot.pos-necklace { grid-area: necklace; }
@@ -506,14 +497,16 @@ details.pd-slot > .pd-detail { padding: 0 var(--sp-3) var(--sp-3); }
   .pd-slot.pos-ring2 { grid-area: ring2; }
   .pd-slot.pos-boots { grid-area: boots; }
   .pd-slot.pos-gloves { grid-area: gloves; }
-  /* an unmapped future slot spans its own row rather than mis-placing into a
-     named area, so a new slot is surfaced, never silently dropped. */
   .pd-slot.pos-misc { grid-column: 1 / -1; }
-}
-
-@media (min-width: 900px) {
-  /* readout hero beside the paperdoll inset */
-  .readout-main { display: grid; grid-template-columns: 1fr minmax(320px, 400px); gap: var(--sp-5); align-items: start; }
+  /* bow the two columns into an arc around the body: head/feet tuck toward the
+     centre, the torso rows push outward — a circular silhouette, grid-robust. */
+  .pd-slot.pos-helmet, .pd-slot.pos-boots { transform: translateX(38px); }
+  .pd-slot.pos-goggles, .pd-slot.pos-ring1 { transform: translateX(16px); }
+  .pd-slot.pos-armor, .pd-slot.pos-bracers { transform: translateX(-10px); }
+  .pd-slot.pos-necklace, .pd-slot.pos-gloves { transform: translateX(-38px); }
+  .pd-slot.pos-trinket, .pd-slot.pos-ring2 { transform: translateX(-16px); }
+  .pd-slot.pos-cloak, .pd-slot.pos-belt { transform: translateX(10px); }
+  .pd-weapons { max-width: 32rem; margin: var(--sp-4) auto 0; }
 }
 
 /* accessibility: respect reduced motion (JS also checks this) */

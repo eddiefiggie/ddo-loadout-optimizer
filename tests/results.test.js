@@ -275,17 +275,6 @@ test("whyThisLine has an explicit empty state for a filler pick", () => {
   assert.ok(/complete the loadout/.test(html), "a pick winning no target reads as filler, not blank");
 });
 
-test("proofPanel explains the method, lists the ranked order, and breaks down each value (R10)", () => {
-  const res = whyResult();
-  const html = R.proofPanel(res, { targets: ["Constitution"] }, R.attributionByTarget(res));
-  assert.ok(/provably/i.test(html), "states the result is provably optimal");
-  assert.ok(/MILP/.test(html), "explains the MILP method");
-  assert.ok(/42 candidate items/.test(html), "cites the compute scale");
-  assert.ok(/7 ms/.test(html), "shows the solve time");
-  assert.ok(/proof-order/.test(html) && /Constitution/.test(html), "lists the ranked priority order");
-  assert.ok(/proof-target/.test(html), "includes the per-target contribution breakdown");
-});
-
 test("whyThis does not cross-attribute a set win between the two rings (host-id match)", () => {
   // Set "Alpha" is yielded by Ring1 + Necklace only; Ring2 is a non-member.
   const result = {

@@ -398,31 +398,6 @@ function whyThisLine(result, item, attr) {
   return `<div class="pd-why" title="why this item is best-in-slot here">wins ${txt}</div>`;
 }
 
-// The expandable proof panel (R10): plain-language method + the ranked-priority
-// order the solve optimized + a per-target contribution breakdown. `attr` is the
-// attributionByTarget map, reused so the breakdown matches the achieved readout.
-function proofPanel(result, query, attr) {
-  const cs = result.computeScale || {};
-  const ms = result.solveMs;
-  const order = query.targets.map((stat, i) => {
-    const v = (result.perTarget && result.perTarget[stat] != null) ? result.perTarget[stat] : (result.effective[stat] ?? 0);
-    return `<li><span class="proof-rank">${i + 1}</span><span class="proof-stat">${esc(stat)}</span><span class="proof-val">${esc(v)}</span></li>`;
-  }).join("");
-  const breakdown = query.targets.map((stat) => `
-    <div class="proof-target">
-      <div class="proof-target-head">${esc(stat)} = ${esc(result.effective[stat] ?? 0)}</div>
-      ${attributionList(attr[stat] || [])}
-    </div>`).join("");
-  return `<details class="proof-panel" id="proof-panel">
-    <summary>How do we know this is optimal?</summary>
-    <div class="proof-body">
-      <p class="proof-method">This isn't a guess. The optimizer models your gear as an <strong>exact integer program</strong> and effectively checks <strong>every legal combination</strong>${cs.variants ? ` of ${esc(cs.variants)} candidate items` : ""}, then returns the loadout that is <strong>provably the best</strong> for your ranked priorities${ms != null ? `, solved in ${esc(ms)} ms` : ""}. <em>MILP</em> is the method — a mixed-integer linear program; <em>provable</em> means no other legal loadout scores better on these priorities. A low-level item can still win a slot when its bonus genuinely beats every higher-level option for a target you ranked.</p>
-      <div class="proof-section"><h4>Your priorities, in the order they were maximized</h4><ol class="proof-order">${order}</ol></div>
-      <div class="proof-section"><h4>What builds each value</h4>${breakdown}</div>
-    </div>
-  </details>`;
-}
-
 // Count-up motion (KTD4), robust to motion NOT running (AE4). The final value is
 // written into the DOM first and stays there unless an animation frame actually
 // fires — so if requestAnimationFrame is throttled/absent, or reduced-motion is
@@ -494,13 +469,13 @@ function renderResults(container, { model, result, query, dataset }) {
     <div class="solve-banner">
       <details class="solve-explain">
         <summary class="solve-verdict"><span class="dot"></span><span class="label">OPTIMAL</span><span class="sub">· exact MILP, provably best</span><span class="explain-hint" aria-hidden="true">ⓘ</span></summary>
-        <div class="solve-explain-body">Every legal combination of your gear was checked as an exact math problem — this loadout is <strong>provably the best</strong> for your ranked priorities, not a guess or estimate. Open “How do we know this is optimal?” below for the full proof.</div>
+        <div class="solve-explain-body">Every legal combination of your gear was checked as an exact math problem — this loadout is <strong>provably the best</strong> for your ranked priorities, not a guess or estimate. Each equipped item below shows exactly what it wins.</div>
       </details>
       <div class="solve-scale">
-        <div class="scale-item"><span class="n">${esc(cs.variants)}</span><span class="k">variants</span></div>
-        <div class="scale-item"><span class="n">${esc(cs.crafts)}</span><span class="k">craft options</span></div>
-        <div class="scale-item"><span class="n">${esc(cs.stages)}</span><span class="k">solve stages</span></div>
-        <div class="scale-item"><span class="n">${esc(result.solveMs ?? "—")}</span><span class="k">ms</span></div>
+        <div class="scale-item" title="Candidate item variants the solver weighed across your slots"><span class="n">${esc(cs.variants)}</span><span class="k">gear considered</span></div>
+        <div class="scale-item" title="Augment and expansion-crafting options considered"><span class="n">${esc(cs.crafts)}</span><span class="k">craft choices</span></div>
+        <div class="scale-item" title="One optimization pass per ranked priority, plus a final tie-break"><span class="n">${esc(cs.stages)}</span><span class="k">priority passes</span></div>
+        <div class="scale-item" title="Wall-clock solve time"><span class="n">${esc(result.solveMs ?? "—")}</span><span class="k">solve ms</span></div>
       </div>
     </div>`;
 
@@ -567,26 +542,21 @@ function renderResults(container, { model, result, query, dataset }) {
 
   container.innerHTML = `
     ${banner}
-    ${proofPanel(result, query, attr)}
-    <div class="readout-grid">
-      <div class="readout-main">
-        <div class="readout-hero">
-          <h3 class="section-title">Achieved — ranked priority</h3>
-          <div class="targets">${cards}</div>
-          ${setsBlock}
-        </div>
-        <div class="readout-doll">
-          <h3 class="section-title">Loadout</h3>
-          <div class="paperdoll">${paperdollFigure()}${paired.join("")}</div>
-          <div class="pd-weapons">${weaponCells}</div>
-        </div>
-      </div>
+    <div class="readout-doll">
+      <div class="paperdoll">${paperdollFigure()}${paired.join("")}</div>
+      <div class="pd-weapons">${weaponCells}</div>
     </div>
-    ${coverageNote(dataset)}`;
+    <div class="readout-analysis">
+      <div class="readout-hero">
+        <h3 class="section-title">Achieved — ranked priority</h3>
+        <div class="targets">${cards}</div>
+        ${setsBlock}
+      </div>
+    </div>`;
 
   animateCounters(container);
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, attributionByTarget, whyThis, whyThisLine, proofPanel, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, slotDetailChips, esc, safeUrl };
+  module.exports = { renderResults, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, slotDetailChips, esc, safeUrl };
 }
