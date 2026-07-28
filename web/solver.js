@@ -707,6 +707,103 @@ function solveConstrained(program, highs, { objectiveStat, objTerms, sense = "ma
   return { status: "optimal", ...sol, breakdown: breakdownByTarget(program, prim), capped: { ...program.cappedStats } };
 }
 
+// The bounded give allowed on a priority for an alternative: 10% or at least 2, so
+// the tolerance scales with the stat (Constitution ~40 vs Physical Sheltering ~150).
+function alternativeGive(value) { return Math.max(2, Math.round(0.10 * Math.abs(value))); }
+
+// Do two solutions equip the same item set? (build-equality for the zero-cost check.)
+function sameChosen(a, b) {
+  const key = (s) => s.chosen.map((c) => `${c.slot}:${c.variant.variant_id}`).sort().join("|");
+  return key(a) === key(b);
+}
+
+// Distinct affix/scaling stats an item can carry (for unranked-stat candidates).
+function modelStats(model) {
+  const s = new Set();
+  const add = (v) => {
+    for (const a of v.affixes || []) if (a.value > 0) s.add(a.stat);
+    for (const sc of v.scaling || []) s.add(sc.stat);
+  };
+  for (const slot of model.worn || []) for (const v of slot.variants || []) add(v);
+  for (const a of model.augments || []) add(a);
+  return s;
+}
+
+// U2 (alternatives) — produce candidate trade-off builds, one family per gain axis,
+// each a re-solve over the optimum's program (or, for unranked stats, a program
+// rebuilt to model that stat, since `buildProgram` only tracks the ranked targets).
+// Returns raw candidates `{ sol, gainAxis, meta }`; dedupe/analysis/ranking is U3.
+// `opts.cap` bounds the per-axis re-solve budget so on-demand generation stays fast.
+function generateAlternatives(optimum, model, highs, opts = {}) {
+  const program = optimum.program;
+  const targets = program.targetList;              // ranked priorities, in order
+  const per = optimum.perTarget || optimum.effective;
+  const cap = { sets: 6, unranked: 6, ...(opts.cap || {}) };
+  const out = [];
+
+  // (a) set-activation — force each not-yet-active set active and maximize the top
+  // priority (no priority floor: completing a set can cost more than the rebalance
+  // give; U3 reports the real cost and ranking cuts overly-costly ones).
+  const active = new Set((optimum.setsActive || []).map((s) => s.set));
+  let sCount = 0;
+  for (const [setVar, meta] of program.setMeta || []) {
+    if (active.has(meta.set) || sCount >= cap.sets) continue;
+    const sol = solveConstrained(program, highs, { objectiveStat: targets[0], locks: [], extra: [`${setVar} = 1`] });
+    if (sol.status === "optimal" && !sameChosen(sol, optimum)) { out.push({ sol, gainAxis: "set", meta: { set: meta.set } }); sCount++; }
+  }
+
+  // (b) rebalance — relax ONLY the higher priority being traded from (by its give),
+  // keep the priorities ABOVE the maximized one pinned at optimum, and maximize a
+  // lower priority (which must be left unlocked so it can rise).
+  for (let i = 0; i < targets.length; i++) {
+    for (let j = i + 1; j < targets.length; j++) {
+      const locks = targets.slice(0, j).map((s, k) => (k === i
+        ? { stat: s, value: per[s], give: alternativeGive(per[s]) }
+        : { stat: s, value: per[s] }));
+      const sol = solveConstrained(program, highs, { objectiveStat: targets[j], locks });
+      if (sol.status === "optimal" && !sameChosen(sol, optimum)) out.push({ sol, gainAxis: "rebalance", meta: { from: targets[i], to: targets[j] } });
+    }
+  }
+
+  // (c) unranked-stat — the program does not model non-target stats, so rebuild it with
+  // the candidate stat appended as a target, lock the original targets at optimum, and
+  // maximize the stat (a zero-cost strict improvement); if that just re-finds the
+  // optimum, relax the lowest priority and try once more.
+  const targetSet = new Set(targets);
+  const unrankedCandidates = [...modelStats(model)].filter((s) => !targetSet.has(s)).slice(0, cap.unranked);
+  const originalExact = targets.map((s) => ({ stat: s, value: per[s] }));
+  for (const u of unrankedCandidates) {
+    const p2 = buildProgram({ ...model, targets: [...model.targets, u] });
+    if (!p2.xVars.length) continue;
+    let sol = solveConstrained(p2, highs, { objectiveStat: u, locks: originalExact });
+    let zeroCost = true;
+    if (sol.status === "optimal" && sameChosen(sol, optimum) && targets.length) {
+      zeroCost = false;
+      const relaxLowest = originalExact.map((l, k) => (k === originalExact.length - 1 ? { ...l, give: alternativeGive(l.value) } : l));
+      sol = solveConstrained(p2, highs, { objectiveStat: u, locks: relaxLowest });
+    }
+    if (sol.status === "optimal" && !sameChosen(sol, optimum)) out.push({ sol, gainAxis: "unranked", meta: { stat: u, zeroCost } });
+  }
+
+  // (d) fewer-crafts — minimize the sum of craft-placement binaries, allowing a bounded
+  // give on the priorities (only when the optimum actually uses crafts).
+  const craftVars = [
+    ...(program.augMeta ? program.augMeta.keys() : []), ...(program.dinoMeta ? program.dinoMeta.keys() : []),
+    ...(program.ncMeta ? program.ncMeta.keys() : []), ...(program.vikMeta ? program.vikMeta.keys() : []),
+    ...(program.sealMeta ? program.sealMeta.keys() : []),
+  ];
+  const optCrafts = (optimum.augmentsPlaced || []).length + (optimum.dinoPlaced || []).length
+    + (optimum.ncPlaced || []).length + (optimum.vikPlaced || []).length + (optimum.sealPlaced || []).length;
+  if (craftVars.length && optCrafts > 0) {
+    const relaxedAll = targets.map((s) => ({ stat: s, value: per[s], give: alternativeGive(per[s]) }));
+    const objTerms = craftVars.map((name) => ({ coef: 1, name }));
+    const sol = solveConstrained(program, highs, { objTerms, sense: "min", locks: relaxedAll });
+    if (sol.status === "optimal" && !sameChosen(sol, optimum)) out.push({ sol, gainAxis: "crafts", meta: { optCrafts } });
+  }
+
+  return out;
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, solveLexicographic, solveConstrained, scaleAt, breakdownByTarget, computeScale };
+  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, computeScale };
 }

@@ -94,5 +94,54 @@ const tradeModel = () => ({
     assert.strictEqual(alt.status, "infeasible", "cannot drop Constitution to 13 with only a give of 3");
   });
 
+  // ---- U2: the four gain generators ----
+
+  await test("set-activation generator surfaces the skipped set as a trade", async () => {
+    const opt = await S.solveLexicographic(tradeModel(), highs);
+    const alts = S.generateAlternatives(opt, tradeModel(), highs);
+    const setAlt = alts.find((a) => a.gainAxis === "set" && a.meta.set === "Alpha");
+    assert.ok(setAlt, "produced a set-activation candidate for Alpha");
+    assert.strictEqual(setAlt.sol.effective.Constitution, 13, "the set build trades Constitution down to 13");
+    assert.ok(setAlt.sol.setsActive.some((s) => s.set === "Alpha"), "Alpha is active in the candidate");
+  });
+
+  await test("rebalance generator trades a higher priority for a lower one", async () => {
+    const model = {
+      targets: ["Strength", "Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Gloves", [
+        item("Glove A", "Gloves", [["Strength", "Enhancement", 20]]),
+        item("Glove B", "Gloves", [["Strength", "Enhancement", 18], ["Constitution", "Enhancement", 12]]),
+      ])],
+      augments: [],
+    };
+    const opt = await S.solveLexicographic(model, highs);
+    assert.strictEqual(opt.effective.Strength, 20);
+    assert.strictEqual(opt.effective.Constitution, 0, "optimum takes max Strength, no Constitution");
+    const alts = S.generateAlternatives(opt, model, highs);
+    const reb = alts.find((a) => a.gainAxis === "rebalance");
+    assert.ok(reb, "produced a rebalance candidate");
+    assert.ok(reb.sol.effective.Constitution > opt.effective.Constitution, "gains on the lower priority");
+    assert.ok(reb.sol.effective.Strength >= 18, "gives up Strength only within the bounded give");
+  });
+
+  await test("unranked-stat generator finds a zero-cost strict improvement", async () => {
+    const model = {
+      targets: ["Strength"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Boots", [
+        item("Boots Low", "Boots", [["Strength", "Enhancement", 10], ["Fortitude", "Enhancement", 5]]),
+        item("Boots High", "Boots", [["Strength", "Enhancement", 10], ["Fortitude", "Enhancement", 15]]),
+      ])],
+      augments: [],
+    };
+    const opt = await S.solveLexicographic(model, highs);
+    assert.strictEqual(opt.effective.Strength, 10);
+    const alts = S.generateAlternatives(opt, model, highs);
+    const un = alts.find((a) => a.gainAxis === "unranked" && a.meta.stat === "Fortitude");
+    assert.ok(un, "produced an unranked-stat candidate for Fortitude");
+    assert.strictEqual(un.meta.zeroCost, true, "the Fortitude gain costs no Strength");
+    assert.strictEqual(un.sol.effective.Strength, 10, "Strength is unchanged");
+    assert.ok(un.sol.chosen.some((c) => c.variant.variant_id === "Boots High"), "equips the higher-Fortitude boots");
+  });
+
   console.log(`\n${passed} passed`);
 })();
