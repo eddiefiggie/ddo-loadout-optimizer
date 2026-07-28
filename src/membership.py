@@ -56,6 +56,35 @@ def build_membership_set_defs(seed: dict) -> dict:
     return out
 
 
+STATION = "Cannith Repurposing Station"
+
+
+def pool_for_tier(seed: dict, tier: str) -> list:
+    """The set names a Lost Purpose item of the given tier ('heroic'|'legendary')
+    can awaken — every Vecna set whose own tier matches. Deterministic (seed order)."""
+    return [name for name, spec in (seed.get("sets") or {}).items()
+            if spec.get("tier") == tier]
+
+
+def membership_slot_for(tier: str, seed: dict) -> dict:
+    """The set_membership_slot to attach to a Lost Purpose item of this tier."""
+    return {"pool": pool_for_tier(seed, tier), "station": STATION}
+
+
+def attach_lost_purpose_slots(variants, seed: dict) -> int:
+    """In place: every variant carrying a `lost_purpose` tier marker gets its
+    set_membership_slot (pool of same-tier Vecna sets). Returns the count attached.
+    Keeps the 11-set pool in ONE place (the set seed) instead of on 44 items."""
+    n = 0
+    for v in variants:
+        tier = v.get("lost_purpose")
+        if tier not in ("heroic", "legendary"):
+            continue
+        v["set_membership_slot"] = membership_slot_for(tier, seed)
+        n += 1
+    return n
+
+
 def coverage(defs: dict) -> dict:
     return {
         "sets": len(defs),

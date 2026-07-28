@@ -69,6 +69,9 @@ def _make_variant(item, ml, tier_label, parsed):
         # Seal-slot host markers [{seal_type, category}] — propagated so the solver
         # unseals the best option from the seal_type's pool (single-pick).
         "seal_slots": item.get("seal_slots"),
+        # Vecna "Lost Purpose" tier marker ('heroic'|'legendary') — propagated so the
+        # build attaches the chosen-set-membership slot (pool = same-tier Vecna sets).
+        "lost_purpose": item.get("lost_purpose"),
     }
 
 

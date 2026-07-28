@@ -1136,6 +1136,28 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.strictEqual((r.membershipPlaced || []).length, 0, "a non-load-bearing awaken is not fabricated");
   });
 
+  await test("MEMBERSHIP/real items: a spellpower build awakens a Vecna set on real Lost Purpose gear", async () => {
+    // The full feature: real dataset + real buildModel. Legendary University Lost
+    // Purpose armor/helm/cloak hosts awaken a spellpower Vecna set (Vol's Influence /
+    // Delight / Shadow's Emptiness) to complete its 3-piece Universal Spell Power tier.
+    const fs = require("fs");
+    const { buildModel } = require("../web/model.js");
+    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    const lp = data.items.filter((v) => v.set_membership_slot);
+    assert.ok(lp.length === 44, "all 44 Lost Purpose items carry a membership slot");
+    const query = { mlCap: 32, targets: ["Universal Spell Power", "Spell Critical Chance", "Spell DCs"], armorType: null, weaponSetup: null, classRace: null };
+    const model = buildModel(data.items, query, data.dino_inserts, data.nearly_complete, data.viktranium, data.seal, data.membership_set_defs);
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    const awakened = new Set((r.membershipPlaced || []).map((m) => m.set));
+    assert.ok(awakened.size > 0, "at least one Vecna set is awakened on real Lost Purpose gear");
+    assert.ok((r.membershipPlaced || []).every((m) => m.station === "Cannith Repurposing Station"),
+      "every awaken prescription names the Cannith Repurposing Station");
+    // whatever set was awakened is genuinely active (load-bearing guard holds on real data)
+    const active = new Set((r.setsActive || []).map((s) => s.set));
+    for (const s of awakened) assert.ok(active.has(s), `${s} is active where awakened`);
+  });
+
   await test("MEMBERSHIP/no over-report on tieBreak:false (alternatives path)", async () => {
     // A Lost Purpose host equipped for its plain worn affix, but its 3-piece set
     // cannot complete (only one such host). On a tieBreak:false solve (the path every

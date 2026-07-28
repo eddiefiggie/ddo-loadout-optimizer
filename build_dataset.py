@@ -141,8 +141,8 @@ def build(seed: dict) -> dict:
     seen_names = set(base_by_name)
     deduped = []
     for it in all_enriched:
-        if it.get("_seal_carrier"):
-            continue
+        if it.get("_seal_carrier") or it.get("_lost_purpose_carrier"):
+            continue  # marker-only stubs: they graft a slot/marker in Pass 2, never claim a body
         name = it.get("name")
         if name in seen_names:
             continue
@@ -158,6 +158,12 @@ def build(seed: dict) -> dict:
         winner = kept_by_name.get(name)
         if winner is not None and it.get("seal_slots") and not winner.get("seal_slots"):
             winner["seal_slots"] = [dict(s) for s in it["seal_slots"]]  # copy: no shared ref across base + tier variants
+        # Same graft for the Vecna "Lost Purpose" marker: many University items are
+        # already solver-active via the gear-planner shard (which sorts before the
+        # vecna shard and wins the body), so the lost_purpose marker must graft onto
+        # the winner from ANY loaded record (KTD6), or the awaken slot would be lost.
+        if winner is not None and it.get("lost_purpose") and not winner.get("lost_purpose"):
+            winner["lost_purpose"] = it["lost_purpose"]
     enriched_items = deduped
 
     # Set bonuses for enriched members (U3). Only the 67 base-seed items carry a
@@ -248,6 +254,12 @@ def build(seed: dict) -> dict:
     # Expand umbrella ability affixes ("All Ability Scores +15", "Well Rounded")
     # into the six concrete abilities so single-ability targets get credited.
     umbrella_mod.expand_variants(variants)
+    # Vecna "Lost Purpose": attach the chosen-set-membership slot (pool = the 11
+    # same-tier Vecna sets) to every item carrying a `lost_purpose` tier marker, so
+    # the solver can awaken one set on it at the Cannith Repurposing Station. The pool
+    # lives once in the set seed, not repeated on 44 items.
+    _vecna_seed = membership_mod.load_seed()
+    membership_mod.attach_lost_purpose_slots(variants, _vecna_seed)
     variants, cov = verify_mod.apply(variants)          # per-affix verification gate
 
     # U3 — Isle of Dread Dino crafting: append pre-verified blank host variants
@@ -277,7 +289,7 @@ def build(seed: dict) -> dict:
     # the runtime table the solver self-seeds awaken-only set thresholds from. Unlike
     # intrinsic sets (baked onto member items), an awaken-only set has no equipped
     # member to register its threshold, so its tier definition is exported here (KTD4).
-    membership_defs = membership_mod.build_membership_set_defs(membership_mod.load_seed())
+    membership_defs = membership_mod.build_membership_set_defs(_vecna_seed)
 
     # Compendium roster: the complete named-item INDEX (name + slot + wiki link
     # for every named item on the wiki, harvested by category). Roster entries
