@@ -147,6 +147,24 @@ test("craftChips renders the Gem's wildcard set assignment, load-bearing only", 
   assert.ok(!/Wildcard set/.test(chips2), "no wildcard chip for a non-joker item");
 });
 
+test("craftChips renders the Vecna awaken prescription with its station", () => {
+  const host = { variant_id: "Legendary University Mage's Hat", wiki_url: "https://ddowiki.com/x" };
+  const maps = {
+    augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
+    ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(),
+    jokerByHost: new Map(),
+    membershipByHost: new Map([["Legendary University Mage's Hat",
+      [{ host: "Legendary University Mage's Hat", set: "Legendary Vol's Influence", station: "Cannith Repurposing Station" }]]]),
+  };
+  const chips = R.craftChips(host, 0, maps).join(" ");
+  // esc() HTML-escapes the apostrophe in "Vol's", so match around it.
+  assert.ok(/Awaken: Legendary Vol/.test(chips) && /Influence/.test(chips), "renders the awakened set");
+  assert.ok(/Cannith Repurposing Station/.test(chips), "names the station");
+  // an item with no awaken pick renders no awaken chip
+  const other = { variant_id: "Some Ring" };
+  assert.ok(!/Awaken:/.test(R.craftChips(other, 1, maps).join(" ")), "no awaken chip for a non-host item");
+});
+
 test("coverageNote discloses set bonuses now applying to enriched gear", () => {
   const note = R.coverageNote({ metadata: { set_enrichment_coverage: {
     enriched_members_with_set_bonus: 602, distinct_enriched_sets: 79,

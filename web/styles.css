@@ -378,6 +378,7 @@ input.bumped { background: rgba(76,194,255,0.16); border-color: var(--accent); }
 .pd-weapons { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); margin-top: var(--sp-2); }
 .setpip { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--set); flex: none; }
 .chip.joker { border-color: var(--accent-2); color: var(--accent-2); }
+.chip.awaken { border-color: #6a5a2a; background: #1a1710; color: #e6c86a; }
 /* Uniform, fixed-size slot cells: item name, ML, and set name only. */
 .pd-slot {
   border: 1px solid var(--border); border-radius: var(--radius-sm);
