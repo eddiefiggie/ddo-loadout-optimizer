@@ -290,7 +290,8 @@ function craftChips(v, idx, maps) {
   const viks = (maps.vikByItem.get(v.variant_id) || []).map((n) => `<span class="chip lamordia" title="U81 Viktranium / Lamordia">Lamordia ${esc(n.slot_type)}: ${lbl(n)}</span>`);
   const seals = (maps.sealByItem.get(v.variant_id) || []).map((n) => `<span class="chip seal" title="unseal one effect at the crafting table">Sealed in ${esc(n.seal_type)}: ${lbl(n)}</span>`);
   const jokers = ((maps.jokerByHost && maps.jokerByHost.get(v.variant_id)) || []).map((j) => `<span class="chip joker" title="wildcard set piece">Wildcard set: ${esc(j.set)}</span>`);
-  return [...augs, ...dinos, ...ncs, ...rolls, ...viks, ...seals, ...jokers];
+  const awakens = ((maps.membershipByHost && maps.membershipByHost.get(v.variant_id)) || []).map((m) => `<span class="chip awaken" title="awaken this set at the ${esc(m.station || "crafting station")}">Awaken: ${esc(m.set)}${m.station ? ` <span class="muted">(${esc(m.station)})</span>` : ""}</span>`);
+  return [...augs, ...dinos, ...ncs, ...rolls, ...viks, ...seals, ...jokers, ...awakens];
 }
 
 // The set(s) an equipped piece belongs to, stated on its slot (R15).
@@ -575,10 +576,18 @@ function buildViews(build, model, query) {
     if (!jokerByHost.has(j.host)) jokerByHost.set(j.host, []);
     jokerByHost.get(j.host).push(j);
   }
+  // Awakened set-membership picks (Vecna Lost Purpose / Cannith Repurposing Station),
+  // keyed by host item like jokers.
+  const membershipByHost = new Map();
+  for (const m of build.membershipPlaced || []) {
+    if (!membershipByHost.has(m.host)) membershipByHost.set(m.host, []);
+    membershipByHost.get(m.host).push(m);
+  }
   const maps = {
     augAssign, dinoAssign,
     ncByItem: byItemMap(build.ncPlaced), rollByItem: byItemMap(build.rollPlaced),
     vikByItem: byItemMap(build.vikPlaced), sealByItem: byItemMap(build.sealPlaced), jokerByHost,
+    membershipByHost,
   };
   const picksBySlot = new Map();
   build.chosen.forEach((c, idx) => {
