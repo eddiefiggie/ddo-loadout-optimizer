@@ -46,15 +46,48 @@ function variantAugColors(variant) {
   return (variant.augment_slots || []).filter(Boolean);
 }
 
+// Warforged/Bladeforged wear a Docent in the body slot instead of armor.
+const FORGED_RACES = new Set(["warforged", "bladeforged", "battleforged"]);
+function isForgedRace(race) {
+  return !!race && FORGED_RACES.has(String(race).toLowerCase());
+}
+/** Docent detection keys off the item name — the dataset has no docent flag,
+ *  and docents are consistently named "<X> Docent". */
+function isDocent(v) {
+  return /\bdocent\b/i.test(v.source_item || v.variant_id || v.name || "");
+}
+
+// Character gate (U2). Every branch below is ADDITIVE and backward-compatible:
+// it only narrows the pool when the relevant query field is present AND the
+// variant carries concrete data. With the current query (no race/alignment) and
+// dataset (armor_type all "unknown", no alignment_req), every new branch is a
+// no-op, so live behavior is unchanged until the wizard supplies the fields and
+// the pipeline (U3) fills the data.
 function eligible(variants, query) {
   const cap = query.mlCap;
+  const forged = isForgedRace(query.race);
   return variants.filter((v) => {
     if (v.verification !== "verified") return false;
     if (v.minimum_level != null && v.minimum_level > cap) return false;
-    // class/race restrictions are fail-open until sourced (R18 / plan assumption)
-    if (query.classRace && v.restrictions && v.restrictions !== "unknown") {
-      // structured restrictions would be checked here; none exist in the seed yet
+
+    // R6/AE1 — Race → body slot: Forged races take docents; others cannot.
+    if (v.slot === "Armor" && query.race) {
+      const doc = isDocent(v);
+      if (forged && !doc) return false; // Forged: docents only
+      if (!forged && doc) return false; // non-Forged: never a docent
     }
+
+    // R7 — Armor-type proficiency: exclude mismatched body armor when the
+    // variant declares a concrete armor_type. Fail-open on "unknown"/absent.
+    if (v.slot === "Armor" && query.armorType && !isDocent(v) &&
+        v.armor_type && v.armor_type !== "unknown" &&
+        v.armor_type !== query.armorType) return false;
+
+    // R7/AE2 — Alignment: exclude items whose alignment requirement the
+    // character does not meet. Fail-open until alignment_req is sourced (U3).
+    if (query.alignment && Array.isArray(v.alignment_req) && v.alignment_req.length &&
+        !v.alignment_req.includes(query.alignment)) return false;
+
     return true;
   });
 }
@@ -302,6 +335,7 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     buildModel, eligible, dominanceFilter, dominates,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys,
+    isForgedRace, isDocent,
     WORN_SLOTS, SLOT_CARDINALITY, ARMOR_DODGE_CAP,
   };
 }
