@@ -76,11 +76,19 @@ function parseTroveCsv(text) {
   return { ownedNames, quantities, rowCount, columns };
 }
 
-/** Coverage disclosure (R11): how many owned distinct names matched the
- *  dataset. `items` is the worn/weapon variant pool (each has `.name`). */
+/** The base-item name a Trove "Name" is matched against. Dataset variants carry
+ *  `source_item` (the base item) and `variant_id` (tier-specific); Trove exports
+ *  the base item name, so `source_item` is the match key. (`.name` is a
+ *  test/synthetic fallback — real variants do not carry it.) */
+function itemName(v) {
+  return (v && (v.source_item || v.variant_id || v.name)) || "";
+}
+
+/** Coverage disclosure (R11): how many owned distinct names matched the dataset
+ *  by base-item name. `items` is the worn/weapon variant pool. */
 function ownedMatch(ownedNames, items) {
   const datasetNames = new Set();
-  (items || []).forEach((v) => v && v.name && datasetNames.add(v.name));
+  (items || []).forEach((v) => { const n = itemName(v); if (n) datasetNames.add(n); });
   let matched = 0;
   ownedNames.forEach((n) => { if (datasetNames.has(n)) matched++; });
   const ownedCount = ownedNames.size;
@@ -92,16 +100,17 @@ function ownedMatch(ownedNames, items) {
   };
 }
 
-/** Base-items-only pool filter (R13/KTD4): keep only worn/weapon variants the
- *  player owns by name. Augment/crafting pools are NOT passed here — the caller
- *  forwards them to buildModel unchanged so enhancements stay full-catalog. */
+/** Base-items-only pool filter (R13/KTD4): keep every variant whose base item
+ *  (`source_item`) the player owns. Augment/crafting pools are NOT passed here —
+ *  the caller forwards them to buildModel unchanged so enhancements stay
+ *  full-catalog. */
 function filterItemsToOwned(items, ownedNames) {
-  return (items || []).filter((v) => v && ownedNames.has(v.name));
+  return (items || []).filter((v) => ownedNames.has(itemName(v)));
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { splitCsvLine, parseTroveCsv, ownedMatch, filterItemsToOwned, USED_COLUMNS };
+  module.exports = { splitCsvLine, parseTroveCsv, ownedMatch, filterItemsToOwned, itemName, USED_COLUMNS };
 }
 if (typeof window !== "undefined") {
-  window.TroveImport = { splitCsvLine, parseTroveCsv, ownedMatch, filterItemsToOwned };
+  window.TroveImport = { splitCsvLine, parseTroveCsv, ownedMatch, filterItemsToOwned, itemName };
 }

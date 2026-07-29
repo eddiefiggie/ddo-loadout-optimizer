@@ -3,7 +3,7 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 const {
-  splitCsvLine, parseTroveCsv, ownedMatch, filterItemsToOwned, USED_COLUMNS,
+  splitCsvLine, parseTroveCsv, ownedMatch, filterItemsToOwned, itemName, USED_COLUMNS,
 } = require("../web/import.js");
 
 let passed = 0;
@@ -58,30 +58,36 @@ test("parseTroveCsv rejects a file with no Name column (R10)", () => {
   assert.throws(() => parseTroveCsv(""), /Empty file/);
 });
 
-test("ownedMatch discloses matched vs unrecognized (R11, AE5)", () => {
+test("itemName matches on source_item (the real dataset identity, not .name)", () => {
+  assert.strictEqual(itemName({ source_item: "Saltiron Docent", variant_id: "Saltiron Docent" }), "Saltiron Docent");
+  assert.strictEqual(itemName({ variant_id: "Foo (Legendary)" }), "Foo (Legendary)");
+});
+
+test("ownedMatch discloses matched vs unrecognized against real variant shape (R11, AE5)", () => {
   const { ownedNames } = parseTroveCsv(sampleCsv);
+  // real variants carry source_item, NOT name
   const items = [
-    { name: "Legendary Collar of the Unbroken" },
-    { name: "Ring of Fire, Lesser" },
-    { name: "Docent of Gravity" },
-    { name: "An Item The Player Does Not Own" },
+    { source_item: "Legendary Collar of the Unbroken", variant_id: "Legendary Collar of the Unbroken" },
+    { source_item: "Ring of Fire, Lesser", variant_id: "Ring of Fire, Lesser" },
+    { source_item: "Docent of Gravity", variant_id: "Docent of Gravity" },
+    { source_item: "An Item The Player Does Not Own", variant_id: "x" },
   ];
   const m = ownedMatch(ownedNames, items);
   assert.strictEqual(m.ownedCount, 4);        // 4 distinct owned names
-  assert.strictEqual(m.matched, 3);           // 3 exist in the dataset
+  assert.strictEqual(m.matched, 3);           // 3 exist in the dataset by source_item
   assert.strictEqual(m.unrecognized, 1);      // "Some Item Not In Dataset"
 });
 
-test("filterItemsToOwned keeps only owned base items (R13/KTD4)", () => {
+test("filterItemsToOwned keeps all variants of an owned base item (R13/KTD4)", () => {
   const ownedNames = new Set(["Docent of Gravity", "Ring of Fire, Lesser"]);
   const items = [
-    { name: "Docent of Gravity", slot: "Armor" },
-    { name: "Ring of Fire, Lesser", slot: "Ring" },
-    { name: "Unowned Helm", slot: "Helmet" },
+    { source_item: "Docent of Gravity", variant_id: "Docent of Gravity", slot: "Armor" },
+    { source_item: "Ring of Fire, Lesser", variant_id: "Ring of Fire, Lesser (Legendary)", slot: "Ring" },
+    { source_item: "Unowned Helm", variant_id: "Unowned Helm", slot: "Helmet" },
   ];
   const owned = filterItemsToOwned(items, ownedNames);
   assert.strictEqual(owned.length, 2);
-  assert.ok(!owned.some((v) => v.name === "Unowned Helm"));
+  assert.ok(!owned.some((v) => itemName(v) === "Unowned Helm"));
 });
 
 console.log(`\n${passed} passed`);
