@@ -9,6 +9,8 @@ title: Inventory-Aware Progressive Optimizer — Own It, Work It, Remember It - 
 
 # Inventory-Aware Progressive Optimizer — Own It, Work It, Remember It - Plan
 
+> **Superseded (2026-07-29)** by `docs/plans/2026-07-29-001-feat-guided-workflow-ui-reengineering-plan.md`, which absorbs the progressive-flow, pool-toggle, and inventory-import intent into one umbrella. Two decisions changed there: the flow shape is a linear wizard (not a progressive one-page), and inventory mode constrains base items only (augments come from the full catalog). The personalization layer (presets, notes, history) is deferred to a later slice. Kept for history; not the current source of truth.
+
 ## Goal Capsule
 
 **Objective.** Evolve the optimizer from a tabbed, theoretical-best-in-slot tool into a **single progressive, inventory-aware, personalized workflow**: the same exact math, reshaped around one continuous flow, grounded in the gear a player actually owns, and remembering what they set and learn. Three connected capabilities — a progressive flow that replaces the tabs, inventory-aware optimization over an imported owned-item set, and a client-side personalization layer.

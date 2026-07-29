@@ -71,3 +71,11 @@ A variant the solver is allowed to equip. The usual path to this status is contr
 
 ### Quarantined
 A record excluded from the solver because it yields no explicitly-parseable value — its wiki text was ambiguous or value-less. Quarantined records stay in the dataset for browsing and coverage disclosure but never contribute to a solve; nothing is ever inferred to rescue one.
+
+## Candidate pool & constraints
+
+### Inventory mode ("What I own")
+A candidate-pool option where the solve is restricted to the base items a player owns, imported from a Trove inventory export and matched to the dataset by name. Only **base items** are constrained; augments and each owned item's crafting transformations are still sourced from the full catalog, so the result shows the full build potential achievable with the owned base gear rather than what the player could craft from owned consumables. The alternative pool is all findable game gear (the default, theoretical best-in-slot).
+
+### Slot constraint
+A per-session hard constraint the user places on an equipment slot before solving: **pin** it to a specific item, **lock** it empty (excluded from the loadout), or leave it **free** for the solver. The solve honors these exactly and optimizes the remaining free slots around them.

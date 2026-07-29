@@ -4,3 +4,6 @@ __pycache__/
 .pytest_cache/
 node_modules/
 web/data/
+
+# Local dev fixtures — real Trove exports contain personal data (SubscriptionHash); never ship/commit.
+data/samples/
