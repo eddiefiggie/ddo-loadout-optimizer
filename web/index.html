@@ -6,31 +6,19 @@
   <title>DDO Loadout Optimizer</title>
   <!-- ?v= is bumped on each UI deploy so browsers never serve a stale cached
        stylesheet/script after a release (GitHub Pages has no content hashing). -->
-  <link rel="stylesheet" href="styles.css?v=14" />
+  <link rel="stylesheet" href="styles.css?v=15" />
 </head>
 <body>
   <header class="app-header">
     <div class="wrap">
       <h1>DDO Loadout Optimizer</h1>
       <p class="tagline">Your best-in-slot gear, proven by math.</p>
-      <p class="blurb">Pick the stats you care about and rank them. The solver searches every wiki-sourced item, augment, set bonus, and expansion-crafting option, then builds the single loadout that is provably the best for your priorities.</p>
     </div>
   </header>
 
   <main id="app">
-    <nav class="tabs" role="tablist" aria-label="Views">
-      <button class="tab" id="tab-solver" type="button" role="tab" aria-controls="solver" aria-selected="true" tabindex="0">Solver</button>
-      <button class="tab" id="tab-browse" type="button" role="tab" aria-controls="browse" aria-selected="false" tabindex="-1">Item Browser</button>
-    </nav>
-
-    <section id="solver" class="panel tabpanel" role="tabpanel" aria-labelledby="tab-solver" tabindex="0"><!-- loadout solver injected by query.js --></section>
-
-    <section id="browse" class="panel tabpanel" role="tabpanel" aria-labelledby="tab-browse" tabindex="0" hidden>
-      <h2>Item Browser</h2>
-      <div id="browse-controls" class="controls"><!-- filters injected by browse.js --></div>
-      <p id="browse-status" class="status"></p>
-      <div id="browse-results"><!-- rows injected by browse.js --></div>
-    </section>
+    <!-- The guided wizard (stepper + steps + results) is injected by wizard.js. -->
+    <div id="wizard"></div>
   </main>
 
   <footer class="app-footer">
@@ -40,13 +28,13 @@
     </div>
   </footer>
 
-  <script src="app.js?v=14"></script>
-  <script src="model.js?v=14"></script>
-  <script src="solver.js?v=14"></script>
-  <script src="alternatives.js?v=14"></script>
+  <script src="app.js?v=15"></script>
+  <script src="model.js?v=15"></script>
+  <script src="solver.js?v=15"></script>
+  <script src="alternatives.js?v=15"></script>
   <script src="vendor/highs.js"></script>
-  <script src="results.js?v=14"></script>
-  <script src="query.js?v=14"></script>
-  <script src="browse.js?v=14"></script>
+  <script src="results.js?v=15"></script>
+  <script src="import.js?v=15"></script>
+  <script src="wizard.js?v=15"></script>
 </body>
 </html>
