@@ -77,11 +77,16 @@ function eligible(variants, query) {
       if (!forged && doc) return false; // non-Forged: never a docent
     }
 
-    // R7 — Armor-type proficiency: exclude mismatched body armor when the
-    // variant declares a concrete armor_type. Fail-open on "unknown"/absent.
-    if (v.slot === "Armor" && query.armorType && !isDocent(v) &&
+    // R7 — Armor-type proficiency: keep only body armor whose concrete armor_type
+    // is in the character's proficiency set. Gated on the dedicated wizard field
+    // `armorTypes` (an array of allowed types) — NOT on `query.armorType`, which
+    // is the live dodge-cap input; decoupling avoids silently excluding armor if
+    // the pipeline later stamps armor_type onto items[]. Fail-open on
+    // "unknown"/absent, and a heavy-proficient character passes lighter types too.
+    if (v.slot === "Armor" && !isDocent(v) &&
+        Array.isArray(query.armorTypes) && query.armorTypes.length &&
         v.armor_type && v.armor_type !== "unknown" &&
-        v.armor_type !== query.armorType) return false;
+        !query.armorTypes.includes(v.armor_type)) return false;
 
     // R7/AE2 — Alignment: exclude items whose alignment requirement the
     // character does not meet. Fail-open until alignment_req is sourced (U3).

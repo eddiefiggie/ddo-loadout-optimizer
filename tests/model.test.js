@@ -340,13 +340,38 @@ test("AE1 inverse: a non-Forged race excludes docents", () => {
 
 test("armor-type excludes mismatched body armor when armor_type is concrete", () => {
   const pool = [armorV("Heavy Plate", "heavy"), armorV("Silk Robe", "cloth")];
-  const kept = M.eligible(pool, { mlCap: 34, armorType: "cloth" }).map((x) => x.source_item);
+  // gated on the dedicated wizard field armorTypes (proficiency set), not armorType
+  const kept = M.eligible(pool, { mlCap: 34, armorTypes: ["cloth"] }).map((x) => x.source_item);
   assert.deepStrictEqual(kept, ["Silk Robe"]);
+});
+
+test("armor-type proficiency set keeps every allowed type (heavy-prof wears lighter)", () => {
+  const pool = [armorV("Robe", "cloth"), armorV("Chain", "medium"), armorV("Plate", "heavy")];
+  const kept = M.eligible(pool, { mlCap: 34, armorTypes: ["cloth", "light", "medium", "heavy"] });
+  assert.strictEqual(kept.length, 3);
 });
 
 test('armor-type filter fails open on "unknown" (current dataset)', () => {
   const pool = [armorV("Whatsit", "unknown")];
-  assert.strictEqual(M.eligible(pool, { mlCap: 34, armorType: "cloth" }).length, 1);
+  assert.strictEqual(M.eligible(pool, { mlCap: 34, armorTypes: ["cloth"] }).length, 1);
+});
+
+test("live query.armorType (dodge-cap input) does NOT gate armor (P2 decoupling)", () => {
+  // passing the live armorType field must not exclude concrete-typed armor
+  const pool = [armorV("Heavy Plate", "heavy"), armorV("Silk Robe", "cloth")];
+  const kept = M.eligible(pool, { mlCap: 34, armorType: "cloth" }).map((x) => x.source_item).sort();
+  assert.deepStrictEqual(kept, ["Heavy Plate", "Silk Robe"]);
+});
+
+test("a docent bypasses the armor-type proficiency filter", () => {
+  const pool = [{ ...v("Adamantine Docent", "Armor", [["Fortification", "Enhancement", 100]]), armor_type: "heavy" }];
+  const kept = M.eligible(pool, { mlCap: 34, race: "warforged", armorTypes: ["cloth"] });
+  assert.strictEqual(kept.length, 1); // docent kept despite armorTypes=[cloth]
+});
+
+test("alignment_req of [] fails open (no gate)", () => {
+  const item = { ...v("Trink", "Trinket", [["Melee Power", "Profane", 20]]), alignment_req: [] };
+  assert.strictEqual(M.eligible([item], { mlCap: 34, alignment: "Chaotic Neutral" }).length, 1);
 });
 
 test("AE2: alignment excludes items whose alignment_req is unmet, incl. by axis", () => {

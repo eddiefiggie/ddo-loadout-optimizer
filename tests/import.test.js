@@ -53,6 +53,27 @@ test("parseTroveCsv sums quantity per name", () => {
   assert.strictEqual(quantities.get("Legendary Collar of the Unbroken"), 1);
 });
 
+test("parseTroveCsv handles CRLF line endings (real Windows Trove exports)", () => {
+  const crlf = 'Name,Quantity,Binding\r\n"Cloak of Night",1,BtA\r\n"Ring of Fire",2,BtC\r\n';
+  const { ownedNames, quantities, rowCount } = parseTroveCsv(crlf);
+  assert.strictEqual(rowCount, 2);
+  assert.ok(ownedNames.has("Cloak of Night")); // no trailing \r on the name
+  assert.strictEqual(quantities.get("Ring of Fire"), 2); // no \r corrupting the last column
+});
+
+test("parseTroveCsv skips a row with an empty Name and does not inflate rowCount", () => {
+  const csv = 'Name,Quantity\n"Real Item",1\n,3\n';
+  const { ownedNames, rowCount } = parseTroveCsv(csv);
+  assert.strictEqual(rowCount, 1);
+  assert.deepStrictEqual([...ownedNames], ["Real Item"]);
+});
+
+test("parseTroveCsv accepts a header-only file (zero rows, no throw)", () => {
+  const { ownedNames, rowCount } = parseTroveCsv("Name,Quantity,Binding\n");
+  assert.strictEqual(rowCount, 0);
+  assert.strictEqual(ownedNames.size, 0);
+});
+
 test("parseTroveCsv rejects a file with no Name column (R10)", () => {
   assert.throws(() => parseTroveCsv("foo,bar\n1,2\n"), /Not a Trove export/);
   assert.throws(() => parseTroveCsv(""), /Empty file/);

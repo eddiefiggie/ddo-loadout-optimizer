@@ -1302,5 +1302,33 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.strictEqual(r.gsPlaced[0].bonus_type, "Quality", "chose the stacking tier");
   });
 
+  // U6 — AE4 end-to-end: slot constraints honored through the real HiGHS solve
+  await test("AE4: a pinned (weaker) variant is force-equipped over the optimum", async () => {
+    const model = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [
+        item("TrinkStrong", "Trinket", [["Constitution", "Enhancement", 20]]),
+        item("TrinkWeak", "Trinket", [["Constitution", "Enhancement", 5]]),
+      ])],
+      query: { slotConstraints: { Trinket: { type: "pin", variant_id: "TrinkWeak" } } },
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.chosen[0].variant.variant_id, "TrinkWeak", "pin forces the weaker item");
+    assert.strictEqual(r.effective.Constitution, 5, "and the solve honors it, not the 20 optimum");
+  });
+
+  await test("AE4: lock-empty leaves the slot empty (and stays feasible)", async () => {
+    const model = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [item("T", "Trinket", [["Constitution", "Enhancement", 20]])])],
+      query: { slotConstraints: { Trinket: { type: "empty" } } },
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal", "lock-empty must not make the solve infeasible");
+    assert.strictEqual(r.chosen.length, 0, "the trinket slot is empty");
+    assert.strictEqual(r.effective.Constitution || 0, 0, "no contribution from the locked slot");
+  });
+
   console.log(`\n${passed} passed`);
 })();
