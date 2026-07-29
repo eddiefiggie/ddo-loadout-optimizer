@@ -604,8 +604,9 @@ input.bumped { background: rgba(76,194,255,0.16); border-color: var(--accent); }
 .wz-step { display: flex; align-items: center; gap: var(--sp-2); color: var(--faint); font-size: var(--fs-sm); }
 .wz-step:not(:last-child)::after { content: ""; width: 28px; height: 2px; background: var(--border); margin: 0 var(--sp-2); border-radius: 2px; }
 .wz-step.done::after { background: var(--optimal); }
-.wz-dot { width: 26px; height: 26px; border-radius: 50%; background: var(--panel-2); border: 1px solid var(--border-2);
-  color: var(--muted); font-size: var(--fs-xs); font-weight: 700; cursor: default; }
+.wz-dot { width: 26px; height: 26px; min-height: 0; padding: 0; flex: none; border-radius: 50%;
+  background: var(--panel-2); border: 1px solid var(--border-2); display: flex; align-items: center;
+  justify-content: center; color: var(--muted); font-size: var(--fs-xs); font-weight: 700; cursor: default; }
 .wz-step.done .wz-dot { background: var(--optimal); border-color: var(--optimal); color: var(--bg); cursor: pointer; }
 .wz-step.on .wz-dot { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); box-shadow: var(--ring); }
 .wz-step.on span { color: var(--text); font-weight: 600; }
@@ -670,7 +671,8 @@ input.wz-ml { width: 120px; }
 .wz-nm { flex: 1; font-weight: 550; }
 .wz-ctl { display: flex; gap: 4px; }
 .wz-ctl button { background: var(--panel); border: 1px solid var(--border-2); color: var(--muted);
-  width: 32px; height: 32px; border-radius: var(--radius-sm); cursor: pointer; }
+  width: 32px; height: 32px; min-height: 0; padding: 0; flex: none; display: flex; align-items: center;
+  justify-content: center; border-radius: var(--radius-sm); cursor: pointer; }
 .wz-ctl button:hover:not(:disabled) { color: var(--text); border-color: var(--accent); }
 .wz-ctl button:disabled { opacity: 0.35; cursor: not-allowed; }
 .wz-hint { color: var(--faint); font-style: italic; list-style: none; }
