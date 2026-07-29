@@ -31,6 +31,33 @@ const _lamordiaTier = (typeof lamordiaTier !== "undefined")
   // eslint-disable-next-line global-require
   : require("./model.js").lamordiaTier;
 
+/** U6 — per-slot constraint bodies (pin / lock-empty) as raw LP strings, using
+ *  the `extra` seam. Pin → the chosen variant's pick var = 1; lock-empty → the
+ *  slot's pick vars sum to 0; free → nothing. Pure + exported for tests. A pin
+ *  whose variant isn't in the pool is a silent no-op (the wizard drops an
+ *  ineligible pin to free before solving, R17). */
+function slotConstraintBodies(xVars, slotConstraints) {
+  if (!slotConstraints) return [];
+  const bySlot = new Map();
+  xVars.forEach((xv) => {
+    if (!bySlot.has(xv.slot)) bySlot.set(xv.slot, []);
+    bySlot.get(xv.slot).push(xv);
+  });
+  const bodies = [];
+  for (const [slot, c] of Object.entries(slotConstraints)) {
+    if (!c || c.type === "free") continue;
+    const group = bySlot.get(slot) || [];
+    if (c.type === "empty") {
+      if (group.length) bodies.push(`${group.map((x) => x.name).join(" + ")} = 0`);
+    } else if (c.type === "pin") {
+      const xv = group.find(
+        (x) => (x.variant.variant_id || x.variant.source_item) === c.variant_id);
+      if (xv) bodies.push(`${xv.name} = 1`);
+    }
+  }
+  return bodies;
+}
+
 function buildProgram(model) {
   const targetSet = new Set(model.targets);
   const mlCap = model.mlCap;
@@ -75,6 +102,12 @@ function buildProgram(model) {
   // raw LP constraint bodies that encodeStage injects verbatim.
   const extraVars = [];
   const extraConstraints = [];
+
+  // U6 — per-slot pin/lock constraints hold across every lexicographic stage.
+  // No-op when the query carries no slotConstraints (current live behavior).
+  for (const body of slotConstraintBodies(xVars, model.query && model.query.slotConstraints)) {
+    extraConstraints.push(body);
+  }
   const augMeta = new Map(); // color-placement var -> {variant_id, color, slot_color, wiki_url}
   const placeMeta = new Map(); // augment place indicator (pu) -> {variant_id, color, wiki_url}
   const setMeta = new Map(); // set_active var -> {set, pieces_required, pieces_label, wiki_url}
@@ -970,5 +1003,5 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, computeScale };
+  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, computeScale, slotConstraintBodies };
 }

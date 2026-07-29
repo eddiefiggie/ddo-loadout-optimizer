@@ -46,6 +46,7 @@ SEAL_SEED_PATH = os.path.join(HERE, "data", "seed", "seal.json")
 TF_SEED_PATH = os.path.join(HERE, "data", "seed", "thunder_forged.json")
 GS_SEED_PATH = os.path.join(HERE, "data", "seed", "green_steel.json")
 AUG_SEED_PATH = os.path.join(HERE, "data", "seed", "augments.json")
+ALIGN_SEED_PATH = os.path.join(HERE, "data", "seed", "alignment_restrictions.json")
 JOKER_SEED_PATH = os.path.join(HERE, "data", "seed", "joker_sets.json")
 COMPENDIUM_DIR = os.path.join(HERE, "data", "seed", "compendium")
 # Output lands inside web/ so that directory is a self-contained, deployable
@@ -121,6 +122,31 @@ def load_gs_seed(path: str = GS_SEED_PATH) -> dict:
         return {}
     with open(path, "r", encoding="utf-8") as fh:
         return json.load(fh)
+
+
+def load_alignment_restrictions(path: str = ALIGN_SEED_PATH) -> dict:
+    """Curated alignment equip-gates: base-item name -> allowed alignments.
+    Keys beginning with '_' (README/example) are ignored. Missing file -> {}."""
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as fh:
+        raw = json.load(fh)
+    return {k: v for k, v in raw.items()
+            if not k.startswith("_") and isinstance(v, list) and v}
+
+
+def stamp_alignment_req(variants: list, restrictions: dict) -> int:
+    """Stamp `alignment_req` onto each variant whose base item (source_item) has a
+    curated alignment equip-gate. Additive + exclude-until-verified: an item not
+    in the seed carries no field, so eligible() (JS) fails open for it. Returns
+    the count of variants stamped."""
+    n = 0
+    for v in variants:
+        req = restrictions.get(v.get("source_item"))
+        if req:
+            v["alignment_req"] = list(req)
+            n += 1
+    return n
 
 
 def load_enriched_items(dirpath: str = COMPENDIUM_DIR) -> list:
@@ -260,6 +286,11 @@ def build(seed: dict) -> dict:
         v["joker_set_groups"] = [[set_catalog_mod.canonical(s) for s in group]
                                  for group in spec.get("groups", [])]
         v["set_bonus"] = []
+
+    # Alignment equip-gates (U3): stamp alignment_req from the curated seed so the
+    # JS character gate (eligible) can exclude items the character's alignment
+    # can't equip. Empty seed today -> no-op; fail-open until wiki-verified.
+    stamp_alignment_req(variants, load_alignment_restrictions())
 
     for v in variants:                                  # U2 augment-color normalization
         colors_mod.annotate_variant(v)

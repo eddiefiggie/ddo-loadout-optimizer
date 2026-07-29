@@ -46,15 +46,53 @@ function variantAugColors(variant) {
   return (variant.augment_slots || []).filter(Boolean);
 }
 
+// Warforged/Bladeforged wear a Docent in the body slot instead of armor.
+const FORGED_RACES = new Set(["warforged", "bladeforged", "battleforged"]);
+function isForgedRace(race) {
+  return !!race && FORGED_RACES.has(String(race).toLowerCase());
+}
+/** Docent detection keys off the item name — the dataset has no docent flag,
+ *  and docents are consistently named "<X> Docent". */
+function isDocent(v) {
+  return /\bdocent\b/i.test(v.source_item || v.variant_id || v.name || "");
+}
+
+// Character gate (U2). Every branch below is ADDITIVE and backward-compatible:
+// it only narrows the pool when the relevant query field is present AND the
+// variant carries concrete data. With the current query (no race/alignment) and
+// dataset (armor_type all "unknown", no alignment_req), every new branch is a
+// no-op, so live behavior is unchanged until the wizard supplies the fields and
+// the pipeline (U3) fills the data.
 function eligible(variants, query) {
   const cap = query.mlCap;
+  const forged = isForgedRace(query.race);
   return variants.filter((v) => {
     if (v.verification !== "verified") return false;
     if (v.minimum_level != null && v.minimum_level > cap) return false;
-    // class/race restrictions are fail-open until sourced (R18 / plan assumption)
-    if (query.classRace && v.restrictions && v.restrictions !== "unknown") {
-      // structured restrictions would be checked here; none exist in the seed yet
+
+    // R6/AE1 — Race → body slot: Forged races take docents; others cannot.
+    if (v.slot === "Armor" && query.race) {
+      const doc = isDocent(v);
+      if (forged && !doc) return false; // Forged: docents only
+      if (!forged && doc) return false; // non-Forged: never a docent
     }
+
+    // R7 — Armor-type proficiency: keep only body armor whose concrete armor_type
+    // is in the character's proficiency set. Gated on the dedicated wizard field
+    // `armorTypes` (an array of allowed types) — NOT on `query.armorType`, which
+    // is the live dodge-cap input; decoupling avoids silently excluding armor if
+    // the pipeline later stamps armor_type onto items[]. Fail-open on
+    // "unknown"/absent, and a heavy-proficient character passes lighter types too.
+    if (v.slot === "Armor" && !isDocent(v) &&
+        Array.isArray(query.armorTypes) && query.armorTypes.length &&
+        v.armor_type && v.armor_type !== "unknown" &&
+        !query.armorTypes.includes(v.armor_type)) return false;
+
+    // R7/AE2 — Alignment: exclude items whose alignment requirement the
+    // character does not meet. Fail-open until alignment_req is sourced (U3).
+    if (query.alignment && Array.isArray(v.alignment_req) && v.alignment_req.length &&
+        !v.alignment_req.includes(query.alignment)) return false;
+
     return true;
   });
 }
@@ -187,10 +225,19 @@ function lamordiaSlotKeys(v) {
  *  tier can become silently unreachable. A chosen set-membership host (Lost Purpose /
  *  Dino Set-Bonus) is a set-piece contributor for the same reason, so it gets the same
  *  multi-pick exemption. */
-function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1) {
+/** The stable id a slot-constraint pin refers to (matches the wizard's pin). */
+function variantKey(v) {
+  return (v && (v.variant_id || v.source_item)) || "";
+}
+
+function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinnedIds = null) {
   const kept = [];
   for (let i = 0; i < slotVariants.length; i++) {
     const A = slotVariants[i];
+    // A pinned variant is force-equipped by a slot constraint (U6), so it must
+    // survive the pre-filter even if a same-slot peer dominates it — otherwise
+    // its pick var wouldn't exist for the `= 1` constraint to reference.
+    if (pinnedIds && pinnedIds.has(variantKey(A))) { kept.push(A); continue; }
     const isSetContributor = (A.set_bonus || []).length
       || ((A.set_membership_slot || {}).pool || []).length;
     if (cardinality > 1 && isSetContributor) { kept.push(A); continue; }
@@ -216,11 +263,18 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   const mlCap = query.mlCap;
   const elig = eligible(variants, query);
 
+  // Pinned variant ids (U6): kept through the dominance pre-filter so a pinned
+  // item's pick var always exists for its `= 1` constraint. Empty when absent.
+  const pinnedIds = new Set();
+  for (const c of Object.values(query.slotConstraints || {})) {
+    if (c && c.type === "pin" && c.variant_id) pinnedIds.add(c.variant_id);
+  }
+
   const worn = [];
   for (const slotName of WORN_SLOTS) {
     const card = SLOT_CARDINALITY[slotName] || 1;
     let cands = elig.filter((v) => v.slot === slotName);
-    cands = dominanceFilter(cands, targetSet, mlCap, card);
+    cands = dominanceFilter(cands, targetSet, mlCap, card, pinnedIds);
     if (cands.length) {
       worn.push({ slot: slotName, cardinality: card, variants: cands });
     }
@@ -229,9 +283,9 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // One main-hand weapon: all weapon-category variants compete for a single slot
   // so the solver can never equip several weapons at once. Rune-arm is a separate
   // off-hand slot.
-  const mainHand = dominanceFilter(elig.filter((v) => v.category === "weapon"), targetSet, mlCap);
+  const mainHand = dominanceFilter(elig.filter((v) => v.category === "weapon"), targetSet, mlCap, 1, pinnedIds);
   if (mainHand.length) worn.push({ slot: "Main Hand", cardinality: 1, variants: mainHand });
-  const runeArm = dominanceFilter(elig.filter((v) => v.category === "runearm"), targetSet, mlCap);
+  const runeArm = dominanceFilter(elig.filter((v) => v.category === "runearm"), targetSet, mlCap, 1, pinnedIds);
   if (runeArm.length) worn.push({ slot: "Rune Arm", cardinality: 1, variants: runeArm });
 
   // Augment pool: augments (category augment) as a compatible-color-capacity
@@ -302,6 +356,7 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     buildModel, eligible, dominanceFilter, dominates,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys,
+    isForgedRace, isDocent, variantKey,
     WORN_SLOTS, SLOT_CARDINALITY, ARMOR_DODGE_CAP,
   };
 }

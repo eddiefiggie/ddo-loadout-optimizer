@@ -1,0 +1,6 @@
+{
+  "_README": "Curated alignment EQUIP-GATES: base-item name -> list of alignments allowed to equip it. Exclude-until-verified — add an item ONLY when the DDO wiki explicitly states an alignment equip restriction (NOT a conditional bonus like 'Required Trait: Lawful (UMD +20)', which is a bonus, not a gate). Keys beginning with '_' are ignored. Empty until wiki-verified curation (see plan U3 / Outstanding Questions).",
+  "_example": {
+    "Some Lawful-Only Trinket": ["Lawful Good", "Lawful Neutral", "Lawful Evil"]
+  }
+}

@@ -1,0 +1,368 @@
+// Guided-wizard flow controller (U1). Replaces the two-tab shell + the old
+// query form: one linear flow (intro -> character -> gear pool -> priorities ->
+// solve -> results) that drives the EXISTING engine (buildModel / solveLexicographic
+// / renderResults) with the character gate (U2), Trove import (U5), and per-slot
+// constraints (U6) wired in. Pure step helpers are exported for node tests; all
+// DOM wiring is guarded so Node can require this file.
+
+// ---- pure step machine (tested in tests/wizard.test.js) --------------------
+const WIZARD_STEPS = ["intro", "character", "pool", "priorities", "results"];
+const FORGED = new Set(["warforged", "bladeforged", "battleforged"]);
+
+/** Can the flow advance FROM `stepId` given the collected state? Gates the
+ *  Continue/Solve buttons. Unknown steps are permissive. */
+function canAdvance(stepId, state) {
+  if (stepId === "character") return !!state.race && Number(state.ml) > 0;
+  if (stepId === "pool") return state.pool !== "owned" || !!state.ownedNames;
+  if (stepId === "priorities") return (state.priorities || []).length > 0;
+  return true;
+}
+/** Next step id after advancing from `stepId` (clamped at results). */
+function nextStep(stepId, steps = WIZARD_STEPS) {
+  const i = steps.indexOf(stepId);
+  if (i < 0) return stepId;
+  return steps[Math.min(i + 1, steps.length - 1)];
+}
+/** Previous step id (clamped at intro). */
+function prevStep(stepId, steps = WIZARD_STEPS) {
+  const i = steps.indexOf(stepId);
+  if (i <= 0) return steps[0];
+  return steps[i - 1];
+}
+const wizIsForged = (race) => FORGED.has(String(race || "").toLowerCase());
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged };
+}
+
+// ---- browser flow ----------------------------------------------------------
+if (typeof window !== "undefined" && window.App) {
+  const RACES = ["Human", "Elf", "Half-Elf", "Dwarf", "Halfling", "Gnome", "Half-Orc",
+    "Drow", "Aasimar", "Tiefling", "Dragonborn", "Shifter", "Tabaxi", "Warforged", "Bladeforged"];
+  const ALIGNMENTS = ["Lawful Good", "Neutral Good", "Chaotic Good",
+    "Lawful Neutral", "True Neutral", "Chaotic Neutral"];
+  const ARMOR = [["cloth", "Cloth"], ["light", "Light"], ["medium", "Medium"], ["heavy", "Heavy"]];
+  const WEAPONS = [["2h", "Two-handed"], ["swordboard", "One-hand + shield"],
+    ["twf", "Dual-wield"], ["runearm", "One-hand + rune arm"]];
+  const STEP_LABELS = { intro: "Start", character: "Character", pool: "Gear pool", priorities: "Priorities", results: "Results" };
+
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  window.App.ready((dataset) => {
+    const root = document.getElementById("wizard");
+    if (!root) return;
+
+    // Targetable affix stats present in the dataset (mirrors the old query form).
+    const statSet = new Set();
+    dataset.items.forEach((v) => {
+      (v.affixes || []).forEach((a) => statSet.add(a.stat));
+      (v.scaling || []).forEach((s) => statSet.add(s.stat));
+      (v.parsed_set_bonuses || []).forEach((t) => (t.affixes || []).forEach((a) => statSet.add(a.stat)));
+    });
+    const allStats = [...statSet].sort();
+
+    const state = { step: "intro", ml: 34, race: "", alignment: "", armor: "", weapon: "",
+      pool: "all", ownedNames: null, priorities: [], slotConstraints: {}, lastRun: null };
+
+    let highs = null;
+    async function getHighs() {
+      if (highs) return highs;
+      // eslint-disable-next-line no-undef
+      highs = await Module({ locateFile: (f) => "vendor/" + f });
+      return highs;
+    }
+
+    // ---- stepper -----------------------------------------------------------
+    function renderStepper() {
+      const done = (id) => WIZARD_STEPS.indexOf(id) < WIZARD_STEPS.indexOf(state.step);
+      return `<ol class="wz-steps">${WIZARD_STEPS.map((id) => {
+        const cls = done(id) ? "done" : (id === state.step ? "on" : "");
+        const n = WIZARD_STEPS.indexOf(id) + 1;
+        return `<li class="wz-step ${cls}"><button class="wz-dot" data-goto="${id}" ${done(id) ? "" : "disabled"}>${done(id) ? "✓" : n}</button><span>${STEP_LABELS[id]}</span></li>`;
+      }).join("")}</ol>`;
+    }
+
+    // ---- steps -------------------------------------------------------------
+    function stepIntro() {
+      const n = (dataset.items || []).length;
+      return `<section class="wz-card">
+        <p class="wz-eyebrow">What this does</p>
+        <h2>Find your provably-best gear — not a guess.</h2>
+        <p class="wz-lead">Tell us about your character and rank the stats you care about. We search every
+          wiki-sourced item, augment, set bonus, and crafting option (${n.toLocaleString()} indexed) and return the
+          <strong>single loadout that is mathematically optimal</strong> for your priorities — slot by slot,
+          with the exact crafting steps to build it.</p>
+        <p class="wz-lead">Four short steps, then the answer. No account; it runs entirely in your browser.</p>
+        <div class="wz-actions"><button class="btn primary" data-next>Get started →</button></div>
+      </section>`;
+    }
+
+    function stepCharacter() {
+      const forged = wizIsForged(state.race);
+      return `<section class="wz-card">
+        <p class="wz-eyebrow">Step 1 of 4 · Your character</p>
+        <h2>A few basics so we only show gear you can use</h2>
+        <p class="wz-lead">These filter out anything you can't equip before we optimize — no wasted results.</p>
+        <div class="wz-form">
+          <label class="wz-field"><span class="wz-label">Minimum level (ML) cap</span>
+            <span class="wz-help">Highest item level you can equip. Gear above this is excluded.</span>
+            <input id="wz-ml" class="wz-ml" type="number" min="1" max="40" value="${esc(state.ml)}"></label>
+          <div class="wz-pair">
+            <label class="wz-field"><span class="wz-label">Race</span>
+              <span class="wz-help">Determines body-slot and race-locked gear.</span>
+              <select id="wz-race"><option value="">Select a race…</option>
+                ${RACES.map((r) => `<option ${state.race === r ? "selected" : ""}>${r}</option>`).join("")}</select></label>
+            <label class="wz-field"><span class="wz-label">Alignment</span>
+              <span class="wz-help">Some gear requires or forbids an alignment.</span>
+              <select id="wz-align"><option value="">Select an alignment…</option>
+                ${ALIGNMENTS.map((a) => `<option ${state.alignment === a ? "selected" : ""}>${a}</option>`).join("")}</select></label>
+          </div>
+          <div class="wz-field"><span class="wz-label">Armor type ${forged ? '<span class="wz-sub">· docent (Forged race)</span>' : ""}</span>
+            <span class="wz-help">Your proficiency — sets the dodge cap and eligible body armor.</span>
+            <div class="wz-seg" id="wz-armor">${ARMOR.map(([v, l]) => `<button class="wz-chip ${state.armor === v ? "on" : ""}" data-armor="${v}" ${forged ? "disabled" : ""}>${l}</button>`).join("")}</div></div>
+          <div class="wz-field"><span class="wz-label">Weapon setup <span class="wz-sub">· optional</span></span>
+            <span class="wz-help">Shapes which weapon / off-hand combinations we consider.</span>
+            <div class="wz-seg" id="wz-weapon">${WEAPONS.map(([v, l]) => `<button class="wz-chip ${state.weapon === v ? "on" : ""}" data-weapon="${v}">${l}</button>`).join("")}</div></div>
+        </div>
+        <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
+          <button class="btn primary" data-next>Continue →</button></div>
+      </section>`;
+    }
+
+    function stepPool() {
+      const owned = state.pool === "owned";
+      return `<section class="wz-card">
+        <p class="wz-eyebrow">Step 2 of 4 · Which gear should we search?</p>
+        <h2>Optimize over everything, or only what you own</h2>
+        <p class="wz-lead">Augments and crafting options always come from the full catalog — owned mode only
+          restricts the base gear.</p>
+        <div class="wz-seg wz-pool">
+          <button class="wz-chip big ${!owned ? "on" : ""}" data-pool="all"><strong>All gear in the game</strong><small>Every wiki-sourced named item — theoretical best-in-slot.</small></button>
+          <button class="wz-chip big ${owned ? "on" : ""}" data-pool="owned"><strong>Only what I own</strong><small>Upload your Trove inventory export.</small></button>
+        </div>
+        <div id="wz-upload" class="${owned ? "" : "wz-hidden"}">
+          <label class="wz-field"><span class="wz-label">Import your inventory (CSV)</span>
+            <span class="wz-help">Export from Trove. Your file never leaves your browser; account columns are ignored.</span>
+            <input id="wz-file-label" type="text" readonly placeholder="Click to choose a .csv file…" class="wz-file">
+            <input id="wz-file" type="file" accept=".csv" class="wz-hidden"></label>
+          <div id="wz-file-stat" class="wz-filestat"></div>
+        </div>
+        <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
+          <button class="btn primary" data-next>Continue →</button></div>
+      </section>`;
+    }
+
+    function stepPriorities() {
+      return `<section class="wz-card">
+        <p class="wz-eyebrow">Step 3 of 4 · What matters most?</p>
+        <h2>Rank the stats you care about</h2>
+        <p class="wz-lead">Add stats and order them — #1 is maximized first, then #2 without giving up any of #1,
+          and so on. This ordering <em>is</em> the objective the solver optimizes.</p>
+        <div class="wz-addrow">
+          <input id="wz-add" list="wz-stats" placeholder="Add a stat — e.g. Constitution, Dodge, Melee Power…">
+          <datalist id="wz-stats">${allStats.map((s) => `<option value="${esc(s)}">`).join("")}</datalist>
+          <button class="btn ghost" id="wz-add-btn">Add</button>
+        </div>
+        <ol class="wz-ranked" id="wz-ranked"></ol>
+        <p class="wz-draghelp">Drag the ⋮⋮ handle to reorder, or use the ↑ ↓ buttons (they work on touch and keyboard).</p>
+        <p id="wz-status" class="wz-status"></p>
+        <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
+          <button class="btn primary" data-solve>Solve ⚡</button></div>
+      </section>`;
+    }
+
+    function stepResults() {
+      return `<section class="wz-card wz-results">
+        <div class="wz-results-head">
+          <div><p class="wz-eyebrow">Your optimal loadout</p></div>
+          <span class="wz-spacer"></span>
+          <button class="btn ghost" data-goto="priorities">← Adjust priorities</button>
+          <button class="btn ghost" data-goto="character">Edit character</button>
+        </div>
+        <div id="wz-results"></div>
+      </section>`;
+    }
+
+    // ---- priorities editor (pure array ops + drag/buttons) -----------------
+    function rankedHTML() {
+      if (!state.priorities.length) return `<li class="wz-hint">Add at least one stat to optimize for.</li>`;
+      return state.priorities.map((p, i) => `<li data-i="${i}" draggable="true">
+        <span class="wz-grip" title="drag to reorder">⋮⋮</span>
+        <span class="wz-rk">${i + 1}</span><span class="wz-nm">${esc(p)}</span>
+        <span class="wz-ctl"><button data-up="${i}" ${i === 0 ? "disabled" : ""} aria-label="move up">↑</button>
+          <button data-down="${i}" ${i === state.priorities.length - 1 ? "disabled" : ""} aria-label="move down">↓</button>
+          <button data-del="${i}" aria-label="remove">✕</button></span></li>`).join("");
+    }
+    function renderRanked() {
+      const ol = document.getElementById("wz-ranked"); if (!ol) return;
+      ol.innerHTML = rankedHTML();
+      ol.querySelectorAll("button").forEach((b) => b.onclick = () => {
+        if (b.dataset.up != null) { const i = +b.dataset.up;[state.priorities[i - 1], state.priorities[i]] = [state.priorities[i], state.priorities[i - 1]]; }
+        else if (b.dataset.down != null) { const i = +b.dataset.down;[state.priorities[i + 1], state.priorities[i]] = [state.priorities[i], state.priorities[i + 1]]; }
+        else if (b.dataset.del != null) state.priorities.splice(+b.dataset.del, 1);
+        renderRanked();
+      });
+      let from = null;
+      ol.querySelectorAll("li[draggable]").forEach((li) => {
+        li.ondragstart = (e) => { from = +li.dataset.i; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", ""); };
+        li.ondragend = () => { li.classList.remove("dragging"); from = null; };
+        li.ondragover = (e) => e.preventDefault();
+        li.ondrop = (e) => { e.preventDefault(); const to = +li.dataset.i; if (from === null || to === from) return; const m = state.priorities.splice(from, 1)[0]; state.priorities.splice(to, 0, m); from = null; renderRanked(); };
+      });
+    }
+    function addPriority(v) {
+      v = (v || "").trim(); const status = document.getElementById("wz-status");
+      if (!v) return;
+      if (!statSet.has(v)) { if (status) status.textContent = `"${v}" isn't a known affix in the dataset.`; return; }
+      if (state.priorities.includes(v)) return;
+      state.priorities.push(v); if (status) status.textContent = ""; renderRanked();
+    }
+
+    // ---- solve (real engine) ----------------------------------------------
+    function candidateItems() {
+      if (state.pool === "owned" && state.ownedNames) {
+        // owned base items + full-catalog augments (KTD4/R13)
+        return dataset.items.filter((v) => v.category === "augment"
+          || state.ownedNames.has(v.source_item || v.variant_id));
+      }
+      return dataset.items;
+    }
+    function buildQuery() {
+      const forged = wizIsForged(state.race);
+      return {
+        mlCap: Number(state.ml) || 34,
+        targets: state.priorities.slice(),
+        armorType: forged ? null : (state.armor || null),   // dodge-cap input
+        armorTypes: forged || !state.armor ? undefined : [state.armor], // gate (U2)
+        weaponSetup: state.weapon || null,
+        race: state.race || null,
+        alignment: state.alignment || null,
+        slotConstraints: state.slotConstraints,
+      };
+    }
+    function overlay(on, title, sub) {
+      let el = document.getElementById("wz-solve-overlay");
+      if (!el && on) {
+        el = document.createElement("div"); el.id = "wz-solve-overlay"; el.className = "wz-overlay";
+        el.innerHTML = `<div class="wz-overlay-box"><div class="wz-ring"></div><h3 id="wz-ov-title"></h3><p id="wz-ov-sub" class="wz-ov-sub"></p><p class="wz-ov-foot">Exact optimization — the provably best answer, not a guess.</p></div>`;
+        document.body.appendChild(el);
+      }
+      if (el) {
+        if (on) { el.querySelector("#wz-ov-title").textContent = title; el.querySelector("#wz-ov-sub").textContent = sub || ""; el.classList.add("on"); }
+        else el.classList.remove("on");
+      }
+    }
+
+    let solving = false;
+    async function solve(firstRun) {
+      if (solving) return;
+      if (!state.priorities.length) return;
+      solving = true;
+      const n = candidateItems().length;
+      overlay(true, "Solving your loadout…", firstRun ? `searching ${n.toLocaleString()} eligible items · exact MILP` : "re-solving…");
+      try {
+        const h = await getHighs();
+        const query = buildQuery();
+        // eslint-disable-next-line no-undef
+        const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
+          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel);
+        const t0 = performance.now();
+        // eslint-disable-next-line no-undef
+        const result = await solveLexicographic(model, h);
+        if (result.status === "optimal") result.solveMs = Math.round(performance.now() - t0);
+        state.lastRun = { model, result, query };
+        state.step = "results";
+        render();
+        const box = document.getElementById("wz-results");
+        // eslint-disable-next-line no-undef
+        if (box) renderResults(box, { model, result, query, dataset, highs: h });
+      } catch (err) {
+        state.step = "results"; render();
+        const box = document.getElementById("wz-results");
+        if (box) box.innerHTML = `<p class="wz-status">Solver error: ${esc(err.message)}</p>`;
+        console.error(err);
+      } finally {
+        overlay(false); solving = false;
+      }
+    }
+
+    // ---- master render + wiring -------------------------------------------
+    function render() {
+      const bodies = { intro: stepIntro, character: stepCharacter, pool: stepPool, priorities: stepPriorities, results: stepResults };
+      root.innerHTML = renderStepper() + (bodies[state.step] || stepIntro)();
+      wire();
+    }
+    function go(step) { state.step = step; render(); }
+
+    function wire() {
+      root.querySelectorAll("[data-goto]").forEach((b) => b.onclick = () => { if (!b.disabled) go(b.dataset.goto); });
+      root.querySelectorAll("[data-back]").forEach((b) => b.onclick = () => go(prevStep(state.step)));
+      root.querySelectorAll("[data-next]").forEach((b) => b.onclick = () => {
+        if (!canAdvance(state.step, state)) { flashBlock(); return; }
+        go(nextStep(state.step));
+      });
+      root.querySelectorAll("[data-solve]").forEach((b) => b.onclick = () => {
+        if (!canAdvance("priorities", state)) { const s = document.getElementById("wz-status"); if (s) s.textContent = "Add at least one stat to optimize for."; return; }
+        solve(true);
+      });
+
+      if (state.step === "character") {
+        document.getElementById("wz-ml").oninput = (e) => state.ml = e.target.value;
+        document.getElementById("wz-race").onchange = (e) => { state.race = e.target.value; if (wizIsForged(state.race)) state.armor = ""; render(); };
+        document.getElementById("wz-align").onchange = (e) => state.alignment = e.target.value;
+        root.querySelectorAll("#wz-armor .wz-chip").forEach((c) => c.onclick = () => {
+          if (c.disabled) return; state.armor = state.armor === c.dataset.armor ? "" : c.dataset.armor;
+          root.querySelectorAll("#wz-armor .wz-chip").forEach((x) => x.classList.toggle("on", x.dataset.armor === state.armor));
+        });
+        root.querySelectorAll("#wz-weapon .wz-chip").forEach((c) => c.onclick = () => {
+          state.weapon = state.weapon === c.dataset.weapon ? "" : c.dataset.weapon;
+          root.querySelectorAll("#wz-weapon .wz-chip").forEach((x) => x.classList.toggle("on", x.dataset.weapon === state.weapon));
+        });
+      }
+      if (state.step === "pool") {
+        root.querySelectorAll(".wz-chip[data-pool]").forEach((c) => c.onclick = () => {
+          state.pool = c.dataset.pool;
+          document.getElementById("wz-upload").classList.toggle("wz-hidden", state.pool !== "owned");
+          root.querySelectorAll(".wz-chip[data-pool]").forEach((x) => x.classList.toggle("on", x.dataset.pool === state.pool));
+        });
+        const disp = document.getElementById("wz-file-label"), real = document.getElementById("wz-file");
+        if (disp) {
+          disp.onclick = () => real.click();
+          real.onchange = (e) => {
+            const f = e.target.files[0]; if (!f) return; disp.value = f.name;
+            const reader = new FileReader();
+            reader.onload = () => {
+              const stat = document.getElementById("wz-file-stat");
+              try {
+                // eslint-disable-next-line no-undef
+                const { ownedNames, rowCount } = TroveImport.parseTroveCsv(reader.result);
+                state.ownedNames = ownedNames;
+                // eslint-disable-next-line no-undef
+                const m = TroveImport.ownedMatch(ownedNames, dataset.items);
+                stat.className = "wz-filestat" + (m.matched ? "" : " warn");
+                stat.innerHTML = `✓ Parsed <strong>${rowCount.toLocaleString()}</strong> entries · <strong>${m.ownedCount}</strong> distinct names · matched <strong>${m.matched}</strong> in the dataset (${m.unrecognized} unrecognized).`;
+              } catch (err) {
+                state.ownedNames = null;
+                stat.className = "wz-filestat warn";
+                stat.textContent = `Couldn't read that file: ${err.message}`;
+              }
+            };
+            reader.readAsText(f);
+          };
+        }
+      }
+      if (state.step === "priorities") {
+        const add = document.getElementById("wz-add");
+        document.getElementById("wz-add-btn").onclick = () => { addPriority(add.value); add.value = ""; add.focus(); };
+        add.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); addPriority(add.value); add.value = ""; } };
+        renderRanked();
+      }
+    }
+    function flashBlock() {
+      const btn = root.querySelector("[data-next]"); if (!btn) return;
+      btn.classList.remove("wz-nudge"); void btn.offsetWidth; btn.classList.add("wz-nudge");
+    }
+
+    render();
+  });
+}
