@@ -1,0 +1,858 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDO Optimizer — Wizard Flow (working prototype)</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#171e2e; --panel2:#1e273a; --line:#2b3650;
+    --line2:#38466a; --text:#e7ecf6; --mut:#9aa6bf; --faint:#6b7793;
+    --acc:#5b8cff; --acc2:#3a63d6; --accwash:#1a2540;
+    --good:#43c59e; --warn:#f0b360; --pill:#222c42;
+    --ring:0 0 0 3px rgba(91,140,255,.35);
+  }
+  @media (prefers-color-scheme: light){
+    :root{--bg:#eef1f7;--panel:#fff;--panel2:#f3f6fc;--line:#dbe1ec;--line2:#c4cddd;
+      --text:#18202f;--mut:#5a6478;--faint:#8b95a8;--pill:#eef2f9;--accwash:#e6edff;}
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--text);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .app{max-width:900px;margin:0 auto;padding:22px 20px 60px;min-height:100vh}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  .brand .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--acc),var(--acc2));
+    display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:15px}
+  .brand h1{font-size:16px;margin:0;font-weight:650}
+  .brand .demo{margin-left:auto;font-size:11px;color:var(--faint);border:1px solid var(--line);
+    padding:3px 8px;border-radius:20px}
+
+  /* progress stepper */
+  .steps{display:flex;align-items:center;gap:0;margin:6px 0 22px}
+  .step{display:flex;align-items:center;gap:8px;flex:1}
+  .step .num{width:24px;height:24px;border-radius:50%;background:var(--panel2);border:1px solid var(--line2);
+    color:var(--mut);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex:none;
+    transition:.2s}
+  .step .lbl{font-size:12px;color:var(--faint);white-space:nowrap}
+  .step .line{height:2px;background:var(--line);flex:1;margin:0 8px;border-radius:2px}
+  .step.done .num{background:var(--good);border-color:var(--good);color:#06231b}
+  .step.done .lbl{color:var(--mut)}
+  .step.on .num{background:var(--acc);border-color:var(--acc);color:#fff;box-shadow:var(--ring)}
+  .step.on .lbl{color:var(--text);font-weight:600}
+  .step.done .line{background:var(--good)}
+  .step .num.clickable{cursor:pointer}
+  @media(max-width:640px){.step .lbl{display:none}}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px 26px 24px;
+    box-shadow:0 8px 30px rgba(0,0,0,.18)}
+  .eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--acc);font-weight:700;margin:0 0 6px}
+  .card h2{font-size:22px;margin:0 0 8px;font-weight:680;letter-spacing:-.01em}
+  .lead{color:var(--mut);margin:0 0 20px;font-size:14.5px;max-width:60ch}
+
+  /* form: single-column, fields proportioned to their input */
+  .formgrid{display:flex;flex-direction:column;gap:18px;max-width:560px}
+  .field{display:block}
+  .field > .flabel{font-size:13.5px;font-weight:600;margin-bottom:3px;display:flex;align-items:center;gap:6px}
+  .field > .fhelp{font-size:12.5px;color:var(--faint);margin-bottom:7px}
+  input[type=number],input[type=text],select{background:var(--panel2);color:var(--text);
+    border:1px solid var(--line2);border-radius:9px;padding:10px 12px;font-size:14.5px;font-family:inherit;width:100%}
+  input:focus,select:focus{outline:none;box-shadow:var(--ring);border-color:var(--acc)}
+  /* proportion: narrow fields for short inputs */
+  input.w-ml{width:120px}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:520px){.pair{grid-template-columns:1fr}}
+
+  .segset{display:flex;flex-wrap:wrap;gap:8px}
+  .seg{border:1px solid var(--line2);background:var(--panel2);color:var(--mut);border-radius:10px;
+    padding:9px 14px;cursor:pointer;font-size:14px;font-weight:550;transition:.12s;user-select:none;min-height:40px;display:flex;align-items:center}
+  .seg:hover{border-color:var(--acc)}
+  .seg.on{background:var(--accwash);border-color:var(--acc);color:var(--text)}
+  .seg.disabled{opacity:.38;pointer-events:none}
+  .subtle{color:var(--faint);font-size:12px;font-weight:500}
+
+  .actions{display:flex;gap:10px;margin-top:24px;align-items:center}
+  .btn{border:none;border-radius:10px;padding:11px 20px;font-size:14.5px;font-weight:650;cursor:pointer;font-family:inherit}
+  .btn.primary{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff}
+  .btn.primary:hover{filter:brightness(1.07)}
+  .btn.ghost{background:transparent;color:var(--mut);border:1px solid var(--line2)}
+  .btn.ghost:hover{color:var(--text);border-color:var(--acc)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .spacer{flex:1}
+
+  /* priorities editor (shared by step 4 and the results iterate area) */
+  .addrow{display:flex;gap:8px;max-width:560px}
+  .addrow input{flex:1}
+  .ranked{list-style:none;padding:0;margin:14px 0 0;max-width:560px}
+  .ranked li{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line2);
+    border-radius:10px;padding:9px 12px;margin-bottom:8px;transition:border-color .12s,transform .12s}
+  .ranked li.dragging{opacity:.5;border-color:var(--acc)}
+  .ranked li .grip{color:var(--faint);cursor:grab;font-size:14px;letter-spacing:-2px;user-select:none}
+  .ranked li .rk{width:22px;height:22px;border-radius:6px;background:var(--acc);color:#fff;font-size:12px;
+    font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+  .ranked li .nm{flex:1;font-weight:550}
+  .ranked li .ctl{display:flex;gap:4px}
+  .ranked li .ctl button{background:var(--panel);border:1px solid var(--line2);color:var(--mut);
+    width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:13px}
+  .ranked li .ctl button:hover:not(:disabled){color:var(--text);border-color:var(--acc)}
+  .ranked li .ctl button:disabled{opacity:.35;cursor:not-allowed}
+  .hint{color:var(--faint);font-size:13px;font-style:italic}
+  .draghelp{font-size:12px;color:var(--faint);margin:10px 0 0;max-width:560px}
+
+  /* solve overlay */
+  .solveover{position:fixed;inset:0;background:rgba(9,13,22,.86);backdrop-filter:blur(3px);
+    display:flex;align-items:center;justify-content:center;z-index:50;opacity:0;pointer-events:none;transition:.25s}
+  .solveover.on{opacity:1;pointer-events:auto}
+  .solvebox{text-align:center;max-width:440px;padding:20px}
+  .solvebox .ring{width:76px;height:76px;margin:0 auto 20px;border-radius:50%;
+    border:5px solid rgba(91,140,255,.2);border-top-color:var(--acc);animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .solvebox h3{font-size:19px;margin:0 0 6px}
+  .solvebox .tick{font-size:13px;color:var(--mut);height:20px;font-variant-numeric:tabular-nums}
+  .solvebox .prog{height:6px;background:var(--panel2);border-radius:4px;overflow:hidden;margin:16px 0 10px}
+  .solvebox .prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--good));transition:.2s}
+  .solvebox .foot{font-size:12px;color:var(--faint)}
+
+  /* results */
+  .verdict{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,var(--panel2),var(--panel));
+    border:1px solid var(--line2);border-radius:14px;padding:14px 18px;margin-bottom:16px}
+  .verdict .dot{width:12px;height:12px;border-radius:50%;background:var(--good);box-shadow:0 0 12px var(--good);flex:none}
+  .verdict .vt{font-weight:700;letter-spacing:.03em}
+  .verdict .vs{color:var(--mut);font-size:13px}
+  .verdict .scale{margin-left:auto;text-align:right}
+  .verdict .scale b{font-size:18px} .verdict .scale span{display:block;font-size:11px;color:var(--faint)}
+
+  .rlayout{display:grid;grid-template-columns:262px 1fr;gap:18px}
+  @media(max-width:700px){.rlayout{grid-template-columns:1fr}}
+  .paperdoll{background:var(--panel2);border:1px solid var(--line2);border-radius:14px;padding:12px}
+  .paperdoll h4{margin:2px 4px 10px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint)}
+  .slot{padding:8px 10px;border-radius:8px;border:1px solid transparent;margin-bottom:4px}
+  .slot:hover{background:var(--panel);border-color:var(--line2)}
+  .slot .sslot{color:var(--faint);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+  .slot .sname{color:var(--text);font-weight:550;font-size:13px;line-height:1.3}
+  .slot.setpiece .sname{color:var(--acc)}
+  .slot .stier{color:var(--faint);font-weight:500}
+  .slot.empty .sname{color:var(--faint);font-style:italic}
+  .slot .srow{display:flex;align-items:center;justify-content:space-between;gap:6px}
+  .slot.constrained{border-color:var(--acc);background:var(--panel)}
+  .slotctl{background:none;border:1px solid transparent;color:var(--faint);border-radius:6px;
+    width:22px;height:22px;cursor:pointer;font-size:15px;line-height:1;opacity:0;transition:.12s;flex:none}
+  .slot:hover .slotctl,.slot.constrained .slotctl{opacity:1}
+  .slotctl:hover{border-color:var(--line2);color:var(--text)}
+  .cbadge{display:inline-block;margin-top:5px;font-size:10.5px;border-radius:5px;padding:1px 6px;border:1px solid var(--line2)}
+  .cbadge.pin{color:var(--acc);border-color:var(--acc);background:var(--accwash)}
+  .cbadge.empty{color:var(--warn);border-color:var(--warn)}
+  .slotmenu{margin-top:7px;display:flex;flex-direction:column;gap:4px;border-top:1px dashed var(--line);padding-top:7px}
+  .slotmenu button{background:var(--panel);border:1px solid var(--line2);color:var(--text);border-radius:7px;
+    padding:6px 8px;font-size:11.5px;cursor:pointer;text-align:left;font-family:inherit;white-space:normal}
+  .slotmenu button:hover:not(:disabled){border-color:var(--acc)}
+  .slotmenu button:disabled{opacity:.4;cursor:not-allowed}
+  .pdhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .pd-resolve{background:var(--acc);color:#fff;border:none;border-radius:7px;padding:5px 10px;
+    font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit}
+  .pd-hint{font-size:11px;color:var(--warn);margin:0 4px 8px}
+
+  .rtabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px;flex-wrap:wrap}
+  .rtab{background:none;border:none;color:var(--mut);padding:8px 12px;cursor:pointer;font-size:13.5px;
+    font-weight:600;border-bottom:2px solid transparent;font-family:inherit}
+  .rtab.on{color:var(--text);border-bottom-color:var(--acc)}
+  .rtab:hover{color:var(--text)}
+
+  .brk .brow{padding:11px 0;border-bottom:1px solid var(--line)}
+  .brk .brow:last-child{border-bottom:none}
+  .brk .bhead{display:flex;justify-content:space-between;align-items:baseline}
+  .brk .bstat{font-weight:650}
+  .brk .btot{font-variant-numeric:tabular-nums;color:var(--good);font-weight:700}
+  .brk .bsrc{font-size:12.5px;color:var(--mut);margin-top:4px;display:flex;flex-wrap:wrap;gap:5px}
+  .brk .chip{background:var(--pill);border:1px solid var(--line2);border-radius:6px;padding:2px 7px;font-size:11.5px}
+  .brk .chip .bt{color:var(--faint)}
+
+  /* set bonuses */
+  .setblk{border:1px solid var(--line2);border-radius:11px;padding:13px 15px;margin-bottom:12px;background:var(--panel2)}
+  .setblk .sh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .setblk .sn{font-weight:680}
+  .setblk .sc{font-size:12px;color:var(--good);font-weight:600}
+  .setblk .sbon{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px}
+  .setblk .sbon .chip{background:var(--accwash);border:1px solid var(--acc);border-radius:6px;padding:2px 8px;font-size:12px;color:var(--text)}
+  .setblk .plabel{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);margin-bottom:4px}
+  .setblk .prow{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0;border-top:1px dashed var(--line)}
+  .setblk .prow .ploc{color:var(--faint)}
+  .none{color:var(--faint);font-size:13.5px}
+
+  .craft .cstep{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .craft .cstep:last-child{border:none}
+  .craft .cn{width:22px;height:22px;border-radius:6px;background:var(--warn);color:#3a2a05;font-weight:700;
+    font-size:12px;display:flex;align-items:center;justify-content:center;flex:none}
+  .craft .ctext b{color:var(--text)} .craft .ctext{font-size:13.5px;color:var(--mut)}
+  .craft .cwhere{font-size:12px;color:var(--faint)}
+
+  .alts .alt{border:1px solid var(--line2);border-radius:11px;padding:12px 14px;margin-bottom:10px;background:var(--panel2)}
+  .alts .alt .ah{font-weight:650;margin-bottom:3px}
+  .alts .alt .ad{font-size:13px;color:var(--mut)}
+  .alts .alt .cost{font-size:12px;color:var(--warn);margin-top:5px}
+
+  /* adjust & re-solve (last results tab, inside the right panel) */
+  .adjustpanel .isub{font-size:12.5px;color:var(--faint);margin:0 0 12px}
+  .adjustpanel .ranked,.adjustpanel .addrow{max-width:none}
+  .adjustpanel .irow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .foldhdr{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;padding:9px 11px;
+    border:1px solid var(--line2);border-radius:9px;background:var(--panel2);font-weight:600;font-size:13.5px}
+  .foldhdr:hover{border-color:var(--acc)}
+  .foldhdr .chev{color:var(--acc);width:12px;text-align:center}
+  .foldhdr .foldsum{font-weight:400;color:var(--mut);font-size:12.5px}
+  #fold-body{margin-top:10px}
+  #fold-body.folded{display:none}
+  .toggle{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+  .toggle button{background:var(--panel);border:none;color:var(--mut);padding:7px 12px;cursor:pointer;font-size:12.5px;font-family:inherit;min-height:34px}
+  .toggle button.on{background:var(--acc);color:#fff}
+  .jump{font-size:12.5px;color:var(--acc);cursor:pointer;text-decoration:underline;background:none;border:none;font-family:inherit}
+  .muted{color:var(--faint);font-size:12.5px}
+  .hidden{display:none!important}
+  .filestat{font-size:13px;color:var(--good);margin-top:10px}
+  .filestat.warn{color:var(--warn)}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="brand">
+    <div class="logo">◆</div>
+    <h1>DDO Loadout Optimizer</h1>
+    <span class="demo">working prototype · build 07292026.4</span>
+  </div>
+
+  <div class="steps" id="steps"></div>
+  <div id="screen"></div>
+</div>
+
+<div class="solveover" id="solveover">
+  <div class="solvebox">
+    <div class="ring"></div>
+    <h3 id="solve-title">Solving your loadout…</h3>
+    <div class="prog"><i id="solve-prog"></i></div>
+    <div class="tick" id="solve-tick"></div>
+    <div class="foot">Exact optimization — this is the provably best answer, not a guess.</div>
+  </div>
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+// PROTOTYPE DATA — a small representative slice so the flow feels alive.
+// ---------------------------------------------------------------------------
+const STATS = ["Constitution","Dexterity","Strength","Physical Sheltering (PRR)",
+  "Magical Sheltering (MRR)","Dodge","Fortification","Healing Amplification",
+  "Melee Power","Fire Spell Power","Sheltering","Nullification"];
+
+// set definitions: only rendered when the piece threshold is met
+const SETDEFS = {
+  "Legendary Dread Isle": {threshold:2, bonuses:[
+    {stat:"Physical Sheltering (PRR)",val:15},{stat:"Magical Sheltering (MRR)",val:15}]},
+  "Slave Lords": {threshold:3, bonuses:[{stat:"Fire Spell Power",val:30}]},
+};
+
+// item: slot, name, ml, armorType (armor only), docent, set, alignReq[], affixes[]
+const CATALOG = [
+  {slot:"Armor",name:"Flightless Bird's Icebox",tier:"Heavy",ml:34,armorType:"heavy",set:"Legendary Dread Isle",
+    affixes:[{stat:"Physical Sheltering (PRR)",val:64,type:"enh"},{stat:"Constitution",val:21,type:"insight"}]},
+  {slot:"Armor",name:"Cloudburst Shell",tier:"Light",ml:34,armorType:"light",
+    affixes:[{stat:"Dodge",val:9,type:"enh"},{stat:"Dexterity",val:21,type:"insight"}]},
+  {slot:"Armor",name:"Robe of the Cabal",tier:"Cloth",ml:33,armorType:"cloth",
+    affixes:[{stat:"Fire Spell Power",val:114,type:"enh"},{stat:"Magical Sheltering (MRR)",val:40,type:"enh"}]},
+  {slot:"Armor",name:"Docent of Gravity",tier:"Docent",ml:34,docent:true,
+    affixes:[{stat:"Physical Sheltering (PRR)",val:58,type:"enh"},{stat:"Constitution",val:23,type:"quality"}]},
+  {slot:"Armor",name:"Adamantine Docent of Battle",tier:"Docent",ml:33,docent:true,
+    affixes:[{stat:"Fortification",val:160,type:"enh"},{stat:"Strength",val:20,type:"insight"}]},
+
+  {slot:"Helmet",name:"Legendary Visor of the Flesh Render",ml:34,
+    affixes:[{stat:"Constitution",val:23,type:"enh"},{stat:"Healing Amplification",val:80,type:"enh"}]},
+  {slot:"Helmet",name:"Crown of Summer",ml:32,set:"Slave Lords",
+    affixes:[{stat:"Fire Spell Power",val:66,type:"insight"},{stat:"Sheltering",val:20,type:"enh"}]},
+  {slot:"Helmet",name:"Helm of the Blue Dragon",ml:34,
+    affixes:[{stat:"Melee Power",val:16,type:"enh"},{stat:"Dexterity",val:23,type:"enh"}]},
+
+  {slot:"Goggles",name:"Legendary Nearsight Goggles",ml:34,
+    affixes:[{stat:"Dexterity",val:21,type:"quality"},{stat:"Dodge",val:6,type:"insight"}]},
+  {slot:"Goggles",name:"Goggles of Time-Sensing",ml:33,
+    affixes:[{stat:"Melee Power",val:20,type:"insight"},{stat:"Fortification",val:100,type:"quality"}]},
+
+  {slot:"Necklace",name:"Legendary Collar of the Unbroken",ml:34,
+    affixes:[{stat:"Constitution",val:21,type:"artifact"},{stat:"Nullification",val:114,type:"enh"}]},
+  {slot:"Necklace",name:"Torc of the Titans",ml:32,
+    affixes:[{stat:"Strength",val:23,type:"enh"},{stat:"Melee Power",val:14,type:"quality"}]},
+
+  {slot:"Cloak",name:"Legendary Flowing Cloak",ml:34,set:"Legendary Dread Isle",
+    affixes:[{stat:"Magical Sheltering (MRR)",val:54,type:"enh"},{stat:"Dodge",val:8,type:"enh"}]},
+  {slot:"Cloak",name:"Cloak of the Zephyr",ml:33,
+    affixes:[{stat:"Dexterity",val:21,type:"enh"},{stat:"Healing Amplification",val:60,type:"quality"}]},
+
+  {slot:"Bracers",name:"Legendary Bracers of Wind",ml:34,set:"Legendary Dread Isle",
+    affixes:[{stat:"Physical Sheltering (PRR)",val:44,type:"quality"},{stat:"Sheltering",val:22,type:"insight"}]},
+  {slot:"Bracers",name:"Bracers of the Sun Soul",ml:32,set:"Slave Lords",
+    affixes:[{stat:"Fire Spell Power",val:60,type:"enh"},{stat:"Constitution",val:19,type:"quality"}]},
+
+  {slot:"Gloves",name:"Legendary Grave Wrappings",ml:34,
+    affixes:[{stat:"Healing Amplification",val:90,type:"enh"},{stat:"Melee Power",val:18,type:"enh"}]},
+  {slot:"Gloves",name:"Gauntlets of Eternity",ml:33,
+    affixes:[{stat:"Strength",val:21,type:"insight"},{stat:"Physical Sheltering (PRR)",val:36,type:"quality"}]},
+
+  {slot:"Boots",name:"Legendary Boots of the Innocent",ml:34,set:"Legendary Dread Isle",
+    affixes:[{stat:"Constitution",val:19,type:"quality"},{stat:"Physical Sheltering (PRR)",val:30,type:"insight"}]},
+  {slot:"Boots",name:"Anvil Boots",ml:33,
+    affixes:[{stat:"Physical Sheltering (PRR)",val:40,type:"insight"},{stat:"Strength",val:19,type:"quality"}]},
+
+  {slot:"Belt",name:"Legendary Belt of the Mroranon",ml:34,
+    affixes:[{stat:"Constitution",val:23,type:"enh"},{stat:"Fortification",val:150,type:"enh"}]},
+  {slot:"Belt",name:"Cinch of the Flame",ml:32,set:"Slave Lords",
+    affixes:[{stat:"Fire Spell Power",val:72,type:"enh"},{stat:"Magical Sheltering (MRR)",val:30,type:"quality"}]},
+
+  {slot:"Ring",name:"Legendary Ring of the Stormreaver",ml:34,
+    affixes:[{stat:"Dexterity",val:19,type:"quality"},{stat:"Melee Power",val:15,type:"insight"}]},
+  {slot:"Ring",name:"Seal of House Dun'Robar",ml:33,
+    affixes:[{stat:"Healing Amplification",val:70,type:"insight"},{stat:"Sheltering",val:18,type:"quality"}]},
+  {slot:"Ring",name:"Ring of the Ancestors",ml:33,
+    affixes:[{stat:"Constitution",val:17,type:"insight"},{stat:"Nullification",val:90,type:"quality"}]},
+
+  {slot:"Trinket",name:"Legendary Bloodrage Symbiont",ml:34,
+    affixes:[{stat:"Melee Power",val:25,type:"enh"},{stat:"Strength",val:15,type:"profane"}]},
+  {slot:"Trinket",name:"Litany of the Dead",ml:34,alignReq:["Lawful Good","Lawful Neutral"],
+    affixes:[{stat:"Constitution",val:20,type:"profane"},{stat:"Melee Power",val:20,type:"profane"}]},
+  {slot:"Trinket",name:"Epic Voice of the Master",ml:30,
+    affixes:[{stat:"Healing Amplification",val:50,type:"enh"},{stat:"Dodge",val:5,type:"enh"}]},
+];
+
+const SLOT_ORDER = ["Armor","Helmet","Goggles","Necklace","Cloak","Bracers","Gloves","Boots","Belt","Ring","Ring","Trinket"];
+const SLOT_LABELS = {Armor:"Body",Helmet:"Head",Goggles:"Eyes",Necklace:"Neck",Cloak:"Back",Bracers:"Wrists",Gloves:"Hands",Boots:"Feet",Belt:"Waist",Ring1:"Ring 1",Ring2:"Ring 2",Trinket:"Trinket"};
+
+let ownedNames = null; // Set of owned item names, or null = all gear
+
+// ---------------------------------------------------------------------------
+// STATE
+// ---------------------------------------------------------------------------
+const state = { step:0, ml:34, race:"", alignment:"", armor:"", weapon:"", pool:"all", priorities:[], lastResult:null, slotConstraints:{}, constraintsDirty:false };
+
+const RACES = [
+  {v:"human",label:"Human"},{v:"elf",label:"Elf"},{v:"half-elf",label:"Half-Elf"},
+  {v:"dwarf",label:"Dwarf"},{v:"halfling",label:"Halfling"},{v:"gnome",label:"Gnome"},
+  {v:"half-orc",label:"Half-Orc"},{v:"drow",label:"Drow"},{v:"aasimar",label:"Aasimar"},
+  {v:"tiefling",label:"Tiefling"},{v:"dragonborn",label:"Dragonborn"},{v:"shifter",label:"Shifter"},
+  {v:"tabaxi",label:"Tabaxi"},{v:"warforged",label:"Warforged"},{v:"bladeforged",label:"Bladeforged"},
+];
+const ALIGNMENTS = ["Lawful Good","Neutral Good","Chaotic Good","Lawful Neutral","True Neutral","Chaotic Neutral"];
+const isForged = ()=> state.race==="warforged"||state.race==="bladeforged";
+
+const STEP_DEFS = [
+  {id:"welcome",label:"Start"},{id:"character",label:"Character"},{id:"pool",label:"Gear pool"},
+  {id:"priorities",label:"Priorities"},{id:"results",label:"Results"},
+];
+
+// ---------------------------------------------------------------------------
+// STEPPER
+// ---------------------------------------------------------------------------
+function renderSteps(){
+  const el = document.getElementById("steps");
+  el.innerHTML = STEP_DEFS.map((s,i)=>{
+    const cls = i<state.step?"done":(i===state.step?"on":"");
+    const clickable = i<state.step ? "clickable" : "";
+    const line = i<STEP_DEFS.length-1?`<span class="line"></span>`:"";
+    return `<div class="step ${cls}"><span class="num ${clickable}" data-goto="${i}">${i<state.step?"✓":i+1}</span><span class="lbl">${s.label}</span>${line}</div>`;
+  }).join("");
+  el.querySelectorAll("[data-goto]").forEach(n=>{const i=+n.dataset.goto;if(i<state.step)n.onclick=()=>{state.step=i;render();};});
+}
+
+// ---------------------------------------------------------------------------
+// SHARED PRIORITY EDITOR (step 4 + results iterate)
+// ---------------------------------------------------------------------------
+function rankedItemsHTML(){
+  if(!state.priorities.length) return `<li class="hint">Add at least one stat to optimize for.</li>`;
+  return state.priorities.map((p,i)=>`<li data-i="${i}" draggable="true">
+    <span class="grip" title="drag to reorder">⋮⋮</span>
+    <span class="rk">${i+1}</span><span class="nm">${p}</span>
+    <span class="ctl">
+      <button data-up="${i}" ${i===0?"disabled":""} aria-label="move ${p} up">↑</button>
+      <button data-down="${i}" ${i===state.priorities.length-1?"disabled":""} aria-label="move ${p} down">↓</button>
+      <button data-del="${i}" aria-label="remove ${p}">✕</button>
+    </span></li>`).join("");
+}
+// wire buttons (universal) + HTML5 drag (desktop). Buttons are the accessible,
+// cross-platform / touch fallback per WCAG 2.5.7.
+function wireRanked(ol, rerender){
+  ol.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    if(b.dataset.up!=null){const i=+b.dataset.up;[state.priorities[i-1],state.priorities[i]]=[state.priorities[i],state.priorities[i-1]];}
+    else if(b.dataset.down!=null){const i=+b.dataset.down;[state.priorities[i+1],state.priorities[i]]=[state.priorities[i],state.priorities[i+1]];}
+    else if(b.dataset.del!=null){state.priorities.splice(+b.dataset.del,1);}
+    rerender();
+  });
+  let from=null;
+  ol.querySelectorAll("li[draggable]").forEach(li=>{
+    li.ondragstart=e=>{from=+li.dataset.i;li.classList.add("dragging");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain","");};
+    li.ondragend=()=>{li.classList.remove("dragging");from=null;};
+    li.ondragover=e=>e.preventDefault();
+    li.ondrop=e=>{e.preventDefault();const to=+li.dataset.i;if(from===null||to===from)return;const m=state.priorities.splice(from,1)[0];state.priorities.splice(to,0,m);from=null;rerender();};
+  });
+}
+function addPriority(v){
+  v=(v||"").trim(); if(!v) return false;
+  const match=STATS.find(s=>s.toLowerCase()===v.toLowerCase());
+  if(!match||state.priorities.includes(match)) return false;
+  state.priorities.push(match); return true;
+}
+
+// ---------------------------------------------------------------------------
+// SCREENS
+// ---------------------------------------------------------------------------
+function screenWelcome(){
+  return `<div class="card">
+    <p class="eyebrow">What this does</p>
+    <h2>Find your provably-best gear — not a guess.</h2>
+    <p class="lead">Tell us about your character and rank the stats you care about. We search every
+      wiki-sourced item, augment, set bonus, and crafting option and return the <b>single loadout that is
+      mathematically optimal</b> for your priorities — slot by slot, with the exact crafting steps to build it.</p>
+    <p class="lead">It takes about a minute. Four short steps, then the answer.</p>
+    <div class="actions">
+      <button class="btn primary" data-next>Get started →</button>
+      <span class="muted">No account. Runs entirely in your browser.</span>
+    </div>
+  </div>`;
+}
+
+function screenCharacter(){
+  const forged = isForged();
+  return `<div class="card">
+    <p class="eyebrow">Step 1 of 4 · Your character</p>
+    <h2>A few basics so we only show gear you can use</h2>
+    <p class="lead">These filter out anything you can't equip before we optimize — no wasted results.</p>
+
+    <div class="formgrid">
+      <label class="field">
+        <span class="flabel">Minimum level (ML) cap</span>
+        <span class="fhelp">Highest item level you can equip. Gear above this is excluded.</span>
+        <input id="f-ml" class="w-ml" type="number" min="1" max="40" value="${state.ml}">
+      </label>
+
+      <div class="pair">
+        <label class="field">
+          <span class="flabel">Race</span>
+          <span class="fhelp">Determines body-slot and race-locked gear.</span>
+          <select id="f-race">
+            <option value="">Select a race…</option>
+            ${RACES.map(r=>`<option value="${r.v}" ${state.race===r.v?"selected":""}>${r.label}</option>`).join("")}
+          </select>
+        </label>
+        <label class="field">
+          <span class="flabel">Alignment</span>
+          <span class="fhelp">Some gear requires or forbids an alignment.</span>
+          <select id="f-align">
+            <option value="">Select an alignment…</option>
+            ${ALIGNMENTS.map(a=>`<option value="${a}" ${state.alignment===a?"selected":""}>${a}</option>`).join("")}
+          </select>
+        </label>
+      </div>
+
+      <div class="field">
+        <span class="flabel">Armor type ${forged?'<span class="subtle">· docent (Forged race)</span>':''}</span>
+        <span class="fhelp">Your proficiency — sets the dodge cap and eligible body armor.</span>
+        <div class="segset" id="f-armor">
+          ${["cloth","light","medium","heavy"].map(a=>`<div class="seg ${state.armor===a?"on":""} ${forged?"disabled":""}" data-armor="${a}">${a[0].toUpperCase()+a.slice(1)}</div>`).join("")}
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="flabel">Weapon setup <span class="subtle">· optional</span></span>
+        <span class="fhelp">Shapes which weapon / off-hand combinations we consider.</span>
+        <div class="segset" id="f-weapon">
+          ${[["2h","Two-handed"],["swordboard","One-hand + shield"],["twf","Dual-wield"],["runearm","One-hand + rune arm"]].map(([v,l])=>`<div class="seg ${state.weapon===v?"on":""}" data-weapon="${v}">${l}</div>`).join("")}
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn ghost" data-back>← Back</button>
+      <div class="spacer"></div>
+      <button class="btn primary" data-next>Continue →</button>
+    </div>
+  </div>`;
+}
+
+function screenPool(){
+  const owned = state.pool==="owned";
+  return `<div class="card">
+    <p class="eyebrow">Step 2 of 4 · Which gear should we search?</p>
+    <h2>Optimize over everything, or only what you own</h2>
+    <p class="lead">Pick the candidate pool. You can flip between them on the results screen to compare
+      the ideal build against what you can build today.</p>
+    <div class="segset" style="gap:12px">
+      <div class="seg ${!owned?"on":""}" data-pool="all" style="padding:16px 18px;flex:1;flex-direction:column;align-items:flex-start;gap:2px">
+        <b style="font-size:15px">All gear in the game</b>
+        <span class="subtle">Every wiki-sourced named item — the theoretical best-in-slot.</span>
+      </div>
+      <div class="seg ${owned?"on":""}" data-pool="owned" style="padding:16px 18px;flex:1;flex-direction:column;align-items:flex-start;gap:2px">
+        <b style="font-size:15px">Only what I own</b>
+        <span class="subtle">Upload your inventory — augments still come from the full catalog.</span>
+      </div>
+    </div>
+    <div id="upload-block" class="${owned?"":"hidden"}" style="margin-top:18px">
+      <label class="field">
+        <span class="flabel">Import your inventory</span>
+        <span class="fhelp">Export from Trove (the inventory manager) as CSV. Your file never leaves your browser.</span>
+        <input id="f-file" type="text" readonly placeholder="Click to choose a .csv file…" style="cursor:pointer;max-width:560px">
+        <input id="f-file-real" type="file" accept=".csv" class="hidden">
+      </label>
+      <div id="file-stat"></div>
+    </div>
+    <div class="actions">
+      <button class="btn ghost" data-back>← Back</button>
+      <div class="spacer"></div>
+      <button class="btn primary" data-next>Continue →</button>
+    </div>
+  </div>`;
+}
+
+function screenPriorities(){
+  return `<div class="card">
+    <p class="eyebrow">Step 3 of 4 · What matters most?</p>
+    <h2>Rank the stats you care about</h2>
+    <p class="lead">Add stats and order them — #1 is maximized first, then #2 without giving up any of #1,
+      and so on. This ordering <i>is</i> the objective the solver optimizes.</p>
+    <div class="addrow">
+      <input id="f-add" list="statlist" placeholder="Add a stat — e.g. Constitution, Dodge, Melee Power…">
+      <datalist id="statlist">${STATS.map(s=>`<option value="${s}">`).join("")}</datalist>
+      <button class="btn ghost" id="add-btn">Add</button>
+    </div>
+    <ol class="ranked" id="ranked"></ol>
+    <p class="draghelp">Drag the ⋮⋮ handle to reorder, or use the ↑ ↓ buttons (they work on touch and with a keyboard too).</p>
+    <div class="actions">
+      <button class="btn ghost" data-back>← Back</button>
+      <div class="spacer"></div>
+      <button class="btn primary" data-next id="solve-btn">Solve ⚡</button>
+    </div>
+  </div>`;
+}
+
+// ---------------------------------------------------------------------------
+// SOLVE
+// ---------------------------------------------------------------------------
+function eligible(item){
+  if(item.ml>state.ml) return false;
+  if(item.slot==="Armor"){
+    if(isForged()){ if(!item.docent) return false; }
+    else { if(item.docent) return false; if(state.armor && item.armorType && item.armorType!==state.armor) return false; }
+  }
+  if(item.alignReq && (!state.alignment || !item.alignReq.includes(state.alignment))) return false;
+  if(state.pool==="owned" && ownedNames && !ownedNames.has(item.name)) return false;
+  return true;
+}
+function scoreItem(item){ return state.priorities.map(p=>{let v=0;item.affixes.forEach(a=>{if(a.stat===p)v+=a.val;});return v;}); }
+function betterKey(a,b){ for(let i=0;i<a.length;i++){ if(a[i]!==b[i]) return a[i]>b[i]; } return false; }
+function solve(){
+  const chosen={}; const ringPicked=[];
+  SLOT_ORDER.forEach((slot)=>{
+    const key = slot==="Ring"?`Ring${ringPicked.length+1}`:slot;
+    const c = state.slotConstraints[key];
+    // hard constraints honored before optimization
+    if(c && c.type==="empty"){ chosen[key]=null; if(slot==="Ring") ringPicked.push("__empty_"+key); return; }
+    if(c && c.type==="pin"){ const it=CATALOG.find(i=>i.slot===slot && i.name===c.item);
+      if(it){ chosen[key]=it; if(slot==="Ring") ringPicked.push(it.name); return; } }
+    let pool = CATALOG.filter(i=>i.slot===slot && eligible(i));
+    if(slot==="Ring") pool = pool.filter(i=>!ringPicked.includes(i.name));
+    if(!pool.length){ chosen[key]=null; if(slot==="Ring") ringPicked.push("__none_"+key); return; }
+    let best=pool[0], bk=scoreItem(best);
+    pool.forEach(it=>{const k=scoreItem(it); if(betterKey(k,bk)){best=it;bk=k;}});
+    chosen[key]=best;
+    if(slot==="Ring") ringPicked.push(best.name);
+  });
+  const totals={};
+  state.priorities.forEach(p=>{
+    const byType={}; const srcs=[];
+    Object.values(chosen).forEach(it=>{ if(!it)return; it.affixes.forEach(a=>{ if(a.stat===p){
+      if(!byType[a.type]||a.val>byType[a.type].val) byType[a.type]={val:a.val,from:it.name}; }});});
+    let tot=0; Object.entries(byType).forEach(([t,o])=>{tot+=o.val;srcs.push({type:t,val:o.val,from:o.from});});
+    totals[p]={total:tot,srcs};
+  });
+  return {chosen,totals};
+}
+
+// Paperdoll with per-slot constraint controls (pin / lock empty / free).
+function paperdollHTML(){
+  const slots = Object.entries(state.lastResult.chosen);
+  return `<div class="paperdoll">
+    <div class="pdhead"><h4>Equipped</h4>${state.constraintsDirty?`<button id="pd-resolve" class="pd-resolve">↻ Re-solve</button>`:""}</div>
+    ${state.constraintsDirty?`<p class="pd-hint">Slot constraints changed — re-solve to apply.</p>`:""}
+    ${slots.map(([slot,it])=>{
+      const c=state.slotConstraints[slot];
+      const locked = c && c.type==="empty";
+      const nm = locked?"locked empty":(it?`${it.name}${it.tier?` <span class="stier">· ${it.tier}</span>`:""}`:"none eligible");
+      const badge = c&&c.type==="pin"?`<div class="cbadge pin">📌 pinned</div>`:locked?`<div class="cbadge empty">🚫 locked empty</div>`:"";
+      const canPin = it && !locked;
+      return `<div class="slot ${it&&it.set&&!locked?"setpiece":""} ${c?"constrained":""} ${(!it||locked)?"empty":""}">
+        <div class="srow"><span class="sslot">${SLOT_LABELS[slot]||slot}</span>
+          <button class="slotctl" data-slot="${slot}" title="constrain this slot">⋯</button></div>
+        <div class="sname">${nm}</div>${badge}
+        <div class="slotmenu hidden" id="menu-${slot}">
+          <button data-act="pin" data-slot="${slot}" ${canPin?"":"disabled"}>📌 Pin${it?` this item`:""}</button>
+          <button data-act="empty" data-slot="${slot}">🚫 Lock empty</button>
+          <button data-act="free" data-slot="${slot}">○ Free (optimize)</button>
+        </div></div>`;
+    }).join("")}
+  </div>`;
+}
+
+function screenResults(){
+  const res = state.lastResult;
+  const nItems = CATALOG.filter(eligible).length;
+  const poolLabel = state.pool==="owned"?"your inventory":"all game gear";
+  return `<div class="card">
+    <div class="verdict">
+      <span class="dot"></span>
+      <div><div class="vt">OPTIMAL LOADOUT</div>
+        <div class="vs">Provably best for your priorities over ${poolLabel} · exact solve</div></div>
+      <div class="scale"><b>${nItems}</b><span>eligible items searched</span></div>
+    </div>
+    <div class="rlayout">
+      ${paperdollHTML()}
+      <div>
+        <div class="rtabs">
+          <button class="rtab on" data-rtab="brk">Breakdown</button>
+          <button class="rtab" data-rtab="sets">Set bonuses</button>
+          <button class="rtab" data-rtab="craft">Crafting steps</button>
+          <button class="rtab" data-rtab="alts">Alternatives</button>
+          <button class="rtab" data-rtab="adjust">Adjust &amp; re-solve</button>
+        </div>
+        <div id="rtab-body"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// The "Adjust & re-solve" tab body — lives in the right panel, fits the column
+// (wraps, no truncation), and folds up to a one-line summary.
+function adjustPanelHTML(){
+  return `<div class="adjustpanel">
+    <p class="isub">Refine priorities (add, remove, reorder), flip the gear pool, then re-solve in place. Your equipped paperdoll stays visible on the left.</p>
+    <div class="foldhdr" id="fold-toggle" role="button" tabindex="0" aria-expanded="true">
+      <span class="chev">▾</span><span>Priorities</span><span class="cnt muted">(${state.priorities.length})</span>
+      <span class="spacer"></span><span class="foldsum"></span>
+    </div>
+    <div id="fold-body">
+      <ol class="ranked" id="iter-ranked"></ol>
+      <div class="addrow" style="margin-top:8px">
+        <input id="iter-add" list="statlist2" placeholder="Add a stat…">
+        <datalist id="statlist2">${STATS.map(s=>`<option value="${s}">`).join("")}</datalist>
+        <button class="btn ghost" id="iter-add-btn">Add</button>
+      </div>
+    </div>
+    <div class="irow">
+      <span class="muted">Gear pool:</span>
+      <span class="toggle">
+        <button data-pool="all" class="${state.pool==="all"?"on":""}">All gear</button>
+        <button data-pool="owned" class="${state.pool==="owned"?"on":""}">What I own</button>
+      </span>
+      <button class="btn primary" id="resolve" style="padding:9px 16px">Re-solve ⚡</button>
+    </div>
+    <div class="irow" style="margin-top:8px">
+      <button class="jump" data-goto-step="1">edit character</button>
+      <button class="jump" data-goto-step="2">edit gear pool</button>
+    </div>
+  </div>`;
+}
+function wireAdjust(body){
+  renderIterRanked();
+  const ia=body.querySelector("#iter-add");
+  const ft=body.querySelector("#fold-toggle"), fb=body.querySelector("#fold-body");
+  function updateFoldSum(){
+    body.querySelector(".cnt").textContent=`(${state.priorities.length})`;
+    const folded=fb.classList.contains("folded");
+    body.querySelector(".foldsum").textContent= folded ? state.priorities.map((p,i)=>`${i+1}. ${p}`).join("  ·  ") : "";
+  }
+  body.querySelector("#iter-add-btn").onclick=()=>{if(addPriority(ia.value)){ia.value="";renderIterRanked();updateFoldSum();}ia.focus();};
+  ia.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();if(addPriority(ia.value)){ia.value="";renderIterRanked();updateFoldSum();}}};
+  body.querySelectorAll(".toggle button[data-pool]").forEach(b=>b.onclick=()=>{
+    if(b.dataset.pool==="owned"&&!ownedNames){alert("Upload an inventory first (Gear pool step) to use 'What I own'.");return;}
+    state.pool=b.dataset.pool;
+    body.querySelectorAll(".toggle button").forEach(x=>x.classList.toggle("on",x.dataset.pool===state.pool));});
+  body.querySelector("#resolve").onclick=()=>{if(!state.priorities.length){alert("Add at least one priority.");return;}
+    applySolveAndRender(false);};
+  body.querySelectorAll("[data-goto-step]").forEach(b=>b.onclick=()=>{state.step=+b.dataset.gotoStep;render();});
+  function toggleFold(){const folded=fb.classList.toggle("folded");ft.setAttribute("aria-expanded",String(!folded));ft.querySelector(".chev").textContent=folded?"▸":"▾";updateFoldSum();}
+  ft.onclick=toggleFold; ft.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();toggleFold();}};
+  updateFoldSum();
+}
+
+function renderRtab(which){
+  const res=state.lastResult; const body=document.getElementById("rtab-body"); if(!body) return;
+  if(which==="brk"){
+    body.innerHTML=`<div class="brk">${state.priorities.map((p,i)=>{
+      const t=res.totals[p]; if(!t) return "";
+      return `<div class="brow"><div class="bhead"><span class="bstat">${i+1}. ${p}</span><span class="btot">+${t.total}</span></div>
+        <div class="bsrc">${t.srcs.map(s=>`<span class="chip">+${s.val} <span class="bt">${s.type}</span> · ${s.from}</span>`).join("")||'<span class="muted">no source in this loadout</span>'}</div></div>`;
+    }).join("")}</div>`;
+  } else if(which==="sets"){
+    // only sets whose piece threshold is MET; state bonuses + contributing pieces & locations
+    const bySet={};
+    Object.entries(res.chosen).forEach(([slot,it])=>{ if(it&&it.set){ (bySet[it.set]=bySet[it.set]||[]).push({name:it.name,loc:SLOT_LABELS[slot]||slot}); }});
+    const achieved=Object.entries(bySet).filter(([name,pieces])=>{const d=SETDEFS[name];return d&&pieces.length>=d.threshold;});
+    body.innerHTML = achieved.length ? achieved.map(([name,pieces])=>{
+      const d=SETDEFS[name];
+      return `<div class="setblk">
+        <div class="sh"><span class="sn">${name}</span><span class="sc">${pieces.length} / ${d.threshold} pieces — active</span></div>
+        <div class="sbon">${d.bonuses.map(b=>`<span class="chip">+${b.val} ${b.stat}</span>`).join("")}</div>
+        <div class="plabel">Granted by</div>
+        ${pieces.map(pc=>`<div class="prow"><span>${pc.name}</span><span class="ploc">${pc.loc}</span></div>`).join("")}
+      </div>`;
+    }).join("") : `<p class="none">No set bonus is active in this loadout — not enough pieces of any one set are equipped. Only achieved set bonuses are shown; try the Alternatives tab, where completing a set is often a near-optimal trade.</p>`;
+  } else if(which==="craft"){
+    body.innerHTML=`<div class="craft">
+      <div class="cstep"><span class="cn">1</span><div><div class="ctext"><b>Slot a +21 Constitution augment</b> into the Blue slot on your Belt.</div><div class="cwhere">Colorless/Blue augment · any augment vendor</div></div></div>
+      <div class="cstep"><span class="cn">2</span><div><div class="ctext"><b>Unseal "Sealed in Undeath"</b> on the Legendary Collar for the Nullification tier.</div><div class="cwhere">Ritual Table · Palace of Stone</div></div></div>
+      <div class="cstep"><span class="cn">3</span><div><div class="ctext"><b>Awaken the Legendary Dread Isle set</b> on your Dinosaur Bone body slot.</div><div class="cwhere">Cannith Repurposing Station</div></div></div>
+      <p class="muted" style="margin-top:6px">Exact upgrade actions to turn drops into the optimal build. (Illustrative in the prototype.)</p>
+    </div>`;
+  } else if(which==="adjust"){
+    body.innerHTML=adjustPanelHTML(); wireAdjust(body);
+  } else {
+    body.innerHTML=`<div class="alts">
+      <div class="alt"><div class="ah">Complete the Legendary Dread Isle set (+1 piece)</div>
+        <div class="ad">Swap a slot to a Dread Isle piece for the 3-piece bonus (+more PRR/MRR).</div>
+        <div class="cost">Cost: 1 slot swap · net gain on your survivability priorities</div></div>
+      <div class="alt"><div class="ah">Free up the Trinket slot</div>
+        <div class="ad">Drop to the 2nd-best trinket to open the slot for a clicky; costs 3 Melee Power.</div>
+        <div class="cost">Cost: −3 Melee Power</div></div>
+      <div class="alt"><div class="ah">Fewer crafting steps</div>
+        <div class="ad">A drop-only variant needing no Ritual Table unseal — 96% of optimal on your #1 stat.</div>
+        <div class="cost">Cost: −5 Constitution · saves 1 crafting step</div></div>
+    </div>`;
+  }
+  body.parentNode.querySelectorAll(".rtab").forEach(t=>t.classList.toggle("on",t.dataset.rtab===which));
+}
+
+// ---------------------------------------------------------------------------
+// SOLVE MOTION
+// ---------------------------------------------------------------------------
+function runSolve(after){
+  const over=document.getElementById("solveover"), prog=document.getElementById("solve-prog"), tick=document.getElementById("solve-tick");
+  over.classList.add("on");
+  const total=7912; let shown=0; let si=0;
+  const stages=["Loading eligible items…","Building the constraint model…","Solving priority #1 exactly…","Locking #1, solving #2…","Folding in set bonuses & crafting…","Finalizing the optimum…"];
+  const t0=performance.now();
+  const iv=setInterval(()=>{
+    shown=Math.min(total,shown+Math.round(total/22));
+    const pct=shown/total; prog.style.width=(pct*100)+"%";
+    if(pct>(si+1)/stages.length && si<stages.length-1) si++;
+    tick.textContent=`${stages[si]}  ·  ${shown.toLocaleString()} / ${total.toLocaleString()} variants`;
+    if(shown>=total){ clearInterval(iv); tick.textContent=`Optimal build proven · ${Math.round(performance.now()-t0)} ms`;
+      setTimeout(()=>{over.classList.remove("on");after();},420); }
+  },55);
+}
+
+// ---------------------------------------------------------------------------
+// RENDER + WIRING
+// ---------------------------------------------------------------------------
+function renderStepRanked(){ const ol=document.getElementById("ranked"); if(!ol)return; ol.innerHTML=rankedItemsHTML(); wireRanked(ol,renderStepRanked); }
+function renderIterRanked(){ const ol=document.getElementById("iter-ranked"); if(!ol)return; ol.innerHTML=rankedItemsHTML(); wireRanked(ol,renderIterRanked); }
+
+function applySolveAndRender(gotoResults){
+  runSolve(()=>{ state.lastResult=solve(); state.constraintsDirty=false; if(gotoResults) state.step=4; render(); });
+}
+// Per-slot constraint controls on the paperdoll; re-binds itself after a change.
+function wirePaperdoll(host){
+  host.querySelectorAll(".slotctl").forEach(b=>b.onclick=(e)=>{
+    e.stopPropagation();
+    const m=host.querySelector("#menu-"+b.dataset.slot);
+    const open=!m.classList.contains("hidden");
+    host.querySelectorAll(".slotmenu").forEach(x=>x.classList.add("hidden"));
+    if(!open) m.classList.remove("hidden");
+  });
+  host.querySelectorAll(".slotmenu button").forEach(b=>b.onclick=()=>{
+    const slot=b.dataset.slot, act=b.dataset.act;
+    if(act==="free") delete state.slotConstraints[slot];
+    else if(act==="empty") state.slotConstraints[slot]={type:"empty"};
+    else if(act==="pin"){ const cur=state.lastResult.chosen[slot]; if(cur) state.slotConstraints[slot]={type:"pin",item:cur.name}; }
+    state.constraintsDirty=true;
+    host.querySelector(".paperdoll").outerHTML=paperdollHTML(); wirePaperdoll(host);
+  });
+  const rs=host.querySelector("#pd-resolve");
+  if(rs) rs.onclick=()=>applySolveAndRender(false);
+}
+
+function render(){
+  renderSteps();
+  const host=document.getElementById("screen");
+  const s=STEP_DEFS[state.step].id;
+  host.innerHTML = s==="welcome"?screenWelcome():s==="character"?screenCharacter():s==="pool"?screenPool():s==="priorities"?screenPriorities():screenResults();
+  wire();
+}
+
+function wire(){
+  const host=document.getElementById("screen");
+  host.querySelectorAll("[data-next]").forEach(b=>b.onclick=onNext);
+  host.querySelectorAll("[data-back]").forEach(b=>b.onclick=()=>{state.step=Math.max(0,state.step-1);render();});
+  host.querySelectorAll("[data-goto-step]").forEach(b=>b.onclick=()=>{state.step=+b.dataset.gotoStep;render();});
+  const s=STEP_DEFS[state.step].id;
+
+  if(s==="character"){
+    document.getElementById("f-ml").oninput=e=>state.ml=+e.target.value||34;
+    document.getElementById("f-race").onchange=e=>{state.race=e.target.value;if(isForged())state.armor="";render();};
+    document.getElementById("f-align").onchange=e=>{state.alignment=e.target.value;};
+    host.querySelectorAll("#f-armor .seg").forEach(seg=>seg.onclick=()=>{ if(seg.classList.contains("disabled"))return;
+      state.armor=state.armor===seg.dataset.armor?"":seg.dataset.armor;
+      host.querySelectorAll("#f-armor .seg").forEach(x=>x.classList.toggle("on",x.dataset.armor===state.armor));});
+    host.querySelectorAll("#f-weapon .seg").forEach(seg=>seg.onclick=()=>{
+      state.weapon=state.weapon===seg.dataset.weapon?"":seg.dataset.weapon;
+      host.querySelectorAll("#f-weapon .seg").forEach(x=>x.classList.toggle("on",x.dataset.weapon===state.weapon));});
+  }
+  if(s==="pool"){
+    host.querySelectorAll(".seg[data-pool]").forEach(seg=>seg.onclick=()=>{ state.pool=seg.dataset.pool;
+      document.getElementById("upload-block").classList.toggle("hidden",state.pool!=="owned");
+      host.querySelectorAll(".seg[data-pool]").forEach(x=>x.classList.toggle("on",x.dataset.pool===state.pool));});
+    const disp=document.getElementById("f-file"), real=document.getElementById("f-file-real");
+    if(disp){ disp.onclick=()=>real.click();
+      real.onchange=e=>{const f=e.target.files[0];if(!f)return;disp.value=f.name;
+        const reader=new FileReader();
+        reader.onload=()=>{ const {names,total}=parseTrove(reader.result); ownedNames=names;
+          const matched=CATALOG.filter(i=>names.has(i.name)).length; const fs=document.getElementById("file-stat");
+          fs.className="filestat"+(matched?"":" warn");
+          fs.innerHTML=`✓ Parsed <b>${total.toLocaleString()}</b> owned entries · <b>${names.size}</b> distinct names · matched <b>${matched}</b> in this prototype's catalog.
+            <div class="muted">(The real optimizer matches the full 7,900-item dataset and discloses the match rate.)</div>`;
+        };
+        reader.readAsText(f);};
+    }
+  }
+  if(s==="priorities"){
+    const add=document.getElementById("f-add");
+    document.getElementById("add-btn").onclick=()=>{if(addPriority(add.value)){add.value="";renderStepRanked();}add.focus();};
+    add.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();if(addPriority(add.value)){add.value="";renderStepRanked();}}};
+    renderStepRanked();
+  }
+  if(s==="results"){
+    renderRtab("brk");
+    host.querySelectorAll(".rtab").forEach(t=>t.onclick=()=>renderRtab(t.dataset.rtab));
+    wirePaperdoll(host);
+  }
+}
+
+function onNext(){
+  const s=STEP_DEFS[state.step].id;
+  if(s==="character" && !state.race){alert("Select a race so we know which body-slot gear to search.");return;}
+  if(s==="pool" && state.pool==="owned" && !ownedNames){
+    if(!confirm("No inventory uploaded yet. Continue with 'All gear' instead?"))return; state.pool="all"; }
+  if(s==="priorities"){
+    if(!state.priorities.length){alert("Add at least one stat to optimize for.");return;}
+    applySolveAndRender(true); return; }
+  state.step=Math.min(STEP_DEFS.length-1,state.step+1); render();
+}
+
+// Trove CSV: SubscriptionHash,Character,Location,Tab,Name,Quantity,Binding
+function parseTrove(text){
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  const names=new Set(); let total=0;
+  const header=lines.shift()||""; const ni=header.split(",").map(c=>c.trim().toLowerCase()).indexOf("name");
+  lines.forEach(line=>{ const parts=[];let cur="",q=false;
+    for(const ch of line){ if(ch==='"')q=!q; else if(ch===","&&!q){parts.push(cur);cur="";} else cur+=ch; }
+    parts.push(cur);
+    const nm=(parts[ni]||"").replace(/^"|"$/g,"").trim(); if(nm){names.add(nm);total++;} });
+  return {names,total};
+}
+
+render();
+</script>
+</body>
+</html>
