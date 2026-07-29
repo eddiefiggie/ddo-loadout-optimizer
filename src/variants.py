@@ -72,6 +72,11 @@ def _make_variant(item, ml, tier_label, parsed):
         # Vecna "Lost Purpose" tier marker ('heroic'|'legendary') — propagated so the
         # build attaches the chosen-set-membership slot (pool = same-tier Vecna sets).
         "lost_purpose": item.get("lost_purpose"),
+        # Legendary Thunder-Forged multi-tier choice-slot marker: a list of tier slots
+        # [{tier:1},{tier:2},{tier:3}] the solver crafts one option per (mirrors lamordia_slots).
+        "thunder_forged_tiers": item.get("thunder_forged_tiers"),
+        # Legendary Green Steel single-pick choice-slot marker (truthy = host).
+        "green_steel_slot": item.get("green_steel_slot"),
     }
 
 

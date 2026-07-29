@@ -289,9 +289,11 @@ function craftChips(v, idx, maps) {
   const rolls = (maps.rollByItem.get(v.variant_id) || []).map((r) => `<span class="chip roll" title="choice slot, best option selected">Choice: ${lbl(r)}</span>`);
   const viks = (maps.vikByItem.get(v.variant_id) || []).map((n) => `<span class="chip lamordia" title="U81 Viktranium / Lamordia">Lamordia ${esc(n.slot_type)}: ${lbl(n)}</span>`);
   const seals = (maps.sealByItem.get(v.variant_id) || []).map((n) => `<span class="chip seal" title="unseal one effect at the crafting table">Sealed in ${esc(n.seal_type)}: ${lbl(n)}</span>`);
+  const tfs = (maps.tfByItem.get(v.variant_id) || []).map((n) => `<span class="chip thunderforged" title="Legendary Thunder-Forged tier upgrade">Thunder-Forged T${esc(n.tier)}: ${lbl(n)}</span>`);
+  const gss = (maps.gsByItem.get(v.variant_id) || []).map((n) => `<span class="chip greensteel" title="Legendary Green Steel craft">Green Steel: ${lbl(n)}</span>`);
   const jokers = ((maps.jokerByHost && maps.jokerByHost.get(v.variant_id)) || []).map((j) => `<span class="chip joker" title="wildcard set piece">Wildcard set: ${esc(j.set)}</span>`);
   const awakens = ((maps.membershipByHost && maps.membershipByHost.get(v.variant_id)) || []).map((m) => `<span class="chip awaken" title="awaken this set at the ${esc(m.station || "crafting station")}">Awaken: ${esc(m.set)}${m.station ? ` <span class="muted">(${esc(m.station)})</span>` : ""}</span>`);
-  return [...augs, ...dinos, ...ncs, ...rolls, ...viks, ...seals, ...jokers, ...awakens];
+  return [...augs, ...dinos, ...ncs, ...rolls, ...viks, ...seals, ...tfs, ...gss, ...jokers, ...awakens];
 }
 
 // The set(s) an equipped piece belongs to, stated on its slot (R15).
@@ -586,7 +588,8 @@ function buildViews(build, model, query) {
   const maps = {
     augAssign, dinoAssign,
     ncByItem: byItemMap(build.ncPlaced), rollByItem: byItemMap(build.rollPlaced),
-    vikByItem: byItemMap(build.vikPlaced), sealByItem: byItemMap(build.sealPlaced), jokerByHost,
+    vikByItem: byItemMap(build.vikPlaced), sealByItem: byItemMap(build.sealPlaced),
+    tfByItem: byItemMap(build.tfPlaced), gsByItem: byItemMap(build.gsPlaced), jokerByHost,
     membershipByHost,
   };
   const picksBySlot = new Map();

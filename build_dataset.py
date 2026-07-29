@@ -26,6 +26,8 @@ from src import dino as dino_mod
 from src import nearly_complete as nc_mod
 from src import viktranium as vik_mod
 from src import seal as seal_mod
+from src import thunder_forged as tf_mod
+from src import green_steel as gs_mod
 from src import membership as membership_mod
 from src import compendium as compendium_mod
 from src import band_frontier as band_mod
@@ -41,6 +43,8 @@ DINO_SEED_PATH = os.path.join(HERE, "data", "seed", "dino_crafting.json")
 NC_SEED_PATH = os.path.join(HERE, "data", "seed", "nearly_complete.json")
 VIK_SEED_PATH = os.path.join(HERE, "data", "seed", "viktranium.json")
 SEAL_SEED_PATH = os.path.join(HERE, "data", "seed", "seal.json")
+TF_SEED_PATH = os.path.join(HERE, "data", "seed", "thunder_forged.json")
+GS_SEED_PATH = os.path.join(HERE, "data", "seed", "green_steel.json")
 AUG_SEED_PATH = os.path.join(HERE, "data", "seed", "augments.json")
 JOKER_SEED_PATH = os.path.join(HERE, "data", "seed", "joker_sets.json")
 COMPENDIUM_DIR = os.path.join(HERE, "data", "seed", "compendium")
@@ -97,6 +101,22 @@ def load_joker_seed(path: str = JOKER_SEED_PATH) -> dict:
 
 def load_seal_seed(path: str = SEAL_SEED_PATH) -> dict:
     """Load the seal-slot ("Sealed in X") pool seed (wiki-sourced; separate from base)."""
+    if not os.path.exists(path):
+        return {}
+    with open(path, "r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def load_tf_seed(path: str = TF_SEED_PATH) -> dict:
+    """Load the Legendary Thunder-Forged tier-pool seed (wiki-sourced)."""
+    if not os.path.exists(path):
+        return {}
+    with open(path, "r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def load_gs_seed(path: str = GS_SEED_PATH) -> dict:
+    """Load the Legendary Green Steel endgame-effect pool seed (wiki-sourced)."""
     if not os.path.exists(path):
         return {}
     with open(path, "r", encoding="utf-8") as fh:
@@ -291,6 +311,13 @@ def build(seed: dict) -> dict:
     # matching pool. Undeath sourced (Ritual Table); Fire/Gloom/Mist pending.
     sl = seal_mod.parse_seal(load_seal_seed())
 
+    # Legendary Thunder-Forged (multi-tier choice-slot) + Green Steel (single-pick
+    # choice-slot): expose the craftable option pools. Hosts carry the marker
+    # (thunder_forged_tiers / green_steel_slot); the solver crafts the best option.
+    # Pools pending wiki harvest — machinery complete, empty until sourced.
+    tf = tf_mod.parse_thunder_forged(load_tf_seed())
+    gs = gs_mod.parse_green_steel(load_gs_seed())
+
     # Compendium roster: the complete named-item INDEX (name + slot + wiki link
     # for every named item on the wiki, harvested by category). Roster entries
     # are browse-only ("indexed") until their stats are enriched into real item
@@ -378,6 +405,8 @@ def build(seed: dict) -> dict:
             "nc_coverage": nc["coverage"],
             "viktranium_coverage": vik["coverage"],
             "seal_coverage": sl["coverage"],
+            "thunder_forged_coverage": tf["coverage"],
+            "green_steel_coverage": gs["coverage"],
             "membership_coverage": membership_mod.coverage(membership_defs),
             "augment_coverage": augment_coverage,
             "compendium_coverage": comp_cov,
@@ -390,6 +419,8 @@ def build(seed: dict) -> dict:
         "nearly_complete": nc["records"],
         "viktranium": vik["records"],
         "seal": sl["records"],
+        "thunder_forged": tf["records"],
+        "green_steel": gs["records"],
         "membership_set_defs": membership_defs,
         "compendium": comp_records,
     }

@@ -1,0 +1,9 @@
+{
+  "metadata": {
+    "system": "Legendary Green Steel crafting — single-pick choice-slot over the endgame-relevant effect pool",
+    "note": "PENDING WIKI HARVEST. Machinery complete; the endgame-relevant Green Steel craftable effects (the SP/HP/Insightful/Quality/proc options that win ML30+ slots) must be sourced from the DDO wiki (Legendary Green Steel) via Claude-in-Chrome (plain fetch returns empty for ddowiki). Record the endgame cutline + rationale in `cutline` below so coverage is disclosed. Mirrors the Seal single-pick choice-slot; the solver crafts the best option per host.",
+    "wiki_url": "https://ddowiki.com/page/Legendary_Green_Steel",
+    "cutline": null
+  },
+  "options": []
+}

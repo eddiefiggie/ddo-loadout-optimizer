@@ -84,6 +84,8 @@ function buildProgram(model) {
   const rollMeta = new Map(); // roll-group option var -> {item, stat, bonus_type, value, unit}
   const vikMeta = new Map(); // Viktranium placement var -> {item, slot_type, category, stat, bonus_type, value, unit, tier, wiki_url}
   const sealMeta = new Map(); // seal placement var -> {item, seal_type, category, stat, bonus_type, value, unit, wiki_url}
+  const tfMeta = new Map();   // Thunder-Forged pick var -> {item, tier, stat, bonus_type, value, unit, wiki_url}
+  const gsMeta = new Map();   // Green Steel pick var -> {item, name, stat, bonus_type, value, unit, wiki_url}
   const memberMeta = new Map(); // membership pick var -> {host, set, station} (chosen set-membership: Cannith / Dino Set-Bonus)
 
   // U3 — augment assignment (aggregate compatible-color capacity). Correctness
@@ -351,6 +353,59 @@ function buildProgram(model) {
     }
   }
 
+  // Legendary Thunder-Forged — a multi-tier choice-slot. `thunder_forged_tiers` is a
+  // list of tier slots [{tier}]; each may craft one option from that tier's pool, an
+  // independent Σ n <= 1 per tier (mirrors Viktranium's per-`lamordia_slot` loop). Pool
+  // keyed by `tier` alone (the Legendary tier is fixed for these hosts).
+  let tfc = 0;
+  for (const xv of xVars) {
+    const tiers = xv.variant.thunder_forged_tiers || [];
+    if (!tiers.length) continue;
+    for (const slot of tiers) {
+      const slotVars = [];
+      for (const opt of model.thunderForged || []) {
+        if (opt.tier !== slot.tier) continue;
+        if (!(targetSet.has(opt.stat) && opt.value > 0)) continue;
+        const n = "tf" + tfc++;
+        extraVars.push(n);
+        tfMeta.set(n, {
+          item: xv.variant.variant_id, tier: slot.tier, stat: opt.stat,
+          bonus_type: opt.bonus_type, value: opt.value, unit: opt.unit || "flat", wiki_url: opt.wiki_url,
+        });
+        slotVars.push(n);
+        extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
+        const k = `${opt.stat}||${opt.bonus_type}`;
+        if (!zByBucket.has(k)) zByBucket.set(k, []);
+        zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: opt.value });
+      }
+      if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single pick per tier
+    }
+  }
+
+  // Legendary Green Steel — a single-pick choice-slot over a flat endgame pool. A host
+  // with `green_steel_slot` may craft ONE option from model.greenSteel (mirrors Seal,
+  // but the pool has no key — every GS host draws from the one endgame-relevant pool).
+  let gsc = 0;
+  for (const xv of xVars) {
+    if (!xv.variant.green_steel_slot) continue;
+    const slotVars = [];
+    for (const opt of model.greenSteel || []) {
+      if (!(targetSet.has(opt.stat) && opt.value > 0)) continue;
+      const n = "gs" + gsc++;
+      extraVars.push(n);
+      gsMeta.set(n, {
+        item: xv.variant.variant_id, name: opt.name, stat: opt.stat,
+        bonus_type: opt.bonus_type, value: opt.value, unit: opt.unit || "flat", wiki_url: opt.wiki_url,
+      });
+      slotVars.push(n);
+      extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
+      const k = `${opt.stat}||${opt.bonus_type}`;
+      if (!zByBucket.has(k)) zByBucket.set(k, []);
+      zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: opt.value });
+    }
+    if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single craft per host
+  }
+
   // U5 — set thresholds. A set tier's parsed stats count only when >= N pieces
   // of the set are equipped. Per tier: a binary set_active with the linear
   // indicator  N*set_active - sum(equipped pieces of the set) <= 0  (so it can
@@ -478,7 +533,7 @@ function buildProgram(model) {
 
   return {
     xVars, zByBucket, cappedStats, targetList: model.targets, model,
-    extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, jokerMeta, jokerVars, memberMeta, memberVars, _zc: zc,
+    extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, jokerMeta, jokerVars, memberMeta, memberVars, _zc: zc,
   };
 }
 
@@ -622,6 +677,8 @@ function breakdownByTarget(program, prim) {
     if (program.ncMeta && program.ncMeta.has(gate)) { const m = program.ncMeta.get(gate); return { kind: "nc", label: "Nearly Complete", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.rollMeta && program.rollMeta.has(gate)) { const m = program.rollMeta.get(gate); return { kind: "roll", label: "choice slot", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.vikMeta && program.vikMeta.has(gate)) { const m = program.vikMeta.get(gate); return { kind: "vik", label: `Lamordia ${m.slot_type}`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
+    if (program.tfMeta && program.tfMeta.has(gate)) { const m = program.tfMeta.get(gate); return { kind: "tf", label: `Thunder-Forged Tier ${m.tier}`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
+    if (program.gsMeta && program.gsMeta.has(gate)) { const m = program.gsMeta.get(gate); return { kind: "gs", label: "Green Steel", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.placeMeta && program.placeMeta.has(gate)) return { kind: "augment", label: program.placeMeta.get(gate).variant_id };
     return { kind: "other", label: gate };
   };
@@ -656,7 +713,8 @@ function computeScale(program) {
   const crafts = (program.augMeta ? program.augMeta.size : 0)
     + (program.dinoMeta ? program.dinoMeta.size : 0) + (program.ncMeta ? program.ncMeta.size : 0)
     + (program.rollMeta ? program.rollMeta.size : 0) + (program.vikMeta ? program.vikMeta.size : 0)
-    + (program.sealMeta ? program.sealMeta.size : 0) + (program.memberMeta ? program.memberMeta.size : 0);
+    + (program.sealMeta ? program.sealMeta.size : 0) + (program.memberMeta ? program.memberMeta.size : 0)
+    + (program.tfMeta ? program.tfMeta.size : 0) + (program.gsMeta ? program.gsMeta.size : 0);
   return { variants: program.xVars.length, crafts, stages: (program.targetList || []).length + 1 };
 }
 
@@ -686,6 +744,10 @@ function readSolution(res, program) {
   for (const [n, meta] of program.vikMeta || []) if (prim(n) > 0.5) vikPlaced.push(meta);
   const sealPlaced = [];
   for (const [n, meta] of program.sealMeta || []) if (prim(n) > 0.5) sealPlaced.push(meta);
+  const tfPlaced = [];
+  for (const [n, meta] of program.tfMeta || []) if (prim(n) > 0.5) tfPlaced.push(meta);
+  const gsPlaced = [];
+  for (const [n, meta] of program.gsMeta || []) if (prim(n) > 0.5) gsPlaced.push(meta);
   // Wildcard joker picks — report a group's chosen set only when the joker is truly
   // load-bearing: the set is active AND its real (non-joker) equipped pieces fall short
   // of the threshold, so the Gem is the completing piece. This holds regardless of solve
@@ -711,7 +773,7 @@ function readSolution(res, program) {
   for (const [m, meta] of program.memberMeta || []) {
     if (prim(m) > 0.5 && activeSetNames.has(meta.set)) membershipPlaced.push(meta);
   }
-  return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, jokerPlaced, membershipPlaced };
+  return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, tfPlaced, gsPlaced, jokerPlaced, membershipPlaced };
 }
 
 async function solveLexicographic(model, highs) {
@@ -738,6 +800,7 @@ async function solveLexicographic(model, highs) {
     augmentsPlaced: sol.augmentsPlaced, setsActive: sol.setsActive,
     dinoPlaced: sol.dinoPlaced, ncPlaced: sol.ncPlaced, rollPlaced: sol.rollPlaced,
     vikPlaced: sol.vikPlaced, sealPlaced: sol.sealPlaced, jokerPlaced: sol.jokerPlaced,
+    tfPlaced: sol.tfPlaced, gsPlaced: sol.gsPlaced,
     membershipPlaced: sol.membershipPlaced,
     breakdown: breakdownByTarget(program, prim), computeScale: computeScale(program),
     capped: { ...program.cappedStats }, program,

@@ -107,6 +107,17 @@ function dominates(A, B, targetSet, mlCap) {
   const sealA = countColors((A.seal_slots || []).map((s) => s.seal_type));
   const sealB = countColors((B.seal_slots || []).map((s) => s.seal_type));
   for (const [k, n] of sealB) if ((sealA.get(k) || 0) < n) return false;
+  // Thunder-Forged multi-tier choice-slot: the craftable value lives in
+  // thunder_forged_tiers (a list of tier slots), outside variantBuckets — so a
+  // slot-only TF host would be pruned by any affix rival. A must offer at least as
+  // many of each tier slot as B (same trap as Viktranium/Seal hosts).
+  const tfA = countColors((A.thunder_forged_tiers || []).map((s) => s.tier));
+  const tfB = countColors((B.thunder_forged_tiers || []).map((s) => s.tier));
+  for (const [k, n] of tfB) if ((tfA.get(k) || 0) < n) return false;
+  // Green Steel single-pick choice-slot: its craftable value lives in green_steel_slot
+  // (a presence marker), outside variantBuckets — a GS host must not be pruned by an
+  // affix rival that lacks the slot.
+  if (B.green_steel_slot && !A.green_steel_slot) return false;
   // Wildcard set-piece (Gem of Many Facets) joker: its set-completion value lives in
   // joker_set_groups (pools of sets it can complete toward a threshold), outside
   // variantBuckets AND outside set_bonus (the build clears the Gem's fixed set). So a
@@ -200,7 +211,7 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1) {
 
 /** Build the abstract model. Returns worn slots (filtered + pruned), the
  *  augment source pool, the Dino insert pool, target list, and the dodge cap. */
-function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}) {
+function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}, thunderForged = [], greenSteel = []) {
   const targetSet = new Set(query.targets);
   const mlCap = query.mlCap;
   const elig = eligible(variants, query);
@@ -272,10 +283,15 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // Keep only options advancing a ranked target; the solver unseals one option
   // per host seal slot via the item's `seal_slots`.
   const sealPool = (seal || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
+  // Thunder-Forged (tier-keyed) + Green Steel (flat) choice-slot pools, kept to
+  // target-advancing options only; the solver attaches them per host via the marker.
+  const tfPool = (thunderForged || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
+  const gsPool = (greenSteel || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
 
   return {
     query, targets: query.targets, worn, augments,
     dinoInserts: dinoPool, nearlyComplete: ncPool, viktranium: vikPool, seal: sealPool,
+    thunderForged: tfPool, greenSteel: gsPool,
     membershipSetDefs: membershipSetDefs || {},
     dodgeCap, mlCap,
   };
