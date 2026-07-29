@@ -220,10 +220,19 @@ function lamordiaSlotKeys(v) {
  *  tier can become silently unreachable. A chosen set-membership host (Lost Purpose /
  *  Dino Set-Bonus) is a set-piece contributor for the same reason, so it gets the same
  *  multi-pick exemption. */
-function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1) {
+/** The stable id a slot-constraint pin refers to (matches the wizard's pin). */
+function variantKey(v) {
+  return (v && (v.variant_id || v.source_item)) || "";
+}
+
+function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinnedIds = null) {
   const kept = [];
   for (let i = 0; i < slotVariants.length; i++) {
     const A = slotVariants[i];
+    // A pinned variant is force-equipped by a slot constraint (U6), so it must
+    // survive the pre-filter even if a same-slot peer dominates it — otherwise
+    // its pick var wouldn't exist for the `= 1` constraint to reference.
+    if (pinnedIds && pinnedIds.has(variantKey(A))) { kept.push(A); continue; }
     const isSetContributor = (A.set_bonus || []).length
       || ((A.set_membership_slot || {}).pool || []).length;
     if (cardinality > 1 && isSetContributor) { kept.push(A); continue; }
@@ -249,11 +258,18 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   const mlCap = query.mlCap;
   const elig = eligible(variants, query);
 
+  // Pinned variant ids (U6): kept through the dominance pre-filter so a pinned
+  // item's pick var always exists for its `= 1` constraint. Empty when absent.
+  const pinnedIds = new Set();
+  for (const c of Object.values(query.slotConstraints || {})) {
+    if (c && c.type === "pin" && c.variant_id) pinnedIds.add(c.variant_id);
+  }
+
   const worn = [];
   for (const slotName of WORN_SLOTS) {
     const card = SLOT_CARDINALITY[slotName] || 1;
     let cands = elig.filter((v) => v.slot === slotName);
-    cands = dominanceFilter(cands, targetSet, mlCap, card);
+    cands = dominanceFilter(cands, targetSet, mlCap, card, pinnedIds);
     if (cands.length) {
       worn.push({ slot: slotName, cardinality: card, variants: cands });
     }
@@ -262,9 +278,9 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // One main-hand weapon: all weapon-category variants compete for a single slot
   // so the solver can never equip several weapons at once. Rune-arm is a separate
   // off-hand slot.
-  const mainHand = dominanceFilter(elig.filter((v) => v.category === "weapon"), targetSet, mlCap);
+  const mainHand = dominanceFilter(elig.filter((v) => v.category === "weapon"), targetSet, mlCap, 1, pinnedIds);
   if (mainHand.length) worn.push({ slot: "Main Hand", cardinality: 1, variants: mainHand });
-  const runeArm = dominanceFilter(elig.filter((v) => v.category === "runearm"), targetSet, mlCap);
+  const runeArm = dominanceFilter(elig.filter((v) => v.category === "runearm"), targetSet, mlCap, 1, pinnedIds);
   if (runeArm.length) worn.push({ slot: "Rune Arm", cardinality: 1, variants: runeArm });
 
   // Augment pool: augments (category augment) as a compatible-color-capacity
@@ -335,7 +351,7 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     buildModel, eligible, dominanceFilter, dominates,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys,
-    isForgedRace, isDocent,
+    isForgedRace, isDocent, variantKey,
     WORN_SLOTS, SLOT_CARDINALITY, ARMOR_DODGE_CAP,
   };
 }
