@@ -343,7 +343,25 @@ function loadoutDeepDive(result, query, maps, attr) {
   }).join("")}</div>`;
 }
 
-// Front-facing armored-adventurer silhouette for the paperdoll centre (decorative).
+// One row of the plain equipped list (prototype layout): slot label, the full
+// item name (no truncation), ML, and set membership. A set piece is highlighted.
+function equippedRow(label, pick) {
+  if (!pick) {
+    return `<div class="pd-row empty"><div class="pd-rlabel">${esc(label)}</div><div class="pd-rname muted">empty</div></div>`;
+  }
+  const v = pick.variant;
+  const sets = slotSetNames(v);
+  const setLine = sets.length
+    ? `<span class="pd-rset" title="part of a set bonus">${esc(sets.join(", "))}</span>` : "";
+  return `<div class="pd-row occupied${sets.length ? " is-set" : ""}">
+    <div class="pd-rlabel">${esc(label)}</div>
+    <div class="pd-rname" title="${esc(v.variant_id)}">${esc(v.variant_id)}</div>
+    <div class="pd-rfoot"><span class="pd-rml">ML ${esc(v.minimum_level ?? "?")}</span>${setLine}</div>
+  </div>`;
+}
+
+// Front-facing armored-adventurer silhouette (retired from the results layout;
+// kept for reference — the equipped list above replaced it per user preference).
 function paperdollFigure() {
   return `<div class="pd-figure" aria-hidden="true"><svg viewBox="0 0 120 300" preserveAspectRatio="xMidYMid meet">
     <path d="M60 34 C40 46 39 210 46 250 L60 238 L74 250 C81 210 80 46 60 34 Z" fill="var(--panel-2)" stroke="var(--border-2)"/>
@@ -479,8 +497,8 @@ function renderResults(container, { model, result, query, dataset, highs }) {
       <button class="return-optimum" type="button">Return to optimum</button>
     </div>
     <div class="readout-doll">
-      <div class="paperdoll" id="rp-doll"></div>
-      <div class="pd-weapons" id="rp-weapons"></div>
+      <div class="pd-equipped" id="rp-doll"></div>
+      <div id="rp-weapons"></div>
     </div>
     <div class="readout-analysis">
       <div class="result-tabs" role="tablist" aria-label="Result details">
@@ -614,23 +632,18 @@ function buildViews(build, model, query) {
     </div>`;
   }).join("");
 
-  const WEAPONS = [{ pos: "mainhand", label: "Main Hand" }, { pos: "offhand", label: "Off Hand" }, { pos: "quiver", label: "Quiver" }];
-  const WEAPON_POS = Object.fromEntries(WEAPONS.map((w, i) => [w.pos, i]));
-  const paired = [];
-  const weapon = [null, null, null];
+  // Equipped list (prototype layout): a plain stacked list of every slot the
+  // model considered, occupied or empty — no humanoid figure, full item names
+  // (no truncation). Weapons are folded into the same list in slot order.
+  const rows = [];
   for (const slot of model.worn) {
     const picks = picksBySlot.get(slot.slot) || [];
     const cardinality = slot.cardinality || 1;
     for (let r = 0; r < cardinality; r++) {
-      const pos = slotPosition(slot.slot, r);
-      const pick = picks[r] || null;
-      const label = pos === "offhand" && !pick ? "Off Hand" : slot.slot;
-      const cell = paperdollSlot(label, pos, pick);
-      if (pos in WEAPON_POS) weapon[WEAPON_POS[pos]] = cell;
-      else paired.push(cell);
+      rows.push(equippedRow(slot.slot, picks[r] || null));
     }
   }
-  const weapons = weapon.map((c, i) => c || paperdollSlot(WEAPONS[i].label, WEAPONS[i].pos, null)).join("");
+  const weapons = ""; // weapons are included in the equipped list above
 
   const activeSets = activeSetDetail(build).map((s) => {
     const grants = s.affixes.length ? esc(s.affixes.map(affixLabel).join(", ")) : "bonus active";
@@ -643,7 +656,7 @@ function buildViews(build, model, query) {
     ? `<ul class="sets">${activeSets}${nearMiss}</ul>`
     : `<p class="dd-none muted">No set bonuses are active for this build.</p>`;
 
-  return { paperdoll: paperdollFigure() + paired.join(""), weapons, cards, setsPanel, deepDive: loadoutDeepDive(build, query, maps, attr) };
+  return { paperdoll: `<div class="pd-list">${rows.join("")}</div>`, weapons, cards, setsPanel, deepDive: loadoutDeepDive(build, query, maps, attr) };
 }
 
 // Alternative cards (U4): compact trade-off summary + gain tags, as a single-select

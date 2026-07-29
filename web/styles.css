@@ -692,3 +692,19 @@ input.wz-ml { width: 120px; }
 .wz-overlay-box h3 { margin: 0 0 var(--sp-1); font-size: var(--fs-lg); }
 .wz-ov-sub { color: var(--muted); font-size: var(--fs-sm); margin: 0; font-variant-numeric: tabular-nums; }
 .wz-ov-foot { color: var(--faint); font-size: var(--fs-xs); margin: var(--sp-3) 0 0; }
+
+/* Equipped list — plain stacked layout replacing the humanoid paperdoll figure
+   (prototype look; full item names, no truncation). */
+.pd-equipped { width: 100%; }
+.readout-doll { align-items: stretch; }
+.pd-list { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); width: 100%; }
+@media (max-width: 560px) { .pd-list { grid-template-columns: 1fr; } }
+.pd-row { background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: var(--sp-2) var(--sp-3); }
+.pd-row.empty { opacity: 0.5; }
+.pd-row.is-set { border-color: var(--set); box-shadow: inset 0 0 0 1px rgba(240,180,90,0.22); }
+.pd-rlabel { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.05em; color: var(--faint); }
+.pd-rname { font-size: var(--fs-sm); font-weight: 600; color: var(--text); line-height: 1.3; }
+.pd-row.is-set .pd-rname { color: var(--set); }
+.pd-rfoot { display: flex; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--fs-xs); color: var(--faint); margin-top: 2px; }
+.pd-rset { color: var(--set); }
