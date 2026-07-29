@@ -6,27 +6,27 @@
    ========================================================================== */
 
 :root {
-  /* surfaces */
-  --bg: #0e1014;
-  --bg-2: #12151b;
-  --panel: #171b22;
-  --panel-2: #1d222b;
-  --elev: #232935;
-  --border: #2a313d;
-  --border-2: #353d4b;
+  /* surfaces — prototype look & feel: bluer, flatter dark palette */
+  --bg: #0f1420;
+  --bg-2: #131826;
+  --panel: #171e2e;
+  --panel-2: #1e273a;
+  --elev: #26314a;
+  --border: #2b3650;
+  --border-2: #38466a;
 
   /* ink */
-  --text: #e8ebf0;
-  --muted: #98a2b3;
+  --text: #e7ecf6;
+  --muted: #9aa6bf;
   --faint: #8b95a5;   /* lifted to clear WCAG AA (~4.5:1) on --bg/--bg-2 for small labels */
 
   /* accents + roles */
-  --accent: #4cc2ff;          /* primary — "compute" cyan */
-  --accent-2: #a78bfa;        /* secondary — violet */
-  --accent-ink: #04121d;
-  --optimal: #46d6a1;
-  --verified: #46d6a1;
-  --quarantined: #e0a44a;
+  --accent: #5b8cff;          /* primary — prototype blue */
+  --accent-2: #3a63d6;        /* secondary — deeper blue (primary-button gradient partner) */
+  --accent-ink: #ffffff;      /* text on the blue accent (prototype used white) */
+  --optimal: #43c59e;
+  --verified: #43c59e;
+  --quarantined: #f0b360;
   --set: #f0b45a;             /* set-bonus attribution */
 
   /* type scale (fluid) */
@@ -56,9 +56,10 @@ html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* prototype look: flat surface (a single, very subtle top wash instead of the
+     twin cyan/violet radial gradients) */
   background:
-    radial-gradient(1200px 600px at 100% -10%, rgba(76,194,255,0.06), transparent 60%),
-    radial-gradient(900px 500px at -10% 10%, rgba(167,139,250,0.05), transparent 55%),
+    radial-gradient(1100px 520px at 100% -12%, rgba(91,140,255,0.05), transparent 62%),
     var(--bg);
   color: var(--text);
   line-height: 1.5;
@@ -182,7 +183,7 @@ button:hover { border-color: var(--accent); }
 button:active { transform: translateY(1px); }
 button:disabled { opacity: 0.4; cursor: default; }
 button.primary {
-  background: linear-gradient(135deg, var(--accent), #38a8ea);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: var(--accent-ink); border-color: transparent; font-weight: 700;
 }
 button.primary:hover { filter: brightness(1.08); }
@@ -605,7 +606,7 @@ input.bumped { background: rgba(76,194,255,0.16); border-color: var(--accent); }
 .wz-step.done::after { background: var(--optimal); }
 .wz-dot { width: 26px; height: 26px; border-radius: 50%; background: var(--panel-2); border: 1px solid var(--border-2);
   color: var(--muted); font-size: var(--fs-xs); font-weight: 700; cursor: default; }
-.wz-step.done .wz-dot { background: var(--optimal); border-color: var(--optimal); color: var(--accent-ink); cursor: pointer; }
+.wz-step.done .wz-dot { background: var(--optimal); border-color: var(--optimal); color: var(--bg); cursor: pointer; }
 .wz-step.on .wz-dot { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); box-shadow: var(--ring); }
 .wz-step.on span { color: var(--text); font-weight: 600; }
 
