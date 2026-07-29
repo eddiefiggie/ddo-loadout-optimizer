@@ -1222,5 +1222,85 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.ok(r.membershipPlaced.every((m) => m.station === "Cannith Repurposing Station"), "prescriptions name the station");
   });
 
+  // ---- Legendary Thunder-Forged (multi-tier choice-slot) ----
+  function tfHost(id, slotName, tiers, affixes) {
+    const v = item(id, slotName, affixes || []);
+    v.thunder_forged_tiers = tiers.map((t) => ({ tier: t }));
+    return v;
+  }
+  function tfOpt(tier, stat, bonus_type, value) {
+    return { tier, stat, bonus_type, value, unit: "flat" };
+  }
+
+  await test("TF/multi-tier: a Thunder-Forged host crafts one option per tier independently", async () => {
+    const POOL = [
+      tfOpt(1, "Strength", "Enhancement", 4),
+      tfOpt(2, "Constitution", "Insightful", 3),
+      tfOpt(3, "Strength", "Profane", 2),
+    ];
+    const model = {
+      targets: ["Strength", "Constitution"], mlCap: 34, dodgeCap: null,
+      thunderForged: POOL,
+      worn: [slot("Main Hand", [tfHost("W", "Main Hand", [1, 2, 3])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual((r.tfPlaced || []).length, 3, "one pick per tier (3 tiers)");
+    // Strength Enhancement 4 (T1) + Strength Profane 2 (T3) stack (different types) = 6
+    assert.strictEqual(r.effective.Strength, 6, "T1 + T3 Strength stack across bonus types");
+    assert.strictEqual(r.effective.Constitution, 3, "T2 Constitution crafted");
+  });
+
+  await test("TF/tier-keyed: an option for the wrong tier is not craftable in that tier", () => {
+    // Pool only has a Tier-2 option; a host with only Tier 1 crafts nothing.
+    const program = S.buildProgram({
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      thunderForged: [tfOpt(2, "Constitution", "Insightful", 3)],
+      worn: [slot("Main Hand", [tfHost("W", "Main Hand", [1])])],
+    });
+    assert.strictEqual(program.tfMeta.size, 0, "no craft option generated for an absent tier");
+  });
+
+  // ---- Legendary Green Steel (single-pick choice-slot) ----
+  function gsHost(id, slotName, affixes) {
+    const v = item(id, slotName, affixes || []);
+    v.green_steel_slot = true;
+    return v;
+  }
+  function gsOpt(name, stat, bonus_type, value) {
+    return { name, stat, bonus_type, value, unit: "flat" };
+  }
+
+  await test("GS/single-pick: a Green Steel host crafts exactly one endgame option", async () => {
+    const POOL = [
+      gsOpt("Con item", "Constitution", "Insightful", 8),
+      gsOpt("Str item", "Strength", "Insightful", 8),
+    ];
+    const model = {
+      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      greenSteel: POOL,
+      worn: [slot("Trinket", [gsHost("H", "Trinket")])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual((r.gsPlaced || []).length, 1, "exactly one Green Steel craft");
+    assert.strictEqual(r.effective.Constitution, 8, "priority-1 crafted");
+    assert.strictEqual(r.effective.Strength, 0, "one slot -> only one option, not both");
+  });
+
+  await test("GS/stacking: single-pick respects bonus-type stacking (picks the stacking tier)", async () => {
+    // Con Insightful already capped by a worn affix; the GS best move for a Con-first
+    // ranking is a different bonus type (Quality) so it stacks.
+    const POOL = [gsOpt("Con insight", "Constitution", "Insightful", 8), gsOpt("Con quality", "Constitution", "Quality", 4)];
+    const model = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      greenSteel: POOL,
+      worn: [slot("Trinket", [gsHost("H", "Trinket", [["Constitution", "Insightful", 10]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    // worn Insightful 10 + GS Quality 4 = 14 (different types stack); NOT 18, NOT just 10.
+    assert.strictEqual(r.effective.Constitution, 14, "crafts the Quality tier to stack past the capped Insightful");
+    assert.strictEqual(r.gsPlaced[0].bonus_type, "Quality", "chose the stacking tier");
+  });
+
   console.log(`\n${passed} passed`);
 })();

@@ -229,6 +229,28 @@ test("dominates: an affix item does NOT dominate a seal host it can't match", ()
   assert.strictEqual(kept.length, 2, "the seal host survives per-slot dominance");
 });
 
+test("dominates: an affix item does NOT dominate a Thunder-Forged host it can't match", () => {
+  // Regression: a TF host's craftable value lives in thunder_forged_tiers, outside
+  // variantBuckets, so a stronger plain-affix rival lacking the tier slots must NOT prune it.
+  const real = v("Real", "Main Hand", [["Strength", "Enhancement", 12]], { category: "weapon" });
+  const host = v("Host", "Main Hand", [["Strength", "Enhancement", 8]], { category: "weapon" });
+  host.thunder_forged_tiers = [{ tier: 1 }, { tier: 2 }, { tier: 3 }];
+  const targets = new Set(["Strength"]);
+  assert.strictEqual(M.dominates(real, host, targets, 34), false,
+    "a rival lacking the TF tier slots cannot dominate the host");
+  assert.strictEqual(M.dominanceFilter([real, host], targets, 34, 1).length, 2, "the TF host survives");
+});
+
+test("dominates: an affix item does NOT dominate a Green Steel host it can't match", () => {
+  const real = v("Real", "Trinket", [["Constitution", "Enhancement", 12]]);
+  const host = v("Host", "Trinket", [["Constitution", "Enhancement", 8]]);
+  host.green_steel_slot = true;
+  const targets = new Set(["Constitution"]);
+  assert.strictEqual(M.dominates(real, host, targets, 34), false,
+    "a rival lacking the Green Steel slot cannot dominate the host");
+  assert.strictEqual(M.dominanceFilter([real, host], targets, 34, 1).length, 2, "the GS host survives");
+});
+
 test("dominates: an affix item does NOT dominate a chosen set-membership host it can't match", () => {
   // Regression: a Lost Purpose / Dino Set-Bonus host's value lives in
   // set_membership_slot.pool (which sets it can awaken toward a threshold), outside

@@ -1,0 +1,12 @@
+{
+  "metadata": {
+    "system": "Legendary Thunder-Forged crafting — multi-tier affix choice-slot (Tier 1/2/3, one pick per tier)",
+    "note": "PENDING WIKI HARVEST. Machinery complete; the per-tier option magnitudes must be sourced from the DDO wiki (Fire on Thunder Peak / Legendary Thunder-Forged) via Claude-in-Chrome (plain fetch returns empty for ddowiki). Confirm the tier count/structure and the Legendary tier boundary during harvest. Mirrors the Viktranium multi-slot choice-slot; the solver crafts the best option per tier for the ranked targets.",
+    "wiki_url": "https://ddowiki.com/page/Legendary_Thunder-Forged"
+  },
+  "pools": [
+    { "tier": 1, "wiki_url": "https://ddowiki.com/page/Legendary_Thunder-Forged", "options": [] },
+    { "tier": 2, "wiki_url": "https://ddowiki.com/page/Legendary_Thunder-Forged", "options": [] },
+    { "tier": 3, "wiki_url": "https://ddowiki.com/page/Legendary_Thunder-Forged", "options": [] }
+  ]
+}
