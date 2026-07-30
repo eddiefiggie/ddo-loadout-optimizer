@@ -333,8 +333,9 @@ function loadoutDeepDive(result, query, maps, attr) {
     const craftBlock = crafts.length
       ? `<div class="dd-crafts"><h5>Applied crafting &amp; augments</h5><div class="dd-chips">${crafts.join(" ")}</div></div>` : "";
     const wiki = v.wiki_url ? `<a class="dd-wiki" href="${safeUrl(v.wiki_url)}" target="_blank" rel="noopener">wiki</a>` : "";
-    return `<div class="dd-item${sets.length ? " is-set" : ""}">
-      <div class="dd-head"><span class="dd-slot">${esc(c.slot)}</span><span class="dd-name">${esc(v.variant_id)}</span><span class="dd-ml">ML ${esc(v.minimum_level ?? "?")}</span>${wiki}</div>
+    const artifactTag = v.artifact ? `<span class="dd-artifact" title="your one equipped Artifact">Artifact</span>` : "";
+    return `<div class="dd-item${sets.length ? " is-set" : ""}${v.artifact ? " is-artifact" : ""}">
+      <div class="dd-head"><span class="dd-slot">${esc(c.slot)}</span><span class="dd-name">${esc(v.variant_id)}</span>${artifactTag}<span class="dd-ml">ML ${esc(v.minimum_level ?? "?")}</span>${wiki}</div>
       ${whyThisLine(result, { slot: c.slot, variant_id: v.variant_id }, attr)}
       ${sets.length ? `<div class="dd-set"><span class="setpip"></span>Part of set: ${esc(sets.join(", "))}</div>` : ""}
       <div class="dd-affixes"><h5>Affixes</h5>${affixes}</div>
@@ -362,15 +363,17 @@ function equippedRow(label, pick, slotConstraints) {
     : locked ? `<span class="pd-badge empty">locked empty</span>` : "";
   const sets = v && !locked ? slotSetNames(v) : [];
   const setLine = sets.length ? `<span class="pd-rset" title="part of a set bonus">${esc(sets.join(", "))}</span>` : "";
+  const isArtifact = !!(v && !locked && v.artifact);   // U5/R5 — tag the equipped Artifact's slot
+  const artifactBadge = isArtifact ? `<span class="pd-badge artifact" title="your one equipped Artifact">Artifact</span>` : "";
   const name = locked ? "locked empty" : (v ? esc(v.variant_id) : "empty");
   const nameCls = (!v || locked) ? "pd-rname muted" : "pd-rname";
   const foot = (v && !locked)
     ? `<div class="pd-rfoot"><span class="pd-rml">ML ${esc(v.minimum_level ?? "?")}</span>${setLine}</div>` : "";
-  const rowCls = `pd-row ${(!v || locked) ? "empty" : "occupied"}${sets.length ? " is-set" : ""}${c ? " constrained" : ""}`;
+  const rowCls = `pd-row ${(!v || locked) ? "empty" : "occupied"}${sets.length ? " is-set" : ""}${isArtifact ? " is-artifact" : ""}${c ? " constrained" : ""}`;
   return `<div class="${rowCls}">
     <div class="pd-rtop"><div class="pd-rlabel">${esc(label)}</div>${ctl}</div>
     <div class="${nameCls}"${v ? ` title="${esc(v.variant_id)}"` : ""}>${name}</div>
-    ${foot}${badge}${menu}
+    ${foot}${artifactBadge}${badge}${menu}
   </div>`;
 }
 
@@ -475,6 +478,18 @@ function animateCounters(container) {
   });
 }
 
+// U5/R6 — the box was checked but no eligible Artifact could be placed (empty
+// seed, or the only Artifact's slot locked/pinned away). A distinct callout by
+// the loadout — NOT buried in the coverage scope-note — because with the seed
+// shipping empty every opt-in hits this path. Pure (query + chosen), exported.
+function artifactNotice(result, query) {
+  const missing = !!(query && query.includeArtifact && result && result.chosen
+    && !result.chosen.some((c) => c.variant && c.variant.artifact));
+  return missing
+    ? `<div class="artifact-notice" role="status">No Artifact could be included — none is flagged in the current data.</div>`
+    : "";
+}
+
 function renderResults(container, { model, result, query, dataset, highs }) {
   if (result.status !== "optimal") {
     container.innerHTML = `<div class="empty">No set satisfies these constraints${result.reason ? ` — ${esc(result.reason)}` : ""}.<br><span class="muted">Loosen the ML cap, armor/class filters, or targets.</span></div>`;
@@ -506,6 +521,7 @@ function renderResults(container, { model, result, query, dataset, highs }) {
 
   container.innerHTML = `
     ${banner}
+    ${artifactNotice(result, query)}
     <div class="active-build-bar" hidden>
       <span class="active-build-msg"></span>
       <button class="return-optimum" type="button">Return to optimum</button>
@@ -742,5 +758,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, craftChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, artifactNotice, craftChips, loadoutDeepDive, esc, safeUrl };
 }
