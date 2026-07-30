@@ -167,25 +167,16 @@ if (typeof window !== "undefined" && window.App) {
         <details class="wz-data" id="wz-data">
           <summary>Export &amp; Data Management</summary>
           <div class="wz-data-body">
-            <p class="wz-help">Back up every saved character to a file, or restore from one — the way to move your builds to another
-              device. Backups stay compatible across the last 3 data versions; a file that's older than that, or made by a newer
-              version of the app, is declined so a bad import can't corrupt your saves.</p>
+            <p class="wz-help">Manage <strong>your own saved builds</strong> (master records). Back up every saved character to a
+              file, or restore from one — the way to move your builds to another device. Backups stay compatible across the last
+              3 data versions; a file that's older than that, or made by a newer version of the app, is declined so a bad import
+              can't corrupt your saves. To share a single loadout with others, use the <strong>Share</strong> tab on a solved build.</p>
             <div class="wz-data-row">
               <button class="btn ghost" id="wz-export" type="button">Export all (.json)</button>
               <input id="wz-import-label" type="text" readonly placeholder="Import a backup (.json)…" class="wz-file">
               <input id="wz-import" type="file" accept=".json,application/json" class="wz-hidden">
             </div>
             <div id="wz-data-stat" class="wz-filestat"></div>
-            <hr class="wz-data-sep">
-            <p class="wz-help">Share a single loadout: a forum-ready Markdown post, a clean CSV of the full detail, or a
-              print-friendly page. Both files carry the character name and constraints in the header.</p>
-            <div class="wz-data-row">
-              <label class="wz-share-pick"><span class="wz-label">Loadout</span>
-                <select id="wz-share-sel"></select></label>
-              <button class="btn ghost" id="wz-share-md" type="button">Markdown</button>
-              <button class="btn ghost" id="wz-share-csv" type="button">CSV</button>
-              <button class="btn ghost" id="wz-share-print" type="button">Print</button>
-            </div>
           </div>
         </details>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
@@ -308,6 +299,68 @@ if (typeof window !== "undefined" && window.App) {
       if (rsolve) rsolve.onclick = () => { if (state.priorities.length) solve(false); };
     }
 
+    // U5/R9-R11 — the Share tab's content: pick a saved loadout, export it as a
+    // forum-ready Markdown post / CSV / print page. Copy states this is for
+    // sharing with OTHERS, distinct from the Character step's personal-build
+    // management (KD3). Lives inside #wz-results, so it is (re)wired by the
+    // post-render callback like the Adjust panel.
+    function sharePanelHTML() {
+      return `<div class="wz-share">
+          <p class="wz-help">Share <strong>this loadout with others</strong> — a forum-ready Markdown post, a clean CSV of
+            the full detail, or a print-friendly page. Each carries the character name and constraints in the header.
+            (Backing up all your saved builds lives in the Character step's Export &amp; Data Management.)</p>
+          <div class="wz-data-row">
+            <label class="wz-share-pick"><span class="wz-label">Loadout</span>
+              <select id="wz-share-sel"></select></label>
+            <button class="btn ghost" id="wz-share-md" type="button">Markdown</button>
+            <button class="btn ghost" id="wz-share-csv" type="button">CSV</button>
+            <button class="btn ghost" id="wz-share-print" type="button">Print</button>
+          </div>
+          <div id="wz-share-stat" class="wz-filestat"></div>
+        </div>`;
+    }
+
+    // Wire the Share tab's picker + MD/CSV/print buttons (U5). Reuses the global
+    // LoadoutExport + downloadFile/printLoadout, and guards a record with no
+    // solved loadout so a share never produces a misleading empty file.
+    function wireShareExports() {
+      const shareSel = document.getElementById("wz-share-sel");
+      if (!shareSel) return;
+      renderSharePicker();
+      const selected = () => {
+        const n = shareSel.value;
+        // eslint-disable-next-line no-undef
+        const rec = n ? CharacterStore.loadCharacter(n) : null;
+        if (rec && !(rec.snapshot && (rec.snapshot.chosen || []).length)) {
+          const s = document.getElementById("wz-share-stat");
+          if (s) { s.className = "wz-filestat warn"; s.textContent = `“${rec.name}” has no solved loadout to share.`; }
+          return null;
+        }
+        return rec;
+      };
+      const mdBtn = document.getElementById("wz-share-md");
+      const csvBtn = document.getElementById("wz-share-csv");
+      const printBtn = document.getElementById("wz-share-print");
+      if (mdBtn) mdBtn.onclick = () => { const rec = selected(); if (rec) downloadFile(`${slug(rec.name)}.md`, LoadoutExport.toMarkdown(rec), "text/markdown"); };
+      if (csvBtn) csvBtn.onclick = () => { const rec = selected(); if (rec) downloadFile(`${slug(rec.name)}.csv`, LoadoutExport.toCsv(rec), "text/csv"); };
+      if (printBtn) printBtn.onclick = () => { const rec = selected(); if (rec) printLoadout(rec); };
+    }
+
+    // Populate + wire the Share tab panel (inside #wz-results, rebuilt every render).
+    function fillSharePanel() {
+      const panel = document.getElementById("rp-sharepanel");
+      if (!panel) return;
+      panel.innerHTML = sharePanelHTML();
+      wireShareExports();
+    }
+
+    // The KTD3 post-render callback: (re)populate + (re)wire every wizard-owned
+    // panel that lives inside #wz-results (Adjust — U3, Share — U5) on each render.
+    function afterResultsRender() {
+      fillAdjustSlot();
+      fillSharePanel();
+    }
+
     // ---- priorities editor (pure array ops + drag/buttons) -----------------
     function rankedHTML() {
       if (!state.priorities.length) return `<li class="wz-hint">Add at least one stat to optimize for.</li>`;
@@ -405,7 +458,7 @@ if (typeof window !== "undefined" && window.App) {
         render();
         const box = document.getElementById("wz-results");
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result, query, dataset, highs: h, onAfterRender: fillAdjustSlot });
+        if (box) renderResults(box, { model, result, query, dataset, highs: h, onAfterRender: afterResultsRender });
       } catch (err) {
         state.step = "results"; render();
         const box = document.getElementById("wz-results");
@@ -499,7 +552,7 @@ if (typeof window !== "undefined" && window.App) {
         render();
         const box = document.getElementById("wz-results");
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result: snap, query, dataset, highs: null, onAfterRender: fillAdjustSlot });
+        if (box) renderResults(box, { model, result: snap, query, dataset, highs: null, onAfterRender: afterResultsRender });
         const stale = document.getElementById("wz-stale");
         if (stale) stale.classList.toggle("wz-hidden", !state.loadedStale);
       } else {
@@ -552,38 +605,6 @@ if (typeof window !== "undefined" && window.App) {
           JSON.stringify(payload, null, 2), "application/json");
       };
 
-      // Share a single saved loadout (U13): Markdown / CSV / print.
-      const shareSel = document.getElementById("wz-share-sel");
-      if (shareSel) {
-        renderSharePicker();
-        const selected = () => {
-          const n = shareSel.value;
-          // eslint-disable-next-line no-undef
-          const rec = n ? CharacterStore.loadCharacter(n) : null;
-          // Guard a record with no solved loadout (e.g. a hand-edited backup):
-          // export nothing and say why instead of a misleading empty file.
-          if (rec && !(rec.snapshot && (rec.snapshot.chosen || []).length)) {
-            const s = document.getElementById("wz-data-stat");
-            if (s) { s.className = "wz-filestat warn"; s.textContent = `“${rec.name}” has no solved loadout to share.`; }
-            return null;
-          }
-          return rec;
-        };
-        const mdBtn = document.getElementById("wz-share-md");
-        const csvBtn = document.getElementById("wz-share-csv");
-        const printBtn = document.getElementById("wz-share-print");
-        if (mdBtn) mdBtn.onclick = () => {
-          const rec = selected(); if (!rec) return;
-          // eslint-disable-next-line no-undef
-          downloadFile(`${slug(rec.name)}.md`, LoadoutExport.toMarkdown(rec), "text/markdown");
-        };
-        if (csvBtn) csvBtn.onclick = () => {
-          const rec = selected(); if (!rec) return;
-          // eslint-disable-next-line no-undef
-          downloadFile(`${slug(rec.name)}.csv`, LoadoutExport.toCsv(rec), "text/csv");
-        };
-        if (printBtn) printBtn.onclick = () => { const rec = selected(); if (rec) printLoadout(rec); };
-      }
       const impLabel = document.getElementById("wz-import-label");
       const impFile = document.getElementById("wz-import");
       const stat = () => document.getElementById("wz-data-stat");
@@ -781,7 +802,7 @@ if (typeof window !== "undefined" && window.App) {
           if (state.lastRun) {
             state.lastRun.query.slotConstraints = { ...state.slotConstraints };
             // eslint-disable-next-line no-undef
-            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: fillAdjustSlot });
+            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: afterResultsRender });
           }
           if (cbar) cbar.classList.remove("wz-hidden");
         });
