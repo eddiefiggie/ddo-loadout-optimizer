@@ -104,6 +104,57 @@ test("eligible filters ML above cap", () => {
   assert.deepStrictEqual(out.map((x) => x.source_item), ["Lo"]);
 });
 
+// artifact variant factory: a normal variant flagged as Artifact-quality.
+function art(name, slot, affixes, opts = {}) {
+  const x = v(name, slot, affixes, opts);
+  x.artifact = true;
+  return x;
+}
+
+test("U2/R2: eligible EXCLUDES artifacts when the box is off (default)", () => {
+  const ring = v("Ring", "Ring", [["Intelligence", "Enhancement", 5]]);
+  const arti = art("Arti", "Ring", [["Intelligence", "Enhancement", 9]]);
+  // default (no includeArtifact) — matches today's behavior
+  const off = M.eligible([ring, arti], { mlCap: 34, targets: ["Intelligence"] });
+  assert.deepStrictEqual(off.map((x) => x.source_item), ["Ring"]);
+});
+
+test("U2/R3: eligible INCLUDES artifacts when the box is on", () => {
+  const ring = v("Ring", "Ring", [["Intelligence", "Enhancement", 5]]);
+  const arti = art("Arti", "Ring", [["Intelligence", "Enhancement", 9]]);
+  const on = M.eligible([ring, arti], { mlCap: 34, targets: ["Intelligence"], includeArtifact: true });
+  assert.deepStrictEqual(on.map((x) => x.source_item).sort(), ["Arti", "Ring"]);
+});
+
+test("U2/KTD2: dominance exemption keeps a dominated Artifact when box is on", () => {
+  // non-artifact A (Int 10) strictly dominates artifact B (Int 5) in the Ring slot.
+  const A = v("A", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const B = art("B", "Ring", [["Intelligence", "Enhancement", 5]]);
+  const model = M.buildModel([A, B], { mlCap: 34, targets: ["Intelligence"], includeArtifact: true });
+  const ring = model.worn.find((s) => s.slot === "Ring");
+  assert.ok(ring, "expected a Ring slot");
+  const kept = ring.variants.map((x) => x.source_item).sort();
+  assert.deepStrictEqual(kept, ["A", "B"], "the dominated Artifact must survive pruning");
+});
+
+test("U2/KTD2: a dominated NON-artifact is still pruned when box is on (exemption is artifact-only)", () => {
+  const A = v("A", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const B = v("B", "Ring", [["Intelligence", "Enhancement", 5]]); // non-artifact, dominated
+  const model = M.buildModel([A, B], { mlCap: 34, targets: ["Intelligence"], includeArtifact: true });
+  const ring = model.worn.find((s) => s.slot === "Ring");
+  assert.deepStrictEqual(ring.variants.map((x) => x.source_item), ["A"]);
+});
+
+test("U2/KTD5: box off leaves pruning byte-for-byte unchanged (no exemption leak)", () => {
+  const A = v("A", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const B = v("B", "Ring", [["Intelligence", "Enhancement", 5]]);
+  const baseline = M.buildModel([A, B], { mlCap: 34, targets: ["Intelligence"] });
+  const off = M.buildModel([A, B], { mlCap: 34, targets: ["Intelligence"], includeArtifact: false });
+  const names = (m) => m.worn.find((s) => s.slot === "Ring").variants.map((x) => x.source_item);
+  assert.deepStrictEqual(names(off), names(baseline));
+  assert.deepStrictEqual(names(baseline), ["A"]);
+});
+
 test("scaledValue interpolates and clamps", () => {
   const s = { val_lo: 1, ml_lo: 1, val_hi: 14, ml_hi: 32 };
   assert.strictEqual(M.scaledValue(s, 1), 1);

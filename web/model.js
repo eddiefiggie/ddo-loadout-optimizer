@@ -93,6 +93,11 @@ function eligible(variants, query) {
     if (query.alignment && Array.isArray(v.alignment_req) && v.alignment_req.length &&
         !v.alignment_req.includes(query.alignment)) return false;
 
+    // R2/AE2 — Artifact opt-in: unless the player checked "Include an Artifact",
+    // no Artifact-quality item is considered. Absent flag => non-Artifact (KTD5),
+    // so this is a no-op until the seed is populated AND the box is checked.
+    if (v.artifact && !query.includeArtifact) return false;
+
     return true;
   });
 }
@@ -268,6 +273,14 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   const pinnedIds = new Set();
   for (const c of Object.values(query.slotConstraints || {})) {
     if (c && c.type === "pin" && c.variant_id) pinnedIds.add(c.variant_id);
+  }
+
+  // KTD2 — Artifact exemption: when the box is on, "exactly one Artifact" makes
+  // Artifact-ness a value dimension, so a non-Artifact beating an Artifact on
+  // stats must NOT prune it (the solver could then be unable to place one). Reuse
+  // the pin-exemption seam: keep every eligible Artifact through the pre-filter.
+  if (query.includeArtifact) {
+    for (const v of elig) if (v.artifact) pinnedIds.add(variantKey(v));
   }
 
   const worn = [];
