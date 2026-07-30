@@ -110,6 +110,15 @@ test("allCharacters returns the full name->record map; saveMany writes a batch",
   assert.strictEqual(all.Sook.inputs.race, "Elf");
 });
 
+test("a character literally named __proto__ saves and loads (null-proto store)", () => {
+  const st = fakeStorage();
+  const rec = serializeCharacter("__proto__", state, lastRun, "id1");
+  assert.strictEqual(saveCharacter(rec, st).ok, true);
+  assert.deepStrictEqual(listCharacters(st).map((c) => c.name), ["__proto__"]);
+  assert.ok(loadCharacter("__proto__", st), "named __proto__ was silently dropped");
+  assert.strictEqual(({}).__proto__, Object.prototype, "Object.prototype was replaced");
+});
+
 test("quota-exceeded on save returns a typed error rather than throwing", () => {
   const st = fakeStorage(true);
   const res = saveCharacter(serializeCharacter("Sook", state, lastRun, "id1"), st);

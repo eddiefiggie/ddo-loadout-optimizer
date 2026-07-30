@@ -11,37 +11,64 @@
   const WINDOW = 3;           // migrate the last 3 schema versions up to current
   const MAX_CHARS = 5000000;  // ~5MB, matched to the localStorage budget
 
-  const POLLUTION_KEYS = { __proto__: true, constructor: true, prototype: true };
+  // NB: written as an explicit comparison, NOT an object literal — `{ __proto__: … }`
+  // is prototype-setter syntax, so a literal would define no own "__proto__" key
+  // and silently fail to match the single most important pollution key.
+  function isPollutionKey(key) {
+    return key === "__proto__" || key === "constructor" || key === "prototype";
+  }
 
   // Reviver drops prototype-pollution keys at every nesting level during parse,
   // so a hostile backup can never reach Object.prototype (defense in depth
   // alongside the field allowlist below).
   function safeReviver(key, value) {
-    if (Object.prototype.hasOwnProperty.call(POLLUTION_KEYS, key)) return undefined;
+    if (isPollutionKey(key)) return undefined;
     return value;
   }
 
-  const INPUT_KEYS = [
+  // Input allowlist — sourced from persist.js so it can never drift from the
+  // save path (adding a saved input there automatically survives an import here).
+  const _persist = (typeof require !== "undefined" && typeof module !== "undefined")
+    ? require("./persist.js")
+    : (typeof window !== "undefined" ? window.CharacterStore : null);
+  const INPUT_KEYS = (_persist && _persist.INPUT_KEYS) || [
     "characterName", "ml", "race", "alignment", "armor", "weapon",
     "includeArtifact", "pool", "ownedNames", "priorities", "slotConstraints",
   ];
 
+  // Recursively strip pollution keys from app-produced data (snapshot/query)
+  // that the allowlist passes through by reference, so no inert own "__proto__"
+  // property is smuggled into stored state.
+  function scrub(value) {
+    if (Array.isArray(value)) return value.map(scrub);
+    if (value && typeof value === "object") {
+      const out = {};
+      for (const k of Object.keys(value)) {
+        if (!isPollutionKey(k)) out[k] = scrub(value[k]);
+      }
+      return out;
+    }
+    return value;
+  }
+
   // Rebuild a character from an allowlist of known fields so no unexpected key
-  // (including a pollution key that slipped a reviver) rides along. The snapshot
-  // and query are app-produced data already cleaned by the reviver.
+  // (including a pollution key that slipped a reviver) rides along. Returns null
+  // for a structurally-invalid record (missing/non-string name), which the caller
+  // treats as a full-file refusal.
   function sanitizeCharacter(raw) {
     if (!raw || typeof raw !== "object") return null;
+    if (typeof raw.name !== "string" || raw.name === "") return null;
     const inputs = {};
     const rawInputs = (raw.inputs && typeof raw.inputs === "object") ? raw.inputs : {};
     for (const k of INPUT_KEYS) {
-      if (rawInputs[k] !== undefined) inputs[k] = rawInputs[k];
+      if (!isPollutionKey(k) && rawInputs[k] !== undefined) inputs[k] = scrub(rawInputs[k]);
     }
     return {
       name: String(raw.name),
       savedAt: typeof raw.savedAt === "string" ? raw.savedAt : null,
       inputs,
-      query: raw.query || null,
-      snapshot: (raw.snapshot && typeof raw.snapshot === "object") ? raw.snapshot : {},
+      query: raw.query ? scrub(raw.query) : null,
+      snapshot: (raw.snapshot && typeof raw.snapshot === "object") ? scrub(raw.snapshot) : {},
       stampedBuildId: raw.stampedBuildId || null,
     };
   }
@@ -102,10 +129,14 @@
     }
 
     const migrated = migrate(data, v, current, o.migrations);
-    const clean = {};
+    const clean = Object.create(null);
     for (const name of Object.keys(migrated.characters)) {
+      if (isPollutionKey(name)) continue;   // never a real character key
       const c = sanitizeCharacter(migrated.characters[name]);
-      if (c) clean[name] = c;
+      if (!c) {
+        return { ok: false, error: "invalid", message: "This backup contains a malformed character; nothing was imported." };
+      }
+      clean[name] = c;
     }
     return { ok: true, characters: clean, schemaVersion: current };
   }

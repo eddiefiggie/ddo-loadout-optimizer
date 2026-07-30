@@ -28,31 +28,40 @@
     return out;
   }
 
+  // The saved-character input allowlist — the single source of truth for which
+  // input fields persist. backup.js imports this so an import round-trip can
+  // never silently strip a field the save path keeps (the two lists cannot drift).
+  const INPUT_KEYS = [
+    "characterName", "ml", "race", "alignment", "armor", "weapon",
+    "includeArtifact", "pool", "ownedNames", "priorities", "slotConstraints",
+  ];
+
+  function pickInputs(state, name) {
+    const s = state || {};
+    const src = Object.assign({}, s, { characterName: String(name) });
+    const inputs = {};
+    for (const k of INPUT_KEYS) {
+      if (k === "ownedNames") {
+        // ownedNames is a Set at runtime; JSON can't hold a Set, so store an
+        // array and let the loader rebuild the Set.
+        inputs.ownedNames = s.ownedNames instanceof Set ? Array.from(s.ownedNames)
+          : (Array.isArray(s.ownedNames) ? s.ownedNames : null);
+      } else {
+        inputs[k] = src[k];
+      }
+    }
+    return inputs;
+  }
+
   // Build a saved-character record from the live wizard state + its last solve.
   // `chosen[]` already holds full item objects (keyed on source_item/variant_id),
   // so the snapshot renders standalone without the live catalog.
   function serializeCharacter(name, state, lastRun, buildId) {
-    const s = state || {};
     const run = lastRun || {};
     return {
       name: String(name),
       savedAt: new Date().toISOString(),
-      inputs: {
-        characterName: String(name),
-        ml: s.ml,
-        race: s.race,
-        alignment: s.alignment,
-        armor: s.armor,
-        weapon: s.weapon,
-        includeArtifact: s.includeArtifact,
-        pool: s.pool,
-        // ownedNames is a Set at runtime; JSON can't hold a Set, so store an
-        // array and let the loader rebuild the Set.
-        ownedNames: s.ownedNames instanceof Set ? Array.from(s.ownedNames)
-          : (Array.isArray(s.ownedNames) ? s.ownedNames : null),
-        priorities: s.priorities,
-        slotConstraints: s.slotConstraints,
-      },
+      inputs: pickInputs(state, name),
       query: run.query || null,
       snapshot: stripResult(run.result),
       stampedBuildId: buildId || null,
@@ -69,13 +78,18 @@
 
   function readAll(storage) {
     const st = resolveStorage(storage);
-    if (!st) return {};
+    // null-prototype map so a character literally named "__proto__" is stored as
+    // an own key (hitting the proto setter would silently drop it and mutate the
+    // object's prototype).
+    const empty = () => Object.create(null);
+    if (!st) return empty();
     try {
       const raw = st.getItem(STORE_KEY);
-      const parsed = raw ? JSON.parse(raw) : {};
-      return (parsed && typeof parsed === "object") ? parsed : {};
+      const parsed = raw ? JSON.parse(raw) : null;
+      return (parsed && typeof parsed === "object")
+        ? Object.assign(empty(), parsed) : empty();
     } catch (e) {
-      return {};
+      return empty();
     }
   }
 
@@ -130,7 +144,7 @@
   }
 
   const api = {
-    STORE_KEY, stripResult, serializeCharacter,
+    STORE_KEY, INPUT_KEYS, stripResult, pickInputs, serializeCharacter,
     saveCharacter, listCharacters, loadCharacter, deleteCharacter,
     allCharacters, saveMany,
   };

@@ -350,7 +350,9 @@ if (typeof window !== "undefined" && window.App) {
           }
         });
         state.constraintsDirty = false;
-        state.lastRun = { model, result, query };
+        // fresh:true — this build was solved against the current catalog, so a
+        // subsequent Save stamps the current build id (see saveCurrentCharacter).
+        state.lastRun = { model, result, query, fresh: true };
         state.step = "results";
         render();
         const box = document.getElementById("wz-results");
@@ -378,8 +380,14 @@ if (typeof window !== "undefined" && window.App) {
         return { ok: false, error: "no-build" };
       }
       state.characterName = nm;
+      // Stamp with the current build only for a freshly-solved run. Saving a
+      // LOADED-but-not-resolved build (e.g. after a rename) must preserve its
+      // original stamp, or a stale build would re-stamp itself current and the
+      // staleness warning would be silenced forever.
+      const stamp = (state.lastRun.fresh === false && state.lastRun.stampedBuildId)
+        ? state.lastRun.stampedBuildId : currentBuildId();
       // eslint-disable-next-line no-undef
-      const rec = CharacterStore.serializeCharacter(nm, state, state.lastRun, currentBuildId());
+      const rec = CharacterStore.serializeCharacter(nm, state, state.lastRun, stamp);
       // eslint-disable-next-line no-undef
       return CharacterStore.saveCharacter(rec);
     }
@@ -401,13 +409,15 @@ if (typeof window !== "undefined" && window.App) {
       state.ownedNames = Array.isArray(i.ownedNames) ? new Set(i.ownedNames) : null;
       state.priorities = Array.isArray(i.priorities) ? i.priorities.slice() : [];
       state.slotConstraints = i.slotConstraints || {};
+      state.constraintsDirty = false;   // loaded constraints are the saved state, not a pending change
       const snap = rec.snapshot;
       if (snap && snap.status === "optimal") {
         const query = rec.query || buildQuery(state);
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
           dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel);
-        state.lastRun = { model, result: snap, query };
+        // fresh:false + the original stamp so a later Save preserves staleness (see saveCurrentCharacter).
+        state.lastRun = { model, result: snap, query, fresh: false, stampedBuildId: rec.stampedBuildId || null };
         state.loadedStale = !!(rec.stampedBuildId && currentBuildId() && rec.stampedBuildId !== currentBuildId());
         state.step = "results";
         render();
@@ -466,10 +476,10 @@ if (typeof window !== "undefined" && window.App) {
             // eslint-disable-next-line no-undef
             const res = BackupIO.parseBackup(reader.result);
             if (!res.ok) { s.className = "wz-filestat warn"; s.textContent = res.message || "Import failed."; return; }
+            // saveMany already merges by name into the existing store, so pass the
+            // imported set directly — no separate mergeInto pass needed for "merge".
             // eslint-disable-next-line no-undef
-            const merged = BackupIO.mergeInto(CharacterStore.allCharacters(), res.characters, "merge");
-            // eslint-disable-next-line no-undef
-            const w = CharacterStore.saveMany(merged);
+            const w = CharacterStore.saveMany(res.characters);
             const n = Object.keys(res.characters).length;
             s.className = "wz-filestat" + (w.ok ? "" : " warn");
             s.textContent = w.ok
@@ -603,7 +613,12 @@ if (typeof window !== "undefined" && window.App) {
         const savestat = document.getElementById("wz-savestat");
         if (savename) savename.oninput = (e) => state.characterName = e.target.value;
         if (savebtn) savebtn.onclick = () => {
-          const res = saveCurrentCharacter(savename ? savename.value : state.characterName);
+          const nm = ((savename ? savename.value : state.characterName) || "").trim();
+          // Confirm before overwriting an existing character (R3/KD5), mirroring
+          // the delete confirm.
+          // eslint-disable-next-line no-undef
+          if (nm && CharacterStore.loadCharacter(nm) && !window.confirm(`Update saved character "${nm}"?`)) return;
+          const res = saveCurrentCharacter(nm);
           if (!savestat) return;
           if (res.ok) savestat.textContent = `Saved “${state.characterName}”.`;
           else if (res.error === "no-name") savestat.textContent = "Enter a name to save.";

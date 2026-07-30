@@ -86,6 +86,25 @@ test("prototype-pollution payload does not pollute Object.prototype and is strip
   }
 });
 
+test("reviver strips __proto__ nested inside snapshot (exercises the reviver, not the allowlist)", () => {
+  // __proto__ buried in app-produced snapshot data — the field allowlist passes
+  // snapshot through, so only the reviver + scrub can catch this.
+  const hostile = '{"schema_version":1,"characters":{"Sook":{"name":"Sook",'
+    + '"snapshot":{"status":"optimal","chosen":[],"__proto__":{"polluted":true}}}}}';
+  const res = parseBackup(hostile, { current: 1, window: 3 });
+  assert.strictEqual(({}).polluted, undefined, "Object.prototype polluted via nested __proto__");
+  assert.strictEqual(res.ok, true);
+  assert.ok(!Object.prototype.hasOwnProperty.call(res.characters.Sook.snapshot, "__proto__"),
+    "snapshot still carries an own __proto__ property");
+});
+
+test("a malformed character (missing name) refuses the whole file — no partial import", () => {
+  const text = JSON.stringify({ schema_version: 1, characters: { Good: rec("Good", 34), Bad: { inputs: { ml: 1 } } } });
+  const res = parseBackup(text, { current: 1, window: 3 });
+  assert.strictEqual(res.ok, false);
+  assert.strictEqual(res.error, "invalid");
+});
+
 test("mergeInto per-name updates collisions, adds new, keeps others; replace wipes", () => {
   const existing = { Sook: rec("Sook", 34), Keeper: rec("Keeper", 20) };
   const incoming = { Sook: rec("Sook", 30), Torin: rec("Torin", 28) };

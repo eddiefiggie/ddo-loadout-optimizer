@@ -479,20 +479,16 @@ def build(seed: dict) -> dict:
         "wiki_crosscheck_note": "wiki completeness cross-check (R5) is a deferred harvest",
     }
 
-    # Catalog build identifier (U1 / KTD5): a content hash of the roster so a
-    # persisted loadout snapshot can detect a stale catalog. Deterministic for
-    # unchanged input — the same variants rebuild to the same id — so staleness
-    # reflects real drift, not build-run noise.
+    # Catalog schema version (U1 / KTD5). build_id is computed below over the
+    # full assembled dataset so a persisted loadout snapshot can detect a stale
+    # catalog. Deterministic for unchanged input — same data rebuilds to the same
+    # id — so staleness reflects real drift, not build-run noise.
     schema_version = 1
-    build_id = hashlib.sha256(
-        json.dumps(variants, sort_keys=True, ensure_ascii=False).encode("utf-8")
-    ).hexdigest()[:16]
 
     out = {
         "metadata": {
             "title": "DDO Loadout Optimizer — dataset",
             "schema_version": schema_version,
-            "build_id": build_id,
             "source": seed["metadata"].get("source", ""),
             "seed_generated": seed["metadata"].get("generated", ""),
             "seed_count": len(seed["items"]),
@@ -526,6 +522,14 @@ def build(seed: dict) -> dict:
         "compendium": comp_records,
     }
     affix_parser_mod.set_boolean_features(_prev_bool_features)   # restore; don't leak the scoped allowlist
+
+    # build_id hashes the full assembled dataset (everything except metadata) so
+    # drift in sets, augments, or crafting inputs — not just base variants —
+    # marks a saved snapshot stale.
+    out["metadata"]["build_id"] = hashlib.sha256(
+        json.dumps({k: v for k, v in out.items() if k != "metadata"},
+                   sort_keys=True, ensure_ascii=False).encode("utf-8")
+    ).hexdigest()[:16]
     return out
 
 
