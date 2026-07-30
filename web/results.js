@@ -739,8 +739,23 @@ function renderAltCards(ranked) {
     <li class="alt-card" role="option" id="alt-opt-${i}" aria-selected="false" tabindex="${i === 0 ? 0 : -1}" data-idx="${i}">
       <div class="alt-tags">${a.tags.map((t) => `<span class="alt-tag">${esc(t)}</span>`).join("")}</div>
       <div class="alt-gain">${esc(a.gainText)}</div>
+      ${altGrantsLine(a)}
       <div class="alt-cost">${esc(a.costText)}</div>
     </li>`).join("")}</ul>`;
+}
+
+// U7: name the concrete bonuses an alternative adds. For every set the candidate
+// newly activates, expand its granted affixes via the same activeSetDetail
+// expander the build sheet uses (dedicated line so multi-affix grants read
+// consistently). Non-set gain families already name their delta in gainText.
+function altGrantsLine(a) {
+  if (!a.activatedSets || !a.activatedSets.length || !a.sol) return "";
+  const detail = activeSetDetail(a.sol);
+  const parts = (a.activatedSets || []).map((setName) => {
+    const d = detail.find((s) => s.set === setName);
+    return d && d.affixes.length ? `${setName}: ${d.affixes.map(affixLabel).join(", ")}` : null;
+  }).filter(Boolean);
+  return parts.length ? `<div class="alt-grants">grants ${esc(parts.join("; "))}</div>` : "";
 }
 
 // Wire the alternative cards as a keyboard-operable listbox (U5): arrows rove focus,

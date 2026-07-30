@@ -156,6 +156,28 @@ const tradeModel = () => ({
     assert.deepStrictEqual(an.cost, [{ stat: "Constitution", delta: -7 }], "costs 7 Constitution");
     assert.strictEqual(an.costText, "-7 Constitution");
     assert.ok(/activates Alpha/.test(an.gainText), "names the gained set");
+    assert.ok(an.activatedSets.includes("Alpha"), "records the newly-activated set for affix expansion (U7)");
+  });
+
+  await test("U7: renderAltCards names the concrete affixes an activated set grants", () => {
+    const sol = {
+      setsActive: [{ set: "Alpha", pieces_required: 2 }],
+      chosen: [
+        { slot: "Ring", variant: { variant_id: "Ring Alpha", set_bonus: [{ set: "Alpha" }],
+          parsed_set_bonuses: [{ set: "Alpha", pieces_required: 2,
+            affixes: [{ stat: "Constitution", bonus_type: "Insightful", value: 3, unit: "flat" }] }] } },
+        { slot: "Necklace", variant: { variant_id: "Neck Alpha", set_bonus: [{ set: "Alpha" }], parsed_set_bonuses: [] } },
+      ],
+    };
+    const html = R.renderAltCards([{ tags: ["set bonus"], gainText: "activates Alpha",
+      costText: "-7 Constitution", activatedSets: ["Alpha"], sol }]);
+    assert.ok(/alt-grants/.test(html), "renders a dedicated grants detail line");
+    assert.ok(/Constitution \+3 Insightful/.test(html), "names the set's granted affix, not just the set");
+  });
+
+  await test("U7: renderAltCards omits the grants line for an alt that activates no set", () => {
+    const html = R.renderAltCards([{ tags: ["rebalance"], gainText: "+5 Constitution", costText: "-3 Strength" }]);
+    assert.ok(!/alt-grants/.test(html), "no grants line when nothing new is activated (gainText already names the delta)");
   });
 
   await test("rankAlternatives dedupes, drops within-K of the optimum, and caps to N", () => {
