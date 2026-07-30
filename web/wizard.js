@@ -150,6 +150,20 @@ if (typeof window !== "undefined" && window.App) {
             <input id="wz-charname" type="text" value="${esc(state.characterName)}" placeholder="e.g. Sook - Reaper"></label>
         </div>
         <div class="wz-saved" id="wz-saved"></div>
+        <details class="wz-data" id="wz-data">
+          <summary>Export &amp; Data Management</summary>
+          <div class="wz-data-body">
+            <p class="wz-help">Back up every saved character to a file, or restore from one — the way to move your builds to another
+              device. Backups stay compatible across the last 3 data versions; a file that's older than that, or made by a newer
+              version of the app, is declined so a bad import can't corrupt your saves.</p>
+            <div class="wz-data-row">
+              <button class="btn ghost" id="wz-export" type="button">Export all (.json)</button>
+              <input id="wz-import-label" type="text" readonly placeholder="Import a backup (.json)…" class="wz-file">
+              <input id="wz-import" type="file" accept=".json,application/json" class="wz-hidden">
+            </div>
+            <div id="wz-data-stat" class="wz-filestat"></div>
+          </div>
+        </details>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
           <button class="btn primary" data-next>Continue →</button></div>
       </section>`;
@@ -417,6 +431,51 @@ if (typeof window !== "undefined" && window.App) {
         `</ul>`;
     }
 
+    // Export & Data Management (U6): backup export/import, reachable pre-solve
+    // from the Character step so a first-time restore works on an empty store.
+    function wireDataManagement() {
+      const exportBtn = document.getElementById("wz-export");
+      if (exportBtn) exportBtn.onclick = () => {
+        // eslint-disable-next-line no-undef
+        const payload = BackupIO.serializeAll(CharacterStore.allCharacters(), { buildId: currentBuildId() });
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `ddo-characters-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+      };
+      const impLabel = document.getElementById("wz-import-label");
+      const impFile = document.getElementById("wz-import");
+      const stat = () => document.getElementById("wz-data-stat");
+      if (impLabel && impFile) {
+        impLabel.onclick = () => impFile.click();
+        impFile.onchange = (e) => {
+          const f = e.target.files[0]; if (!f) return;
+          impLabel.value = f.name;
+          const reader = new FileReader();
+          reader.onload = () => {
+            const s = stat();
+            // eslint-disable-next-line no-undef
+            const res = BackupIO.parseBackup(reader.result);
+            if (!res.ok) { s.className = "wz-filestat warn"; s.textContent = res.message || "Import failed."; return; }
+            // eslint-disable-next-line no-undef
+            const merged = BackupIO.mergeInto(CharacterStore.allCharacters(), res.characters, "merge");
+            // eslint-disable-next-line no-undef
+            const w = CharacterStore.saveMany(merged);
+            const n = Object.keys(res.characters).length;
+            s.className = "wz-filestat" + (w.ok ? "" : " warn");
+            s.textContent = w.ok
+              ? `Imported ${n} character${n === 1 ? "" : "s"} (merged by name).`
+              : (w.error === "quota" ? "Storage full — remove some saves and try again." : "Could not save the import.");
+            renderSavedPicker();
+          };
+          reader.readAsText(f);
+        };
+      }
+    }
+
     // ---- on-demand Item Browser (U9) --------------------------------------
     // Reference-only roster search; not a competing top-level tab (R23). Reuses
     // browse.js's initBrowse over a panel this opens on demand.
@@ -489,6 +548,7 @@ if (typeof window !== "undefined" && window.App) {
             renderSavedPicker();
           }
         };
+        wireDataManagement();
       }
       if (state.step === "pool") {
         root.querySelectorAll(".wz-chip[data-pool]").forEach((c) => c.onclick = () => {

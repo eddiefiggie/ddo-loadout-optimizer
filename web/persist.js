@@ -112,6 +112,17 @@
     return Object.prototype.hasOwnProperty.call(all, name) ? all[name] : null;
   }
 
+  // Full name -> record map, for backup export/import.
+  function allCharacters(storage) {
+    return readAll(storage);
+  }
+
+  function saveMany(records, storage) {
+    const all = readAll(storage);
+    for (const name of Object.keys(records || {})) all[name] = records[name];
+    return writeAll(all, storage);
+  }
+
   function deleteCharacter(name, storage) {
     const all = readAll(storage);
     delete all[name];
@@ -121,6 +132,7 @@
   const api = {
     STORE_KEY, stripResult, serializeCharacter,
     saveCharacter, listCharacters, loadCharacter, deleteCharacter,
+    allCharacters, saveMany,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;

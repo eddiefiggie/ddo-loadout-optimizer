@@ -775,6 +775,11 @@ input.wz-ml { width: 120px; }
 .wz-save input:focus { outline: none; box-shadow: var(--ring); border-color: var(--accent); }
 .wz-save .btn { padding: 7px 14px; }
 .wz-savestat { font-size: var(--fs-sm); color: var(--muted); }
+.wz-data { margin-top: var(--sp-3); border: 1px dashed var(--border-2); border-radius: var(--radius); background: var(--panel-2); }
+.wz-data > summary { cursor: pointer; padding: var(--sp-2) var(--sp-3); font-weight: 600; font-size: var(--fs-sm); }
+.wz-data-body { padding: 0 var(--sp-3) var(--sp-3); }
+.wz-data-row { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
+.wz-data-row .wz-file { flex: 1; min-width: 200px; }
 
 /* Adjust & re-solve panel (U8) — fold-up editor in the results view. */
 .wz-adjust { margin-top: var(--sp-4); border: 1px dashed var(--border-2); border-radius: var(--radius);

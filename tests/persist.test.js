@@ -2,6 +2,7 @@
 const assert = require("assert");
 const {
   serializeCharacter, stripResult, saveCharacter, listCharacters, loadCharacter, deleteCharacter,
+  allCharacters, saveMany,
 } = require("../web/persist.js");
 
 let passed = 0;
@@ -96,6 +97,17 @@ test("delete removes only the named entry", () => {
   deleteCharacter("Sook", st);
   assert.deepStrictEqual(listCharacters(st).map((c) => c.name), ["Torin"]);
   assert.strictEqual(loadCharacter("Sook", st), null);
+});
+
+test("allCharacters returns the full name->record map; saveMany writes a batch", () => {
+  const st = fakeStorage();
+  saveMany({
+    Sook: serializeCharacter("Sook", state, lastRun, "id1"),
+    Torin: serializeCharacter("Torin", state, lastRun, "id1"),
+  }, st);
+  const all = allCharacters(st);
+  assert.deepStrictEqual(Object.keys(all).sort(), ["Sook", "Torin"]);
+  assert.strictEqual(all.Sook.inputs.race, "Elf");
 });
 
 test("quota-exceeded on save returns a typed error rather than throwing", () => {
