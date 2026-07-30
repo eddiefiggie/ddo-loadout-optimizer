@@ -344,7 +344,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   };
   const dinoPool = (dinoInserts || []).filter((i) => i && dinoAdvances(i));
 
-  // U81 Nearly Complete: the parametric option pool. Keep only options that
+  // U81 Nearly Completed: the parametric option pool. Keep only options that
   // advance a ranked target; the solver attaches them per item via the item's
   // `nearly_complete` category + tier.
   const ncPool = (nearlyComplete || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);

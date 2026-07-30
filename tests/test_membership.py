@@ -24,8 +24,8 @@ def test_build_membership_set_defs_shape():
 
 
 def test_uses_catalog_vocabulary_not_a_parallel_file():
-    # The awaken def must match the catalog vocab intrinsic members use, so a set
-    # gives identical stats whether awakened or intrinsically completed. The catalog
+    # The membership set def must match the catalog vocab intrinsic members use, so a
+    # set gives identical stats whether crafted-in or intrinsically completed. The catalog
     # models Vol's spell-crit line as "Universal Spell Lore" / "Spell Focus Mastery".
     defs = membership.build_membership_set_defs()
     vol_stats = {a["stat"] for t in defs["Vol's Influence"]["tiers"] for a in t["affixes"]}
@@ -120,7 +120,7 @@ def test_items_json_has_44_lost_purpose_hosts():
 
 
 def test_items_json_has_dino_set_bonus_hosts():
-    # U4: the Dinosaur Bone Armor/Helmet/Cloak Set-Bonus hosts awaken one of the 6
+    # U4: the Dinosaur Bone Armor/Helmet/Cloak Set-Bonus hosts join one of the 6
     # Dino sets at the Dinosaur Bone crafting station (same primitive, different pool).
     with open(ITEMS, encoding="utf-8") as fh:
         data = json.load(fh)

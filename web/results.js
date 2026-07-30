@@ -261,7 +261,7 @@ function safeUrl(u) {
 }
 
 // Craft/augment prescriptions applied to an equipped item (augments, Dino inserts,
-// Nearly Complete, choice slots, Viktranium, seals, wildcard), as labeled chips.
+// Nearly Completed, choice slots, Viktranium, seals, wildcard), as labeled chips.
 // Used by the Loadout Deep Dive so every applied bonus is visible. Returns an array.
 // Crafting-system label registry (U1). Global in the browser (loaded before
 // results.js); require()'d in Node tests where the global isn't present.

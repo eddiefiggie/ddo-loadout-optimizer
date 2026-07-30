@@ -304,7 +304,7 @@ function buildProgram(model) {
     extraConstraints.push(`${qs.join(" + ")}${rhs} <= 0`);
   }
 
-  // U81 Nearly Complete — a parametric choice-slot on an item. An item carrying
+  // U81 Nearly Completed — a parametric choice-slot on an item. An item carrying
   // `nearly_complete: <category>` may craft one option from that category's pool
   // (at the item's tier): each candidate option gets a placement binary n, its
   // stat is a contribution gated [n], n is available only when the host item is
@@ -367,7 +367,7 @@ function buildProgram(model) {
   // U81 Viktranium ("Lamordia") — a typed choice-slot on an item. Each entry in
   // `lamordia_slots` is an independent slot of a (type, category); it may craft
   // one option from the matching pool at the host's tier. Same gated select-one
-  // primitive as Nearly Complete: a per-option binary n gated by the host item
+  // primitive as Nearly Completed: a per-option binary n gated by the host item
   // (n - x_item <= 0), its stat fed into the (stat, bonus_type) bucket [n], and
   // Σ n <= 1 PER SLOT — so an item with two Lamordia slots gets two independent
   // choices. Tier from the host's ML (ML>=35 Legendary), matching lamordiaTier.
@@ -401,7 +401,7 @@ function buildProgram(model) {
   // Seal slots ("Sealed in X") — a single-pick choice-slot on an item. Each entry
   // in `seal_slots` may unseal ONE option from its seal_type's pool at a crafting
   // table; picking another replaces the original (mutually exclusive). Same gated
-  // select-one primitive as Nearly Complete / Viktranium: a per-option binary n
+  // select-one primitive as Nearly Completed / Viktranium: a per-option binary n
   // gated by the host item (n - x_item <= 0), its stat fed into the (stat,
   // bonus_type) bucket [n], and Σ n <= 1 PER SLOT. The pool is keyed by seal_type
   // ALONE — unlike Viktranium's (slot_type, category) key, a seal type is one flat
@@ -755,9 +755,9 @@ function breakdownByTarget(program, prim) {
     }
     if (program.sealMeta && program.sealMeta.has(gate)) { const m = program.sealMeta.get(gate); return { kind: "seal", label: `Sealed in ${m.seal_type}`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.dinoMeta && program.dinoMeta.has(gate)) return { kind: "dino", label: `${program.dinoMeta.get(gate).dino_type} insert` };
-    if (program.ncMeta && program.ncMeta.has(gate)) { const m = program.ncMeta.get(gate); return { kind: "nc", label: "Nearly Complete", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
+    if (program.ncMeta && program.ncMeta.has(gate)) { const m = program.ncMeta.get(gate); return { kind: "nc", label: "Nearly Completed", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.rollMeta && program.rollMeta.has(gate)) { const m = program.rollMeta.get(gate); return { kind: "roll", label: "choice slot", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
-    if (program.vikMeta && program.vikMeta.has(gate)) { const m = program.vikMeta.get(gate); return { kind: "vik", label: `Lamordia ${m.slot_type}`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
+    if (program.vikMeta && program.vikMeta.has(gate)) { const m = program.vikMeta.get(gate); return { kind: "vik", label: `Slot ${m.slot_type} Viktranium augment`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.tfMeta && program.tfMeta.has(gate)) { const m = program.tfMeta.get(gate); return { kind: "tf", label: `Thunder-Forged Tier ${m.tier}`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.gsMeta && program.gsMeta.has(gate)) { const m = program.gsMeta.get(gate); return { kind: "gs", label: "Green Steel", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.placeMeta && program.placeMeta.has(gate)) return { kind: "augment", label: program.placeMeta.get(gate).variant_id };
