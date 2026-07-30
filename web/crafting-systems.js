@@ -1,9 +1,13 @@
-// Centralized crafting-system metadata registry (U1). One source of truth for
-// each DDO crafting system's player-facing labels, so the renderer derives
-// instructions from metadata instead of hardcoded strings. "Awaken" is correct
-// ONLY for Vecna Unleashed Lost Purpose — every other system uses its own
-// terminology. Pure data + accessors, no solver contact. Dual-exported;
-// namespaced global `CraftingSystems`.
+// Centralized crafting-system metadata registry (U1). Single source of truth for
+// each DDO crafting system's player-facing labels. The membership fork — Vecna
+// Unleashed Lost Purpose vs Isle-of-Dread Set Bonus, the two stations in
+// STATION_TO_SYSTEM — reads its chip label from here via actionLabel(), so a
+// terminology edit flows to the UI instead of drifting from a hardcoded string.
+// The remaining entries are declarative metadata (labels, stations, slot types)
+// carried for reference and future wiring; their chips still render inline today.
+// "Awaken" is correct ONLY for Vecna Unleashed Lost Purpose — every other system
+// uses its own terminology. Pure data + accessors, no solver contact.
+// Dual-exported; namespaced global `CraftingSystems`.
 (function () {
   "use strict";
 

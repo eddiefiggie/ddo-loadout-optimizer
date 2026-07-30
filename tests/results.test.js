@@ -147,6 +147,20 @@ test("craftChips renders Isle-of-Dread Set Bonus as 'Slot Set Bonus augment' (no
   assert.ok(!/awaken/i.test(chips), "Dino Set Bonus must not say 'awaken'");
 });
 
+test("craftChips membership label IS the registry's actionLabel output (no drift)", () => {
+  // The chip must render exactly what crafting-systems.js produces, so a
+  // terminology edit in the registry can never silently diverge from the UI.
+  const CS = require("../web/crafting-systems.js");
+  const vec = R.craftChips({ variant_id: "V" },
+    0, membershipMaps("V", "Legendary Vol's Influence", "Cannith Repurposing Station")).join(" ");
+  assert.ok(vec.includes(R.esc(CS.actionLabel("vecna-lost-purpose", { set_name: "Legendary Vol's Influence" }))),
+    "Vecna chip text equals the registry label");
+  const dino = R.craftChips({ variant_id: "D" },
+    0, membershipMaps("D", "Legendary Dread Stalker", "Dinosaur Bone crafting")).join(" ");
+  assert.ok(dino.includes(R.esc(CS.actionLabel("isle-of-dread-set-bonus", { set_name: "Legendary Dread Stalker" }))),
+    "Dino chip text equals the registry label");
+});
+
 test("craftChips uses 'Nearly Completed' and 'Viktranium' (not 'Nearly Complete'/'Lamordia')", () => {
   const v = { variant_id: "Legendary Thing" };
   const maps = {

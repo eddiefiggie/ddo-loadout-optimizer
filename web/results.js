@@ -290,13 +290,18 @@ function craftChips(v, idx, maps) {
   // through one solver primitive but must render different labels — fork on the
   // station via the registry (KTD2). Only Vecna keeps "Awaken".
   const memberships = ((maps.membershipByHost && maps.membershipByHost.get(v.variant_id)) || []).map((m) => {
-    const sysId = CraftingReg ? CraftingReg.systemForStation(m.station) : null;
+    // Unknown/absent station defaults to the Dino system (the non-Vecna label),
+    // matching the prior fallthrough behavior.
+    const sysId = (CraftingReg && CraftingReg.systemForStation(m.station)) || "isle-of-dread-set-bonus";
     const isVecna = sysId === "vecna-lost-purpose";
     const cls = isVecna ? "chip awaken" : "chip setbonus";
-    const label = isVecna ? "Awaken Set Bonus" : "Slot Set Bonus augment";
+    // The label text comes from the registry (single source of truth), not a
+    // hardcoded string — a terminology edit in crafting-systems.js now flows
+    // straight to the chip instead of drifting from it.
+    const text = CraftingReg ? CraftingReg.actionLabel(sysId, { set_name: m.set }) : `Slot Set Bonus augment: ${m.set}`;
     const title = isVecna ? `awaken this set at the ${esc(m.station || "Cannith Repurposing Station")}`
       : `slot a Dinosaur Bone Set Bonus augment at ${esc(m.station || "Dinosaur Bone crafting")}`;
-    return `<span class="${cls}" title="${title}">${label}: ${esc(m.set)}${m.station ? ` <span class="muted">(${esc(m.station)})</span>` : ""}</span>`;
+    return `<span class="${cls}" title="${title}">${esc(text)}${m.station ? ` <span class="muted">(${esc(m.station)})</span>` : ""}</span>`;
   });
   return [...augs, ...dinos, ...ncs, ...rolls, ...viks, ...seals, ...tfs, ...gss, ...jokers, ...memberships];
 }
