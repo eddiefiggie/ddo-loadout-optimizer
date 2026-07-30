@@ -759,6 +759,32 @@ input.wz-ml { width: 120px; }
   margin-bottom: var(--sp-3); font-size: var(--fs-sm); color: var(--muted); }
 .wz-cbar .btn { padding: 7px 14px; }
 
+/* Character persistence (U3/U4): saved-character picker + save row. */
+.wz-saved { margin-top: var(--sp-3); }
+.wz-charlist { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-1); }
+.wz-charlist li { display: flex; align-items: center; gap: var(--sp-2); background: var(--panel-2);
+  border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: var(--sp-2) var(--sp-3); }
+.wz-charnm { flex: 1; font-weight: 600; overflow-wrap: anywhere; }
+.wz-charlist .wz-ctl { display: flex; gap: var(--sp-1); }
+.wz-charlist .wz-ctl button { background: transparent; color: var(--muted); border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm); padding: 3px 9px; font-size: var(--fs-xs); cursor: pointer; }
+.wz-charlist .wz-ctl button:hover { color: var(--text); border-color: var(--accent); }
+.wz-save { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-3); flex-wrap: wrap; }
+.wz-save input { flex: 1; min-width: 180px; background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: 7px 10px; }
+.wz-save input:focus { outline: none; box-shadow: var(--ring); border-color: var(--accent); }
+.wz-save .btn { padding: 7px 14px; }
+.wz-savestat { font-size: var(--fs-sm); color: var(--muted); }
+.wz-data { margin-top: var(--sp-3); border: 1px dashed var(--border-2); border-radius: var(--radius); background: var(--panel-2); }
+.wz-data > summary { list-style: none; cursor: pointer; padding: var(--sp-2) var(--sp-3); font-weight: 600; font-size: var(--fs-sm);
+  display: flex; align-items: center; gap: var(--sp-2); }
+.wz-data > summary::-webkit-details-marker { display: none; }
+.wz-data > summary::before { content: "▸"; color: var(--accent); transition: transform 0.15s; }
+.wz-data[open] > summary::before { transform: rotate(90deg); }
+.wz-data-body { padding: 0 var(--sp-3) var(--sp-3); }
+.wz-data-row { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
+.wz-data-row .wz-file { flex: 1; min-width: 200px; }
+
 /* Adjust & re-solve panel (U8) — fold-up editor in the results view. */
 .wz-adjust { margin-top: var(--sp-4); border: 1px dashed var(--border-2); border-radius: var(--radius);
   background: var(--panel-2); }

@@ -62,7 +62,13 @@ if (typeof window !== "undefined" && window.App) {
     ["twf", "Dual-wield"], ["runearm", "One-hand + rune arm"]];
   const STEP_LABELS = { intro: "Start", character: "Character", pool: "Gear pool", priorities: "Priorities", results: "Results" };
 
-  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  // U7 / KTD6: standardize output-encoding on the global esc from results.js
+  // (escapes & < > " ' — the apostrophe the old local helper missed). Fall back
+  // to a full 5-char escape if results.js somehow hasn't loaded, so a saved or
+  // imported character name can never inject markup.
+  const esc = (typeof window !== "undefined" && typeof window.esc === "function")
+    ? window.esc
+    : (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   window.App.ready((dataset) => {
     const root = document.getElementById("wizard");
@@ -79,7 +85,8 @@ if (typeof window !== "undefined" && window.App) {
 
     const state = { step: "intro", ml: 34, race: "", alignment: "", armor: "", weapon: "",
       includeArtifact: false,
-      pool: "all", ownedNames: null, priorities: [], slotConstraints: {}, constraintsDirty: false, lastRun: null };
+      pool: "all", ownedNames: null, priorities: [], slotConstraints: {}, constraintsDirty: false, lastRun: null,
+      characterName: "", loadedStale: false };
 
     let highs = null;
     async function getHighs() {
@@ -143,7 +150,26 @@ if (typeof window !== "undefined" && window.App) {
           <label class="wz-check"><input type="checkbox" id="wz-artifact"${state.includeArtifact ? " checked" : ""}>
             <span class="wz-check-body"><span class="wz-label">Include an Artifact</span>
             <span class="wz-help">Build around your one equippable Artifact — the optimizer picks the best-scoring one and tags its slot. Off by default.</span></span></label>
+          <label class="wz-field"><span class="wz-label">Character name <span class="wz-sub">· optional</span></span>
+            <span class="wz-help">Name this character to save its build and reload it later. Saved only in this browser
+              (no account, cleared if you clear browser data) — use Export &amp; Data Management to move a copy between devices.</span>
+            <input id="wz-charname" type="text" value="${esc(state.characterName)}" placeholder="e.g. Sook - Reaper"></label>
         </div>
+        <div class="wz-saved" id="wz-saved"></div>
+        <details class="wz-data" id="wz-data">
+          <summary>Export &amp; Data Management</summary>
+          <div class="wz-data-body">
+            <p class="wz-help">Back up every saved character to a file, or restore from one — the way to move your builds to another
+              device. Backups stay compatible across the last 3 data versions; a file that's older than that, or made by a newer
+              version of the app, is declined so a bad import can't corrupt your saves.</p>
+            <div class="wz-data-row">
+              <button class="btn ghost" id="wz-export" type="button">Export all (.json)</button>
+              <input id="wz-import-label" type="text" readonly placeholder="Import a backup (.json)…" class="wz-file">
+              <input id="wz-import" type="file" accept=".json,application/json" class="wz-hidden">
+            </div>
+            <div id="wz-data-stat" class="wz-filestat"></div>
+          </div>
+        </details>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
           <button class="btn primary" data-next>Continue →</button></div>
       </section>`;
@@ -198,6 +224,14 @@ if (typeof window !== "undefined" && window.App) {
           <span class="wz-spacer"></span>
           <button class="btn ghost" data-goto="priorities">← Adjust priorities</button>
           <button class="btn ghost" data-goto="character">Edit character</button>
+        </div>
+        <div class="wz-save" id="wz-save">
+          <input id="wz-savename" type="text" value="${esc(state.characterName)}" placeholder="Name this character…">
+          <button class="btn primary" id="wz-savebtn">Save character</button>
+          <span class="wz-savestat" id="wz-savestat" aria-live="polite"></span>
+        </div>
+        <div id="wz-stale" class="wz-cbar wz-hidden">
+          This saved build predates the current gear catalog. <button class="btn primary" id="wz-staleresolve">Re-solve ⚡</button>
         </div>
         <div id="wz-cbar" class="wz-cbar${state.constraintsDirty ? "" : " wz-hidden"}">
           Slot constraints changed. <button class="btn primary" id="wz-cresolve">Re-solve ⚡</button>
@@ -316,7 +350,9 @@ if (typeof window !== "undefined" && window.App) {
           }
         });
         state.constraintsDirty = false;
-        state.lastRun = { model, result, query };
+        // fresh:true — this build was solved against the current catalog, so a
+        // subsequent Save stamps the current build id (see saveCurrentCharacter).
+        state.lastRun = { model, result, query, fresh: true };
         state.step = "results";
         render();
         const box = document.getElementById("wz-results");
@@ -329,6 +365,130 @@ if (typeof window !== "undefined" && window.App) {
         console.error(err);
       } finally {
         overlay(false); solving = false;
+      }
+    }
+
+    // ---- character persistence (U3/U4) ------------------------------------
+    function currentBuildId() {
+      return (dataset && dataset.metadata && dataset.metadata.build_id) || null;
+    }
+
+    function saveCurrentCharacter(name) {
+      const nm = (name || "").trim();
+      if (!nm) return { ok: false, error: "no-name" };
+      if (!state.lastRun || !state.lastRun.result || state.lastRun.result.status !== "optimal") {
+        return { ok: false, error: "no-build" };
+      }
+      state.characterName = nm;
+      // Stamp with the current build only for a freshly-solved run. Saving a
+      // LOADED-but-not-resolved build (e.g. after a rename) must preserve its
+      // original stamp, or a stale build would re-stamp itself current and the
+      // staleness warning would be silenced forever.
+      const stamp = (state.lastRun.fresh === false && state.lastRun.stampedBuildId)
+        ? state.lastRun.stampedBuildId : currentBuildId();
+      // eslint-disable-next-line no-undef
+      const rec = CharacterStore.serializeCharacter(nm, state, state.lastRun, stamp);
+      // eslint-disable-next-line no-undef
+      return CharacterStore.saveCharacter(rec);
+    }
+
+    // Load a saved character: restore inputs, rebuild the model scaffold WITHOUT
+    // solving (KTD2), and render Results from the stored snapshot. renderResults
+    // only needs `highs` for the Alternatives tab, which degrades gracefully when
+    // absent, so a loaded build shows instantly.
+    function loadCharacter(name) {
+      // eslint-disable-next-line no-undef
+      const rec = CharacterStore.loadCharacter(name);
+      if (!rec) return;
+      const i = rec.inputs || {};
+      state.characterName = rec.name;
+      state.ml = i.ml; state.race = i.race; state.alignment = i.alignment;
+      state.armor = i.armor; state.weapon = i.weapon;
+      state.includeArtifact = !!i.includeArtifact;
+      state.pool = i.pool || "all";
+      state.ownedNames = Array.isArray(i.ownedNames) ? new Set(i.ownedNames) : null;
+      state.priorities = Array.isArray(i.priorities) ? i.priorities.slice() : [];
+      state.slotConstraints = i.slotConstraints || {};
+      state.constraintsDirty = false;   // loaded constraints are the saved state, not a pending change
+      const snap = rec.snapshot;
+      if (snap && snap.status === "optimal") {
+        const query = rec.query || buildQuery(state);
+        // eslint-disable-next-line no-undef
+        const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
+          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel);
+        // fresh:false + the original stamp so a later Save preserves staleness (see saveCurrentCharacter).
+        state.lastRun = { model, result: snap, query, fresh: false, stampedBuildId: rec.stampedBuildId || null };
+        state.loadedStale = !!(rec.stampedBuildId && currentBuildId() && rec.stampedBuildId !== currentBuildId());
+        state.step = "results";
+        render();
+        const box = document.getElementById("wz-results");
+        // eslint-disable-next-line no-undef
+        if (box) renderResults(box, { model, result: snap, query, dataset, highs: null });
+        const stale = document.getElementById("wz-stale");
+        if (stale) stale.classList.toggle("wz-hidden", !state.loadedStale);
+      } else {
+        go("priorities");
+      }
+    }
+
+    function renderSavedPicker() {
+      const host = document.getElementById("wz-saved");
+      if (!host) return;
+      // eslint-disable-next-line no-undef
+      const chars = CharacterStore.listCharacters();
+      if (!chars.length) {
+        host.innerHTML = `<p class="wz-help wz-saved-empty">No saved characters yet — solve a build, name it, and Save it from the results.</p>`;
+        return;
+      }
+      host.innerHTML = `<p class="wz-label">Saved characters</p><ul class="wz-charlist">` +
+        chars.map((c) => `<li><span class="wz-charnm">${esc(c.name)}</span>
+          <span class="wz-ctl"><button type="button" data-load="${esc(c.name)}">Load →</button>
+          <button type="button" data-del="${esc(c.name)}" aria-label="delete ${esc(c.name)}">✕</button></span></li>`).join("") +
+        `</ul>`;
+    }
+
+    // Export & Data Management (U6): backup export/import, reachable pre-solve
+    // from the Character step so a first-time restore works on an empty store.
+    function wireDataManagement() {
+      const exportBtn = document.getElementById("wz-export");
+      if (exportBtn) exportBtn.onclick = () => {
+        // eslint-disable-next-line no-undef
+        const payload = BackupIO.serializeAll(CharacterStore.allCharacters(), { buildId: currentBuildId() });
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `ddo-characters-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+      };
+      const impLabel = document.getElementById("wz-import-label");
+      const impFile = document.getElementById("wz-import");
+      const stat = () => document.getElementById("wz-data-stat");
+      if (impLabel && impFile) {
+        impLabel.onclick = () => impFile.click();
+        impFile.onchange = (e) => {
+          const f = e.target.files[0]; if (!f) return;
+          impLabel.value = f.name;
+          const reader = new FileReader();
+          reader.onload = () => {
+            const s = stat();
+            // eslint-disable-next-line no-undef
+            const res = BackupIO.parseBackup(reader.result);
+            if (!res.ok) { s.className = "wz-filestat warn"; s.textContent = res.message || "Import failed."; return; }
+            // saveMany already merges by name into the existing store, so pass the
+            // imported set directly — no separate mergeInto pass needed for "merge".
+            // eslint-disable-next-line no-undef
+            const w = CharacterStore.saveMany(res.characters);
+            const n = Object.keys(res.characters).length;
+            s.className = "wz-filestat" + (w.ok ? "" : " warn");
+            s.textContent = w.ok
+              ? `Imported ${n} character${n === 1 ? "" : "s"} (merged by name).`
+              : (w.error === "quota" ? "Storage full — remove some saves and try again." : "Could not save the import.");
+            renderSavedPicker();
+          };
+          reader.readAsText(f);
+        };
       }
     }
 
@@ -391,6 +551,20 @@ if (typeof window !== "undefined" && window.App) {
           state.weapon = state.weapon === c.dataset.weapon ? "" : c.dataset.weapon;
           root.querySelectorAll("#wz-weapon .wz-chip").forEach((x) => x.classList.toggle("on", x.dataset.weapon === state.weapon));
         });
+        const cn = document.getElementById("wz-charname");
+        if (cn) cn.oninput = (e) => state.characterName = e.target.value;
+        renderSavedPicker();
+        const saved = document.getElementById("wz-saved");
+        if (saved) saved.onclick = (e) => {
+          const b = e.target.closest("button"); if (!b) return;
+          if (b.dataset.load != null) loadCharacter(b.dataset.load);
+          else if (b.dataset.del != null && window.confirm(`Delete saved character "${b.dataset.del}"?`)) {
+            // eslint-disable-next-line no-undef
+            CharacterStore.deleteCharacter(b.dataset.del);
+            renderSavedPicker();
+          }
+        };
+        wireDataManagement();
       }
       if (state.step === "pool") {
         root.querySelectorAll(".wz-chip[data-pool]").forEach((c) => c.onclick = () => {
@@ -433,6 +607,34 @@ if (typeof window !== "undefined" && window.App) {
       if (state.step === "results") {
         const box = document.getElementById("wz-results");
         const cbar = document.getElementById("wz-cbar");
+        // Save the current character (U3): inputs + solved snapshot.
+        const savename = document.getElementById("wz-savename");
+        const savebtn = document.getElementById("wz-savebtn");
+        const savestat = document.getElementById("wz-savestat");
+        if (savename) savename.oninput = (e) => state.characterName = e.target.value;
+        if (savebtn) savebtn.onclick = () => {
+          const nm = ((savename ? savename.value : state.characterName) || "").trim();
+          // Confirm before overwriting an existing character (R3/KD5), mirroring
+          // the delete confirm.
+          // eslint-disable-next-line no-undef
+          if (nm && CharacterStore.loadCharacter(nm) && !window.confirm(`Update saved character "${nm}"?`)) return;
+          const res = saveCurrentCharacter(nm);
+          if (!savestat) return;
+          if (res.ok) savestat.textContent = `Saved “${state.characterName}”.`;
+          else if (res.error === "no-name") savestat.textContent = "Enter a name to save.";
+          else if (res.error === "no-build") savestat.textContent = "Solve a build first.";
+          else if (res.error === "quota") savestat.textContent = "Storage full — export and remove old saves.";
+          else savestat.textContent = "Could not save.";
+        };
+        // Staleness note (U4): re-solve is view-only — it refreshes the shown
+        // build but does not overwrite the saved snapshot until an explicit Save.
+        const staleBtn = document.getElementById("wz-staleresolve");
+        if (staleBtn) staleBtn.onclick = () => {
+          state.loadedStale = false;
+          const stale = document.getElementById("wz-stale");
+          if (stale) stale.classList.add("wz-hidden");
+          solve(false);
+        };
         // Per-slot constraint controls (U6), wired by delegation so they survive
         // renderResults re-rendering the box contents.
         if (box) box.addEventListener("click", (e) => {
