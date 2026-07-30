@@ -18,6 +18,9 @@ The unifying primitive for every stat source: a `(stat, bonus_type, value)` that
 ### Bonus-type bucket
 The `(stat, bonus_type)` group in which at most one contributing value counts. Within a bucket only the single highest *selected* value applies; across buckets (different bonus types on the same stat) values sum. This encodes DDO stacking: same-type does not stack (max), different-type does (add).
 
+### Boolean feature
+A stat source with no magnitude — a toggle either an item grants or it doesn't (DDO's Salt guard is the canonical case). Modeled with **presence semantics**: stored as a gated contribution with `value 1` and `bonus_type: boolean`, so the ordinary highest-of-bucket rule collapses any number of sources to a single 1 — present, never additive. Deliberately not `untyped`: real untyped bonuses stack, boolean features must not. Targetable like any stat.
+
 ### Dominance pre-filter
 A per-slot Pareto reduction run before the model is built: a variant beaten by a same-slot peer on **every value-carrying dimension** is dropped, since it can never be uniquely optimal. Soundness has three standing obligations — it holds only while every objective is max-aggregation (a piece-*count* objective breaks it in a multi-pick slot); its comparison surface must stay a **superset** of every dimension the objective reads (a variant whose worth is a dimension the comparator ignores gets wrongly pruned); and every kept item's dominator must be **unconditionally available** to equip. The third breaks when a hard constraint can force a candidate off (an exactly-one-of-a-class, a mutual exclusion, a quota): such a candidate is only *conditionally* available, so it must be exempted from pruning AND barred from pruning the peers it merely dominates — once it is forced off, a peer it dominated may be the true best.
 
