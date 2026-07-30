@@ -380,12 +380,38 @@ function equippedRow(label, pick, slotConstraints, satisfied) {
   const nameCls = (!v || locked) ? "pd-rname muted" : "pd-rname";
   const foot = (v && !locked)
     ? `<div class="pd-rfoot"><span class="pd-rml">ML ${esc(v.minimum_level ?? "?")}</span>${setLine}</div>` : "";
+  // U9: per-item stats + augment slots + craft slots, shown uniformly on every
+  // occupied block (empty blocks stay the same height via the grid stretch + the
+  // .pd-row min-height). Data is intrinsic to the variant — no maps needed.
+  const body = (v && !locked) ? equippedBody(v) : "";
   const rowCls = `pd-row ${(!v || locked) ? "empty" : "occupied"}${glow ? " is-set" : ""}${isArtifact ? " is-artifact" : ""}${c ? " constrained" : ""}`;
   return `<div class="${rowCls}">
     <div class="pd-rtop"><div class="pd-rlabel">${esc(label)}</div>${ctl}</div>
     <div class="${nameCls}"${v ? ` title="${esc(v.variant_id)}"` : ""}>${name}</div>
-    ${foot}${artifactBadge}${badge}${menu}
+    ${foot}${body}${artifactBadge}${badge}${menu}
   </div>`;
+}
+
+// The stats / augment-slot / craft-slot body of an equipped block (U9). Pure
+// projection over the variant; surfaces value even for slot-only items so no
+// occupied block renders blank.
+function equippedBody(v) {
+  const affixes = (v.affixes || []);
+  const stats = affixes.length
+    ? `<ul class="pd-stats">${affixes.map((a) => `<li>${esc(affixLabel(a))}</li>`).join("")}</ul>` : "";
+  const augColors = (v.augment_slots_norm && v.augment_slots_norm.colors) || v.augment_slots || [];
+  const augs = augColors.length
+    ? `<div class="pd-slots"><span class="pd-slabel">Augments</span>${augColors.map((c) =>
+        `<span class="aug-pip aug-${esc(String(c).toLowerCase())}" title="${esc(c)} augment slot">${esc(c)}</span>`).join("")}</div>` : "";
+  const craftMarks = [];
+  if (v.green_steel_slot) craftMarks.push("Greensteel");
+  if (v.seal_slots) craftMarks.push("Seal");
+  if (v.lamordia_slots) craftMarks.push("Lamordia");
+  const crafts = craftMarks.length
+    ? `<div class="pd-slots"><span class="pd-slabel">Craft</span>${craftMarks.map((m) =>
+        `<span class="craft-mark">${esc(m)}</span>`).join("")}</div>` : "";
+  if (!stats && !augs && !crafts) return "";
+  return `<div class="pd-rbody">${stats}${augs}${crafts}</div>`;
 }
 
 // Front-facing armored-adventurer silhouette (retired from the results layout;

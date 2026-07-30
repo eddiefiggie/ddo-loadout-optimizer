@@ -724,6 +724,27 @@ input.wz-ml { width: 120px; }
 .pd-rfoot { display: flex; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--fs-xs); color: var(--faint); margin-top: 2px; }
 .pd-rset { color: var(--set); }
 
+/* U9: uniform equipment blocks — same floor height whether or not the item
+   carries stats/augment/craft info; grid stretch keeps paired blocks equal. */
+.pd-row { min-height: 92px; display: flex; flex-direction: column; }
+.pd-rbody { margin-top: var(--sp-2); display: flex; flex-direction: column; gap: 5px; }
+.pd-stats { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 3px 6px;
+  font-size: var(--fs-xs); color: var(--muted); }
+.pd-stats li { white-space: nowrap; }
+.pd-stats li:not(:last-child)::after { content: "·"; margin-left: 6px; color: var(--faint); }
+.pd-slots { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: var(--fs-xs); }
+.pd-slabel { text-transform: uppercase; letter-spacing: 0.04em; color: var(--faint); font-size: 0.62rem; margin-right: 2px; }
+.aug-pip { display: inline-flex; align-items: center; padding: 1px 6px; border-radius: 999px; font-size: 0.62rem;
+  border: 1px solid var(--border-2); color: var(--muted); }
+.aug-pip.aug-blue { border-color: #5a8fd0; color: #9cc2ee; }
+.aug-pip.aug-red { border-color: #cf6a63; color: #e6a09a; }
+.aug-pip.aug-yellow { border-color: #cbb45e; color: #e6d68f; }
+.aug-pip.aug-green { border-color: #6fae74; color: #a6d6aa; }
+.aug-pip.aug-orange { border-color: #d08a4a; color: #eab98a; }
+.aug-pip.aug-purple { border-color: #a074c0; color: #cbb0e0; }
+.aug-pip.aug-colorless, .aug-pip.aug-clear { border-color: var(--border-2); color: var(--faint); }
+.craft-mark { padding: 1px 6px; border-radius: var(--radius-sm); border: 1px dashed var(--border-2); font-size: 0.62rem; color: var(--muted); }
+
 /* Per-slot constraint controls (U6) on the equipped-list rows. */
 .pd-row { position: relative; }
 .pd-rtop { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
