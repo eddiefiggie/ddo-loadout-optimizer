@@ -752,3 +752,16 @@ input.wz-ml { width: 120px; }
 .wz-toggle button { min-height: 0; padding: 7px 12px; background: var(--panel); border: none; color: var(--muted);
   font-size: var(--fs-sm); cursor: pointer; }
 .wz-toggle button.on { background: var(--accent); color: var(--accent-ink); }
+
+/* Top bar (stepper + Browse trigger) and the on-demand Item Browser overlay (U9). */
+.wz-topbar { display: flex; align-items: center; gap: var(--sp-4); flex-wrap: wrap; }
+.wz-topbar .wz-steps { flex: 1; }
+.wz-browse-btn { flex: none; }
+.wz-browse-overlay { position: fixed; inset: 0; background: rgba(8,10,14,0.82); backdrop-filter: blur(3px);
+  display: none; align-items: flex-start; justify-content: center; z-index: 70; padding: var(--sp-5) var(--sp-4);
+  overflow-y: auto; }
+.wz-browse-overlay.on { display: flex; }
+.wz-browse-panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: var(--sp-5); width: 100%; max-width: var(--maxw); }
+.wz-browse-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+.wz-browse-head h2 { margin: 0; font-size: var(--fs-xl); }
