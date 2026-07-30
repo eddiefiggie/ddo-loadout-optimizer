@@ -111,4 +111,32 @@ test("filterItemsToOwned keeps all variants of an owned base item (R13/KTD4)", (
   assert.ok(!owned.some((v) => itemName(v) === "Unowned Helm"));
 });
 
+test("U5: owned filter retains an artifact-flagged variant with its dataset stats", () => {
+  // R5: the Trove supplies identity only; an owned Artifact must resolve to its
+  // dataset variant (stats + artifact flag intact), never be filtered out.
+  const ownedNames = new Set(["Legendary Epic Artifact"]);
+  const items = [{
+    source_item: "Legendary Epic Artifact", variant_id: "Legendary Epic Artifact",
+    slot: "Trinket", artifact: true,
+    affixes: [{ stat: "Constitution", bonus_type: "Enhancement", value: 20, unit: "flat" }],
+  }];
+  const owned = filterItemsToOwned(items, ownedNames);
+  assert.strictEqual(owned.length, 1, "the owned Artifact is retained");
+  assert.strictEqual(owned[0].artifact, true, "artifact flag preserved");
+  assert.strictEqual(owned[0].affixes[0].value, 20, "stats come from the dataset variant");
+});
+
+test("U5: owned filter retains a boolean-only-eligible variant", () => {
+  // An item whose only eligible content is a boolean presence affix must still
+  // match by source_item and stay in the owned pool.
+  const ownedNames = new Set(["Salt Guard Cloak"]);
+  const items = [{
+    source_item: "Salt Guard Cloak", variant_id: "Salt Guard Cloak", slot: "Cloak",
+    affixes: [{ stat: "Salt", bonus_type: "boolean", value: 1, unit: "flat" }],
+  }];
+  const owned = filterItemsToOwned(items, ownedNames);
+  assert.strictEqual(owned.length, 1, "the boolean-only item is retained");
+  assert.strictEqual(owned[0].affixes[0].bonus_type, "boolean");
+});
+
 console.log(`\n${passed} passed`);
