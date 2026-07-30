@@ -183,6 +183,26 @@ if (typeof window !== "undefined" && window.App) {
           Slot constraints changed. <button class="btn primary" id="wz-cresolve">Re-solve ⚡</button>
         </div>
         <div id="wz-results"></div>
+        <details class="wz-adjust" id="wz-adjust">
+          <summary>Adjust &amp; re-solve</summary>
+          <div class="wz-adjust-body">
+            <p class="wz-help" style="margin:0 0 var(--sp-3)">Refine priorities, flip the gear pool, then re-solve — no need to step back.</p>
+            <div class="wz-addrow">
+              <input id="wz-radd" list="wz-stats2" placeholder="Add a stat…">
+              <datalist id="wz-stats2">${allStats.map((s) => `<option value="${esc(s)}">`).join("")}</datalist>
+              <button class="btn ghost" id="wz-radd-btn">Add</button>
+            </div>
+            <ol class="wz-ranked" id="wz-rranked"></ol>
+            <div class="wz-adjust-row">
+              <span class="wz-help" style="margin:0">Gear pool:</span>
+              <span class="wz-toggle">
+                <button data-rpool="all" class="${state.pool === "all" ? "on" : ""}">All gear</button>
+                <button data-rpool="owned" class="${state.pool === "owned" ? "on" : ""}">What I own</button>
+              </span>
+              <button class="btn primary" id="wz-radjust-solve">Re-solve ⚡</button>
+            </div>
+          </div>
+        </details>
       </section>`;
     }
 
@@ -196,29 +216,35 @@ if (typeof window !== "undefined" && window.App) {
           <button data-down="${i}" ${i === state.priorities.length - 1 ? "disabled" : ""} aria-label="move down">↓</button>
           <button data-del="${i}" aria-label="remove">✕</button></span></li>`).join("");
     }
-    function renderRanked() {
-      const ol = document.getElementById("wz-ranked"); if (!ol) return;
+    // Generic ranked-list renderer: reused by the priorities step and the
+    // in-results "Adjust & re-solve" panel (U8). `rerender` re-renders that
+    // same list after a mutation.
+    function renderRankedList(ol, rerender) {
+      if (!ol) return;
       ol.innerHTML = rankedHTML();
       ol.querySelectorAll("button").forEach((b) => b.onclick = () => {
         if (b.dataset.up != null) { const i = +b.dataset.up;[state.priorities[i - 1], state.priorities[i]] = [state.priorities[i], state.priorities[i - 1]]; }
         else if (b.dataset.down != null) { const i = +b.dataset.down;[state.priorities[i + 1], state.priorities[i]] = [state.priorities[i], state.priorities[i + 1]]; }
         else if (b.dataset.del != null) state.priorities.splice(+b.dataset.del, 1);
-        renderRanked();
+        rerender();
       });
       let from = null;
       ol.querySelectorAll("li[draggable]").forEach((li) => {
         li.ondragstart = (e) => { from = +li.dataset.i; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", ""); };
         li.ondragend = () => { li.classList.remove("dragging"); from = null; };
         li.ondragover = (e) => e.preventDefault();
-        li.ondrop = (e) => { e.preventDefault(); const to = +li.dataset.i; if (from === null || to === from) return; const m = state.priorities.splice(from, 1)[0]; state.priorities.splice(to, 0, m); from = null; renderRanked(); };
+        li.ondrop = (e) => { e.preventDefault(); const to = +li.dataset.i; if (from === null || to === from) return; const m = state.priorities.splice(from, 1)[0]; state.priorities.splice(to, 0, m); from = null; rerender(); };
       });
     }
+    function renderRanked() { renderRankedList(document.getElementById("wz-ranked"), renderRanked); }
+    function renderAdjustRanked() { renderRankedList(document.getElementById("wz-rranked"), renderAdjustRanked); }
+    /** Add a target affix; returns true if it landed (caller re-renders the list). */
     function addPriority(v) {
       v = (v || "").trim(); const status = document.getElementById("wz-status");
-      if (!v) return;
-      if (!statSet.has(v)) { if (status) status.textContent = `"${v}" isn't a known affix in the dataset.`; return; }
-      if (state.priorities.includes(v)) return;
-      state.priorities.push(v); if (status) status.textContent = ""; renderRanked();
+      if (!v) return false;
+      if (!statSet.has(v)) { if (status) status.textContent = `"${v}" isn't a known affix in the dataset.`; return false; }
+      if (state.priorities.includes(v)) return false;
+      state.priorities.push(v); if (status) status.textContent = ""; return true;
     }
 
     // ---- solve (real engine) ----------------------------------------------
@@ -366,8 +392,8 @@ if (typeof window !== "undefined" && window.App) {
       }
       if (state.step === "priorities") {
         const add = document.getElementById("wz-add");
-        document.getElementById("wz-add-btn").onclick = () => { addPriority(add.value); add.value = ""; add.focus(); };
-        add.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); addPriority(add.value); add.value = ""; } };
+        document.getElementById("wz-add-btn").onclick = () => { if (addPriority(add.value)) renderRanked(); add.value = ""; add.focus(); };
+        add.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); if (addPriority(add.value)) renderRanked(); add.value = ""; } };
         renderRanked();
       }
       if (state.step === "results") {
@@ -401,6 +427,21 @@ if (typeof window !== "undefined" && window.App) {
         });
         const cres = document.getElementById("wz-cresolve");
         if (cres) cres.onclick = () => { if (state.priorities.length) solve(false); };
+
+        // Adjust & re-solve panel (U8): inline priority editor + pool flip + re-solve.
+        renderAdjustRanked();
+        const radd = document.getElementById("wz-radd");
+        if (radd) {
+          document.getElementById("wz-radd-btn").onclick = () => { if (addPriority(radd.value)) renderAdjustRanked(); radd.value = ""; radd.focus(); };
+          radd.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); if (addPriority(radd.value)) renderAdjustRanked(); radd.value = ""; } };
+        }
+        root.querySelectorAll(".wz-toggle button[data-rpool]").forEach((b) => b.onclick = () => {
+          if (b.dataset.rpool === "owned" && !state.ownedNames) { go("pool"); return; } // AE8: route to upload
+          state.pool = b.dataset.rpool;
+          root.querySelectorAll(".wz-toggle button[data-rpool]").forEach((x) => x.classList.toggle("on", x.dataset.rpool === state.pool));
+        });
+        const rsolve = document.getElementById("wz-radjust-solve");
+        if (rsolve) rsolve.onclick = () => { if (state.priorities.length) solve(false); };
       }
     }
     function flashBlock() {

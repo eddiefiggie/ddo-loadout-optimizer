@@ -736,3 +736,19 @@ input.wz-ml { width: 120px; }
   border: 1px dashed var(--quarantined); border-radius: var(--radius-sm); padding: var(--sp-2) var(--sp-3);
   margin-bottom: var(--sp-3); font-size: var(--fs-sm); color: var(--muted); }
 .wz-cbar .btn { padding: 7px 14px; }
+
+/* Adjust & re-solve panel (U8) — fold-up editor in the results view. */
+.wz-adjust { margin-top: var(--sp-4); border: 1px dashed var(--border-2); border-radius: var(--radius);
+  background: var(--panel-2); }
+.wz-adjust > summary { list-style: none; cursor: pointer; padding: var(--sp-3) var(--sp-4); font-weight: 650;
+  font-size: var(--fs-sm); color: var(--text); display: flex; align-items: center; gap: var(--sp-2); }
+.wz-adjust > summary::-webkit-details-marker { display: none; }
+.wz-adjust > summary::before { content: "▸"; color: var(--accent); transition: transform 0.15s; }
+.wz-adjust[open] > summary::before { transform: rotate(90deg); }
+.wz-adjust > summary:focus-visible { outline: none; box-shadow: var(--ring); border-radius: var(--radius); }
+.wz-adjust-body { padding: 0 var(--sp-4) var(--sp-4); }
+.wz-adjust-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin-top: var(--sp-3); }
+.wz-toggle { display: inline-flex; border: 1px solid var(--border-2); border-radius: var(--radius-sm); overflow: hidden; }
+.wz-toggle button { min-height: 0; padding: 7px 12px; background: var(--panel); border: none; color: var(--muted);
+  font-size: var(--fs-sm); cursor: pointer; }
+.wz-toggle button.on { background: var(--accent); color: var(--accent-ink); }
