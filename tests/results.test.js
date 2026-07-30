@@ -466,7 +466,7 @@ test("U8: satisfiedSetDetail recovers a runtime-completed set from setsActive", 
     setsActive: [{ set: "Vol's Influence", pieces_required: 3 }],
   };
   const d = R.satisfiedSetDetail(build);
-  assert.ok(d.some((s) => s.set === "Vol's Influence"), "the awakened/joker set appears in the tab, not dropped");
+  assert.ok(d.some((s) => s.set === "Vol's Influence"), "the chosen-membership/joker set appears in the tab, not dropped");
 });
 
 test("U6: loadoutDeepDive glows only satisfied-set pieces, not mere membership", () => {

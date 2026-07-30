@@ -255,7 +255,7 @@ def build(seed: dict) -> dict:
         # Same graft for the Vecna "Lost Purpose" marker: many University items are
         # already solver-active via the gear-planner shard (which sorts before the
         # vecna shard and wins the body), so the lost_purpose marker must graft onto
-        # the winner from ANY loaded record (KTD6), or the awaken slot would be lost.
+        # the winner from ANY loaded record (KTD6), or the set-membership slot would be lost.
         if winner is not None and it.get("lost_purpose") and not winner.get("lost_purpose"):
             winner["lost_purpose"] = it["lost_purpose"]
     enriched_items = deduped
@@ -364,8 +364,8 @@ def build(seed: dict) -> dict:
     # Expand umbrella ability affixes ("All Ability Scores +15", "Well Rounded")
     # into the six concrete abilities so single-ability targets get credited.
     umbrella_mod.expand_variants(variants)
-    # Vecna "Lost Purpose": the awaken defs come from the SAME set catalog that feeds
-    # intrinsic set members (single source of truth), so an awakened set gives the
+    # Vecna Lost Purpose: the membership set defs come from the SAME set catalog that feeds
+    # intrinsic set members (single source of truth), so an awakened Lost Purpose set gives the
     # identical bonus + stat vocabulary as an intrinsically-completed one. Attach the
     # chosen-set-membership slot (pool = same-tier Vecna sets that resolve to a def)
     # to every item carrying a `lost_purpose` tier marker.

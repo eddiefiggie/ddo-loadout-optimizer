@@ -324,7 +324,7 @@ function satisfiedSets(chosen, setsActive) {
   }
   const out = new Set();
   for (const [set, need] of minReq) if ((counts.get(set) || 0) >= need) out.add(set);
-  for (const s of setsActive || []) if (s.set) out.add(s.set);   // runtime-completed (joker/awaken)
+  for (const s of setsActive || []) if (s.set) out.add(s.set);   // runtime-completed (joker/membership)
   return out;
 }
 
@@ -745,7 +745,7 @@ function buildViews(build, model, query) {
     if (!jokerByHost.has(j.host)) jokerByHost.set(j.host, []);
     jokerByHost.get(j.host).push(j);
   }
-  // Awakened set-membership picks (Vecna Lost Purpose / Cannith Repurposing Station),
+  // Set-membership picks (Vecna Lost Purpose or Dinosaur Bone Set Bonus),
   // keyed by host item like jokers.
   const membershipByHost = new Map();
   for (const m of build.membershipPlaced || []) {

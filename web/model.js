@@ -169,12 +169,12 @@ function dominates(A, B, targetSet, mlCap) {
   const jokerA = countColors((A.joker_set_groups || []).flat());
   const jokerB = countColors((B.joker_set_groups || []).flat());
   for (const [k, n] of jokerB) if ((jokerA.get(k) || 0) < n) return false;
-  // Chosen set-membership slot (Vecna "Lost Purpose" / Dino Set-Bonus): the awaken
-  // value lives in set_membership_slot.pool (which sets the host can join toward a
-  // threshold), outside variantBuckets AND set_bonus — so a plain-affix item looks
-  // strictly better and would prune a slot-only Lost Purpose host, silently losing its
-  // awaken capacity (the same trap as Dino blanks / the Gem joker). Keep B whenever it
-  // can awaken a set A cannot also awaken.
+  // Chosen set-membership slot (Vecna Lost Purpose / Dinosaur Bone Set Bonus): the
+  // set-membership value lives in set_membership_slot.pool (which sets the host can
+  // join toward a threshold), outside variantBuckets AND set_bonus — so a plain-affix
+  // item looks strictly better and would prune a slot-only host, silently losing its
+  // set-membership capacity (the same trap as Dino blanks / the Gem joker). Keep B
+  // whenever it can join a set A cannot also join.
   const memA = countColors(((A.set_membership_slot || {}).pool) || []);
   const memB = countColors(((B.set_membership_slot || {}).pool) || []);
   for (const [k, n] of memB) if ((memA.get(k) || 0) < n) return false;

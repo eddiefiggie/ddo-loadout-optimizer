@@ -8,7 +8,7 @@ its thresholds from:
 SINGLE SOURCE OF TRUTH: the 11 Vecna sets are already defined in the gear-planner
 set catalog (data/seed/compendium/raw/gearplanner_sets.json) — the same catalog
 that feeds intrinsic set members (e.g. the Fire Over Morgrave raid weapons that
-carry Forbidden Knowledge). Deriving the awaken defs from that catalog, rather
+carry Forbidden Knowledge). Deriving the membership set defs from that catalog, rather
 than a parallel hand-harvested file, guarantees a set gives identical bonuses (and
 the same canonical stat vocabulary) whether it is completed by intrinsic members
 or purely by awakened Lost Purpose items.
@@ -42,7 +42,7 @@ _DINO_SETS = [
 # The 11 Vecna Unleashed sets, base (Heroic, ML18) names. Each also has a
 # "Legendary <name>" (ML32) variant. Lost Purpose items awaken one of these at the
 # Cannith Repurposing Station. Forbidden Knowledge also has intrinsic raid members;
-# the other 10 are awaken-only (not found natively on any item — wiki-confirmed).
+# the other 10 are Lost-Purpose-only (not found natively on any item — wiki-confirmed).
 _VECNA_BASE = [
     "Forbidden Knowledge",
     "Armaments of the Archons",
@@ -68,20 +68,20 @@ def set_names_for_tier(tier: str) -> list:
 
 
 def all_set_names() -> list:
-    """Every set the chosen-membership primitive can awaken: the 22 Vecna (Heroic +
+    """Every set the chosen-membership primitive can grant: the 22 Vecna (Heroic +
     Legendary) plus the 6 Isle of Dread Dino sets."""
     return set_names_for_tier("heroic") + set_names_for_tier("legendary") + list(_DINO_SETS)
 
 
 def dino_pool(defs: dict = None) -> list:
-    """The Dino sets a Set-Bonus host can awaken; restricted to resolved defs when given."""
+    """The Dino sets a Set-Bonus host can join; restricted to resolved defs when given."""
     if defs is None:
         return list(_DINO_SETS)
     return [n for n in _DINO_SETS if n in defs]
 
 
 def build_membership_set_defs(catalog: dict = None) -> dict:
-    """Build the awaken defs from the gear-planner set catalog (single source of
+    """Build the membership set defs from the gear-planner set catalog (single source of
     truth). Returns {set_name: {tiers, tier, wiki_url}} with umbrella-expanded
     affixes, only for Vecna sets the catalog actually defines."""
     catalog = catalog if catalog is not None else set_catalog.load_catalog()
@@ -90,7 +90,7 @@ def build_membership_set_defs(catalog: dict = None) -> dict:
         entry = catalog.get(set_catalog.canonical(name))
         sb = entry["set_bonus"] if entry else None
         if not sb:
-            continue  # catalog has no usable def (every affix flagged) -> awaken buys nothing
+            continue  # catalog has no usable def (every affix flagged) -> membership buys nothing
         kept = []
         for tier in parse_set_bonuses([sb]):
             if tier["pieces_required"] is None or not tier["affixes"]:

@@ -541,13 +541,13 @@ function buildProgram(model) {
 
   // Chosen set-membership slot (Vecna "Lost Purpose" / Cannith Repurposing Station,
   // and Dino Set-Bonus). A host with `set_membership_slot: {pool:[...sets], station}`
-  // may AWAKEN exactly one set from its pool. Unlike the joker — which only feeds a set
+  // may JOIN exactly one set from its pool. Unlike the joker — which only feeds a set
   // already registered by an equipped FIXED member (the set/joker blocks above) — a
   // membership slot SELF-SEEDS the set threshold from the runtime membershipSetDefs
   // table, so an awaken-only set (no intrinsic member equipped, e.g. every Vecna Lost
-  // Purpose set) is reachable purely from awakened pieces. Per host: one pick binary
+  // Purpose set) is reachable purely from chosen-membership pieces. Per host: one pick binary
   // per pool set that has a def, gated by the host (m - x_host <= 0), appended to
-  // setPieces[set]; Σ m <= 1 per host (single, mutually-exclusive awaken). The tie-break
+  // setPieces[set]; Σ m <= 1 per host (single, mutually-exclusive membership pick). The tie-break
   // minimizes member vars (like jokers) so a pick is 1 only when it is a load-bearing
   // piece. For an intrinsic-anchored set (Dino, Forbidden Knowledge) the fixed pieces
   // still register and sum in normally — self-seeding is idempotent with fixed members.
@@ -558,13 +558,13 @@ function buildProgram(model) {
     const mslot = xv.variant.set_membership_slot;
     if (!mslot || !(mslot.pool || []).length) continue;
     const opts = [];
-    const hostSets = new Set(); // one awaken per host, even if a set repeats in the pool
+    const hostSets = new Set(); // one membership pick per host, even if a set repeats in the pool
     for (const setName of mslot.pool) {
       if (hostSets.has(setName)) continue;
       // self-seed: register the set's tiers from the def even with no fixed member.
       if (!setTiers.has(setName)) {
         const def = membershipDefs[setName];
-        if (!def) continue; // no runtime def -> cannot value this awaken (strict: never fabricate)
+        if (!def) continue; // no runtime def -> cannot value this membership pick (strict: never fabricate)
         const byLabel = new Map();
         for (const tier of def.tiers || []) {
           if (tier.pieces_required == null || !(tier.affixes || []).length) continue;
@@ -583,7 +583,7 @@ function buildProgram(model) {
       setPieces.get(setName).push(m);                     // counts toward the set's threshold
       memberMeta.set(m, { host: xv.variant.variant_id, set: setName, station: mslot.station || null });
     }
-    if (opts.length) extraConstraints.push(`${opts.join(" + ")} <= 1`); // single awaken per host
+    if (opts.length) extraConstraints.push(`${opts.join(" + ")} <= 1`); // single membership pick per host
   }
 
   let sc = 0;
@@ -649,8 +649,8 @@ function encodeStage(program, { objectiveStat, objTerms, sense, locks, tieBreak,
     // is the load-bearing Nth piece of a completed set), and ties among equally-good
     // pool sets resolve deterministically by option order.
     const n = program.xVars.length;
-    // Joker AND membership (awaken) vars are both minimized here so a wildcard pick or
-    // a Cannith/Dino awaken is set to 1 only when a locked constraint forces it (it is
+    // Joker AND membership vars are both minimized here so a wildcard pick or
+    // a Cannith/Dino membership pick is set to 1 only when a locked constraint forces it (it is
     // the load-bearing Nth piece of a completed set), resolving ties deterministically.
     const minVars = [...(program.jokerVars || []), ...(program.memberVars || [])];
     const terms = program.xVars.map((xv, i) => `+ ${i + 1} ${xv.name}`)
@@ -843,12 +843,12 @@ function readSolution(res, program) {
   for (const [j, meta] of program.jokerMeta || []) {
     if (prim(j) > 0.5 && realShort.has(meta.set)) jokerPlaced.push(meta);
   }
-  // Awakened set-membership picks (Cannith Repurposing Station / Dino Set-Bonus).
+  // Set-membership picks (Cannith Repurposing Station / Dino Set-Bonus).
   // Guard on the set being ACTIVE, mirroring the joker's load-bearing guard: on a
   // tieBreak:false solve (every alternatives re-solve) a member var can float to 1
-  // for free even when its set never activates, which would prescribe an awaken that
+  // for free even when its set never activates, which would prescribe a membership pick that
   // buys nothing. The optimum path minimizes member vars, but the guard must hold on
-  // all solve paths — report an awaken only when its set is actually active.
+  // all solve paths — report a membership pick only when its set is actually active.
   const activeSetNames = new Set(setsActive.map((m) => m.set));
   const membershipPlaced = [];
   for (const [m, meta] of program.memberMeta || []) {
