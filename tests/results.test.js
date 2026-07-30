@@ -409,6 +409,41 @@ test("safeUrl passes http(s) but neutralizes hostile schemes", () => {
   assert.ok(!/[<>"]/.test(R.safeUrl('https://x/"onmouseover=alert(1)')), "quotes/brackets escaped");
 });
 
+test("U6: satisfiedSets includes only sets whose piece count meets the threshold", () => {
+  const chosen = [
+    chosenItem("R", "Ring", [], ["TwoSet", "ThreeSet"], [
+      { set: "TwoSet", n: 2, affixes: [["Strength", "Enhancement", 10]] },
+      { set: "ThreeSet", n: 3, affixes: [["Dexterity", "Enhancement", 10]] },
+    ]),
+    chosenItem("N", "Necklace", [], ["TwoSet"], [
+      { set: "TwoSet", n: 2, affixes: [["Strength", "Enhancement", 10]] },
+    ]),
+  ];
+  const sat = R.satisfiedSets(chosen);
+  assert.ok(sat.has("TwoSet"), "2/2 pieces -> satisfied");
+  assert.ok(!sat.has("ThreeSet"), "1/3 pieces -> not satisfied");
+});
+
+test("U6: a single-piece set (threshold 1) is satisfied when worn", () => {
+  const chosen = [chosenItem("R", "Ring", [], ["Solo"],
+    [{ set: "Solo", n: 1, affixes: [["Strength", "Enhancement", 5]] }])];
+  assert.ok(R.satisfiedSets(chosen).has("Solo"));
+});
+
+test("U6: slotSetNames glows only satisfied sets when given the satisfied set", () => {
+  const v = { set_bonus: [{ set: "TwoSet" }, { set: "ThreeSet" }] };
+  assert.deepStrictEqual(R.slotSetNames(v, new Set(["TwoSet"])), ["TwoSet"], "only the satisfied set glows");
+  assert.deepStrictEqual(R.slotSetNames(v).sort(), ["ThreeSet", "TwoSet"], "no filter -> raw membership");
+});
+
+test("U6: equippedRow gets is-set only for a satisfied-set piece", () => {
+  const pick = { variant: { variant_id: "R", set_bonus: [{ set: "ThreeSet" }] } };
+  assert.ok(!/is-set/.test(R.equippedRow("Ring", pick, undefined, new Set())),
+    "an unsatisfied set piece does not glow");
+  assert.ok(/is-set/.test(R.equippedRow("Ring", pick, undefined, new Set(["ThreeSet"]))),
+    "a satisfied set piece glows");
+});
+
 test("U4: affixLabel renders a boolean feature as presence, not a magnitude", () => {
   assert.strictEqual(R.affixLabel({ stat: "Salt", bonus_type: "boolean", value: 1, unit: "flat" }), "✓ Salt");
   // a real magnitude affix is unaffected

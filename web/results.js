@@ -303,22 +303,51 @@ function craftChips(v, idx, maps) {
   return [...augs, ...dinos, ...ncs, ...rolls, ...viks, ...seals, ...tfs, ...gss, ...jokers, ...awakens];
 }
 
-// The set(s) an equipped piece belongs to, stated on its slot (R15).
-function slotSetNames(v) {
-  return [...new Set((v.set_bonus || []).map((s) => s.set).filter(Boolean))];
+/** Sets actually satisfied by the equipped loadout (U6): a set whose equipped
+ *  piece count meets its lowest piece-threshold tier. This is the glow signal —
+ *  a strict superset of `setsActive` (solver-activated), which drops a set that is
+ *  threshold-met but advanced no ranked target. Gating the glow on membership
+ *  (the old behavior) lit up pieces of an unsatisfied set; gating on this Set
+ *  lights a piece only once its set is genuinely complete. */
+function satisfiedSets(chosen) {
+  const counts = new Map();   // set -> equipped piece count
+  const minReq = new Map();   // set -> lowest pieces_required across its tiers
+  for (const c of chosen || []) {
+    for (const sb of c.variant.set_bonus || []) {
+      if (sb.set) counts.set(sb.set, (counts.get(sb.set) || 0) + 1);
+    }
+    for (const tier of c.variant.parsed_set_bonuses || []) {
+      if (tier.pieces_required == null) continue;
+      const cur = minReq.get(tier.set);
+      if (cur == null || tier.pieces_required < cur) minReq.set(tier.set, tier.pieces_required);
+    }
+  }
+  const out = new Set();
+  for (const [set, need] of minReq) if ((counts.get(set) || 0) >= need) out.add(set);
+  return out;
+}
+
+// The set(s) an equipped piece belongs to, stated on its slot (R15). When
+// `satisfied` (from satisfiedSets) is passed, only sets that are actually
+// complete are returned — so the .is-set glow (U6) fires on satisfaction, not
+// mere membership. Omitting `satisfied` keeps the raw membership list.
+function slotSetNames(v, satisfied) {
+  const names = [...new Set((v.set_bonus || []).map((s) => s.set).filter(Boolean))];
+  return satisfied ? names.filter((n) => satisfied.has(n)) : names;
 }
 
 // One paperdoll slot cell: uniform, fixed-size, showing only the item name, ML,
 // and the set it belongs to. A set piece gets a themed highlight frame (.is-set).
 // Full affixes/crafts live in the Loadout Deep Dive tab, not on the cell.
-function paperdollSlot(label, pos, pick) {
+function paperdollSlot(label, pos, pick, satisfied) {
   if (!pick) {
     return `<div class="pd-slot empty pos-${pos}"><div class="pd-label">${esc(label)}</div><div class="pd-item muted">empty</div></div>`;
   }
   const v = pick.variant;
-  const sets = slotSetNames(v);
-  const setLine = sets.length ? `<div class="pd-setname" title="part of a set bonus">${esc(sets.join(", "))}</div>` : "";
-  return `<div class="pd-slot occupied pos-${pos}${sets.length ? " is-set" : ""}">
+  const memberSets = slotSetNames(v);                                                       // U6: label = membership
+  const glow = satisfied ? memberSets.some((n) => satisfied.has(n)) : memberSets.length > 0; // glow = satisfaction
+  const setLine = memberSets.length ? `<div class="pd-setname" title="part of a set bonus">${esc(memberSets.join(", "))}</div>` : "";
+  return `<div class="pd-slot occupied pos-${pos}${glow ? " is-set" : ""}">
     <div class="pd-label">${esc(label)}</div>
     <div class="pd-item" title="${esc(v.variant_id)}">${esc(v.variant_id)}</div>
     <div class="pd-foot"><span class="pd-ml">ML ${esc(v.minimum_level ?? "?")}</span>${setLine}</div>
@@ -330,9 +359,11 @@ function paperdollSlot(label, pos, pick) {
 // off the paperdoll cell into this tab).
 function loadoutDeepDive(result, query, maps, attr) {
   if (!result.chosen.length) return `<p class="dd-none muted">No items equipped for this build.</p>`;
+  const satisfied = satisfiedSets(result.chosen);   // U6: glow on satisfaction, not membership
   return `<div class="deepdive">${result.chosen.map((c, idx) => {
     const v = c.variant;
-    const sets = slotSetNames(v);
+    const memberSets = slotSetNames(v);                        // U6: label = raw membership (informative)
+    const glow = memberSets.some((n) => satisfied.has(n));     // U6: is-set glow = satisfaction only
     const affixes = (v.affixes || []).length
       ? `<ul class="dd-list">${v.affixes.map((a) => `<li>${esc(affixLabel(a))}</li>`).join("")}</ul>`
       : `<p class="dd-none muted">No parsed affixes on this item.</p>`;
@@ -341,10 +372,10 @@ function loadoutDeepDive(result, query, maps, attr) {
       ? `<div class="dd-crafts"><h5>Applied crafting &amp; augments</h5><div class="dd-chips">${crafts.join(" ")}</div></div>` : "";
     const wiki = v.wiki_url ? `<a class="dd-wiki" href="${safeUrl(v.wiki_url)}" target="_blank" rel="noopener">wiki</a>` : "";
     const artifactTag = v.artifact ? `<span class="dd-artifact" title="your one equipped Artifact">Artifact</span>` : "";
-    return `<div class="dd-item${sets.length ? " is-set" : ""}${v.artifact ? " is-artifact" : ""}">
+    return `<div class="dd-item${glow ? " is-set" : ""}${v.artifact ? " is-artifact" : ""}">
       <div class="dd-head"><span class="dd-slot">${esc(c.slot)}</span><span class="dd-name">${esc(v.variant_id)}</span>${artifactTag}<span class="dd-ml">ML ${esc(v.minimum_level ?? "?")}</span>${wiki}</div>
       ${whyThisLine(result, { slot: c.slot, variant_id: v.variant_id }, attr)}
-      ${sets.length ? `<div class="dd-set"><span class="setpip"></span>Part of set: ${esc(sets.join(", "))}</div>` : ""}
+      ${memberSets.length ? `<div class="dd-set"><span class="setpip"></span>Part of set: ${esc(memberSets.join(", "))}</div>` : ""}
       <div class="dd-affixes"><h5>Affixes</h5>${affixes}</div>
       ${craftBlock}
     </div>`;
@@ -355,7 +386,7 @@ function loadoutDeepDive(result, query, maps, attr) {
 // item name (no truncation), ML, set membership, and a per-slot constraint
 // control (U6: pin the current item / lock empty / free). The wizard reads the
 // menu clicks via delegation, updates query.slotConstraints, and re-solves.
-function equippedRow(label, pick, slotConstraints) {
+function equippedRow(label, pick, slotConstraints, satisfied) {
   const c = (slotConstraints || {})[label];
   const locked = c && c.type === "empty";
   const v = pick ? pick.variant : null;
@@ -368,15 +399,16 @@ function equippedRow(label, pick, slotConstraints) {
   </div>`;
   const badge = c && c.type === "pin" ? `<span class="pd-badge pin">pinned</span>`
     : locked ? `<span class="pd-badge empty">locked empty</span>` : "";
-  const sets = v && !locked ? slotSetNames(v) : [];
-  const setLine = sets.length ? `<span class="pd-rset" title="part of a set bonus">${esc(sets.join(", "))}</span>` : "";
+  const memberSets = v && !locked ? slotSetNames(v) : [];                          // U6: label = membership
+  const glow = satisfied ? memberSets.some((n) => satisfied.has(n)) : memberSets.length > 0;  // glow = satisfaction
+  const setLine = memberSets.length ? `<span class="pd-rset" title="part of a set bonus">${esc(memberSets.join(", "))}</span>` : "";
   const isArtifact = !!(v && !locked && v.artifact);   // U5/R5 — tag the equipped Artifact's slot
   const artifactBadge = isArtifact ? `<span class="pd-badge artifact" title="your one equipped Artifact">Artifact</span>` : "";
   const name = locked ? "locked empty" : (v ? esc(v.variant_id) : "empty");
   const nameCls = (!v || locked) ? "pd-rname muted" : "pd-rname";
   const foot = (v && !locked)
     ? `<div class="pd-rfoot"><span class="pd-rml">ML ${esc(v.minimum_level ?? "?")}</span>${setLine}</div>` : "";
-  const rowCls = `pd-row ${(!v || locked) ? "empty" : "occupied"}${sets.length ? " is-set" : ""}${isArtifact ? " is-artifact" : ""}${c ? " constrained" : ""}`;
+  const rowCls = `pd-row ${(!v || locked) ? "empty" : "occupied"}${glow ? " is-set" : ""}${isArtifact ? " is-artifact" : ""}${c ? " constrained" : ""}`;
   return `<div class="${rowCls}">
     <div class="pd-rtop"><div class="pd-rlabel">${esc(label)}</div>${ctl}</div>
     <div class="${nameCls}"${v ? ` title="${esc(v.variant_id)}"` : ""}>${name}</div>
@@ -675,12 +707,13 @@ function buildViews(build, model, query) {
   // Equipped list (prototype layout): a plain stacked list of every slot the
   // model considered, occupied or empty — no humanoid figure, full item names
   // (no truncation). Weapons are folded into the same list in slot order.
+  const satisfied = satisfiedSets(build.chosen);   // U6: glow only satisfied-set pieces
   const rows = [];
   for (const slot of model.worn) {
     const picks = picksBySlot.get(slot.slot) || [];
     const cardinality = slot.cardinality || 1;
     for (let r = 0; r < cardinality; r++) {
-      rows.push(equippedRow(slot.slot, picks[r] || null, query.slotConstraints));
+      rows.push(equippedRow(slot.slot, picks[r] || null, query.slotConstraints, satisfied));
     }
   }
   const weapons = ""; // weapons are included in the equipped list above
@@ -768,5 +801,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, artifactNotice, craftChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, satisfiedSets, slotSetNames, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, artifactNotice, craftChips, loadoutDeepDive, esc, safeUrl };
 }
