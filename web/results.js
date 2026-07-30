@@ -48,8 +48,21 @@ function assignAugments(chosen, augmentsPlaced) {
     }
     if (!placed) unplaced.push(aug);
   }
-  return { byIndex, unplaced };
+  // Slots left open per item after placement — the substrate for U10's
+  // "unused augment slot" / unrealized-upgrade note.
+  const freeByIndex = new Map();
+  remaining.forEach((m, i) => {
+    const cols = [];
+    for (const [col, n] of m) for (let k = 0; k < n; k++) cols.push(col);
+    if (cols.length) freeByIndex.set(i, cols);
+  });
+  return { byIndex, unplaced, freeByIndex };
 }
+
+// Standard fillable augment-slot colors — a generic augment can go here, so an
+// open one is a realizable upgrade. Named crafting slots (Lamordia, celestial)
+// need specific augments and are shown as craft slots, not flagged as unused.
+const STD_AUG_COLORS = new Set(["blue", "red", "yellow", "green", "orange", "purple", "colorless", "clear"]);
 
 /** Reconstruct a concrete Dino-insert -> item assignment from the solver's
  *  aggregate per-key placements (mirrors assignAugments). Slots are keyed by
@@ -332,8 +345,14 @@ function paperdollSlot(label, pos, pick, satisfied) {
 function loadoutDeepDive(result, query, maps, attr) {
   if (!result.chosen.length) return `<p class="dd-none muted">No items equipped for this build.</p>`;
   const satisfied = satisfiedSets(result.chosen, result.setsActive);   // U6: glow on completion, not membership
+  const freeByIndex = (maps && maps.augAssign && maps.augAssign.freeByIndex) || new Map();
   return `<div class="deepdive">${result.chosen.map((c, idx) => {
     const v = c.variant;
+    // U10: flag open standard-color augment slots as a concrete unrealized upgrade.
+    const openAug = (freeByIndex.get(idx) || []).filter((col) => STD_AUG_COLORS.has(String(col).toLowerCase()));
+    const upgradeNote = openAug.length
+      ? `<div class="dd-upgrade"><span class="dd-upgrade-tag">Unrealized upgrade</span> ${openAug.length} open augment slot${openAug.length === 1 ? "" : "s"} (${esc(openAug.join(", "))}) — slot an augment here for more stats.</div>`
+      : "";
     const memberSets = slotSetNames(v);                        // U6: label = raw membership (informative)
     const glow = slotSetNames(v, satisfied).length > 0;        // U6: is-set glow = satisfaction (via the helper)
     const affixes = (v.affixes || []).length
@@ -348,6 +367,7 @@ function loadoutDeepDive(result, query, maps, attr) {
       <div class="dd-head"><span class="dd-slot">${esc(c.slot)}</span><span class="dd-name">${esc(v.variant_id)}</span>${artifactTag}<span class="dd-ml">ML ${esc(v.minimum_level ?? "?")}</span>${wiki}</div>
       ${whyThisLine(result, { slot: c.slot, variant_id: v.variant_id }, attr)}
       ${memberSets.length ? `<div class="dd-set"><span class="setpip"></span>Part of set: ${esc(memberSets.join(", "))}</div>` : ""}
+      ${upgradeNote}
       <div class="dd-affixes"><h5>Affixes</h5>${affixes}</div>
       ${craftBlock}
     </div>`;
@@ -380,12 +400,38 @@ function equippedRow(label, pick, slotConstraints, satisfied) {
   const nameCls = (!v || locked) ? "pd-rname muted" : "pd-rname";
   const foot = (v && !locked)
     ? `<div class="pd-rfoot"><span class="pd-rml">ML ${esc(v.minimum_level ?? "?")}</span>${setLine}</div>` : "";
+  // U9: per-item stats + augment slots + craft slots, shown uniformly on every
+  // occupied block (empty blocks stay the same height via the grid stretch + the
+  // .pd-row min-height). Data is intrinsic to the variant — no maps needed.
+  const body = (v && !locked) ? equippedBody(v) : "";
   const rowCls = `pd-row ${(!v || locked) ? "empty" : "occupied"}${glow ? " is-set" : ""}${isArtifact ? " is-artifact" : ""}${c ? " constrained" : ""}`;
   return `<div class="${rowCls}">
     <div class="pd-rtop"><div class="pd-rlabel">${esc(label)}</div>${ctl}</div>
     <div class="${nameCls}"${v ? ` title="${esc(v.variant_id)}"` : ""}>${name}</div>
-    ${foot}${artifactBadge}${badge}${menu}
+    ${foot}${body}${artifactBadge}${badge}${menu}
   </div>`;
+}
+
+// The stats / augment-slot / craft-slot body of an equipped block (U9). Pure
+// projection over the variant; surfaces value even for slot-only items so no
+// occupied block renders blank.
+function equippedBody(v) {
+  const affixes = (v.affixes || []);
+  const stats = affixes.length
+    ? `<ul class="pd-stats">${affixes.map((a) => `<li>${esc(affixLabel(a))}</li>`).join("")}</ul>` : "";
+  const augColors = (v.augment_slots_norm && v.augment_slots_norm.colors) || v.augment_slots || [];
+  const augs = augColors.length
+    ? `<div class="pd-slots"><span class="pd-slabel">Augments</span>${augColors.map((c) =>
+        `<span class="aug-pip aug-${esc(String(c).toLowerCase())}" title="${esc(c)} augment slot">${esc(c)}</span>`).join("")}</div>` : "";
+  const craftMarks = [];
+  if (v.green_steel_slot) craftMarks.push("Greensteel");
+  if (v.seal_slots) craftMarks.push("Seal");
+  if (v.lamordia_slots) craftMarks.push("Lamordia");
+  const crafts = craftMarks.length
+    ? `<div class="pd-slots"><span class="pd-slabel">Craft</span>${craftMarks.map((m) =>
+        `<span class="craft-mark">${esc(m)}</span>`).join("")}</div>` : "";
+  if (!stats && !augs && !crafts) return "";
+  return `<div class="pd-rbody">${stats}${augs}${crafts}</div>`;
 }
 
 // Front-facing armored-adventurer silhouette (retired from the results layout;
@@ -580,18 +626,21 @@ function renderResults(container, { model, result, query, dataset, highs }) {
       <span class="active-build-msg"></span>
       <button class="return-optimum" type="button">Return to optimum</button>
     </div>
-    <div class="readout-doll">
-      <div class="pd-equipped" id="rp-doll"></div>
-      <div id="rp-weapons"></div>
-    </div>
     <div class="readout-analysis">
+      <p class="readout-header">Your build, tab by tab — <strong>Loadout</strong> is your equipped gear; the other tabs
+        break down priorities, set bonuses, and per-item detail. Use <strong>Adjust &amp; re-solve</strong> below to change
+        priorities or the gear pool: each adjustment shows what you gain and what you lose, then updates the loadout here.</p>
       <div class="result-tabs" role="tablist" aria-label="Result details">
-        <button class="rtab" role="tab" id="rt-ranked" aria-controls="rp-ranked" aria-selected="true" tabindex="0" type="button">Ranked Priorities</button>
+        <button class="rtab" role="tab" id="rt-loadout" aria-controls="rp-loadout" aria-selected="true" tabindex="0" type="button">Loadout</button>
+        <button class="rtab" role="tab" id="rt-ranked" aria-controls="rp-ranked" aria-selected="false" tabindex="-1" type="button">Ranked Priorities</button>
         <button class="rtab" role="tab" id="rt-sets" aria-controls="rp-sets" aria-selected="false" tabindex="-1" type="button">Set Bonuses</button>
         <button class="rtab" role="tab" id="rt-deep" aria-controls="rp-deep" aria-selected="false" tabindex="-1" type="button">Loadout Deep Dive</button>
         <button class="rtab" role="tab" id="rt-alts" aria-controls="rp-alts" aria-selected="false" tabindex="-1" type="button">Alternatives</button>
       </div>
-      <section id="rp-ranked" class="rpanel" role="tabpanel" aria-labelledby="rt-ranked" tabindex="0"><div class="targets" id="rp-cards"></div></section>
+      <section id="rp-loadout" class="rpanel" role="tabpanel" aria-labelledby="rt-loadout" tabindex="0">
+        <div class="readout-doll"><div class="pd-equipped" id="rp-doll"></div><div id="rp-weapons"></div></div>
+      </section>
+      <section id="rp-ranked" class="rpanel" role="tabpanel" aria-labelledby="rt-ranked" tabindex="0" hidden><div class="targets" id="rp-cards"></div></section>
       <section id="rp-sets" class="rpanel" role="tabpanel" aria-labelledby="rt-sets" tabindex="0" hidden><div id="rp-setspanel"></div></section>
       <section id="rp-deep" class="rpanel" role="tabpanel" aria-labelledby="rt-deep" tabindex="0" hidden><div id="rp-deeppanel"></div></section>
       <section id="rp-alts" class="rpanel" role="tabpanel" aria-labelledby="rt-alts" tabindex="0" hidden><div id="rp-altspanel"></div></section>
