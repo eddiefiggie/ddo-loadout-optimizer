@@ -478,6 +478,40 @@ function activeSetDetail(result) {
   }));
 }
 
+/** The Set Bonuses tab (U8), driven by threshold satisfaction rather than
+ *  `setsActive`: for each satisfied set, its highest satisfied tier's granted
+ *  affixes and the equipped pieces (item names) composing it, grouped by set.
+ *  A set that is threshold-met but not solver-activated still appears — matching
+ *  the U6 glow — and near-miss / non-set items are excluded (R9). */
+function satisfiedSetDetail(build) {
+  const counts = new Map();    // set -> equipped piece count
+  const members = new Map();   // set -> [item names]
+  const tiers = new Map();     // set -> Map(pieces_required -> granted affixes)
+  for (const c of build.chosen || []) {
+    for (const sb of c.variant.set_bonus || []) {
+      if (!sb.set) continue;
+      counts.set(sb.set, (counts.get(sb.set) || 0) + 1);
+      if (!members.has(sb.set)) members.set(sb.set, []);
+      members.get(sb.set).push(c.variant.variant_id);
+    }
+    for (const t of c.variant.parsed_set_bonuses || []) {
+      if (t.pieces_required == null) continue;
+      if (!tiers.has(t.set)) tiers.set(t.set, new Map());
+      const byN = tiers.get(t.set);
+      if (!byN.has(t.pieces_required)) byN.set(t.pieces_required, t.affixes || []);
+    }
+  }
+  const out = [];
+  for (const [set, byN] of tiers) {
+    const have = counts.get(set) || 0;
+    let best = null;                                  // highest tier the count satisfies
+    for (const [n, affixes] of byN) if (n <= have && (best == null || n > best.pieces)) best = { pieces: n, affixes };
+    if (!best) continue;                              // threshold not met -> excluded
+    out.push({ set, pieces: best.pieces, affixes: best.affixes, members: members.get(set) || [] });
+  }
+  return out;
+}
+
 // The "why this?" line for an equipped item (R8, R9): the ranked target(s) it
 // wins and by how much. Empty-state (a filler/tie-break pick that wins nothing)
 // reads as such rather than blank. `item` is { slot, variant_id }.
@@ -718,15 +752,16 @@ function buildViews(build, model, query) {
   }
   const weapons = ""; // weapons are included in the equipped list above
 
-  const activeSets = activeSetDetail(build).map((s) => {
+  // Set Bonuses tab (U8): only satisfied sets, each showing its granted affixes
+  // and the equipped pieces composing it (grouped by set). No near-miss hints,
+  // no non-set items.
+  const activeSets = satisfiedSetDetail(build).map((s) => {
     const grants = s.affixes.length ? esc(s.affixes.map(affixLabel).join(", ")) : "bonus active";
-    const via = s.slots.length ? `<div class="set-via">yielded by ${esc(s.slots.join(", "))}</div>` : "";
-    return `<li class="set-card"><strong>${esc(s.set)}</strong> <span class="meta">${esc(s.pieces)} pieces</span><div class="set-grants">${grants}</div>${via}</li>`;
+    const pieces = s.members.length ? `<div class="set-via">pieces: ${esc(s.members.join(", "))}</div>` : "";
+    return `<li class="set-card"><strong>${esc(s.set)}</strong> <span class="meta">${esc(s.pieces)} pieces</span><div class="set-grants">${grants}</div>${pieces}</li>`;
   }).join("");
-  const nearMiss = nearMissSetHints(build.chosen, query.targets).map((h) =>
-    `<li class="set-card near"><strong>${esc(h.set)}</strong> <span class="meta">(${esc(h.have)}/${esc(h.need)})</span><div class="set-via">one more piece adds ${esc(h.affixes.map(affixLabel).join(", "))}</div></li>`).join("");
-  const setsPanel = (activeSets || nearMiss)
-    ? `<ul class="sets">${activeSets}${nearMiss}</ul>`
+  const setsPanel = activeSets
+    ? `<ul class="sets">${activeSets}</ul>`
     : `<p class="dd-none muted">No set bonuses are active for this build.</p>`;
 
   return { paperdoll: `<div class="pd-list">${rows.join("")}</div>`, weapons, cards, setsPanel, deepDive: loadoutDeepDive(build, query, maps, attr) };
@@ -816,5 +851,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, satisfiedSets, slotSetNames, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, artifactNotice, craftChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, artifactNotice, craftChips, loadoutDeepDive, esc, safeUrl };
 }

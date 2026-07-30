@@ -409,6 +409,38 @@ test("safeUrl passes http(s) but neutralizes hostile schemes", () => {
   assert.ok(!/[<>"]/.test(R.safeUrl('https://x/"onmouseover=alert(1)')), "quotes/brackets escaped");
 });
 
+test("U8: satisfiedSetDetail lists only satisfied sets with grants and member pieces", () => {
+  const build = { chosen: [
+    chosenItem("Ring Alpha", "Ring", [], ["Alpha", "Beta"], [
+      { set: "Alpha", n: 2, affixes: [["Constitution", "Insightful", 3]] },
+      { set: "Beta", n: 3, affixes: [["Dexterity", "Enhancement", 5]] },
+    ]),
+    chosenItem("Neck Alpha", "Necklace", [], ["Alpha"], [
+      { set: "Alpha", n: 2, affixes: [["Constitution", "Insightful", 3]] },
+    ]),
+  ] };
+  const d = R.satisfiedSetDetail(build);
+  assert.strictEqual(d.length, 1, "only Alpha (2/2) is satisfied; Beta (1/3) is excluded");
+  assert.strictEqual(d[0].set, "Alpha");
+  assert.strictEqual(d[0].pieces, 2);
+  assert.deepStrictEqual(d[0].members.slice().sort(), ["Neck Alpha", "Ring Alpha"], "lists the equipped pieces composing the set");
+  assert.deepStrictEqual(d[0].affixes.map((a) => a.stat), ["Constitution"], "carries the satisfied tier's granted affixes");
+});
+
+test("U8: satisfiedSetDetail reports the highest satisfied tier", () => {
+  const build = { chosen: [
+    chosenItem("A", "Ring", [], ["S"], [
+      { set: "S", n: 2, affixes: [["Strength", "Enhancement", 5]] },
+      { set: "S", n: 4, affixes: [["Strength", "Enhancement", 10]] }]),
+    chosenItem("B", "Necklace", [], ["S"], []),
+    chosenItem("C", "Cloak", [], ["S"], []),
+    chosenItem("D", "Boots", [], ["S"], []),
+  ] };
+  const d = R.satisfiedSetDetail(build);
+  assert.strictEqual(d[0].pieces, 4, "4 pieces worn -> the 4-piece tier");
+  assert.strictEqual(d[0].affixes[0].value, 10, "grants the higher tier's affixes");
+});
+
 test("U6: satisfiedSets includes only sets whose piece count meets the threshold", () => {
   const chosen = [
     chosenItem("R", "Ring", [], ["TwoSet", "ThreeSet"], [
