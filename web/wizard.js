@@ -168,6 +168,16 @@ if (typeof window !== "undefined" && window.App) {
               <input id="wz-import" type="file" accept=".json,application/json" class="wz-hidden">
             </div>
             <div id="wz-data-stat" class="wz-filestat"></div>
+            <hr class="wz-data-sep">
+            <p class="wz-help">Share a single loadout: a forum-ready Markdown post, a clean CSV of the full detail, or a
+              print-friendly page. Both files carry the character name and constraints in the header.</p>
+            <div class="wz-data-row">
+              <label class="wz-share-pick"><span class="wz-label">Loadout</span>
+                <select id="wz-share-sel"></select></label>
+              <button class="btn ghost" id="wz-share-md" type="button">Markdown</button>
+              <button class="btn ghost" id="wz-share-csv" type="button">CSV</button>
+              <button class="btn ghost" id="wz-share-print" type="button">Print</button>
+            </div>
           </div>
         </details>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
@@ -373,6 +383,32 @@ if (typeof window !== "undefined" && window.App) {
       return (dataset && dataset.metadata && dataset.metadata.build_id) || null;
     }
 
+    function downloadFile(filename, text, mime) {
+      const blob = new Blob([text], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function slug(s) {
+      return String(s || "loadout").trim().replace(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "loadout";
+    }
+
+    // Print a single loadout via a body-level print container isolated by the
+    // @media print rules — avoids popup-blocked window.open and needs no new tab.
+    function printLoadout(rec) {
+      let area = document.getElementById("wz-printarea");
+      if (!area) { area = document.createElement("div"); area.id = "wz-printarea"; document.body.appendChild(area); }
+      // eslint-disable-next-line no-undef
+      area.innerHTML = LoadoutExport.toPrintHtml(rec);
+      document.body.classList.add("printing");
+      const cleanup = () => { document.body.classList.remove("printing"); window.removeEventListener("afterprint", cleanup); };
+      window.addEventListener("afterprint", cleanup);
+      window.print();
+    }
+
     function saveCurrentCharacter(name) {
       const nm = (name || "").trim();
       if (!nm) return { ok: false, error: "no-name" };
@@ -447,6 +483,20 @@ if (typeof window !== "undefined" && window.App) {
         `</ul>`;
     }
 
+    // Keep the share dropdown (U13) in sync with the store — called on render and
+    // after any in-panel save/delete/import so it never lists a stale name.
+    function renderSharePicker() {
+      const shareSel = document.getElementById("wz-share-sel");
+      if (!shareSel) return;
+      // eslint-disable-next-line no-undef
+      const names = CharacterStore.listCharacters().map((c) => c.name);
+      const prev = shareSel.value;
+      shareSel.innerHTML = names.length
+        ? names.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join("")
+        : `<option value="">No saved characters</option>`;
+      if (prev && names.indexOf(prev) !== -1) shareSel.value = prev;
+    }
+
     // Export & Data Management (U6): backup export/import, reachable pre-solve
     // from the Character step so a first-time restore works on an empty store.
     function wireDataManagement() {
@@ -454,14 +504,42 @@ if (typeof window !== "undefined" && window.App) {
       if (exportBtn) exportBtn.onclick = () => {
         // eslint-disable-next-line no-undef
         const payload = BackupIO.serializeAll(CharacterStore.allCharacters(), { buildId: currentBuildId() });
-        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `ddo-characters-${new Date().toISOString().slice(0, 10)}.json`;
-        document.body.appendChild(a); a.click(); a.remove();
-        URL.revokeObjectURL(url);
+        downloadFile(`ddo-characters-${new Date().toISOString().slice(0, 10)}.json`,
+          JSON.stringify(payload, null, 2), "application/json");
       };
+
+      // Share a single saved loadout (U13): Markdown / CSV / print.
+      const shareSel = document.getElementById("wz-share-sel");
+      if (shareSel) {
+        renderSharePicker();
+        const selected = () => {
+          const n = shareSel.value;
+          // eslint-disable-next-line no-undef
+          const rec = n ? CharacterStore.loadCharacter(n) : null;
+          // Guard a record with no solved loadout (e.g. a hand-edited backup):
+          // export nothing and say why instead of a misleading empty file.
+          if (rec && !(rec.snapshot && (rec.snapshot.chosen || []).length)) {
+            const s = document.getElementById("wz-data-stat");
+            if (s) { s.className = "wz-filestat warn"; s.textContent = `“${rec.name}” has no solved loadout to share.`; }
+            return null;
+          }
+          return rec;
+        };
+        const mdBtn = document.getElementById("wz-share-md");
+        const csvBtn = document.getElementById("wz-share-csv");
+        const printBtn = document.getElementById("wz-share-print");
+        if (mdBtn) mdBtn.onclick = () => {
+          const rec = selected(); if (!rec) return;
+          // eslint-disable-next-line no-undef
+          downloadFile(`${slug(rec.name)}.md`, LoadoutExport.toMarkdown(rec), "text/markdown");
+        };
+        if (csvBtn) csvBtn.onclick = () => {
+          const rec = selected(); if (!rec) return;
+          // eslint-disable-next-line no-undef
+          downloadFile(`${slug(rec.name)}.csv`, LoadoutExport.toCsv(rec), "text/csv");
+        };
+        if (printBtn) printBtn.onclick = () => { const rec = selected(); if (rec) printLoadout(rec); };
+      }
       const impLabel = document.getElementById("wz-import-label");
       const impFile = document.getElementById("wz-import");
       const stat = () => document.getElementById("wz-data-stat");
@@ -486,6 +564,7 @@ if (typeof window !== "undefined" && window.App) {
               ? `Imported ${n} character${n === 1 ? "" : "s"} (merged by name).`
               : (w.error === "quota" ? "Storage full — remove some saves and try again." : "Could not save the import.");
             renderSavedPicker();
+            renderSharePicker();
           };
           reader.readAsText(f);
         };
@@ -562,6 +641,7 @@ if (typeof window !== "undefined" && window.App) {
             // eslint-disable-next-line no-undef
             CharacterStore.deleteCharacter(b.dataset.del);
             renderSavedPicker();
+            renderSharePicker();
           }
         };
         wireDataManagement();
