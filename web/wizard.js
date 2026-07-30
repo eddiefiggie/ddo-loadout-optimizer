@@ -62,7 +62,13 @@ if (typeof window !== "undefined" && window.App) {
     ["twf", "Dual-wield"], ["runearm", "One-hand + rune arm"]];
   const STEP_LABELS = { intro: "Start", character: "Character", pool: "Gear pool", priorities: "Priorities", results: "Results" };
 
-  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  // U7 / KTD6: standardize output-encoding on the global esc from results.js
+  // (escapes & < > " ' — the apostrophe the old local helper missed). Fall back
+  // to a full 5-char escape if results.js somehow hasn't loaded, so a saved or
+  // imported character name can never inject markup.
+  const esc = (typeof window !== "undefined" && typeof window.esc === "function")
+    ? window.esc
+    : (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   window.App.ready((dataset) => {
     const root = document.getElementById("wizard");
