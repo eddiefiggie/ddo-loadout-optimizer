@@ -44,12 +44,20 @@ function analyzeAlternative(optimum, candidate, query) {
   else if (gainAxis === "unranked") gainText = `${meta.zeroCost ? "free " : ""}+${meta.stat}`;
   else gainText = `${meta.optCrafts - craftCount(sol)} fewer crafting steps`;
 
+  // Sets this candidate newly activates vs the optimum (U7): the render layer
+  // expands these to their granted affixes so an alternative names the concrete
+  // bonuses it adds, not just the set. Include the generator's own set for a set gain.
+  const activatedSets = [...new Set([
+    ...(gainAxis === "set" && meta.set ? [meta.set] : []),
+    ...newSets,
+  ])];
+
   const costText = cost.length ? cost.map((c) => `${c.delta} ${c.stat}`).join(", ") : "no priority cost";
   const gainMag = gainAxis === "set" ? (newSets.length ? 1 : 0.5)
     : gainAxis === "rebalance" ? gains.reduce((s, g) => s + g.delta, 0)
     : gainAxis === "unranked" ? 1
     : (meta.optCrafts - craftCount(sol));
-  return { ...candidate, cost, gains, tags, gainText, costText, gainMag, totalCost: cost.reduce((s, c) => s - c.delta, 0), key: buildKey(sol) };
+  return { ...candidate, cost, gains, tags, gainText, costText, gainMag, activatedSets, totalCost: cost.reduce((s, c) => s - c.delta, 0), key: buildKey(sol) };
 }
 
 /** Dedupe (by chosen-item set), drop candidates within K different slots of the optimum

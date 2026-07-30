@@ -4,6 +4,9 @@
 // follow-up, surfaced honestly in the coverage disclosure.
 
 function affixLabel(a) {
+  // Boolean feature (U4): presence, not a magnitude. Render a marker so it never
+  // reads as a broken "+N" next to real magnitudes.
+  if (a.bonus_type === "boolean") return `✓ ${a.stat}`;
   const type = a.bonus_type && a.bonus_type !== "Enhancement" ? ` ${a.bonus_type}` : "";
   return `${a.stat} +${a.value}${a.unit === "pct" ? "%" : ""}${type}`;
 }
@@ -81,37 +84,6 @@ function assignDinoInserts(chosen, dinoPlaced) {
   return { byIndex, unplaced };
 }
 
-/** Sets you are exactly one piece short of, whose next tier would advance a
- *  target. Display-only nudge; never changes the computed optimum. */
-function nearMissSetHints(chosen, targets) {
-  const t = new Set(targets);
-  const counts = new Map();       // set name -> equipped piece count
-  const tiersBySet = new Map();   // set name -> Map(pieces_label -> tier)
-  for (const c of chosen) {
-    for (const sb of c.variant.set_bonus || []) {
-      if (sb.set) counts.set(sb.set, (counts.get(sb.set) || 0) + 1);
-    }
-    for (const tier of c.variant.parsed_set_bonuses || []) {
-      if (tier.pieces_required == null || !(tier.affixes || []).length) continue;
-      if (!tiersBySet.has(tier.set)) tiersBySet.set(tier.set, new Map());
-      const byLabel = tiersBySet.get(tier.set);
-      if (!byLabel.has(tier.pieces_label)) byLabel.set(tier.pieces_label, tier);
-    }
-  }
-  const hints = [];
-  for (const [setName, byLabel] of tiersBySet) {
-    const have = counts.get(setName) || 0;
-    for (const [, tier] of byLabel) {
-      if (tier.pieces_required !== have + 1) continue;
-      const adv = tier.affixes.filter((a) => t.has(a.stat) && a.value > 0);
-      if (adv.length) {
-        hints.push({ set: setName, have, need: tier.pieces_required, affixes: adv });
-      }
-    }
-  }
-  return hints;
-}
-
 /** Per-target contributor attribution for the achieved-priority view (R11, R12,
  *  R16). Reads the solver's already-computed breakdown (which now carries the
  *  host slot for worn + item-crafts and the yielding slots for sets, KTD6) and
@@ -161,11 +133,15 @@ function whyThis(result, item, attr) {
   attr = attr || attributionByTarget(result);
   const wins = [];
   for (const stat of Object.keys(attr)) {
-    let val = 0, viaSet = false;
+    let val = 0, viaSet = false, boolean = false;
     for (const p of attr[stat]) {
-      if ((p.hostIds || []).includes(item.variant_id)) { val += p.value; if (p.isSet) viaSet = true; }
+      if ((p.hostIds || []).includes(item.variant_id)) {
+        val += p.value;
+        if (p.isSet) viaSet = true;
+        if (p.bonus_type === "boolean") boolean = true;   // U4: presence win
+      }
     }
-    if (val > 0) wins.push({ stat, value: val, viaSet });
+    if (val > 0) wins.push({ stat, value: val, viaSet, boolean });
   }
   wins.sort((a, b) => b.value - a.value);
   return wins;
@@ -296,22 +272,54 @@ function craftChips(v, idx, maps) {
   return [...augs, ...dinos, ...ncs, ...rolls, ...viks, ...seals, ...tfs, ...gss, ...jokers, ...awakens];
 }
 
-// The set(s) an equipped piece belongs to, stated on its slot (R15).
-function slotSetNames(v) {
-  return [...new Set((v.set_bonus || []).map((s) => s.set).filter(Boolean))];
+/** Sets actually complete in the equipped loadout (U6) — the glow signal. Two
+ *  sources, unioned: (1) a static set whose equipped piece count meets its lowest
+ *  piece-threshold tier (covers a set that is threshold-met but advanced no ranked
+ *  target, which `setsActive` alone would drop); (2) `setsActive`, the solver's
+ *  authoritative active-set signal, which additionally covers sets completed by
+ *  runtime pieces that carry no static `set_bonus`/`parsed_set_bonuses` — a Gem of
+ *  Many Facets joker or a Vecna Lost Purpose awaken. Gating the glow on membership
+ *  (the old behavior) lit pieces of an unsatisfied set; this gates on completion. */
+function satisfiedSets(chosen, setsActive) {
+  const counts = new Map();   // set -> equipped piece count
+  const minReq = new Map();   // set -> lowest pieces_required across its tiers
+  for (const c of chosen || []) {
+    for (const sb of c.variant.set_bonus || []) {
+      if (sb.set) counts.set(sb.set, (counts.get(sb.set) || 0) + 1);
+    }
+    for (const tier of c.variant.parsed_set_bonuses || []) {
+      if (tier.pieces_required == null) continue;
+      const cur = minReq.get(tier.set);
+      if (cur == null || tier.pieces_required < cur) minReq.set(tier.set, tier.pieces_required);
+    }
+  }
+  const out = new Set();
+  for (const [set, need] of minReq) if ((counts.get(set) || 0) >= need) out.add(set);
+  for (const s of setsActive || []) if (s.set) out.add(s.set);   // runtime-completed (joker/awaken)
+  return out;
+}
+
+// The set(s) an equipped piece belongs to, stated on its slot (R15). When
+// `satisfied` (from satisfiedSets) is passed, only sets that are actually
+// complete are returned — so the .is-set glow (U6) fires on satisfaction, not
+// mere membership. Omitting `satisfied` keeps the raw membership list.
+function slotSetNames(v, satisfied) {
+  const names = [...new Set((v.set_bonus || []).map((s) => s.set).filter(Boolean))];
+  return satisfied ? names.filter((n) => satisfied.has(n)) : names;
 }
 
 // One paperdoll slot cell: uniform, fixed-size, showing only the item name, ML,
 // and the set it belongs to. A set piece gets a themed highlight frame (.is-set).
 // Full affixes/crafts live in the Loadout Deep Dive tab, not on the cell.
-function paperdollSlot(label, pos, pick) {
+function paperdollSlot(label, pos, pick, satisfied) {
   if (!pick) {
     return `<div class="pd-slot empty pos-${pos}"><div class="pd-label">${esc(label)}</div><div class="pd-item muted">empty</div></div>`;
   }
   const v = pick.variant;
-  const sets = slotSetNames(v);
-  const setLine = sets.length ? `<div class="pd-setname" title="part of a set bonus">${esc(sets.join(", "))}</div>` : "";
-  return `<div class="pd-slot occupied pos-${pos}${sets.length ? " is-set" : ""}">
+  const memberSets = slotSetNames(v);                          // U6: label = membership
+  const glow = slotSetNames(v, satisfied).length > 0;          // U6: glow = satisfaction (via helper)
+  const setLine = memberSets.length ? `<div class="pd-setname" title="part of a set bonus">${esc(memberSets.join(", "))}</div>` : "";
+  return `<div class="pd-slot occupied pos-${pos}${glow ? " is-set" : ""}">
     <div class="pd-label">${esc(label)}</div>
     <div class="pd-item" title="${esc(v.variant_id)}">${esc(v.variant_id)}</div>
     <div class="pd-foot"><span class="pd-ml">ML ${esc(v.minimum_level ?? "?")}</span>${setLine}</div>
@@ -323,9 +331,11 @@ function paperdollSlot(label, pos, pick) {
 // off the paperdoll cell into this tab).
 function loadoutDeepDive(result, query, maps, attr) {
   if (!result.chosen.length) return `<p class="dd-none muted">No items equipped for this build.</p>`;
+  const satisfied = satisfiedSets(result.chosen, result.setsActive);   // U6: glow on completion, not membership
   return `<div class="deepdive">${result.chosen.map((c, idx) => {
     const v = c.variant;
-    const sets = slotSetNames(v);
+    const memberSets = slotSetNames(v);                        // U6: label = raw membership (informative)
+    const glow = slotSetNames(v, satisfied).length > 0;        // U6: is-set glow = satisfaction (via the helper)
     const affixes = (v.affixes || []).length
       ? `<ul class="dd-list">${v.affixes.map((a) => `<li>${esc(affixLabel(a))}</li>`).join("")}</ul>`
       : `<p class="dd-none muted">No parsed affixes on this item.</p>`;
@@ -334,10 +344,10 @@ function loadoutDeepDive(result, query, maps, attr) {
       ? `<div class="dd-crafts"><h5>Applied crafting &amp; augments</h5><div class="dd-chips">${crafts.join(" ")}</div></div>` : "";
     const wiki = v.wiki_url ? `<a class="dd-wiki" href="${safeUrl(v.wiki_url)}" target="_blank" rel="noopener">wiki</a>` : "";
     const artifactTag = v.artifact ? `<span class="dd-artifact" title="your one equipped Artifact">Artifact</span>` : "";
-    return `<div class="dd-item${sets.length ? " is-set" : ""}${v.artifact ? " is-artifact" : ""}">
+    return `<div class="dd-item${glow ? " is-set" : ""}${v.artifact ? " is-artifact" : ""}">
       <div class="dd-head"><span class="dd-slot">${esc(c.slot)}</span><span class="dd-name">${esc(v.variant_id)}</span>${artifactTag}<span class="dd-ml">ML ${esc(v.minimum_level ?? "?")}</span>${wiki}</div>
       ${whyThisLine(result, { slot: c.slot, variant_id: v.variant_id }, attr)}
-      ${sets.length ? `<div class="dd-set"><span class="setpip"></span>Part of set: ${esc(sets.join(", "))}</div>` : ""}
+      ${memberSets.length ? `<div class="dd-set"><span class="setpip"></span>Part of set: ${esc(memberSets.join(", "))}</div>` : ""}
       <div class="dd-affixes"><h5>Affixes</h5>${affixes}</div>
       ${craftBlock}
     </div>`;
@@ -348,7 +358,7 @@ function loadoutDeepDive(result, query, maps, attr) {
 // item name (no truncation), ML, set membership, and a per-slot constraint
 // control (U6: pin the current item / lock empty / free). The wizard reads the
 // menu clicks via delegation, updates query.slotConstraints, and re-solves.
-function equippedRow(label, pick, slotConstraints) {
+function equippedRow(label, pick, slotConstraints, satisfied) {
   const c = (slotConstraints || {})[label];
   const locked = c && c.type === "empty";
   const v = pick ? pick.variant : null;
@@ -361,15 +371,16 @@ function equippedRow(label, pick, slotConstraints) {
   </div>`;
   const badge = c && c.type === "pin" ? `<span class="pd-badge pin">pinned</span>`
     : locked ? `<span class="pd-badge empty">locked empty</span>` : "";
-  const sets = v && !locked ? slotSetNames(v) : [];
-  const setLine = sets.length ? `<span class="pd-rset" title="part of a set bonus">${esc(sets.join(", "))}</span>` : "";
+  const memberSets = v && !locked ? slotSetNames(v) : [];                          // U6: label = membership
+  const glow = !!(v && !locked) && slotSetNames(v, satisfied).length > 0;          // glow = satisfaction (via helper)
+  const setLine = memberSets.length ? `<span class="pd-rset" title="part of a set bonus">${esc(memberSets.join(", "))}</span>` : "";
   const isArtifact = !!(v && !locked && v.artifact);   // U5/R5 — tag the equipped Artifact's slot
   const artifactBadge = isArtifact ? `<span class="pd-badge artifact" title="your one equipped Artifact">Artifact</span>` : "";
   const name = locked ? "locked empty" : (v ? esc(v.variant_id) : "empty");
   const nameCls = (!v || locked) ? "pd-rname muted" : "pd-rname";
   const foot = (v && !locked)
     ? `<div class="pd-rfoot"><span class="pd-rml">ML ${esc(v.minimum_level ?? "?")}</span>${setLine}</div>` : "";
-  const rowCls = `pd-row ${(!v || locked) ? "empty" : "occupied"}${sets.length ? " is-set" : ""}${isArtifact ? " is-artifact" : ""}${c ? " constrained" : ""}`;
+  const rowCls = `pd-row ${(!v || locked) ? "empty" : "occupied"}${glow ? " is-set" : ""}${isArtifact ? " is-artifact" : ""}${c ? " constrained" : ""}`;
   return `<div class="${rowCls}">
     <div class="pd-rtop"><div class="pd-rlabel">${esc(label)}</div>${ctl}</div>
     <div class="${nameCls}"${v ? ` title="${esc(v.variant_id)}"` : ""}>${name}</div>
@@ -405,9 +416,10 @@ function attributionList(contribs) {
     const where = c.isSet
       ? `<span class="attrib-set">set: ${esc(c.source)}</span>${c.slots.length ? `<span class="attrib-slots"> via ${c.slots.map(esc).join(", ")}</span>` : ""}`
       : `<span class="attrib-slots">${c.slots.length ? c.slots.map(esc).join(", ") : "—"}</span><span class="attrib-src"> · ${esc(c.source)}</span>`;
+    const isBool = c.bonus_type === "boolean";   // U4: presence, not a magnitude
     return `<li class="attrib-row ${kind}">
-      <span class="attrib-type">${esc(c.bonus_type)}</span>
-      <span class="attrib-val">+${esc(c.value)}</span>
+      <span class="attrib-type">${esc(isBool ? "feature" : c.bonus_type)}</span>
+      <span class="attrib-val">${isBool ? "✓" : "+" + esc(c.value)}</span>
       <span class="attrib-where">${where}</span>
     </li>`;
   }).join("")}</ul>`;
@@ -438,13 +450,55 @@ function activeSetDetail(result) {
   }));
 }
 
+/** The Set Bonuses tab (U8): every set complete in the build, grouped by set,
+ *  with its granted affixes and the equipped pieces (item names) composing it.
+ *  Near-miss / non-set items are excluded (R9). Two sources are unioned so the
+ *  tab matches the U6 glow and never drops an active set: (1) static
+ *  threshold-satisfied sets (highest satisfied tier + member item names); (2) any
+ *  remaining `setsActive` set via the shared `activeSetDetail` expander — this
+ *  recovers sets completed by runtime pieces with no static `set_bonus`
+ *  (a Gem of Many Facets joker, a Vecna Lost Purpose awaken). */
+function satisfiedSetDetail(build) {
+  const counts = new Map();    // set -> equipped piece count
+  const members = new Map();   // set -> [item names]
+  const tiers = new Map();     // set -> Map(pieces_required -> granted affixes)
+  for (const c of build.chosen || []) {
+    for (const sb of c.variant.set_bonus || []) {
+      if (!sb.set) continue;
+      counts.set(sb.set, (counts.get(sb.set) || 0) + 1);
+      if (!members.has(sb.set)) members.set(sb.set, []);
+      members.get(sb.set).push(c.variant.variant_id);
+    }
+    for (const t of c.variant.parsed_set_bonuses || []) {
+      if (t.pieces_required == null) continue;
+      if (!tiers.has(t.set)) tiers.set(t.set, new Map());
+      const byN = tiers.get(t.set);
+      if (!byN.has(t.pieces_required)) byN.set(t.pieces_required, t.affixes || []);
+    }
+  }
+  const bySet = new Map();
+  for (const [set, byN] of tiers) {
+    const have = counts.get(set) || 0;
+    let best = null;                                  // highest tier the count satisfies
+    for (const [n, affixes] of byN) if (n <= have && (best == null || n > best.pieces)) best = { pieces: n, affixes };
+    if (best) bySet.set(set, { set, pieces: best.pieces, affixes: best.affixes, members: members.get(set) || [] });
+  }
+  for (const s of activeSetDetail(build)) {           // recover runtime-completed sets
+    if (bySet.has(s.set)) continue;
+    bySet.set(s.set, { set: s.set, pieces: s.pieces, affixes: s.affixes, members: members.get(s.set) || [] });
+  }
+  return [...bySet.values()];
+}
+
 // The "why this?" line for an equipped item (R8, R9): the ranked target(s) it
 // wins and by how much. Empty-state (a filler/tie-break pick that wins nothing)
 // reads as such rather than blank. `item` is { slot, variant_id }.
 function whyThisLine(result, item, attr) {
   const wins = whyThis(result, item, attr);
   if (!wins.length) return `<div class="pd-why muted">included to complete the loadout</div>`;
-  const txt = wins.slice(0, 3).map((w) => `${esc(w.stat)} +${esc(w.value)}${w.viaSet ? " (set)" : ""}`).join(", ");
+  const txt = wins.slice(0, 3).map((w) => w.boolean
+    ? `✓ ${esc(w.stat)}`                                   // U4: presence, not "+1"
+    : `${esc(w.stat)} +${esc(w.value)}${w.viaSet ? " (set)" : ""}`).join(", ");
   return `<div class="pd-why" title="why this item is best-in-slot here">wins ${txt}</div>`;
 }
 
@@ -665,25 +719,27 @@ function buildViews(build, model, query) {
   // Equipped list (prototype layout): a plain stacked list of every slot the
   // model considered, occupied or empty — no humanoid figure, full item names
   // (no truncation). Weapons are folded into the same list in slot order.
+  const satisfied = satisfiedSets(build.chosen, build.setsActive);   // U6: glow only completed-set pieces
   const rows = [];
   for (const slot of model.worn) {
     const picks = picksBySlot.get(slot.slot) || [];
     const cardinality = slot.cardinality || 1;
     for (let r = 0; r < cardinality; r++) {
-      rows.push(equippedRow(slot.slot, picks[r] || null, query.slotConstraints));
+      rows.push(equippedRow(slot.slot, picks[r] || null, query.slotConstraints, satisfied));
     }
   }
   const weapons = ""; // weapons are included in the equipped list above
 
-  const activeSets = activeSetDetail(build).map((s) => {
+  // Set Bonuses tab (U8): only satisfied sets, each showing its granted affixes
+  // and the equipped pieces composing it (grouped by set). No near-miss hints,
+  // no non-set items.
+  const activeSets = satisfiedSetDetail(build).map((s) => {
     const grants = s.affixes.length ? esc(s.affixes.map(affixLabel).join(", ")) : "bonus active";
-    const via = s.slots.length ? `<div class="set-via">yielded by ${esc(s.slots.join(", "))}</div>` : "";
-    return `<li class="set-card"><strong>${esc(s.set)}</strong> <span class="meta">${esc(s.pieces)} pieces</span><div class="set-grants">${grants}</div>${via}</li>`;
+    const pieces = s.members.length ? `<div class="set-via">pieces: ${esc(s.members.join(", "))}</div>` : "";
+    return `<li class="set-card"><strong>${esc(s.set)}</strong> <span class="meta">${esc(s.pieces)} pieces</span><div class="set-grants">${grants}</div>${pieces}</li>`;
   }).join("");
-  const nearMiss = nearMissSetHints(build.chosen, query.targets).map((h) =>
-    `<li class="set-card near"><strong>${esc(h.set)}</strong> <span class="meta">(${esc(h.have)}/${esc(h.need)})</span><div class="set-via">one more piece adds ${esc(h.affixes.map(affixLabel).join(", "))}</div></li>`).join("");
-  const setsPanel = (activeSets || nearMiss)
-    ? `<ul class="sets">${activeSets}${nearMiss}</ul>`
+  const setsPanel = activeSets
+    ? `<ul class="sets">${activeSets}</ul>`
     : `<p class="dd-none muted">No set bonuses are active for this build.</p>`;
 
   return { paperdoll: `<div class="pd-list">${rows.join("")}</div>`, weapons, cards, setsPanel, deepDive: loadoutDeepDive(build, query, maps, attr) };
@@ -696,8 +752,23 @@ function renderAltCards(ranked) {
     <li class="alt-card" role="option" id="alt-opt-${i}" aria-selected="false" tabindex="${i === 0 ? 0 : -1}" data-idx="${i}">
       <div class="alt-tags">${a.tags.map((t) => `<span class="alt-tag">${esc(t)}</span>`).join("")}</div>
       <div class="alt-gain">${esc(a.gainText)}</div>
+      ${altGrantsLine(a)}
       <div class="alt-cost">${esc(a.costText)}</div>
     </li>`).join("")}</ul>`;
+}
+
+// U7: name the concrete bonuses an alternative adds. For every set the candidate
+// newly activates, expand its granted affixes via the same activeSetDetail
+// expander the build sheet uses (dedicated line so multi-affix grants read
+// consistently). Non-set gain families already name their delta in gainText.
+function altGrantsLine(a) {
+  if (!a.activatedSets || !a.activatedSets.length || !a.sol) return "";
+  const detail = activeSetDetail(a.sol);
+  const parts = (a.activatedSets || []).map((setName) => {
+    const d = detail.find((s) => s.set === setName);
+    return d && d.affixes.length ? `${setName}: ${d.affixes.map(affixLabel).join(", ")}` : null;
+  }).filter(Boolean);
+  return parts.length ? `<div class="alt-grants">grants ${esc(parts.join("; "))}</div>` : "";
 }
 
 // Wire the alternative cards as a keyboard-operable listbox (U5): arrows rove focus,
@@ -758,5 +829,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, nearMissSetHints, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, artifactNotice, craftChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, artifactNotice, craftChips, loadoutDeepDive, esc, safeUrl };
 }

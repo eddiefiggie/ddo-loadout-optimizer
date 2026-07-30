@@ -28,6 +28,29 @@ BONUS_TYPES = {
 # Tokens inside a trailing "(A/B)" that we expand to multiple stats.
 MULTI_STAT_TOKENS = {"PRR", "MRR"}
 
+# Curated boolean-feature allowlist (exclude-until-verified). A value-less line
+# whose text exactly matches an entry is emitted as a presence affix
+# {stat, bonus_type: "boolean", value: 1} instead of being dropped. Populated by
+# build_dataset via set_boolean_features before parsing; empty by default, so the
+# shipping behavior is unchanged until a wiki harvest lands.
+_BOOLEAN_FEATURES: set = set()
+
+
+def set_boolean_features(names) -> None:
+    """Install the curated boolean-feature allowlist. Non-string and
+    underscore-prefixed entries are ignored (mirrors load_artifacts). Passing an
+    empty/None list disables boolean emission — the safe exclude-until-verified
+    default."""
+    global _BOOLEAN_FEATURES
+    _BOOLEAN_FEATURES = {s for s in (names or [])
+                         if isinstance(s, str) and s and not s.startswith("_")}
+
+
+def get_boolean_features() -> set:
+    """A copy of the current allowlist, for scoped save/restore (so a build that
+    installs the allowlist can restore the prior state instead of leaking it)."""
+    return set(_BOOLEAN_FEATURES)
+
 _NOISE = re.compile(
     r"(Augment Slot$|\(set\)$|\(Legendary set\)$|\(Heroic set\)$|^Set:|"
     r"weapon slots|slots:| Boost \+)",
@@ -168,6 +191,15 @@ def parse_line(line: str) -> dict:
     affixes = _parse_value_bearing(text, raw)
     if affixes:
         return {**base, "kind": "affix", "affixes": affixes}
+
+    # Curated boolean feature (exclude-until-verified): a value-less toggle on the
+    # allowlist is presence, not a magnitude. Emit value 1 with bonus_type
+    # "boolean" — the solver's highest-of-bucket rule then collapses any number of
+    # sources to a single 1 (present, never additive). NOT "untyped": real untyped
+    # bonuses stack in DDO; boolean features must not.
+    if text in _BOOLEAN_FEATURES:
+        return {**base, "kind": "affix",
+                "affixes": [_affix(text, "boolean", 1, "flat", raw)]}
 
     # recognized text but no magnitude (named proc, immunity, weapon dice, ...)
     return {**base, "kind": "unparsed", "reason": "no parseable magnitude"}

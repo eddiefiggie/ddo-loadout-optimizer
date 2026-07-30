@@ -81,6 +81,47 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.strictEqual(r.effective.Intelligence, 16);
   });
 
+  await test("U2/AE1: boolean feature is presence — two sources do NOT stack", async () => {
+    const model = {
+      targets: ["Salt"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [item("R", "Ring", [["Salt", "boolean", 1]])]),
+             slot("Necklace", [item("N", "Necklace", [["Salt", "boolean", 1]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.Salt, 1, "presence is 1 even with two Salt sources, never 2");
+  });
+
+  await test("U3/AE2: a targeted boolean prefers a loadout that has it", async () => {
+    // One Trinket slot; only one variant grants Salt. With Salt ranked, the
+    // solver must equip the Salt-bearing variant.
+    const model = {
+      targets: ["Salt"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [
+        item("noSalt", "Trinket", [["Accuracy", "Enhancement", 10]]),
+        item("hasSalt", "Trinket", [["Salt", "boolean", 1]]),
+      ])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.Salt, 1, "the Salt-bearing variant is chosen for a Salt target");
+    assert.strictEqual(r.chosen[0].variant.variant_id, "hasSalt");
+  });
+
+  await test("U3: a non-target boolean never perturbs the optimum (soundness)", async () => {
+    // Salt is NOT a target; a Salt source must not change which item wins the
+    // slot on the real (Accuracy) target.
+    const model = {
+      targets: ["Accuracy"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [
+        item("hiAcc", "Trinket", [["Accuracy", "Enhancement", 10]]),
+        item("saltLowAcc", "Trinket", [["Accuracy", "Enhancement", 6], ["Salt", "boolean", 1]]),
+      ])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.Accuracy, 10, "the higher-Accuracy item wins; Salt is irrelevant");
+    assert.strictEqual(r.chosen[0].variant.variant_id, "hiAcc");
+  });
+
   await test("AE3: dodge cap clamps (item still equipped)", async () => {
     const model = {
       targets: ["Dodge"], mlCap: 34, dodgeCap: 4,

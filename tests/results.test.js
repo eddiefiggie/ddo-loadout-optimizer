@@ -54,34 +54,6 @@ test("assignAugments places a multi-fit augment into a host with the consumed sl
   assert.strictEqual(out.unplaced.length, 0);
 });
 
-test("nearMissSetHints flags a set one piece short that would advance a target", () => {
-  // Two equipped pieces of "Elite"; its 3-piece tier gives Dodge and would help.
-  const tiers = [{ set: "Elite", n: 3, affixes: [["Dodge", "Insightful", 3]] }];
-  const chosen = [
-    chosenItem("A", "Ring", [], ["Elite"], tiers),
-    chosenItem("B", "Cloak", [], ["Elite"], tiers),
-  ];
-  const hints = R.nearMissSetHints(chosen, ["Dodge"]);
-  assert.strictEqual(hints.length, 1);
-  assert.strictEqual(hints[0].set, "Elite");
-  assert.strictEqual(hints[0].have, 2);
-  assert.strictEqual(hints[0].need, 3);
-});
-
-test("nearMissSetHints stays silent when the next tier helps no target", () => {
-  const tiers = [{ set: "Elite", n: 3, affixes: [["Dodge", "Insightful", 3]] }];
-  const chosen = [
-    chosenItem("A", "Ring", [], ["Elite"], tiers),
-    chosenItem("B", "Cloak", [], ["Elite"], tiers),
-  ];
-  assert.strictEqual(R.nearMissSetHints(chosen, ["Strength"]).length, 0);
-});
-
-test("nearMissSetHints stays silent when not exactly one short", () => {
-  const tiers = [{ set: "Elite", n: 3, affixes: [["Dodge", "Insightful", 3]] }];
-  const chosen = [chosenItem("A", "Ring", [], ["Elite"], tiers)]; // only 1 of 3
-  assert.strictEqual(R.nearMissSetHints(chosen, ["Dodge"]).length, 0);
-});
 
 // ---- U5: Dino insert assignment + coverage disclosure ----
 // Slots and inserts are keyed by `type||category` (KTD1); an insert is a UNIT
@@ -407,6 +379,111 @@ test("safeUrl passes http(s) but neutralizes hostile schemes", () => {
   assert.strictEqual(R.safeUrl(null), "#");
   // an http(s) url carrying a quote is still escaped (no attribute breakout)
   assert.ok(!/[<>"]/.test(R.safeUrl('https://x/"onmouseover=alert(1)')), "quotes/brackets escaped");
+});
+
+test("U8: satisfiedSetDetail lists only satisfied sets with grants and member pieces", () => {
+  const build = { chosen: [
+    chosenItem("Ring Alpha", "Ring", [], ["Alpha", "Beta"], [
+      { set: "Alpha", n: 2, affixes: [["Constitution", "Insightful", 3]] },
+      { set: "Beta", n: 3, affixes: [["Dexterity", "Enhancement", 5]] },
+    ]),
+    chosenItem("Neck Alpha", "Necklace", [], ["Alpha"], [
+      { set: "Alpha", n: 2, affixes: [["Constitution", "Insightful", 3]] },
+    ]),
+  ] };
+  const d = R.satisfiedSetDetail(build);
+  assert.strictEqual(d.length, 1, "only Alpha (2/2) is satisfied; Beta (1/3) is excluded");
+  assert.strictEqual(d[0].set, "Alpha");
+  assert.strictEqual(d[0].pieces, 2);
+  assert.deepStrictEqual(d[0].members.slice().sort(), ["Neck Alpha", "Ring Alpha"], "lists the equipped pieces composing the set");
+  assert.deepStrictEqual(d[0].affixes.map((a) => a.stat), ["Constitution"], "carries the satisfied tier's granted affixes");
+});
+
+test("U8: satisfiedSetDetail reports the highest satisfied tier", () => {
+  const build = { chosen: [
+    chosenItem("A", "Ring", [], ["S"], [
+      { set: "S", n: 2, affixes: [["Strength", "Enhancement", 5]] },
+      { set: "S", n: 4, affixes: [["Strength", "Enhancement", 10]] }]),
+    chosenItem("B", "Necklace", [], ["S"], []),
+    chosenItem("C", "Cloak", [], ["S"], []),
+    chosenItem("D", "Boots", [], ["S"], []),
+  ] };
+  const d = R.satisfiedSetDetail(build);
+  assert.strictEqual(d[0].pieces, 4, "4 pieces worn -> the 4-piece tier");
+  assert.strictEqual(d[0].affixes[0].value, 10, "grants the higher tier's affixes");
+});
+
+test("U6: satisfiedSets includes only sets whose piece count meets the threshold", () => {
+  const chosen = [
+    chosenItem("R", "Ring", [], ["TwoSet", "ThreeSet"], [
+      { set: "TwoSet", n: 2, affixes: [["Strength", "Enhancement", 10]] },
+      { set: "ThreeSet", n: 3, affixes: [["Dexterity", "Enhancement", 10]] },
+    ]),
+    chosenItem("N", "Necklace", [], ["TwoSet"], [
+      { set: "TwoSet", n: 2, affixes: [["Strength", "Enhancement", 10]] },
+    ]),
+  ];
+  const sat = R.satisfiedSets(chosen);
+  assert.ok(sat.has("TwoSet"), "2/2 pieces -> satisfied");
+  assert.ok(!sat.has("ThreeSet"), "1/3 pieces -> not satisfied");
+});
+
+test("U6: satisfiedSets also counts runtime-completed sets from setsActive", () => {
+  // A build with NO static set members but a solver-active set (a Vecna awaken or
+  // Gem-of-Facets joker completes it from runtime pieces) must still be satisfied.
+  const chosen = [chosenItem("Host", "Ring", [], [], [])];
+  const sat = R.satisfiedSets(chosen, [{ set: "Vol's Influence", pieces_required: 3 }]);
+  assert.ok(sat.has("Vol's Influence"), "a solver-active set with no static pieces still counts as satisfied");
+});
+
+test("U8: satisfiedSetDetail recovers a runtime-completed set from setsActive", () => {
+  const build = {
+    chosen: [chosenItem("Host", "Ring", [], [], [])],
+    setsActive: [{ set: "Vol's Influence", pieces_required: 3 }],
+  };
+  const d = R.satisfiedSetDetail(build);
+  assert.ok(d.some((s) => s.set === "Vol's Influence"), "the awakened/joker set appears in the tab, not dropped");
+});
+
+test("U6: loadoutDeepDive glows only satisfied-set pieces, not mere membership", () => {
+  const maps = { augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
+    ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(),
+    jokerByHost: new Map(), membershipByHost: new Map() };
+  const tier = [{ set: "Trio", pieces_required: 2, affixes: [{ stat: "Dodge", bonus_type: "Insightful", value: 3, unit: "flat" }] }];
+  const mkc = (id, slot) => ({ slot, variant: { variant_id: id, set_bonus: [{ set: "Trio" }], parsed_set_bonuses: tier, affixes: [] } });
+  const oneShort = { chosen: [mkc("R", "Ring")], breakdown: {}, augmentsPlaced: [], effective: {}, setsActive: [] };
+  const html1 = R.loadoutDeepDive(oneShort, { targets: [] }, maps, R.attributionByTarget(oneShort));
+  assert.ok(!/class="dd-item is-set/.test(html1), "1/2 pieces -> no glow");
+  assert.ok(/Part of set: Trio/.test(html1), "membership label still shows for a one-short set");
+  const complete = { chosen: [mkc("R", "Ring"), mkc("N", "Necklace")], breakdown: {}, augmentsPlaced: [], effective: {}, setsActive: [] };
+  const html2 = R.loadoutDeepDive(complete, { targets: [] }, maps, R.attributionByTarget(complete));
+  assert.ok(/class="dd-item is-set/.test(html2), "2/2 pieces -> glow");
+});
+
+test("U6: a single-piece set (threshold 1) is satisfied when worn", () => {
+  const chosen = [chosenItem("R", "Ring", [], ["Solo"],
+    [{ set: "Solo", n: 1, affixes: [["Strength", "Enhancement", 5]] }])];
+  assert.ok(R.satisfiedSets(chosen).has("Solo"));
+});
+
+test("U6: slotSetNames glows only satisfied sets when given the satisfied set", () => {
+  const v = { set_bonus: [{ set: "TwoSet" }, { set: "ThreeSet" }] };
+  assert.deepStrictEqual(R.slotSetNames(v, new Set(["TwoSet"])), ["TwoSet"], "only the satisfied set glows");
+  assert.deepStrictEqual(R.slotSetNames(v).sort(), ["ThreeSet", "TwoSet"], "no filter -> raw membership");
+});
+
+test("U6: equippedRow gets is-set only for a satisfied-set piece", () => {
+  const pick = { variant: { variant_id: "R", set_bonus: [{ set: "ThreeSet" }] } };
+  assert.ok(!/is-set/.test(R.equippedRow("Ring", pick, undefined, new Set())),
+    "an unsatisfied set piece does not glow");
+  assert.ok(/is-set/.test(R.equippedRow("Ring", pick, undefined, new Set(["ThreeSet"]))),
+    "a satisfied set piece glows");
+});
+
+test("U4: affixLabel renders a boolean feature as presence, not a magnitude", () => {
+  assert.strictEqual(R.affixLabel({ stat: "Salt", bonus_type: "boolean", value: 1, unit: "flat" }), "✓ Salt");
+  // a real magnitude affix is unaffected
+  assert.strictEqual(R.affixLabel({ stat: "Dodge", bonus_type: "Enhancement", value: 5, unit: "pct" }), "Dodge +5%");
 });
 
 console.log(`\n${passed} passed`);
