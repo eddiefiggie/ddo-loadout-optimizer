@@ -47,7 +47,7 @@ The Results view shipped in the character-persistence work (PRs #55/#57) but has
 **Loadout block display**
 
 - R3. Each equipment block shows, per augment slot, the **augment assigned** to it and the **affixes that augment adds** (using the solver's per-item augment assignment, e.g. `augAssign.byIndex`), not just the slot color.
-- R4. Each **craft-upgrade slot** on an item is **declared** and shows **what is assigned** to it (the applied craft), rather than only indicating the slot exists.
+- R4. Each **craft-upgrade slot on an item that has an applied craft** is **declared** with **what is assigned** to it (the applied value), rather than only indicating a slot exists. (Scope: only crafts that were *assigned* are surfaced — the craft assignment maps carry applied crafts, not an empty-slot inventory. Unlike augment slots, whose colors are intrinsic item data and so render open-when-empty per R3/AE2, an unfilled craft slot is not separately enumerated.)
 - R5. Equipment blocks stay **uniform in size** as R3/R4 content expands or contracts — a block with many augments/crafts is the same size as an empty one (fixed floor + consistent layout; the grid keeps paired blocks equal).
 
 **Adjust & re-solve placement**
@@ -57,7 +57,7 @@ The Results view shipped in the character-persistence work (PRs #55/#57) but has
 **Alternatives**
 
 - R7. The Alternatives tab shows an explicit **"Run analysis" button** instead of auto-computing on open. Clicking it triggers the computation.
-- R8. While Alternatives compute, show the **same swirly "thinking" indicator used for the main solve** (the solve-wait overlay), so the user sees that work is happening; results replace the indicator when done.
+- R8. While Alternatives compute, show the **same swirly "thinking" indicator used for the main solve** (the solve-wait overlay), so the user sees that work is happening; results replace the indicator when done. The spinner is **always** replaced by a terminal state — the alternative cards on success, a "no near-optimal alternatives found" message when the compute yields none, or an error-with-retry state if it throws — so it is never left spinning.
 
 **Share tab split**
 
@@ -69,15 +69,16 @@ The Results view shipped in the character-persistence work (PRs #55/#57) but has
 
 - AE1. **Load → Results.** *Given* a saved character with a solved snapshot, *when* the user clicks Load, *then* Results renders directly with no pool/priorities steps in between. (R1)
 - AE2. **Assigned augments shown.** *Given* an item with a slotted augment, *then* its block shows the augment and the affixes it adds; *given* an empty augment slot, *then* the block shows the open slot. (R3, R5)
-- AE3. **Craft slot assignment shown.** *Given* an item with a craft-upgrade slot that has an assignment, *then* the block declares the slot and shows what's assigned. (R4)
+- AE3. **Craft slot assignment shown.** *Given* an item with a craft-upgrade slot that has an assignment, *then* the block declares the slot and shows what's assigned; *given* an item whose craft slot has no assignment, *then* nothing extra is rendered for it (unfilled craft slots are not enumerated — R4 scope). (R4)
 - AE4. **Uniform blocks.** *Given* two items where one has many augments/crafts and one has none, *then* their blocks render at the same size. (R5)
 - AE5. **Adjust everywhere.** *Given* any of the five tabs is active, *then* Adjust & re-solve sits directly under the tab bar and is reachable. (R6)
-- AE6. **Alternatives button + spinner.** *Given* the Alternatives tab, *when* the user clicks Run analysis, *then* the solve-style spinner shows while computing and is replaced by the alternatives when done. (R7, R8)
+- AE6. **Alternatives button + spinner.** *Given* the Alternatives tab, *when* the user clicks Run analysis, *then* the solve-style spinner shows while computing and is replaced by the alternatives when done; *if* the compute yields no alternatives or throws, *then* the spinner is replaced by a clear message (never left spinning). (R7, R8)
 - AE7. **Share tab.** *Given* Results, *then* a far-right Share tab offers Markdown/CSV/print for a loadout; the Character step's export panel no longer offers share exports and states it manages personal builds. (R9–R11)
+- AE8. **Load stays put.** *Given* the app, *then* the Load control and master-records export/import appear **only** in the Character step, and no load entry point exists elsewhere (e.g. the Start screen). (R2)
 
 ### Scope Boundaries
 
-- No change to the solver, the optimization, or the crafting terminology itself (labels come from the current app or, once shipped, Plan A's registry).
+- No change to the solver, the optimization, or the crafting terminology itself (labels come from the current app or, once shipped, the crafting-terminology refactor's (`2026-07-30-002`) registry).
 - No new load entry point on the Start screen (KD1) — load stays in the Character step.
 - Not re-solving on load — the stored snapshot renders (existing behavior); Adjust & re-solve is the re-compute path.
 
@@ -104,7 +105,7 @@ The Results view shipped in the character-persistence work (PRs #55/#57) but has
 - KTD3. **Adjust & re-solve becomes a persistent slot directly under the tab bar, re-wired via a `renderResults` post-render callback.** `renderResults` emits the Adjust container between `.result-tabs` and the panels, and — critically — invokes a **wizard-supplied callback at the end of every render**. All Adjust-panel (and Share-panel, KTD5) population + handler wiring live in that callback, because `renderResults` is called from **three** sites that each rebuild `#wz-results` and destroy the wizard-filled content and its **direct** handlers (drag/drop + per-button in the priorities editor, the pool toggle, re-solve): solve, load, **and every per-slot constraint change**. Delegation alone cannot restore the drag/direct handlers, so the callback is required; the panel stays collapsed by default and is outside the panels so a tab switch (which only toggles `hidden`, not a re-render) never disturbs it. (This is the R6 placement the prior restructure deferred.)
 - KTD4. **The Alternatives spinner is panel-local**: render the same `.wz-ring` swirly markup inside `#rp-altspanel` while computing, not the wizard's full-screen `overlay()` (a wizard closure results.js can't call). A "Run analysis" button gates the compute (replacing auto-compute-on-open in `ensureAlternatives`).
 - KTD5. **Share exports move to a new far-right "Share" results tab; the Character step keeps only master-records backup.** The `wz-share-*` controls (select + MD/CSV/print) move out of `stepCharacter`'s `wz-data` panel into the new tab's panel, reusing the global `LoadoutExport`. Copy on each surface states its purpose (sharing vs personal management). (instantiates KD3.)
-- KTD6. **Cross-plan labels stay decoupled now.** U2/U3's block display renders whatever crafting labels exist today; when the terminology refactor (`2026-07-30-002`) ships, its registry updates these labels. No coupling is built in this plan.
+- KTD6. **Cross-plan labels stay decoupled now.** U2's block display renders whatever crafting labels exist today; when the terminology refactor (`2026-07-30-002`) ships, its registry updates these labels. No coupling is built in this plan.
 - KTD7. **Uniform block size is preserved** as R3/R4 add content — the min-height floor + flex layout + grid stretch from the prior restructure already enforce this; new content flows within the block.
 
 ### Assumptions
@@ -124,7 +125,7 @@ U1 (load guard) and U4 (alternatives) are independent. U3 (adjust slot) introduc
 ### U1. Harden load-to-Results
 
 - **Goal:** Loading a saved solved build always lands directly on Results, never stepping through pool/priorities.
-- **Requirements:** R1, R2; KTD1; AE1.
+- **Requirements:** R1, R2; KTD1; AE1, AE8.
 - **Dependencies:** none.
 - **Files:** `web/wizard.js` (`loadCharacter` load path), `tests/wizard.test.js`.
 - **Approach:** Confirm `loadCharacter` sets `state.step = "results"` and renders the snapshot for an optimal build; add a guard so any snapshot with `status === "optimal"` renders results directly and a non-optimal/missing snapshot routes to priorities with a clear reason (existing fallback). No new load entry point.
@@ -137,7 +138,7 @@ U1 (load guard) and U4 (alternatives) are independent. U3 (adjust slot) introduc
 - **Requirements:** R3, R4, R5; KTD2, KTD7; AE2, AE3, AE4.
 - **Dependencies:** U1 (none functional; ordering only).
 - **Files:** `web/results.js` (`buildViews` → pass `maps` into the equipped-row builder; `equippedRow`/`equippedBody` render applied augments + resolved affixes + assigned craft slots), `web/styles.css` (block-detail styling within the existing uniform-block rules), `tests/results.test.js`.
-- **Approach:** Thread `maps` (or `augAssign.byIndex` + the craft maps) into `equippedRow` (it currently gets only `label, pick, slotConstraints, satisfied`). For each occupied item: list its assigned augments with each augment's affixes (resolve affixes by `variant_id` from the augment pool — KTD2, no solver-output change), and declare each craft-upgrade slot (greensteel/seal/lamordia/etc.) with the applied value from the craft maps (the same data `craftChips` uses). Keep blocks uniform via the existing min-height/flex/grid-stretch rules (KTD7).
+- **Approach:** Thread `maps` (or `augAssign.byIndex` + the craft maps) into `equippedRow` (it currently gets only `label, pick, slotConstraints, satisfied`). For each occupied item: list its assigned augments with each augment's affixes (resolve affixes by `variant_id` from the augment pool — KTD2, no solver-output change), and declare each craft-upgrade slot (greensteel/seal/lamordia/etc.) with the applied value from the craft maps (the same data `craftChips` uses). Only assigned crafts are surfaced — the craft maps carry applied crafts, not empty-slot inventory, so an unfilled craft slot renders nothing extra (R4 scope); empty *augment* slots still show open per R3 because slot colors are intrinsic item data. Keep blocks uniform via the existing min-height/flex/grid-stretch rules (KTD7).
 - **Patterns to follow:** `craftChips` (results.js ~L266) for the applied-craft data shape; the U9 `equippedBody` projection from the prior restructure for uniform layout.
 - **Test scenarios:** Covers AE2 (an item with a slotted augment shows the augment + its affixes; an empty augment slot shows the open slot), AE3 (an item with an assigned craft slot declares it + shows the assignment), AE4 (a heavily-augmented item and a bare item render at the same block size). Edge: an item with an augment whose affixes can't be resolved renders the augment name without crashing.
 - **Verification:** `node tests/results.test.js` passes; browser pass across a build with augments + crafts confirms uniform sizing.
@@ -159,8 +160,8 @@ U1 (load guard) and U4 (alternatives) are independent. U3 (adjust slot) introduc
 - **Requirements:** R7, R8; KTD4; AE6.
 - **Dependencies:** none.
 - **Files:** `web/results.js` (`ensureAlternatives` / the alternatives panel render), `web/styles.css` (reuse `.wz-ring` if any panel-scoped tweak is needed), `tests/alternatives.test.js` (guard the generation logic still works; the button/spinner are DOM).
-- **Approach:** Replace auto-compute-on-open with an explicit "Run analysis" button in `#rp-altspanel`. On click, render the `.wz-ring` swirly (same markup as the solve overlay) with a short "Computing alternatives…" line, run `generateAlternatives`, then replace the spinner with the results. Keep the existing graceful "unavailable" path when the solver/highs isn't present.
-- **Test scenarios:** Covers AE6. The tab opens showing the button (no auto-compute); clicking it shows the `.wz-ring` spinner, then the alternative cards; a second visit does not recompute (cached). The generation logic is unchanged (existing alternatives tests stay green).
+- **Approach:** Replace auto-compute-on-open with an explicit "Run analysis" button in `#rp-altspanel`. On click, render the `.wz-ring` swirly (same markup as the solve overlay) with a short "Computing alternatives…" line, run `generateAlternatives`, then replace the spinner with the results. Cover all terminal states so the spinner never hangs: (a) success with cards; (b) success with zero alternatives → a "No near-optimal alternatives found" line with a way to re-run; (c) `generateAlternatives` throws → an error state with retry (wrap the call). Keep the existing graceful "unavailable" path when the solver/highs isn't present (distinct from (b)/(c) — that path is solver-absent, not ran-and-returned-nothing).
+- **Test scenarios:** Covers AE6. The tab opens showing the button (no auto-compute); clicking it shows the `.wz-ring` spinner, then the alternative cards; a second visit does not recompute (cached). The zero-result and thrown-error terminal states each replace the spinner with their message rather than leaving it spinning (browser pass; the states are DOM). The generation logic is unchanged (existing alternatives tests stay green).
 - **Verification:** browser pass — open Alternatives, click Run analysis, see the swirly then the results; `node tests/alternatives.test.js` passes.
 
 ### U5. Share tab (move share exports out of the Character step)
@@ -191,6 +192,6 @@ Bump the shared `?v=` cache-buster in `web/index.html` once on the first UI unit
 - Loading a saved solved build lands on Results with no wizard steps in between (AE1); load + master-records export remain in the Character step.
 - Each equipment block shows its assigned augments with the affixes they add and declares each craft-upgrade slot with its assignment, at uniform block size (AE2–AE4), with no change to `augmentsPlaced`/solver output.
 - Adjust & re-solve sits directly under the tab bar on all five tabs and its re-solve works from each (AE5).
-- The Alternatives tab shows a Run-analysis button and the solve-style `.wz-ring` spinner while computing, then the alternatives (AE6).
+- The Alternatives tab shows a Run-analysis button and the solve-style `.wz-ring` spinner while computing, then the alternatives — or a "no alternatives found" / error-with-retry message; the spinner is never left spinning (AE6).
 - A far-right Share tab offers Markdown/CSV/print; the Character step's export panel is master-records-only; copy distinguishes sharing from personal management (AE7).
 - `python3 tests/run_tests.py` and the full `node tests/*.test.js` loop pass; the browser pass is clean (no console errors) across all five refinements.
