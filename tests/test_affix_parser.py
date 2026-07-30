@@ -278,6 +278,18 @@ def test_allowlist_ignores_underscore_and_non_string_entries():
         set_boolean_features([])
 
 
+def test_build_does_not_leak_boolean_allowlist_into_module_state():
+    # Regression: build() installs the curated allowlist for its own parse but must
+    # restore the prior module state, so a later in-process caller/test is not
+    # contaminated (a value-less line like "Ghostly" must still be unparsed by default).
+    import build_dataset
+    from src.affix_parser import get_boolean_features
+    before = get_boolean_features()
+    build_dataset.build({"metadata": {}, "items": []})
+    assert get_boolean_features() == before, "build() leaked its scoped boolean allowlist"
+    assert parse_line("Ghostly")["kind"] == "unparsed", "default (empty) allowlist restored after build"
+
+
 def test_allowlisted_name_that_trips_a_guard_is_not_emitted_as_boolean():
     # KTD3: the boolean emit runs AFTER the _NOISE / _NON_MAGNITUDE guards, so an
     # allowlisted string that also matches a guard stays classified by the guard

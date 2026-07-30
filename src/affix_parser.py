@@ -45,6 +45,12 @@ def set_boolean_features(names) -> None:
     _BOOLEAN_FEATURES = {s for s in (names or [])
                          if isinstance(s, str) and s and not s.startswith("_")}
 
+
+def get_boolean_features() -> set:
+    """A copy of the current allowlist, for scoped save/restore (so a build that
+    installs the allowlist can restore the prior state instead of leaking it)."""
+    return set(_BOOLEAN_FEATURES)
+
 _NOISE = re.compile(
     r"(Augment Slot$|\(set\)$|\(Legendary set\)$|\(Heroic set\)$|^Set:|"
     r"weapon slots|slots:| Boost \+)",

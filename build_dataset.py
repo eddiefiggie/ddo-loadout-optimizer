@@ -317,8 +317,10 @@ def build(seed: dict) -> dict:
     base_items = [it for it in seed["items"]
                   if not (it.get("category") == "augment" and it.get("name") in aug_names)]
     # Boolean-feature allowlist (U2): install before parsing so a value-less line on
-    # the curated list becomes a presence affix instead of being dropped. Empty seed
-    # today -> no boolean affixes; exclude-until-verified until a wiki harvest lands.
+    # the curated list becomes a presence affix instead of being dropped. Scoped to
+    # this build — restored before returning so an in-process build() never leaks the
+    # allowlist into the shared affix_parser module (contaminating later callers/tests).
+    _prev_bool_features = affix_parser_mod.get_boolean_features()
     affix_parser_mod.set_boolean_features(load_boolean_features())
     variants = expand_dataset(base_items + enriched_items + aug_pool)  # parse enhancements + expand tiers
 
@@ -511,6 +513,7 @@ def build(seed: dict) -> dict:
         "membership_set_defs": membership_defs,
         "compendium": comp_records,
     }
+    affix_parser_mod.set_boolean_features(_prev_bool_features)   # restore; don't leak the scoped allowlist
     return out
 
 
