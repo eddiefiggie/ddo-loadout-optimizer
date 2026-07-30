@@ -79,6 +79,13 @@ test("markdown escapes a markup-bearing name (no raw tag)", () => {
   assert.ok(!/<img /.test(md), "raw markup leaked into markdown");
 });
 
+test("markdown escapes link/emphasis metacharacters in names (no injected link)", () => {
+  const evil = { ...rec, name: "[Free points](https://evil.example)" };
+  const md = toMarkdown(evil);
+  assert.ok(!/\[Free points\]\(https/.test(md), "markdown link injected via name");
+  assert.ok(/\\\[Free points\\\]/.test(md), "link brackets not backslash-escaped");
+});
+
 test("toPrintHtml renders name + constraints + loadout table, escaping markup", () => {
   const h = toPrintHtml(rec);
   assert.ok(/<h1>Sook - Reaper<\/h1>/.test(h));

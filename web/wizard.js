@@ -483,6 +483,20 @@ if (typeof window !== "undefined" && window.App) {
         `</ul>`;
     }
 
+    // Keep the share dropdown (U13) in sync with the store — called on render and
+    // after any in-panel save/delete/import so it never lists a stale name.
+    function renderSharePicker() {
+      const shareSel = document.getElementById("wz-share-sel");
+      if (!shareSel) return;
+      // eslint-disable-next-line no-undef
+      const names = CharacterStore.listCharacters().map((c) => c.name);
+      const prev = shareSel.value;
+      shareSel.innerHTML = names.length
+        ? names.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join("")
+        : `<option value="">No saved characters</option>`;
+      if (prev && names.indexOf(prev) !== -1) shareSel.value = prev;
+    }
+
     // Export & Data Management (U6): backup export/import, reachable pre-solve
     // from the Character step so a first-time restore works on an empty store.
     function wireDataManagement() {
@@ -497,15 +511,19 @@ if (typeof window !== "undefined" && window.App) {
       // Share a single saved loadout (U13): Markdown / CSV / print.
       const shareSel = document.getElementById("wz-share-sel");
       if (shareSel) {
-        // eslint-disable-next-line no-undef
-        const names = CharacterStore.listCharacters().map((c) => c.name);
-        shareSel.innerHTML = names.length
-          ? names.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join("")
-          : `<option value="">No saved characters</option>`;
+        renderSharePicker();
         const selected = () => {
           const n = shareSel.value;
           // eslint-disable-next-line no-undef
-          return n ? CharacterStore.loadCharacter(n) : null;
+          const rec = n ? CharacterStore.loadCharacter(n) : null;
+          // Guard a record with no solved loadout (e.g. a hand-edited backup):
+          // export nothing and say why instead of a misleading empty file.
+          if (rec && !(rec.snapshot && (rec.snapshot.chosen || []).length)) {
+            const s = document.getElementById("wz-data-stat");
+            if (s) { s.className = "wz-filestat warn"; s.textContent = `“${rec.name}” has no solved loadout to share.`; }
+            return null;
+          }
+          return rec;
         };
         const mdBtn = document.getElementById("wz-share-md");
         const csvBtn = document.getElementById("wz-share-csv");
@@ -546,6 +564,7 @@ if (typeof window !== "undefined" && window.App) {
               ? `Imported ${n} character${n === 1 ? "" : "s"} (merged by name).`
               : (w.error === "quota" ? "Storage full — remove some saves and try again." : "Could not save the import.");
             renderSavedPicker();
+            renderSharePicker();
           };
           reader.readAsText(f);
         };
@@ -622,6 +641,7 @@ if (typeof window !== "undefined" && window.App) {
             // eslint-disable-next-line no-undef
             CharacterStore.deleteCharacter(b.dataset.del);
             renderSavedPicker();
+            renderSharePicker();
           }
         };
         wireDataManagement();

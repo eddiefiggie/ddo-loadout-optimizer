@@ -38,7 +38,12 @@
   }
 
   function mdEsc(s) {
-    return String(s == null ? "" : s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+    // Escape HTML (blocks raw <script>/<img>) AND markdown link/emphasis
+    // metacharacters, so a name from an imported backup can't inject a live
+    // link or formatting into the shared post.
+    return String(s == null ? "" : s)
+      .replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]))
+      .replace(/[\\[\]()!*_`|]/g, "\\$&");
   }
 
   function loadoutRows(rec) {
