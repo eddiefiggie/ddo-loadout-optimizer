@@ -108,6 +108,33 @@ function buildProgram(model) {
   for (const body of slotConstraintBodies(xVars, model.query && model.query.slotConstraints)) {
     extraConstraints.push(body);
   }
+
+  // KTD3 / R6 — "exactly one Artifact" when the opt-in box is on. Sum ALL Artifact
+  // pick vars = 1, but ONLY when at least one of them is still selectable under the
+  // active slot constraints. A forced-to-0 Artifact (its slot locked empty, or a
+  // single-cardinality slot pinned to a different item) contributes 0 to the sum
+  // harmlessly; but if EVERY Artifact is forced to 0 (or the seed is empty, so
+  // there are none), a blanket `= 1` would be infeasible — so we add nothing and
+  // let R6 fire (best non-Artifact build + disclosure). This keeps the model
+  // feasible for both the empty-data case (AE3) and the locked/pinned-slot case.
+  if (model.query && model.query.includeArtifact) {
+    const arts = xVars.filter((xv) => xv.variant && xv.variant.artifact);
+    const sc = model.query.slotConstraints || {};
+    const forcedToZero = (xv) => {
+      const c = sc[xv.slot];
+      if (!c || c.type === "free") return false;
+      if (c.type === "empty") return true;
+      if (c.type === "pin") {
+        const id = xv.variant.variant_id || xv.variant.source_item;
+        if (c.variant_id === id) return false;   // this Artifact is the pin (forced on)
+        return (xv.cardinality || 1) <= 1;        // single slot already taken by another item
+      }
+      return false;
+    };
+    if (arts.some((xv) => !forcedToZero(xv))) {
+      extraConstraints.push(`${arts.map((xv) => xv.name).join(" + ")} = 1`);
+    }
+  }
   const augMeta = new Map(); // color-placement var -> {variant_id, color, slot_color, wiki_url}
   const placeMeta = new Map(); // augment place indicator (pu) -> {variant_id, color, wiki_url}
   const setMeta = new Map(); // set_active var -> {set, pieces_required, pieces_label, wiki_url}

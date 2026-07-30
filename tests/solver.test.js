@@ -1330,5 +1330,98 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.strictEqual(r.effective.Constitution || 0, 0, "no contribution from the locked slot");
   });
 
+  // ---- U3: Artifact opt-in "exactly one" constraint + R6 fallback ----------
+  // an Artifact-quality worn item (the U1 flag; the solver reads xv.variant.artifact)
+  function artItem(id, slotName, affixes) { const v = item(id, slotName, affixes); v.artifact = true; return v; }
+
+  await test("U3/AE1: box on equips exactly one Artifact, the best-scoring", async () => {
+    // Two Artifacts in different slots; same bonus type so equipping both would
+    // not out-score one. Exactly-one must pick the higher (Acc 10 over Acc 5).
+    const model = {
+      targets: ["Accuracy"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [artItem("artHi", "Trinket", [["Accuracy", "Enhancement", 10]])]),
+             slot("Ring", [artItem("artLo", "Ring", [["Accuracy", "Enhancement", 5]])])],
+      query: { includeArtifact: true },
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    const arts = r.chosen.filter((c) => c.variant.artifact);
+    assert.strictEqual(arts.length, 1, "exactly one Artifact equipped");
+    assert.strictEqual(arts[0].variant.variant_id, "artHi", "the best-scoring Artifact");
+    assert.strictEqual(r.effective.Accuracy, 10);
+  });
+
+  await test("U3/AE4: never two — only one Artifact even when both are strong", async () => {
+    // Each Artifact maxes a different target; without the constraint the solver
+    // would equip both. Exactly-one forces a single pick.
+    const model = {
+      targets: ["Accuracy", "Deadly"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [artItem("artAcc", "Trinket", [["Accuracy", "Enhancement", 10]])]),
+             slot("Ring", [artItem("artDead", "Ring", [["Deadly", "Enhancement", 10]])])],
+      query: { includeArtifact: true },
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.chosen.filter((c) => c.variant.artifact).length, 1, "never two Artifacts");
+    assert.strictEqual(r.effective.Accuracy, 10, "priority 1 target maxed by the chosen Artifact");
+    assert.strictEqual(r.effective.Deadly || 0, 0, "the second Artifact is not equipped");
+  });
+
+  await test("U3/R6: box on but no Artifact flagged -> feasible non-Artifact build", async () => {
+    const model = {
+      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [item("R", "Ring", [["Intelligence", "Enhancement", 10]])])], // none flagged
+      query: { includeArtifact: true },
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal", "no Artifact data must not make the solve infeasible");
+    assert.strictEqual(r.chosen.filter((c) => c.variant.artifact).length, 0);
+    assert.strictEqual(r.effective.Intelligence, 10, "best non-Artifact build still returned");
+  });
+
+  await test("U3/R6: only Artifact's slot locked empty -> feasible, no infeasibility", async () => {
+    // The sole Artifact sits in the Trinket slot, which the user locks empty.
+    // The =1 constraint must NOT be added (else infeasible); R6 fallback fires.
+    const model = {
+      targets: ["Accuracy", "Intelligence"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [artItem("artT", "Trinket", [["Accuracy", "Enhancement", 10]])]),
+             slot("Ring", [item("R", "Ring", [["Intelligence", "Enhancement", 8]])])],
+      query: { includeArtifact: true, slotConstraints: { Trinket: { type: "empty" } } },
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal", "locked-away Artifact must not make the solve infeasible");
+    assert.strictEqual(r.chosen.filter((c) => c.variant.artifact).length, 0, "no Artifact equipped");
+    assert.strictEqual(r.effective.Intelligence, 8, "the free non-Artifact slot still fills");
+  });
+
+  await test("U3: a non-conflicting pin coexists with the equipped Artifact", async () => {
+    // Artifact in a free Trinket slot; a pin on a different slot (Ring -> ring2).
+    const model = {
+      targets: ["Accuracy", "Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [artItem("artT", "Trinket", [["Accuracy", "Enhancement", 10]])]),
+             slot("Ring", [item("ring1", "Ring", [["Constitution", "Enhancement", 5]]),
+                           item("ring2", "Ring", [["Constitution", "Enhancement", 3]])])],
+      query: { includeArtifact: true, slotConstraints: { Ring: { type: "pin", variant_id: "ring2" } } },
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    const ids = r.chosen.map((c) => c.variant.variant_id);
+    assert.ok(ids.includes("artT"), "the sole free Artifact is equipped (exactly-one)");
+    assert.ok(ids.includes("ring2"), "the honored pin coexists");
+    assert.strictEqual(r.chosen.filter((c) => c.variant.artifact).length, 1);
+  });
+
+  await test("U3: exactly-one solve is deterministic across runs", async () => {
+    const mk = () => ({
+      targets: ["Accuracy"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [artItem("artHi", "Trinket", [["Accuracy", "Enhancement", 10]])]),
+             slot("Ring", [artItem("artLo", "Ring", [["Accuracy", "Enhancement", 10]])])],
+      query: { includeArtifact: true },
+    });
+    const a = await S.solveLexicographic(mk(), highs);
+    const b = await S.solveLexicographic(mk(), highs);
+    assert.deepStrictEqual(a.chosen.map((c) => c.variant.variant_id), b.chosen.map((c) => c.variant.variant_id));
+    assert.strictEqual(a.chosen.filter((c) => c.variant.artifact).length, 1);
+  });
+
   console.log(`\n${passed} passed`);
 })();
