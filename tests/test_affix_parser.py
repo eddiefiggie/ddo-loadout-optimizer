@@ -278,6 +278,18 @@ def test_allowlist_ignores_underscore_and_non_string_entries():
         set_boolean_features([])
 
 
+def test_allowlisted_name_that_trips_a_guard_is_not_emitted_as_boolean():
+    # KTD3: the boolean emit runs AFTER the _NOISE / _NON_MAGNITUDE guards, so an
+    # allowlisted string that also matches a guard stays classified by the guard
+    # rather than being converted to a presence affix. Locks the ordering invariant.
+    try:
+        set_boolean_features(["Blur (3 charges, 3/day)", "Wallwatch (set)"])
+        assert parse_line("Blur (3 charges, 3/day)")["kind"] == "unparsed"   # _NON_MAGNITUDE wins
+        assert parse_line("Wallwatch (set)")["kind"] == "noise"              # _NOISE wins
+    finally:
+        set_boolean_features([])
+
+
 def test_allowlisted_boolean_does_not_stack_across_sources():
     # Two lines of the same boolean feature within one item collapse to a single
     # presence affix per line (value 1 each); the solver's bucket does the actual

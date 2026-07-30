@@ -180,6 +180,15 @@ const tradeModel = () => ({
     assert.ok(!/alt-grants/.test(html), "no grants line when nothing new is activated (gainText already names the delta)");
   });
 
+  await test("U7: renderAltCards degrades gracefully when an activated set resolves no affixes", () => {
+    // activatedSets names a set absent from the candidate's setsActive -> activeSetDetail
+    // finds no entry. The card must not crash and must still name the set via gainText.
+    const html = R.renderAltCards([{ tags: ["set bonus"], gainText: "activates Ghost",
+      costText: "no priority cost", activatedSets: ["Ghost"], sol: { setsActive: [], chosen: [] } }]);
+    assert.ok(!/alt-grants/.test(html), "no grants line when the set's affixes cannot be resolved");
+    assert.ok(/activates Ghost/.test(html), "the gain text still names the set (no silent break)");
+  });
+
   await test("rankAlternatives dedupes, drops within-K of the optimum, and caps to N", () => {
     const optimum = { chosen: [{ slot: "Ring", variant: { variant_id: "R1" } }, { slot: "Neck", variant: { variant_id: "N1" } }, { slot: "Boots", variant: { variant_id: "B1" } }],
       setsActive: [], augmentsPlaced: [], effective: {} };
