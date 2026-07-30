@@ -148,10 +148,11 @@ function browsableItems(dataset) {
 // ---- DOM rendering (browser only) ----
 
 function initBrowse(dataset) {
-  const items = browsableItems(dataset);   // real items + Dino insert pool rows
   const controls = document.getElementById("browse-controls");
   const status = document.getElementById("browse-status");
   const results = document.getElementById("browse-results");
+  if (!controls || !status || !results) return; // on-demand: no-op until the browser panel exists
+  const items = browsableItems(dataset);   // real items + Dino insert pool rows
 
   const slots = distinct(items, (v) => [v.slot]);
   const stats = distinct(items, variantStats);
@@ -224,8 +225,10 @@ function initBrowse(dataset) {
   render();
 }
 
-if (typeof window !== "undefined" && window.App) {
-  window.App.ready(initBrowse);
+// Exposed for the wizard's on-demand Item Browser mode (U9); no auto-mount —
+// the wizard opens a panel that provides the browse-* elements, then calls this.
+if (typeof window !== "undefined") {
+  window.ItemBrowser = { initBrowse, browsableItems, filterVariants };
 }
 
 if (typeof module !== "undefined" && module.exports) {

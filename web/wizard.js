@@ -325,15 +325,41 @@ if (typeof window !== "undefined" && window.App) {
       }
     }
 
+    // ---- on-demand Item Browser (U9) --------------------------------------
+    // Reference-only roster search; not a competing top-level tab (R23). Reuses
+    // browse.js's initBrowse over a panel this opens on demand.
+    function openBrowser() {
+      let ov = document.getElementById("wz-browse-overlay");
+      if (!ov) {
+        ov = document.createElement("div"); ov.id = "wz-browse-overlay"; ov.className = "wz-browse-overlay";
+        ov.innerHTML = `<div class="wz-browse-panel">
+          <div class="wz-browse-head"><h2>Item Browser</h2><button class="btn ghost" id="wz-browse-close">Close ✕</button></div>
+          <p class="wz-help">Search and filter the full indexed roster — reference only; it doesn't change your solve.</p>
+          <div id="browse-controls" class="controls"></div>
+          <p id="browse-status" class="status"></p>
+          <div id="browse-results"></div>
+        </div>`;
+        document.body.appendChild(ov);
+        ov.querySelector("#wz-browse-close").onclick = () => ov.classList.remove("on");
+        ov.addEventListener("click", (e) => { if (e.target === ov) ov.classList.remove("on"); });
+        document.addEventListener("keydown", (e) => { if (e.key === "Escape") ov.classList.remove("on"); });
+        // eslint-disable-next-line no-undef
+        if (window.ItemBrowser) window.ItemBrowser.initBrowse(dataset);
+      }
+      ov.classList.add("on");
+    }
+
     // ---- master render + wiring -------------------------------------------
     function render() {
       const bodies = { intro: stepIntro, character: stepCharacter, pool: stepPool, priorities: stepPriorities, results: stepResults };
-      root.innerHTML = renderStepper() + (bodies[state.step] || stepIntro)();
+      root.innerHTML = `<div class="wz-topbar">${renderStepper()}<button class="btn ghost wz-browse-btn" data-browse type="button">Browse items</button></div>`
+        + (bodies[state.step] || stepIntro)();
       wire();
     }
     function go(step) { state.step = step; render(); }
 
     function wire() {
+      root.querySelectorAll("[data-browse]").forEach((b) => b.onclick = openBrowser);
       root.querySelectorAll("[data-goto]").forEach((b) => b.onclick = () => { if (!b.disabled) go(b.dataset.goto); });
       root.querySelectorAll("[data-back]").forEach((b) => b.onclick = () => go(prevStep(state.step)));
       root.querySelectorAll("[data-next]").forEach((b) => b.onclick = () => {
