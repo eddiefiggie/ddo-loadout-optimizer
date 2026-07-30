@@ -25,6 +25,17 @@ test("filter by stat returns exactly items carrying that stat", () => {
   assert.strictEqual(rows.length, expected);
 });
 
+test("U4: affixText renders a boolean feature as presence, not a magnitude", () => {
+  const v = { affixes: [
+    { stat: "Salt", bonus_type: "boolean", value: 1, unit: "flat" },
+    { stat: "Intelligence", bonus_type: "Enhancement", value: 10, unit: "flat" },
+  ] };
+  const parts = affixText(v);
+  assert.ok(parts.includes("✓ Salt"), "boolean rendered as presence marker");
+  assert.ok(!parts.some((p) => /Salt \+/.test(p)), "no '+N' magnitude for the boolean");
+  assert.ok(parts.some((p) => p.includes("Intelligence +10")), "real magnitude still shown");
+});
+
 test("ML filter returns only variants at or below the cap", () => {
   const rows = filterVariants(items, { maxMl: 10 });
   assert.ok(rows.length > 0);

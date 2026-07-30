@@ -409,4 +409,10 @@ test("safeUrl passes http(s) but neutralizes hostile schemes", () => {
   assert.ok(!/[<>"]/.test(R.safeUrl('https://x/"onmouseover=alert(1)')), "quotes/brackets escaped");
 });
 
+test("U4: affixLabel renders a boolean feature as presence, not a magnitude", () => {
+  assert.strictEqual(R.affixLabel({ stat: "Salt", bonus_type: "boolean", value: 1, unit: "flat" }), "✓ Salt");
+  // a real magnitude affix is unaffected
+  assert.strictEqual(R.affixLabel({ stat: "Dodge", bonus_type: "Enhancement", value: 5, unit: "pct" }), "Dodge +5%");
+});
+
 console.log(`\n${passed} passed`);

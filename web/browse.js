@@ -40,6 +40,7 @@ function distinct(items, fn) {
 
 function affixText(v) {
   const parts = (v.affixes || []).map((a) => {
+    if (a.bonus_type === "boolean") return `✓ ${a.stat}`;   // U4: presence, not a magnitude
     const type = a.bonus_type && a.bonus_type !== "Enhancement" ? ` ${a.bonus_type}` : "";
     const unit = a.unit === "pct" ? "%" : "";
     return `${a.stat} +${a.value}${unit}${type}`;

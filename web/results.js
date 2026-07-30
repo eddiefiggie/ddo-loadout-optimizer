@@ -4,6 +4,9 @@
 // follow-up, surfaced honestly in the coverage disclosure.
 
 function affixLabel(a) {
+  // Boolean feature (U4): presence, not a magnitude. Render a marker so it never
+  // reads as a broken "+N" next to real magnitudes.
+  if (a.bonus_type === "boolean") return `✓ ${a.stat}`;
   const type = a.bonus_type && a.bonus_type !== "Enhancement" ? ` ${a.bonus_type}` : "";
   return `${a.stat} +${a.value}${a.unit === "pct" ? "%" : ""}${type}`;
 }
@@ -161,11 +164,15 @@ function whyThis(result, item, attr) {
   attr = attr || attributionByTarget(result);
   const wins = [];
   for (const stat of Object.keys(attr)) {
-    let val = 0, viaSet = false;
+    let val = 0, viaSet = false, boolean = false;
     for (const p of attr[stat]) {
-      if ((p.hostIds || []).includes(item.variant_id)) { val += p.value; if (p.isSet) viaSet = true; }
+      if ((p.hostIds || []).includes(item.variant_id)) {
+        val += p.value;
+        if (p.isSet) viaSet = true;
+        if (p.bonus_type === "boolean") boolean = true;   // U4: presence win
+      }
     }
-    if (val > 0) wins.push({ stat, value: val, viaSet });
+    if (val > 0) wins.push({ stat, value: val, viaSet, boolean });
   }
   wins.sort((a, b) => b.value - a.value);
   return wins;
@@ -405,9 +412,10 @@ function attributionList(contribs) {
     const where = c.isSet
       ? `<span class="attrib-set">set: ${esc(c.source)}</span>${c.slots.length ? `<span class="attrib-slots"> via ${c.slots.map(esc).join(", ")}</span>` : ""}`
       : `<span class="attrib-slots">${c.slots.length ? c.slots.map(esc).join(", ") : "—"}</span><span class="attrib-src"> · ${esc(c.source)}</span>`;
+    const isBool = c.bonus_type === "boolean";   // U4: presence, not a magnitude
     return `<li class="attrib-row ${kind}">
-      <span class="attrib-type">${esc(c.bonus_type)}</span>
-      <span class="attrib-val">+${esc(c.value)}</span>
+      <span class="attrib-type">${esc(isBool ? "feature" : c.bonus_type)}</span>
+      <span class="attrib-val">${isBool ? "✓" : "+" + esc(c.value)}</span>
       <span class="attrib-where">${where}</span>
     </li>`;
   }).join("")}</ul>`;
@@ -444,7 +452,9 @@ function activeSetDetail(result) {
 function whyThisLine(result, item, attr) {
   const wins = whyThis(result, item, attr);
   if (!wins.length) return `<div class="pd-why muted">included to complete the loadout</div>`;
-  const txt = wins.slice(0, 3).map((w) => `${esc(w.stat)} +${esc(w.value)}${w.viaSet ? " (set)" : ""}`).join(", ");
+  const txt = wins.slice(0, 3).map((w) => w.boolean
+    ? `✓ ${esc(w.stat)}`                                   // U4: presence, not "+1"
+    : `${esc(w.stat)} +${esc(w.value)}${w.viaSet ? " (set)" : ""}`).join(", ");
   return `<div class="pd-why" title="why this item is best-in-slot here">wins ${txt}</div>`;
 }
 

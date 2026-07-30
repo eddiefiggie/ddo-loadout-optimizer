@@ -124,5 +124,29 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
     assert.strictEqual(parts[0].slot, "Boots", "the capped contributor still attributes to its slot");
   });
 
+  await test("U4: whyThis flags a boolean win; whyThisLine renders presence not +1", async () => {
+    const r = await S.solveLexicographic({
+      targets: ["Salt"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [item("T", "Trinket", [["Salt", "boolean", 1]])])],
+    }, highs);
+    const wins = R.whyThis(r, { slot: "Trinket", variant_id: "T" });
+    assert.strictEqual(wins.length, 1);
+    assert.strictEqual(wins[0].stat, "Salt");
+    assert.strictEqual(wins[0].boolean, true, "the win is flagged boolean");
+    const line = R.whyThisLine(r, { slot: "Trinket", variant_id: "T" });
+    assert.ok(line.includes("✓ Salt"), "presence marker in the why-this line");
+    assert.ok(!line.includes("+1"), "no magnitude for a boolean win");
+  });
+
+  await test("U4: attributionList renders a boolean contribution as presence", async () => {
+    const html = R.attributionList([{
+      bonus_type: "boolean", value: 1, source: "Some Trinket", sourceKind: "worn",
+      slots: ["Trinket"], hostIds: ["T"], isSet: false,
+    }]);
+    assert.ok(html.includes("✓"), "presence glyph, not a magnitude");
+    assert.ok(html.includes("feature"), "type labeled 'feature', not 'boolean'");
+    assert.ok(!html.includes("+1"), "no +1 for a boolean contribution");
+  });
+
   console.log(`\n${passed} passed`);
 })();
