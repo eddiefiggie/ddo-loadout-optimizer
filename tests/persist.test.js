@@ -58,6 +58,14 @@ test("serializeCharacter carries inputs, query, snapshot, build stamp; item ref 
   assert.strictEqual(rec.snapshot.chosen[0].variant.source_item, "Sight of the Devil");
 });
 
+test("ownedNames Set serializes to a JSON-safe array", () => {
+  const withOwned = { ...state, ownedNames: new Set(["Item A", "Item B"]) };
+  const rec = serializeCharacter("Owned", withOwned, lastRun, "id1");
+  assert.deepStrictEqual(rec.inputs.ownedNames, ["Item A", "Item B"]);
+  // round-trips through JSON unchanged
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(rec)).inputs.ownedNames, ["Item A", "Item B"]);
+});
+
 test("save -> list -> load round-trip preserves inputs + snapshot", () => {
   const st = fakeStorage();
   const rec = serializeCharacter("Sook", state, lastRun, "id1");

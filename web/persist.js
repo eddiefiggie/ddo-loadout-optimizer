@@ -46,7 +46,10 @@
         weapon: s.weapon,
         includeArtifact: s.includeArtifact,
         pool: s.pool,
-        ownedNames: s.ownedNames,
+        // ownedNames is a Set at runtime; JSON can't hold a Set, so store an
+        // array and let the loader rebuild the Set.
+        ownedNames: s.ownedNames instanceof Set ? Array.from(s.ownedNames)
+          : (Array.isArray(s.ownedNames) ? s.ownedNames : null),
         priorities: s.priorities,
         slotConstraints: s.slotConstraints,
       },
