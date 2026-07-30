@@ -62,7 +62,7 @@ if (typeof window !== "undefined" && window.App) {
     const allStats = [...statSet].sort();
 
     const state = { step: "intro", ml: 34, race: "", alignment: "", armor: "", weapon: "",
-      pool: "all", ownedNames: null, priorities: [], slotConstraints: {}, lastRun: null };
+      pool: "all", ownedNames: null, priorities: [], slotConstraints: {}, constraintsDirty: false, lastRun: null };
 
     let highs = null;
     async function getHighs() {
@@ -179,6 +179,9 @@ if (typeof window !== "undefined" && window.App) {
           <button class="btn ghost" data-goto="priorities">← Adjust priorities</button>
           <button class="btn ghost" data-goto="character">Edit character</button>
         </div>
+        <div id="wz-cbar" class="wz-cbar${state.constraintsDirty ? "" : " wz-hidden"}">
+          Slot constraints changed. <button class="btn primary" id="wz-cresolve">Re-solve ⚡</button>
+        </div>
         <div id="wz-results"></div>
       </section>`;
     }
@@ -270,6 +273,16 @@ if (typeof window !== "undefined" && window.App) {
         // eslint-disable-next-line no-undef
         const result = await solveLexicographic(model, h);
         if (result.status === "optimal") result.solveMs = Math.round(performance.now() - t0);
+        // R17 pin-invalidation: a pinned item that didn't land (e.g. a gate change
+        // made it ineligible) is dropped to "free" so its badge never lies.
+        Object.entries(state.slotConstraints).forEach(([slot, c]) => {
+          if (c && c.type === "pin" &&
+              !(result.chosen || []).some((ch) => ch.slot === slot && ch.variant.variant_id === c.variant_id)) {
+            delete state.slotConstraints[slot];
+            query.slotConstraints = { ...state.slotConstraints };
+          }
+        });
+        state.constraintsDirty = false;
         state.lastRun = { model, result, query };
         state.step = "results";
         render();
@@ -356,6 +369,38 @@ if (typeof window !== "undefined" && window.App) {
         document.getElementById("wz-add-btn").onclick = () => { addPriority(add.value); add.value = ""; add.focus(); };
         add.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); addPriority(add.value); add.value = ""; } };
         renderRanked();
+      }
+      if (state.step === "results") {
+        const box = document.getElementById("wz-results");
+        const cbar = document.getElementById("wz-cbar");
+        // Per-slot constraint controls (U6), wired by delegation so they survive
+        // renderResults re-rendering the box contents.
+        if (box) box.addEventListener("click", (e) => {
+          const ctl = e.target.closest(".pd-ctl");
+          if (ctl) {
+            const menu = ctl.closest(".pd-row").querySelector(".pd-menu");
+            const willOpen = menu.hidden;
+            box.querySelectorAll(".pd-menu").forEach((m) => { m.hidden = true; });
+            menu.hidden = !willOpen;
+            return;
+          }
+          const act = e.target.closest(".pd-menu button");
+          if (!act || act.disabled) return;
+          const slot = act.dataset.slot;
+          if (act.dataset.act === "free") delete state.slotConstraints[slot];
+          else if (act.dataset.act === "empty") state.slotConstraints[slot] = { type: "empty" };
+          else if (act.dataset.act === "pin" && act.dataset.variant) state.slotConstraints[slot] = { type: "pin", variant_id: act.dataset.variant };
+          state.constraintsDirty = true;
+          // refresh the equipped-list badges in place (no re-solve yet)
+          if (state.lastRun) {
+            state.lastRun.query.slotConstraints = { ...state.slotConstraints };
+            // eslint-disable-next-line no-undef
+            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs });
+          }
+          if (cbar) cbar.classList.remove("wz-hidden");
+        });
+        const cres = document.getElementById("wz-cresolve");
+        if (cres) cres.onclick = () => { if (state.priorities.length) solve(false); };
       }
     }
     function flashBlock() {

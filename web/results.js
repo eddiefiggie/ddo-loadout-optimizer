@@ -344,19 +344,33 @@ function loadoutDeepDive(result, query, maps, attr) {
 }
 
 // One row of the plain equipped list (prototype layout): slot label, the full
-// item name (no truncation), ML, and set membership. A set piece is highlighted.
-function equippedRow(label, pick) {
-  if (!pick) {
-    return `<div class="pd-row empty"><div class="pd-rlabel">${esc(label)}</div><div class="pd-rname muted">empty</div></div>`;
-  }
-  const v = pick.variant;
-  const sets = slotSetNames(v);
-  const setLine = sets.length
-    ? `<span class="pd-rset" title="part of a set bonus">${esc(sets.join(", "))}</span>` : "";
-  return `<div class="pd-row occupied${sets.length ? " is-set" : ""}">
-    <div class="pd-rlabel">${esc(label)}</div>
-    <div class="pd-rname" title="${esc(v.variant_id)}">${esc(v.variant_id)}</div>
-    <div class="pd-rfoot"><span class="pd-rml">ML ${esc(v.minimum_level ?? "?")}</span>${setLine}</div>
+// item name (no truncation), ML, set membership, and a per-slot constraint
+// control (U6: pin the current item / lock empty / free). The wizard reads the
+// menu clicks via delegation, updates query.slotConstraints, and re-solves.
+function equippedRow(label, pick, slotConstraints) {
+  const c = (slotConstraints || {})[label];
+  const locked = c && c.type === "empty";
+  const v = pick ? pick.variant : null;
+  const canPin = v && !locked;
+  const ctl = `<button class="pd-ctl" data-slot="${esc(label)}" title="constrain this slot" aria-label="constrain ${esc(label)}">&#8943;</button>`;
+  const menu = `<div class="pd-menu" hidden>
+    <button data-act="pin" data-slot="${esc(label)}" data-variant="${canPin ? esc(v.variant_id) : ""}"${canPin ? "" : " disabled"}>Pin this item</button>
+    <button data-act="empty" data-slot="${esc(label)}">Lock empty</button>
+    <button data-act="free" data-slot="${esc(label)}">Free (optimize)</button>
+  </div>`;
+  const badge = c && c.type === "pin" ? `<span class="pd-badge pin">pinned</span>`
+    : locked ? `<span class="pd-badge empty">locked empty</span>` : "";
+  const sets = v && !locked ? slotSetNames(v) : [];
+  const setLine = sets.length ? `<span class="pd-rset" title="part of a set bonus">${esc(sets.join(", "))}</span>` : "";
+  const name = locked ? "locked empty" : (v ? esc(v.variant_id) : "empty");
+  const nameCls = (!v || locked) ? "pd-rname muted" : "pd-rname";
+  const foot = (v && !locked)
+    ? `<div class="pd-rfoot"><span class="pd-rml">ML ${esc(v.minimum_level ?? "?")}</span>${setLine}</div>` : "";
+  const rowCls = `pd-row ${(!v || locked) ? "empty" : "occupied"}${sets.length ? " is-set" : ""}${c ? " constrained" : ""}`;
+  return `<div class="${rowCls}">
+    <div class="pd-rtop"><div class="pd-rlabel">${esc(label)}</div>${ctl}</div>
+    <div class="${nameCls}"${v ? ` title="${esc(v.variant_id)}"` : ""}>${name}</div>
+    ${foot}${badge}${menu}
   </div>`;
 }
 
@@ -640,7 +654,7 @@ function buildViews(build, model, query) {
     const picks = picksBySlot.get(slot.slot) || [];
     const cardinality = slot.cardinality || 1;
     for (let r = 0; r < cardinality; r++) {
-      rows.push(equippedRow(slot.slot, picks[r] || null));
+      rows.push(equippedRow(slot.slot, picks[r] || null, query.slotConstraints));
     }
   }
   const weapons = ""; // weapons are included in the equipped list above
