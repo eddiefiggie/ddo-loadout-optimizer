@@ -79,3 +79,6 @@ A candidate-pool option where the solve is restricted to the base items a player
 
 ### Slot constraint
 A per-session hard constraint the user places on an equipment slot before solving: **pin** it to a specific item, **lock** it empty (excluded from the loadout), or leave it **free** for the solver. The solve honors these exactly and optimizes the remaining free slots around them.
+
+### Artifact (item type)
+A DDO item quality — distinct from the **Artifact bonus type** carried by Lunar/Solar Gem augments — of which only one may be equipped at a time. Surfaced as an opt-in: an "Include an Artifact" setup checkbox (default off). Off excludes Artifact-flagged variants from the candidate pool; on requires **exactly one** Artifact in the loadout (the best-scoring one, tagged in the results). Backed by a per-variant `artifact` flag (exclude-until-verified; unflagged variants are treated as non-Artifact). The "exactly one" case makes Artifact-ness a value dimension, so the per-slot dominance pre-filter must exempt the best Artifact (like set contributors).
