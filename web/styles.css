@@ -630,6 +630,15 @@ input.wz-ml { width: 120px; }
 .wz-pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
 @media (max-width: 520px) { .wz-pair { grid-template-columns: 1fr; } }
 
+/* opt-in checkbox: inline box-beside-label, deliberately NOT a .wz-field (whose
+   input rule forces width:100%) so the box stays small; the whole row toggles it */
+.wz-check { display: flex; align-items: flex-start; gap: var(--sp-2); cursor: pointer; }
+.wz-check input[type="checkbox"] { width: 18px; height: 18px; min-height: 0; flex: 0 0 auto;
+  margin-top: 2px; accent-color: var(--accent); cursor: pointer; }
+.wz-check .wz-check-body { display: block; }
+.wz-check .wz-label { margin-bottom: 2px; }
+.wz-check .wz-help { margin-bottom: 0; }
+
 .wz-seg { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
 .wz-chip { background: var(--panel-2); color: var(--muted); border: 1px solid var(--border-2);
   border-radius: var(--radius-sm); padding: 9px 14px; min-height: var(--tap); cursor: pointer; font-size: var(--fs-md); font-weight: 550; }
