@@ -48,8 +48,21 @@ function assignAugments(chosen, augmentsPlaced) {
     }
     if (!placed) unplaced.push(aug);
   }
-  return { byIndex, unplaced };
+  // Slots left open per item after placement — the substrate for U10's
+  // "unused augment slot" / unrealized-upgrade note.
+  const freeByIndex = new Map();
+  remaining.forEach((m, i) => {
+    const cols = [];
+    for (const [col, n] of m) for (let k = 0; k < n; k++) cols.push(col);
+    if (cols.length) freeByIndex.set(i, cols);
+  });
+  return { byIndex, unplaced, freeByIndex };
 }
+
+// Standard fillable augment-slot colors — a generic augment can go here, so an
+// open one is a realizable upgrade. Named crafting slots (Lamordia, celestial)
+// need specific augments and are shown as craft slots, not flagged as unused.
+const STD_AUG_COLORS = new Set(["blue", "red", "yellow", "green", "orange", "purple", "colorless", "clear"]);
 
 /** Reconstruct a concrete Dino-insert -> item assignment from the solver's
  *  aggregate per-key placements (mirrors assignAugments). Slots are keyed by
@@ -332,8 +345,14 @@ function paperdollSlot(label, pos, pick, satisfied) {
 function loadoutDeepDive(result, query, maps, attr) {
   if (!result.chosen.length) return `<p class="dd-none muted">No items equipped for this build.</p>`;
   const satisfied = satisfiedSets(result.chosen, result.setsActive);   // U6: glow on completion, not membership
+  const freeByIndex = (maps && maps.augAssign && maps.augAssign.freeByIndex) || new Map();
   return `<div class="deepdive">${result.chosen.map((c, idx) => {
     const v = c.variant;
+    // U10: flag open standard-color augment slots as a concrete unrealized upgrade.
+    const openAug = (freeByIndex.get(idx) || []).filter((col) => STD_AUG_COLORS.has(String(col).toLowerCase()));
+    const upgradeNote = openAug.length
+      ? `<div class="dd-upgrade"><span class="dd-upgrade-tag">Unrealized upgrade</span> ${openAug.length} open augment slot${openAug.length === 1 ? "" : "s"} (${esc(openAug.join(", "))}) — slot an augment here for more stats.</div>`
+      : "";
     const memberSets = slotSetNames(v);                        // U6: label = raw membership (informative)
     const glow = slotSetNames(v, satisfied).length > 0;        // U6: is-set glow = satisfaction (via the helper)
     const affixes = (v.affixes || []).length
@@ -348,6 +367,7 @@ function loadoutDeepDive(result, query, maps, attr) {
       <div class="dd-head"><span class="dd-slot">${esc(c.slot)}</span><span class="dd-name">${esc(v.variant_id)}</span>${artifactTag}<span class="dd-ml">ML ${esc(v.minimum_level ?? "?")}</span>${wiki}</div>
       ${whyThisLine(result, { slot: c.slot, variant_id: v.variant_id }, attr)}
       ${memberSets.length ? `<div class="dd-set"><span class="setpip"></span>Part of set: ${esc(memberSets.join(", "))}</div>` : ""}
+      ${upgradeNote}
       <div class="dd-affixes"><h5>Affixes</h5>${affixes}</div>
       ${craftBlock}
     </div>`;

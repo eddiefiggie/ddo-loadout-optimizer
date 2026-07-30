@@ -453,6 +453,11 @@ input.bumped { background: rgba(91,140,255,0.16); border-color: var(--accent); }
 .dd-ml { color: var(--muted); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
 .dd-wiki { color: var(--accent); font-size: var(--fs-xs); }
 .dd-set { color: var(--set); font-size: var(--fs-xs); display: flex; align-items: center; gap: 5px; margin-top: var(--sp-1); }
+/* U10: unrealized-upgrade / unused-augment-slot note. */
+.dd-upgrade { margin-top: var(--sp-2); font-size: var(--fs-xs); color: var(--muted); line-height: 1.4;
+  border-left: 2px solid var(--accent); padding-left: var(--sp-2); }
+.dd-upgrade-tag { display: inline-block; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.6rem;
+  font-weight: 700; color: var(--accent); margin-right: 4px; }
 .dd-affixes h5, .dd-crafts h5 { margin: var(--sp-2) 0 var(--sp-1); font-size: var(--fs-xs); color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
 .dd-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); font-size: var(--fs-sm); }
 .dd-list li { color: var(--text); }
