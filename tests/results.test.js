@@ -100,7 +100,7 @@ test("coverageNote discloses Dino crafting with all pools optimized and Set-Bonu
   const note = R.coverageNote({ metadata: { dino_coverage: { inserts_eligible: 85, blank_hosts: 11 } } });
   assert.ok(/Isle of Dread Dino crafting/.test(note), "names Dino crafting as optimized");
   assert.ok(/85 inserts across Accessory\/Armor\/Weapon\/Raid/.test(note), "shows the eligible count + pools");
-  assert.ok(/Set-Bonus/.test(note), "discloses the deferred Set-Bonus pool honestly");
+  assert.ok(/Dinosaur Bone Set Bonus/.test(note), "discloses the deferred Set Bonus augment pool honestly");
 });
 
 test("craftChips renders the Gem's wildcard set assignment, load-bearing only", () => {
@@ -119,22 +119,60 @@ test("craftChips renders the Gem's wildcard set assignment, load-bearing only", 
   assert.ok(!/Wildcard set/.test(chips2), "no wildcard chip for a non-joker item");
 });
 
-test("craftChips renders the Vecna awaken prescription with its station", () => {
-  const host = { variant_id: "Legendary University Mage's Hat", wiki_url: "https://ddowiki.com/x" };
-  const maps = {
+function membershipMaps(host, set, station) {
+  return {
     augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
     ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(),
     jokerByHost: new Map(),
-    membershipByHost: new Map([["Legendary University Mage's Hat",
-      [{ host: "Legendary University Mage's Hat", set: "Legendary Vol's Influence", station: "Cannith Repurposing Station" }]]]),
+    membershipByHost: new Map([[host, [{ host, set, station }]]]),
   };
+}
+
+test("craftChips renders Vecna as 'Awaken Set Bonus' (the only place 'awaken' survives)", () => {
+  const host = { variant_id: "Legendary University Mage's Hat", wiki_url: "https://ddowiki.com/x" };
+  const maps = membershipMaps("Legendary University Mage's Hat", "Legendary Vol's Influence", "Cannith Repurposing Station");
   const chips = R.craftChips(host, 0, maps).join(" ");
   // esc() HTML-escapes the apostrophe in "Vol's", so match around it.
-  assert.ok(/Awaken: Legendary Vol/.test(chips) && /Influence/.test(chips), "renders the awakened set");
+  assert.ok(/Awaken Set Bonus: Legendary Vol/.test(chips) && /Influence/.test(chips), "renders the awakened set");
   assert.ok(/Cannith Repurposing Station/.test(chips), "names the station");
-  // an item with no awaken pick renders no awaken chip
   const other = { variant_id: "Some Ring" };
-  assert.ok(!/Awaken:/.test(R.craftChips(other, 1, maps).join(" ")), "no awaken chip for a non-host item");
+  assert.ok(!/Awaken Set Bonus:/.test(R.craftChips(other, 1, maps).join(" ")), "no membership chip for a non-host item");
+});
+
+test("craftChips renders Isle-of-Dread Set Bonus as 'Slot Set Bonus augment' (not 'awaken')", () => {
+  const host = { variant_id: "Legendary Dino Vest" };
+  const maps = membershipMaps("Legendary Dino Vest", "The Legendary Dread Isle's Curse", "Dinosaur Bone crafting");
+  const chips = R.craftChips(host, 0, maps).join(" ");
+  assert.ok(/Slot Set Bonus augment: The Legendary Dread Isle/.test(chips), "renders the crafted Set Bonus augment");
+  assert.ok(!/awaken/i.test(chips), "Dino Set Bonus must not say 'awaken'");
+});
+
+test("craftChips membership label IS the registry's actionLabel output (no drift)", () => {
+  // The chip must render exactly what crafting-systems.js produces, so a
+  // terminology edit in the registry can never silently diverge from the UI.
+  const CS = require("../web/crafting-systems.js");
+  const vec = R.craftChips({ variant_id: "V" },
+    0, membershipMaps("V", "Legendary Vol's Influence", "Cannith Repurposing Station")).join(" ");
+  assert.ok(vec.includes(R.esc(CS.actionLabel("vecna-lost-purpose", { set_name: "Legendary Vol's Influence" }))),
+    "Vecna chip text equals the registry label");
+  const dino = R.craftChips({ variant_id: "D" },
+    0, membershipMaps("D", "Legendary Dread Stalker", "Dinosaur Bone crafting")).join(" ");
+  assert.ok(dino.includes(R.esc(CS.actionLabel("isle-of-dread-set-bonus", { set_name: "Legendary Dread Stalker" }))),
+    "Dino chip text equals the registry label");
+});
+
+test("craftChips uses 'Nearly Completed' and 'Viktranium' (not 'Nearly Complete'/'Lamordia')", () => {
+  const v = { variant_id: "Legendary Thing" };
+  const maps = {
+    augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
+    ncByItem: new Map([["Legendary Thing", [{ stat: "Charisma", value: 4, bonus_type: "Quality" }]]]),
+    rollByItem: new Map(), sealByItem: new Map(), jokerByHost: new Map(), membershipByHost: new Map(),
+    vikByItem: new Map([["Legendary Thing", [{ slot_type: "Melancholic", stat: "Constitution", value: 15 }]]]),
+  };
+  const chips = R.craftChips(v, 0, maps).join(" ");
+  assert.ok(/Nearly Completed:/.test(chips) && !/Nearly Complete:/.test(chips.replace(/Nearly Completed/g, "")), "Nearly Completed");
+  assert.ok(/Slot Melancholic Viktranium augment:/.test(chips), "Viktranium label");
+  assert.ok(!/Lamordia [A-Z]/.test(chips), "no 'Lamordia {type}:' label");
 });
 
 test("coverageNote discloses set bonuses now applying to enriched gear", () => {
@@ -163,7 +201,7 @@ test("coverageNote discloses the ML30-36 endgame band coverage per expansion", (
 test("coverageNote discloses Nearly Complete as optimized once item hosts exist", () => {
   const note = R.coverageNote({ metadata: { nc_coverage: { options_eligible: 68, hosts_activated: 17 } } });
   const optimized = note.split("Coverage:")[0];
-  assert.ok(/U81 Nearly Complete crafting/.test(optimized), "NC is listed under Optimized now that hosts exist");
+  assert.ok(/Nearly Completed crafting/.test(optimized), "NC is listed under Optimized now that hosts exist");
   assert.ok(/17 item hosts/.test(optimized), "discloses the activated host count");
   assert.ok(/68 options/.test(optimized), "discloses the eligible option count");
   assert.ok(!/no U81 item hosts are published/.test(note), "no longer claims hosts are pending");
@@ -172,7 +210,7 @@ test("coverageNote discloses Nearly Complete as optimized once item hosts exist"
 test("coverageNote discloses Viktranium/Lamordia as optimized once hosts exist", () => {
   const note = R.coverageNote({ metadata: { viktranium_coverage: { options_eligible: 194, hosts_active: 43 } } });
   const optimized = note.split("Coverage:")[0];
-  assert.ok(/U81 Viktranium \/ Lamordia crafting/.test(optimized), "Viktranium is listed under Optimized once hosts exist");
+  assert.ok(/Viktranium Experiment crafting/.test(optimized), "Viktranium is listed under Optimized once hosts exist");
   assert.ok(/43 item hosts/.test(optimized), "discloses the active host count");
   assert.ok(/194 options/.test(optimized), "discloses the eligible option count");
 });
@@ -442,7 +480,7 @@ test("U8: satisfiedSetDetail recovers a runtime-completed set from setsActive", 
     setsActive: [{ set: "Vol's Influence", pieces_required: 3 }],
   };
   const d = R.satisfiedSetDetail(build);
-  assert.ok(d.some((s) => s.set === "Vol's Influence"), "the awakened/joker set appears in the tab, not dropped");
+  assert.ok(d.some((s) => s.set === "Vol's Influence"), "the chosen-membership/joker set appears in the tab, not dropped");
 });
 
 test("U6: loadoutDeepDive glows only satisfied-set pieces, not mere membership", () => {

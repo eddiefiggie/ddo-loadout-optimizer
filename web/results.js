@@ -202,14 +202,14 @@ function coverageNote(dataset) {
       (aug != null ? ` (${aug} placeable)` : "") +
       ", set bonuses" + (setAff != null ? ` (${setAff} threshold effects)` : "") +
       ", Isle of Dread Dino crafting" + (dinoElig != null ? ` (${dinoElig} inserts across Accessory/Armor/Weapon/Raid slots, ${dc.blank_hosts != null ? dc.blank_hosts + " hosts" : "typed"})` : "") +
-      ", U81 Nearly Complete crafting" +
+      ", Nearly Completed crafting" +
       (ncHosts ? ` (${ncHosts} item hosts, ${ncElig != null ? ncElig + " options" : "sourced pool"})` : "") +
-      ", U81 Viktranium / Lamordia crafting" +
+      ", Viktranium Experiment crafting" +
       (vikHosts ? ` (${vikHosts} item hosts, ${vikElig != null ? vikElig + " options" : "sourced pool"})` : "") +
       ", and Sealed-in-Undeath seal-slot crafting" +
       (sealHosts ? ` (${sealHosts} item hosts, ${sealElig != null ? sealElig + " options" : "sourced pool"})` : ""),
     "<strong>Coverage:</strong> results reflect only verified, wiki-sourced data; ambiguous effects are quarantined and excluded",
-    "<strong>Pending:</strong> the Dino Set-Bonus pool (crafted set-membership; sourced + browsable, activation awaits intrinsic named/raid set pieces)" +
+    "<strong>Pending:</strong> the Dinosaur Bone Set Bonus augments (crafted and slotted on Isle of Dread hosts; sourced + browsable, activation awaits intrinsic named/raid set pieces)" +
       (sealPending ? `, the Sealed-in-${sealPending} seal pools (hosts identified, option pools awaiting harvest)` : "") +
       ", and other expansion crafting systems",
     "<strong>Compendium:</strong> " +
@@ -261,8 +261,13 @@ function safeUrl(u) {
 }
 
 // Craft/augment prescriptions applied to an equipped item (augments, Dino inserts,
-// Nearly Complete, choice slots, Viktranium, seals, wildcard), as labeled chips.
+// Nearly Completed, choice slots, Viktranium, seals, wildcard), as labeled chips.
 // Used by the Loadout Deep Dive so every applied bonus is visible. Returns an array.
+// Crafting-system label registry (U1). Global in the browser (loaded before
+// results.js); require()'d in Node tests where the global isn't present.
+const CraftingReg = (typeof CraftingSystems !== "undefined") ? CraftingSystems
+  : (typeof require !== "undefined" ? require("./crafting-systems.js") : null);
+
 function craftChips(v, idx, maps) {
   const lbl = (o) => esc(affixLabel({ stat: o.stat, bonus_type: o.bonus_type, value: o.value, unit: o.unit || "flat" }));
   const augs = (maps.augAssign.byIndex.get(idx) || []).map((a) => {
@@ -274,15 +279,31 @@ function craftChips(v, idx, maps) {
     const label = affixes.map(lbl).join(", ");
     return `<span class="chip dino" title="Isle of Dread insert">${esc(d.dino_type)}: ${d.name ? esc(d.name) + ", " : ""}${label}</span>`;
   });
-  const ncs = (maps.ncByItem.get(v.variant_id) || []).map((n) => `<span class="chip nc" title="U81 Nearly Complete">Nearly Complete: ${lbl(n)}</span>`);
+  const ncs = (maps.ncByItem.get(v.variant_id) || []).map((n) => `<span class="chip nc" title="Terror of Demogorgon — Nearly Completed">Nearly Completed: ${lbl(n)}</span>`);
   const rolls = (maps.rollByItem.get(v.variant_id) || []).map((r) => `<span class="chip roll" title="choice slot, best option selected">Choice: ${lbl(r)}</span>`);
-  const viks = (maps.vikByItem.get(v.variant_id) || []).map((n) => `<span class="chip lamordia" title="U81 Viktranium / Lamordia">Lamordia ${esc(n.slot_type)}: ${lbl(n)}</span>`);
+  const viks = (maps.vikByItem.get(v.variant_id) || []).map((n) => `<span class="chip lamordia" title="The Chill of Ravenloft — Viktranium Experiment crafting">Slot ${esc(n.slot_type)} Viktranium augment: ${lbl(n)}</span>`);
   const seals = (maps.sealByItem.get(v.variant_id) || []).map((n) => `<span class="chip seal" title="unseal one effect at the crafting table">Sealed in ${esc(n.seal_type)}: ${lbl(n)}</span>`);
   const tfs = ((maps.tfByItem && maps.tfByItem.get(v.variant_id)) || []).map((n) => `<span class="chip thunderforged" title="Legendary Thunder-Forged tier upgrade">Thunder-Forged T${esc(n.tier)}: ${lbl(n)}</span>`);
   const gss = ((maps.gsByItem && maps.gsByItem.get(v.variant_id)) || []).map((n) => `<span class="chip greensteel" title="Legendary Green Steel craft">Green Steel: ${lbl(n)}</span>`);
   const jokers = ((maps.jokerByHost && maps.jokerByHost.get(v.variant_id)) || []).map((j) => `<span class="chip joker" title="wildcard set piece">Wildcard set: ${esc(j.set)}</span>`);
-  const awakens = ((maps.membershipByHost && maps.membershipByHost.get(v.variant_id)) || []).map((m) => `<span class="chip awaken" title="awaken this set at the ${esc(m.station || "crafting station")}">Awaken: ${esc(m.set)}${m.station ? ` <span class="muted">(${esc(m.station)})</span>` : ""}</span>`);
-  return [...augs, ...dinos, ...ncs, ...rolls, ...viks, ...seals, ...tfs, ...gss, ...jokers, ...awakens];
+  // Membership chip (R3/R4): Vecna Lost Purpose and Isle-of-Dread Set Bonus flow
+  // through one solver primitive but must render different labels — fork on the
+  // station via the registry (KTD2). Only Vecna keeps "Awaken".
+  const memberships = ((maps.membershipByHost && maps.membershipByHost.get(v.variant_id)) || []).map((m) => {
+    // Unknown/absent station defaults to the Dino system (the non-Vecna label),
+    // matching the prior fallthrough behavior.
+    const sysId = (CraftingReg && CraftingReg.systemForStation(m.station)) || "isle-of-dread-set-bonus";
+    const isVecna = sysId === "vecna-lost-purpose";
+    const cls = isVecna ? "chip awaken" : "chip setbonus";
+    // The label text comes from the registry (single source of truth), not a
+    // hardcoded string — a terminology edit in crafting-systems.js now flows
+    // straight to the chip instead of drifting from it.
+    const text = CraftingReg ? CraftingReg.actionLabel(sysId, { set_name: m.set }) : `Slot Set Bonus augment: ${m.set}`;
+    const title = isVecna ? `awaken this set at the ${esc(m.station || "Cannith Repurposing Station")}`
+      : `slot a Dinosaur Bone Set Bonus augment at ${esc(m.station || "Dinosaur Bone crafting")}`;
+    return `<span class="${cls}" title="${title}">${esc(text)}${m.station ? ` <span class="muted">(${esc(m.station)})</span>` : ""}</span>`;
+  });
+  return [...augs, ...dinos, ...ncs, ...rolls, ...viks, ...seals, ...tfs, ...gss, ...jokers, ...memberships];
 }
 
 /** Sets actually complete in the equipped loadout (U6) — the glow signal. Two
@@ -308,7 +329,7 @@ function satisfiedSets(chosen, setsActive) {
   }
   const out = new Set();
   for (const [set, need] of minReq) if ((counts.get(set) || 0) >= need) out.add(set);
-  for (const s of setsActive || []) if (s.set) out.add(s.set);   // runtime-completed (joker/awaken)
+  for (const s of setsActive || []) if (s.set) out.add(s.set);   // runtime-completed (joker/membership)
   return out;
 }
 
@@ -424,9 +445,9 @@ function equippedBody(v) {
     ? `<div class="pd-slots"><span class="pd-slabel">Augments</span>${augColors.map((c) =>
         `<span class="aug-pip aug-${esc(String(c).toLowerCase())}" title="${esc(c)} augment slot">${esc(c)}</span>`).join("")}</div>` : "";
   const craftMarks = [];
-  if (v.green_steel_slot) craftMarks.push("Greensteel");
+  if (v.green_steel_slot) craftMarks.push("Green Steel");
   if (v.seal_slots) craftMarks.push("Seal");
-  if (v.lamordia_slots) craftMarks.push("Lamordia");
+  if (v.lamordia_slots) craftMarks.push("Viktranium");
   const crafts = craftMarks.length
     ? `<div class="pd-slots"><span class="pd-slabel">Craft</span>${craftMarks.map((m) =>
         `<span class="craft-mark">${esc(m)}</span>`).join("")}</div>` : "";
@@ -729,7 +750,7 @@ function buildViews(build, model, query) {
     if (!jokerByHost.has(j.host)) jokerByHost.set(j.host, []);
     jokerByHost.get(j.host).push(j);
   }
-  // Awakened set-membership picks (Vecna Lost Purpose / Cannith Repurposing Station),
+  // Set-membership picks (Vecna Lost Purpose or Dinosaur Bone Set Bonus),
   // keyed by host item like jokers.
   const membershipByHost = new Map();
   for (const m of build.membershipPlaced || []) {

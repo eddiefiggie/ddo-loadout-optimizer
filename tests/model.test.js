@@ -325,7 +325,7 @@ test("dominates: an affix item does NOT dominate a Green Steel host it can't mat
 
 test("dominates: an affix item does NOT dominate a chosen set-membership host it can't match", () => {
   // Regression: a Lost Purpose / Dino Set-Bonus host's value lives in
-  // set_membership_slot.pool (which sets it can awaken toward a threshold), outside
+  // set_membership_slot.pool (which sets it can join toward a threshold), outside
   // variantBuckets AND set_bonus. A stronger plain-affix rival lacking the slot must
   // NOT prune it (the same trap as Dino blanks / seal / joker hosts).
   const real = v("Real", "Helmet", [["Constitution", "Enhancement", 12]]);
@@ -339,7 +339,7 @@ test("dominates: an affix item does NOT dominate a chosen set-membership host it
 });
 
 test("dominanceFilter keeps a dominated membership host in a multi-pick slot", () => {
-  // Two Rings that can both awaken the same set: A dominates B on the target, but in a
+  // Two Rings that can both join the same set: A dominates B on the target, but in a
   // cardinality-2 slot both are needed to reach a piece threshold, so neither is pruned.
   const A = v("RingA", "Ring", [["Strength", "Enhancement", 10]]);
   const B = v("RingB", "Ring", [["Strength", "Enhancement", 6]]);

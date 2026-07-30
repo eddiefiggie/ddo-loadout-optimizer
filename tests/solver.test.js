@@ -1100,7 +1100,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
 
   await test("MEMBERSHIP/awaken-only: 3 Lost Purpose items awaken one set to hit a 3-piece threshold (no intrinsic member)", async () => {
     // The case the joker structurally CANNOT do: complete a set with zero fixed
-    // members equipped, purely from awakened pieces (self-seeded threshold).
+    // members equipped, purely from chosen-membership pieces (self-seeded threshold).
     const SET = "Legendary Vol's Influence";
     const DEFS = { [SET]: memberDef([{ n: 3, affixes: [["Constitution", "Profane", 8]] }]) };
     const pool = [SET];
@@ -1114,12 +1114,12 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     };
     const r = await S.solveLexicographic(model, highs);
     assert.strictEqual(r.status, "optimal");
-    assert.ok(r.setsActive.some((s) => s.set === SET), "awaken-only completion activates the set (joker cannot do this)");
+    assert.ok(r.setsActive.some((s) => s.set === SET), "membership-only completion activates the set (joker cannot do this)");
     assert.strictEqual(r.effective.Constitution, 8, "the set's 3-piece bonus reaches the total");
-    assert.strictEqual((r.membershipPlaced || []).length, 3, "three awakens reported");
+    assert.strictEqual((r.membershipPlaced || []).length, 3, "three membership picks reported");
     // determinism
     const again = await S.solveLexicographic(model, highs);
-    assert.deepStrictEqual(again.membershipPlaced, r.membershipPlaced, "awaken assignment is deterministic");
+    assert.deepStrictEqual(again.membershipPlaced, r.membershipPlaced, "membership assignment is deterministic");
   });
 
   await test("MEMBERSHIP/below-threshold: 2 of 3 do not activate", async () => {
@@ -1134,7 +1134,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.ok(!r.setsActive.some((s) => s.set === SET), "2 pieces below the 3-piece threshold do not activate");
   });
 
-  await test("MEMBERSHIP/single-pick: one host awakens exactly one set", async () => {
+  await test("MEMBERSHIP/single-pick: one host joins exactly one set", async () => {
     const DEFS = {
       SetA: memberDef([{ n: 1, affixes: [["Strength", "Profane", 5]] }]),
       SetB: memberDef([{ n: 1, affixes: [["Constitution", "Profane", 5]] }]),
@@ -1144,12 +1144,12 @@ function setPiece(id, slotName, affixes, setName, tiers) {
       worn: [slot("Helmet", [memberHost("H1", "Helmet", ["SetA", "SetB"])])],
     };
     const r = await S.solveLexicographic(model, highs);
-    assert.strictEqual((r.membershipPlaced || []).length, 1, "one host awakens exactly one set, not both");
-    assert.strictEqual(r.effective.Strength, 5, "the priority-1 set is the one awakened");
-    assert.strictEqual(r.effective.Constitution, 0, "the second set is not awakened on the same host");
+    assert.strictEqual((r.membershipPlaced || []).length, 1, "one host joins exactly one set, not both");
+    assert.strictEqual(r.effective.Strength, 5, "the priority-1 set is the one chosen");
+    assert.strictEqual(r.effective.Constitution, 0, "the second set is not chosen on the same host");
   });
 
-  await test("MEMBERSHIP/fixed+awakened mix: a fixed Forbidden Knowledge weapon + 1 awakened piece complete a 2-piece tier", async () => {
+  await test("MEMBERSHIP/fixed+chosen-membership mix: a fixed Forbidden Knowledge weapon + 1 chosen-membership piece complete a 2-piece tier", async () => {
     const SET = "Legendary Forbidden Knowledge";
     const tier = [{ n: 2, affixes: [["Constitution", "Profane", 10]] }];
     const DEFS = { [SET]: memberDef(tier) };
@@ -1161,20 +1161,20 @@ function setPiece(id, slotName, affixes, setName, tiers) {
              slot("Helmet", [memberHost("LP", "Helmet", [SET])])],
     };
     const r = await S.solveLexicographic(model, highs);
-    assert.ok(r.setsActive.some((s) => s.set === SET), "fixed weapon piece + 1 awakened piece complete the 2-piece tier");
-    assert.strictEqual((r.membershipPlaced || []).length, 1, "one awaken reported (the weapon is intrinsic, not an awaken)");
+    assert.ok(r.setsActive.some((s) => s.set === SET), "fixed weapon piece + 1 chosen-membership piece complete the 2-piece tier");
+    assert.strictEqual((r.membershipPlaced || []).length, 1, "one membership pick reported (the weapon is intrinsic, not a membership pick)");
   });
 
-  await test("MEMBERSHIP/no-fabrication: an awaken with no set benefit is not placed", async () => {
+  await test("MEMBERSHIP/no-fabrication: a membership pick with no set benefit is not placed", async () => {
     const SET = "Legendary Vol's Influence";
     const DEFS = { [SET]: memberDef([{ n: 3, affixes: [["Constitution", "Profane", 8]] }]) };
-    // only one host -> a 3-piece set can never complete -> no awaken fired
+    // only one host -> a 3-piece set can never complete -> no membership pick fired
     const model = {
       targets: ["Constitution"], mlCap: 34, dodgeCap: null, membershipSetDefs: DEFS,
       worn: [slot("Helmet", [memberHost("H1", "Helmet", [SET])])],
     };
     const r = await S.solveLexicographic(model, highs);
-    assert.strictEqual((r.membershipPlaced || []).length, 0, "a non-load-bearing awaken is not fabricated");
+    assert.strictEqual((r.membershipPlaced || []).length, 0, "a non-load-bearing membership pick is not fabricated");
   });
 
   await test("MEMBERSHIP/real items: an awaken-only set is awakened on real Lost Purpose gear", async () => {
@@ -1191,18 +1191,18 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     const model = buildModel(data.items, query, data.dino_inserts, data.nearly_complete, data.viktranium, data.seal, data.membership_set_defs);
     const r = await S.solveLexicographic(model, highs);
     assert.strictEqual(r.status, "optimal");
-    const awakened = new Set((r.membershipPlaced || []).map((m) => m.set));
-    assert.ok(awakened.size > 0, "at least one Vecna set is awakened on real Lost Purpose gear");
+    const memberSets = new Set((r.membershipPlaced || []).map((m) => m.set));
+    assert.ok(memberSets.size > 0, "at least one Vecna set is awakened on real Lost Purpose gear");
     assert.ok((r.membershipPlaced || []).every((m) => m.station === "Cannith Repurposing Station"),
-      "every awaken prescription names the Cannith Repurposing Station");
-    // whatever set was awakened is genuinely active (load-bearing guard holds on real data)
+      "every membership prescription names the Cannith Repurposing Station");
+    // whatever set was chosen is genuinely active (load-bearing guard holds on real data)
     const active = new Set((r.setsActive || []).map((s) => s.set));
-    for (const s of awakened) assert.ok(active.has(s), `${s} is active where awakened`);
+    for (const s of memberSets) assert.ok(active.has(s), `${s} is active where chosen`);
   });
 
-  await test("MEMBERSHIP/dino: a Dinosaur Bone Set-Bonus host awakens a Dino set at its own station", async () => {
+  await test("MEMBERSHIP/dino: a Dinosaur Bone Set-Bonus host joins a Dino set at its own station", async () => {
     // U4: the shared primitive also drives Dino Set-Bonus. 3 Dinosaur Bone Armor/Helmet/
-    // Cloak hosts awaken the same 3-piece Dino set (Dread Stalker) — reported at the
+    // Cloak hosts join the same 3-piece Dino set (Dread Stalker) — reported at the
     // Dinosaur Bone crafting station, not the Cannith one.
     const SET = "Dread Stalker";
     const DEFS = { [SET]: memberDef([{ n: 3, affixes: [["Melee Power", "Artifact", 15]] }]) };
@@ -1217,8 +1217,8 @@ function setPiece(id, slotName, affixes, setName, tiers) {
              slot("Cloak", [dinoHost("DC", "Cloak")])],
     };
     const r = await S.solveLexicographic(model, highs);
-    assert.ok(r.setsActive.some((s) => s.set === SET), "the Dino set activates from 3 awakened Set-Bonus slots");
-    assert.strictEqual((r.membershipPlaced || []).length, 3, "three Dino awakens reported");
+    assert.ok(r.setsActive.some((s) => s.set === SET), "the Dino set activates from 3 chosen Set-Bonus slots");
+    assert.strictEqual((r.membershipPlaced || []).length, 3, "three Dino membership picks reported");
     assert.ok(r.membershipPlaced.every((m) => m.station === "Dinosaur Bone crafting"), "reported at the Dino station");
   });
 
@@ -1226,7 +1226,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     // A Lost Purpose host equipped for its plain worn affix, but its 3-piece set
     // cannot complete (only one such host). On a tieBreak:false solve (the path every
     // alternative re-solve takes) the member var may float to 1 for free — but the set
-    // is inactive, so no awaken must be prescribed (it would buy nothing).
+    // is inactive, so no membership pick must be prescribed (it would buy nothing).
     const SET = "Legendary Vol's Influence";
     const DEFS = { [SET]: memberDef([{ n: 3, affixes: [["Universal Spell Power", "Artifact", 25]] }]) };
     const host = memberHost("LP", "Helmet", [SET], [["Constitution", "Enhancement", 12]]);
@@ -1237,13 +1237,13 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     const program = S.buildProgram(model);
     const r = S.solveConstrained(program, highs, { objectiveStat: "Constitution", sense: "max", tieBreak: false });
     assert.strictEqual(r.status, "optimal");
-    assert.strictEqual((r.membershipPlaced || []).length, 0, "no awaken reported when the set is inactive on a tieBreak:false solve");
+    assert.strictEqual((r.membershipPlaced || []).length, 0, "no membership pick reported when the set is inactive on a tieBreak:false solve");
   });
 
-  await test("MEMBERSHIP/end-to-end: real exported set defs self-seed an awaken-only completion", async () => {
+  await test("MEMBERSHIP/end-to-end: real exported set defs self-seed an membership-only completion", async () => {
     // The full path: build_dataset exported membership_set_defs -> the solver
     // self-seeds a threshold with NO fixed member equipped -> 3 Lost Purpose hosts
-    // awaken Legendary Vol's Influence and complete its 3-piece Artifact bonus.
+    // join Legendary Vol's Influence and complete its 3-piece Artifact bonus.
     const fs = require("fs");
     const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
     const defs = data.membership_set_defs || {};
@@ -1257,9 +1257,9 @@ function setPiece(id, slotName, affixes, setName, tiers) {
       worn: [slot("Helmet", [lp("Helmet")]), slot("Cloak", [lp("Cloak")]), slot("Gloves", [lp("Gloves")])],
     };
     const r = await S.solveLexicographic(model, highs);
-    assert.ok(r.setsActive.some((s) => s.set === SET), "the real def self-seeds and the set activates from 3 awakened pieces");
+    assert.ok(r.setsActive.some((s) => s.set === SET), "the real def self-seeds and the set activates from 3 chosen pieces");
     assert.strictEqual(r.effective["Universal Spell Power"], 25, "the set's real +25 Artifact USP reaches the total");
-    assert.strictEqual((r.membershipPlaced || []).length, 3, "three awakens prescribed");
+    assert.strictEqual((r.membershipPlaced || []).length, 3, "three membership picks prescribed");
     assert.ok(r.membershipPlaced.every((m) => m.station === "Cannith Repurposing Station"), "prescriptions name the station");
   });
 

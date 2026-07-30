@@ -304,7 +304,7 @@ function buildProgram(model) {
     extraConstraints.push(`${qs.join(" + ")}${rhs} <= 0`);
   }
 
-  // U81 Nearly Complete — a parametric choice-slot on an item. An item carrying
+  // U81 Nearly Completed — a parametric choice-slot on an item. An item carrying
   // `nearly_complete: <category>` may craft one option from that category's pool
   // (at the item's tier): each candidate option gets a placement binary n, its
   // stat is a contribution gated [n], n is available only when the host item is
@@ -367,7 +367,7 @@ function buildProgram(model) {
   // U81 Viktranium ("Lamordia") — a typed choice-slot on an item. Each entry in
   // `lamordia_slots` is an independent slot of a (type, category); it may craft
   // one option from the matching pool at the host's tier. Same gated select-one
-  // primitive as Nearly Complete: a per-option binary n gated by the host item
+  // primitive as Nearly Completed: a per-option binary n gated by the host item
   // (n - x_item <= 0), its stat fed into the (stat, bonus_type) bucket [n], and
   // Σ n <= 1 PER SLOT — so an item with two Lamordia slots gets two independent
   // choices. Tier from the host's ML (ML>=35 Legendary), matching lamordiaTier.
@@ -401,7 +401,7 @@ function buildProgram(model) {
   // Seal slots ("Sealed in X") — a single-pick choice-slot on an item. Each entry
   // in `seal_slots` may unseal ONE option from its seal_type's pool at a crafting
   // table; picking another replaces the original (mutually exclusive). Same gated
-  // select-one primitive as Nearly Complete / Viktranium: a per-option binary n
+  // select-one primitive as Nearly Completed / Viktranium: a per-option binary n
   // gated by the host item (n - x_item <= 0), its stat fed into the (stat,
   // bonus_type) bucket [n], and Σ n <= 1 PER SLOT. The pool is keyed by seal_type
   // ALONE — unlike Viktranium's (slot_type, category) key, a seal type is one flat
@@ -541,13 +541,13 @@ function buildProgram(model) {
 
   // Chosen set-membership slot (Vecna "Lost Purpose" / Cannith Repurposing Station,
   // and Dino Set-Bonus). A host with `set_membership_slot: {pool:[...sets], station}`
-  // may AWAKEN exactly one set from its pool. Unlike the joker — which only feeds a set
+  // may JOIN exactly one set from its pool. Unlike the joker — which only feeds a set
   // already registered by an equipped FIXED member (the set/joker blocks above) — a
   // membership slot SELF-SEEDS the set threshold from the runtime membershipSetDefs
   // table, so an awaken-only set (no intrinsic member equipped, e.g. every Vecna Lost
-  // Purpose set) is reachable purely from awakened pieces. Per host: one pick binary
+  // Purpose set) is reachable purely from chosen-membership pieces. Per host: one pick binary
   // per pool set that has a def, gated by the host (m - x_host <= 0), appended to
-  // setPieces[set]; Σ m <= 1 per host (single, mutually-exclusive awaken). The tie-break
+  // setPieces[set]; Σ m <= 1 per host (single, mutually-exclusive membership pick). The tie-break
   // minimizes member vars (like jokers) so a pick is 1 only when it is a load-bearing
   // piece. For an intrinsic-anchored set (Dino, Forbidden Knowledge) the fixed pieces
   // still register and sum in normally — self-seeding is idempotent with fixed members.
@@ -558,13 +558,13 @@ function buildProgram(model) {
     const mslot = xv.variant.set_membership_slot;
     if (!mslot || !(mslot.pool || []).length) continue;
     const opts = [];
-    const hostSets = new Set(); // one awaken per host, even if a set repeats in the pool
+    const hostSets = new Set(); // one membership pick per host, even if a set repeats in the pool
     for (const setName of mslot.pool) {
       if (hostSets.has(setName)) continue;
       // self-seed: register the set's tiers from the def even with no fixed member.
       if (!setTiers.has(setName)) {
         const def = membershipDefs[setName];
-        if (!def) continue; // no runtime def -> cannot value this awaken (strict: never fabricate)
+        if (!def) continue; // no runtime def -> cannot value this membership pick (strict: never fabricate)
         const byLabel = new Map();
         for (const tier of def.tiers || []) {
           if (tier.pieces_required == null || !(tier.affixes || []).length) continue;
@@ -583,7 +583,7 @@ function buildProgram(model) {
       setPieces.get(setName).push(m);                     // counts toward the set's threshold
       memberMeta.set(m, { host: xv.variant.variant_id, set: setName, station: mslot.station || null });
     }
-    if (opts.length) extraConstraints.push(`${opts.join(" + ")} <= 1`); // single awaken per host
+    if (opts.length) extraConstraints.push(`${opts.join(" + ")} <= 1`); // single membership pick per host
   }
 
   let sc = 0;
@@ -649,8 +649,8 @@ function encodeStage(program, { objectiveStat, objTerms, sense, locks, tieBreak,
     // is the load-bearing Nth piece of a completed set), and ties among equally-good
     // pool sets resolve deterministically by option order.
     const n = program.xVars.length;
-    // Joker AND membership (awaken) vars are both minimized here so a wildcard pick or
-    // a Cannith/Dino awaken is set to 1 only when a locked constraint forces it (it is
+    // Joker AND membership vars are both minimized here so a wildcard pick or
+    // a Cannith/Dino membership pick is set to 1 only when a locked constraint forces it (it is
     // the load-bearing Nth piece of a completed set), resolving ties deterministically.
     const minVars = [...(program.jokerVars || []), ...(program.memberVars || [])];
     const terms = program.xVars.map((xv, i) => `+ ${i + 1} ${xv.name}`)
@@ -755,9 +755,9 @@ function breakdownByTarget(program, prim) {
     }
     if (program.sealMeta && program.sealMeta.has(gate)) { const m = program.sealMeta.get(gate); return { kind: "seal", label: `Sealed in ${m.seal_type}`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.dinoMeta && program.dinoMeta.has(gate)) return { kind: "dino", label: `${program.dinoMeta.get(gate).dino_type} insert` };
-    if (program.ncMeta && program.ncMeta.has(gate)) { const m = program.ncMeta.get(gate); return { kind: "nc", label: "Nearly Complete", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
+    if (program.ncMeta && program.ncMeta.has(gate)) { const m = program.ncMeta.get(gate); return { kind: "nc", label: "Nearly Completed", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.rollMeta && program.rollMeta.has(gate)) { const m = program.rollMeta.get(gate); return { kind: "roll", label: "choice slot", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
-    if (program.vikMeta && program.vikMeta.has(gate)) { const m = program.vikMeta.get(gate); return { kind: "vik", label: `Lamordia ${m.slot_type}`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
+    if (program.vikMeta && program.vikMeta.has(gate)) { const m = program.vikMeta.get(gate); return { kind: "vik", label: `Slot ${m.slot_type} Viktranium augment`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.tfMeta && program.tfMeta.has(gate)) { const m = program.tfMeta.get(gate); return { kind: "tf", label: `Thunder-Forged Tier ${m.tier}`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.gsMeta && program.gsMeta.has(gate)) { const m = program.gsMeta.get(gate); return { kind: "gs", label: "Green Steel", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.placeMeta && program.placeMeta.has(gate)) return { kind: "augment", label: program.placeMeta.get(gate).variant_id };
@@ -843,12 +843,12 @@ function readSolution(res, program) {
   for (const [j, meta] of program.jokerMeta || []) {
     if (prim(j) > 0.5 && realShort.has(meta.set)) jokerPlaced.push(meta);
   }
-  // Awakened set-membership picks (Cannith Repurposing Station / Dino Set-Bonus).
+  // Set-membership picks (Cannith Repurposing Station / Dino Set-Bonus).
   // Guard on the set being ACTIVE, mirroring the joker's load-bearing guard: on a
   // tieBreak:false solve (every alternatives re-solve) a member var can float to 1
-  // for free even when its set never activates, which would prescribe an awaken that
+  // for free even when its set never activates, which would prescribe a membership pick that
   // buys nothing. The optimum path minimizes member vars, but the guard must hold on
-  // all solve paths — report an awaken only when its set is actually active.
+  // all solve paths — report a membership pick only when its set is actually active.
   const activeSetNames = new Set(setsActive.map((m) => m.set));
   const membershipPlaced = [];
   for (const [m, meta] of program.memberMeta || []) {

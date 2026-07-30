@@ -68,7 +68,7 @@ function dinoInsertRow(ins) {
   return {
     variant_id: title,
     source_item: `Isle of Dread Dino insert (${category})`,
-    slot: `Dino Insert (${ins.dino_type} / ${category})`,
+    slot: `Dinosaur Bone augment (${ins.dino_type} / ${category})`,
     minimum_level: 31,
     verification: "verified",
     affixes,
@@ -83,9 +83,9 @@ function dinoInsertRow(ins) {
  *  option; this is inventory visibility only. */
 function ncRow(opt) {
   return {
-    variant_id: `Nearly Complete: ${opt.stat} (${opt.tier})`,
-    source_item: `U81 Nearly Complete — ${opt.category}`,
-    slot: `Nearly Complete (${opt.category})`,
+    variant_id: `Nearly Completed: ${opt.stat} (${opt.tier})`,
+    source_item: `Nearly Completed — ${opt.category}`,
+    slot: `Nearly Completed (${opt.category})`,
     minimum_level: opt.tier === "legendary" ? 35 : 11,
     verification: "verified",
     affixes: [{ stat: opt.stat, bonus_type: opt.bonus_type, value: opt.value, unit: opt.unit || "flat" }],
@@ -100,9 +100,9 @@ function ncRow(opt) {
  *  slot selects one option; this is inventory visibility only. */
 function vikRow(opt) {
   return {
-    variant_id: `Lamordia ${opt.slot_type}: ${opt.stat} (${opt.tier})`,
-    source_item: `U81 Viktranium — ${opt.slot_type} (${opt.category})`,
-    slot: `Lamordia (${opt.slot_type} ${opt.category})`,
+    variant_id: `Slot ${opt.slot_type} Viktranium augment: ${opt.stat} (${opt.tier})`,
+    source_item: `Viktranium — ${opt.slot_type} (${opt.category})`,
+    slot: `Viktranium (${opt.slot_type} ${opt.category})`,
     minimum_level: opt.tier === "legendary" ? 34 : 8,
     verification: "verified",
     affixes: [{ stat: opt.stat, bonus_type: opt.bonus_type, value: opt.value, unit: opt.unit || "flat" }],

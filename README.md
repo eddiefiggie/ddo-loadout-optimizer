@@ -18,9 +18,9 @@ And it doesn't stop at what drops — it tells you **what to craft**:
 
 - **Which augment goes in which slot** (respecting the real color-fit matrix — Colorless anywhere, Red into Red/Purple/Orange, etc.).
 - **Which "Sealed in X" effect to unseal** at the Ritual Table.
-- **Which Nearly Complete / Viktranium (Lamordia) option to pick.**
+- **Which Nearly Completed / Viktranium (Lamordia) option to pick.**
 - **Which Dinosaur Bone insert to slot.**
-- **Which set bonus to awaken** on a Vecna *Lost Purpose* item at the **Cannith Repurposing Station**, or on a Dinosaur Bone host — including completing an artifact set (Vol's Influence, Delight of the Devourer, and the rest) that isn't found natively on *any* item.
+- **Which set bonus to craft into a host** — *awaken* it on a Vecna *Lost Purpose* item at the **Cannith Repurposing Station**, or slot a **Set Bonus augment** on a Dinosaur Bone host — including completing an artifact set (Vol's Influence, Delight of the Devourer, and the rest) that isn't found natively on *any* item.
 
 ## What's modeled
 
@@ -34,9 +34,9 @@ Coverage that's live today:
 | Set bonuses (intrinsic + piece thresholds) | ✅ |
 | Augments (multi-fit colors, Lunar/Solar) | ✅ |
 | **Vecna Unleashed set crafting** (Lost Purpose → awaken 1 of 11 sets) | ✅ |
-| **Dino Set-Bonus** (Isle of Dread, awaken 1 of 6 sets) | ✅ |
+| **Dino Set-Bonus** (Isle of Dread, slot 1 of 6 Set Bonus augments) | ✅ |
 | Sealed in X (Ritual Table) | ✅ Undeath sourced; Fire/Gloom/Mist pending |
-| Nearly Complete (Terror of Demogorgon, U81) | ✅ |
+| Nearly Completed (Terror of Demogorgon, U81) | ✅ |
 | Viktranium / Lamordia experiment (Chill of Ravenloft, U75) | ✅ |
 | Dinosaur Bone inserts (Isle of Dread) | ✅ |
 | Endgame band ML 30–36 (U81 / Isle of Dread / Myth Drannor) | ✅ named + raid gear solver-active |
@@ -52,16 +52,16 @@ Everything is **wiki-sourced and exclude-until-verified**: if the DDO Wiki doesn
 4. Hit **Solve**. In well under a second you get:
    - a **paperdoll** of the optimal loadout, set pieces highlighted;
    - a **ranked-priority readout** showing exactly where each point of every stat comes from (which item, which set, which bonus type);
-   - a **Loadout Deep Dive** with every item's affixes and every craft/augment/awaken to apply;
+   - a **Loadout Deep Dive** with every item's affixes and every craft/augment/set-membership to apply;
    - an **Alternatives** tab of near-optimal trade-off builds (complete a different set, free up a slot, fewer crafting steps).
 
 There's also an **Item Browser** to search and filter the whole indexed roster.
 
 ## How it works (for the theorycrafters)
 
-It's a real solver, not a script full of if-statements. Every stat source — a worn affix, an augment, a set tier, a crafted option, an awakened set — is a **gated contribution** `(stat, bonus_type, value)` that only counts when its enabling conditions hold. Those feed a mixed-integer linear program solved **in your browser** by [HiGHS](https://highs.dev/) compiled to WebAssembly, run as a staged lexicographic solve. Same math a good spreadsheet-wielding theorycrafter does — just exhaustive, exact, and instant.
+It's a real solver, not a script full of if-statements. Every stat source — a worn affix, an augment, a set tier, a crafted option, a crafted set membership — is a **gated contribution** `(stat, bonus_type, value)` that only counts when its enabling conditions hold. Those feed a mixed-integer linear program solved **in your browser** by [HiGHS](https://highs.dev/) compiled to WebAssembly, run as a staged lexicographic solve. Same math a good spreadsheet-wielding theorycrafter does — just exhaustive, exact, and instant.
 
-The interesting recent addition is a general **chosen-set-membership** primitive: the same machinery that models "this Lost Purpose item can awaken any one of 11 sets" also models the Dino Set-Bonus, and it can complete an artifact set with *no* natively-dropping members purely from awakened pieces.
+The interesting recent addition is a general **chosen-set-membership** primitive: the same machinery that models "this Lost Purpose item can awaken any one of 11 sets" also models the Dino Set-Bonus, and it can complete an artifact set with *no* natively-dropping members purely from crafted-membership pieces.
 
 ## Build & run (developers)
 
@@ -75,7 +75,7 @@ node tests/model.test.js tests/browse.test.js tests/results.test.js
 
 `web/data/items.json` is a **generated artifact** (gitignored) — edit the pipeline (`build_dataset.py` + `src/`) and the seed data, never the JSON. The `web/` folder is a self-contained static site deployed to GitHub Pages by `.github/workflows/deploy.yml` (rebuilds the dataset + runs the full test suite, then deploys on every push to `main`).
 
-**Set definitions are single-source-of-truth:** all named-set bonuses (including the ones a Lost Purpose / Dino host can awaken) come from the gear-planner set catalog, so an awakened set and an intrinsically-completed one always give identical stats.
+**Set definitions are single-source-of-truth:** all named-set bonuses (including the ones a Lost Purpose or Dino host can craft toward) come from the gear-planner set catalog, so a crafted-membership set and an intrinsically-completed one always give identical stats.
 
 ## Files
 - `web/` — the static app (`solver.js`, `model.js`, `query.js`, `results.js`, `browse.js`, `alternatives.js`).
@@ -84,4 +84,4 @@ node tests/model.test.js tests/browse.test.js tests/results.test.js
 - `docs/plans/` — the feature plans (brainstorm → plan) behind each milestone.
 
 ## Resume prompt
-> Resuming the **ddo-loadout-optimizer** garage project (`~/ClaudeGarage/personal/ddo-loadout-optimizer/`). Public DDO best-in-slot optimizer, live at eddiefiggie.github.io/ddo-loadout-optimizer. Input = ML cap + class/race + armor + weapon setup + a ranked affix list; output = the provably-optimal fully-upgraded loadout (item + tier + augment-in-slot + crafted options + chosen/awakened set bonuses), every value wiki-sourced (Claude-in-Chrome scrape; plain fetch returns empty for ddowiki). **Client-side static app on GitHub Pages**; exact MILP in-browser via **HiGHS-WASM**, staged lexicographic solve, deterministic tie-break; Python generator builds `web/data/items.json`. Core rules: strict lexicographic priority; pure theoretical BiS (no per-user inventory); strict exclude-until-verified data with per-result coverage disclosure; **never infer a value**. **State (2026-07-28):** Milestones 1–3 live; endgame band ML30-36 (U81/IoD/Myth Drannor) solver-active; crafting modeled — augments, seal/Ritual Table (Undeath), Nearly Complete, Viktranium, Dino inserts; **Vecna Lost Purpose + Dino Set-Bonus set-crafting SHIPPED** via a general self-seeding **chosen-set-membership primitive** (`web/solver.js`), 28 awakenable sets, awakens rendered in the Loadout Deep Dive with their crafting station. **Set defs come from the gear-planner catalog (single source of truth) — never re-harvest into a parallel file.** Marker-only carrier shards (mirror `_seal_carrier`) attach markers to items already solver-active via the gear-planner import (KTD6 dedup trap). Data pipeline: seed → `build_dataset.py` → `web/data/items.json` (gitignored). Next candidates: filigrees, more enriched Vecna/IoD gear, remaining crafting systems (Green Steel, Thunder-Forged, Essence).
+> Resuming the **ddo-loadout-optimizer** garage project (`~/ClaudeGarage/personal/ddo-loadout-optimizer/`). Public DDO best-in-slot optimizer, live at eddiefiggie.github.io/ddo-loadout-optimizer. Input = ML cap + class/race + armor + weapon setup + a ranked affix list; output = the provably-optimal fully-upgraded loadout (item + tier + augment-in-slot + crafted options + chosen set-membership bonuses), every value wiki-sourced (Claude-in-Chrome scrape; plain fetch returns empty for ddowiki). **Client-side static app on GitHub Pages**; exact MILP in-browser via **HiGHS-WASM**, staged lexicographic solve, deterministic tie-break; Python generator builds `web/data/items.json`. Core rules: strict lexicographic priority; pure theoretical BiS (no per-user inventory); strict exclude-until-verified data with per-result coverage disclosure; **never infer a value**. **State (2026-07-28):** Milestones 1–3 live; endgame band ML30-36 (U81/IoD/Myth Drannor) solver-active; crafting modeled — augments, seal/Ritual Table (Undeath), Nearly Completed, Viktranium, Dino inserts; **Vecna Lost Purpose + Dino Set-Bonus set-crafting SHIPPED** via a general self-seeding **chosen-set-membership primitive** (`web/solver.js`), 28 craftable-membership sets (Vecna *awakens* a set; Dino slots a Set Bonus augment), memberships rendered in the Loadout Deep Dive with their crafting station. **Set defs come from the gear-planner catalog (single source of truth) — never re-harvest into a parallel file.** Marker-only carrier shards (mirror `_seal_carrier`) attach markers to items already solver-active via the gear-planner import (KTD6 dedup trap). Data pipeline: seed → `build_dataset.py` → `web/data/items.json` (gitignored). Next candidates: filigrees, more enriched Vecna/IoD gear, remaining crafting systems (Green Steel, Thunder-Forged, Essence).
