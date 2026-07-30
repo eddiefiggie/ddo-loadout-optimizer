@@ -202,14 +202,14 @@ function coverageNote(dataset) {
       (aug != null ? ` (${aug} placeable)` : "") +
       ", set bonuses" + (setAff != null ? ` (${setAff} threshold effects)` : "") +
       ", Isle of Dread Dino crafting" + (dinoElig != null ? ` (${dinoElig} inserts across Accessory/Armor/Weapon/Raid slots, ${dc.blank_hosts != null ? dc.blank_hosts + " hosts" : "typed"})` : "") +
-      ", U81 Nearly Complete crafting" +
+      ", Nearly Completed crafting" +
       (ncHosts ? ` (${ncHosts} item hosts, ${ncElig != null ? ncElig + " options" : "sourced pool"})` : "") +
-      ", U81 Viktranium / Lamordia crafting" +
+      ", Viktranium Experiment crafting" +
       (vikHosts ? ` (${vikHosts} item hosts, ${vikElig != null ? vikElig + " options" : "sourced pool"})` : "") +
       ", and Sealed-in-Undeath seal-slot crafting" +
       (sealHosts ? ` (${sealHosts} item hosts, ${sealElig != null ? sealElig + " options" : "sourced pool"})` : ""),
     "<strong>Coverage:</strong> results reflect only verified, wiki-sourced data; ambiguous effects are quarantined and excluded",
-    "<strong>Pending:</strong> the Dino Set-Bonus pool (crafted set-membership; sourced + browsable, activation awaits intrinsic named/raid set pieces)" +
+    "<strong>Pending:</strong> the Dinosaur Bone Set Bonus augments (crafted and slotted on Isle of Dread hosts; sourced + browsable, activation awaits intrinsic named/raid set pieces)" +
       (sealPending ? `, the Sealed-in-${sealPending} seal pools (hosts identified, option pools awaiting harvest)` : "") +
       ", and other expansion crafting systems",
     "<strong>Compendium:</strong> " +
@@ -440,9 +440,9 @@ function equippedBody(v) {
     ? `<div class="pd-slots"><span class="pd-slabel">Augments</span>${augColors.map((c) =>
         `<span class="aug-pip aug-${esc(String(c).toLowerCase())}" title="${esc(c)} augment slot">${esc(c)}</span>`).join("")}</div>` : "";
   const craftMarks = [];
-  if (v.green_steel_slot) craftMarks.push("Greensteel");
+  if (v.green_steel_slot) craftMarks.push("Green Steel");
   if (v.seal_slots) craftMarks.push("Seal");
-  if (v.lamordia_slots) craftMarks.push("Lamordia");
+  if (v.lamordia_slots) craftMarks.push("Viktranium");
   const crafts = craftMarks.length
     ? `<div class="pd-slots"><span class="pd-slabel">Craft</span>${craftMarks.map((m) =>
         `<span class="craft-mark">${esc(m)}</span>`).join("")}</div>` : "";

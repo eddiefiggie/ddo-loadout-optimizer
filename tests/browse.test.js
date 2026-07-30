@@ -83,7 +83,7 @@ test("browsableItems appends the Dino insert pool as display rows", () => {
 test("a Dino insert is findable in the browser by stat", () => {
   const list = browsableItems(data);
   const rows = filterVariants(list, { stat: "Constitution" });
-  assert.ok(rows.some((v) => v.dino_insert && /^Dino Insert \(Scale\b/.test(v.slot)),
+  assert.ok(rows.some((v) => v.dino_insert && /^Dinosaur Bone augment \(Scale\b/.test(v.slot)),
     "the Scale Constitution insert should surface under the Constitution stat filter");
 });
 

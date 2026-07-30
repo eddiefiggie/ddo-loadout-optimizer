@@ -100,7 +100,7 @@ test("coverageNote discloses Dino crafting with all pools optimized and Set-Bonu
   const note = R.coverageNote({ metadata: { dino_coverage: { inserts_eligible: 85, blank_hosts: 11 } } });
   assert.ok(/Isle of Dread Dino crafting/.test(note), "names Dino crafting as optimized");
   assert.ok(/85 inserts across Accessory\/Armor\/Weapon\/Raid/.test(note), "shows the eligible count + pools");
-  assert.ok(/Set-Bonus/.test(note), "discloses the deferred Set-Bonus pool honestly");
+  assert.ok(/Dinosaur Bone Set Bonus/.test(note), "discloses the deferred Set Bonus augment pool honestly");
 });
 
 test("craftChips renders the Gem's wildcard set assignment, load-bearing only", () => {
@@ -187,7 +187,7 @@ test("coverageNote discloses the ML30-36 endgame band coverage per expansion", (
 test("coverageNote discloses Nearly Complete as optimized once item hosts exist", () => {
   const note = R.coverageNote({ metadata: { nc_coverage: { options_eligible: 68, hosts_activated: 17 } } });
   const optimized = note.split("Coverage:")[0];
-  assert.ok(/U81 Nearly Complete crafting/.test(optimized), "NC is listed under Optimized now that hosts exist");
+  assert.ok(/Nearly Completed crafting/.test(optimized), "NC is listed under Optimized now that hosts exist");
   assert.ok(/17 item hosts/.test(optimized), "discloses the activated host count");
   assert.ok(/68 options/.test(optimized), "discloses the eligible option count");
   assert.ok(!/no U81 item hosts are published/.test(note), "no longer claims hosts are pending");
@@ -196,7 +196,7 @@ test("coverageNote discloses Nearly Complete as optimized once item hosts exist"
 test("coverageNote discloses Viktranium/Lamordia as optimized once hosts exist", () => {
   const note = R.coverageNote({ metadata: { viktranium_coverage: { options_eligible: 194, hosts_active: 43 } } });
   const optimized = note.split("Coverage:")[0];
-  assert.ok(/U81 Viktranium \/ Lamordia crafting/.test(optimized), "Viktranium is listed under Optimized once hosts exist");
+  assert.ok(/Viktranium Experiment crafting/.test(optimized), "Viktranium is listed under Optimized once hosts exist");
   assert.ok(/43 item hosts/.test(optimized), "discloses the active host count");
   assert.ok(/194 options/.test(optimized), "discloses the eligible option count");
 });
