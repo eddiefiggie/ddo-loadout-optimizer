@@ -63,7 +63,18 @@ def test_loader_missing_file_is_empty_set():
     assert bd.load_artifacts("/nonexistent/artifacts.json") == set()
 
 
-def test_shipping_seed_is_empty_until_verified():
-    # Guards the exclude-until-verified contract: no unverified Artifacts shipped,
-    # so the feature is wired but inert until the seed is populated (KTD1).
-    assert bd.load_artifacts() == set()
+def test_shipping_seed_is_populated_from_verified_wiki_roster():
+    # The seed is harvested from the DDO wiki Minor Artifact categories. Every
+    # entry is a verified base-item name; the _README doc line is filtered out.
+    names = bd.load_artifacts()
+    assert len(names) >= 90, "expected the harvested Minor Artifact roster"
+    assert "Baphomet's Reign" in names, "a known Minor Artifact is present"
+    assert not any(n.startswith("_") for n in names), "the _README doc line is filtered"
+
+
+def test_a_real_artifact_item_is_flagged_in_the_built_dataset():
+    # End-to-end: a known Minor Artifact present in our dataset gets artifact:true.
+    out = bd.build(bd.load_seed())
+    flagged = {v["source_item"] for v in out["items"] if v.get("artifact")}
+    assert len(flagged) >= 50, "the harvested roster flags real items"
+    assert "Baphomet's Reign" in flagged
