@@ -268,23 +268,37 @@ function safeUrl(u) {
 const CraftingReg = (typeof CraftingSystems !== "undefined") ? CraftingSystems
   : (typeof require !== "undefined" ? require("./crafting-systems.js") : null);
 
+// One craft option's value label (e.g. "Constitution +15"). Shared by every
+// craft-chip family so the Deep Dive and the equipped block read identically.
+function craftLbl(o) {
+  return esc(affixLabel({ stat: o.stat, bonus_type: o.bonus_type, value: o.value, unit: o.unit || "flat" }));
+}
+
+// The applied craft-upgrade chips for one item — Dino inserts, Nearly Completed,
+// choice slots, Viktranium, seals, Thunder-Forged, Green Steel — keyed by the
+// chosen index (dino) or variant_id (the rest). Assigned crafts only (the maps
+// carry no empty-slot inventory). Shared by the Loadout Deep Dive (craftChips)
+// and the equipped-block detail (equippedBody, U2) so the two never drift.
+function craftSlotChips(v, idx, maps) {
+  const dinos = (maps.dinoAssign.byIndex.get(idx) || []).map((d) => {
+    const affixes = (d.affixes && d.affixes.length) ? d.affixes : [d];
+    const label = affixes.map(craftLbl).join(", ");
+    return `<span class="chip dino" title="Isle of Dread insert">${esc(d.dino_type)}: ${d.name ? esc(d.name) + ", " : ""}${label}</span>`;
+  });
+  const ncs = (maps.ncByItem.get(v.variant_id) || []).map((n) => `<span class="chip nc" title="Terror of Demogorgon — Nearly Completed">Nearly Completed: ${craftLbl(n)}</span>`);
+  const rolls = (maps.rollByItem.get(v.variant_id) || []).map((r) => `<span class="chip roll" title="choice slot, best option selected">Choice: ${craftLbl(r)}</span>`);
+  const viks = (maps.vikByItem.get(v.variant_id) || []).map((n) => `<span class="chip lamordia" title="The Chill of Ravenloft — Viktranium Experiment crafting">Slot ${esc(n.slot_type)} Viktranium augment: ${craftLbl(n)}</span>`);
+  const seals = (maps.sealByItem.get(v.variant_id) || []).map((n) => `<span class="chip seal" title="unseal one effect at the crafting table">Sealed in ${esc(n.seal_type)}: ${craftLbl(n)}</span>`);
+  const tfs = ((maps.tfByItem && maps.tfByItem.get(v.variant_id)) || []).map((n) => `<span class="chip thunderforged" title="Legendary Thunder-Forged tier upgrade">Thunder-Forged T${esc(n.tier)}: ${craftLbl(n)}</span>`);
+  const gss = ((maps.gsByItem && maps.gsByItem.get(v.variant_id)) || []).map((n) => `<span class="chip greensteel" title="Legendary Green Steel craft">Green Steel: ${craftLbl(n)}</span>`);
+  return [...dinos, ...ncs, ...rolls, ...viks, ...seals, ...tfs, ...gss];
+}
+
 function craftChips(v, idx, maps) {
-  const lbl = (o) => esc(affixLabel({ stat: o.stat, bonus_type: o.bonus_type, value: o.value, unit: o.unit || "flat" }));
   const augs = (maps.augAssign.byIndex.get(idx) || []).map((a) => {
     const where = a.slot_color && a.slot_color !== a.color ? `${a.color} in ${a.slot_color} slot` : (a.color || "");
     return `<span class="chip aug" title="augment slotted">${esc(a.variant_id)} <span class="muted">(${esc(where)})</span></span>`;
   });
-  const dinos = (maps.dinoAssign.byIndex.get(idx) || []).map((d) => {
-    const affixes = (d.affixes && d.affixes.length) ? d.affixes : [d];
-    const label = affixes.map(lbl).join(", ");
-    return `<span class="chip dino" title="Isle of Dread insert">${esc(d.dino_type)}: ${d.name ? esc(d.name) + ", " : ""}${label}</span>`;
-  });
-  const ncs = (maps.ncByItem.get(v.variant_id) || []).map((n) => `<span class="chip nc" title="Terror of Demogorgon — Nearly Completed">Nearly Completed: ${lbl(n)}</span>`);
-  const rolls = (maps.rollByItem.get(v.variant_id) || []).map((r) => `<span class="chip roll" title="choice slot, best option selected">Choice: ${lbl(r)}</span>`);
-  const viks = (maps.vikByItem.get(v.variant_id) || []).map((n) => `<span class="chip lamordia" title="The Chill of Ravenloft — Viktranium Experiment crafting">Slot ${esc(n.slot_type)} Viktranium augment: ${lbl(n)}</span>`);
-  const seals = (maps.sealByItem.get(v.variant_id) || []).map((n) => `<span class="chip seal" title="unseal one effect at the crafting table">Sealed in ${esc(n.seal_type)}: ${lbl(n)}</span>`);
-  const tfs = ((maps.tfByItem && maps.tfByItem.get(v.variant_id)) || []).map((n) => `<span class="chip thunderforged" title="Legendary Thunder-Forged tier upgrade">Thunder-Forged T${esc(n.tier)}: ${lbl(n)}</span>`);
-  const gss = ((maps.gsByItem && maps.gsByItem.get(v.variant_id)) || []).map((n) => `<span class="chip greensteel" title="Legendary Green Steel craft">Green Steel: ${lbl(n)}</span>`);
   const jokers = ((maps.jokerByHost && maps.jokerByHost.get(v.variant_id)) || []).map((j) => `<span class="chip joker" title="wildcard set piece">Wildcard set: ${esc(j.set)}</span>`);
   // Membership chip (R3/R4): Vecna Lost Purpose and Isle-of-Dread Set Bonus flow
   // through one solver primitive but must render different labels — fork on the
@@ -303,7 +317,7 @@ function craftChips(v, idx, maps) {
       : `slot a Dinosaur Bone Set Bonus augment at ${esc(m.station || "Dinosaur Bone crafting")}`;
     return `<span class="${cls}" title="${title}">${esc(text)}${m.station ? ` <span class="muted">(${esc(m.station)})</span>` : ""}</span>`;
   });
-  return [...augs, ...dinos, ...ncs, ...rolls, ...viks, ...seals, ...tfs, ...gss, ...jokers, ...memberships];
+  return [...augs, ...craftSlotChips(v, idx, maps), ...jokers, ...memberships];
 }
 
 /** Sets actually complete in the equipped loadout (U6) — the glow signal. Two
@@ -399,7 +413,7 @@ function loadoutDeepDive(result, query, maps, attr) {
 // item name (no truncation), ML, set membership, and a per-slot constraint
 // control (U6: pin the current item / lock empty / free). The wizard reads the
 // menu clicks via delegation, updates query.slotConstraints, and re-solves.
-function equippedRow(label, pick, slotConstraints, satisfied) {
+function equippedRow(label, pick, slotConstraints, satisfied, maps, augById) {
   const c = (slotConstraints || {})[label];
   const locked = c && c.type === "empty";
   const v = pick ? pick.variant : null;
@@ -421,10 +435,12 @@ function equippedRow(label, pick, slotConstraints, satisfied) {
   const nameCls = (!v || locked) ? "pd-rname muted" : "pd-rname";
   const foot = (v && !locked)
     ? `<div class="pd-rfoot"><span class="pd-rml">ML ${esc(v.minimum_level ?? "?")}</span>${setLine}</div>` : "";
-  // U9: per-item stats + augment slots + craft slots, shown uniformly on every
-  // occupied block (empty blocks stay the same height via the grid stretch + the
-  // .pd-row min-height). Data is intrinsic to the variant — no maps needed.
-  const body = (v && !locked) ? equippedBody(v) : "";
+  // U9/U2: per-item stats + assigned augments (with their affixes) + assigned
+  // craft slots, shown uniformly on every occupied block (empty blocks stay the
+  // same height via the grid stretch + the .pd-row min-height). Assignment data
+  // comes from `maps` (keyed by the pick's chosen index); `augById` resolves an
+  // augment's affixes by variant_id (the placed meta carries none).
+  const body = (v && !locked) ? equippedBody(v, pick ? pick.idx : -1, maps, augById) : "";
   const rowCls = `pd-row ${(!v || locked) ? "empty" : "occupied"}${glow ? " is-set" : ""}${isArtifact ? " is-artifact" : ""}${c ? " constrained" : ""}`;
   return `<div class="${rowCls}">
     <div class="pd-rtop"><div class="pd-rlabel">${esc(label)}</div>${ctl}</div>
@@ -433,24 +449,50 @@ function equippedRow(label, pick, slotConstraints, satisfied) {
   </div>`;
 }
 
-// The stats / augment-slot / craft-slot body of an equipped block (U9). Pure
-// projection over the variant; surfaces value even for slot-only items so no
-// occupied block renders blank.
-function equippedBody(v) {
+// The stats / augment / craft body of an equipped block. Projects the variant's
+// own affixes, then — when the assignment `maps` (and `idx`) are supplied (U2) —
+// the augments actually slotted (with the affixes they add, resolved by
+// variant_id via `augById`) alongside any still-open augment slots, and the
+// item's assigned craft-upgrade slots. Without maps it falls back to the plain
+// slot-color pips, so no occupied block renders blank.
+function equippedBody(v, idx, maps, augById) {
   const affixes = (v.affixes || []);
   const stats = affixes.length
     ? `<ul class="pd-stats">${affixes.map((a) => `<li>${esc(affixLabel(a))}</li>`).join("")}</ul>` : "";
-  const augColors = (v.augment_slots_norm && v.augment_slots_norm.colors) || v.augment_slots || [];
-  const augs = augColors.length
-    ? `<div class="pd-slots"><span class="pd-slabel">Augments</span>${augColors.map((c) =>
-        `<span class="aug-pip aug-${esc(String(c).toLowerCase())}" title="${esc(c)} augment slot">${esc(c)}</span>`).join("")}</div>` : "";
-  const craftMarks = [];
-  if (v.green_steel_slot) craftMarks.push("Green Steel");
-  if (v.seal_slots) craftMarks.push("Seal");
-  if (v.lamordia_slots) craftMarks.push("Viktranium");
-  const crafts = craftMarks.length
-    ? `<div class="pd-slots"><span class="pd-slabel">Craft</span>${craftMarks.map((m) =>
-        `<span class="craft-mark">${esc(m)}</span>`).join("")}</div>` : "";
+
+  let augs = "";
+  if (maps && maps.augAssign) {
+    // Filled slots: the assigned augment + the affixes it adds (R3). Open slots:
+    // still shown as a pip so an empty augment slot reads as an open upgrade (AE2).
+    const placed = (idx != null && idx >= 0 && maps.augAssign.byIndex.get(idx)) || [];
+    const open = (idx != null && idx >= 0 && maps.augAssign.freeByIndex.get(idx)) || [];
+    const filled = placed.map((p) => {
+      const meta = augById && augById.get(p.variant_id);
+      const affx = (meta && meta.affixes && meta.affixes.length)
+        ? `<span class="aug-affx">${esc(meta.affixes.map(affixLabel).join(", "))}</span>` : "";
+      const col = String(p.color || "").toLowerCase();
+      const where = p.slot_color && p.slot_color !== p.color ? `${p.color} in ${p.slot_color} slot` : `${p.color || ""} slot`;
+      return `<li class="aug-filled"><span class="aug-pip aug-${esc(col)}" title="${esc(where)}"></span><span class="aug-name">${esc(p.variant_id)}</span>${affx}</li>`;
+    });
+    const openPips = open.map((c) =>
+      `<li class="aug-open"><span class="aug-pip aug-${esc(String(c).toLowerCase())}" title="open ${esc(c)} augment slot"></span><span class="muted">open ${esc(c)} slot</span></li>`);
+    if (filled.length || openPips.length) {
+      augs = `<div class="pd-slots"><span class="pd-slabel">Augments</span><ul class="pd-auglist">${filled.join("")}${openPips.join("")}</ul></div>`;
+    }
+  } else {
+    const augColors = (v.augment_slots_norm && v.augment_slots_norm.colors) || v.augment_slots || [];
+    augs = augColors.length
+      ? `<div class="pd-slots"><span class="pd-slabel">Augments</span>${augColors.map((c) =>
+          `<span class="aug-pip aug-${esc(String(c).toLowerCase())}" title="${esc(c)} augment slot">${esc(c)}</span>`).join("")}</div>` : "";
+  }
+
+  // Assigned craft-upgrade slots (R4) — the same shared chips the Deep Dive uses,
+  // so the two surfaces never drift. Assigned-only (the maps carry no empty-slot
+  // inventory); an unfilled craft slot renders nothing extra.
+  const craftArr = (maps && idx != null && idx >= 0) ? craftSlotChips(v, idx, maps) : [];
+  const crafts = craftArr.length
+    ? `<div class="pd-slots"><span class="pd-slabel">Craft</span>${craftArr.join("")}</div>` : "";
+
   if (!stats && !augs && !crafts) return "";
   return `<div class="pd-rbody">${stats}${augs}${crafts}</div>`;
 }
@@ -790,12 +832,15 @@ function buildViews(build, model, query) {
   // model considered, occupied or empty — no humanoid figure, full item names
   // (no truncation). Weapons are folded into the same list in slot order.
   const satisfied = satisfiedSets(build.chosen, build.setsActive);   // U6: glow only completed-set pieces
+  // U2 — resolve an augment's affixes by variant_id (the placed meta carries the
+  // id + color but no affixes); model.augments holds the full augment records.
+  const augById = new Map((model.augments || []).map((a) => [a.variant_id, a]));
   const rows = [];
   for (const slot of model.worn) {
     const picks = picksBySlot.get(slot.slot) || [];
     const cardinality = slot.cardinality || 1;
     for (let r = 0; r < cardinality; r++) {
-      rows.push(equippedRow(slot.slot, picks[r] || null, query.slotConstraints, satisfied));
+      rows.push(equippedRow(slot.slot, picks[r] || null, query.slotConstraints, satisfied, maps, augById));
     }
   }
   const weapons = ""; // weapons are included in the equipped list above
@@ -899,5 +944,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, artifactNotice, craftChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }

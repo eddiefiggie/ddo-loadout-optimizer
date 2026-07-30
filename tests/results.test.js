@@ -287,6 +287,71 @@ test("U5/R5: a non-Artifact equipped row has no Artifact cue", () => {
   assert.ok(!/artifact/i.test(html), "no Artifact badge or frame on ordinary gear");
 });
 
+// ---- U2 (Plan B) — assigned augments + affixes + craft slots in blocks ----
+function blockMaps(o) {
+  o = o || {};
+  return {
+    augAssign: { byIndex: o.byIndex || new Map(), freeByIndex: o.freeByIndex || new Map() },
+    dinoAssign: { byIndex: o.dinoByIndex || new Map() },
+    ncByItem: o.ncByItem || new Map(), rollByItem: o.rollByItem || new Map(),
+    vikByItem: o.vikByItem || new Map(), sealByItem: o.sealByItem || new Map(),
+    tfByItem: o.tfByItem || new Map(), gsByItem: o.gsByItem || new Map(),
+  };
+}
+
+test("U2/AE2: a filled augment slot shows the augment name and the affixes it adds", () => {
+  const v = { variant_id: "Ring1", affixes: [{ stat: "Constitution", bonus_type: "Enhancement", value: 10, unit: "flat" }] };
+  const maps = blockMaps({ byIndex: new Map([[0, [{ variant_id: "Sapphire of Con", color: "Blue" }]]]) });
+  const augById = new Map([["Sapphire of Con", { variant_id: "Sapphire of Con", affixes: [{ stat: "Constitution", bonus_type: "Insightful", value: 3, unit: "flat" }] }]]);
+  const html = R.equippedBody(v, 0, maps, augById);
+  assert.ok(/Sapphire of Con/.test(html), "shows the assigned augment name");
+  assert.ok(/Constitution \+3 Insightful/.test(html), "shows the affixes the augment adds");
+});
+
+test("U2/AE2: an empty augment slot is shown as open", () => {
+  const v = { variant_id: "Ring1", affixes: [] };
+  const maps = blockMaps({ freeByIndex: new Map([[0, ["Red"]]]) });
+  const html = R.equippedBody(v, 0, maps, new Map());
+  assert.ok(/open Red slot/.test(html), "an unfilled augment slot reads as open");
+});
+
+test("U2/AE3: an assigned craft slot is declared with its applied value", () => {
+  const v = { variant_id: "Cloak1", affixes: [] };
+  const maps = blockMaps({ ncByItem: new Map([["Cloak1", [{ stat: "Constitution", bonus_type: "Enhancement", value: 15, unit: "flat" }]]]) });
+  const html = R.equippedBody(v, 0, maps, new Map());
+  assert.ok(/Craft/.test(html) && /Nearly Completed: Constitution \+15/.test(html), "declares the craft slot + shows the assignment");
+});
+
+test("U2/AE3: an item with no craft assignment renders nothing extra for crafts", () => {
+  const v = { variant_id: "Bare1", affixes: [{ stat: "Strength", bonus_type: "Enhancement", value: 8, unit: "flat" }] };
+  const html = R.equippedBody(v, 0, blockMaps(), new Map());
+  assert.ok(!/<span class="pd-slabel">Craft<\/span>/.test(html), "no Craft row when nothing is assigned (unfilled slots are not enumerated)");
+});
+
+test("U2/KTD2: an augment whose affixes can't be resolved renders its name without crashing", () => {
+  const v = { variant_id: "Ring1", affixes: [] };
+  const maps = blockMaps({ byIndex: new Map([[0, [{ variant_id: "Mystery Aug", color: "Green" }]]]) });
+  const html = R.equippedBody(v, 0, maps, new Map());   // empty augById -> no affix lookup
+  assert.ok(/Mystery Aug/.test(html), "still names the augment");
+  assert.ok(!/aug-affx/.test(html), "no affix span when affixes are unresolvable");
+});
+
+test("U2/AE4: filled and bare occupied blocks share the same container (uniform size)", () => {
+  const heavy = { slot: "Ring", variant: { variant_id: "Heavy", minimum_level: 34,
+    affixes: [{ stat: "Constitution", bonus_type: "Enhancement", value: 10, unit: "flat" }] } };
+  const bare = { slot: "Ring", variant: { variant_id: "Bare", minimum_level: 34, affixes: [] } };
+  const maps = blockMaps({ byIndex: new Map([[0, [{ variant_id: "A1", color: "Blue" }, { variant_id: "A2", color: "Red" }]]]),
+    ncByItem: new Map([["Heavy", [{ stat: "Strength", bonus_type: "Enhancement", value: 15, unit: "flat" }]]]) });
+  const augById = new Map([["A1", { variant_id: "A1", affixes: [] }], ["A2", { variant_id: "A2", affixes: [] }]]);
+  const heavyHtml = R.equippedRow("Ring", heavy, {}, undefined, maps, augById);
+  const bareHtml = R.equippedRow("Ring", bare, {}, undefined, blockMaps(), new Map());
+  // Uniform sizing is enforced by CSS (.pd-row min-height + grid stretch); assert
+  // the structural invariant that both are the same occupied container with no
+  // inline sizing that would break the grid. Pixel parity is the browser pass.
+  assert.ok(/class="pd-row occupied/.test(heavyHtml) && /class="pd-row occupied/.test(bareHtml), "both are occupied blocks");
+  assert.ok(!/style=/.test(heavyHtml) && !/style=/.test(bareHtml), "no inline sizing that would defeat the uniform grid");
+});
+
 test("U5/R5: Deep Dive mirrors the Artifact cue on its item block", () => {
   const result = {
     chosen: [{ slot: "Trinket", variant: { variant_id: "Family Blade", minimum_level: 32, artifact: true, affixes: [] } }],
