@@ -15,6 +15,7 @@ Output path is __file__-relative, so it works from any directory.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 
@@ -478,9 +479,20 @@ def build(seed: dict) -> dict:
         "wiki_crosscheck_note": "wiki completeness cross-check (R5) is a deferred harvest",
     }
 
+    # Catalog build identifier (U1 / KTD5): a content hash of the roster so a
+    # persisted loadout snapshot can detect a stale catalog. Deterministic for
+    # unchanged input — the same variants rebuild to the same id — so staleness
+    # reflects real drift, not build-run noise.
+    schema_version = 1
+    build_id = hashlib.sha256(
+        json.dumps(variants, sort_keys=True, ensure_ascii=False).encode("utf-8")
+    ).hexdigest()[:16]
+
     out = {
         "metadata": {
             "title": "DDO Loadout Optimizer — dataset",
+            "schema_version": schema_version,
+            "build_id": build_id,
             "source": seed["metadata"].get("source", ""),
             "seed_generated": seed["metadata"].get("generated", ""),
             "seed_count": len(seed["items"]),
