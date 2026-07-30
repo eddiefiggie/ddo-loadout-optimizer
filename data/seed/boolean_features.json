@@ -1,0 +1,3 @@
+[
+  "_README: Curated allowlist of value-less boolean features (presence toggles like Salt). A value-less enhancement line whose text EXACTLY matches an entry here is parsed as a presence affix {stat, bonus_type: 'boolean', value: 1} instead of being dropped; the solver's highest-of-bucket rule collapses multiple sources to presence (non-stacking). Exclude-until-verified: entries must be wiki-confirmed genuine toggles (NOT procs, on-hit effects, immunities, or weapon dice). Underscore-prefixed and non-string entries are ignored. Empty of real entries until a wiki harvest populates it."
+]

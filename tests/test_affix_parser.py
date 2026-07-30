@@ -16,7 +16,8 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from src.affix_parser import parse_line, parse_enhancements  # noqa: E402
+from src.affix_parser import (  # noqa: E402
+    parse_line, parse_enhancements, set_boolean_features)
 
 SEED = os.path.join(os.path.dirname(__file__), "..", "data", "seed", "ddo_items.json")
 
@@ -227,3 +228,65 @@ def test_insight_is_distinct_from_insightful():
     assert a["bonus_type"] == "Insight"
     assert b["bonus_type"] == "Insightful"
     assert a["bonus_type"] != b["bonus_type"]
+
+
+# --- (U2) boolean-feature allowlist: value-less toggles become presence ---
+
+def test_allowlisted_value_less_line_is_presence_affix():
+    # An allowlisted value-less feature parses to {stat, boolean, 1} instead of
+    # being dropped as unparsed.
+    try:
+        set_boolean_features(["Salt"])
+        r = parse_line("Salt")
+        assert r["kind"] == "affix"
+        a = r["affixes"][0]
+        assert (a["stat"], a["bonus_type"], a["value"]) == ("Salt", "boolean", 1)
+    finally:
+        set_boolean_features([])
+
+
+def test_non_allowlisted_value_less_line_stays_unparsed():
+    # A value-less line NOT on the allowlist is still dropped, even when the
+    # allowlist holds other entries — no boolean is minted for procs/immunities.
+    try:
+        set_boolean_features(["Salt"])
+        for named in ["Blindness Immunity", "True Seeing", "Accuracy"]:
+            r = parse_line(named)
+            assert r["kind"] == "unparsed", f"{named!r} should stay unparsed"
+            assert r["affixes"] == []
+    finally:
+        set_boolean_features([])
+
+
+def test_empty_allowlist_emits_no_boolean():
+    # The exclude-until-verified default: with no allowlist, no value-less line
+    # becomes a boolean affix — parsing behavior is unchanged.
+    set_boolean_features([])
+    r = parse_line("Salt")
+    assert r["kind"] == "unparsed"
+    assert r["affixes"] == []
+
+
+def test_allowlist_ignores_underscore_and_non_string_entries():
+    # Mirrors load_boolean_features filtering: `_README` docs and non-strings are
+    # never treated as real features.
+    try:
+        set_boolean_features(["_README: docs", 123, None, "Salt"])
+        assert parse_line("_README: docs")["kind"] == "unparsed"
+        assert parse_line("Salt")["kind"] == "affix"
+    finally:
+        set_boolean_features([])
+
+
+def test_allowlisted_boolean_does_not_stack_across_sources():
+    # Two lines of the same boolean feature within one item collapse to a single
+    # presence affix per line (value 1 each); the solver's bucket does the actual
+    # non-stacking, but the parser must consistently emit value 1.
+    try:
+        set_boolean_features(["Salt"])
+        parsed = parse_enhancements(["Salt", "Salt"])
+        salt = [a for a in parsed["affixes"] if a["stat"] == "Salt"]
+        assert len(salt) == 2
+        assert all(a["value"] == 1 and a["bonus_type"] == "boolean" for a in salt)
+    finally:
+        set_boolean_features([])

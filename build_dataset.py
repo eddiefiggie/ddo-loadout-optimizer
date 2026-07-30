@@ -19,6 +19,7 @@ import json
 import os
 
 from src.variants import expand_dataset
+from src import affix_parser as affix_parser_mod
 from src import verify as verify_mod
 from src import colors as colors_mod
 from src import set_parser as set_mod
@@ -48,6 +49,7 @@ GS_SEED_PATH = os.path.join(HERE, "data", "seed", "green_steel.json")
 AUG_SEED_PATH = os.path.join(HERE, "data", "seed", "augments.json")
 ALIGN_SEED_PATH = os.path.join(HERE, "data", "seed", "alignment_restrictions.json")
 ARTIFACT_SEED_PATH = os.path.join(HERE, "data", "seed", "artifacts.json")
+BOOLEAN_SEED_PATH = os.path.join(HERE, "data", "seed", "boolean_features.json")
 JOKER_SEED_PATH = os.path.join(HERE, "data", "seed", "joker_sets.json")
 COMPENDIUM_DIR = os.path.join(HERE, "data", "seed", "compendium")
 # Output lands inside web/ so that directory is a self-contained, deployable
@@ -164,6 +166,21 @@ def load_artifacts(path: str = ARTIFACT_SEED_PATH) -> set:
     if not isinstance(raw, list):
         return set()
     return {s for s in raw if isinstance(s, str) and s and not s.startswith("_")}
+
+
+def load_boolean_features(path: str = BOOLEAN_SEED_PATH) -> list:
+    """Curated boolean-feature names (value-less presence toggles like Salt), as a
+    flat JSON array. Non-string or underscore-prefixed entries are ignored; a
+    missing file yields an empty list. Exclude-until-verified: the shipping seed
+    carries no real entries until a wiki harvest populates it, so no value-less
+    line becomes a boolean affix and parsing behavior is unchanged."""
+    if not os.path.exists(path):
+        return []
+    with open(path, encoding="utf-8") as fh:
+        raw = json.load(fh)
+    if not isinstance(raw, list):
+        return []
+    return [s for s in raw if isinstance(s, str) and s and not s.startswith("_")]
 
 
 def stamp_artifact(variants: list, names: set) -> int:
@@ -299,6 +316,10 @@ def build(seed: dict) -> dict:
     aug_names = {a.get("name") for a in aug_pool}
     base_items = [it for it in seed["items"]
                   if not (it.get("category") == "augment" and it.get("name") in aug_names)]
+    # Boolean-feature allowlist (U2): install before parsing so a value-less line on
+    # the curated list becomes a presence affix instead of being dropped. Empty seed
+    # today -> no boolean affixes; exclude-until-verified until a wiki harvest lands.
+    affix_parser_mod.set_boolean_features(load_boolean_features())
     variants = expand_dataset(base_items + enriched_items + aug_pool)  # parse enhancements + expand tiers
 
     # Wildcard set pieces (U1) — the Gem of Many Facets rolls one set from each of two

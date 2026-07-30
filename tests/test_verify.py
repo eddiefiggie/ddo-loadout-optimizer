@@ -37,6 +37,18 @@ def test_item_with_no_magnitude_is_quarantined_with_reason():
     assert all(v["verification_reasons"] for v in quarantined)
 
 
+def test_boolean_only_item_verifies_via_its_presence_affix():
+    # U2: an item whose only eligible content is a boolean presence affix must
+    # verify (not quarantine) — the affix counts toward eligibility by list length,
+    # bonus_type-agnostic.
+    v = {"affixes": [{"stat": "Salt", "bonus_type": "boolean", "value": 1, "unit": "flat"}],
+         "scaling": [], "flagged": []}
+    V.verify_variant(v)
+    assert v["verification"] == "verified"
+    assert v["eligible_affix_count"] == 1
+    assert v["affixes"][0]["eligible"] is True
+
+
 def test_coverage_counts_sum_to_variant_count():
     verified, cov = V.apply(_variants())
     assert cov["totals"]["verified"] + cov["totals"]["quarantined"] == len(verified)
