@@ -278,7 +278,10 @@ function craftLbl(o) {
 // choice slots, Viktranium, seals, Thunder-Forged, Green Steel — keyed by the
 // chosen index (dino) or variant_id (the rest). Assigned crafts only (the maps
 // carry no empty-slot inventory). Shared by the Loadout Deep Dive (craftChips)
-// and the equipped-block detail (equippedBody, U2) so the two never drift.
+// and the equipped-block detail (equippedBody, U2) so these families never drift.
+// NOT included: the augment chips and the joker/membership (wildcard/set) chips —
+// craftChips keeps those, and the equipped block surfaces set state via its row
+// glow/setLine instead, so a joker/membership rendering change only hits the Deep Dive.
 function craftSlotChips(v, idx, maps) {
   const dinos = (maps.dinoAssign.byIndex.get(idx) || []).map((d) => {
     const affixes = (d.affixes && d.affixes.length) ? d.affixes : [d];
@@ -450,22 +453,22 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById) {
 }
 
 // The stats / augment / craft body of an equipped block. Projects the variant's
-// own affixes, then — when the assignment `maps` (and `idx`) are supplied (U2) —
-// the augments actually slotted (with the affixes they add, resolved by
-// variant_id via `augById`) alongside any still-open augment slots, and the
-// item's assigned craft-upgrade slots. Without maps it falls back to the plain
-// slot-color pips, so no occupied block renders blank.
+// own affixes, then the augments actually slotted (with the affixes they add,
+// resolved by variant_id via `augById`) alongside any still-open augment slots,
+// and the item's assigned craft-upgrade slots (U2). `maps` (and the pick's `idx`)
+// are always supplied on the render path (buildViews -> equippedRow); a maps-less
+// call (only the pure test callers) simply renders no augment/craft section.
 function equippedBody(v, idx, maps, augById) {
   const affixes = (v.affixes || []);
   const stats = affixes.length
     ? `<ul class="pd-stats">${affixes.map((a) => `<li>${esc(affixLabel(a))}</li>`).join("")}</ul>` : "";
 
   let augs = "";
-  if (maps && maps.augAssign) {
+  if (maps && maps.augAssign && idx != null && idx >= 0) {
     // Filled slots: the assigned augment + the affixes it adds (R3). Open slots:
     // still shown as a pip so an empty augment slot reads as an open upgrade (AE2).
-    const placed = (idx != null && idx >= 0 && maps.augAssign.byIndex.get(idx)) || [];
-    const open = (idx != null && idx >= 0 && maps.augAssign.freeByIndex.get(idx)) || [];
+    const placed = maps.augAssign.byIndex.get(idx) || [];
+    const open = maps.augAssign.freeByIndex.get(idx) || [];
     const filled = placed.map((p) => {
       const meta = augById && augById.get(p.variant_id);
       const affx = (meta && meta.affixes && meta.affixes.length)
@@ -479,11 +482,6 @@ function equippedBody(v, idx, maps, augById) {
     if (filled.length || openPips.length) {
       augs = `<div class="pd-slots"><span class="pd-slabel">Augments</span><ul class="pd-auglist">${filled.join("")}${openPips.join("")}</ul></div>`;
     }
-  } else {
-    const augColors = (v.augment_slots_norm && v.augment_slots_norm.colors) || v.augment_slots || [];
-    augs = augColors.length
-      ? `<div class="pd-slots"><span class="pd-slabel">Augments</span>${augColors.map((c) =>
-          `<span class="aug-pip aug-${esc(String(c).toLowerCase())}" title="${esc(c)} augment slot">${esc(c)}</span>`).join("")}</div>` : "";
   }
 
   // Assigned craft-upgrade slots (R4) — the same shared chips the Deep Dive uses,
@@ -655,7 +653,13 @@ function artifactNotice(result, query) {
 
 function renderResults(container, { model, result, query, dataset, highs, onAfterRender }) {
   if (result.status !== "optimal") {
-    container.innerHTML = `<div class="empty">No set satisfies these constraints${result.reason ? ` — ${esc(result.reason)}` : ""}.<br><span class="muted">Loosen the ML cap, armor/class filters, or targets.</span></div>`;
+    // Keep the Adjust & re-solve control available on a non-optimal result — this
+    // is exactly when the user needs to loosen priorities/constraints in place.
+    // Emit its slot and run the post-render callback so fillAdjustSlot repopulates
+    // it (fillSharePanel no-ops here — no #rp-sharepanel, nothing to share).
+    container.innerHTML = `<div class="empty">No set satisfies these constraints${result.reason ? ` — ${esc(result.reason)}` : ""}.<br><span class="muted">Loosen the ML cap, armor/class filters, or targets.</span></div>
+    <div class="wz-adjust-slot" id="wz-adjust-slot"></div>`;
+    if (typeof onAfterRender === "function") onAfterRender(container);
     return;
   }
 
@@ -774,6 +778,10 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     q("#rp-live").textContent = "Computing alternative loadouts…";
     // Defer so the spinner paints before the synchronous re-solves run.
     setTimeout(() => {
+      // If a re-render (e.g. a per-slot constraint change) replaced this panel
+      // while we waited, abandon: don't run the stale solve or write cards/aria
+      // into the fresh closure's live region.
+      if (q("#rp-altspanel") !== panel) { altState.computing = false; return; }
       try {
         const raw = generateAlternatives(optimum, model, highs);
         const analyzed = raw.map((c) => analyzeAlternative(optimum, c, query));

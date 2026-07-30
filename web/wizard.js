@@ -372,7 +372,7 @@ if (typeof window !== "undefined" && window.App) {
           <button data-del="${i}" aria-label="remove">✕</button></span></li>`).join("");
     }
     // Generic ranked-list renderer: reused by the priorities step and the
-    // in-results "Adjust & re-solve" panel (U8). `rerender` re-renders that
+    // in-results "Adjust & re-solve" panel (U3). `rerender` re-renders that
     // same list after a mutation.
     function renderRankedList(ol, rerender) {
       if (!ol) return;
@@ -580,7 +580,7 @@ if (typeof window !== "undefined" && window.App) {
         `</ul>`;
     }
 
-    // Keep the share dropdown (U13) in sync with the store — called on render and
+    // Keep the share dropdown (U5) in sync with the store — called on render and
     // after any in-panel save/delete/import so it never lists a stale name.
     function renderSharePicker() {
       const shareSel = document.getElementById("wz-share-sel");
@@ -629,7 +629,6 @@ if (typeof window !== "undefined" && window.App) {
               ? `Imported ${n} character${n === 1 ? "" : "s"} (merged by name).`
               : (w.error === "quota" ? "Storage full — remove some saves and try again." : "Could not save the import.");
             renderSavedPicker();
-            renderSharePicker();
           };
           reader.readAsText(f);
         };
@@ -706,7 +705,6 @@ if (typeof window !== "undefined" && window.App) {
             // eslint-disable-next-line no-undef
             CharacterStore.deleteCharacter(b.dataset.del);
             renderSavedPicker();
-            renderSharePicker();
           }
         };
         wireDataManagement();

@@ -842,7 +842,7 @@ input.wz-ml { width: 120px; }
   #wz-printarea thead th { background: #eee; }
 }
 
-/* Adjust & re-solve panel (U8) — fold-up editor in the results view. */
+/* Adjust & re-solve panel (U3) — fold-up editor in the results view. */
 /* U3/R6 — the Adjust slot sits directly under the tab bar, above the panels, so
    it shows on every tab (the panels toggle; the slot never does). */
 .wz-adjust-slot:not(:empty) { margin-bottom: var(--sp-3); }
