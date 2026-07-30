@@ -108,6 +108,54 @@ function buildProgram(model) {
   for (const body of slotConstraintBodies(xVars, model.query && model.query.slotConstraints)) {
     extraConstraints.push(body);
   }
+
+  // KTD3 / R6 — "exactly one Artifact" when the opt-in box is on. Sum ALL Artifact
+  // pick vars = 1, but ONLY when at least one of them is still selectable under the
+  // active slot constraints. A forced-to-0 Artifact (its slot locked empty, or a
+  // single-cardinality slot pinned to a different item) contributes 0 to the sum
+  // harmlessly; but if EVERY Artifact is forced to 0 (or the seed is empty, so
+  // there are none), a blanket `= 1` would be infeasible — so we add nothing and
+  // let R6 fire (best non-Artifact build + disclosure). This keeps the model
+  // feasible for both the empty-data case (AE3) and the locked/pinned-slot case.
+  if (model.query && model.query.includeArtifact) {
+    const arts = xVars.filter((xv) => xv.variant && xv.variant.artifact);
+    const sc = model.query.slotConstraints || {};
+    const idOf = (xv) => xv.variant.variant_id || xv.variant.source_item;
+    // Resolve a pin against the actual pick vars in its slot: a pin whose id
+    // matches no eligible var is a STALE/ghost pin (R17 reconciles it post-solve)
+    // and consumes nothing — `slotConstraintBodies` likewise emits no body for it.
+    const bySlot = new Map();
+    for (const xv of xVars) {
+      if (!bySlot.has(xv.slot)) bySlot.set(xv.slot, []);
+      bySlot.get(xv.slot).push(xv);
+    }
+    const pinResolves = (slot, variantId) =>
+      (bySlot.get(slot) || []).some((x) => idOf(x) === variantId);
+    const forcedToZero = (xv) => {
+      const c = sc[xv.slot];
+      if (!c || c.type === "free") return false;
+      if (c.type === "empty") return true;
+      if (c.type === "pin") {
+        if (!pinResolves(xv.slot, c.variant_id)) return false; // stale pin -> slot still free
+        if (c.variant_id === idOf(xv)) return false;   // this Artifact is the pin (forced on)
+        return (xv.cardinality || 1) <= 1;              // single slot already taken by another item
+      }
+      return false;
+    };
+    // Artifacts the user force-pinned ON (a resolving pin to the Artifact itself).
+    // `slotConstraintBodies` already emits `x=1` for each. If TWO or more are
+    // pinned on, the pins themselves assert >1 Artifact (the user's explicit
+    // choice), so adding `sum(artifacts)=1` would make the model infeasible
+    // (e.g. xA=1 AND xB=1 AND xA+xB=1). Skip the constraint in that case — let
+    // the pins stand rather than wiping the build with a generic 'no set' error.
+    const pinnedOnArtifacts = arts.filter((xv) => {
+      const c = sc[xv.slot];
+      return c && c.type === "pin" && c.variant_id === idOf(xv) && pinResolves(xv.slot, c.variant_id);
+    }).length;
+    if (pinnedOnArtifacts <= 1 && arts.some((xv) => !forcedToZero(xv))) {
+      extraConstraints.push(`${arts.map((xv) => xv.name).join(" + ")} = 1`);
+    }
+  }
   const augMeta = new Map(); // color-placement var -> {variant_id, color, slot_color, wiki_url}
   const placeMeta = new Map(); // augment place indicator (pu) -> {variant_id, color, wiki_url}
   const setMeta = new Map(); // set_active var -> {set, pieces_required, pieces_label, wiki_url}

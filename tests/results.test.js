@@ -264,6 +264,47 @@ test("loadoutDeepDive renders a per-item block with slot, affixes, and set (R5)"
   assert.ok(/Part of set/.test(html) && /Dread Isle/.test(html), "shows set membership");
 });
 
+test("U5/R5: equippedRow tags an Artifact slot with a badge + is-artifact frame", () => {
+  const pick = { slot: "Trinket", variant: { variant_id: "Family Blade", minimum_level: 32, artifact: true } };
+  const html = R.equippedRow("Trinket", pick, {});
+  assert.ok(/pd-badge artifact/.test(html), "renders the Artifact badge");
+  assert.ok(/is-artifact/.test(html), "carries the is-artifact frame class");
+});
+
+test("U5/R5: a non-Artifact equipped row has no Artifact cue", () => {
+  const pick = { slot: "Ring", variant: { variant_id: "Plain Ring", minimum_level: 20 } };
+  const html = R.equippedRow("Ring", pick, {});
+  assert.ok(!/artifact/i.test(html), "no Artifact badge or frame on ordinary gear");
+});
+
+test("U5/R5: Deep Dive mirrors the Artifact cue on its item block", () => {
+  const result = {
+    chosen: [{ slot: "Trinket", variant: { variant_id: "Family Blade", minimum_level: 32, artifact: true, affixes: [] } }],
+    breakdown: {}, augmentsPlaced: [], effective: {}, perTarget: {},
+  };
+  const maps = { augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
+    ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(), jokerByHost: new Map() };
+  const html = R.loadoutDeepDive(result, { targets: [] }, maps, R.attributionByTarget(result));
+  assert.ok(/dd-artifact/.test(html) && /is-artifact/.test(html), "Deep Dive flags the Artifact item too");
+});
+
+test("U5/R6: disclosure fires when box on and no Artifact equipped", () => {
+  const result = { chosen: [{ slot: "Ring", variant: { variant_id: "Plain Ring" } }] };
+  const html = R.artifactNotice(result, { includeArtifact: true });
+  assert.ok(/artifact-notice/.test(html) && /No Artifact could be included/.test(html));
+});
+
+test("U5/R6: no disclosure when an Artifact WAS equipped", () => {
+  const result = { chosen: [{ slot: "Trinket", variant: { variant_id: "Family Blade", artifact: true } }] };
+  assert.strictEqual(R.artifactNotice(result, { includeArtifact: true }), "");
+});
+
+test("U5/R6: no disclosure when the box is off", () => {
+  const result = { chosen: [{ slot: "Ring", variant: { variant_id: "Plain Ring" } }] };
+  assert.strictEqual(R.artifactNotice(result, { includeArtifact: false }), "");
+  assert.strictEqual(R.artifactNotice(result, {}), "");
+});
+
 test("attributionList shows a set contributor with its yielding slots, no bar (R11,R12)", () => {
   const html = R.attributionList(
     [{ bonus_type: "Insightful", value: 2, source: "Legendary Set", sourceKind: "set", isSet: true, slots: ["Necklace", "Trinket"] }]);

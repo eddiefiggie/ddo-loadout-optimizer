@@ -1,6 +1,9 @@
 // U1 — wizard step-machine pure helpers. Run: node tests/wizard.test.js
 const assert = require("assert");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery } = require("../web/wizard.js");
+
+const baseState = () => ({ ml: 34, race: "Human", armor: "", weapon: "", alignment: "",
+  priorities: ["Constitution"], slotConstraints: {} });
 
 let passed = 0;
 function test(name, fn) {
@@ -40,6 +43,20 @@ test("nextStep / prevStep clamp at the ends", () => {
 test("wizIsForged", () => {
   assert.ok(wizIsForged("Warforged") && wizIsForged("bladeforged"));
   assert.ok(!wizIsForged("Elf") && !wizIsForged(""));
+});
+
+test("U4: buildQuery reflects the Include-an-Artifact flag", () => {
+  const on = buildQuery({ ...baseState(), includeArtifact: true });
+  assert.strictEqual(on.includeArtifact, true);
+  const off = buildQuery({ ...baseState(), includeArtifact: false });
+  assert.strictEqual(off.includeArtifact, false);
+});
+
+test("U4: buildQuery defaults includeArtifact to false when unset", () => {
+  // A fresh state with no includeArtifact -> query is false, so the default run
+  // excludes Artifacts (R2 default). Coerced boolean, never undefined.
+  const q = buildQuery(baseState());
+  assert.strictEqual(q.includeArtifact, false);
 });
 
 console.log(`\n${passed} passed`);

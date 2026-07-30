@@ -31,8 +31,24 @@ function prevStep(stepId, steps = WIZARD_STEPS) {
 }
 const wizIsForged = (race) => FORGED.has(String(race || "").toLowerCase());
 
+/** Pure state -> solver query mapping (no DOM). Exported for unit tests. */
+function buildQuery(state) {
+  const forged = wizIsForged(state.race);
+  return {
+    mlCap: Number(state.ml) || 34,
+    targets: state.priorities.slice(),
+    armorType: forged ? null : (state.armor || null),   // dodge-cap input
+    armorTypes: forged || !state.armor ? undefined : [state.armor], // gate (U2)
+    weaponSetup: state.weapon || null,
+    race: state.race || null,
+    alignment: state.alignment || null,
+    includeArtifact: !!state.includeArtifact,           // U4 — Artifact opt-in
+    slotConstraints: state.slotConstraints,
+  };
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -62,6 +78,7 @@ if (typeof window !== "undefined" && window.App) {
     const allStats = [...statSet].sort();
 
     const state = { step: "intro", ml: 34, race: "", alignment: "", armor: "", weapon: "",
+      includeArtifact: false,
       pool: "all", ownedNames: null, priorities: [], slotConstraints: {}, constraintsDirty: false, lastRun: null };
 
     let highs = null;
@@ -123,6 +140,9 @@ if (typeof window !== "undefined" && window.App) {
           <div class="wz-field"><span class="wz-label">Weapon setup <span class="wz-sub">· optional</span></span>
             <span class="wz-help">Shapes which weapon / off-hand combinations we consider.</span>
             <div class="wz-seg" id="wz-weapon">${WEAPONS.map(([v, l]) => `<button class="wz-chip ${state.weapon === v ? "on" : ""}" data-weapon="${v}">${l}</button>`).join("")}</div></div>
+          <label class="wz-check"><input type="checkbox" id="wz-artifact"${state.includeArtifact ? " checked" : ""}>
+            <span class="wz-check-body"><span class="wz-label">Include an Artifact</span>
+            <span class="wz-help">Build around your one equippable Artifact — the optimizer picks the best-scoring one and tags its slot. Off by default.</span></span></label>
         </div>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
           <button class="btn primary" data-next>Continue →</button></div>
@@ -256,19 +276,6 @@ if (typeof window !== "undefined" && window.App) {
       }
       return dataset.items;
     }
-    function buildQuery() {
-      const forged = wizIsForged(state.race);
-      return {
-        mlCap: Number(state.ml) || 34,
-        targets: state.priorities.slice(),
-        armorType: forged ? null : (state.armor || null),   // dodge-cap input
-        armorTypes: forged || !state.armor ? undefined : [state.armor], // gate (U2)
-        weaponSetup: state.weapon || null,
-        race: state.race || null,
-        alignment: state.alignment || null,
-        slotConstraints: state.slotConstraints,
-      };
-    }
     function overlay(on, title, sub) {
       let el = document.getElementById("wz-solve-overlay");
       if (!el && on) {
@@ -291,7 +298,7 @@ if (typeof window !== "undefined" && window.App) {
       overlay(true, "Solving your loadout…", firstRun ? `searching ${n.toLocaleString()} eligible items · exact MILP` : "re-solving…");
       try {
         const h = await getHighs();
-        const query = buildQuery();
+        const query = buildQuery(state);
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
           dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel);
@@ -375,6 +382,7 @@ if (typeof window !== "undefined" && window.App) {
         document.getElementById("wz-ml").oninput = (e) => state.ml = e.target.value;
         document.getElementById("wz-race").onchange = (e) => { state.race = e.target.value; if (wizIsForged(state.race)) state.armor = ""; render(); };
         document.getElementById("wz-align").onchange = (e) => state.alignment = e.target.value;
+        document.getElementById("wz-artifact").onchange = (e) => state.includeArtifact = e.target.checked;
         root.querySelectorAll("#wz-armor .wz-chip").forEach((c) => c.onclick = () => {
           if (c.disabled) return; state.armor = state.armor === c.dataset.armor ? "" : c.dataset.armor;
           root.querySelectorAll("#wz-armor .wz-chip").forEach((x) => x.classList.toggle("on", x.dataset.armor === state.armor));
