@@ -296,7 +296,9 @@ input.bumped { background: rgba(91,140,255,0.16); border-color: var(--accent); }
 
 /* readout layout: the paperdoll is the hero (front and centre), the ranked-target
    analysis sits below it. */
-.readout-analysis { margin-top: var(--sp-5); }
+.readout-analysis { margin-top: var(--sp-4); }
+.readout-header { margin: 0 0 var(--sp-3); font-size: var(--fs-sm); color: var(--muted); line-height: 1.5; }
+.readout-header strong { color: var(--text); font-weight: 650; }
 .readout-doll { display: flex; flex-direction: column; align-items: center; }
 
 /* on-load intro state (before the first solve) — shows the data-forward design */
