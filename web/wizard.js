@@ -255,7 +255,15 @@ if (typeof window !== "undefined" && window.App) {
           Slot constraints changed. <button class="btn primary" id="wz-cresolve">Re-solve ⚡</button>
         </div>
         <div id="wz-results"></div>
-        <details class="wz-adjust" id="wz-adjust">
+      </section>`;
+    }
+
+    // U3/R6 — the Adjust & re-solve fold-up. Emitted by renderResults into the
+    // #wz-adjust-slot directly under the tab bar (so it shows on every tab and is
+    // never buried), then populated + wired by the KTD3 post-render callback
+    // (fillAdjustSlot) on every render. Collapsed by default.
+    function adjustPanelHTML() {
+      return `<details class="wz-adjust" id="wz-adjust">
           <summary>Adjust &amp; re-solve</summary>
           <div class="wz-adjust-body">
             <p class="wz-help" style="margin:0 0 var(--sp-3)">Refine priorities, flip the gear pool, then re-solve — no need to step back.</p>
@@ -274,8 +282,30 @@ if (typeof window !== "undefined" && window.App) {
               <button class="btn primary" id="wz-radjust-solve">Re-solve ⚡</button>
             </div>
           </div>
-        </details>
-      </section>`;
+        </details>`;
+    }
+
+    // KTD3 post-render callback — runs after every renderResults (solve, load,
+    // per-slot constraint change) to (re)populate + (re)wire the Adjust panel in
+    // its renderer-emitted slot. The priorities drag/reorder + button handlers are
+    // direct (not delegable), so they must be re-bound on each render.
+    function fillAdjustSlot() {
+      const slot = document.getElementById("wz-adjust-slot");
+      if (!slot) return;
+      slot.innerHTML = adjustPanelHTML();
+      renderAdjustRanked();
+      const radd = document.getElementById("wz-radd");
+      if (radd) {
+        document.getElementById("wz-radd-btn").onclick = () => { if (addPriority(radd.value)) renderAdjustRanked(); radd.value = ""; radd.focus(); };
+        radd.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); if (addPriority(radd.value)) renderAdjustRanked(); radd.value = ""; } };
+      }
+      slot.querySelectorAll(".wz-toggle button[data-rpool]").forEach((b) => b.onclick = () => {
+        if (b.dataset.rpool === "owned" && !state.ownedNames) { go("pool"); return; } // route to upload
+        state.pool = b.dataset.rpool;
+        slot.querySelectorAll(".wz-toggle button[data-rpool]").forEach((x) => x.classList.toggle("on", x.dataset.rpool === state.pool));
+      });
+      const rsolve = document.getElementById("wz-radjust-solve");
+      if (rsolve) rsolve.onclick = () => { if (state.priorities.length) solve(false); };
     }
 
     // ---- priorities editor (pure array ops + drag/buttons) -----------------
@@ -375,7 +405,7 @@ if (typeof window !== "undefined" && window.App) {
         render();
         const box = document.getElementById("wz-results");
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result, query, dataset, highs: h });
+        if (box) renderResults(box, { model, result, query, dataset, highs: h, onAfterRender: fillAdjustSlot });
       } catch (err) {
         state.step = "results"; render();
         const box = document.getElementById("wz-results");
@@ -469,7 +499,7 @@ if (typeof window !== "undefined" && window.App) {
         render();
         const box = document.getElementById("wz-results");
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result: snap, query, dataset, highs: null });
+        if (box) renderResults(box, { model, result: snap, query, dataset, highs: null, onAfterRender: fillAdjustSlot });
         const stale = document.getElementById("wz-stale");
         if (stale) stale.classList.toggle("wz-hidden", !state.loadedStale);
       } else {
@@ -751,27 +781,15 @@ if (typeof window !== "undefined" && window.App) {
           if (state.lastRun) {
             state.lastRun.query.slotConstraints = { ...state.slotConstraints };
             // eslint-disable-next-line no-undef
-            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs });
+            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: fillAdjustSlot });
           }
           if (cbar) cbar.classList.remove("wz-hidden");
         });
         const cres = document.getElementById("wz-cresolve");
         if (cres) cres.onclick = () => { if (state.priorities.length) solve(false); };
-
-        // Adjust & re-solve panel (U8): inline priority editor + pool flip + re-solve.
-        renderAdjustRanked();
-        const radd = document.getElementById("wz-radd");
-        if (radd) {
-          document.getElementById("wz-radd-btn").onclick = () => { if (addPriority(radd.value)) renderAdjustRanked(); radd.value = ""; radd.focus(); };
-          radd.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); if (addPriority(radd.value)) renderAdjustRanked(); radd.value = ""; } };
-        }
-        root.querySelectorAll(".wz-toggle button[data-rpool]").forEach((b) => b.onclick = () => {
-          if (b.dataset.rpool === "owned" && !state.ownedNames) { go("pool"); return; } // AE8: route to upload
-          state.pool = b.dataset.rpool;
-          root.querySelectorAll(".wz-toggle button[data-rpool]").forEach((x) => x.classList.toggle("on", x.dataset.rpool === state.pool));
-        });
-        const rsolve = document.getElementById("wz-radjust-solve");
-        if (rsolve) rsolve.onclick = () => { if (state.priorities.length) solve(false); };
+        // The Adjust & re-solve panel (U3/R6) now lives inside #wz-results, under
+        // the tab bar, so it is populated + wired by fillAdjustSlot on every
+        // renderResults call — not once here (it would not exist yet).
       }
     }
     function flashBlock() {

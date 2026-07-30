@@ -653,7 +653,7 @@ function artifactNotice(result, query) {
     : "";
 }
 
-function renderResults(container, { model, result, query, dataset, highs }) {
+function renderResults(container, { model, result, query, dataset, highs, onAfterRender }) {
   if (result.status !== "optimal") {
     container.innerHTML = `<div class="empty">No set satisfies these constraints${result.reason ? ` — ${esc(result.reason)}` : ""}.<br><span class="muted">Loosen the ML cap, armor/class filters, or targets.</span></div>`;
     return;
@@ -700,6 +700,7 @@ function renderResults(container, { model, result, query, dataset, highs }) {
         <button class="rtab" role="tab" id="rt-deep" aria-controls="rp-deep" aria-selected="false" tabindex="-1" type="button">Loadout Deep Dive</button>
         <button class="rtab" role="tab" id="rt-alts" aria-controls="rp-alts" aria-selected="false" tabindex="-1" type="button">Alternatives</button>
       </div>
+      <div class="wz-adjust-slot" id="wz-adjust-slot"></div>
       <section id="rp-loadout" class="rpanel" role="tabpanel" aria-labelledby="rt-loadout" tabindex="0">
         <div class="readout-doll"><div class="pd-equipped" id="rp-doll"></div><div id="rp-weapons"></div></div>
       </section>
@@ -773,6 +774,13 @@ function renderResults(container, { model, result, query, dataset, highs }) {
     }, 20);
   }
   wireResultTabs(container, (id) => { if (id === "rp-alts") ensureAlternatives(); });
+
+  // KTD3 — the Adjust (U3) and Share (U5) panels live inside this container and so
+  // are destroyed on every renderResults call (solve, load, per-slot constraint
+  // change). The wizard supplies a post-render callback to (re)populate + (re)wire
+  // its slots — direct drag/click handlers that delegation can't restore — on each
+  // render. Fires last, after the panels + tabs exist.
+  if (typeof onAfterRender === "function") onAfterRender(container);
 }
 
 // Compute the per-build view HTML (paperdoll, weapon row, ranked cards, set panel,
