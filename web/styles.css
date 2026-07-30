@@ -849,6 +849,9 @@ input.wz-ml { width: 120px; }
 /* U5 — the Share tab panel (single-loadout exports, distinct from the Character
    step's personal-build backup). */
 .wz-share { display: flex; flex-direction: column; gap: var(--sp-3); }
+/* U4 — Alternatives Run-analysis prompt + the panel-local computing swirly. */
+.alt-intro { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-3); padding: var(--sp-3) 0; }
+.alt-computing { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); padding: var(--sp-5) 0; }
 .wz-adjust { margin-top: var(--sp-4); border: 1px dashed var(--border-2); border-radius: var(--radius);
   background: var(--panel-2); }
 .wz-adjust > summary { list-style: none; cursor: pointer; padding: var(--sp-3) var(--sp-4); font-weight: 650;

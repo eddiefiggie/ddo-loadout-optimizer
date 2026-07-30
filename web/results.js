@@ -740,42 +740,61 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   q(".return-optimum").addEventListener("click", () => setActive(optimum, false));
   renderBuild(optimum);
 
-  // Alternatives tab (U4): generate on first open so the base solve stays instant (KTD2).
+  // Alternatives tab (U4): gated behind an explicit "Run analysis" button (R7) so
+  // the base solve stays instant and nothing computes until asked. While it runs,
+  // a panel-local .wz-ring swirly shows (R8/KTD4 — the wizard's overlay() is a
+  // closure results.js can't reach). Every terminal state replaces the spinner —
+  // cards, "none found", an error-with-retry, or solver-unavailable — so it is
+  // never left spinning.
   const altState = { list: null, computing: false };
-  function ensureAlternatives() {
+  const altUnavailable = () => typeof generateAlternatives !== "function" || !highs;
+  // Small helper: a message + a button that (re)runs the analysis.
+  function altPrompt(msg, btnLabel, cls) {
     const panel = q("#rp-altspanel");
+    panel.innerHTML = `<div class="alt-intro"><p class="${cls || "muted"}">${msg}</p><button class="btn ${cls === "dd-none muted" ? "ghost" : "primary"} alt-run" type="button">${esc(btnLabel)}</button></div>`;
+    const run = panel.querySelector(".alt-run");
+    if (run) run.addEventListener("click", () => { altState.list = null; runAlternatives(); });
+  }
+  // Initial (or re-open) state: the Run-analysis button, unless already computed
+  // (leave the cards/message in place) or the solver never loaded.
+  function showAltIntro() {
     if (altState.list !== null || altState.computing) return;
-    if (typeof generateAlternatives !== "function" || !highs) {
-      panel.innerHTML = `<p class="dd-none muted">Alternatives are unavailable (the solver did not load).</p>`;
+    if (altUnavailable()) {
+      q("#rp-altspanel").innerHTML = `<p class="dd-none muted">Alternatives are unavailable (the solver did not load).</p>`;
       altState.list = []; return;
     }
+    altPrompt("Explore near-optimal trade-off builds — complete a different set, free a slot, or take fewer crafting steps.", "Run analysis");
+  }
+  function runAlternatives() {
+    const panel = q("#rp-altspanel");
+    if (altState.computing) return;
     altState.computing = true;
-    panel.innerHTML = `<p class="dd-none muted">Computing alternatives…</p>`;
+    // Panel-local swirly (KTD4), same markup as the main solve overlay.
+    panel.innerHTML = `<div class="alt-computing"><div class="wz-ring"></div><p class="muted">Computing alternatives…</p></div>`;
     q("#rp-live").textContent = "Computing alternative loadouts…";
-    // Defer so the "computing" state paints before the synchronous re-solves run.
+    // Defer so the spinner paints before the synchronous re-solves run.
     setTimeout(() => {
       try {
         const raw = generateAlternatives(optimum, model, highs);
         const analyzed = raw.map((c) => analyzeAlternative(optimum, c, query));
         const ranked = rankAlternatives(analyzed, optimum, {});
         altState.list = ranked;
-        panel.innerHTML = ranked.length ? renderAltCards(ranked)
-          : `<p class="dd-none muted">No worthwhile trade-off build was found — the optimum is hard to beat for these priorities.</p>`;
-        if (ranked.length) wireAltCards(panel, ranked, setActive);
+        if (ranked.length) { panel.innerHTML = renderAltCards(ranked); wireAltCards(panel, ranked, setActive); }
+        else altPrompt("No worthwhile trade-off build was found — the optimum is hard to beat for these priorities.", "Run again", "dd-none muted");
         q("#rp-live").textContent = ranked.length
           ? `${ranked.length} alternative loadout${ranked.length === 1 ? "" : "s"} found.`
           : "No worthwhile alternative loadouts were found.";
       } catch (e) {
         console.error(e);
-        panel.innerHTML = `<p class="dd-none muted">Could not compute alternatives.</p><button class="q-edit alt-retry" type="button">Retry</button>`;
+        altState.list = null;   // let a retry recompute cleanly
+        altPrompt("Could not compute alternatives.", "Retry", "dd-none muted");
         q("#rp-live").textContent = "Could not compute alternative loadouts.";
-        const retry = panel.querySelector(".alt-retry");
-        if (retry) retry.addEventListener("click", () => { altState.list = null; ensureAlternatives(); });
       }
       altState.computing = false;
     }, 20);
   }
-  wireResultTabs(container, (id) => { if (id === "rp-alts") ensureAlternatives(); });
+  showAltIntro();   // pre-render the button so the tab is ready on first open
+  wireResultTabs(container, () => {});
 
   // KTD3 — the Adjust (U3) and Share (U5) panels live inside this container and so
   // are destroyed on every renderResults call (solve, load, per-slot constraint
