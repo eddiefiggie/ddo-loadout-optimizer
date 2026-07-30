@@ -31,6 +31,14 @@ function prevStep(stepId, steps = WIZARD_STEPS) {
 }
 const wizIsForged = (race) => FORGED.has(String(race || "").toLowerCase());
 
+/** U1 (R1) — where loading a saved character lands. A snapshot that solved
+ *  optimally goes straight to "results" (no pool/priorities detour); anything
+ *  else (missing snapshot, or a non-optimal status) falls back to "priorities"
+ *  so the user can re-solve, never a blank results view. Pure; unit-tested. */
+function stepAfterLoad(snapshot) {
+  return snapshot && snapshot.status === "optimal" ? "results" : "priorities";
+}
+
 /** Pure state -> solver query mapping (no DOM). Exported for unit tests. */
 function buildQuery(state) {
   const forged = wizIsForged(state.race);
@@ -48,7 +56,7 @@ function buildQuery(state) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -447,7 +455,9 @@ if (typeof window !== "undefined" && window.App) {
       state.slotConstraints = i.slotConstraints || {};
       state.constraintsDirty = false;   // loaded constraints are the saved state, not a pending change
       const snap = rec.snapshot;
-      if (snap && snap.status === "optimal") {
+      // U1/R1 — an optimal snapshot lands directly on Results; anything else
+      // routes to priorities to re-solve (never a blank results view).
+      if (stepAfterLoad(snap) === "results") {
         const query = rec.query || buildQuery(state);
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
@@ -463,7 +473,11 @@ if (typeof window !== "undefined" && window.App) {
         const stale = document.getElementById("wz-stale");
         if (stale) stale.classList.toggle("wz-hidden", !state.loadedStale);
       } else {
+        // No optimal snapshot saved — land on priorities so the user can re-solve,
+        // with a reason rather than a silent jump.
         go("priorities");
+        const s = document.getElementById("wz-status");
+        if (s) s.textContent = `"${rec.name}" has no solved build saved — adjust priorities and re-solve.`;
       }
     }
 

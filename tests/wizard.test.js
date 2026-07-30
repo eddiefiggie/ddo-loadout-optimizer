@@ -1,6 +1,6 @@
 // U1 — wizard step-machine pure helpers. Run: node tests/wizard.test.js
 const assert = require("assert");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad } = require("../web/wizard.js");
 
 const baseState = () => ({ ml: 34, race: "Human", armor: "", weapon: "", alignment: "",
   priorities: ["Constitution"], slotConstraints: {} });
@@ -57,6 +57,28 @@ test("U4: buildQuery defaults includeArtifact to false when unset", () => {
   // excludes Artifacts (R2 default). Coerced boolean, never undefined.
   const q = buildQuery(baseState());
   assert.strictEqual(q.includeArtifact, false);
+});
+
+// ---- U1 (Plan B) — load-to-Results routing (AE1, AE8) ----
+test("U1: an optimal snapshot lands straight on Results", () => {
+  assert.strictEqual(stepAfterLoad({ status: "optimal" }), "results");
+});
+
+test("U1: a non-optimal or missing snapshot routes to priorities (never blank Results)", () => {
+  assert.strictEqual(stepAfterLoad({ status: "infeasible" }), "priorities");
+  assert.strictEqual(stepAfterLoad({ status: "no_solution" }), "priorities");
+  assert.strictEqual(stepAfterLoad({}), "priorities", "a snapshot with no status is not optimal");
+  assert.strictEqual(stepAfterLoad(null), "priorities", "no saved snapshot");
+  assert.strictEqual(stepAfterLoad(undefined), "priorities");
+});
+
+test("U1: load routing never targets pool/priorities-skippable intermediate steps", () => {
+  // The only two landing steps are results (solved) or priorities (re-solve) —
+  // load never drops the user on intro/character/pool.
+  const landing = stepAfterLoad({ status: "optimal" });
+  assert.ok(landing === "results" || landing === "priorities");
+  assert.ok(!["intro", "character", "pool"].includes(stepAfterLoad({ status: "optimal" })));
+  assert.ok(!["intro", "character", "pool"].includes(stepAfterLoad(null)));
 });
 
 console.log(`\n${passed} passed`);
