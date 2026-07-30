@@ -119,22 +119,46 @@ test("craftChips renders the Gem's wildcard set assignment, load-bearing only", 
   assert.ok(!/Wildcard set/.test(chips2), "no wildcard chip for a non-joker item");
 });
 
-test("craftChips renders the Vecna awaken prescription with its station", () => {
-  const host = { variant_id: "Legendary University Mage's Hat", wiki_url: "https://ddowiki.com/x" };
-  const maps = {
+function membershipMaps(host, set, station) {
+  return {
     augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
     ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(),
     jokerByHost: new Map(),
-    membershipByHost: new Map([["Legendary University Mage's Hat",
-      [{ host: "Legendary University Mage's Hat", set: "Legendary Vol's Influence", station: "Cannith Repurposing Station" }]]]),
+    membershipByHost: new Map([[host, [{ host, set, station }]]]),
   };
+}
+
+test("craftChips renders Vecna as 'Awaken Set Bonus' (the only place 'awaken' survives)", () => {
+  const host = { variant_id: "Legendary University Mage's Hat", wiki_url: "https://ddowiki.com/x" };
+  const maps = membershipMaps("Legendary University Mage's Hat", "Legendary Vol's Influence", "Cannith Repurposing Station");
   const chips = R.craftChips(host, 0, maps).join(" ");
   // esc() HTML-escapes the apostrophe in "Vol's", so match around it.
-  assert.ok(/Awaken: Legendary Vol/.test(chips) && /Influence/.test(chips), "renders the awakened set");
+  assert.ok(/Awaken Set Bonus: Legendary Vol/.test(chips) && /Influence/.test(chips), "renders the awakened set");
   assert.ok(/Cannith Repurposing Station/.test(chips), "names the station");
-  // an item with no awaken pick renders no awaken chip
   const other = { variant_id: "Some Ring" };
-  assert.ok(!/Awaken:/.test(R.craftChips(other, 1, maps).join(" ")), "no awaken chip for a non-host item");
+  assert.ok(!/Awaken Set Bonus:/.test(R.craftChips(other, 1, maps).join(" ")), "no membership chip for a non-host item");
+});
+
+test("craftChips renders Isle-of-Dread Set Bonus as 'Slot Set Bonus augment' (not 'awaken')", () => {
+  const host = { variant_id: "Legendary Dino Vest" };
+  const maps = membershipMaps("Legendary Dino Vest", "The Legendary Dread Isle's Curse", "Dinosaur Bone crafting");
+  const chips = R.craftChips(host, 0, maps).join(" ");
+  assert.ok(/Slot Set Bonus augment: The Legendary Dread Isle/.test(chips), "renders the crafted Set Bonus augment");
+  assert.ok(!/awaken/i.test(chips), "Dino Set Bonus must not say 'awaken'");
+});
+
+test("craftChips uses 'Nearly Completed' and 'Viktranium' (not 'Nearly Complete'/'Lamordia')", () => {
+  const v = { variant_id: "Legendary Thing" };
+  const maps = {
+    augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
+    ncByItem: new Map([["Legendary Thing", [{ stat: "Charisma", value: 4, bonus_type: "Quality" }]]]),
+    rollByItem: new Map(), sealByItem: new Map(), jokerByHost: new Map(), membershipByHost: new Map(),
+    vikByItem: new Map([["Legendary Thing", [{ slot_type: "Melancholic", stat: "Constitution", value: 15 }]]]),
+  };
+  const chips = R.craftChips(v, 0, maps).join(" ");
+  assert.ok(/Nearly Completed:/.test(chips) && !/Nearly Complete:/.test(chips.replace(/Nearly Completed/g, "")), "Nearly Completed");
+  assert.ok(/Slot Melancholic Viktranium augment:/.test(chips), "Viktranium label");
+  assert.ok(!/Lamordia [A-Z]/.test(chips), "no 'Lamordia {type}:' label");
 });
 
 test("coverageNote discloses set bonuses now applying to enriched gear", () => {

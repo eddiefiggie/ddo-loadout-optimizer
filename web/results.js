@@ -263,6 +263,11 @@ function safeUrl(u) {
 // Craft/augment prescriptions applied to an equipped item (augments, Dino inserts,
 // Nearly Complete, choice slots, Viktranium, seals, wildcard), as labeled chips.
 // Used by the Loadout Deep Dive so every applied bonus is visible. Returns an array.
+// Crafting-system label registry (U1). Global in the browser (loaded before
+// results.js); require()'d in Node tests where the global isn't present.
+const CraftingReg = (typeof CraftingSystems !== "undefined") ? CraftingSystems
+  : (typeof require !== "undefined" ? require("./crafting-systems.js") : null);
+
 function craftChips(v, idx, maps) {
   const lbl = (o) => esc(affixLabel({ stat: o.stat, bonus_type: o.bonus_type, value: o.value, unit: o.unit || "flat" }));
   const augs = (maps.augAssign.byIndex.get(idx) || []).map((a) => {
@@ -274,15 +279,26 @@ function craftChips(v, idx, maps) {
     const label = affixes.map(lbl).join(", ");
     return `<span class="chip dino" title="Isle of Dread insert">${esc(d.dino_type)}: ${d.name ? esc(d.name) + ", " : ""}${label}</span>`;
   });
-  const ncs = (maps.ncByItem.get(v.variant_id) || []).map((n) => `<span class="chip nc" title="U81 Nearly Complete">Nearly Complete: ${lbl(n)}</span>`);
+  const ncs = (maps.ncByItem.get(v.variant_id) || []).map((n) => `<span class="chip nc" title="Terror of Demogorgon — Nearly Completed">Nearly Completed: ${lbl(n)}</span>`);
   const rolls = (maps.rollByItem.get(v.variant_id) || []).map((r) => `<span class="chip roll" title="choice slot, best option selected">Choice: ${lbl(r)}</span>`);
-  const viks = (maps.vikByItem.get(v.variant_id) || []).map((n) => `<span class="chip lamordia" title="U81 Viktranium / Lamordia">Lamordia ${esc(n.slot_type)}: ${lbl(n)}</span>`);
+  const viks = (maps.vikByItem.get(v.variant_id) || []).map((n) => `<span class="chip lamordia" title="The Chill of Ravenloft — Viktranium Experiment crafting">Slot ${esc(n.slot_type)} Viktranium augment: ${lbl(n)}</span>`);
   const seals = (maps.sealByItem.get(v.variant_id) || []).map((n) => `<span class="chip seal" title="unseal one effect at the crafting table">Sealed in ${esc(n.seal_type)}: ${lbl(n)}</span>`);
   const tfs = ((maps.tfByItem && maps.tfByItem.get(v.variant_id)) || []).map((n) => `<span class="chip thunderforged" title="Legendary Thunder-Forged tier upgrade">Thunder-Forged T${esc(n.tier)}: ${lbl(n)}</span>`);
   const gss = ((maps.gsByItem && maps.gsByItem.get(v.variant_id)) || []).map((n) => `<span class="chip greensteel" title="Legendary Green Steel craft">Green Steel: ${lbl(n)}</span>`);
   const jokers = ((maps.jokerByHost && maps.jokerByHost.get(v.variant_id)) || []).map((j) => `<span class="chip joker" title="wildcard set piece">Wildcard set: ${esc(j.set)}</span>`);
-  const awakens = ((maps.membershipByHost && maps.membershipByHost.get(v.variant_id)) || []).map((m) => `<span class="chip awaken" title="awaken this set at the ${esc(m.station || "crafting station")}">Awaken: ${esc(m.set)}${m.station ? ` <span class="muted">(${esc(m.station)})</span>` : ""}</span>`);
-  return [...augs, ...dinos, ...ncs, ...rolls, ...viks, ...seals, ...tfs, ...gss, ...jokers, ...awakens];
+  // Membership chip (R3/R4): Vecna Lost Purpose and Isle-of-Dread Set Bonus flow
+  // through one solver primitive but must render different labels — fork on the
+  // station via the registry (KTD2). Only Vecna keeps "Awaken".
+  const memberships = ((maps.membershipByHost && maps.membershipByHost.get(v.variant_id)) || []).map((m) => {
+    const sysId = CraftingReg ? CraftingReg.systemForStation(m.station) : null;
+    const isVecna = sysId === "vecna-lost-purpose";
+    const cls = isVecna ? "chip awaken" : "chip setbonus";
+    const label = isVecna ? "Awaken Set Bonus" : "Slot Set Bonus augment";
+    const title = isVecna ? `awaken this set at the ${esc(m.station || "Cannith Repurposing Station")}`
+      : `slot a Dinosaur Bone Set Bonus augment at ${esc(m.station || "Dinosaur Bone crafting")}`;
+    return `<span class="${cls}" title="${title}">${label}: ${esc(m.set)}${m.station ? ` <span class="muted">(${esc(m.station)})</span>` : ""}</span>`;
+  });
+  return [...augs, ...dinos, ...ncs, ...rolls, ...viks, ...seals, ...tfs, ...gss, ...jokers, ...memberships];
 }
 
 /** Sets actually complete in the equipped loadout (U6) — the glow signal. Two
