@@ -145,6 +145,27 @@ test("U2/KTD2: a dominated NON-artifact is still pruned when box is on (exemptio
   assert.deepStrictEqual(ring.variants.map((x) => x.source_item), ["A"]);
 });
 
+test("U2/KTD2 soundness: an Artifact must NOT prune a non-Artifact when box on", () => {
+  // artifact B (Int 10) dominates non-artifact A (Int 5) in the Ring slot. Because
+  // exactly-one can force B off (a different Artifact wins elsewhere), A could be
+  // the true best-available Ring — so A must survive pruning when the box is on.
+  const A = v("A", "Ring", [["Intelligence", "Enhancement", 5]]);
+  const B = art("B", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const model = M.buildModel([A, B], { mlCap: 34, targets: ["Intelligence"], includeArtifact: true });
+  const ring = model.worn.find((s) => s.slot === "Ring");
+  const kept = ring.variants.map((x) => x.source_item).sort();
+  assert.deepStrictEqual(kept, ["A", "B"], "the Artifact must not prune the non-Artifact");
+});
+
+test("U2/KTD2 soundness: box OFF, an Artifact-flagged item is excluded so normal pruning holds", () => {
+  // With the box off the artifact is excluded entirely (R2), so only A remains.
+  const A = v("A", "Ring", [["Intelligence", "Enhancement", 5]]);
+  const B = art("B", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const model = M.buildModel([A, B], { mlCap: 34, targets: ["Intelligence"] });
+  const ring = model.worn.find((s) => s.slot === "Ring");
+  assert.deepStrictEqual(ring.variants.map((x) => x.source_item), ["A"]);
+});
+
 test("U2/KTD5: box off leaves pruning byte-for-byte unchanged (no exemption leak)", () => {
   const A = v("A", "Ring", [["Intelligence", "Enhancement", 10]]);
   const B = v("B", "Ring", [["Intelligence", "Enhancement", 5]]);

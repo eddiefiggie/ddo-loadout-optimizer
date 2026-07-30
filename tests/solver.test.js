@@ -1410,6 +1410,100 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.strictEqual(r.chosen.filter((c) => c.variant.artifact).length, 1);
   });
 
+  await test("U3: Artifact pinned to its OWN slot -> equipped, exactly one, no false R6", async () => {
+    const model = {
+      targets: ["Accuracy"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [artItem("artT", "Trinket", [["Accuracy", "Enhancement", 10]])]),
+             slot("Ring", [item("R", "Ring", [["Accuracy", "Enhancement", 3]])])],
+      query: { includeArtifact: true, slotConstraints: { Trinket: { type: "pin", variant_id: "artT" } } },
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.ok(r.chosen.some((c) => c.variant.variant_id === "artT"), "the pinned Artifact is equipped");
+    assert.strictEqual(r.chosen.filter((c) => c.variant.artifact).length, 1);
+  });
+
+  await test("U3: sole Artifact's cardinality-1 slot pinned to ANOTHER item -> feasible R6 fallback", async () => {
+    // Trinket holds the only Artifact but is pinned to a different (non-artifact)
+    // Trinket item, so the Artifact cannot be placed -> exactly-one must drop.
+    const model = {
+      targets: ["Accuracy", "Intelligence"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [artItem("artT", "Trinket", [["Accuracy", "Enhancement", 10]]),
+                              item("plainT", "Trinket", [["Intelligence", "Enhancement", 6]])])],
+      query: { includeArtifact: true, slotConstraints: { Trinket: { type: "pin", variant_id: "plainT" } } },
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal", "foreign pin on the sole Artifact's slot must stay feasible");
+    assert.strictEqual(r.chosen.filter((c) => c.variant.artifact).length, 0, "no Artifact equipped");
+    assert.ok(r.chosen.some((c) => c.variant.variant_id === "plainT"), "the pin is honored");
+  });
+
+  await test("U3: Artifact Ring coexists with a foreign-pinned Ring (cardinality 2)", async () => {
+    const model = {
+      targets: ["Accuracy", "Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [artItem("artRing", "Ring", [["Accuracy", "Enhancement", 10]]),
+                           item("ring2", "Ring", [["Constitution", "Enhancement", 5]]),
+                           item("ring3", "Ring", [["Constitution", "Enhancement", 3]])], 2)],
+      query: { includeArtifact: true, slotConstraints: { Ring: { type: "pin", variant_id: "ring2" } } },
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    const ids = r.chosen.map((c) => c.variant.variant_id);
+    assert.ok(ids.includes("artRing"), "the Artifact ring takes the free Ring slot");
+    assert.ok(ids.includes("ring2"), "the pinned ring is honored");
+    assert.strictEqual(r.chosen.filter((c) => c.variant.artifact).length, 1);
+  });
+
+  await test("U3: TWO Artifacts force-pinned in different slots -> feasible, not infeasible", async () => {
+    // The pins assert two Artifacts (the user's explicit choice); adding
+    // sum(artifacts)=1 would be infeasible (2=1). The guard drops the constraint
+    // so the pins stand and the solve does not collapse to the generic error.
+    const model = {
+      targets: ["Accuracy", "Deadly"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [artItem("artT", "Trinket", [["Accuracy", "Enhancement", 10]])]),
+             slot("Necklace", [artItem("artN", "Necklace", [["Deadly", "Enhancement", 10]])])],
+      query: { includeArtifact: true,
+        slotConstraints: { Trinket: { type: "pin", variant_id: "artT" }, Necklace: { type: "pin", variant_id: "artN" } } },
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal", "two pinned Artifacts must not make the solve infeasible");
+    const ids = r.chosen.map((c) => c.variant.variant_id);
+    assert.ok(ids.includes("artT") && ids.includes("artN"), "both explicitly-pinned Artifacts stand");
+  });
+
+  await test("U3: a STALE pin in the sole Artifact's slot does not suppress exactly-one", async () => {
+    // The pin references a variant not present in the slot (ghost). It resolves
+    // to nothing, so the slot is actually free and the Artifact must be required.
+    const model = {
+      targets: ["Accuracy"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [artItem("artT", "Trinket", [["Accuracy", "Enhancement", 10]])])],
+      query: { includeArtifact: true, slotConstraints: { Trinket: { type: "pin", variant_id: "ghost" } } },
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.chosen.filter((c) => c.variant.artifact).length, 1, "stale pin must not drop the Artifact");
+  });
+
+  await test("U3/KTD2 soundness: exactly-one does not sacrifice a non-Artifact's secondary stat", async () => {
+    // Trinket: artifact B (Acc10/Deadly10) vs non-artifact A (Acc8/Deadly8).
+    // Necklace: artifact C (Acc12). Priorities [Accuracy, Deadly].
+    // Stage 1 picks C (Acc 12) as the one Artifact, forcing B off. The optimum
+    // then equips non-artifact A in Trinket for Deadly 8 — which is only reachable
+    // if A survived pruning (it would be wrongly pruned by B without the fix).
+    const model = {
+      targets: ["Accuracy", "Deadly"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [artItem("B", "Trinket", [["Accuracy", "Enhancement", 10], ["Deadly", "Enhancement", 10]]),
+                              item("A", "Trinket", [["Accuracy", "Enhancement", 8], ["Deadly", "Enhancement", 8]])]),
+             slot("Necklace", [artItem("C", "Necklace", [["Accuracy", "Enhancement", 12]])])],
+      query: { includeArtifact: true },
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.Accuracy, 12, "priority 1 maxed by the one Artifact (C)");
+    assert.strictEqual(r.effective.Deadly, 8, "non-Artifact A supplies Deadly — it must not have been pruned by B");
+    assert.strictEqual(r.chosen.filter((c) => c.variant.artifact).length, 1, "still exactly one Artifact");
+  });
+
   await test("U3: exactly-one solve is deterministic across runs", async () => {
     const mk = () => ({
       targets: ["Accuracy"], mlCap: 34, dodgeCap: null,

@@ -235,7 +235,7 @@ function variantKey(v) {
   return (v && (v.variant_id || v.source_item)) || "";
 }
 
-function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinnedIds = null) {
+function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinnedIds = null, includeArtifact = false) {
   const kept = [];
   for (let i = 0; i < slotVariants.length; i++) {
     const A = slotVariants[i];
@@ -250,6 +250,13 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinned
     for (let j = 0; j < slotVariants.length; j++) {
       if (i === j) continue;
       const B = slotVariants[j];
+      // KTD2 soundness: when the box is on, an Artifact is only *conditionally*
+      // available — the `= 1` exactly-one constraint can force it off if a
+      // different Artifact wins elsewhere. So an Artifact must not prune a
+      // non-Artifact peer: the non-Artifact could be the true best-available
+      // item once its Artifact "dominator" is forced off. (Artifacts themselves
+      // are already exempt via pinnedIds and never reach this loop when on.)
+      if (includeArtifact && B.artifact && !A.artifact) continue;
       // B dominates A, and to break exact ties keep the lower index
       if (dominates(B, A, targetSet, mlCap) && !(dominates(A, B, targetSet, mlCap) && i < j)) {
         dominated = true;
@@ -283,11 +290,12 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     for (const v of elig) if (v.artifact) pinnedIds.add(variantKey(v));
   }
 
+  const withArt = !!query.includeArtifact;
   const worn = [];
   for (const slotName of WORN_SLOTS) {
     const card = SLOT_CARDINALITY[slotName] || 1;
     let cands = elig.filter((v) => v.slot === slotName);
-    cands = dominanceFilter(cands, targetSet, mlCap, card, pinnedIds);
+    cands = dominanceFilter(cands, targetSet, mlCap, card, pinnedIds, withArt);
     if (cands.length) {
       worn.push({ slot: slotName, cardinality: card, variants: cands });
     }
@@ -296,9 +304,9 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // One main-hand weapon: all weapon-category variants compete for a single slot
   // so the solver can never equip several weapons at once. Rune-arm is a separate
   // off-hand slot.
-  const mainHand = dominanceFilter(elig.filter((v) => v.category === "weapon"), targetSet, mlCap, 1, pinnedIds);
+  const mainHand = dominanceFilter(elig.filter((v) => v.category === "weapon"), targetSet, mlCap, 1, pinnedIds, withArt);
   if (mainHand.length) worn.push({ slot: "Main Hand", cardinality: 1, variants: mainHand });
-  const runeArm = dominanceFilter(elig.filter((v) => v.category === "runearm"), targetSet, mlCap, 1, pinnedIds);
+  const runeArm = dominanceFilter(elig.filter((v) => v.category === "runearm"), targetSet, mlCap, 1, pinnedIds, withArt);
   if (runeArm.length) worn.push({ slot: "Rune Arm", cardinality: 1, variants: runeArm });
 
   // Augment pool: augments (category augment) as a compatible-color-capacity
