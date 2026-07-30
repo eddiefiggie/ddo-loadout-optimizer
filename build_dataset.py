@@ -47,6 +47,7 @@ TF_SEED_PATH = os.path.join(HERE, "data", "seed", "thunder_forged.json")
 GS_SEED_PATH = os.path.join(HERE, "data", "seed", "green_steel.json")
 AUG_SEED_PATH = os.path.join(HERE, "data", "seed", "augments.json")
 ALIGN_SEED_PATH = os.path.join(HERE, "data", "seed", "alignment_restrictions.json")
+ARTIFACT_SEED_PATH = os.path.join(HERE, "data", "seed", "artifacts.json")
 JOKER_SEED_PATH = os.path.join(HERE, "data", "seed", "joker_sets.json")
 COMPENDIUM_DIR = os.path.join(HERE, "data", "seed", "compendium")
 # Output lands inside web/ so that directory is a self-contained, deployable
@@ -145,6 +146,35 @@ def stamp_alignment_req(variants: list, restrictions: dict) -> int:
         req = restrictions.get(v.get("source_item"))
         if req:
             v["alignment_req"] = list(req)
+            n += 1
+    return n
+
+
+def load_artifacts(path: str = ARTIFACT_SEED_PATH) -> set:
+    """Curated Artifact-quality base-item names (source_item), as a flat JSON
+    array. Membership only — no per-item value and (unlike the object-shaped
+    alignment seed) no `_README` key, since a top-level array cannot carry one.
+    Non-string or underscore-prefixed entries are ignored; a missing file yields
+    an empty set. Exclude-until-verified: the shipping seed is empty until a wiki
+    harvest populates it, so the JS solver treats every variant as non-Artifact."""
+    if not os.path.exists(path):
+        return set()
+    with open(path, encoding="utf-8") as fh:
+        raw = json.load(fh)
+    if not isinstance(raw, list):
+        return set()
+    return {s for s in raw if isinstance(s, str) and s and not s.startswith("_")}
+
+
+def stamp_artifact(variants: list, names: set) -> int:
+    """Stamp `artifact: True` onto each variant whose base item (source_item) is a
+    curated Artifact. Additive + exclude-until-verified: a variant not in the seed
+    carries no `artifact` field, so eligible()/the solver (JS) treat it as a
+    non-Artifact. Returns the count of variants stamped."""
+    n = 0
+    for v in variants:
+        if v.get("source_item") in names:
+            v["artifact"] = True
             n += 1
     return n
 
@@ -291,6 +321,11 @@ def build(seed: dict) -> dict:
     # JS character gate (eligible) can exclude items the character's alignment
     # can't equip. Empty seed today -> no-op; fail-open until wiki-verified.
     stamp_alignment_req(variants, load_alignment_restrictions())
+
+    # Artifact item-quality flag (U1): stamp `artifact` from the curated seed so
+    # the JS opt-in (eligible/solver) can exclude Artifacts or require exactly one.
+    # Empty seed today -> no-op; exclude-until-verified until a wiki harvest lands.
+    stamp_artifact(variants, load_artifacts())
 
     for v in variants:                                  # U2 augment-color normalization
         colors_mod.annotate_variant(v)
