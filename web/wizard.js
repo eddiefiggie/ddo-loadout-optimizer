@@ -168,6 +168,16 @@ if (typeof window !== "undefined" && window.App) {
               <input id="wz-import" type="file" accept=".json,application/json" class="wz-hidden">
             </div>
             <div id="wz-data-stat" class="wz-filestat"></div>
+            <hr class="wz-data-sep">
+            <p class="wz-help">Share a single loadout: a forum-ready Markdown post, a clean CSV of the full detail, or a
+              print-friendly page. Both files carry the character name and constraints in the header.</p>
+            <div class="wz-data-row">
+              <label class="wz-share-pick"><span class="wz-label">Loadout</span>
+                <select id="wz-share-sel"></select></label>
+              <button class="btn ghost" id="wz-share-md" type="button">Markdown</button>
+              <button class="btn ghost" id="wz-share-csv" type="button">CSV</button>
+              <button class="btn ghost" id="wz-share-print" type="button">Print</button>
+            </div>
           </div>
         </details>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
@@ -373,6 +383,32 @@ if (typeof window !== "undefined" && window.App) {
       return (dataset && dataset.metadata && dataset.metadata.build_id) || null;
     }
 
+    function downloadFile(filename, text, mime) {
+      const blob = new Blob([text], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function slug(s) {
+      return String(s || "loadout").trim().replace(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "loadout";
+    }
+
+    // Print a single loadout via a body-level print container isolated by the
+    // @media print rules — avoids popup-blocked window.open and needs no new tab.
+    function printLoadout(rec) {
+      let area = document.getElementById("wz-printarea");
+      if (!area) { area = document.createElement("div"); area.id = "wz-printarea"; document.body.appendChild(area); }
+      // eslint-disable-next-line no-undef
+      area.innerHTML = LoadoutExport.toPrintHtml(rec);
+      document.body.classList.add("printing");
+      const cleanup = () => { document.body.classList.remove("printing"); window.removeEventListener("afterprint", cleanup); };
+      window.addEventListener("afterprint", cleanup);
+      window.print();
+    }
+
     function saveCurrentCharacter(name) {
       const nm = (name || "").trim();
       if (!nm) return { ok: false, error: "no-name" };
@@ -454,14 +490,38 @@ if (typeof window !== "undefined" && window.App) {
       if (exportBtn) exportBtn.onclick = () => {
         // eslint-disable-next-line no-undef
         const payload = BackupIO.serializeAll(CharacterStore.allCharacters(), { buildId: currentBuildId() });
-        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `ddo-characters-${new Date().toISOString().slice(0, 10)}.json`;
-        document.body.appendChild(a); a.click(); a.remove();
-        URL.revokeObjectURL(url);
+        downloadFile(`ddo-characters-${new Date().toISOString().slice(0, 10)}.json`,
+          JSON.stringify(payload, null, 2), "application/json");
       };
+
+      // Share a single saved loadout (U13): Markdown / CSV / print.
+      const shareSel = document.getElementById("wz-share-sel");
+      if (shareSel) {
+        // eslint-disable-next-line no-undef
+        const names = CharacterStore.listCharacters().map((c) => c.name);
+        shareSel.innerHTML = names.length
+          ? names.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join("")
+          : `<option value="">No saved characters</option>`;
+        const selected = () => {
+          const n = shareSel.value;
+          // eslint-disable-next-line no-undef
+          return n ? CharacterStore.loadCharacter(n) : null;
+        };
+        const mdBtn = document.getElementById("wz-share-md");
+        const csvBtn = document.getElementById("wz-share-csv");
+        const printBtn = document.getElementById("wz-share-print");
+        if (mdBtn) mdBtn.onclick = () => {
+          const rec = selected(); if (!rec) return;
+          // eslint-disable-next-line no-undef
+          downloadFile(`${slug(rec.name)}.md`, LoadoutExport.toMarkdown(rec), "text/markdown");
+        };
+        if (csvBtn) csvBtn.onclick = () => {
+          const rec = selected(); if (!rec) return;
+          // eslint-disable-next-line no-undef
+          downloadFile(`${slug(rec.name)}.csv`, LoadoutExport.toCsv(rec), "text/csv");
+        };
+        if (printBtn) printBtn.onclick = () => { const rec = selected(); if (rec) printLoadout(rec); };
+      }
       const impLabel = document.getElementById("wz-import-label");
       const impFile = document.getElementById("wz-import");
       const stat = () => document.getElementById("wz-data-stat");

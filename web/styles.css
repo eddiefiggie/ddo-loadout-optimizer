@@ -812,6 +812,23 @@ input.wz-ml { width: 120px; }
 .wz-data-body { padding: 0 var(--sp-3) var(--sp-3); }
 .wz-data-row { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
 .wz-data-row .wz-file { flex: 1; min-width: 200px; }
+.wz-data-sep { border: none; border-top: 1px dashed var(--border-2); margin: var(--sp-3) 0; }
+.wz-share-pick { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 160px; }
+.wz-share-pick select { background: var(--panel-2); color: var(--text); border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm); padding: 7px 10px; }
+
+/* U13: single-loadout print view — a body-level container the @media print
+   rules isolate so only the loadout prints. */
+#wz-printarea { display: none; }
+@media print {
+  body.printing > *:not(#wz-printarea) { display: none !important; }
+  #wz-printarea { display: block !important; color: #000; background: #fff; padding: 0; }
+  #wz-printarea h1 { font-size: 20px; margin: 0 0 6px; }
+  #wz-printarea .pc { font-size: 12px; margin: 0 0 12px; color: #333; }
+  #wz-printarea table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  #wz-printarea th, #wz-printarea td { border: 1px solid #999; padding: 4px 6px; text-align: left; vertical-align: top; }
+  #wz-printarea thead th { background: #eee; }
+}
 
 /* Adjust & re-solve panel (U8) — fold-up editor in the results view. */
 .wz-adjust { margin-top: var(--sp-4); border: 1px dashed var(--border-2); border-radius: var(--radius);

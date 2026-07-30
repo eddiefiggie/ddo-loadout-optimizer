@@ -1,6 +1,6 @@
 // U12 — Markdown + CSV loadout exporters. Run: node tests/exporters.test.js
 const assert = require("assert");
-const { toMarkdown, toCsv, csvSafe, constraintLines } = require("../web/exporters.js");
+const { toMarkdown, toCsv, toPrintHtml, csvSafe, constraintLines } = require("../web/exporters.js");
 
 let passed = 0;
 function test(name, fn) {
@@ -77,6 +77,15 @@ test("markdown escapes a markup-bearing name (no raw tag)", () => {
   const evil = { ...rec, name: "<img src=x onerror=alert(1)>" };
   const md = toMarkdown(evil);
   assert.ok(!/<img /.test(md), "raw markup leaked into markdown");
+});
+
+test("toPrintHtml renders name + constraints + loadout table, escaping markup", () => {
+  const h = toPrintHtml(rec);
+  assert.ok(/<h1>Sook - Reaper<\/h1>/.test(h));
+  assert.ok(/<table>/.test(h) && /<td>Armor<\/td>/.test(h));
+  assert.ok(/Legendary Gravekeeper/.test(h));   // apostrophe is html-escaped to &#39;
+  const evil = toPrintHtml({ ...rec, name: "<script>x</script>" });
+  assert.ok(!/<script>x/.test(evil), "raw script leaked into print html");
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);

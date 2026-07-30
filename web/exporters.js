@@ -95,7 +95,28 @@
     return rows.join("\n");
   }
 
-  const api = { toMarkdown, toCsv, csvSafe, csvRow, constraintPairs, constraintLines, fmtAffix };
+  function htmlEsc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g,
+      (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  // Print-friendly loadout fragment (name + constraints + table). Escaped HTML;
+  // injected into a print container by U13, then window.print().
+  function toPrintHtml(rec) {
+    const pairs = constraintPairs(rec);
+    const rows = loadoutRows(rec);
+    let h = `<h1>${htmlEsc(rec && rec.name)}</h1>`;
+    h += `<p class="pc">${pairs.slice(1).map(([k, v]) => `<strong>${htmlEsc(k)}:</strong> ${htmlEsc(v)}`).join(" &middot; ")}</p>`;
+    h += `<table><thead><tr><th>Slot</th><th>Item</th><th>ML</th><th>Stats</th><th>Augment slots</th></tr></thead><tbody>`;
+    for (const r of rows) {
+      h += `<tr><td>${htmlEsc(r.slot)}</td><td>${htmlEsc(r.item)}</td><td>${htmlEsc(r.ml)}</td>`
+        + `<td>${r.stats.map(htmlEsc).join(", ")}</td><td>${r.augs.map(htmlEsc).join(", ")}</td></tr>`;
+    }
+    h += `</tbody></table>`;
+    return h;
+  }
+
+  const api = { toMarkdown, toCsv, toPrintHtml, csvSafe, csvRow, htmlEsc, constraintPairs, constraintLines, fmtAffix };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (typeof window !== "undefined") window.LoadoutExport = api;
 })();
