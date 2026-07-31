@@ -10,7 +10,7 @@
 
 ## What it does
 
-Tell it your build — minimum level, class/race, armor type, weapon setup — and a **ranked list of the stats you care about**. It searches every wiki-sourced named item, augment, set bonus, and crafting option in the game and returns the **single loadout that is provably the best** for your priorities, slot by slot.
+Tell it your build — minimum level, race, armor type, weapon setup — and a **ranked list of the stats you care about**. It searches every wiki-sourced named item, augment, set bonus, and crafting option in the game and returns the **single loadout that is provably the best** for your priorities, slot by slot. Optimize over the whole game, or restrict it to **only the gear you own** (import a Trove inventory export).
 
 Not a tier list. Not "what a good player usually wears." An exact optimizer: it considers **7,900+ item variants** and solves for the mathematically optimal answer under DDO's real bonus-type stacking rules. When it says a set is better than three individual items, it's because it *proved* it.
 
@@ -40,22 +40,32 @@ Coverage that's live today:
 | Viktranium / Lamordia experiment (Chill of Ravenloft, U75) | ✅ |
 | Dinosaur Bone inserts (Isle of Dread) | ✅ |
 | Endgame band ML 30–36 (U81 / Isle of Dread / Myth Drannor) | ✅ named + raid gear solver-active |
+| **Wildcard set pieces** (Gem of Many Facets family — counts toward a chosen set) | ✅ |
+| **Boolean presence affixes** (Ghost Touch, True Seeing, Freedom of Movement, immunities…) | ✅ modeled as presence, not a magnitude |
+| **Minor Artifact opt-in** (build around one equippable Artifact; the optimizer picks the best-scoring one) | ✅ |
 | Filigrees, Green Steel, Thunder-Forged, Essence crafting | ⏳ not yet |
 
 Everything is **wiki-sourced and exclude-until-verified**: if the DDO Wiki doesn't state a value explicitly, it's quarantined and disclosed rather than guessed. Every result shows its own coverage so you know what was and wasn't considered.
 
 ## How to use it
 
-1. Open the [live site](https://eddiefiggie.github.io/ddo-loadout-optimizer/).
-2. Set your **ML cap**, and optionally class/race, armor type, and weapon setup.
-3. **Add your target affixes in priority order** (drag to reorder). First = most important.
-4. Hit **Solve**. In well under a second you get:
-   - a **paperdoll** of the optimal loadout, set pieces highlighted;
-   - a **ranked-priority readout** showing exactly where each point of every stat comes from (which item, which set, which bonus type);
-   - a **Loadout Deep Dive** with every item's affixes and every craft/augment/set-membership to apply;
-   - an **Alternatives** tab of near-optimal trade-off builds (complete a different set, free up a slot, fewer crafting steps).
+A short guided wizard walks you through it:
 
-There's also an **Item Browser** to search and filter the whole indexed roster.
+1. Open the [live site](https://eddiefiggie.github.io/ddo-loadout-optimizer/).
+2. **Character:** set your **ML cap**, and optionally race, armor type, and weapon setup. Tick **Include an Artifact** to build around one equippable Minor Artifact.
+3. **Gear pool:** optimize over **all gear in the game**, or **only what you own** (import a Trove inventory export).
+4. **Priorities:** **add your target affixes in priority order** (drag to reorder). First = most important.
+5. Hit **Solve**. In well under a second you get six result tabs:
+   - **Loadout** — the full equipped loadout laid out slot by slot, set pieces highlighted, with the assigned augments and craft steps on each item;
+   - **Ranked Priorities** — where each point of every stat comes from (which item, which set, which bonus type);
+   - **Set Bonuses** — every set you actually complete and the affixes it grants;
+   - **Loadout Deep Dive** — every item's affixes and every craft/augment/set-membership to apply;
+   - **Alternatives** — near-optimal trade-off builds (complete a different set, free up a slot, fewer crafting steps), computed on demand behind a **Run analysis** button so the base solve stays instant;
+   - **Share** — export the loadout as forum-ready Markdown, CSV, or a print-friendly page.
+
+From the results you can **pin, lock-empty, or free any slot** and re-solve in place (**Adjust & re-solve**), and **name and save the character** to reload later — all in your browser. **Export & Data Management** backs up every saved build to a file (and restores one) to move builds between devices.
+
+There's also a **Browse items** view to search and filter the whole indexed roster.
 
 ## How it works (for the theorycrafters)
 
@@ -78,10 +88,10 @@ node tests/model.test.js tests/browse.test.js tests/results.test.js
 **Set definitions are single-source-of-truth:** all named-set bonuses (including the ones a Lost Purpose or Dino host can craft toward) come from the gear-planner set catalog, so a crafted-membership set and an intrinsically-completed one always give identical stats.
 
 ## Files
-- `web/` — the static app (`solver.js`, `model.js`, `query.js`, `results.js`, `browse.js`, `alternatives.js`).
+- `web/` — the static app: `wizard.js` (the guided-wizard UI entry point), `solver.js`, `model.js`, `results.js`, `alternatives.js`, `browse.js`, plus the crafting/data layer (`crafting-systems.js`, `import.js`) and the persistence/sharing layer (`persist.js`, `backup.js`, `exporters.js`).
 - `src/` + `build_dataset.py` — the Python data pipeline (parse wiki affix text, expand tier variants, verify/quarantine, build the dataset).
 - `data/seed/` — hand-verified seed + wiki-sourced shards.
 - `docs/plans/` — the feature plans (brainstorm → plan) behind each milestone.
 
 ## Resume prompt
-> Resuming the **ddo-loadout-optimizer** garage project (`~/ClaudeGarage/personal/ddo-loadout-optimizer/`). Public DDO best-in-slot optimizer, live at eddiefiggie.github.io/ddo-loadout-optimizer. Input = ML cap + class/race + armor + weapon setup + a ranked affix list; output = the provably-optimal fully-upgraded loadout (item + tier + augment-in-slot + crafted options + chosen set-membership bonuses), every value wiki-sourced (Claude-in-Chrome scrape; plain fetch returns empty for ddowiki). **Client-side static app on GitHub Pages**; exact MILP in-browser via **HiGHS-WASM**, staged lexicographic solve, deterministic tie-break; Python generator builds `web/data/items.json`. Core rules: strict lexicographic priority; pure theoretical BiS (no per-user inventory); strict exclude-until-verified data with per-result coverage disclosure; **never infer a value**. **State (2026-07-28):** Milestones 1–3 live; endgame band ML30-36 (U81/IoD/Myth Drannor) solver-active; crafting modeled — augments, seal/Ritual Table (Undeath), Nearly Completed, Viktranium, Dino inserts; **Vecna Lost Purpose + Dino Set-Bonus set-crafting SHIPPED** via a general self-seeding **chosen-set-membership primitive** (`web/solver.js`), 28 craftable-membership sets (Vecna *awakens* a set; Dino slots a Set Bonus augment), memberships rendered in the Loadout Deep Dive with their crafting station. **Set defs come from the gear-planner catalog (single source of truth) — never re-harvest into a parallel file.** Marker-only carrier shards (mirror `_seal_carrier`) attach markers to items already solver-active via the gear-planner import (KTD6 dedup trap). Data pipeline: seed → `build_dataset.py` → `web/data/items.json` (gitignored). Next candidates: filigrees, more enriched Vecna/IoD gear, remaining crafting systems (Green Steel, Thunder-Forged, Essence).
+> Resuming the **ddo-loadout-optimizer** garage project (`~/ClaudeGarage/personal/ddo-loadout-optimizer/`). Public DDO best-in-slot optimizer, live at eddiefiggie.github.io/ddo-loadout-optimizer. Input = ML cap + race + armor + weapon setup + a ranked affix list (optionally restricted to an imported Trove owned-inventory); output = the provably-optimal fully-upgraded loadout (item + tier + augment-in-slot + crafted options + chosen set-membership bonuses), every value wiki-sourced (Claude-in-Chrome scrape; plain fetch returns empty for ddowiki). **Client-side static app on GitHub Pages**; exact MILP in-browser via **HiGHS-WASM**, staged lexicographic solve, deterministic tie-break; Python generator builds `web/data/items.json`. Core rules: strict lexicographic priority; theoretical BiS by default, with an optional owned-inventory pool (Trove import) that constrains base items to what you have (augments/crafting still come from the full catalog); strict exclude-until-verified data with per-result coverage disclosure; **never infer a value**. **State (2026-07-31):** Milestones 1–3 live; endgame band ML30-36 (U81/IoD/Myth Drannor) solver-active; crafting modeled — augments, seal/Ritual Table (Undeath), Nearly Completed, Viktranium, Dino inserts; **Vecna Lost Purpose + Dino Set-Bonus set-crafting SHIPPED** via a general self-seeding **chosen-set-membership primitive** (`web/solver.js`), 28 craftable-membership sets (Vecna *awakens* a set; Dino slots a Set Bonus augment), memberships rendered in the Loadout Deep Dive with their crafting station. Also live: **wildcard set pieces** + **boolean presence affixes** + **Minor Artifact opt-in** (all data-gated exclude-until-verified); a **guided 5-step wizard** UI (intro/character/pool/priorities/results) with 6 result tabs (Loadout / Ranked Priorities / Set Bonuses / Loadout Deep Dive / Alternatives [on-demand Run-analysis button] / Share); **per-slot Adjust & re-solve** (pin/lock-empty/free); and a full **client-side persistence layer** — named character save/load/delete (`persist.js`), versioned backup/restore (`backup.js`), and single-loadout share exporters MD/CSV/print (`exporters.js`). **Set defs come from the gear-planner catalog (single source of truth) — never re-harvest into a parallel file.** Marker-only carrier shards (mirror `_seal_carrier`) attach markers to items already solver-active via the gear-planner import (KTD6 dedup trap). Data pipeline: seed → `build_dataset.py` → `web/data/items.json` (gitignored). Genuinely-future: filigrees, Essence crafting, more enriched Vecna/IoD gear. NOTE: Green Steel + Thunder-Forged machinery is complete but **shelved** (pools intentionally empty — no Legendary hosts in the catalog yet), so they read "not yet" despite the code existing. Known app gap: the **Alignment selector is inert** (empty `alignment_restrictions.json` seed) — either seed verified gates or soften its help text.

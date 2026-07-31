@@ -1,0 +1,106 @@
+# DDO Loadout Optimizer — your best-in-slot gear, *proven by math* (free, in-browser)
+
+**Play it now:** https://eddiefiggie.github.io/ddo-loadout-optimizer/
+
+Ever spent an evening with six wiki tabs open, a spreadsheet, and a headache, trying to work out which named items give you the most Constitution *without* wasting a bonus type you already have covered? I did that one too many times — so I built a tool that does it exactly, in under a second, right in your browser.
+
+This isn't a tier list and it isn't "what a good player usually wears." It's a real **optimizer**: you tell it your build and the stats you care about, and it searches every wiki-sourced named item, augment, set bonus, and crafting option in the game and hands back the **single loadout that is mathematically the best** for your priorities — slot by slot, with the receipts.
+
+No install, no login, nothing to download. Free. Works on desktop and mobile.
+
+---
+
+## Why it's different
+
+Most gear guides tell you *an* answer. This tells you *the* answer and **shows its work**.
+
+Under the hood it's a genuine solver (a mixed-integer linear program running in your browser), not a pile of if-statements. It respects DDO's real rules:
+
+- **Bonus-type stacking done right** — only the highest of each same-named type counts; different types add. It won't hand you two Insightful Con items and pretend they stack.
+- **The dodge cap** clamped correctly to your armor type.
+- **Strict priority order.** You rank the stats you want; it maximizes your #1 first, then your #2 *without giving up any of #1*, and so on. Same query always gives the same build.
+
+When it tells you a set bonus beats three individual items, it's because it **proved** it — and it'll show you the point-by-point comparison.
+
+---
+
+## How to use it
+
+1. Open the [site](https://eddiefiggie.github.io/ddo-loadout-optimizer/).
+2. Set your **minimum level cap**, and optionally race, armor type, and weapon setup.
+3. Choose your **gear pool** — all gear in the game, or **only what you own** (import a Trove inventory export).
+4. **Add the stats you want, in priority order** — drag to reorder. First = most important.
+5. Hit **Solve.**
+
+That's it. In well under a second you get a full answer.
+
+---
+
+## What you get back
+
+- **The full equipped loadout** laid out slot by slot, every slot filled, set pieces highlighted.
+- **A ranked-priority readout** showing *exactly where every point of every stat comes from* — which item, which set, which bonus type. No hand-waving.
+- **A Loadout Deep Dive** listing every item's affixes and every craft, augment, and set-membership you'd need to apply to hit that build.
+- **An Alternatives tab** — near-optimal trade-off builds (complete a *different* set, free up a slot, or take fewer crafting steps). Click any one to inspect it against the optimum.
+- **An Item Browser** to search and filter the entire indexed roster.
+
+And it doesn't stop at what drops — it tells you **what to craft**:
+
+- Which **augment** goes in which slot (respecting the real color-fit rules — Colorless anywhere, Red into Red/Purple/Orange, etc., including Lunar/Solar).
+- Which **"Sealed in X"** effect to unseal at the Ritual Table.
+- Which **Nearly Completed** (Terror of Demogorgon) or **Viktranium** (Chill of Ravenloft) option to pick.
+- Which **Dinosaur Bone insert** to slot (Isle of Dread).
+- Which **set bonus to craft into a host** — *awaken* a set on a Vecna *Lost Purpose* item at the Cannith Repurposing Station, or slot a Set Bonus augment on a Dino Bone host — **including completing an artifact set** (Vol's Influence, Delight of the Devourer, and friends) that isn't found natively on *any* single item.
+
+---
+
+## What's modeled today
+
+| System | Status |
+|---|---|
+| Named items across all slots + tiers | ✅ full roster (7,658 named items indexed, 7,900+ variants) |
+| Set bonuses (intrinsic + piece thresholds) | ✅ |
+| Augments (multi-fit colors, Lunar/Solar) | ✅ |
+| **Vecna Unleashed set crafting** (*Lost Purpose* → awaken 1 of 11 sets) | ✅ |
+| **Dino Set Bonus** (Isle of Dread) | ✅ |
+| Sealed in X (Ritual Table) | ✅ Undeath sourced; Fire/Gloom/Mist pending |
+| Nearly Completed (Terror of Demogorgon, U81) | ✅ |
+| Viktranium / Lamordia experiment (Chill of Ravenloft, U75) | ✅ |
+| Dinosaur Bone inserts (Isle of Dread) | ✅ |
+| Endgame band **ML 30–36** (U81 / Isle of Dread / Myth Drannor) | ✅ named + raid gear |
+| Filigrees, Green Steel, Thunder-Forged, Essence crafting | ⏳ not yet |
+
+---
+
+## The honest part (this matters)
+
+Every value is **wiki-sourced and exclude-until-verified.** If the DDO Wiki doesn't state a number explicitly, the tool **quarantines it and tells you** rather than guessing. It would rather admit "I didn't consider this" than silently feed you a made-up value.
+
+Because of that, **every result shows its own coverage** — you always know what was and wasn't in the search. No black box.
+
+---
+
+## Save, share, come back later
+
+- **Save characters** in your browser (nothing leaves your machine) and reload a build straight to its results.
+- **Back up / restore** all your saved builds to a file to move them between devices.
+- **Share a single loadout** as a forum-ready Markdown post, a clean CSV, or a print-friendly page — great for build threads right here.
+
+---
+
+## What's coming
+
+Filigrees are the big one I hear about most, and Green Steel / Thunder-Forged / Essence crafting are on the list. More enriched gear from the recent expansions keeps getting folded in. I'd love to know **which system you want next.**
+
+---
+
+## Feedback wanted
+
+This is a labor of love and it gets better the more real builds get thrown at it. If it gives you a weird answer, misses an item, or you want a system modeled — **please reply here.** Tell me the build you tried and the priorities you set, and I'll dig in.
+
+Try it, break it, tell me what you find:
+**https://eddiefiggie.github.io/ddo-loadout-optimizer/**
+
+---
+
+*A fan-made theorycrafting tool. Not affiliated with or endorsed by Standing Stone Games. All game data sourced from the DDO Wiki. Optimizes over the full game roster by default — or restrict it to only the gear you own by importing a Trove inventory export.*

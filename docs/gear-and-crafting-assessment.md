@@ -21,7 +21,7 @@ A system's *gating* (which altar/table, which eligible gear) never changes its a
 
 | Expansion | = Update / Pack | Crafting system(s) | Shape | Ritual table / altar (access gate) | Optimizer treatment |
 |---|---|---|---|---|---|
-| **Isle of Dread** | Update 67 | **Dinosaur Bone crafting** | affix choice-slot, **two-keyed `(bone type × gear category)`** | Dino crafting altar (Isle of Dread) | ✅ **DONE** — solver-active (Accessory + Weapon/Armor/Raid; multi-affix; 84 insert units). Set-Bonus deferred (see §4). |
+| **Isle of Dread** | Update 67 | **Dinosaur Bone crafting** | affix choice-slot, **two-keyed `(bone type × gear category)`** | Dino crafting altar (Isle of Dread) | ✅ **DONE** — solver-active (Accessory + Weapon/Armor/Raid; multi-affix; 84 insert units). Set-Bonus **also shipped** — solver-active via the chosen-set-membership primitive (see §4). |
 | **Lamordia** | "Viktranium Experiment" content (a **Level 8+** system from **U75, The Chill of Ravenloft** — *not* U81) | **Viktranium Experiment Crafting** | affix choice-slot, **two-keyed `(slot type × item category)`** | Viktranium ritual station | ✅ **DONE** — solver-active (194 options, 43 hosts). |
 | **Update 81** | **Terror of Demogorgon** (Underdark / Gravenhollow; released 2026-07-22) | **Essence Crafting** *(= Cannith Crafting renamed, U9; universal)* | item-creation + affix slots | **House Kundarak Crafting Hall** | ⚠️ **Universal, not U81-specific** — de-scope from the expansion sweep as a *system*; its crafted generic Enhancement affixes rarely beat named BiS. Revisit separately if ever modeled. |
 | **Update 81** | Terror of Demogorgon | **Catalyst Crafting** | **item-CREATION** | **Strange Catalyst Forge, Gravenhollow** — combines a rare Catalyst (from Demogorgon quests) with a *specific older named item* | 🎯 **Named gear** — the created ML11/ML35 Drow/Demon-themed items are sourced in the R4 sweep. **Not** a solver primitive. |
@@ -41,13 +41,13 @@ The headline goal — capture **all** named + raid gear for these expansions. Fr
 - **Lamordia:** the **Lamordian** clothing line + **Legendary Cataclysmic** weapons/shields (the Viktranium "Cataclysmic" item-creation output). Already partly in the local roster (**~32 "Lamordian" + ~44 "Cataclysmic"** name matches) — indexed, **not yet enriched**.
 - **Myth Drannor:** the "Magic of Myth Drannor" pack quest gear + **Heroic/Legendary Myth Drannor Saga** reward items.
 
-**Capture = enrich, not just index.** The 7,658-item roster already *indexes* most existing named gear (browse-only), but only **262 are enriched** (solver-active). The roster is keyed by slot, **not tagged by expansion**, so expansion capture proceeds by: identify each expansion's item set (by name family / quest / raid page) → harvest `enhancements` wikitext → `enrich.build_item_record` → verify. Newly-released U81 items may need *indexing* first (roster predates the 2026-07-22 release).
+**Capture = enrich, not just index.** The ~7,900-item roster already *indexes* most existing named gear (browse-only), and **several thousand are now enriched** (solver-active) — check the build output's coverage stats rather than a hard count, which drifts every harvest (this figure read "262 enriched" at M2 and is long superseded). The roster is keyed by slot, **not tagged by expansion**, so expansion capture proceeds by: identify each expansion's item set (by name family / quest / raid page) → harvest `enhancements` wikitext → `enrich.build_item_record` → verify. Newly-released U81 items may need *indexing* first (roster predates the 2026-07-22 release).
 
 ---
 
-## 4. Carry-over decision — Dino Set-Bonus (from M2)
+## 4. Dino Set-Bonus — SHIPPED (was an M2 carry-over)
 
-Dino Set-Bonus is a **crafted set-membership choice-slot** (only Armor/Helmet/Cloak hosts carry a set-bonus slot; ≤3 crafted slots, yet one set needs 5 pieces). Sourced + browsable now; **solver activation deferred to the IoD named-gear sweep**, when intrinsic named/raid pieces that also belong to these sets exist and completion becomes meaningful. This is the natural join point between the crafting work (done) and the R4 gear sweep.
+Dino Set-Bonus is a **crafted set-membership choice-slot** (only Armor/Helmet/Cloak hosts carry a set-bonus slot; ≤3 crafted slots, yet one set needs 5 pieces). This **shipped solver-active** via the same general **chosen-set-membership primitive** that powers Vecna *Lost Purpose*: a Dino Bone host with a Set-Bonus slot can be crafted to count toward ONE of the 6 IoD Dino sets (`src/membership.py:24`), the choice is a solver variable, and the set defs come from the gear-planner catalog (single source of truth — see `single-source-of-truth-for-set-definitions.md`), so a crafted-membership set and an intrinsically-completed one give identical stats. *(Original deferral note kept for history: it was gated on the IoD named-gear sweep landing intrinsic set pieces — that join has since happened.)*
 
 ---
 
