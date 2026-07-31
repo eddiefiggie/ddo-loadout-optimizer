@@ -46,7 +46,7 @@ That's it. In well under a second you get a full answer.
 - **A ranked-priority readout** showing *exactly where every point of every stat comes from* — which item, which set, which bonus type. No hand-waving.
 - **A Loadout Deep Dive** listing every item's affixes and every craft, augment, and set-membership you'd need to apply to hit that build.
 - **An Alternatives tab** — near-optimal trade-off builds (complete a *different* set, free up a slot, or take fewer crafting steps). Click any one to inspect it against the optimum.
-- **An Item Browser** to search and filter the entire indexed roster.
+- A **Browse items** view to search and filter the entire indexed roster.
 
 And it doesn't stop at what drops — it tells you **what to craft**:
 
