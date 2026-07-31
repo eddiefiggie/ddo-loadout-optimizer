@@ -8,6 +8,8 @@ This isn't a tier list and it isn't "what a good player usually wears." It's a r
 
 No install, no login, nothing to download. Free. Works on desktop and mobile.
 
+![The optimal loadout: an OPTIMAL "provably the best build, not a guess" badge with proof stats (gear considered, craft choices, priority passes, solve time), above equipped-gear blocks showing each item's affixes, slotted augments, and craft steps.](https://eddiefiggie.github.io/ddo-loadout-optimizer/screenshots/01-optimal-loadout.jpg)
+
 ---
 
 ## Why it's different
@@ -21,6 +23,8 @@ Under the hood it's a genuine solver (a mixed-integer linear program running in 
 - **Strict priority order.** You rank the stats you want; it maximizes your #1 first, then your #2 *without giving up any of #1*, and so on. Same query always gives the same build.
 
 When it tells you a set bonus beats three individual items, it's because it **proved** it — and it'll show you the point-by-point comparison.
+
+![Ranked Priorities readout: Constitution 44 and Fortification 361 each broken down line by line into their source item and bonus type (Enhancement, Insight, Insightful, Profane, Artifact, Quality, Exceptional, Festive) — proving the stacking math.](https://eddiefiggie.github.io/ddo-loadout-optimizer/screenshots/02-ranked-priorities-attribution.jpg)
 
 ---
 
