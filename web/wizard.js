@@ -144,8 +144,8 @@ if (typeof window !== "undefined" && window.App) {
               <span class="wz-help">Determines body-slot and race-locked gear.</span>
               <select id="wz-race"><option value="">Select a race…</option>
                 ${RACES.map((r) => `<option ${state.race === r ? "selected" : ""}>${r}</option>`).join("")}</select></label>
-            <label class="wz-field"><span class="wz-label">Alignment</span>
-              <span class="wz-help">Some gear requires or forbids an alignment.</span>
+            <label class="wz-field"><span class="wz-label">Alignment <span class="wz-sub">· optional</span></span>
+              <span class="wz-help">No alignment-gated gear is in the verified dataset yet, so this won't change results.</span>
               <select id="wz-align"><option value="">Select an alignment…</option>
                 ${ALIGNMENTS.map((a) => `<option ${state.alignment === a ? "selected" : ""}>${a}</option>`).join("")}</select></label>
           </div>
