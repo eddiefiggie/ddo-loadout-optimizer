@@ -31,6 +31,14 @@ function prevStep(stepId, steps = WIZARD_STEPS) {
 }
 const wizIsForged = (race) => FORGED.has(String(race || "").toLowerCase());
 
+/** U1 (R1) — where loading a saved character lands. A snapshot that solved
+ *  optimally goes straight to "results" (no pool/priorities detour); anything
+ *  else (missing snapshot, or a non-optimal status) falls back to "priorities"
+ *  so the user can re-solve, never a blank results view. Pure; unit-tested. */
+function stepAfterLoad(snapshot) {
+  return snapshot && snapshot.status === "optimal" ? "results" : "priorities";
+}
+
 /** Pure state -> solver query mapping (no DOM). Exported for unit tests. */
 function buildQuery(state) {
   const forged = wizIsForged(state.race);
@@ -48,7 +56,7 @@ function buildQuery(state) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -159,25 +167,16 @@ if (typeof window !== "undefined" && window.App) {
         <details class="wz-data" id="wz-data">
           <summary>Export &amp; Data Management</summary>
           <div class="wz-data-body">
-            <p class="wz-help">Back up every saved character to a file, or restore from one — the way to move your builds to another
-              device. Backups stay compatible across the last 3 data versions; a file that's older than that, or made by a newer
-              version of the app, is declined so a bad import can't corrupt your saves.</p>
+            <p class="wz-help">Manage <strong>your own saved builds</strong> (master records). Back up every saved character to a
+              file, or restore from one — the way to move your builds to another device. Backups stay compatible across the last
+              3 data versions; a file that's older than that, or made by a newer version of the app, is declined so a bad import
+              can't corrupt your saves. To share a single loadout with others, use the <strong>Share</strong> tab on a solved build.</p>
             <div class="wz-data-row">
               <button class="btn ghost" id="wz-export" type="button">Export all (.json)</button>
               <input id="wz-import-label" type="text" readonly placeholder="Import a backup (.json)…" class="wz-file">
               <input id="wz-import" type="file" accept=".json,application/json" class="wz-hidden">
             </div>
             <div id="wz-data-stat" class="wz-filestat"></div>
-            <hr class="wz-data-sep">
-            <p class="wz-help">Share a single loadout: a forum-ready Markdown post, a clean CSV of the full detail, or a
-              print-friendly page. Both files carry the character name and constraints in the header.</p>
-            <div class="wz-data-row">
-              <label class="wz-share-pick"><span class="wz-label">Loadout</span>
-                <select id="wz-share-sel"></select></label>
-              <button class="btn ghost" id="wz-share-md" type="button">Markdown</button>
-              <button class="btn ghost" id="wz-share-csv" type="button">CSV</button>
-              <button class="btn ghost" id="wz-share-print" type="button">Print</button>
-            </div>
           </div>
         </details>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
@@ -247,7 +246,15 @@ if (typeof window !== "undefined" && window.App) {
           Slot constraints changed. <button class="btn primary" id="wz-cresolve">Re-solve ⚡</button>
         </div>
         <div id="wz-results"></div>
-        <details class="wz-adjust" id="wz-adjust">
+      </section>`;
+    }
+
+    // U3/R6 — the Adjust & re-solve fold-up. Emitted by renderResults into the
+    // #wz-adjust-slot directly under the tab bar (so it shows on every tab and is
+    // never buried), then populated + wired by the KTD3 post-render callback
+    // (fillAdjustSlot) on every render. Collapsed by default.
+    function adjustPanelHTML() {
+      return `<details class="wz-adjust" id="wz-adjust">
           <summary>Adjust &amp; re-solve</summary>
           <div class="wz-adjust-body">
             <p class="wz-help" style="margin:0 0 var(--sp-3)">Refine priorities, flip the gear pool, then re-solve — no need to step back.</p>
@@ -266,8 +273,92 @@ if (typeof window !== "undefined" && window.App) {
               <button class="btn primary" id="wz-radjust-solve">Re-solve ⚡</button>
             </div>
           </div>
-        </details>
-      </section>`;
+        </details>`;
+    }
+
+    // KTD3 post-render callback — runs after every renderResults (solve, load,
+    // per-slot constraint change) to (re)populate + (re)wire the Adjust panel in
+    // its renderer-emitted slot. The priorities drag/reorder + button handlers are
+    // direct (not delegable), so they must be re-bound on each render.
+    function fillAdjustSlot() {
+      const slot = document.getElementById("wz-adjust-slot");
+      if (!slot) return;
+      slot.innerHTML = adjustPanelHTML();
+      renderAdjustRanked();
+      const radd = document.getElementById("wz-radd");
+      if (radd) {
+        document.getElementById("wz-radd-btn").onclick = () => { if (addPriority(radd.value)) renderAdjustRanked(); radd.value = ""; radd.focus(); };
+        radd.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); if (addPriority(radd.value)) renderAdjustRanked(); radd.value = ""; } };
+      }
+      slot.querySelectorAll(".wz-toggle button[data-rpool]").forEach((b) => b.onclick = () => {
+        if (b.dataset.rpool === "owned" && !state.ownedNames) { go("pool"); return; } // route to upload
+        state.pool = b.dataset.rpool;
+        slot.querySelectorAll(".wz-toggle button[data-rpool]").forEach((x) => x.classList.toggle("on", x.dataset.rpool === state.pool));
+      });
+      const rsolve = document.getElementById("wz-radjust-solve");
+      if (rsolve) rsolve.onclick = () => { if (state.priorities.length) solve(false); };
+    }
+
+    // U5/R9-R11 — the Share tab's content: pick a saved loadout, export it as a
+    // forum-ready Markdown post / CSV / print page. Copy states this is for
+    // sharing with OTHERS, distinct from the Character step's personal-build
+    // management (KD3). Lives inside #wz-results, so it is (re)wired by the
+    // post-render callback like the Adjust panel.
+    function sharePanelHTML() {
+      return `<div class="wz-share">
+          <p class="wz-help">Share <strong>this loadout with others</strong> — a forum-ready Markdown post, a clean CSV of
+            the full detail, or a print-friendly page. Each carries the character name and constraints in the header.
+            (Backing up all your saved builds lives in the Character step's Export &amp; Data Management.)</p>
+          <div class="wz-data-row">
+            <label class="wz-share-pick"><span class="wz-label">Loadout</span>
+              <select id="wz-share-sel"></select></label>
+            <button class="btn ghost" id="wz-share-md" type="button">Markdown</button>
+            <button class="btn ghost" id="wz-share-csv" type="button">CSV</button>
+            <button class="btn ghost" id="wz-share-print" type="button">Print</button>
+          </div>
+          <div id="wz-share-stat" class="wz-filestat"></div>
+        </div>`;
+    }
+
+    // Wire the Share tab's picker + MD/CSV/print buttons (U5). Reuses the global
+    // LoadoutExport + downloadFile/printLoadout, and guards a record with no
+    // solved loadout so a share never produces a misleading empty file.
+    function wireShareExports() {
+      const shareSel = document.getElementById("wz-share-sel");
+      if (!shareSel) return;
+      renderSharePicker();
+      const selected = () => {
+        const n = shareSel.value;
+        // eslint-disable-next-line no-undef
+        const rec = n ? CharacterStore.loadCharacter(n) : null;
+        if (rec && !(rec.snapshot && (rec.snapshot.chosen || []).length)) {
+          const s = document.getElementById("wz-share-stat");
+          if (s) { s.className = "wz-filestat warn"; s.textContent = `“${rec.name}” has no solved loadout to share.`; }
+          return null;
+        }
+        return rec;
+      };
+      const mdBtn = document.getElementById("wz-share-md");
+      const csvBtn = document.getElementById("wz-share-csv");
+      const printBtn = document.getElementById("wz-share-print");
+      if (mdBtn) mdBtn.onclick = () => { const rec = selected(); if (rec) downloadFile(`${slug(rec.name)}.md`, LoadoutExport.toMarkdown(rec), "text/markdown"); };
+      if (csvBtn) csvBtn.onclick = () => { const rec = selected(); if (rec) downloadFile(`${slug(rec.name)}.csv`, LoadoutExport.toCsv(rec), "text/csv"); };
+      if (printBtn) printBtn.onclick = () => { const rec = selected(); if (rec) printLoadout(rec); };
+    }
+
+    // Populate + wire the Share tab panel (inside #wz-results, rebuilt every render).
+    function fillSharePanel() {
+      const panel = document.getElementById("rp-sharepanel");
+      if (!panel) return;
+      panel.innerHTML = sharePanelHTML();
+      wireShareExports();
+    }
+
+    // The KTD3 post-render callback: (re)populate + (re)wire every wizard-owned
+    // panel that lives inside #wz-results (Adjust — U3, Share — U5) on each render.
+    function afterResultsRender() {
+      fillAdjustSlot();
+      fillSharePanel();
     }
 
     // ---- priorities editor (pure array ops + drag/buttons) -----------------
@@ -281,7 +372,7 @@ if (typeof window !== "undefined" && window.App) {
           <button data-del="${i}" aria-label="remove">✕</button></span></li>`).join("");
     }
     // Generic ranked-list renderer: reused by the priorities step and the
-    // in-results "Adjust & re-solve" panel (U8). `rerender` re-renders that
+    // in-results "Adjust & re-solve" panel (U3). `rerender` re-renders that
     // same list after a mutation.
     function renderRankedList(ol, rerender) {
       if (!ol) return;
@@ -367,7 +458,7 @@ if (typeof window !== "undefined" && window.App) {
         render();
         const box = document.getElementById("wz-results");
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result, query, dataset, highs: h });
+        if (box) renderResults(box, { model, result, query, dataset, highs: h, onAfterRender: afterResultsRender });
       } catch (err) {
         state.step = "results"; render();
         const box = document.getElementById("wz-results");
@@ -447,7 +538,9 @@ if (typeof window !== "undefined" && window.App) {
       state.slotConstraints = i.slotConstraints || {};
       state.constraintsDirty = false;   // loaded constraints are the saved state, not a pending change
       const snap = rec.snapshot;
-      if (snap && snap.status === "optimal") {
+      // U1/R1 — an optimal snapshot lands directly on Results; anything else
+      // routes to priorities to re-solve (never a blank results view).
+      if (stepAfterLoad(snap) === "results") {
         const query = rec.query || buildQuery(state);
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
@@ -459,11 +552,15 @@ if (typeof window !== "undefined" && window.App) {
         render();
         const box = document.getElementById("wz-results");
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result: snap, query, dataset, highs: null });
+        if (box) renderResults(box, { model, result: snap, query, dataset, highs: null, onAfterRender: afterResultsRender });
         const stale = document.getElementById("wz-stale");
         if (stale) stale.classList.toggle("wz-hidden", !state.loadedStale);
       } else {
+        // No optimal snapshot saved — land on priorities so the user can re-solve,
+        // with a reason rather than a silent jump.
         go("priorities");
+        const s = document.getElementById("wz-status");
+        if (s) s.textContent = `"${rec.name}" has no solved build saved — adjust priorities and re-solve.`;
       }
     }
 
@@ -483,7 +580,7 @@ if (typeof window !== "undefined" && window.App) {
         `</ul>`;
     }
 
-    // Keep the share dropdown (U13) in sync with the store — called on render and
+    // Keep the share dropdown (U5) in sync with the store — called on render and
     // after any in-panel save/delete/import so it never lists a stale name.
     function renderSharePicker() {
       const shareSel = document.getElementById("wz-share-sel");
@@ -508,38 +605,6 @@ if (typeof window !== "undefined" && window.App) {
           JSON.stringify(payload, null, 2), "application/json");
       };
 
-      // Share a single saved loadout (U13): Markdown / CSV / print.
-      const shareSel = document.getElementById("wz-share-sel");
-      if (shareSel) {
-        renderSharePicker();
-        const selected = () => {
-          const n = shareSel.value;
-          // eslint-disable-next-line no-undef
-          const rec = n ? CharacterStore.loadCharacter(n) : null;
-          // Guard a record with no solved loadout (e.g. a hand-edited backup):
-          // export nothing and say why instead of a misleading empty file.
-          if (rec && !(rec.snapshot && (rec.snapshot.chosen || []).length)) {
-            const s = document.getElementById("wz-data-stat");
-            if (s) { s.className = "wz-filestat warn"; s.textContent = `“${rec.name}” has no solved loadout to share.`; }
-            return null;
-          }
-          return rec;
-        };
-        const mdBtn = document.getElementById("wz-share-md");
-        const csvBtn = document.getElementById("wz-share-csv");
-        const printBtn = document.getElementById("wz-share-print");
-        if (mdBtn) mdBtn.onclick = () => {
-          const rec = selected(); if (!rec) return;
-          // eslint-disable-next-line no-undef
-          downloadFile(`${slug(rec.name)}.md`, LoadoutExport.toMarkdown(rec), "text/markdown");
-        };
-        if (csvBtn) csvBtn.onclick = () => {
-          const rec = selected(); if (!rec) return;
-          // eslint-disable-next-line no-undef
-          downloadFile(`${slug(rec.name)}.csv`, LoadoutExport.toCsv(rec), "text/csv");
-        };
-        if (printBtn) printBtn.onclick = () => { const rec = selected(); if (rec) printLoadout(rec); };
-      }
       const impLabel = document.getElementById("wz-import-label");
       const impFile = document.getElementById("wz-import");
       const stat = () => document.getElementById("wz-data-stat");
@@ -564,7 +629,6 @@ if (typeof window !== "undefined" && window.App) {
               ? `Imported ${n} character${n === 1 ? "" : "s"} (merged by name).`
               : (w.error === "quota" ? "Storage full — remove some saves and try again." : "Could not save the import.");
             renderSavedPicker();
-            renderSharePicker();
           };
           reader.readAsText(f);
         };
@@ -641,7 +705,6 @@ if (typeof window !== "undefined" && window.App) {
             // eslint-disable-next-line no-undef
             CharacterStore.deleteCharacter(b.dataset.del);
             renderSavedPicker();
-            renderSharePicker();
           }
         };
         wireDataManagement();
@@ -737,27 +800,15 @@ if (typeof window !== "undefined" && window.App) {
           if (state.lastRun) {
             state.lastRun.query.slotConstraints = { ...state.slotConstraints };
             // eslint-disable-next-line no-undef
-            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs });
+            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: afterResultsRender });
           }
           if (cbar) cbar.classList.remove("wz-hidden");
         });
         const cres = document.getElementById("wz-cresolve");
         if (cres) cres.onclick = () => { if (state.priorities.length) solve(false); };
-
-        // Adjust & re-solve panel (U8): inline priority editor + pool flip + re-solve.
-        renderAdjustRanked();
-        const radd = document.getElementById("wz-radd");
-        if (radd) {
-          document.getElementById("wz-radd-btn").onclick = () => { if (addPriority(radd.value)) renderAdjustRanked(); radd.value = ""; radd.focus(); };
-          radd.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); if (addPriority(radd.value)) renderAdjustRanked(); radd.value = ""; } };
-        }
-        root.querySelectorAll(".wz-toggle button[data-rpool]").forEach((b) => b.onclick = () => {
-          if (b.dataset.rpool === "owned" && !state.ownedNames) { go("pool"); return; } // AE8: route to upload
-          state.pool = b.dataset.rpool;
-          root.querySelectorAll(".wz-toggle button[data-rpool]").forEach((x) => x.classList.toggle("on", x.dataset.rpool === state.pool));
-        });
-        const rsolve = document.getElementById("wz-radjust-solve");
-        if (rsolve) rsolve.onclick = () => { if (state.priorities.length) solve(false); };
+        // The Adjust & re-solve panel (U3/R6) now lives inside #wz-results, under
+        // the tab bar, so it is populated + wired by fillAdjustSlot on every
+        // renderResults call — not once here (it would not exist yet).
       }
     }
     function flashBlock() {

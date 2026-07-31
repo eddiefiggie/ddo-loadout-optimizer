@@ -750,6 +750,17 @@ input.wz-ml { width: 120px; }
 .aug-pip.aug-purple { border-color: #a074c0; color: #cbb0e0; }
 .aug-pip.aug-colorless, .aug-pip.aug-clear { border-color: var(--border-2); color: var(--faint); }
 .craft-mark { padding: 1px 6px; border-radius: var(--radius-sm); border: 1px dashed var(--border-2); font-size: 0.62rem; color: var(--muted); }
+/* U2 — assigned-augment list inside an equipped block: a filled slot shows the
+   augment name + the affixes it adds; an open slot shows its color, so a block
+   reads what is slotted rather than just which colors exist. Chips in the Craft
+   row reuse the shared .chip styles. */
+.pd-auglist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; width: 100%; }
+.pd-auglist li { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+.pd-auglist .aug-pip { width: 8px; height: 8px; min-width: 8px; padding: 0; border-radius: 999px; }
+.pd-auglist .aug-open .aug-pip { background: repeating-linear-gradient(45deg, transparent, transparent 2px, var(--border-2) 2px, var(--border-2) 3px); }
+.aug-name { color: var(--text); font-size: var(--fs-xs); }
+.aug-affx { color: var(--muted); font-size: 0.62rem; }
+.aug-open .muted { font-size: 0.62rem; font-style: italic; }
 
 /* Per-slot constraint controls (U6) on the equipped-list rows. */
 .pd-row { position: relative; }
@@ -831,7 +842,16 @@ input.wz-ml { width: 120px; }
   #wz-printarea thead th { background: #eee; }
 }
 
-/* Adjust & re-solve panel (U8) — fold-up editor in the results view. */
+/* Adjust & re-solve panel (U3) — fold-up editor in the results view. */
+/* U3/R6 — the Adjust slot sits directly under the tab bar, above the panels, so
+   it shows on every tab (the panels toggle; the slot never does). */
+.wz-adjust-slot:not(:empty) { margin-bottom: var(--sp-3); }
+/* U5 — the Share tab panel (single-loadout exports, distinct from the Character
+   step's personal-build backup). */
+.wz-share { display: flex; flex-direction: column; gap: var(--sp-3); }
+/* U4 — Alternatives Run-analysis prompt + the panel-local computing swirly. */
+.alt-intro { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-3); padding: var(--sp-3) 0; }
+.alt-computing { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); padding: var(--sp-5) 0; }
 .wz-adjust { margin-top: var(--sp-4); border: 1px dashed var(--border-2); border-radius: var(--radius);
   background: var(--panel-2); }
 .wz-adjust > summary { list-style: none; cursor: pointer; padding: var(--sp-3) var(--sp-4); font-weight: 650;

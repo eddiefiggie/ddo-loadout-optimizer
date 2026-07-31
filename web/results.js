@@ -268,23 +268,40 @@ function safeUrl(u) {
 const CraftingReg = (typeof CraftingSystems !== "undefined") ? CraftingSystems
   : (typeof require !== "undefined" ? require("./crafting-systems.js") : null);
 
+// One craft option's value label (e.g. "Constitution +15"). Shared by every
+// craft-chip family so the Deep Dive and the equipped block read identically.
+function craftLbl(o) {
+  return esc(affixLabel({ stat: o.stat, bonus_type: o.bonus_type, value: o.value, unit: o.unit || "flat" }));
+}
+
+// The applied craft-upgrade chips for one item — Dino inserts, Nearly Completed,
+// choice slots, Viktranium, seals, Thunder-Forged, Green Steel — keyed by the
+// chosen index (dino) or variant_id (the rest). Assigned crafts only (the maps
+// carry no empty-slot inventory). Shared by the Loadout Deep Dive (craftChips)
+// and the equipped-block detail (equippedBody, U2) so these families never drift.
+// NOT included: the augment chips and the joker/membership (wildcard/set) chips —
+// craftChips keeps those, and the equipped block surfaces set state via its row
+// glow/setLine instead, so a joker/membership rendering change only hits the Deep Dive.
+function craftSlotChips(v, idx, maps) {
+  const dinos = (maps.dinoAssign.byIndex.get(idx) || []).map((d) => {
+    const affixes = (d.affixes && d.affixes.length) ? d.affixes : [d];
+    const label = affixes.map(craftLbl).join(", ");
+    return `<span class="chip dino" title="Isle of Dread insert">${esc(d.dino_type)}: ${d.name ? esc(d.name) + ", " : ""}${label}</span>`;
+  });
+  const ncs = (maps.ncByItem.get(v.variant_id) || []).map((n) => `<span class="chip nc" title="Terror of Demogorgon — Nearly Completed">Nearly Completed: ${craftLbl(n)}</span>`);
+  const rolls = (maps.rollByItem.get(v.variant_id) || []).map((r) => `<span class="chip roll" title="choice slot, best option selected">Choice: ${craftLbl(r)}</span>`);
+  const viks = (maps.vikByItem.get(v.variant_id) || []).map((n) => `<span class="chip lamordia" title="The Chill of Ravenloft — Viktranium Experiment crafting">Slot ${esc(n.slot_type)} Viktranium augment: ${craftLbl(n)}</span>`);
+  const seals = (maps.sealByItem.get(v.variant_id) || []).map((n) => `<span class="chip seal" title="unseal one effect at the crafting table">Sealed in ${esc(n.seal_type)}: ${craftLbl(n)}</span>`);
+  const tfs = ((maps.tfByItem && maps.tfByItem.get(v.variant_id)) || []).map((n) => `<span class="chip thunderforged" title="Legendary Thunder-Forged tier upgrade">Thunder-Forged T${esc(n.tier)}: ${craftLbl(n)}</span>`);
+  const gss = ((maps.gsByItem && maps.gsByItem.get(v.variant_id)) || []).map((n) => `<span class="chip greensteel" title="Legendary Green Steel craft">Green Steel: ${craftLbl(n)}</span>`);
+  return [...dinos, ...ncs, ...rolls, ...viks, ...seals, ...tfs, ...gss];
+}
+
 function craftChips(v, idx, maps) {
-  const lbl = (o) => esc(affixLabel({ stat: o.stat, bonus_type: o.bonus_type, value: o.value, unit: o.unit || "flat" }));
   const augs = (maps.augAssign.byIndex.get(idx) || []).map((a) => {
     const where = a.slot_color && a.slot_color !== a.color ? `${a.color} in ${a.slot_color} slot` : (a.color || "");
     return `<span class="chip aug" title="augment slotted">${esc(a.variant_id)} <span class="muted">(${esc(where)})</span></span>`;
   });
-  const dinos = (maps.dinoAssign.byIndex.get(idx) || []).map((d) => {
-    const affixes = (d.affixes && d.affixes.length) ? d.affixes : [d];
-    const label = affixes.map(lbl).join(", ");
-    return `<span class="chip dino" title="Isle of Dread insert">${esc(d.dino_type)}: ${d.name ? esc(d.name) + ", " : ""}${label}</span>`;
-  });
-  const ncs = (maps.ncByItem.get(v.variant_id) || []).map((n) => `<span class="chip nc" title="Terror of Demogorgon — Nearly Completed">Nearly Completed: ${lbl(n)}</span>`);
-  const rolls = (maps.rollByItem.get(v.variant_id) || []).map((r) => `<span class="chip roll" title="choice slot, best option selected">Choice: ${lbl(r)}</span>`);
-  const viks = (maps.vikByItem.get(v.variant_id) || []).map((n) => `<span class="chip lamordia" title="The Chill of Ravenloft — Viktranium Experiment crafting">Slot ${esc(n.slot_type)} Viktranium augment: ${lbl(n)}</span>`);
-  const seals = (maps.sealByItem.get(v.variant_id) || []).map((n) => `<span class="chip seal" title="unseal one effect at the crafting table">Sealed in ${esc(n.seal_type)}: ${lbl(n)}</span>`);
-  const tfs = ((maps.tfByItem && maps.tfByItem.get(v.variant_id)) || []).map((n) => `<span class="chip thunderforged" title="Legendary Thunder-Forged tier upgrade">Thunder-Forged T${esc(n.tier)}: ${lbl(n)}</span>`);
-  const gss = ((maps.gsByItem && maps.gsByItem.get(v.variant_id)) || []).map((n) => `<span class="chip greensteel" title="Legendary Green Steel craft">Green Steel: ${lbl(n)}</span>`);
   const jokers = ((maps.jokerByHost && maps.jokerByHost.get(v.variant_id)) || []).map((j) => `<span class="chip joker" title="wildcard set piece">Wildcard set: ${esc(j.set)}</span>`);
   // Membership chip (R3/R4): Vecna Lost Purpose and Isle-of-Dread Set Bonus flow
   // through one solver primitive but must render different labels — fork on the
@@ -303,7 +320,7 @@ function craftChips(v, idx, maps) {
       : `slot a Dinosaur Bone Set Bonus augment at ${esc(m.station || "Dinosaur Bone crafting")}`;
     return `<span class="${cls}" title="${title}">${esc(text)}${m.station ? ` <span class="muted">(${esc(m.station)})</span>` : ""}</span>`;
   });
-  return [...augs, ...dinos, ...ncs, ...rolls, ...viks, ...seals, ...tfs, ...gss, ...jokers, ...memberships];
+  return [...augs, ...craftSlotChips(v, idx, maps), ...jokers, ...memberships];
 }
 
 /** Sets actually complete in the equipped loadout (U6) — the glow signal. Two
@@ -399,7 +416,7 @@ function loadoutDeepDive(result, query, maps, attr) {
 // item name (no truncation), ML, set membership, and a per-slot constraint
 // control (U6: pin the current item / lock empty / free). The wizard reads the
 // menu clicks via delegation, updates query.slotConstraints, and re-solves.
-function equippedRow(label, pick, slotConstraints, satisfied) {
+function equippedRow(label, pick, slotConstraints, satisfied, maps, augById) {
   const c = (slotConstraints || {})[label];
   const locked = c && c.type === "empty";
   const v = pick ? pick.variant : null;
@@ -421,10 +438,12 @@ function equippedRow(label, pick, slotConstraints, satisfied) {
   const nameCls = (!v || locked) ? "pd-rname muted" : "pd-rname";
   const foot = (v && !locked)
     ? `<div class="pd-rfoot"><span class="pd-rml">ML ${esc(v.minimum_level ?? "?")}</span>${setLine}</div>` : "";
-  // U9: per-item stats + augment slots + craft slots, shown uniformly on every
-  // occupied block (empty blocks stay the same height via the grid stretch + the
-  // .pd-row min-height). Data is intrinsic to the variant — no maps needed.
-  const body = (v && !locked) ? equippedBody(v) : "";
+  // U9/U2: per-item stats + assigned augments (with their affixes) + assigned
+  // craft slots, shown uniformly on every occupied block (empty blocks stay the
+  // same height via the grid stretch + the .pd-row min-height). Assignment data
+  // comes from `maps` (keyed by the pick's chosen index); `augById` resolves an
+  // augment's affixes by variant_id (the placed meta carries none).
+  const body = (v && !locked) ? equippedBody(v, pick ? pick.idx : -1, maps, augById) : "";
   const rowCls = `pd-row ${(!v || locked) ? "empty" : "occupied"}${glow ? " is-set" : ""}${isArtifact ? " is-artifact" : ""}${c ? " constrained" : ""}`;
   return `<div class="${rowCls}">
     <div class="pd-rtop"><div class="pd-rlabel">${esc(label)}</div>${ctl}</div>
@@ -433,24 +452,45 @@ function equippedRow(label, pick, slotConstraints, satisfied) {
   </div>`;
 }
 
-// The stats / augment-slot / craft-slot body of an equipped block (U9). Pure
-// projection over the variant; surfaces value even for slot-only items so no
-// occupied block renders blank.
-function equippedBody(v) {
+// The stats / augment / craft body of an equipped block. Projects the variant's
+// own affixes, then the augments actually slotted (with the affixes they add,
+// resolved by variant_id via `augById`) alongside any still-open augment slots,
+// and the item's assigned craft-upgrade slots (U2). `maps` (and the pick's `idx`)
+// are always supplied on the render path (buildViews -> equippedRow); a maps-less
+// call (only the pure test callers) simply renders no augment/craft section.
+function equippedBody(v, idx, maps, augById) {
   const affixes = (v.affixes || []);
   const stats = affixes.length
     ? `<ul class="pd-stats">${affixes.map((a) => `<li>${esc(affixLabel(a))}</li>`).join("")}</ul>` : "";
-  const augColors = (v.augment_slots_norm && v.augment_slots_norm.colors) || v.augment_slots || [];
-  const augs = augColors.length
-    ? `<div class="pd-slots"><span class="pd-slabel">Augments</span>${augColors.map((c) =>
-        `<span class="aug-pip aug-${esc(String(c).toLowerCase())}" title="${esc(c)} augment slot">${esc(c)}</span>`).join("")}</div>` : "";
-  const craftMarks = [];
-  if (v.green_steel_slot) craftMarks.push("Green Steel");
-  if (v.seal_slots) craftMarks.push("Seal");
-  if (v.lamordia_slots) craftMarks.push("Viktranium");
-  const crafts = craftMarks.length
-    ? `<div class="pd-slots"><span class="pd-slabel">Craft</span>${craftMarks.map((m) =>
-        `<span class="craft-mark">${esc(m)}</span>`).join("")}</div>` : "";
+
+  let augs = "";
+  if (maps && maps.augAssign && idx != null && idx >= 0) {
+    // Filled slots: the assigned augment + the affixes it adds (R3). Open slots:
+    // still shown as a pip so an empty augment slot reads as an open upgrade (AE2).
+    const placed = maps.augAssign.byIndex.get(idx) || [];
+    const open = maps.augAssign.freeByIndex.get(idx) || [];
+    const filled = placed.map((p) => {
+      const meta = augById && augById.get(p.variant_id);
+      const affx = (meta && meta.affixes && meta.affixes.length)
+        ? `<span class="aug-affx">${esc(meta.affixes.map(affixLabel).join(", "))}</span>` : "";
+      const col = String(p.color || "").toLowerCase();
+      const where = p.slot_color && p.slot_color !== p.color ? `${p.color} in ${p.slot_color} slot` : `${p.color || ""} slot`;
+      return `<li class="aug-filled"><span class="aug-pip aug-${esc(col)}" title="${esc(where)}"></span><span class="aug-name">${esc(p.variant_id)}</span>${affx}</li>`;
+    });
+    const openPips = open.map((c) =>
+      `<li class="aug-open"><span class="aug-pip aug-${esc(String(c).toLowerCase())}" title="open ${esc(c)} augment slot"></span><span class="muted">open ${esc(c)} slot</span></li>`);
+    if (filled.length || openPips.length) {
+      augs = `<div class="pd-slots"><span class="pd-slabel">Augments</span><ul class="pd-auglist">${filled.join("")}${openPips.join("")}</ul></div>`;
+    }
+  }
+
+  // Assigned craft-upgrade slots (R4) — the same shared chips the Deep Dive uses,
+  // so the two surfaces never drift. Assigned-only (the maps carry no empty-slot
+  // inventory); an unfilled craft slot renders nothing extra.
+  const craftArr = (maps && idx != null && idx >= 0) ? craftSlotChips(v, idx, maps) : [];
+  const crafts = craftArr.length
+    ? `<div class="pd-slots"><span class="pd-slabel">Craft</span>${craftArr.join("")}</div>` : "";
+
   if (!stats && !augs && !crafts) return "";
   return `<div class="pd-rbody">${stats}${augs}${crafts}</div>`;
 }
@@ -611,9 +651,15 @@ function artifactNotice(result, query) {
     : "";
 }
 
-function renderResults(container, { model, result, query, dataset, highs }) {
+function renderResults(container, { model, result, query, dataset, highs, onAfterRender }) {
   if (result.status !== "optimal") {
-    container.innerHTML = `<div class="empty">No set satisfies these constraints${result.reason ? ` — ${esc(result.reason)}` : ""}.<br><span class="muted">Loosen the ML cap, armor/class filters, or targets.</span></div>`;
+    // Keep the Adjust & re-solve control available on a non-optimal result — this
+    // is exactly when the user needs to loosen priorities/constraints in place.
+    // Emit its slot and run the post-render callback so fillAdjustSlot repopulates
+    // it (fillSharePanel no-ops here — no #rp-sharepanel, nothing to share).
+    container.innerHTML = `<div class="empty">No set satisfies these constraints${result.reason ? ` — ${esc(result.reason)}` : ""}.<br><span class="muted">Loosen the ML cap, armor/class filters, or targets.</span></div>
+    <div class="wz-adjust-slot" id="wz-adjust-slot"></div>`;
+    if (typeof onAfterRender === "function") onAfterRender(container);
     return;
   }
 
@@ -657,7 +703,9 @@ function renderResults(container, { model, result, query, dataset, highs }) {
         <button class="rtab" role="tab" id="rt-sets" aria-controls="rp-sets" aria-selected="false" tabindex="-1" type="button">Set Bonuses</button>
         <button class="rtab" role="tab" id="rt-deep" aria-controls="rp-deep" aria-selected="false" tabindex="-1" type="button">Loadout Deep Dive</button>
         <button class="rtab" role="tab" id="rt-alts" aria-controls="rp-alts" aria-selected="false" tabindex="-1" type="button">Alternatives</button>
+        <button class="rtab" role="tab" id="rt-share" aria-controls="rp-share" aria-selected="false" tabindex="-1" type="button">Share</button>
       </div>
+      <div class="wz-adjust-slot" id="wz-adjust-slot"></div>
       <section id="rp-loadout" class="rpanel" role="tabpanel" aria-labelledby="rt-loadout" tabindex="0">
         <div class="readout-doll"><div class="pd-equipped" id="rp-doll"></div><div id="rp-weapons"></div></div>
       </section>
@@ -665,6 +713,7 @@ function renderResults(container, { model, result, query, dataset, highs }) {
       <section id="rp-sets" class="rpanel" role="tabpanel" aria-labelledby="rt-sets" tabindex="0" hidden><div id="rp-setspanel"></div></section>
       <section id="rp-deep" class="rpanel" role="tabpanel" aria-labelledby="rt-deep" tabindex="0" hidden><div id="rp-deeppanel"></div></section>
       <section id="rp-alts" class="rpanel" role="tabpanel" aria-labelledby="rt-alts" tabindex="0" hidden><div id="rp-altspanel"></div></section>
+      <section id="rp-share" class="rpanel" role="tabpanel" aria-labelledby="rt-share" tabindex="0" hidden><div id="rp-sharepanel"></div></section>
     </div>
     <div class="sr-only" aria-live="polite" id="rp-live"></div>`;
 
@@ -695,42 +744,72 @@ function renderResults(container, { model, result, query, dataset, highs }) {
   q(".return-optimum").addEventListener("click", () => setActive(optimum, false));
   renderBuild(optimum);
 
-  // Alternatives tab (U4): generate on first open so the base solve stays instant (KTD2).
+  // Alternatives tab (U4): gated behind an explicit "Run analysis" button (R7) so
+  // the base solve stays instant and nothing computes until asked. While it runs,
+  // a panel-local .wz-ring swirly shows (R8/KTD4 — the wizard's overlay() is a
+  // closure results.js can't reach). Every terminal state replaces the spinner —
+  // cards, "none found", an error-with-retry, or solver-unavailable — so it is
+  // never left spinning.
   const altState = { list: null, computing: false };
-  function ensureAlternatives() {
+  const altUnavailable = () => typeof generateAlternatives !== "function" || !highs;
+  // Small helper: a message + a button that (re)runs the analysis.
+  function altPrompt(msg, btnLabel, cls) {
     const panel = q("#rp-altspanel");
+    panel.innerHTML = `<div class="alt-intro"><p class="${cls || "muted"}">${msg}</p><button class="btn ${cls === "dd-none muted" ? "ghost" : "primary"} alt-run" type="button">${esc(btnLabel)}</button></div>`;
+    const run = panel.querySelector(".alt-run");
+    if (run) run.addEventListener("click", () => { altState.list = null; runAlternatives(); });
+  }
+  // Initial (or re-open) state: the Run-analysis button, unless already computed
+  // (leave the cards/message in place) or the solver never loaded.
+  function showAltIntro() {
     if (altState.list !== null || altState.computing) return;
-    if (typeof generateAlternatives !== "function" || !highs) {
-      panel.innerHTML = `<p class="dd-none muted">Alternatives are unavailable (the solver did not load).</p>`;
+    if (altUnavailable()) {
+      q("#rp-altspanel").innerHTML = `<p class="dd-none muted">Alternatives are unavailable (the solver did not load).</p>`;
       altState.list = []; return;
     }
+    altPrompt("Explore near-optimal trade-off builds — complete a different set, free a slot, or take fewer crafting steps.", "Run analysis");
+  }
+  function runAlternatives() {
+    const panel = q("#rp-altspanel");
+    if (altState.computing) return;
     altState.computing = true;
-    panel.innerHTML = `<p class="dd-none muted">Computing alternatives…</p>`;
+    // Panel-local swirly (KTD4), same markup as the main solve overlay.
+    panel.innerHTML = `<div class="alt-computing"><div class="wz-ring"></div><p class="muted">Computing alternatives…</p></div>`;
     q("#rp-live").textContent = "Computing alternative loadouts…";
-    // Defer so the "computing" state paints before the synchronous re-solves run.
+    // Defer so the spinner paints before the synchronous re-solves run.
     setTimeout(() => {
+      // If a re-render (e.g. a per-slot constraint change) replaced this panel
+      // while we waited, abandon: don't run the stale solve or write cards/aria
+      // into the fresh closure's live region.
+      if (q("#rp-altspanel") !== panel) { altState.computing = false; return; }
       try {
         const raw = generateAlternatives(optimum, model, highs);
         const analyzed = raw.map((c) => analyzeAlternative(optimum, c, query));
         const ranked = rankAlternatives(analyzed, optimum, {});
         altState.list = ranked;
-        panel.innerHTML = ranked.length ? renderAltCards(ranked)
-          : `<p class="dd-none muted">No worthwhile trade-off build was found — the optimum is hard to beat for these priorities.</p>`;
-        if (ranked.length) wireAltCards(panel, ranked, setActive);
+        if (ranked.length) { panel.innerHTML = renderAltCards(ranked); wireAltCards(panel, ranked, setActive); }
+        else altPrompt("No worthwhile trade-off build was found — the optimum is hard to beat for these priorities.", "Run again", "dd-none muted");
         q("#rp-live").textContent = ranked.length
           ? `${ranked.length} alternative loadout${ranked.length === 1 ? "" : "s"} found.`
           : "No worthwhile alternative loadouts were found.";
       } catch (e) {
         console.error(e);
-        panel.innerHTML = `<p class="dd-none muted">Could not compute alternatives.</p><button class="q-edit alt-retry" type="button">Retry</button>`;
+        altState.list = null;   // let a retry recompute cleanly
+        altPrompt("Could not compute alternatives.", "Retry", "dd-none muted");
         q("#rp-live").textContent = "Could not compute alternative loadouts.";
-        const retry = panel.querySelector(".alt-retry");
-        if (retry) retry.addEventListener("click", () => { altState.list = null; ensureAlternatives(); });
       }
       altState.computing = false;
     }, 20);
   }
-  wireResultTabs(container, (id) => { if (id === "rp-alts") ensureAlternatives(); });
+  showAltIntro();   // pre-render the button so the tab is ready on first open
+  wireResultTabs(container, () => {});
+
+  // KTD3 — the Adjust (U3) and Share (U5) panels live inside this container and so
+  // are destroyed on every renderResults call (solve, load, per-slot constraint
+  // change). The wizard supplies a post-render callback to (re)populate + (re)wire
+  // its slots — direct drag/click handlers that delegation can't restore — on each
+  // render. Fires last, after the panels + tabs exist.
+  if (typeof onAfterRender === "function") onAfterRender(container);
 }
 
 // Compute the per-build view HTML (paperdoll, weapon row, ranked cards, set panel,
@@ -790,12 +869,15 @@ function buildViews(build, model, query) {
   // model considered, occupied or empty — no humanoid figure, full item names
   // (no truncation). Weapons are folded into the same list in slot order.
   const satisfied = satisfiedSets(build.chosen, build.setsActive);   // U6: glow only completed-set pieces
+  // U2 — resolve an augment's affixes by variant_id (the placed meta carries the
+  // id + color but no affixes); model.augments holds the full augment records.
+  const augById = new Map((model.augments || []).map((a) => [a.variant_id, a]));
   const rows = [];
   for (const slot of model.worn) {
     const picks = picksBySlot.get(slot.slot) || [];
     const cardinality = slot.cardinality || 1;
     for (let r = 0; r < cardinality; r++) {
-      rows.push(equippedRow(slot.slot, picks[r] || null, query.slotConstraints, satisfied));
+      rows.push(equippedRow(slot.slot, picks[r] || null, query.slotConstraints, satisfied, maps, augById));
     }
   }
   const weapons = ""; // weapons are included in the equipped list above
@@ -899,5 +981,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, artifactNotice, craftChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }
