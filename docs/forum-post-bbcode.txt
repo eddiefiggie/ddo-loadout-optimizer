@@ -6,7 +6,7 @@ Tired of juggling six wiki tabs and a spreadsheet to work out which named items 
 
 This isn't a tier list. You tell it your build and rank the stats you care about; it searches every wiki-sourced named item, augment, set bonus, and crafting option and hands back the [B]single loadout that is mathematically best[/B] for your priorities — slot by slot, and it [B]shows its work[/B]. No install, no login, free.
 
-[IMG]https://YOUR-IMAGE-HOST/01-optimal-loadout.jpg[/IMG]
+[IMG]https://eddiefiggie.github.io/ddo-loadout-optimizer/screenshots/01-optimal-loadout.jpg[/IMG]
 
 [SIZE=4][B]Why it's different[/B][/SIZE]
 Under the hood it's a real solver, not a pile of if-statements, and it respects DDO's actual rules:
@@ -17,7 +17,7 @@ Under the hood it's a real solver, not a pile of if-statements, and it respects 
 [/LIST]
 When it says a set beats three individual items, it's because it [B]proved[/B] it — and shows you the point-by-point breakdown:
 
-[IMG]https://YOUR-IMAGE-HOST/02-ranked-priorities-attribution.jpg[/IMG]
+[IMG]https://eddiefiggie.github.io/ddo-loadout-optimizer/screenshots/02-ranked-priorities-attribution.jpg[/IMG]
 
 [SIZE=4][B]How to use it[/B][/SIZE]
 [LIST=1]
