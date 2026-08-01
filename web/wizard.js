@@ -43,7 +43,7 @@ function stepAfterLoad(snapshot) {
 function buildQuery(state) {
   const forged = wizIsForged(state.race);
   return {
-    mlCap: Number(state.ml) || 34,
+    mlCap: Number(state.ml) || 36,
     targets: state.priorities.slice(),
     armorType: forged ? null : (state.armor || null),   // dodge-cap input
     armorTypes: forged || !state.armor ? undefined : [state.armor], // gate (U2)
@@ -92,8 +92,9 @@ if (typeof module !== "undefined" && module.exports) {
 
 // ---- browser flow ----------------------------------------------------------
 if (typeof window !== "undefined" && window.App) {
-  const RACES = ["Human", "Elf", "Half-Elf", "Dwarf", "Halfling", "Gnome", "Half-Orc",
-    "Drow", "Aasimar", "Tiefling", "Dragonborn", "Shifter", "Tabaxi", "Warforged", "Bladeforged"];
+  const RACES = ["Human", "Elf", "Half-Elf", "Dwarf", "Halfling", "Gnome", "Deep Gnome", "Half-Orc",
+    "Drow", "Aasimar", "Eladrin", "Tiefling", "Dragonborn", "Shifter", "Shadar-kai", "Tabaxi",
+    "Warforged", "Bladeforged", "Battleforged"];
   const ALIGNMENTS = ["Lawful Good", "Neutral Good", "Chaotic Good",
     "Lawful Neutral", "True Neutral", "Chaotic Neutral"];
   const ARMOR = [["cloth", "Cloth"], ["light", "Light"], ["medium", "Medium"], ["heavy", "Heavy"]];
@@ -122,7 +123,7 @@ if (typeof window !== "undefined" && window.App) {
     const vocab = pickerVocabulary(dataset);
     const allStats = vocab.suggestions;
 
-    const state = { step: "intro", ml: 34, race: "", alignment: "", armor: "", weapon: "",
+    const state = { step: "intro", ml: 36, race: "", alignment: "", armor: "", weapon: "",
       includeArtifact: false,
       pool: "all", ownedNames: null, priorities: [], slotConstraints: {}, constraintsDirty: false, lastRun: null,
       characterName: "", loadedStale: false };
