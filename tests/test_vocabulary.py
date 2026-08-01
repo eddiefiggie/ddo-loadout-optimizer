@@ -138,3 +138,132 @@ def test_crafting_integrity_gate_passes_and_fails_loudly():
     # an augment stone absent from the frozen augment registry fails the build
     bad_aug = {"Blue Augment Slot": {"*": [{"name": "Totally Fake Augment Zzz", "affixes": []}]}}
     _raises(V.IntegrityError, V.check_crafting_integrity, [], bad_aug, slot_reg, aug_reg)
+
+
+# --- U6.5: vocabulary hardening (ported synonyms, co-occurrence, unit signature) ----
+
+# The 12 semantic synonyms ported from the legacy vocab.STAT_ALIASES into the curated
+# alias table (the string-similarity lint cannot discover these — zero shared characters).
+# "All Abilities" -> "All Ability Scores" is deliberately NOT ported: that canonical does
+# not exist as a native registry affix.
+_PORTED_SYNONYMS = {
+    "Str": "Strength", "Dex": "Dexterity", "Con": "Constitution",
+    "Int": "Intelligence", "Wis": "Wisdom", "Cha": "Charisma",
+    "PRR": "Physical Sheltering", "MRR": "Magical Sheltering",
+    "Physical Resistance Rating": "Physical Sheltering",
+    "Magical Resistance Rating": "Magical Sheltering",
+    "Fortification Bypass": "Armor-Piercing",
+    "Fortification Bypass (Armor-Piercing)": "Armor-Piercing",
+}
+
+# Every string-similar pair that co-occurs on the SAME item is DISTINCT (an item never
+# lists one affix twice). These four are the named regression anchors; Blood Rage/Bloodrage
+# in particular CONTRADICTS the plan's redundancy example — both are separate Bool affixes.
+_COOCCUR_DISTINCT = [
+    ("Frost", "Frostbite"),
+    ("Freezing", "Freezing Ice"),
+    ("Impact", "Impactful"),
+    ("Blood Rage", "Bloodrage"),
+]
+
+
+def test_ported_synonyms_resolve_to_valid_registry_canonicals():
+    alias_map, _ = V.load_affix_aliases()
+    names = set(V.generate_registries()["affix_names"])
+    for variant, canonical in _PORTED_SYNONYMS.items():
+        # the alias is present and points at the expected canonical
+        assert alias_map.get(variant) == canonical, f"{variant!r} should alias to {canonical!r}"
+        # the canonical is a real native registry entry (no invented affixes)
+        assert canonical in names, f"canonical {canonical!r} must exist natively"
+        # resolve_affix_name round-trips the variant to the valid canonical
+        assert V.resolve_affix_name(variant, names, alias_map) == canonical
+
+
+def test_prr_canonicalizes_to_physical_sheltering():
+    alias_map, _ = V.load_affix_aliases()
+    names = set(V.generate_registries()["affix_names"])
+    assert V.resolve_affix_name("PRR", names, alias_map) == "Physical Sheltering"
+    assert V.resolve_affix_name("MRR", names, alias_map) == "Magical Sheltering"
+
+
+def test_all_abilities_synonym_not_ported_canonical_absent():
+    # Guard the "don't invent a canonical" decision: All Ability Scores is not native,
+    # so no alias may point at it.
+    alias_map, _ = V.load_affix_aliases()
+    names = set(V.generate_registries()["affix_names"])
+    assert "All Ability Scores" not in names
+    assert "All Abilities" not in alias_map
+
+
+def test_cooccurring_pairs_are_classified_distinct():
+    _, distinct = V.load_affix_aliases()
+    for a, b in _COOCCUR_DISTINCT:
+        assert frozenset((a, b)) in distinct, f"{a!r}/{b!r} must be whitelisted distinct"
+
+
+def test_cooccurring_pairs_never_share_a_canonical():
+    # A co-occurring pair must NEVER resolve to one shared canonical (that would be a merge).
+    alias_map, _ = V.load_affix_aliases()
+    names = set(V.generate_registries()["affix_names"])
+    for a, b in _COOCCUR_DISTINCT:
+        ra = V.resolve_affix_name(a, names, alias_map)
+        rb = V.resolve_affix_name(b, names, alias_map)
+        # each resolves to itself (present natively) or None (type-less, e.g. Impactful) —
+        # but the two never collapse onto the same name.
+        assert not (ra is not None and ra == rb), f"{a!r}/{b!r} must not merge"
+
+
+def test_detector_finds_cooccurring_pairs_and_is_deterministic():
+    det1 = V.detect_cooccurring_distinct()
+    det2 = V.detect_cooccurring_distinct()
+    assert det1 == det2, "detector must be deterministic"
+    keys = {frozenset(e["pair"]) for e in det1}
+    for a, b in _COOCCUR_DISTINCT:
+        assert frozenset((a, b)) in keys, f"detector must surface {a!r}/{b!r}"
+        # each record carries its co-occurrence evidence
+    for e in det1:
+        assert e["reason"].startswith("co-occurs on ")
+    # every detected pair actually co-occurs on the named item (evidence is real)
+    items = V._load(V.ITEMS_PATH)
+    by_item = {it.get("name"): {a["name"] for a in it.get("affixes") or []
+                                if isinstance(a, dict) and isinstance(a.get("name"), str)}
+               for it in items}
+    for e in det1:
+        item = e["reason"][len("co-occurs on "):]
+        a, b = e["pair"]
+        assert a in by_item.get(item, set()) and b in by_item.get(item, set())
+
+
+def test_unit_marker_is_significant_flat_vs_percent_distinct():
+    # The normalizer must NOT strip % — flat vs percent are different stats.
+    assert V._norm_collision("Armor Class") != V._norm_collision("Armor Class (%)")
+    assert V.differ_only_by_unit_marker("Armor Class", "Armor Class (%)")
+    assert V.differ_only_by_unit_marker("False Life", "False Life (%)")
+    assert V.name_unit("Armor Class (%)") == "pct" and V.name_unit("Armor Class") == "flat"
+    # a flat-vs-percent pair is never a lint merge candidate
+    out = V.lint_affix_names(["Armor Class", "Armor Class (%)"])
+    flagged = set(out["prefix_pairs"]) | set(out["similar"])
+    assert ("Armor Class", "Armor Class (%)") not in flagged
+
+
+def test_anti_false_merge_insight_natural_and_ac_percent_hold():
+    reg = V.generate_registries()
+    names, types = set(reg["affix_names"]), set(reg["bonus_types"])
+    # Insight vs Insight Natural are distinct stacking BUCKETS (types), never merged.
+    assert "Insight" in types and "Insight Natural" in types
+    # Armor Class (flat) vs Armor Class (%) are distinct affix NAMES, never collapsed.
+    assert "Armor Class" in names and "Armor Class (%)" in names
+
+
+def test_evidence_bundle_reports_without_mutating():
+    names = V.generate_registries()["affix_names"]
+    _, distinct = V.load_affix_aliases()
+    before = list(names)
+    bundle = V.evidence_bundle(names=names, distinct_pairs=distinct)
+    assert names == before, "evidence bundle must never mutate its input"
+    assert "candidates" in bundle and isinstance(bundle["candidates"], list)
+    for c in bundle["candidates"]:
+        assert set(c) >= {"pair", "cooccurs", "cooccur_item", "units", "bonus_types", "counts"}
+    # a report-only structure: it surfaces co-occurrence + unit + bonus-type evidence
+    # for at least one real candidate
+    assert any(c["cooccurs"] for c in bundle["candidates"])

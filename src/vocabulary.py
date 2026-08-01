@@ -185,15 +185,26 @@ def check_crafting_integrity(items, crafting, slot_registry, augment_registry):
 
 # ------------------------------------------------------------------------- curated tables
 
+def _distinct_pair(entry):
+    """A ``distinct`` entry is either a bare 2-name list (``["A", "B"]``) or a
+    reason-carrying object (``{"pair": ["A", "B"], "reason": "co-occurs on …"}``).
+    Both yield the same ``frozenset`` key — the reason is documentation only."""
+    if isinstance(entry, dict):
+        return frozenset(entry.get("pair", []))
+    return frozenset(entry)
+
+
 def load_affix_aliases(path=AFFIX_ALIASES_PATH):
     """Return ``(alias_map, distinct_pairs)`` from the curated affix table.
 
     ``alias_map``: ``{variant_name: canonical_name}``.
     ``distinct_pairs``: set of frozenset pairs whitelisted as genuinely different.
+    Distinct entries accept both the bare ``["A","B"]`` shape and the reason-carrying
+    ``{"pair":["A","B"],"reason":…}`` shape (the co-occurrence detector emits the latter).
     """
     data = _load(path)
     alias_map = {e["variant"]: e["canonical"] for e in data.get("aliases", [])}
-    distinct = {frozenset(p) for p in data.get("distinct", [])}
+    distinct = {_distinct_pair(p) for p in data.get("distinct", [])}
     return alias_map, distinct
 
 
@@ -263,9 +274,73 @@ def check_referential_integrity(items, crafting, sets, baseline, alias_map):
 # ------------------------------------------------------------------------- ambiguity lint
 
 def _norm_collision(s):
-    """Case + whitespace normalization ONLY (punctuation preserved, so ``Armor Class``
-    and ``Armor Class (%)`` stay distinct)."""
+    """Case + whitespace normalization ONLY. Punctuation — crucially the ``%`` / ``(%)``
+    value-unit marker — is PRESERVED (U6.5 defense #3), so ``Armor Class`` and
+    ``Armor Class (%)`` (flat vs percent) normalize DIFFERENTLY and never collide. The
+    normalizer must never strip ``%``: a percent affix is a distinct stat, not a variant."""
     return re.sub(r"\s+", " ", s.strip()).lower()
+
+
+# A value-unit marker: a trailing "(%)" or "%" that turns a flat stat into a percentage
+# one (``False Life`` -> ``False Life (%)``). It is SIGNIFICANT — two names that differ
+# only by this marker are DISTINCT stats, never merge candidates (U6.5 defense #3).
+_UNIT_MARKER_RE = re.compile(r"\s*\(?%\)?\s*$")
+
+
+def _strip_unit_marker(s):
+    return _UNIT_MARKER_RE.sub("", s.strip())
+
+
+def name_unit(name):
+    """Classify a name's value unit: ``"pct"`` if it carries a ``%`` / ``(%)`` marker,
+    else ``"flat"``. Used by the evidence bundle and the flat-vs-percent distinctness guard."""
+    return "pct" if "%" in (name or "") else "flat"
+
+
+def differ_only_by_unit_marker(a, b):
+    """True when ``a`` and ``b`` are the same name except one carries a ``%``/``(%)`` unit
+    marker (``Armor Class`` vs ``Armor Class (%)``). Such a pair is ALWAYS distinct."""
+    if _norm_collision(a) == _norm_collision(b):
+        return False  # identical after normalization — not a unit-marker difference
+    return _norm_collision(_strip_unit_marker(a)) == _norm_collision(_strip_unit_marker(b))
+
+
+def _a_prefix_of_b(a, b, allow_space=False):
+    """``a`` (lowercased) is a leading prefix of ``b`` (lowercased), with ``a`` at least 4
+    chars and strictly shorter. ``allow_space=False`` (the lint's tight-prefix rule) rejects
+    a word-boundary prefix (``Freezing`` vs ``Freezing Ice``); ``allow_space=True`` (the
+    co-occurrence detector) accepts it, because co-occurrence already proves distinctness."""
+    al, bl = a.lower(), b.lower()
+    if len(a) >= 4 and bl.startswith(al) and len(b) > len(a):
+        return allow_space or not b[len(a):len(a) + 1].isspace()
+    return False
+
+
+def _edit_similar(a, b, threshold=0.90):
+    """Edit-similarity ratio ``>=`` threshold (the lint's ``Blood Rage``/``Bloodrage`` rule)."""
+    return difflib.SequenceMatcher(None, a.lower(), b.lower()).ratio() >= threshold
+
+
+def _string_similar_kind(a, b, *, cooccur=False):
+    """Shared similarity classifier reused by both the lint and the co-occurrence detector.
+
+    Returns ``"collision"`` | ``"prefix"`` | ``"similar"`` | ``None``. A ``%``/``(%)`` unit
+    difference is short-circuited to ``None`` (flat-vs-percent is DISTINCT, never a candidate).
+    ``cooccur=False`` reproduces the report-only lint's shape (length-diff<=2 guard, tight
+    prefix). ``cooccur=True`` relaxes both — it drops the length guard and accepts a
+    word-boundary prefix — because same-item co-occurrence is itself proof of distinctness.
+    """
+    if differ_only_by_unit_marker(a, b):
+        return None
+    if _norm_collision(a) == _norm_collision(b):
+        return "collision"
+    if not cooccur and abs(len(a) - len(b)) > 2:
+        return None
+    if _a_prefix_of_b(a, b, allow_space=cooccur) or _a_prefix_of_b(b, a, allow_space=cooccur):
+        return "prefix"
+    if _edit_similar(a, b):
+        return "similar"
+    return None
 
 
 def lint_affix_names(names, distinct_pairs=None):
@@ -289,7 +364,9 @@ def lint_affix_names(names, distinct_pairs=None):
         by_norm.setdefault(_norm_collision(n), []).append(n)
     collisions = {k: sorted(v) for k, v in by_norm.items() if len(v) > 1}
 
-    # prefix pairs + similarity (report only)
+    # prefix pairs + similarity (report only). A ``%``/``(%)`` unit difference is NEVER a
+    # candidate (flat-vs-percent is distinct); ``_a_prefix_of_b``/``_edit_similar`` are the
+    # same primitives the co-occurrence detector reuses.
     prefix_pairs, similar = [], []
     for i, a in enumerate(names):
         for b in names[i + 1:]:
@@ -297,12 +374,126 @@ def lint_affix_names(names, distinct_pairs=None):
                 continue
             if abs(len(a) - len(b)) > 2:
                 continue
-            al, bl = a.lower(), b.lower()
-            if len(a) >= 4 and bl.startswith(al) and len(b) > len(a) and not b[len(a):len(a) + 1].isspace():
+            if differ_only_by_unit_marker(a, b):
+                continue
+            if _a_prefix_of_b(a, b):
                 prefix_pairs.append((a, b))
-            elif difflib.SequenceMatcher(None, al, bl).ratio() >= 0.90:
+            elif _edit_similar(a, b):
                 similar.append((a, b))
     return {"collisions": collisions, "prefix_pairs": prefix_pairs, "similar": similar}
+
+
+# --------------------------------------------------- U6.5 co-occurrence distinctness detector
+
+def _item_affix_names_by_item(items):
+    """Yield ``(item_name, sorted_unique_affix_names)`` for each item. Affix names are read
+    directly (any ``{"name": …}`` in ``affixes``), INCLUDING type-less names like
+    ``Impactful`` that ``iter_affixes`` skips — the detector needs the full on-item name set."""
+    item_list = items.get("items", items) if isinstance(items, dict) else items
+    for it in item_list or []:
+        if not isinstance(it, dict):
+            continue
+        names = {a["name"] for a in (it.get("affixes") or [])
+                 if isinstance(a, dict) and isinstance(a.get("name"), str)}
+        yield it.get("name"), sorted(names)
+
+
+def detect_cooccurring_distinct(items=None, existing=None):
+    """Auto-classify string-similar affix-name pairs that CO-OCCUR on the same item as
+    DISTINCT (U6.5 defense #2). An item never lists one affix twice, so same-item
+    co-occurrence is proof the two names are different stats — never a redundancy to merge.
+
+    Reuses the lint similarity logic in its relaxed (``cooccur=True``) form: normalized-form
+    collision, word-boundary prefix, or edit-similarity >= 0.90, with no length-diff guard.
+    Verified real pairs it captures: ``Frost``/``Frostbite``, ``Freezing``/``Freezing Ice``,
+    ``Impact``/``Impactful``, and ``Blood Rage``/``Bloodrage`` (both are separate ``Bool``
+    affixes on "Legendary Dagger of the Liturgist" — proving they are NOT the redundancy the
+    plan's example assumed).
+
+    Returns a sorted list of ``{"pair": [a, b], "reason": "co-occurs on <item>"}`` records,
+    deterministic and REPORT-ONLY (it never writes). Pass ``existing`` (a set of frozenset
+    pairs already whitelisted) to omit already-adjudicated pairs. """
+    items = _load(ITEMS_PATH) if items is None else items
+    existing = existing or set()
+    found = {}  # frozenset -> (a, b, first-item)
+    for item_name, names in _item_affix_names_by_item(items):
+        for i, a in enumerate(names):
+            for b in names[i + 1:]:
+                key = frozenset((a, b))
+                if key in existing or key in found:
+                    continue
+                if _string_similar_kind(a, b, cooccur=True):
+                    found[key] = (a, b, item_name)
+    out = []
+    for a, b, item_name in sorted(found.values()):
+        out.append({"pair": [a, b], "reason": f"co-occurs on {item_name}"})
+    return out
+
+
+# --------------------------------------------------------------- U6.5 evidence bundle (report)
+
+def evidence_bundle(items=None, names=None, distinct_pairs=None):
+    """Evidence for adjudicating each lint candidate — REPORT ONLY, never mutates data
+    (U6.5 defense #4). For each near-duplicate pair the lint surfaces, attach the facts a
+    human (or a future run) needs to rule same-vs-distinct without guesswork:
+
+      * ``cooccurs`` / ``cooccur_item`` — do the two names appear on the SAME item? (proof
+        of distinctness if yes)
+      * ``units`` — ``pct``/``flat`` for each name (a flat-vs-percent split is distinct)
+      * ``bonus_types`` — the set of stacking ``type`` tokens each name is observed with
+      * ``counts`` — how many affix occurrences carry each name
+
+    Returns ``{"candidates": [ … ]}`` sorted deterministically. """
+    items = _load(ITEMS_PATH) if items is None else items
+    if names is None:
+        names = generate_registries(items=items)["affix_names"]
+    distinct_pairs = distinct_pairs or set()
+
+    # occurrence counts + observed bonus-type set per name (from the full on-item affix walk)
+    counts, types_seen = {}, {}
+    item_list = items.get("items", items) if isinstance(items, dict) else items
+    cooccur = {}  # frozenset -> item name
+    for it in item_list or []:
+        if not isinstance(it, dict):
+            continue
+        on_item = set()
+        for a in it.get("affixes") or []:
+            if not isinstance(a, dict) or not isinstance(a.get("name"), str):
+                continue
+            nm = a["name"]
+            counts[nm] = counts.get(nm, 0) + 1
+            ty = a.get("type")
+            if isinstance(ty, str):
+                types_seen.setdefault(nm, set()).add(ty)
+            on_item.add(nm)
+        on_sorted = sorted(on_item)
+        for i, x in enumerate(on_sorted):
+            for y in on_sorted[i + 1:]:
+                cooccur.setdefault(frozenset((x, y)), it.get("name"))
+
+    # Surface ALL near-duplicate candidates (empty whitelist) so already-adjudicated pairs
+    # still carry their evidence; ``adjudicated_distinct`` records the current ruling.
+    lint = lint_affix_names(names, set())
+    pairs = list(lint["prefix_pairs"]) + list(lint["similar"])
+    for grp in lint["collisions"].values():
+        for i, a in enumerate(grp):
+            for b in grp[i + 1:]:
+                pairs.append((a, b))
+
+    candidates = []
+    for a, b in sorted(set(map(lambda p: tuple(sorted(p)), pairs))):
+        item = cooccur.get(frozenset((a, b)))
+        candidates.append({
+            "pair": [a, b],
+            "cooccurs": item is not None,
+            "cooccur_item": item,
+            "units": {a: name_unit(a), b: name_unit(b)},
+            "bonus_types": {a: sorted(types_seen.get(a, set())),
+                            b: sorted(types_seen.get(b, set()))},
+            "counts": {a: counts.get(a, 0), b: counts.get(b, 0)},
+            "adjudicated_distinct": frozenset((a, b)) in distinct_pairs,
+        })
+    return {"candidates": candidates}
 
 
 # ------------------------------------------------------------------------------ freshness
