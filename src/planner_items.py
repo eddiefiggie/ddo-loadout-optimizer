@@ -87,6 +87,22 @@ def _value_unit(raw_value):
     return raw_value, unit
 
 
+# --- U1: native gear-planner passthrough (the canonical schema, at rest) -------
+#
+# The overhaul makes gear-planner's own record shape THE schema. `_native_affixes`
+# copies the dump's typed affixes verbatim as `{name, type, value}` — no remap, no
+# quarantine, no unit split (KTD1/KTD2). `value` stays the native string ("14",
+# "9%"); the numeric coercion + unit derivation are the derived layer (U3), never a
+# native rename. Phase A is additive: `_record` emits this native block ALONGSIDE
+# the legacy `structured_affixes`/`enhancements`/`minimum_level` fields so the
+# legacy solver path stays green; U3/U4 flip consumers to native, U7 deletes the
+# legacy block + the remap.
+
+def _native_affixes(affixes):
+    return [{"name": a.get("name"), "type": a.get("type"), "value": a.get("value")}
+            for a in affixes or []]
+
+
 def _structured_affixes(affixes, boolean_allowlist):
     """Map the dump's typed affixes into (emitted, quarantined) lists.
 
@@ -124,6 +140,18 @@ def _record(it, boolean_allowlist, verified_seal_types):
     quests = it.get("quests") or []
     rec = {
         "name": it.get("name"),
+        # --- native gear-planner block (U1, canonical schema at rest) ---------
+        # Verbatim from the dump: raw `slot`/`type`, `ml`, `url`, `quests`,
+        # native `affixes` {name,type,value}, `crafting`, `sets`, `artifact`.
+        "type": it.get("type"),
+        "ml": it.get("ml"),
+        "url": it.get("url"),
+        "quests": list(quests),
+        "affixes": _native_affixes(it.get("affixes")),
+        "crafting": list(it.get("crafting") or []),
+        "sets": list(it.get("sets") or []),
+        "artifact": bool(it.get("artifact")),
+        # --- legacy remapped block (removed in U7; kept so Phase A stays green) -
         "category": _category(slot),
         "slot": slot,
         "minimum_level": it.get("ml"),

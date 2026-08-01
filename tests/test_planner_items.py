@@ -115,6 +115,43 @@ def test_host_pipeline_names_excluded():
     assert stats["planner_host_pipeline_names_excluded"] == 2
 
 
+def test_native_block_emitted_verbatim_from_dump():
+    # U1: the reader emits gear-planner's native record shape at rest. `affixes`
+    # carries {name,type,value} (NOT the legacy {stat,bonus_type,value,unit}); the
+    # native `type`/`ml`/`url`/`quests`/`crafting`/`sets`/`artifact` are verbatim.
+    recs, _ = _records()
+    r = _by_name(recs, "Absorption Gauntlet")
+    assert r["type"] == "Hand items"        # native item type, not "weapon"/"item"
+    assert r["ml"] == 18
+    assert r["url"] == "/page/Item:Absorption_Gauntlet"
+    assert r["sets"] == ["Forbidden Knowledge"]   # raw set names, no "(set)" marker
+    assert r["artifact"] is False
+    # native affixes are {name,type,value} with the value verbatim (string), no unit
+    aff = {a["name"]: a for a in r["affixes"]}
+    assert "Magical Sheltering" in aff
+    assert aff["Magical Sheltering"]["type"] == "Insight"
+    assert aff["Magical Sheltering"]["value"] == "10"   # verbatim string, not int
+    assert set(aff["Magical Sheltering"].keys()) == {"name", "type", "value"}
+
+
+def test_native_affixes_are_not_quarantined():
+    # The native `affixes` block is a clean passthrough — procs the legacy remap
+    # quarantines (e.g. "Holy") ARE present natively (the un-quarantining the
+    # overhaul intends; the legacy `structured_affixes` still drops them in Phase A).
+    recs, _ = _records()
+    native = {a["name"] for r in recs for a in r["affixes"]}
+    assert "Holy" in native
+    # ...while the legacy path still quarantines it (unchanged this unit).
+    legacy = {a["stat"] for r in recs for a in r["structured_affixes"]}
+    assert "Holy" not in legacy
+
+
+def test_native_artifact_flag_present_on_artifact_item():
+    recs, _ = _records()
+    r = _by_name(recs, "Band of Diani ir'Wynarn")
+    assert r["artifact"] is True
+
+
 def test_intra_dump_name_collisions_collapsed_and_reported():
     recs, stats = _records()
     names = [r["name"] for r in recs]
