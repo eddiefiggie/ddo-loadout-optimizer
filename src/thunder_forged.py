@@ -76,3 +76,30 @@ def parse_thunder_forged(seed):
                 "per-tier picks. Pools pending wiki harvest.",
     }
     return {"records": records, "quarantined": quarantined, "coverage": coverage}
+
+
+def build_thunder_forged(catalog=None):
+    """Native path (U2/R6): source the Thunder-Forged per-tier pools from
+    ``gearplanner_crafting.json`` (the ``T*(Weapon)`` menu pools) via
+    ``crafting_catalog`` instead of the legacy hand-harvested seed. No ``wiki_url``
+    gate, no type remap, no quarantine (F1). Returns the same
+    ``{records, quarantined, coverage}`` shape ``parse_thunder_forged`` does."""
+    from src import crafting_catalog
+    records = crafting_catalog.thunder_forged_records(catalog)
+    by_tier = {}
+    for r in records:
+        by_tier[r["tier"]] = by_tier.get(r["tier"], 0) + 1
+    coverage = {
+        "tiers_sourced": sorted(by_tier),
+        "tiers_pending": sorted(t for t in (1, 2, 3) if by_tier.get(t, 0) == 0),
+        "options_eligible": len(records),
+        "options_quarantined": 0,
+        "quarantined": [],
+        "by_tier": by_tier,
+        "source": "gearplanner_crafting.json: "
+                  + ", ".join(crafting_catalog.THUNDER_FORGED_KEYS.values()),
+        "note": "multi-tier choice-slot (1/2/3) over the native Thunder-Forged "
+                "Weapon pools. Sourced from the gear-planner crafting catalog; "
+                "host-marker surfacing lands with the native reader (U3).",
+    }
+    return {"records": records, "quarantined": [], "coverage": coverage}

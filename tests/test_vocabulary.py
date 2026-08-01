@@ -100,3 +100,41 @@ def test_freshness_reads_and_detects_drift():
     assert recorded == "ec3e595d0d879b29c13f3c34ffc155e71d0418c4"
     # a wrong expected commit surfaces drift
     _raises(V.FreshnessError, V.assert_freshness, expected_commit="deadbeef")
+
+
+# --- U2/R14: crafting-slot + augment registries + integrity gate --------------
+
+def test_crafting_slot_registry_generates_and_matches_frozen():
+    gen = V.generate_crafting_slot_registry()
+    # deterministic + sorted
+    assert gen == V.generate_crafting_slot_registry()
+    assert gen == sorted(gen)
+    # pool keys (83) ∪ item markers (adds the 12 pool-less Cannith slots) = 95
+    assert len(gen) == 95, "crafting-slot registry = 83 pool keys ∪ item crafting[] markers"
+    assert "Sealed in Undeath" in gen and "T1 (Weapon)" in gen
+    assert "Cannith: Rune Arm - Extra" in gen, "pool-less item markers are still in the registry"
+    frozen = V._load(V.CRAFTING_SLOT_REGISTRY_PATH)["crafting_slots"]
+    assert frozen == gen, "checked-in frozen registry matches the generator"
+
+
+def test_augment_registry_generates_and_matches_frozen():
+    gen = V.generate_augment_registry()
+    assert gen == sorted(gen) and len(gen) > 500, "augment-stone registry from the <Color> Augment Slot pools"
+    frozen = V._load(V.AUGMENT_REGISTRY_PATH)["augments"]
+    assert frozen == gen, "checked-in frozen augment registry matches the generator"
+
+
+def test_crafting_integrity_gate_passes_and_fails_loudly():
+    items = V._load(V.ITEMS_PATH)
+    crafting = V._load(V.CRAFTING_PATH)
+    slot_reg = V._load(V.CRAFTING_SLOT_REGISTRY_PATH)
+    aug_reg = V._load(V.AUGMENT_REGISTRY_PATH)
+    # the frozen registries resolve every real crafting[] marker + augment stone
+    n = V.check_crafting_integrity(items, crafting, slot_reg, aug_reg)
+    assert n > 10000
+    # an item marker absent from the frozen slot registry fails the build
+    bad_item = [{"name": "Fake Item", "crafting": ["No Such Slot Zzz"]}]
+    _raises(V.IntegrityError, V.check_crafting_integrity, bad_item, {}, slot_reg, aug_reg)
+    # an augment stone absent from the frozen augment registry fails the build
+    bad_aug = {"Blue Augment Slot": {"*": [{"name": "Totally Fake Augment Zzz", "affixes": []}]}}
+    _raises(V.IntegrityError, V.check_crafting_integrity, [], bad_aug, slot_reg, aug_reg)

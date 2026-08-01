@@ -43,3 +43,14 @@ def test_dataset_exposes_pool():
     data = json.load(open(ITEMS, encoding="utf-8"))
     assert "green_steel" in data, "items.json exposes the green_steel pool"
     assert "green_steel_coverage" in data["metadata"]
+
+
+def test_native_build_sources_from_catalog():
+    # U2/A2: the pool is now sourced NATIVELY from gearplanner_crafting.json
+    # (T1/T2/T3 Equipment), not the legacy hand-harvested seed. The pools DO exist.
+    out = gs.build_green_steel()
+    assert len(out["records"]) > 50, "native Green Steel Equipment pools are populated"
+    assert out["coverage"]["pending"] is False
+    assert "gearplanner_crafting.json" in out["coverage"]["source"]
+    r = out["records"][0]
+    assert {"stat", "bonus_type", "value", "unit"} <= set(r), "legacy solver-facing shape preserved"

@@ -28,6 +28,11 @@ SETS_PATH = os.path.join(RAW_DIR, "gearplanner_sets.json")
 SOURCE_PATH = os.path.join(RAW_DIR, "SOURCE.json")
 AFFIX_ALIASES_PATH = os.path.join(CURATED_DIR, "affix_aliases.json")
 TYPE_STACKING_PATH = os.path.join(CURATED_DIR, "type_stacking_equivalence.json")
+CRAFTING_SLOT_REGISTRY_PATH = os.path.join(CURATED_DIR, "crafting_slot_registry.json")
+AUGMENT_REGISTRY_PATH = os.path.join(CURATED_DIR, "augment_registry.json")
+
+# The augment-stone pools share this key suffix (see crafting_catalog).
+_AUGMENT_SLOT_SUFFIX = "Augment Slot"
 
 
 # --------------------------------------------------------------------------- raw walk
@@ -95,6 +100,87 @@ def generate_registries(items=None, crafting=None, sets=None):
         "crafting_slots": crafting_slots,
         "augments": sorted(augments),
     }
+
+
+# ------------------------------------------------- crafting-slot + augment registries (R14)
+
+def generate_crafting_slot_registry(crafting=None, items=None):
+    """The crafting-slot registry: the closed set of every crafting-slot identifier
+    that must resolve (R12/R14) = the ``gearplanner_crafting.json`` pool keys (the
+    83 pool-bearing slots) UNIONED with every item ``crafting[]`` marker. The union
+    is required because some item markers name pool-less slots (the 12 Cannith
+    player-crafting slots — Melee/Ring/Rune Arm/Trinket Prefix/Suffix/Extra — carry
+    no fixed option pool), yet a referential-integrity gate must still resolve them.
+    Sorted, deterministic. A closed structural set — integrity-gated, no alias/lint."""
+    crafting = _load(CRAFTING_PATH) if crafting is None else crafting
+    if not isinstance(crafting, dict):
+        raise ValueError("crafting catalog must be a dict of pools")
+    slots = set(crafting.keys())
+    if items is None:
+        items = _load(ITEMS_PATH)
+    item_list = items.get("items", items) if isinstance(items, dict) else items
+    for it in item_list or []:
+        for c in it.get("crafting") or []:
+            key = c if isinstance(c, str) else (c.get("name") if isinstance(c, dict) else None)
+            if isinstance(key, str) and key:
+                slots.add(key)
+    return sorted(slots)
+
+
+def generate_augment_registry(crafting=None):
+    """The augment registry: the augment-stone ``name`` fields drawn from the
+    ``<Color> Augment Slot`` menu pools, sorted. Closed structural set (R14)."""
+    crafting = _load(CRAFTING_PATH) if crafting is None else crafting
+    augs = set()
+    for key, pool in (crafting or {}).items():
+        if key.endswith(_AUGMENT_SLOT_SUFFIX) and isinstance(pool, dict):
+            for opt in pool.get("*", []) or []:
+                nm = opt.get("name") if isinstance(opt, dict) else None
+                if isinstance(nm, str) and nm:
+                    augs.add(nm)
+    return sorted(augs)
+
+
+def _registry_list(obj, key):
+    """Accept either a raw list or a ``{key: [...]}`` frozen-registry dict."""
+    if isinstance(obj, dict):
+        return obj.get(key, [])
+    return obj or []
+
+
+def check_crafting_integrity(items, crafting, slot_registry, augment_registry):
+    """Referential-integrity gate for crafting slots + augments (R12/R14), against
+    the FROZEN checked-in registries. Every item ``crafting[]`` marker must resolve
+    to a crafting-slot registry entry, and every augment-stone ``name`` in the
+    ``<Color> Augment Slot`` pools must resolve to an augment registry entry. The
+    first unresolved reference raises ``IntegrityError``; returns the count checked.
+
+    ``slot_registry``/``augment_registry`` may be a raw list or a frozen-registry
+    dict (``{"crafting_slots": [...]}`` / ``{"augments": [...]}``)."""
+    slots = set(_registry_list(slot_registry, "crafting_slots"))
+    augs = set(_registry_list(augment_registry, "augments"))
+    item_list = items.get("items", items) if isinstance(items, dict) else items
+    checked = 0
+    for it in item_list or []:
+        for c in it.get("crafting") or []:
+            key = c if isinstance(c, str) else (c.get("name") if isinstance(c, dict) else None)
+            if key is None:
+                continue
+            if key not in slots:
+                raise IntegrityError(
+                    f"unknown crafting slot {key!r} on item {it.get('name')!r} "
+                    f"not in the frozen crafting-slot registry (new-slot event)")
+            checked += 1
+    for key, pool in (crafting or {}).items():
+        if key.endswith(_AUGMENT_SLOT_SUFFIX) and isinstance(pool, dict):
+            for opt in pool.get("*", []) or []:
+                nm = opt.get("name") if isinstance(opt, dict) else None
+                if isinstance(nm, str) and nm and nm not in augs:
+                    raise IntegrityError(
+                        f"unknown augment {nm!r} in pool {key!r} not in the frozen "
+                        f"augment registry (new-augment event)")
+                checked += 1
+    return checked
 
 
 # ------------------------------------------------------------------------- curated tables

@@ -48,3 +48,14 @@ def test_dataset_exposes_pool_and_hosts_survive():
     data = json.load(open(ITEMS, encoding="utf-8"))
     assert "thunder_forged" in data, "items.json exposes the thunder_forged pool"
     assert "thunder_forged_coverage" in data["metadata"]
+
+
+def test_native_build_sources_from_catalog():
+    # U2: the per-tier pools are now sourced NATIVELY from gearplanner_crafting.json
+    # (T1/T2/T3 Weapon), not the legacy hand-harvested seed.
+    out = tf.build_thunder_forged()
+    assert len(out["records"]) > 20, "native Thunder-Forged Weapon pools are populated"
+    assert out["coverage"]["tiers_sourced"] == [1, 2, 3], "all three weapon tiers resolve"
+    assert "gearplanner_crafting.json" in out["coverage"]["source"]
+    r = out["records"][0]
+    assert {"tier", "stat", "bonus_type", "value", "unit"} <= set(r), "legacy solver-facing shape + tier"

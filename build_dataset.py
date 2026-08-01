@@ -38,6 +38,8 @@ from src import umbrella as umbrella_mod
 from src import planner_items as planner_mod
 from src import vocab as vocab_mod
 from src import variants as variants_mod
+from src import vocabulary as vocabulary_mod
+from src import crafting_catalog as crafting_catalog_mod
 import re as _re
 
 import collections
@@ -191,6 +193,24 @@ def load_boolean_features(path: str = BOOLEAN_SEED_PATH) -> list:
     if not isinstance(raw, list):
         return []
     return [s for s in raw if isinstance(s, str) and s and not s.startswith("_")]
+
+
+GEARPLANNER_ITEMS_PATH = os.path.join(HERE, "data", "seed", "compendium", "raw", "gearplanner_items.json")
+
+
+def assert_crafting_vocab() -> int:
+    """Referential-integrity gate for the crafting-slot + augment vocabularies
+    (U2/R14/R12), against the FROZEN checked-in registries. Every gear-planner
+    item `crafting[]` marker must resolve to the crafting-slot registry, and every
+    augment stone in the `<Color> Augment Slot` pools to the augment registry — an
+    unknown reference fails the build (new-slot/new-augment event). Non-mutating;
+    returns the count of references validated."""
+    with open(GEARPLANNER_ITEMS_PATH, encoding="utf-8") as fh:
+        items = json.load(fh)
+    crafting = crafting_catalog_mod.load_catalog()
+    slot_reg = vocabulary_mod._load(vocabulary_mod.CRAFTING_SLOT_REGISTRY_PATH)
+    aug_reg = vocabulary_mod._load(vocabulary_mod.AUGMENT_REGISTRY_PATH)
+    return vocabulary_mod.check_crafting_integrity(items, crafting, slot_reg, aug_reg)
 
 
 SOURCE_PROVENANCE_PATH = os.path.join(HERE, "data", "seed", "compendium", "raw", "SOURCE.json")
@@ -381,6 +401,11 @@ def build(seed: dict) -> dict:
     # merged FIRST (see the merge below) so they win name collisions over the
     # free-text-parsed wiki shards (KTD1) — clean, structured affixes. The boolean
     # allowlist gates which Bool affixes emit (exclude-until-verified).
+    # U2/R14/R12 — crafting-slot + augment referential-integrity gate. Validate the
+    # native item crafting[] markers + augment pools against the FROZEN checked-in
+    # registries BEFORE assembling the dataset; an unknown slot/augment fails the
+    # build (new-slot/new-augment event forcing a reviewed regenerate). Non-mutating.
+    _crafting_vocab_checked = assert_crafting_vocab()
     _boolean_allowlist = load_boolean_features()
     # Seal types with a non-empty verified pool gate which "Sealed in X" hosts the
     # reader recovers from the raw dump (Undeath sourced; Mist/Gloom pending).
@@ -610,9 +635,14 @@ def build(seed: dict) -> dict:
     # Legendary Thunder-Forged (multi-tier choice-slot) + Green Steel (single-pick
     # choice-slot): expose the craftable option pools. Hosts carry the marker
     # (thunder_forged_tiers / green_steel_slot); the solver crafts the best option.
-    # Pools pending wiki harvest — machinery complete, empty until sourced.
-    tf = tf_mod.parse_thunder_forged(load_tf_seed())
-    gs = gs_mod.parse_green_steel(load_gs_seed())
+    # U2 (R6/A2): these pools DO exist in gearplanner_crafting.json (the earlier
+    # "no pool / pending harvest" claim was wrong) — source them NATIVELY from the
+    # crafting catalog (T*(Weapon) / T*(Equipment)). No wiki_url gate, no type
+    # remap, no quarantine (F1). Host-marker surfacing (which items carry the slot)
+    # lands with the native reader in U3; until then the pools are populated but
+    # inert (no host references them), so the solver behavior is unchanged.
+    tf = tf_mod.build_thunder_forged()
+    gs = gs_mod.build_green_steel()
 
     # Compendium roster: the complete named-item INDEX (name + slot + wiki link
     # for every named item on the wiki, harvested by category). Roster entries
@@ -715,6 +745,13 @@ def build(seed: dict) -> dict:
             "compendium_coverage": comp_cov,
             "band_coverage": band_cov,
             "provenance": load_source_provenance(),
+            "crafting_vocab_coverage": {
+                "crafting_slot_registry": len(vocabulary_mod._load(
+                    vocabulary_mod.CRAFTING_SLOT_REGISTRY_PATH).get("crafting_slots", [])),
+                "augment_registry": len(vocabulary_mod._load(
+                    vocabulary_mod.AUGMENT_REGISTRY_PATH).get("augments", [])),
+                "references_validated": _crafting_vocab_checked,
+            },
             "planner_coverage": planner_stats,
             "wiki_confirmed_coverage": {
                 "confirmed_items": len(_wiki_confirmed),
