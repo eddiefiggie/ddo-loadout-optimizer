@@ -66,7 +66,7 @@ window.App && window.App.ready((dataset) => {
     }
     ol.innerHTML = ranked.map((s, i) => `<li><div class="rank-item">
       <span class="rank-order">${i + 1}</span>
-      <span class="rank-name">${esc(s)}</span>
+      <span class="rank-name">${esc(s)}${vocab.presence && vocab.presence.has(s) ? ` <span class="rank-tag" title="On/off effect — the solver secures an item that has it, in priority order (no magnitude to maximize).">on/off</span>` : ""}</span>
       <span class="rank-ctrl">
         <button data-up="${i}" aria-label="move ${esc(s)} up" ${i === 0 ? "disabled" : ""}>↑</button>
         <button data-down="${i}" aria-label="move ${esc(s)} down" ${i === ranked.length - 1 ? "disabled" : ""}>↓</button>

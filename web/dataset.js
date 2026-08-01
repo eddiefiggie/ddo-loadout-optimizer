@@ -126,10 +126,12 @@ function normalizeDataset(dataset) {
 // crafting union closes the gap where a CRAFTING-ONLY affix could not be selected
 // even though the solver matches it.
 //
-// Rankability filter on the crafting contribution mirrors the build's rankable-
-// affix rule: drop the non-rankable descriptor/penalty types and the Bool/boolean
-// presence affixes (there are ~8000 presence affixes; they would swamp the picker),
-// and require a numeric magnitude (you rank a magnitude, not a descriptor).
+// Rankability filter on the crafting MAGNITUDE contribution: drop the non-rankable
+// descriptor/penalty types and require a numeric magnitude (you rank a magnitude).
+// Bool/boolean presence affixes are added SEPARATELY as build-around effects: the
+// discrete, named on/off effects players chase (Ghost Touch, Bone Paws, immunities,
+// SALT...) ARE suggested + flagged in `presence`; only the ~280 sentence/clicky/
+// flavor Bool lines stay hidden (still typeable via `known`).
 //
 // `known` is the UNfiltered union of every affix name present on any source
 // (canonicalized) — a free-typed target is validated against it, so a user may type
@@ -140,6 +142,26 @@ const NON_RANKABLE_TYPES = new Set([
   "Good", "Evil", "Lawful", "Chaotic",
 ]);
 const PRESENCE_TYPES = new Set(["boolean", "Bool"]);
+
+// Build-around presence effects (Bool) that ARE worth suggesting — Ghost Touch,
+// Bone Paws, immunities, SALT, etc. Auto-classified from the name shape: a
+// DISCRETE effect name qualifies; a full sentence, a clicky, an upgrade line, or a
+// "%/N charges/per day" proc description does NOT (those ~280 stay hidden but
+// remain free-typeable via `known`). A small curated override adjusts edge cases:
+// PRESENCE_DENY force-hides, PRESENCE_ALLOW force-shows (both empty by default —
+// the extension point for tightening the list, e.g. trimming weapon materials).
+const _PRESENCE_NOISE = /[.%:]|\bchance\b|\bwhen you\b|\byour\b|\bclicky\b|\bupgrade|\bper (?:rest|day)\b|\bcharges?\b|\(\d|\d\/day/i;
+const PRESENCE_DENY = new Set([]);
+const PRESENCE_ALLOW = new Set([]);
+
+function _isPresenceTargetable(name) {
+  const n = String(name == null ? "" : name).trim();
+  if (!n) return false;
+  if (PRESENCE_DENY.has(n)) return false;
+  if (PRESENCE_ALLOW.has(n)) return true;
+  if (_PRESENCE_NOISE.test(n)) return false;
+  return n.split(/\s+/).length <= 4;
+}
 
 function _rankableType(type) {
   return type == null || (!NON_RANKABLE_TYPES.has(type) && !PRESENCE_TYPES.has(type));
@@ -220,12 +242,24 @@ function buildPickerVocabulary(dataset) {
   for (const [name, type, value] of _craftingAffixTriples(ds)) {
     if (_rankableType(type) && _isMagnitude(value)) suggest.add(canonical(name));
   }
+  // Build-around presence effects: discrete on/off (Bool) effects from items AND
+  // crafting pools (Ghost Touch, Bone Paws, immunities, SALT...) — added to
+  // suggestions and flagged in `presence` so the UI can badge them as on/off (no
+  // magnitude). Sentence/clicky/flavor Bool lines are filtered out here but stay
+  // free-typeable via `known`.
+  const presence = new Set();
+  for (const [name, type] of _itemAffixTriples(ds)) {
+    if (PRESENCE_TYPES.has(type) && _isPresenceTargetable(name)) { const c = canonical(name); suggest.add(c); presence.add(c); }
+  }
+  for (const [name, type] of _craftingAffixTriples(ds)) {
+    if (PRESENCE_TYPES.has(type) && _isPresenceTargetable(name)) { const c = canonical(name); suggest.add(c); presence.add(c); }
+  }
   // known = the unfiltered union (canonicalized), plus every suggestion.
   const known = new Set();
   for (const n of _allAffixNames(ds)) { const c = canonical(n); if (c) known.add(c); }
   for (const c of suggest) known.add(c);
   for (const n of (ds._affixRegistry || meta.affix_registry || [])) { const c = canonical(n); if (c) known.add(c); }
-  return { suggestions: [...suggest].sort(), known, canonical };
+  return { suggestions: [...suggest].sort(), known, canonical, presence };
 }
 
 /** U5, Part C — one-time load migration for a persisted loadout snapshot. Runs the

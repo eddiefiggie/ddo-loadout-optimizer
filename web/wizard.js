@@ -398,7 +398,7 @@ if (typeof window !== "undefined" && window.App) {
       if (!state.priorities.length) return `<li class="wz-hint">Add at least one stat to optimize for.</li>`;
       return state.priorities.map((p, i) => `<li data-i="${i}" draggable="true">
         <span class="wz-grip" title="drag to reorder">⋮⋮</span>
-        <span class="wz-rk">${i + 1}</span><span class="wz-nm">${esc(p)}</span>
+        <span class="wz-rk">${i + 1}</span><span class="wz-nm">${esc(p)}${vocab.presence && vocab.presence.has(p) ? ` <span class="rank-tag" title="On/off effect — the solver secures an item that has it, in priority order (no magnitude to maximize).">on/off</span>` : ""}</span>
         <span class="wz-ctl"><button data-up="${i}" ${i === 0 ? "disabled" : ""} aria-label="move up">↑</button>
           <button data-down="${i}" ${i === state.priorities.length - 1 ? "disabled" : ""} aria-label="move down">↓</button>
           <button data-del="${i}" aria-label="remove">✕</button></span></li>`).join("");
