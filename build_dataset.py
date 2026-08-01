@@ -784,10 +784,40 @@ def build(seed: dict) -> dict:
     return out
 
 
+def _native_affix(a: dict) -> dict:
+    """Emit one variant affix in gear-planner's NATIVE shape (U3).
+
+    The in-memory pipeline carries legacy `{stat, bonus_type, value:int, unit,
+    raw, eligible}`; at rest each affix becomes `{name, type, value}` where
+    `value` is the native STRING ("10", "9%", "-5") — a trailing "%" when the
+    unit is pct. NO numeric value / unit / raw is persisted; the load-time
+    normalizer (web/dataset.js) re-derives those by parsing the string. The
+    per-affix `eligible` flag is carried through verbatim so eligibility
+    semantics (verify) are unchanged."""
+    val = a.get("value")
+    native_value = f"{val}%" if a.get("unit") == "pct" else str(val)
+    out = {"name": a.get("stat"), "type": a.get("bonus_type"), "value": native_value}
+    if "eligible" in a:
+        out["eligible"] = a["eligible"]
+    return out
+
+
+def _serialize_item(it: dict) -> dict:
+    """A shallow copy of a variant with its `affixes` converted to native shape.
+    Only `items[]` variant affixes go native (uniform across all sources); the
+    other pools (dino_inserts, membership set defs, green_steel, …) keep their
+    legacy structured shape and their own consumers, so they are untouched."""
+    return {**it, "affixes": [_native_affix(a) for a in (it.get("affixes") or [])]}
+
+
 def write(dataset: dict, path: str = OUT_PATH) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
+    # Serialize items with native affixes WITHOUT mutating the in-memory build
+    # output (python tests inspect build()'s legacy-shaped dict directly).
+    serialized = {**dataset,
+                  "items": [_serialize_item(it) for it in dataset["items"]]}
     with open(path, "w", encoding="utf-8") as fh:
-        json.dump(dataset, fh, indent=2, ensure_ascii=False)
+        json.dump(serialized, fh, indent=2, ensure_ascii=False)
         fh.write("\n")
 
 

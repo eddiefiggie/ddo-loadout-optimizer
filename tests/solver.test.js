@@ -3,6 +3,7 @@
 const assert = require("assert");
 const path = require("path");
 const S = require("../web/solver.js");
+const { normalizeDataset } = require("../web/dataset.js");
 
 const vendor = path.join(__dirname, "..", "web", "vendor") + "/";
 const Highs = require(vendor + "highs.js");
@@ -688,7 +689,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
   await test("enriched compendium item is solver-selectable end-to-end (real dataset)", async () => {
     const fs = require("fs");
     const { buildModel } = require("../web/model.js");
-    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
     // "Diversion" is carried ONLY by enriched compendium items, so a positive
     // achieved value proves an enriched item entered the solver pool, survived the
     // dominance filter, and was selected — not just that it "verified".
@@ -704,7 +705,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
   await test("U81 Nearly-Complete crafts onto a real enriched host (real dataset)", async () => {
     const fs = require("fs");
     const { buildModel } = require("../web/model.js");
-    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
     // Real ML35 items carry `nearly_complete` category slots. Solve over ONLY the
     // real NC hosts so the host's crafted option is the source of the target — the
     // precedence-flip plan (U4) made this pool-scoped: over the FULL dataset the
@@ -868,7 +869,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
   await test("U81 Viktranium crafts onto a real host end-to-end (real dataset)", async () => {
     const fs = require("fs");
     const { buildModel } = require("../web/model.js");
-    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
     // Acid Spellpower is supplied by the Viktranium pool; targeting it must craft a
     // Lamordia augment onto one of the real hosts (proves the host survived the
     // dominance filter and the pool was consumed — the load-bearing checks).
@@ -895,7 +896,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
   await test("Dino crafts a multi-affix insert onto a real host end-to-end (real dataset)", async () => {
     const fs = require("fs");
     const { buildModel } = require("../web/model.js");
-    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
     // "Sneak Attack Damage" is supplied ONLY by the multi-affix Fang insert
     // (Accessory). Targeting it must select a real Dino blank host and place the
     // multi-affix unit (proves the blank survived dominance + the pool was
@@ -913,7 +914,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
   await test("Dino crafts an Armor-typed multi-affix insert onto the real armor blank end-to-end (real dataset)", async () => {
     const fs = require("fs");
     const { buildModel } = require("../web/model.js");
-    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
     // "Repair Healing Amplification" is supplied ONLY by the Armor-typed
     // multi-affix "Silverscale" insert (Scale). Targeting it must select the real
     // Dinosaur Bone Armor blank and place an ARMOR-typed insert — proving two-key
@@ -992,7 +993,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
   await test("seal unseals onto a real Undeath host end-to-end (real dataset)", async () => {
     const fs = require("fs");
     const { buildModel } = require("../web/model.js");
-    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
     assert.ok((data.seal || []).length > 0, "the built dataset exposes the seal pool");
     // Undeath hosts are clothing/jewelry; targeting abilities the Ritual Table pool
     // supplies must reach a real Undeath host and generate its unseal options in the
@@ -1019,7 +1020,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     // through the real engine and wins on its own stat (past dominance) — the U5
     // end-to-end proof that the ML30-36 band is genuinely solver-active.
     const fs = require("fs");
-    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
     const r4 = data.items.find(v => (v.source_item || v.variant_id) === "The Theurgy of Autumn");
     assert.ok(r4, "The Theurgy of Autumn is solver-active in the dataset");
     const corr = (r4.affixes || []).find(a => a.stat === "Corrosion");
@@ -1041,7 +1042,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     // enriched Dread Isle's Curse members from the built dataset and confirm the
     // 5-piece bonus activates at 5 pieces and not at 4.
     const fs = require("fs");
-    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
     const SET = "The Legendary Dread Isle's Curse";
     const members = data.items.filter(it => (it.set_bonus || []).some(s => s.set === SET));
     const bySlot = {};
@@ -1063,7 +1064,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     // Real dataset: Legendary Azure Necklace of Prophecy carries a 2-piece Legendary
     // Draconic Prophecy (a group-1 pool set). 1 real piece + the Gem's joker = 2 pieces.
     const fs = require("fs");
-    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
     const key = it => it.source_item || it.variant_id;
     const nk = data.items.find(it => key(it) === "Legendary Azure Necklace of Prophecy");
     const gem = data.items.find(it => key(it) === "Legendary Gem of Many Facets");
@@ -1190,7 +1191,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     // the Devourer gives both these stats, so completing its 3-piece tier wins.
     const fs = require("fs");
     const { buildModel } = require("../web/model.js");
-    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
     const lp = data.items.filter((v) => (v.set_membership_slot || {}).station === "Cannith Repurposing Station");
     assert.ok(lp.length === 44, "all 44 Lost Purpose items carry a Cannith membership slot");
     const query = { mlCap: 32, targets: ["Additional Damage to Helpless Targets", "Melee and Ranged Power"], armorType: null, weaponSetup: null, classRace: null };
@@ -1251,7 +1252,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     // self-seeds a threshold with NO fixed member equipped -> 3 Lost Purpose hosts
     // join Legendary Vol's Influence and complete its 3-piece Artifact bonus.
     const fs = require("fs");
-    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+    const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
     const defs = data.membership_set_defs || {};
     assert.ok(Object.keys(defs).length === 28, "items.json exports all 28 membership set defs (22 Vecna + 6 Dino)");
     const SET = "Legendary Vol's Influence";

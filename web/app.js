@@ -113,7 +113,13 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
   }
 
   loadDataset()
-    .then((dataset) => {
+    .then((raw) => {
+      // U3 — normalize the near-native dataset at load: parse each native affix
+      // string into numeric value + unit and attach the legacy aliases the
+      // solver/model/UI still read. The ONLY place legacy names survive.
+      const dataset = (window.DatasetNormalizer
+        ? window.DatasetNormalizer.normalizeDataset(raw)
+        : raw);
       const info = document.getElementById("dataset-info");
       if (info) {
         const m = dataset.metadata || {};

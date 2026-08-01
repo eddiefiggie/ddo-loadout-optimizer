@@ -19,6 +19,7 @@ const path = require("path");
 const fs = require("fs");
 const { buildModel } = require("../../web/model.js");
 const { solveLexicographic } = require("../../web/solver.js");
+const { normalizeDataset } = require("../../web/dataset.js");
 
 const ROOT = path.join(__dirname, "..", "..");
 const DATASET = path.join(ROOT, "web", "data", "items.json");
@@ -57,7 +58,11 @@ async function main() {
   const Highs = require(path.join(ROOT, "web", "vendor", "highs.js"));
   const highs = await Highs({ locateFile: (f) => path.join(ROOT, "web", "vendor", f) });
 
-  const dataset = JSON.parse(fs.readFileSync(DATASET, "utf8"));
+  // U3 — items.json is near-native at rest; apply the load-time normalizer so
+  // this harness sees the same numeric value/unit + legacy aliases the web load
+  // path produces. (The frozen baseline.json was captured pre-U3; native "10"
+  // parses to 10, so the affix triples compare equal.)
+  const dataset = normalizeDataset(JSON.parse(fs.readFileSync(DATASET, "utf8")));
   const fixtures = JSON.parse(fs.readFileSync(FIXTURES, "utf8"));
 
   // 1. roster

@@ -4,9 +4,10 @@ const fs = require("fs");
 const path = require("path");
 
 const { filterVariants, variantStats, affixText, dinoInsertRow, ncRow, vikRow, compendiumRow, browsableItems } = require("../web/browse.js");
-const data = JSON.parse(
+const { normalizeDataset } = require("../web/dataset.js");
+const data = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")
-);
+));
 const items = data.items;
 
 let passed = 0;

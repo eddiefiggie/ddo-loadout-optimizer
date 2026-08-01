@@ -81,6 +81,15 @@ def _make_variant(item, ml, tier_label, parsed):
         "category": item["category"],
         "slot": slot,
         "minimum_level": ml,
+        # --- native gear-planner item fields (U3) -----------------------------
+        # Carried onto every variant so the load-time normalizer can read them
+        # (armor_type is derived from native `type`) and so items.json is
+        # near-native at rest. Absent on legacy base-seed items -> None.
+        "ml": ml,
+        "type": item.get("type"),
+        "crafting": item.get("crafting"),
+        "sets": item.get("sets"),
+        "artifact": item.get("artifact"),
         "binding": item.get("binding"),
         "location_quest": item.get("location_quest"),
         "wiki_url": item.get("wiki_url"),

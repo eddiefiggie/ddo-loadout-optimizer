@@ -3,10 +3,11 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 const M = require("../web/model.js");
+const { normalizeDataset } = require("../web/dataset.js");
 
-const data = JSON.parse(
+const data = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")
-);
+));
 
 let passed = 0;
 function test(name, fn) {
