@@ -46,11 +46,17 @@ function parseAffixValue(raw) {
 }
 
 /** Attach the numeric value + unit + legacy aliases to one native affix, in
- *  place. Idempotent: skips fields already present. */
+ *  place. Idempotent: skips fields already present. Bidirectional so it doubles as
+ *  a one-time migration for a PRE-OVERHAUL persisted loadout whose embedded affix
+ *  carries ONLY the legacy `stat`/`bonus_type` (U5, Part C): native readers then
+ *  find `name`/`type` too. Live native affixes already have `name`/`type`, so those
+ *  branches never fire and the live-dataset output is unchanged (parity-neutral). */
 function normalizeAffix(a) {
   if (!a || typeof a !== "object") return a;
   if (a.stat == null && a.name != null) a.stat = a.name;
   if (a.bonus_type == null && a.type != null) a.bonus_type = a.type;
+  if (a.name == null && a.stat != null) a.name = a.stat;         // legacy -> native (old saves)
+  if (a.type == null && a.bonus_type != null) a.type = a.bonus_type;
   if (typeof a.value === "string") {
     const parsed = parseAffixValue(a.value);
     a.value = parsed.value;
@@ -90,18 +96,148 @@ function installStackEquiv(map) {
  *  bucket keys collapse equivalent affix types (Insight Natural -> Insight). */
 function normalizeDataset(dataset) {
   if (!dataset || !Array.isArray(dataset.items)) return dataset;
-  const equiv = (dataset.metadata && dataset.metadata.stacking_equivalence) || {};
+  const meta = dataset.metadata || {};
+  const equiv = meta.stacking_equivalence || {};
   dataset._stackEquiv = equiv;
   installStackEquiv(equiv);
+  // U5 — surface the affix-name registry + alias table so the picker vocabulary
+  // (buildPickerVocabulary) can canonicalize a variant name to the ONE canonical
+  // that gear/augments/crafting share.
+  dataset._affixRegistry = meta.affix_registry || [];
+  dataset._affixAliases = meta.affix_aliases || {};
   for (const it of dataset.items) normalizeItem(it);
   return dataset;
+}
+
+// ---------------------------------------------------------------------------
+// U5 — priority-picker vocabulary (shared by web/query.js and web/wizard.js).
+//
+// The picker's SUGGESTIONS are the UNION of every place a rankable affix can come
+// from, each canonicalized through the alias table so a selected target matches
+// gear, augments, AND crafting by one canonical name. Sources: the build's curated
+// item/scaling/set-bonus vocabulary (metadata.rankable_affixes — clean, ≥2-item +
+// CORE_STATS) UNIONED with every crafting pool (seal, nearly_complete[/per_item],
+// viktranium, dino_inserts, thunder_forged, green_steel, membership set defs). The
+// crafting union closes the gap where a CRAFTING-ONLY affix could not be selected
+// even though the solver matches it.
+//
+// Rankability filter on the crafting contribution mirrors the build's rankable-
+// affix rule: drop the non-rankable descriptor/penalty types and the Bool/boolean
+// presence affixes (there are ~8000 presence affixes; they would swamp the picker),
+// and require a numeric magnitude (you rank a magnitude, not a descriptor).
+//
+// `known` is the UNfiltered union of every affix name present on any source
+// (canonicalized) — a free-typed target is validated against it, so a user may type
+// ANY real affix (a Bool presence, a crafting-only one) even when it is not a
+// suggestion; `canonical()` maps a typed value through the alias table first.
+const NON_RANKABLE_TYPES = new Set([
+  "Penalty", "Sneak Attack", "Bludgeoning", "Piercing", "Slashing",
+  "Good", "Evil", "Lawful", "Chaotic",
+]);
+const PRESENCE_TYPES = new Set(["boolean", "Bool"]);
+
+function _rankableType(type) {
+  return type == null || (!NON_RANKABLE_TYPES.has(type) && !PRESENCE_TYPES.has(type));
+}
+function _isMagnitude(v) {
+  return typeof v === "number" && !Number.isNaN(v);
+}
+
+/** Every crafting-pool affix as [name, type, value] (all pools carry the legacy
+ *  {stat,bonus_type} shape — the normalizer does not touch pools, and the solver
+ *  reads them the same legacy way). */
+function _craftingAffixTriples(ds) {
+  const out = [];
+  const push = (n, t, v) => { if (n != null && n !== "") out.push([n, t, v]); };
+  for (const pool of [ds.seal, ds.nearly_complete, ds.viktranium, ds.thunder_forged, ds.green_steel]) {
+    for (const o of pool || []) push(o.stat, o.bonus_type, o.value);
+  }
+  for (const arr of Object.values(ds.nearly_complete_per_item || {})) {
+    for (const o of arr || []) push(o.stat, o.bonus_type, o.value);
+  }
+  for (const ins of ds.dino_inserts || []) {
+    const affs = (ins.affixes && ins.affixes.length) ? ins.affixes : [ins];
+    for (const a of affs) push(a.stat, a.bonus_type, a.value);
+  }
+  for (const def of Object.values(ds.membership_set_defs || {})) {
+    for (const tier of (def.tiers || [])) for (const a of tier.affixes || []) push(a.stat, a.bonus_type, a.value);
+  }
+  return out;
+}
+
+/** Every item/scaling/set-bonus affix as [name, type, value]. Item affixes are
+ *  native ({name,type}); scaling + set-bonus affixes are legacy at rest ({stat,
+ *  bonus_type}) — read the same way the solver does. */
+function _itemAffixTriples(ds) {
+  const out = [];
+  const push = (n, t, v) => { if (n != null && n !== "") out.push([n, t, v]); };
+  for (const v of ds.items || []) {
+    for (const a of v.affixes || []) push(a.name != null ? a.name : a.stat, a.type != null ? a.type : a.bonus_type, a.value);
+    for (const s of v.scaling || []) push(s.stat, s.bonus_type, s.val_hi);
+    for (const t of v.parsed_set_bonuses || []) for (const a of t.affixes || []) push(a.stat, a.bonus_type, a.value);
+  }
+  return out;
+}
+
+/** Every affix NAME present on any source (item + scaling + set-bonus + crafting),
+ *  for the free-typed-input known set. Unfiltered. */
+function _allAffixNames(ds) {
+  const out = [];
+  for (const [n] of _itemAffixTriples(ds)) out.push(n);
+  for (const [n] of _craftingAffixTriples(ds)) out.push(n);
+  return out;
+}
+
+/** Build the picker vocabulary. Returns { suggestions:[sorted], known:Set,
+ *  canonical:(name)->canonicalName }. */
+function buildPickerVocabulary(dataset) {
+  const ds = dataset || {};
+  const meta = ds.metadata || {};
+  const aliases = ds._affixAliases || meta.affix_aliases || {};
+  const canonical = (name) => {
+    const n = String(name == null ? "" : name).trim();
+    return (aliases[n] != null) ? aliases[n] : n;
+  };
+  const suggest = new Set();
+  // Item/scaling/set-bonus vocabulary = the build's curated rankable-affix list
+  // (already clean: ≥2-item + CORE_STATS, non-rankable/Bool already excluded). For
+  // an older build without that metadata, derive a present-affix scan filtered to
+  // the rankable types (so the fallback isn't noisier than the curated path).
+  if (meta.rankable_affixes && meta.rankable_affixes.length) {
+    for (const n of meta.rankable_affixes) { const c = canonical(n); if (c) suggest.add(c); }
+  } else {
+    for (const [name, type] of _itemAffixTriples(ds)) {
+      if (_rankableType(type)) suggest.add(canonical(name));
+    }
+  }
+  // Crafting-only additions: every crafting-pool affix that is rankable (numeric
+  // magnitude, not a non-rankable descriptor/penalty, not a Bool/boolean presence).
+  for (const [name, type, value] of _craftingAffixTriples(ds)) {
+    if (_rankableType(type) && _isMagnitude(value)) suggest.add(canonical(name));
+  }
+  // known = the unfiltered union (canonicalized), plus every suggestion.
+  const known = new Set();
+  for (const n of _allAffixNames(ds)) { const c = canonical(n); if (c) known.add(c); }
+  for (const c of suggest) known.add(c);
+  for (const n of (ds._affixRegistry || meta.affix_registry || [])) { const c = canonical(n); if (c) known.add(c); }
+  return { suggestions: [...suggest].sort(), known, canonical };
+}
+
+/** U5, Part C — one-time load migration for a persisted loadout snapshot. Runs the
+ *  bidirectional affix/item normalizer over each chosen variant so a PRE-OVERHAUL
+ *  save (embedded items carrying only legacy `stat`/`bonus_type`/`minimum_level`)
+ *  gains the native `name`/`type`/`ml` the migrated readers use. Idempotent. */
+function migrateLoadout(snapshot) {
+  if (!snapshot || !Array.isArray(snapshot.chosen)) return snapshot;
+  for (const c of snapshot.chosen) if (c && c.variant) normalizeItem(c.variant);
+  return snapshot;
 }
 
 // Browser: expose a global so app.js can normalize the fetched dataset without a
 // module system. Node: CommonJS export for the tests + parity harness.
 if (typeof window !== "undefined") {
-  window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, parseAffixValue };
+  window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, parseAffixValue, buildPickerVocabulary, migrateLoadout };
 }
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, parseAffixValue };
+  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, parseAffixValue, buildPickerVocabulary, migrateLoadout };
 }

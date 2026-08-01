@@ -28,6 +28,31 @@ const rec = {
   stampedBuildId: "abc123",
 };
 
+// The `rec` fixture above is intentionally LEGACY-shaped ({stat,bonus_type},
+// minimum_level) — it exercises the exporter's fallback path, i.e. a pre-overhaul
+// persisted snapshot. This test proves the migrated NATIVE primary path: item
+// affixes as {name,type} and item-level `ml`, which is what a current save embeds.
+test("U5: exporters read NATIVE {name,type} affixes and item `ml`", () => {
+  const nativeRec = {
+    name: "Native Build",
+    inputs: { ml: 34, race: "Elf", pool: "all", priorities: ["Constitution"] },
+    snapshot: {
+      status: "optimal",
+      chosen: [
+        { slot: "Armor", variant: { variant_id: "Native Vest", ml: 30,
+          affixes: [{ name: "Constitution", type: "Insightful", value: 7 }, { name: "PRR", value: 15 }] } },
+      ],
+      setsActive: [],
+    },
+  };
+  const md = toMarkdown(nativeRec);
+  assert.ok(/Constitution \+7 Insightful/.test(md), "native affix name+type render");
+  assert.ok(/PRR \+15/.test(md));
+  assert.ok(/ML 30/.test(md), "native item `ml` renders");
+  const csv = toCsv(nativeRec);
+  assert.ok(/Armor,Native Vest,30/.test(csv), "native `ml` in the CSV table");
+});
+
 test("constraintLines carry the character name + all constraints", () => {
   const lines = constraintLines(rec);
   const joined = lines.join("\n");

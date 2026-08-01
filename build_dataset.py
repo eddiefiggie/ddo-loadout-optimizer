@@ -196,6 +196,20 @@ def load_boolean_features(path: str = BOOLEAN_SEED_PATH) -> list:
 
 
 GEARPLANNER_ITEMS_PATH = os.path.join(HERE, "data", "seed", "compendium", "raw", "gearplanner_items.json")
+VOCAB_REGISTRIES_PATH = os.path.join(HERE, "data", "seed", "compendium", "vocab_registries.json")
+
+
+def load_affix_vocabulary() -> tuple:
+    """U5 — the affix-name registry + the variant->canonical alias table the web
+    priority-picker consumes. The registry is the frozen checked-in affix-name
+    vocabulary (``vocab_registries.json``); the alias map is the curated
+    ``affix_aliases.json`` (``load_affix_aliases``). Emitting them to the dataset
+    lets the picker canonicalize a typed/selected target to the ONE name gear,
+    augments, and crafting all carry — so a single target matches every source.
+    Deterministic (sorted list from a checked-in file; dict order from the file)."""
+    registry = vocabulary_mod._load(VOCAB_REGISTRIES_PATH).get("affix_names", [])
+    alias_map, _distinct = vocabulary_mod.load_affix_aliases()
+    return registry, alias_map
 
 
 def assert_crafting_vocab() -> int:
@@ -735,6 +749,9 @@ def build(seed: dict) -> dict:
     # id — so staleness reflects real drift, not build-run noise.
     schema_version = 1
 
+    # U5 — affix-name registry + alias table for the web priority-picker vocabulary.
+    _affix_registry, _affix_aliases = load_affix_vocabulary()
+
     out = {
         "metadata": {
             "title": "DDO Loadout Optimizer — dataset",
@@ -773,6 +790,12 @@ def build(seed: dict) -> dict:
                 "ml30_target": 1809,
             },
             "rankable_affixes": rankable_affixes(planner_records),
+            # U5 — the shared affix-name registry + variant->canonical alias table.
+            # The web picker unions every affix source (gear, augments, set bonuses,
+            # ALL crafting pools) and canonicalizes each through the alias table, so a
+            # selected target matches gear, augments, AND crafting by one canonical name.
+            "affix_registry": _affix_registry,
+            "affix_aliases": _affix_aliases,
             # U4b-i — stacking-equivalence map {native_type: stacks_as_bucket}.
             # gear-planner's native affix `type` IS the stacking bucket verbatim,
             # EXCEPT these curated pairs (e.g. "Insight Natural" -> "Insight") that do

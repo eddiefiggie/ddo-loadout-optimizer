@@ -37,10 +37,25 @@ test("U4: affixText renders a boolean feature as presence, not a magnitude", () 
   assert.ok(parts.some((p) => p.includes("Intelligence +10")), "real magnitude still shown");
 });
 
+test("U5: affixText / variantStats read NATIVE {name,type} affixes and item `ml`", () => {
+  // A live item affix is native ({name,type}); the ML filter reads native `ml`.
+  const v = { ml: 30, affixes: [
+    { name: "Salt", type: "boolean", value: 1, unit: "flat" },
+    { name: "Constitution", type: "Insightful", value: 7, unit: "flat" },
+  ] };
+  const parts = affixText(v);
+  assert.ok(parts.includes("✓ Salt"), "native boolean rendered as presence");
+  assert.ok(parts.some((p) => p.includes("Constitution +7 Insightful")), "native name+type render");
+  assert.deepStrictEqual(variantStats(v).sort(), ["Constitution", "Salt"], "variantStats reads native names");
+  // filter by native `ml` (item carries no legacy minimum_level)
+  assert.strictEqual(filterVariants([v], { maxMl: 34 }).length, 1);
+  assert.strictEqual(filterVariants([v], { maxMl: 20 }).length, 0);
+});
+
 test("ML filter returns only variants at or below the cap", () => {
   const rows = filterVariants(items, { maxMl: 10 });
   assert.ok(rows.length > 0);
-  for (const v of rows) assert.ok(Number(v.minimum_level) <= 10);
+  for (const v of rows) assert.ok(Number(v.ml) <= 10);   // U5: native item-level ML
 });
 
 test("verification filter returns only quarantined", () => {
@@ -124,7 +139,8 @@ test("a Nearly-Complete option is findable in the browser by stat", () => {
 
 test("ncRow tags the tier's ML and renders its value", () => {
   const row = ncRow({ category: "Ability Score", stat: "Constitution", bonus_type: "Enhancement", value: 15, tier: "legendary", wiki_url: "w" });
-  assert.strictEqual(row.minimum_level, 35);
+  // U5: pseudo-rows now carry native item-level `ml` (was legacy `minimum_level`).
+  assert.strictEqual(row.ml, 35);
   assert.ok(affixText(row).some((t) => /Constitution \+15/.test(t)));
 });
 
@@ -143,7 +159,8 @@ test("a Viktranium option is findable in the browser by stat", () => {
 
 test("vikRow tags the tier's ML, keys the pool, and renders its value", () => {
   const row = vikRow({ slot_type: "Melancholic", category: "Accessory", stat: "Charisma", bonus_type: "Enhancement", value: 15, tier: "legendary", wiki_url: "w" });
-  assert.strictEqual(row.minimum_level, 34);
+  // U5: pseudo-rows now carry native item-level `ml` (was legacy `minimum_level`).
+  assert.strictEqual(row.ml, 34);
   assert.ok(/Melancholic/.test(row.slot) && /Accessory/.test(row.slot), "slot names the (type, category) pool");
   assert.ok(affixText(row).some((t) => /Charisma \+15/.test(t)));
 });
