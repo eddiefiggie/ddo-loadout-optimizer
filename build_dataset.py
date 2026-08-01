@@ -333,6 +333,16 @@ def build(seed: dict) -> dict:
         # the winner from ANY loaded record (KTD6), or the set-membership slot would be lost.
         if winner is not None and it.get("lost_purpose") and not winner.get("lost_purpose"):
             winner["lost_purpose"] = it["lost_purpose"]
+        # Same graft for the two wiki-shard-only crafting markers (U1). When the
+        # gear-planner record wins a collision (U2), it carries no Lamordia /
+        # Nearly-Complete markers — those live only on the wiki-enriched shard —
+        # so graft them from ANY loaded record onto the winner. `nc_tier` is NOT
+        # grafted: it occurs on zero shard records (variants.py reads it via
+        # .get()), so a direct copy would KeyError.
+        if winner is not None and it.get("lamordia_slots") and not winner.get("lamordia_slots"):
+            winner["lamordia_slots"] = [dict(s) for s in it["lamordia_slots"]]  # copy: no shared ref across variants
+        if winner is not None and it.get("nearly_complete") and not winner.get("nearly_complete"):
+            winner["nearly_complete"] = it["nearly_complete"]
     enriched_items = deduped
 
     # Set bonuses for enriched members (U3). Only the 67 base-seed items carry a
