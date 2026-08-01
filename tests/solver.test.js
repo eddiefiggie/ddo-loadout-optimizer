@@ -899,44 +899,81 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     const fs = require("fs");
     const { buildModel } = require("../web/model.js");
     const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
-    // Acid Spellpower is supplied by the Viktranium pool; targeting it must craft a
-    // Lamordia augment onto one of the real hosts (proves the host survived the
-    // dominance filter and the pool was consumed — the load-bearing checks).
-    const query = { mlCap: 36, targets: ["Acid Spellpower"], armorType: null, weaponSetup: null, classRace: null };
+    // The seal/dino/viktranium pools now live in the native gear-planner catalog, so
+    // this test DERIVES its target from the loaded pool instead of hard-targeting a
+    // legacy affix name (which would re-break on every catalog refresh). Intent is
+    // unchanged: a real Lamordia host crafts a LEGENDARY option at the legendary
+    // magnitude — the regression guard for the ML>=35 mis-tier bug.
+    const itemMax = (stat) => {
+      let m = 0;
+      for (const it of data.items) for (const a of (it.affixes || []))
+        if (a.stat === stat && typeof a.value === "number" && a.value > m) m = a.value;
+      return m;
+    };
+    // (slot_type, category) pairs that a real item actually offers as a Lamordia slot.
+    const hostKeys = new Set();
+    for (const it of data.items) for (const ls of (it.lamordia_slots || [])) hostKeys.add(ls.type + "|" + ls.category);
+    // Pick a legendary option that (a) has a real host for its (slot_type, category),
+    // (b) out-values every worn item for its stat (so the craft is genuinely reached,
+    // not made redundant by an item), and (c) has a strictly weaker heroic counterpart
+    // (so "legendary magnitude > heroic" is a real assertion). Deterministic: strongest
+    // first, stat name as the tie-break.
+    const pick = data.viktranium
+      .filter((o) => o.tier === "legendary" && o.value > 35 && hostKeys.has(o.slot_type + "|" + o.category)
+        && o.value > itemMax(o.stat)
+        && data.viktranium.some((h) => h.stat === o.stat && h.slot_type === o.slot_type
+          && h.category === o.category && h.tier === "heroic" && h.value < o.value))
+      .sort((a, b) => b.value - a.value || (a.stat < b.stat ? -1 : 1))[0];
+    assert.ok(pick, "the native pool offers a hostable legendary option for the regression guard");
+    const query = { mlCap: 36, targets: [pick.stat], armorType: null, weaponSetup: null, classRace: null };
     const model = buildModel(data.items, query, data.dino_inserts, data.nearly_complete, data.viktranium);
     const res = await S.solveLexicographic(model, highs);
     assert.strictEqual(res.status, "optimal");
     assert.ok((res.vikPlaced || []).length > 0, "at least one Viktranium craft was placed onto a host");
-    const craft = res.vikPlaced.find((n) => n.stat === "Acid Spellpower");
-    assert.ok(craft && craft.value > 0, "a Lamordia host crafted an Acid Spellpower option from its pool");
+    const craft = res.vikPlaced.find((n) => n.stat === pick.stat);
+    assert.ok(craft && craft.value > 0, `a Lamordia host crafted a ${pick.stat} option from its pool`);
     assert.ok(craft.item, "the craft names its host item");
-    // Every real host is a Legendary (ML34) item, so the craft MUST pull the
-    // legendary magnitude (regression guard for the ML>=35 mis-tier bug: a heroic
-    // value here would mean the legendary pool went unreachable). Assert the exact
-    // legendary value for the chosen (slot_type, category), derived from the data.
-    assert.strictEqual(craft.tier, "legendary", "an ML34 host crafts at the legendary tier");
-    const expected = data.viktranium.find((o) => o.stat === "Acid Spellpower"
+    // Every real host is a Legendary item, so the craft MUST pull the legendary
+    // magnitude (a heroic value here would mean the legendary pool went unreachable —
+    // the ML>=35 mis-tier bug). Assert the exact legendary value for the chosen
+    // (slot_type, category), and that it beats the heroic magnitude of the same option.
+    assert.strictEqual(craft.tier, "legendary", "a legendary host crafts at the legendary tier");
+    const expected = data.viktranium.find((o) => o.stat === pick.stat
       && o.slot_type === craft.slot_type && o.category === craft.category && o.tier === "legendary");
     assert.ok(expected && craft.value === expected.value,
       `craft value ${craft.value} matches the legendary pool value ${expected && expected.value}`);
-    assert.ok(craft.value > 35, "legendary magnitude exceeds the heroic one (would have been ~35)");
+    const heroicOpt = data.viktranium.find((o) => o.stat === pick.stat
+      && o.slot_type === craft.slot_type && o.category === craft.category && o.tier === "heroic");
+    assert.ok(heroicOpt && craft.value > heroicOpt.value,
+      `legendary magnitude ${craft.value} exceeds the heroic one ${heroicOpt && heroicOpt.value}`);
+    assert.ok(craft.value > 35, "legendary magnitude exceeds the heroic tier band");
   });
 
   await test("Dino crafts a multi-affix insert onto a real host end-to-end (real dataset)", async () => {
     const fs = require("fs");
     const { buildModel } = require("../web/model.js");
     const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
-    // "Sneak Attack Damage" is supplied ONLY by the multi-affix Fang insert
-    // (Accessory). Targeting it must select a real Dino blank host and place the
-    // multi-affix unit (proves the blank survived dominance + the pool was
-    // consumed all-or-nothing — the load-bearing checks).
-    const query = { mlCap: 34, targets: ["Sneak Attack Damage"], armorType: null, weaponSetup: null, classRace: null };
+    // DERIVED from the native pool (see the Viktranium test above for why): a non-Armor
+    // multi-affix insert carrying an affix that exists on NO worn item and NO Viktranium
+    // option — dino-unique, so the target can be reached ONLY by crafting that insert.
+    // Intent unchanged: a multi-affix insert rides ONE placement onto a real blank host.
+    const known = new Set();
+    for (const it of data.items) for (const a of (it.affixes || [])) known.add(a.stat);
+    for (const o of data.viktranium) known.add(o.stat);
+    let target = null;
+    for (const ins of data.dino_inserts) {
+      if (ins.category === "Armor" || (ins.affixes || []).length < 2) continue;
+      const uniq = (ins.affixes || []).find((a) => !known.has(a.stat));
+      if (uniq) { target = uniq.stat; break; }
+    }
+    assert.ok(target, "the native pool offers a dino-unique multi-affix non-Armor insert");
+    const query = { mlCap: 34, targets: [target], armorType: null, weaponSetup: null, classRace: null };
     const model = buildModel(data.items, query, data.dino_inserts, data.nearly_complete, data.viktranium);
     const res = await S.solveLexicographic(model, highs);
     assert.strictEqual(res.status, "optimal");
-    assert.ok(res.effective["Sneak Attack Damage"] > 0, "the crafted insert advances the target");
-    const unit = (res.dinoPlaced || []).find((d) => (d.affixes || []).some((a) => a.stat === "Sneak Attack Damage"));
-    assert.ok(unit, "a Dino insert supplying Sneak Attack Damage was placed onto a real host");
+    assert.ok(res.effective[target] > 0, "the crafted insert advances the target");
+    const unit = (res.dinoPlaced || []).find((d) => (d.affixes || []).some((a) => a.stat === target));
+    assert.ok(unit, `a Dino insert supplying ${target} was placed onto a real host`);
     assert.ok(unit.affixes.length >= 2, "the placed unit is the multi-affix insert (both affixes ride one placement)");
   });
 
@@ -944,19 +981,35 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     const fs = require("fs");
     const { buildModel } = require("../web/model.js");
     const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
-    // "Repair Healing Amplification" is supplied ONLY by the Armor-typed
-    // multi-affix "Silverscale" insert (Scale). Targeting it must select the real
-    // Dinosaur Bone Armor blank and place an ARMOR-typed insert — proving two-key
-    // (category) routing AND multi-affix placement end-to-end on the real data.
-    const query = { mlCap: 34, targets: ["Repair Healing Amplification"], armorType: null, weaponSetup: null, classRace: null };
+    // DERIVED from the native pool: an Armor-category multi-affix insert whose magnitude
+    // affix out-values every worn item AND every Viktranium option for that stat, so the
+    // dino craft is the SOLE way to reach the target — forcing the real Dinosaur Bone
+    // Armor blank to be equipped. Intent unchanged: two-key (category) routing AND
+    // multi-affix placement end-to-end on the real data.
+    const globalMax = (stat) => {
+      let m = 0;
+      for (const it of data.items) for (const a of (it.affixes || []))
+        if (a.stat === stat && typeof a.value === "number" && a.value > m) m = a.value;
+      for (const o of data.viktranium)
+        if (o.stat === stat && typeof o.value === "number" && o.value > m) m = o.value;
+      return m;
+    };
+    let target = null;
+    for (const ins of data.dino_inserts) {
+      if (ins.category !== "Armor" || (ins.affixes || []).length < 2) continue;
+      const win = (ins.affixes || []).find((a) => typeof a.value === "number" && a.value > 0 && a.value > globalMax(a.stat));
+      if (win) { target = win.stat; break; }
+    }
+    assert.ok(target, "the native pool offers a dino-winning Armor multi-affix insert");
+    const query = { mlCap: 34, targets: [target], armorType: null, weaponSetup: null, classRace: null };
     const model = buildModel(data.items, query, data.dino_inserts, data.nearly_complete, data.viktranium);
     const res = await S.solveLexicographic(model, highs);
     assert.strictEqual(res.status, "optimal");
-    const unit = (res.dinoPlaced || []).find((d) => (d.affixes || []).some((a) => a.stat === "Repair Healing Amplification"));
-    assert.ok(unit, "an Armor-typed Dino insert supplying Repair Healing Amplification was placed");
+    const unit = (res.dinoPlaced || []).find((d) => (d.affixes || []).some((a) => a.stat === target));
+    assert.ok(unit, `an Armor-typed Dino insert supplying ${target} was placed`);
     assert.strictEqual(unit.category, "Armor", "the placed insert is Armor-category (two-key routing held)");
-    assert.ok(unit.affixes.length >= 2, "the placed unit is the multi-affix Silverscale insert");
-    assert.ok(res.effective["Repair Healing Amplification"] > 0, "the crafted armor insert advances the target");
+    assert.ok(unit.affixes.length >= 2, "the placed unit is a multi-affix Armor insert");
+    assert.ok(res.effective[target] > 0, "the crafted armor insert advances the target");
     const armorBlank = res.chosen.find((c) => c.variant.source === "dino_crafting_blank" && c.slot === "Armor");
     assert.ok(armorBlank, "the real Dinosaur Bone Armor blank was equipped to host the insert");
   });
