@@ -21,6 +21,7 @@ threshold or no parseable affix is dropped, never guessed.
 from src.set_parser import parse_set_bonuses
 from src import umbrella
 from src import set_catalog
+from src import crafting_catalog
 
 STATION = "Cannith Repurposing Station"
 DINO_STATION = "Dinosaur Bone crafting"
@@ -39,32 +40,34 @@ _DINO_SETS = [
     "The Legendary Dread Isle's Curse",
 ]
 
-# The 11 Vecna Unleashed sets, base (Heroic, ML18) names. Each also has a
-# "Legendary <name>" (ML32) variant. Lost Purpose items awaken one of these at the
-# Cannith Repurposing Station. Forbidden Knowledge also has intrinsic raid members;
-# the other 10 are Lost-Purpose-only (not found natively on any item — wiki-confirmed).
-_VECNA_BASE = [
-    "Forbidden Knowledge",
-    "Armaments of the Archons",
-    "Delight of the Devourer",
-    "Devils' Infernal Dance",
-    "The Fury's Rage",
-    "Heart of Blades",
-    "The Keeper's Coffin",
-    "Minion of the Mockery",
-    "The Shadow's Emptiness",
-    "The Traveler's Guidance",
-    "Vol's Influence",
-]
+# The Vecna Unleashed "Lost Purpose" set-membership pool is now sourced NATIVELY
+# (U4b-ii) from the gear-planner crafting catalog: the ``Lost Purpose`` (Heroic)
+# and ``Legendary Lost Purpose`` menu pools list the set names an awakened Lost
+# Purpose item can join. Each option's native ``set`` field IS the set name; the
+# set DEFINITIONS still come from the gear-planner set catalog (single source of
+# truth). Lost Purpose items awaken one of these at the Cannith Repurposing
+# Station. Forbidden Knowledge also has intrinsic raid members; the others are
+# Lost-Purpose-only (wiki-confirmed).
+_LOST_PURPOSE_KEY = {"heroic": "Lost Purpose", "legendary": "Legendary Lost Purpose"}
+_VECNA_NAME_CACHE = {}  # tier -> [set names], memoized off the native catalog
 
 
 def _tier_of(name: str) -> str:
     return "legendary" if name.startswith("Legendary ") else "heroic"
 
 
-def set_names_for_tier(tier: str) -> list:
-    """The 11 Vecna set names of a tier ('heroic'|'legendary'). Deterministic."""
-    return [(f"Legendary {n}" if tier == "legendary" else n) for n in _VECNA_BASE]
+def set_names_for_tier(tier: str, catalog: dict = None) -> list:
+    """The Vecna set names of a tier ('heroic'|'legendary'), sourced from the
+    native ``(Legendary )Lost Purpose`` crafting menu pool. Deterministic
+    (native pool order). Memoized when reading the default catalog."""
+    if catalog is None and tier in _VECNA_NAME_CACHE:
+        return list(_VECNA_NAME_CACHE[tier])
+    cat = catalog if catalog is not None else crafting_catalog.load_catalog()
+    names = [o.get("set") for o in crafting_catalog.menu_options(_LOST_PURPOSE_KEY[tier], cat)
+             if o.get("set")]
+    if catalog is None:
+        _VECNA_NAME_CACHE[tier] = list(names)
+    return names
 
 
 def all_set_names() -> list:

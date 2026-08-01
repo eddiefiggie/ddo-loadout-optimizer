@@ -34,9 +34,18 @@ import re
 
 from src.affix_parser import BONUS_TYPES, parse_line
 from src import vocab
+from src import crafting_catalog
 
 # The four Viktranium slot types (the wiki's recipe-table names).
 SLOT_TYPES = {"Melancholic", "Dolorous", "Miserable", "Woeful"}
+# Viktranium host tier boundary: Legendary is ML>=30 (matches solver.js
+# lamordiaTier, the single source of truth), Heroic below. Native option MLs are
+# Heroic ML8 / Legendary ML34.
+_VIK_LEGENDARY_ML = 30
+
+
+def _vik_tier_from_ml(ml):
+    return "legendary" if (ml or 0) >= _VIK_LEGENDARY_ML else "heroic"
 # The three item categories. Keyed to the singular form the ``{{Lamordia Slot}}``
 # template uses on host items; the recipe-table headings use the plural, which
 # ``normalize_category`` folds in.
@@ -284,3 +293,54 @@ def parse_viktranium(seed):
                      "not a choice-slot",
     }
     return {"records": records, "quarantined": quarantined, "coverage": coverage}
+
+
+def build_viktranium(catalog: dict = None) -> dict:
+    """Native path (U4b-ii): source the Viktranium typed pools from
+    ``gearplanner_crafting.json`` via ``crafting_catalog`` instead of the legacy
+    ``viktranium.json`` seed. The strict parser gate is REMOVED, not swapped
+    (F1) — native affixes flow through verbatim via ``legacy_affix`` (so
+    un-quarantined multi-affix options now emit one record PER affix). The pool
+    key is the native ``<SlotType> (<Category>)`` menu, Category in
+    (Accessory, Armor, Weapon); the specialized ``(quarterstaff)`` /
+    ``(artifact)`` variant pools are out of scope (no host slot references them).
+    Tier is derived from the option's native ``ml``. Returns the same
+    ``{records, quarantined, coverage}`` shape ``parse_viktranium`` does."""
+    catalog = crafting_catalog.load_catalog() if catalog is None else catalog
+    records = []
+    for slot_type in sorted(SLOT_TYPES):
+        for category in sorted(CATEGORIES):
+            key = f"{slot_type} ({category})"
+            if key not in catalog:
+                continue  # not every (type, category) combination has a pool
+            for opt in crafting_catalog.menu_options(key, catalog):
+                tier = _vik_tier_from_ml(opt.get("ml"))
+                name = (opt.get("name") or "").strip()
+                for aff in crafting_catalog.iter_affixes(opt):
+                    rec = crafting_catalog.legacy_affix(aff)
+                    rec["stat"] = vocab.normalize_stat(rec["stat"]) if rec.get("stat") else rec.get("stat")
+                    rec.update({
+                        "slot_type": slot_type, "category": category,
+                        "name": name, "tier": tier, "wiki_url": "",
+                    })
+                    records.append(rec)
+    by_pool = {}
+    for r in records:
+        k = f"{r['slot_type']}/{r['category']}"
+        by_pool[k] = by_pool.get(k, 0) + 1
+    coverage = {
+        "slot_types_sourced": sorted({r["slot_type"] for r in records}),
+        "categories_sourced": sorted({r["category"] for r in records}),
+        "options_eligible": len(records),
+        "options_quarantined": 0,
+        "quarantined": [],
+        "by_pool": by_pool,
+        "source": "gearplanner_crafting.json: <SlotType> (<Category>) menus",
+        "item_hosts": "resolved from {{Lamordia Slot|...}} on enriched items "
+                      "and human-readable Lamordia strings on base-seed items",
+        "arms_note": "typed augment pools sourced natively (Accessory/Armor/Weapon); "
+                     "(quarterstaff)/(artifact) variant pools deferred (no host slot "
+                     "references them); Cataclysmic weapon/shield creation is "
+                     "item-creation (deferred to named-gear R4), not a choice-slot",
+    }
+    return {"records": records, "quarantined": [], "coverage": coverage}

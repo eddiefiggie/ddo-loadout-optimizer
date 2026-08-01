@@ -416,17 +416,22 @@ def build(seed: dict) -> dict:
     # build (new-slot/new-augment event forcing a reviewed regenerate). Non-mutating.
     _crafting_vocab_checked = assert_crafting_vocab()
     _boolean_allowlist = load_boolean_features()
+    # U4b-ii — the active crafting families source their option pools NATIVELY from
+    # gearplanner_crafting.json (the gear-planner crafting catalog), not their
+    # legacy seed files. Load the catalog once and thread it into each family
+    # builder. (The legacy seed FILES remain on disk, purged in U7.)
+    crafting = crafting_catalog_mod.load_catalog()
     # Seal types with a non-empty verified pool gate which "Sealed in X" hosts the
     # reader recovers from the raw dump (Undeath sourced; Mist/Gloom pending).
     _verified_seal_types = {r["seal_type"]
-                            for r in seal_mod.parse_seal(load_seal_seed())["records"]}
+                            for r in seal_mod.build_seal(crafting)["records"]}
     # Dinosaur Bone hosts are synthetic bodies generated post-verify (dino_blanks
     # below); they never pass through the Pass-1 name dedup, so a same-name
     # gear-planner record would double-list with an identical variant_id (KTD6
     # trap). Build the blanks now and exclude their names from the reader — the
     # dino seed owns the authoritative body.
     dino_seed = load_dino_seed()
-    dino_blanks, dino_inserts, dino_sets, dino_cov = dino_mod.build_dino(dino_seed)
+    dino_blanks, dino_inserts, dino_sets, dino_cov = dino_mod.build_dino(dino_seed, crafting)
     _host_pipeline_names = {b.get("source_item") for b in dino_blanks}
     planner_records, planner_stats = planner_mod.load_planner_items(
         boolean_allowlist=_boolean_allowlist,
@@ -629,17 +634,17 @@ def build(seed: dict) -> dict:
     # U81 Nearly Complete: expose the parametric choice-slot effect pool. Items
     # carrying a `nearly_complete: <category>` field draw one option from it (host
     # items pending wiki; the pool + machinery ship now).
-    nc = nc_mod.parse_nearly_complete(load_nc_seed())
+    nc = nc_mod.build_nearly_complete(crafting)
 
     # U75 (Chill of Ravenloft) Viktranium ("Lamordia") crafting: expose the typed choice-slot pool
     # keyed by (slot_type, item-category). Items carrying `lamordia_slots` draw
     # one option per slot from the matching pool (tier from host ML at solve time).
-    vik = vik_mod.parse_viktranium(load_vik_seed())
+    vik = vik_mod.build_viktranium(crafting)
 
     # Seal-slot crafting ("Sealed in X"): expose the single-pick choice-slot pool
     # keyed by seal_type. Items carrying `seal_slots` unseal one option from the
     # matching pool. Undeath sourced (Ritual Table); Fire/Gloom/Mist pending.
-    sl = seal_mod.parse_seal(load_seal_seed())
+    sl = seal_mod.build_seal(crafting)
 
     # Legendary Thunder-Forged (multi-tier choice-slot) + Green Steel (single-pick
     # choice-slot): expose the craftable option pools. Hosts carry the marker
@@ -781,6 +786,10 @@ def build(seed: dict) -> dict:
         "dino_inserts": dino_inserts,
         "dino_sets": dino_sets,
         "nearly_complete": nc["records"],
+        # Per-item Nearly Complete pools (Nearly Finished / Almost There), keyed by
+        # host name — a DISTINCT mechanism from the category path above (never
+        # conflated). Browse/inventory visibility; not solver-wired.
+        "nearly_complete_per_item": nc.get("per_item", {}),
         "viktranium": vik["records"],
         "seal": sl["records"],
         "thunder_forged": tf["records"],

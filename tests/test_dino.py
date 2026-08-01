@@ -44,19 +44,33 @@ def test_necklace_blank_maps_to_necklace_slot():
     assert neck["dino_slots_norm"] == ["Scale||Accessory"]
 
 
-def test_insert_pool_returned_as_units():
+def test_insert_pool_sourced_natively_as_units():
+    # U4b-ii: the insert OPTION POOL is now sourced natively from
+    # gearplanner_crafting.json (the <Type> (<Category>) menu pools), NOT from the
+    # seed's `inserts` — only the blank host BODIES still come from the seed. So
+    # the pool is the native one regardless of the seed's inserts, keyed by
+    # (dino_type, category) with each option carrying an `affixes` unit.
     _, inserts, _, _ = dino.build_dino(_seed())
-    assert len(inserts) == 2
-    con = next(i for i in inserts if i["affixes"][0]["stat"] == "Constitution")
-    assert con["dino_type"] == "Scale" and con["affixes"][0]["value"] == 14
-    assert con["category"] == "Accessory"
+    assert len(inserts) > 2, "native pool is larger than the tiny seed's 2 inserts"
+    for i in inserts:
+        assert i["dino_type"] in dino._DINO_TYPES
+        assert i["category"] in ("Accessory", "Armor", "Weapon")
+        assert i["affixes"] and all("stat" in a and "bonus_type" in a for a in i["affixes"])
+    # multi-affix units (KTD4) flow through un-quarantined
+    assert any(len(i["affixes"]) > 1 for i in inserts)
+    # an explicit empty catalog yields NO inserts (proves the source is the catalog)
+    _, empty_inserts, _, _ = dino.build_dino(_seed(), catalog={})
+    assert empty_inserts == []
 
 
-def test_coverage_reports_blank_hosts_and_quarantine():
-    _, _, _, cov = dino.build_dino(_seed())
-    assert cov["blank_hosts"] == 2
+def test_coverage_reports_blank_hosts_and_native_inserts():
+    _, inserts, _, cov = dino.build_dino(_seed())
+    assert cov["blank_hosts"] == 2           # blanks still from the seed
     assert "quarantined" in cov
-    assert cov["by_type"]["Scale"] == 1
+    # insert coverage now reflects the NATIVE pool, not the seed's inserts
+    assert cov["inserts_eligible"] == len(inserts)
+    assert cov["by_type"]["Scale"] > 1       # native Scale pool has many options
+    assert cov["insert_source"].startswith("gearplanner_crafting.json")
 
 
 def test_weapon_crafted_host_maps_to_main_hand():
@@ -110,7 +124,9 @@ def test_set_records_passed_through():
 
 
 def test_empty_seed_yields_nothing_gracefully():
-    blanks, inserts, sets, cov = dino.build_dino({})
+    # Blanks + set records come from the seed (empty -> none). The insert pool is
+    # native, so pass an explicit empty catalog to keep this a pure empty-input case.
+    blanks, inserts, sets, cov = dino.build_dino({}, catalog={})
     assert blanks == [] and inserts == [] and sets == []
     assert cov["blank_hosts"] == 0
 

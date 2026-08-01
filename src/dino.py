@@ -23,6 +23,44 @@ in the solver model, so their blanks are disclosed-deferred rather than dropped.
 from __future__ import annotations
 
 from src import dino_parser
+from src import crafting_catalog
+
+# The four Dino bone types and the three gear categories whose native
+# ``<Type> (<Category>)`` menu pools feed the insert option pool (U4b-ii). The
+# specialized ``(quarterstaff)`` / ``(artifact)`` variant pools are out of scope
+# (no blank host slot references them).
+_DINO_TYPES = ("Claw", "Fang", "Horn", "Scale")
+_DINO_CATEGORIES = ("Accessory", "Armor", "Weapon")
+
+
+def _native_insert_records(catalog):
+    """Source the Dino insert UNITS from ``gearplanner_crafting.json`` via
+    ``crafting_catalog`` (the ``<Type> (<Category>)`` menu pools). Each native
+    option becomes ONE placeable unit carrying its affix list (multi-affix kept
+    all-or-nothing — KTD4). The strict parser gate is REMOVED, not swapped (F1):
+    native affixes flow through verbatim via ``legacy_affix``. Blank host BODIES
+    are NOT touched here — they stay generated from the seed (dino_parser)."""
+    records = []
+    for dino_type in _DINO_TYPES:
+        for category in _DINO_CATEGORIES:
+            key = f"{dino_type} ({category})"
+            if key not in catalog:
+                continue  # not every (type, category) pool exists (e.g. Claw Armor)
+            for opt in crafting_catalog.menu_options(key, catalog):
+                affixes = [crafting_catalog.legacy_affix(a)
+                           for a in crafting_catalog.iter_affixes(opt)]
+                if not affixes:
+                    continue
+                unit = {
+                    "category": category,
+                    "dino_type": dino_type,
+                    "affixes": affixes,
+                    "wiki_url": "",
+                }
+                if opt.get("name"):
+                    unit["name"] = opt["name"]
+                records.append(unit)
+    return records
 
 # Dinosaur Bone accessory blanks map onto these worn slots (model.js WORN_SLOTS).
 _ACCESSORY_WORN = {"Belt", "Boots", "Bracers", "Gloves", "Necklace", "Ring",
@@ -91,15 +129,25 @@ def _blank_variant(layout):
     }
 
 
-def build_dino(seed):
+def build_dino(seed, catalog=None):
     """Parse a dino_crafting seed into (blank_variants, insert_records, set_records, coverage).
+
+    U4b-ii — SPLIT SOURCING:
+      * Blank host BODIES and Dino Set-Bonus records still come from the SEED
+        (dino_parser): the 8 synthetic Dinosaur-Bone blank bodies are generated
+        post-expansion and excluded via ``exclude_names`` in build_dataset — that
+        pattern is PRESERVED; the blank identity derives from which items carry
+        the Claw/Fang/Horn/Scale markers, not a crafting.json pool.
+      * The insert OPTION POOL is now sourced NATIVELY from
+        ``gearplanner_crafting.json`` (the ``<Type> (<Category>)`` menu pools),
+        replacing the legacy seed's hand-parsed inserts.
 
     Blank hosts are deduped by worn slot (many named host items collapse to one
     equippable slot — six armor types -> one Armor blank), keeping the richest
-    slot layout. ``coverage`` carries the parser's per-key counts plus the
-    quarantine lists, the count of blank hosts materialized, and the Dino
-    Set-Bonus disclosure.
+    slot layout. ``coverage`` carries the blank/set counts plus the native insert
+    counts and the Dino Set-Bonus disclosure.
     """
+    catalog = crafting_catalog.load_catalog() if catalog is None else catalog
     parsed = dino_parser.parse_dino_crafting(seed or {})
     by_slot = {}          # worn_slot -> best blank variant
     deferred = {}         # worn-slot-less hosts, deduped by reason
@@ -120,7 +168,21 @@ def build_dino(seed):
             by_slot[b["slot"]] = b
     blanks = list(by_slot.values())
 
+    # Insert option pool: NATIVE (gearplanner_crafting.json), not the seed's inserts.
+    insert_records = _native_insert_records(catalog)
+
     coverage = dict(parsed["coverage"])
+    # Override the seed-derived insert counts with the native pool's reality.
+    coverage["inserts_eligible"] = len(insert_records)
+    coverage["inserts_quarantined"] = 0
+    coverage["insert_source"] = "gearplanner_crafting.json: <Type> (<Category>) menus"
+    coverage["by_type"] = {t: sum(1 for r in insert_records if r["dino_type"] == t)
+                           for t in _DINO_TYPES}
+    _by_key = {}
+    for r in insert_records:
+        k = f"{r['dino_type']}||{r['category']}"
+        _by_key[k] = _by_key.get(k, 0) + 1
+    coverage["by_key"] = dict(sorted(_by_key.items()))
     coverage["blank_hosts"] = len(blanks)
     coverage["blank_hosts_by_slot"] = {b["slot"]: len(b["dino_slots_norm"]) for b in blanks}
     coverage["set_bonus_hosts"] = sorted(b["slot"] for b in blanks if b["dino_set_bonus_slot"])
@@ -136,4 +198,4 @@ def build_dino(seed):
     meta = (seed or {}).get("metadata", {})
     coverage["system"] = meta.get("system", "Isle of Dread — Dino crafting")
     coverage["sourcing_status"] = meta.get("sourcing_status", "")
-    return blanks, parsed["insert_records"], parsed["set_records"], coverage
+    return blanks, insert_records, parsed["set_records"], coverage

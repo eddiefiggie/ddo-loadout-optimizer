@@ -24,11 +24,21 @@ from __future__ import annotations
 
 from src.affix_parser import BONUS_TYPES
 from src import vocab
+from src import crafting_catalog
 
 # The seal-enchantment types (the wiki's "Sealed in X" Unique_enchantment names).
 # "Amber" is intentionally absent: it is Ravenloft "The Vampire Hunters" quest
 # content, not a stat-choice seal in this family.
 SEAL_TYPES = {"Undeath", "Fire", "Gloom", "Mist"}
+
+# Native "Sealed in X" menu-pool key per seal type in gearplanner_crafting.json.
+_NATIVE_SEAL_KEY = {t: f"Sealed in {t}" for t in SEAL_TYPES}
+# Seal types with a hand-verified, solver-eligible pool. Native pools exist for
+# Fire/Gloom/Mist too, but they stay EXCLUDED (pending verification) — only the
+# Undeath Ritual-Table pool is wired live (verified-seal-type gating preserved).
+VERIFIED_SEAL_TYPES = {"Undeath"}
+# The gear domain each seal type's pool applies to (informational; carried for display).
+_SEAL_DOMAIN = {"Undeath": "clothing/jewelry"}
 
 
 def normalize_seal_type(name):
@@ -110,3 +120,53 @@ def parse_seal(seed):
                 "sourced from the Ritual Table; Fire/Gloom/Mist pending harvest.",
     }
     return {"records": records, "quarantined": quarantined, "coverage": coverage}
+
+
+def build_seal(catalog: dict = None) -> dict:
+    """Native path (U4b-ii): source the seal option pool from
+    ``gearplanner_crafting.json`` (the ``Sealed in X`` menu pools) via
+    ``crafting_catalog`` instead of the legacy hand-harvested ``seal.json`` seed.
+    The strict wiki_url / BONUS_TYPES parser gate is REMOVED, not swapped (review
+    F1): native affixes flow through verbatim via ``legacy_affix`` (type preserved
+    — natively the ability-Insight options are typed ``Insight``, correcting the
+    legacy seed's ``Insightful`` mistype). Only the VERIFIED seal types
+    (Undeath today) are emitted; Fire/Gloom/Mist stay pending. Returns the same
+    ``{records, quarantined, coverage}`` shape ``parse_seal`` does."""
+    catalog = crafting_catalog.load_catalog() if catalog is None else catalog
+    records = []
+    for seal_type in sorted(VERIFIED_SEAL_TYPES):
+        key = _NATIVE_SEAL_KEY[seal_type]
+        for opt in crafting_catalog.menu_options(key, catalog):
+            name = (opt.get("name") or "").strip()
+            for aff in crafting_catalog.iter_affixes(opt):
+                rec = crafting_catalog.legacy_affix(aff)  # {stat, bonus_type, value, unit}
+                rec["stat"] = vocab.normalize_stat(rec["stat"]) if rec.get("stat") else rec.get("stat")
+                rec.update({
+                    "seal_type": seal_type,
+                    "domain": _SEAL_DOMAIN.get(seal_type, ""),
+                    "name": name,
+                    "wiki_url": "",
+                })
+                records.append(rec)
+    by_seal = {}
+    for r in records:
+        by_seal[r["seal_type"]] = by_seal.get(r["seal_type"], 0) + 1
+    pending = sorted(t for t in SEAL_TYPES if t not in VERIFIED_SEAL_TYPES)
+    coverage = {
+        "seal_types_sourced": sorted(by_seal),
+        "seal_types_pending": pending,
+        "options_eligible": len(records),
+        "options_quarantined": 0,
+        "quarantined": [],
+        "by_seal": by_seal,
+        "source": "gearplanner_crafting.json: " + ", ".join(
+            _NATIVE_SEAL_KEY[t] for t in sorted(VERIFIED_SEAL_TYPES)),
+        "item_hosts": "resolved from a Sealed-in-X marker on gear-planner items "
+                      "(crafting[] for Undeath/Mist/Gloom, affixes[] Bool for Fire)",
+        "note": "single-pick choice-slot sourced natively from the gear-planner "
+                "crafting catalog. Undeath (Ritual Table) is verified live; "
+                "Fire/Gloom/Mist pools exist natively but stay pending verification. "
+                "Ability-Insight options are typed 'Insight' (native), correcting the "
+                "legacy seed's 'Insightful'.",
+    }
+    return {"records": records, "quarantined": [], "coverage": coverage}
