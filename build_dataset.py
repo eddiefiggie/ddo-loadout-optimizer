@@ -55,6 +55,7 @@ AUG_SEED_PATH = os.path.join(HERE, "data", "seed", "augments.json")
 ALIGN_SEED_PATH = os.path.join(HERE, "data", "seed", "alignment_restrictions.json")
 ARTIFACT_SEED_PATH = os.path.join(HERE, "data", "seed", "artifacts.json")
 BOOLEAN_SEED_PATH = os.path.join(HERE, "data", "seed", "boolean_features.json")
+WIKI_CONFIRMED_SEED_PATH = os.path.join(HERE, "data", "seed", "wiki_confirmed.json")
 JOKER_SEED_PATH = os.path.join(HERE, "data", "seed", "joker_sets.json")
 COMPENDIUM_DIR = os.path.join(HERE, "data", "seed", "compendium")
 # Collision precedence: True = gear-planner wins over wiki shards (KTD1, shipped).
@@ -190,6 +191,31 @@ def load_boolean_features(path: str = BOOLEAN_SEED_PATH) -> list:
     if not isinstance(raw, list):
         return []
     return [s for s in raw if isinstance(s, str) and s and not s.startswith("_")]
+
+
+def load_wiki_confirmed(path: str = WIKI_CONFIRMED_SEED_PATH) -> dict:
+    """Wiki-confirmed ML30+ items: name -> {confirmed, affixes, corrections, ...}.
+    Each entry records an item validated against its DDO wiki page (source of truth).
+    Also the resumable worklist for the validation loop. Missing file -> empty."""
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as fh:
+        raw = json.load(fh)
+    return {k: v for k, v in (raw.get("items") or {}).items()
+            if isinstance(v, dict) and v.get("confirmed")}
+
+
+def stamp_wiki_confirmed(variants: list, confirmed: dict) -> int:
+    """Stamp `wiki_confirmed` (the confirmation date) onto each variant whose base
+    item was validated against the wiki. Additive; a non-confirmed item carries no
+    field. Returns the count of variants stamped."""
+    n = 0
+    for v in variants:
+        entry = confirmed.get(v.get("source_item"))
+        if entry:
+            v["wiki_confirmed"] = entry.get("confirmed")
+            n += 1
+    return n
 
 
 def stamp_artifact(variants: list, names: set) -> int:
@@ -512,6 +538,10 @@ def build(seed: dict) -> dict:
     # the JS opt-in (eligible/solver) can exclude Artifacts or require exactly one.
     # Empty seed today -> no-op; exclude-until-verified until a wiki harvest lands.
     stamp_artifact(variants, load_artifacts())
+    # Wiki-confirmed status (ML30+ validation loop): stamp the confirmation date
+    # onto items validated against the DDO wiki. Additive; empty seed -> no-op.
+    _wiki_confirmed = load_wiki_confirmed()
+    _wiki_confirmed_stamped = stamp_wiki_confirmed(variants, _wiki_confirmed)
 
     for v in variants:                                  # U2 augment-color normalization
         colors_mod.annotate_variant(v)
@@ -670,6 +700,11 @@ def build(seed: dict) -> dict:
             "compendium_coverage": comp_cov,
             "band_coverage": band_cov,
             "planner_coverage": planner_stats,
+            "wiki_confirmed_coverage": {
+                "confirmed_items": len(_wiki_confirmed),
+                "variants_stamped": _wiki_confirmed_stamped,
+                "ml30_target": 1809,
+            },
             "rankable_affixes": rankable_affixes(planner_records),
             "pipeline_stage": "M4-compendium-roster",
         },

@@ -1,0 +1,73 @@
+{
+  "_README": "ML30+ items validated against their DDO wiki page (source of truth). This file is BOTH the record and the resumable worklist for the wiki-validation loop: an item present here with `confirmed` set is skipped on re-runs. `affixes` documents the magnitude affixes read from the wiki `enhancements` field ({{Stat|value|type}} templates); `corrections` records any dataset change applied (wiki wins). `notes` capture procs/set/augment context. Method: MediaWiki query API via Claude-in-Chrome (ddowiki blocks plain fetch). Scope target: 1809 distinct ML30+ items. build_dataset stamps `wiki_confirmed` onto matching items from this file.",
+  "_meta": {
+    "scope": "minimum_level >= 30",
+    "target_items": 1809,
+    "method": "ddowiki MediaWiki query API (prop=revisions rvslots=main) via Claude-in-Chrome; parse the {{...}} templates in the `enhancements` field",
+    "policy": "wiki is source of truth; on mismatch correct the dataset via the seed/pipeline and log it under `corrections` (never edit generated web/data/items.json)"
+  },
+  "items": {
+    "Baphomet's Reign": {
+      "confirmed": "2026-08-01",
+      "ml": 35,
+      "wiki_url": "https://ddowiki.com/page/Item:Baphomet%27s_Reign",
+      "affixes": [
+        {"stat": "Conditioning", "bonus_type": "Legendary", "value": 15},
+        {"stat": "Deadly", "bonus_type": "Legendary", "value": 3},
+        {"stat": "Sheltering", "bonus_type": "Quality", "value": 11}
+      ],
+      "corrections": [],
+      "notes": "Procs: Unstoppable Staggering Blow, Mind Drain. Augments: Green/Yellow/Blue. Dataset matched exactly."
+    },
+    "Legendary Driftwood Bracers": {
+      "confirmed": "2026-08-01",
+      "ml": 30,
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Driftwood_Bracers",
+      "affixes": [
+        {"stat": "Wisdom", "bonus_type": "Insightful", "value": 6},
+        {"stat": "Healing Lore", "bonus_type": "Enhancement", "value": 21},
+        {"stat": "Devotion", "bonus_type": "Enhancement", "value": 146},
+        {"stat": "Wizardry", "bonus_type": "Enhancement", "value": 277}
+      ],
+      "corrections": [],
+      "notes": "Set: Legendary Saltmarsh Explorer. Augments: Green/Yellow. Values matched; bare {{Spelllore}}/{{SpellPower}} templates carry no explicit type — dataset type (gear-planner-rendered) accepted."
+    },
+    "Legendary Crocodile Tooth": {
+      "confirmed": "2026-08-01",
+      "ml": 30,
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Crocodile_Tooth",
+      "affixes": [
+        {"stat": "Armor-Piercing", "bonus_type": "Enhancement", "value": 21},
+        {"stat": "Accuracy", "bonus_type": "Enhancement", "value": 21},
+        {"stat": "Accuracy", "bonus_type": "Insightful", "value": 10}
+      ],
+      "corrections": [],
+      "notes": "Proc: Crippling. Set: Legendary Saltmarsh Explorer. Dataset matched exactly."
+    },
+    "Legendary Amethyst Loupe": {
+      "confirmed": "2026-08-01",
+      "ml": 30,
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Amethyst_Loupe",
+      "affixes": [
+        {"stat": "Improved Deception", "bonus_type": "Enhancement", "value": 20},
+        {"stat": "Search", "bonus_type": "Enhancement", "value": 20},
+        {"stat": "Spot", "bonus_type": "Enhancement", "value": 20},
+        {"stat": "Reflex Save", "bonus_type": "Enhancement", "value": 12}
+      ],
+      "corrections": [],
+      "notes": "{{Eversight}} = Blindness Immunity + True Seeing (both present in dataset as booleans). Set: Legendary Saltmarsh Explorer. Dataset matched."
+    },
+    "Legendary Ethereal Ring": {
+      "confirmed": "2026-08-01",
+      "ml": 30,
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ethereal_Ring",
+      "affixes": [
+        {"stat": "Speed", "bonus_type": "Enhancement", "value": 30},
+        {"stat": "Dodge", "bonus_type": "Enhancement", "value": 13},
+        {"stat": "Reflex Save", "bonus_type": "Enhancement", "value": 12}
+      ],
+      "corrections": [],
+      "notes": "{{Ghostly|Enhanced}} = Enhanced Ghostly (boolean, present). Clicky: Invisibility (not a passive affix). Set: Legendary Saltmarsh Explorer. Dataset matched."
+    }
+  }
+}
