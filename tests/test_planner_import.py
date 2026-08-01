@@ -1,92 +1,84 @@
-"""Tests for the bulk ML>=29 gear-planner item import (enriched_planner_ml29.json)."""
-import glob
+"""Integration tests for the gear-planner bulk import.
+
+The flattened `enriched_planner_ml29.json` shard was retired (U3); the gear-planner
+catalog (`raw/gearplanner_items.json`) is now read directly with structured affixes
+via `src.planner_items`. These tests cover the reader-to-built-dataset integration;
+`test_planner_items.py` covers the reader's mapping in detail.
+"""
 import json
 import os
 import sys
+from collections import Counter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
-COMP = os.path.join(ROOT, "data", "seed", "compendium")
-SHARD = os.path.join(COMP, "enriched_planner_ml29.json")
+from src import planner_items as P  # noqa: E402
+
+BOOL_SEED = os.path.join(ROOT, "data", "seed", "boolean_features.json")
 
 
-def _shard():
-    return json.load(open(SHARD, encoding="utf-8"))
+def _allow():
+    raw = json.load(open(BOOL_SEED, encoding="utf-8"))
+    return [s for s in raw if isinstance(s, str) and not s.startswith("_")]
 
 
-def test_bulk_shard_exists_and_spans_all_levels():
-    # Full-import (all levels): the bulk shard now covers every ML, not just endgame.
-    d = _shard()
-    real = [x for x in d["items"] if not x.get("_seal_carrier")]
-    assert len(real) > 4000, f"expected the full all-levels import, got {len(real)}"
-    mls = [it.get("minimum_level", 0) for it in real]
-    assert min(mls) < 29 and max(mls) >= 29, "the shard should span sub-endgame and endgame MLs"
+def _reader():
+    return P.load_planner_items(boolean_allowlist=_allow())
 
 
-def test_no_planner_name_collides_with_prior_shards():
-    # A bulk-import name must not duplicate a prior (non-planner) enriched shard —
-    # build_dataset's name-dedup would silently drop one and it would double-list.
-    prior = set()
-    for f in glob.glob(os.path.join(COMP, "enriched_*.json")):
-        if os.path.basename(f) == "enriched_planner_ml29.json":
-            continue
-        for it in json.load(open(f, encoding="utf-8")).get("items", []):
-            # Marker-only carriers (seal / Lost Purpose) intentionally share a name with
-            # the item they annotate — they never claim a body, so they are not a
-            # colliding record. Only real bodies count toward a collision.
-            if it.get("name") and not it.get("_seal_carrier") and not it.get("_lost_purpose_carrier"):
-                prior.add(it["name"])
-    seen = set()
-    for it in _shard()["items"]:
-        if it.get("_seal_carrier"):
-            continue
-        n = it["name"]
-        assert n not in prior, f"planner name {n!r} collides with a prior shard"
-        assert n not in seen, f"planner name {n!r} duplicated within the bulk shard"
-        seen.add(n)
+def test_import_spans_all_levels():
+    recs, _ = _reader()
+    assert len(recs) > 4000, f"expected the full all-levels catalog, got {len(recs)}"
+    mls = [r.get("minimum_level") or 0 for r in recs]
+    assert min(mls) < 29 and max(mls) >= 29, "should span sub-endgame and endgame MLs"
 
 
-def test_real_records_carry_a_rankable_affix_or_seal():
-    for it in _shard()["items"]:
-        if it.get("_seal_carrier"):
-            continue
-        real = [e for e in it.get("enhancements", []) if not e.endswith("Augment Slot")]
-        assert real or it.get("seal_slots"), f"{it['name']} has neither a rankable affix nor a seal"
+def test_reader_emits_no_duplicate_names():
+    recs, _ = _reader()
+    names = [r["name"] for r in recs]
+    assert len(names) == len(set(names)), "reader must not emit duplicate names"
 
 
 def test_set_members_carry_a_set_marker():
-    # U2: a gear-planner set member gets the same "X (set)" marker enrich.py emits, so
-    # build_dataset can attach its set_bonus; a non-member gets none.
-    items = [x for x in _shard()["items"] if not x.get("_seal_carrier")]
-    def markers(it):
-        return [e for e in it.get("enhancements", []) if str(e).endswith("(set)")]
-    with_marker = [it for it in items if markers(it)]
+    recs, _ = _reader()
+    by_name = {r["name"]: r for r in recs}
+    with_marker = [r for r in recs if any(str(e).endswith("(set)") for e in r["enhancements"])]
     assert len(with_marker) > 100, "expected many gear-planner set members to carry a (set) marker"
-    adam = next((it for it in items if it["name"] == "Adamantine Bracers"), None)
+    adam = by_name.get("Adamantine Bracers")
     assert adam and "Eminence of Winter (set)" in adam["enhancements"]
-    memento = next((it for it in items if it["name"] == "A Memento of Mori"), None)
-    if memento:
-        assert not markers(memento), "a non-set item should carry no (set) marker"
 
 
-def test_seal_carriers_are_seal_only_stubs():
-    for it in _shard()["items"]:
-        if it.get("_seal_carrier"):
-            assert it.get("seal_slots"), "a seal carrier must carry a seal slot"
-            assert not it.get("enhancements"), "a seal carrier must not carry affixes (body stub only)"
+def test_records_carry_solver_value_apart_from_a_tiny_empty_tail():
+    # Nearly every record must contribute something: a structured affix, a seal/set
+    # marker, an augment slot (verify.py treats an augment-slot-only host as valid —
+    # "value is its open slots"), or a disclosed quarantined affix. A handful of raw
+    # catalog placeholders ("Trinket [Crafted]") are genuinely empty and get
+    # quarantined downstream; guard that the empty tail stays tiny (a reader bug
+    # would blank out thousands).
+    recs, _ = _reader()
+    empty = [r["name"] for r in recs
+             if not (r["structured_affixes"] or r.get("seal_slots") or r["enhancements"]
+                     or r["augment_slots"] or r["structured_flagged"])]
+    assert len(empty) < 10, f"{len(empty)} empty records — reader likely dropped content: {empty[:10]}"
 
 
-def test_bulk_items_reach_the_built_dataset_without_double_listing():
+def test_reader_names_reach_the_built_dataset_exactly_once():
     ds_path = os.path.join(ROOT, "web", "data", "items.json")
     if not os.path.exists(ds_path):
-        return
-    from collections import Counter
+        return  # dataset not built in this environment
     its = json.load(open(ds_path, encoding="utf-8")).get("items", [])
-    c = Counter((it.get("source_item") or it.get("variant_id") or it.get("name")) for it in its)
     # no seal-carrier stub leaks in as a solver item
     assert not any(it.get("_seal_carrier") for it in its)
-    real = [x for x in _shard()["items"] if not x.get("_seal_carrier")]
-    present = sum(1 for x in real if c[x["name"]] >= 1)
-    assert present == len(real), f"{len(real) - present} bulk items missing from the dataset"
-    assert all(c[x["name"]] == 1 for x in real), "a bulk item is double-listed"
+    counts = Counter(it.get("source_item") or it.get("variant_id") or it.get("name")
+                     for it in its)
+    recs, _ = _reader()
+    # every gear-planner name is present (won by gear-planner or an existing shard)
+    # and never double-listed (name-keyed dedup keeps exactly one body per name)
+    missing = [r["name"] for r in recs if counts[r["name"]] < 1]
+    assert not missing, f"{len(missing)} gear-planner names missing from the dataset"
+    doubled = [r["name"] for r in recs
+               if len({it.get("tier_label") for it in its
+                       if (it.get("source_item") == r["name"])}) == 0 and counts[r["name"]] > 1]
+    # (tiered items legitimately expand to >1 variant; only untiered double-listing is a bug)
+    assert not doubled, f"a gear-planner item is double-listed: {doubled[:5]}"

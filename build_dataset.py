@@ -35,6 +35,7 @@ from src import compendium as compendium_mod
 from src import band_frontier as band_mod
 from src import set_catalog as set_catalog_mod
 from src import umbrella as umbrella_mod
+from src import planner_items as planner_mod
 import re as _re
 
 import glob
@@ -226,7 +227,19 @@ def build(seed: dict) -> dict:
     # is the hand-verified source; a same-name enriched copy would double-list in
     # browse and put two identities of one item into the solver). Also drops any
     # cross-batch name collision.
-    all_enriched = load_enriched_items()
+    # Gear-planner structured records (U3): read the raw catalog directly and
+    # append LAST so base-seed and existing wiki-enriched shards win name
+    # collisions (KTD5) — these contribute clean, structured net-new bodies. The
+    # boolean allowlist gates which Bool affixes emit (exclude-until-verified).
+    _boolean_allowlist = load_boolean_features()
+    # Seal types with a non-empty verified pool gate which "Sealed in X" hosts the
+    # reader recovers from the raw dump (Undeath sourced; Mist/Gloom pending).
+    _verified_seal_types = {r["seal_type"]
+                            for r in seal_mod.parse_seal(load_seal_seed())["records"]}
+    planner_records, planner_stats = planner_mod.load_planner_items(
+        boolean_allowlist=_boolean_allowlist,
+        verified_seal_types=_verified_seal_types)
+    all_enriched = load_enriched_items() + planner_records
     base_by_name = {it.get("name"): it for it in seed["items"]}
     # Pass 1 — pick the winning record per name (base seed, else first enriched shard
     # to claim it). `_seal_carrier` records are seal-only stubs (an already-active
@@ -322,7 +335,7 @@ def build(seed: dict) -> dict:
     # this build — restored before returning so an in-process build() never leaks the
     # allowlist into the shared affix_parser module (contaminating later callers/tests).
     _prev_bool_features = affix_parser_mod.get_boolean_features()
-    affix_parser_mod.set_boolean_features(load_boolean_features())
+    affix_parser_mod.set_boolean_features(_boolean_allowlist)
     variants = expand_dataset(base_items + enriched_items + aug_pool)  # parse enhancements + expand tiers
 
     # Wildcard set pieces (U1) — the Gem of Many Facets rolls one set from each of two
@@ -508,6 +521,7 @@ def build(seed: dict) -> dict:
             "augment_coverage": augment_coverage,
             "compendium_coverage": comp_cov,
             "band_coverage": band_cov,
+            "planner_coverage": planner_stats,
             "pipeline_stage": "M4-compendium-roster",
         },
         "items": variants,
