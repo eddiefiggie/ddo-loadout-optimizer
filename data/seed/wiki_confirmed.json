@@ -12,9 +12,21 @@
       "ml": 35,
       "wiki_url": "https://ddowiki.com/page/Item:Baphomet%27s_Reign",
       "affixes": [
-        {"stat": "Conditioning", "bonus_type": "Legendary", "value": 15},
-        {"stat": "Deadly", "bonus_type": "Legendary", "value": 3},
-        {"stat": "Sheltering", "bonus_type": "Quality", "value": 11}
+        {
+          "stat": "Conditioning",
+          "bonus_type": "Legendary",
+          "value": 15
+        },
+        {
+          "stat": "Deadly",
+          "bonus_type": "Legendary",
+          "value": 3
+        },
+        {
+          "stat": "Sheltering",
+          "bonus_type": "Quality",
+          "value": 11
+        }
       ],
       "corrections": [],
       "notes": "Procs: Unstoppable Staggering Blow, Mind Drain. Augments: Green/Yellow/Blue. Dataset matched exactly."
@@ -24,10 +36,26 @@
       "ml": 30,
       "wiki_url": "https://ddowiki.com/page/Item:Legendary_Driftwood_Bracers",
       "affixes": [
-        {"stat": "Wisdom", "bonus_type": "Insightful", "value": 6},
-        {"stat": "Healing Lore", "bonus_type": "Enhancement", "value": 21},
-        {"stat": "Devotion", "bonus_type": "Enhancement", "value": 146},
-        {"stat": "Wizardry", "bonus_type": "Enhancement", "value": 277}
+        {
+          "stat": "Wisdom",
+          "bonus_type": "Insightful",
+          "value": 6
+        },
+        {
+          "stat": "Healing Lore",
+          "bonus_type": "Enhancement",
+          "value": 21
+        },
+        {
+          "stat": "Devotion",
+          "bonus_type": "Enhancement",
+          "value": 146
+        },
+        {
+          "stat": "Wizardry",
+          "bonus_type": "Enhancement",
+          "value": 277
+        }
       ],
       "corrections": [],
       "notes": "Set: Legendary Saltmarsh Explorer. Augments: Green/Yellow. Values matched; bare {{Spelllore}}/{{SpellPower}} templates carry no explicit type — dataset type (gear-planner-rendered) accepted."
@@ -37,9 +65,21 @@
       "ml": 30,
       "wiki_url": "https://ddowiki.com/page/Item:Legendary_Crocodile_Tooth",
       "affixes": [
-        {"stat": "Armor-Piercing", "bonus_type": "Enhancement", "value": 21},
-        {"stat": "Accuracy", "bonus_type": "Enhancement", "value": 21},
-        {"stat": "Accuracy", "bonus_type": "Insightful", "value": 10}
+        {
+          "stat": "Armor-Piercing",
+          "bonus_type": "Enhancement",
+          "value": 21
+        },
+        {
+          "stat": "Accuracy",
+          "bonus_type": "Enhancement",
+          "value": 21
+        },
+        {
+          "stat": "Accuracy",
+          "bonus_type": "Insightful",
+          "value": 10
+        }
       ],
       "corrections": [],
       "notes": "Proc: Crippling. Set: Legendary Saltmarsh Explorer. Dataset matched exactly."
@@ -49,10 +89,26 @@
       "ml": 30,
       "wiki_url": "https://ddowiki.com/page/Item:Legendary_Amethyst_Loupe",
       "affixes": [
-        {"stat": "Improved Deception", "bonus_type": "Enhancement", "value": 20},
-        {"stat": "Search", "bonus_type": "Enhancement", "value": 20},
-        {"stat": "Spot", "bonus_type": "Enhancement", "value": 20},
-        {"stat": "Reflex Save", "bonus_type": "Enhancement", "value": 12}
+        {
+          "stat": "Improved Deception",
+          "bonus_type": "Enhancement",
+          "value": 20
+        },
+        {
+          "stat": "Search",
+          "bonus_type": "Enhancement",
+          "value": 20
+        },
+        {
+          "stat": "Spot",
+          "bonus_type": "Enhancement",
+          "value": 20
+        },
+        {
+          "stat": "Reflex Save",
+          "bonus_type": "Enhancement",
+          "value": 12
+        }
       ],
       "corrections": [],
       "notes": "{{Eversight}} = Blindness Immunity + True Seeing (both present in dataset as booleans). Set: Legendary Saltmarsh Explorer. Dataset matched."
@@ -62,12 +118,167 @@
       "ml": 30,
       "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ethereal_Ring",
       "affixes": [
-        {"stat": "Speed", "bonus_type": "Enhancement", "value": 30},
-        {"stat": "Dodge", "bonus_type": "Enhancement", "value": 13},
-        {"stat": "Reflex Save", "bonus_type": "Enhancement", "value": 12}
+        {
+          "stat": "Speed",
+          "bonus_type": "Enhancement",
+          "value": 30
+        },
+        {
+          "stat": "Dodge",
+          "bonus_type": "Enhancement",
+          "value": 13
+        },
+        {
+          "stat": "Reflex Save",
+          "bonus_type": "Enhancement",
+          "value": 12
+        }
       ],
       "corrections": [],
       "notes": "{{Ghostly|Enhanced}} = Enhanced Ghostly (boolean, present). Clicky: Invisibility (not a passive affix). Set: Legendary Saltmarsh Explorer. Dataset matched."
+    },
+    "Legendary Belt of Myriad Pockets": {
+      "ml": 30,
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Belt_of_Myriad_Pockets",
+      "affixes": [
+        {
+          "stat": "Constitution",
+          "bonus_type": "Insightful",
+          "value": 6
+        },
+        {
+          "stat": "Physical Sheltering",
+          "bonus_type": "Enhancement",
+          "value": 34
+        },
+        {
+          "stat": "Protection",
+          "bonus_type": "Enhancement",
+          "value": 11
+        },
+        {
+          "stat": "Shield",
+          "bonus_type": "Enhancement",
+          "value": 13
+        }
+      ],
+      "notes": "Wiki Sheltering|34|Enh|Physical=Physical Sheltering; Shield Bonus|13=Shield; Protection|11. Hp|Legendary Elemental Energy is a set/HP effect (not a worn magnitude affix). Matched.",
+      "confirmed": "2026-08-01",
+      "corrections": []
+    },
+    "Legendary Bronzed Bracers": {
+      "ml": 31,
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bronzed_Bracers",
+      "affixes": [
+        {
+          "stat": "Protection",
+          "bonus_type": "Enhancement",
+          "value": 11
+        },
+        {
+          "stat": "Repair Lore",
+          "bonus_type": "Enhancement",
+          "value": 22
+        },
+        {
+          "stat": "Reconstruction",
+          "bonus_type": "Enhancement",
+          "value": 149
+        }
+      ],
+      "notes": "Set: The Legendary Dread Isle's Curse. Dino Slot: Scale. Matched.",
+      "confirmed": "2026-08-01",
+      "corrections": []
+    },
+    "Legendary Mask of Comedy": {
+      "ml": 30,
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Mask_of_Comedy",
+      "affixes": [
+        {
+          "stat": "Charisma",
+          "bonus_type": "Enhancement",
+          "value": 13
+        },
+        {
+          "stat": "Healing Lore",
+          "bonus_type": "Enhancement",
+          "value": 21
+        },
+        {
+          "stat": "Devotion",
+          "bonus_type": "Enhancement",
+          "value": 146
+        },
+        {
+          "stat": "Potency",
+          "bonus_type": "Enhancement",
+          "value": 100
+        }
+      ],
+      "notes": "Clicky: Good Hope. Matched.",
+      "confirmed": "2026-08-01",
+      "corrections": []
+    },
+    "Legendary Lamordian Bowler": {
+      "ml": 34,
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Lamordian_Bowler",
+      "affixes": [
+        {
+          "stat": "Intelligence",
+          "bonus_type": "Insightful",
+          "value": 7
+        },
+        {
+          "stat": "Physical Sheltering",
+          "bonus_type": "Insightful",
+          "value": 18
+        }
+      ],
+      "notes": "Wiki INT=Intelligence; Sheltering|18|Insightful|Physical=Physical Sheltering. Lamordia slots present. Matched.",
+      "confirmed": "2026-08-01",
+      "corrections": []
+    },
+    "Legendary Skullduggery Cap": {
+      "ml": 30,
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Skullduggery_Cap",
+      "status": "review",
+      "wiki_affixes": [
+        {
+          "stat": "Wisdom",
+          "value": 13
+        },
+        {
+          "stat": "Necromancy Spell Focus",
+          "value": 8
+        },
+        {
+          "stat": "Nullification",
+          "value": 73,
+          "bonus_type": "Insight"
+        }
+      ],
+      "dataset_affixes": [
+        {
+          "stat": "Wisdom",
+          "bonus_type": "Enhancement",
+          "value": 13
+        },
+        {
+          "stat": "Necromancy Focus",
+          "bonus_type": "Enhancement",
+          "value": 6
+        },
+        {
+          "stat": "Nullification",
+          "bonus_type": "Insightful",
+          "value": 73
+        }
+      ],
+      "discrepancies": [
+        "Necromancy Focus: dataset value 6 vs wiki {{Spell Focus|Necromancy|8}} = 8 (also stat-name: 'Necromancy Focus' vs 'Necromancy Spell Focus' — may be the same affix)",
+        "Nullification: dataset bonus_type 'Insightful' vs wiki {{SpellPower|Nullification|73|Insight}} = 'Insight' (distinct stacking types; needs confirmation which the wiki template intends)"
+      ],
+      "notes": "NOT auto-corrected — template interpretation ambiguous; flagged for review. Wisdom 13 matches."
     }
   }
 }
