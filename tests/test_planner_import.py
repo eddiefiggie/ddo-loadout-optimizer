@@ -90,3 +90,60 @@ def test_reader_names_reach_the_built_dataset():
     recs, _ = _reader()
     missing = [r["name"] for r in recs if r["name"] not in present]
     assert not missing, f"{len(missing)} gear-planner names missing from the dataset: {missing[:8]}"
+
+
+# --- U3 (precedence-flip plan): affix union-merge keeps the flip from downgrading ---
+
+def _norm(stat):
+    from src import vocab
+    return vocab.normalize_stat(stat)
+
+
+def test_union_merge_restores_affixes_the_flip_would_strip():
+    # The precedence flip makes gear-planner win collisions, but gear-planner is
+    # thinner than the losing wiki record for some items. The union-merge restores
+    # the missing solver-eligible affixes onto the winner so no build is downgraded.
+    # Spot-check known regressors across bonus types, including a CORE_STATS-only
+    # stat (Vitality) that gear-planner emits only as a bonus type.
+    its = {it["variant_id"]: it for it in _built_items()}
+    expect = {
+        "Legendary The Bloody Boulder": {"Deception", "Accuracy", "Deadly"},
+        "The Winter Solstice": {"Deception", "Resistance"},
+        "Legendary Cloak of the Ambassador": {"Accuracy"},
+        "Legendary Feargaze": {"Intimidate"},
+        "Legendary Dream of the Worldshaper": {"Spell Save"},
+        "Legendary Cloak of the Forest's Arrow": {"Doubleshot"},
+        "Legendary Cloak of the Forest's Blade": {"Doublestrike"},
+        "Legendary Amulet of the Makers": {"Vitality"},  # CORE_STATS-only restore
+    }
+    for name, needed in expect.items():
+        it = its.get(name)
+        assert it is not None, f"{name} missing from dataset"
+        stats = {_norm(a["stat"]) for a in (it.get("affixes") or [])}
+        missing = {s for s in needed if _norm(s) not in stats}
+        assert not missing, f"{name} lost {missing} — union-merge did not restore them"
+
+
+def test_union_merge_does_not_reintroduce_parser_garbage():
+    # The union is filtered to the clean vocabulary; parser artifacts a losing wiki
+    # record carried (Bal/INT/OL/DD/UMD) must NOT come back on the winner.
+    its = _built_items()
+    stats = {a.get("stat") for it in its for a in it.get("affixes") or []}
+    for junk in ("Bal", "INT", "OL", "DD", "UMD"):
+        assert junk not in stats, f"union re-introduced garbage stat {junk!r}"
+
+
+def test_union_merge_is_additive_on_restored_items():
+    # The union only FILLS (stat,bonus_type) pairs the winner lacks; it never
+    # duplicates or rewrites a pair gear-planner already provides. On a restored
+    # regressor, each affix key appears exactly once. (Pure gear-planner items may
+    # carry a source-level duplicate — e.g. Aberrant Robe lists "Armor Class" twice
+    # — which is a data-quality matter in the catalog itself, not the union's doing;
+    # the union never touches non-collision items, so this test scopes to restored
+    # collision winners.)
+    its = {it["variant_id"]: it for it in _built_items()}
+    for name in ("Legendary The Bloody Boulder", "The Winter Solstice",
+                 "Legendary Cloak of the Ambassador", "Legendary Feargaze"):
+        it = its[name]
+        keys = [(_norm(a["stat"]), a["bonus_type"]) for a in (it.get("affixes") or [])]
+        assert len(keys) == len(set(keys)), f"{name} has a duplicate (stat,bonus_type) after union"

@@ -37,6 +37,7 @@ from src import set_catalog as set_catalog_mod
 from src import umbrella as umbrella_mod
 from src import planner_items as planner_mod
 from src import vocab as vocab_mod
+from src import variants as variants_mod
 import re as _re
 
 import collections
@@ -251,6 +252,57 @@ def rankable_affixes(planner_records) -> list:
     return sorted(names)
 
 
+def planner_clean_vocab(planner_records) -> set:
+    """The set of normalized stat names any gear-planner structured record emits.
+    This is the clean, wiki-sourced stat namespace — a stat in it is definitionally
+    a real DDO stat, never a free-text parse artifact (`Bal`, `INT`, `OL`, …).
+    Used as the union-merge filter (U3) so restoring a collision loser's affixes
+    can never re-import parser garbage."""
+    return {vocab_mod.normalize_stat(a["stat"])
+            for r in planner_records or []
+            for a in r.get("structured_affixes") or []}
+
+
+def union_gearplanner_affix_losses(kept_by_name, losers_by_name, clean_vocab) -> int:
+    """U3: the precedence flip (U2) makes gear-planner win collisions, but gear-planner
+    is thinner than the losing wiki record for ~9 items — each loses a solver-eligible
+    affix. Restore those affixes onto the gear-planner winner so no build is silently
+    downgraded. Only affixes whose normalized stat is in `clean_vocab` are restored:
+    that covers every rankable (user-targetable) stat while structurally excluding the
+    free-text parse artifacts the flip is meant to remove. Only gear-planner winners
+    are touched — a base-seed winner is authoritative and never gets wiki affixes.
+    Returns the count of affixes restored."""
+    restored = 0
+    for name, losers in losers_by_name.items():
+        winner = kept_by_name.get(name)
+        if winner is None or winner.get("_source") != "gear-planner":
+            continue
+        have = {(vocab_mod.normalize_stat(a["stat"]), a["bonus_type"])
+                for a in winner.get("structured_affixes") or []}
+        # Restore any clean-vocab affix a losing wiki record has that the winner
+        # lacks. This is a per-affix guarantee, not a net-count one: an item can be
+        # net-richer in gear-planner yet still drop one specific affix (e.g. an
+        # Accuracy the wiki listed), and R3 requires no solver-eligible affix be
+        # lost. Purely additive — gear-planner's own values are never overridden
+        # (a (stat,bonus_type) already on the winner is skipped) — and clean-vocab-
+        # filtered, so no parse artifact is re-imported.
+        add = {}
+        for loser in losers:
+            for var in variants_mod.expand_item(loser):
+                for a in var.get("affixes") or []:
+                    key = (vocab_mod.normalize_stat(a["stat"]), a["bonus_type"])
+                    if key in have or key[0] not in clean_vocab:
+                        continue
+                    prev = add.get(key)
+                    if prev is None or (a.get("value") or 0) > (prev.get("value") or 0):
+                        add[key] = {"stat": a["stat"], "bonus_type": a["bonus_type"],
+                                    "value": a.get("value"), "unit": a.get("unit", "flat")}
+        if add:
+            winner.setdefault("structured_affixes", []).extend(add.values())
+            restored += len(add)
+    return restored
+
+
 def load_enriched_items(dirpath: str = COMPENDIUM_DIR) -> list:
     """Load stat-enriched compendium items (data/seed/compendium/enriched_*.json).
 
@@ -280,10 +332,10 @@ def build(seed: dict) -> dict:
     # is the hand-verified source; a same-name enriched copy would double-list in
     # browse and put two identities of one item into the solver). Also drops any
     # cross-batch name collision.
-    # Gear-planner structured records (U3): read the raw catalog directly and
-    # append LAST so base-seed and existing wiki-enriched shards win name
-    # collisions (KTD5) — these contribute clean, structured net-new bodies. The
-    # boolean allowlist gates which Bool affixes emit (exclude-until-verified).
+    # Gear-planner structured records: read the raw catalog directly. They are
+    # merged FIRST (see the merge below) so they win name collisions over the
+    # free-text-parsed wiki shards (KTD1) — clean, structured affixes. The boolean
+    # allowlist gates which Bool affixes emit (exclude-until-verified).
     _boolean_allowlist = load_boolean_features()
     # Seal types with a non-empty verified pool gate which "Sealed in X" hosts the
     # reader recovers from the raw dump (Undeath sourced; Mist/Gloom pending).
@@ -301,7 +353,14 @@ def build(seed: dict) -> dict:
         boolean_allowlist=_boolean_allowlist,
         verified_seal_types=_verified_seal_types,
         exclude_names=_host_pipeline_names)
-    all_enriched = load_enriched_items() + planner_records
+    # Gear-planner records go FIRST so they WIN name collisions against the
+    # free-text-parsed wiki-enriched shards (KTD1, precedence-flip plan) — those
+    # shards mangle affixes via affix_parser, while gear-planner is clean and
+    # equal-or-richer for the collisions. Base seed still wins over both (it seeds
+    # kept_by_name before Pass 1). Roster membership is unchanged — same name set,
+    # only the winning record per collision flips. The 9 items where gear-planner
+    # is thinner are reconciled by the U3 union-merge below.
+    all_enriched = planner_records + load_enriched_items()
     base_by_name = {it.get("name"): it for it in seed["items"]}
     # Pass 1 — pick the winning record per name (base seed, else first enriched shard
     # to claim it). `_seal_carrier` records are seal-only stubs (an already-active
@@ -309,11 +368,13 @@ def build(seed: dict) -> dict:
     kept_by_name = dict(base_by_name)
     seen_names = set(base_by_name)
     deduped = []
+    losers_by_name = {}  # U3: collision losers, for the affix union-merge below
     for it in all_enriched:
         if it.get("_seal_carrier") or it.get("_lost_purpose_carrier"):
             continue  # marker-only stubs: they graft a slot/marker in Pass 2, never claim a body
         name = it.get("name")
         if name in seen_names:
+            losers_by_name.setdefault(name, []).append(it)
             continue
         seen_names.add(name)
         kept_by_name[name] = it
@@ -343,6 +404,16 @@ def build(seed: dict) -> dict:
             winner["lamordia_slots"] = [dict(s) for s in it["lamordia_slots"]]  # copy: no shared ref across variants
         if winner is not None and it.get("nearly_complete") and not winner.get("nearly_complete"):
             winner["nearly_complete"] = it["nearly_complete"]
+    # U3 — restore solver-relevant affixes the flip would strip from collision
+    # items where gear-planner is thinner than the losing wiki record for a given
+    # affix. Filtered to the gear-planner clean vocabulary UNION the canonical
+    # CORE_STATS (which adds rankable stats gear-planner only ever emits as a bonus
+    # type, e.g. Vitality / Spell Power) so no rankable affix is lost — while still
+    # excluding free-text parse artifacts, which are in neither namespace.
+    _restore_vocab = (planner_clean_vocab(planner_records)
+                      | {vocab_mod.normalize_stat(s) for s in vocab_mod.CORE_STATS})
+    planner_stats["planner_affixes_union_restored"] = union_gearplanner_affix_losses(
+        kept_by_name, losers_by_name, _restore_vocab)
     enriched_items = deduped
 
     # Set bonuses for enriched members (U3). Only the 67 base-seed items carry a

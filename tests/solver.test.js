@@ -705,13 +705,19 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     const fs = require("fs");
     const { buildModel } = require("../web/model.js");
     const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
-    // Enriched ML35 items now carry `nearly_complete` category slots; the solver
-    // must craft the best option from that category's pool onto the host.
+    // Real ML35 items carry `nearly_complete` category slots. Solve over ONLY the
+    // real NC hosts so the host's crafted option is the source of the target — the
+    // precedence-flip plan (U4) made this pool-scoped: over the FULL dataset the
+    // richer gear-planner bodies can supply Constitution without the craft, so
+    // asserting placement in the whole-dataset optimum is no longer meaningful.
+    // This still exercises the real hosts + real pool end-to-end.
+    const ncHosts = data.items.filter((v) => v.nearly_complete);
+    assert.ok(ncHosts.length > 0, "the real dataset carries Nearly-Complete hosts");
     const query = { mlCap: 36, targets: ["Constitution"], armorType: null, weaponSetup: null, classRace: null };
-    const model = buildModel(data.items, query, data.dino_inserts, data.nearly_complete);
+    const model = buildModel(ncHosts, query, data.dino_inserts, data.nearly_complete);
     const res = await S.solveLexicographic(model, highs);
     assert.strictEqual(res.status, "optimal");
-    assert.ok((res.ncPlaced || []).length > 0, "at least one NC craft was placed onto a host");
+    assert.ok((res.ncPlaced || []).length > 0, "at least one NC craft was placed onto a real host");
     const craft = res.ncPlaced.find((n) => n.stat === "Constitution");
     assert.ok(craft && craft.value > 0, "an NC host crafted a Constitution option from its category pool");
   });
