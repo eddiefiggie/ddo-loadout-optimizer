@@ -1,0 +1,50 @@
+{
+  "_README": "Curated affix-NAME ambiguity decisions (KTD10/U10). AFFIX NAMES ONLY. The lint SURFACES near-duplicates; a human decides same-vs-distinct here. NEVER auto-merge. 'aliases' rewrites a variant to its canonical entry; 'distinct' whitelists similar-but-different pairs so the lint stops flagging them and serves as anti-false-merge test fixtures.",
+  "_meta": {
+    "generated_from": "illusionistpm/ddo-gear-planner",
+    "upstream_commit": "ec3e595d",
+    "seeded": "2026-08-01",
+    "scope": "affix names only; types use type_stacking_equivalence.json; slots/augments are closed sets (no alias table)",
+    "distinct_note": "High-similarity-but-distinct pairs (Alchemical Air/Fire, 1d4/1d6, +66/+108, Summon Monster II/III, etc.) are auto-seeded distinct by the non-blocking lint and are NOT enumerated here; only the punctuation-collision danger pairs are pinned as explicit anti-false-merge anchors."
+  },
+  "aliases": [
+    {
+      "variant": "damage vs the Helpless",
+      "canonical": "Damage vs the Helpless",
+      "reason": "case-only"
+    },
+    {
+      "variant": "Damage vs. Helpless opponents",
+      "canonical": "Damage vs. Helpless Opponents",
+      "reason": "case-only"
+    },
+    {
+      "variant": "Greater Dragonmark charges",
+      "canonical": "Greater Dragonmark Charges",
+      "reason": "case-only"
+    },
+    {
+      "variant": "item becomes a Spellcasting Implement",
+      "canonical": "Item becomes a Spellcasting Implement",
+      "reason": "case-only"
+    }
+  ],
+  "distinct": [
+    [
+      "Armor Class",
+      "Armor Class (%)"
+    ],
+    [
+      "False Life",
+      "False Life (%)"
+    ],
+    [
+      "Maximum Spellpoints",
+      "Maximum Spell Points (%)"
+    ],
+    [
+      "Acid",
+      "Acidic"
+    ]
+  ]
+}
