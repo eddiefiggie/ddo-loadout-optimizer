@@ -1,0 +1,269 @@
+"""U10 — controlled-vocabulary foundation (registries, integrity, lint, freshness)."""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+from src import vocabulary as V  # noqa: E402
+
+
+def _raises(exc, fn, *args, **kwargs):
+    """Zero-dependency replacement for pytest.raises (this repo runs plain-assert tests)."""
+    try:
+        fn(*args, **kwargs)
+    except exc:
+        return True
+    raise AssertionError(f"expected {exc.__name__} to be raised")
+
+
+def test_registries_generate_nonempty_and_deterministic():
+    r1 = V.generate_registries()
+    r2 = V.generate_registries()
+    assert r1 == r2, "registry generation must be deterministic"
+    assert len(r1["affix_names"]) > 1000, "expected the full affix-name vocabulary"
+    assert len(r1["bonus_types"]) > 30, "expected the bonus-type vocabulary"
+    assert len(r1["crafting_slots"]) == 83, "expected the 83 crafting-slot keys"
+    # sorted (deterministic) order
+    assert r1["affix_names"] == sorted(r1["affix_names"])
+
+
+def test_bonus_types_include_distinct_compounds():
+    # The compound types are DISTINCT stacking buckets, not to be merged.
+    types = set(V.generate_registries()["bonus_types"])
+    assert "Insight" in types and "Insight Natural" in types
+    assert "Insightful" not in types, "Insightful is a legacy wiki-parser artifact, not native"
+
+
+def test_alias_resolution_and_distinct_whitelist():
+    alias_map, distinct = V.load_affix_aliases()
+    names = set(V.generate_registries()["affix_names"])
+    # a curated variant resolves to its canonical entry
+    assert V.resolve_affix_name("Greater Dragonmark charges", names, alias_map) == \
+        "Greater Dragonmark Charges"
+    # a canonical entry resolves to itself
+    assert V.resolve_affix_name("Greater Dragonmark Charges", names, alias_map) == \
+        "Greater Dragonmark Charges"
+    # anti-false-merge: the punctuation-differing pair is two distinct entries
+    assert frozenset(("Armor Class", "Armor Class (%)")) in distinct
+    assert "Armor Class" in names and "Armor Class (%)" in names
+
+
+def test_integrity_gate_passes_on_real_data_and_fails_on_unknown():
+    items, crafting, sets = V._load(V.ITEMS_PATH), V._load(V.CRAFTING_PATH), V._load(V.SETS_PATH)
+    baseline = V.generate_registries(items, crafting, sets)
+    alias_map, _ = V.load_affix_aliases()
+    # the frozen baseline resolves all current references (aliases cover the collisions)
+    n = V.check_referential_integrity(items, crafting, sets, baseline, alias_map)
+    assert n > 10000
+    # a reference absent from the frozen baseline is a build-blocking new-name event
+    injected = [{"name": "Totally Not A Real Affix Zzz", "type": "Enhancement", "value": "1"}]
+    _raises(V.IntegrityError, V.check_referential_integrity, injected, {}, {}, baseline, alias_map)
+    # an unknown TYPE also fails
+    bad_type = [{"name": baseline["affix_names"][0], "type": "MadeUpType", "value": "1"}]
+    _raises(V.IntegrityError, V.check_referential_integrity, bad_type, {}, {}, baseline, alias_map)
+
+
+def test_lint_surfaces_collisions_without_mutating():
+    names = V.generate_registries()["affix_names"]
+    _, distinct = V.load_affix_aliases()
+    before = list(names)
+    out = V.lint_affix_names(names, distinct)
+    assert names == before, "lint must never mutate the input"
+    # the known case/whitespace collisions surface as blocking candidates
+    flat = {n for grp in out["collisions"].values() for n in grp}
+    assert "Greater Dragonmark charges" in flat and "Greater Dragonmark Charges" in flat
+    # a whitelisted distinct pair is not re-flagged as similar
+    for a, b in out["similar"]:
+        assert frozenset((a, b)) not in distinct
+
+
+def test_anti_false_merge_similar_names_stay_distinct():
+    # Acid vs Acidic are genuinely different affixes — the lint may flag them, but they
+    # remain two separate registry entries (never collapsed).
+    names = set(V.generate_registries()["affix_names"])
+    assert "Acid" in names and "Acidic" in names
+    assert "Armor Class" in names and "Armor Class (%)" in names
+    assert "False Life" in names and "False Life (%)" in names
+
+
+def test_stacking_equivalence_groups_the_curated_pairs():
+    eq = V.load_stacking_equivalence()
+    assert V.stacking_bucket("Insight Natural", eq) == "Insight"
+    assert V.stacking_bucket("Primal Natural", eq) == "Primal"
+    # a normal type is its own bucket, verbatim
+    assert V.stacking_bucket("Insight", eq) == "Insight"
+    assert V.stacking_bucket("Enhancement", eq) == "Enhancement"
+
+
+def test_freshness_reads_and_detects_drift():
+    recorded = V.assert_freshness()
+    assert recorded == "ec3e595d0d879b29c13f3c34ffc155e71d0418c4"
+    # a wrong expected commit surfaces drift
+    _raises(V.FreshnessError, V.assert_freshness, expected_commit="deadbeef")
+
+
+# --- U2/R14: crafting-slot + augment registries + integrity gate --------------
+
+def test_crafting_slot_registry_generates_and_matches_frozen():
+    gen = V.generate_crafting_slot_registry()
+    # deterministic + sorted
+    assert gen == V.generate_crafting_slot_registry()
+    assert gen == sorted(gen)
+    # pool keys (83) ∪ item markers (adds the 12 pool-less Cannith slots) = 95
+    assert len(gen) == 95, "crafting-slot registry = 83 pool keys ∪ item crafting[] markers"
+    assert "Sealed in Undeath" in gen and "T1 (Weapon)" in gen
+    assert "Cannith: Rune Arm - Extra" in gen, "pool-less item markers are still in the registry"
+    frozen = V._load(V.CRAFTING_SLOT_REGISTRY_PATH)["crafting_slots"]
+    assert frozen == gen, "checked-in frozen registry matches the generator"
+
+
+def test_augment_registry_generates_and_matches_frozen():
+    gen = V.generate_augment_registry()
+    assert gen == sorted(gen) and len(gen) > 500, "augment-stone registry from the <Color> Augment Slot pools"
+    frozen = V._load(V.AUGMENT_REGISTRY_PATH)["augments"]
+    assert frozen == gen, "checked-in frozen augment registry matches the generator"
+
+
+def test_crafting_integrity_gate_passes_and_fails_loudly():
+    items = V._load(V.ITEMS_PATH)
+    crafting = V._load(V.CRAFTING_PATH)
+    slot_reg = V._load(V.CRAFTING_SLOT_REGISTRY_PATH)
+    aug_reg = V._load(V.AUGMENT_REGISTRY_PATH)
+    # the frozen registries resolve every real crafting[] marker + augment stone
+    n = V.check_crafting_integrity(items, crafting, slot_reg, aug_reg)
+    assert n > 10000
+    # an item marker absent from the frozen slot registry fails the build
+    bad_item = [{"name": "Fake Item", "crafting": ["No Such Slot Zzz"]}]
+    _raises(V.IntegrityError, V.check_crafting_integrity, bad_item, {}, slot_reg, aug_reg)
+    # an augment stone absent from the frozen augment registry fails the build
+    bad_aug = {"Blue Augment Slot": {"*": [{"name": "Totally Fake Augment Zzz", "affixes": []}]}}
+    _raises(V.IntegrityError, V.check_crafting_integrity, [], bad_aug, slot_reg, aug_reg)
+
+
+# --- U6.5: vocabulary hardening (ported synonyms, co-occurrence, unit signature) ----
+
+# The 12 semantic synonyms ported from the legacy vocab.STAT_ALIASES into the curated
+# alias table (the string-similarity lint cannot discover these — zero shared characters).
+# "All Abilities" -> "All Ability Scores" is deliberately NOT ported: that canonical does
+# not exist as a native registry affix.
+_PORTED_SYNONYMS = {
+    "Str": "Strength", "Dex": "Dexterity", "Con": "Constitution",
+    "Int": "Intelligence", "Wis": "Wisdom", "Cha": "Charisma",
+    "PRR": "Physical Sheltering", "MRR": "Magical Sheltering",
+    "Physical Resistance Rating": "Physical Sheltering",
+    "Magical Resistance Rating": "Magical Sheltering",
+    "Fortification Bypass": "Armor-Piercing",
+    "Fortification Bypass (Armor-Piercing)": "Armor-Piercing",
+}
+
+# Every string-similar pair that co-occurs on the SAME item is DISTINCT (an item never
+# lists one affix twice). These four are the named regression anchors; Blood Rage/Bloodrage
+# in particular CONTRADICTS the plan's redundancy example — both are separate Bool affixes.
+_COOCCUR_DISTINCT = [
+    ("Frost", "Frostbite"),
+    ("Freezing", "Freezing Ice"),
+    ("Impact", "Impactful"),
+    ("Blood Rage", "Bloodrage"),
+]
+
+
+def test_ported_synonyms_resolve_to_valid_registry_canonicals():
+    alias_map, _ = V.load_affix_aliases()
+    names = set(V.generate_registries()["affix_names"])
+    for variant, canonical in _PORTED_SYNONYMS.items():
+        # the alias is present and points at the expected canonical
+        assert alias_map.get(variant) == canonical, f"{variant!r} should alias to {canonical!r}"
+        # the canonical is a real native registry entry (no invented affixes)
+        assert canonical in names, f"canonical {canonical!r} must exist natively"
+        # resolve_affix_name round-trips the variant to the valid canonical
+        assert V.resolve_affix_name(variant, names, alias_map) == canonical
+
+
+def test_prr_canonicalizes_to_physical_sheltering():
+    alias_map, _ = V.load_affix_aliases()
+    names = set(V.generate_registries()["affix_names"])
+    assert V.resolve_affix_name("PRR", names, alias_map) == "Physical Sheltering"
+    assert V.resolve_affix_name("MRR", names, alias_map) == "Magical Sheltering"
+
+
+def test_all_abilities_synonym_not_ported_canonical_absent():
+    # Guard the "don't invent a canonical" decision: All Ability Scores is not native,
+    # so no alias may point at it.
+    alias_map, _ = V.load_affix_aliases()
+    names = set(V.generate_registries()["affix_names"])
+    assert "All Ability Scores" not in names
+    assert "All Abilities" not in alias_map
+
+
+def test_cooccurring_pairs_are_classified_distinct():
+    _, distinct = V.load_affix_aliases()
+    for a, b in _COOCCUR_DISTINCT:
+        assert frozenset((a, b)) in distinct, f"{a!r}/{b!r} must be whitelisted distinct"
+
+
+def test_cooccurring_pairs_never_share_a_canonical():
+    # A co-occurring pair must NEVER resolve to one shared canonical (that would be a merge).
+    alias_map, _ = V.load_affix_aliases()
+    names = set(V.generate_registries()["affix_names"])
+    for a, b in _COOCCUR_DISTINCT:
+        ra = V.resolve_affix_name(a, names, alias_map)
+        rb = V.resolve_affix_name(b, names, alias_map)
+        # each resolves to itself (present natively) or None (type-less, e.g. Impactful) —
+        # but the two never collapse onto the same name.
+        assert not (ra is not None and ra == rb), f"{a!r}/{b!r} must not merge"
+
+
+def test_detector_finds_cooccurring_pairs_and_is_deterministic():
+    det1 = V.detect_cooccurring_distinct()
+    det2 = V.detect_cooccurring_distinct()
+    assert det1 == det2, "detector must be deterministic"
+    keys = {frozenset(e["pair"]) for e in det1}
+    for a, b in _COOCCUR_DISTINCT:
+        assert frozenset((a, b)) in keys, f"detector must surface {a!r}/{b!r}"
+        # each record carries its co-occurrence evidence
+    for e in det1:
+        assert e["reason"].startswith("co-occurs on ")
+    # every detected pair actually co-occurs on the named item (evidence is real)
+    items = V._load(V.ITEMS_PATH)
+    by_item = {it.get("name"): {a["name"] for a in it.get("affixes") or []
+                                if isinstance(a, dict) and isinstance(a.get("name"), str)}
+               for it in items}
+    for e in det1:
+        item = e["reason"][len("co-occurs on "):]
+        a, b = e["pair"]
+        assert a in by_item.get(item, set()) and b in by_item.get(item, set())
+
+
+def test_unit_marker_is_significant_flat_vs_percent_distinct():
+    # The normalizer must NOT strip % — flat vs percent are different stats.
+    assert V._norm_collision("Armor Class") != V._norm_collision("Armor Class (%)")
+    assert V.differ_only_by_unit_marker("Armor Class", "Armor Class (%)")
+    assert V.differ_only_by_unit_marker("False Life", "False Life (%)")
+    assert V.name_unit("Armor Class (%)") == "pct" and V.name_unit("Armor Class") == "flat"
+    # a flat-vs-percent pair is never a lint merge candidate
+    out = V.lint_affix_names(["Armor Class", "Armor Class (%)"])
+    flagged = set(out["prefix_pairs"]) | set(out["similar"])
+    assert ("Armor Class", "Armor Class (%)") not in flagged
+
+
+def test_anti_false_merge_insight_natural_and_ac_percent_hold():
+    reg = V.generate_registries()
+    names, types = set(reg["affix_names"]), set(reg["bonus_types"])
+    # Insight vs Insight Natural are distinct stacking BUCKETS (types), never merged.
+    assert "Insight" in types and "Insight Natural" in types
+    # Armor Class (flat) vs Armor Class (%) are distinct affix NAMES, never collapsed.
+    assert "Armor Class" in names and "Armor Class (%)" in names
+
+
+def test_evidence_bundle_reports_without_mutating():
+    names = V.generate_registries()["affix_names"]
+    _, distinct = V.load_affix_aliases()
+    before = list(names)
+    bundle = V.evidence_bundle(names=names, distinct_pairs=distinct)
+    assert names == before, "evidence bundle must never mutate its input"
+    assert "candidates" in bundle and isinstance(bundle["candidates"], list)
+    for c in bundle["candidates"]:
+        assert set(c) >= {"pair", "cooccurs", "cooccur_item", "units", "bonus_types", "counts"}
+    # a report-only structure: it surfaces co-occurrence + unit + bonus-type evidence
+    # for at least one real candidate
+    assert any(c["cooccurs"] for c in bundle["candidates"])

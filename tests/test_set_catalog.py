@@ -62,20 +62,18 @@ def test_percent_untyped_and_signed_rendering():
     assert text3 == "-5 bonus to Threat"
 
 
-def test_definition_for_base_wins_on_canonical_key():
-    seed = json.load(open(os.path.join(ROOT, "data", "seed", "ddo_items.json"), encoding="utf-8"))["items"]
-    base = SC.base_defs_from_seed(seed)
+def test_definition_for_resolves_name_drift_against_catalog():
+    # The base seed was purged (U7); all defs come from the gear-planner catalog.
+    # The " Set" infix drift still canonicalizes into the catalog def.
+    base = {}
     cat = _catalog()
-    # Adherent: enriched name has " Set"; base def keyed without it — must return the BASE entry
     d = SC.definition_for("Adherent of the Mists Set (Legendary)", base, cat)
     assert d is not None
     assert d["set"] == "Adherent of the Mists (Legendary)"
-    assert d.get("source") != "gear-planner sets.json (ddowiki-derived)", "base def must win, not the catalog"
 
 
 def test_definition_for_none_for_undefined_novelty_set():
-    seed = json.load(open(os.path.join(ROOT, "data", "seed", "ddo_items.json"), encoding="utf-8"))["items"]
-    base = SC.base_defs_from_seed(seed)
+    base = {}  # base seed purged (U7)
     cat = _catalog()
     assert SC.definition_for("Legendary Cooking By the Book", base, cat) is None
 

@@ -21,7 +21,6 @@ from __future__ import annotations
 import re
 
 from src.affix_parser import parse_line, BONUS_TYPES, MULTI_STAT_TOKENS
-from src import vocab
 
 _PIECES = re.compile(r"(\d+)")
 _TRAILING_TYPE = re.compile(r"\(([^)]+)\)\s*$")
@@ -78,7 +77,7 @@ def parse_piece_text(text: str) -> tuple[list, list]:
         for a in r["affixes"]:
             for part in _expand_compound(a["stat"]):
                 b = dict(a)
-                b["stat"] = vocab.normalize_stat(part)
+                b["stat"] = part
                 if line_type and b["bonus_type"] == "Enhancement":
                     b["bonus_type"] = line_type  # apply trailing type only to untyped clauses
                 affixes.append(b)

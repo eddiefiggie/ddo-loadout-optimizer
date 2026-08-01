@@ -55,8 +55,39 @@ function buildQuery(state) {
   };
 }
 
+// Resolve the shared picker-vocabulary builder across both runtimes: Node (require
+// the dataset module the tests use) and browser (the global the scripts share).
+function _datasetNormalizer() {
+  if (typeof require !== "undefined") { try { return require("./dataset.js"); } catch (e) { /* absent */ } }
+  return (typeof window !== "undefined") ? window.DatasetNormalizer : null;
+}
+
+/** Priority-picker affix vocabulary (U5): the UNION of every affix source (gear,
+ * augments, set bonuses, and ALL crafting pools), canonicalized through the alias
+ * table and filtered to the rankable ones — so a crafting-only affix is selectable
+ * and one target matches gear/augments/crafting by one canonical name. Returns
+ * { suggestions, known, canonical }. Falls back to a present-affix scan only when
+ * the shared builder is unavailable. Gates *suggestions* only — free-typed input
+ * (validated against `known`, canonicalized) still accepts any real affix. */
+function pickerVocabulary(dataset) {
+  const N = _datasetNormalizer();
+  if (N && N.buildPickerVocabulary) return N.buildPickerVocabulary(dataset);
+  const set = new Set();
+  (dataset.items || []).forEach((v) => {
+    (v.affixes || []).forEach((a) => set.add(a.name != null ? a.name : a.stat));
+    (v.scaling || []).forEach((s) => set.add(s.stat));
+    (v.parsed_set_bonuses || []).forEach((t) => (t.affixes || []).forEach((a) => set.add(a.stat)));
+  });
+  return { suggestions: [...set].sort(), known: set, canonical: (n) => String(n == null ? "" : n).trim() };
+}
+
+/** Back-compat: the sorted suggestion list (used by the datalist + tests). */
+function curatedStats(dataset) {
+  return pickerVocabulary(dataset).suggestions;
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad, curatedStats, pickerVocabulary };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -82,14 +113,14 @@ if (typeof window !== "undefined" && window.App) {
     const root = document.getElementById("wizard");
     if (!root) return;
 
-    // Targetable affix stats present in the dataset (mirrors the old query form).
-    const statSet = new Set();
-    dataset.items.forEach((v) => {
-      (v.affixes || []).forEach((a) => statSet.add(a.stat));
-      (v.scaling || []).forEach((s) => statSet.add(s.stat));
-      (v.parsed_set_bonuses || []).forEach((t) => (t.affixes || []).forEach((a) => statSet.add(a.stat)));
-    });
-    const allStats = [...statSet].sort();
+    // Targetable affix stats for the priority picker (U5): the shared picker
+    // vocabulary — the UNION of every affix source (gear, augments, set bonuses, and
+    // ALL crafting pools), canonicalized through the alias table and filtered to the
+    // rankable ones (so a crafting-only affix is selectable). `known` validates
+    // free-typed input; `canonical` maps a typed value to the name gear carries. The
+    // solver still accepts any typed affix — this gates suggestions, not input.
+    const vocab = pickerVocabulary(dataset);
+    const allStats = vocab.suggestions;
 
     const state = { step: "intro", ml: 34, race: "", alignment: "", armor: "", weapon: "",
       includeArtifact: false,
@@ -395,9 +426,12 @@ if (typeof window !== "undefined" && window.App) {
     function renderAdjustRanked() { renderRankedList(document.getElementById("wz-rranked"), renderAdjustRanked); }
     /** Add a target affix; returns true if it landed (caller re-renders the list). */
     function addPriority(v) {
-      v = (v || "").trim(); const status = document.getElementById("wz-status");
+      // Canonicalize the typed value through the alias table so it matches the ONE
+      // name gear/augments/crafting carry, then validate against the unfiltered
+      // known set (U5; also fixes the prior undefined-`statSet` reference).
+      v = vocab.canonical((v || "").trim()); const status = document.getElementById("wz-status");
       if (!v) return false;
-      if (!statSet.has(v)) { if (status) status.textContent = `"${v}" isn't a known affix in the dataset.`; return false; }
+      if (!vocab.known.has(v)) { if (status) status.textContent = `"${v}" isn't a known affix in the dataset.`; return false; }
       if (state.priorities.includes(v)) return false;
       state.priorities.push(v); if (status) status.textContent = ""; return true;
     }
@@ -537,7 +571,11 @@ if (typeof window !== "undefined" && window.App) {
       state.priorities = Array.isArray(i.priorities) ? i.priorities.slice() : [];
       state.slotConstraints = i.slotConstraints || {};
       state.constraintsDirty = false;   // loaded constraints are the saved state, not a pending change
-      const snap = rec.snapshot;
+      // U5, Part C — one-time load migration: a PRE-OVERHAUL saved snapshot embedded
+      // its chosen items with only the legacy `stat`/`bonus_type`/`minimum_level`
+      // fields; upgrade them so the native-first readers (affixLabel/itemMl) render.
+      const _norm = _datasetNormalizer();
+      const snap = (_norm && _norm.migrateLoadout) ? _norm.migrateLoadout(rec.snapshot) : rec.snapshot;
       // U1/R1 — an optimal snapshot lands directly on Results; anything else
       // routes to priorities to re-solve (never a blank results view).
       if (stepAfterLoad(snap) === "results") {

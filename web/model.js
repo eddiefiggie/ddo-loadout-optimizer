@@ -15,6 +15,27 @@ const SLOT_CARDINALITY = { Ring: 2 }; // one of every other worn slot
 // matters, not the exact cap). null = uncapped for this query.
 const ARMOR_DODGE_CAP = { cloth: 25, light: 25, medium: 11, heavy: 4 };
 
+// U4b-i — stacking-equivalence. gear-planner's native affix `type` IS the
+// stacking bucket, verbatim, EXCEPT curated pairs that do not stack independently
+// in-game and must share ONE bucket (e.g. "Insight Natural" -> "Insight", "Primal
+// Natural" -> "Primal"). The map is emitted into items.json `metadata.stacking_
+// equivalence` and installed here (dataset.js calls setStackEquiv on load). The
+// affix keeps its native `type` for DISPLAY; only the stacking BUCKET KEY formed
+// from a `type` is canonicalized through equivType — so two items typed "Insight
+// Natural" and "Insight" (same stat) land in one bucket and do NOT double-count.
+let _STACK_EQUIV = Object.create(null);
+function setStackEquiv(map) {
+  _STACK_EQUIV = Object.create(null);
+  if (map && typeof map === "object") {
+    for (const k of Object.keys(map)) _STACK_EQUIV[k] = map[k];
+  }
+}
+/** Canonicalize an affix `type` to its stacking bucket token (identity unless the
+ *  curated equivalence table remaps it). Used ONLY to form bucket keys. */
+function equivType(type) {
+  return (type != null && _STACK_EQUIV[type] != null) ? _STACK_EQUIV[type] : type;
+}
+
 /** Resolve an ML-scaling affix to its value at the query ML cap. */
 function scaledValue(s, mlCap) {
   if (mlCap <= s.ml_lo) return s.val_lo;
@@ -28,10 +49,10 @@ function variantBuckets(variant, targetSet, mlCap) {
   const b = new Map();
   const put = (stat, type, val) => {
     if (!targetSet.has(stat)) return;
-    const key = `${stat}||${type}`;
+    const key = `${stat}||${equivType(type)}`;
     if (!b.has(key) || b.get(key) < val) b.set(key, val);
   };
-  for (const a of variant.affixes || []) put(a.stat, a.bonus_type, a.value);
+  for (const a of variant.affixes || []) put(a.name, a.type, a.value);
   for (const s of variant.scaling || []) put(s.stat, s.bonus_type, scaledValue(s, mlCap));
   return b;
 }
@@ -68,7 +89,7 @@ function eligible(variants, query) {
   const forged = isForgedRace(query.race);
   return variants.filter((v) => {
     if (v.verification !== "verified") return false;
-    if (v.minimum_level != null && v.minimum_level > cap) return false;
+    if (v.ml != null && v.ml > cap) return false;
 
     // R6/AE1 — Race → body slot: Forged races take docents; others cannot.
     if (v.slot === "Armor" && query.race) {
@@ -188,7 +209,7 @@ function rollOptionKeys(v, targetSet) {
   const s = new Set();
   for (const g of v.roll_groups || [])
     for (const o of g.options || [])
-      if (targetSet.has(o.stat) && o.value > 0) s.add(`${o.stat}||${o.bonus_type}||${o.value}`);
+      if (targetSet.has(o.stat) && o.value > 0) s.add(`${o.stat}||${equivType(o.bonus_type)}||${o.value}`);
   return s;
 }
 
@@ -201,7 +222,7 @@ function countColors(colors) {
 /** A Nearly-Complete host's tier: explicit nc_tier, else derived from ML
  *  (Legendary only at ML>=35). Matches the solver's derivation. */
 function ncTier(v) {
-  return v.nc_tier || ((v.minimum_level || 0) >= 35 ? "legendary" : "heroic");
+  return v.nc_tier || ((v.ml || 0) >= 35 ? "legendary" : "heroic");
 }
 
 /** A Viktranium ("Lamordia") host's tier, derived from host ML. Viktranium's two
@@ -212,7 +233,7 @@ function ncTier(v) {
  *  unreachable. This is the SINGLE source of truth — the solver and browse layers
  *  derive tier from this function, never a re-inlined threshold. */
 function lamordiaTier(v) {
-  return (v.minimum_level || 0) >= 30 ? "legendary" : "heroic";
+  return (v.ml || 0) >= 30 ? "legendary" : "heroic";
 }
 
 /** A host's typed Lamordia slots as a `type||category||tier` multiset key list,
@@ -377,7 +398,7 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     buildModel, eligible, dominanceFilter, dominates,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys,
-    isForgedRace, isDocent, variantKey,
+    isForgedRace, isDocent, variantKey, setStackEquiv, equivType,
     WORN_SLOTS, SLOT_CARDINALITY, ARMOR_DODGE_CAP,
   };
 }

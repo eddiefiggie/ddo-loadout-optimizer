@@ -19,9 +19,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from src.affix_parser import (  # noqa: E402
     parse_line, parse_enhancements, set_boolean_features)
 
-SEED = os.path.join(os.path.dirname(__file__), "..", "data", "seed", "ddo_items.json")
-
-
 def _affixes(line):
     """Return the list of affix dicts parse_line produced (may be empty)."""
     return parse_line(line)["affixes"]
@@ -128,27 +125,6 @@ def test_value_less_named_is_flagged_not_fatal():
 
 # --- (a) essence-crafting effect-identity coverage ---
 
-def test_essence_crafting_effects_surfaced_by_parser():
-    """Run the essence-crafted items' real lines THROUGH the parser and assert
-    the ground-truth effect identities (Seeker/Deadly/Search/Spot) are surfaced
-    (as affixes or flagged), never silently dropped as noise. This ties parser
-    output to oracle (a) — the earlier version grepped the seed and tested
-    nothing about the parser."""
-    d = json.load(open(SEED, encoding="utf-8"))
-    surfaced = set()
-    for item in d["items"]:
-        if item["category"] != "essence_crafted":
-            continue
-        for line in item.get("enhancements", []):
-            r = parse_line(line)
-            # an essence effect name must not be classified as noise
-            for effect in ["Seeker", "Deadly", "Search", "Spot"]:
-                if effect in line:
-                    assert r["kind"] != "noise", f"{line!r} wrongly dropped as noise"
-                    surfaced.add(effect)
-    # the goggles guarantee Seeker and Deadly are present in the seed
-    assert {"Seeker", "Deadly"} <= surfaced
-
 
 def test_negative_magnitude_keeps_its_sign():
     a = _one("Concentration -50")
@@ -187,19 +163,6 @@ def test_scaling_extracts_bonus_type():
 
 
 # --- whole-seed sweep: no exceptions, per-affix tolerance ---
-
-def test_whole_seed_parses_without_exceptions():
-    d = json.load(open(SEED, encoding="utf-8"))
-    total_lines = 0
-    eligible = 0
-    for item in d["items"]:
-        res = parse_enhancements(item.get("enhancements", []))
-        # parse_enhancements must never raise and must always return the buckets
-        assert set(res) >= {"affixes", "flagged", "scaling", "rolls"}
-        total_lines += len(item.get("enhancements", []))
-        eligible += len(res["affixes"])
-    # A meaningful fraction of lines yield clean value-bearing affixes.
-    assert eligible > 200, f"only {eligible} eligible affixes parsed from the seed"
 
 
 # --- bonus-type vocabulary: Equipment / Resistance / Insight (Dino pool) ---
@@ -277,17 +240,6 @@ def test_allowlist_ignores_underscore_and_non_string_entries():
     finally:
         set_boolean_features([])
 
-
-def test_build_does_not_leak_boolean_allowlist_into_module_state():
-    # Regression: build() installs the curated allowlist for its own parse but must
-    # restore the prior module state, so a later in-process caller/test is not
-    # contaminated (a value-less line like "Ghostly" must still be unparsed by default).
-    import build_dataset
-    from src.affix_parser import get_boolean_features
-    before = get_boolean_features()
-    build_dataset.build({"metadata": {}, "items": []})
-    assert get_boolean_features() == before, "build() leaked its scoped boolean allowlist"
-    assert parse_line("Ghostly")["kind"] == "unparsed", "default (empty) allowlist restored after build"
 
 
 def test_allowlisted_name_that_trips_a_guard_is_not_emitted_as_boolean():

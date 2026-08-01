@@ -1,5 +1,11 @@
-"""Tests for src.band_frontier — the R4 ML30-36 band work-list (U1)."""
-import json
+"""U6 — src.band_frontier tests (native-roster ML30-36 band coverage).
+
+`band_coverage` now derives the band directly from the built NATIVE roster (items
+carry `ml` + `slot` + `wiki_url`), with no wiki-harvest shard, roster lookup, or
+enriched-baseline snapshot. Under single-source completeness every band item is
+`enriched` (pending/quarantined no longer occur). Isle of Dread is attributed via
+the native Dino signal; the rest of the band is reported under `unattributed`.
+"""
 import os
 import sys
 
@@ -8,78 +14,75 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src import band_frontier as bf
 
 
-def _worklist():
-    return bf.build_worklist()
+def _item(name, slot, ml=None, wiki_url=None):
+    return {"source_item": name, "slot": slot, "ml": ml,
+            "wiki_url": wiki_url or f"https://ddowiki.com/page/Item:{name.replace(' ', '_')}"}
 
 
-def test_worklist_only_target_expansions():
-    wl, _ = _worklist()
-    assert wl, "work-list should not be empty"
-    exps = {w["expansion"] for w in wl}
-    assert exps == {"isle_of_dread", "myth_drannor", "u81"}
-    # every entry's update maps to its expansion (attribution is the hard gate)
-    for w in wl:
-        assert bf.TARGET_UPDATES[w["update"]] == w["expansion"]
+def _dino(name, slot, ml=31):
+    return {"source_item": name, "slot": slot, "ml": ml,
+            "wiki_url": "https://ddowiki.com/page/Dinosaur_Bone_crafting"}
 
 
-def test_every_item_has_a_roster_slot():
-    # All 188 band items in the three sets are roster-indexed; none should be Unknown.
-    wl, _ = _worklist()
-    unknown = [w["name"] for w in wl if w["slot"] == "Unknown"]
-    assert not unknown, f"band items missing a roster slot: {unknown}"
+def test_band_is_native_ml30_36():
+    items = [
+        _item("In Band Low", "Ring", ml=30),
+        _item("In Band High", "Belt", ml=36),
+        _item("Below Band", "Ring", ml=29),
+        _item("Above Band", "Ring", ml=37),
+        _item("No ML", "Trinket", ml=None),
+    ]
+    cov = bf.band_coverage(items)
+    assert cov["totals"]["band_total"] == 2  # only the two ML30-36 items
+    keys = set(cov["by_slot"])
+    assert "unattributed/Ring" in keys and "unattributed/Belt" in keys
 
 
-def test_status_is_terminal_or_pending():
-    wl, _ = _worklist()
-    for w in wl:
-        assert w["status"] in ("already_enriched", "pending")
+def test_dino_attributed_to_isle_of_dread():
+    items = [_dino("Dinosaur Bone Ring", "Ring"), _item("Legendary Thing", "Belt", ml=33)]
+    cov = bf.band_coverage(items)
+    assert cov["by_slot"]["isle_of_dread/Ring"]["band_total"] == 1
+    assert cov["by_slot"]["unattributed/Belt"]["band_total"] == 1
+    assert cov["expansions_attributed"] == ["isle_of_dread"]
+    assert cov["attributed"] == 1 and cov["unattributed"] == 1
 
 
-def test_known_attribution():
-    wl, _ = _worklist()
-    by_name = {w["name"]: w for w in wl}
-    # Isle of Dread signature item (Dinosaur Bone / Dread Isle's Curse, U55)
-    assert by_name["Dinosaur Bone Ring"]["expansion"] == "isle_of_dread"
-    assert by_name["Dinosaur Bone Ring"]["update"] == 55
-    # U81 Demonweb signature item
-    assert by_name["Demogorgon's Reign"]["expansion"] == "u81"
-    assert by_name["Demogorgon's Reign"]["update"] == 81
+def test_dino_host_without_ml_still_in_band():
+    # Synthetic Dino set-bonus hosts can lack an ml; the native Dino signal still
+    # places them in the band (endgame Isle of Dread gear).
+    items = [_dino("Dinosaur Bone Belt", "Belt", ml=None)]
+    cov = bf.band_coverage(items)
+    assert cov["by_slot"]["isle_of_dread/Belt"]["band_total"] == 1
 
 
-def test_coverage_reconciles_with_worklist():
-    wl, cov = _worklist()
-    # per-(expansion, slot) band_total sums to the work-list length
-    assert sum(c["band_total"] for c in cov.values()) == len(wl)
-    for c in cov.values():
-        assert c["band_total"] == c["already_enriched"] + c["pending"]
-    # coverage counts match a direct recount of the work-list
-    for w in wl:
-        key = f"{w['expansion']}/{w['slot']}"
-        assert key in cov
+def test_every_band_item_is_enriched():
+    # Single-source completeness: pending and quarantined never occur.
+    items = [_item("A", "Ring", ml=33), _dino("Dinosaur Bone Cloak", "Cloak")]
+    cov = bf.band_coverage(items)
+    assert cov["totals"]["pending"] == 0
+    assert cov["totals"]["quarantined"] == 0
+    assert cov["totals"]["enriched"] == cov["totals"]["band_total"]
+    for c in cov["by_slot"].values():
+        assert c["enriched"] == c["band_total"]
+        assert c["pending"] == 0 and c["quarantined"] == 0
 
 
-def test_already_enriched_marks_track_the_corpus():
-    # A pending item must NOT be in the enriched corpus; an already_enriched one must be.
-    wl, _ = _worklist()
-    enriched = bf.enriched_names()
-    for w in wl:
-        if w["status"] == "already_enriched":
-            assert w["name"] in enriched
-        else:
-            assert w["name"] not in enriched
+def test_dedupe_by_source_item():
+    # Tier variants of one item count once in the band.
+    items = [_item("Ring of X", "Ring", ml=33), _item("Ring of X", "Ring", ml=33)]
+    cov = bf.band_coverage(items)
+    assert cov["totals"]["band_total"] == 1
 
 
-def test_attribution_source_carries_provenance():
-    attr_path = os.path.join(bf.COMPENDIUM_DIR, "band_categories", "ml30_36_attribution.json")
-    with open(attr_path, encoding="utf-8") as fh:
-        d = json.load(fh)
-    assert "ddowiki.com" in d.get("source", "")
-    assert d.get("harvested")
-    assert len(d["attr"]) >= 500  # the full ML30-36 band was harvested
+def test_coverage_reconciles():
+    items = [_item("A", "Ring", ml=33), _item("B", "Ring", ml=34),
+             _dino("Dinosaur Bone Boots", "Boots")]
+    cov = bf.band_coverage(items)
+    assert sum(c["band_total"] for c in cov["by_slot"].values()) == cov["totals"]["band_total"]
+    assert cov["attributed"] + cov["unattributed"] == cov["totals"]["band_total"]
 
 
-def test_written_worklist_matches_builder():
-    out = bf.write_worklist()
-    wl, cov = _worklist()
-    assert out["metadata"]["total"] == len(wl)
-    assert out["metadata"]["pending"] == sum(1 for w in wl if w["status"] == "pending")
+def test_attribution_is_disclosed_as_coarse():
+    cov = bf.band_coverage([_item("A", "Ring", ml=33)])
+    assert cov["attribution"] == "native-coarse"
+    assert "Update NN" in cov["note"] or "Update" in cov["note"]

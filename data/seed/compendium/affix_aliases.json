@@ -1,0 +1,356 @@
+{
+  "_README": "Curated affix-NAME ambiguity decisions (KTD10/U10; hardened U6.5). AFFIX NAMES ONLY. The lint SURFACES near-duplicates; a human (or the co-occurrence detector) decides same-vs-distinct here. NEVER auto-merge. 'aliases' rewrites a variant to its canonical entry (incl. the U6.5-ported semantic synonyms whose canonical is verified native). 'distinct' whitelists similar-but-different pairs so the lint stops flagging them and serves as anti-false-merge test fixtures; entries are either a bare [A,B] pair or a {pair,reason} object (the co-occurrence detector auto-classifies same-item pairs DISTINCT with evidence).",
+  "_meta": {
+    "generated_from": "illusionistpm/ddo-gear-planner",
+    "upstream_commit": "ec3e595d",
+    "seeded": "2026-08-01",
+    "scope": "affix names only; types use type_stacking_equivalence.json; slots/augments are closed sets (no alias table)",
+    "distinct_note": "High-similarity-but-distinct pairs (Alchemical Air/Fire, 1d4/1d6, +66/+108, Summon Monster II/III, etc.) are auto-seeded distinct by the non-blocking lint and are NOT enumerated here; only the punctuation-collision danger pairs are pinned as explicit anti-false-merge anchors.",
+    "u65_notes": "U6.5: ported 12 legacy STAT_ALIASES semantic synonyms (Str/Dex/.../Cha, PRR/MRR, Physical/Magical Resistance Rating, Fortification Bypass -> Armor-Piercing); 'All Abilities'->'All Ability Scores' was NOT ported because 'All Ability Scores' is not a native registry affix. Added 35 same-item co-occurrence-proven distinct pairs (incl. Blood Rage/Bloodrage). % / (%) unit marker is significant (flat-vs-percent is always distinct)."
+  },
+  "aliases": [
+    {
+      "variant": "damage vs the Helpless",
+      "canonical": "Damage vs the Helpless",
+      "reason": "case-only"
+    },
+    {
+      "variant": "Damage vs. Helpless opponents",
+      "canonical": "Damage vs. Helpless Opponents",
+      "reason": "case-only"
+    },
+    {
+      "variant": "Greater Dragonmark charges",
+      "canonical": "Greater Dragonmark Charges",
+      "reason": "case-only"
+    },
+    {
+      "variant": "item becomes a Spellcasting Implement",
+      "canonical": "Item becomes a Spellcasting Implement",
+      "reason": "case-only"
+    },
+    {
+      "variant": "Str",
+      "canonical": "Strength",
+      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+    },
+    {
+      "variant": "Dex",
+      "canonical": "Dexterity",
+      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+    },
+    {
+      "variant": "Con",
+      "canonical": "Constitution",
+      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+    },
+    {
+      "variant": "Int",
+      "canonical": "Intelligence",
+      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+    },
+    {
+      "variant": "Wis",
+      "canonical": "Wisdom",
+      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+    },
+    {
+      "variant": "Cha",
+      "canonical": "Charisma",
+      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+    },
+    {
+      "variant": "PRR",
+      "canonical": "Physical Sheltering",
+      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+    },
+    {
+      "variant": "MRR",
+      "canonical": "Magical Sheltering",
+      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+    },
+    {
+      "variant": "Physical Resistance Rating",
+      "canonical": "Physical Sheltering",
+      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+    },
+    {
+      "variant": "Magical Resistance Rating",
+      "canonical": "Magical Sheltering",
+      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+    },
+    {
+      "variant": "Fortification Bypass",
+      "canonical": "Armor-Piercing",
+      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+    },
+    {
+      "variant": "Fortification Bypass (Armor-Piercing)",
+      "canonical": "Armor-Piercing",
+      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+    }
+  ],
+  "distinct": [
+    [
+      "Armor Class",
+      "Armor Class (%)"
+    ],
+    [
+      "False Life",
+      "False Life (%)"
+    ],
+    [
+      "Maximum Spellpoints",
+      "Maximum Spell Points (%)"
+    ],
+    [
+      "Acid",
+      "Acidic"
+    ],
+    {
+      "pair": [
+        "Acid",
+        "Acid Resistance"
+      ],
+      "reason": "co-occurs on Elemental Longbow of Earth (level 4)"
+    },
+    {
+      "pair": [
+        "Anarchic",
+        "Anarchic Blast"
+      ],
+      "reason": "co-occurs on Bastard Sword of the Fallen Age"
+    },
+    {
+      "pair": [
+        "Anarchic",
+        "Anarchic Burst"
+      ],
+      "reason": "co-occurs on Demogorgon's Sinew"
+    },
+    {
+      "pair": [
+        "Blinding",
+        "Blinding Flash clicky"
+      ],
+      "reason": "co-occurs on Coronation Shield"
+    },
+    {
+      "pair": [
+        "Blood Rage",
+        "Bloodrage"
+      ],
+      "reason": "co-occurs on Legendary Dagger of the Liturgist"
+    },
+    {
+      "pair": [
+        "Blood Sacrifice",
+        "Blood Sacrifice clicky"
+      ],
+      "reason": "co-occurs on Epic Twisted Talisman"
+    },
+    {
+      "pair": [
+        "Charisma",
+        "Charisma Skills"
+      ],
+      "reason": "co-occurs on Fancy Flayer's Cape"
+    },
+    {
+      "pair": [
+        "Constitution",
+        "Constitution Skills"
+      ],
+      "reason": "co-occurs on Pink Ioun Stone (unsuppressed)"
+    },
+    {
+      "pair": [
+        "Dexterity",
+        "Dexterity Skills"
+      ],
+      "reason": "co-occurs on Deep Red Ioun Stone (unsuppressed)"
+    },
+    {
+      "pair": [
+        "Extra damage vs Giants",
+        "Extra damage vs non-Giants"
+      ],
+      "reason": "co-occurs on Dwarven Thrower"
+    },
+    {
+      "pair": [
+        "Final Litany of the Crimson Covenant",
+        "First Litany of the Crimson Covenant"
+      ],
+      "reason": "co-occurs on Keeper of the Crimson Covenant"
+    },
+    {
+      "pair": [
+        "Fire Shield (Cold)",
+        "Fire Shield (Cold) Miss-Guard"
+      ],
+      "reason": "co-occurs on Epic Cloak of Ice"
+    },
+    {
+      "pair": [
+        "First Litany of the Crimson Covenant",
+        "Third Litany of the Crimson Covenant"
+      ],
+      "reason": "co-occurs on Keeper of the Crimson Covenant"
+    },
+    {
+      "pair": [
+        "Freezing",
+        "Freezing Ice"
+      ],
+      "reason": "co-occurs on Legendary Menzoberranzan's Memory"
+    },
+    {
+      "pair": [
+        "Frost",
+        "Frostbite"
+      ],
+      "reason": "co-occurs on Frostbite Blade (level 17)"
+    },
+    {
+      "pair": [
+        "Greater Disruption",
+        "Greater Disruption Guard"
+      ],
+      "reason": "co-occurs on Epic Hammer of Life"
+    },
+    {
+      "pair": [
+        "Heal",
+        "Heal, Mass clicky"
+      ],
+      "reason": "co-occurs on Epic Hammer of Life"
+    },
+    {
+      "pair": [
+        "Heal",
+        "Healing Amplification"
+      ],
+      "reason": "co-occurs on Epic Pouch of Jerky"
+    },
+    {
+      "pair": [
+        "Heal",
+        "Healing Lore"
+      ],
+      "reason": "co-occurs on Epic Halcyonia"
+    },
+    {
+      "pair": [
+        "Holy",
+        "Holy Burst"
+      ],
+      "reason": "co-occurs on Epic Ship-Chaplain's Sidearm (level 20)"
+    },
+    {
+      "pair": [
+        "Impact",
+        "Impactful"
+      ],
+      "reason": "co-occurs on Beacon of Day"
+    },
+    {
+      "pair": [
+        "Intelligence",
+        "Intelligence Skills"
+      ],
+      "reason": "co-occurs on Scarlet and Blue Ioun Stone (unsuppressed)"
+    },
+    {
+      "pair": [
+        "Legendary Magma Surge",
+        "Legendary Magma Surge Guard"
+      ],
+      "reason": "co-occurs on Legendary Tinder"
+    },
+    {
+      "pair": [
+        "Negative Energy Absorption",
+        "Negative Energy Absorption clicky"
+      ],
+      "reason": "co-occurs on Epic Sacred Helm"
+    },
+    {
+      "pair": [
+        "Radiance",
+        "Radiance Guard"
+      ],
+      "reason": "co-occurs on Epic Vambraces of Inner Light"
+    },
+    {
+      "pair": [
+        "Radiance",
+        "Radiance Lore"
+      ],
+      "reason": "co-occurs on Celestial Beacon"
+    },
+    {
+      "pair": [
+        "Repair",
+        "Repair Amplification"
+      ],
+      "reason": "co-occurs on Boots of Uncanny Mending"
+    },
+    {
+      "pair": [
+        "Repair",
+        "Repair Lore"
+      ],
+      "reason": "co-occurs on Epic Trapsmith's Toolbelt"
+    },
+    {
+      "pair": [
+        "Repair",
+        "Repair Moderate Damage clicky"
+      ],
+      "reason": "co-occurs on Brass Beaver"
+    },
+    {
+      "pair": [
+        "Shocking",
+        "Shocking Blast"
+      ],
+      "reason": "co-occurs on Storm's Harness"
+    },
+    {
+      "pair": [
+        "Shocking",
+        "Shocking Burst"
+      ],
+      "reason": "co-occurs on Storm's Harness"
+    },
+    {
+      "pair": [
+        "Strength",
+        "Strength Skills"
+      ],
+      "reason": "co-occurs on Pale Blue Ioun Stone (unsuppressed)"
+    },
+    {
+      "pair": [
+        "Summon Legendary Werewolf",
+        "Summon Legendary Werewolf clicky"
+      ],
+      "reason": "co-occurs on Legendary Wolf Whistle"
+    },
+    {
+      "pair": [
+        "Swim",
+        "Swim like a Fish"
+      ],
+      "reason": "co-occurs on Aquatic Bracers (level 14)"
+    },
+    {
+      "pair": [
+        "Wisdom",
+        "Wisdom Skills"
+      ],
+      "reason": "co-occurs on Incandescent Blue Ioun Stone (unsuppressed)"
+    }
+  ]
+}

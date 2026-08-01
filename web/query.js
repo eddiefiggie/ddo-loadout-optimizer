@@ -4,15 +4,15 @@ window.App && window.App.ready((dataset) => {
   const root = document.getElementById("solver");
   if (!root) return;
 
-  // Targetable stats: distinct affix stats present in the dataset.
-  const statSet = new Set();
-  dataset.items.forEach((v) => {
-    (v.affixes || []).forEach((a) => statSet.add(a.stat));   // worn + augment affixes
-    (v.scaling || []).forEach((s) => statSet.add(s.stat));
-    (v.parsed_set_bonuses || []).forEach((tier) =>           // set-bonus threshold stats
-      (tier.affixes || []).forEach((a) => statSet.add(a.stat)));
-  });
-  const allStats = [...statSet].sort();
+  // Targetable stats (U5): the shared picker vocabulary — the UNION of every affix
+  // source (gear, augments, set bonuses, and ALL crafting pools), canonicalized
+  // through the alias table and filtered to the rankable ones. This closes the gap
+  // where a crafting-only affix could not be selected even though the solver matches
+  // it. `known` is the unfiltered union used to validate free-typed input.
+  const vocab = (window.DatasetNormalizer && window.DatasetNormalizer.buildPickerVocabulary)
+    ? window.DatasetNormalizer.buildPickerVocabulary(dataset)
+    : { suggestions: [], known: new Set(), canonical: (n) => n };
+  const allStats = vocab.suggestions;
 
   const ranked = []; // ordered target stats
 
@@ -75,9 +75,11 @@ window.App && window.App.ready((dataset) => {
   }
 
   function addTarget(stat) {
-    stat = (stat || "").trim();
+    // Canonicalize a free-typed value through the alias table (variant->canonical)
+    // so it matches the ONE name gear/augments/crafting carry (U5).
+    stat = vocab.canonical((stat || "").trim());
     if (!stat || ranked.includes(stat)) return;
-    if (!statSet.has(stat)) { $("q-status").textContent = `"${stat}" isn't a known affix in the dataset.`; return; }
+    if (!vocab.known.has(stat)) { $("q-status").textContent = `"${stat}" isn't a known affix in the dataset.`; return; }
     ranked.push(stat);
     $("q-add").value = "";
     $("q-status").textContent = "";

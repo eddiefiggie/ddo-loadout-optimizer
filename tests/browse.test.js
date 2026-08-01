@@ -4,9 +4,10 @@ const fs = require("fs");
 const path = require("path");
 
 const { filterVariants, variantStats, affixText, dinoInsertRow, ncRow, vikRow, compendiumRow, browsableItems } = require("../web/browse.js");
-const data = JSON.parse(
+const { normalizeDataset } = require("../web/dataset.js");
+const data = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")
-);
+));
 const items = data.items;
 
 let passed = 0;
@@ -36,10 +37,25 @@ test("U4: affixText renders a boolean feature as presence, not a magnitude", () 
   assert.ok(parts.some((p) => p.includes("Intelligence +10")), "real magnitude still shown");
 });
 
+test("U5: affixText / variantStats read NATIVE {name,type} affixes and item `ml`", () => {
+  // A live item affix is native ({name,type}); the ML filter reads native `ml`.
+  const v = { ml: 30, affixes: [
+    { name: "Salt", type: "boolean", value: 1, unit: "flat" },
+    { name: "Constitution", type: "Insightful", value: 7, unit: "flat" },
+  ] };
+  const parts = affixText(v);
+  assert.ok(parts.includes("✓ Salt"), "native boolean rendered as presence");
+  assert.ok(parts.some((p) => p.includes("Constitution +7 Insightful")), "native name+type render");
+  assert.deepStrictEqual(variantStats(v).sort(), ["Constitution", "Salt"], "variantStats reads native names");
+  // filter by native `ml` (item carries no legacy minimum_level)
+  assert.strictEqual(filterVariants([v], { maxMl: 34 }).length, 1);
+  assert.strictEqual(filterVariants([v], { maxMl: 20 }).length, 0);
+});
+
 test("ML filter returns only variants at or below the cap", () => {
   const rows = filterVariants(items, { maxMl: 10 });
   assert.ok(rows.length > 0);
-  for (const v of rows) assert.ok(Number(v.minimum_level) <= 10);
+  for (const v of rows) assert.ok(Number(v.ml) <= 10);   // U5: native item-level ML
 });
 
 test("verification filter returns only quarantined", () => {
@@ -123,7 +139,8 @@ test("a Nearly-Complete option is findable in the browser by stat", () => {
 
 test("ncRow tags the tier's ML and renders its value", () => {
   const row = ncRow({ category: "Ability Score", stat: "Constitution", bonus_type: "Enhancement", value: 15, tier: "legendary", wiki_url: "w" });
-  assert.strictEqual(row.minimum_level, 35);
+  // U5: pseudo-rows now carry native item-level `ml` (was legacy `minimum_level`).
+  assert.strictEqual(row.ml, 35);
   assert.ok(affixText(row).some((t) => /Constitution \+15/.test(t)));
 });
 
@@ -142,17 +159,22 @@ test("a Viktranium option is findable in the browser by stat", () => {
 
 test("vikRow tags the tier's ML, keys the pool, and renders its value", () => {
   const row = vikRow({ slot_type: "Melancholic", category: "Accessory", stat: "Charisma", bonus_type: "Enhancement", value: 15, tier: "legendary", wiki_url: "w" });
-  assert.strictEqual(row.minimum_level, 34);
+  // U5: pseudo-rows now carry native item-level `ml` (was legacy `minimum_level`).
+  assert.strictEqual(row.ml, 34);
   assert.ok(/Melancholic/.test(row.slot) && /Accessory/.test(row.slot), "slot names the (type, category) pool");
   assert.ok(affixText(row).some((t) => /Charisma \+15/.test(t)));
 });
 
-test("browsableItems appends the compendium index (indexed-only entries)", () => {
+test("browsableItems appends only indexed-only compendium rows (collapsed under single-source)", () => {
+  // U6: the native roster is the single source of truth — every indexed item is
+  // enriched (its own solver-active variant row), so the indexed-only layer has
+  // collapsed to empty. browsableItems appends exactly the indexed-only entries,
+  // which is now 0: nothing is browse-only-but-unparsed anymore.
   const list = browsableItems(data);
   const idx = list.filter((v) => v.compendium);
   const indexedOnly = (data.compendium || []).filter((x) => x.status === "indexed").length;
   assert.strictEqual(idx.length, indexedOnly, "indexed-only compendium rows are browsable");
-  assert.ok(idx.length > 0, "expected a non-empty compendium index");
+  assert.strictEqual(indexedOnly, 0, "single-source completeness: no known-but-unparsed layer");
   // enriched entries are NOT re-listed here (they appear as real variant rows)
   assert.ok(!idx.some((v) => v.verification !== "indexed"));
 });
@@ -165,11 +187,19 @@ test("compendiumRow renders an indexed, solver-excluded row with a wiki link", (
   assert.ok(row.wiki_url);
 });
 
-test("indexed items are filterable by status and slot", () => {
+test("indexed-only rows have collapsed under single-source completeness", () => {
+  // U6: with every native item enriched, no browse row carries verification
+  // "indexed" — the unparsed layer is gone. The status+slot filter still WORKS
+  // (compendiumRow keeps rendering a synthetic indexed row, tested above); real
+  // data simply has none.
   const list = browsableItems(data);
   const rows = filterVariants(list, { verification: "indexed", slot: "Ring" });
-  assert.ok(rows.length > 0, "indexed Rings surface under the status+slot filter");
-  for (const v of rows) { assert.strictEqual(v.verification, "indexed"); assert.strictEqual(v.slot, "Ring"); }
+  assert.strictEqual(rows.length, 0, "no indexed-only Rings under single-source");
+  // A synthetic indexed row still filters correctly (function-level guarantee).
+  const synth = compendiumRow({ name: "Some Ring", slot: "Ring", wiki_url: "w", status: "indexed" });
+  const filtered = filterVariants(list.concat(synth), { verification: "indexed", slot: "Ring" });
+  assert.strictEqual(filtered.length, 1);
+  assert.strictEqual(filtered[0].verification, "indexed");
 });
 
 console.log(`\n${passed} passed`);

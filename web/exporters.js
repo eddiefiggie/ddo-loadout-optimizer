@@ -7,11 +7,15 @@
 
   // Compact "Stat +Value[%][ Type]" affix label — mirrors results.js affixLabel
   // (kept inline so this module stays self-contained and Node-testable).
+  // Reads name/type native-first (`{name,type}`) with the legacy alias as a fallback
+  // for pre-overhaul persisted snapshots and the not-yet-native set-bonus affixes (U5).
   function fmtAffix(a) {
     if (!a) return "";
-    if (a.bonus_type === "boolean") return "✓ " + a.stat;
-    const type = a.bonus_type && a.bonus_type !== "Enhancement" ? " " + a.bonus_type : "";
-    return `${a.stat} +${a.value}${a.unit === "pct" ? "%" : ""}${type}`;
+    const name = a.name != null ? a.name : a.stat;
+    const bt = a.type != null ? a.type : a.bonus_type;
+    if (bt === "boolean") return "✓ " + name;
+    const type = bt && bt !== "Enhancement" ? " " + bt : "";
+    return `${name} +${a.value}${a.unit === "pct" ? "%" : ""}${type}`;
   }
 
   const ARMOR = { cloth: "Cloth", light: "Light", medium: "Medium", heavy: "Heavy" };
@@ -52,7 +56,9 @@
       return {
         slot: c.slot,
         item: v.variant_id,
-        ml: v.minimum_level == null ? "" : v.minimum_level,
+        // item-level ML: native `ml`, falling back to the legacy `minimum_level`
+        // for a pre-overhaul persisted snapshot (U5).
+        ml: (v.ml != null ? v.ml : v.minimum_level) == null ? "" : (v.ml != null ? v.ml : v.minimum_level),
         stats: (v.affixes || []).map(fmtAffix).filter(Boolean),
         augs: (v.augment_slots_norm && v.augment_slots_norm.colors) || v.augment_slots || [],
       };

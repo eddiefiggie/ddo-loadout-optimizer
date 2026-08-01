@@ -9,7 +9,7 @@ the pool is keyed by ``tier`` (1/2/3); a host exposes one slot per tier.
 
 Strict wiki provenance: an option is solver-eligible only with a canonical
 ``bonus_type`` (in ``affix_parser.BONUS_TYPES``), a present ``stat`` (normalized
-via ``vocab.normalize_stat``), an integer ``value``, and a non-empty ``wiki_url``.
+via the item pipeline stat name), an integer ``value``, and a non-empty ``wiki_url``.
 Anything else — a proc, a set/on-hit effect, a non-magnitude line — is quarantined
 with a reason, never inferred. Pools are empty until harvested; the machinery is
 complete. The tier count/boundary is confirmed from the wiki during harvest.
@@ -17,7 +17,6 @@ complete. The tier count/boundary is confirmed from the wiki during harvest.
 from __future__ import annotations
 
 from src.affix_parser import BONUS_TYPES
-from src import vocab
 
 
 def parse_pools(pools):
@@ -50,7 +49,7 @@ def parse_pools(pools):
                 quarantined.append({"raw": f"tier {tier}/{name}", "reason": "missing magnitude"})
                 continue
             records.append({
-                "tier": tier, "name": name, "stat": vocab.normalize_stat(stat),
+                "tier": tier, "name": name, "stat": stat,
                 "bonus_type": bonus_type, "value": value, "unit": unit, "wiki_url": wiki_url,
             })
     return records, quarantined
@@ -76,3 +75,30 @@ def parse_thunder_forged(seed):
                 "per-tier picks. Pools pending wiki harvest.",
     }
     return {"records": records, "quarantined": quarantined, "coverage": coverage}
+
+
+def build_thunder_forged(catalog=None):
+    """Native path (U2/R6): source the Thunder-Forged per-tier pools from
+    ``gearplanner_crafting.json`` (the ``T*(Weapon)`` menu pools) via
+    ``crafting_catalog`` instead of the legacy hand-harvested seed. No ``wiki_url``
+    gate, no type remap, no quarantine (F1). Returns the same
+    ``{records, quarantined, coverage}`` shape ``parse_thunder_forged`` does."""
+    from src import crafting_catalog
+    records = crafting_catalog.thunder_forged_records(catalog)
+    by_tier = {}
+    for r in records:
+        by_tier[r["tier"]] = by_tier.get(r["tier"], 0) + 1
+    coverage = {
+        "tiers_sourced": sorted(by_tier),
+        "tiers_pending": sorted(t for t in (1, 2, 3) if by_tier.get(t, 0) == 0),
+        "options_eligible": len(records),
+        "options_quarantined": 0,
+        "quarantined": [],
+        "by_tier": by_tier,
+        "source": "gearplanner_crafting.json: "
+                  + ", ".join(crafting_catalog.THUNDER_FORGED_KEYS.values()),
+        "note": "multi-tier choice-slot (1/2/3) over the native Thunder-Forged "
+                "Weapon pools. Sourced from the gear-planner crafting catalog; "
+                "host-marker surfacing lands with the native reader (U3).",
+    }
+    return {"records": records, "quarantined": [], "coverage": coverage}

@@ -1,0 +1,221 @@
+"""gear-planner raw-dump reader (native schema — the single source of truth).
+
+Reads `data/seed/compendium/raw/gearplanner_items.json` (the gear-planner catalog)
+and maps each item onto a pipeline record carrying the **native** affix block —
+`{name, type, value}` taken straight from the dump's typed `affixes[]`, VERBATIM
+(no free-text re-parse, no type remap, no quarantine). gear-planner is the sole
+authority for item data; the legacy internal-schema remap was purged in U7.
+
+Key mappings (the dump keeps these in *separate* keys):
+  * `affixes[] {name,type,value}` -> native `affixes` (verbatim)
+  * `crafting[]` markers -> the native host choice-slot markers:
+      - `"<Color> Augment Slot"`              -> `augment_slots`
+      - `"Sealed in X"`                        -> `seal_slots`      (gated)
+      - `"<Dolorous|Melancholic|Miserable|Woeful> (<Category>)"` -> `lamordia_slots`
+      - `"Nearly Complete: <category>"`        -> `nearly_complete`
+      - `"Lost Purpose" / "Legendary Lost Purpose"` -> `lost_purpose`
+    Each host marker is surfaced NATIVELY (the plan's native host-marker
+    surfacing) so the crafting families activate from the authority, not from the
+    retired wiki-enriched shards.
+  * `sets[]` -> `enhancements ["<Set> (set)"]` markers (resolved against
+    gearplanner_sets.json by build_dataset)
+  * `slot` / `ml` / `url` -> canonical slot / minimum_level / wiki_url
+
+Roster membership: every dump item is emitted; the build's name-keyed dedup
+collapses intra-dump same-name collisions (first wins), disclosed in coverage.
+"""
+from __future__ import annotations
+
+import json
+import os
+import re
+
+from src.seal import normalize_seal_type
+
+RAW_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "seed",
+                        "compendium", "raw", "gearplanner_items.json")
+
+# Raw-dump slot names -> canonical pipeline slot names (the retired shard applied
+# the same normalization; the rest of the pipeline expects "Helmet" / "Off Hand").
+_SLOT_MAP = {"Helm": "Helmet", "Offhand": "Off Hand"}
+
+_WIKI_BASE = "https://ddowiki.com"
+
+# Viktranium ("Lamordia", Chill of Ravenloft) typed slots and the crafting-marker
+# grammar `"<Type> (<Category>)"` (an optional "(quarterstaff)" tail is ignored).
+_LAMORDIA_RE = re.compile(r"^(Dolorous|Melancholic|Miserable|Woeful) \((Armor|Accessory|Weapon)\)")
+_NEARLY_PREFIX = "Nearly Complete: "
+
+
+def _slot(raw_slot):
+    return _SLOT_MAP.get(raw_slot, raw_slot)
+
+
+def _category(slot):
+    # The retired shard used "weapon" for weapons and "item" for everything else
+    # (including Armor). Mirror that so downstream category logic is unchanged.
+    return "weapon" if slot == "Weapon" else "item"
+
+
+def _native_affixes(affixes):
+    return [{"name": a.get("name"), "type": a.get("type"), "value": a.get("value")}
+            for a in affixes or []]
+
+
+def _augment_slots(crafting):
+    """Extract augment-slot colors from the crafting[] list ("Yellow Augment Slot"
+    -> "Yellow"). Non-augment crafting entries are left for their own handlers."""
+    out = []
+    for c in crafting or []:
+        if isinstance(c, str) and c.endswith(" Augment Slot"):
+            out.append(c[: -len(" Augment Slot")].strip())
+    return out
+
+
+def _seal_slots(crafting, slot, verified_seal_types):
+    """Recover "Sealed in X" seal-slot host markers from the crafting[] list.
+    Gated on `verified_seal_types` (seal types with a non-empty pool) so
+    Mist/Gloom — present in the dump but not yet sourced — stay excluded."""
+    out = []
+    for c in crafting or []:
+        if not (isinstance(c, str) and c.lower().startswith("sealed in ")):
+            continue
+        st = normalize_seal_type(c)
+        if st and st in verified_seal_types:
+            out.append({"seal_type": st, "category": slot})
+    return out
+
+
+def _lamordia_slots(crafting):
+    """Viktranium ("Lamordia") typed host slots from the crafting[] list. Each
+    `"<Type> (<Category>)"` marker becomes `{type, category}`; deduped by
+    (type, category) so the "(quarterstaff)" variant does not double a slot."""
+    out, seen = [], set()
+    for c in crafting or []:
+        if not isinstance(c, str):
+            continue
+        m = _LAMORDIA_RE.match(c)
+        if not m:
+            continue
+        key = (m.group(1), m.group(2))
+        if key not in seen:
+            seen.add(key)
+            out.append({"type": m.group(1), "category": m.group(2)})
+    return out
+
+
+def _nearly_complete(crafting):
+    """U81 Nearly-Complete host category from `"Nearly Complete: <category>"`
+    (the parametric single-affix choice slot). First marker wins; None if absent."""
+    for c in crafting or []:
+        if isinstance(c, str) and c.startswith(_NEARLY_PREFIX):
+            return c[len(_NEARLY_PREFIX):].strip()
+    return None
+
+
+def _lost_purpose(crafting):
+    """Vecna "Lost Purpose" tier marker: `"Legendary Lost Purpose"` -> 'legendary',
+    `"Lost Purpose"` -> 'heroic'. None if absent."""
+    for c in crafting or []:
+        if c == "Legendary Lost Purpose":
+            return "legendary"
+    for c in crafting or []:
+        if c == "Lost Purpose":
+            return "heroic"
+    return None
+
+
+def _record(it, verified_seal_types):
+    slot = _slot(it.get("slot"))
+    quests = it.get("quests") or []
+    rec = {
+        "name": it.get("name"),
+        # --- native gear-planner block (canonical schema at rest) --------------
+        "type": it.get("type"),
+        "ml": it.get("ml"),
+        "url": it.get("url"),
+        "quests": list(quests),
+        "affixes": _native_affixes(it.get("affixes")),
+        "crafting": list(it.get("crafting") or []),
+        "sets": list(it.get("sets") or []),
+        "artifact": bool(it.get("artifact")),
+        # --- derived-from-native fields the rest of the pipeline reads ---------
+        "category": _category(slot),
+        "slot": slot,
+        "minimum_level": it.get("ml"),
+        "binding": None,
+        "location_quest": "; ".join(q for q in quests if isinstance(q, str)),
+        "wiki_url": _WIKI_BASE + it.get("url", "") if it.get("url") else "",
+        "augment_slots": _augment_slots(it.get("crafting")),
+        # set membership -> "(set)" markers; the build resolves them against the
+        # gear-planner set catalog (single source of truth).
+        "enhancements": [f"{s} (set)" for s in (it.get("sets") or [])],
+        "_source": "gear-planner",
+        "_enriched": True,
+    }
+    seals = _seal_slots(it.get("crafting"), slot, verified_seal_types)
+    if seals:
+        rec["seal_slots"] = seals
+    lam = _lamordia_slots(it.get("crafting"))
+    if lam:
+        rec["lamordia_slots"] = lam
+    nc = _nearly_complete(it.get("crafting"))
+    if nc:
+        rec["nearly_complete"] = nc
+    lp = _lost_purpose(it.get("crafting"))
+    if lp:
+        rec["lost_purpose"] = lp
+    return rec
+
+
+def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
+                       exclude_names=None):
+    """Load and map the gear-planner raw dump into native pipeline records.
+    `verified_seal_types` (seal types with a non-empty pool) gates which "Sealed
+    in X" crafting entries become seal-slot hosts; default empty -> none.
+
+    `exclude_names` are names owned by a host-pipeline seed that generates its own
+    synthetic bodies *after* the build's name-keyed dedup (the Dinosaur Bone
+    hosts). Such records are dropped here — the host seed owns the body.
+
+    Returns `(records, stats)` where `stats` reports intra-dump name collisions
+    collapsed (name-keyed, first wins) and native host-marker counts, for coverage
+    disclosure."""
+    seal_types = set(verified_seal_types or ())
+    excluded = set(exclude_names or ())
+    with open(path, encoding="utf-8") as fh:
+        raw = json.load(fh)
+
+    records, seen = [], set()
+    collapsed = host_owned = 0
+    seal_hosts = lamordia_hosts = nearly_hosts = lost_purpose_hosts = 0
+    for it in raw:
+        name = it.get("name")
+        if name in excluded:
+            host_owned += 1
+            continue
+        if name in seen:
+            collapsed += 1
+            continue
+        seen.add(name)
+        rec = _record(it, seal_types)
+        if rec.get("seal_slots"):
+            seal_hosts += 1
+        if rec.get("lamordia_slots"):
+            lamordia_hosts += 1
+        if rec.get("nearly_complete"):
+            nearly_hosts += 1
+        if rec.get("lost_purpose"):
+            lost_purpose_hosts += 1
+        records.append(rec)
+
+    stats = {
+        "planner_records": len(records),
+        "planner_name_collisions_collapsed": collapsed,
+        "planner_host_pipeline_names_excluded": host_owned,
+        "planner_seal_hosts": seal_hosts,
+        "planner_lamordia_hosts": lamordia_hosts,
+        "planner_nearly_complete_hosts": nearly_hosts,
+        "planner_lost_purpose_hosts": lost_purpose_hosts,
+    }
+    return records, stats

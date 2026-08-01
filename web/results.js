@@ -3,18 +3,32 @@
 // now optimized and prescribed here; crafting/upgrade paths are a pending
 // follow-up, surfaced honestly in the coverage disclosure.
 
+// Shared affix formatter. Reads NAME/TYPE native-first (`{name,type}`) with the
+// legacy `{stat,bonus_type}` as a fallback, because it formats BOTH native item
+// affixes AND the not-yet-native crafting-pool / set-bonus / Dino affixes (and any
+// pre-overhaul persisted item) — mirroring the parity harness's affixTriple (U5).
 function affixLabel(a) {
+  if (!a) return "";
+  const name = a.name != null ? a.name : a.stat;
+  const bt = a.type != null ? a.type : a.bonus_type;
   // Boolean feature (U4): presence, not a magnitude. Render a marker so it never
   // reads as a broken "+N" next to real magnitudes.
-  if (a.bonus_type === "boolean") return `✓ ${a.stat}`;
-  const type = a.bonus_type && a.bonus_type !== "Enhancement" ? ` ${a.bonus_type}` : "";
-  return `${a.stat} +${a.value}${a.unit === "pct" ? "%" : ""}${type}`;
+  if (bt === "boolean") return `✓ ${name}`;
+  const type = bt && bt !== "Enhancement" ? ` ${bt}` : "";
+  return `${name} +${a.value}${a.unit === "pct" ? "%" : ""}${type}`;
 }
+
+// Item-level ML read native-first (`ml`), falling back to the legacy `minimum_level`
+// alias for a pre-overhaul persisted item (U5).
+// `var` (not `const`): itemMl is declared in both results.js and browse.js, which
+// share one global scope as plain browser scripts; `var` tolerates the redeclaration
+// while each file keeps its own copy for node's module-scoped `require`.
+var itemMl = (v) => (v && v.ml != null) ? v.ml : (v && v.minimum_level);
 
 /** Which of a variant's affixes hit the query targets (for the "why" column). */
 function contributingAffixes(variant, targets) {
   const t = new Set(targets);
-  return (variant.affixes || []).filter((a) => t.has(a.stat));
+  return (variant.affixes || []).filter((a) => t.has(a.name != null ? a.name : a.stat));
 }
 
 /** Reconstruct a concrete augment->item assignment from the solver's aggregate
@@ -373,7 +387,7 @@ function paperdollSlot(label, pos, pick, satisfied) {
   return `<div class="pd-slot occupied pos-${pos}${glow ? " is-set" : ""}">
     <div class="pd-label">${esc(label)}</div>
     <div class="pd-item" title="${esc(v.variant_id)}">${esc(v.variant_id)}</div>
-    <div class="pd-foot"><span class="pd-ml">ML ${esc(v.minimum_level ?? "?")}</span>${setLine}</div>
+    <div class="pd-foot"><span class="pd-ml">ML ${esc(itemMl(v) ?? "?")}</span>${setLine}</div>
   </div>`;
 }
 
@@ -402,7 +416,7 @@ function loadoutDeepDive(result, query, maps, attr) {
     const wiki = v.wiki_url ? `<a class="dd-wiki" href="${safeUrl(v.wiki_url)}" target="_blank" rel="noopener">wiki</a>` : "";
     const artifactTag = v.artifact ? `<span class="dd-artifact" title="your one equipped Artifact">Artifact</span>` : "";
     return `<div class="dd-item${glow ? " is-set" : ""}${v.artifact ? " is-artifact" : ""}">
-      <div class="dd-head"><span class="dd-slot">${esc(c.slot)}</span><span class="dd-name">${esc(v.variant_id)}</span>${artifactTag}<span class="dd-ml">ML ${esc(v.minimum_level ?? "?")}</span>${wiki}</div>
+      <div class="dd-head"><span class="dd-slot">${esc(c.slot)}</span><span class="dd-name">${esc(v.variant_id)}</span>${artifactTag}<span class="dd-ml">ML ${esc(itemMl(v) ?? "?")}</span>${wiki}</div>
       ${whyThisLine(result, { slot: c.slot, variant_id: v.variant_id }, attr)}
       ${memberSets.length ? `<div class="dd-set"><span class="setpip"></span>Part of set: ${esc(memberSets.join(", "))}</div>` : ""}
       ${upgradeNote}
@@ -437,7 +451,7 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById) {
   const name = locked ? "locked empty" : (v ? esc(v.variant_id) : "empty");
   const nameCls = (!v || locked) ? "pd-rname muted" : "pd-rname";
   const foot = (v && !locked)
-    ? `<div class="pd-rfoot"><span class="pd-rml">ML ${esc(v.minimum_level ?? "?")}</span>${setLine}</div>` : "";
+    ? `<div class="pd-rfoot"><span class="pd-rml">ML ${esc(itemMl(v) ?? "?")}</span>${setLine}</div>` : "";
   // U9/U2: per-item stats + assigned augments (with their affixes) + assigned
   // craft slots, shown uniformly on every occupied block (empty blocks stay the
   // same height via the grid stretch + the .pd-row min-height). Assignment data

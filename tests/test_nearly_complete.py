@@ -73,33 +73,32 @@ def test_per_option_bonus_type_preserved():
     assert types["Negative Healing Amplification"] == "Profane"
 
 
-def test_shipped_seed_parses_clean():
-    seed_path = os.path.join(ROOT, "data", "seed", "nearly_complete.json")
-    with open(seed_path, encoding="utf-8") as fh:
-        seed = json.load(fh)
-    result = nearly_complete.parse_nearly_complete(seed)
-    cov = result["coverage"]
-    # Regression pin on the full sourced pool (U2): all 6 categories, 0 quarantined.
-    assert set(cov["categories_sourced"]) == nearly_complete.CATEGORIES
-    assert cov["options_quarantined"] == 0, result["quarantined"]
-    assert cov["options_eligible"] >= 60
-    assert "pending" in cov["item_hosts"]
-    for r in result["records"]:
-        assert r["category"] in nearly_complete.CATEGORIES
-        assert r["wiki_url"]
-        assert r["tier"] in ("heroic", "legendary")
-    # spot-check reconciled endgame values
-    leg = {(r["stat"], r["category"]): r for r in result["records"] if r["tier"] == "legendary"}
-    assert leg[("Constitution", "Ability Score")]["value"] == 15
-    assert leg[("Positive Healing Amplification", "Healing Amplification")]["bonus_type"] == "Competence"
-
 
 def test_built_dataset_carries_nearly_complete_pool():
     # U3: the real build wires the pool + coverage into the dataset.
     import build_dataset
-    dataset = build_dataset.build(build_dataset.load_seed())
+    dataset = build_dataset.build()
     assert "nearly_complete" in dataset
     assert len(dataset["nearly_complete"]) >= 60
     nc_cov = dataset["metadata"]["nc_coverage"]
     assert set(nc_cov["categories_sourced"]) == nearly_complete.CATEGORIES
     assert "pending" in nc_cov["item_hosts"]
+
+
+def test_pass2_grafts_nc_and_lamordia_markers_onto_the_winner():
+    # U1 (precedence-flip plan): the wiki-shard-only crafting markers survive the
+    # gear-planner collision flip because Pass-2 grafts them from ANY loaded record
+    # onto the winning body. Without the graft, a flip-only build strands them
+    # (nearly_complete 70->0, lamordia 108->6). Guard the full host counts.
+    import build_dataset
+    items = build_dataset.build()["items"]
+    nc_hosts = sum(1 for it in items if it.get("nearly_complete"))
+    lam_hosts = sum(1 for it in items if it.get("lamordia_slots"))
+    # Floors, not exact counts: the regression to catch is the flip STRANDING these
+    # markers (nc 70->0, lamordia 108->6 without the graft). A floor well above the
+    # stranded residual guards that without breaking on a legitimate catalog refresh.
+    assert nc_hosts >= 60, f"Nearly-Complete hosts stranded by the flip: {nc_hosts}"
+    assert lam_hosts >= 100, f"Lamordia hosts stranded by the flip: {lam_hosts}"
+    # grafted list values are independent copies (no shared ref across variants)
+    lam_lists = [it["lamordia_slots"] for it in items if it.get("lamordia_slots")]
+    assert len({id(x) for x in lam_lists}) == len(lam_lists), "lamordia_slots lists are shared by reference"

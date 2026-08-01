@@ -53,4 +53,6 @@ def test_shipped_dataset_has_no_umbrella_stats_left():
     d = json.load(open(p, encoding="utf-8"))
     for v in d["items"]:
         for a in v.get("affixes", []) or []:
-            assert not umbrella.is_umbrella(a["stat"]), f"{v.get('source_item')}: {a['stat']}"
+            # items.json affixes are native at rest (U3): the stat name is `name`.
+            stat = a.get("name", a.get("stat"))
+            assert not umbrella.is_umbrella(stat), f"{v.get('source_item')}: {stat}"

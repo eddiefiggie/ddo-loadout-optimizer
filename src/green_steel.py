@@ -12,14 +12,13 @@ its rationale live in the seed metadata and are disclosed per result.
 
 Strict wiki provenance: an option is solver-eligible only with a canonical
 ``bonus_type`` (in ``affix_parser.BONUS_TYPES``), a present ``stat`` (normalized
-via ``vocab.normalize_stat``), an integer ``value``, and a non-empty ``wiki_url``.
+via the item pipeline stat name), an integer ``value``, and a non-empty ``wiki_url``.
 Anything else is quarantined with a reason, never inferred. The pool is empty
 until harvested; the machinery is complete.
 """
 from __future__ import annotations
 
 from src.affix_parser import BONUS_TYPES
-from src import vocab
 
 
 def parse_options(options, wiki_url):
@@ -46,7 +45,7 @@ def parse_options(options, wiki_url):
             quarantined.append({"raw": name or stat, "reason": "missing wiki_url"})
             continue
         records.append({
-            "name": name, "stat": vocab.normalize_stat(stat), "bonus_type": bonus_type,
+            "name": name, "stat": stat, "bonus_type": bonus_type,
             "value": value, "unit": unit, "wiki_url": opt_url,
         })
     return records, quarantined
@@ -68,3 +67,26 @@ def parse_green_steel(seed):
                 "pending wiki harvest.",
     }
     return {"records": records, "quarantined": quarantined, "coverage": coverage}
+
+
+def build_green_steel(catalog=None):
+    """Native path (U2/R6/A2): source the Green Steel pool from
+    ``gearplanner_crafting.json`` (the ``T*(Equipment)`` menu pools) via
+    ``crafting_catalog`` instead of the legacy hand-harvested seed. The pools DO
+    exist (A2 corrects the earlier false "no pool" claim); no ``wiki_url`` gate,
+    no type remap, no quarantine (F1). Returns the same
+    ``{records, quarantined, coverage}`` shape ``parse_green_steel`` does."""
+    from src import crafting_catalog
+    records = crafting_catalog.green_steel_records(catalog)
+    coverage = {
+        "options_eligible": len(records),
+        "options_quarantined": 0,
+        "quarantined": [],
+        "pending": len(records) == 0,
+        "cutline": None,
+        "source": "gearplanner_crafting.json: " + ", ".join(crafting_catalog.GREEN_STEEL_KEYS),
+        "note": "single-pick choice-slot over the native Green Steel effect pool "
+                "(T1/T2/T3 Equipment). Sourced from the gear-planner crafting "
+                "catalog; host-marker surfacing lands with the native reader (U3).",
+    }
+    return {"records": records, "quarantined": [], "coverage": coverage}

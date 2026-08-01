@@ -4,6 +4,7 @@ const {
   serializeCharacter, stripResult, saveCharacter, listCharacters, loadCharacter, deleteCharacter,
   allCharacters, saveMany,
 } = require("../web/persist.js");
+const { migrateLoadout } = require("../web/dataset.js");
 
 let passed = 0;
 function test(name, fn) {
@@ -124,6 +125,43 @@ test("quota-exceeded on save returns a typed error rather than throwing", () => 
   const res = saveCharacter(serializeCharacter("Sook", state, lastRun, "id1"), st);
   assert.strictEqual(res.ok, false);
   assert.strictEqual(res.error, "quota");
+});
+
+// ---- U5, Part C — one-time load migration for a pre-overhaul snapshot ----------
+test("migrateLoadout upgrades a PRE-OVERHAUL snapshot's chosen items to native fields", () => {
+  // A save made before the native-schema overhaul embedded its chosen items with
+  // ONLY the legacy stat/bonus_type/minimum_level. On load, migrateLoadout attaches
+  // the native name/type/ml the migrated readers use — without dropping the legacy
+  // aliases (so both read paths keep working).
+  const snap = {
+    status: "optimal",
+    chosen: [
+      { slot: "Armor", variant: { variant_id: "Old Vest", minimum_level: 30,
+        affixes: [{ stat: "Constitution", bonus_type: "Insightful", value: 7, unit: "flat" }] } },
+    ],
+  };
+  const out = migrateLoadout(snap);
+  const v = out.chosen[0].variant;
+  assert.strictEqual(v.ml, 30, "native item ml attached from minimum_level");
+  const a = v.affixes[0];
+  assert.strictEqual(a.name, "Constitution", "native affix name attached from stat");
+  assert.strictEqual(a.type, "Insightful", "native affix type attached from bonus_type");
+  // idempotent + non-destructive: a second pass and the legacy aliases both survive
+  migrateLoadout(out);
+  assert.strictEqual(a.stat, "Constitution", "legacy affix alias preserved");
+  assert.strictEqual(v.minimum_level, 30, "legacy item alias preserved");
+});
+
+test("migrateLoadout is a no-op on a native (current) snapshot and tolerates empties", () => {
+  assert.strictEqual(migrateLoadout(null), null);
+  const native = { chosen: [{ slot: "Ring", variant: { variant_id: "New", ml: 34,
+    affixes: [{ name: "Dodge", type: "Enhancement", value: 5, unit: "pct" }] } }] };
+  const out = migrateLoadout(native);
+  const a = out.chosen[0].variant.affixes[0];
+  assert.strictEqual(a.name, "Dodge");
+  // U7 removed the native->legacy affix aliases: a native affix stays {name,type},
+  // no stat/bonus_type back-fill.
+  assert.strictEqual(a.stat, undefined, "no legacy alias back-filled for a native affix");
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);

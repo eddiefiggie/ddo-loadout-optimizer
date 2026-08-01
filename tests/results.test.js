@@ -584,9 +584,17 @@ test("U6: equippedRow gets is-set only for a satisfied-set piece", () => {
 });
 
 test("U4: affixLabel renders a boolean feature as presence, not a magnitude", () => {
+  // Legacy-shaped input (the fallback path — also covers a pre-overhaul persisted
+  // snapshot / the not-yet-native crafting-pool + set-bonus affixes).
   assert.strictEqual(R.affixLabel({ stat: "Salt", bonus_type: "boolean", value: 1, unit: "flat" }), "✓ Salt");
-  // a real magnitude affix is unaffected
   assert.strictEqual(R.affixLabel({ stat: "Dodge", bonus_type: "Enhancement", value: 5, unit: "pct" }), "Dodge +5%");
+});
+
+test("U5: affixLabel reads NATIVE {name,type} (the migrated primary path)", () => {
+  // Native item affixes carry {name,type}; the formatter reads them native-first.
+  assert.strictEqual(R.affixLabel({ name: "Salt", type: "boolean", value: 1, unit: "flat" }), "✓ Salt");
+  assert.strictEqual(R.affixLabel({ name: "Dodge", type: "Enhancement", value: 5, unit: "pct" }), "Dodge +5%");
+  assert.strictEqual(R.affixLabel({ name: "Constitution", type: "Insightful", value: 7, unit: "flat" }), "Constitution +7 Insightful");
 });
 
 console.log(`\n${passed} passed`);

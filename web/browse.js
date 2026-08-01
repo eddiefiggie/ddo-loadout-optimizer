@@ -2,6 +2,17 @@
 // The filter logic is a pure function (filterVariants) so it is unit-testable
 // under node; DOM rendering only runs in the browser.
 
+// Read an item affix's NAME/TYPE native-first (`{name,type}`), falling back to the
+// legacy alias for the not-yet-native crafting-pool / set-bonus affixes and for a
+// pre-overhaul persisted item. Item-level ML reads `ml` native-first (== minimum_level).
+const affixName = (a) => (a && a.name != null) ? a.name : (a && a.stat);
+const affixType = (a) => (a && a.type != null) ? a.type : (a && a.bonus_type);
+// `var` (not `const`): this identical helper is declared in both browse.js and
+// results.js, which share one global scope as plain browser scripts (a `const`
+// redeclaration is a SyntaxError). Each file keeps its own copy so node `require`
+// resolves it in module scope; `var` tolerates the browser-global redeclaration.
+var itemMl = (v) => (v && v.ml != null) ? v.ml : (v && v.minimum_level);
+
 /**
  * Pure filter. Returns the variants matching every active criterion.
  * @param {Array} items - variant records
@@ -13,7 +24,7 @@ function filterVariants(items, c) {
   return items.filter((v) => {
     if (c.slot && v.slot !== c.slot) return false;
     if (c.verification && c.verification !== "all" && v.verification !== c.verification) return false;
-    if (c.maxMl != null && c.maxMl !== "" && Number(v.minimum_level) > Number(c.maxMl)) return false;
+    if (c.maxMl != null && c.maxMl !== "" && Number(itemMl(v)) > Number(c.maxMl)) return false;
     if (c.stat) {
       const stats = variantStats(v);
       if (!stats.includes(c.stat)) return false;
@@ -29,8 +40,8 @@ function filterVariants(items, c) {
 /** All distinct stat names a variant carries (affixes + scaling). */
 function variantStats(v) {
   const out = [];
-  (v.affixes || []).forEach((a) => out.push(a.stat));
-  (v.scaling || []).forEach((s) => out.push(s.stat));
+  (v.affixes || []).forEach((a) => out.push(affixName(a)));   // item affix (native name)
+  (v.scaling || []).forEach((s) => out.push(s.stat));         // scaling: legacy at rest
   return out;
 }
 
@@ -40,10 +51,11 @@ function distinct(items, fn) {
 
 function affixText(v) {
   const parts = (v.affixes || []).map((a) => {
-    if (a.bonus_type === "boolean") return `✓ ${a.stat}`;   // U4: presence, not a magnitude
-    const type = a.bonus_type && a.bonus_type !== "Enhancement" ? ` ${a.bonus_type}` : "";
+    const name = affixName(a), bt = affixType(a);
+    if (bt === "boolean") return `✓ ${name}`;   // U4: presence, not a magnitude
+    const type = bt && bt !== "Enhancement" ? ` ${bt}` : "";
     const unit = a.unit === "pct" ? "%" : "";
-    return `${a.stat} +${a.value}${unit}${type}`;
+    return `${name} +${a.value}${unit}${type}`;
   });
   (v.scaling || []).forEach((s) => parts.push(`${s.stat} (scales to +${s.val_hi}${s.unit === "pct" ? "%" : ""})`));
   // A Dinosaur Bone blank's value is its typed Dino slots, not affixes — surface
@@ -60,16 +72,18 @@ function affixText(v) {
 function dinoInsertRow(ins) {
   // An insert is a UNIT keyed by (dino_type, category) that may carry several
   // affixes (KTD4). Fall back to a flat single-affix record for back-compat.
+  // Pool option objects are legacy-shaped ({stat,bonus_type}); the display row is
+  // built native ({name,type}) so the native readers above render it (U5).
   const affixes = (ins.affixes && ins.affixes.length)
-    ? ins.affixes.map((a) => ({ stat: a.stat, bonus_type: a.bonus_type, value: a.value, unit: a.unit || "flat" }))
-    : [{ stat: ins.stat, bonus_type: ins.bonus_type, value: ins.value, unit: ins.unit || "flat" }];
+    ? ins.affixes.map((a) => ({ name: a.stat, type: a.bonus_type, value: a.value, unit: a.unit || "flat" }))
+    : [{ name: ins.stat, type: ins.bonus_type, value: ins.value, unit: ins.unit || "flat" }];
   const category = ins.category || "Accessory";
-  const title = ins.name ? `${ins.name} — ${ins.dino_type}` : `${ins.dino_type}: ${affixes[0].stat}`;
+  const title = ins.name ? `${ins.name} — ${ins.dino_type}` : `${ins.dino_type}: ${affixes[0].name}`;
   return {
     variant_id: title,
     source_item: `Isle of Dread Dino insert (${category})`,
     slot: `Dinosaur Bone augment (${ins.dino_type} / ${category})`,
-    minimum_level: 31,
+    ml: 31,
     verification: "verified",
     affixes,
     scaling: [],
@@ -86,9 +100,9 @@ function ncRow(opt) {
     variant_id: `Nearly Completed: ${opt.stat} (${opt.tier})`,
     source_item: `Nearly Completed — ${opt.category}`,
     slot: `Nearly Completed (${opt.category})`,
-    minimum_level: opt.tier === "legendary" ? 35 : 11,
+    ml: opt.tier === "legendary" ? 35 : 11,
     verification: "verified",
-    affixes: [{ stat: opt.stat, bonus_type: opt.bonus_type, value: opt.value, unit: opt.unit || "flat" }],
+    affixes: [{ name: opt.stat, type: opt.bonus_type, value: opt.value, unit: opt.unit || "flat" }],
     scaling: [],
     wiki_url: opt.wiki_url,
     nc_option: true,
@@ -103,9 +117,9 @@ function vikRow(opt) {
     variant_id: `Slot ${opt.slot_type} Viktranium augment: ${opt.stat} (${opt.tier})`,
     source_item: `Viktranium — ${opt.slot_type} (${opt.category})`,
     slot: `Viktranium (${opt.slot_type} ${opt.category})`,
-    minimum_level: opt.tier === "legendary" ? 34 : 8,
+    ml: opt.tier === "legendary" ? 34 : 8,
     verification: "verified",
-    affixes: [{ stat: opt.stat, bonus_type: opt.bonus_type, value: opt.value, unit: opt.unit || "flat" }],
+    affixes: [{ name: opt.stat, type: opt.bonus_type, value: opt.value, unit: opt.unit || "flat" }],
     scaling: [],
     wiki_url: opt.wiki_url,
     vik_option: true,
@@ -123,7 +137,7 @@ function compendiumRow(it) {
     variant_id: it.name,
     source_item: `Compendium index — ${it.slot}${typ ? ` (${typ})` : ""}`,
     slot: it.slot,
-    minimum_level: null,
+    ml: null,
     verification: "indexed",
     verification_reasons: ["indexed — stats not yet sourced"],
     affixes: [],
@@ -156,7 +170,11 @@ function initBrowse(dataset) {
   const items = browsableItems(dataset);   // real items + Dino insert pool rows
 
   const slots = distinct(items, (v) => [v.slot]);
-  const stats = distinct(items, variantStats);
+  // Affix filter uses the build's curated rankable-affix vocabulary (U4) so parser
+  // noise from wiki-only shards stays out of the dropdown; fall back to every stat
+  // present for older builds without the metadata.
+  const _curated = dataset.metadata && dataset.metadata.rankable_affixes;
+  const stats = (_curated && _curated.length) ? _curated.slice() : distinct(items, variantStats);
 
   controls.innerHTML = `
     <input id="f-query" type="search" placeholder="Search item or affix…" />
@@ -199,7 +217,7 @@ function initBrowse(dataset) {
       return `<tr>
         <td data-label="Item">${esc(v.variant_id)}${tier}</td>
         <td data-label="Slot">${esc(v.slot)}</td>
-        <td class="num" data-label="ML">${esc(v.minimum_level ?? "—")}</td>
+        <td class="num" data-label="ML">${esc(itemMl(v) ?? "—")}</td>
         <td data-label="Status">${badge}</td>
         <td data-label="Affixes">${affixes}</td>
         <td data-label="Source">${link}</td>
