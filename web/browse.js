@@ -156,7 +156,11 @@ function initBrowse(dataset) {
   const items = browsableItems(dataset);   // real items + Dino insert pool rows
 
   const slots = distinct(items, (v) => [v.slot]);
-  const stats = distinct(items, variantStats);
+  // Affix filter uses the build's curated rankable-affix vocabulary (U4) so parser
+  // noise from wiki-only shards stays out of the dropdown; fall back to every stat
+  // present for older builds without the metadata.
+  const _curated = dataset.metadata && dataset.metadata.rankable_affixes;
+  const stats = (_curated && _curated.length) ? _curated.slice() : distinct(items, variantStats);
 
   controls.innerHTML = `
     <input id="f-query" type="search" placeholder="Search item or affix…" />

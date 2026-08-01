@@ -1,6 +1,6 @@
 // U1 — wizard step-machine pure helpers. Run: node tests/wizard.test.js
 const assert = require("assert");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad, curatedStats } = require("../web/wizard.js");
 
 const baseState = () => ({ ml: 34, race: "Human", armor: "", weapon: "", alignment: "",
   priorities: ["Constitution"], slotConstraints: {} });
@@ -79,6 +79,28 @@ test("U1: load routing never targets pool/priorities-skippable intermediate step
   assert.ok(landing === "results" || landing === "priorities");
   assert.ok(!["intro", "character", "pool"].includes(stepAfterLoad({ status: "optimal" })));
   assert.ok(!["intro", "character", "pool"].includes(stepAfterLoad(null)));
+});
+
+// U4 — priority-picker vocabulary prefers the build's curated rankable list.
+test("curatedStats: uses metadata.rankable_affixes when present", () => {
+  const ds = {
+    metadata: { rankable_affixes: ["Constitution", "Dodge", "Strength"] },
+    items: [{ affixes: [{ stat: "Bal" }, { stat: "Strength" }] }],
+  };
+  assert.deepStrictEqual(curatedStats(ds), ["Constitution", "Dodge", "Strength"]);
+  // parser garbage present in items[] must NOT appear (gate came from metadata)
+  assert.ok(!curatedStats(ds).includes("Bal"));
+});
+
+test("curatedStats: falls back to dataset stats when metadata is absent", () => {
+  const ds = { items: [{ affixes: [{ stat: "Dodge" }, { stat: "Accuracy" }] }] };
+  assert.deepStrictEqual(curatedStats(ds), ["Accuracy", "Dodge"]);
+});
+
+test("curatedStats: returns a copy (mutating it never edits the dataset)", () => {
+  const ds = { metadata: { rankable_affixes: ["Strength"] }, items: [] };
+  curatedStats(ds).push("Mutated");
+  assert.deepStrictEqual(ds.metadata.rankable_affixes, ["Strength"]);
 });
 
 console.log(`\n${passed} passed`);

@@ -4,15 +4,23 @@ window.App && window.App.ready((dataset) => {
   const root = document.getElementById("solver");
   if (!root) return;
 
-  // Targetable stats: distinct affix stats present in the dataset.
-  const statSet = new Set();
-  dataset.items.forEach((v) => {
-    (v.affixes || []).forEach((a) => statSet.add(a.stat));   // worn + augment affixes
-    (v.scaling || []).forEach((s) => statSet.add(s.stat));
-    (v.parsed_set_bonuses || []).forEach((tier) =>           // set-bonus threshold stats
-      (tier.affixes || []).forEach((a) => statSet.add(a.stat)));
-  });
-  const allStats = [...statSet].sort();
+  // Targetable stats: prefer the build's curated rankable-affix vocabulary (U4,
+  // clean gear-planner-sourced); fall back to every dataset stat for older builds.
+  // Gates suggestions only — the solver accepts any typed affix.
+  const _curated = dataset.metadata && dataset.metadata.rankable_affixes;
+  let allStats;
+  if (_curated && _curated.length) {
+    allStats = _curated.slice();
+  } else {
+    const statSet = new Set();
+    dataset.items.forEach((v) => {
+      (v.affixes || []).forEach((a) => statSet.add(a.stat));   // worn + augment affixes
+      (v.scaling || []).forEach((s) => statSet.add(s.stat));
+      (v.parsed_set_bonuses || []).forEach((tier) =>           // set-bonus threshold stats
+        (tier.affixes || []).forEach((a) => statSet.add(a.stat)));
+    });
+    allStats = [...statSet].sort();
+  }
 
   const ranked = []; // ordered target stats
 

@@ -1,7 +1,6 @@
 """U3 — gear-planner raw-dump reader (structured affixes, KTD5/KTD6)."""
 import json
 import os
-import subprocess
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -90,15 +89,6 @@ def test_intra_dump_name_collisions_collapsed_and_reported():
     # 144 raw dup-name groups collapse to one each (disclosed, not silent).
     assert stats["planner_name_collisions_collapsed"] == 144
 
-
-def test_no_retired_shard_name_is_dropped_from_the_roster():
-    # KTD5 invariant: retiring enriched_planner_ml29.json must drop NO names.
-    blob = subprocess.check_output(
-        ["git", "show", "HEAD:data/seed/compendium/enriched_planner_ml29.json"],
-        cwd=os.path.join(HERE, ".."))
-    old_planner = {it["name"] for it in json.loads(blob)["items"]}
-    recs, _ = _records()
-    planner_names = {r["name"] for r in recs}
-    # every retired-shard name is present in the gear-planner source
-    assert old_planner <= planner_names, \
-        f"{len(old_planner - planner_names)} retired-shard names missing from reader"
+# KTD5 no-dropped-names was a migration-time invariant (verified: 0 of the retired
+# shard's 6,195 names dropped). Ongoing coverage — that every reader name reaches
+# the built dataset — lives in test_planner_import.py, without a git dependency.

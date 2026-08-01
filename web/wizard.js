@@ -55,8 +55,24 @@ function buildQuery(state) {
   };
 }
 
+/** Priority-picker affix vocabulary (U4). Prefer the build's curated
+ * rankable-affix list (clean, gear-planner-sourced); fall back to every stat in
+ * the dataset only when an older build lacks the metadata. Gates *suggestions*
+ * only — the solver still accepts any typed affix. */
+function curatedStats(dataset) {
+  const curated = dataset && dataset.metadata && dataset.metadata.rankable_affixes;
+  if (curated && curated.length) return curated.slice();
+  const statSet = new Set();
+  (dataset.items || []).forEach((v) => {
+    (v.affixes || []).forEach((a) => statSet.add(a.stat));
+    (v.scaling || []).forEach((s) => statSet.add(s.stat));
+    (v.parsed_set_bonuses || []).forEach((t) => (t.affixes || []).forEach((a) => statSet.add(a.stat)));
+  });
+  return [...statSet].sort();
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad, curatedStats };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -82,14 +98,12 @@ if (typeof window !== "undefined" && window.App) {
     const root = document.getElementById("wizard");
     if (!root) return;
 
-    // Targetable affix stats present in the dataset (mirrors the old query form).
-    const statSet = new Set();
-    dataset.items.forEach((v) => {
-      (v.affixes || []).forEach((a) => statSet.add(a.stat));
-      (v.scaling || []).forEach((s) => statSet.add(s.stat));
-      (v.parsed_set_bonuses || []).forEach((t) => (t.affixes || []).forEach((a) => statSet.add(a.stat)));
-    });
-    const allStats = [...statSet].sort();
+    // Targetable affix stats for the priority picker. Prefer the build's curated
+    // rankable-affix vocabulary (clean, gear-planner-sourced) so parser noise from
+    // wiki-only shards never reaches the suggestions. Fall back to every stat in
+    // the dataset only if an older build lacks the metadata. The solver still
+    // accepts any typed affix — this gates suggestions, not input.
+    const allStats = curatedStats(dataset);
 
     const state = { step: "intro", ml: 34, race: "", alignment: "", armor: "", weapon: "",
       includeArtifact: false,

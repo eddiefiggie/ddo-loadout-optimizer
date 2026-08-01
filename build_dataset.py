@@ -36,6 +36,7 @@ from src import band_frontier as band_mod
 from src import set_catalog as set_catalog_mod
 from src import umbrella as umbrella_mod
 from src import planner_items as planner_mod
+from src import vocab as vocab_mod
 import re as _re
 
 import glob
@@ -196,6 +197,42 @@ def stamp_artifact(variants: list, names: set) -> int:
             v["artifact"] = True
             n += 1
     return n
+
+
+def _is_numeric(v) -> bool:
+    if isinstance(v, (int, float)):
+        return True
+    if isinstance(v, str):
+        try:
+            float(v.strip().rstrip("%"))
+            return True
+        except ValueError:
+            return False
+    return False
+
+
+def rankable_affixes(planner_records) -> list:
+    """Curated rankable-affix vocabulary (U4): the affix names a user meaningfully
+    ranks as a priority. Derived from the CLEAN gear-planner structured affixes —
+    those with a real (mapped) magnitude bonus type — unioned with the canonical
+    CORE_STATS, and normalized to match the dataset's affix stat spellings. This is
+    deliberately NOT "every stat present in the dataset": the wiki-only enriched
+    shards still go through the free-text parser and leak fabricated names (Bal,
+    INT, ...); gating the priority-picker on this list keeps that noise out of the
+    user-facing suggestions without restricting what the solver accepts."""
+    names = set()
+    for r in planner_records or []:
+        for a in r.get("structured_affixes") or []:
+            bt = a.get("bonus_type")
+            if bt == "boolean" or bt in vocab_mod.NON_RANKABLE_TYPES:
+                continue
+            if not _is_numeric(a.get("value")):
+                continue
+            stat = vocab_mod.normalize_stat(a.get("stat"))
+            if stat:
+                names.add(stat)
+    names |= {vocab_mod.normalize_stat(s) for s in vocab_mod.CORE_STATS}
+    return sorted(names)
 
 
 def load_enriched_items(dirpath: str = COMPENDIUM_DIR) -> list:
@@ -522,6 +559,7 @@ def build(seed: dict) -> dict:
             "compendium_coverage": comp_cov,
             "band_coverage": band_cov,
             "planner_coverage": planner_stats,
+            "rankable_affixes": rankable_affixes(planner_records),
             "pipeline_stage": "M4-compendium-roster",
         },
         "items": variants,
