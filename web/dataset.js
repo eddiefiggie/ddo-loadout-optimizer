@@ -74,10 +74,25 @@ function normalizeItem(it) {
   return it;
 }
 
+// U4b-i — resolve model.js's stacking-equivalence installer across both runtimes:
+// browser (model.js loaded as a plain script -> `setStackEquiv` is a global) and
+// Node/tests (require the shared module, same cached instance the solver uses).
+function installStackEquiv(map) {
+  if (typeof setStackEquiv !== "undefined") { setStackEquiv(map); return; }
+  if (typeof require !== "undefined") {
+    try { require("./model.js").setStackEquiv(map); } catch (e) { /* model.js absent: no-op */ }
+  }
+}
+
 /** Walk a loaded dataset once, normalizing every item[] variant in place, and
- *  return the same dataset object (for convenient chaining). */
+ *  return the same dataset object (for convenient chaining). Also installs the
+ *  stacking-equivalence map from `metadata.stacking_equivalence` so the solver's
+ *  bucket keys collapse equivalent affix types (Insight Natural -> Insight). */
 function normalizeDataset(dataset) {
   if (!dataset || !Array.isArray(dataset.items)) return dataset;
+  const equiv = (dataset.metadata && dataset.metadata.stacking_equivalence) || {};
+  dataset._stackEquiv = equiv;
+  installStackEquiv(equiv);
   for (const it of dataset.items) normalizeItem(it);
   return dataset;
 }

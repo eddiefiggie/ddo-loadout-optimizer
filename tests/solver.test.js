@@ -82,6 +82,35 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.strictEqual(r.effective.Intelligence, 16);
   });
 
+  await test("U4b-i: stacking-equivalence — 'Insight Natural' and 'Insight' do NOT stack (same bucket)", async () => {
+    // Curated equivalence: "Insight Natural" collapses to the "Insight" bucket, so
+    // an item typed "Insight Natural +10" and one typed "Insight +6" (same stat)
+    // take the MAX, not the sum. Install the map (dataset.js does this on load).
+    const M = require("../web/model.js");
+    M.setStackEquiv({ "Insight Natural": "Insight", "Primal Natural": "Primal" });
+    try {
+      const collapse = {
+        targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+        worn: [slot("Ring", [item("R", "Ring", [["Intelligence", "Insight Natural", 10]])]),
+               slot("Necklace", [item("N", "Necklace", [["Intelligence", "Insight", 6]])])],
+      };
+      const rc = await S.solveLexicographic(collapse, highs);
+      assert.strictEqual(rc.status, "optimal");
+      assert.strictEqual(rc.effective.Intelligence, 10, "equivalent types share a bucket: max(10,6), not 16");
+
+      // Non-equivalent types (Insight + Enhancement) still stack (sum), unaffected.
+      const stackModel = {
+        targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+        worn: [slot("Ring", [item("R", "Ring", [["Intelligence", "Insight", 10]])]),
+               slot("Necklace", [item("N", "Necklace", [["Intelligence", "Enhancement", 6]])])],
+      };
+      const rs = await S.solveLexicographic(stackModel, highs);
+      assert.strictEqual(rs.effective.Intelligence, 16, "distinct types stack: 10 + 6");
+    } finally {
+      M.setStackEquiv({}); // reset shared module state so later tests see identity
+    }
+  });
+
   await test("U2/AE1: boolean feature is presence — two sources do NOT stack", async () => {
     const model = {
       targets: ["Salt"], mlCap: 34, dodgeCap: null,

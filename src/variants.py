@@ -55,7 +55,13 @@ def _structured_parsed(item):
     `{stat, bonus_type, value, unit}` already, so they skip the free-text parser
     entirely — the re-inference that manufactured the garbage vocabulary. Optional
     `structured_scaling` / `structured_flagged` carry through if the reader emits
-    them; there are no roll-groups on this path."""
+    them; there are no roll-groups on this path.
+
+    NOTE (U4b-i): this legacy path — reading the REMAPPED, QUARANTINED
+    `structured_affixes` block — is now used ONLY by base-seed/shard records that
+    the enrich pipeline stamps with `structured_affixes` but no native `affixes`
+    block. Gear-planner records (which carry a native `affixes` block) go through
+    `_native_parsed` instead. `structured_affixes` is removed entirely in U7."""
     affixes = []
     for a in item.get("structured_affixes") or []:
         affixes.append({
@@ -65,6 +71,43 @@ def _structured_parsed(item):
             "unit": a.get("unit") or "flat",
             "raw": a.get("raw",
                          f'{a.get("bonus_type", "")} {a["stat"]} {a.get("value", "")}'.strip()),
+        })
+    return {"affixes": affixes,
+            "scaling": item.get("structured_scaling") or [],
+            "rolls": [],
+            "flagged": item.get("structured_flagged") or []}
+
+
+def _native_parsed(item):
+    """U4b-i — build the variant's affixes from the record's NATIVE gear-planner
+    affix block `affixes: [{name, type, value(string)}]`, VERBATIM.
+
+    Each native affix maps to the downstream variant shape:
+      * `stat`       = native `name`
+      * `bonus_type` = native `type` VERBATIM — NO vocab remap, NO quarantine
+        (e.g. "Primal Natural", "Bool", "Armor", "Bludgeoning" all pass through
+        as-is). Stacking-equivalence collapse (Insight Natural -> Insight) is a
+        BUCKET-KEY concern applied in the solver, never a rename here.
+      * `value`      = `_coerce_value(value)` (native strings "3"/"9%"/"1d6")
+      * `unit`       = "pct" if the native value string ends with "%" else "flat"
+
+    ALL native affixes are emitted — including `Bool` (value 1 -> presence) and
+    weapon/alignment descriptors — so the ~11k affixes the old remap quarantined
+    become live. `src.verify` still runs and stamps per-affix `eligible`. There are
+    no roll-groups on this path; `structured_scaling`/`structured_flagged` (if any)
+    carry through unchanged."""
+    affixes = []
+    for a in item.get("affixes") or []:
+        raw_val = a.get("value")
+        unit = "pct" if isinstance(raw_val, str) and raw_val.strip().endswith("%") else "flat"
+        name = a.get("name")
+        atype = a.get("type")
+        affixes.append({
+            "stat": name,
+            "bonus_type": atype,
+            "value": _coerce_value(raw_val),
+            "unit": unit,
+            "raw": f'{atype or ""} {name or ""} {"" if raw_val is None else raw_val}'.strip(),
         })
     return {"affixes": affixes,
             "scaling": item.get("structured_scaling") or [],
@@ -140,8 +183,15 @@ def expand_item(item) -> list:
     # lines), so this emits a single variant. Marker fields (augment_slots,
     # set_bonus, seal_slots, …) come from the record's own keys via _make_variant.
     if item.get("structured_affixes") is not None:
+        # U4b-i — gear-planner records carry a native `affixes` block
+        # [{name, type, value}]; build the variant's affixes from it VERBATIM
+        # (no remap, no quarantine). Base-seed/shard records only ever have
+        # `structured_affixes` (no native block) and stay on the legacy path.
+        native = item.get("affixes")
+        parsed = (_native_parsed(item) if isinstance(native, list)
+                  else _structured_parsed(item))
         var = _make_variant(item, ml=item.get("minimum_level"), tier_label=None,
-                            parsed=_structured_parsed(item))
+                            parsed=parsed)
         var["lamordia_slots"] = item.get("lamordia_slots")
         return [var]
 

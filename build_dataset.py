@@ -351,8 +351,15 @@ def union_gearplanner_affix_losses(kept_by_name, losers_by_name, clean_vocab) ->
         winner = kept_by_name.get(name)
         if winner is None or winner.get("_source") != "gear-planner":
             continue
-        have = {vocab_mod.normalize_stat(a["stat"])
-                for a in winner.get("structured_affixes") or []}
+        # U4b-i: the gear-planner variant now builds its affixes from the NATIVE
+        # `affixes` block (not the remapped/quarantined `structured_affixes`), so
+        # both the "already have" test AND the restore target must be that block —
+        # appending to `structured_affixes` would be silently dropped by the reader.
+        # Computing `have` from the native block (a superset of the old structured
+        # one) keeps the no-double-count guarantee: a stat the winner already carries
+        # natively — even one the old remap quarantined — still blocks a restore.
+        native = winner.setdefault("affixes", [])
+        have = {vocab_mod.normalize_stat(a.get("name")) for a in native}
         add = {}
         for loser in losers:
             for var in variants_mod.expand_item(loser):
@@ -360,10 +367,12 @@ def union_gearplanner_affix_losses(kept_by_name, losers_by_name, clean_vocab) ->
                     ns = vocab_mod.normalize_stat(a["stat"])
                     if ns in have or ns in add or ns not in clean_vocab:
                         continue
-                    add[ns] = {"stat": a["stat"], "bonus_type": a["bonus_type"],
-                               "value": a.get("value"), "unit": a.get("unit", "flat")}
+                    # Native shape: value is a STRING, "%"-suffixed when the unit is pct.
+                    val = a.get("value")
+                    native_value = f"{val}%" if a.get("unit") == "pct" else str(val)
+                    add[ns] = {"name": a["stat"], "type": a["bonus_type"], "value": native_value}
         if add:
-            winner.setdefault("structured_affixes", []).extend(add.values())
+            native.extend(add.values())
             restored += len(add)
     return restored
 
@@ -759,6 +768,13 @@ def build(seed: dict) -> dict:
                 "ml30_target": 1809,
             },
             "rankable_affixes": rankable_affixes(planner_records),
+            # U4b-i — stacking-equivalence map {native_type: stacks_as_bucket}.
+            # gear-planner's native affix `type` IS the stacking bucket verbatim,
+            # EXCEPT these curated pairs (e.g. "Insight Natural" -> "Insight") that do
+            # not stack independently in-game and must share ONE bucket. The web layer
+            # (dataset.js -> model.js/solver.js) canonicalizes the bucket KEY through
+            # this map; the affix keeps its native type for display.
+            "stacking_equivalence": vocabulary_mod.load_stacking_equivalence(),
             "pipeline_stage": "M4-compendium-roster",
         },
         "items": variants,

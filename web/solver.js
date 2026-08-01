@@ -31,6 +31,16 @@ const _lamordiaTier = (typeof lamordiaTier !== "undefined")
   // eslint-disable-next-line global-require
   : require("./model.js").lamordiaTier;
 
+// U4b-i — stacking-equivalence: canonicalize an affix `type` to its stacking
+// bucket token before it forms a bucket KEY, so equivalent-but-distinct native
+// types (e.g. "Insight Natural" and "Insight") collapse to ONE bucket and cannot
+// double-count. Shares model.js's single equivType (browser global; Node require)
+// so the solver and the model/dominance guard can never disagree on a bucket key.
+const _equivType = (typeof equivType !== "undefined")
+  ? equivType
+  // eslint-disable-next-line global-require
+  : require("./model.js").equivType;
+
 /** U6 — per-slot constraint bodies (pin / lock-empty) as raw LP strings, using
  *  the `extra` seam. Pin → the chosen variant's pick var = 1; lock-empty → the
  *  slot's pick vars sum to 0; free → nothing. Pure + exported for tests. A pin
@@ -78,12 +88,12 @@ function buildProgram(model) {
   for (const xv of xVars) {
     const best = new Map();
     for (const a of xv.variant.affixes || []) {
-      const k = `${a.name}||${a.type}`;
+      const k = `${a.name}||${_equivType(a.type)}`;
       if (targetSet.has(a.name) && a.value > 0 && (!best.has(k) || best.get(k) < a.value)) best.set(k, a.value);
     }
     for (const s of xv.variant.scaling || []) {
       const val = scaleAt(s, mlCap);
-      const k = `${s.stat}||${s.bonus_type}`;
+      const k = `${s.stat}||${_equivType(s.bonus_type)}`;
       if (targetSet.has(s.stat) && val > 0 && (!best.has(k) || best.get(k) < val)) best.set(k, val);
     }
     for (const [k, val] of best) {
@@ -190,12 +200,12 @@ function buildProgram(model) {
   for (const aug of model.augments || []) {
     const best = new Map();
     for (const a of aug.affixes || []) {
-      const k = `${a.name}||${a.type}`;
+      const k = `${a.name}||${_equivType(a.type)}`;
       if (targetSet.has(a.name) && a.value > 0 && (!best.has(k) || best.get(k) < a.value)) best.set(k, a.value);
     }
     for (const s of aug.scaling || []) {
       const val = scaleAt(s, mlCap);
-      const k = `${s.stat}||${s.bonus_type}`;
+      const k = `${s.stat}||${_equivType(s.bonus_type)}`;
       if (targetSet.has(s.stat) && val > 0 && (!best.has(k) || best.get(k) < val)) best.set(k, val);
     }
     if (best.size) augBest.set(aug, best); // only augments advancing a target
@@ -287,7 +297,7 @@ function buildProgram(model) {
     // unit ride along physically but add no objective terms); one shared gate [q]
     // keeps the multi-affix placement all-or-nothing.
     for (const a of onTarget) {
-      const k = `${a.stat}||${a.bonus_type}`;
+      const k = `${a.stat}||${_equivType(a.bonus_type)}`;
       if (!zByBucket.has(k)) zByBucket.set(k, []);
       zByBucket.get(k).push({ name: "z" + zc++, gates: [q], value: a.value });
     }
@@ -330,7 +340,7 @@ function buildProgram(model) {
       });
       slotVars.push(n);
       extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
-      const k = `${opt.stat}||${opt.bonus_type}`;
+      const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
       if (!zByBucket.has(k)) zByBucket.set(k, []);
       zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: opt.value });
     }
@@ -356,7 +366,7 @@ function buildProgram(model) {
         });
         slotVars.push(n);
         extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
-        const k = `${opt.stat}||${opt.bonus_type}`;
+        const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
         if (!zByBucket.has(k)) zByBucket.set(k, []);
         zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: opt.value });
       }
@@ -390,7 +400,7 @@ function buildProgram(model) {
         });
         slotVars.push(n);
         extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
-        const k = `${opt.stat}||${opt.bonus_type}`;
+        const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
         if (!zByBucket.has(k)) zByBucket.set(k, []);
         zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: opt.value });
       }
@@ -426,7 +436,7 @@ function buildProgram(model) {
         });
         slotVars.push(n);
         extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
-        const k = `${opt.stat}||${opt.bonus_type}`;
+        const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
         if (!zByBucket.has(k)) zByBucket.set(k, []);
         zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: opt.value });
       }
@@ -455,7 +465,7 @@ function buildProgram(model) {
         });
         slotVars.push(n);
         extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
-        const k = `${opt.stat}||${opt.bonus_type}`;
+        const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
         if (!zByBucket.has(k)) zByBucket.set(k, []);
         zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: opt.value });
       }
@@ -480,7 +490,7 @@ function buildProgram(model) {
       });
       slotVars.push(n);
       extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
-      const k = `${opt.stat}||${opt.bonus_type}`;
+      const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
       if (!zByBucket.has(k)) zByBucket.set(k, []);
       zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: opt.value });
     }
@@ -593,7 +603,7 @@ function buildProgram(model) {
     for (const [, tier] of byLabel) {
       const best = new Map();
       for (const a of tier.affixes) {
-        const k = `${a.stat}||${a.bonus_type}`;
+        const k = `${a.stat}||${_equivType(a.bonus_type)}`;
         if (targetSet.has(a.stat) && a.value > 0 && (!best.has(k) || best.get(k) < a.value)) best.set(k, a.value);
       }
       if (!best.size) continue; // this tier advances no target

@@ -15,6 +15,27 @@ const SLOT_CARDINALITY = { Ring: 2 }; // one of every other worn slot
 // matters, not the exact cap). null = uncapped for this query.
 const ARMOR_DODGE_CAP = { cloth: 25, light: 25, medium: 11, heavy: 4 };
 
+// U4b-i — stacking-equivalence. gear-planner's native affix `type` IS the
+// stacking bucket, verbatim, EXCEPT curated pairs that do not stack independently
+// in-game and must share ONE bucket (e.g. "Insight Natural" -> "Insight", "Primal
+// Natural" -> "Primal"). The map is emitted into items.json `metadata.stacking_
+// equivalence` and installed here (dataset.js calls setStackEquiv on load). The
+// affix keeps its native `type` for DISPLAY; only the stacking BUCKET KEY formed
+// from a `type` is canonicalized through equivType — so two items typed "Insight
+// Natural" and "Insight" (same stat) land in one bucket and do NOT double-count.
+let _STACK_EQUIV = Object.create(null);
+function setStackEquiv(map) {
+  _STACK_EQUIV = Object.create(null);
+  if (map && typeof map === "object") {
+    for (const k of Object.keys(map)) _STACK_EQUIV[k] = map[k];
+  }
+}
+/** Canonicalize an affix `type` to its stacking bucket token (identity unless the
+ *  curated equivalence table remaps it). Used ONLY to form bucket keys. */
+function equivType(type) {
+  return (type != null && _STACK_EQUIV[type] != null) ? _STACK_EQUIV[type] : type;
+}
+
 /** Resolve an ML-scaling affix to its value at the query ML cap. */
 function scaledValue(s, mlCap) {
   if (mlCap <= s.ml_lo) return s.val_lo;
@@ -28,7 +49,7 @@ function variantBuckets(variant, targetSet, mlCap) {
   const b = new Map();
   const put = (stat, type, val) => {
     if (!targetSet.has(stat)) return;
-    const key = `${stat}||${type}`;
+    const key = `${stat}||${equivType(type)}`;
     if (!b.has(key) || b.get(key) < val) b.set(key, val);
   };
   for (const a of variant.affixes || []) put(a.name, a.type, a.value);
@@ -188,7 +209,7 @@ function rollOptionKeys(v, targetSet) {
   const s = new Set();
   for (const g of v.roll_groups || [])
     for (const o of g.options || [])
-      if (targetSet.has(o.stat) && o.value > 0) s.add(`${o.stat}||${o.bonus_type}||${o.value}`);
+      if (targetSet.has(o.stat) && o.value > 0) s.add(`${o.stat}||${equivType(o.bonus_type)}||${o.value}`);
   return s;
 }
 
@@ -377,7 +398,7 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     buildModel, eligible, dominanceFilter, dominates,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys,
-    isForgedRace, isDocent, variantKey,
+    isForgedRace, isDocent, variantKey, setStackEquiv, equivType,
     WORN_SLOTS, SLOT_CARDINALITY, ARMOR_DODGE_CAP,
   };
 }
