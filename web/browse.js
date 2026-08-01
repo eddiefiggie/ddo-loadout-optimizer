@@ -7,7 +7,11 @@
 // pre-overhaul persisted item. Item-level ML reads `ml` native-first (== minimum_level).
 const affixName = (a) => (a && a.name != null) ? a.name : (a && a.stat);
 const affixType = (a) => (a && a.type != null) ? a.type : (a && a.bonus_type);
-const itemMl = (v) => (v && v.ml != null) ? v.ml : (v && v.minimum_level);
+// `var` (not `const`): this identical helper is declared in both browse.js and
+// results.js, which share one global scope as plain browser scripts (a `const`
+// redeclaration is a SyntaxError). Each file keeps its own copy so node `require`
+// resolves it in module scope; `var` tolerates the browser-global redeclaration.
+var itemMl = (v) => (v && v.ml != null) ? v.ml : (v && v.minimum_level);
 
 /**
  * Pure filter. Returns the variants matching every active criterion.

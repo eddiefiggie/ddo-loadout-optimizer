@@ -20,7 +20,10 @@ function affixLabel(a) {
 
 // Item-level ML read native-first (`ml`), falling back to the legacy `minimum_level`
 // alias for a pre-overhaul persisted item (U5).
-const itemMl = (v) => (v && v.ml != null) ? v.ml : (v && v.minimum_level);
+// `var` (not `const`): itemMl is declared in both results.js and browse.js, which
+// share one global scope as plain browser scripts; `var` tolerates the redeclaration
+// while each file keeps its own copy for node's module-scoped `require`.
+var itemMl = (v) => (v && v.ml != null) ? v.ml : (v && v.minimum_level);
 
 /** Which of a variant's affixes hit the query targets (for the "why" column). */
 function contributingAffixes(variant, targets) {
