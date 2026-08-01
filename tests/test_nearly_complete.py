@@ -114,8 +114,11 @@ def test_pass2_grafts_nc_and_lamordia_markers_onto_the_winner():
     items = build_dataset.build(build_dataset.load_seed())["items"]
     nc_hosts = sum(1 for it in items if it.get("nearly_complete"))
     lam_hosts = sum(1 for it in items if it.get("lamordia_slots"))
-    assert nc_hosts == 70, f"Nearly-Complete host count changed: {nc_hosts}"
-    assert lam_hosts == 108, f"Lamordia host count changed: {lam_hosts}"
+    # Floors, not exact counts: the regression to catch is the flip STRANDING these
+    # markers (nc 70->0, lamordia 108->6 without the graft). A floor well above the
+    # stranded residual guards that without breaking on a legitimate catalog refresh.
+    assert nc_hosts >= 60, f"Nearly-Complete hosts stranded by the flip: {nc_hosts}"
+    assert lam_hosts >= 100, f"Lamordia hosts stranded by the flip: {lam_hosts}"
     # grafted list values are independent copies (no shared ref across variants)
     lam_lists = [it["lamordia_slots"] for it in items if it.get("lamordia_slots")]
     assert len({id(x) for x in lam_lists}) == len(lam_lists), "lamordia_slots lists are shared by reference"

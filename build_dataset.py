@@ -57,6 +57,10 @@ ARTIFACT_SEED_PATH = os.path.join(HERE, "data", "seed", "artifacts.json")
 BOOLEAN_SEED_PATH = os.path.join(HERE, "data", "seed", "boolean_features.json")
 JOKER_SEED_PATH = os.path.join(HERE, "data", "seed", "joker_sets.json")
 COMPENDIUM_DIR = os.path.join(HERE, "data", "seed", "compendium")
+# Collision precedence: True = gear-planner wins over wiki shards (KTD1, shipped).
+# A test seam only — flipped to False to build the pre-flip baseline for the
+# no-affix-loss (R3) invariant. Not a runtime config; leave True.
+FLIP_COLLISION_PRECEDENCE = True
 # Output lands inside web/ so that directory is a self-contained, deployable
 # site root (GitHub Pages serves web/ as the root; the app fetches data/ relatively).
 OUT_PATH = os.path.join(HERE, "web", "data", "items.json")
@@ -265,38 +269,38 @@ def planner_clean_vocab(planner_records) -> set:
 
 def union_gearplanner_affix_losses(kept_by_name, losers_by_name, clean_vocab) -> int:
     """U3: the precedence flip (U2) makes gear-planner win collisions, but gear-planner
-    is thinner than the losing wiki record for ~9 items — each loses a solver-eligible
+    is thinner than the losing wiki record for some items — each drops a solver-eligible
     affix. Restore those affixes onto the gear-planner winner so no build is silently
-    downgraded. Only affixes whose normalized stat is in `clean_vocab` are restored:
-    that covers every rankable (user-targetable) stat while structurally excluding the
-    free-text parse artifacts the flip is meant to remove. Only gear-planner winners
-    are touched — a base-seed winner is authoritative and never gets wiki affixes.
-    Returns the count of affixes restored."""
+    downgraded. Only gear-planner winners are touched — a base-seed winner is
+    authoritative and never gets wiki affixes. Returns the count of affixes restored.
+
+    Restores only affixes whose normalized stat the winner LACKS ENTIRELY. This is
+    the KTD1-aligned rule: gear-planner is authoritative for any stat it already
+    lists, so its value is never overridden and no `(stat, bonus_type)` duplicate is
+    created. It also structurally avoids the wiki free-text parser's MIS-TYPED
+    duplicates: the parser defaults unknown types to Enhancement and renames
+    Insight->Insightful, so a losing record often re-spells an affix gear-planner
+    already provides under a different bonus_type — restoring that would make the
+    solver (which stacks distinct bonus_type buckets) double-count it. Because the
+    winner already carries that stat, the entirely-missing rule skips it. The
+    `clean_vocab` filter additionally excludes free-text parse artifacts, and the
+    R3 no-loss invariant is a stat-presence guarantee, which this rule satisfies."""
     restored = 0
     for name, losers in losers_by_name.items():
         winner = kept_by_name.get(name)
         if winner is None or winner.get("_source") != "gear-planner":
             continue
-        have = {(vocab_mod.normalize_stat(a["stat"]), a["bonus_type"])
+        have = {vocab_mod.normalize_stat(a["stat"])
                 for a in winner.get("structured_affixes") or []}
-        # Restore any clean-vocab affix a losing wiki record has that the winner
-        # lacks. This is a per-affix guarantee, not a net-count one: an item can be
-        # net-richer in gear-planner yet still drop one specific affix (e.g. an
-        # Accuracy the wiki listed), and R3 requires no solver-eligible affix be
-        # lost. Purely additive — gear-planner's own values are never overridden
-        # (a (stat,bonus_type) already on the winner is skipped) — and clean-vocab-
-        # filtered, so no parse artifact is re-imported.
         add = {}
         for loser in losers:
             for var in variants_mod.expand_item(loser):
                 for a in var.get("affixes") or []:
-                    key = (vocab_mod.normalize_stat(a["stat"]), a["bonus_type"])
-                    if key in have or key[0] not in clean_vocab:
+                    ns = vocab_mod.normalize_stat(a["stat"])
+                    if ns in have or ns in add or ns not in clean_vocab:
                         continue
-                    prev = add.get(key)
-                    if prev is None or (a.get("value") or 0) > (prev.get("value") or 0):
-                        add[key] = {"stat": a["stat"], "bonus_type": a["bonus_type"],
-                                    "value": a.get("value"), "unit": a.get("unit", "flat")}
+                    add[ns] = {"stat": a["stat"], "bonus_type": a["bonus_type"],
+                               "value": a.get("value"), "unit": a.get("unit", "flat")}
         if add:
             winner.setdefault("structured_affixes", []).extend(add.values())
             restored += len(add)
@@ -358,9 +362,11 @@ def build(seed: dict) -> dict:
     # shards mangle affixes via affix_parser, while gear-planner is clean and
     # equal-or-richer for the collisions. Base seed still wins over both (it seeds
     # kept_by_name before Pass 1). Roster membership is unchanged — same name set,
-    # only the winning record per collision flips. The 9 items where gear-planner
-    # is thinner are reconciled by the U3 union-merge below.
-    all_enriched = planner_records + load_enriched_items()
+    # only the winning record per collision flips. Any affix gear-planner is thinner
+    # on is reconciled by the U3 union-merge below. `FLIP_COLLISION_PRECEDENCE` is a
+    # test seam for building the pre-flip baseline (the no-affix-loss R3 invariant).
+    all_enriched = (planner_records + load_enriched_items() if FLIP_COLLISION_PRECEDENCE
+                    else load_enriched_items() + planner_records)
     base_by_name = {it.get("name"): it for it in seed["items"]}
     # Pass 1 — pick the winning record per name (base seed, else first enriched shard
     # to claim it). `_seal_carrier` records are seal-only stubs (an already-active
@@ -404,9 +410,9 @@ def build(seed: dict) -> dict:
             winner["lamordia_slots"] = [dict(s) for s in it["lamordia_slots"]]  # copy: no shared ref across variants
         if winner is not None and it.get("nearly_complete") and not winner.get("nearly_complete"):
             winner["nearly_complete"] = it["nearly_complete"]
-    # U3 — restore solver-relevant affixes the flip would strip from collision
-    # items where gear-planner is thinner than the losing wiki record for a given
-    # affix. Filtered to the gear-planner clean vocabulary UNION the canonical
+    # U3 — restore genuinely-missing solver-relevant affixes the flip would strip
+    # from collision items where gear-planner is thinner than the losing wiki record
+    # for a given affix. Filtered to the gear-planner clean vocabulary UNION the canonical
     # CORE_STATS (which adds rankable stats gear-planner only ever emits as a bonus
     # type, e.g. Vitality / Spell Power) so no rankable affix is lost — while still
     # excluding free-text parse artifacts, which are in neither namespace.

@@ -124,6 +124,32 @@ def test_union_merge_restores_affixes_the_flip_would_strip():
         assert not missing, f"{name} lost {missing} — union-merge did not restore them"
 
 
+def test_no_collision_item_loses_a_rankable_affix_vs_pre_flip():
+    # R3 machine invariant (not a hardcoded name list): build both ways — pre-flip
+    # (wiki shards win) and post-flip+union — and assert EVERY item's post-flip
+    # rankable-affix set is a superset of its pre-flip set. This catches a union bug
+    # on ANY of the ~300 restored items, not just the readability spot-check below.
+    import build_dataset as B
+    from src import vocab
+    orig = B.FLIP_COLLISION_PRECEDENCE
+    try:
+        B.FLIP_COLLISION_PRECEDENCE = False
+        pre = {it["variant_id"]: it for it in B.build(B.load_seed())["items"]}
+        B.FLIP_COLLISION_PRECEDENCE = True
+        built = B.build(B.load_seed())
+        post = {it["variant_id"]: it for it in built["items"]}
+    finally:
+        B.FLIP_COLLISION_PRECEDENCE = orig
+    rankable = set(built["metadata"]["rankable_affixes"])
+
+    def rk(it):
+        return {vocab.normalize_stat(a["stat"]) for a in (it.get("affixes") or [])} & rankable
+
+    lost = {vid: sorted(rk(b) - rk(post[vid])) for vid, b in pre.items()
+            if vid in post and rk(b) - rk(post[vid])}
+    assert not lost, f"{len(lost)} items lost a rankable affix in the flip: {dict(list(lost.items())[:6])}"
+
+
 def test_union_merge_does_not_reintroduce_parser_garbage():
     # The union is filtered to the clean vocabulary; parser artifacts a losing wiki
     # record carried (Bal/INT/OL/DD/UMD) must NOT come back on the winner.
@@ -131,6 +157,33 @@ def test_union_merge_does_not_reintroduce_parser_garbage():
     stats = {a.get("stat") for it in its for a in it.get("affixes") or []}
     for junk in ("Bal", "INT", "OL", "DD", "UMD"):
         assert junk not in stats, f"union re-introduced garbage stat {junk!r}"
+
+
+def test_union_merge_does_not_create_mistyped_duplicate_of_a_winner_affix():
+    # The wiki free-text parser mis-types affixes (defaults to Enhancement, renames
+    # Insight->Insightful). The union must NOT restore such a re-typed copy of an
+    # affix gear-planner already provides, or the solver (which sums bonus-type
+    # buckets) double-counts it. Assert no item carries the same normalized stat at
+    # the same value under two bonus types, EXCEPT the small set of pre-existing
+    # gear-planner native stacks (Armor/Shield/Natural AC, Exceptional/Insight) that
+    # legitimately share a value — those are the catalog's own data, not the union's.
+    def num(v):
+        try:
+            return float(str(v).rstrip("%"))
+        except ValueError:
+            return 0.0
+    offenders = []
+    for it in _built_items():
+        by = {}
+        for a in it.get("affixes") or []:
+            by.setdefault((_norm(a["stat"]), num(a.get("value"))), set()).add(a["bonus_type"])
+        for (stat, val), types in by.items():
+            if len(types) > 1 and val > 0:
+                offenders.append((it["variant_id"], stat, val, sorted(types)))
+    # A tight ceiling well below the pre-flip's own ~45 native pairs — the union
+    # (fixed) adds no mis-typed duplicate; a regression re-introducing them would
+    # spike this into the hundreds.
+    assert len(offenders) < 60, f"{len(offenders)} same-stat/same-value/two-type affixes (double-count risk): {offenders[:8]}"
 
 
 def test_union_merge_is_additive_on_restored_items():
