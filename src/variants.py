@@ -37,6 +37,41 @@ def _normalize_affixes(affixes):
     return [{**a, "stat": vocab.normalize_stat(a["stat"])} for a in affixes]
 
 
+def _coerce_value(v):
+    """Gear-planner values arrive as strings ('3', '10'); coerce to signed int.
+    A non-numeric value is left as-is (the affix's `unit`/reader decides)."""
+    if isinstance(v, str):
+        s = v.strip().rstrip("%")
+        try:
+            return int(s)
+        except ValueError:
+            return v
+    return v
+
+
+def _structured_parsed(item):
+    """Build a `parse_enhancements`-shaped bucket from a record's pre-structured
+    affixes (U1). Gear-planner-sourced records carry affixes as
+    `{stat, bonus_type, value, unit}` already, so they skip the free-text parser
+    entirely — the re-inference that manufactured the garbage vocabulary. Optional
+    `structured_scaling` / `structured_flagged` carry through if the reader emits
+    them; there are no roll-groups on this path."""
+    affixes = []
+    for a in item.get("structured_affixes") or []:
+        affixes.append({
+            "stat": a["stat"],
+            "bonus_type": a.get("bonus_type") or "Enhancement",
+            "value": _coerce_value(a.get("value")),
+            "unit": a.get("unit") or "flat",
+            "raw": a.get("raw",
+                         f'{a.get("bonus_type", "")} {a["stat"]} {a.get("value", "")}'.strip()),
+        })
+    return {"affixes": affixes,
+            "scaling": item.get("structured_scaling") or [],
+            "rolls": [],
+            "flagged": item.get("structured_flagged") or []}
+
+
 def _make_variant(item, ml, tier_label, parsed):
     slot = item["slot"]
     return {
@@ -90,6 +125,17 @@ def _combine(base, extra):
 
 
 def expand_item(item) -> list:
+    # Structured-affix path (U1): a record carrying `structured_affixes` has
+    # already-parsed affixes; use them verbatim and skip `parse_enhancements`.
+    # Gear-planner-sourced records are per-ML separate entries (no `ML<n>:` tier
+    # lines), so this emits a single variant. Marker fields (augment_slots,
+    # set_bonus, seal_slots, …) come from the record's own keys via _make_variant.
+    if item.get("structured_affixes") is not None:
+        var = _make_variant(item, ml=item.get("minimum_level"), tier_label=None,
+                            parsed=_structured_parsed(item))
+        var["lamordia_slots"] = item.get("lamordia_slots")
+        return [var]
+
     lines = item.get("enhancements", [])
     # Base-seed Lamordia host markers are human-readable enhancement strings (the
     # enriched path uses the {{Lamordia Slot}} template instead). Recover them into

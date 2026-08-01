@@ -128,3 +128,79 @@ def test_expand_dataset_wraps_bad_item_with_name():
         assert False, "expected ValueError"
     except ValueError as e:
         assert "Broken Item" in str(e)
+
+
+# --- U1: structured-affix ingest path ---------------------------------------
+
+def _structured_item(**over):
+    base = {
+        "name": "Structured Ring", "category": "item", "slot": "Ring",
+        "minimum_level": 20, "binding": None, "location_quest": "",
+        "wiki_url": "", "augment_slots": [], "set_bonus": [],
+        "structured_affixes": [
+            {"stat": "Intimidate", "bonus_type": "Competence", "value": 3, "unit": "flat"},
+        ],
+    }
+    base.update(over)
+    return base
+
+
+def test_structured_affixes_used_verbatim_and_skip_parser(monkeypatch=None):
+    # A record carrying structured_affixes must NOT go through parse_enhancements.
+    # Prove it by making the parser explode: if the structured path still expands,
+    # the parser was bypassed.
+    import src.variants as V
+    orig = V.parse_enhancements
+    V.parse_enhancements = lambda *_a, **_k: (_ for _ in ()).throw(
+        AssertionError("parse_enhancements must not run on the structured path"))
+    try:
+        v = expand_item(_structured_item())[0]
+    finally:
+        V.parse_enhancements = orig
+    assert len(v["affixes"]) == 1
+    a = v["affixes"][0]
+    assert (a["stat"], a["bonus_type"], a["value"]) == ("Intimidate", "Competence", 3)
+    assert v["minimum_level"] == 20
+
+
+def test_enhancements_only_record_still_parses_as_before():
+    # Characterization: a record with no structured_affixes falls back to the
+    # free-text parser exactly as today (an alias stat still canonicalizes).
+    v = expand_item({
+        "name": "Legacy Ring", "category": "item", "slot": "Ring",
+        "minimum_level": 10, "binding": None, "location_quest": "",
+        "wiki_url": "", "augment_slots": [], "set_bonus": [],
+        "enhancements": ["Con +5"], "upgradeable": "No",
+    })[0]
+    assert any(a["stat"] == "Constitution" and a["value"] == 5 for a in v["affixes"])
+
+
+def test_structured_string_value_coerced_to_int():
+    v = expand_item(_structured_item(structured_affixes=[
+        {"stat": "Dodge", "bonus_type": "Enhancement", "value": "7"},
+    ]))[0]
+    assert v["affixes"][0]["value"] == 7
+
+
+def test_structured_path_canonicalizes_alias_stats():
+    v = expand_item(_structured_item(structured_affixes=[
+        {"stat": "Con", "bonus_type": "Insight", "value": 3},
+    ]))[0]
+    assert v["affixes"][0]["stat"] == "Constitution"
+
+
+def test_structured_negative_and_percent_round_trip():
+    v = expand_item(_structured_item(structured_affixes=[
+        {"stat": "Concentration", "bonus_type": "Penalty", "value": "-50"},
+        {"stat": "Dodge", "bonus_type": "Enhancement", "value": "5", "unit": "pct"},
+    ]))[0]
+    by_stat = {a["stat"]: a for a in v["affixes"]}
+    assert by_stat["Concentration"]["value"] == -50
+    assert by_stat["Dodge"]["unit"] == "pct"
+
+
+def test_structured_record_carries_marker_fields():
+    v = expand_item(_structured_item(
+        augment_slots=["Yellow"], set_bonus=[{"set": "Forbidden Knowledge"}]))[0]
+    assert v["augment_slots"] == ["Yellow"]
+    assert v["set_bonus"] == [{"set": "Forbidden Knowledge"}]
