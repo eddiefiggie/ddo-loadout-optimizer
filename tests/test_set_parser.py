@@ -113,11 +113,12 @@ def test_pieces_required_zero_is_not_a_threshold():
 
 
 def test_prr_mrr_compound_splits_into_both_stats():
-    # "+20 PRR/MRR" (value-first) must expand into both stats, canonicalized to
-    # their "Sheltering" affix wording so a target matches every spelling.
+    # "+20 PRR/MRR" (value-first) must expand into BOTH stats. Names are kept
+    # verbatim (native); the PRR->Physical Sheltering canonicalization now lives in
+    # the web picker's affix_aliases table (U6.5), not the Python parser (U7).
     affixes, _ = set_parser.parse_piece_text("+20 PRR/MRR (Artifact)")
     stats = {a["stat"] for a in affixes}
-    assert stats == {"Physical Sheltering", "Magical Sheltering"}, stats
+    assert stats == {"PRR", "MRR"}, stats
     for a in affixes:
         assert a["value"] == 20 and a["bonus_type"] == "Artifact"
 

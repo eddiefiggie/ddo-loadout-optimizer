@@ -127,9 +127,10 @@ test("U5 picker: raw Bool/boolean presence affixes are excluded from suggestions
   // ~8000 presence affixes would swamp the picker; excluded from SUGGESTIONS but
   // still typeable (present in `known`).
   const v = buildPickerVocabulary(realData);
+  const PRESENCE = new Set(["boolean", "Bool"]);  // native gear-planner uses "Bool"
   const bool = (realData.items || [])
     .flatMap((it) => it.affixes || [])
-    .find((a) => (a.type != null ? a.type : a.bonus_type) === "boolean");
+    .find((a) => PRESENCE.has(a.type != null ? a.type : a.bonus_type));
   assert.ok(bool, "precondition: the dataset has a boolean presence affix");
   const nm = bool.name != null ? bool.name : bool.stat;
   assert.ok(!v.suggestions.includes(nm), `Bool presence "${nm}" is not a suggestion`);

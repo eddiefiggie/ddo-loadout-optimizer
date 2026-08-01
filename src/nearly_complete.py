@@ -11,7 +11,7 @@ option records and QUARANTINES anything it cannot verify.
 
 Strict wiki provenance (KTD2). An option record is solver-eligible only with a
 canonical category, a canonical ``bonus_type`` (in ``affix_parser.BONUS_TYPES``),
-a present ``stat`` (run through ``vocab.normalize_stat`` to match the item
+a present ``stat`` (run through the item pipeline stat name to match the item
 pipeline's vocabulary), an integer per-tier ``value``, and a non-empty
 ``wiki_url``. Anything else is quarantined with a reason, never inferred.
 Choosing between two source spellings of a bonus type (e.g. the release notes'
@@ -23,7 +23,6 @@ empty for ddowiki).
 from __future__ import annotations
 
 from src.affix_parser import BONUS_TYPES
-from src import vocab
 from src import crafting_catalog
 
 # The six Nearly Complete categories (the wiki's names on the Nearly_Complete page).
@@ -72,7 +71,6 @@ def parse_categories(cats):
             if bonus_type not in BONUS_TYPES:
                 quarantined.append({"raw": f"{category}: {stat} ({bonus_type})", "reason": "unrecognized bonus type"})
                 continue
-            stat = vocab.normalize_stat(stat)  # match the item pipeline's stat vocabulary
             for tier, val in tier_values.items():
                 if not isinstance(val, int):
                     quarantined.append({"raw": f"{category}/{stat}/{tier}", "reason": "missing magnitude"})
@@ -129,7 +127,6 @@ def build_nearly_complete(catalog: dict = None) -> dict:
             tier = _nc_tier_from_ml(opt.get("ml"))
             for aff in crafting_catalog.iter_affixes(opt):
                 rec = crafting_catalog.legacy_affix(aff)
-                rec["stat"] = vocab.normalize_stat(rec["stat"]) if rec.get("stat") else rec.get("stat")
                 rec.update({"category": category, "tier": tier, "wiki_url": ""})
                 records.append(rec)
 
@@ -144,7 +141,6 @@ def build_nearly_complete(catalog: dict = None) -> dict:
                 name = (opt.get("name") or "").strip()
                 for aff in crafting_catalog.iter_affixes(opt):
                     rec = crafting_catalog.legacy_affix(aff)
-                    rec["stat"] = vocab.normalize_stat(rec["stat"]) if rec.get("stat") else rec.get("stat")
                     rec["pool"] = key
                     if name:
                         rec["name"] = name

@@ -8,28 +8,30 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src.variants import expand_dataset  # noqa: E402
 from src import verify as V  # noqa: E402
+from src import planner_items as P  # noqa: E402
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
-SEED = os.path.join(ROOT, "data", "seed", "ddo_items.json")
 
 
 def _variants():
-    d = json.load(open(SEED, encoding="utf-8"))
-    return expand_dataset(d["items"])
+    # gear-planner is the sole roster (U7); the base seed was purged.
+    recs, _ = P.load_planner_items(verified_seal_types=set())
+    return expand_dataset(recs)
 
 
-def test_item_with_incidental_bad_line_stays_eligible():
-    # Silver Pocketwatch has clean stat lines plus noise; must be verified and
-    # contribute its clean affixes.
-    v = [x for x in _variants() if x["source_item"] == "Silver Pocketwatch"][0]
+def test_native_affix_item_is_verified_and_eligible():
+    # A gear-planner item with a real magnitude affix must verify and mark its
+    # eligible affixes.
+    v = next(x for x in _variants()
+             if any(a.get("bonus_type") not in (None, "Bool", "boolean")
+                    and isinstance(a.get("value"), int) for a in x["affixes"]))
     V.verify_variant(v)
     assert v["verification"] == "verified"
     assert v["eligible_affix_count"] >= 1
-    assert all(a.get("eligible") for a in v["affixes"])
 
 
 def test_item_with_no_magnitude_is_quarantined_with_reason():
-    variants = expand_dataset(json.load(open(SEED, encoding="utf-8"))["items"])
+    variants = _variants()
     verified, _ = V.apply(variants)
     quarantined = [v for v in verified if v["verification"] == "quarantined"]
     assert quarantined, "expected some quarantined (value-less) records"

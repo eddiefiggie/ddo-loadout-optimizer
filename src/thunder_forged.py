@@ -9,7 +9,7 @@ the pool is keyed by ``tier`` (1/2/3); a host exposes one slot per tier.
 
 Strict wiki provenance: an option is solver-eligible only with a canonical
 ``bonus_type`` (in ``affix_parser.BONUS_TYPES``), a present ``stat`` (normalized
-via ``vocab.normalize_stat``), an integer ``value``, and a non-empty ``wiki_url``.
+via the item pipeline stat name), an integer ``value``, and a non-empty ``wiki_url``.
 Anything else — a proc, a set/on-hit effect, a non-magnitude line — is quarantined
 with a reason, never inferred. Pools are empty until harvested; the machinery is
 complete. The tier count/boundary is confirmed from the wiki during harvest.
@@ -17,7 +17,6 @@ complete. The tier count/boundary is confirmed from the wiki during harvest.
 from __future__ import annotations
 
 from src.affix_parser import BONUS_TYPES
-from src import vocab
 
 
 def parse_pools(pools):
@@ -50,7 +49,7 @@ def parse_pools(pools):
                 quarantined.append({"raw": f"tier {tier}/{name}", "reason": "missing magnitude"})
                 continue
             records.append({
-                "tier": tier, "name": name, "stat": vocab.normalize_stat(stat),
+                "tier": tier, "name": name, "stat": stat,
                 "bonus_type": bonus_type, "value": value, "unit": unit, "wiki_url": wiki_url,
             })
     return records, quarantined

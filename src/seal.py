@@ -12,7 +12,7 @@ Heroic/Legendary split.
 
 Strict wiki provenance. An option is solver-eligible only with a canonical
 ``bonus_type`` (in ``affix_parser.BONUS_TYPES``), a present ``stat`` (run through
-``vocab.normalize_stat`` to match the item pipeline's vocabulary), an integer
+the item pipeline stat name to match the item pipeline's vocabulary), an integer
 ``value``, and a non-empty ``wiki_url``. Anything else is quarantined with a
 reason, never inferred.
 
@@ -23,7 +23,6 @@ covers them. Sourced via Claude-in-Chrome (plain fetch returns empty for ddowiki
 from __future__ import annotations
 
 from src.affix_parser import BONUS_TYPES
-from src import vocab
 from src import crafting_catalog
 
 # The seal-enchantment types (the wiki's "Sealed in X" Unique_enchantment names).
@@ -89,7 +88,7 @@ def parse_pools(pools):
                 continue
             records.append({
                 "seal_type": seal_type, "domain": domain, "name": name,
-                "stat": vocab.normalize_stat(stat), "bonus_type": bonus_type,
+                "stat": stat, "bonus_type": bonus_type,
                 "value": value, "unit": unit, "wiki_url": wiki_url,
             })
     return records, quarantined
@@ -140,7 +139,6 @@ def build_seal(catalog: dict = None) -> dict:
             name = (opt.get("name") or "").strip()
             for aff in crafting_catalog.iter_affixes(opt):
                 rec = crafting_catalog.legacy_affix(aff)  # {stat, bonus_type, value, unit}
-                rec["stat"] = vocab.normalize_stat(rec["stat"]) if rec.get("stat") else rec.get("stat")
                 rec.update({
                     "seal_type": seal_type,
                     "domain": _SEAL_DOMAIN.get(seal_type, ""),

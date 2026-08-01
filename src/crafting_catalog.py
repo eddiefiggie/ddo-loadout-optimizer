@@ -172,6 +172,41 @@ def green_steel_records(catalog: dict = None) -> list:
     return out
 
 
+_AUGMENT_WIKI_URL = "https://ddowiki.com/page/Augment_Slot"
+
+
+def augment_pool_records(catalog: dict = None) -> list:
+    """The native legendary augment pool, sourced from the `<Color> Augment Slot`
+    menu pools (replacing the retired `augments.json` seed). Each stone option
+    becomes a base-item-shaped record carrying its NATIVE affix block so it flows
+    through the item pipeline's native path (category "augment"); the slot COLOR is
+    taken from the pool key ("Blue Augment Slot" -> "Blue"). One record per stone
+    name (first occurrence wins; the gear-planner pools carry no multi-color
+    duplicates). Deterministic: colors iterated in sorted key order."""
+    catalog = load_catalog() if catalog is None else catalog
+    records, seen = [], set()
+    for key in sorted(k for k in catalog if k.endswith(AUGMENT_SLOT_SUFFIX)):
+        color = key[: -len(AUGMENT_SLOT_SUFFIX)].strip()
+        for opt in menu_options(key, catalog):
+            name = opt.get("name")
+            if not name or name in seen:
+                continue
+            seen.add(name)
+            records.append({
+                "name": name,
+                "category": "augment",
+                "slot": color,
+                "affixes": [{"name": a.get("name"), "type": a.get("type"),
+                             "value": a.get("value")} for a in iter_affixes(opt)],
+                "minimum_level": opt.get("ml"),
+                "ml": opt.get("ml"),
+                "quests": list(opt.get("quests") or []),
+                "wiki_url": _AUGMENT_WIKI_URL,
+                "_source": "gear-planner-crafting",
+            })
+    return records
+
+
 def thunder_forged_records(catalog: dict = None) -> list:
     """Per-tier Thunder-Forged option records sourced natively from the
     ``T*(Weapon)`` menu pools. One record per affix, tagged with its tier (1/2/3),

@@ -268,29 +268,3 @@ def test_set_augment_splits_concatenated_tier_text():
 
 # --- End-to-end on the shipped seed ------------------------------------------
 
-def test_shipped_seed_parses_clean_and_pins_the_pool():
-    seed_path = os.path.join(ROOT, "data", "seed", "dino_crafting.json")
-    with open(seed_path, encoding="utf-8") as fh:
-        seed = json.load(fh)
-    result = dino_parser.parse_dino_crafting(seed)
-    cov = result["coverage"]
-    assert result["quarantined"]["items"] == []
-    # Two-key pool present with weapon + armor keys (M2 lifted the Accessory-only
-    # limitation).
-    assert "Scale||Weapon" in cov["by_key"], cov["by_key"]
-    assert "Scale||Armor" in cov["by_key"], cov["by_key"]
-    assert cov["inserts_eligible"] >= 60, cov
-    assert cov["set_records"] == 6, cov
-    for t in ("Scale", "Fang", "Claw", "Horn"):
-        assert cov["by_type"][t] > 0, f"no eligible {t} inserts"
-    # Every eligible unit carries a wiki_url and at least one affix (KTD5).
-    for u in result["insert_records"]:
-        assert u["wiki_url"]
-        assert len(u["affixes"]) >= 1
-    # Every layout slot is a canonical type||category key.
-    for layout in result["slot_layouts"]:
-        for k in layout["dino_slots"]:
-            t, _, c = k.partition("||")
-            assert t in dino_parser.DINO_TYPES
-            assert c in dino_parser.DINO_CATEGORIES
-        assert layout["wiki_url"]

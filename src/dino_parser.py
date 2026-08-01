@@ -36,7 +36,6 @@ from __future__ import annotations
 import re
 
 from src.affix_parser import parse_line
-from src import vocab
 
 # The four Isle of Dread Dino bone types. A slot accepts only an insert of its
 # own type (a Scale slot takes a Scale insert), exactly like a colored augment
@@ -152,7 +151,7 @@ def _parse_effect(effect):
             continue
         for a in r["affixes"]:
             stat = _strip_flavor_bleed((a["stat"] or "").rstrip(". ").strip())
-            stat = vocab.normalize_stat(stat)
+            stat = stat
             if not stat:
                 rejected.append({"raw": clause, "reason": "empty stat after normalization"})
                 continue

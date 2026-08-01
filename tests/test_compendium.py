@@ -79,7 +79,7 @@ def test_empty_input_returns_empty():
 def test_real_native_roster_indexes_the_full_dataset():
     """The built dataset's native roster indexes at the expected scale, all enriched."""
     import build_dataset as B
-    ds = B.build(B.load_seed())
+    ds = B.build()
     recs, cov = compendium.build_compendium(ds["items"])
     # Native roster is a superset of the old ~7,658 wiki roster (~8,997 names).
     assert cov["total_indexed"] > 8000

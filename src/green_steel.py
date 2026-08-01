@@ -12,14 +12,13 @@ its rationale live in the seed metadata and are disclosed per result.
 
 Strict wiki provenance: an option is solver-eligible only with a canonical
 ``bonus_type`` (in ``affix_parser.BONUS_TYPES``), a present ``stat`` (normalized
-via ``vocab.normalize_stat``), an integer ``value``, and a non-empty ``wiki_url``.
+via the item pipeline stat name), an integer ``value``, and a non-empty ``wiki_url``.
 Anything else is quarantined with a reason, never inferred. The pool is empty
 until harvested; the machinery is complete.
 """
 from __future__ import annotations
 
 from src.affix_parser import BONUS_TYPES
-from src import vocab
 
 
 def parse_options(options, wiki_url):
@@ -46,7 +45,7 @@ def parse_options(options, wiki_url):
             quarantined.append({"raw": name or stat, "reason": "missing wiki_url"})
             continue
         records.append({
-            "name": name, "stat": vocab.normalize_stat(stat), "bonus_type": bonus_type,
+            "name": name, "stat": stat, "bonus_type": bonus_type,
             "value": value, "unit": unit, "wiki_url": opt_url,
         })
     return records, quarantined

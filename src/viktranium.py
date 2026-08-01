@@ -17,7 +17,7 @@ records and QUARANTINES anything it cannot verify.
 Strict wiki provenance. An option is solver-eligible only with a canonical
 ``slot_type`` and ``category``, a canonical ``bonus_type`` (in
 ``affix_parser.BONUS_TYPES``), a present ``stat`` (run through
-``vocab.normalize_stat`` to match the item pipeline's vocabulary), an integer
+the item pipeline stat name to match the item pipeline's vocabulary), an integer
 per-tier ``value``, and a non-empty ``wiki_url``. Anything else is quarantined
 with a reason, never inferred. Weapon procs ("On hit: 2d6 Fire Damage", material
 types), descriptive effects ("You have Deathblock"), and multi-affix options are
@@ -33,7 +33,6 @@ from __future__ import annotations
 import re
 
 from src.affix_parser import BONUS_TYPES, parse_line
-from src import vocab
 from src import crafting_catalog
 
 # The four Viktranium slot types (the wiki's recipe-table names).
@@ -248,7 +247,6 @@ def parse_pools(pools):
                 quarantined.append({"raw": f"{slot_type}/{category}: {stat} ({bonus_type})",
                                     "reason": "unrecognized bonus type"})
                 continue
-            stat = vocab.normalize_stat(stat)  # match the item pipeline's vocabulary
             tier_values = {"heroic": opt.get("heroic_value"),
                            "legendary": opt.get("legendary_value")}
             for tier, val in tier_values.items():
@@ -318,7 +316,6 @@ def build_viktranium(catalog: dict = None) -> dict:
                 name = (opt.get("name") or "").strip()
                 for aff in crafting_catalog.iter_affixes(opt):
                     rec = crafting_catalog.legacy_affix(aff)
-                    rec["stat"] = vocab.normalize_stat(rec["stat"]) if rec.get("stat") else rec.get("stat")
                     rec.update({
                         "slot_type": slot_type, "category": category,
                         "name": name, "tier": tier, "wiki_url": "",

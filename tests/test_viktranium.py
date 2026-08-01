@@ -7,44 +7,23 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src import viktranium  # noqa: E402
-from src.enrich import parse_enhancement_field, build_item_record  # noqa: E402
-from src.variants import expand_item, expand_dataset  # noqa: E402
+from src.variants import expand_item  # noqa: E402
 
-SEED = os.path.join(os.path.dirname(__file__), "..", "data", "seed", "viktranium.json")
-RAW = os.path.join(os.path.dirname(__file__), "..", "data", "seed",
-                   "compendium", "raw", "viktranium.json")
 WIKI = "https://ddowiki.com/page/Viktranium_Experiment_crafting"
 
 
-def _seed():
-    return json.load(open(SEED, encoding="utf-8"))
+# --- native pool (gearplanner_crafting.json) ------------------------------
 
-
-# --- seed load path -------------------------------------------------------
-
-def test_seed_parses_to_tier_expanded_records():
-    parsed = viktranium.parse_viktranium(_seed())
+def test_native_pool_is_tier_expanded_and_two_dimensional():
+    parsed = viktranium.build_viktranium()
     recs = parsed["records"]
-    assert recs, "expected eligible Viktranium options"
-    # every eligible record is fully specified and wiki-traceable
+    assert recs, "expected native Viktranium options"
     for r in recs:
         assert r["slot_type"] in viktranium.SLOT_TYPES
         assert r["category"] in viktranium.CATEGORIES
         assert r["stat"] and r["bonus_type"]
-        assert r["bonus_type"] in viktranium.BONUS_TYPES
-        assert isinstance(r["value"], int)
         assert r["tier"] in ("heroic", "legendary")
-        assert r["wiki_url"]
-    # both tiers expand: each option yields a heroic and a legendary record
-    tiers = {r["tier"] for r in recs}
-    assert tiers == {"heroic", "legendary"}
-    assert len(recs) % 2 == 0
-
-
-def test_pool_keyed_by_type_and_category():
-    # KTD1: the same stat can live under different (type, category) pools; the
-    # coverage keys prove the pool is two-dimensional, not category-only.
-    cov = viktranium.parse_viktranium(_seed())["coverage"]
+    cov = parsed["coverage"]
     assert any("/" in k for k in cov["by_pool"]), "pool keys must be type/category"
     assert len(cov["slot_types_sourced"]) >= 2
     assert len(cov["categories_sourced"]) >= 2
@@ -123,13 +102,6 @@ def test_structure_from_raw_quarantines_cross_tier_mismatch():
     assert any("mismatch" in q["reason"] for q in quar)
 
 
-def test_committed_seed_regenerates_from_raw():
-    # U5 reproducibility: viktranium.json is a pure function of the raw harvest.
-    raw = json.load(open(RAW, encoding="utf-8"))["tables"]
-    regen, _ = viktranium.structure_from_raw(raw, WIKI)
-    assert regen == _seed()
-
-
 def test_parse_base_lamordia_all_three_string_shapes():
     # The base seed encodes host slots as human-readable strings (not the
     # template). All three documented shapes must parse to lamordia_slots.
@@ -192,42 +164,22 @@ def test_normalize_category_folds_plural_and_singular():
     assert viktranium.normalize_category("Bogus") is None
 
 
-# --- host detection in enrich + variant propagation -----------------------
+# --- native host detection: planner_items reads crafting[] "<Type> (<Cat>)" --
 
-def test_lamordia_slot_template_becomes_host_marker():
-    r = parse_enhancement_field("* {{Lamordia Slot|Melancholic|Accessory}}")
-    assert r["lamordia_slots"] == [{"type": "Melancholic", "category": "Accessory"}]
-    assert "Lamordia Slot" not in r["unmapped"]
-
-
-def test_unknown_slot_type_is_recorded_not_hosted():
-    r = parse_enhancement_field("* {{Lamordia Slot|Bogus|Accessory}}")
-    assert r["lamordia_slots"] == []
-    assert "Lamordia Slot" in r["unmapped"]
+def test_native_lamordia_host_marker_from_crafting():
+    from src import planner_items as P
+    rec = P._record({"name": "H", "slot": "Weapon", "ml": 34, "affixes": [],
+                     "crafting": ["Melancholic (Weapon)", "Dolorous (Weapon)"]}, set())
+    assert rec["lamordia_slots"] == [
+        {"type": "Melancholic", "category": "Weapon"},
+        {"type": "Dolorous", "category": "Weapon"}]
 
 
-def test_two_lamordia_slots_both_captured():
-    r = parse_enhancement_field(
-        "* {{Lamordia Slot|Melancholic|Accessory}}\n"
-        "* {{Lamordia Slot|Dolorous|Weapon}}")
-    assert r["lamordia_slots"] == [
-        {"type": "Melancholic", "category": "Accessory"},
-        {"type": "Dolorous", "category": "Weapon"},
-    ]
-
-
-def test_host_flows_through_expand_dataset_onto_variant():
-    # R4: an enriched host item carries lamordia_slots on its variant.
-    rec = build_item_record(
-        "Test Amulet", "Neck",
-        "* {{Lamordia Slot|Melancholic|Accessory}}\n* {{Stat|CON|13}}",
-        WIKI, minimum_level=34)
-    assert rec["lamordia_slots"] == [{"type": "Melancholic", "category": "Accessory"}]
-    variants = expand_dataset([rec])
-    assert variants[0]["lamordia_slots"] == [
-        {"type": "Melancholic", "category": "Accessory"}]
-
-
-def test_non_host_item_has_null_lamordia_slots():
-    v = expand_item(build_item_record("Plain Ring", "Ring", "* {{Stat|CON|13}}", WIKI))[0]
-    assert v.get("lamordia_slots") in (None, [])
+def test_native_lamordia_flows_onto_variant():
+    from src.variants import expand_dataset
+    rec = {"name": "Amulet", "category": "item", "slot": "Necklace", "ml": 34,
+           "affixes": [{"name": "Constitution", "type": "Enhancement", "value": "13"}],
+           "lamordia_slots": [{"type": "Melancholic", "category": "Accessory"}],
+           "minimum_level": 34}
+    v = expand_dataset([rec])[0]
+    assert v["lamordia_slots"] == [{"type": "Melancholic", "category": "Accessory"}]

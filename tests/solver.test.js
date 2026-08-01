@@ -727,7 +727,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     const res = await S.solveLexicographic(model, highs);
     assert.strictEqual(res.status, "optimal");
     assert.ok(res.effective["Diversion"] > 0, "an enriched item supplying Diversion was selected");
-    const pick = res.chosen.find((c) => (c.variant.affixes || []).some((a) => a.stat === "Diversion"));
+    const pick = res.chosen.find((c) => (c.variant.affixes || []).some((a) => (a.name != null ? a.name : a.stat) === "Diversion"));
     assert.ok(pick, "the selected loadout includes the Diversion-carrying enriched item");
   });
 
@@ -907,7 +907,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     const itemMax = (stat) => {
       let m = 0;
       for (const it of data.items) for (const a of (it.affixes || []))
-        if (a.stat === stat && typeof a.value === "number" && a.value > m) m = a.value;
+        if ((a.name != null ? a.name : a.stat) === stat && typeof a.value === "number" && a.value > m) m = a.value;
       return m;
     };
     // (slot_type, category) pairs that a real item actually offers as a Lamordia slot.
@@ -958,7 +958,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     // option — dino-unique, so the target can be reached ONLY by crafting that insert.
     // Intent unchanged: a multi-affix insert rides ONE placement onto a real blank host.
     const known = new Set();
-    for (const it of data.items) for (const a of (it.affixes || [])) known.add(a.stat);
+    for (const it of data.items) for (const a of (it.affixes || [])) known.add(a.name != null ? a.name : a.stat);
     for (const o of data.viktranium) known.add(o.stat);
     let target = null;
     for (const ins of data.dino_inserts) {
@@ -989,7 +989,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     const globalMax = (stat) => {
       let m = 0;
       for (const it of data.items) for (const a of (it.affixes || []))
-        if (a.stat === stat && typeof a.value === "number" && a.value > m) m = a.value;
+        if ((a.name != null ? a.name : a.stat) === stat && typeof a.value === "number" && a.value > m) m = a.value;
       for (const o of data.viktranium)
         if (o.stat === stat && typeof o.value === "number" && o.value > m) m = o.value;
       return m;
@@ -1105,9 +1105,10 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
     const r4 = data.items.find(v => (v.source_item || v.variant_id) === "The Theurgy of Autumn");
     assert.ok(r4, "The Theurgy of Autumn is solver-active in the dataset");
-    const corr = (r4.affixes || []).find(a => a.stat === "Corrosion");
+    const corr = (r4.affixes || []).find(a => (a.name != null ? a.name : a.stat) === "Corrosion");
     assert.ok(corr && corr.value > 0, "it carries a parsed Corrosion spellpower affix");
-    const weak = item("WeakRing", r4.slot, [["Corrosion", corr.bonus_type, Math.max(1, corr.value - 50)]]);
+    const corrType = corr.type != null ? corr.type : corr.bonus_type;
+    const weak = item("WeakRing", r4.slot, [["Corrosion", corrType, Math.max(1, corr.value - 50)]]);
     const model = {
       targets: ["Corrosion"], mlCap: 34, dodgeCap: null,
       worn: [slot(r4.slot, [r4, weak])],
@@ -1142,37 +1143,9 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.ok(!r4.setsActive.some(s => s.set === SET), "4 pieces do NOT activate the set (threshold honored)");
   });
 
-  await test("Joker/U3: the Gem completes a pool set via the wildcard, load-bearing only", async () => {
-    // Real dataset: Legendary Azure Necklace of Prophecy carries a 2-piece Legendary
-    // Draconic Prophecy (a group-1 pool set). 1 real piece + the Gem's joker = 2 pieces.
-    const fs = require("fs");
-    const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
-    const key = it => it.source_item || it.variant_id;
-    const nk = data.items.find(it => key(it) === "Legendary Azure Necklace of Prophecy");
-    const gem = data.items.find(it => key(it) === "Legendary Gem of Many Facets");
-    assert.ok(nk && gem && gem.joker_set_groups, "fixtures present");
-    const SET = "Legendary Draconic Prophecy";
-    const mk = vs => ({ targets: ["Universal Spell Power"], mlCap: 34, dodgeCap: null,
-      worn: vs.map(v => ({ slot: v.slot, cardinality: 1, variants: [v] })) });
-
-    const withGem = await S.solveLexicographic(mk([nk, gem]), highs);
-    assert.ok(withGem.setsActive.some(s => s.set === SET), "the joker completes Draconic Prophecy at 2 pieces");
-    assert.ok(withGem.jokerPlaced.some(j => j.set === SET && j.group === 0), "the Gem's group-0 pick is reported");
-
-    const noGem = await S.solveLexicographic(mk([nk]), highs);
-    assert.ok(!noGem.setsActive.some(s => s.set === SET), "without the Gem the set is below threshold");
-
-    // No fabrication: the Gem alone (no other pool piece) completes nothing.
-    const gemOnly = await S.solveLexicographic(mk([gem]), highs);
-    assert.strictEqual((gemOnly.jokerPlaced || []).length, 0, "the Gem alone fabricates no set assignment");
-
-    // At most one pick per group; determinism across runs.
-    const byGroup = {};
-    for (const j of withGem.jokerPlaced) byGroup[j.group] = (byGroup[j.group] || 0) + 1;
-    assert.ok(Object.values(byGroup).every(n => n <= 1), "at most one joker pick per group");
-    const again = await S.solveLexicographic(mk([nk, gem]), highs);
-    assert.deepStrictEqual(again.jokerPlaced, withGem.jokerPlaced, "joker assignment is deterministic");
-  });
+  // (Retired U7) The Gem of Many Facets wildcard-set (joker) feature was removed —
+  // the joker_sets.json seed is not in gear-planner's set model (accepted loss,
+  // logged in the migration manifest). The solver's joker code path remains inert.
 
   // ---- Chosen set-membership slot (Cannith Repurposing Station / Dino Set-Bonus) ----
   function memberHost(id, slotName, pool, affixes, station) {

@@ -8,15 +8,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src import green_steel as gs  # noqa: E402
 
-SEED = os.path.join(os.path.dirname(__file__), "..", "data", "seed", "green_steel.json")
 ITEMS = os.path.join(os.path.dirname(__file__), "..", "web", "data", "items.json")
 
-
-def test_seed_stub_is_valid_and_pending():
-    seed = json.load(open(SEED, encoding="utf-8"))
-    out = gs.parse_green_steel(seed)
-    assert out["records"] == [], "seed stub carries no options yet (pending harvest)"
-    assert out["coverage"]["pending"] is True
 
 
 def test_parses_flat_options():

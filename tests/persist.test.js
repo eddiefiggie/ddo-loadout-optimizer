@@ -159,7 +159,9 @@ test("migrateLoadout is a no-op on a native (current) snapshot and tolerates emp
   const out = migrateLoadout(native);
   const a = out.chosen[0].variant.affixes[0];
   assert.strictEqual(a.name, "Dodge");
-  assert.strictEqual(a.stat, "Dodge", "legacy alias back-filled for a native affix too");
+  // U7 removed the native->legacy affix aliases: a native affix stays {name,type},
+  // no stat/bonus_type back-fill.
+  assert.strictEqual(a.stat, undefined, "no legacy alias back-filled for a native affix");
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);

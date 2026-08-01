@@ -8,7 +8,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src import thunder_forged as tf  # noqa: E402
 
-SEED = os.path.join(os.path.dirname(__file__), "..", "data", "seed", "thunder_forged.json")
 ITEMS = os.path.join(os.path.dirname(__file__), "..", "web", "data", "items.json")
 
 
@@ -16,12 +15,6 @@ def _opt(tier, stat, bonus_type, value, name="opt"):
     return {"tier": tier, "wiki_url": "https://ddowiki.com/x", "options": [
         {"name": name, "stat": stat, "bonus_type": bonus_type, "value": value, "unit": "flat"}]}
 
-
-def test_seed_stub_is_valid_and_pending():
-    seed = json.load(open(SEED, encoding="utf-8"))
-    out = tf.parse_thunder_forged(seed)
-    assert out["records"] == [], "seed stub carries no options yet (pending harvest)"
-    assert sorted(out["coverage"]["tiers_pending"]) == [1, 2, 3], "all three tiers pending"
 
 
 def test_parses_per_tier_options():

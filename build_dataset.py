@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Dataset build pipeline for ddo-loadout-optimizer.
 
-Reads the immutable seed (imported from ddo-item-puller) and produces
-`data/items.json`, the static dataset the web app fetches.
+gear-planner is the sole item-data authority (the legacy base seed + wiki shards
+were purged in U7). Reads the gear-planner raw mirror
+(`data/seed/compendium/raw/gearplanner_{items,crafting,sets}.json`) and produces
+`web/data/items.json`, the static dataset the web app fetches.
 
-Pipeline stages (filled in across implementation units):
-  U1  load seed + write passthrough dataset      (this unit)
-  U2  parse enhancements[] -> parsed_affixes[]    (src.affix_parser)
-  U3  expand tier variants + normalize vocab      (src.variants, src.vocab)
-  U4  per-affix verification gate + coverage       (src.verify)
+Pipeline: native gear-planner records (verbatim affix block) -> expand variants
+(src.variants) -> per-affix verification gate + coverage (src.verify); crafting
+families + augment pool sourced natively from the crafting catalog
+(src.crafting_catalog).
 
 Run:  python3 build_dataset.py
 Output path is __file__-relative, so it works from any directory.
@@ -20,7 +21,6 @@ import json
 import os
 
 from src.variants import expand_dataset
-from src import affix_parser as affix_parser_mod
 from src import verify as verify_mod
 from src import colors as colors_mod
 from src import set_parser as set_mod
@@ -36,163 +36,38 @@ from src import band_frontier as band_mod
 from src import set_catalog as set_catalog_mod
 from src import umbrella as umbrella_mod
 from src import planner_items as planner_mod
-from src import vocab as vocab_mod
 from src import variants as variants_mod
 from src import vocabulary as vocabulary_mod
 from src import crafting_catalog as crafting_catalog_mod
+from src import dino_native as dino_native_mod
 import re as _re
 
 import collections
-import glob
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SEED_PATH = os.path.join(HERE, "data", "seed", "ddo_items.json")
-DINO_SEED_PATH = os.path.join(HERE, "data", "seed", "dino_crafting.json")
-NC_SEED_PATH = os.path.join(HERE, "data", "seed", "nearly_complete.json")
-VIK_SEED_PATH = os.path.join(HERE, "data", "seed", "viktranium.json")
-SEAL_SEED_PATH = os.path.join(HERE, "data", "seed", "seal.json")
-TF_SEED_PATH = os.path.join(HERE, "data", "seed", "thunder_forged.json")
-GS_SEED_PATH = os.path.join(HERE, "data", "seed", "green_steel.json")
-AUG_SEED_PATH = os.path.join(HERE, "data", "seed", "augments.json")
-ALIGN_SEED_PATH = os.path.join(HERE, "data", "seed", "alignment_restrictions.json")
-ARTIFACT_SEED_PATH = os.path.join(HERE, "data", "seed", "artifacts.json")
-BOOLEAN_SEED_PATH = os.path.join(HERE, "data", "seed", "boolean_features.json")
-WIKI_CONFIRMED_SEED_PATH = os.path.join(HERE, "data", "seed", "wiki_confirmed.json")
-JOKER_SEED_PATH = os.path.join(HERE, "data", "seed", "joker_sets.json")
 COMPENDIUM_DIR = os.path.join(HERE, "data", "seed", "compendium")
-# Collision precedence: True = gear-planner wins over wiki shards (KTD1, shipped).
-# A test seam only — flipped to False to build the pre-flip baseline for the
-# no-affix-loss (R3) invariant. Not a runtime config; leave True.
-FLIP_COLLISION_PRECEDENCE = True
 # Output lands inside web/ so that directory is a self-contained, deployable
 # site root (GitHub Pages serves web/ as the root; the app fetches data/ relatively).
 OUT_PATH = os.path.join(HERE, "web", "data", "items.json")
 
-
-def load_seed(path: str = SEED_PATH) -> dict:
-    """Load the immutable seed dataset."""
-    with open(path, "r", encoding="utf-8") as fh:
-        return json.load(fh)
-
-
-def load_dino_seed(path: str = DINO_SEED_PATH) -> dict:
-    """Load the Dino-crafting seed (freshly sourced; separate from the base seed)."""
-    if not os.path.exists(path):
-        return {}
-    with open(path, "r", encoding="utf-8") as fh:
-        return json.load(fh)
-
-
-def load_nc_seed(path: str = NC_SEED_PATH) -> dict:
-    """Load the U81 Nearly-Complete seed (freshly sourced; separate from the base seed)."""
-    if not os.path.exists(path):
-        return {}
-    with open(path, "r", encoding="utf-8") as fh:
-        return json.load(fh)
-
-
-def load_vik_seed(path: str = VIK_SEED_PATH) -> dict:
-    """Load the U75 (Chill of Ravenloft) Viktranium ("Lamordia") seed (freshly sourced; separate from base)."""
-    if not os.path.exists(path):
-        return {}
-    with open(path, "r", encoding="utf-8") as fh:
-        return json.load(fh)
-
-
-def load_augment_seed(path: str = AUG_SEED_PATH) -> dict:
-    """Load the sourced legendary augment pool (gear-planner import; separate from base)."""
-    if not os.path.exists(path):
-        return {}
-    with open(path, "r", encoding="utf-8") as fh:
-        return json.load(fh)
-
-
-def load_joker_seed(path: str = JOKER_SEED_PATH) -> dict:
-    """Load the wildcard-set-piece pools (Gem of Many Facets family); {item_name: spec}."""
-    if not os.path.exists(path):
-        return {}
-    with open(path, "r", encoding="utf-8") as fh:
-        return json.load(fh).get("items", {})
-
-
-def load_seal_seed(path: str = SEAL_SEED_PATH) -> dict:
-    """Load the seal-slot ("Sealed in X") pool seed (wiki-sourced; separate from base)."""
-    if not os.path.exists(path):
-        return {}
-    with open(path, "r", encoding="utf-8") as fh:
-        return json.load(fh)
-
-
-def load_tf_seed(path: str = TF_SEED_PATH) -> dict:
-    """Load the Legendary Thunder-Forged tier-pool seed (wiki-sourced)."""
-    if not os.path.exists(path):
-        return {}
-    with open(path, "r", encoding="utf-8") as fh:
-        return json.load(fh)
-
-
-def load_gs_seed(path: str = GS_SEED_PATH) -> dict:
-    """Load the Legendary Green Steel endgame-effect pool seed (wiki-sourced)."""
-    if not os.path.exists(path):
-        return {}
-    with open(path, "r", encoding="utf-8") as fh:
-        return json.load(fh)
-
-
-def load_alignment_restrictions(path: str = ALIGN_SEED_PATH) -> dict:
-    """Curated alignment equip-gates: base-item name -> allowed alignments.
-    Keys beginning with '_' (README/example) are ignored. Missing file -> {}."""
-    if not os.path.exists(path):
-        return {}
-    with open(path, encoding="utf-8") as fh:
-        raw = json.load(fh)
-    return {k: v for k, v in raw.items()
-            if not k.startswith("_") and isinstance(v, list) and v}
-
-
-def stamp_alignment_req(variants: list, restrictions: dict) -> int:
-    """Stamp `alignment_req` onto each variant whose base item (source_item) has a
-    curated alignment equip-gate. Additive + exclude-until-verified: an item not
-    in the seed carries no field, so eligible() (JS) fails open for it. Returns
-    the count of variants stamped."""
-    n = 0
-    for v in variants:
-        req = restrictions.get(v.get("source_item"))
-        if req:
-            v["alignment_req"] = list(req)
-            n += 1
-    return n
-
-
-def load_artifacts(path: str = ARTIFACT_SEED_PATH) -> set:
-    """Curated Artifact-quality base-item names (source_item), as a flat JSON
-    array. Membership only — no per-item value and (unlike the object-shaped
-    alignment seed) no `_README` key, since a top-level array cannot carry one.
-    Non-string or underscore-prefixed entries are ignored; a missing file yields
-    an empty set. Exclude-until-verified: the shipping seed is empty until a wiki
-    harvest populates it, so the JS solver treats every variant as non-Artifact."""
-    if not os.path.exists(path):
-        return set()
-    with open(path, encoding="utf-8") as fh:
-        raw = json.load(fh)
-    if not isinstance(raw, list):
-        return set()
-    return {s for s in raw if isinstance(s, str) and s and not s.startswith("_")}
-
-
-def load_boolean_features(path: str = BOOLEAN_SEED_PATH) -> list:
-    """Curated boolean-feature names (value-less presence toggles like Salt), as a
-    flat JSON array. Non-string or underscore-prefixed entries are ignored; a
-    missing file yields an empty list. Exclude-until-verified: the shipping seed
-    carries no real entries until a wiki harvest populates it, so no value-less
-    line becomes a boolean affix and parsing behavior is unchanged."""
-    if not os.path.exists(path):
-        return []
-    with open(path, encoding="utf-8") as fh:
-        raw = json.load(fh)
-    if not isinstance(raw, list):
-        return []
-    return [s for s in raw if isinstance(s, str) and s and not s.startswith("_")]
+# Rankable-affix vocabulary constants (formerly src/vocab.py, purged in U7). The
+# STAT_ALIASES canonicalization moved to the web picker (affix_aliases.json, U6.5);
+# these two closed sets only gate which native affix NAMES surface as picker
+# suggestions and are not a schema remap.
+CORE_STATS = {
+    "Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma",
+    "Deadly", "Seeker", "Accuracy", "Dodge", "PRR", "MRR",
+    "Physical Sheltering", "Magical Sheltering", "Fortification",
+    "Melee Power", "Ranged Power", "Spell Power", "Doublestrike", "Doubleshot",
+    "Sheltering", "Well Rounded", "False Life", "Healing Amplification",
+    "Armor-Piercing", "Vitality", "Devotion", "Nullification", "Potency",
+}
+# Recognized-but-not-rankable bonus types: present on items but kept out of the
+# picker vocabulary (a user never ranks a weapon-damage/penalty descriptor).
+NON_RANKABLE_TYPES = {
+    "Penalty", "Sneak Attack", "Bludgeoning", "Piercing", "Slashing",
+    "Good", "Evil", "Lawful", "Chaotic",
+}
 
 
 GEARPLANNER_ITEMS_PATH = os.path.join(HERE, "data", "seed", "compendium", "raw", "gearplanner_items.json")
@@ -242,44 +117,6 @@ def load_source_provenance(path: str = SOURCE_PROVENANCE_PATH) -> dict:
     return {k: v for k, v in raw.items() if not k.startswith("_")}
 
 
-def load_wiki_confirmed(path: str = WIKI_CONFIRMED_SEED_PATH) -> dict:
-    """Wiki-confirmed ML30+ items: name -> {confirmed, affixes, corrections, ...}.
-    Each entry records an item validated against its DDO wiki page (source of truth).
-    Also the resumable worklist for the validation loop. Missing file -> empty."""
-    if not os.path.exists(path):
-        return {}
-    with open(path, encoding="utf-8") as fh:
-        raw = json.load(fh)
-    return {k: v for k, v in (raw.get("items") or {}).items()
-            if isinstance(v, dict) and v.get("confirmed")}
-
-
-def stamp_wiki_confirmed(variants: list, confirmed: dict) -> int:
-    """Stamp `wiki_confirmed` (the confirmation date) onto each variant whose base
-    item was validated against the wiki. Additive; a non-confirmed item carries no
-    field. Returns the count of variants stamped."""
-    n = 0
-    for v in variants:
-        entry = confirmed.get(v.get("source_item"))
-        if entry:
-            v["wiki_confirmed"] = entry.get("confirmed")
-            n += 1
-    return n
-
-
-def stamp_artifact(variants: list, names: set) -> int:
-    """Stamp `artifact: True` onto each variant whose base item (source_item) is a
-    curated Artifact. Additive + exclude-until-verified: a variant not in the seed
-    carries no `artifact` field, so eligible()/the solver (JS) treat it as a
-    non-Artifact. Returns the count of variants stamped."""
-    n = 0
-    for v in variants:
-        if v.get("source_item") in names:
-            v["artifact"] = True
-            n += 1
-    return n
-
-
 def _is_numeric(v) -> bool:
     if isinstance(v, (int, float)):
         return True
@@ -299,231 +136,77 @@ def _well_formed_stat(name: str) -> bool:
 
 
 def rankable_affixes(planner_records) -> list:
-    """Curated rankable-affix vocabulary (U4): the affix names a user meaningfully
-    ranks as a priority. Derived from the CLEAN gear-planner structured affixes —
-    those with a real (mapped) magnitude bonus type — unioned with the canonical
-    CORE_STATS, and normalized to match the dataset's affix stat spellings. This is
-    deliberately NOT "every stat present in the dataset": the wiki-only enriched
-    shards still go through the free-text parser and leak fabricated names (Bal,
-    INT, ...); gating the priority-picker on this list keeps that noise out of the
-    user-facing suggestions without restricting what the solver accepts.
-
-    Two extra filters keep per-item noise out of the suggestions: a candidate must
-    appear on **at least two distinct items** (a real stat is shared across gear;
-    a named proc keyed to one weapon — "Devil's Bones", "Dragon's Edge" — is not),
-    and its name must be well-formed (balanced brackets). CORE_STATS are always
-    included regardless of item count."""
+    """Rankable-affix vocabulary: the affix names a user meaningfully ranks as a
+    priority, read from the NATIVE gear-planner affix block. Filters: a magnitude
+    bonus type (not Bool/boolean presence, not a non-rankable weapon/penalty
+    descriptor), a numeric value, a well-formed name, and presence on at least two
+    distinct items (a real stat is shared across gear; a one-off named proc is not).
+    CORE_STATS are always included regardless of item count."""
     counts = collections.Counter()
     for r in planner_records or []:
         seen = set()
-        for a in r.get("structured_affixes") or []:
-            bt = a.get("bonus_type")
-            if bt == "boolean" or bt in vocab_mod.NON_RANKABLE_TYPES:
+        for a in r.get("affixes") or []:
+            bt = a.get("type")
+            # Skip presence (Bool), non-rankable descriptors, and NULL/empty-typed
+            # affixes — the latter are overwhelmingly weapon procs/banes (Holy,
+            # Vampirism, ...), not rankable magnitude stats, so they stay out of the
+            # picker suggestions (a user never ranks a proc).
+            if bt in (None, "", "boolean", "Bool") or bt in NON_RANKABLE_TYPES:
                 continue
             if not _is_numeric(a.get("value")):
                 continue
-            stat = vocab_mod.normalize_stat(a.get("stat"))
+            stat = a.get("name")
             if stat and _well_formed_stat(stat):
                 seen.add(stat)
         counts.update(seen)
     names = {s for s, c in counts.items() if c >= 2}
-    names |= {vocab_mod.normalize_stat(s) for s in vocab_mod.CORE_STATS}
+    names |= set(CORE_STATS)
     return sorted(names)
 
 
-def planner_clean_vocab(planner_records) -> set:
-    """The set of normalized stat names any gear-planner structured record emits.
-    This is the clean, wiki-sourced stat namespace — a stat in it is definitionally
-    a real DDO stat, never a free-text parse artifact (`Bal`, `INT`, `OL`, …).
-    Used as the union-merge filter (U3) so restoring a collision loser's affixes
-    can never re-import parser garbage."""
-    return {vocab_mod.normalize_stat(a["stat"])
-            for r in planner_records or []
-            for a in r.get("structured_affixes") or []}
+def build() -> dict:
+    """Transform the gear-planner authority into the optimizer dataset.
 
-
-def union_gearplanner_affix_losses(kept_by_name, losers_by_name, clean_vocab) -> int:
-    """U3: the precedence flip (U2) makes gear-planner win collisions, but gear-planner
-    is thinner than the losing wiki record for some items — each drops a solver-eligible
-    affix. Restore those affixes onto the gear-planner winner so no build is silently
-    downgraded. Only gear-planner winners are touched — a base-seed winner is
-    authoritative and never gets wiki affixes. Returns the count of affixes restored.
-
-    Restores only affixes whose normalized stat the winner LACKS ENTIRELY. This is
-    the KTD1-aligned rule: gear-planner is authoritative for any stat it already
-    lists, so its value is never overridden and no `(stat, bonus_type)` duplicate is
-    created. It also structurally avoids the wiki free-text parser's MIS-TYPED
-    duplicates: the parser defaults unknown types to Enhancement and renames
-    Insight->Insightful, so a losing record often re-spells an affix gear-planner
-    already provides under a different bonus_type — restoring that would make the
-    solver (which stacks distinct bonus_type buckets) double-count it. Because the
-    winner already carries that stat, the entirely-missing rule skips it. The
-    `clean_vocab` filter additionally excludes free-text parse artifacts, and the
-    R3 no-loss invariant is a stat-presence guarantee, which this rule satisfies."""
-    restored = 0
-    for name, losers in losers_by_name.items():
-        winner = kept_by_name.get(name)
-        if winner is None or winner.get("_source") != "gear-planner":
-            continue
-        # U4b-i: the gear-planner variant now builds its affixes from the NATIVE
-        # `affixes` block (not the remapped/quarantined `structured_affixes`), so
-        # both the "already have" test AND the restore target must be that block —
-        # appending to `structured_affixes` would be silently dropped by the reader.
-        # Computing `have` from the native block (a superset of the old structured
-        # one) keeps the no-double-count guarantee: a stat the winner already carries
-        # natively — even one the old remap quarantined — still blocks a restore.
-        native = winner.setdefault("affixes", [])
-        have = {vocab_mod.normalize_stat(a.get("name")) for a in native}
-        add = {}
-        for loser in losers:
-            for var in variants_mod.expand_item(loser):
-                for a in var.get("affixes") or []:
-                    ns = vocab_mod.normalize_stat(a["stat"])
-                    if ns in have or ns in add or ns not in clean_vocab:
-                        continue
-                    # Native shape: value is a STRING, "%"-suffixed when the unit is pct.
-                    val = a.get("value")
-                    native_value = f"{val}%" if a.get("unit") == "pct" else str(val)
-                    add[ns] = {"name": a["stat"], "type": a["bonus_type"], "value": native_value}
-        if add:
-            native.extend(add.values())
-            restored += len(add)
-    return restored
-
-
-def load_enriched_items(dirpath: str = COMPENDIUM_DIR) -> list:
-    """Load stat-enriched compendium items (data/seed/compendium/enriched_*.json).
-
-    These are base-seed-shape records produced by src.enrich from item wikitext;
-    they merge into the item pipeline so their parsed affixes become solver-active.
+    gear-planner is the sole item-data source (legacy purged in U7). Pipeline:
+    native gear-planner records -> expand variants (native affix block, verbatim)
+    -> per-affix verification gate + coverage. The output `items` are variant
+    records; each carries `affixes`, `verification`, and flags.
+    `metadata.coverage` records per-slot verified/quarantined counts.
     """
-    items = []
-    for path in sorted(glob.glob(os.path.join(dirpath, "enriched_*.json"))):
-        with open(path, "r", encoding="utf-8") as fh:
-            items.extend(json.load(fh).get("items", []))
-    return items
-
-
-def build(seed: dict) -> dict:
-    """Transform the seed into the optimizer dataset.
-
-    Pipeline: parse enhancements[] (U2) -> expand tier variants + normalize
-    vocab (U3) -> per-affix verification gate + coverage (U4). The output
-    `items` are variant records; each carries `affixes`, `verification`, and
-    flags. `metadata.coverage` records per-slot verified/quarantined counts.
-    """
-    # Merge stat-enriched compendium items into the base seed before expansion so
-    # they flow through the identical parse (affix_parser) + verify pipeline and
-    # become solver-active. Enriched records are strict (src.enrich); unmapped
-    # effects are recorded, never fabricated.
-    # Dedupe: skip enriched records whose name already exists (base seed wins — it
-    # is the hand-verified source; a same-name enriched copy would double-list in
-    # browse and put two identities of one item into the solver). Also drops any
-    # cross-batch name collision.
-    # Gear-planner structured records: read the raw catalog directly. They are
-    # merged FIRST (see the merge below) so they win name collisions over the
-    # free-text-parsed wiki shards (KTD1) — clean, structured affixes. The boolean
-    # allowlist gates which Bool affixes emit (exclude-until-verified).
     # U2/R14/R12 — crafting-slot + augment referential-integrity gate. Validate the
     # native item crafting[] markers + augment pools against the FROZEN checked-in
     # registries BEFORE assembling the dataset; an unknown slot/augment fails the
     # build (new-slot/new-augment event forcing a reviewed regenerate). Non-mutating.
     _crafting_vocab_checked = assert_crafting_vocab()
-    _boolean_allowlist = load_boolean_features()
-    # U4b-ii — the active crafting families source their option pools NATIVELY from
-    # gearplanner_crafting.json (the gear-planner crafting catalog), not their
-    # legacy seed files. Load the catalog once and thread it into each family
-    # builder. (The legacy seed FILES remain on disk, purged in U7.)
+    # The active crafting families source their option pools NATIVELY from
+    # gearplanner_crafting.json (the gear-planner crafting catalog). Load once and
+    # thread it into each family builder.
     crafting = crafting_catalog_mod.load_catalog()
     # Seal types with a non-empty verified pool gate which "Sealed in X" hosts the
     # reader recovers from the raw dump (Undeath sourced; Mist/Gloom pending).
     _verified_seal_types = {r["seal_type"]
                             for r in seal_mod.build_seal(crafting)["records"]}
     # Dinosaur Bone hosts are synthetic bodies generated post-verify (dino_blanks
-    # below); they never pass through the Pass-1 name dedup, so a same-name
-    # gear-planner record would double-list with an identical variant_id (KTD6
-    # trap). Build the blanks now and exclude their names from the reader — the
-    # dino seed owns the authoritative body.
-    dino_seed = load_dino_seed()
+    # below); they never pass through the name dedup, so a same-name gear-planner
+    # record would double-list with an identical variant_id (KTD8 trap). Build the
+    # blanks now (from the native Dino host layout — src.dino_native, KTD8) and
+    # exclude their names from the reader so the synthetic body is the sole host.
+    dino_seed = dino_native_mod.native_dino_seed()
     dino_blanks, dino_inserts, dino_sets, dino_cov = dino_mod.build_dino(dino_seed, crafting)
     _host_pipeline_names = {b.get("source_item") for b in dino_blanks}
+    # Native gear-planner records — the sole item roster. The loader already
+    # dedups intra-dump same-name collisions (first wins) and surfaces every host
+    # choice-slot marker (augment/seal/lamordia/nearly-complete/lost-purpose)
+    # NATIVELY from crafting[], so no cross-source graft is needed.
     planner_records, planner_stats = planner_mod.load_planner_items(
-        boolean_allowlist=_boolean_allowlist,
         verified_seal_types=_verified_seal_types,
         exclude_names=_host_pipeline_names)
-    # Gear-planner records go FIRST so they WIN name collisions against the
-    # free-text-parsed wiki-enriched shards (KTD1, precedence-flip plan) — those
-    # shards mangle affixes via affix_parser, while gear-planner is clean and
-    # equal-or-richer for the collisions. Base seed still wins over both (it seeds
-    # kept_by_name before Pass 1). Roster membership is unchanged — same name set,
-    # only the winning record per collision flips. Any affix gear-planner is thinner
-    # on is reconciled by the U3 union-merge below. `FLIP_COLLISION_PRECEDENCE` is a
-    # test seam for building the pre-flip baseline (the no-affix-loss R3 invariant).
-    all_enriched = (planner_records + load_enriched_items() if FLIP_COLLISION_PRECEDENCE
-                    else load_enriched_items() + planner_records)
-    base_by_name = {it.get("name"): it for it in seed["items"]}
-    # Pass 1 — pick the winning record per name (base seed, else first enriched shard
-    # to claim it). `_seal_carrier` records are seal-only stubs (an already-active
-    # item's gear-planner seal slot); they never win a body and are excluded here.
-    kept_by_name = dict(base_by_name)
-    seen_names = set(base_by_name)
-    deduped = []
-    losers_by_name = {}  # U3: collision losers, for the affix union-merge below
-    for it in all_enriched:
-        if it.get("_seal_carrier") or it.get("_lost_purpose_carrier"):
-            continue  # marker-only stubs: they graft a slot/marker in Pass 2, never claim a body
-        name = it.get("name")
-        if name in seen_names:
-            losers_by_name.setdefault(name, []).append(it)
-            continue
-        seen_names.add(name)
-        kept_by_name[name] = it
-        deduped.append(it)
-    # Pass 2 — graft any "Sealed in X" slot onto the winner that lacks it, from ANY
-    # loaded record (real or seal-carrier), independent of shard order. The gear-planner
-    # marks seals the hand-verified base seed and older wiki batches predate, so a sealed
-    # item would otherwise be stranded whichever source won its body.
-    for it in all_enriched:
-        name = it.get("name")
-        winner = kept_by_name.get(name)
-        if winner is not None and it.get("seal_slots") and not winner.get("seal_slots"):
-            winner["seal_slots"] = [dict(s) for s in it["seal_slots"]]  # copy: no shared ref across base + tier variants
-        # Same graft for the Vecna "Lost Purpose" marker: many University items are
-        # already solver-active via the gear-planner shard (which sorts before the
-        # vecna shard and wins the body), so the lost_purpose marker must graft onto
-        # the winner from ANY loaded record (KTD6), or the set-membership slot would be lost.
-        if winner is not None and it.get("lost_purpose") and not winner.get("lost_purpose"):
-            winner["lost_purpose"] = it["lost_purpose"]
-        # Same graft for the two wiki-shard-only crafting markers (U1). When the
-        # gear-planner record wins a collision (U2), it carries no Lamordia /
-        # Nearly-Complete markers — those live only on the wiki-enriched shard —
-        # so graft them from ANY loaded record onto the winner. `nc_tier` is NOT
-        # grafted: it occurs on zero shard records (variants.py reads it via
-        # .get()), so a direct copy would KeyError.
-        if winner is not None and it.get("lamordia_slots") and not winner.get("lamordia_slots"):
-            winner["lamordia_slots"] = [dict(s) for s in it["lamordia_slots"]]  # copy: no shared ref across variants
-        if winner is not None and it.get("nearly_complete") and not winner.get("nearly_complete"):
-            winner["nearly_complete"] = it["nearly_complete"]
-    # U3 — restore genuinely-missing solver-relevant affixes the flip would strip
-    # from collision items where gear-planner is thinner than the losing wiki record
-    # for a given affix. Filtered to the gear-planner clean vocabulary UNION the canonical
-    # CORE_STATS (which adds rankable stats gear-planner only ever emits as a bonus
-    # type, e.g. Vitality / Spell Power) so no rankable affix is lost — while still
-    # excluding free-text parse artifacts, which are in neither namespace.
-    _restore_vocab = (planner_clean_vocab(planner_records)
-                      | {vocab_mod.normalize_stat(s) for s in vocab_mod.CORE_STATS})
-    planner_stats["planner_affixes_union_restored"] = union_gearplanner_affix_losses(
-        kept_by_name, losers_by_name, _restore_vocab)
-    enriched_items = deduped
+    enriched_items = planner_records
 
-    # Set bonuses for enriched members (U3). Only the 67 base-seed items carry a
-    # set_bonus field, so the solver (which reads membership from set_bonus[].set)
-    # ignores every enriched set member. Attach the authoritative definition — base
-    # def wins, else the gear-planner catalog — to each enriched record carrying an
-    # "X (set)" marker, matched on the canonical name so cross-source spelling drift
-    # (the " Set" infix) resolves. Base-seed items are never touched (they already
-    # have set_bonus and never enter enriched_items).
-    _set_base_defs = set_catalog_mod.base_defs_from_seed(seed["items"])
+    # Set bonuses (native): attach the authoritative gear-planner catalog def to
+    # each record carrying an "X (set)" marker (from its `sets[]`), matched on the
+    # canonical name so cross-source spelling drift (the " Set" infix) resolves.
+    _set_base_defs = {}  # no base seed anymore; all defs come from the catalog
     _set_catalog = set_catalog_mod.load_catalog()
     _KNOWN_UNDEFINED_SETS = ["Legendary Cooking By the Book"]  # novelty set, no catalog def
     _enriched_set_names = set()
@@ -566,52 +249,24 @@ def build(seed: dict) -> dict:
         "known_undefined_sets": _KNOWN_UNDEFINED_SETS,
     }
 
-    # Legendary augment pool (gear-planner import). Sourced augments SUPERSEDE a
-    # same-name base-seed augment (richer source wins — opposite of the base-wins
-    # rule for enriched gear), so the incidental base augments don't double-list.
-    aug_pool = (load_augment_seed() or {}).get("items", [])
-    aug_names = {a.get("name") for a in aug_pool}
-    base_items = [it for it in seed["items"]
-                  if not (it.get("category") == "augment" and it.get("name") in aug_names)]
-    # Boolean-feature allowlist (U2): install before parsing so a value-less line on
-    # the curated list becomes a presence affix instead of being dropped. Scoped to
-    # this build — restored before returning so an in-process build() never leaks the
-    # allowlist into the shared affix_parser module (contaminating later callers/tests).
-    _prev_bool_features = affix_parser_mod.get_boolean_features()
-    affix_parser_mod.set_boolean_features(_boolean_allowlist)
-    variants = expand_dataset(base_items + enriched_items + aug_pool)  # parse enhancements + expand tiers
+    # Legendary augment pool — sourced NATIVELY from the `<Color> Augment Slot`
+    # menu pools in gearplanner_crafting.json (one stone per option, native affix
+    # block, color from the slot key). Replaces the retired augments.json seed.
+    aug_pool = crafting_catalog_mod.augment_pool_records(crafting)
+    variants = expand_dataset(enriched_items + aug_pool)  # native path (verbatim affixes)
 
-    # Wildcard set pieces (U1) — the Gem of Many Facets rolls one set from each of two
-    # pools (rerollable; theoretical-BiS picks the best per group). Attach the pools to
-    # the item's variants here, AFTER expand_dataset: src.variants._make_variant rebuilds
-    # each variant from a fixed field list, so a joker_set_groups field on the base seed
-    # item would be dropped. Clear the item's stale fixed set_bonus (the base seed
-    # mis-modeled it as one fixed set) BEFORE set_mod.annotate_variant runs below, so no
-    # lingering parsed_set_bonuses remains — the joker is the item's only set contribution.
-    _joker = load_joker_seed()
-    for v in variants:
-        spec = _joker.get(v.get("source_item"))
-        if spec is None:
-            continue
-        v["joker_set_groups"] = [[set_catalog_mod.canonical(s) for s in group]
-                                 for group in spec.get("groups", [])]
-        v["set_bonus"] = []
+    # Artifact item-quality flag: sourced NATIVELY — each gear-planner variant
+    # already carries `artifact` (bool) from the dump, read through _make_variant.
+    # No curated seed / stamp remains (verified: the retired artifacts.json seed
+    # was exactly the native artifact set). The JS opt-in reads `artifact`.
+    #
+    # Alignment equip-gates: the curated seed held 0 real gates and model.js
+    # eligible() is fail-open, so no gate is stamped (accepted no-op loss); the
+    # eligible() branch stays live-but-inert (gear-planner carries no restriction
+    # field). Wiki-confirmed override + the wildcard-set (Gem of Many Facets)
+    # mechanic are removed (KTD4 / accepted loss, see the migration report).
 
-    # Alignment equip-gates (U3): stamp alignment_req from the curated seed so the
-    # JS character gate (eligible) can exclude items the character's alignment
-    # can't equip. Empty seed today -> no-op; fail-open until wiki-verified.
-    stamp_alignment_req(variants, load_alignment_restrictions())
-
-    # Artifact item-quality flag (U1): stamp `artifact` from the curated seed so
-    # the JS opt-in (eligible/solver) can exclude Artifacts or require exactly one.
-    # Empty seed today -> no-op; exclude-until-verified until a wiki harvest lands.
-    stamp_artifact(variants, load_artifacts())
-    # Wiki-confirmed status (ML30+ validation loop): stamp the confirmation date
-    # onto items validated against the DDO wiki. Additive; empty seed -> no-op.
-    _wiki_confirmed = load_wiki_confirmed()
-    _wiki_confirmed_stamped = stamp_wiki_confirmed(variants, _wiki_confirmed)
-
-    for v in variants:                                  # U2 augment-color normalization
+    for v in variants:                                  # augment-color normalization
         colors_mod.annotate_variant(v)
         set_mod.annotate_variant(v)                     # U4 set-bonus threshold parsing
         # Bake each augment's compatible slot colors (the wiki matrix, applied once
@@ -750,14 +405,15 @@ def build(seed: dict) -> dict:
 
     # U5 — affix-name registry + alias table for the web priority-picker vocabulary.
     _affix_registry, _affix_aliases = load_affix_vocabulary()
+    _provenance = load_source_provenance()
 
     out = {
         "metadata": {
             "title": "DDO Loadout Optimizer — dataset",
             "schema_version": schema_version,
-            "source": seed["metadata"].get("source", ""),
-            "seed_generated": seed["metadata"].get("generated", ""),
-            "seed_count": len(seed["items"]),
+            "source": _provenance.get("source_url") or _provenance.get("source", ""),
+            "seed_generated": _provenance.get("imported", ""),
+            "seed_count": len(planner_records),
             "variant_count": len(variants),
             "item_count": len(variants),
             "coverage": cov,
@@ -774,7 +430,7 @@ def build(seed: dict) -> dict:
             "augment_coverage": augment_coverage,
             "compendium_coverage": comp_cov,
             "band_coverage": band_cov,
-            "provenance": load_source_provenance(),
+            "provenance": _provenance,
             "crafting_vocab_coverage": {
                 "crafting_slot_registry": len(vocabulary_mod._load(
                     vocabulary_mod.CRAFTING_SLOT_REGISTRY_PATH).get("crafting_slots", [])),
@@ -783,11 +439,6 @@ def build(seed: dict) -> dict:
                 "references_validated": _crafting_vocab_checked,
             },
             "planner_coverage": planner_stats,
-            "wiki_confirmed_coverage": {
-                "confirmed_items": len(_wiki_confirmed),
-                "variants_stamped": _wiki_confirmed_stamped,
-                "ml30_target": 1809,
-            },
             "rankable_affixes": rankable_affixes(planner_records),
             # U5 — the shared affix-name registry + variant->canonical alias table.
             # The web picker unions every affix source (gear, augments, set bonuses,
@@ -819,7 +470,6 @@ def build(seed: dict) -> dict:
         "membership_set_defs": membership_defs,
         "compendium": comp_records,
     }
-    affix_parser_mod.set_boolean_features(_prev_bool_features)   # restore; don't leak the scoped allowlist
 
     # build_id hashes the full assembled dataset (everything except metadata) so
     # drift in sets, augments, or crafting inputs — not just base variants —
@@ -869,12 +519,11 @@ def write(dataset: dict, path: str = OUT_PATH) -> None:
 
 
 def main() -> None:
-    seed = load_seed()
-    dataset = build(seed)
+    dataset = build()
     write(dataset)
     print(
         f"Wrote {OUT_PATH}: {dataset['metadata']['item_count']} items "
-        f"(seed {dataset['metadata']['seed_count']})."
+        f"(gear-planner roster {dataset['metadata']['seed_count']})."
     )
 
 

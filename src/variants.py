@@ -16,7 +16,6 @@ from __future__ import annotations
 import re
 
 from src.affix_parser import parse_enhancements
-from src import vocab
 from src.viktranium import parse_base_lamordia, is_base_lamordia_line
 
 _TIER_PREFIX = re.compile(r"^(ML\d+[^:]*):\s*(.*)$")
@@ -30,11 +29,10 @@ def _parse_tier_ml_list(upgradeable: str):
     return [int(x) for x in m.group(1).split("/") if x.isdigit()]
 
 
-def _normalize_affixes(affixes):
-    # Return fresh dicts: this both canonicalizes the stat and de-aliases the
-    # affix objects so a base affix shared across tier variants is never mutated
+def _fresh_affixes(affixes):
+    # Return fresh dicts so an affix shared across tier variants is never mutated
     # in place by a later stage (e.g. verify's per-affix eligibility flag).
-    return [{**a, "stat": vocab.normalize_stat(a["stat"])} for a in affixes]
+    return [dict(a) for a in affixes]
 
 
 def _coerce_value(v):
@@ -49,37 +47,8 @@ def _coerce_value(v):
     return v
 
 
-def _structured_parsed(item):
-    """Build a `parse_enhancements`-shaped bucket from a record's pre-structured
-    affixes (U1). Gear-planner-sourced records carry affixes as
-    `{stat, bonus_type, value, unit}` already, so they skip the free-text parser
-    entirely — the re-inference that manufactured the garbage vocabulary. Optional
-    `structured_scaling` / `structured_flagged` carry through if the reader emits
-    them; there are no roll-groups on this path.
-
-    NOTE (U4b-i): this legacy path — reading the REMAPPED, QUARANTINED
-    `structured_affixes` block — is now used ONLY by base-seed/shard records that
-    the enrich pipeline stamps with `structured_affixes` but no native `affixes`
-    block. Gear-planner records (which carry a native `affixes` block) go through
-    `_native_parsed` instead. `structured_affixes` is removed entirely in U7."""
-    affixes = []
-    for a in item.get("structured_affixes") or []:
-        affixes.append({
-            "stat": a["stat"],
-            "bonus_type": a.get("bonus_type") or "Enhancement",
-            "value": _coerce_value(a.get("value")),
-            "unit": a.get("unit") or "flat",
-            "raw": a.get("raw",
-                         f'{a.get("bonus_type", "")} {a["stat"]} {a.get("value", "")}'.strip()),
-        })
-    return {"affixes": affixes,
-            "scaling": item.get("structured_scaling") or [],
-            "rolls": [],
-            "flagged": item.get("structured_flagged") or []}
-
-
 def _native_parsed(item):
-    """U4b-i — build the variant's affixes from the record's NATIVE gear-planner
+    """Build the variant's affixes from the record's NATIVE gear-planner
     affix block `affixes: [{name, type, value(string)}]`, VERBATIM.
 
     Each native affix maps to the downstream variant shape:
@@ -138,7 +107,7 @@ def _make_variant(item, ml, tier_label, parsed):
         "wiki_url": item.get("wiki_url"),
         "augment_slots": item.get("augment_slots", []),
         "set_bonus": item.get("set_bonus", []),
-        "affixes": _normalize_affixes(parsed["affixes"]),
+        "affixes": _fresh_affixes(parsed["affixes"]),
         "scaling": parsed["scaling"],
         "roll_groups": parsed["rolls"],
         "flagged": parsed["flagged"],
@@ -177,19 +146,15 @@ def _combine(base, extra):
 
 
 def expand_item(item) -> list:
-    # Structured-affix path (U1): a record carrying `structured_affixes` has
-    # already-parsed affixes; use them verbatim and skip `parse_enhancements`.
-    # Gear-planner-sourced records are per-ML separate entries (no `ML<n>:` tier
-    # lines), so this emits a single variant. Marker fields (augment_slots,
-    # set_bonus, seal_slots, …) come from the record's own keys via _make_variant.
-    if item.get("structured_affixes") is not None:
-        # U4b-i — gear-planner records carry a native `affixes` block
-        # [{name, type, value}]; build the variant's affixes from it VERBATIM
-        # (no remap, no quarantine). Base-seed/shard records only ever have
-        # `structured_affixes` (no native block) and stay on the legacy path.
-        native = item.get("affixes")
-        parsed = (_native_parsed(item) if isinstance(native, list)
-                  else _structured_parsed(item))
+    # Native path: a gear-planner record carries a native `affixes` block
+    # [{name, type, value}]; build the variant's affixes from it VERBATIM (no
+    # remap, no quarantine) and skip the free-text `parse_enhancements` round-trip.
+    # gear-planner records are per-ML separate entries (no `ML<n>:` tier lines), so
+    # this emits a single variant. Marker fields (augment_slots, set_bonus,
+    # seal_slots, lamordia_slots, …) come from the record's own keys via
+    # _make_variant. Native augment-stone pool records take this path too.
+    if isinstance(item.get("affixes"), list):
+        parsed = _native_parsed(item)
         var = _make_variant(item, ml=item.get("minimum_level"), tier_label=None,
                             parsed=parsed)
         var["lamordia_slots"] = item.get("lamordia_slots")

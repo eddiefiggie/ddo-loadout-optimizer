@@ -53,8 +53,11 @@ function parseAffixValue(raw) {
  *  branches never fire and the live-dataset output is unchanged (parity-neutral). */
 function normalizeAffix(a) {
   if (!a || typeof a !== "object") return a;
-  if (a.stat == null && a.name != null) a.stat = a.name;
-  if (a.bonus_type == null && a.type != null) a.bonus_type = a.type;
+  // Live native item affixes carry {name, type}; every affix/ML consumer reads
+  // native now (U4a/U5), so the transitional native->legacy stat/bonus_type
+  // aliases were removed in U7. The legacy->native direction is kept as a
+  // migration for a PRE-OVERHAUL persisted loadout whose embedded affix carries
+  // only the old stat/bonus_type (migrateLoadout).
   if (a.name == null && a.stat != null) a.name = a.stat;         // legacy -> native (old saves)
   if (a.type == null && a.bonus_type != null) a.type = a.bonus_type;
   if (typeof a.value === "string") {
@@ -73,7 +76,9 @@ function normalizeItem(it) {
   if (!it || typeof it !== "object") return it;
   const affixes = it.affixes;
   if (Array.isArray(affixes)) for (const a of affixes) normalizeAffix(a);
-  if (it.minimum_level == null && it.ml != null) it.minimum_level = it.ml;
+  // Every ML consumer reads native `ml` now (U7 removed the item minimum_level
+  // alias); the reverse is kept so a PRE-OVERHAUL persisted loadout (only
+  // minimum_level) still gains native `ml`.
   if (it.ml == null && it.minimum_level != null) it.ml = it.minimum_level;
   const at = ARMOR_TYPE_MAP[it.type];
   if (at) it.armor_type = at;

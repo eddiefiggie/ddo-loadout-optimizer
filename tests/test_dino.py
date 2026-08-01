@@ -134,7 +134,7 @@ def test_empty_seed_yields_nothing_gracefully():
 def test_built_dataset_carries_dino_blanks_and_inserts():
     # End-to-end: the real build wires the shipped seed through.
     import build_dataset
-    dataset = build_dataset.build(build_dataset.load_seed())
+    dataset = build_dataset.build()
     assert "dino_inserts" in dataset
     assert len(dataset["dino_inserts"]) >= 1
     blanks = [v for v in dataset["items"] if v.get("source") == "dino_crafting_blank"]

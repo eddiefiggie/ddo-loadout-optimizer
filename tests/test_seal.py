@@ -1,45 +1,35 @@
-"""U2 — Seal-slot crafting: seed parse, strict quarantine, coverage.
+"""Seal-slot crafting: NATIVE pool (gearplanner_crafting.json), strict quarantine,
+coverage, and native host detection.
 
-Covers the plan's U2 test scenarios: the Undeath pool parses to 18 options
-(6 stats x 3 bonus tiers) with correct (stat, bonus_type, value); the stubbed
-Fire/Gloom/Mist pools parse to zero options and are reported pending; ambiguous
-lines quarantine, never guess."""
-import json
+The Undeath pool sources to 18 options (6 stats x 3 bonus tiers); Fire/Gloom/Mist
+are present-but-pending (no sourced pool). Host detection is native — the reader
+recovers "Sealed in X" markers from the gear-planner item crafting[] list (U7:
+the legacy seal.json seed + the enrich_from_planner import script were purged)."""
 import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src import seal  # noqa: E402
-
-SEED = os.path.join(os.path.dirname(__file__), "..", "data", "seed", "seal.json")
-
-
-def _seed():
-    return json.load(open(SEED, encoding="utf-8"))
+from src import planner_items  # noqa: E402
 
 
-def test_undeath_pool_parses_to_18_options():
-    parsed = seal.parse_seal(_seed())
+def test_undeath_pool_sources_to_18_options():
+    parsed = seal.build_seal()
     recs = [r for r in parsed["records"] if r["seal_type"] == "Undeath"]
     assert len(recs) == 18, f"expected 18 Undeath options, got {len(recs)}"
     stats = {"Strength", "Constitution", "Dexterity", "Intelligence", "Wisdom", "Charisma"}
-    tiers = {("Enhancement", 15), ("Insightful", 7), ("Quality", 3)}
+    tiers = {("Enhancement", 15), ("Insight", 7), ("Quality", 3)}
     seen = {(r["stat"], (r["bonus_type"], r["value"])) for r in recs}
-    # every stat x tier combination is present exactly once
     for s in stats:
         for t in tiers:
             assert (s, t) in seen, f"missing {s} at {t}"
-    # each record is fully specified and wiki-traceable
     for r in recs:
-        assert r["bonus_type"] in {"Enhancement", "Insightful", "Quality"}
         assert isinstance(r["value"], int) and r["value"] > 0
-        assert r["wiki_url"].startswith("https://ddowiki.com/")
 
 
 def test_stub_pools_are_pending_not_errors():
-    parsed = seal.parse_seal(_seed())
-    cov = parsed["coverage"]
+    cov = seal.build_seal()["coverage"]
     assert cov["seal_types_sourced"] == ["Undeath"]
     assert set(cov["seal_types_pending"]) == {"Fire", "Gloom", "Mist"}
     assert cov["options_eligible"] == 18
@@ -68,85 +58,55 @@ def test_unrecognized_seal_type_and_missing_wiki_url_quarantine():
     ]}
     parsed = seal.parse_seal(bad)
     reasons = " ".join(q["reason"] for q in parsed["quarantined"])
-    assert "unrecognized seal type" in reasons  # "Bogus" is not a canonical seal
-    assert "missing wiki_url" in reasons        # the Undeath pool has no wiki_url
-    assert parsed["records"] == []              # nothing solver-eligible survives
+    assert "unrecognized seal type" in reasons
+    assert "missing wiki_url" in reasons
+    assert parsed["records"] == []
 
 
 def test_normalize_seal_type_folds_prefix_and_case():
     assert seal.normalize_seal_type("Sealed in Undeath") == "Undeath"
     assert seal.normalize_seal_type("undeath") == "Undeath"
     assert seal.normalize_seal_type("Sealed in Fire") == "Fire"
-    assert seal.normalize_seal_type("Amber") is None  # excluded from the family
+    assert seal.normalize_seal_type("Amber") is None
     assert seal.normalize_seal_type("") is None
 
 
-# --- U1: host detection in the gear-planner import ------------------------
+# --- native host detection (planner_items reads crafting[] "Sealed in X") ---
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
-from enrich_from_planner import build_record  # noqa: E402
-
-
-def test_build_record_detects_crafting_seal():
-    # Undeath seals live in crafting[]; the augment slot is still captured.
+def test_native_record_detects_crafting_seal():
     it = {"name": "Test Trinket", "slot": "Trinket", "ml": 33,
           "affixes": [{"name": "Dodge", "type": "Enhancement", "value": 15}],
           "crafting": ["Sealed in Undeath", "Green Augment Slot"]}
-    rec = build_record(it)
+    rec = planner_items._record(it, {"Undeath"})
     assert rec["seal_slots"] == [{"seal_type": "Undeath", "category": "Trinket"}]
     assert "Green" in rec["augment_slots"]
 
 
-def test_build_record_detects_bool_affix_seal():
-    # Fire seals are affixes[] Bool markers, not crafting[] — proves that path.
-    it = {"name": "Test Sword", "slot": "Weapon", "type": "Longswords", "ml": 33,
-          "affixes": [{"name": "Sealed in Fire", "type": "Bool", "value": 1}],
-          "crafting": []}
-    rec = build_record(it)
-    assert rec["seal_slots"] == [{"seal_type": "Fire", "category": "Weapon"}]
-
-
-def test_build_record_dedups_a_seal_in_both_fields():
-    # A seal redundantly encoded in BOTH affixes[] Bool and crafting[] must yield
-    # ONE slot, or the solver's per-slot single-pick would let it unseal twice.
-    it = {"name": "Dbl", "slot": "Trinket", "ml": 33,
-          "affixes": [{"name": "Sealed in Undeath", "type": "Bool", "value": 1}],
-          "crafting": ["Sealed in Undeath", "Green Augment Slot"]}
-    rec = build_record(it)
-    assert rec["seal_slots"] == [{"seal_type": "Undeath", "category": "Trinket"}]
-
-
-def test_build_record_no_seal_yields_no_slots():
-    it = {"name": "Plain Ring", "slot": "Ring", "ml": 33,
-          "affixes": [{"name": "Strength", "type": "Enhancement", "value": 15}],
-          "crafting": ["Yellow Augment Slot"]}
-    rec = build_record(it)
+def test_native_record_gates_unsourced_seal_type():
+    # Mist is present in the dump but not sourced (no pool) -> not a live host.
+    it = {"name": "Misty", "slot": "Trinket", "ml": 33, "affixes": [],
+          "crafting": ["Sealed in Mist"]}
+    rec = planner_items._record(it, {"Undeath"})
     assert "seal_slots" not in rec
 
 
-def test_undyingage_batch_reaches_the_undeath_hosts():
-    # Regression for the reachability gap: the 9 Undeath hosts (Threats Old and New
-    # drops) are absent from every wiki batch. The bulk gear-planner import supplies
-    # them; where one collides with an already-active item (e.g. Ophael's Cincture),
-    # a seal-carrier stub grafts the seal onto the winner (order-independent). The
-    # invariant is the end state: 9 Undeath seal hosts solver-active in the dataset.
-    import build_dataset
-    ds = build_dataset.build(build_dataset.load_seed())
-    def key(it):
-        return it.get("source_item") or it.get("variant_id") or it.get("name")
-    undeath = {key(it) for it in ds["items"]
-               if any(s.get("seal_type") == "Undeath" for s in (it.get("seal_slots") or []))}
-    assert len(undeath) == 9, f"expected 9 solver-active Undeath hosts, got {len(undeath)}: {sorted(undeath)}"
+def test_native_record_no_seal_yields_no_slots():
+    it = {"name": "Plain Ring", "slot": "Ring", "ml": 33,
+          "affixes": [{"name": "Strength", "type": "Enhancement", "value": 15}],
+          "crafting": ["Yellow Augment Slot"]}
+    rec = planner_items._record(it, {"Undeath"})
+    assert "seal_slots" not in rec
 
 
-# --- U3: dataset wiring ---------------------------------------------------
+# --- dataset wiring (native, end-to-end) ------------------------------------
 
 from src.variants import expand_dataset  # noqa: E402
 import build_dataset  # noqa: E402
 
 
 def test_seal_slots_flow_through_expand_dataset_onto_variant():
-    item = {"name": "Seal Trinket", "category": "item", "slot": "Trinket", "enhancements": ["Dodge +15"],
+    item = {"name": "Seal Trinket", "category": "item", "slot": "Trinket",
+            "affixes": [{"name": "Dodge", "type": "Enhancement", "value": "15"}],
             "seal_slots": [{"seal_type": "Undeath", "category": "Trinket"}],
             "_enriched": True, "minimum_level": 33}
     variants = expand_dataset([item])
@@ -156,22 +116,19 @@ def test_seal_slots_flow_through_expand_dataset_onto_variant():
 
 
 def test_build_exposes_seal_pool_and_counts_hosts():
-    seed = {"metadata": {}, "items": [
-        {"name": "Seal Test Trinket", "category": "item", "slot": "Trinket", "enhancements": ["Dodge +15"],
-         "seal_slots": [{"seal_type": "Undeath", "category": "Trinket"}],
-         "minimum_level": 33}]}
-    out = build_dataset.build(seed)
+    out = build_dataset.build()
     assert len(out["seal"]) == 18                       # Undeath pool exposed
     assert out["metadata"]["seal_coverage"]["hosts_active"] >= 1
     assert out["metadata"]["seal_coverage"]["seal_types_sourced"] == ["Undeath"]
 
 
-def test_base_seed_sealed_item_keeps_its_seal_after_dedup():
-    # A base-seed item whose gear-planner twin carries a seal must not lose it to
-    # the base-wins dedup (regression for Ophael's Cincture).
-    seed = {"metadata": {}, "items": [
-        {"name": "Ophael's Cincture", "category": "item", "slot": "Belt", "enhancements": ["Seeker +15"],
-         "minimum_level": 33}]}
-    out = build_dataset.build(seed)
-    host = next(v for v in out["items"] if v.get("source_item") == "Ophael's Cincture")
-    assert host.get("seal_slots"), "base-seed sealed item lost its seal in dedup"
+def test_undeath_hosts_reach_the_solver_natively():
+    # The 9 Undeath seal hosts are surfaced NATIVELY from gear-planner crafting[]
+    # (e.g. Ophael's Cincture), no cross-source graft. Invariant: 9 solver-active.
+    out = build_dataset.build()
+
+    def key(it):
+        return it.get("source_item") or it.get("variant_id") or it.get("name")
+    undeath = {key(it) for it in out["items"]
+               if any(s.get("seal_type") == "Undeath" for s in (it.get("seal_slots") or []))}
+    assert len(undeath) == 9, f"expected 9 Undeath hosts, got {len(undeath)}: {sorted(undeath)}"

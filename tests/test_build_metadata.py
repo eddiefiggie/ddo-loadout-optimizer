@@ -15,7 +15,7 @@ import build_dataset  # noqa: E402
 
 
 def _build():
-    return build_dataset.build(build_dataset.load_seed())
+    return build_dataset.build()
 
 
 def test_metadata_carries_build_id_and_schema_version():
