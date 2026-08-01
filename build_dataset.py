@@ -39,6 +39,7 @@ from src import planner_items as planner_mod
 from src import vocab as vocab_mod
 import re as _re
 
+import collections
 import glob
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -211,6 +212,12 @@ def _is_numeric(v) -> bool:
     return False
 
 
+def _well_formed_stat(name: str) -> bool:
+    """Reject names that are obviously leaked partial effect text rather than a
+    stat: unbalanced parentheses/brackets (e.g. "Invisibility (Protection")."""
+    return name.count("(") == name.count(")") and name.count("[") == name.count("]")
+
+
 def rankable_affixes(planner_records) -> list:
     """Curated rankable-affix vocabulary (U4): the affix names a user meaningfully
     ranks as a priority. Derived from the CLEAN gear-planner structured affixes —
@@ -219,9 +226,16 @@ def rankable_affixes(planner_records) -> list:
     deliberately NOT "every stat present in the dataset": the wiki-only enriched
     shards still go through the free-text parser and leak fabricated names (Bal,
     INT, ...); gating the priority-picker on this list keeps that noise out of the
-    user-facing suggestions without restricting what the solver accepts."""
-    names = set()
+    user-facing suggestions without restricting what the solver accepts.
+
+    Two extra filters keep per-item noise out of the suggestions: a candidate must
+    appear on **at least two distinct items** (a real stat is shared across gear;
+    a named proc keyed to one weapon — "Devil's Bones", "Dragon's Edge" — is not),
+    and its name must be well-formed (balanced brackets). CORE_STATS are always
+    included regardless of item count."""
+    counts = collections.Counter()
     for r in planner_records or []:
+        seen = set()
         for a in r.get("structured_affixes") or []:
             bt = a.get("bonus_type")
             if bt == "boolean" or bt in vocab_mod.NON_RANKABLE_TYPES:
@@ -229,8 +243,10 @@ def rankable_affixes(planner_records) -> list:
             if not _is_numeric(a.get("value")):
                 continue
             stat = vocab_mod.normalize_stat(a.get("stat"))
-            if stat:
-                names.add(stat)
+            if stat and _well_formed_stat(stat):
+                seen.add(stat)
+        counts.update(seen)
+    names = {s for s, c in counts.items() if c >= 2}
     names |= {vocab_mod.normalize_stat(s) for s in vocab_mod.CORE_STATS}
     return sorted(names)
 
@@ -273,9 +289,18 @@ def build(seed: dict) -> dict:
     # reader recovers from the raw dump (Undeath sourced; Mist/Gloom pending).
     _verified_seal_types = {r["seal_type"]
                             for r in seal_mod.parse_seal(load_seal_seed())["records"]}
+    # Dinosaur Bone hosts are synthetic bodies generated post-verify (dino_blanks
+    # below); they never pass through the Pass-1 name dedup, so a same-name
+    # gear-planner record would double-list with an identical variant_id (KTD6
+    # trap). Build the blanks now and exclude their names from the reader — the
+    # dino seed owns the authoritative body.
+    dino_seed = load_dino_seed()
+    dino_blanks, dino_inserts, dino_sets, dino_cov = dino_mod.build_dino(dino_seed)
+    _host_pipeline_names = {b.get("source_item") for b in dino_blanks}
     planner_records, planner_stats = planner_mod.load_planner_items(
         boolean_allowlist=_boolean_allowlist,
-        verified_seal_types=_verified_seal_types)
+        verified_seal_types=_verified_seal_types,
+        exclude_names=_host_pipeline_names)
     all_enriched = load_enriched_items() + planner_records
     base_by_name = {it.get("name"): it for it in seed["items"]}
     # Pass 1 — pick the winning record per name (base seed, else first enriched shard
@@ -426,9 +451,8 @@ def build(seed: dict) -> dict:
     # U3 — Isle of Dread Dino crafting: append pre-verified blank host variants
     # (they carry typed Dino slots, no base affixes) and expose the insert pool
     # the solver places into those slots. Blanks are added AFTER verify so their
-    # empty affix list does not quarantine them.
-    dino_seed = load_dino_seed()
-    dino_blanks, dino_inserts, dino_sets, dino_cov = dino_mod.build_dino(dino_seed)
+    # empty affix list does not quarantine them. (Built earlier so their host names
+    # can be excluded from the gear-planner reader — see the merge above.)
     variants = variants + dino_blanks
     # U4 — Dino Set-Bonus: activate the chosen-set-membership slot on the Dinosaur
     # Bone Armor/Helmet/Cloak Set-Bonus hosts (added here, after verify, since the

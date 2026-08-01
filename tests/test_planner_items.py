@@ -72,14 +72,47 @@ def test_bool_affix_gated_by_allowlist():
     assert "Acid" not in emitted
 
 
-def test_string_values_and_percent_units():
+def test_value_unit_detects_percent_vs_flat():
+    # Direct unit-of-work test (the old version asserted a tautology).
+    assert P._value_unit("5%")[1] == "pct"
+    assert P._value_unit("3")[1] == "flat"
+    assert P._value_unit("-10")[1] == "flat"
+
+
+def test_seal_hosts_recovered_when_seal_type_verified():
+    # Positive path: "Sealed in Undeath" hosts become seal_slots when Undeath has a
+    # verified pool; and NOT when the seal type is unverified (Mist/Gloom).
+    recs_on, stats_on = P.load_planner_items(boolean_allowlist=_bool_allowlist(),
+                                             verified_seal_types={"Undeath"})
+    hosts = [r for r in recs_on if r.get("seal_slots")]
+    assert stats_on["planner_seal_hosts"] == len(hosts) >= 1
+    gauntlet = _by_name(recs_on, "Bauble of Draconic Resistance")
+    assert gauntlet["seal_slots"] == [{"seal_type": "Undeath", "category": gauntlet["slot"]}]
+    # Mist appears in the dump but has no verified pool -> no seal host emitted.
+    recs_off, stats_off = P.load_planner_items(boolean_allowlist=_bool_allowlist(),
+                                               verified_seal_types=set())
+    assert stats_off["planner_seal_hosts"] == 0
+
+
+def test_null_typed_allowlisted_stat_is_emitted_not_quarantined():
+    # KTD6 allowlist: a genuinely-real typeless stat (Magical Efficiency) is emitted
+    # as a live affix, not quarantined with the procs.
     recs, _ = _records()
-    for r in recs:
-        for a in r["structured_affixes"]:
-            if a["bonus_type"] == "boolean":
-                continue
-            # emitted magnitude values coerce cleanly downstream; unit is set
-            assert a["unit"] in ("flat", "pct")
+    emitted = {a["stat"]: a for r in recs for a in r["structured_affixes"]}
+    if "Magical Efficiency" in {a.get("name") for it in json.load(open(RAW))
+                                for a in it.get("affixes") or []}:
+        assert "Magical Efficiency" in emitted
+        assert emitted["Magical Efficiency"]["bonus_type"] == "Enhancement"
+
+
+def test_host_pipeline_names_excluded():
+    # The Dinosaur Bone hosts (owned by the dino seed's synthetic bodies) are
+    # dropped when passed as exclude_names, so they can't double-list (KTD6 trap).
+    recs, stats = P.load_planner_items(boolean_allowlist=_bool_allowlist(),
+                                       exclude_names={"Dinosaur Bone Belt", "Dinosaur Bone Ring"})
+    names = {r["name"] for r in recs}
+    assert "Dinosaur Bone Belt" not in names and "Dinosaur Bone Ring" not in names
+    assert stats["planner_host_pipeline_names_excluded"] == 2
 
 
 def test_intra_dump_name_collisions_collapsed_and_reported():

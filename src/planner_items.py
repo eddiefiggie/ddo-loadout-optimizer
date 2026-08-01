@@ -146,12 +146,19 @@ def _record(it, boolean_allowlist, verified_seal_types):
 
 
 def load_planner_items(path: str = RAW_PATH, boolean_allowlist=None,
-                       verified_seal_types=None):
+                       verified_seal_types=None, exclude_names=None):
     """Load and map the gear-planner raw dump into pipeline records with structured
     affixes. `boolean_allowlist` (curated presence-feature names) gates which Bool
     affixes emit; default empty -> all Bool quarantined (exclude-until-verified).
     `verified_seal_types` (seal types with a non-empty pool) gates which "Sealed in
     X" crafting entries become seal-slot hosts; default empty -> none.
+
+    `exclude_names` are names owned by a **host-pipeline seed** that generates its
+    own synthetic bodies *after* the build's name-keyed dedup (the Dinosaur Bone
+    hosts, added as `dino_blanks` post-verify). Those bodies never pass through the
+    Pass-1 dedup, so a same-name gear-planner record would double-list with an
+    identical variant_id (the documented KTD6 trap). Such records are dropped here
+    — the host seed owns the authoritative body.
 
     Returns `(records, stats)` where `stats` reports intra-dump name collisions
     collapsed (name-keyed, first wins — mirrors the build's own dedup) and affix
@@ -160,14 +167,18 @@ def load_planner_items(path: str = RAW_PATH, boolean_allowlist=None,
     a known, disclosed limitation of the name-keyed pipeline, not a silent drop."""
     allow = set(boolean_allowlist or ())
     seal_types = set(verified_seal_types or ())
+    excluded = set(exclude_names or ())
     with open(path, encoding="utf-8") as fh:
         raw = json.load(fh)
 
     records, seen = [], set()
-    collapsed = 0
+    collapsed = host_owned = 0
     emitted_total = flagged_total = seal_hosts = 0
     for it in raw:
         name = it.get("name")
+        if name in excluded:
+            host_owned += 1
+            continue
         if name in seen:
             collapsed += 1
             continue
@@ -182,6 +193,7 @@ def load_planner_items(path: str = RAW_PATH, boolean_allowlist=None,
     stats = {
         "planner_records": len(records),
         "planner_name_collisions_collapsed": collapsed,
+        "planner_host_pipeline_names_excluded": host_owned,
         "planner_affixes_emitted": emitted_total,
         "planner_affixes_quarantined": flagged_total,
         "planner_seal_hosts": seal_hosts,

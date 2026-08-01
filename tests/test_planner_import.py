@@ -63,22 +63,30 @@ def test_records_carry_solver_value_apart_from_a_tiny_empty_tail():
     assert len(empty) < 10, f"{len(empty)} empty records — reader likely dropped content: {empty[:10]}"
 
 
-def test_reader_names_reach_the_built_dataset_exactly_once():
-    ds_path = os.path.join(ROOT, "web", "data", "items.json")
-    if not os.path.exists(ds_path):
-        return  # dataset not built in this environment
-    its = json.load(open(ds_path, encoding="utf-8")).get("items", [])
+def _built_items():
+    import build_dataset
+    return build_dataset.build(build_dataset.load_seed())["items"]
+
+
+def test_no_variant_id_is_double_listed_in_the_built_dataset():
+    # KTD5 + the KTD6 host-pipeline trap: retiring the flattened shard and appending
+    # the gear-planner reader must NOT double-list any item. The 8 Dinosaur Bone
+    # hosts (synthetic dino_blanks generated post-dedup) are the known trap — a
+    # same-name reader record collides with an identical variant_id. Guard the
+    # end state: every variant_id is unique.
+    its = _built_items()
+    dupes = [v for v, c in Counter(it["variant_id"] for it in its).items() if c > 1]
+    assert not dupes, f"{len(dupes)} double-listed variant_ids: {dupes[:8]}"
+
+
+def test_reader_names_reach_the_built_dataset():
+    # Every gear-planner name is present in the built roster (won by the reader, an
+    # existing shard, or its host-pipeline seed) — no dropped names (KTD5). Built
+    # in-process so this never silently skips on a clean checkout.
+    its = _built_items()
+    present = {it.get("source_item") or it.get("variant_id") or it.get("name") for it in its}
     # no seal-carrier stub leaks in as a solver item
     assert not any(it.get("_seal_carrier") for it in its)
-    counts = Counter(it.get("source_item") or it.get("variant_id") or it.get("name")
-                     for it in its)
     recs, _ = _reader()
-    # every gear-planner name is present (won by gear-planner or an existing shard)
-    # and never double-listed (name-keyed dedup keeps exactly one body per name)
-    missing = [r["name"] for r in recs if counts[r["name"]] < 1]
-    assert not missing, f"{len(missing)} gear-planner names missing from the dataset"
-    doubled = [r["name"] for r in recs
-               if len({it.get("tier_label") for it in its
-                       if (it.get("source_item") == r["name"])}) == 0 and counts[r["name"]] > 1]
-    # (tiered items legitimately expand to >1 variant; only untiered double-listing is a bug)
-    assert not doubled, f"a gear-planner item is double-listed: {doubled[:5]}"
+    missing = [r["name"] for r in recs if r["name"] not in present]
+    assert not missing, f"{len(missing)} gear-planner names missing from the dataset: {missing[:8]}"

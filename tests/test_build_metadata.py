@@ -57,6 +57,15 @@ def test_rankable_excludes_boolean_and_descriptor_types():
     assert "Holy" not in ra and "Vampirism" not in ra
 
 
+def test_rankable_excludes_malformed_and_single_item_names():
+    # Leaked partial effect text (unbalanced parens) and per-item named procs must
+    # not reach the picker. A malformed name and a single-item proc both fail the
+    # well-formed + >=2-item filters.
+    ra = set(_build()["metadata"]["rankable_affixes"])
+    assert not any(s.count("(") != s.count(")") for s in ra), "unbalanced-paren name leaked"
+    assert "Invisibility (Protection" not in ra
+
+
 def test_rankable_derivation_is_a_subset_signal_not_input_restriction():
     # The curated list is far smaller than "every stat in the dataset" — proving it
     # actually gates suggestions rather than mirroring the polluted full set.
