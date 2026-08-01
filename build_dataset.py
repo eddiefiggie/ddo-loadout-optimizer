@@ -102,6 +102,75 @@ def assert_crafting_vocab() -> int:
     return vocabulary_mod.check_crafting_integrity(items, crafting, slot_reg, aug_reg)
 
 
+GAP_CORRECTIONS_PATH = os.path.join(HERE, "data", "seed", "gap_corrections.json")
+
+
+def load_gap_corrections(path: str = GAP_CORRECTIONS_PATH) -> dict:
+    """U7.5 — the sanctioned minimal exception to gear-planner sole-authority (U7).
+
+    gear-planner's parser UNDER-parses a small number of collision items — it
+    genuinely LACKS affixes those items really have (spot-validated against the
+    live DDO wiki, e.g. Ophael's Cincture's all-ability-scores block). This overlay
+    restores ONLY those genuinely-missing affixes, sourced from the retired
+    hand-verified base seed. It does NOT restore affixes gear-planner already
+    carries under a different type/synonym name — those "downgrades" were the
+    correct removal of Insightful/Insight-class double-counts (U4b) and must stay.
+
+    Returns `{item_name: [{name,type,value}, …]}` (the `_*` meta keys stripped).
+    Missing file -> {} (the overlay is optional; the build stays deterministic)."""
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as fh:
+        raw = json.load(fh)
+    return {k: v for k, v in raw.items() if not k.startswith("_")}
+
+
+def apply_gap_corrections(records: list, corrections: dict) -> dict:
+    """Apply the U7.5 gap-correction overlay ADDITIVELY and DETERMINISTICALLY.
+
+    For each native record whose name is a correction key, APPEND the gap affixes
+    to that record's native `affixes` — never overwrite an existing gear-planner
+    affix. Anti-double-count guard: an overlay affix is SKIPPED when the record
+    already carries that exact `(name, type)` (guards against re-introducing the
+    double-counts U4b/U7 removed). Mutates `records` in place; returns a coverage
+    dict (items corrected, affixes added, per-ML distribution, skipped count)."""
+    by_name = {}
+    for r in records:
+        by_name.setdefault(r.get("name"), r)  # first wins (matches loader dedup)
+    items_corrected = affixes_added = affixes_skipped = 0
+    ml_distribution = collections.Counter()
+    # Deterministic iteration: sorted by item name.
+    for name in sorted(corrections):
+        rec = by_name.get(name)
+        if rec is None:
+            continue  # correction targets an item not in the roster — no-op
+        existing = {(a.get("name"), a.get("type"))
+                    for a in rec.get("affixes") or []}
+        added_here = 0
+        for aff in corrections[name]:
+            key = (aff.get("name"), aff.get("type"))
+            if key in existing:
+                affixes_skipped += 1  # anti-double-count: gear-planner already has it
+                continue
+            rec.setdefault("affixes", []).append(
+                {"name": aff.get("name"), "type": aff.get("type"), "value": aff.get("value")})
+            existing.add(key)
+            added_here += 1
+        if added_here:
+            items_corrected += 1
+            affixes_added += added_here
+            ml_distribution[rec.get("ml")] += added_here
+    return {
+        "items_corrected": items_corrected,
+        "affixes_added": affixes_added,
+        "affixes_skipped_already_present": affixes_skipped,
+        "ml_distribution": {str(k): v for k, v in sorted(
+            ml_distribution.items(), key=lambda kv: (kv[0] is None, kv[0]))},
+        "corrected_items": sorted(
+            n for n in corrections if by_name.get(n) is not None),
+    }
+
+
 SOURCE_PROVENANCE_PATH = os.path.join(HERE, "data", "seed", "compendium", "raw", "SOURCE.json")
 
 
@@ -201,6 +270,12 @@ def build() -> dict:
     planner_records, planner_stats = planner_mod.load_planner_items(
         verified_seal_types=_verified_seal_types,
         exclude_names=_host_pipeline_names)
+    # U7.5 — apply the wiki-validated gap-corrections overlay ADDITIVELY, in place,
+    # BEFORE variant expansion so the restored affixes flow through verify/coverage
+    # like any native affix. Sole sanctioned exception to gear-planner sole-authority
+    # (restores only affixes gear-planner genuinely LACKS; anti-double-count guarded).
+    _gap_corrections = load_gap_corrections()
+    _gap_coverage = apply_gap_corrections(planner_records, _gap_corrections)
     enriched_items = planner_records
 
     # Set bonuses (native): attach the authoritative gear-planner catalog def to
@@ -439,6 +514,9 @@ def build() -> dict:
                 "references_validated": _crafting_vocab_checked,
             },
             "planner_coverage": planner_stats,
+            # U7.5 — wiki-validated gap-corrections overlay coverage (sanctioned
+            # minimal exception to gear-planner sole-authority).
+            "gap_corrections_coverage": _gap_coverage,
             "rankable_affixes": rankable_affixes(planner_records),
             # U5 — the shared affix-name registry + variant->canonical alias table.
             # The web picker unions every affix source (gear, augments, set bonuses,
