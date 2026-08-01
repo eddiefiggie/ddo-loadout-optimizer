@@ -4,7 +4,43 @@
     "scope": "minimum_level >= 30",
     "target_items": 1809,
     "method": "ddowiki MediaWiki query API (prop=revisions rvslots=main) via Claude-in-Chrome; parse the {{...}} templates in the `enhancements` field",
-    "policy": "wiki is source of truth; on mismatch correct the dataset via the seed/pipeline and log it under `corrections` (never edit generated web/data/items.json)"
+    "policy": "wiki is source of truth; on mismatch correct the dataset via the seed/pipeline and log it under `corrections` (never edit generated web/data/items.json)",
+    "cross_check_2026_08_01": {
+      "method": "offline diff of the optimizer catalog vs two independent wiki-mirrors: illusionistpm/ddo-gear-planner (JSON, near-daily) + Maetrim/DDOBuilderV2 (per-item XML). Compared normalized (stat->value) magnitude affixes for all 1809 ML30+ items.",
+      "result": "1809 ML30+ items -> only 4 genuine value conflicts (same stat, different value). The other ~1805 agree or differ only in representation (Shield+Protection vs Armor Class; True Seeing+Blindness Immunity vs Eversight) or booleans/procs the pipeline drops (KTD6).",
+      "coverage_note": "DBv2 has NO ML35 tier (231 items exist only in gear-planner) and only 11 ML36; so ML35 raid gear has no independent cross-check and needs wiki verification.",
+      "catalog_freshness": "optimizer catalog derives from an older gear-planner snapshot (mine ~8091 vs gp-latest 8188 items); values largely match, so staleness is minimal for magnitudes."
+    },
+    "conflicts_pending_wiki": {
+      "Legendary Outfit of Moonlight": {
+        "stat": "Mystic Incite",
+        "mine": 19,
+        "gear_planner": 44,
+        "dbv2": 44,
+        "note": "TWO independent mirrors agree on 44; my 19 near-certainly stale. Correct to 44 pending final wiki confirm."
+      },
+      "Legendary Skullduggery Cap": {
+        "stat": "Necromancy Focus",
+        "mine": 6,
+        "gear_planner": 8,
+        "dbv2": null,
+        "note": "gp says 8; DBv2 lacks stat. Wiki arbitrates."
+      },
+      "Legendary Ring of Mystic Intelligence": {
+        "stat": "Spell Focus Mastery",
+        "mine": 3,
+        "gear_planner": 4,
+        "dbv2": null,
+        "note": "gp says 4; DBv2 lacks stat. Wiki arbitrates."
+      },
+      "Legendary Shaped Great Forge Helm": {
+        "stat": "Seeker",
+        "mine": 15,
+        "gear_planner": 3,
+        "dbv2": null,
+        "note": "gp says 3 (mine 15 — large gap); DBv2 lacks stat. Wiki arbitrates. ML35 = no DBv2 cross-check."
+      }
+    }
   },
   "items": {
     "Baphomet's Reign": {
