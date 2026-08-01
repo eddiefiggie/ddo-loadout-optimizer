@@ -18,7 +18,7 @@ async function test(name, fn) {
 function item(id, slot, affixes) {
   return {
     variant_id: id, source_item: id, slot,
-    affixes: affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, value, unit: "flat" })),
+    affixes: affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, name: stat, type: bonus_type, value, unit: "flat" })),
     scaling: [], set_bonus: [], augment_slots: [],
   };
 }
@@ -29,7 +29,7 @@ function setHost(id, slotName, affixes, setName, tiers) {
   v.augment_slots_norm = { colors: [], quarantined: [] };
   v.parsed_set_bonuses = (tiers || []).map((t) => ({
     set: setName, pieces_required: t.n, pieces_label: `${t.n} Pieces`,
-    affixes: t.affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, value, unit: "flat" })),
+    affixes: t.affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, name: stat, type: bonus_type, value, unit: "flat" })),
     flagged: [],
   }));
   return v;

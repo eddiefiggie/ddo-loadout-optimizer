@@ -18,7 +18,7 @@ async function test(name, fn) {
 function item(id, slot, affixes) {
   return {
     variant_id: id, source_item: id, slot,
-    affixes: affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, value, unit: "flat" })),
+    affixes: affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, name: stat, type: bonus_type, value, unit: "flat" })),
     scaling: [], set_bonus: [], augment_slots: [],
   };
 }
@@ -42,7 +42,7 @@ function augment(id, color, affixes) {
   return {
     variant_id: id, source_item: id, category: "augment", slot: color,
     aug_color: { color, raw: color, reason: null }, fits_slots: AUG_FITS_SLOTS[color] || [],
-    affixes: affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, value, unit: "flat" })),
+    affixes: affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, name: stat, type: bonus_type, value, unit: "flat" })),
     scaling: [], set_bonus: [], augment_slots: [],
   };
 }
@@ -52,7 +52,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
   v.set_bonus = [{ set: setName }];
   v.parsed_set_bonuses = (tiers || []).map((t) => ({
     set: setName, pieces_required: t.n, pieces_label: `${t.n} Pieces`,
-    affixes: t.affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, value, unit: "flat" })),
+    affixes: t.affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, name: stat, type: bonus_type, value, unit: "flat" })),
     flagged: [],
   }));
   return v;
@@ -428,7 +428,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
   function dinoMulti(dino_type, affixes, category) {
     return {
       dino_type, category: category || "Accessory",
-      affixes: affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, value, unit: "flat" })),
+      affixes: affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, name: stat, type: bonus_type, value, unit: "flat" })),
       wiki_url: "wiki",
     };
   }
@@ -745,7 +745,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
   function vikHost(id, slotName, slots, ml, affixes) {
     const v = item(id, slotName, affixes || []);
     v.lamordia_slots = slots;        // [{type, category}]
-    v.minimum_level = ml == null ? 35 : ml;
+    v.minimum_level = v.ml = ml == null ? 35 : ml;
     return v;
   }
   function vikOpt(slot_type, category, stat, bonus_type, value, tier) {
@@ -1101,7 +1101,7 @@ function setPiece(id, slotName, affixes, setName, tiers) {
   function memberDef(tiers) {
     return { tiers: tiers.map((t) => ({
       pieces_required: t.n, pieces_label: `${t.n} Pieces`,
-      affixes: t.affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, value, unit: "flat" })),
+      affixes: t.affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, name: stat, type: bonus_type, value, unit: "flat" })),
     })) };
   }
 

@@ -31,7 +31,7 @@ function variantBuckets(variant, targetSet, mlCap) {
     const key = `${stat}||${type}`;
     if (!b.has(key) || b.get(key) < val) b.set(key, val);
   };
-  for (const a of variant.affixes || []) put(a.stat, a.bonus_type, a.value);
+  for (const a of variant.affixes || []) put(a.name, a.type, a.value);
   for (const s of variant.scaling || []) put(s.stat, s.bonus_type, scaledValue(s, mlCap));
   return b;
 }
@@ -68,7 +68,7 @@ function eligible(variants, query) {
   const forged = isForgedRace(query.race);
   return variants.filter((v) => {
     if (v.verification !== "verified") return false;
-    if (v.minimum_level != null && v.minimum_level > cap) return false;
+    if (v.ml != null && v.ml > cap) return false;
 
     // R6/AE1 — Race → body slot: Forged races take docents; others cannot.
     if (v.slot === "Armor" && query.race) {
@@ -201,7 +201,7 @@ function countColors(colors) {
 /** A Nearly-Complete host's tier: explicit nc_tier, else derived from ML
  *  (Legendary only at ML>=35). Matches the solver's derivation. */
 function ncTier(v) {
-  return v.nc_tier || ((v.minimum_level || 0) >= 35 ? "legendary" : "heroic");
+  return v.nc_tier || ((v.ml || 0) >= 35 ? "legendary" : "heroic");
 }
 
 /** A Viktranium ("Lamordia") host's tier, derived from host ML. Viktranium's two
@@ -212,7 +212,7 @@ function ncTier(v) {
  *  unreachable. This is the SINGLE source of truth — the solver and browse layers
  *  derive tier from this function, never a re-inlined threshold. */
 function lamordiaTier(v) {
-  return (v.minimum_level || 0) >= 30 ? "legendary" : "heroic";
+  return (v.ml || 0) >= 30 ? "legendary" : "heroic";
 }
 
 /** A host's typed Lamordia slots as a `type||category||tier` multiset key list,

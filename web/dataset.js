@@ -9,9 +9,11 @@
 //
 //   * per affix: a numeric `value` + `unit` parsed from the native string, and
 //     the legacy aliases `stat` (= name) and `bonus_type` (= type).
-//   * per item:  `minimum_level` (= ml), and `armor_type` derived from the
-//     native item `type` ("Cloth armor" -> "cloth", …). `category` is already
-//     persisted; it is left as-is.
+//   * per item:  `minimum_level` (= ml) AND, symmetrically, `ml` (= minimum_level)
+//     for the handful of records seeded with only the legacy field, so native `ml`
+//     readers are always safe; plus `armor_type` derived from the native item
+//     `type` ("Cloth armor" -> "cloth", …). `category` is already persisted; it is
+//     left as-is.
 //
 // This is the ONLY place the legacy names survive. A later unit (U7) removes the
 // aliases once the solver + UI read the native shape directly. The walk is
@@ -66,6 +68,7 @@ function normalizeItem(it) {
   const affixes = it.affixes;
   if (Array.isArray(affixes)) for (const a of affixes) normalizeAffix(a);
   if (it.minimum_level == null && it.ml != null) it.minimum_level = it.ml;
+  if (it.ml == null && it.minimum_level != null) it.ml = it.minimum_level;
   const at = ARMOR_TYPE_MAP[it.type];
   if (at) it.armor_type = at;
   return it;

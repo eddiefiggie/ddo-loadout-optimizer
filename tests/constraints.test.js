@@ -12,8 +12,8 @@ function test(name, fn) {
 function v(name, slot, con, opts = {}) {
   return {
     source_item: name, variant_id: name, slot, category: opts.category || "item",
-    minimum_level: 10, verification: "verified",
-    affixes: [{ stat: "Constitution", bonus_type: "Enhancement", value: con, unit: "flat" }],
+    minimum_level: 10, ml: 10, verification: "verified",
+    affixes: [{ stat: "Constitution", bonus_type: "Enhancement", name: "Constitution", type: "Enhancement", value: con, unit: "flat" }],
     scaling: [], set_bonus: [], augment_slots: [], restrictions: "unknown", armor_type: null,
   };
 }

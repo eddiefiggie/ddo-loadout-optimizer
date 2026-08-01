@@ -7,7 +7,7 @@ window.App && window.App.ready((dataset) => {
   // Targetable stats: distinct affix stats present in the dataset.
   const statSet = new Set();
   dataset.items.forEach((v) => {
-    (v.affixes || []).forEach((a) => statSet.add(a.stat));   // worn + augment affixes
+    (v.affixes || []).forEach((a) => statSet.add(a.name));   // worn + augment affixes
     (v.scaling || []).forEach((s) => statSet.add(s.stat));
     (v.parsed_set_bonuses || []).forEach((tier) =>           // set-bonus threshold stats
       (tier.affixes || []).forEach((a) => statSet.add(a.stat)));

@@ -78,8 +78,8 @@ function buildProgram(model) {
   for (const xv of xVars) {
     const best = new Map();
     for (const a of xv.variant.affixes || []) {
-      const k = `${a.stat}||${a.bonus_type}`;
-      if (targetSet.has(a.stat) && a.value > 0 && (!best.has(k) || best.get(k) < a.value)) best.set(k, a.value);
+      const k = `${a.name}||${a.type}`;
+      if (targetSet.has(a.name) && a.value > 0 && (!best.has(k) || best.get(k) < a.value)) best.set(k, a.value);
     }
     for (const s of xv.variant.scaling || []) {
       const val = scaleAt(s, mlCap);
@@ -190,8 +190,8 @@ function buildProgram(model) {
   for (const aug of model.augments || []) {
     const best = new Map();
     for (const a of aug.affixes || []) {
-      const k = `${a.stat}||${a.bonus_type}`;
-      if (targetSet.has(a.stat) && a.value > 0 && (!best.has(k) || best.get(k) < a.value)) best.set(k, a.value);
+      const k = `${a.name}||${a.type}`;
+      if (targetSet.has(a.name) && a.value > 0 && (!best.has(k) || best.get(k) < a.value)) best.set(k, a.value);
     }
     for (const s of aug.scaling || []) {
       const val = scaleAt(s, mlCap);
@@ -316,7 +316,7 @@ function buildProgram(model) {
     if (!category) continue;
     // Tier from the host's ML, not a fixed default — never grant the larger
     // (Legendary ML35) magnitude to a heroic item that omitted nc_tier.
-    const tier = xv.variant.nc_tier || ((xv.variant.minimum_level || 0) >= 35 ? "legendary" : "heroic");
+    const tier = xv.variant.nc_tier || ((xv.variant.ml || 0) >= 35 ? "legendary" : "heroic");
     const slotVars = [];
     for (const opt of model.nearlyComplete || []) {
       if (opt.category !== category || opt.tier !== tier) continue;
@@ -945,7 +945,7 @@ function sameChosen(a, b) {
 function modelStats(model) {
   const s = new Set();
   const add = (v) => {
-    for (const a of v.affixes || []) if (a.value > 0) s.add(a.stat);
+    for (const a of v.affixes || []) if (a.value > 0) s.add(a.name);
     for (const sc of v.scaling || []) s.add(sc.stat);
   };
   for (const slot of model.worn || []) for (const v of slot.variants || []) add(v);
