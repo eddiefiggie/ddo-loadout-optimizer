@@ -165,12 +165,16 @@ test("vikRow tags the tier's ML, keys the pool, and renders its value", () => {
   assert.ok(affixText(row).some((t) => /Charisma \+15/.test(t)));
 });
 
-test("browsableItems appends the compendium index (indexed-only entries)", () => {
+test("browsableItems appends only indexed-only compendium rows (collapsed under single-source)", () => {
+  // U6: the native roster is the single source of truth — every indexed item is
+  // enriched (its own solver-active variant row), so the indexed-only layer has
+  // collapsed to empty. browsableItems appends exactly the indexed-only entries,
+  // which is now 0: nothing is browse-only-but-unparsed anymore.
   const list = browsableItems(data);
   const idx = list.filter((v) => v.compendium);
   const indexedOnly = (data.compendium || []).filter((x) => x.status === "indexed").length;
   assert.strictEqual(idx.length, indexedOnly, "indexed-only compendium rows are browsable");
-  assert.ok(idx.length > 0, "expected a non-empty compendium index");
+  assert.strictEqual(indexedOnly, 0, "single-source completeness: no known-but-unparsed layer");
   // enriched entries are NOT re-listed here (they appear as real variant rows)
   assert.ok(!idx.some((v) => v.verification !== "indexed"));
 });
@@ -183,11 +187,19 @@ test("compendiumRow renders an indexed, solver-excluded row with a wiki link", (
   assert.ok(row.wiki_url);
 });
 
-test("indexed items are filterable by status and slot", () => {
+test("indexed-only rows have collapsed under single-source completeness", () => {
+  // U6: with every native item enriched, no browse row carries verification
+  // "indexed" — the unparsed layer is gone. The status+slot filter still WORKS
+  // (compendiumRow keeps rendering a synthetic indexed row, tested above); real
+  // data simply has none.
   const list = browsableItems(data);
   const rows = filterVariants(list, { verification: "indexed", slot: "Ring" });
-  assert.ok(rows.length > 0, "indexed Rings surface under the status+slot filter");
-  for (const v of rows) { assert.strictEqual(v.verification, "indexed"); assert.strictEqual(v.slot, "Ring"); }
+  assert.strictEqual(rows.length, 0, "no indexed-only Rings under single-source");
+  // A synthetic indexed row still filters correctly (function-level guarantee).
+  const synth = compendiumRow({ name: "Some Ring", slot: "Ring", wiki_url: "w", status: "indexed" });
+  const filtered = filterVariants(list.concat(synth), { verification: "indexed", slot: "Ring" });
+  assert.strictEqual(filtered.length, 1);
+  assert.strictEqual(filtered[0].verification, "indexed");
 });
 
 console.log(`\n${passed} passed`);

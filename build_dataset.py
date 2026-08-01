@@ -672,24 +672,23 @@ def build(seed: dict) -> dict:
     tf = tf_mod.build_thunder_forged()
     gs = gs_mod.build_green_steel()
 
-    # Compendium roster: the complete named-item INDEX (name + slot + wiki link
-    # for every named item on the wiki, harvested by category). Roster entries
-    # are browse-only ("indexed") until their stats are enriched into real item
-    # records; those already solver-active are cross-referenced as "enriched" so
-    # the two layers do not double-count. Does not feed the solver.
-    enriched_names = {v.get("source_item") for v in variants if v.get("source_item")}
-    comp_records, comp_cov = compendium_mod.build_compendium(enriched_names)
+    # Compendium browse index (U6): derived from the NATIVE roster (the built
+    # variants' own source_item + slot + wiki_url), not the legacy roster_*.json
+    # wiki-harvest shards. Under single-source completeness every native item is
+    # solver-active, so every indexed item is "enriched" — the old indexed-only
+    # layer has collapsed (see src.compendium). Does not feed the solver.
+    comp_records, comp_cov = compendium_mod.build_compendium(variants)
     comp_cov["enriched_items"] = len(enriched_items)
     # Surface the strict-provenance disclosure: how many wiki effects were recorded
     # as unmapped (never guessed) across the enriched batches.
     comp_cov["enriched_unmapped_effects"] = sum(
         len(it.get("_enrich_unmapped", [])) for it in enriched_items)
-    # R4 ML30-36 endgame-band coverage (U4): per (expansion, slot) enriched /
-    # quarantined / pending across U81, Isle of Dread, Myth Drannor — honest
-    # disclosure driven by the solver-active names in this very build.
-    band_active = {(v.get("source_item") or v.get("variant_id") or v.get("name")) for v in variants}
-    band_active.discard(None)
-    band_cov = band_mod.band_coverage(band_active)
+    # R4 ML30-36 endgame-band coverage (U6): per (expansion, slot) counts derived
+    # from the NATIVE roster (items carry ml + slot + wiki_url). Under single-source
+    # completeness every band item is solver-active ("enriched"); Isle of Dread is
+    # attributed via the native Dino signal, the rest reported per-slot as
+    # "unattributed" (the coarser attribution — see src.band_frontier).
+    band_cov = band_mod.band_coverage(variants)
     # U81 Nearly-Complete hosts activated via enrichment (items carrying an open
     # NC 4th-affix slot the solver crafts into).
     nc["coverage"]["hosts_activated"] = sum(

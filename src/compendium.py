@@ -1,92 +1,85 @@
-"""DDO named-item compendium — roster layer.
+"""DDO named-item compendium — browse index over the NATIVE roster (U6).
 
-Loads the harvested roster (name + slot + wiki link for every named item on the
-DDO wiki, enumerated by category) and exposes it as the complete item INDEX.
+Re-homed onto the gear-planner NATIVE roster (the single source of truth). The
+browse index is derived directly from the built item records — each carries its
+own `source_item` (name), `slot`, and `wiki_url` — instead of the legacy
+`roster_*.json` wiki-harvest shards. Those shards remain on disk (U7 purges
+them); this module no longer reads them, and `load_roster` is retired.
 
-Two layers, disclosed honestly:
-  - **indexed** — the roster knows the item exists (name, slot, wiki link) but its
-    stats are not yet parsed. Browse-only; NOT fed to the solver.
-  - **enriched** — the item has parsed affixes and is solver-active (it entered
-    through the base-item pipeline). Cross-referenced here so the two layers do
-    not double-count.
-
-Harvested via the DDO wiki MediaWiki API (list=categorymembers), same-origin from
-ddowiki.com — the only working access path (server-side fetch/curl are blocked).
-Roster shards live in data/seed/compendium/roster_*.json.
+Single-source completeness collapses the old two-layer split. Previously the
+index disclosed:
+  - **indexed** — the wiki roster knew a name/slot/link but its stats were not
+    parsed (browse-only, never solver-fed), and
+  - **enriched** — stats parsed, solver-active.
+Under single-source, gear-planner provides COMPLETE data for every item it lists,
+so every native item is solver-active. There is no "known but unparsed" layer
+anymore: every indexed item is enriched. `indexed_only` is reported as 0 to mean
+single-source COMPLETENESS, not lost coverage — the native roster (~8,997 names)
+is a SUPERSET of the old ~7,658-name wiki roster.
 """
 from __future__ import annotations
 
-import glob
-import json
-import os
-
-HERE = os.path.dirname(os.path.abspath(__file__))
-COMPENDIUM_DIR = os.path.join(HERE, "..", "data", "seed", "compendium")
-
 
 def wiki_url(name: str) -> str:
-    """Derive an item's wiki page URL from its name (spaces -> underscores)."""
+    """Derive an item's wiki page URL from its name (spaces -> underscores).
+
+    Fallback only: native items carry their own `wiki_url`; this reconstructs one
+    when a record lacks it.
+    """
     return "https://ddowiki.com/page/Item:" + name.replace(" ", "_")
 
 
-def load_roster(dirpath: str = COMPENDIUM_DIR) -> list:
-    """Load every roster_*.json shard and return the flat list of category blocks."""
-    cats = []
-    if not os.path.isdir(dirpath):
-        return cats
-    for path in sorted(glob.glob(os.path.join(dirpath, "roster_*.json"))):
-        with open(path, "r", encoding="utf-8") as fh:
-            d = json.load(fh)
-        cats.extend(d.get("categories", []))
-    return cats
+def build_compendium(items):
+    """Build the browse index records + coverage from the NATIVE roster.
 
+    `items` is the built variant list; each record carries `source_item` (the
+    item name), `slot`, `wiki_url`, and a native sub-type in `type`. Names are
+    de-duplicated by (name, slot) so tier variants of one item index once.
 
-def build_compendium(enriched_names=None, dirpath: str = COMPENDIUM_DIR):
-    """Build the compendium index records + coverage from the roster shards.
-
-    `enriched_names` is the set of item names already solver-active (their stats
-    are parsed). Matching roster entries are marked `enriched`; the rest `indexed`.
-    Names are de-duplicated across categories (armor-type cross-listings recur).
+    Under single-source completeness every native item is solver-active, so every
+    record is `enriched` — the legacy indexed-vs-enriched split has collapsed.
     Returns (records, coverage).
     """
-    enriched = set(enriched_names or [])
-    cats = load_roster(dirpath)
     records = []
     by_slot = {}
     seen = set()
-    enriched_matched = 0
-    indexed_only = 0
-    for c in cats:
-        slot = c.get("slot", "")
-        for name in c.get("items", []):
-            key = (name, slot)
-            if key in seen:
-                continue
-            seen.add(key)
-            is_enriched = name in enriched
-            rec = {
-                "name": name,
-                "slot": slot,
-                "wiki_url": wiki_url(name),
-                "status": "enriched" if is_enriched else "indexed",
-            }
-            if c.get("armor_type"):
-                rec["armor_type"] = c["armor_type"]
-            if c.get("weapon_type"):
-                rec["weapon_type"] = c["weapon_type"]
-            if c.get("offhand_type"):
-                rec["offhand_type"] = c["offhand_type"]
-            records.append(rec)
-            by_slot[slot] = by_slot.get(slot, 0) + 1
-            if is_enriched:
-                enriched_matched += 1
-            else:
-                indexed_only += 1
+    for it in items or []:
+        name = it.get("source_item")
+        if not name:
+            continue
+        slot = it.get("slot") or ""
+        key = (name, slot)
+        if key in seen:
+            continue
+        seen.add(key)
+        rec = {
+            "name": name,
+            "slot": slot,
+            "wiki_url": it.get("wiki_url") or wiki_url(name),
+            # Single-source: gear-planner gives complete data for every listed
+            # item, so it is solver-active. No "indexed-only" (unparsed) layer.
+            "status": "enriched",
+        }
+        # Carry the native sub-type (gear-planner's `type`) into the slot-specific
+        # field the browse row reads, so the index keeps its display fidelity.
+        typ = it.get("type")
+        if typ:
+            if it.get("category") == "weapon" or slot == "Weapon":
+                rec["weapon_type"] = typ
+            elif slot == "Off Hand":
+                rec["offhand_type"] = typ
+            elif slot == "Armor":
+                rec["armor_type"] = typ
+        records.append(rec)
+        by_slot[slot] = by_slot.get(slot, 0) + 1
     coverage = {
         "total_indexed": len(records),
-        "enriched_matched": enriched_matched,
-        "indexed_only": indexed_only,
+        # Every indexed item is enriched under single-source completeness.
+        "enriched_matched": len(records),
+        # 0 = single-source COMPLETENESS (there is no known-but-unparsed layer),
+        # NOT lost coverage: the native roster is a superset of the old wiki roster.
+        "indexed_only": 0,
         "by_slot": by_slot,
-        "source_categories": len(cats),
+        "source": "native gear-planner roster (single source of truth)",
     }
     return records, coverage
