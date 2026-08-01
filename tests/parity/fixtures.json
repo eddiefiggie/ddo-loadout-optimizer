@@ -1,0 +1,32 @@
+[
+  {
+    "name": "heroic-str-melee",
+    "note": "low-ML strength melee bruiser",
+    "query": { "mlCap": 15, "targets": ["Strength", "Constitution", "Physical Sheltering"], "armorType": null, "weaponSetup": null, "classRace": null }
+  },
+  {
+    "name": "mid-caster",
+    "note": "mid-ML int caster",
+    "query": { "mlCap": 30, "targets": ["Intelligence", "Universal Spell Power", "Wisdom"], "armorType": null, "weaponSetup": null, "classRace": null }
+  },
+  {
+    "name": "endgame-tank-ml34",
+    "note": "endgame constitution tank spanning the ML30-36 band",
+    "query": { "mlCap": 34, "targets": ["Constitution", "Physical Sheltering", "Magical Sheltering", "Fortification"], "armorType": null, "weaponSetup": null, "classRace": null }
+  },
+  {
+    "name": "endgame-dex-ml36",
+    "note": "top-of-band ML36 dexterity/dodge evasion build",
+    "query": { "mlCap": 36, "targets": ["Dexterity", "Dodge", "Physical Sheltering"], "armorType": null, "weaponSetup": null, "classRace": null }
+  },
+  {
+    "name": "endgame-dps-ml33",
+    "note": "ML33 melee dps chasing crit/accuracy affixes",
+    "query": { "mlCap": 33, "targets": ["Strength", "Deadly", "Seeker", "Accuracy"], "armorType": null, "weaponSetup": null, "classRace": null }
+  },
+  {
+    "name": "endgame-caster-ml32",
+    "note": "ML32 spellcaster chasing spell power + potency",
+    "query": { "mlCap": 32, "targets": ["Universal Spell Power", "Potency", "Wisdom", "Charisma"], "armorType": null, "weaponSetup": null, "classRace": null }
+  }
+]
