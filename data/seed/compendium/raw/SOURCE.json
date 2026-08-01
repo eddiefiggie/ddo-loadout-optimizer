@@ -15,5 +15,13 @@
   ],
   "item_count": 8188,
   "crafting_count": 83,
-  "set_count": 282
+  "set_count": 282,
+  "overhaul_closeout": {
+    "_README": "Close-out stamp for the U1-U9 gear-planner native-schema overhaul. Informational only; does NOT affect freshness (assert_freshness reads upstream_commit above, which is intact). See docs/reports/2026-08-01-gear-planner-overhaul.md.",
+    "schema": "gear-planner native (items persist verbatim {name,type,value} affix blocks; normalization is logic-not-data in web/dataset.js)",
+    "date": "2026-08-01",
+    "final_item_count": 9045,
+    "sole_authority": "illusionistpm/ddo-gear-planner (legacy base seed + wiki shards purged in U7)",
+    "sanctioned_exception": "gap_corrections.json (Ophael's Cincture only, KTD4)"
+  }
 }

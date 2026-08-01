@@ -1,6 +1,8 @@
-# Gear-planner single-source overhaul — migration report (U7 legacy purge)
+# Gear-planner single-source overhaul — migration report (U1–U9)
 
 _Generated 2026-08-01 from the purge-time dataset. Derived programmatically (base-seed − gear-planner recomputed at purge), not hand-authored._
+
+_Sections **1–7** below are the U7 purge-time manifest (unchanged). Sections **8–13** are the U8/U9 close-out: the native-schema/logic-not-data decision, the accepted-diff summary across U4b→U7.5, the app-smoke result, the final state, and the regression guard. Final dataset: **9045 items**, deterministic build (md5 `e467330c`; the solve-relevant body is unchanged from the U7.5 `b87c5d38` build — the hash moved only because the U9 SOURCE.json close-out stamp is embedded into `metadata.provenance`)._
 
 ## Sources — before / after
 
@@ -87,4 +89,48 @@ The `heroic-str-melee` fixture is unchanged (low-level gear is well-covered by g
 ### Native host-marker surfacing (fuller coverage, additive)
 
 Extracting lamordia / nearly-complete / lost-purpose markers natively from gear-planner `crafting[]` (rather than grafting from the deleted wiki shards) is a superset — every previously-active host is preserved and more are activated: lamordia hosts 108→350, nearly-complete 70→140, lost-purpose 44 (unchanged). Seal hosts (9 Undeath) unchanged. This is the plan's intended native host-marker surfacing (fuller = correct under single-source authority).
+
+---
+
+## 8. Native schema, at rest — the KTD3 "logic-not-data" decision
+
+The authority's own record persists **near-native**: each item variant keeps gear-planner's `affixes: [{name, type, value}]` block verbatim (`value` a string — `"15"`, `"9%"` for percent), plus native `type`/`ml`/`url`/`quests`/`crafting`/`sets`/`artifact`. There is **no persisted derived/normalized block** — the KTD3-superseded decision was to keep the normalization in **logic, not data**: the load-time normalizer in `web/dataset.js` re-derives numeric value + unit and installs `metadata.stacking_equivalence` into the solver on load, so the disk artifact never carries a second (drift-prone) copy of the derived view. The legacy per-affix `{stat, bonus_type}` aliases and the per-affix `minimum_level`/`unit` aliases were **removed from item affixes entirely** — every consumer reads the native `{name, type, value}` shape (verified: `stat`/`bonus_type`/`unit` appear nowhere in any of the 9045 items' `affixes`; the U8 semantic-invariant guard asserts this). Host choice-slot markers (augment / seal / lamordia / nearly-complete / lost-purpose) are surfaced natively from `crafting[]`.
+
+> Note: the crafting/NC/dino/set/seal **option pools** (`nearly_complete`, `viktranium`, `seal`, `dino_inserts`, `membership_set_defs`, …) legitimately retain the `{stat, bonus_type, value, unit}` shape — that is the native crafting-catalog schema the solver reads for those pools, not a legacy item-affix alias. The invariant is scoped to worn-item affixes.
+
+## 9. Accepted-diff summary (U4b → U7.5)
+
+The single-source outcome landed as four ratified, individually-verified data changes:
+
+**(a) U4b-i — native affix block, +11,380 affixes un-quarantined, ZERO fixture-solve change.** gear-planner variants now build their affixes from the native `affixes` block (verbatim, no remap, no quarantine gate) instead of the remapped/quarantined `structured_affixes`. This un-quarantines **+11,380 affixes** at the data level, yet **all 6 fixtures' `perTarget` and chosen loadouts are identical** to before — the newly-live affixes are non-rankable (Bool presence / null-type / descriptor) and the stacking-equivalence collapse it also installs touches only Armor Class (unranked by any fixture). Same commit fixed a real regression where `union_gearplanner_affix_losses` had been restoring affixes into the now-unused `structured_affixes` block (rerouted to native, tightening the no-double-count guarantee).
+
+**(b) U4b-ii — crafting-rewire corrections, incl. the seal Insight double-count fix.** seal / nearly-complete / viktranium / dino / membership pools now source from the native crafting catalog (`src/crafting_catalog.py`), and the strict seed-parser gate was removed so native multi-affix options flow through. This surfaced a genuine **correctness bug fix**: the six "Sealed in Undeath" ability options were mistyped **Insightful** in the legacy seed; native types them **Insight**. In-game an item's Constitution Insight and the seal's Constitution Insight do **not** stack — the mistyping put them in separate buckets, so the pre-overhaul solver **double-counted** them. Now corrected (the fix is visible live in-app: "Sealed in Undeath: Constitution +7 Insight"). Three of six fixtures move, all lexicographically correct (e.g. tank Con held with PS −1 / Fort −4 — the honest cost of removing the double-count).
+
+**(c) U7 endgame deltas are mostly double-count REMOVAL, not loss.** The endgame fixtures' ability drops (e.g. Constitution 44→37) are, in the main, base-seed **Insightful/Insight double-count removals** on endgame gear — a correctness gain, not lost coverage. Rigorous analysis of all **89** base∩gear-planner collision items found that, of ~100 naively-flagged "missing" affixes, all but one are **false gaps** (gear-planner already carries them under the correct type or a synonym — Protection = AC/Deflection, etc.; restoring them would re-introduce the very double-counts U4b/U7 removed). **Exactly one item — Ophael's Cincture (ML33) — was a genuine gear-planner parser gap** (wiki category tags confirm +15/+7/+3 to all six abilities; gear-planner captured only Deception + Seeker).
+
+**(d) U7.5 — the one sanctioned KTD4 exception: the `gap_corrections` overlay.** `data/seed/gap_corrections.json` restores **only** Ophael's 18 missing ability affixes (6 abilities × Enhancement 15 / Insight 7 / Quality 3), sourced from the retired hand-verified base seed and spot-validated against the live DDO wiki. `build_dataset.py` applies it **additively** with an anti-double-count guard (skips any `(name, type)` the item already carries). Behavioral safety confirmed: the defensive/combat stats (PS/MS/Fort/Deadly/Accuracy) hold **exactly** at the U7-corrected values across all 6 fixtures — no double-count bounced back — and an isolated solve proves Ophael alone yields 25/ability (15+7+3). The U8 invariant guard asserts the six +15 Enhancement abilities remain present.
+
+## 10. App-smoke result (browser end-to-end)
+
+A full browser app-smoke **passed end-to-end**: the app loads clean, the guided wizard runs with correct validation gates, saved characters load, the native picker adds targets, the solver returns **OPTIMAL** (~248 ms), results render native affixes + native crafting (incl. the live "Sealed in Undeath: Constitution +7 Insight" U4b fix), and the Share/CSV/Print tab renders — console clean throughout.
+
+The smoke caught **one bug every node suite missed**: `browse.js` and `results.js` each declared `const itemMl` at top level. As plain browser scripts they share **one** global scope, so the `const` redeclaration is a `SyntaxError` that blocked `browse.js` from loading — but node `require()`s each file in an isolated module scope, so the suites never saw it (a classic browser-vs-node scope gap). **Fix:** `const` → `var` on both (redeclaration-tolerant; each file keeps its own copy so node's module-scoped require still resolves it); cache-bust bumped `?v=33 → 34` across `index.html`.
+
+## 11. Final state
+
+- **Dataset: 9045 items**, deterministic build (`python3 build_dataset.py`, md5 `e467330c`, gear-planner roster 8034).
+- **`data/seed/` is gear-planner-only + sanctioned survivors:** the gear-planner raw mirror (`compendium/raw/gearplanner_{items,crafting,sets}.json` + `SOURCE.json`), three generated registries (`compendium/augment_registry.json`, `compendium/crafting_slot_registry.json`, `compendium/vocab_registries.json`), and the curated survivors `compendium/affix_aliases.json`, `compendium/type_stacking_equivalence.json`, and `gap_corrections.json`. No legacy seed files remain (`ddo_items.json` / `augments.json` / `artifacts.json` / `boolean_features.json` / `alignment_restrictions.json` / `joker_sets.json` / `wiki_confirmed.json` are gone; the only source mentions of them are migration comments).
+- **No live legacy symbols:** `FLIP_COLLISION_PRECEDENCE`, `union_gearplanner_affix_losses`, `wiki_confirmed`, `src.vocab` (module `vocab.py`), `GEARPLANNER_TYPE_MAP` — zero live references (the sole `src.vocab` textual hit is a "formerly … purged in U7" comment; `src/vocabulary.py` is the live replacement module).
+
+## 12. Regression guard (U8)
+
+- **`tests/parity/golden.json`** — the FORWARD golden fixture: the ratified/accepted post-overhaul solves (per fixture: `perTarget`, `effective`, and the sorted `chosen` slot+variant loadout) for the 6 `fixtures.json` characters, generated on the current build via `node tests/parity/capture_golden.js` (reuses the `capture_baseline.js` machinery — `buildModel` + `solveLexicographic` + `normalizeDataset`).
+- **`tests/solver_golden.test.js`** — the guard: reloads the current `web/data/items.json`, re-solves the 6 fixtures, and asserts each fixture's `perTarget` and sorted `chosen` **exactly** equal `golden.json`. Any future change that alters an optimal loadout fails loudly. Deterministic; part of the node suite convention (prints its pass count). To ratify an intentional change, regenerate `golden.json` with the capture script.
+- **`tests/test_overhaul_invariants.py`** — three structural invariants over the built dataset: (1) no legacy affix keys at rest (item affixes carry only `name`/`type`/`value` + `eligible`), (2) Ophael's Cincture's six base-ability +15 Enhancement affixes are intact (KTD4 gap-fill), (3) the stacking-equivalence collapse is embedded (`Insight Natural → Insight`, `Primal Natural → Primal`). Behavioral proof of the collapse (max-not-sum) lives in `solver.test.js` U4b-i.
+- **`tests/parity/baseline.json`** — the pre-overhaul BEFORE image is **kept unmodified** as the historical record.
+
+## 13. Suite status at close-out
+
+- **Python:** `python3 tests/run_tests.py` → **252 passed, 0 failed** (adds the 3 U8 invariants to the prior 249).
+- **Node:** 16 suites, **319 passed** (adds `solver_golden.test.js` = 7 to the prior 15 suites / 312). Per suite: alternatives 12, attribution 9, backup 12, breakdown 3, browse 22, constraints 6, crafting-systems 5, exporters 9, import 14, model 44, persist 11, results 52, solver 86, tabs 8, wizard 19, **solver_golden 7**.
 

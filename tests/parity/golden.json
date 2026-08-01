@@ -1,0 +1,368 @@
+{
+ "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
+ "generated": "2026-08-01",
+ "dataset": "web/data/items.json (9045 items)",
+ "fixture_count": 6,
+ "solves": {
+  "heroic-str-melee": {
+   "status": "optimal",
+   "perTarget": {
+    "Strength": 18,
+    "Constitution": 17,
+    "Physical Sheltering": 28
+   },
+   "effective": {
+    "Strength": 18,
+    "Constitution": 17,
+    "Physical Sheltering": 28
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Graz'zt's Habiliment"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Belt of the Scoundrel"
+    },
+    {
+     "slot": "Boots",
+     "variant": "Bulette-Armored Boots"
+    },
+    {
+     "slot": "Bracers",
+     "variant": "Barbette's Bracers"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Slate-Scale Capelet"
+    },
+    {
+     "slot": "Gloves",
+     "variant": "Gloves of the Strong"
+    },
+    {
+     "slot": "Goggles",
+     "variant": "Drider's Vision"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Helm of Eternal Day"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Calamitous Bastard Sword"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Lion's Mane"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Ivy Helix"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Laurel Helix"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Eagle's Eye"
+    }
+   ]
+  },
+  "mid-caster": {
+   "status": "optimal",
+   "perTarget": {
+    "Intelligence": 34,
+    "Universal Spell Power": 91,
+    "Wisdom": 28
+   },
+   "effective": {
+    "Intelligence": 34,
+    "Universal Spell Power": 91,
+    "Wisdom": 28
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Legendary Diabolist's Docent"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Belt of the Burrower"
+    },
+    {
+     "slot": "Boots",
+     "variant": "Legendary Flightfoot Greaves"
+    },
+    {
+     "slot": "Bracers",
+     "variant": "Legendary Bracers of the Fallen Hero"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Legendary Silverthread Cloak"
+    },
+    {
+     "slot": "Gloves",
+     "variant": "Legendary Crumbling Gloves"
+    },
+    {
+     "slot": "Goggles",
+     "variant": "Drider's Vision"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Circlet of Shar"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Epic Locked and Loaded"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Celestial Insignia"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Duskbone Ring"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Ring of Nightfall"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Epic Dragon's Eye"
+    }
+   ]
+  },
+  "endgame-tank-ml34": {
+   "status": "optimal",
+   "perTarget": {
+    "Constitution": 37,
+    "Physical Sheltering": 125,
+    "Magical Sheltering": 133,
+    "Fortification": 283
+   },
+   "effective": {
+    "Constitution": 37,
+    "Physical Sheltering": 125,
+    "Magical Sheltering": 133,
+    "Fortification": 283
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Docent of the Artblade's Reflection"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Legendary Jetscale Belt"
+    },
+    {
+     "slot": "Bracers",
+     "variant": "Bracers of the Battlerager"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Mysterious Cloak (level 21)"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Legendary Downcast Bowler"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Legendary Calamitous Bastard Sword"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Legendary Climber's Remembrance"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Bauble of Draconic Resistance"
+    }
+   ]
+  },
+  "endgame-dex-ml36": {
+   "status": "optimal",
+   "perTarget": {
+    "Dexterity": 37,
+    "Dodge": 36,
+    "Physical Sheltering": 134
+   },
+   "effective": {
+    "Dexterity": 37,
+    "Dodge": 36,
+    "Physical Sheltering": 134
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Legendary Duergarcraft Docent"
+    },
+    {
+     "slot": "Boots",
+     "variant": "Legendary Demonic Rush"
+    },
+    {
+     "slot": "Goggles",
+     "variant": "Legendary Doctor Gustav's Warped Lenses"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Legendary Duergarcraft Helm"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Legendary Calamitous Bastard Sword"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Dracolich's Eye"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Legendary Periapt of Dexterity"
+    }
+   ]
+  },
+  "endgame-dps-ml33": {
+   "status": "optimal",
+   "perTarget": {
+    "Strength": 37,
+    "Deadly": 30,
+    "Seeker": 28,
+    "Accuracy": 50
+   },
+   "effective": {
+    "Strength": 37,
+    "Deadly": 30,
+    "Seeker": 28,
+    "Accuracy": 50
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Docent of the Warblade's Reflection"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Ophael's Cincture"
+    },
+    {
+     "slot": "Boots",
+     "variant": "Death's Deferral"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Legendary Cloak of the Ambassador"
+    },
+    {
+     "slot": "Gloves",
+     "variant": "Baron Aubrecker's Monogrammed Gloves"
+    },
+    {
+     "slot": "Goggles",
+     "variant": "The Masque"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Cowl of the Drow Devotee"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Dinosaur Bone Weapon"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Shintao Cord"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Kyosho's Ring"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Legendary Periapt of Strength"
+    }
+   ]
+  },
+  "endgame-caster-ml32": {
+   "status": "optimal",
+   "perTarget": {
+    "Universal Spell Power": 101,
+    "Potency": 250,
+    "Wisdom": 30,
+    "Charisma": 29
+   },
+   "effective": {
+    "Universal Spell Power": 101,
+    "Potency": 250,
+    "Wisdom": 30,
+    "Charisma": 29
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Legendary Darkmoss"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Belt of the Burrower"
+    },
+    {
+     "slot": "Boots",
+     "variant": "Legendary Lightning Railworker's Boots"
+    },
+    {
+     "slot": "Bracers",
+     "variant": "Legendary World-Weary Wrappings"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Legendary University Researcher's Cloak"
+    },
+    {
+     "slot": "Gloves",
+     "variant": "Gloryborne Gloves"
+    },
+    {
+     "slot": "Goggles",
+     "variant": "Legendary Eyes of Enlightenment"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Legendary University Mage's Hat"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Epic Locked and Loaded"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Celestial Insignia"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Duskbone Ring"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Ring of Fall's Decay"
+    },
+    {
+     "slot": "Rune Arm",
+     "variant": "Dinosaur Bone Rune Arm"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Golden Souvenir Coin"
+    }
+   ]
+  }
+ }
+}
