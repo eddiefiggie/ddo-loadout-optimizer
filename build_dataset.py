@@ -193,6 +193,21 @@ def load_boolean_features(path: str = BOOLEAN_SEED_PATH) -> list:
     return [s for s in raw if isinstance(s, str) and s and not s.startswith("_")]
 
 
+SOURCE_PROVENANCE_PATH = os.path.join(HERE, "data", "seed", "compendium", "raw", "SOURCE.json")
+
+
+def load_source_provenance(path: str = SOURCE_PROVENANCE_PATH) -> dict:
+    """Provenance of the gear-planner raw seeds: upstream repo + commit/date, import
+    date, and the DDO official update the snapshot reflects. Surfaced into
+    `metadata.provenance` so the dataset declares its freshness and game-version
+    (a static snapshot goes stale ~1 day/day until re-imported). Missing -> {}."""
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as fh:
+        raw = json.load(fh)
+    return {k: v for k, v in raw.items() if not k.startswith("_")}
+
+
 def load_wiki_confirmed(path: str = WIKI_CONFIRMED_SEED_PATH) -> dict:
     """Wiki-confirmed ML30+ items: name -> {confirmed, affixes, corrections, ...}.
     Each entry records an item validated against its DDO wiki page (source of truth).
@@ -699,6 +714,7 @@ def build(seed: dict) -> dict:
             "augment_coverage": augment_coverage,
             "compendium_coverage": comp_cov,
             "band_coverage": band_cov,
+            "provenance": load_source_provenance(),
             "planner_coverage": planner_stats,
             "wiki_confirmed_coverage": {
                 "confirmed_items": len(_wiki_confirmed),

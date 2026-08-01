@@ -119,8 +119,11 @@ def test_intra_dump_name_collisions_collapsed_and_reported():
     recs, stats = _records()
     names = [r["name"] for r in recs]
     assert len(names) == len(set(names)), "reader must not emit duplicate names"
-    # 144 raw dup-name groups collapse to one each (disclosed, not silent).
-    assert stats["planner_name_collisions_collapsed"] == 144
+    # Raw dup-name groups collapse to one each (disclosed, not silent). A floor, not
+    # an exact count — the number drifts as upstream gear-planner data refreshes
+    # (~144-146). The invariant is "dedup happens and is reported"; a break drops it
+    # toward 0.
+    assert stats["planner_name_collisions_collapsed"] >= 100
 
 # KTD5 no-dropped-names was a migration-time invariant (verified: 0 of the retired
 # shard's 6,195 names dropped). Ongoing coverage — that every reader name reaches

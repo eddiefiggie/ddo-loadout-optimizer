@@ -40,6 +40,18 @@
         "dbv2": null,
         "note": "gp says 3 (mine 15 — large gap); DBv2 lacks stat. Wiki arbitrates. ML35 = no DBv2 cross-check."
       }
+    },
+    "refresh_2026_08_01": {
+      "action": "Replaced gear-planner raw seeds (items/crafting/sets) with upstream illusionistpm/ddo-gear-planner @ ec3e595d (2026-08-01); stamped provenance (SOURCE.json + metadata.provenance) declaring the source, import date, and DDO update reflected (U81, released 2026-07-22).",
+      "roster": "8908 -> 9002 variants (+95 net-new upstream items); 0 gear-planner orphans (my seed was a strict subset of upstream).",
+      "orphans_removed": "93 sub-ML30 redundant enriched-shard bodies (present in fresh gear-planner, no unique marker) pruned from batch1-10; build output (roster/band 188/markers) verified unchanged. Band-tier + marker-bearing shard records retained (needed for band_coverage + graft).",
+      "base_seed_corrections": [
+        "Legendary Phasecloak: Evocation Focus +5 -> +7 (source: gp-latest; base seed was stale, wins collisions)",
+        "Epic Skullduggery Cap: Necromancy Focus +4 -> +6",
+        "Legendary Skullduggery Cap: Necromancy Focus +6 -> +8",
+        "Legendary Ring of Mystic Intelligence: Spell Focus Mastery +3 -> +4"
+      ],
+      "pending_wiki": "Legendary Outfit of Moonlight (Mystic Incite 19; gp-latest dropped the Incite affix — ambiguous) + a 12-item ML36 sample still queued for direct-wiki spot-check (ddowiki throttled)."
     }
   },
   "items": {

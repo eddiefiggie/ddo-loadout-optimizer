@@ -1,0 +1,19 @@
+{
+  "_README": "Provenance of the gear-planner raw seeds. These are a point-in-time snapshot of the upstream open-source DDO gear-planner (which auto-scrapes ddowiki near-daily). Re-import from upstream to refresh; stale otherwise. See build_dataset load_source_provenance / metadata.provenance.",
+  "source": "illusionistpm/ddo-gear-planner",
+  "source_url": "https://github.com/illusionistpm/ddo-gear-planner",
+  "upstream_commit": "ec3e595d0d879b29c13f3c34ffc155e71d0418c4",
+  "upstream_commit_date": "2026-08-01",
+  "imported": "2026-08-01",
+  "ddo_update_reflected": "Update 81 \u2014 Terror of Demogorgon",
+  "ddo_update_released": "2026-07-22",
+  "level_cap": 36,
+  "files": [
+    "gearplanner_items.json",
+    "gearplanner_crafting.json",
+    "gearplanner_sets.json"
+  ],
+  "item_count": 8188,
+  "crafting_count": 83,
+  "set_count": 282
+}

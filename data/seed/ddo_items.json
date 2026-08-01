@@ -1860,7 +1860,7 @@
       "location_quest": "A Raven at the Door, end chest (or Rescue Yesper optional chest)",
       "enhancements": [
         "Intelligence +13",
-        "Evocation Focus +5",
+        "Evocation Focus +7",
         "Quality Intelligence +3",
         "Wizardry +269",
         "Yellow Augment Slot",
@@ -2340,7 +2340,7 @@
       "enhancements": [
         "Death Ward, Mass (3 charges, 3/day)",
         "Wisdom +9",
-        "Necromancy Focus +4",
+        "Necromancy Focus +6",
         "Insightful Nullification +55",
         "Trap the Soul Guard",
         "Green Augment Slot",
@@ -2378,7 +2378,7 @@
       "enhancements": [
         "Death Ward, Mass (3 charges, 3/day)",
         "Wisdom +13",
-        "Necromancy Focus +6",
+        "Necromancy Focus +8",
         "Insightful Nullification +73",
         "Trap the Soul Guard",
         "Legendary Nightmare Guard",
@@ -3337,7 +3337,7 @@
         "Quality Intelligence +3",
         "Insightful Combat Mastery +6",
         "Quality Deception +3",
-        "Insightful Spell Focus Mastery +3",
+        "Insightful Spell Focus Mastery +4",
         "Green Augment Slot",
         "Colorless Augment Slot"
       ],

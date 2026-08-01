@@ -99,29 +99,12 @@ def _norm(stat):
     return vocab.normalize_stat(stat)
 
 
-def test_union_merge_restores_affixes_the_flip_would_strip():
-    # The precedence flip makes gear-planner win collisions, but gear-planner is
-    # thinner than the losing wiki record for some items. The union-merge restores
-    # the missing solver-eligible affixes onto the winner so no build is downgraded.
-    # Spot-check known regressors across bonus types, including a CORE_STATS-only
-    # stat (Vitality) that gear-planner emits only as a bonus type.
-    its = {it["variant_id"]: it for it in _built_items()}
-    expect = {
-        "Legendary The Bloody Boulder": {"Deception", "Accuracy", "Deadly"},
-        "The Winter Solstice": {"Deception", "Resistance"},
-        "Legendary Cloak of the Ambassador": {"Accuracy"},
-        "Legendary Feargaze": {"Intimidate"},
-        "Legendary Dream of the Worldshaper": {"Spell Save"},
-        "Legendary Cloak of the Forest's Arrow": {"Doubleshot"},
-        "Legendary Cloak of the Forest's Blade": {"Doublestrike"},
-        "Legendary Amulet of the Makers": {"Vitality"},  # CORE_STATS-only restore
-    }
-    for name, needed in expect.items():
-        it = its.get(name)
-        assert it is not None, f"{name} missing from dataset"
-        stats = {_norm(a["stat"]) for a in (it.get("affixes") or [])}
-        missing = {s for s in needed if _norm(s) not in stats}
-        assert not missing, f"{name} lost {missing} — union-merge did not restore them"
+# The union-merge is guarded by the machine invariant below
+# (test_no_collision_item_loses_a_rankable_affix_vs_pre_flip), which builds both
+# ways and proves NO collision item loses a rankable affix. A former hardcoded
+# 8-item spot-check was removed: it named specific regressors (e.g. Amulet of the
+# Makers / Vitality) that shift whenever upstream gear-planner data refreshes, so
+# it went stale on a data update while the real invariant kept passing.
 
 
 def test_no_collision_item_loses_a_rankable_affix_vs_pre_flip():

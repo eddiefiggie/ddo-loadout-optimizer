@@ -1,1001 +1,581 @@
 {
- "metadata": {
-  "layer": "enriched",
-  "batch": "batch5",
-  "harvested": "2026-07-25",
-  "count": 44
- },
- "items": [
-  {
-   "name": "Legendary Anchorchain",
-   "category": "item",
-   "slot": "Necklace",
-   "enhancements": [
-    "Ice Lore +21%",
-    "Glaciation +146",
-    "Profane Lifeforce +45",
-    "Green Augment Slot",
-    "Yellow Augment Slot",
-    "Legendary Saltmarsh Explorer (set)"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Anchorchain",
-   "augment_slots": [
-    "Green",
-    "Yellow"
-   ],
-   "_enrich_unmapped": [
-    "Spell Focus",
-    "Guard"
-   ],
-   "_enriched": true,
-   "minimum_level": 30
+  "metadata": {
+    "layer": "enriched",
+    "batch": "batch5",
+    "harvested": "2026-07-25",
+    "count": 44
   },
-  {
-   "name": "Legendary Astral Spore Pendant",
-   "category": "item",
-   "slot": "Necklace",
-   "enhancements": [
-    "Poison Absorption +39%",
-    "Insightful Will Save +6",
-    "Insightful False Life +29",
-    "Green Augment Slot",
-    "Colorless Augment Slot",
-    "Moon Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Astral_Spore_Pendant",
-   "augment_slots": [
-    "Green",
-    "Colorless",
-    "Moon"
-   ],
-   "_enrich_unmapped": [],
-   "_enriched": true,
-   "minimum_level": 35,
-   "nearly_complete": "Quality Ability Score"
-  },
-  {
-   "name": "Legendary Azure Necklace of Prophecy",
-   "category": "item",
-   "slot": "Necklace",
-   "enhancements": [
-    "Lightning Lore +22%",
-    "Magnetism +151",
-    "Electricity Absorption +36%",
-    "Electric Resistance +54",
-    "Green Augment Slot",
-    "Legendary Draconic Prophecy (set)"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Azure_Necklace_of_Prophecy",
-   "augment_slots": [
-    "Green"
-   ],
-   "_enrich_unmapped": [],
-   "_enriched": true,
-   "minimum_level": 30
-  },
-  {
-   "name": "Legendary Baron Aubrecker's Family Amulet",
-   "category": "item",
-   "slot": "Necklace",
-   "enhancements": [
-    "Mastery Spell Focus +8",
-    "Green Augment Slot",
-    "Colorless Augment Slot",
-    "Moon Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Baron_Aubrecker's_Family_Amulet",
-   "augment_slots": [
-    "Green",
-    "Colorless",
-    "Moon"
-   ],
-   "_enrich_unmapped": [
-    "Power in Pact"
-   ],
-   "_enriched": true,
-   "minimum_level": 34,
-   "lamordia_slots": [
+  "items": [
     {
-     "type": "Melancholic",
-     "category": "Accessory"
+      "name": "Legendary Anchorchain",
+      "category": "item",
+      "slot": "Necklace",
+      "enhancements": [
+        "Ice Lore +21%",
+        "Glaciation +146",
+        "Profane Lifeforce +45",
+        "Green Augment Slot",
+        "Yellow Augment Slot",
+        "Legendary Saltmarsh Explorer (set)"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Anchorchain",
+      "augment_slots": [
+        "Green",
+        "Yellow"
+      ],
+      "_enrich_unmapped": [
+        "Spell Focus",
+        "Guard"
+      ],
+      "_enriched": true,
+      "minimum_level": 30
     },
     {
-     "type": "Dolorous",
-     "category": "Accessory"
+      "name": "Legendary Astral Spore Pendant",
+      "category": "item",
+      "slot": "Necklace",
+      "enhancements": [
+        "Poison Absorption +39%",
+        "Insightful Will Save +6",
+        "Insightful False Life +29",
+        "Green Augment Slot",
+        "Colorless Augment Slot",
+        "Moon Augment Slot"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Astral_Spore_Pendant",
+      "augment_slots": [
+        "Green",
+        "Colorless",
+        "Moon"
+      ],
+      "_enrich_unmapped": [],
+      "_enriched": true,
+      "minimum_level": 35,
+      "nearly_complete": "Quality Ability Score"
+    },
+    {
+      "name": "Legendary Azure Necklace of Prophecy",
+      "category": "item",
+      "slot": "Necklace",
+      "enhancements": [
+        "Lightning Lore +22%",
+        "Magnetism +151",
+        "Electricity Absorption +36%",
+        "Electric Resistance +54",
+        "Green Augment Slot",
+        "Legendary Draconic Prophecy (set)"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Azure_Necklace_of_Prophecy",
+      "augment_slots": [
+        "Green"
+      ],
+      "_enrich_unmapped": [],
+      "_enriched": true,
+      "minimum_level": 30
+    },
+    {
+      "name": "Legendary Baron Aubrecker's Family Amulet",
+      "category": "item",
+      "slot": "Necklace",
+      "enhancements": [
+        "Mastery Spell Focus +8",
+        "Green Augment Slot",
+        "Colorless Augment Slot",
+        "Moon Augment Slot"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Baron_Aubrecker's_Family_Amulet",
+      "augment_slots": [
+        "Green",
+        "Colorless",
+        "Moon"
+      ],
+      "_enrich_unmapped": [
+        "Power in Pact"
+      ],
+      "_enriched": true,
+      "minimum_level": 34,
+      "lamordia_slots": [
+        {
+          "type": "Melancholic",
+          "category": "Accessory"
+        },
+        {
+          "type": "Dolorous",
+          "category": "Accessory"
+        }
+      ]
+    },
+    {
+      "name": "Legendary Beads of Winter",
+      "category": "item",
+      "slot": "Necklace",
+      "enhancements": [
+        "Evocation Spell Focus +12",
+        "Insight Spellcraft +11",
+        "Green Augment Slot",
+        "Colorless Augment Slot",
+        "Moon Augment Slot"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Beads_of_Winter",
+      "augment_slots": [
+        "Green",
+        "Colorless",
+        "Moon"
+      ],
+      "_enrich_unmapped": [],
+      "_enriched": true,
+      "minimum_level": 34,
+      "lamordia_slots": [
+        {
+          "type": "Melancholic",
+          "category": "Accessory"
+        },
+        {
+          "type": "Dolorous",
+          "category": "Accessory"
+        }
+      ]
+    },
+    {
+      "name": "Legendary Black Dynamo",
+      "category": "item",
+      "slot": "Necklace",
+      "enhancements": [
+        "Insightful Constitution +7",
+        "Insightful Armor-Piercing +11",
+        "Green Augment Slot",
+        "Colorless Augment Slot",
+        "Moon Augment Slot"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Black_Dynamo",
+      "augment_slots": [
+        "Green",
+        "Colorless",
+        "Moon"
+      ],
+      "_enrich_unmapped": [],
+      "_enriched": true,
+      "minimum_level": 34,
+      "lamordia_slots": [
+        {
+          "type": "Melancholic",
+          "category": "Accessory"
+        },
+        {
+          "type": "Dolorous",
+          "category": "Accessory"
+        }
+      ]
+    },
+    {
+      "name": "Legendary Blademark Amulet",
+      "category": "item",
+      "slot": "Necklace",
+      "enhancements": [
+        "Fortitude Save +12",
+        "Profane Lifeforce +48",
+        "Insightful Physical Sheltering +17",
+        "Repair Amplification +57",
+        "Green Augment Slot",
+        "Colorless Augment Slot",
+        "Legendary Forbidden Knowledge (set)"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Blademark_Amulet",
+      "augment_slots": [
+        "Green",
+        "Colorless"
+      ],
+      "_enrich_unmapped": [],
+      "_enriched": true,
+      "minimum_level": 32
+    },
+    {
+      "name": "Legendary Chains of Yeenoghu",
+      "category": "item",
+      "slot": "Necklace",
+      "enhancements": [
+        "Quality Accuracy +5",
+        "Incite +140",
+        "Green Augment Slot",
+        "Colorless Augment Slot",
+        "Moon Augment Slot"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Chains_of_Yeenoghu",
+      "augment_slots": [
+        "Green",
+        "Colorless",
+        "Moon"
+      ],
+      "_enrich_unmapped": [
+        "Bloodrage",
+        "Conditioning"
+      ],
+      "_enriched": true,
+      "minimum_level": 35
+    },
+    {
+      "name": "Legendary Climber's Remembrance",
+      "category": "item",
+      "slot": "Necklace",
+      "enhancements": [
+        "Insightful Mastery Spell Focus +4",
+        "Green Augment Slot",
+        "Colorless Augment Slot",
+        "Moon Augment Slot"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Climber's_Remembrance",
+      "augment_slots": [
+        "Green",
+        "Colorless",
+        "Moon"
+      ],
+      "_enrich_unmapped": [],
+      "_enriched": true,
+      "minimum_level": 34,
+      "lamordia_slots": [
+        {
+          "type": "Melancholic",
+          "category": "Accessory"
+        },
+        {
+          "type": "Dolorous",
+          "category": "Accessory"
+        },
+        {
+          "type": "Miserable",
+          "category": "Accessory"
+        }
+      ]
+    },
+    {
+      "name": "Legendary Corroded Iron Lenses",
+      "category": "item",
+      "slot": "Goggles",
+      "enhancements": [
+        "Acid Lore +21%",
+        "Corrosion +146",
+        "Conjuration Spell Focus +8",
+        "Enhancement Magical Sheltering +34",
+        "Green Augment Slot",
+        "Yellow Augment Slot",
+        "Legendary Saltmarsh Explorer (set)"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Corroded_Iron_Lenses",
+      "augment_slots": [
+        "Green",
+        "Yellow"
+      ],
+      "_enrich_unmapped": [],
+      "_enriched": true,
+      "minimum_level": 30
+    },
+    {
+      "name": "Legendary Doctor Gustav's Warped Lenses",
+      "category": "item",
+      "slot": "Goggles",
+      "enhancements": [
+        "Profane Spell Spell Focus +2",
+        "Quality Spell Penetration +3",
+        "Wizardry +310",
+        "Insightful Dodge +7%",
+        "Green Augment Slot",
+        "Colorless Augment Slot",
+        "Sun Augment Slot"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Doctor_Gustav's_Warped_Lenses",
+      "augment_slots": [
+        "Green",
+        "Colorless",
+        "Sun"
+      ],
+      "_enrich_unmapped": [],
+      "_enriched": true,
+      "minimum_level": 34
+    },
+    {
+      "name": "Legendary Drider's Vision",
+      "category": "item",
+      "slot": "Goggles",
+      "enhancements": [
+        "Deception +22",
+        "Deception +12",
+        "Green Augment Slot",
+        "Colorless Augment Slot",
+        "Sun Augment Slot"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Drider's_Vision",
+      "augment_slots": [
+        "Green",
+        "Colorless",
+        "Sun"
+      ],
+      "_enrich_unmapped": [
+        "Assassinate"
+      ],
+      "_enriched": true,
+      "minimum_level": 35,
+      "nearly_complete": "Skill"
+    },
+    {
+      "name": "Legendary Electric Eyes",
+      "category": "item",
+      "slot": "Goggles",
+      "enhancements": [
+        "Magnetism +159",
+        "Enhancement Magical Sheltering +38",
+        "Wizardry +310",
+        "Green Augment Slot",
+        "Colorless Augment Slot",
+        "Sun Augment Slot"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Electric_Eyes",
+      "augment_slots": [
+        "Green",
+        "Colorless",
+        "Sun"
+      ],
+      "_enrich_unmapped": [
+        "Speed"
+      ],
+      "_enriched": true,
+      "minimum_level": 34
+    },
+    {
+      "name": "Legendary Eternal Flameguard's Lenses",
+      "category": "item",
+      "slot": "Goggles",
+      "enhancements": [
+        "Deadly +11",
+        "Quality Deadly +3",
+        "Doublestrike +16%",
+        "Quality Doublestrike +4%",
+        "Yellow Augment Slot",
+        "Legendary Temple's Inferno (set)"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Eternal_Flameguard's_Lenses",
+      "augment_slots": [
+        "Yellow"
+      ],
+      "_enrich_unmapped": [],
+      "_enriched": true,
+      "minimum_level": 31
+    },
+    {
+      "name": "Legendary Band of Mental Magic",
+      "category": "item",
+      "slot": "Ring",
+      "enhancements": [
+        "Enchantment Spell Focus +11",
+        "Illusion Spell Focus +11",
+        "Necromancy Spell Focus +11",
+        "Insightful Wizardry +151",
+        "Green Augment Slot",
+        "Colorless Augment Slot"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_Mental_Magic",
+      "augment_slots": [
+        "Green",
+        "Colorless"
+      ],
+      "_enrich_unmapped": [],
+      "_enriched": true,
+      "minimum_level": 33
+    },
+    {
+      "name": "Legendary Band of Seasons' Warding",
+      "category": "item",
+      "slot": "Ring",
+      "enhancements": [
+        "Fire Resistance +56",
+        "Cold Resistance +56",
+        "Electric Resistance +56",
+        "Acid Resistance +56",
+        "Green Augment Slot",
+        "Colorless Augment Slot"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_Seasons'_Warding",
+      "augment_slots": [
+        "Green",
+        "Colorless"
+      ],
+      "_enrich_unmapped": [],
+      "_enriched": true,
+      "minimum_level": 33
+    },
+    {
+      "name": "Legendary Band of the Holy Way",
+      "category": "item",
+      "slot": "Ring",
+      "enhancements": [
+        "Green Augment Slot",
+        "Colorless Augment Slot"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_the_Holy_Way",
+      "augment_slots": [
+        "Green",
+        "Colorless"
+      ],
+      "_enrich_unmapped": [
+        "Extra Smites",
+        "Bonus Turning",
+        "Bonus Turning",
+        "Bonus Turning"
+      ],
+      "_enriched": true,
+      "minimum_level": 33
+    },
+    {
+      "name": "Legendary Band of the Imprisoned One",
+      "category": "item",
+      "slot": "Ring",
+      "enhancements": [
+        "Enhancement Magical Sheltering +39",
+        "Spell Resistance +45",
+        "Insightful Spell Save +5",
+        "Green Augment Slot",
+        "Colorless Augment Slot"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_the_Imprisoned_One",
+      "augment_slots": [
+        "Green",
+        "Colorless"
+      ],
+      "_enrich_unmapped": [],
+      "_enriched": true,
+      "minimum_level": 35,
+      "nearly_complete": "Ability Score"
+    },
+    {
+      "name": "Legendary Brawn's Spirits",
+      "category": "item",
+      "slot": "Trinket",
+      "enhancements": [
+        "Intimidate +20",
+        "Incite +124",
+        "Insightful Strength +6",
+        "Insightful Constitution +6",
+        "Green Augment Slot"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brawn's_Spirits",
+      "augment_slots": [
+        "Green"
+      ],
+      "_enrich_unmapped": [
+        "Clicky",
+        "Cursed",
+        "Cursed"
+      ],
+      "_enriched": true,
+      "minimum_level": 30
+    },
+    {
+      "name": "Legendary Breaker's Bauble",
+      "category": "item",
+      "slot": "Trinket",
+      "enhancements": [
+        "Doublestrike +16%",
+        "Insightful Doublestrike +7%",
+        "Accuracy +23",
+        "Armor-Piercing +23",
+        "Green Augment Slot",
+        "Colorless Augment Slot",
+        "Sun Augment Slot"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Breaker's_Bauble",
+      "augment_slots": [
+        "Green",
+        "Colorless",
+        "Sun"
+      ],
+      "_enrich_unmapped": [],
+      "_enriched": true,
+      "minimum_level": 33
+    },
+    {
+      "name": "Legendary Arcane Contraption",
+      "category": "item",
+      "slot": "Off Hand",
+      "enhancements": [
+        "Insight Potency +55",
+        "Will Save +13",
+        "Purple Augment Slot",
+        "Orange Augment Slot"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Arcane_Contraption",
+      "augment_slots": [
+        "Purple",
+        "Orange"
+      ],
+      "_enrich_unmapped": [
+        "Enhancement bonus"
+      ],
+      "_enriched": true,
+      "minimum_level": 34,
+      "lamordia_slots": [
+        {
+          "type": "Melancholic",
+          "category": "Weapon"
+        },
+        {
+          "type": "Dolorous",
+          "category": "Weapon"
+        }
+      ]
+    },
+    {
+      "name": "Legendary Core of a War Machine",
+      "category": "item",
+      "slot": "Off Hand",
+      "enhancements": [
+        "Quality Doublestrike +3%",
+        "Purple Augment Slot",
+        "Orange Augment Slot",
+        "Legendary Forbidden Knowledge (set)"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Core_of_a_War_Machine",
+      "augment_slots": [
+        "Purple",
+        "Orange"
+      ],
+      "_enrich_unmapped": [
+        "Enhancement bonus",
+        "Blast",
+        "Shield Bashing",
+        "Impactful"
+      ],
+      "_enriched": true,
+      "minimum_level": 32
+    },
+    {
+      "name": "Legendary Death's Anchor",
+      "category": "item",
+      "slot": "Off Hand",
+      "enhancements": [
+        "Quality Nullification +39",
+        "Necromancy Spell Focus +12",
+        "Purple Augment Slot",
+        "Orange Augment Slot"
+      ],
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Death's_Anchor",
+      "augment_slots": [
+        "Purple",
+        "Orange"
+      ],
+      "_enrich_unmapped": [
+        "Enhancement bonus"
+      ],
+      "_enriched": true,
+      "minimum_level": 34,
+      "lamordia_slots": [
+        {
+          "type": "Melancholic",
+          "category": "Weapon"
+        },
+        {
+          "type": "Dolorous",
+          "category": "Weapon"
+        }
+      ]
     }
-   ]
-  },
-  {
-   "name": "Legendary Beads of Winter",
-   "category": "item",
-   "slot": "Necklace",
-   "enhancements": [
-    "Evocation Spell Focus +12",
-    "Insight Spellcraft +11",
-    "Green Augment Slot",
-    "Colorless Augment Slot",
-    "Moon Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Beads_of_Winter",
-   "augment_slots": [
-    "Green",
-    "Colorless",
-    "Moon"
-   ],
-   "_enrich_unmapped": [],
-   "_enriched": true,
-   "minimum_level": 34,
-   "lamordia_slots": [
-    {
-     "type": "Melancholic",
-     "category": "Accessory"
-    },
-    {
-     "type": "Dolorous",
-     "category": "Accessory"
-    }
-   ]
-  },
-  {
-   "name": "Legendary Black Dynamo",
-   "category": "item",
-   "slot": "Necklace",
-   "enhancements": [
-    "Insightful Constitution +7",
-    "Insightful Armor-Piercing +11",
-    "Green Augment Slot",
-    "Colorless Augment Slot",
-    "Moon Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Black_Dynamo",
-   "augment_slots": [
-    "Green",
-    "Colorless",
-    "Moon"
-   ],
-   "_enrich_unmapped": [],
-   "_enriched": true,
-   "minimum_level": 34,
-   "lamordia_slots": [
-    {
-     "type": "Melancholic",
-     "category": "Accessory"
-    },
-    {
-     "type": "Dolorous",
-     "category": "Accessory"
-    }
-   ]
-  },
-  {
-   "name": "Legendary Blademark Amulet",
-   "category": "item",
-   "slot": "Necklace",
-   "enhancements": [
-    "Fortitude Save +12",
-    "Profane Lifeforce +48",
-    "Insightful Physical Sheltering +17",
-    "Repair Amplification +57",
-    "Green Augment Slot",
-    "Colorless Augment Slot",
-    "Legendary Forbidden Knowledge (set)"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Blademark_Amulet",
-   "augment_slots": [
-    "Green",
-    "Colorless"
-   ],
-   "_enrich_unmapped": [],
-   "_enriched": true,
-   "minimum_level": 32
-  },
-  {
-   "name": "Legendary Chains",
-   "category": "item",
-   "slot": "Necklace",
-   "enhancements": [],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Chains",
-   "augment_slots": [],
-   "_enrich_unmapped": [
-    "Slaver's Slot",
-    "Slaver's Slot",
-    "Slaver's Slot",
-    "Slaver's Slot",
-    "CraftingEffects",
-    "Slaver's Slot"
-   ],
-   "_enriched": true,
-   "minimum_level": 28
-  },
-  {
-   "name": "Legendary Chains of Yeenoghu",
-   "category": "item",
-   "slot": "Necklace",
-   "enhancements": [
-    "Quality Accuracy +5",
-    "Incite +140",
-    "Green Augment Slot",
-    "Colorless Augment Slot",
-    "Moon Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Chains_of_Yeenoghu",
-   "augment_slots": [
-    "Green",
-    "Colorless",
-    "Moon"
-   ],
-   "_enrich_unmapped": [
-    "Bloodrage",
-    "Conditioning"
-   ],
-   "_enriched": true,
-   "minimum_level": 35
-  },
-  {
-   "name": "Legendary Climber's Remembrance",
-   "category": "item",
-   "slot": "Necklace",
-   "enhancements": [
-    "Insightful Mastery Spell Focus +4",
-    "Green Augment Slot",
-    "Colorless Augment Slot",
-    "Moon Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Climber's_Remembrance",
-   "augment_slots": [
-    "Green",
-    "Colorless",
-    "Moon"
-   ],
-   "_enrich_unmapped": [],
-   "_enriched": true,
-   "minimum_level": 34,
-   "lamordia_slots": [
-    {
-     "type": "Melancholic",
-     "category": "Accessory"
-    },
-    {
-     "type": "Dolorous",
-     "category": "Accessory"
-    },
-    {
-     "type": "Miserable",
-     "category": "Accessory"
-    }
-   ]
-  },
-  {
-   "name": "Legendary Corroded Iron Lenses",
-   "category": "item",
-   "slot": "Goggles",
-   "enhancements": [
-    "Acid Lore +21%",
-    "Corrosion +146",
-    "Conjuration Spell Focus +8",
-    "Enhancement Magical Sheltering +34",
-    "Green Augment Slot",
-    "Yellow Augment Slot",
-    "Legendary Saltmarsh Explorer (set)"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Corroded_Iron_Lenses",
-   "augment_slots": [
-    "Green",
-    "Yellow"
-   ],
-   "_enrich_unmapped": [],
-   "_enriched": true,
-   "minimum_level": 30
-  },
-  {
-   "name": "Legendary Doctor Gustav's Warped Lenses",
-   "category": "item",
-   "slot": "Goggles",
-   "enhancements": [
-    "Profane Spell Spell Focus +2",
-    "Quality Spell Penetration +3",
-    "Wizardry +310",
-    "Insightful Dodge +7%",
-    "Green Augment Slot",
-    "Colorless Augment Slot",
-    "Sun Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Doctor_Gustav's_Warped_Lenses",
-   "augment_slots": [
-    "Green",
-    "Colorless",
-    "Sun"
-   ],
-   "_enrich_unmapped": [],
-   "_enriched": true,
-   "minimum_level": 34
-  },
-  {
-   "name": "Legendary Dragon Eyes",
-   "category": "item",
-   "slot": "Goggles",
-   "enhancements": [
-    "Breath Weapon Spell Focus +7",
-    "Quality Charisma +3",
-    "Insight Reflex Save +5",
-    "Blue Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dragon_Eyes",
-   "augment_slots": [
-    "Blue"
-   ],
-   "_enrich_unmapped": [
-    "Immunity"
-   ],
-   "_enriched": true,
-   "minimum_level": 28
-  },
-  {
-   "name": "Legendary Drider's Vision",
-   "category": "item",
-   "slot": "Goggles",
-   "enhancements": [
-    "Deception +22",
-    "Deception +12",
-    "Green Augment Slot",
-    "Colorless Augment Slot",
-    "Sun Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Drider's_Vision",
-   "augment_slots": [
-    "Green",
-    "Colorless",
-    "Sun"
-   ],
-   "_enrich_unmapped": [
-    "Assassinate"
-   ],
-   "_enriched": true,
-   "minimum_level": 35,
-   "nearly_complete": "Skill"
-  },
-  {
-   "name": "Legendary Dusk Lenses",
-   "category": "item",
-   "slot": "Goggles",
-   "enhancements": [
-    "Potency +98",
-    "Insightful Potency +49",
-    "Yellow Augment Slot",
-    "Legendary Esoteric Initiate (set)"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dusk_Lenses",
-   "augment_slots": [
-    "Yellow"
-   ],
-   "_enrich_unmapped": [
-    "Efficient Metamagic",
-    "Efficient Metamagic"
-   ],
-   "_enriched": true,
-   "minimum_level": 29
-  },
-  {
-   "name": "Legendary Electric Eyes",
-   "category": "item",
-   "slot": "Goggles",
-   "enhancements": [
-    "Magnetism +159",
-    "Enhancement Magical Sheltering +38",
-    "Wizardry +310",
-    "Green Augment Slot",
-    "Colorless Augment Slot",
-    "Sun Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Electric_Eyes",
-   "augment_slots": [
-    "Green",
-    "Colorless",
-    "Sun"
-   ],
-   "_enrich_unmapped": [
-    "Speed"
-   ],
-   "_enriched": true,
-   "minimum_level": 34
-  },
-  {
-   "name": "Legendary Eternal Flameguard's Lenses",
-   "category": "item",
-   "slot": "Goggles",
-   "enhancements": [
-    "Deadly +11",
-    "Quality Deadly +3",
-    "Doublestrike +16%",
-    "Quality Doublestrike +4%",
-    "Yellow Augment Slot",
-    "Legendary Temple's Inferno (set)"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Eternal_Flameguard's_Lenses",
-   "augment_slots": [
-    "Yellow"
-   ],
-   "_enrich_unmapped": [],
-   "_enriched": true,
-   "minimum_level": 31
-  },
-  {
-   "name": "Legendary Experimenter's Goggles",
-   "category": "item",
-   "slot": "Goggles",
-   "enhancements": [
-    "Competence Search +20",
-    "Competence Spot +20",
-    "Competence Open Lock +20",
-    "Competence Disable Device +20",
-    "Blue Augment Slot",
-    "Legendary Profane Experiment (set)"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Experimenter's_Goggles",
-   "augment_slots": [
-    "Blue"
-   ],
-   "_enrich_unmapped": [],
-   "_enriched": true,
-   "minimum_level": 29
-  },
-  {
-   "name": "Legendary Band of Mental Magic",
-   "category": "item",
-   "slot": "Ring",
-   "enhancements": [
-    "Enchantment Spell Focus +11",
-    "Illusion Spell Focus +11",
-    "Necromancy Spell Focus +11",
-    "Insightful Wizardry +151",
-    "Green Augment Slot",
-    "Colorless Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_Mental_Magic",
-   "augment_slots": [
-    "Green",
-    "Colorless"
-   ],
-   "_enrich_unmapped": [],
-   "_enriched": true,
-   "minimum_level": 33
-  },
-  {
-   "name": "Legendary Band of Seasons' Warding",
-   "category": "item",
-   "slot": "Ring",
-   "enhancements": [
-    "Fire Resistance +56",
-    "Cold Resistance +56",
-    "Electric Resistance +56",
-    "Acid Resistance +56",
-    "Green Augment Slot",
-    "Colorless Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_Seasons'_Warding",
-   "augment_slots": [
-    "Green",
-    "Colorless"
-   ],
-   "_enrich_unmapped": [],
-   "_enriched": true,
-   "minimum_level": 33
-  },
-  {
-   "name": "Legendary Band of the Holy Way",
-   "category": "item",
-   "slot": "Ring",
-   "enhancements": [
-    "Green Augment Slot",
-    "Colorless Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_the_Holy_Way",
-   "augment_slots": [
-    "Green",
-    "Colorless"
-   ],
-   "_enrich_unmapped": [
-    "Extra Smites",
-    "Bonus Turning",
-    "Bonus Turning",
-    "Bonus Turning"
-   ],
-   "_enriched": true,
-   "minimum_level": 33
-  },
-  {
-   "name": "Legendary Band of the Imprisoned One",
-   "category": "item",
-   "slot": "Ring",
-   "enhancements": [
-    "Enhancement Magical Sheltering +39",
-    "Spell Resistance +45",
-    "Insightful Spell Save +5",
-    "Green Augment Slot",
-    "Colorless Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Band_of_the_Imprisoned_One",
-   "augment_slots": [
-    "Green",
-    "Colorless"
-   ],
-   "_enrich_unmapped": [],
-   "_enriched": true,
-   "minimum_level": 35,
-   "nearly_complete": "Ability Score"
-  },
-  {
-   "name": "Legendary Brazenband",
-   "category": "item",
-   "slot": "Ring",
-   "enhancements": [
-    "Enchantment Spell Focus +7",
-    "Insightful Evocation Spell Focus +3",
-    "Insight Dodge +6%",
-    "Yellow Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brazenband",
-   "augment_slots": [
-    "Yellow"
-   ],
-   "_enrich_unmapped": [
-    "Speed"
-   ],
-   "_enriched": true,
-   "minimum_level": 29
-  },
-  {
-   "name": "Legendary Celestial Amethyst Ring",
-   "category": "item",
-   "slot": "Ring",
-   "enhancements": [
-    "Rolls one of: Strength +13 / Intelligence +13 / Charisma +13",
-    "Insightful Repair Amplification +27",
-    "Repair +20",
-    "Green Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Celestial_Amethyst_Ring",
-   "augment_slots": [
-    "Green"
-   ],
-   "_enrich_unmapped": [
-    "Auto-Repair"
-   ],
-   "_enriched": true,
-   "minimum_level": 29
-  },
-  {
-   "name": "Legendary Celestial Emerald Ring",
-   "category": "item",
-   "slot": "Ring",
-   "enhancements": [
-    "Rolls one of: Constitution +13 / Strength +13 / Wisdom +13",
-    "Insightful Incite +52",
-    "Insight Intimidate +10",
-    "Linguistics +10",
-    "Blue Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Celestial_Emerald_Ring",
-   "augment_slots": [
-    "Blue"
-   ],
-   "_enrich_unmapped": [],
-   "_enriched": true,
-   "minimum_level": 29
-  },
-  {
-   "name": "Legendary Celestial Ruby Ring",
-   "category": "item",
-   "slot": "Ring",
-   "enhancements": [
-    "Rolls one of: Strength +13 / Dexterity +13 / Intelligence +13",
-    "Accuracy +20",
-    "Green Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Celestial_Ruby_Ring",
-   "augment_slots": [
-    "Green"
-   ],
-   "_enrich_unmapped": [
-    "Stunning",
-    "Ghostly"
-   ],
-   "_enriched": true,
-   "minimum_level": 29
-  },
-  {
-   "name": "Legendary Celestial Sapphire Ring",
-   "category": "item",
-   "slot": "Ring",
-   "enhancements": [
-    "Rolls one of: Constitution +13 / Dexterity +13 / Intelligence +13",
-    "Dodge +13%",
-    "Profane Well Rounded +2",
-    "Yellow Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Celestial_Sapphire_Ring",
-   "augment_slots": [
-    "Yellow"
-   ],
-   "_enrich_unmapped": [
-    "Deception"
-   ],
-   "_enriched": true,
-   "minimum_level": 29
-  },
-  {
-   "name": "Legendary Celestial Topaz Ring",
-   "category": "item",
-   "slot": "Ring",
-   "enhancements": [
-    "Rolls one of: Intelligence +13 / Wisdom +13 / Charisma +13",
-    "Wizardry +269",
-    "Parrying +6",
-    "Yellow Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Celestial_Topaz_Ring",
-   "augment_slots": [
-    "Yellow"
-   ],
-   "_enrich_unmapped": [
-    "Concealment"
-   ],
-   "_enriched": true,
-   "minimum_level": 29
-  },
-  {
-   "name": "Legendary Bone Figurine",
-   "category": "item",
-   "slot": "Trinket",
-   "enhancements": [
-    "quality Strength +3",
-    "Doublestrike +15%",
-    "Insight Seeker +6",
-    "Evil Absorption +22%",
-    "Blue Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bone_Figurine",
-   "augment_slots": [
-    "Blue"
-   ],
-   "_enrich_unmapped": [],
-   "_enriched": true,
-   "minimum_level": 29
-  },
-  {
-   "name": "Legendary Book of Spirits",
-   "category": "item",
-   "slot": "Trinket",
-   "enhancements": [
-    "Diversion +20",
-    "Green Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Book_of_Spirits",
-   "augment_slots": [
-    "Green"
-   ],
-   "_enrich_unmapped": [
-    "Ghostly",
-    "TrueSeeing",
-    "Protection from Evil"
-   ],
-   "_enriched": true,
-   "minimum_level": 29
-  },
-  {
-   "name": "Legendary Bottle of Shadows",
-   "category": "item",
-   "slot": "Trinket",
-   "enhancements": [
-    "Profane Well Rounded +2",
-    "Law Absorption +22%",
-    "Good Absorption +22%",
-    "Green Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bottle_of_Shadows",
-   "augment_slots": [
-    "Green"
-   ],
-   "_enrich_unmapped": [
-    "Concealment"
-   ],
-   "_enriched": true,
-   "minimum_level": 29
-  },
-  {
-   "name": "Legendary Bottle of Smoke",
-   "category": "item",
-   "slot": "Trinket",
-   "enhancements": [
-    "Quality Dexterity +3",
-    "Deception +10",
-    "Blue Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bottle_of_Smoke",
-   "augment_slots": [
-    "Blue"
-   ],
-   "_enrich_unmapped": [
-    "Concealment",
-    "Speed"
-   ],
-   "_enriched": true,
-   "minimum_level": 29
-  },
-  {
-   "name": "Legendary Brawn's Spirits",
-   "category": "item",
-   "slot": "Trinket",
-   "enhancements": [
-    "Intimidate +20",
-    "Incite +124",
-    "Insightful Strength +6",
-    "Insightful Constitution +6",
-    "Green Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brawn's_Spirits",
-   "augment_slots": [
-    "Green"
-   ],
-   "_enrich_unmapped": [
-    "Clicky",
-    "Cursed",
-    "Cursed"
-   ],
-   "_enriched": true,
-   "minimum_level": 30
-  },
-  {
-   "name": "Legendary Breaker's Bauble",
-   "category": "item",
-   "slot": "Trinket",
-   "enhancements": [
-    "Doublestrike +16%",
-    "Insightful Doublestrike +7%",
-    "Accuracy +23",
-    "Armor-Piercing +23",
-    "Green Augment Slot",
-    "Colorless Augment Slot",
-    "Sun Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Breaker's_Bauble",
-   "augment_slots": [
-    "Green",
-    "Colorless",
-    "Sun"
-   ],
-   "_enrich_unmapped": [],
-   "_enriched": true,
-   "minimum_level": 33
-  },
-  {
-   "name": "Legendary Bronze Figurine",
-   "category": "item",
-   "slot": "Trinket",
-   "enhancements": [
-    "Incite +120",
-    "Insightful Incite +52",
-    "Enhancement Magical Sheltering +33",
-    "Parrying +6",
-    "Green Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bronze_Figurine",
-   "augment_slots": [
-    "Green"
-   ],
-   "_enrich_unmapped": [],
-   "_enriched": true,
-   "minimum_level": 29
-  },
-  {
-   "name": "Legendary Chaos in a Bottle",
-   "category": "item",
-   "slot": "Trinket",
-   "enhancements": [
-    "Potency +98",
-    "Wizardry +269",
-    "Enhancement Magical Sheltering +33",
-    "Blue Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Chaos_in_a_Bottle",
-   "augment_slots": [
-    "Blue"
-   ],
-   "_enrich_unmapped": [
-    "SpellPower",
-    "Taint of Chaos"
-   ],
-   "_enriched": true,
-   "minimum_level": 29
-  },
-  {
-   "name": "Legendary Acidic Sphere",
-   "category": "item",
-   "slot": "Off Hand",
-   "enhancements": [
-    "Corrosion +142",
-    "Mystic Diversion +20",
-    "Mystic Diversion +9",
-    "Insightful Corrosion +71",
-    "Orange Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Acidic_Sphere",
-   "augment_slots": [
-    "Orange"
-   ],
-   "_enrich_unmapped": [
-    "Enhancement bonus"
-   ],
-   "_enriched": true,
-   "minimum_level": 28
-  },
-  {
-   "name": "Legendary Alchemical Orb",
-   "category": "item",
-   "slot": "Off Hand",
-   "enhancements": [
-    "Red Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Alchemical_Orb",
-   "augment_slots": [
-    "Red"
-   ],
-   "_enrich_unmapped": [
-    "Enhancement bonus",
-    "CraftingEffects"
-   ],
-   "_enriched": true,
-   "minimum_level": 29
-  },
-  {
-   "name": "Legendary Arcane Contraption",
-   "category": "item",
-   "slot": "Off Hand",
-   "enhancements": [
-    "Insight Potency +55",
-    "Will Save +13",
-    "Purple Augment Slot",
-    "Orange Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Arcane_Contraption",
-   "augment_slots": [
-    "Purple",
-    "Orange"
-   ],
-   "_enrich_unmapped": [
-    "Enhancement bonus"
-   ],
-   "_enriched": true,
-   "minimum_level": 34,
-   "lamordia_slots": [
-    {
-     "type": "Melancholic",
-     "category": "Weapon"
-    },
-    {
-     "type": "Dolorous",
-     "category": "Weapon"
-    }
-   ]
-  },
-  {
-   "name": "Legendary Bolt Sphere",
-   "category": "item",
-   "slot": "Off Hand",
-   "enhancements": [
-    "Magnetism +142",
-    "Mystic Diversion +20",
-    "Mystic Diversion +9",
-    "Insightful Magnetism +71",
-    "Orange Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bolt_Sphere",
-   "augment_slots": [
-    "Orange"
-   ],
-   "_enrich_unmapped": [
-    "Enhancement bonus"
-   ],
-   "_enriched": true,
-   "minimum_level": 28
-  },
-  {
-   "name": "Legendary Concentrated Chaos",
-   "category": "item",
-   "slot": "Off Hand",
-   "enhancements": [
-    "Rolls one of: Quality Intelligence +3 / Quality Wisdom +3 / Quality Charisma +3",
-    "Insight Enchantment Spell Focus +3",
-    "Insight Necromancy Spell Focus +3",
-    "Chaos Absorption +22%",
-    "Purple Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Concentrated_Chaos",
-   "augment_slots": [
-    "Purple"
-   ],
-   "_enrich_unmapped": [
-    "Enhancement bonus"
-   ],
-   "_enriched": true,
-   "minimum_level": 29
-  },
-  {
-   "name": "Legendary Core of a War Machine",
-   "category": "item",
-   "slot": "Off Hand",
-   "enhancements": [
-    "Quality Doublestrike +3%",
-    "Purple Augment Slot",
-    "Orange Augment Slot",
-    "Legendary Forbidden Knowledge (set)"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Core_of_a_War_Machine",
-   "augment_slots": [
-    "Purple",
-    "Orange"
-   ],
-   "_enrich_unmapped": [
-    "Enhancement bonus",
-    "Blast",
-    "Shield Bashing",
-    "Impactful"
-   ],
-   "_enriched": true,
-   "minimum_level": 32
-  },
-  {
-   "name": "Legendary Cursed Skull",
-   "category": "item",
-   "slot": "Off Hand",
-   "enhancements": [
-    "Insight Nullification +71",
-    "Void Lore +21%",
-    "Necromancy Spell Focus +7",
-    "Profane Negative Healing Amplification +53",
-    "Purple Augment Slot",
-    "Curse Necromancer (Legendary) (set)"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cursed_Skull",
-   "augment_slots": [
-    "Purple"
-   ],
-   "_enrich_unmapped": [
-    "Enhancement bonus"
-   ],
-   "_enriched": true,
-   "minimum_level": 29
-  },
-  {
-   "name": "Legendary Death's Anchor",
-   "category": "item",
-   "slot": "Off Hand",
-   "enhancements": [
-    "Quality Nullification +39",
-    "Necromancy Spell Focus +12",
-    "Purple Augment Slot",
-    "Orange Augment Slot"
-   ],
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Death's_Anchor",
-   "augment_slots": [
-    "Purple",
-    "Orange"
-   ],
-   "_enrich_unmapped": [
-    "Enhancement bonus"
-   ],
-   "_enriched": true,
-   "minimum_level": 34,
-   "lamordia_slots": [
-    {
-     "type": "Melancholic",
-     "category": "Weapon"
-    },
-    {
-     "type": "Dolorous",
-     "category": "Weapon"
-    }
-   ]
-  }
- ]
+  ]
 }
