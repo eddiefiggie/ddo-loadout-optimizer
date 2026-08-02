@@ -11,7 +11,8 @@ function test(name, fn) {
 const rec = {
   name: "Sook - Reaper",
   inputs: {
-    ml: 34, race: "Human", alignment: "Lawful Good", armor: "light", weapon: "2h",
+    ml: 34, race: "Human", alignment: "Lawful Good", armor: "light", oath: "druid",
+    style: "one-hand", weaponTypes: ["Long Swords", "Rapiers"], offHand: ["Tower shields", "empty"],
     pool: "all", priorities: ["Constitution", "Dodge"],
   },
   snapshot: {
@@ -60,6 +61,27 @@ test("constraintLines carry the character name + all constraints", () => {
   assert.ok(/ML 34|34/.test(joined));
   assert.ok(/Human/.test(joined));
   assert.ok(/Constitution/.test(joined));
+});
+
+// ---- U5 — combat-style / weapon-type / off-hand / oath in exports ----------
+test("U5: exports surface style/weapon-type/off-hand/oath constraints", () => {
+  const lines = constraintLines(rec).join("\n");
+  assert.ok(/Weapon: One-hand: Long Swords, Rapiers/.test(lines), "weapon style+types line");
+  assert.ok(/Off hand: Tower shields, Empty/.test(lines), "off-hand allow-set with Empty");
+  assert.ok(/Oath: Druid/.test(lines), "oath line");
+  // every format inherits the constraints via the shared header (BBCode too, once
+  // its exporter from PR #76 lands — it reads the same constraintPairs).
+  assert.ok(/One-hand: Long Swords/.test(toMarkdown(rec)), "markdown header");
+  assert.ok(/Tower shields/.test(toCsv(rec)), "csv preamble");
+  assert.ok(/Druid/.test(toPrintHtml(rec)), "print header");
+});
+
+test("U5: an unconstrained build omits the weapon/off-hand/oath lines", () => {
+  const plain = { name: "Plain", inputs: { ml: 30, race: "Elf", pool: "all", priorities: ["Wisdom"] },
+    snapshot: { status: "optimal", chosen: [], setsActive: [] } };
+  const lines = constraintLines(plain).join("\n");
+  assert.ok(!/Weapon:/.test(lines) && !/Off hand:/.test(lines) && !/Oath:/.test(lines),
+    "no empty constraint lines for an unconstrained build");
 });
 
 test("toMarkdown has a name heading, a constraints header, and per-slot loadout", () => {

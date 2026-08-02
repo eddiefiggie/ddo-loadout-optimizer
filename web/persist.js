@@ -32,7 +32,8 @@
   // input fields persist. backup.js imports this so an import round-trip can
   // never silently strip a field the save path keeps (the two lists cannot drift).
   const INPUT_KEYS = [
-    "characterName", "ml", "race", "alignment", "armor", "weapon",
+    "characterName", "ml", "race", "alignment", "armor", "oath",
+    "style", "weaponTypes", "offHand",
     "includeArtifact", "pool", "ownedNames", "priorities", "slotConstraints",
   ];
 

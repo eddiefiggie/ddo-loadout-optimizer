@@ -25,7 +25,8 @@ function fakeStorage(failOnSet) {
 }
 
 const state = {
-  ml: 34, race: "Elf", alignment: "Lawful Good", armor: "light", weapon: "",
+  ml: 34, race: "Elf", alignment: "Lawful Good", armor: "light", weapon: "old-flag",
+  oath: "druid", style: "one-hand", weaponTypes: ["Long Swords"], offHand: ["Orbs"],
   includeArtifact: false, pool: "all", ownedNames: null,
   priorities: ["Constitution", "Dodge"], slotConstraints: { Goggles: "lock" },
 };
@@ -58,6 +59,17 @@ test("serializeCharacter carries inputs, query, snapshot, build stamp; item ref 
   assert.strictEqual(rec.snapshot.program, undefined);
   assert.strictEqual(rec.snapshot.chosen[0].variant.variant_id, "Sight:heroic");
   assert.strictEqual(rec.snapshot.chosen[0].variant.source_item, "Sight of the Devil");
+});
+
+test("U5: serializeCharacter persists combat constraints and drops the inert weapon flag", () => {
+  const rec = serializeCharacter("Combat", state, lastRun, "id5");
+  assert.strictEqual(rec.inputs.style, "one-hand");
+  assert.deepStrictEqual(rec.inputs.weaponTypes, ["Long Swords"]);
+  assert.deepStrictEqual(rec.inputs.offHand, ["Orbs"]);
+  assert.strictEqual(rec.inputs.oath, "druid");
+  // The obsolete coarse flag is off the allowlist, so it never round-trips — an old
+  // save that still carries it simply loses it and loads unconstrained.
+  assert.ok(!("weapon" in rec.inputs), "the obsolete coarse weapon flag is not persisted");
 });
 
 test("ownedNames Set serializes to a JSON-safe array", () => {

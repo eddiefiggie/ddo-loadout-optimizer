@@ -700,7 +700,13 @@ if (typeof window !== "undefined" && window.App) {
       const i = rec.inputs || {};
       state.characterName = rec.name;
       state.ml = i.ml; state.mlFloor = i.mlFloor || 0; state.race = i.race; state.alignment = i.alignment;
-      state.armor = i.armor; state.weapon = i.weapon;
+      state.armor = i.armor; state.oath = i.oath || "";
+      // U5 — combat constraints. A pre-migration save carries the inert `weapon`
+      // flag and none of these; it loads unconstrained (Settled Decision 5), so an
+      // old build re-solves identically. The stale `weapon` value is simply dropped.
+      state.style = i.style || "";
+      state.weaponTypes = Array.isArray(i.weaponTypes) ? i.weaponTypes.slice() : [];
+      state.offHand = Array.isArray(i.offHand) ? i.offHand.slice() : [];
       state.includeArtifact = !!i.includeArtifact;
       state.pool = i.pool || "all";
       state.ownedNames = Array.isArray(i.ownedNames) ? new Set(i.ownedNames) : null;
