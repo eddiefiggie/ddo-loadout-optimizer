@@ -20,6 +20,7 @@ window.App && window.App.ready((dataset) => {
     <h2>Loadout Solver</h2>
     <div class="controls query-controls">
       <label class="field"><span>ML cap</span><input id="q-ml" type="number" min="1" max="40" value="36"></label>
+      <label class="field"><span>Items ML ≥</span><input id="q-mlfloor" type="number" min="1" max="40" placeholder="any" title="Only consider items at or above this level (hide low-level gear)"></label>
       <label class="field"><span>Class / race</span><input id="q-class" type="text" placeholder="(optional)"></label>
       <label class="field"><span>Armor</span>
         <select id="q-armor"><option value="">Any</option><option value="cloth">Cloth</option><option value="light">Light</option><option value="medium">Medium</option><option value="heavy">Heavy</option></select>
@@ -140,6 +141,7 @@ window.App && window.App.ready((dataset) => {
       $("q-status").textContent = "Solving…";
       const query = {
         mlCap: Number($("q-ml").value) || 36,
+        mlFloor: Number($("q-mlfloor").value) || null,
         targets: ranked.slice(),
         armorType: $("q-armor").value || null,
         weaponSetup: $("q-weapon").value || null,

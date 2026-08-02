@@ -86,10 +86,12 @@ function isDocent(v) {
 // the pipeline (U3) fills the data.
 function eligible(variants, query) {
   const cap = query.mlCap;
+  const floor = query.mlFloor;   // optional item-level floor: hide gear below it
   const forged = isForgedRace(query.race);
   return variants.filter((v) => {
     if (v.verification !== "verified") return false;
     if (v.ml != null && v.ml > cap) return false;
+    if (floor != null && v.ml != null && v.ml < floor) return false;
 
     // R6/AE1 — Race → body slot: Forged races take docents; others cannot.
     if (v.slot === "Armor" && query.race) {

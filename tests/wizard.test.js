@@ -50,6 +50,12 @@ test("wizIsForged", () => {
   assert.ok(!wizIsForged("Elf") && !wizIsForged(""));
 });
 
+test("buildQuery threads the optional mlFloor (blank/0 -> null)", () => {
+  assert.strictEqual(buildQuery({ ...baseState(), mlFloor: 30 }).mlFloor, 30);
+  assert.strictEqual(buildQuery({ ...baseState(), mlFloor: "" }).mlFloor, null);
+  assert.strictEqual(buildQuery(baseState()).mlFloor, null);
+});
+
 test("U4: buildQuery reflects the Include-an-Artifact flag", () => {
   const on = buildQuery({ ...baseState(), includeArtifact: true });
   assert.strictEqual(on.includeArtifact, true);

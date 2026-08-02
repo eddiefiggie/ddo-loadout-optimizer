@@ -105,6 +105,17 @@ test("eligible filters ML above cap", () => {
   assert.deepStrictEqual(out.map((x) => x.source_item), ["Lo"]);
 });
 
+test("eligible honors the optional mlFloor (hide low-level gear)", () => {
+  const lo = v("Lo", "Ring", [["Intelligence", "Enhancement", 5]], { ml: 10 });
+  const hi = v("Hi", "Ring", [["Intelligence", "Enhancement", 9]], { ml: 34 });
+  // with a floor of 30, the ML10 ring is excluded; ML34 kept.
+  const floored = M.eligible([lo, hi], { mlCap: 36, mlFloor: 30, targets: ["Intelligence"] });
+  assert.deepStrictEqual(floored.map((x) => x.source_item), ["Hi"]);
+  // no floor (null/absent) -> current behavior, both kept.
+  const none = M.eligible([lo, hi], { mlCap: 36, mlFloor: null, targets: ["Intelligence"] });
+  assert.deepStrictEqual(none.map((x) => x.source_item).sort(), ["Hi", "Lo"]);
+});
+
 // artifact variant factory: a normal variant flagged as Artifact-quality.
 function art(name, slot, affixes, opts = {}) {
   const x = v(name, slot, affixes, opts);
