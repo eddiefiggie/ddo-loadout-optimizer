@@ -7,7 +7,7 @@ const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js")
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
 
-const baseState = () => ({ ml: 34, race: "Human", armor: "", alignment: "",
+const baseState = () => ({ ml: 34, race: "Human", armor: "", oath: "", alignment: "",
   style: "", weaponTypes: [], offHand: [],
   priorities: ["Constitution"], slotConstraints: {} });
 
@@ -93,6 +93,27 @@ test("U3: buildQuery copies the arrays (mutating the query never edits state)", 
   const q = buildQuery(st);
   q.weaponTypes.push("Mauls");
   assert.deepStrictEqual(st.weaponTypes, ["Falchions"], "state array untouched");
+});
+
+// ---- U4 — druidic oath / anathema (armor-type approximation) ----
+test("U4: the Druid oath restricts armorTypes to cloth + light", () => {
+  const q = buildQuery({ ...baseState(), oath: "druid" });
+  assert.deepStrictEqual(q.armorTypes, ["cloth", "light"]);
+});
+
+test("U4: the oath overrides a conflicting armor-proficiency chip", () => {
+  const q = buildQuery({ ...baseState(), armor: "heavy", oath: "druid" });
+  assert.deepStrictEqual(q.armorTypes, ["cloth", "light"], "oath wins over the heavy chip");
+});
+
+test("U4: with no oath, armorTypes behaves exactly as before", () => {
+  assert.deepStrictEqual(buildQuery({ ...baseState(), armor: "heavy" }).armorTypes, ["heavy"]);
+  assert.strictEqual(buildQuery(baseState()).armorTypes, undefined, "no armor, no oath => undefined");
+});
+
+test("U4: a Forged race ignores the oath (docent body slot, gate moot)", () => {
+  const q = buildQuery({ ...baseState(), race: "Bladeforged", oath: "druid" });
+  assert.strictEqual(q.armorTypes, undefined);
 });
 
 // ---- U1 (Plan B) — load-to-Results routing (AE1, AE8) ----

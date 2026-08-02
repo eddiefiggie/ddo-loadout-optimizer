@@ -47,7 +47,13 @@ function buildQuery(state) {
     mlFloor: Number(state.mlFloor) || null,   // optional item-level floor (hide low-ML gear)
     targets: state.priorities.slice(),
     armorType: forged ? null : (state.armor || null),   // dodge-cap input
-    armorTypes: forged || !state.armor ? undefined : [state.armor], // gate (U2)
+    // U4 — armor eligibility gate (R7). A druidic oath approximates "no metal" by
+    // restricting body armor to cloth + light (rides the existing armorTypes gate),
+    // overriding the single proficiency chip. Forged wear docents, so the gate is
+    // moot for them (docent handling lives in the R6 branch).
+    armorTypes: forged ? undefined
+      : (state.oath === "druid" ? ["cloth", "light"]
+        : (state.armor ? [state.armor] : undefined)),
     // U3 — combat-style / weapon-type / off-hand constraints (replaces the inert
     // coarse `weaponSetup`). Empty arrays / unset style => unconstrained.
     style: state.style || null,
@@ -197,7 +203,7 @@ if (typeof window !== "undefined" && window.App) {
     const weaponTypesInData = [...new Set((dataset.items || [])
       .filter((v) => v.slot === "Weapon" && v.type).map((v) => v.type))];
 
-    const state = { step: "intro", ml: 36, mlFloor: 0, race: "", alignment: "", armor: "",
+    const state = { step: "intro", ml: 36, mlFloor: 0, race: "", alignment: "", armor: "", oath: "",
       style: "", weaponTypes: [], offHand: [],
       includeArtifact: false,
       pool: "all", ownedNames: null, priorities: [], slotConstraints: {}, constraintsDirty: false, lastRun: null,
@@ -264,6 +270,10 @@ if (typeof window !== "undefined" && window.App) {
           <div class="wz-field"><span class="wz-label">Armor type ${forged ? '<span class="wz-sub">· docent (Forged race)</span>' : ""}</span>
             <span class="wz-help">Your proficiency — sets the dodge cap and eligible body armor.</span>
             <div class="wz-seg" id="wz-armor">${ARMOR.map(([v, l]) => `<button class="wz-chip ${state.armor === v ? "on" : ""}" data-armor="${v}" ${forged ? "disabled" : ""}>${l}</button>`).join("")}</div></div>
+          <div class="wz-field"><span class="wz-label">Oath / anathema <span class="wz-sub">· optional</span></span>
+            <span class="wz-help">A class oath that forbids certain armor. Approximated by armor type — see the note when on.</span>
+            <div class="wz-seg" id="wz-oath"><button class="wz-chip ${state.oath === "druid" ? "on" : ""}" data-oath="druid" ${forged ? "disabled" : ""}>Druid — no metal</button></div>
+            ${state.oath === "druid" && !forged ? `<p class="wz-help wz-note">Druidic oath: body armor restricted to cloth + light. Metal vs non-metal medium/heavy (e.g. Darkleaf, Dragonhide) isn't distinguishable in our data, so this is a conservative approximation.</p>` : ""}</div>
           ${(() => {
             const styles = WT ? WT.STYLES : [];
             const styleLabel = (WT && state.style) ? ((WT.STYLES.find((s) => s.id === state.style) || {}).label || "") : "";
@@ -863,6 +873,12 @@ if (typeof window !== "undefined" && window.App) {
         root.querySelectorAll("#wz-armor .wz-chip").forEach((c) => c.onclick = () => {
           if (c.disabled) return; state.armor = state.armor === c.dataset.armor ? "" : c.dataset.armor;
           root.querySelectorAll("#wz-armor .wz-chip").forEach((x) => x.classList.toggle("on", x.dataset.armor === state.armor));
+        });
+        // U4 — oath: single-select; toggling shows/hides the approximation note.
+        root.querySelectorAll("#wz-oath .wz-chip").forEach((c) => c.onclick = () => {
+          if (c.disabled) return;
+          state.oath = state.oath === c.dataset.oath ? "" : c.dataset.oath;
+          render();
         });
         // Combat style: single-select; changing it swaps which weapon-type / off-hand
         // chips are shown and resets any prior sub-picks, so a full re-render.
