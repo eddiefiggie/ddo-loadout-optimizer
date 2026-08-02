@@ -88,6 +88,49 @@
     });
   }
 
+  // The active set bonuses in a build with the ACTUAL affixes each grants — the
+  // "additional analysis" surfaced in every export. Mirrors results.js
+  // satisfiedSetDetail: count equipped members per set, take the highest tier the
+  // count satisfies, expand its granted affixes; then recover any runtime-completed
+  // set (joker/membership) from setsActive that carries no static tier. Returns
+  // [{ set, pieces, affixes:[label] }]. Pure — reads only the snapshot.
+  function setBonusDetail(rec) {
+    const chosen = (rec && rec.snapshot && rec.snapshot.chosen) || [];
+    const setsActive = (rec && rec.snapshot && rec.snapshot.setsActive) || [];
+    const counts = new Map();
+    const tiers = new Map();                 // set -> Map(pieces_required -> affixes[])
+    for (const c of chosen) {
+      const v = c.variant || {};
+      for (const sb of v.set_bonus || []) if (sb.set) counts.set(sb.set, (counts.get(sb.set) || 0) + 1);
+      for (const t of v.parsed_set_bonuses || []) {
+        if (t.pieces_required == null) continue;
+        if (!tiers.has(t.set)) tiers.set(t.set, new Map());
+        const byN = tiers.get(t.set);
+        if (!byN.has(t.pieces_required)) byN.set(t.pieces_required, t.affixes || []);
+      }
+    }
+    const bySet = new Map();
+    for (const [set, byN] of tiers) {
+      const have = counts.get(set) || 0;
+      let best = null;
+      for (const [n, affixes] of byN) if (n <= have && (best == null || n > best.pieces)) best = { pieces: n, affixes };
+      if (best) bySet.set(set, { set, pieces: best.pieces, affixes: best.affixes.map(fmtAffix).filter(Boolean) });
+    }
+    for (const s of setsActive) {            // runtime-completed sets with no static tier
+      const name = typeof s === "string" ? s : (s && (s.set || s.name));
+      if (!name || bySet.has(name)) continue;
+      bySet.set(name, { set: name, pieces: (s && s.pieces_required) || null, affixes: [] });
+    }
+    return [...bySet.values()];
+  }
+
+  // One "Set — N pieces: affix, affix" line (or "bonus active" when the granted
+  // affixes aren't in the snapshot). `join` renders the affix list.
+  function setBonusText(s) {
+    const grants = s.affixes.length ? s.affixes.join(", ") : "bonus active";
+    return `${s.set}${s.pieces ? ` (${s.pieces} pieces)` : ""}: ${grants}`;
+  }
+
   function toMarkdown(rec) {
     const pairs = constraintPairs(rec);
     let out = `# ${mdEsc(rec && rec.name)}\n\n`;
@@ -99,10 +142,13 @@
       if (r.stats.length) out += `  - ${r.stats.map(mdEsc).join(", ")}\n`;
       if (r.augs.length) out += `  - Augment slots: ${r.augs.map(mdEsc).join(", ")}\n`;
     }
-    const sets = (rec && rec.snapshot && rec.snapshot.setsActive) || [];
+    const sets = setBonusDetail(rec);
     if (sets.length) {
       out += `\n## Set bonuses\n\n`;
-      for (const s of sets) out += `- ${mdEsc(typeof s === "string" ? s : (s.set || s.name || ""))}\n`;
+      for (const s of sets) {
+        out += `- **${mdEsc(s.set)}**${s.pieces ? ` (${s.pieces} pieces)` : ""}\n`;
+        if (s.affixes.length) out += `  - ${s.affixes.map(mdEsc).join(", ")}\n`;
+      }
     }
     return out;
   }
@@ -126,6 +172,12 @@
     for (const r of loadoutRows(rec)) {
       rows.push(csvRow([r.slot, r.item, r.ml, r.stats.join("; "), r.augs.join(" | ")]));
     }
+    const sets = setBonusDetail(rec);
+    if (sets.length) {
+      rows.push("");
+      rows.push(csvRow(["Set bonus", "Pieces", "Grants"]));
+      for (const s of sets) rows.push(csvRow([s.set, s.pieces == null ? "" : s.pieces, s.affixes.join("; ")]));
+    }
     return rows.join("\n");
   }
 
@@ -147,10 +199,45 @@
         + `<td>${r.stats.map(htmlEsc).join(", ")}</td><td>${r.augs.map(htmlEsc).join(", ")}</td></tr>`;
     }
     h += `</tbody></table>`;
+    const sets = setBonusDetail(rec);
+    if (sets.length) {
+      h += `<h2>Set bonuses</h2><ul>`;
+      for (const s of sets) h += `<li><strong>${htmlEsc(s.set)}</strong>${s.pieces ? ` (${htmlEsc(s.pieces)} pieces)` : ""}${s.affixes.length ? ` — ${s.affixes.map(htmlEsc).join(", ")}` : ""}</li>`;
+      h += `</ul>`;
+    }
     return h;
   }
 
-  const api = { toMarkdown, toCsv, toPrintHtml, csvSafe, csvRow, htmlEsc, constraintPairs, constraintLines, fmtAffix };
+  // Escape BBCode metacharacters in user-derived text so a name from an imported
+  // backup can't inject forum tags. Brackets are stripped (BBCode has no portable
+  // escape for a literal '['), which is safe for item/affix/character names.
+  function bbEsc(s) { return String(s == null ? "" : s).replace(/[[\]]/g, ""); }
+
+  // Forum-ready BBCode post (DDO forums): title, constraints, loadout list, and the
+  // set-bonus analysis. Copied to the clipboard by the Share tab.
+  function toBBCode(rec) {
+    const pairs = constraintPairs(rec);
+    let out = `[b]${bbEsc(rec && rec.name)}[/b]\n`;
+    out += `[i]Optimal loadout — built with the DDO Loadout Optimizer.[/i]\n\n`;
+    out += pairs.slice(1).map(([k, v]) => `[b]${bbEsc(k)}:[/b] ${bbEsc(v)}`).join(" | ") + "\n\n";
+    out += `[b]Loadout[/b]\n[list]\n`;
+    for (const r of loadoutRows(rec)) {
+      out += `[*][b]${bbEsc(r.slot)}[/b] — ${bbEsc(r.item)} (ML ${bbEsc(r.ml || "?")})`;
+      if (r.stats.length) out += `: ${r.stats.map(bbEsc).join(", ")}`;
+      if (r.augs.length) out += ` [i](augments: ${r.augs.map(bbEsc).join(", ")})[/i]`;
+      out += `\n`;
+    }
+    out += `[/list]\n`;
+    const sets = setBonusDetail(rec);
+    if (sets.length) {
+      out += `\n[b]Set bonuses[/b]\n[list]\n`;
+      for (const s of sets) out += `[*][b]${bbEsc(s.set)}[/b]${s.pieces ? ` (${bbEsc(s.pieces)} pieces)` : ""}${s.affixes.length ? `: ${s.affixes.map(bbEsc).join(", ")}` : ""}\n`;
+      out += `[/list]\n`;
+    }
+    return out;
+  }
+
+  const api = { toMarkdown, toCsv, toPrintHtml, toBBCode, setBonusDetail, csvSafe, csvRow, htmlEsc, bbEsc, constraintPairs, constraintLines, fmtAffix };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (typeof window !== "undefined") window.LoadoutExport = api;
 })();

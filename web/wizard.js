@@ -477,13 +477,17 @@ if (typeof window !== "undefined" && window.App) {
     // post-render callback like the Adjust panel.
     function sharePanelHTML() {
       return `<div class="wz-share">
-          <p class="wz-help">Share <strong>this loadout with others</strong> — a forum-ready Markdown post, a clean CSV of
-            the full detail, or a print-friendly page. Each carries the character name and constraints in the header.
-            (Backing up all your saved builds lives in the Character step's Export &amp; Data Management.)</p>
-          <div class="wz-data-row">
-            <label class="wz-share-pick"><span class="wz-label">Loadout</span>
-              <select id="wz-share-sel"></select></label>
+          <p class="wz-help">Share <strong>this loadout with others</strong> — a forum-ready Markdown or BBCode post, a clean
+            CSV of the full detail, or a print-friendly page. Each carries the character name, constraints, and the active
+            set bonuses with the affixes they grant. (Backing up all your saved builds lives in the Character step's Export
+            &amp; Data Management.)</p>
+          <div class="wz-share-pick">
+            <label class="wz-label" for="wz-share-sel">Loadout</label>
+            <select id="wz-share-sel"></select>
+          </div>
+          <div class="wz-share-btns">
             <button class="btn ghost" id="wz-share-md" type="button">Markdown</button>
+            <button class="btn ghost" id="wz-share-bb" type="button">BBCode</button>
             <button class="btn ghost" id="wz-share-csv" type="button">CSV</button>
             <button class="btn ghost" id="wz-share-print" type="button">Print</button>
           </div>
@@ -523,11 +527,25 @@ if (typeof window !== "undefined" && window.App) {
         return rec;
       };
       const mdBtn = document.getElementById("wz-share-md");
+      const bbBtn = document.getElementById("wz-share-bb");
       const csvBtn = document.getElementById("wz-share-csv");
       const printBtn = document.getElementById("wz-share-print");
       if (mdBtn) mdBtn.onclick = () => { const rec = selected(); if (rec) downloadFile(`${slug(rec.name)}.md`, LoadoutExport.toMarkdown(rec), "text/markdown"); };
       if (csvBtn) csvBtn.onclick = () => { const rec = selected(); if (rec) downloadFile(`${slug(rec.name)}.csv`, LoadoutExport.toCsv(rec), "text/csv"); };
       if (printBtn) printBtn.onclick = () => { const rec = selected(); if (rec) printLoadout(rec); };
+      // BBCode is meant to be pasted into a forum post — copy to clipboard (with a
+      // .txt download fallback if the clipboard API is blocked), and confirm.
+      if (bbBtn) bbBtn.onclick = () => {
+        const rec = selected(); if (!rec) return;
+        const bb = LoadoutExport.toBBCode(rec);
+        const s = document.getElementById("wz-share-stat");
+        const ok = () => { if (s) { s.className = "wz-filestat"; s.textContent = "BBCode copied — paste it into your forum post."; } };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(bb).then(ok, () => downloadFile(`${slug(rec.name)}.bbcode.txt`, bb, "text/plain"));
+        } else {
+          downloadFile(`${slug(rec.name)}.bbcode.txt`, bb, "text/plain");
+        }
+      };
     }
 
     // Populate + wire the Share tab panel (inside #wz-results, rebuilt every render).

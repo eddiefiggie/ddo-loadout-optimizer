@@ -1,6 +1,6 @@
 // U12 — Markdown + CSV loadout exporters. Run: node tests/exporters.test.js
 const assert = require("assert");
-const { toMarkdown, toCsv, toPrintHtml, csvSafe, constraintLines } = require("../web/exporters.js");
+const { toMarkdown, toCsv, toPrintHtml, toBBCode, setBonusDetail, bbEsc, csvSafe, constraintLines } = require("../web/exporters.js");
 
 let passed = 0;
 function test(name, fn) {
@@ -142,6 +142,57 @@ test("toPrintHtml renders name + constraints + loadout table, escaping markup", 
   assert.ok(/Legendary Gravekeeper/.test(h));   // apostrophe is html-escaped to &#39;
   const evil = toPrintHtml({ ...rec, name: "<script>x</script>" });
   assert.ok(!/<script>x/.test(evil), "raw script leaked into print html");
+});
+
+// ---- set-bonus analysis + BBCode -------------------------------------------
+
+// A build with a completed set: two members carry set_bonus, and a parsed tier
+// grants concrete affixes at 2 pieces.
+const setRec = {
+  name: "Tank",
+  inputs: { ml: 34, race: "Dwarf", pool: "all", priorities: ["Constitution"] },
+  snapshot: {
+    status: "optimal",
+    setsActive: [{ set: "Legendary Kundarak Delving Boots", pieces_required: 2 }],
+    chosen: [
+      { slot: "Boots", variant: { variant_id: "Delving Boots", ml: 34,
+        affixes: [{ name: "Constitution", type: "Insight", value: 6 }],
+        set_bonus: [{ set: "Legendary Kundarak Delving Boots" }],
+        parsed_set_bonuses: [{ set: "Legendary Kundarak Delving Boots", pieces_required: 2,
+          affixes: [{ name: "Physical Sheltering", type: "Enhancement", value: 20 }, { name: "Fortification", value: 30, unit: "pct" }] }] } },
+      { slot: "Gloves", variant: { variant_id: "Delving Gloves", ml: 34, affixes: [],
+        set_bonus: [{ set: "Legendary Kundarak Delving Boots" }],
+        parsed_set_bonuses: [{ set: "Legendary Kundarak Delving Boots", pieces_required: 2, affixes: [] }] } },
+    ],
+  },
+};
+
+test("set-bonus analysis: exports include the ACTUAL affixes a set grants", () => {
+  const detail = setBonusDetail(setRec);
+  assert.strictEqual(detail.length, 1, "one active set");
+  assert.strictEqual(detail[0].pieces, 2);
+  assert.deepStrictEqual(detail[0].affixes, ["Physical Sheltering +20", "Fortification +30%"]);
+  // and each format surfaces the granted affixes, not just the set name
+  const md = toMarkdown(setRec);
+  assert.ok(/Set bonuses/.test(md) && /Physical Sheltering \+20/.test(md), "markdown lists granted affixes");
+  const csv = toCsv(setRec);
+  assert.ok(/Set bonus,Pieces,Grants/.test(csv) && /Physical Sheltering \+20/.test(csv), "csv has a set-bonus section");
+  assert.ok(/Physical Sheltering \+20/.test(toPrintHtml(setRec)), "print includes granted affixes");
+});
+
+test("BBCode export: forum-ready structure + set-bonus affixes", () => {
+  const bb = toBBCode(setRec);
+  assert.ok(bb.startsWith("[b]Tank[/b]"), "title in bold");
+  assert.ok(/\[b\]Loadout\[\/b\]\n\[list\]/.test(bb), "loadout list block");
+  assert.ok(/\[\*\]\[b\]Boots\[\/b\] — Delving Boots/.test(bb), "a loadout row");
+  assert.ok(/\[b\]Set bonuses\[\/b\]/.test(bb) && /Physical Sheltering \+20/.test(bb), "set bonuses with affixes");
+  assert.ok(/\[\/list\]/.test(bb), "closes the list");
+});
+
+test("BBCode export: bbEsc strips brackets so a name can't inject forum tags", () => {
+  assert.strictEqual(bbEsc("[url=x]evil[/url]"), "url=xevil/url");
+  const bb = toBBCode({ ...setRec, name: "[b]Pwn[/b]" });
+  assert.ok(bb.startsWith("[b]bPwn/b[/b]"), "the injected tags are neutralized inside the title");
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);
