@@ -694,6 +694,31 @@ input.wz-ml { width: 120px; }
 .wz-filestat { font-size: var(--fs-sm); color: var(--optimal); margin-top: var(--sp-2); }
 .wz-filestat.warn { color: var(--quarantined); }
 
+/* U3 — pre-solve item pinning (Gear pool step) */
+.wz-pinbox { margin-top: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid var(--line, rgba(255,255,255,0.08)); max-width: 34rem; }
+.wz-pinbox .wz-addrow { margin-top: var(--sp-2); }
+.wz-pin-search, #wz-pin-search { width: 100%; }
+.wz-pin-hint, .wz-pin-empty, .wz-pin-more { font-size: var(--fs-sm); color: var(--faint); margin: var(--sp-2) 0 0; }
+.wz-pin-results { display: flex; flex-direction: column; gap: 2px; margin-top: var(--sp-2); max-height: 15rem; overflow-y: auto; }
+.wz-pin-results:empty { display: none; }
+.wz-pin-hit { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3);
+  width: 100%; text-align: left; appearance: none; background: var(--bg-2); color: var(--text);
+  border: 1px solid transparent; border-radius: var(--radius-sm); padding: 7px 10px; cursor: pointer;
+  font-family: inherit; font-size: var(--fs-sm); }
+.wz-pin-hit:hover:not([disabled]) { border-color: var(--accent); }
+.wz-pin-hit[disabled] { opacity: 0.55; cursor: default; }
+.wz-pin-hit-slot { color: var(--faint); font-size: var(--fs-xs); white-space: nowrap; }
+.wz-pin-list { display: flex; flex-direction: column; gap: var(--sp-2); margin-top: var(--sp-3); }
+.wz-pin-row { display: flex; align-items: center; gap: var(--sp-2); background: var(--elev);
+  border: 1px solid var(--accent); border-radius: var(--radius-sm); padding: 6px 6px 6px 11px; font-size: var(--fs-sm); }
+.wz-pin-name { font-weight: 600; }
+.wz-pin-slot { color: var(--faint); font-size: var(--fs-xs); }
+.wz-pin-warn { color: var(--quarantined); font-size: var(--fs-xs); margin-left: auto; }
+.wz-pin-x { margin-left: auto; appearance: none; background: transparent; border: none; color: var(--faint);
+  font-size: var(--fs-lg); line-height: 1; cursor: pointer; padding: 0 4px; }
+.wz-pin-warn + .wz-pin-x { margin-left: var(--sp-2); }
+.wz-pin-x:hover { color: var(--text); }
+
 .wz-actions { display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-4); }
 .wz-spacer { flex: 1; }
 .btn { border: none; border-radius: var(--radius-sm); padding: 11px 20px; min-height: var(--tap);

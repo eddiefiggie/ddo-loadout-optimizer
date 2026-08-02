@@ -67,6 +67,44 @@ function buildQuery(state) {
   };
 }
 
+// U3 — the shared pin-normalize path, resolved once across runtimes (browser
+// global from model.js; Node require). So the wizard reads a list-shaped Ring pin
+// exactly as the solver does.
+const _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined")
+  ? pinnedVariantIds
+  // eslint-disable-next-line global-require
+  : (typeof require !== "undefined" ? require("./model.js").pinnedVariantIds : (c) => (c && c.type === "pin" ? (Array.isArray(c.variant_ids) ? c.variant_ids : c.variant_id != null ? [c.variant_id] : []) : []));
+
+// U3 — pure pin-mutation core (exported for tests; the wizard closure wraps these
+// with its live cardinality lookup). A pin forces an item into its WORN-slot label
+// (KTD4): a weapon's `variant.slot` is "Weapon", but the solver groups pick-vars by
+// "Main Hand", so pinning by the raw slot would silently no-op. `cardOf(slot)` gives
+// the slot cardinality (Ring = 2, else 1): a full single slot replaces, a full Ring
+// keeps the newest two; a duplicate variant is ignored.
+function pinWornSlotOf(v) { return v.category === "weapon" ? "Main Hand" : v.slot; }
+function pinIdOf(v) { return v.variant_id || v.source_item; }
+function applyPin(slotConstraints, v, cardOf) {
+  const slot = pinWornSlotOf(v), id = pinIdOf(v);
+  const card = (cardOf && cardOf(slot)) || 1;
+  const c = slotConstraints[slot];
+  const existing = (c && c.type === "pin") ? _pinnedVariantIds(c) : [];
+  if (existing.includes(id)) return slotConstraints;              // no duplicate variant
+  let next = existing.concat(id);
+  if (next.length > card) next = next.slice(next.length - card);  // single replaces; Ring keeps newest 2
+  slotConstraints[slot] = card > 1 ? { type: "pin", variant_ids: next } : { type: "pin", variant_id: next[0] };
+  return slotConstraints;
+}
+function removePinFrom(slotConstraints, slot, id, cardOf) {
+  const c = slotConstraints[slot];
+  if (!c || c.type !== "pin") return slotConstraints;
+  const remaining = _pinnedVariantIds(c).filter((x) => x !== id);
+  const card = (cardOf && cardOf(slot)) || 1;
+  if (!remaining.length) delete slotConstraints[slot];
+  else if (card > 1) slotConstraints[slot] = { type: "pin", variant_ids: remaining };
+  else slotConstraints[slot] = { type: "pin", variant_id: remaining[0] };
+  return slotConstraints;
+}
+
 // Resolve the shared picker-vocabulary builder across both runtimes: Node (require
 // the dataset module the tests use) and browser (the global the scripts share).
 function _datasetNormalizer() {
@@ -164,7 +202,7 @@ function addBundle(key, current, vocab) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, removePinFrom };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -367,9 +405,98 @@ if (typeof window !== "undefined" && window.App) {
             <input id="wz-file" type="file" accept=".csv" class="wz-hidden"></label>
           <div id="wz-file-stat" class="wz-filestat"></div>
         </div>
+        <div class="wz-pinbox">
+          <span class="wz-label">Pin specific items <span class="wz-sub">· optional · force gear you've already decided on into the build</span></span>
+          <div class="wz-addrow">
+            <input id="wz-pin-search" type="text" placeholder="Search an item by name — e.g. Hydra's Heart…" autocomplete="off">
+          </div>
+          <div id="wz-pin-results" class="wz-pin-results"></div>
+          <div id="wz-pin-list" class="wz-pin-list"></div>
+        </div>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
           <button class="btn primary" data-next>Continue →</button></div>
       </section>`;
+    }
+
+    // U3 — pre-solve item pinning helpers. A pin forces an item into its WORN slot
+    // (the label the solver groups pick-vars by — model.js builds Main/Off Hand
+    // dynamically, so those aren't in WORN_SLOTS). Ring is cardinality 2 (two rings);
+    // every other slot holds one pin. All state.slotConstraints reads route through
+    // the shared pinnedVariantIds so single- and list-shaped pins stay consistent.
+    // eslint-disable-next-line no-undef
+    const _WORN = (typeof WORN_SLOTS !== "undefined") ? WORN_SLOTS
+      : ["Armor", "Helmet", "Goggles", "Necklace", "Trinket", "Cloak", "Belt", "Ring", "Gloves", "Boots", "Bracers", "Quiver"];
+    // eslint-disable-next-line no-undef
+    const _CARD = (typeof SLOT_CARDINALITY !== "undefined") ? SLOT_CARDINALITY : { Ring: 2 };
+    const PIN_WORN_LABELS = new Set([..._WORN, "Main Hand", "Off Hand"]);
+    const PIN_CAP = 30;
+    const isPinnable = (v) => PIN_WORN_LABELS.has(pinWornSlotOf(v)) && v.category !== "augment";
+    const slotCardOf = (slot) => _CARD[slot] || 1;
+    const itemByPinId = (id) => dataset.items.find((v) => pinIdOf(v) === id) || null;
+
+    function currentPins() {
+      const out = [];
+      Object.entries(state.slotConstraints || {}).forEach(([slot, c]) => {
+        if (!c || c.type !== "pin") return;
+        _pinnedVariantIds(c).forEach((id) => out.push({ slot, id }));
+      });
+      return out;
+    }
+
+    // Thin wrappers over the exported pure core; they add the live cardinality
+    // lookup and the constraintsDirty flag (so a re-solve is offered).
+    function addPin(v) { applyPin(state.slotConstraints, v, slotCardOf); state.constraintsDirty = true; }
+    function removePin(slot, id) { removePinFrom(state.slotConstraints, slot, id, slotCardOf); state.constraintsDirty = true; }
+
+    // KTD3 — name-only match (filterVariants also matches stats/ids, so post-filter
+    // to a name substring), verified + pinnable only, exact/prefix first, capped
+    // with a truncation notice so a target ranked past the cap isn't silently absent.
+    function renderPinResults() {
+      const box = document.getElementById("wz-pin-results");
+      const input = document.getElementById("wz-pin-search");
+      if (!box || !input) return;
+      const q = (input.value || "").trim();
+      if (!q) { box.innerHTML = `<p class="wz-pin-hint">Type an item name to search the catalog.</p>`; return; }
+      const ql = q.toLowerCase();
+      // eslint-disable-next-line no-undef
+      const verified = filterVariants(dataset.items, { verification: "verified" });
+      const matches = verified.filter((v) => isPinnable(v)
+        && `${v.source_item || ""} ${v.variant_id || ""}`.toLowerCase().includes(ql));
+      const rank = (v) => { const n = (v.source_item || v.variant_id || "").toLowerCase(); return n === ql ? 0 : n.startsWith(ql) ? 1 : 2; };
+      matches.sort((a, b) => rank(a) - rank(b) || (a.source_item || "").localeCompare(b.source_item || ""));
+      if (!matches.length) { box.innerHTML = `<p class="wz-pin-hint">No items match “${esc(q)}”.</p>`; return; }
+      const pinned = new Set(currentPins().map((p) => p.id));
+      const shown = matches.slice(0, PIN_CAP);
+      box.innerHTML = shown.map((v) => {
+        const id = pinIdOf(v), already = pinned.has(id);
+        return `<button type="button" class="wz-pin-hit" data-pin-id="${esc(id)}"${already ? " disabled" : ""}>
+          <span class="wz-pin-hit-name">${esc(v.source_item || v.variant_id)}</span>
+          <span class="wz-pin-hit-slot">${esc(pinWornSlotOf(v))}${already ? " · pinned" : ""}</span></button>`;
+      }).join("")
+        + (matches.length > PIN_CAP ? `<p class="wz-pin-more">Showing top ${PIN_CAP} of ${matches.length.toLocaleString()} — refine your search.</p>` : "");
+      box.querySelectorAll(".wz-pin-hit[data-pin-id]").forEach((b) => b.onclick = () => {
+        const it = itemByPinId(b.dataset.pinId); if (it) { addPin(it); renderPinList(); renderPinResults(); }
+      });
+    }
+
+    // Pinned-items list: name + worn slot + inline conflict reason (B4) + remove.
+    function renderPinList() {
+      const box = document.getElementById("wz-pin-list");
+      if (!box) return;
+      const pins = currentPins();
+      if (!pins.length) { box.innerHTML = `<p class="wz-pin-empty">No pinned items yet — search above to force a specific item into the build.</p>`; return; }
+      const query = buildQuery(state);
+      box.innerHTML = pins.map(({ slot, id }) => {
+        const it = itemByPinId(id);
+        const name = it ? (it.source_item || it.variant_id) : id;
+        // eslint-disable-next-line no-undef
+        const why = it ? pinConflict(it, query) : "not in the current catalog";
+        const flag = why ? `<span class="wz-pin-warn">⚠ ${esc(why)}</span>` : "";
+        return `<div class="wz-pin-row"><span class="wz-pin-name">${esc(name)}</span><span class="wz-pin-slot">${esc(slot)}</span>${flag}<button type="button" class="wz-pin-x" data-unpin-slot="${esc(slot)}" data-unpin-id="${esc(id)}" aria-label="Remove ${esc(name)}">×</button></div>`;
+      }).join("");
+      box.querySelectorAll(".wz-pin-x").forEach((b) => b.onclick = () => {
+        removePin(b.dataset.unpinSlot, b.dataset.unpinId); renderPinList(); renderPinResults();
+      });
     }
 
     function stepPriorities() {
@@ -664,8 +791,7 @@ if (typeof window !== "undefined" && window.App) {
         // none survive. Id resolution matches the solver (variant_id || source_item).
         Object.entries(state.slotConstraints).forEach(([slot, c]) => {
           if (!c || c.type !== "pin") return;
-          // eslint-disable-next-line no-undef
-          const ids = pinnedVariantIds(c);
+          const ids = _pinnedVariantIds(c);
           const landed = (vid) => (result.chosen || []).some(
             (ch) => ch.slot === slot && (ch.variant.variant_id || ch.variant.source_item) === vid);
           const survivors = ids.filter(landed);
@@ -1013,6 +1139,13 @@ if (typeof window !== "undefined" && window.App) {
             };
             reader.readAsText(f);
           };
+        }
+        // U3 — pre-solve item pinning: search + pinned list live under the pool pick.
+        const psearch = document.getElementById("wz-pin-search");
+        if (psearch) {
+          psearch.oninput = () => renderPinResults();
+          renderPinResults();
+          renderPinList();
         }
       }
       if (state.step === "priorities") {
