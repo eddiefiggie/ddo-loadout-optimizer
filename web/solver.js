@@ -82,9 +82,19 @@ function slotConstraintBodies(xVars, slotConstraints) {
 }
 
 function buildProgram(model) {
-  const targetSet = new Set(model.targets);
   const mlCap = model.mlCap;
-  const cappedStats = model.dodgeCap != null ? { Dodge: model.dodgeCap } : {};
+  // U1 — capped stats = the armor dodge cap plus any user-set per-stat caps. When a
+  // user caps Dodge and armor also caps it, the tighter (min) cap wins. Each capped
+  // stat is clamped in encodeStage (d <= raw, d <= cap) and read back as min(cap, raw).
+  const cappedStats = {};
+  if (model.dodgeCap != null) cappedStats.Dodge = model.dodgeCap;
+  for (const [stat, cap] of Object.entries(model.userCaps || {})) {
+    if (cap == null) continue;
+    cappedStats[stat] = cappedStats[stat] != null ? Math.min(cappedStats[stat], cap) : cap;
+  }
+  // A capped stat must have its buckets built even if it is not a priority target,
+  // so its raw expression exists for the clamp (KTD3).
+  const targetSet = new Set([...model.targets, ...Object.keys(cappedStats)]);
 
   const xVars = [];
   model.worn.forEach((group) => {

@@ -162,6 +162,53 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.strictEqual(r.chosen.length, 1, "the dodge item is still equipped");
   });
 
+  await test("U1: user cap clamps a stat (item still equipped)", async () => {
+    const model = {
+      targets: ["Intelligence"], mlCap: 34, dodgeCap: null, userCaps: { Intelligence: 5 },
+      worn: [slot("Ring", [item("R", "Ring", [["Intelligence", "Enhancement", 20]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.Intelligence, 5, "clamped to the user cap, not forbidden");
+    assert.strictEqual(r.chosen.length, 1, "the item is still equipped");
+  });
+
+  await test("U1: a cap frees a slot for the next priority (AE1)", async () => {
+    // A stacks across two slots (Enhancement on Ring + Insight on Necklace); B needs a slot.
+    const worn = () => [
+      slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]]), item("rB", "Ring", [["B", "Enhancement", 10]])]),
+      slot("Necklace", [item("nA", "Necklace", [["A", "Insight", 10]]), item("nB", "Necklace", [["B", "Insight", 10]])]),
+    ];
+    const uncapped = await S.solveLexicographic({ targets: ["A", "B"], mlCap: 34, dodgeCap: null, worn: worn() }, highs);
+    assert.strictEqual(uncapped.effective.A, 20, "uncapped: A stacks across both slots");
+    assert.strictEqual(uncapped.effective.B, 0, "uncapped: both slots spent maximizing A");
+    const capped = await S.solveLexicographic({ targets: ["A", "B"], mlCap: 34, dodgeCap: null, userCaps: { A: 10 }, worn: worn() }, highs);
+    assert.strictEqual(capped.effective.A, 10, "capped: A saturates at the cap");
+    assert.strictEqual(capped.effective.B, 10, "capped: the freed slot now serves B");
+  });
+
+  await test("U1: user Dodge cap and armor dodge cap take the min", async () => {
+    const worn = () => [slot("Ring", [item("R", "Ring", [["Dodge", "Enhancement", 20]])])];
+    const a = await S.solveLexicographic({ targets: ["Dodge"], mlCap: 34, dodgeCap: 10, userCaps: { Dodge: 4 }, worn: worn() }, highs);
+    assert.strictEqual(a.effective.Dodge, 4, "user cap 4 < armor cap 10 wins");
+    const b = await S.solveLexicographic({ targets: ["Dodge"], mlCap: 34, dodgeCap: 4, userCaps: { Dodge: 10 }, worn: worn() }, highs);
+    assert.strictEqual(b.effective.Dodge, 4, "armor cap 4 < user cap 10 wins");
+  });
+
+  await test("U1: query.targetCaps flows through buildModel into a clamped solve", async () => {
+    // End-to-end plumbing guard (KTD3/KTD7): a cap on a stat that is a priority
+    // survives the cap-unaware dominance pre-filter and clamps in the real solve.
+    const M = require("../web/model.js");
+    const ring = {
+      source_item: "R", variant_id: "R", slot: "Ring", category: "item",
+      minimum_level: 30, ml: 30, verification: "verified",
+      affixes: [{ stat: "Intelligence", bonus_type: "Enhancement", name: "Intelligence", type: "Enhancement", value: 20, unit: "flat" }],
+      scaling: [], set_bonus: [], augment_slots: [], restrictions: "unknown", armor_type: null,
+    };
+    const model = M.buildModel([ring], { mlCap: 34, targets: ["Intelligence"], targetCaps: { Intelligence: 7 }, targetFloors: {} });
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.Intelligence, 7, "the user cap from the query clamps end-to-end");
+  });
+
   await test("AE1: lexicographic — priority 1 maxed even at cost of priority 2", async () => {
     // one slot, must choose: v1 gives A=10/B=0, v2 gives A=0/B=10. A has priority.
     const model = {

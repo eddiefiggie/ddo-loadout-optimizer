@@ -39,6 +39,21 @@ function stepAfterLoad(snapshot) {
   return snapshot && snapshot.status === "optimal" ? "results" : "priorities";
 }
 
+/** Clean a stat->value bound map (caps/floors): keep only entries whose value is a
+ *  finite number >= 0. Blank, null, negative, or non-numeric entries are dropped so
+ *  a stray input never reaches the solver as a cap/floor. Pure; unit-tested. */
+function cleanBoundMap(m) {
+  const out = {};
+  if (m && typeof m === "object") {
+    for (const [stat, v] of Object.entries(m)) {
+      if (v === "" || v == null) continue;
+      const n = Number(v);
+      if (Number.isFinite(n) && n >= 0) out[stat] = n;
+    }
+  }
+  return out;
+}
+
 /** Pure state -> solver query mapping (no DOM). Exported for unit tests. */
 function buildQuery(state) {
   const forged = wizIsForged(state.race);
@@ -64,6 +79,10 @@ function buildQuery(state) {
     alignment: state.alignment || null,
     includeArtifact: !!state.includeArtifact,           // U4 — Artifact opt-in
     slotConstraints: state.slotConstraints,
+    // U1/U4 — per-priority stat caps (max) and floors (min), stat-keyed. Only clean,
+    // non-negative entries are emitted; empty maps mean "no caps/floors" (default).
+    targetCaps: cleanBoundMap(state.targetCaps),
+    targetFloors: cleanBoundMap(state.targetFloors),
   };
 }
 
@@ -207,7 +226,7 @@ function addBundle(key, current, vocab) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, applyPinId, removePinFrom };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, applyPinId, removePinFrom };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -256,6 +275,9 @@ if (typeof window !== "undefined" && window.App) {
     const state = { step: "intro", ml: 36, mlFloor: 0, race: "", alignment: "", armor: "", oath: "",
       style: "", weaponTypes: [], offHand: [], offHandWeapons: [],
       includeArtifact: false,
+      // U1/U4 — per-priority stat caps (max) and floors (min), keyed by stat name so
+      // they survive priority reordering.
+      targetCaps: {}, targetFloors: {},
       pool: "all", ownedNames: null, priorities: [], slotConstraints: {}, constraintsDirty: false, lastRun: null,
       characterName: "", loadedStale: false };
 
