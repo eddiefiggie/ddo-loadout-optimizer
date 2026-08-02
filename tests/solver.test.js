@@ -209,6 +209,54 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.strictEqual(r.effective.Intelligence, 7, "the user cap from the query clamps end-to-end");
   });
 
+  await test("U2: reachable floor is met, then the rest is maximized", async () => {
+    // Floor B >= 10 forces the B item; A is then maximized in the other slot.
+    const model = {
+      targets: ["A"], mlCap: 34, dodgeCap: null, floors: { B: 10 },
+      worn: [
+        slot("Ring", [item("rB", "Ring", [["B", "Enhancement", 10]])]),
+        slot("Necklace", [item("nA", "Necklace", [["A", "Enhancement", 10]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.A, 10, "priority A still maximized");
+    assert.deepStrictEqual(r.floorReport, [], "floor met, no shortfall");
+    assert.ok(r.chosen.some((c) => c.variant.variant_id === "rB"), "the B item is equipped to meet the floor");
+  });
+
+  await test("U2: unreachable floor is best-effort, never infeasible", async () => {
+    const model = {
+      targets: ["A"], mlCap: 34, dodgeCap: null, floors: { B: 100 },
+      worn: [
+        slot("Ring", [item("rB", "Ring", [["B", "Enhancement", 10]]), item("rA", "Ring", [["A", "Enhancement", 10]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal", "returns a loadout, not infeasible");
+    assert.strictEqual(r.floorReport.length, 1);
+    assert.strictEqual(r.floorReport[0].stat, "B");
+    assert.strictEqual(r.floorReport[0].floor, 100);
+    assert.strictEqual(r.floorReport[0].achieved, 10, "reports the best achievable");
+  });
+
+  await test("U2: two jointly-infeasible floors relax in reverse-priority order", async () => {
+    // One slot can hold only PRR or MRR. Both floors are individually reachable (10)
+    // but not together. PRR is the higher priority, so MRR's floor is relaxed.
+    const model = {
+      targets: ["PRR", "MRR"], mlCap: 34, dodgeCap: null, floors: { PRR: 10, MRR: 10 },
+      worn: [slot("Trinket", [
+        item("tP", "Trinket", [["PRR", "Enhancement", 10]]),
+        item("tM", "Trinket", [["MRR", "Enhancement", 10]]),
+      ])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal", "never bails to infeasible");
+    assert.strictEqual(r.effective.PRR, 10, "the higher-priority floor is kept");
+    const mrr = r.floorReport.find((f) => f.stat === "MRR");
+    assert.ok(mrr && mrr.achieved === 0, "the lower-priority floor is relaxed and reported");
+  });
+
   await test("AE1: lexicographic — priority 1 maxed even at cost of priority 2", async () => {
     // one slot, must choose: v1 gives A=10/B=0, v2 gives A=0/B=10. A has priority.
     const model = {
