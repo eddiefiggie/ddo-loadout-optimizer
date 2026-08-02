@@ -677,6 +677,24 @@ function artifactNotice(result, query) {
     : "";
 }
 
+// U5 — honest disclosure of how the solve was bounded: the considered ML band
+// (R8), any floor that could not be met (R4), and any user cap that actually held
+// a stat down (R12 — "shaped by your cap"). Keeps "provably optimal" truthful by
+// naming what was and wasn't solved over. Pure (query + result), exported.
+function boundNotice(query, result) {
+  const parts = [];
+  const floor = query && Number(query.mlFloor);
+  if (floor) parts.push(`Considered gear ML ≥ ${esc(floor)} (your floor).`);
+  const per = (result && result.perTarget) || {};
+  for (const f of (result && result.floorReport) || []) {
+    parts.push(`Couldn't reach your floor of ${esc(f.floor)} ${esc(f.stat)} — best achievable was ${esc(f.achieved)}.`);
+  }
+  const caps = (query && query.targetCaps) || {};
+  const held = Object.keys(caps).filter((s) => per[s] != null && per[s] >= caps[s]);
+  if (held.length) parts.push(`Held at your cap: ${held.map((s) => `${esc(s)} ${esc(caps[s])}`).join(", ")}.`);
+  return parts.length ? `<p class="scope-note bound-note" role="status">${parts.join(" ")}</p>` : "";
+}
+
 function renderResults(container, { model, result, query, dataset, highs, onAfterRender }) {
   if (result.status !== "optimal") {
     // Keep the Adjust & re-solve control available on a non-optimal result — this
@@ -715,6 +733,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   container.innerHTML = `
     ${banner}
     ${artifactNotice(result, query)}
+    ${boundNotice(query, result)}
     <div class="active-build-bar" hidden>
       <span class="active-build-msg"></span>
       <button class="return-optimum" type="button">Return to optimum</button>
@@ -1007,5 +1026,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }

@@ -39,6 +39,21 @@ function stepAfterLoad(snapshot) {
   return snapshot && snapshot.status === "optimal" ? "results" : "priorities";
 }
 
+/** Clean a stat->value bound map (caps/floors): keep only entries whose value is a
+ *  finite number >= 0. Blank, null, negative, or non-numeric entries are dropped so
+ *  a stray input never reaches the solver as a cap/floor. Pure; unit-tested. */
+function cleanBoundMap(m) {
+  const out = {};
+  if (m && typeof m === "object") {
+    for (const [stat, v] of Object.entries(m)) {
+      if (v === "" || v == null) continue;
+      const n = Number(v);
+      if (Number.isFinite(n) && n >= 0) out[stat] = n;
+    }
+  }
+  return out;
+}
+
 /** Pure state -> solver query mapping (no DOM). Exported for unit tests. */
 function buildQuery(state) {
   const forged = wizIsForged(state.race);
@@ -64,6 +79,10 @@ function buildQuery(state) {
     alignment: state.alignment || null,
     includeArtifact: !!state.includeArtifact,           // U4 — Artifact opt-in
     slotConstraints: state.slotConstraints,
+    // U1/U4 — per-priority stat caps (max) and floors (min), stat-keyed. Only clean,
+    // non-negative entries are emitted; empty maps mean "no caps/floors" (default).
+    targetCaps: cleanBoundMap(state.targetCaps),
+    targetFloors: cleanBoundMap(state.targetFloors),
   };
 }
 
@@ -207,7 +226,7 @@ function addBundle(key, current, vocab) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, applyPinId, removePinFrom };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, applyPinId, removePinFrom };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -253,9 +272,12 @@ if (typeof window !== "undefined" && window.App) {
     const weaponTypesInData = [...new Set((dataset.items || [])
       .filter((v) => v.slot === "Weapon" && v.type).map((v) => v.type))];
 
-    const state = { step: "intro", ml: 36, mlFloor: 0, race: "", alignment: "", armor: "", oath: "",
+    const state = { step: "intro", ml: 36, mlFloor: 32, mlFloorManual: false, race: "", alignment: "", armor: "", oath: "",
       style: "", weaponTypes: [], offHand: [], offHandWeapons: [],
       includeArtifact: false,
+      // U1/U4 — per-priority stat caps (max) and floors (min), keyed by stat name so
+      // they survive priority reordering.
+      targetCaps: {}, targetFloors: {},
       pool: "all", ownedNames: null, priorities: [], slotConstraints: {}, constraintsDirty: false, lastRun: null,
       characterName: "", loadedStale: false };
 
@@ -303,8 +325,8 @@ if (typeof window !== "undefined" && window.App) {
             <label class="wz-field"><span class="wz-label">Minimum level (ML) cap</span>
               <span class="wz-help">Highest item level you can equip. Gear above this is excluded.</span>
               <input id="wz-ml" class="wz-ml" type="number" min="1" max="40" value="${esc(state.ml)}"></label>
-            <label class="wz-field"><span class="wz-label">Only items ML ≥ <span class="wz-sub">· optional</span></span>
-              <span class="wz-help">Hide low-level gear — the solver ignores items below this. Blank = consider all.</span>
+            <label class="wz-field"><span class="wz-label">Only items ML ≥ <span id="wz-mlfloor-auto" class="wz-sub"${state.mlFloorManual ? " hidden" : ""}>· auto (cap − 4)</span></span>
+              <span class="wz-help">Hide low-level gear — the solver ignores items below this. Defaults to your ML cap − 4 and follows the cap until you set it yourself; lower it to consider more gear.</span>
               <input id="wz-mlfloor" class="wz-ml" type="number" min="1" max="40" value="${state.mlFloor ? esc(state.mlFloor) : ""}"></label>
           </div>
           <div class="wz-pair">
@@ -549,6 +571,11 @@ if (typeof window !== "undefined" && window.App) {
         </div>
         <ol class="wz-ranked" id="wz-ranked"></ol>
         <p class="wz-draghelp">Drag the ⋮⋮ handle to reorder, or use the ↑ ↓ buttons (they work on touch and keyboard).</p>
+        <details class="wz-bounds-help">
+          <summary>Optional <strong>min / max</strong> per row — advanced</summary>
+          <p><strong>Min is a hard floor.</strong> The solver sacrifices your lower priorities to reach it, and if it can't, it chases that stat above everything else. Use it only for a number you truly must hit (e.g. a survivability threshold like PRR).</p>
+          <p><strong>Max is a cap.</strong> Stop valuing a stat past a breakpoint you know is real (e.g. 100% doublestrike). The tool can't verify in-game caps for you — set one only when you know the breakpoint.</p>
+        </details>
         <p id="wz-status" class="wz-status"></p>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
           <button class="btn primary" data-solve>Solve ⚡</button></div>
@@ -724,12 +751,20 @@ if (typeof window !== "undefined" && window.App) {
     // ---- priorities editor (pure array ops + drag/buttons) -----------------
     function rankedHTML() {
       if (!state.priorities.length) return `<li class="wz-hint">Add at least one stat to optimize for.</li>`;
-      return state.priorities.map((p, i) => `<li data-i="${i}" draggable="true">
+      return state.priorities.map((p, i) => {
+        // U4 — optional per-priority min (floor) and max (cap), keyed by stat name.
+        const capV = state.targetCaps && state.targetCaps[p] != null ? state.targetCaps[p] : "";
+        const flrV = state.targetFloors && state.targetFloors[p] != null ? state.targetFloors[p] : "";
+        return `<li data-i="${i}" draggable="true">
         <span class="wz-grip" title="drag to reorder">⋮⋮</span>
         <span class="wz-rk">${i + 1}</span><span class="wz-nm">${esc(p)}${vocab.presence && vocab.presence.has(p) ? ` <span class="rank-tag" title="On/off effect — the solver secures an item that has it, in priority order (no magnitude to maximize).">on/off</span>` : ""}</span>
+        <span class="wz-bounds">
+          <input class="wz-bound" type="number" min="0" step="1" inputmode="numeric" data-min="${i}" value="${esc(flrV)}" placeholder="min" aria-label="${esc(p)} minimum (floor)" draggable="false">
+          <input class="wz-bound" type="number" min="0" step="1" inputmode="numeric" data-max="${i}" value="${esc(capV)}" placeholder="max" aria-label="${esc(p)} maximum (cap)" draggable="false"></span>
         <span class="wz-ctl"><button data-up="${i}" ${i === 0 ? "disabled" : ""} aria-label="move up">↑</button>
           <button data-down="${i}" ${i === state.priorities.length - 1 ? "disabled" : ""} aria-label="move down">↓</button>
-          <button data-del="${i}" aria-label="remove">✕</button></span></li>`).join("");
+          <button data-del="${i}" aria-label="remove">✕</button></span></li>`;
+      }).join("");
     }
     // Generic ranked-list renderer: reused by the priorities step and the
     // in-results "Adjust & re-solve" panel (U3). `rerender` re-renders that
@@ -740,12 +775,34 @@ if (typeof window !== "undefined" && window.App) {
       ol.querySelectorAll("button").forEach((b) => b.onclick = () => {
         if (b.dataset.up != null) { const i = +b.dataset.up;[state.priorities[i - 1], state.priorities[i]] = [state.priorities[i], state.priorities[i - 1]]; }
         else if (b.dataset.down != null) { const i = +b.dataset.down;[state.priorities[i + 1], state.priorities[i]] = [state.priorities[i], state.priorities[i + 1]]; }
-        else if (b.dataset.del != null) state.priorities.splice(+b.dataset.del, 1);
+        else if (b.dataset.del != null) {
+          const p = state.priorities[+b.dataset.del];
+          state.priorities.splice(+b.dataset.del, 1);
+          if (state.targetCaps) delete state.targetCaps[p];   // drop the removed stat's bounds
+          if (state.targetFloors) delete state.targetFloors[p];
+        }
         rerender();
+      });
+      // U4 — min/max bound inputs. Write to the stat-keyed maps (clamped to a
+      // non-negative integer); a blank clears the bound. Stop pointer propagation so
+      // focusing/typing never starts a row drag.
+      ol.querySelectorAll("input.wz-bound").forEach((inp) => {
+        inp.onpointerdown = (e) => e.stopPropagation();
+        inp.oninput = () => {
+          const isMax = inp.dataset.max != null;
+          const i = +(isMax ? inp.dataset.max : inp.dataset.min);
+          const p = state.priorities[i];
+          if (!p) return;
+          const map = isMax ? (state.targetCaps || (state.targetCaps = {})) : (state.targetFloors || (state.targetFloors = {}));
+          if (inp.value === "") { delete map[p]; return; }
+          const num = Number(inp.value);
+          if (!Number.isFinite(num)) { delete map[p]; return; }
+          map[p] = Math.max(0, Math.floor(num));
+        };
       });
       let from = null;
       ol.querySelectorAll("li[draggable]").forEach((li) => {
-        li.ondragstart = (e) => { from = +li.dataset.i; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", ""); };
+        li.ondragstart = (e) => { if (e.target && e.target.tagName === "INPUT") { e.preventDefault(); return; } from = +li.dataset.i; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", ""); };
         li.ondragend = () => { li.classList.remove("dragging"); from = null; };
         li.ondragover = (e) => e.preventDefault();
         li.ondrop = (e) => { e.preventDefault(); const to = +li.dataset.i; if (from === null || to === from) return; const m = state.priorities.splice(from, 1)[0]; state.priorities.splice(to, 0, m); from = null; rerender(); };
@@ -898,7 +955,13 @@ if (typeof window !== "undefined" && window.App) {
       if (!rec) return;
       const i = rec.inputs || {};
       state.characterName = rec.name;
-      state.ml = i.ml; state.mlFloor = i.mlFloor || 0; state.race = i.race; state.alignment = i.alignment;
+      state.ml = i.ml;
+      // U3 — restore the ML floor + its manual/auto flag. A pre-U3 save has no
+      // mlFloor: default to cap − 4 in auto mode. A saved explicit floor loads as manual.
+      var savedFloor = (i.mlFloor != null && i.mlFloor !== "") ? i.mlFloor : Math.max(1, (Number(i.ml) || 36) - 4);
+      state.mlFloor = savedFloor;
+      state.mlFloorManual = i.mlFloorManual != null ? !!i.mlFloorManual : (i.mlFloor != null && i.mlFloor !== "");
+      state.race = i.race; state.alignment = i.alignment;
       state.armor = i.armor; state.oath = i.oath || "";
       // U5 — combat constraints. A pre-migration save carries the inert `weapon`
       // flag and none of these; it loads unconstrained (Settled Decision 5), so an
@@ -911,6 +974,9 @@ if (typeof window !== "undefined" && window.App) {
       state.pool = i.pool || "all";
       state.ownedNames = Array.isArray(i.ownedNames) ? new Set(i.ownedNames) : null;
       state.priorities = Array.isArray(i.priorities) ? i.priorities.slice() : [];
+      // U4 — restore per-priority caps/floors (absent on pre-U4 saves -> empty).
+      state.targetCaps = (i.targetCaps && typeof i.targetCaps === "object") ? { ...i.targetCaps } : {};
+      state.targetFloors = (i.targetFloors && typeof i.targetFloors === "object") ? { ...i.targetFloors } : {};
       state.slotConstraints = i.slotConstraints || {};
       state.constraintsDirty = false;   // loaded constraints are the saved state, not a pending change
       // U5, Part C — one-time load migration: a PRE-OVERHAUL saved snapshot embedded
@@ -1071,8 +1137,28 @@ if (typeof window !== "undefined" && window.App) {
       });
 
       if (state.step === "character") {
-        document.getElementById("wz-ml").oninput = (e) => state.ml = e.target.value;
-        document.getElementById("wz-mlfloor").oninput = (e) => state.mlFloor = e.target.value;
+        // U3/R7 — the ML floor defaults to cap − 4 and follows the cap until the
+        // user edits it. Clearing the floor re-enables auto-follow. Updates are made
+        // directly (no re-render) so typing keeps focus.
+        var floorAutoHint = () => { var h = document.getElementById("wz-mlfloor-auto"); if (h) h.hidden = !!state.mlFloorManual; };
+        document.getElementById("wz-ml").oninput = (e) => {
+          state.ml = e.target.value;
+          if (!state.mlFloorManual) {
+            state.mlFloor = Math.max(1, (Number(e.target.value) || 0) - 4);
+            var fi = document.getElementById("wz-mlfloor"); if (fi) fi.value = state.mlFloor;
+          }
+        };
+        document.getElementById("wz-mlfloor").oninput = (e) => {
+          if (e.target.value === "") {
+            state.mlFloorManual = false;
+            state.mlFloor = Math.max(1, (Number(state.ml) || 0) - 4);
+            e.target.value = state.mlFloor;
+          } else {
+            state.mlFloor = e.target.value;
+            state.mlFloorManual = true;
+          }
+          floorAutoHint();
+        };
         document.getElementById("wz-race").onchange = (e) => { state.race = e.target.value; if (wizIsForged(state.race)) { state.armor = ""; state.oath = ""; } render(); };
         document.getElementById("wz-align").onchange = (e) => state.alignment = e.target.value;
         document.getElementById("wz-artifact").onchange = (e) => state.includeArtifact = e.target.checked;

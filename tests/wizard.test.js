@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, removePinFrom } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, removePinFrom } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -328,6 +328,30 @@ test("U3/B6 buildQuery threads slotConstraints (incl. a two-ring list) into the 
   const q = buildQuery(st);
   assert.deepStrictEqual(q.slotConstraints.Trinket, { type: "pin", variant_id: "Hydra's Heart" });
   assert.deepStrictEqual(q.slotConstraints.Ring, { type: "pin", variant_ids: ["R1", "R2"] });
+});
+
+test("U1: cleanBoundMap keeps finite non-negative values, drops the rest", () => {
+  assert.deepStrictEqual(cleanBoundMap({ A: 5, B: 0, C: "", D: null, E: -2, F: "x", G: "7" }), { A: 5, B: 0, G: 7 });
+  assert.deepStrictEqual(cleanBoundMap(undefined), {});
+  assert.deepStrictEqual(cleanBoundMap(null), {});
+});
+
+test("U1/U4: buildQuery emits cleaned targetCaps/targetFloors maps", () => {
+  const st = { ...baseState(), targetCaps: { Dodge: 4, Bad: -1, Blank: "" }, targetFloors: { PRR: 300 } };
+  const q = buildQuery(st);
+  assert.deepStrictEqual(q.targetCaps, { Dodge: 4 }, "negative/blank dropped");
+  assert.deepStrictEqual(q.targetFloors, { PRR: 300 });
+});
+
+test("U1/U4: buildQuery defaults caps/floors to empty maps when absent", () => {
+  const q = buildQuery(baseState());
+  assert.deepStrictEqual(q.targetCaps, {});
+  assert.deepStrictEqual(q.targetFloors, {});
+});
+
+test("U3: buildQuery emits the ML floor from state", () => {
+  assert.strictEqual(buildQuery({ ...baseState(), mlFloor: 32 }).mlFloor, 32);
+  assert.strictEqual(buildQuery({ ...baseState(), mlFloor: 0 }).mlFloor, null, "0/blank means consider all");
 });
 
 console.log(`\n${passed} passed`);

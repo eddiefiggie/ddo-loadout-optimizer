@@ -162,6 +162,134 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.strictEqual(r.chosen.length, 1, "the dodge item is still equipped");
   });
 
+  await test("U1: user cap clamps a stat (item still equipped)", async () => {
+    const model = {
+      targets: ["Intelligence"], mlCap: 34, dodgeCap: null, userCaps: { Intelligence: 5 },
+      worn: [slot("Ring", [item("R", "Ring", [["Intelligence", "Enhancement", 20]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.Intelligence, 5, "clamped to the user cap, not forbidden");
+    assert.strictEqual(r.chosen.length, 1, "the item is still equipped");
+  });
+
+  await test("U1: a cap frees a slot for the next priority (AE1)", async () => {
+    // A stacks across two slots (Enhancement on Ring + Insight on Necklace); B needs a slot.
+    const worn = () => [
+      slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]]), item("rB", "Ring", [["B", "Enhancement", 10]])]),
+      slot("Necklace", [item("nA", "Necklace", [["A", "Insight", 10]]), item("nB", "Necklace", [["B", "Insight", 10]])]),
+    ];
+    const uncapped = await S.solveLexicographic({ targets: ["A", "B"], mlCap: 34, dodgeCap: null, worn: worn() }, highs);
+    assert.strictEqual(uncapped.effective.A, 20, "uncapped: A stacks across both slots");
+    assert.strictEqual(uncapped.effective.B, 0, "uncapped: both slots spent maximizing A");
+    const capped = await S.solveLexicographic({ targets: ["A", "B"], mlCap: 34, dodgeCap: null, userCaps: { A: 10 }, worn: worn() }, highs);
+    assert.strictEqual(capped.effective.A, 10, "capped: A saturates at the cap");
+    assert.strictEqual(capped.effective.B, 10, "capped: the freed slot now serves B");
+  });
+
+  await test("U1: user Dodge cap and armor dodge cap take the min", async () => {
+    const worn = () => [slot("Ring", [item("R", "Ring", [["Dodge", "Enhancement", 20]])])];
+    const a = await S.solveLexicographic({ targets: ["Dodge"], mlCap: 34, dodgeCap: 10, userCaps: { Dodge: 4 }, worn: worn() }, highs);
+    assert.strictEqual(a.effective.Dodge, 4, "user cap 4 < armor cap 10 wins");
+    const b = await S.solveLexicographic({ targets: ["Dodge"], mlCap: 34, dodgeCap: 4, userCaps: { Dodge: 10 }, worn: worn() }, highs);
+    assert.strictEqual(b.effective.Dodge, 4, "armor cap 4 < user cap 10 wins");
+  });
+
+  await test("U1: query.targetCaps flows through buildModel into a clamped solve", async () => {
+    // End-to-end plumbing guard (KTD3/KTD7): a cap on a stat that is a priority
+    // survives the cap-unaware dominance pre-filter and clamps in the real solve.
+    const M = require("../web/model.js");
+    const ring = {
+      source_item: "R", variant_id: "R", slot: "Ring", category: "item",
+      minimum_level: 30, ml: 30, verification: "verified",
+      affixes: [{ stat: "Intelligence", bonus_type: "Enhancement", name: "Intelligence", type: "Enhancement", value: 20, unit: "flat" }],
+      scaling: [], set_bonus: [], augment_slots: [], restrictions: "unknown", armor_type: null,
+    };
+    const model = M.buildModel([ring], { mlCap: 34, targets: ["Intelligence"], targetCaps: { Intelligence: 7 }, targetFloors: {} });
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.Intelligence, 7, "the user cap from the query clamps end-to-end");
+  });
+
+  await test("U2: reachable floor is met, then the rest is maximized", async () => {
+    // Floor B >= 10 forces the B item; A is then maximized in the other slot.
+    const model = {
+      targets: ["A"], mlCap: 34, dodgeCap: null, floors: { B: 10 },
+      worn: [
+        slot("Ring", [item("rB", "Ring", [["B", "Enhancement", 10]])]),
+        slot("Necklace", [item("nA", "Necklace", [["A", "Enhancement", 10]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.A, 10, "priority A still maximized");
+    assert.deepStrictEqual(r.floorReport, [], "floor met, no shortfall");
+    assert.ok(r.chosen.some((c) => c.variant.variant_id === "rB"), "the B item is equipped to meet the floor");
+  });
+
+  await test("U2: unreachable floor is best-effort, never infeasible", async () => {
+    const model = {
+      targets: ["A"], mlCap: 34, dodgeCap: null, floors: { B: 100 },
+      worn: [
+        slot("Ring", [item("rB", "Ring", [["B", "Enhancement", 10]]), item("rA", "Ring", [["A", "Enhancement", 10]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal", "returns a loadout, not infeasible");
+    assert.strictEqual(r.floorReport.length, 1);
+    assert.strictEqual(r.floorReport[0].stat, "B");
+    assert.strictEqual(r.floorReport[0].floor, 100);
+    assert.strictEqual(r.floorReport[0].achieved, 10, "reports the best achievable");
+  });
+
+  await test("U2: two jointly-infeasible floors relax in reverse-priority order", async () => {
+    // One slot can hold only PRR or MRR. Both floors are individually reachable (10)
+    // but not together. PRR is the higher priority, so MRR's floor is relaxed.
+    const model = {
+      targets: ["PRR", "MRR"], mlCap: 34, dodgeCap: null, floors: { PRR: 10, MRR: 10 },
+      worn: [slot("Trinket", [
+        item("tP", "Trinket", [["PRR", "Enhancement", 10]]),
+        item("tM", "Trinket", [["MRR", "Enhancement", 10]]),
+      ])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal", "never bails to infeasible");
+    assert.strictEqual(r.effective.PRR, 10, "the higher-priority floor is kept");
+    const mrr = r.floorReport.find((f) => f.stat === "MRR");
+    assert.ok(mrr && mrr.achieved === 0, "the lower-priority floor is relaxed and reported");
+  });
+
+  // U6 (KTD6) — characterize the "Kinetic Lore ×4, no Kinetic Intensity" report.
+  // Finding: no genuine zero-marginal bug survives. A same-bonus-type duplicate that
+  // adds nothing is already dropped by the tie-break in favor of the next priority;
+  // distinct-bonus-type stacking that legitimately consumes slots is CORRECT strict
+  // lexicographic, and a per-stat cap (U1) is the intended lever to free slots.
+  await test("U6: a zero-marginal same-type duplicate is dropped for the next priority", async () => {
+    const model = {
+      targets: ["KL", "KI"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Ring", [item("klA", "Ring", [["KL", "Enhancement", 10]])]),
+        slot("Necklace", [item("klDup", "Necklace", [["KL", "Enhancement", 10]]), item("kiX", "Necklace", [["KI", "Enhancement", 10]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.KL, 10, "KL maxed (same bonus type does not stack)");
+    assert.strictEqual(r.effective.KI, 10, "the freed slot serves the next priority");
+    assert.ok(r.chosen.some((c) => c.variant.variant_id === "kiX"), "next priority served");
+    assert.ok(!r.chosen.some((c) => c.variant.variant_id === "klDup"), "the redundant duplicate is NOT equipped");
+  });
+
+  await test("U6: distinct-type stacking consumes slots (correct); a cap is the lever", async () => {
+    const worn = () => [
+      slot("Ring", [item("klE", "Ring", [["KL", "Enhancement", 10]])]),
+      slot("Necklace", [item("klI", "Necklace", [["KL", "Insight", 10]]), item("kiX", "Necklace", [["KI", "Enhancement", 10]])]),
+    ];
+    const nocap = await S.solveLexicographic({ targets: ["KL", "KI"], mlCap: 34, dodgeCap: null, worn: worn() }, highs);
+    assert.strictEqual(nocap.effective.KL, 20, "distinct types stack — KL legitimately uses both slots");
+    assert.strictEqual(nocap.effective.KI, 0, "KI unserved: correct strict-lexicographic output, not a bug");
+    const capped = await S.solveLexicographic({ targets: ["KL", "KI"], mlCap: 34, dodgeCap: null, userCaps: { KL: 10 }, worn: worn() }, highs);
+    assert.strictEqual(capped.effective.KL, 10, "cap saturates KL");
+    assert.strictEqual(capped.effective.KI, 10, "the freed slot now serves KI");
+  });
+
   await test("AE1: lexicographic — priority 1 maxed even at cost of priority 2", async () => {
     // one slot, must choose: v1 gives A=10/B=0, v2 gives A=0/B=10. A has priority.
     const model = {

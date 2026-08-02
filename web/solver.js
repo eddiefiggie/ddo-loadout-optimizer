@@ -82,9 +82,19 @@ function slotConstraintBodies(xVars, slotConstraints) {
 }
 
 function buildProgram(model) {
-  const targetSet = new Set(model.targets);
   const mlCap = model.mlCap;
-  const cappedStats = model.dodgeCap != null ? { Dodge: model.dodgeCap } : {};
+  // U1 — capped stats = the armor dodge cap plus any user-set per-stat caps. When a
+  // user caps Dodge and armor also caps it, the tighter (min) cap wins. Each capped
+  // stat is clamped in encodeStage (d <= raw, d <= cap) and read back as min(cap, raw).
+  const cappedStats = {};
+  if (model.dodgeCap != null) cappedStats.Dodge = model.dodgeCap;
+  for (const [stat, cap] of Object.entries(model.userCaps || {})) {
+    if (cap == null) continue;
+    cappedStats[stat] = cappedStats[stat] != null ? Math.min(cappedStats[stat], cap) : cap;
+  }
+  // A capped OR floored stat must have its buckets built even if it is not a priority
+  // target, so its raw expression exists for the clamp / floor constraint (KTD3).
+  const targetSet = new Set([...model.targets, ...Object.keys(cappedStats), ...Object.keys(model.floors || {})]);
 
   const xVars = [];
   model.worn.forEach((group) => {
@@ -738,12 +748,13 @@ function encodeStage(program, { objectiveStat, objTerms, sense, locks, tieBreak,
 
   for (const lock of locks || []) {
     const terms = effectiveExpr(program, lock.stat);
-    // A relaxed lock (`give` set, alternatives-only) allows the value to fall by up
-    // to `give` (`>= value - give`); an exact lock (the optimum path) pins `= value`.
+    // A floor lock (U2, `floor` set) requires at least `value` (`>= value`); a relaxed
+    // lock (`give` set, alternatives-only) allows the value to fall by up to `give`
+    // (`>= value - give`); an exact lock (the optimum path) pins `= value`.
     if (terms.length) {
-      L.push(lock.give != null
-        ? ` c${c++}: ${fmtExpr(terms, fb)} >= ${lock.value - lock.give}`
-        : ` c${c++}: ${fmtExpr(terms, fb)} = ${lock.value}`);
+      if (lock.floor) L.push(` c${c++}: ${fmtExpr(terms, fb)} >= ${lock.value}`);
+      else if (lock.give != null) L.push(` c${c++}: ${fmtExpr(terms, fb)} >= ${lock.value - lock.give}`);
+      else L.push(` c${c++}: ${fmtExpr(terms, fb)} = ${lock.value}`);
     }
   }
 
@@ -898,12 +909,57 @@ function readSolution(res, program) {
   return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, tfPlaced, gsPlaced, jokerPlaced, membershipPlaced };
 }
 
+/** Achieved value of `stat` under a set of floor locks (0 if the solve is not
+ *  Optimal or the stat has no sources). Computed directly from the primal — not via
+ *  readSolution.effective, which only covers priority targets, so a non-priority
+ *  floored stat would read undefined. Used by the U2 floor pre-pass. */
+function probeMax(program, highs, stat, locks) {
+  const res = highs.solve(encodeStage(program, { objectiveStat: stat, sense: "max", locks }));
+  if (res.Status !== "Optimal") return 0;
+  const prim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
+  const raw = rawExpr(program, stat).reduce((s, t) => s + (prim(t.name) > 0.5 ? t.coef : 0), 0);
+  const cap = program.cappedStats[stat];
+  return cap != null ? Math.min(cap, raw) : raw;
+}
+
 async function solveLexicographic(model, highs) {
   const program = buildProgram(model);
   if (!program.xVars.length) return { status: "infeasible", reason: "no eligible items for these constraints" };
 
   const locks = [];
   const perTarget = {};
+
+  // U2 / KTD2 — best-effort per-stat floors. Each floored stat is probed in
+  // isolation (max the stat alone); a reachable floor becomes a `>= floor` lock,
+  // an unreachable one locks at its achieved max and is reported as a shortfall.
+  // Because two individually-reachable floors can be JOINTLY infeasible (they
+  // compete for the same slots), after assembling the locks we verify the whole
+  // set solves and, if not, relax floors in reverse-priority order until it does —
+  // so the solve never bails to infeasible while eligible items exist.
+  const floorReport = [];
+  const floorEntries = Object.entries(model.floors || {}).filter(([, f]) => f != null && Number(f) > 0);
+  if (floorEntries.length) {
+    const rankOf = (s) => { const i = program.targetList.indexOf(s); return i === -1 ? Infinity : i; };
+    const floors = floorEntries
+      .map(([stat, f]) => ({ stat, floor: Number(f), value: 0 }))
+      .sort((a, b) => rankOf(a.stat) - rankOf(b.stat)); // highest priority first
+    for (const fl of floors) {
+      const achieved = probeMax(program, highs, fl.stat, []);
+      fl.value = achieved >= fl.floor ? fl.floor : achieved;
+    }
+    const floorLocks = (list) => list.map((fl) => ({ stat: fl.stat, value: fl.value, floor: true }));
+    const probeStat = program.targetList[0] || floors[0].stat;
+    const jointOk = () => highs.solve(encodeStage(program, { objectiveStat: probeStat, sense: "max", locks: floorLocks(floors) })).Status === "Optimal";
+    for (let i = floors.length - 1; i >= 0 && !jointOk(); i--) {
+      // Relax the lowest-priority floor to what is reachable under the others.
+      const others = floors.filter((_, j) => j !== i);
+      floors[i].value = probeMax(program, highs, floors[i].stat, floorLocks(others));
+    }
+    const useFloors = jointOk() ? floors : []; // last-resort: drop floors rather than bail
+    for (const fl of floors) if (fl.value < fl.floor) floorReport.push({ stat: fl.stat, floor: fl.floor, achieved: fl.value });
+    locks.push(...floorLocks(useFloors));
+  }
+
   for (const stat of program.targetList) {
     const res = highs.solve(encodeStage(program, { objectiveStat: stat, sense: "max", locks }));
     if (res.Status !== "Optimal") return { status: "infeasible", reason: `stage ${stat}: ${res.Status}` };
@@ -925,7 +981,7 @@ async function solveLexicographic(model, highs) {
     tfPlaced: sol.tfPlaced, gsPlaced: sol.gsPlaced,
     membershipPlaced: sol.membershipPlaced,
     breakdown: breakdownByTarget(program, prim), computeScale: computeScale(program),
-    capped: { ...program.cappedStats }, program,
+    capped: { ...program.cappedStats }, floorReport, program,
   };
 }
 

@@ -624,4 +624,18 @@ test("U5: affixLabel reads NATIVE {name,type} (the migrated primary path)", () =
   assert.strictEqual(R.affixLabel({ name: "Constitution", type: "Insightful", value: 7, unit: "flat" }), "Constitution +7 Insightful");
 });
 
+test("U5: boundNotice discloses the ML band, an unmet floor, and a held cap", () => {
+  const note = R.boundNotice(
+    { mlFloor: 32, targetCaps: { Dodge: 4 } },
+    { perTarget: { Dodge: 4 }, floorReport: [{ stat: "PRR", floor: 300, achieved: 274 }] });
+  assert.ok(/ML ≥ 32/.test(note), "shows the considered ML band");
+  assert.ok(/Couldn't reach your floor of 300 PRR/.test(note), "reports the unmet floor");
+  assert.ok(/best achievable was 274/.test(note));
+  assert.ok(/Held at your cap: Dodge 4/.test(note), "notes the cap that held");
+});
+
+test("U5: boundNotice is empty when nothing bounded the solve", () => {
+  assert.strictEqual(R.boundNotice({ mlFloor: 0, targetCaps: {} }, { perTarget: {}, floorReport: [] }), "");
+});
+
 console.log(`\n${passed} passed`);

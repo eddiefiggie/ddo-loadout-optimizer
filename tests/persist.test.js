@@ -73,6 +73,16 @@ test("U5: serializeCharacter persists combat constraints and drops the inert wea
   assert.ok(!("weapon" in rec.inputs), "the obsolete coarse weapon flag is not persisted");
 });
 
+test("U3/U4: serializeCharacter persists the ML floor + caps/floors (INPUT_KEYS)", () => {
+  const withBounds = { ...state, mlFloor: 30, mlFloorManual: true,
+    targetCaps: { Dodge: 4 }, targetFloors: { PRR: 300 } };
+  const rec = serializeCharacter("Bounds", withBounds, lastRun, "idb");
+  assert.strictEqual(rec.inputs.mlFloor, 30, "ML floor persists (was the latent gap)");
+  assert.strictEqual(rec.inputs.mlFloorManual, true, "manual-floor flag persists");
+  assert.deepStrictEqual(rec.inputs.targetCaps, { Dodge: 4 });
+  assert.deepStrictEqual(rec.inputs.targetFloors, { PRR: 300 });
+});
+
 test("ownedNames Set serializes to a JSON-safe array", () => {
   const withOwned = { ...state, ownedNames: new Set(["Item A", "Item B"]) };
   const rec = serializeCharacter("Owned", withOwned, lastRun, "id1");

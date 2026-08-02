@@ -418,7 +418,15 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinned
 /** Build the abstract model. Returns worn slots (filtered + pruned), the
  *  augment source pool, the Dino insert pool, target list, and the dodge cap. */
 function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}, thunderForged = [], greenSteel = []) {
-  const targetSet = new Set(query.targets);
+  // U1/U2 (KTD3) — a user cap or floor can name a stat outside the priority list;
+  // union those into targetSet so the dominance pre-filter and pools keep items
+  // competitive on them and their buckets get built. model.targets (the strict
+  // lexicographic order) stays the priority list only.
+  const targetSet = new Set([
+    ...query.targets,
+    ...Object.keys(query.targetCaps || {}),
+    ...Object.keys(query.targetFloors || {}),
+  ]);
   const mlCap = query.mlCap;
   const elig = eligible(variants, query);
 
@@ -533,6 +541,10 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     thunderForged: tfPool, greenSteel: gsPool,
     membershipSetDefs: membershipSetDefs || {},
     dodgeCap, mlCap,
+    // U1 — user-set per-stat caps (clamp a stat's counted value); merged with the
+    // armor dodge cap in buildProgram. U2 — user-set per-stat floors (best-effort).
+    userCaps: query.targetCaps || {},
+    floors: query.targetFloors || {},
   };
 }
 

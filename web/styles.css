@@ -755,6 +755,17 @@ input.wz-ml { width: 120px; }
 .wz-rk { width: 22px; height: 22px; border-radius: var(--radius-sm); background: var(--accent); color: var(--accent-ink);
   font-size: var(--fs-xs); font-weight: 700; display: flex; align-items: center; justify-content: center; }
 .wz-nm { flex: 1; font-weight: 550; }
+/* U4 — per-priority min/max bound inputs (advanced, secondary affordance) */
+.wz-bounds { display: flex; gap: 4px; }
+.wz-bound { width: 3.4rem; background: var(--panel); color: var(--text); border: 1px solid var(--border-2);
+  border-radius: var(--r-1, 6px); padding: 2px 4px; font-size: 0.85em; text-align: center; }
+.wz-bound::placeholder { color: var(--faint); }
+.wz-bound:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
+.wz-bounds-help { max-width: 34rem; margin: var(--sp-2) 0 0; font-size: 0.88em; color: var(--muted); }
+.wz-bounds-help summary { cursor: pointer; color: var(--faint); }
+.wz-bounds-help summary:hover { color: var(--text); }
+.wz-bounds-help p { margin: var(--sp-2) 0 0; }
+.wz-bounds-help strong { color: var(--text); }
 .wz-ctl { display: flex; gap: 4px; }
 .wz-ctl button { background: var(--panel); border: 1px solid var(--border-2); color: var(--muted);
   width: 32px; height: 32px; min-height: 0; padding: 0; flex: none; display: flex; align-items: center;
