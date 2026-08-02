@@ -481,4 +481,73 @@ test("isForgedRace / isDocent helpers", () => {
   assert.ok(!M.isDocent({ source_item: "Cloak of Night" }));
 });
 
+// ---- U2 — weapon-type / off-hand / style constraints -----------------------
+// Synthetic weapon (category "weapon") and off-hand (slot "Off Hand") builders,
+// carrying a native `type` the new gates read.
+function wt(name, type, affixes = [["Strength", "Enhancement", 5]]) {
+  const w = v(name, "Weapon", affixes, { category: "weapon", ml: 30 });
+  w.type = type; return w;
+}
+function oh(name, type, affixes = [["Constitution", "Enhancement", 5]]) {
+  const o = v(name, "Off Hand", affixes, { ml: 30 });
+  o.type = type; return o;
+}
+const T = new Set(["Strength", "Constitution"]);
+
+test("U2/B1: an Off Hand slot is built and off-hand items are equippable", () => {
+  const model = M.buildModel([oh("Orb", "Orbs"), oh("Tower", "Tower shields")],
+    { mlCap: 34, targets: ["Constitution"] });
+  const slot = model.worn.find((s) => s.slot === "Off Hand");
+  assert.ok(slot, "expected an Off Hand slot");
+  assert.strictEqual(slot.cardinality, 1);
+  assert.ok(slot.variants.length >= 1, "off-hand items entered the pool");
+});
+
+test("U2/B3: weaponTypes pins Main Hand to the allowed types", () => {
+  const items = [wt("Sword", "Long Swords"), wt("Falchion", "Falchions")];
+  const one = M.eligible(items, { mlCap: 34, targets: ["Strength"], weaponTypes: ["Long Swords"] });
+  assert.deepStrictEqual(one.map((x) => x.type), ["Long Swords"]);
+  const both = M.eligible([...items, wt("Rapier", "Rapiers")],
+    { mlCap: 34, targets: ["Strength"], weaponTypes: ["Long Swords", "Rapiers"] });
+  assert.deepStrictEqual(both.map((x) => x.type).sort(), ["Long Swords", "Rapiers"]);
+});
+
+test("U2/B4: offHand pins the Off Hand slot to the allowed types", () => {
+  const items = [oh("Orb", "Orbs"), oh("Tower", "Tower shields")];
+  const only = M.eligible(items, { mlCap: 34, targets: ["Constitution"], offHand: ["Tower shields"] });
+  assert.deepStrictEqual(only.map((x) => x.type), ["Tower shields"]);
+});
+
+test("U2/B5: a two-hand style builds no Off Hand slot and excludes 1H weapons", () => {
+  const model = M.buildModel([oh("Orb", "Orbs"), wt("Falchion", "Falchions"), wt("Sword", "Long Swords")],
+    { mlCap: 34, targets: ["Strength", "Constitution"], style: "two-hand" });
+  assert.ok(!model.worn.find((s) => s.slot === "Off Hand"), "two-hand => no Off Hand slot");
+  const mh = model.worn.find((s) => s.slot === "Main Hand");
+  assert.deepStrictEqual(mh.variants.map((x) => x.type), ["Falchions"], "one-hand weapon excluded under two-hand");
+});
+
+test("U2/KTD4: empty-only builds no Off Hand slot; a set with empty keeps its types", () => {
+  const items = [oh("Orb", "Orbs"), oh("Tower", "Tower shields")];
+  const noneModel = M.buildModel(items, { mlCap: 34, targets: ["Constitution"], offHand: ["empty"] });
+  assert.ok(!noneModel.worn.find((s) => s.slot === "Off Hand"), "empty-only => no Off Hand slot");
+  const orbModel = M.buildModel(items, { mlCap: 34, targets: ["Constitution"], offHand: ["Orbs", "empty"] });
+  const slot = orbModel.worn.find((s) => s.slot === "Off Hand");
+  assert.deepStrictEqual(slot.variants.map((x) => x.type), ["Orbs"], "orb kept, tower excluded, unfilled still allowed");
+});
+
+test("U2: additive no-op — an unconstrained query keeps every weapon and off-hand", () => {
+  const items = [wt("Sword", "Long Swords"), wt("Falchion", "Falchions"),
+    oh("Orb", "Orbs"), oh("Rune", "Rune Arms")];
+  const all = M.eligible(items, { mlCap: 34, targets: ["Strength", "Constitution"] });
+  assert.strictEqual(all.length, 4, "no style/weaponTypes/offHand => nothing filtered");
+});
+
+test("U2: a rune arm is equippable through the Off Hand slot", () => {
+  const model = M.buildModel([oh("Rune", "Rune Arms", [["Strength", "Enhancement", 6]])],
+    { mlCap: 34, targets: ["Strength"] });
+  const slot = model.worn.find((s) => s.slot === "Off Hand");
+  assert.ok(slot && slot.variants.some((x) => x.type === "Rune Arms"), "rune arm placed in Off Hand");
+  assert.ok(!model.worn.find((s) => s.slot === "Rune Arm"), "vestigial Rune Arm slot retired");
+});
+
 console.log(`\n${passed} passed`);
