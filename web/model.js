@@ -150,64 +150,91 @@ function offHandGate(query) {
 // dataset (armor_type all "unknown", no alignment_req), every new branch is a
 // no-op, so live behavior is unchanged until the wizard supplies the fields and
 // the pipeline (U3) fills the data.
+// U1 — Query-derived gate context, computed once per query so `eligible()` (which
+// runs over thousands of variants) does not recompute the style/off-hand sets per
+// item. `variantConflict` accepts it precomputed, or derives it on demand for the
+// handful of calls `pinConflict` makes.
+function queryGates(query) {
+  return {
+    cap: query.mlCap,
+    floor: query.mlFloor,                                  // optional item-level floor
+    forged: isForgedRace(query.race),
+    weaponAllow: allowedWeaponTypes(query),                // main-hand set | null
+    offWeaponAllow: allowedOffHandWeaponTypes(query),      // off-hand weapon set | null
+    offHand: offHandGate(query),                           // { blocked } | { allowed }
+  };
+}
+
+// U1/B4 — THE single per-variant gate list. Returns `null` when the variant is
+// equippable under the query, else a short human reason. `eligible()` filters on
+// `=== null`, so this is the one authority; `pinConflict` re-exports it, and the
+// B4 inline flag therefore reports exactly the gates the solver enforces (alignment
+// included) — no hand-mirrored copy that can drift. Order and predicates mirror the
+// former inline `eligible()` body verbatim; behavior is preserved.
+function variantConflict(v, query, gates) {
+  const g = gates || queryGates(query);
+  // Verification: a gate for the solver's filter. Never surfaces from a pin because
+  // the picker only offers verified items (KTD3), but kept here for eligible() parity.
+  if (v.verification !== "verified") return "this item isn't verified";
+  if (v.ml != null && v.ml > g.cap) return `above your ML ${g.cap} cap`;
+  if (g.floor != null && v.ml != null && v.ml < g.floor) return `below your ML ${g.floor} floor`;
+
+  // R8 — Weapon-type / style lock. A weapon stays eligible if it can serve EITHER
+  // hand: the main-hand lock, or (TWF) the off-hand-weapon lock. Untyped weapon
+  // hosts (the Dino Bone Weapon, `type == null`) can't be matched, so they pass.
+  if (v.category === "weapon" &&
+      !mainHandWeaponOk(v, g.weaponAllow) && !offHandWeaponOk(v, g.offWeaponAllow))
+    return "not equippable with your combat style";
+
+  // R9/B5 — Off-hand configuration: block every off-hand item under a two-hand
+  // style or an "empty"-only pick; otherwise keep only the allowed off-hand types.
+  if (v.slot === "Off Hand") {
+    if (g.offHand.blocked) return "can't be used in the off hand with this style";
+    if (g.offHand.allowed && !g.offHand.allowed.includes(v.type))
+      return "not a valid off-hand type for this style";
+  }
+
+  // R6/AE1 — Race → body slot: Forged races take docents; others cannot.
+  if (v.slot === "Armor" && query.race) {
+    const doc = isDocent(v);
+    if (g.forged && !doc) return "Forged races equip a docent, not body armor";
+    if (!g.forged && doc) return "docents are for Forged races";
+  }
+
+  // R7 — Armor-type proficiency: keep only body armor whose concrete armor_type
+  // is in the character's proficiency set. Gated on the dedicated wizard field
+  // `armorTypes` (an array of allowed types) — NOT on `query.armorType`, which
+  // is the live dodge-cap input; decoupling avoids silently excluding armor if
+  // the pipeline later stamps armor_type onto items[]. Fail-open on
+  // "unknown"/absent, and a heavy-proficient character passes lighter types too.
+  if (v.slot === "Armor" && !isDocent(v) &&
+      Array.isArray(query.armorTypes) && query.armorTypes.length &&
+      v.armor_type && v.armor_type !== "unknown" &&
+      !query.armorTypes.includes(v.armor_type)) return "armor type not in your proficiency";
+
+  // R7/AE2 — Alignment: exclude items whose alignment requirement the
+  // character does not meet. Fail-open until alignment_req is sourced (U3).
+  if (query.alignment && Array.isArray(v.alignment_req) && v.alignment_req.length &&
+      !v.alignment_req.includes(query.alignment)) return "doesn't match your alignment";
+
+  // R2/AE2 — Artifact opt-in: unless the player checked "Include an Artifact",
+  // no Artifact-quality item is considered. Absent flag => non-Artifact (KTD5),
+  // so this is a no-op until the seed is populated AND the box is checked.
+  if (v.artifact && !query.includeArtifact) return 'needs the "Include an Artifact" option';
+
+  return null;
+}
+
+// U1 — advisory per-item flag for pre-solve pinning (B4). Same gate list the solver
+// enforces; returns null (equippable) or a reason string. Thin wrapper so the UI has
+// a stable name distinct from the solver-facing helper.
+function pinConflict(v, query) {
+  return variantConflict(v, query);
+}
+
 function eligible(variants, query) {
-  const cap = query.mlCap;
-  const floor = query.mlFloor;   // optional item-level floor: hide gear below it
-  const forged = isForgedRace(query.race);
-  // U2 — weapon/off-hand constraint sets, computed once (additive: null/allowed
-  // absent => no-op, so an unconstrained query is unchanged except that off-hand
-  // items now become eligible for the new Off Hand slot).
-  const weaponAllow = allowedWeaponTypes(query);        // main-hand set | null
-  const offWeaponAllow = allowedOffHandWeaponTypes(query); // off-hand weapon set | null
-  const offHand = offHandGate(query);              // { blocked } | { allowed }
-  return variants.filter((v) => {
-    if (v.verification !== "verified") return false;
-    if (v.ml != null && v.ml > cap) return false;
-    if (floor != null && v.ml != null && v.ml < floor) return false;
-
-    // R8 — Weapon-type / style lock. A weapon stays eligible if it can serve EITHER
-    // hand: the main-hand lock, or (TWF) the off-hand-weapon lock. Untyped weapon
-    // hosts (the Dino Bone Weapon, `type == null`) can't be matched, so they pass.
-    if (v.category === "weapon" &&
-        !mainHandWeaponOk(v, weaponAllow) && !offHandWeaponOk(v, offWeaponAllow)) return false;
-
-    // R9/B5 — Off-hand configuration: block every off-hand item under a two-hand
-    // style or an "empty"-only pick; otherwise keep only the allowed off-hand types.
-    if (v.slot === "Off Hand") {
-      if (offHand.blocked) return false;
-      if (offHand.allowed && !offHand.allowed.includes(v.type)) return false;
-    }
-
-    // R6/AE1 — Race → body slot: Forged races take docents; others cannot.
-    if (v.slot === "Armor" && query.race) {
-      const doc = isDocent(v);
-      if (forged && !doc) return false; // Forged: docents only
-      if (!forged && doc) return false; // non-Forged: never a docent
-    }
-
-    // R7 — Armor-type proficiency: keep only body armor whose concrete armor_type
-    // is in the character's proficiency set. Gated on the dedicated wizard field
-    // `armorTypes` (an array of allowed types) — NOT on `query.armorType`, which
-    // is the live dodge-cap input; decoupling avoids silently excluding armor if
-    // the pipeline later stamps armor_type onto items[]. Fail-open on
-    // "unknown"/absent, and a heavy-proficient character passes lighter types too.
-    if (v.slot === "Armor" && !isDocent(v) &&
-        Array.isArray(query.armorTypes) && query.armorTypes.length &&
-        v.armor_type && v.armor_type !== "unknown" &&
-        !query.armorTypes.includes(v.armor_type)) return false;
-
-    // R7/AE2 — Alignment: exclude items whose alignment requirement the
-    // character does not meet. Fail-open until alignment_req is sourced (U3).
-    if (query.alignment && Array.isArray(v.alignment_req) && v.alignment_req.length &&
-        !v.alignment_req.includes(query.alignment)) return false;
-
-    // R2/AE2 — Artifact opt-in: unless the player checked "Include an Artifact",
-    // no Artifact-quality item is considered. Absent flag => non-Artifact (KTD5),
-    // so this is a no-op until the seed is populated AND the box is checked.
-    if (v.artifact && !query.includeArtifact) return false;
-
-    return true;
-  });
+  const gates = queryGates(query);
+  return variants.filter((v) => variantConflict(v, query, gates) === null);
 }
 
 /** Does A dominate B in the same slot? A must be >= on every bucket, superset
@@ -500,7 +527,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
 // exports for node tests; harmless in the browser
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
-    buildModel, eligible, dominanceFilter, dominates,
+    buildModel, eligible, variantConflict, pinConflict, dominanceFilter, dominates,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys,
     isForgedRace, isDocent, variantKey, setStackEquiv, equivType,
     WORN_SLOTS, SLOT_CARDINALITY, ARMOR_DODGE_CAP,
