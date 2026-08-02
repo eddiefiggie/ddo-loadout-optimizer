@@ -1,0 +1,88 @@
+================================================================
+ DDO LOADOUT OPTIMIZER — your best-in-slot gear, proven by math
+                  (free, in-browser, no login)
+================================================================
+
+  >>  Try it: https://eddiefiggie.github.io/ddo-loadout-optimizer/
+
+Tired of juggling six wiki tabs and a spreadsheet to work out which
+named items give you the most of a stat WITHOUT wasting a bonus type
+you already have covered?
+
+This isn't a tier list, and it isn't "what a good player usually
+wears." It's a real OPTIMIZER: you tell it your build and rank the
+stats you care about, and it searches every wiki-sourced named item,
+augment, set bonus, and crafting option (9,000+ indexed) and hands
+back the SINGLE loadout that is mathematically the best for your
+priorities — slot by slot, with the receipts.
+
+No install. No login. Nothing to download. Free. Runs entirely in
+your browser, on desktop or mobile.
+
+
+----------------------------------------------------------------
+ 1.  TELL IT HOW YOU ACTUALLY PLAY
+----------------------------------------------------------------
+Set your level, race, and armor — then your combat style, down to
+weapon type and even a dual-wield off-hand weapon, a crossbow + rune
+arm, or a druid's "no metal" oath. It only considers gear you can
+truly equip, so nothing is wasted.
+
+   [ SCREENSHOT -> https://eddiefiggie.github.io/ddo-loadout-optimizer/screenshots/ad/1-character.png ]
+
+
+----------------------------------------------------------------
+ 2.  RANK WHAT MATTERS
+----------------------------------------------------------------
+Add the stats you care about and order them. #1 is maximized first,
+then #2 without giving up any of #1, and so on — that ordering IS the
+objective the solver optimizes. One-click bundles get you started.
+
+   [ SCREENSHOT -> https://eddiefiggie.github.io/ddo-loadout-optimizer/screenshots/ad/2-priorities.png ]
+
+
+----------------------------------------------------------------
+ 3.  GET THE PROVABLY-OPTIMAL LOADOUT
+----------------------------------------------------------------
+In under a second you get the single best loadout for your
+priorities — every slot, plus the EXACT crafting steps (augments,
+seals, set pieces) needed to build it. Not a guess. Provably optimal.
+
+   [ SCREENSHOT -> https://eddiefiggie.github.io/ddo-loadout-optimizer/screenshots/ad/3-loadout.png ]
+
+
+----------------------------------------------------------------
+ 4.  IT SHOWS ITS WORK
+----------------------------------------------------------------
+Every point of every stat is traced to the exact item and bonus
+type. No hand-waving — you can see precisely where your Constitution
+37 (or your Doublestrike, or your Physical Sheltering) comes from.
+
+   [ SCREENSHOT -> https://eddiefiggie.github.io/ddo-loadout-optimizer/screenshots/ad/4-proof.png ]
+
+
+----------------------------------------------------------------
+ 5.  EXPLORE THE TRADE-OFFS
+----------------------------------------------------------------
+Near-optimal alternatives show exactly what you'd gain and give up
+to complete a different set, free up a slot, or take fewer crafting
+steps. Click any one to inspect it against the optimum.
+
+   [ SCREENSHOT -> https://eddiefiggie.github.io/ddo-loadout-optimizer/screenshots/ad/5-alternatives.png ]
+
+
+----------------------------------------------------------------
+ SHARE IT
+----------------------------------------------------------------
+Export any build as a forum-ready Markdown or BBCode post, a clean
+CSV, or a print-friendly page — each carrying your constraints and
+the set bonuses it grants.
+
+
+  >>  Try it now: https://eddiefiggie.github.io/ddo-loadout-optimizer/
+
+Built on the shoulders of two community projects — the DDO Wiki (the
+source of truth for every item) and the DDO Gear Planner by
+illusionistpm (the canonical catalog + crafting data). Huge thanks
+to both and their contributors.
+================================================================
