@@ -284,7 +284,6 @@ if (typeof window !== "undefined" && window.App) {
             const offWeaponTypes = twfOn ? WT.offHandWeaponTypes(weaponTypesInData) : [];
             // A filterable pick-list of toggle chips, for the long weapon lists.
             const pickList = (id, opts, sel) => `<div class="wz-picklist">
-              <input class="wz-pl-filter" data-plfilter="${id}" placeholder="Filter…" aria-label="Filter ${id}">
               <div class="wz-pl-opts" id="wz-${id}">${opts.map((t) => `<button class="wz-chip ${sel.includes(t) ? "on" : ""}" data-plopt="${id}" data-val="${esc(t)}">${esc(t)}</button>`).join("")}</div>
               <span class="wz-pl-count" data-plcount="${id}">${sel.length ? esc(sel.length) + " selected" : "none = any"}</span></div>`;
             return `<div class="wz-field"><span class="wz-label">Combat style <span class="wz-sub">· optional</span></span>
@@ -908,7 +907,7 @@ if (typeof window !== "undefined" && window.App) {
         const toggleIn = (arr, val) => arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
         // Pick-lists (weapon type + off-hand weapon): each `data-plopt` names the
         // list; map it to the backing state array. Toggling updates only the chip +
-        // the count, so the filter text and scroll position survive.
+        // the count, so the scroll position survives (no full re-render).
         const PL = { weptypes: "weaponTypes", offweapons: "offHandWeapons" };
         root.querySelectorAll(".wz-pl-opts .wz-chip").forEach((c) => c.onclick = () => {
           const key = PL[c.dataset.plopt]; if (!key) return;
@@ -916,13 +915,6 @@ if (typeof window !== "undefined" && window.App) {
           c.classList.toggle("on", state[key].includes(c.dataset.val));
           const count = root.querySelector(`[data-plcount="${c.dataset.plopt}"]`);
           if (count) count.textContent = state[key].length ? state[key].length + " selected" : "none = any";
-        });
-        // Pick-list filter: hide options whose label doesn't contain the query.
-        root.querySelectorAll(".wz-pl-filter").forEach((inp) => inp.oninput = () => {
-          const q = inp.value.trim().toLowerCase();
-          root.querySelectorAll(`#wz-${inp.dataset.plfilter} .wz-chip`).forEach((b) => {
-            b.classList.toggle("wz-hidden", q !== "" && !b.dataset.val.toLowerCase().includes(q));
-          });
         });
         root.querySelectorAll("#wz-offhand .wz-chip").forEach((c) => c.onclick = () => {
           state.offHand = toggleIn(state.offHand, c.dataset.offhand);
