@@ -865,9 +865,12 @@ input.wz-ml { width: 120px; }
 .wz-data-row { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
 .wz-data-row .wz-file { flex: 1; min-width: 200px; }
 .wz-data-sep { border: none; border-top: 1px dashed var(--border-2); margin: var(--sp-3) 0; }
-.wz-share-pick { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 160px; }
-.wz-share-pick select { background: var(--panel-2); color: var(--text); border: 1px solid var(--border-2);
+.wz-share-pick { display: flex; flex-direction: column; gap: 2px; max-width: 34rem; }
+.wz-share-pick select { width: 100%; background: var(--panel-2); color: var(--text); border: 1px solid var(--border-2);
   border-radius: var(--radius-sm); padding: 7px 10px; }
+/* export buttons: a tidy, evenly-sized row directly under the loadout picker */
+.wz-share-btns { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-2); max-width: 34rem; }
+.wz-share-btns .btn { flex: 1 1 0; min-width: 6rem; text-align: center; }
 
 /* U13: single-loadout print view — a body-level container the @media print
    rules isolate so only the loadout prints. */
