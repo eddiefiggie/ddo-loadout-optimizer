@@ -678,9 +678,8 @@ input.wz-ml { width: 120px; }
 .wz-sublabel { display: block; font-size: var(--fs-xs); font-weight: 600; color: var(--muted); }
 .wz-wrap .wz-chip { padding: 6px 11px; min-height: 0; font-size: var(--fs-sm); font-weight: 500; }
 .wz-note { font-style: italic; margin: var(--sp-1) 0 0; }
-/* TC — filterable weapon/off-hand pick-list. */
+/* TC — weapon/off-hand pick-list (scrollable toggle chips). */
 .wz-picklist { display: flex; flex-direction: column; gap: var(--sp-1); }
-.wz-field .wz-pl-filter { max-width: 240px; padding: 6px 10px; font-size: var(--fs-sm); }
 .wz-pl-opts { display: flex; flex-wrap: wrap; gap: var(--sp-2); max-height: 168px; overflow-y: auto;
   padding: var(--sp-2); border: 1px solid var(--border-2); border-radius: var(--radius-sm); background: var(--panel-2); }
 .wz-pl-opts .wz-chip { padding: 6px 11px; min-height: 0; font-size: var(--fs-sm); font-weight: 500; }
