@@ -1,16 +1,13 @@
-"""U7.5 — wiki-validated gap-corrections overlay.
+"""U7.5 gap-corrections overlay — now EMPTY (Ophael entry reverted 2026-08-02).
 
-gear-planner's parser UNDER-parses a small set of collision items; the overlay
-(`data/seed/gap_corrections.json`) restores ONLY the genuinely-missing affixes,
-sourced from the retired hand-verified base seed and spot-validated against the
-DDO wiki. Applied ADDITIVELY by build_dataset (append; never overwrite; skip a
-(name,type) the item already has so it can NEVER double-count).
-
-These tests assert:
-  1. Ophael's Cincture carries the 6 base-ability +15 Enhancement affixes after
-     the build (the confirmed wiki gap), alongside its full +15/+7/+3 block.
-  2. The overlay never adds a (name,type) an item already has (anti-double-count).
-  3. gear-planner's own native affixes (Deception / Seeker) survive untouched.
+The overlay (`data/seed/gap_corrections.json`) restored genuinely-missing affixes
+that gear-planner under-parsed. Its ONLY entry, Ophael's Cincture, was REMOVED: its
+18 "ability score" affixes were NOT a real gap — they are the "Sealed in Undeath"
+seal POOL (all 18 Undeath outcomes), already modeled as a SINGLE-PICK via the item's
+`seal_slots`. The gap-fill duplicated the seal pool as flat all-apply affixes,
+over-counting (a chosen seal grants ONE ability score, not all six). These tests
+assert the corrected state, plus the additive-apply mechanism (still used should a
+genuine gap ever appear).
 """
 import os
 import sys
@@ -23,41 +20,51 @@ ABILITIES = ["Strength", "Constitution", "Dexterity",
              "Intelligence", "Wisdom", "Charisma"]
 
 
-def _ophael_affixes():
+def _ophael():
     ds = B.build()
     for it in ds["items"]:
         if it["source_item"] == "Ophael's Cincture":
-            # build() carries legacy-shaped affixes {stat,bonus_type,value}.
-            return [(a.get("stat"), a.get("bonus_type"), a.get("value")) for a in it["affixes"]]
+            return it
     raise AssertionError("Ophael's Cincture not in built dataset")
 
 
-def test_ophael_carries_six_base_ability_plus15():
-    affs = _ophael_affixes()
-    for ab in ABILITIES:
-        assert (ab, "Enhancement", 15) in affs, f"missing {ab} Enhancement +15: {affs}"
+def _affixes(it):
+    # build() carries legacy-shaped affixes {stat,bonus_type,value}.
+    return [(a.get("stat"), a.get("bonus_type"), a.get("value")) for a in it["affixes"]]
 
 
-def test_ophael_carries_full_all_abilities_block():
-    affs = _ophael_affixes()
-    # +15/+7/+3 to ALL ability scores == 18 affixes (6 abilities x 3 types).
-    for ab in ABILITIES:
-        assert (ab, "Enhancement", 15) in affs
-        assert (ab, "Insight", 7) in affs
-        assert (ab, "Quality", 3) in affs
+def test_ophael_does_not_carry_flat_ability_affixes():
+    # The bug: the gap-fill appended all 18 Undeath seal outcomes as flat, all-apply
+    # affixes, so a solve credited +15/+7/+3 to EVERY ability score. They belong to
+    # the single-pick seal, not the affix block.
+    leaked = [a for a in _affixes(_ophael()) if a[0] in ABILITIES]
+    assert leaked == [], f"ability scores leaked as flat affixes (must be seal-only): {leaked}"
 
 
 def test_ophael_native_deception_seeker_preserved():
-    affs = _ophael_affixes()
-    # gear-planner's own parse must survive verbatim (overlay is additive-only).
+    affs = _affixes(_ophael())
+    # gear-planner's own parse survives verbatim.
     assert ("Deception", "Enhancement", 12) in affs
     assert ("Deception", "Insight", 6) in affs
     assert ("Seeker", "Enhancement", 15) in affs
 
 
+def test_ophael_ability_scores_come_from_the_undeath_seal():
+    # The ability-score bonus is the single-pick "Sealed in Undeath" slot.
+    seals = _ophael().get("seal_slots") or []
+    assert any(s.get("seal_type") == "Undeath" for s in seals), seals
+
+
+def test_overlay_is_empty():
+    # Ophael reverted; no sanctioned gap corrections remain (the only entry was a
+    # misread of the seal pool, not a genuine affix gap).
+    corrections = B.load_gap_corrections()
+    assert corrections == {}, list(corrections.keys())
+
+
 def test_apply_never_double_counts_existing_name_type():
     # Anti-double-count: an overlay affix whose (name,type) the record already has
-    # must be SKIPPED, not appended.
+    # must be SKIPPED, not appended. (The mechanism stays, ready for a real gap.)
     records = [{
         "name": "Fixture Item", "ml": 20,
         "affixes": [
@@ -71,21 +78,11 @@ def test_apply_never_double_counts_existing_name_type():
     ]}
     cov = B.apply_gap_corrections(records, corrections)
     affs = [(a["name"], a["type"]) for a in records[0]["affixes"]]
-    # Strength/Enhancement appears exactly once (the original), NOT doubled.
     assert affs.count(("Strength", "Enhancement")) == 1
     assert ("Constitution", "Enhancement") in affs
-    # And the pre-existing Strength keeps its original value (never overwritten).
     strengths = [a["value"] for a in records[0]["affixes"]
                  if (a["name"], a["type"]) == ("Strength", "Enhancement")]
     assert strengths == ["10"], strengths
     assert cov["items_corrected"] == 1
     assert cov["affixes_added"] == 1
     assert cov["affixes_skipped_already_present"] == 1
-
-
-def test_overlay_file_contains_only_ophael():
-    corrections = B.load_gap_corrections()
-    # The minimal sanctioned exception: Ophael's Cincture is the sole genuine gap
-    # across all base∪gear-planner collision items.
-    assert set(corrections.keys()) == {"Ophael's Cincture"}, list(corrections.keys())
-    assert len(corrections["Ophael's Cincture"]) == 18
