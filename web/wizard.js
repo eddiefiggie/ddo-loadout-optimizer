@@ -87,42 +87,73 @@ function curatedStats(dataset) {
   return pickerVocabulary(dataset).suggestions;
 }
 
-// Curated priority-list presets per build archetype (like the gear planner's
-// build styles) — a starting point so a user doesn't hand-build the ranked list.
-// Each `priorities` is an ordered list of REAL affix names (validated against the
-// dataset vocabulary in tests); applyPreset canonicalizes + drops any the current
-// dataset doesn't carry, so a preset can never inject a dangling target.
-const PRIORITY_PRESETS = [
-  { group: "Melee", label: "Two-weapon (TWF)", priorities: ["Strength", "Doublestrike", "Melee Power", "Accuracy", "Deadly", "Seeker", "Constitution"] },
-  { group: "Melee", label: "Two-handed (THF)", priorities: ["Strength", "Melee Power", "Deadly", "Seeker", "Accuracy", "Constitution"] },
-  { group: "Melee", label: "Sword & board", priorities: ["Constitution", "Physical Sheltering", "Magical Sheltering", "Strength", "Melee Power", "Fortification"] },
-  { group: "Melee", label: "Assassin (sneak)", priorities: ["Dexterity", "Sneak Attack Dice", "Melee Power", "Doublestrike", "Accuracy", "Deadly"] },
-  { group: "Ranged", label: "Bow", priorities: ["Dexterity", "Ranged Power", "Doubleshot", "Accuracy", "Deadly", "Seeker", "Constitution"] },
-  { group: "Ranged", label: "Repeater / thrower", priorities: ["Dexterity", "Ranged Power", "Doubleshot", "Deadly", "Seeker", "Accuracy"] },
-  { group: "Caster", label: "DC caster — Int (Wizard)", priorities: ["Intelligence", "Spell Penetration", "Spell Focus Mastery", "Universal Spell Power", "Potency"] },
-  { group: "Caster", label: "DC caster — Wis (Cleric/Druid)", priorities: ["Wisdom", "Spell Penetration", "Spell Focus Mastery", "Universal Spell Power", "Potency"] },
-  { group: "Caster", label: "DC caster — Cha (Sorc/Bard/FvS)", priorities: ["Charisma", "Spell Penetration", "Spell Focus Mastery", "Universal Spell Power", "Potency"] },
-  { group: "Caster", label: "Spell-power nuker", priorities: ["Universal Spell Power", "Potency", "Spell Focus Mastery", "Spell Penetration"] },
-  { group: "Caster", label: "Healer", priorities: ["Devotion", "Universal Spell Power", "Potency", "Healing Amplification"] },
-  { group: "Tank", label: "Defensive", priorities: ["Constitution", "Physical Sheltering", "Magical Sheltering", "Fortification", "Dodge", "Healing Amplification"] },
-];
+// Composable affix BUNDLES — modelled on the DDO gear planner's "packages" (its
+// "pick a bundle of affixes to save time"). Picking a bundle APPENDS its affixes
+// to the priority list (deduped, in the bundle's order); the user then reorders /
+// adds / removes. Additive + layered, NOT one-shot archetype templates:
+//   * top packages: Basic / Melee / Ranged / Caster / Trapping
+//   * Melee reveals TACTICS; Caster reveals SPELL SCHOOLS + damage-type SPELL POWER
+// Affix lists are the gear planner's, verbatim; resolveBundle canonicalizes +
+// drops any our dataset doesn't carry, so a bundle can never inject a dead target.
+const PRESET_BUNDLES = {
+  Basic: ["Healing Amplification", "Physical Sheltering", "Magical Sheltering", "Constitution", "Dodge", "Fortification", "False Life", "Resistance", "Freedom of Movement", "Blurry", "Ghostly", "Blindness Immunity"],
+  Melee: ["Melee Power", "Doublestrike", "Melee Alacrity", "Accuracy", "Deadly", "Armor-Piercing", "Armor Class"],
+  Ranged: ["Ranged Power", "Doubleshot", "Ranged Alacrity", "Accuracy", "Deadly", "Armor-Piercing"],
+  Caster: ["Universal Spell Power", "Universal Spell Lore", "Spell Penetration", "Spell Focus Mastery", "Wizardry", "Spellcraft"],
+  Trapping: ["Open Lock", "Disable Device", "Spot", "Search"],
+  // tactics (revealed by Melee) — each is a single presence affix
+  Stunning: ["Stunning"], Sundering: ["Sundering"], Vertigo: ["Vertigo"],
+  // spell schools (revealed by Caster) — the button label is the school, the affix is "<School> Focus"
+  Evocation: ["Evocation Focus"], Transmutation: ["Transmutation Focus"], Abjuration: ["Abjuration Focus"],
+  Conjuration: ["Conjuration Focus"], Enchantment: ["Enchantment Focus"], Illusion: ["Illusion Focus"], Necromancy: ["Necromancy Focus"],
+  // damage-type spell power (revealed by Caster) — power + lore + intensity per element
+  Healing: ["Devotion", "Healing Lore", "Healing Intensity", "Heal"],
+  Kinetic: ["Impulse", "Kinetic Lore", "Kinetic Intensity"],
+  Fire: ["Combustion", "Fire Lore", "Fire Intensity"],
+  Cold: ["Glaciation", "Ice Lore", "Ice Intensity"],
+  Electric: ["Magnetism", "Lightning Lore", "Lightning Intensity"],
+  Acid: ["Corrosion", "Acid Lore", "Acid Intensity"],
+  Sonic: ["Resonance", "Sonic Lore", "Sonic Intensity"],
+  Negative: ["Nullification", "Void Lore", "Void Intensity"],
+  Light: ["Radiance", "Radiance Lore", "Radiance Intensity"],
+  Repair: ["Repair Spell Power", "Repair Lore", "Repair Intensity", "Repair"],
+  Poison: ["Poison Spell Power", "Poison Lore", "Void Intensity"],
+};
+// UI groupings + progressive disclosure (which top package reveals which extra row).
+const BUNDLE_GROUPS = {
+  packages: ["Basic", "Melee", "Ranged", "Caster", "Trapping"],
+  tactics: ["Stunning", "Sundering", "Vertigo"],
+  schools: ["Evocation", "Transmutation", "Abjuration", "Conjuration", "Enchantment", "Illusion", "Necromancy"],
+  spellpower: ["Healing", "Kinetic", "Fire", "Cold", "Electric", "Acid", "Sonic", "Negative", "Light", "Repair", "Poison"],
+};
+const BUNDLE_REVEALS = { Melee: ["tactics"], Caster: ["schools", "spellpower"] };
 
-/** Resolve a preset's priority list against the live dataset vocabulary: each name
- *  canonicalized through the alias table, deduped, and dropped if the dataset does
- *  not carry it (`vocab.known`). Returns [] for an unknown preset label. Pure. */
-function applyPreset(label, vocab) {
-  const p = PRIORITY_PRESETS.find((x) => x.label === label);
-  if (!p) return [];
+/** Resolve a bundle key to a canonicalized, dataset-filtered, deduped affix list.
+ *  Each affix is canonicalized through the alias table and dropped if the dataset
+ *  doesn't carry it (`vocab.known`). Unknown key -> []. Pure. */
+function resolveBundle(key, vocab) {
+  const affixes = PRESET_BUNDLES[key];
+  if (!affixes) return [];
   const out = [];
-  for (const name of p.priorities) {
+  for (const name of affixes) {
     const c = vocab && vocab.canonical ? vocab.canonical(name) : name;
     if (c && (!vocab || !vocab.known || vocab.known.has(c)) && !out.includes(c)) out.push(c);
   }
   return out;
 }
 
+/** Append a bundle's resolved affixes to an existing priority list, skipping any
+ *  already present (order preserved: existing first, then the bundle's new ones).
+ *  Pure — returns a new array. This is the "place the picked selection into the
+ *  priority order, then let the user adjust" step. */
+function addBundle(key, current, vocab) {
+  const next = (current || []).slice();
+  for (const affix of resolveBundle(key, vocab)) if (!next.includes(affix)) next.push(affix);
+  return next;
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad, curatedStats, pickerVocabulary, PRIORITY_PRESETS, applyPreset };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -285,14 +316,23 @@ if (typeof window !== "undefined" && window.App) {
         <h2>Rank the stats you care about</h2>
         <p class="wz-lead">Add stats and order them — #1 is maximized first, then #2 without giving up any of #1,
           and so on. This ordering <em>is</em> the objective the solver optimizes.</p>
-        <div class="wz-preset">
-          <label class="wz-label" for="wz-preset">Start from a preset <span class="wz-sub">· optional</span></label>
-          <select id="wz-preset">
-            <option value="">Choose a build style…</option>
-            ${(() => { const g = {}; for (const p of PRIORITY_PRESETS) (g[p.group] = g[p.group] || []).push(p);
-              return Object.entries(g).map(([grp, ps]) => `<optgroup label="${esc(grp)}">${ps.map((p) => `<option value="${esc(p.label)}">${esc(p.label)}</option>`).join("")}</optgroup>`).join(""); })()}
-          </select>
-          <span class="wz-help">Fills the priority list for a common build — reorder or edit anything after.</span>
+        <div class="wz-bundles">
+          <span class="wz-label">Start from a bundle <span class="wz-sub">· optional · adds to your list — reorder or edit after</span></span>
+          <div class="wz-bundle-row">
+            ${BUNDLE_GROUPS.packages.map((k) => `<button type="button" class="wz-bundle" data-bundle="${esc(k)}">${esc(k)}</button>`).join("")}
+          </div>
+          <div class="wz-bundle-row wz-bundle-sub" data-group="tactics" hidden>
+            <span class="wz-bundle-tag">Tactics</span>
+            ${BUNDLE_GROUPS.tactics.map((k) => `<button type="button" class="wz-bundle" data-bundle="${esc(k)}">${esc(k)}</button>`).join("")}
+          </div>
+          <div class="wz-bundle-row wz-bundle-sub" data-group="spellpower" hidden>
+            <span class="wz-bundle-tag">Spell power</span>
+            ${BUNDLE_GROUPS.spellpower.map((k) => `<button type="button" class="wz-bundle" data-bundle="${esc(k)}">${esc(k)}</button>`).join("")}
+          </div>
+          <div class="wz-bundle-row wz-bundle-sub" data-group="schools" hidden>
+            <span class="wz-bundle-tag">Spell schools (DC)</span>
+            ${BUNDLE_GROUPS.schools.map((k) => `<button type="button" class="wz-bundle" data-bundle="${esc(k)}">${esc(k)}</button>`).join("")}
+          </div>
         </div>
         <div class="wz-addrow">
           <input id="wz-add" list="wz-stats" placeholder="Add a stat — e.g. Constitution, Dodge, Melee Power…">
@@ -832,12 +872,21 @@ if (typeof window !== "undefined" && window.App) {
       }
       if (state.step === "priorities") {
         const add = document.getElementById("wz-add");
-        const preset = document.getElementById("wz-preset");
-        if (preset) preset.onchange = (e) => {
-          const list = applyPreset(e.target.value, vocab);   // canonicalized + dataset-filtered
-          if (list.length) { state.priorities = list; renderRanked(); }
-          e.target.value = "";   // reset to the placeholder; the list is now editable
-        };
+        // Composable bundle buttons: append the bundle's affixes to the priority
+        // list (deduped), then reveal any layered rows (Melee -> tactics, Caster ->
+        // spell power + schools) — the picked selection lands in the priority order,
+        // editable after.
+        root.querySelectorAll(".wz-bundle").forEach((btn) => {
+          btn.onclick = () => {
+            const key = btn.dataset.bundle;
+            state.priorities = addBundle(key, state.priorities, vocab);
+            for (const group of (BUNDLE_REVEALS[key] || [])) {
+              const row = root.querySelector(`.wz-bundle-row[data-group="${group}"]`);
+              if (row) row.hidden = false;
+            }
+            renderRanked();
+          };
+        });
         document.getElementById("wz-add-btn").onclick = () => { if (addPriority(add.value)) renderRanked(); add.value = ""; add.focus(); };
         add.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); if (addPriority(add.value)) renderRanked(); add.value = ""; } };
         renderRanked();

@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad, curatedStats, pickerVocabulary, PRIORITY_PRESETS, applyPreset } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -184,34 +184,42 @@ test("U5 pickerVocabulary (wizard) delegates to the shared builder", () => {
   assert.ok(out.suggestions.includes("Strikethrough Chance"));
 });
 
-// ---- priority presets ------------------------------------------------------
+// ---- composable preset bundles (gear-planner style) ------------------------
 
-test("presets: every preset affix is a real, known target in the dataset", () => {
-  const vocab = buildPickerVocabulary(realData);
-  assert.ok(PRIORITY_PRESETS.length >= 8, "a useful set of presets exists");
-  for (const p of PRIORITY_PRESETS) {
-    assert.ok(p.group && p.label && p.priorities.length, `${p.label} is well-formed`);
-    for (const name of p.priorities) {
-      const c = vocab.canonical(name);
-      assert.ok(vocab.known.has(c), `preset "${p.label}" affix "${name}" (-> "${c}") is a known target`);
-    }
+test("bundles: every UI bundle resolves to >=1 known target in the dataset", () => {
+  const rv = buildPickerVocabulary(realData);
+  const allKeys = [...BUNDLE_GROUPS.packages, ...BUNDLE_GROUPS.tactics, ...BUNDLE_GROUPS.schools, ...BUNDLE_GROUPS.spellpower];
+  assert.ok(allKeys.length >= 20, "a rich set of bundles exists");
+  for (const key of allKeys) {
+    assert.ok(PRESET_BUNDLES[key], `bundle "${key}" is defined`);
+    const resolved = resolveBundle(key, rv);
+    assert.ok(resolved.length >= 1, `bundle "${key}" resolves to at least one known affix`);
+    assert.ok(resolved.every((n) => rv.known.has(n)), `bundle "${key}" resolves to all-known targets`);
   }
 });
 
-test("applyPreset canonicalizes, dedupes, and drops dataset-absent names", () => {
-  // real preset resolves against the real vocab
+test("resolveBundle canonicalizes, dedupes, and drops dataset-absent names", () => {
+  const stub = { canonical: (n) => ({ Str: "Strength" }[n] || n), known: new Set(["Strength"]) };
+  PRESET_BUNDLES.__test = ["Str", "Ghostwalk", "Strength"]; // canonical dup + unknown
+  assert.deepStrictEqual(resolveBundle("__test", stub), ["Strength"], "Str->Strength once, unknown dropped, dup removed");
+  delete PRESET_BUNDLES.__test;
+  assert.deepStrictEqual(resolveBundle("Nope", stub), [], "unknown bundle key -> []");
+});
+
+test("addBundle is additive: appends new affixes, preserves existing, no dupes", () => {
   const rv = buildPickerVocabulary(realData);
-  const twf = applyPreset("Two-weapon (TWF)", rv);
-  assert.ok(twf.length && twf.every((n) => rv.known.has(n)), "TWF preset -> all-known targets");
-  assert.strictEqual(twf[0], "Strength", "order preserved (Strength first)");
-  // unknown label -> []
-  assert.deepStrictEqual(applyPreset("Nope", rv), []);
-  // canonicalization + drop-unknown via a stub vocab
-  const stub = { canonical: (n) => ({ "Str": "Strength" }[n] || n), known: new Set(["Strength"]) };
-  const custom = { label: "x", group: "y", priorities: ["Str", "Ghostwalk", "Strength"] };
-  PRIORITY_PRESETS.push(custom);
-  assert.deepStrictEqual(applyPreset("x", stub), ["Strength"], "Str->Strength kept once, unknown dropped, dup removed");
-  PRIORITY_PRESETS.pop();
+  const melee = resolveBundle("Melee", rv);
+  const base = ["Constitution"];
+  const out = addBundle("Melee", base, rv);
+  assert.strictEqual(out[0], "Constitution", "existing priority stays first");
+  assert.ok(melee.every((n) => out.includes(n)), "the bundle's affixes are appended");
+  // adding the same bundle again is a no-op (dedup)
+  assert.deepStrictEqual(addBundle("Melee", out, rv), out, "re-adding a bundle changes nothing");
+});
+
+test("bundle disclosure: Melee reveals tactics, Caster reveals schools + spell power", () => {
+  assert.deepStrictEqual(BUNDLE_REVEALS.Melee, ["tactics"]);
+  assert.deepStrictEqual(BUNDLE_REVEALS.Caster, ["schools", "spellpower"]);
 });
 
 console.log(`\n${passed} passed`);
