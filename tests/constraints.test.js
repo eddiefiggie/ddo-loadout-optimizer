@@ -77,23 +77,25 @@ test("a pinned but dominated variant survives the dominance pre-filter", () => {
   assert.ok(!ring2.variants.map((x) => x.variant_id).includes("RingB"));
 });
 
-test("pin-exemption also covers the Main Hand and Rune Arm slots", () => {
+test("pin-exemption also covers the Main Hand and Off Hand slots", () => {
   const wA = { ...v("SwordA", "Weapon", 20), category: "weapon" };
   const wB = { ...v("SwordB", "Weapon", 5), category: "weapon" };   // dominated
-  const rA = { ...v("RuneA", "RuneArm", 20), category: "runearm" };
-  const rB = { ...v("RuneB", "RuneArm", 5), category: "runearm" };  // dominated
+  // Rune arms (and orbs/shields) are Off Hand items now (U2) — the standalone
+  // runearm slot was retired.
+  const oA = { ...v("OrbA", "Off Hand", 20), type: "Orbs" };
+  const oB = { ...v("OrbB", "Off Hand", 5), type: "Orbs" };         // dominated
   const query = {
     mlCap: 34, targets,
     slotConstraints: {
       "Main Hand": { type: "pin", variant_id: "SwordB" },
-      "Rune Arm": { type: "pin", variant_id: "RuneB" },
+      "Off Hand": { type: "pin", variant_id: "OrbB" },
     },
   };
-  const model = M.buildModel([wA, wB, rA, rB], query);
+  const model = M.buildModel([wA, wB, oA, oB], query);
   const mh = model.worn.find((g) => g.slot === "Main Hand").variants.map((x) => x.variant_id);
-  const ra = model.worn.find((g) => g.slot === "Rune Arm").variants.map((x) => x.variant_id);
+  const off = model.worn.find((g) => g.slot === "Off Hand").variants.map((x) => x.variant_id);
   assert.ok(mh.includes("SwordB"), "pinned dominated weapon was pruned");
-  assert.ok(ra.includes("RuneB"), "pinned dominated rune arm was pruned");
+  assert.ok(off.includes("OrbB"), "pinned dominated off-hand was pruned");
 });
 
 console.log(`\n${passed} passed`);

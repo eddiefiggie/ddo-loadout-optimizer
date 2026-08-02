@@ -47,8 +47,18 @@ function buildQuery(state) {
     mlFloor: Number(state.mlFloor) || null,   // optional item-level floor (hide low-ML gear)
     targets: state.priorities.slice(),
     armorType: forged ? null : (state.armor || null),   // dodge-cap input
-    armorTypes: forged || !state.armor ? undefined : [state.armor], // gate (U2)
-    weaponSetup: state.weapon || null,
+    // U4 — armor eligibility gate (R7). A druidic oath approximates "no metal" by
+    // restricting body armor to cloth + light (rides the existing armorTypes gate),
+    // overriding the single proficiency chip. Forged wear docents, so the gate is
+    // moot for them (docent handling lives in the R6 branch).
+    armorTypes: forged ? undefined
+      : (state.oath === "druid" ? ["cloth", "light"]
+        : (state.armor ? [state.armor] : undefined)),
+    // U3 — combat-style / weapon-type / off-hand constraints (replaces the inert
+    // coarse `weaponSetup`). Empty arrays / unset style => unconstrained.
+    style: state.style || null,
+    weaponTypes: Array.isArray(state.weaponTypes) ? state.weaponTypes.slice() : [],
+    offHand: Array.isArray(state.offHand) ? state.offHand.slice() : [],
     race: state.race || null,
     alignment: state.alignment || null,
     includeArtifact: !!state.includeArtifact,           // U4 — Artifact opt-in
@@ -164,8 +174,7 @@ if (typeof window !== "undefined" && window.App) {
   const ALIGNMENTS = ["Lawful Good", "Neutral Good", "Chaotic Good",
     "Lawful Neutral", "True Neutral", "Chaotic Neutral"];
   const ARMOR = [["cloth", "Cloth"], ["light", "Light"], ["medium", "Medium"], ["heavy", "Heavy"]];
-  const WEAPONS = [["2h", "Two-handed"], ["swordboard", "One-hand + shield"],
-    ["twf", "Dual-wield"], ["runearm", "One-hand + rune arm"]];
+  const WT = (typeof window !== "undefined" && window.WeaponTaxonomy) || null; // U1 taxonomy
   const STEP_LABELS = { intro: "Start", character: "Character", pool: "Gear pool", priorities: "Priorities", results: "Results" };
 
   // U7 / KTD6: standardize output-encoding on the global esc from results.js
@@ -189,7 +198,13 @@ if (typeof window !== "undefined" && window.App) {
     const vocab = pickerVocabulary(dataset);
     const allStats = vocab.suggestions;
 
-    const state = { step: "intro", ml: 36, mlFloor: 0, race: "", alignment: "", armor: "", weapon: "",
+    // U3 — distinct weapon `type` values the dataset actually carries, so the
+    // handedness-gated chip list never offers a type with no items (KTD6).
+    const weaponTypesInData = [...new Set((dataset.items || [])
+      .filter((v) => v.slot === "Weapon" && v.type).map((v) => v.type))];
+
+    const state = { step: "intro", ml: 36, mlFloor: 0, race: "", alignment: "", armor: "", oath: "",
+      style: "", weaponTypes: [], offHand: [],
       includeArtifact: false,
       pool: "all", ownedNames: null, priorities: [], slotConstraints: {}, constraintsDirty: false, lastRun: null,
       characterName: "", loadedStale: false };
@@ -255,9 +270,27 @@ if (typeof window !== "undefined" && window.App) {
           <div class="wz-field"><span class="wz-label">Armor type ${forged ? '<span class="wz-sub">· docent (Forged race)</span>' : ""}</span>
             <span class="wz-help">Your proficiency — sets the dodge cap and eligible body armor.</span>
             <div class="wz-seg" id="wz-armor">${ARMOR.map(([v, l]) => `<button class="wz-chip ${state.armor === v ? "on" : ""}" data-armor="${v}" ${forged ? "disabled" : ""}>${l}</button>`).join("")}</div></div>
-          <div class="wz-field"><span class="wz-label">Weapon setup <span class="wz-sub">· optional</span></span>
-            <span class="wz-help">Shapes which weapon / off-hand combinations we consider.</span>
-            <div class="wz-seg" id="wz-weapon">${WEAPONS.map(([v, l]) => `<button class="wz-chip ${state.weapon === v ? "on" : ""}" data-weapon="${v}">${l}</button>`).join("")}</div></div>
+          <div class="wz-field"><span class="wz-label">Oath / anathema <span class="wz-sub">· optional</span></span>
+            <span class="wz-help">A class oath that forbids certain armor. Approximated by armor type — see the note when on.</span>
+            <div class="wz-seg" id="wz-oath"><button class="wz-chip ${state.oath === "druid" ? "on" : ""}" data-oath="druid" ${forged ? "disabled" : ""}>Druid — no metal</button></div>
+            ${state.oath === "druid" && !forged ? `<p class="wz-help wz-note">Druidic oath: body armor restricted to cloth + light. Metal vs non-metal medium/heavy (e.g. Darkleaf, Dragonhide) isn't distinguishable in our data, so this is a conservative approximation.</p>` : ""}</div>
+          ${(() => {
+            const styles = WT ? WT.STYLES : [];
+            const styleLabel = (WT && state.style) ? ((WT.STYLES.find((s) => s.id === state.style) || {}).label || "") : "";
+            const wtypes = (WT && state.style) ? WT.weaponTypesForStyle(state.style, weaponTypesInData) : [];
+            const ohOn = WT ? WT.offHandEnabledForStyle(state.style) : true;
+            const ohTypes = WT ? WT.OFF_HAND_TYPES : [];
+            return `<div class="wz-field"><span class="wz-label">Combat style <span class="wz-sub">· optional</span></span>
+            <span class="wz-help">Pick a style to constrain the weapon and off-hand we consider. None picked within a group = any of it. Leave the style unset to allow anything.</span>
+            <div class="wz-seg" id="wz-style">${styles.map((s) => `<button class="wz-chip ${state.style === s.id ? "on" : ""}" data-style="${s.id}">${esc(s.label)}</button>`).join("")}</div>
+            ${state.style ? `<div class="wz-subseg">
+              <span class="wz-sublabel">Weapon type <span class="wz-sub">· none = any ${esc(styleLabel.toLowerCase())}</span></span>
+              <div class="wz-seg wz-wrap" id="wz-weptypes">${wtypes.map((t) => `<button class="wz-chip ${state.weaponTypes.includes(t) ? "on" : ""}" data-weptype="${esc(t)}">${esc(t)}</button>`).join("")}</div>
+              ${ohOn ? `<span class="wz-sublabel">Off hand <span class="wz-sub">· none = any</span></span>
+              <div class="wz-seg wz-wrap" id="wz-offhand"><button class="wz-chip ${state.offHand.includes("empty") ? "on" : ""}" data-offhand="empty">Empty</button>${ohTypes.map((t) => `<button class="wz-chip ${state.offHand.includes(t) ? "on" : ""}" data-offhand="${esc(t)}">${esc(t)}</button>`).join("")}</div>`
+                : `<p class="wz-help wz-note">Two-handed weapons use both hands — no off-hand item.</p>`}
+            </div>` : ""}</div>`;
+          })()}
           <label class="wz-check"><input type="checkbox" id="wz-artifact"${state.includeArtifact ? " checked" : ""}>
             <span class="wz-check-body"><span class="wz-label">Include an Artifact</span>
             <span class="wz-help">Build around your one equippable Artifact — the optimizer picks the best-scoring one and tags its slot. Off by default.</span></span></label>
@@ -667,7 +700,13 @@ if (typeof window !== "undefined" && window.App) {
       const i = rec.inputs || {};
       state.characterName = rec.name;
       state.ml = i.ml; state.mlFloor = i.mlFloor || 0; state.race = i.race; state.alignment = i.alignment;
-      state.armor = i.armor; state.weapon = i.weapon;
+      state.armor = i.armor; state.oath = i.oath || "";
+      // U5 — combat constraints. A pre-migration save carries the inert `weapon`
+      // flag and none of these; it loads unconstrained (Settled Decision 5), so an
+      // old build re-solves identically. The stale `weapon` value is simply dropped.
+      state.style = i.style || "";
+      state.weaponTypes = Array.isArray(i.weaponTypes) ? i.weaponTypes.slice() : [];
+      state.offHand = Array.isArray(i.offHand) ? i.offHand.slice() : [];
       state.includeArtifact = !!i.includeArtifact;
       state.pool = i.pool || "all";
       state.ownedNames = Array.isArray(i.ownedNames) ? new Set(i.ownedNames) : null;
@@ -834,16 +873,35 @@ if (typeof window !== "undefined" && window.App) {
       if (state.step === "character") {
         document.getElementById("wz-ml").oninput = (e) => state.ml = e.target.value;
         document.getElementById("wz-mlfloor").oninput = (e) => state.mlFloor = e.target.value;
-        document.getElementById("wz-race").onchange = (e) => { state.race = e.target.value; if (wizIsForged(state.race)) state.armor = ""; render(); };
+        document.getElementById("wz-race").onchange = (e) => { state.race = e.target.value; if (wizIsForged(state.race)) { state.armor = ""; state.oath = ""; } render(); };
         document.getElementById("wz-align").onchange = (e) => state.alignment = e.target.value;
         document.getElementById("wz-artifact").onchange = (e) => state.includeArtifact = e.target.checked;
         root.querySelectorAll("#wz-armor .wz-chip").forEach((c) => c.onclick = () => {
           if (c.disabled) return; state.armor = state.armor === c.dataset.armor ? "" : c.dataset.armor;
           root.querySelectorAll("#wz-armor .wz-chip").forEach((x) => x.classList.toggle("on", x.dataset.armor === state.armor));
         });
-        root.querySelectorAll("#wz-weapon .wz-chip").forEach((c) => c.onclick = () => {
-          state.weapon = state.weapon === c.dataset.weapon ? "" : c.dataset.weapon;
-          root.querySelectorAll("#wz-weapon .wz-chip").forEach((x) => x.classList.toggle("on", x.dataset.weapon === state.weapon));
+        // U4 — oath: single-select; toggling shows/hides the approximation note.
+        root.querySelectorAll("#wz-oath .wz-chip").forEach((c) => c.onclick = () => {
+          if (c.disabled) return;
+          state.oath = state.oath === c.dataset.oath ? "" : c.dataset.oath;
+          render();
+        });
+        // Combat style: single-select; changing it swaps which weapon-type / off-hand
+        // chips are shown and resets any prior sub-picks, so a full re-render.
+        root.querySelectorAll("#wz-style .wz-chip").forEach((c) => c.onclick = () => {
+          const next = state.style === c.dataset.style ? "" : c.dataset.style;
+          state.style = next; state.weaponTypes = []; state.offHand = [];
+          render();
+        });
+        // Weapon-type + off-hand: permissive multi-select (toggle membership).
+        const toggleIn = (arr, val) => arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
+        root.querySelectorAll("#wz-weptypes .wz-chip").forEach((c) => c.onclick = () => {
+          state.weaponTypes = toggleIn(state.weaponTypes, c.dataset.weptype);
+          c.classList.toggle("on", state.weaponTypes.includes(c.dataset.weptype));
+        });
+        root.querySelectorAll("#wz-offhand .wz-chip").forEach((c) => c.onclick = () => {
+          state.offHand = toggleIn(state.offHand, c.dataset.offhand);
+          c.classList.toggle("on", state.offHand.includes(c.dataset.offhand));
         });
         const cn = document.getElementById("wz-charname");
         if (cn) cn.oninput = (e) => state.characterName = e.target.value;

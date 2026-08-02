@@ -203,10 +203,10 @@ test("buildModel over real dataset prunes per slot", () => {
   assert.ok(model.worn.length > 0, "expected worn slots");
   const eligible = (pred) => data.items.filter((x) => pred(x) && x.verification === "verified" && x.minimum_level <= 34).length;
   for (const slot of model.worn) {
-    // Main Hand / Rune Arm are synthetic (category-merged) slots; others map to a real slot field.
+    // Main Hand is a synthetic (category-merged) slot; Off Hand and the rest map to
+    // a real slot field ("Off Hand" holds orbs/shields/rune arms).
     let raw;
     if (slot.slot === "Main Hand") raw = eligible((x) => x.category === "weapon");
-    else if (slot.slot === "Rune Arm") raw = eligible((x) => x.category === "runearm");
     else raw = eligible((x) => x.slot === slot.slot);
     assert.ok(slot.variants.length <= raw, `${slot.slot}: pruned (${slot.variants.length}) <= raw (${raw})`);
     assert.ok(slot.variants.length >= 1);
@@ -218,7 +218,7 @@ test("weapon types share ONE main-hand slot (not one slot per type)", () => {
   const lc = v("LC", "Light Crossbow", [["Accuracy", "Enhancement", 10]], { category: "weapon" });
   const hc = v("HC", "Heavy Crossbow", [["Deadly", "Enhancement", 10]], { category: "weapon" });
   const rc = v("RC", "Repeating Heavy Crossbow", [["Seeker", "Enhancement", 10]], { category: "weapon" });
-  const ra = v("RA", "Rune Arm", [["Intelligence", "Enhancement", 10]], { category: "runearm" });
+  const ra = v("RA", "Off Hand", [["Intelligence", "Enhancement", 10]]); ra.type = "Rune Arms";
   const model = M.buildModel([lc, hc, rc, ra], {
     mlCap: 34, targets: ["Accuracy", "Deadly", "Seeker", "Intelligence"], armorType: null,
   });
@@ -226,7 +226,7 @@ test("weapon types share ONE main-hand slot (not one slot per type)", () => {
   assert.ok(mh, "expected a single Main Hand slot");
   assert.strictEqual(mh.cardinality, 1);
   assert.deepStrictEqual(mh.variants.map((x) => x.source_item).sort(), ["HC", "LC", "RC"]);
-  assert.ok(model.worn.find((s) => s.slot === "Rune Arm"), "rune-arm is its own slot");
+  assert.ok(model.worn.find((s) => s.slot === "Off Hand"), "rune-arm lives in the Off Hand slot");
   // and no per-weapon-type slots leak through
   assert.ok(!model.worn.some((s) => s.slot === "Light Crossbow"));
 });
@@ -479,6 +479,109 @@ test("isForgedRace / isDocent helpers", () => {
   assert.ok(!M.isForgedRace("elf") && !M.isForgedRace(""));
   assert.ok(M.isDocent({ source_item: "Saltiron Docent" }));
   assert.ok(!M.isDocent({ source_item: "Cloak of Night" }));
+  // native `type` is authoritative — a docent whose name lacks "docent" is still one
+  assert.ok(M.isDocent({ source_item: "Legendary Scale-Stone of Avarice", type: "Docents" }));
+  assert.ok(!M.isDocent({ source_item: "Robe", type: "Cloth armor" }));
+});
+
+// ---- U2 — weapon-type / off-hand / style constraints -----------------------
+// Synthetic weapon (category "weapon") and off-hand (slot "Off Hand") builders,
+// carrying a native `type` the new gates read.
+function wt(name, type, affixes = [["Strength", "Enhancement", 5]]) {
+  const w = v(name, "Weapon", affixes, { category: "weapon", ml: 30 });
+  w.type = type; return w;
+}
+function oh(name, type, affixes = [["Constitution", "Enhancement", 5]]) {
+  const o = v(name, "Off Hand", affixes, { ml: 30 });
+  o.type = type; return o;
+}
+const T = new Set(["Strength", "Constitution"]);
+
+test("U2/B1: an Off Hand slot is built and off-hand items are equippable", () => {
+  const model = M.buildModel([oh("Orb", "Orbs"), oh("Tower", "Tower shields")],
+    { mlCap: 34, targets: ["Constitution"] });
+  const slot = model.worn.find((s) => s.slot === "Off Hand");
+  assert.ok(slot, "expected an Off Hand slot");
+  assert.strictEqual(slot.cardinality, 1);
+  assert.ok(slot.variants.length >= 1, "off-hand items entered the pool");
+});
+
+test("U2/B3: weaponTypes pins Main Hand to the allowed types", () => {
+  const items = [wt("Sword", "Long Swords"), wt("Falchion", "Falchions")];
+  const one = M.eligible(items, { mlCap: 34, targets: ["Strength"], weaponTypes: ["Long Swords"] });
+  assert.deepStrictEqual(one.map((x) => x.type), ["Long Swords"]);
+  const both = M.eligible([...items, wt("Rapier", "Rapiers")],
+    { mlCap: 34, targets: ["Strength"], weaponTypes: ["Long Swords", "Rapiers"] });
+  assert.deepStrictEqual(both.map((x) => x.type).sort(), ["Long Swords", "Rapiers"]);
+});
+
+test("U2/B4: offHand pins the Off Hand slot to the allowed types", () => {
+  const items = [oh("Orb", "Orbs"), oh("Tower", "Tower shields")];
+  const only = M.eligible(items, { mlCap: 34, targets: ["Constitution"], offHand: ["Tower shields"] });
+  assert.deepStrictEqual(only.map((x) => x.type), ["Tower shields"]);
+});
+
+test("U2/B5: a two-hand style builds no Off Hand slot and excludes 1H weapons", () => {
+  const model = M.buildModel([oh("Orb", "Orbs"), wt("Falchion", "Falchions"), wt("Sword", "Long Swords")],
+    { mlCap: 34, targets: ["Strength", "Constitution"], style: "two-hand" });
+  assert.ok(!model.worn.find((s) => s.slot === "Off Hand"), "two-hand => no Off Hand slot");
+  const mh = model.worn.find((s) => s.slot === "Main Hand");
+  assert.deepStrictEqual(mh.variants.map((x) => x.type), ["Falchions"], "one-hand weapon excluded under two-hand");
+});
+
+test("U2/KTD4: empty-only builds no Off Hand slot; a set with empty keeps its types", () => {
+  const items = [oh("Orb", "Orbs"), oh("Tower", "Tower shields")];
+  const noneModel = M.buildModel(items, { mlCap: 34, targets: ["Constitution"], offHand: ["empty"] });
+  assert.ok(!noneModel.worn.find((s) => s.slot === "Off Hand"), "empty-only => no Off Hand slot");
+  const orbModel = M.buildModel(items, { mlCap: 34, targets: ["Constitution"], offHand: ["Orbs", "empty"] });
+  const slot = orbModel.worn.find((s) => s.slot === "Off Hand");
+  assert.deepStrictEqual(slot.variants.map((x) => x.type), ["Orbs"], "orb kept, tower excluded, unfilled still allowed");
+});
+
+test("U2: additive no-op — an unconstrained query keeps every weapon and off-hand", () => {
+  const items = [wt("Sword", "Long Swords"), wt("Falchion", "Falchions"),
+    oh("Orb", "Orbs"), oh("Rune", "Rune Arms")];
+  const all = M.eligible(items, { mlCap: 34, targets: ["Strength", "Constitution"] });
+  assert.strictEqual(all.length, 4, "no style/weaponTypes/offHand => nothing filtered");
+});
+
+test("U2: a rune arm is equippable through the Off Hand slot", () => {
+  const model = M.buildModel([oh("Rune", "Rune Arms", [["Strength", "Enhancement", 6]])],
+    { mlCap: 34, targets: ["Strength"] });
+  const slot = model.worn.find((s) => s.slot === "Off Hand");
+  assert.ok(slot && slot.variants.some((x) => x.type === "Rune Arms"), "rune arm placed in Off Hand");
+  assert.ok(!model.worn.find((s) => s.slot === "Rune Arm"), "vestigial Rune Arm slot retired");
+});
+
+test("U2/B4: an off-hand allow-set keeps every allowed type (permissive, not pin)", () => {
+  const items = [oh("Orb", "Orbs"), oh("Tower", "Tower shields"), oh("Buckler", "Bucklers")];
+  const kept = M.eligible(items, { mlCap: 34, targets: ["Constitution"], offHand: ["Orbs", "Tower shields"] });
+  assert.deepStrictEqual(kept.map((x) => x.type).sort(), ["Orbs", "Tower shields"], "both allowed types kept, buckler dropped");
+});
+
+test("U2: an untyped weapon host survives a style/weapon-type lock (Dino Bone Weapon)", () => {
+  // A weapon with no `type` (its in-game type is player-chosen) can't be matched
+  // against a lock, so it must stay eligible under any style / weaponTypes pick.
+  const dino = wt("Dino Bone Weapon", null);
+  const sword = wt("Sword", "Long Swords");
+  const kept = M.eligible([dino, sword], { mlCap: 34, targets: ["Strength"], style: "two-hand", weaponTypes: ["Falchions"] });
+  assert.ok(kept.some((x) => x.source_item === "Dino Bone Weapon"), "untyped weapon host not filtered by a lock");
+  assert.ok(!kept.some((x) => x.source_item === "Sword"), "a typed weapon outside the lock is still filtered");
+});
+
+test("U2: the isDocent-by-type fix excludes a name-less docent from a non-Forged Armor slot", () => {
+  const doc = v("Scale-Stone of Avarice", "Armor", [["Constitution", "Enhancement", 10]]); doc.type = "Docents";
+  const elf = M.eligible([doc], { mlCap: 34, targets: ["Constitution"], race: "elf" });
+  assert.strictEqual(elf.length, 0, "a type-Docents item is excluded for a non-Forged race");
+  const forged = M.eligible([doc], { mlCap: 34, targets: ["Constitution"], race: "warforged" });
+  assert.strictEqual(forged.length, 1, "and kept for a Forged race");
+});
+
+test("U2: the real dataset has no orphaned Rune Arm slot after normalization", () => {
+  assert.strictEqual(data.items.filter((v) => v.slot === "Rune Arm").length, 0, "no item left in the retired Rune Arm slot");
+  const dino = data.items.find((v) => /Dinosaur Bone Rune Arm/.test(v.variant_id || v.source_item || v.name || ""));
+  assert.ok(dino, "the legacy rune-arm host exists");
+  assert.strictEqual(dino.slot, "Off Hand", "it is normalized into the Off Hand slot (still equippable)");
 });
 
 console.log(`\n${passed} passed`);

@@ -72,10 +72,51 @@ const FORGED_RACES = new Set(["warforged", "bladeforged", "battleforged"]);
 function isForgedRace(race) {
   return !!race && FORGED_RACES.has(String(race).toLowerCase());
 }
-/** Docent detection keys off the item name — the dataset has no docent flag,
- *  and docents are consistently named "<X> Docent". */
+/** Docent detection: the native schema's `type` is authoritative ("Docents"), with
+ *  the name regex kept as a fallback for records that predate the type field. (A
+ *  name-only check missed docents like "Legendary Scale-Stone of Avarice" that carry
+ *  no "docent" in their name, leaking them past the R6 race gate to non-Forged
+ *  characters and the druidic oath.) */
 function isDocent(v) {
-  return /\bdocent\b/i.test(v.source_item || v.variant_id || v.name || "");
+  return v.type === "Docents" ||
+    /\bdocent\b/i.test(v.source_item || v.variant_id || v.name || "");
+}
+
+// U1/U2 — weapon/off-hand taxonomy, resolved across runtimes (browser global vs
+// node require), mirroring dataset.js's installStackEquiv bridge.
+function _taxonomy() {
+  if (typeof WeaponTaxonomy !== "undefined") return WeaponTaxonomy;
+  if (typeof require !== "undefined") {
+    try { return require("./weapon-taxonomy.js"); } catch (e) { /* absent: no-op */ }
+  }
+  return null;
+}
+/** Allowed Main Hand weapon types for a query, or null (any). A picked
+ *  `weaponTypes` set wins (already a subset of the chosen style); otherwise the
+ *  style's whole handedness bucket constrains (so one-hand excludes 2H weapons
+ *  even with no explicit type pick). */
+function allowedWeaponTypes(query) {
+  if (Array.isArray(query.weaponTypes) && query.weaponTypes.length) return query.weaponTypes;
+  if (query.style) {
+    const T = _taxonomy();
+    if (T) return T.weaponTypesForStyle(query.style);
+  }
+  return null;
+}
+/** Off-hand gate for a query: `{ blocked }` when no off-hand item may be equipped
+ *  (two-hand style, or only "empty" was chosen), else `{ allowed }` — the allowed
+ *  off-hand `type` list, or null for any. */
+function offHandGate(query) {
+  const T = _taxonomy();
+  const EMPTY = T ? T.OFF_HAND_EMPTY : "empty";
+  if (query.style && T && !T.offHandEnabledForStyle(query.style)) return { blocked: true };
+  const set = Array.isArray(query.offHand) ? query.offHand : [];
+  if (set.length) {
+    const items = set.filter((t) => t !== EMPTY);
+    if (!items.length) return { blocked: true }; // only "empty": no off-hand item
+    return { blocked: false, allowed: items };
+  }
+  return { blocked: false, allowed: null }; // any off-hand item
 }
 
 // Character gate (U2). Every branch below is ADDITIVE and backward-compatible:
@@ -88,10 +129,28 @@ function eligible(variants, query) {
   const cap = query.mlCap;
   const floor = query.mlFloor;   // optional item-level floor: hide gear below it
   const forged = isForgedRace(query.race);
+  // U2 — weapon/off-hand constraint sets, computed once (additive: null/allowed
+  // absent => no-op, so an unconstrained query is unchanged except that off-hand
+  // items now become eligible for the new Off Hand slot).
+  const weaponAllow = allowedWeaponTypes(query);   // array | null
+  const offHand = offHandGate(query);              // { blocked } | { allowed }
   return variants.filter((v) => {
     if (v.verification !== "verified") return false;
     if (v.ml != null && v.ml > cap) return false;
     if (floor != null && v.ml != null && v.ml < floor) return false;
+
+    // R8 — Weapon-type / style lock: Main Hand (category "weapon") is constrained
+    // to the allowed weapon types (a picked set, or the whole style bucket). Untyped
+    // weapon hosts (the Dino Bone Weapon, `type == null`, whose in-game type is
+    // player-chosen) can't be matched against a lock, so they stay eligible.
+    if (v.category === "weapon" && weaponAllow && v.type != null && !weaponAllow.includes(v.type)) return false;
+
+    // R9/B5 — Off-hand configuration: block every off-hand item under a two-hand
+    // style or an "empty"-only pick; otherwise keep only the allowed off-hand types.
+    if (v.slot === "Off Hand") {
+      if (offHand.blocked) return false;
+      if (offHand.allowed && !offHand.allowed.includes(v.type)) return false;
+    }
 
     // R6/AE1 — Race → body slot: Forged races take docents; others cannot.
     if (v.slot === "Armor" && query.race) {
@@ -325,12 +384,18 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   }
 
   // One main-hand weapon: all weapon-category variants compete for a single slot
-  // so the solver can never equip several weapons at once. Rune-arm is a separate
-  // off-hand slot.
+  // so the solver can never equip several weapons at once.
   const mainHand = dominanceFilter(elig.filter((v) => v.category === "weapon"), targetSet, mlCap, 1, pinnedIds, withArt);
   if (mainHand.length) worn.push({ slot: "Main Hand", cardinality: 1, variants: mainHand });
-  const runeArm = dominanceFilter(elig.filter((v) => v.category === "runearm"), targetSet, mlCap, 1, pinnedIds, withArt);
-  if (runeArm.length) worn.push({ slot: "Rune Arm", cardinality: 1, variants: runeArm });
+
+  // U2/B1 — Off Hand slot (at-most-one): orbs, shields (buckler/small/large/tower),
+  // and rune arms all live here (slot "Off Hand"). eligible() has already applied
+  // the off-hand/style constraints, so an empty candidate set — a two-hand style or
+  // an "empty"-only pick — pushes no slot (nothing equippable off-hand). This
+  // supersedes the old vestigial `category==="runearm"` slot; the one legacy
+  // rune-arm host is normalized into this pool at load (dataset.js).
+  const offHand = dominanceFilter(elig.filter((v) => v.slot === "Off Hand"), targetSet, mlCap, 1, pinnedIds, withArt);
+  if (offHand.length) worn.push({ slot: "Off Hand", cardinality: 1, variants: offHand });
 
   // Augment pool: augments (category augment) as a compatible-color-capacity
   // source pool. The solver (U3) places each augment at most once, into one

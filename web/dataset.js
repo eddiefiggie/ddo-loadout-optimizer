@@ -82,6 +82,15 @@ function normalizeItem(it) {
   if (it.ml == null && it.minimum_level != null) it.ml = it.minimum_level;
   const at = ARMOR_TYPE_MAP[it.type];
   if (at) it.armor_type = at;
+  // The one legacy-shaped rune-arm host ("Dinosaur Bone Rune Arm") carries
+  // category "runearm" / slot "Rune Arm". The solver's Off Hand slot keys on
+  // slot === "Off Hand" and the off-hand gate on `type`, so normalize it into that
+  // shape: it stays equippable (it hosts rune-arm dino inserts) AND obeys
+  // two-hand exclusivity and off-hand type locks like every other rune arm.
+  if (it.category === "runearm" || it.slot === "Rune Arm") {
+    it.slot = "Off Hand";
+    if (it.type == null) it.type = "Rune Arms";
+  }
   return it;
 }
 

@@ -8,22 +8,22 @@
    "status": "optimal",
    "perTarget": {
     "Strength": 18,
-    "Constitution": 17,
+    "Constitution": 18,
     "Physical Sheltering": 28
    },
    "effective": {
     "Strength": 18,
-    "Constitution": 17,
+    "Constitution": 18,
     "Physical Sheltering": 28
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Graz'zt's Habiliment"
+     "variant": "Scales of the Exile"
     },
     {
      "slot": "Belt",
-     "variant": "Belt of the Scoundrel"
+     "variant": "Bronze Dragonscale Belt"
     },
     {
      "slot": "Boots",
@@ -58,6 +58,10 @@
      "variant": "Lion's Mane"
     },
     {
+     "slot": "Off Hand",
+     "variant": "Cataclysmic Buckler"
+    },
+    {
      "slot": "Ring",
      "variant": "Ivy Helix"
     },
@@ -75,13 +79,13 @@
    "status": "optimal",
    "perTarget": {
     "Intelligence": 34,
-    "Universal Spell Power": 91,
-    "Wisdom": 28
+    "Universal Spell Power": 94,
+    "Wisdom": 29
    },
    "effective": {
     "Intelligence": 34,
-    "Universal Spell Power": 91,
-    "Wisdom": 28
+    "Universal Spell Power": 94,
+    "Wisdom": 29
    },
    "chosen": [
     {
@@ -118,11 +122,15 @@
     },
     {
      "slot": "Main Hand",
-     "variant": "Epic Locked and Loaded"
+     "variant": "Legendary Souleater"
     },
     {
      "slot": "Necklace",
      "variant": "Celestial Insignia"
+    },
+    {
+     "slot": "Off Hand",
+     "variant": "Dethek Runestone"
     },
     {
      "slot": "Ring",
@@ -294,16 +302,16 @@
   "endgame-caster-ml32": {
    "status": "optimal",
    "perTarget": {
-    "Universal Spell Power": 101,
+    "Universal Spell Power": 104,
     "Potency": 250,
-    "Wisdom": 30,
-    "Charisma": 29
+    "Wisdom": 33,
+    "Charisma": 26
    },
    "effective": {
-    "Universal Spell Power": 101,
+    "Universal Spell Power": 104,
     "Potency": 250,
-    "Wisdom": 30,
-    "Charisma": 29
+    "Wisdom": 33,
+    "Charisma": 26
    },
    "chosen": [
     {
@@ -328,7 +336,7 @@
     },
     {
      "slot": "Gloves",
-     "variant": "Gloryborne Gloves"
+     "variant": "Legendary Absorption Gauntlet"
     },
     {
      "slot": "Goggles",
@@ -336,31 +344,31 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary University Mage's Hat"
+     "variant": "Circlet of Shar"
     },
     {
      "slot": "Main Hand",
-     "variant": "Epic Locked and Loaded"
+     "variant": "Legendary Ornamented Dagger (level 32)"
     },
     {
      "slot": "Necklace",
      "variant": "Celestial Insignia"
     },
     {
-     "slot": "Ring",
-     "variant": "Legendary Duskbone Ring"
+     "slot": "Off Hand",
+     "variant": "Dethek Runestone"
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Ring of Fall's Decay"
+     "variant": "Clouded Dreams"
     },
     {
-     "slot": "Rune Arm",
-     "variant": "Dinosaur Bone Rune Arm"
+     "slot": "Ring",
+     "variant": "Legendary Chieftain"
     },
     {
      "slot": "Trinket",
-     "variant": "Golden Souvenir Coin"
+     "variant": "Epic Piece of Shattered Horn"
     }
    ]
   }

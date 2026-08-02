@@ -19,8 +19,24 @@
   }
 
   const ARMOR = { cloth: "Cloth", light: "Light", medium: "Medium", heavy: "Heavy" };
-  const WEAPON = { "2h": "Two-handed", swordboard: "One-hand + shield", twf: "Dual-wield", runearm: "One-hand + rune arm" };
+  const STYLE = { "one-hand": "One-hand", "two-hand": "Two-hand", unarmed: "Unarmed" };
+  const OATH = { druid: "Druid — no metal (cloth/light approx.)" };
   const POOL = { all: "All gear", owned: "Only what I own" };
+
+  // U5 — the combat-style/weapon-type constraint as one line. Style + picked types
+  // ("One-hand: Long Swords, Rapiers"), style alone, or nothing when unconstrained.
+  function weaponLine(i) {
+    const style = STYLE[i.style] || i.style || "";
+    const types = Array.isArray(i.weaponTypes) ? i.weaponTypes : [];
+    if (!style && !types.length) return "";
+    if (style && types.length) return `${style}: ${types.join(", ")}`;
+    return style || types.join(", ");
+  }
+  // The off-hand allow-set, "empty" rendered as "Empty". Blank when unconstrained.
+  function offHandLine(i) {
+    const set = Array.isArray(i.offHand) ? i.offHand : [];
+    return set.map((t) => (t === "empty" ? "Empty" : t)).join(", ");
+  }
 
   // Name + character constraints, the shared header for both exports.
   function constraintPairs(rec) {
@@ -31,7 +47,9 @@
       ["Race", i.race || ""],
       ["Alignment", i.alignment || ""],
       ["Armor", i.armor ? (ARMOR[i.armor] || i.armor) : ""],
-      ["Weapon", i.weapon ? (WEAPON[i.weapon] || i.weapon) : ""],
+      ["Oath", OATH[i.oath] || ""],
+      ["Weapon", weaponLine(i)],
+      ["Off hand", offHandLine(i)],
       ["Gear pool", POOL[i.pool] || i.pool || "all"],
       ["Priorities", (i.priorities || []).join(" > ")],
     ].filter(([, v]) => v !== "" && v != null);
