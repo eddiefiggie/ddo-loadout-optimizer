@@ -579,7 +579,11 @@ function activeSetDetail(result) {
   return (result.setsActive || []).map((s) => ({
     set: s.set, pieces: s.pieces_required,
     slots: yields.get(s.set) || [],
-    affixes: tierAffixes.get(`${s.set}||${s.pieces_required}`) || [],
+    // Prefer affixes derived from equipped members' static tiers (intrinsic sets);
+    // fall back to the affixes the solver carried on setsActive — the only source for
+    // a craftable-membership set (Vecna Lost Purpose awaken, Dino Set-Bonus), whose
+    // hosts have no static parsed_set_bonuses.
+    affixes: tierAffixes.get(`${s.set}||${s.pieces_required}`) || s.affixes || [],
   }));
 }
 

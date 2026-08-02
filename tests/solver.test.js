@@ -277,6 +277,31 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.ok(!r.chosen.some((c) => c.variant.variant_id === "klDup"), "the redundant duplicate is NOT equipped");
   });
 
+  await test("set-tab: a membership-awakened set carries its granted affixes on setsActive", async () => {
+    // A Lost Purpose host (no static set_bonus) that awakens a set from the runtime def.
+    // The Set Bonuses tab reads these affixes off setsActive, since the host carries none.
+    const host = {
+      variant_id: "Host", source_item: "Host", slot: "Armor",
+      affixes: [], scaling: [], set_bonus: [], parsed_set_bonuses: [], augment_slots: [],
+      set_membership_slot: { pool: ["MySet"], station: "Cannith Repurposing Station" },
+    };
+    const model = {
+      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Armor", [host])],
+      membershipSetDefs: { MySet: { tiers: [
+        { pieces_required: 1, pieces_label: "1 Piece", affixes: [
+          { stat: "Intelligence", bonus_type: "Artifact", value: 3, unit: "flat" },
+          { stat: "Strength", bonus_type: "Artifact", value: 3, unit: "flat" },
+        ] },
+      ] } },
+    };
+    const r = await S.solveLexicographic(model, highs);
+    const active = (r.setsActive || []).find((s) => s.set === "MySet");
+    assert.ok(active, "the set is completed via membership");
+    assert.ok((active.affixes || []).some((a) => a.stat === "Intelligence" && a.value === 3),
+      "setsActive carries the granted affixes for the Set tab to render");
+  });
+
   await test("U6: distinct-type stacking consumes slots (correct); a cap is the lever", async () => {
     const worn = () => [
       slot("Ring", [item("klE", "Ring", [["KL", "Enhancement", 10]])]),
