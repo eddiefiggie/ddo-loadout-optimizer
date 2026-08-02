@@ -12,6 +12,16 @@ A single candidate the solver may equip in a slot — one item expanded to one s
 ### Target
 A stat on the user's **ranked** priority list that a solve maximizes. Priority is strict and lexicographic, not weighted — target 1 is maximized first, then target 2 without giving up any of target 1, and so on.
 
+### Stat cap
+An optional user-set maximum on a Target's counted value — the solve stops crediting the stat past the cap, so it clamps rather than forbids.
+
+A cap is a clamp, not an eligibility filter: an item that exceeds the cap is still equippable, its counted value just saturates at the cap. Because a capped Target's contribution stops rising there, surplus slots fall through to the next-ranked Target instead of over-investing. When two caps name the same stat — a user cap and an intrinsic one such as an armor-type dodge ceiling — the tighter one applies.
+
+### Best-effort floor
+An optional user-set minimum on a Target that the solve tries to satisfy before maximizing the rest, but never at the cost of returning no result.
+
+A floor is enforced only after a joint-feasibility check confirms the whole set of floors can hold together; floors that cannot all be met at once are relaxed in reverse-priority order, each relaxed floor recorded as a shortfall. So an unreachable or conflicting floor degrades to a best-effort target rather than making the solve infeasible — the "get as close as you can" contract.
+
 ### Gated contribution
 The unifying primitive for every stat source: a `(stat, bonus_type, value)` that enters the objective only when all of its enabling binaries hold. A worn affix has one gate (its item is equipped); an augment, set bonus, or Dino insert adds more gates (placement chosen, piece threshold met, slot filled). This is what lets heterogeneous sources share one exact model instead of a code path each.
 
