@@ -45,19 +45,24 @@ def test_no_legacy_affix_keys_at_rest():
     assert not extra, f"unexpected non-native affix keys at rest: {sorted(extra)}"
 
 
-def test_ophaels_cincture_gap_fill_intact():
-    """The KTD4 gap overlay restored Ophael's 6 base-ability +15 Enhancement affixes."""
+def test_ophaels_cincture_abilities_are_seal_only():
+    """Ophael's ability scores are the single-pick 'Sealed in Undeath' pool, NOT flat
+    affixes. The prior gap-fill wrongly appended all 18 Undeath seal outcomes as
+    all-apply affixes, so a solve credited +15/+7/+3 to EVERY ability score
+    (fixed 2026-08-02: the gap-fill was a misread of the seal pool)."""
     data = _load()
     oph = next((it for it in data["items"] if (it.get("source_item") or "") == "Ophael's Cincture"), None)
     assert oph is not None, "Ophael's Cincture must be present in the dataset"
-    abilities = ["Strength", "Constitution", "Dexterity", "Intelligence", "Wisdom", "Charisma"]
+    abilities = {"Strength", "Constitution", "Dexterity", "Intelligence", "Wisdom", "Charisma"}
     have = {(a.get("name"), a.get("type"), str(a.get("value"))) for a in oph.get("affixes") or []}
-    for ab in abilities:
-        assert (ab, "Enhancement", "15") in have, \
-            f"Ophael's Cincture missing base-ability {ab} Enhancement +15 (gap-fill lost)"
-    # Deception/Seeker (gear-planner native, NOT part of the overlay) still present.
+    leaked = [a for a in have if a[0] in abilities]
+    assert not leaked, f"ability scores must come from the seal, not flat affixes: {leaked}"
+    # Deception/Seeker (gear-planner native) still present.
     assert ("Seeker", "Enhancement", "15") in have, "native Seeker +15 must remain"
     assert ("Deception", "Enhancement", "12") in have, "native Deception +12 must remain"
+    # The single-pick 'Sealed in Undeath' slot (the real source of the ability bonus).
+    assert any(s.get("seal_type") == "Undeath" for s in oph.get("seal_slots") or []), \
+        "Ophael must keep its 'Sealed in Undeath' single-pick slot"
 
 
 def test_stacking_equivalence_collapse_embedded():
