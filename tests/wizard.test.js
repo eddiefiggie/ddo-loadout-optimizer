@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, removePinFrom } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -268,6 +268,66 @@ test("addBundle is additive: appends new affixes, preserves existing, no dupes",
 test("bundle disclosure: Melee reveals tactics, Caster reveals schools + spell power", () => {
   assert.deepStrictEqual(BUNDLE_REVEALS.Melee, ["tactics"]);
   assert.deepStrictEqual(BUNDLE_REVEALS.Caster, ["schools", "spellpower"]);
+});
+
+// --- U3 pre-solve item pinning (pure core) --------------------------------
+const cardOf = (slot) => (slot === "Ring" ? 2 : 1);
+const mkItem = (id, slot, opts = {}) => ({ variant_id: id, source_item: id, slot, category: opts.category || "item" });
+
+test("U3/KTD4 pinWornSlotOf maps a weapon to Main Hand, not its raw slot", () => {
+  assert.strictEqual(pinWornSlotOf(mkItem("Sword", "Weapon", { category: "weapon" })), "Main Hand");
+  assert.strictEqual(pinWornSlotOf(mkItem("Orb", "Off Hand")), "Off Hand");
+  assert.strictEqual(pinWornSlotOf(mkItem("R1", "Ring")), "Ring");
+});
+
+test("U3/B2 applyPin pins a single-slot item by its worn slot", () => {
+  const sc = {};
+  applyPin(sc, mkItem("Hydra's Heart", "Trinket"), cardOf);
+  assert.deepStrictEqual(sc, { Trinket: { type: "pin", variant_id: "Hydra's Heart" } });
+});
+
+test("U3/KTD4 applyPin pins a weapon to Main Hand (guards the silent no-op)", () => {
+  const sc = {};
+  applyPin(sc, mkItem("Legendary Sword", "Weapon", { category: "weapon" }), cardOf);
+  assert.deepStrictEqual(sc, { "Main Hand": { type: "pin", variant_id: "Legendary Sword" } });
+  assert.ok(!sc.Weapon, "must NOT key by the raw 'Weapon' slot");
+});
+
+test("U3/B5 applyPin appends up to two different rings, then keeps the newest two", () => {
+  const sc = {};
+  applyPin(sc, mkItem("R1", "Ring"), cardOf);
+  applyPin(sc, mkItem("R2", "Ring"), cardOf);
+  assert.deepStrictEqual(sc.Ring, { type: "pin", variant_ids: ["R1", "R2"] });
+  applyPin(sc, mkItem("R1", "Ring"), cardOf);                 // duplicate -> no-op
+  assert.deepStrictEqual(sc.Ring, { type: "pin", variant_ids: ["R1", "R2"] });
+  applyPin(sc, mkItem("R3", "Ring"), cardOf);                 // third -> drop oldest
+  assert.deepStrictEqual(sc.Ring, { type: "pin", variant_ids: ["R2", "R3"] });
+});
+
+test("U3 applyPin replaces a single-cardinality slot on re-pin", () => {
+  const sc = {};
+  applyPin(sc, mkItem("T1", "Trinket"), cardOf);
+  applyPin(sc, mkItem("T2", "Trinket"), cardOf);
+  assert.deepStrictEqual(sc.Trinket, { type: "pin", variant_id: "T2" });
+});
+
+test("U3/B3 removePinFrom clears a slot, or prunes one ring keeping the other", () => {
+  const single = { Trinket: { type: "pin", variant_id: "T1" } };
+  removePinFrom(single, "Trinket", "T1", cardOf);
+  assert.deepStrictEqual(single, {}, "removing the only pin deletes the slot");
+  const rings = { Ring: { type: "pin", variant_ids: ["R1", "R2"] } };
+  removePinFrom(rings, "Ring", "R1", cardOf);
+  assert.deepStrictEqual(rings.Ring, { type: "pin", variant_ids: ["R2"] }, "the other ring survives as a list");
+});
+
+test("U3/B6 buildQuery threads slotConstraints (incl. a two-ring list) into the query", () => {
+  const st = { ...baseState(), slotConstraints: {
+    Trinket: { type: "pin", variant_id: "Hydra's Heart" },
+    Ring: { type: "pin", variant_ids: ["R1", "R2"] },
+  } };
+  const q = buildQuery(st);
+  assert.deepStrictEqual(q.slotConstraints.Trinket, { type: "pin", variant_id: "Hydra's Heart" });
+  assert.deepStrictEqual(q.slotConstraints.Ring, { type: "pin", variant_ids: ["R1", "R2"] });
 });
 
 console.log(`\n${passed} passed`);

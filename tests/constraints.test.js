@@ -98,4 +98,56 @@ test("pin-exemption also covers the Main Hand and Off Hand slots", () => {
   assert.ok(off.includes("OrbB"), "pinned dominated off-hand was pruned");
 });
 
+// --- U2 two-ring list-pin support -----------------------------------------
+
+test("U2 pinnedVariantIds normalizes single, list, and non-pin constraints", () => {
+  assert.deepStrictEqual(M.pinnedVariantIds({ type: "pin", variant_id: "R1" }), ["R1"]);
+  assert.deepStrictEqual(M.pinnedVariantIds({ type: "pin", variant_ids: ["R1", "R2"] }), ["R1", "R2"]);
+  assert.deepStrictEqual(M.pinnedVariantIds({ type: "empty" }), []);
+  assert.deepStrictEqual(M.pinnedVariantIds({ type: "free" }), []);
+  assert.deepStrictEqual(M.pinnedVariantIds(null), []);
+  assert.deepStrictEqual(M.pinnedVariantIds({ type: "pin", variant_ids: ["R1", null] }), ["R1"]);
+});
+
+test("U2/B5 slotConstraintBodies: a Ring list pins TWO rings (one x=1 each)", () => {
+  const xVars = [
+    { name: "x0", slot: "Ring", variant: { variant_id: "R1" } },
+    { name: "x1", slot: "Ring", variant: { variant_id: "R2" } },
+    { name: "x2", slot: "Ring", variant: { variant_id: "R3" } },
+  ];
+  const bodies = S.slotConstraintBodies(xVars, { Ring: { type: "pin", variant_ids: ["R1", "R3"] } });
+  assert.ok(bodies.includes("x0 = 1"), "first ring pinned");
+  assert.ok(bodies.includes("x2 = 1"), "second ring pinned");
+  assert.strictEqual(bodies.length, 2, "exactly two pin bodies, not the whole slot");
+});
+
+test("U2 slotConstraintBodies: a single-cardinality pin still emits exactly one body", () => {
+  const xVars = [
+    { name: "x0", slot: "Trinket", variant: { variant_id: "T1" } },
+    { name: "x1", slot: "Trinket", variant: { variant_id: "T2" } },
+  ];
+  const bodies = S.slotConstraintBodies(xVars, { Trinket: { type: "pin", variant_id: "T2" } });
+  assert.deepStrictEqual(bodies, ["x1 = 1"]);
+});
+
+test("U2 slotConstraintBodies: a stale member of a Ring list is a silent no-op", () => {
+  const xVars = [
+    { name: "x0", slot: "Ring", variant: { variant_id: "R1" } },
+    { name: "x1", slot: "Ring", variant: { variant_id: "R2" } },
+  ];
+  // R9 isn't in the pool (e.g. became ineligible) -> only R1's body is emitted.
+  const bodies = S.slotConstraintBodies(xVars, { Ring: { type: "pin", variant_ids: ["R1", "R9"] } });
+  assert.deepStrictEqual(bodies, ["x0 = 1"]);
+});
+
+test("U2/B5 buildModel: BOTH rings of a two-ring list survive the dominance pre-filter", () => {
+  // RingA dominates both RingB and RingC on the target; without pinning, B and C
+  // would be pruned. Pinning both via a list must keep both so each `= 1` has a var.
+  const A = v("RingA", "Ring", 20), B = v("RingB", "Ring", 5), C = v("RingC", "Ring", 4);
+  const query = { mlCap: 34, targets, slotConstraints: { Ring: { type: "pin", variant_ids: ["RingB", "RingC"] } } };
+  const model = M.buildModel([A, B, C], query);
+  const ids = model.worn.find((g) => g.slot === "Ring").variants.map((x) => x.variant_id);
+  assert.ok(ids.includes("RingB") && ids.includes("RingC"), "both pinned rings survived dominance");
+});
+
 console.log(`\n${passed} passed`);

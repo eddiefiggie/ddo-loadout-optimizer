@@ -634,4 +634,79 @@ test("U2: the real dataset has no orphaned Rune Arm slot after normalization", (
   assert.strictEqual(dino.slot, "Off Hand", "it is normalized into the Off Hand slot (still equippable)");
 });
 
+// --- U1 pinConflict / variantConflict (pre-solve pin B4 flag) -------------
+// One gate list shared with eligible(): pinConflict returns null (equippable) or
+// a short reason. These assert each gate produces a reason AND that eligible()
+// stays a pure filter over the same predicate (no drift).
+
+test("U1/B4: pinConflict flags ML above the cap", () => {
+  const hi = v("Hi", "Ring", [["Intelligence", "Enhancement", 9]], { ml: 34 });
+  const why = M.pinConflict(hi, { mlCap: 20 });
+  assert.ok(why && /cap/.test(why), `expected an ML-cap reason, got: ${why}`);
+});
+
+test("U1/B4: pinConflict flags ML below the floor", () => {
+  const lo = v("Lo", "Ring", [["Intelligence", "Enhancement", 5]], { ml: 10 });
+  const why = M.pinConflict(lo, { mlCap: 36, mlFloor: 30 });
+  assert.ok(why && /floor/.test(why), `expected an ML-floor reason, got: ${why}`);
+});
+
+test("U1/B4: pinConflict flags the race→docent mismatch both ways", () => {
+  const doc = v("Doc", "Armor", [["Constitution", "Enhancement", 10]]); doc.type = "Docents";
+  const body = v("Robe", "Armor", [["Wisdom", "Enhancement", 5]]);
+  // non-Forged wearing a docent, and a Forged wearing body armor: each has a reason.
+  assert.ok(/docent|Forged/i.test(M.pinConflict(doc, { mlCap: 34, race: "elf" }) || ""));
+  assert.ok(/docent|Forged/i.test(M.pinConflict(body, { mlCap: 34, race: "warforged" }) || ""));
+  // and the matching pairing is equippable
+  assert.strictEqual(M.pinConflict(doc, { mlCap: 34, race: "warforged" }), null);
+});
+
+test("U1/B4: pinConflict flags an armor type outside proficiency", () => {
+  const heavy = v("Plate", "Armor", [["Constitution", "Enhancement", 10]]); heavy.armor_type = "heavy";
+  const why = M.pinConflict(heavy, { mlCap: 34, armorTypes: ["cloth"] });
+  assert.ok(why && /armor/i.test(why), `expected an armor-proficiency reason, got: ${why}`);
+});
+
+test("U1/B4: pinConflict flags weapon-style and off-hand blocks", () => {
+  const sword = wt("Sword", "Long Swords");
+  const styled = M.pinConflict(sword, { mlCap: 34, weaponTypes: ["Rapiers"] });
+  assert.ok(styled && /style/.test(styled), `expected a style reason, got: ${styled}`);
+  const orb = oh("Orb", "Orbs");
+  const blocked = M.pinConflict(orb, { mlCap: 34, style: "thf" });
+  assert.ok(blocked && /off.?hand/i.test(blocked), `expected an off-hand reason, got: ${blocked}`);
+});
+
+test("U1/B4: pinConflict flags an alignment mismatch (drift guard vs eligible)", () => {
+  // eligible() enforces the alignment gate; a hand-mirrored pinConflict would have
+  // silently omitted it. This asserts the extracted core carries it.
+  const item = { ...v("Litany", "Trinket", [["Melee Power", "Profane", 20]]), alignment_req: ["Lawful Good"] };
+  const why = M.pinConflict(item, { mlCap: 34, alignment: "Chaotic Neutral" });
+  assert.ok(why && /alignment/i.test(why), `expected an alignment reason, got: ${why}`);
+});
+
+test("U1/B4: pinConflict flags an artifact without the opt-in", () => {
+  const arti = art("Arti", "Ring", [["Intelligence", "Enhancement", 9]]);
+  assert.ok(/Artifact/i.test(M.pinConflict(arti, { mlCap: 34 }) || ""));
+  assert.strictEqual(M.pinConflict(arti, { mlCap: 34, includeArtifact: true }), null);
+});
+
+test("U1/B4: pinConflict returns null for an equippable item", () => {
+  const ring = v("Ring", "Ring", [["Intelligence", "Enhancement", 5]], { ml: 20 });
+  assert.strictEqual(M.pinConflict(ring, { mlCap: 34 }), null);
+});
+
+test("U1 parity: eligible() equals filtering by variantConflict === null", () => {
+  const pool = [
+    v("okRing", "Ring", [["Intelligence", "Enhancement", 5]], { ml: 20 }),
+    v("hiRing", "Ring", [["Intelligence", "Enhancement", 9]], { ml: 34 }),
+    art("arti", "Ring", [["Intelligence", "Enhancement", 9]], { ml: 20 }),
+    wt("Sword", "Long Swords"),
+    oh("Orb", "Orbs"),
+  ];
+  const q = { mlCap: 30, weaponTypes: ["Rapiers"], style: "one-hand" };
+  const kept = M.eligible(pool, q).map((x) => x.source_item).sort();
+  const byCore = pool.filter((x) => M.variantConflict(x, q) === null).map((x) => x.source_item).sort();
+  assert.deepStrictEqual(kept, byCore, "eligible() and the shared core must agree exactly");
+});
+
 console.log(`\n${passed} passed`);

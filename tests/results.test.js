@@ -287,6 +287,33 @@ test("U5/R5: a non-Artifact equipped row has no Artifact cue", () => {
   assert.ok(!/artifact/i.test(html), "no Artifact badge or frame on ordinary gear");
 });
 
+const ring = (id) => ({ slot: "Ring", variant: { variant_id: id, minimum_level: 20 } });
+
+test("U4/F2: a Ring row badges 'pinned' only when ITS variant is in the pin list", () => {
+  const sc = { Ring: { type: "pin", variant_ids: ["R1", "R2"] } };
+  assert.ok(/pd-badge pin/.test(R.equippedRow("Ring", ring("R1"), sc)), "R1 pinned -> badge");
+  assert.ok(/pd-badge pin/.test(R.equippedRow("Ring", ring("R2"), sc)), "R2 pinned -> badge");
+  assert.ok(!/pd-badge pin/.test(R.equippedRow("Ring", ring("R3"), sc)), "R3 not pinned -> no lying badge");
+});
+
+test("U4/F2: with only one ring pinned, the other ring row shows no pinned badge", () => {
+  const sc = { Ring: { type: "pin", variant_ids: ["R1"] } };
+  assert.ok(/pd-badge pin/.test(R.equippedRow("Ring", ring("R1"), sc)));
+  assert.ok(!/pd-badge pin/.test(R.equippedRow("Ring", ring("R2"), sc)));
+});
+
+test("U4/F1: the Free button targets the row's own variant (frees one ring, not the slot)", () => {
+  const sc = { Ring: { type: "pin", variant_ids: ["R1", "R2"] } };
+  const r2 = R.equippedRow("Ring", ring("R2"), sc);
+  assert.ok(/data-act="free"[^>]*data-variant="R2"/.test(r2), "free carries this ring's variant");
+});
+
+test("U4: a single-slot pin badges its row (regression)", () => {
+  const sc = { Trinket: { type: "pin", variant_id: "Hydra's Heart" } };
+  const html = R.equippedRow("Trinket", { slot: "Trinket", variant: { variant_id: "Hydra's Heart", minimum_level: 30 } }, sc);
+  assert.ok(/pd-badge pin/.test(html));
+});
+
 // ---- U2 (Plan B) — assigned augments + affixes + craft slots in blocks ----
 function blockMaps(o) {
   o = o || {};
