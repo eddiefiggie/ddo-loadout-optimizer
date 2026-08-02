@@ -280,7 +280,7 @@ if (typeof window !== "undefined" && window.App) {
             const wtypes = (WT && state.style) ? WT.weaponTypesForStyle(state.style, weaponTypesInData) : [];
             const ohOn = WT ? WT.offHandEnabledForStyle(state.style) : false;
             const twfOn = WT ? WT.twfWeaponAllowedForStyle(state.style) : false;
-            const ohTypes = WT ? WT.OFF_HAND_TYPES : [];
+            const ohTypes = WT ? ((state.style && WT.offHandTypesForStyle(state.style)) || WT.OFF_HAND_TYPES) : [];
             const offWeaponTypes = twfOn ? WT.offHandWeaponTypes(weaponTypesInData) : [];
             // A filterable pick-list of toggle chips, for the long weapon lists.
             const pickList = (id, opts, sel) => `<div class="wz-picklist">
@@ -298,7 +298,7 @@ if (typeof window !== "undefined" && window.App) {
               ${twfOn ? `<span class="wz-sublabel">Off-hand weapon <span class="wz-sub">· dual-wield, optional</span></span>
               <span class="wz-help">Pick one or more one-handed weapon types to two-weapon fight; the solver optimizes the best second weapon.</span>
               ${pickList("offweapons", offWeaponTypes, state.offHandWeapons)}` : ""}`
-                : `<p class="wz-help wz-note">${state.style === "ranged" ? "Bows and crossbows use both hands — no off-hand item." : "Two-handed weapons use both hands — no off-hand item."}</p>`}
+                : `<p class="wz-help wz-note">${state.style === "ranged" ? "Bows use both hands — no off-hand item." : "Two-handed weapons use both hands — no off-hand item."}</p>`}
             </div>` : ""}</div>`;
           })()}
           <label class="wz-check"><input type="checkbox" id="wz-artifact"${state.includeArtifact ? " checked" : ""}>

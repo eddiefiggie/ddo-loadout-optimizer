@@ -125,19 +125,23 @@ function offHandWeaponOk(v, offWeaponAllow) {
   return offWeaponAllow != null && v.type != null && offWeaponAllow.includes(v.type);
 }
 /** Off-hand gate for a query: `{ blocked }` when no off-hand item may be equipped
- *  (two-hand style, or only "empty" was chosen), else `{ allowed }` — the allowed
- *  off-hand `type` list, or null for any. */
+ *  (THF/bow style, only "empty" chosen, or a style that permits none), else
+ *  `{ allowed }` — the allowed off-hand `type` list, or null for any. The style's
+ *  own restriction (e.g. crossbow => rune arm only) intersects the player's picks. */
 function offHandGate(query) {
   const T = _taxonomy();
   const EMPTY = T ? T.OFF_HAND_EMPTY : "empty";
   if (query.style && T && !T.offHandEnabledForStyle(query.style)) return { blocked: true };
+  const styleAllowed = (query.style && T && T.offHandTypesForStyle) ? T.offHandTypesForStyle(query.style) : null;
   const set = Array.isArray(query.offHand) ? query.offHand : [];
-  if (set.length) {
-    const items = set.filter((t) => t !== EMPTY);
-    if (!items.length) return { blocked: true }; // only "empty": no off-hand item
-    return { blocked: false, allowed: items };
-  }
-  return { blocked: false, allowed: null }; // any off-hand item
+  const items = set.filter((t) => t !== EMPTY);
+  if (set.length && !items.length) return { blocked: true }; // only "empty": no off-hand item
+  // Player picks (if any) constrain within the style's allowance; otherwise the
+  // style's allowance is the whole permitted set (null => any type).
+  let allowed = items.length ? items : null;
+  if (styleAllowed != null) allowed = allowed ? allowed.filter((t) => styleAllowed.includes(t)) : styleAllowed.slice();
+  if (Array.isArray(allowed) && !allowed.length) return { blocked: true };
+  return { blocked: false, allowed };
 }
 
 // Character gate (U2). Every branch below is ADDITIVE and backward-compatible:

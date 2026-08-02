@@ -9,18 +9,21 @@
 //   - one-hand  : One-handed + Light + Thrown (all wield in one hand -> an off-hand
 //                 is allowed: a shield/orb/rune arm, OR a second weapon for TWF).
 //   - thf       : Two Handed Fighting — two-handed melee. No off-hand.
-//   - ranged    : Bows + ALL crossbows (light/heavy included). Both hands occupied,
-//                 so NO off-hand item (a crossbow + shield is an illegal loadout).
+//   - ranged    : Bows only. Both hands occupied, so NO off-hand item.
+//   - crossbow  : ALL crossbows (light/heavy/great/repeating). Per the DDO wiki a
+//                 rune arm "can be wielded with one-handed weapons and all crossbows",
+//                 so the off-hand may hold a RUNE ARM (only) — the artificer style.
 //   - unarmed   : Handwraps. An off-hand orb/rune arm is allowed; no second weapon.
 (function () {
   "use strict";
 
-  const ONE = "one-hand", THF = "thf", RANGED = "ranged", UNARMED = "unarmed";
+  const ONE = "one-hand", THF = "thf", RANGED = "ranged", CROSSBOW = "crossbow", UNARMED = "unarmed";
 
   const STYLES = [
     { id: ONE, label: "One-hand / Dual-wield" },
     { id: THF, label: "Two Handed Fighting" },
-    { id: RANGED, label: "Ranged" },
+    { id: RANGED, label: "Bow" },
+    { id: CROSSBOW, label: "Crossbow + Rune Arm" },
     { id: UNARMED, label: "Unarmed" },
   ];
 
@@ -41,10 +44,11 @@
     // Two-handed melee (DDO)
     "Falchions": THF, "Great Axes": THF, "Great Clubs": THF, "Great Swords": THF,
     "Mauls": THF, "Quarterstaffs": THF,
-    // Ranged (DDO) — bows + ALL crossbows
-    "Long Bows": RANGED, "Short Bows": RANGED, "Great Crossbows": RANGED,
-    "Heavy Crossbows": RANGED, "Light Crossbows": RANGED,
-    "Repeating Heavy Crossbows": RANGED, "Repeating Light Crossbows": RANGED,
+    // Ranged (DDO) — bows use both hands (no off-hand)
+    "Long Bows": RANGED, "Short Bows": RANGED,
+    // Crossbows — per the wiki a rune arm pairs with ALL crossbows (artificer style)
+    "Great Crossbows": CROSSBOW, "Heavy Crossbows": CROSSBOW, "Light Crossbows": CROSSBOW,
+    "Repeating Heavy Crossbows": CROSSBOW, "Repeating Light Crossbows": CROSSBOW,
     // Unarmed
     "Handwraps": UNARMED,
   };
@@ -70,10 +74,18 @@
     return list.sort();
   }
 
-  /** An off-hand ITEM (shield/orb/rune arm/empty) is possible for one-hand and
-   *  unarmed styles; two-handed and ranged occupy both hands. */
+  /** An off-hand ITEM is possible for one-hand, unarmed, and crossbow styles;
+   *  two-handed (THF) and bows (ranged) occupy both hands. */
   function offHandEnabledForStyle(style) {
-    return style === ONE || style === UNARMED;
+    return style === ONE || style === UNARMED || style === CROSSBOW;
+  }
+
+  /** The off-hand item types a style permits, or null for "any". A crossbow can
+   *  only take a rune arm (per the DDO wiki) — no shield/orb. one-hand/unarmed are
+   *  unrestricted (the player's own picks constrain). */
+  function offHandTypesForStyle(style) {
+    if (style === CROSSBOW) return ["Rune Arms"];
+    return null;
   }
 
   /** A second WEAPON in the off-hand (two-weapon fighting) is possible only in the
@@ -95,9 +107,9 @@
 
   const api = {
     STYLES, STYLE_OF_TYPE, OFF_HAND_TYPES, OFF_HAND_EMPTY,
-    styleOfType, weaponTypesForStyle, offHandEnabledForStyle,
+    styleOfType, weaponTypesForStyle, offHandEnabledForStyle, offHandTypesForStyle,
     twfWeaponAllowedForStyle, offHandWeaponTypes, orphanWeaponTypes,
-    ONE_HAND: ONE, THF, RANGED, UNARMED,
+    ONE_HAND: ONE, THF, RANGED, CROSSBOW, UNARMED,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (typeof window !== "undefined") window.WeaponTaxonomy = api;
