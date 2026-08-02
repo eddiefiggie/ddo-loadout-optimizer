@@ -1620,5 +1620,25 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.strictEqual(a.chosen.filter((c) => c.variant.artifact).length, 1);
   });
 
+  await test("TWF hand-mutex: a shared weapon can't fill both hands", () => {
+    const M = require("../web/model.js");
+    // A single Rapier qualifies for BOTH the main-hand lock and the off-hand-weapon
+    // lock (overlapping sets) — the exact case the mutex guards.
+    const rapier = { source_item: "Twin Rapier", variant_id: "Twin Rapier", slot: "Weapon",
+      category: "weapon", type: "Rapiers", minimum_level: 10, ml: 10, verification: "verified",
+      affixes: [{ name: "Strength", type: "Enhancement", value: 8, unit: "flat" }],
+      scaling: [], set_bonus: [], augment_slots: [] };
+    const model = M.buildModel([rapier], { mlCap: 34, targets: ["Strength"], style: "one-hand",
+      weaponTypes: ["Rapiers"], offHandWeapons: ["Rapiers"] });
+    const mh = model.worn.find((s) => s.slot === "Main Hand");
+    const oh = model.worn.find((s) => s.slot === "Off Hand");
+    assert.ok(mh && oh, "both hand slots are built");
+    assert.ok(mh.variants.some((v) => v.variant_id === "Twin Rapier") &&
+      oh.variants.some((v) => v.variant_id === "Twin Rapier"), "the Rapier is a candidate in both hands");
+    const program = S.buildProgram(model);
+    assert.ok(program.extraConstraints.some((c) => /^x\d+ \+ x\d+ <= 1$/.test(c)),
+      "a hand-mutex `xA + xB <= 1` pairs the shared weapon's two pick-vars (load-bearing, not cosmetic)");
+  });
+
   console.log(`\n${passed} passed`);
 })();

@@ -117,9 +117,12 @@ function allowedOffHandWeaponTypes(query) {
 function mainHandWeaponOk(v, weaponAllow) {
   return v.type == null || !weaponAllow || weaponAllow.includes(v.type);
 }
-/** Can this weapon fill the Off Hand as a TWF second weapon? */
+/** Can this weapon fill the Off Hand as a TWF second weapon? Requires a concrete
+ *  type match: an untyped host (unknown handedness — it could be crafted two-handed,
+ *  which can't be dual-wielded) is NOT offered as an off-hand weapon. It stays a Main
+ *  Hand option via the main-hand fail-open. */
 function offHandWeaponOk(v, offWeaponAllow) {
-  return offWeaponAllow != null && (v.type == null || offWeaponAllow.includes(v.type));
+  return offWeaponAllow != null && v.type != null && offWeaponAllow.includes(v.type);
 }
 /** Off-hand gate for a query: `{ blocked }` when no off-hand item may be equipped
  *  (two-hand style, or only "empty" was chosen), else `{ allowed }` — the allowed

@@ -97,7 +97,7 @@
     STYLES, STYLE_OF_TYPE, OFF_HAND_TYPES, OFF_HAND_EMPTY,
     styleOfType, weaponTypesForStyle, offHandEnabledForStyle,
     twfWeaponAllowedForStyle, offHandWeaponTypes, orphanWeaponTypes,
-    ONE_HAND: ONE, TWO_HAND: THF, THF, RANGED, UNARMED,
+    ONE_HAND: ONE, THF, RANGED, UNARMED,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (typeof window !== "undefined") window.WeaponTaxonomy = api;
