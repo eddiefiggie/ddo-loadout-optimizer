@@ -19,7 +19,7 @@
   }
 
   const ARMOR = { cloth: "Cloth", light: "Light", medium: "Medium", heavy: "Heavy" };
-  const STYLE = { "one-hand": "One-hand", "two-hand": "Two-hand", unarmed: "Unarmed" };
+  const STYLE = { "one-hand": "One-hand / Dual-wield", thf: "Two Handed Fighting", ranged: "Ranged", unarmed: "Unarmed" };
   const OATH = { druid: "Druid — no metal (cloth/light approx.)" };
   const POOL = { all: "All gear", owned: "Only what I own" };
 
@@ -37,6 +37,10 @@
     const set = Array.isArray(i.offHand) ? i.offHand : [];
     return set.map((t) => (t === "empty" ? "Empty" : t)).join(", ");
   }
+  // The two-weapon-fighting off-hand weapon allow-set. Blank when not dual-wielding.
+  function offHandWeaponLine(i) {
+    return (Array.isArray(i.offHandWeapons) ? i.offHandWeapons : []).join(", ");
+  }
 
   // Name + character constraints, the shared header for both exports.
   function constraintPairs(rec) {
@@ -50,6 +54,7 @@
       ["Oath", OATH[i.oath] || ""],
       ["Weapon", weaponLine(i)],
       ["Off hand", offHandLine(i)],
+      ["Off-hand weapon", offHandWeaponLine(i)],
       ["Gear pool", POOL[i.pool] || i.pool || "all"],
       ["Priorities", (i.priorities || []).join(" > ")],
     ].filter(([, v]) => v !== "" && v != null);

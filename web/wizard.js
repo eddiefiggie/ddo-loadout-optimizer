@@ -59,6 +59,7 @@ function buildQuery(state) {
     style: state.style || null,
     weaponTypes: Array.isArray(state.weaponTypes) ? state.weaponTypes.slice() : [],
     offHand: Array.isArray(state.offHand) ? state.offHand.slice() : [],
+    offHandWeapons: Array.isArray(state.offHandWeapons) ? state.offHandWeapons.slice() : [],
     race: state.race || null,
     alignment: state.alignment || null,
     includeArtifact: !!state.includeArtifact,           // U4 — Artifact opt-in
@@ -204,7 +205,7 @@ if (typeof window !== "undefined" && window.App) {
       .filter((v) => v.slot === "Weapon" && v.type).map((v) => v.type))];
 
     const state = { step: "intro", ml: 36, mlFloor: 0, race: "", alignment: "", armor: "", oath: "",
-      style: "", weaponTypes: [], offHand: [],
+      style: "", weaponTypes: [], offHand: [], offHandWeapons: [],
       includeArtifact: false,
       pool: "all", ownedNames: null, priorities: [], slotConstraints: {}, constraintsDirty: false, lastRun: null,
       characterName: "", loadedStale: false };
@@ -276,19 +277,28 @@ if (typeof window !== "undefined" && window.App) {
             ${state.oath === "druid" && !forged ? `<p class="wz-help wz-note">Druidic oath: body armor restricted to cloth + light. Metal vs non-metal medium/heavy (e.g. Darkleaf, Dragonhide) isn't distinguishable in our data, so this is a conservative approximation.</p>` : ""}</div>
           ${(() => {
             const styles = WT ? WT.STYLES : [];
-            const styleLabel = (WT && state.style) ? ((WT.STYLES.find((s) => s.id === state.style) || {}).label || "") : "";
             const wtypes = (WT && state.style) ? WT.weaponTypesForStyle(state.style, weaponTypesInData) : [];
-            const ohOn = WT ? WT.offHandEnabledForStyle(state.style) : true;
+            const ohOn = WT ? WT.offHandEnabledForStyle(state.style) : false;
+            const twfOn = WT ? WT.twfWeaponAllowedForStyle(state.style) : false;
             const ohTypes = WT ? WT.OFF_HAND_TYPES : [];
+            const offWeaponTypes = twfOn ? WT.offHandWeaponTypes(weaponTypesInData) : [];
+            // A filterable pick-list of toggle chips, for the long weapon lists.
+            const pickList = (id, opts, sel) => `<div class="wz-picklist">
+              <input class="wz-pl-filter" data-plfilter="${id}" placeholder="Filter…" aria-label="Filter ${id}">
+              <div class="wz-pl-opts" id="wz-${id}">${opts.map((t) => `<button class="wz-chip ${sel.includes(t) ? "on" : ""}" data-plopt="${id}" data-val="${esc(t)}">${esc(t)}</button>`).join("")}</div>
+              <span class="wz-pl-count" data-plcount="${id}">${sel.length ? esc(sel.length) + " selected" : "none = any"}</span></div>`;
             return `<div class="wz-field"><span class="wz-label">Combat style <span class="wz-sub">· optional</span></span>
-            <span class="wz-help">Pick a style to constrain the weapon and off-hand we consider. None picked within a group = any of it. Leave the style unset to allow anything.</span>
+            <span class="wz-help">Pick a style, then narrow the weapon and off-hand. Nothing picked within a list = any of it; leave the style unset to allow anything.</span>
             <div class="wz-seg" id="wz-style">${styles.map((s) => `<button class="wz-chip ${state.style === s.id ? "on" : ""}" data-style="${s.id}">${esc(s.label)}</button>`).join("")}</div>
             ${state.style ? `<div class="wz-subseg">
-              <span class="wz-sublabel">Weapon type <span class="wz-sub">· none = any ${esc(styleLabel.toLowerCase())}</span></span>
-              <div class="wz-seg wz-wrap" id="wz-weptypes">${wtypes.map((t) => `<button class="wz-chip ${state.weaponTypes.includes(t) ? "on" : ""}" data-weptype="${esc(t)}">${esc(t)}</button>`).join("")}</div>
+              <span class="wz-sublabel">Weapon type <span class="wz-sub">· none = any</span></span>
+              ${pickList("weptypes", wtypes, state.weaponTypes)}
               ${ohOn ? `<span class="wz-sublabel">Off hand <span class="wz-sub">· none = any</span></span>
-              <div class="wz-seg wz-wrap" id="wz-offhand"><button class="wz-chip ${state.offHand.includes("empty") ? "on" : ""}" data-offhand="empty">Empty</button>${ohTypes.map((t) => `<button class="wz-chip ${state.offHand.includes(t) ? "on" : ""}" data-offhand="${esc(t)}">${esc(t)}</button>`).join("")}</div>`
-                : `<p class="wz-help wz-note">Two-handed weapons use both hands — no off-hand item.</p>`}
+              <div class="wz-seg wz-wrap" id="wz-offhand"><button class="wz-chip ${state.offHand.includes("empty") ? "on" : ""}" data-offhand="empty">Empty</button>${ohTypes.map((t) => `<button class="wz-chip ${state.offHand.includes(t) ? "on" : ""}" data-offhand="${esc(t)}">${esc(t)}</button>`).join("")}</div>
+              ${twfOn ? `<span class="wz-sublabel">Off-hand weapon <span class="wz-sub">· dual-wield, optional</span></span>
+              <span class="wz-help">Pick one or more one-handed weapon types to two-weapon fight; the solver optimizes the best second weapon.</span>
+              ${pickList("offweapons", offWeaponTypes, state.offHandWeapons)}` : ""}`
+                : `<p class="wz-help wz-note">${state.style === "ranged" ? "Bows and crossbows use both hands — no off-hand item." : "Two-handed weapons use both hands — no off-hand item."}</p>`}
             </div>` : ""}</div>`;
           })()}
           <label class="wz-check"><input type="checkbox" id="wz-artifact"${state.includeArtifact ? " checked" : ""}>
@@ -707,6 +717,7 @@ if (typeof window !== "undefined" && window.App) {
       state.style = i.style || "";
       state.weaponTypes = Array.isArray(i.weaponTypes) ? i.weaponTypes.slice() : [];
       state.offHand = Array.isArray(i.offHand) ? i.offHand.slice() : [];
+      state.offHandWeapons = Array.isArray(i.offHandWeapons) ? i.offHandWeapons.slice() : [];
       state.includeArtifact = !!i.includeArtifact;
       state.pool = i.pool || "all";
       state.ownedNames = Array.isArray(i.ownedNames) ? new Set(i.ownedNames) : null;
@@ -890,14 +901,28 @@ if (typeof window !== "undefined" && window.App) {
         // chips are shown and resets any prior sub-picks, so a full re-render.
         root.querySelectorAll("#wz-style .wz-chip").forEach((c) => c.onclick = () => {
           const next = state.style === c.dataset.style ? "" : c.dataset.style;
-          state.style = next; state.weaponTypes = []; state.offHand = [];
+          state.style = next; state.weaponTypes = []; state.offHand = []; state.offHandWeapons = [];
           render();
         });
-        // Weapon-type + off-hand: permissive multi-select (toggle membership).
+        // Permissive multi-select (toggle membership).
         const toggleIn = (arr, val) => arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
-        root.querySelectorAll("#wz-weptypes .wz-chip").forEach((c) => c.onclick = () => {
-          state.weaponTypes = toggleIn(state.weaponTypes, c.dataset.weptype);
-          c.classList.toggle("on", state.weaponTypes.includes(c.dataset.weptype));
+        // Pick-lists (weapon type + off-hand weapon): each `data-plopt` names the
+        // list; map it to the backing state array. Toggling updates only the chip +
+        // the count, so the filter text and scroll position survive.
+        const PL = { weptypes: "weaponTypes", offweapons: "offHandWeapons" };
+        root.querySelectorAll(".wz-pl-opts .wz-chip").forEach((c) => c.onclick = () => {
+          const key = PL[c.dataset.plopt]; if (!key) return;
+          state[key] = toggleIn(state[key], c.dataset.val);
+          c.classList.toggle("on", state[key].includes(c.dataset.val));
+          const count = root.querySelector(`[data-plcount="${c.dataset.plopt}"]`);
+          if (count) count.textContent = state[key].length ? state[key].length + " selected" : "none = any";
+        });
+        // Pick-list filter: hide options whose label doesn't contain the query.
+        root.querySelectorAll(".wz-pl-filter").forEach((inp) => inp.oninput = () => {
+          const q = inp.value.trim().toLowerCase();
+          root.querySelectorAll(`#wz-${inp.dataset.plfilter} .wz-chip`).forEach((b) => {
+            b.classList.toggle("wz-hidden", q !== "" && !b.dataset.val.toLowerCase().includes(q));
+          });
         });
         root.querySelectorAll("#wz-offhand .wz-chip").forEach((c) => c.onclick = () => {
           state.offHand = toggleIn(state.offHand, c.dataset.offhand);

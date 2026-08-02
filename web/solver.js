@@ -263,6 +263,23 @@ function buildProgram(model) {
   // Unique-Equipped augments sharing a variant_id across records: one placement total.
   for (const [, pls] of augByUnique) if (pls.length > 1) extraConstraints.push(`${pls.join(" + ")} <= 1`);
 
+  // TWF — a one-handed weapon variant is a candidate in BOTH Main Hand and Off Hand
+  // (two-weapon fighting). The same physical item can't fill both hands, so cap the
+  // sum of its pick vars across the two hands at 1. This is LOAD-BEARING correctness,
+  // not cosmetic: plain affixes dedupe per bucket, but set-piece count, augment color
+  // supply, and Dino slot capacity all accumulate PER equipped x-var — so a
+  // double-equipped weapon would double those and could illegitimately RAISE the
+  // optimum. Do not remove.
+  const handVars = new Map(); // variant id -> pick-var names in Main/Off Hand
+  for (const xv of xVars) {
+    if (xv.slot !== "Main Hand" && xv.slot !== "Off Hand") continue;
+    const id = xv.variant.variant_id || xv.variant.source_item || xv.variant.name;
+    if (id == null) continue;
+    if (!handVars.has(id)) handVars.set(id, []);
+    handVars.get(id).push(xv.name);
+  }
+  for (const [, names] of handVars) if (names.length > 1) extraConstraints.push(`${names.join(" + ")} <= 1`);
+
   // U4 (Dino) — Isle of Dread Dino crafting. Structurally the augment mechanic
   // with a typed-slot vocabulary, TWO-KEYED by (dino_type, category) (KTD1): a
   // "Scale (Weapon)" insert fits only a "Scale Slot (Weapon)". Each insert UNIT

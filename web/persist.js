@@ -33,7 +33,7 @@
   // never silently strip a field the save path keeps (the two lists cannot drift).
   const INPUT_KEYS = [
     "characterName", "ml", "race", "alignment", "armor", "oath",
-    "style", "weaponTypes", "offHand",
+    "style", "weaponTypes", "offHand", "offHandWeapons",
     "includeArtifact", "pool", "ownedNames", "priorities", "slotConstraints",
   ];
 
