@@ -1,0 +1,51 @@
+# User bug reports & feature requests
+
+Raw, verbatim feedback aggregated from users/testers. This file is the source of
+record for the reports; each cluster is now tracked as a GitHub issue. Add new
+raw reports below the divider; open/annotate issues rather than deleting text here.
+
+## Tracking issues (filed 2026-08-02 from the reports below)
+
+Bugs:
+- #88  Bonus-type stacking accuracy (Insight/Insightful; over/under-stacking) + manual override
+- #89  Missing & unscored affixes (rare effects, magnitude-less affixes, affix synonyms)
+- #90  Body-slot & armor-type constraint violations (docent/robe mismatches, empty slots)
+- #91  Solver favors niche/leveling gear over holistic value; duplicate & ignored priorities
+- #92  Set-bonus over-fitting (a single set as the only path to a stat)
+- #93  Data currency (pre-U80 Spell Focus values; no-longer-available items)
+
+Enhancements:
+- #94  Stat floors, caps, and cap-awareness (min/max per stat)
+- #95  Input UX: build presets, max-level bound, content filter, default ML 36, abbreviation shortcuts
+
+Already shipped (reports that are resolved):
+- Item pinning — "pick pieces we definitely want" -> PR #86
+- Wiki-sourced race list — "Eladrin / several races missing" -> PR #87
+
+--------------------------------------------------------------------------------
+RAW REPORTS (verbatim)
+--------------------------------------------------------------------------------
+
+These are bug reports. Do a careful audit and validate these claims. Test for these claims and of confirmed let’s flag these issues to be investigated and then resolved: Some Spell focus values are the older ones, be sure they are updated with U80 adjustments. This is too cumbersome it Need presets: Ranged, Melee, Caster with subset like Melee TWF, Ranged Thrower, DC Caster etc etc...like the gear planner. Another user reported the following: I'm using one priority, Force Spell Crit Chance, and its producing a set with Legendary Sirocco and Perfected Torc to get the Biting Sands set and that's it. No other force lore stuff. Presents one way to get biting sands as the only way. Seems to be an issue. Another user reported Eladrin are missing from the Race selection list. Looks like several others are missing as well. It is recommending I use level 18 items, you should add a minimum and maximum level, reduces options and allows me to choose only items with Sun/Moon augments. Another person reported: I’ll shout out that there are some bonuses that stack when they shouldn’t, and some that shouldn’t when they should, so you may also want to make some sort of option for players to manually alter the bonus type of certain items for more accurate calculations? Another reported: I asked for ml7, human thf heavy armor, con, str, deadly, accuracy, mp. got Chain Shirt of Toppling (level 4). And no set at all. I would expect maybe abishai, probably fens set for artifact deadly/accuracy, maybe fey Another reported: Did a quick test, it put a Docent on a Halfling with Light armour selected, and there's no Docent option in the armour list
+
+Priorities: I selected in order: Impulse, Kinetic Lore, Kinetic Intensity, and Intelligence
+
+It put Kinetic Lore on 4 times, 2 of which were provided nothing that wasn't available on other gear
+
+No Kinetic Intensity added or prioritized.
+
+Another reported: right now it's good for suggesting items you might not have considered but it does not seem to be able to play with augments and stacking quite right yet. Another report: 1) Missing effects - there are some effects that we build around (as they are rare) eg Bone Paws, Druidic Mastery, Procs etc that seem to be missing
+2) Stacking - this ones been called out already but there are some incorrect stacking rules like insight and insightful
+3) Caps - has no awareness of caps - eg doublestrike might be my highest priority until i hit 100% then its irrelevant
+4) Over prioritising small benefits - +2 exceptional bonus is rarely worth the tradeoff when they come on level 18 gear
+5) need to be able to set a minimum for stats eg i need 300 PRR then maximise everything else once thats hit
+6) Likewise maximums (goes hand in hand with caps) if i dont want to chase the +2 exceptional i can choose to cap at 2 lower
+7) Ideally the tool would calculate stat weightings and maximise dps (for dps builds) but that requires build awareness
+8) Includes items that are no longer available eg Seeker Tap of Spellsight Another reported:  i picked heavy armor, but when i clicked the solve button it recommended me
+Epic Robe of Insight​ Another person reported: Just tried setting up a Bard to see how it worked, and there's no Sonic Crit or Spellpower Another person reported: I suggested a 36th-level Bladeforged Paladin.
+
+I got a level 8 docent recommendation, no goggles, and no rings. I did get recommendations for all other slots, though.
+
+It would be cool if we could pick pieces that we definitely wanted (Hydra's Heart minor artifact trinket, for example) to be included in the loadout. Another user reported: should change default level to 36. have prr and mrr shortcut to their respective full names. "relentless fury" isnt there... at least in those terms.
+also would be nice to have a filter based on xpac content, for those that dont have it all. ... though that option  may be in there already and i just dont see it
+i noticed it didnt slot a Ravil's for false life... its cause its 'vitality' ... would be nice to some how have the solver know that when we say 'false life' we meant vitality (and whatever else) too. "greater heroism" doesnt come in from search bar. it should due to the aug we all want to slot. same w/normal heroism. does it consider raid aug sets? Also... another hitch... some effects like say SALT dont have a magnitude... like +1 +2 +3... so the solver cant score it. What I did as a work around is make those types of things default to +1....so it ensures at least one point is slotted for that affix assuming it can find a spot for it....based on priority, also, dont forget that 'salt' has a few names in different items but same result, well rounded is not coming up either, dodge bypass doesnt come up. legendary salt / legendary affirmation also dont,
