@@ -653,6 +653,10 @@ function buildProgram(model) {
       setMeta.set(sa, {
         set: setName, pieces_required: tier.pieces_required,
         pieces_label: tier.pieces_label, wiki_url: tier.wiki_url,
+        // Full granted affix list for this tier, so the Set Bonuses tab can show a
+        // craftable-membership set's affixes — its awaken hosts carry no static
+        // parsed_set_bonuses, so the renderer can't derive them from equipped items.
+        affixes: tier.affixes || [],
         realPieces: pieceVars.filter((p) => !p.startsWith("k")),  // non-joker pieces, for the joker load-bearing check
       });
       extraConstraints.push(`${tier.pieces_required} ${sa} - ${pieceVars.join(" - ")} <= 0`);

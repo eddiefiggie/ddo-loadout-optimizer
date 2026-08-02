@@ -494,6 +494,24 @@ test("activeSetDetail reports granted stats + yielding slots per active set (R16
   assert.deepStrictEqual(beta.affixes, [], "an active set with no parsed tier affixes yields []");
 });
 
+test("activeSetDetail surfaces a membership set's affixes from setsActive (Vecna awaken)", () => {
+  // A craftable-membership set (Lost Purpose awaken): the host carries no static
+  // parsed_set_bonuses, so the granted affixes exist only on the setsActive entry.
+  const result = {
+    setsActive: [{ set: "Legendary Devils' Infernal Dance", pieces_required: 3, affixes: [
+      { stat: "Intelligence", bonus_type: "Artifact", value: 3, unit: "flat" },
+      { stat: "Doublestrike", bonus_type: "Artifact", value: 15, unit: "flat" },
+    ] }],
+    chosen: [{ slot: "Armor", variant: { set_bonus: [], parsed_set_bonuses: [] } }],
+  };
+  const set = R.activeSetDetail(result).find((s) => s.set === "Legendary Devils' Infernal Dance");
+  assert.strictEqual(set.pieces, 3);
+  assert.strictEqual(set.affixes.length, 2, "affixes come from setsActive, not the empty member tiers");
+  assert.ok(set.affixes.some((a) => a.stat === "Intelligence" && a.value === 3), "the umbrella-expanded Intelligence shows");
+  // and it renders through the Set-tab expander, not just the raw detail
+  assert.ok(/Intelligence \+3 Artifact/.test(R.satisfiedSetDetail(result).map((s) => s.affixes.map(R.affixLabel).join(", ")).join(" | ")));
+});
+
 test("attributionList renders the empty state and the is-augment class", () => {
   assert.ok(/stat-empty|no contributing gear/.test(R.attributionList([])), "empty contributor list shows the no-gear affordance");
   const aug = R.attributionList([{ bonus_type: "Quality", value: 3, source: "Topaz", sourceKind: "augment", isSet: false, slots: ["Ring"] }]);
