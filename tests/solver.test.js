@@ -257,6 +257,39 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.ok(mrr && mrr.achieved === 0, "the lower-priority floor is relaxed and reported");
   });
 
+  // U6 (KTD6) — characterize the "Kinetic Lore ×4, no Kinetic Intensity" report.
+  // Finding: no genuine zero-marginal bug survives. A same-bonus-type duplicate that
+  // adds nothing is already dropped by the tie-break in favor of the next priority;
+  // distinct-bonus-type stacking that legitimately consumes slots is CORRECT strict
+  // lexicographic, and a per-stat cap (U1) is the intended lever to free slots.
+  await test("U6: a zero-marginal same-type duplicate is dropped for the next priority", async () => {
+    const model = {
+      targets: ["KL", "KI"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Ring", [item("klA", "Ring", [["KL", "Enhancement", 10]])]),
+        slot("Necklace", [item("klDup", "Necklace", [["KL", "Enhancement", 10]]), item("kiX", "Necklace", [["KI", "Enhancement", 10]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.KL, 10, "KL maxed (same bonus type does not stack)");
+    assert.strictEqual(r.effective.KI, 10, "the freed slot serves the next priority");
+    assert.ok(r.chosen.some((c) => c.variant.variant_id === "kiX"), "next priority served");
+    assert.ok(!r.chosen.some((c) => c.variant.variant_id === "klDup"), "the redundant duplicate is NOT equipped");
+  });
+
+  await test("U6: distinct-type stacking consumes slots (correct); a cap is the lever", async () => {
+    const worn = () => [
+      slot("Ring", [item("klE", "Ring", [["KL", "Enhancement", 10]])]),
+      slot("Necklace", [item("klI", "Necklace", [["KL", "Insight", 10]]), item("kiX", "Necklace", [["KI", "Enhancement", 10]])]),
+    ];
+    const nocap = await S.solveLexicographic({ targets: ["KL", "KI"], mlCap: 34, dodgeCap: null, worn: worn() }, highs);
+    assert.strictEqual(nocap.effective.KL, 20, "distinct types stack — KL legitimately uses both slots");
+    assert.strictEqual(nocap.effective.KI, 0, "KI unserved: correct strict-lexicographic output, not a bug");
+    const capped = await S.solveLexicographic({ targets: ["KL", "KI"], mlCap: 34, dodgeCap: null, userCaps: { KL: 10 }, worn: worn() }, highs);
+    assert.strictEqual(capped.effective.KL, 10, "cap saturates KL");
+    assert.strictEqual(capped.effective.KI, 10, "the freed slot now serves KI");
+  });
+
   await test("AE1: lexicographic — priority 1 maxed even at cost of priority 2", async () => {
     // one slot, must choose: v1 gives A=10/B=0, v2 gives A=0/B=10. A has priority.
     const model = {
