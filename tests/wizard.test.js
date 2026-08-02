@@ -50,6 +50,12 @@ test("wizIsForged", () => {
   assert.ok(!wizIsForged("Elf") && !wizIsForged(""));
 });
 
+test("buildQuery threads the optional mlFloor (blank/0 -> null)", () => {
+  assert.strictEqual(buildQuery({ ...baseState(), mlFloor: 30 }).mlFloor, 30);
+  assert.strictEqual(buildQuery({ ...baseState(), mlFloor: "" }).mlFloor, null);
+  assert.strictEqual(buildQuery(baseState()).mlFloor, null);
+});
+
 test("U4: buildQuery reflects the Include-an-Artifact flag", () => {
   const on = buildQuery({ ...baseState(), includeArtifact: true });
   assert.strictEqual(on.includeArtifact, true);
@@ -123,37 +129,38 @@ test("U5 picker: a CRAFTING-ONLY affix is selectable (union includes crafting po
   assert.ok(v.known.has("Strikethrough Chance"), "and is a known (typeable) target");
 });
 
-test("U5 picker: raw Bool/boolean presence affixes are excluded from suggestions", () => {
-  // ~8000 presence affixes would swamp the picker; excluded from SUGGESTIONS but
-  // still typeable (present in `known`).
+test("picker: build-around presence (Bool) effects are suggested + flagged on/off", () => {
+  // Discrete named on/off effects players chase (Ghost Touch, Bone Paws...) ARE now
+  // suggested and flagged in `presence` so the UI can badge them.
   const v = buildPickerVocabulary(realData);
-  const PRESENCE = new Set(["boolean", "Bool"]);  // native gear-planner uses "Bool"
-  const bool = (realData.items || [])
-    .flatMap((it) => it.affixes || [])
-    .find((a) => PRESENCE.has(a.type != null ? a.type : a.bonus_type));
-  assert.ok(bool, "precondition: the dataset has a boolean presence affix");
-  const nm = bool.name != null ? bool.name : bool.stat;
-  assert.ok(!v.suggestions.includes(nm), `Bool presence "${nm}" is not a suggestion`);
-  assert.ok(v.known.has(nm), `but "${nm}" is still typeable`);
+  const found = ["Ghost Touch", "Bone Paws", "Freedom of Movement", "True Seeing", "Deathblock"]
+    .find((n) => v.known.has(n));
+  assert.ok(found, "precondition: a build-around presence effect exists in the dataset");
+  assert.ok(v.suggestions.includes(found), `presence effect "${found}" is a suggestion`);
+  assert.ok(v.presence.has(found), `and "${found}" is flagged as on/off`);
 });
 
-test("U5 picker: non-rankable descriptor/penalty types are filtered from suggestions", () => {
-  // A synthetic dataset: one rankable crafting affix, one Penalty, one Sneak Attack,
-  // one boolean — only the rankable one may become a suggestion.
+test("picker: rankability + presence classification (synthetic)", () => {
+  // Rankable magnitude -> suggested. Penalty/Sneak descriptors -> excluded. A DISCRETE
+  // Bool ("Ghost Touch") -> suggested + flagged presence. A SENTENCE Bool -> hidden
+  // (typeable only). All remain typeable via `known`.
   const ds = {
     metadata: {}, items: [],
     green_steel: [
       { stat: "Wildcard Power", bonus_type: "Untyped", value: 10 },
       { stat: "Armor Class Penalty", bonus_type: "Penalty", value: -5 },
       { stat: "Extra Sneak Damage", bonus_type: "Sneak Attack", value: 8 },
-      { stat: "Free Flag", bonus_type: "boolean", value: 1 },
+      { stat: "Ghost Touch", bonus_type: "Bool", value: 1 },
+      { stat: "5% chance to gain 150 temporary hit points when you are hit", bonus_type: "Bool", value: 1 },
     ],
   };
   const v = buildPickerVocabulary(ds);
-  assert.deepStrictEqual(v.suggestions, ["Wildcard Power"],
-    "only the rankable, numeric, non-presence affix is suggested");
-  // all remain typeable via `known`
-  for (const n of ["Wildcard Power", "Armor Class Penalty", "Extra Sneak Damage", "Free Flag"]) {
+  assert.deepStrictEqual(v.suggestions.sort(), ["Ghost Touch", "Wildcard Power"],
+    "rankable magnitude + discrete presence are suggested; penalty/sneak/sentence are not");
+  assert.ok(v.presence.has("Ghost Touch"), "the discrete Bool is flagged on/off");
+  assert.ok(!v.presence.has("Wildcard Power"), "a magnitude affix is not flagged on/off");
+  for (const n of ["Wildcard Power", "Armor Class Penalty", "Extra Sneak Damage", "Ghost Touch",
+    "5% chance to gain 150 temporary hit points when you are hit"]) {
     assert.ok(v.known.has(n), `${n} is typeable`);
   }
 });

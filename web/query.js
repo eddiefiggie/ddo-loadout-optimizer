@@ -19,7 +19,8 @@ window.App && window.App.ready((dataset) => {
   root.innerHTML = `
     <h2>Loadout Solver</h2>
     <div class="controls query-controls">
-      <label class="field"><span>ML cap</span><input id="q-ml" type="number" min="1" max="40" value="34"></label>
+      <label class="field"><span>ML cap</span><input id="q-ml" type="number" min="1" max="40" value="36"></label>
+      <label class="field"><span>Items ML ≥</span><input id="q-mlfloor" type="number" min="1" max="40" placeholder="any" title="Only consider items at or above this level (hide low-level gear)"></label>
       <label class="field"><span>Class / race</span><input id="q-class" type="text" placeholder="(optional)"></label>
       <label class="field"><span>Armor</span>
         <select id="q-armor"><option value="">Any</option><option value="cloth">Cloth</option><option value="light">Light</option><option value="medium">Medium</option><option value="heavy">Heavy</option></select>
@@ -66,7 +67,7 @@ window.App && window.App.ready((dataset) => {
     }
     ol.innerHTML = ranked.map((s, i) => `<li><div class="rank-item">
       <span class="rank-order">${i + 1}</span>
-      <span class="rank-name">${esc(s)}</span>
+      <span class="rank-name">${esc(s)}${vocab.presence && vocab.presence.has(s) ? ` <span class="rank-tag" title="On/off effect — the solver secures an item that has it, in priority order (no magnitude to maximize).">on/off</span>` : ""}</span>
       <span class="rank-ctrl">
         <button data-up="${i}" aria-label="move ${esc(s)} up" ${i === 0 ? "disabled" : ""}>↑</button>
         <button data-down="${i}" aria-label="move ${esc(s)} down" ${i === ranked.length - 1 ? "disabled" : ""}>↓</button>
@@ -139,7 +140,8 @@ window.App && window.App.ready((dataset) => {
       const h = await getHighs();
       $("q-status").textContent = "Solving…";
       const query = {
-        mlCap: Number($("q-ml").value) || 34,
+        mlCap: Number($("q-ml").value) || 36,
+        mlFloor: Number($("q-mlfloor").value) || null,
         targets: ranked.slice(),
         armorType: $("q-armor").value || null,
         weaponSetup: $("q-weapon").value || null,

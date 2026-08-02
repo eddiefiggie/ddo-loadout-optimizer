@@ -253,6 +253,13 @@ input.bumped { background: rgba(91,140,255,0.16); border-color: var(--accent); }
   font-size: var(--fs-sm); font-weight: 700; font-variant-numeric: tabular-nums;
 }
 .rank-name { flex: 1 1 auto; font-size: var(--fs-md); }
+/* on/off "presence" effect badge — a build-around Bool the solver secures (no magnitude) */
+.rank-tag {
+  display: inline-block; margin-left: 0.5em; padding: 0.05em 0.45em;
+  font-size: 0.72em; font-weight: 600; letter-spacing: 0.02em; vertical-align: middle;
+  color: var(--muted); border: 1px solid var(--muted); border-radius: 999px;
+  opacity: 0.75; text-transform: uppercase; cursor: help;
+}
 .rank-ctrl { display: flex; gap: var(--sp-1); flex: none; }
 .rank-ctrl button {
   min-height: var(--tap); min-width: var(--tap); padding: 0;

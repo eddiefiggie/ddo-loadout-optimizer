@@ -43,7 +43,8 @@ function stepAfterLoad(snapshot) {
 function buildQuery(state) {
   const forged = wizIsForged(state.race);
   return {
-    mlCap: Number(state.ml) || 34,
+    mlCap: Number(state.ml) || 36,
+    mlFloor: Number(state.mlFloor) || null,   // optional item-level floor (hide low-ML gear)
     targets: state.priorities.slice(),
     armorType: forged ? null : (state.armor || null),   // dodge-cap input
     armorTypes: forged || !state.armor ? undefined : [state.armor], // gate (U2)
@@ -92,8 +93,9 @@ if (typeof module !== "undefined" && module.exports) {
 
 // ---- browser flow ----------------------------------------------------------
 if (typeof window !== "undefined" && window.App) {
-  const RACES = ["Human", "Elf", "Half-Elf", "Dwarf", "Halfling", "Gnome", "Half-Orc",
-    "Drow", "Aasimar", "Tiefling", "Dragonborn", "Shifter", "Tabaxi", "Warforged", "Bladeforged"];
+  const RACES = ["Human", "Elf", "Half-Elf", "Dwarf", "Halfling", "Gnome", "Deep Gnome", "Half-Orc",
+    "Drow", "Aasimar", "Eladrin", "Tiefling", "Dragonborn", "Shifter", "Shadar-kai", "Tabaxi",
+    "Warforged", "Bladeforged", "Battleforged"];
   const ALIGNMENTS = ["Lawful Good", "Neutral Good", "Chaotic Good",
     "Lawful Neutral", "True Neutral", "Chaotic Neutral"];
   const ARMOR = [["cloth", "Cloth"], ["light", "Light"], ["medium", "Medium"], ["heavy", "Heavy"]];
@@ -122,7 +124,7 @@ if (typeof window !== "undefined" && window.App) {
     const vocab = pickerVocabulary(dataset);
     const allStats = vocab.suggestions;
 
-    const state = { step: "intro", ml: 34, race: "", alignment: "", armor: "", weapon: "",
+    const state = { step: "intro", ml: 36, mlFloor: 0, race: "", alignment: "", armor: "", weapon: "",
       includeArtifact: false,
       pool: "all", ownedNames: null, priorities: [], slotConstraints: {}, constraintsDirty: false, lastRun: null,
       characterName: "", loadedStale: false };
@@ -167,9 +169,14 @@ if (typeof window !== "undefined" && window.App) {
         <h2>A few basics so we only show gear you can use</h2>
         <p class="wz-lead">These filter out anything you can't equip before we optimize — no wasted results.</p>
         <div class="wz-form">
-          <label class="wz-field"><span class="wz-label">Minimum level (ML) cap</span>
-            <span class="wz-help">Highest item level you can equip. Gear above this is excluded.</span>
-            <input id="wz-ml" class="wz-ml" type="number" min="1" max="40" value="${esc(state.ml)}"></label>
+          <div class="wz-pair">
+            <label class="wz-field"><span class="wz-label">Minimum level (ML) cap</span>
+              <span class="wz-help">Highest item level you can equip. Gear above this is excluded.</span>
+              <input id="wz-ml" class="wz-ml" type="number" min="1" max="40" value="${esc(state.ml)}"></label>
+            <label class="wz-field"><span class="wz-label">Only items ML ≥ <span class="wz-sub">· optional</span></span>
+              <span class="wz-help">Hide low-level gear — the solver ignores items below this. Blank = consider all.</span>
+              <input id="wz-mlfloor" class="wz-ml" type="number" min="1" max="40" value="${state.mlFloor ? esc(state.mlFloor) : ""}"></label>
+          </div>
           <div class="wz-pair">
             <label class="wz-field"><span class="wz-label">Race</span>
               <span class="wz-help">Determines body-slot and race-locked gear.</span>
@@ -397,7 +404,7 @@ if (typeof window !== "undefined" && window.App) {
       if (!state.priorities.length) return `<li class="wz-hint">Add at least one stat to optimize for.</li>`;
       return state.priorities.map((p, i) => `<li data-i="${i}" draggable="true">
         <span class="wz-grip" title="drag to reorder">⋮⋮</span>
-        <span class="wz-rk">${i + 1}</span><span class="wz-nm">${esc(p)}</span>
+        <span class="wz-rk">${i + 1}</span><span class="wz-nm">${esc(p)}${vocab.presence && vocab.presence.has(p) ? ` <span class="rank-tag" title="On/off effect — the solver secures an item that has it, in priority order (no magnitude to maximize).">on/off</span>` : ""}</span>
         <span class="wz-ctl"><button data-up="${i}" ${i === 0 ? "disabled" : ""} aria-label="move up">↑</button>
           <button data-down="${i}" ${i === state.priorities.length - 1 ? "disabled" : ""} aria-label="move down">↓</button>
           <button data-del="${i}" aria-label="remove">✕</button></span></li>`).join("");
@@ -563,7 +570,7 @@ if (typeof window !== "undefined" && window.App) {
       if (!rec) return;
       const i = rec.inputs || {};
       state.characterName = rec.name;
-      state.ml = i.ml; state.race = i.race; state.alignment = i.alignment;
+      state.ml = i.ml; state.mlFloor = i.mlFloor || 0; state.race = i.race; state.alignment = i.alignment;
       state.armor = i.armor; state.weapon = i.weapon;
       state.includeArtifact = !!i.includeArtifact;
       state.pool = i.pool || "all";
@@ -721,6 +728,7 @@ if (typeof window !== "undefined" && window.App) {
 
       if (state.step === "character") {
         document.getElementById("wz-ml").oninput = (e) => state.ml = e.target.value;
+        document.getElementById("wz-mlfloor").oninput = (e) => state.mlFloor = e.target.value;
         document.getElementById("wz-race").onchange = (e) => { state.race = e.target.value; if (wizIsForged(state.race)) state.armor = ""; render(); };
         document.getElementById("wz-align").onchange = (e) => state.alignment = e.target.value;
         document.getElementById("wz-artifact").onchange = (e) => state.includeArtifact = e.target.checked;
