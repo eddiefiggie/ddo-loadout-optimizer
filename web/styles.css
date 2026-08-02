@@ -689,8 +689,16 @@ input.wz-ml { width: 120px; }
 @keyframes wz-nudge { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 
 /* priorities editor */
-.wz-preset { max-width: 34rem; margin-bottom: var(--sp-3); }
-.wz-preset select { width: 100%; margin-top: 2px; }
+/* composable affix-bundle picker (gear-planner style) */
+.wz-bundles { margin-bottom: var(--sp-4); }
+.wz-bundle-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin-top: var(--sp-2); }
+.wz-bundle-sub { padding-left: var(--sp-2); border-left: 2px solid var(--border); margin-left: 2px; }
+.wz-bundle-tag { color: var(--muted); font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; margin-right: var(--sp-1); }
+.wz-bundle {
+  min-height: auto; padding: 0.3em 0.8em; font-size: var(--fs-sm); font-weight: 600;
+  background: var(--panel-2); border-color: var(--border-2); border-radius: 999px;
+}
+.wz-bundle:hover { border-color: var(--accent); background: var(--elev); }
 .wz-addrow { display: flex; gap: var(--sp-2); max-width: 34rem; }
 .wz-addrow input { flex: 1; background: var(--panel-2); color: var(--text); border: 1px solid var(--border-2);
   border-radius: var(--radius-sm); padding: 10px 12px; min-height: var(--tap); }
