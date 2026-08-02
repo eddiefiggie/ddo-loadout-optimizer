@@ -68,7 +68,7 @@ function variantAugColors(variant) {
 }
 
 // Warforged/Bladeforged wear a Docent in the body slot instead of armor.
-const FORGED_RACES = new Set(["warforged", "bladeforged", "battleforged"]);
+const FORGED_RACES = new Set(["warforged", "bladeforged"]);
 function isForgedRace(race) {
   return !!race && FORGED_RACES.has(String(race).toLowerCase());
 }
