@@ -93,8 +93,8 @@ function _taxonomy() {
 }
 /** Allowed Main Hand weapon types for a query, or null (any). A picked
  *  `weaponTypes` set wins (already a subset of the chosen style); otherwise the
- *  style's whole handedness bucket constrains (so one-hand excludes 2H weapons
- *  even with no explicit type pick). */
+ *  style's whole handedness bucket constrains (so THF excludes one-handers even
+ *  with no explicit type pick). */
 function allowedWeaponTypes(query) {
   if (Array.isArray(query.weaponTypes) && query.weaponTypes.length) return query.weaponTypes;
   if (query.style) {
@@ -102,6 +102,24 @@ function allowedWeaponTypes(query) {
     if (T) return T.weaponTypesForStyle(query.style);
   }
   return null;
+}
+/** Allowed OFF-HAND weapon types (two-weapon fighting), or null when no off-hand
+ *  weapon is permitted. TWF is one-hand-style only and OPT-IN: it turns on when the
+ *  player picks at least one off-hand weapon type. */
+function allowedOffHandWeaponTypes(query) {
+  const T = _taxonomy();
+  if (!T || !T.twfWeaponAllowedForStyle(query.style)) return null;
+  const set = Array.isArray(query.offHandWeapons) ? query.offHandWeapons : [];
+  return set.length ? set : null;
+}
+/** Can this weapon fill the Main Hand under the query's main-hand lock? Untyped
+ *  hosts (Dino Bone Weapon) always can. */
+function mainHandWeaponOk(v, weaponAllow) {
+  return v.type == null || !weaponAllow || weaponAllow.includes(v.type);
+}
+/** Can this weapon fill the Off Hand as a TWF second weapon? */
+function offHandWeaponOk(v, offWeaponAllow) {
+  return offWeaponAllow != null && (v.type == null || offWeaponAllow.includes(v.type));
 }
 /** Off-hand gate for a query: `{ blocked }` when no off-hand item may be equipped
  *  (two-hand style, or only "empty" was chosen), else `{ allowed }` — the allowed
@@ -132,18 +150,19 @@ function eligible(variants, query) {
   // U2 — weapon/off-hand constraint sets, computed once (additive: null/allowed
   // absent => no-op, so an unconstrained query is unchanged except that off-hand
   // items now become eligible for the new Off Hand slot).
-  const weaponAllow = allowedWeaponTypes(query);   // array | null
+  const weaponAllow = allowedWeaponTypes(query);        // main-hand set | null
+  const offWeaponAllow = allowedOffHandWeaponTypes(query); // off-hand weapon set | null
   const offHand = offHandGate(query);              // { blocked } | { allowed }
   return variants.filter((v) => {
     if (v.verification !== "verified") return false;
     if (v.ml != null && v.ml > cap) return false;
     if (floor != null && v.ml != null && v.ml < floor) return false;
 
-    // R8 — Weapon-type / style lock: Main Hand (category "weapon") is constrained
-    // to the allowed weapon types (a picked set, or the whole style bucket). Untyped
-    // weapon hosts (the Dino Bone Weapon, `type == null`, whose in-game type is
-    // player-chosen) can't be matched against a lock, so they stay eligible.
-    if (v.category === "weapon" && weaponAllow && v.type != null && !weaponAllow.includes(v.type)) return false;
+    // R8 — Weapon-type / style lock. A weapon stays eligible if it can serve EITHER
+    // hand: the main-hand lock, or (TWF) the off-hand-weapon lock. Untyped weapon
+    // hosts (the Dino Bone Weapon, `type == null`) can't be matched, so they pass.
+    if (v.category === "weapon" &&
+        !mainHandWeaponOk(v, weaponAllow) && !offHandWeaponOk(v, offWeaponAllow)) return false;
 
     // R9/B5 — Off-hand configuration: block every off-hand item under a two-hand
     // style or an "empty"-only pick; otherwise keep only the allowed off-hand types.
@@ -383,18 +402,29 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     }
   }
 
-  // One main-hand weapon: all weapon-category variants compete for a single slot
-  // so the solver can never equip several weapons at once.
-  const mainHand = dominanceFilter(elig.filter((v) => v.category === "weapon"), targetSet, mlCap, 1, pinnedIds, withArt);
+  // One main-hand weapon: weapon-category variants that match the main-hand lock
+  // compete for a single slot, so the solver can never equip several main weapons.
+  // (elig now holds weapons eligible for EITHER hand, so re-apply the main-hand lock.)
+  const weaponAllow = allowedWeaponTypes(query);
+  const offWeaponAllow = allowedOffHandWeaponTypes(query);
+  const mainHand = dominanceFilter(
+    elig.filter((v) => v.category === "weapon" && mainHandWeaponOk(v, weaponAllow)),
+    targetSet, mlCap, 1, pinnedIds, withArt);
   if (mainHand.length) worn.push({ slot: "Main Hand", cardinality: 1, variants: mainHand });
 
   // U2/B1 — Off Hand slot (at-most-one): orbs, shields (buckler/small/large/tower),
-  // and rune arms all live here (slot "Off Hand"). eligible() has already applied
-  // the off-hand/style constraints, so an empty candidate set — a two-hand style or
-  // an "empty"-only pick — pushes no slot (nothing equippable off-hand). This
-  // supersedes the old vestigial `category==="runearm"` slot; the one legacy
-  // rune-arm host is normalized into this pool at load (dataset.js).
-  const offHand = dominanceFilter(elig.filter((v) => v.slot === "Off Hand"), targetSet, mlCap, 1, pinnedIds, withArt);
+  // and rune arms live here (slot "Off Hand"; the one legacy rune-arm host is
+  // normalized into this pool at load). eligible() has applied the off-hand/style
+  // constraints, so a two-hand/ranged style or an "empty"-only pick yields nothing.
+  // TWF: when the one-hand style has an off-hand-weapon lock, one-handed WEAPONS
+  // also compete here (the hand-mutex in solver.js stops the same item filling both
+  // hands). The Off Hand slot then optimizes the best second weapon vs shield/orb.
+  let offHandPool = elig.filter((v) => v.slot === "Off Hand");
+  if (offWeaponAllow != null) {
+    offHandPool = offHandPool.concat(
+      elig.filter((v) => v.category === "weapon" && offHandWeaponOk(v, offWeaponAllow)));
+  }
+  const offHand = dominanceFilter(offHandPool, targetSet, mlCap, 1, pinnedIds, withArt);
   if (offHand.length) worn.push({ slot: "Off Hand", cardinality: 1, variants: offHand });
 
   // Augment pool: augments (category augment) as a compatible-color-capacity

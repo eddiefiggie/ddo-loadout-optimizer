@@ -521,12 +521,47 @@ test("U2/B4: offHand pins the Off Hand slot to the allowed types", () => {
   assert.deepStrictEqual(only.map((x) => x.type), ["Tower shields"]);
 });
 
-test("U2/B5: a two-hand style builds no Off Hand slot and excludes 1H weapons", () => {
+test("U2/B5: a THF style builds no Off Hand slot and excludes 1H weapons", () => {
   const model = M.buildModel([oh("Orb", "Orbs"), wt("Falchion", "Falchions"), wt("Sword", "Long Swords")],
-    { mlCap: 34, targets: ["Strength", "Constitution"], style: "two-hand" });
-  assert.ok(!model.worn.find((s) => s.slot === "Off Hand"), "two-hand => no Off Hand slot");
+    { mlCap: 34, targets: ["Strength", "Constitution"], style: "thf" });
+  assert.ok(!model.worn.find((s) => s.slot === "Off Hand"), "THF => no Off Hand slot");
   const mh = model.worn.find((s) => s.slot === "Main Hand");
-  assert.deepStrictEqual(mh.variants.map((x) => x.type), ["Falchions"], "one-hand weapon excluded under two-hand");
+  assert.deepStrictEqual(mh.variants.map((x) => x.type), ["Falchions"], "one-hand weapon excluded under THF");
+});
+
+test("Ranged style builds no Off Hand slot (bow/crossbow takes both hands)", () => {
+  const model = M.buildModel([
+    oh("Orb", "Orbs"),
+    wt("Bow", "Long Bows", [["Strength", "Enhancement", 8]]),
+    wt("Xbow", "Light Crossbows", [["Dexterity", "Enhancement", 8]])],
+    { mlCap: 34, targets: ["Strength", "Dexterity"], style: "ranged" });
+  assert.ok(!model.worn.find((s) => s.slot === "Off Hand"), "ranged => no off-hand");
+  const mh = model.worn.find((s) => s.slot === "Main Hand");
+  assert.deepStrictEqual(mh.variants.map((x) => x.type).sort(), ["Light Crossbows", "Long Bows"],
+    "light crossbow is a Ranged main-hand option");
+});
+
+test("TWF: a one-handed off-hand weapon competes in the Off Hand slot", () => {
+  const model = M.buildModel(
+    [wt("Rapier", "Rapiers", [["Strength", "Enhancement", 8]]),
+     wt("Shortsword", "Short Swords", [["Constitution", "Enhancement", 8]]),
+     oh("Orb", "Orbs", [["Wisdom", "Enhancement", 6]])],
+    { mlCap: 34, targets: ["Strength", "Constitution"], style: "one-hand",
+      weaponTypes: ["Rapiers"], offHandWeapons: ["Short Swords"] });
+  const off = model.worn.find((s) => s.slot === "Off Hand");
+  assert.ok(off, "an Off Hand slot exists");
+  assert.ok(off.variants.some((x) => x.type === "Short Swords"), "the off-hand weapon competes off-hand");
+  const mh = model.worn.find((s) => s.slot === "Main Hand");
+  assert.deepStrictEqual(mh.variants.map((x) => x.type), ["Rapiers"], "main hand still locked to Rapiers");
+  assert.ok(!mh.variants.some((x) => x.type === "Short Swords"), "the off-hand-only type isn't a main-hand candidate");
+});
+
+test("TWF: off-hand weapons are excluded when offHandWeapons is empty (opt-in)", () => {
+  const model = M.buildModel(
+    [wt("Rapier", "Rapiers"), wt("Shortsword", "Short Swords"), oh("Orb", "Orbs")],
+    { mlCap: 34, targets: ["Strength"], style: "one-hand", offHandWeapons: [] });
+  const off = model.worn.find((s) => s.slot === "Off Hand");
+  assert.ok(off && !off.variants.some((x) => x.category === "weapon"), "no weapon in the off hand without an opt-in");
 });
 
 test("U2/KTD4: empty-only builds no Off Hand slot; a set with empty keeps its types", () => {
@@ -564,7 +599,7 @@ test("U2: an untyped weapon host survives a style/weapon-type lock (Dino Bone We
   // against a lock, so it must stay eligible under any style / weaponTypes pick.
   const dino = wt("Dino Bone Weapon", null);
   const sword = wt("Sword", "Long Swords");
-  const kept = M.eligible([dino, sword], { mlCap: 34, targets: ["Strength"], style: "two-hand", weaponTypes: ["Falchions"] });
+  const kept = M.eligible([dino, sword], { mlCap: 34, targets: ["Strength"], style: "thf", weaponTypes: ["Falchions"] });
   assert.ok(kept.some((x) => x.source_item === "Dino Bone Weapon"), "untyped weapon host not filtered by a lock");
   assert.ok(!kept.some((x) => x.source_item === "Sword"), "a typed weapon outside the lock is still filtered");
 });
