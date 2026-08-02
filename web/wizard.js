@@ -571,6 +571,11 @@ if (typeof window !== "undefined" && window.App) {
         </div>
         <ol class="wz-ranked" id="wz-ranked"></ol>
         <p class="wz-draghelp">Drag the ⋮⋮ handle to reorder, or use the ↑ ↓ buttons (they work on touch and keyboard).</p>
+        <details class="wz-bounds-help">
+          <summary>Optional <strong>min / max</strong> per row — advanced</summary>
+          <p><strong>Min is a hard floor.</strong> The solver sacrifices your lower priorities to reach it, and if it can't, it chases that stat above everything else. Use it only for a number you truly must hit (e.g. a survivability threshold like PRR).</p>
+          <p><strong>Max is a cap.</strong> Stop valuing a stat past a breakpoint you know is real (e.g. 100% doublestrike). The tool can't verify in-game caps for you — set one only when you know the breakpoint.</p>
+        </details>
         <p id="wz-status" class="wz-status"></p>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
           <button class="btn primary" data-solve>Solve ⚡</button></div>
