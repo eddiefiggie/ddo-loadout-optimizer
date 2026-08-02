@@ -746,12 +746,20 @@ if (typeof window !== "undefined" && window.App) {
     // ---- priorities editor (pure array ops + drag/buttons) -----------------
     function rankedHTML() {
       if (!state.priorities.length) return `<li class="wz-hint">Add at least one stat to optimize for.</li>`;
-      return state.priorities.map((p, i) => `<li data-i="${i}" draggable="true">
+      return state.priorities.map((p, i) => {
+        // U4 — optional per-priority min (floor) and max (cap), keyed by stat name.
+        const capV = state.targetCaps && state.targetCaps[p] != null ? state.targetCaps[p] : "";
+        const flrV = state.targetFloors && state.targetFloors[p] != null ? state.targetFloors[p] : "";
+        return `<li data-i="${i}" draggable="true">
         <span class="wz-grip" title="drag to reorder">⋮⋮</span>
         <span class="wz-rk">${i + 1}</span><span class="wz-nm">${esc(p)}${vocab.presence && vocab.presence.has(p) ? ` <span class="rank-tag" title="On/off effect — the solver secures an item that has it, in priority order (no magnitude to maximize).">on/off</span>` : ""}</span>
+        <span class="wz-bounds">
+          <input class="wz-bound" type="number" min="0" step="1" inputmode="numeric" data-min="${i}" value="${esc(flrV)}" placeholder="min" aria-label="${esc(p)} minimum (floor)" draggable="false">
+          <input class="wz-bound" type="number" min="0" step="1" inputmode="numeric" data-max="${i}" value="${esc(capV)}" placeholder="max" aria-label="${esc(p)} maximum (cap)" draggable="false"></span>
         <span class="wz-ctl"><button data-up="${i}" ${i === 0 ? "disabled" : ""} aria-label="move up">↑</button>
           <button data-down="${i}" ${i === state.priorities.length - 1 ? "disabled" : ""} aria-label="move down">↓</button>
-          <button data-del="${i}" aria-label="remove">✕</button></span></li>`).join("");
+          <button data-del="${i}" aria-label="remove">✕</button></span></li>`;
+      }).join("");
     }
     // Generic ranked-list renderer: reused by the priorities step and the
     // in-results "Adjust & re-solve" panel (U3). `rerender` re-renders that
@@ -762,12 +770,34 @@ if (typeof window !== "undefined" && window.App) {
       ol.querySelectorAll("button").forEach((b) => b.onclick = () => {
         if (b.dataset.up != null) { const i = +b.dataset.up;[state.priorities[i - 1], state.priorities[i]] = [state.priorities[i], state.priorities[i - 1]]; }
         else if (b.dataset.down != null) { const i = +b.dataset.down;[state.priorities[i + 1], state.priorities[i]] = [state.priorities[i], state.priorities[i + 1]]; }
-        else if (b.dataset.del != null) state.priorities.splice(+b.dataset.del, 1);
+        else if (b.dataset.del != null) {
+          const p = state.priorities[+b.dataset.del];
+          state.priorities.splice(+b.dataset.del, 1);
+          if (state.targetCaps) delete state.targetCaps[p];   // drop the removed stat's bounds
+          if (state.targetFloors) delete state.targetFloors[p];
+        }
         rerender();
+      });
+      // U4 — min/max bound inputs. Write to the stat-keyed maps (clamped to a
+      // non-negative integer); a blank clears the bound. Stop pointer propagation so
+      // focusing/typing never starts a row drag.
+      ol.querySelectorAll("input.wz-bound").forEach((inp) => {
+        inp.onpointerdown = (e) => e.stopPropagation();
+        inp.oninput = () => {
+          const isMax = inp.dataset.max != null;
+          const i = +(isMax ? inp.dataset.max : inp.dataset.min);
+          const p = state.priorities[i];
+          if (!p) return;
+          const map = isMax ? (state.targetCaps || (state.targetCaps = {})) : (state.targetFloors || (state.targetFloors = {}));
+          if (inp.value === "") { delete map[p]; return; }
+          const num = Number(inp.value);
+          if (!Number.isFinite(num)) { delete map[p]; return; }
+          map[p] = Math.max(0, Math.floor(num));
+        };
       });
       let from = null;
       ol.querySelectorAll("li[draggable]").forEach((li) => {
-        li.ondragstart = (e) => { from = +li.dataset.i; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", ""); };
+        li.ondragstart = (e) => { if (e.target && e.target.tagName === "INPUT") { e.preventDefault(); return; } from = +li.dataset.i; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", ""); };
         li.ondragend = () => { li.classList.remove("dragging"); from = null; };
         li.ondragover = (e) => e.preventDefault();
         li.ondrop = (e) => { e.preventDefault(); const to = +li.dataset.i; if (from === null || to === from) return; const m = state.priorities.splice(from, 1)[0]; state.priorities.splice(to, 0, m); from = null; rerender(); };
@@ -939,6 +969,9 @@ if (typeof window !== "undefined" && window.App) {
       state.pool = i.pool || "all";
       state.ownedNames = Array.isArray(i.ownedNames) ? new Set(i.ownedNames) : null;
       state.priorities = Array.isArray(i.priorities) ? i.priorities.slice() : [];
+      // U4 — restore per-priority caps/floors (absent on pre-U4 saves -> empty).
+      state.targetCaps = (i.targetCaps && typeof i.targetCaps === "object") ? { ...i.targetCaps } : {};
+      state.targetFloors = (i.targetFloors && typeof i.targetFloors === "object") ? { ...i.targetFloors } : {};
       state.slotConstraints = i.slotConstraints || {};
       state.constraintsDirty = false;   // loaded constraints are the saved state, not a pending change
       // U5, Part C — one-time load migration: a PRE-OVERHAUL saved snapshot embedded
