@@ -479,6 +479,9 @@ test("isForgedRace / isDocent helpers", () => {
   assert.ok(!M.isForgedRace("elf") && !M.isForgedRace(""));
   assert.ok(M.isDocent({ source_item: "Saltiron Docent" }));
   assert.ok(!M.isDocent({ source_item: "Cloak of Night" }));
+  // native `type` is authoritative — a docent whose name lacks "docent" is still one
+  assert.ok(M.isDocent({ source_item: "Legendary Scale-Stone of Avarice", type: "Docents" }));
+  assert.ok(!M.isDocent({ source_item: "Robe", type: "Cloth armor" }));
 });
 
 // ---- U2 — weapon-type / off-hand / style constraints -----------------------

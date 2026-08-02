@@ -72,10 +72,14 @@ const FORGED_RACES = new Set(["warforged", "bladeforged", "battleforged"]);
 function isForgedRace(race) {
   return !!race && FORGED_RACES.has(String(race).toLowerCase());
 }
-/** Docent detection keys off the item name — the dataset has no docent flag,
- *  and docents are consistently named "<X> Docent". */
+/** Docent detection: the native schema's `type` is authoritative ("Docents"), with
+ *  the name regex kept as a fallback for records that predate the type field. (A
+ *  name-only check missed docents like "Legendary Scale-Stone of Avarice" that carry
+ *  no "docent" in their name, leaking them past the R6 race gate to non-Forged
+ *  characters and the druidic oath.) */
 function isDocent(v) {
-  return /\bdocent\b/i.test(v.source_item || v.variant_id || v.name || "");
+  return v.type === "Docents" ||
+    /\bdocent\b/i.test(v.source_item || v.variant_id || v.name || "");
 }
 
 // U1/U2 — weapon/off-hand taxonomy, resolved across runtimes (browser global vs
