@@ -26,7 +26,7 @@ function fakeStorage(failOnSet) {
 
 const state = {
   ml: 34, race: "Elf", alignment: "Lawful Good", armor: "light", weapon: "old-flag",
-  oath: "druid", style: "one-hand", weaponTypes: ["Long Swords"], offHand: ["Orbs"],
+  oath: "druid", style: "one-hand", weaponTypes: ["Long Swords"], offHand: ["Orbs"], offHandWeapons: ["Short Swords"],
   includeArtifact: false, pool: "all", ownedNames: null,
   priorities: ["Constitution", "Dodge"], slotConstraints: { Goggles: "lock" },
 };
@@ -66,6 +66,7 @@ test("U5: serializeCharacter persists combat constraints and drops the inert wea
   assert.strictEqual(rec.inputs.style, "one-hand");
   assert.deepStrictEqual(rec.inputs.weaponTypes, ["Long Swords"]);
   assert.deepStrictEqual(rec.inputs.offHand, ["Orbs"]);
+  assert.deepStrictEqual(rec.inputs.offHandWeapons, ["Short Swords"]);
   assert.strictEqual(rec.inputs.oath, "druid");
   // The obsolete coarse flag is off the allowlist, so it never round-trips — an old
   // save that still carries it simply loses it and loads unconstrained.

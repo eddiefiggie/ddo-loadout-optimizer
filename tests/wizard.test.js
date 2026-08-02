@@ -8,7 +8,7 @@ const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
 
 const baseState = () => ({ ml: 34, race: "Human", armor: "", oath: "", alignment: "",
-  style: "", weaponTypes: [], offHand: [],
+  style: "", weaponTypes: [], offHand: [], offHandWeapons: [],
   priorities: ["Constitution"], slotConstraints: {} });
 
 let passed = 0;
@@ -72,12 +72,13 @@ test("U4: buildQuery defaults includeArtifact to false when unset", () => {
 });
 
 // ---- U3 — combat style / weapon-type / off-hand constraints ----
-test("U3: buildQuery emits style/weaponTypes/offHand and drops weaponSetup", () => {
+test("U3: buildQuery emits style/weaponTypes/offHand/offHandWeapons and drops weaponSetup", () => {
   const q = buildQuery({ ...baseState(), style: "one-hand",
-    weaponTypes: ["Long Swords", "Rapiers"], offHand: ["Tower shields"] });
+    weaponTypes: ["Long Swords", "Rapiers"], offHand: ["Tower shields"], offHandWeapons: ["Short Swords"] });
   assert.strictEqual(q.style, "one-hand");
   assert.deepStrictEqual(q.weaponTypes, ["Long Swords", "Rapiers"]);
   assert.deepStrictEqual(q.offHand, ["Tower shields"]);
+  assert.deepStrictEqual(q.offHandWeapons, ["Short Swords"], "TWF off-hand weapon set threads through");
   assert.ok(!("weaponSetup" in q), "the inert weaponSetup flag is gone");
 });
 
@@ -86,6 +87,7 @@ test("U3: an unconstrained state emits null style + empty sets", () => {
   assert.strictEqual(q.style, null);
   assert.deepStrictEqual(q.weaponTypes, []);
   assert.deepStrictEqual(q.offHand, []);
+  assert.deepStrictEqual(q.offHandWeapons, []);
 });
 
 test("U3: buildQuery copies the arrays (mutating the query never edits state)", () => {

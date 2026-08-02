@@ -13,6 +13,7 @@ const rec = {
   inputs: {
     ml: 34, race: "Human", alignment: "Lawful Good", armor: "light", oath: "druid",
     style: "one-hand", weaponTypes: ["Long Swords", "Rapiers"], offHand: ["Tower shields", "empty"],
+    offHandWeapons: ["Short Swords"],
     pool: "all", priorities: ["Constitution", "Dodge"],
   },
   snapshot: {
@@ -66,13 +67,14 @@ test("constraintLines carry the character name + all constraints", () => {
 // ---- U5 — combat-style / weapon-type / off-hand / oath in exports ----------
 test("U5: exports surface style/weapon-type/off-hand/oath constraints", () => {
   const lines = constraintLines(rec).join("\n");
-  assert.ok(/Weapon: One-hand: Long Swords, Rapiers/.test(lines), "weapon style+types line");
+  assert.ok(/Weapon: One-hand \/ Dual-wield: Long Swords, Rapiers/.test(lines), "weapon style+types line");
   assert.ok(/Off hand: Tower shields, Empty/.test(lines), "off-hand allow-set with Empty");
+  assert.ok(/Off-hand weapon: Short Swords/.test(lines), "TWF off-hand weapon line");
   assert.ok(/Oath: Druid/.test(lines), "oath line");
   // every format inherits the constraints via the shared header (BBCode too, once
   // its exporter from PR #76 lands — it reads the same constraintPairs).
-  assert.ok(/One-hand: Long Swords/.test(toMarkdown(rec)), "markdown header");
-  assert.ok(/Tower shields/.test(toCsv(rec)), "csv preamble");
+  assert.ok(/Long Swords/.test(toMarkdown(rec)), "markdown header");
+  assert.ok(/Short Swords/.test(toCsv(rec)), "csv preamble includes off-hand weapon");
   assert.ok(/Druid/.test(toPrintHtml(rec)), "print header");
 });
 
