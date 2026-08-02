@@ -296,17 +296,28 @@ if (typeof window !== "undefined" && window.App) {
               <div class="wz-pl-tags" data-pltags="${id}">${sel.map((t) => `<button class="wz-tag" data-pltag="${id}" data-val="${esc(t)}">${esc(lbl(t))}<span class="wz-tag-x" aria-hidden="true">×</span></button>`).join("")}</div></div>`;
             };
             return `<div class="wz-field"><span class="wz-label">Combat style <span class="wz-sub">· optional</span></span>
-            <span class="wz-help">Pick a style, then narrow the weapon and off-hand. Nothing picked within a list = any of it; leave the style unset to allow anything.</span>
-            <div class="wz-seg" id="wz-style">${styles.map((s) => `<button class="wz-chip ${state.style === s.id ? "on" : ""}" data-style="${s.id}">${esc(s.label)}</button>`).join("")}</div>
+            <span class="wz-help">Pick a style to narrow the weapon and off-hand. Click the selected style again to switch. Nothing picked within a list = any of it.</span>
+            <div class="wz-seg" id="wz-style">${(state.style ? styles.filter((s) => s.id === state.style) : styles).map((s) => `<button class="wz-chip ${state.style === s.id ? "on" : ""}" data-style="${s.id}">${esc(s.label)}</button>`).join("")}</div>
             ${state.style ? `<div class="wz-subseg">
               <span class="wz-sublabel">Weapon type <span class="wz-sub">· none = any</span></span>
               ${pickList("weptypes", wtypes, state.weaponTypes)}
-              ${ohOn ? `<span class="wz-sublabel">Off hand <span class="wz-sub">· none = any</span></span>
-              ${pickList("offhand", ["empty", ...ohTypes], state.offHand, { add: "Add…", lbl: (t) => t === "empty" ? "Empty (no off-hand)" : t })}
-              ${twfOn ? `<span class="wz-sublabel">Off-hand weapon <span class="wz-sub">· dual-wield, optional</span></span>
-              <span class="wz-help">Pick one or more one-handed weapon types to two-weapon fight; the solver optimizes the best second weapon.</span>
-              ${pickList("offweapons", offWeaponTypes, state.offHandWeapons)}` : ""}`
-                : `<p class="wz-help wz-note">${state.style === "ranged" ? "Bows use both hands — no off-hand item." : "Two-handed weapons use both hands — no off-hand item."}</p>`}
+              ${ohOn ? (() => {
+                // One "Off hand" dropdown holding both off-hand ITEMS and (dual-wield)
+                // a second WEAPON. Selections route to state.offHand vs state.offHandWeapons.
+                const ohLbl = (t) => t === "empty" ? "Empty (no off-hand)" : t;
+                const itemAvail = ["empty", ...ohTypes].filter((t) => !state.offHand.includes(t));
+                const wpnAvail = twfOn ? offWeaponTypes.filter((t) => !state.offHandWeapons.includes(t)) : [];
+                const any = itemAvail.length + wpnAvail.length;
+                return `<span class="wz-sublabel">Off hand <span class="wz-sub">· none = any${twfOn ? " — a shield, orb, rune arm, or a second weapon (dual-wield)" : ""}</span></span>
+              <div class="wz-picklist">
+                <select class="wz-pl-select" data-plsel="offhand"${any ? "" : " disabled"}>
+                  <option value="">${any ? "Add…" : "All added"}</option>
+                  ${itemAvail.length ? `<optgroup label="Off-hand item">${itemAvail.map((t) => `<option value="${esc(t)}">${esc(ohLbl(t))}</option>`).join("")}</optgroup>` : ""}
+                  ${wpnAvail.length ? `<optgroup label="Second weapon (dual-wield)">${wpnAvail.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join("")}</optgroup>` : ""}
+                </select>
+                <div class="wz-pl-tags" data-pltags="offhand">${state.offHand.map((t) => `<button class="wz-tag" data-pltag="offhand" data-arr="offHand" data-val="${esc(t)}">${esc(ohLbl(t))}<span class="wz-tag-x" aria-hidden="true">×</span></button>`).join("")}${state.offHandWeapons.map((t) => `<button class="wz-tag" data-pltag="offhand" data-arr="offHandWeapons" data-val="${esc(t)}">${esc(t)}<span class="wz-tag-x" aria-hidden="true">×</span></button>`).join("")}</div>
+              </div>`;
+              })() : `<p class="wz-help wz-note">${state.style === "ranged" ? "Bows use both hands — no off-hand item." : "Two-handed weapons use both hands — no off-hand item."}</p>`}
             </div>` : ""}</div>`;
           })()}
           <label class="wz-check"><input type="checkbox" id="wz-artifact"${state.includeArtifact ? " checked" : ""}>
@@ -930,19 +941,22 @@ if (typeof window !== "undefined" && window.App) {
           state.style = next; state.weaponTypes = []; state.offHand = []; state.offHandWeapons = [];
           render();
         });
-        // Dropdown pick-lists (weapon type + off hand + off-hand weapon):
-        // `data-plsel`/`data-pltag` name the list; map it to the backing state array.
-        // Adding/removing re-renders so the dropdown drops the picked value and the
-        // tags refresh.
-        const PL = { weptypes: "weaponTypes", offhand: "offHand", offweapons: "offHandWeapons" };
+        // Dropdown pick-lists. `data-plsel` names the list -> backing state array.
+        // The "offhand" dropdown is combined: an off-hand ITEM goes to state.offHand,
+        // a second WEAPON (dual-wield) to state.offHandWeapons — routed by whether the
+        // value is a one-handed weapon type. Tags carry `data-arr` naming their array.
+        const PL = { weptypes: "weaponTypes" };
+        const offWeaponSet = (WT && WT.twfWeaponAllowedForStyle(state.style)) ? WT.offHandWeaponTypes(weaponTypesInData) : [];
         root.querySelectorAll(".wz-pl-select").forEach((sel) => sel.onchange = () => {
-          const key = PL[sel.dataset.plsel], val = sel.value;
-          if (!key || !val) return;
+          const id = sel.dataset.plsel, val = sel.value;
+          if (!val) return;
+          const key = id === "offhand" ? (offWeaponSet.includes(val) ? "offHandWeapons" : "offHand") : PL[id];
+          if (!key) return;
           if (!state[key].includes(val)) state[key] = [...state[key], val];
           render();
         });
         root.querySelectorAll(".wz-pl-tags .wz-tag").forEach((tag) => tag.onclick = () => {
-          const key = PL[tag.dataset.pltag]; if (!key) return;
+          const key = tag.dataset.arr || PL[tag.dataset.pltag]; if (!key) return;
           state[key] = state[key].filter((x) => x !== tag.dataset.val);
           render();
         });
