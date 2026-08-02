@@ -140,8 +140,10 @@ function eligible(variants, query) {
     if (floor != null && v.ml != null && v.ml < floor) return false;
 
     // R8 — Weapon-type / style lock: Main Hand (category "weapon") is constrained
-    // to the allowed weapon types (a picked set, or the whole style bucket).
-    if (v.category === "weapon" && weaponAllow && !weaponAllow.includes(v.type)) return false;
+    // to the allowed weapon types (a picked set, or the whole style bucket). Untyped
+    // weapon hosts (the Dino Bone Weapon, `type == null`, whose in-game type is
+    // player-chosen) can't be matched against a lock, so they stay eligible.
+    if (v.category === "weapon" && weaponAllow && v.type != null && !weaponAllow.includes(v.type)) return false;
 
     // R9/B5 — Off-hand configuration: block every off-hand item under a two-hand
     // style or an "empty"-only pick; otherwise keep only the allowed off-hand types.
@@ -390,8 +392,8 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // and rune arms all live here (slot "Off Hand"). eligible() has already applied
   // the off-hand/style constraints, so an empty candidate set — a two-hand style or
   // an "empty"-only pick — pushes no slot (nothing equippable off-hand). This
-  // supersedes the old vestigial `category==="runearm"` slot (rune arms are Off
-  // Hand items typed "Rune Arms").
+  // supersedes the old vestigial `category==="runearm"` slot; the one legacy
+  // rune-arm host is normalized into this pool at load (dataset.js).
   const offHand = dominanceFilter(elig.filter((v) => v.slot === "Off Hand"), targetSet, mlCap, 1, pinnedIds, withArt);
   if (offHand.length) worn.push({ slot: "Off Hand", cardinality: 1, variants: offHand });
 

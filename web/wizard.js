@@ -873,7 +873,7 @@ if (typeof window !== "undefined" && window.App) {
       if (state.step === "character") {
         document.getElementById("wz-ml").oninput = (e) => state.ml = e.target.value;
         document.getElementById("wz-mlfloor").oninput = (e) => state.mlFloor = e.target.value;
-        document.getElementById("wz-race").onchange = (e) => { state.race = e.target.value; if (wizIsForged(state.race)) state.armor = ""; render(); };
+        document.getElementById("wz-race").onchange = (e) => { state.race = e.target.value; if (wizIsForged(state.race)) { state.armor = ""; state.oath = ""; } render(); };
         document.getElementById("wz-align").onchange = (e) => state.alignment = e.target.value;
         document.getElementById("wz-artifact").onchange = (e) => state.includeArtifact = e.target.checked;
         root.querySelectorAll("#wz-armor .wz-chip").forEach((c) => c.onclick = () => {

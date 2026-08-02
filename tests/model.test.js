@@ -553,4 +553,35 @@ test("U2: a rune arm is equippable through the Off Hand slot", () => {
   assert.ok(!model.worn.find((s) => s.slot === "Rune Arm"), "vestigial Rune Arm slot retired");
 });
 
+test("U2/B4: an off-hand allow-set keeps every allowed type (permissive, not pin)", () => {
+  const items = [oh("Orb", "Orbs"), oh("Tower", "Tower shields"), oh("Buckler", "Bucklers")];
+  const kept = M.eligible(items, { mlCap: 34, targets: ["Constitution"], offHand: ["Orbs", "Tower shields"] });
+  assert.deepStrictEqual(kept.map((x) => x.type).sort(), ["Orbs", "Tower shields"], "both allowed types kept, buckler dropped");
+});
+
+test("U2: an untyped weapon host survives a style/weapon-type lock (Dino Bone Weapon)", () => {
+  // A weapon with no `type` (its in-game type is player-chosen) can't be matched
+  // against a lock, so it must stay eligible under any style / weaponTypes pick.
+  const dino = wt("Dino Bone Weapon", null);
+  const sword = wt("Sword", "Long Swords");
+  const kept = M.eligible([dino, sword], { mlCap: 34, targets: ["Strength"], style: "two-hand", weaponTypes: ["Falchions"] });
+  assert.ok(kept.some((x) => x.source_item === "Dino Bone Weapon"), "untyped weapon host not filtered by a lock");
+  assert.ok(!kept.some((x) => x.source_item === "Sword"), "a typed weapon outside the lock is still filtered");
+});
+
+test("U2: the isDocent-by-type fix excludes a name-less docent from a non-Forged Armor slot", () => {
+  const doc = v("Scale-Stone of Avarice", "Armor", [["Constitution", "Enhancement", 10]]); doc.type = "Docents";
+  const elf = M.eligible([doc], { mlCap: 34, targets: ["Constitution"], race: "elf" });
+  assert.strictEqual(elf.length, 0, "a type-Docents item is excluded for a non-Forged race");
+  const forged = M.eligible([doc], { mlCap: 34, targets: ["Constitution"], race: "warforged" });
+  assert.strictEqual(forged.length, 1, "and kept for a Forged race");
+});
+
+test("U2: the real dataset has no orphaned Rune Arm slot after normalization", () => {
+  assert.strictEqual(data.items.filter((v) => v.slot === "Rune Arm").length, 0, "no item left in the retired Rune Arm slot");
+  const dino = data.items.find((v) => /Dinosaur Bone Rune Arm/.test(v.variant_id || v.source_item || v.name || ""));
+  assert.ok(dino, "the legacy rune-arm host exists");
+  assert.strictEqual(dino.slot, "Off Hand", "it is normalized into the Off Hand slot (still equippable)");
+});
+
 console.log(`\n${passed} passed`);
