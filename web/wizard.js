@@ -73,7 +73,7 @@ function buildQuery(state) {
 var _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined")
   ? pinnedVariantIds
   // eslint-disable-next-line global-require
-  : (typeof require !== "undefined" ? require("./model.js").pinnedVariantIds : (c) => (c && c.type === "pin" ? (Array.isArray(c.variant_ids) ? c.variant_ids : c.variant_id != null ? [c.variant_id] : []) : []));
+  : require("./model.js").pinnedVariantIds;
 
 // U3 — pure pin-mutation core (exported for tests; the wizard closure wraps these
 // with its live cardinality lookup). A pin forces an item into its WORN-slot label
@@ -796,14 +796,13 @@ if (typeof window !== "undefined" && window.App) {
         // none survive. Id resolution matches the solver (variant_id || source_item).
         Object.entries(state.slotConstraints).forEach(([slot, c]) => {
           if (!c || c.type !== "pin") return;
-          const ids = _pinnedVariantIds(c);
           const landed = (vid) => (result.chosen || []).some(
             (ch) => ch.slot === slot && (ch.variant.variant_id || ch.variant.source_item) === vid);
-          const survivors = ids.filter(landed);
-          if (survivors.length === ids.length) return;             // all landed -> unchanged
-          if (!survivors.length) delete state.slotConstraints[slot];
-          else if (Array.isArray(c.variant_ids)) state.slotConstraints[slot] = { type: "pin", variant_ids: survivors };
-          else state.slotConstraints[slot] = { type: "pin", variant_id: survivors[0] };
+          const stale = _pinnedVariantIds(c).filter((vid) => !landed(vid));
+          if (!stale.length) return;                               // all landed -> unchanged
+          // Prune each stale member through the tested pin-mutation core (one
+          // shape-writer, cardinality-based predicate) — drops the slot when none survive.
+          stale.forEach((vid) => removePinFrom(state.slotConstraints, slot, vid, slotCardOf));
           query.slotConstraints = { ...state.slotConstraints };
         });
         state.constraintsDirty = false;

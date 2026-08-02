@@ -1657,5 +1657,26 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.deepStrictEqual(ringIds, ["R1", "R2"], "both pinned rings equipped, not the stronger R3");
   });
 
+  await test("U2/U4: Artifact exactly-one drops when a Ring list fills the slot (real solve)", async () => {
+    // artRing is the ONLY Artifact; the cardinality-2 Ring slot is pinned FULL with
+    // two non-Artifacts, so artRing is forced to zero. The 'exactly one Artifact'
+    // constraint must then be DROPPED (not asserted against an unplaceable Artifact),
+    // else the solve goes infeasible. Guards the `resolving.length >= cardinality`
+    // branch in buildProgram's forcedToZero (untested by the single-pin Artifact cases).
+    const artRing = item("artRing", "Ring", [["Intelligence", "Enhancement", 10]]); artRing.artifact = true;
+    const R2 = item("R2", "Ring", [["Intelligence", "Enhancement", 3]]);
+    const R3 = item("R3", "Ring", [["Intelligence", "Enhancement", 4]]);
+    const model = {
+      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      query: { includeArtifact: true, slotConstraints: { Ring: { type: "pin", variant_ids: ["R2", "R3"] } } },
+      worn: [slot("Ring", [artRing, R2, R3], 2)],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal", "feasible: exactly-one is dropped, not asserted against a forced-off Artifact");
+    const ringIds = r.chosen.filter((c) => c.slot === "Ring").map((c) => c.variant.variant_id).sort();
+    assert.deepStrictEqual(ringIds, ["R2", "R3"], "the two pinned non-Artifact rings equip");
+    assert.ok(!r.chosen.some((c) => c.variant.artifact), "the Artifact ring is forced to zero (none equipped)");
+  });
+
   console.log(`\n${passed} passed`);
 })();

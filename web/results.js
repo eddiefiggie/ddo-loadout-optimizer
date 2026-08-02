@@ -286,8 +286,8 @@ const CraftingReg = (typeof CraftingSystems !== "undefined") ? CraftingSystems
 // list). Global from model.js in the browser; require()'d in Node tests. Lets a
 // per-row Deep-Dive badge test its OWN variant against the slot's pin(s).
 var _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined") ? pinnedVariantIds
-  : (typeof require !== "undefined" ? require("./model.js").pinnedVariantIds
-    : (c) => (c && c.type === "pin" ? (Array.isArray(c.variant_ids) ? c.variant_ids : c.variant_id != null ? [c.variant_id] : []) : []));
+  // eslint-disable-next-line global-require
+  : require("./model.js").pinnedVariantIds;
 
 // One craft option's value label (e.g. "Constitution +15"). Shared by every
 // craft-chip family so the Deep Dive and the equipped block read identically.
