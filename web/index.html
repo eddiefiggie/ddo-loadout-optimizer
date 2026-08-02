@@ -6,7 +6,7 @@
   <title>DDO Loadout Optimizer</title>
   <!-- ?v= is bumped on each UI deploy so browsers never serve a stale cached
        stylesheet/script after a release (GitHub Pages has no content hashing). -->
-  <link rel="stylesheet" href="styles.css?v=40" />
+  <link rel="stylesheet" href="styles.css?v=41" />
 </head>
 <body>
   <header class="app-header">
@@ -24,23 +24,27 @@
   <footer class="app-footer">
     <div class="wrap">
       <span id="dataset-info"></span>
-      <span> · All item data sourced from the <a href="https://ddowiki.com" rel="noopener">DDO Wiki</a>.</span>
+      <span> · Item data built on the shoulders of two community projects — the
+        <a href="https://ddowiki.com" rel="noopener">DDO Wiki</a> (the source of truth for every item)
+        and the <a href="https://github.com/illusionistpm/ddo-gear-planner" rel="noopener">DDO Gear Planner</a>
+        by illusionistpm (the canonical catalog + crafting data). Huge thanks to both and their contributors.</span>
+      <span id="build-info" class="build-info"></span>
     </div>
   </footer>
 
-  <script src="dataset.js?v=40"></script>
-  <script src="app.js?v=40"></script>
-  <script src="model.js?v=40"></script>
-  <script src="solver.js?v=40"></script>
-  <script src="alternatives.js?v=40"></script>
+  <script src="dataset.js?v=41"></script>
+  <script src="app.js?v=41"></script>
+  <script src="model.js?v=41"></script>
+  <script src="solver.js?v=41"></script>
+  <script src="alternatives.js?v=41"></script>
   <script src="vendor/highs.js"></script>
-  <script src="crafting-systems.js?v=40"></script>
-  <script src="results.js?v=40"></script>
-  <script src="import.js?v=40"></script>
-  <script src="persist.js?v=40"></script>
-  <script src="backup.js?v=40"></script>
-  <script src="exporters.js?v=40"></script>
-  <script src="browse.js?v=40"></script>
-  <script src="wizard.js?v=40"></script>
+  <script src="crafting-systems.js?v=41"></script>
+  <script src="results.js?v=41"></script>
+  <script src="import.js?v=41"></script>
+  <script src="persist.js?v=41"></script>
+  <script src="backup.js?v=41"></script>
+  <script src="exporters.js?v=41"></script>
+  <script src="browse.js?v=41"></script>
+  <script src="wizard.js?v=41"></script>
 </body>
 </html>

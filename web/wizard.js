@@ -450,8 +450,21 @@ if (typeof window !== "undefined" && window.App) {
       renderSharePicker();
       const selected = () => {
         const n = shareSel.value;
-        // eslint-disable-next-line no-undef
-        const rec = n ? CharacterStore.loadCharacter(n) : null;
+        let rec;
+        if (n === "__current__") {
+          // Serialize the just-solved build on the fly (no save required).
+          if (!(state.lastRun && state.lastRun.result && state.lastRun.result.status === "optimal")) {
+            const s = document.getElementById("wz-share-stat");
+            if (s) { s.className = "wz-filestat warn"; s.textContent = "Solve a build first, then export it here."; }
+            return null;
+          }
+          const nm = ((state.characterName || "").trim()) || "Loadout";
+          // eslint-disable-next-line no-undef
+          rec = CharacterStore.serializeCharacter(nm, state, state.lastRun, currentBuildId());
+        } else {
+          // eslint-disable-next-line no-undef
+          rec = n ? CharacterStore.loadCharacter(n) : null;
+        }
         if (rec && !(rec.snapshot && (rec.snapshot.chosen || []).length)) {
           const s = document.getElementById("wz-share-stat");
           if (s) { s.className = "wz-filestat warn"; s.textContent = `“${rec.name}” has no solved loadout to share.`; }
@@ -713,13 +726,22 @@ if (typeof window !== "undefined" && window.App) {
     function renderSharePicker() {
       const shareSel = document.getElementById("wz-share-sel");
       if (!shareSel) return;
+      // The build the user just solved is exportable WITHOUT saving it first — list
+      // it as the default option; saved characters follow. (The prior version only
+      // listed saved characters, so a fresh unsaved solve had nothing to export.)
+      const hasCurrent = !!(state.lastRun && state.lastRun.result && state.lastRun.result.status === "optimal");
       // eslint-disable-next-line no-undef
       const names = CharacterStore.listCharacters().map((c) => c.name);
       const prev = shareSel.value;
-      shareSel.innerHTML = names.length
-        ? names.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join("")
-        : `<option value="">No saved characters</option>`;
-      if (prev && names.indexOf(prev) !== -1) shareSel.value = prev;
+      const opts = [];
+      if (hasCurrent) {
+        const nm = (state.characterName || "").trim();
+        opts.push(`<option value="__current__">${esc(nm ? `${nm} (current build)` : "Current build")}</option>`);
+      }
+      for (const n of names) opts.push(`<option value="${esc(n)}">${esc(n)}</option>`);
+      shareSel.innerHTML = opts.length ? opts.join("") : `<option value="">No solved or saved loadout</option>`;
+      if (prev && [...shareSel.options].some((o) => o.value === prev)) shareSel.value = prev;
+      else if (hasCurrent) shareSel.value = "__current__";
     }
 
     // Export & Data Management (U6): backup export/import, reachable pre-solve
