@@ -683,6 +683,8 @@ input.wz-ml { width: 120px; }
 @keyframes wz-nudge { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 
 /* priorities editor */
+.wz-preset { max-width: 34rem; margin-bottom: var(--sp-3); }
+.wz-preset select { width: 100%; margin-top: 2px; }
 .wz-addrow { display: flex; gap: var(--sp-2); max-width: 34rem; }
 .wz-addrow input { flex: 1; background: var(--panel-2); color: var(--text); border: 1px solid var(--border-2);
   border-radius: var(--radius-sm); padding: 10px 12px; min-height: var(--tap); }
