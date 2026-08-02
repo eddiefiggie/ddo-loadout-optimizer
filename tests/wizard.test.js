@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad, curatedStats, pickerVocabulary } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad, curatedStats, pickerVocabulary, PRIORITY_PRESETS, applyPreset } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -182,6 +182,36 @@ test("U5 pickerVocabulary (wizard) delegates to the shared builder", () => {
   assert.ok(Array.isArray(out.suggestions) && out.suggestions.length > 0);
   assert.ok(out.known instanceof Set && typeof out.canonical === "function");
   assert.ok(out.suggestions.includes("Strikethrough Chance"));
+});
+
+// ---- priority presets ------------------------------------------------------
+
+test("presets: every preset affix is a real, known target in the dataset", () => {
+  const vocab = buildPickerVocabulary(realData);
+  assert.ok(PRIORITY_PRESETS.length >= 8, "a useful set of presets exists");
+  for (const p of PRIORITY_PRESETS) {
+    assert.ok(p.group && p.label && p.priorities.length, `${p.label} is well-formed`);
+    for (const name of p.priorities) {
+      const c = vocab.canonical(name);
+      assert.ok(vocab.known.has(c), `preset "${p.label}" affix "${name}" (-> "${c}") is a known target`);
+    }
+  }
+});
+
+test("applyPreset canonicalizes, dedupes, and drops dataset-absent names", () => {
+  // real preset resolves against the real vocab
+  const rv = buildPickerVocabulary(realData);
+  const twf = applyPreset("Two-weapon (TWF)", rv);
+  assert.ok(twf.length && twf.every((n) => rv.known.has(n)), "TWF preset -> all-known targets");
+  assert.strictEqual(twf[0], "Strength", "order preserved (Strength first)");
+  // unknown label -> []
+  assert.deepStrictEqual(applyPreset("Nope", rv), []);
+  // canonicalization + drop-unknown via a stub vocab
+  const stub = { canonical: (n) => ({ "Str": "Strength" }[n] || n), known: new Set(["Strength"]) };
+  const custom = { label: "x", group: "y", priorities: ["Str", "Ghostwalk", "Strength"] };
+  PRIORITY_PRESETS.push(custom);
+  assert.deepStrictEqual(applyPreset("x", stub), ["Strength"], "Str->Strength kept once, unknown dropped, dup removed");
+  PRIORITY_PRESETS.pop();
 });
 
 console.log(`\n${passed} passed`);

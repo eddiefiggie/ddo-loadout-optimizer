@@ -87,8 +87,42 @@ function curatedStats(dataset) {
   return pickerVocabulary(dataset).suggestions;
 }
 
+// Curated priority-list presets per build archetype (like the gear planner's
+// build styles) — a starting point so a user doesn't hand-build the ranked list.
+// Each `priorities` is an ordered list of REAL affix names (validated against the
+// dataset vocabulary in tests); applyPreset canonicalizes + drops any the current
+// dataset doesn't carry, so a preset can never inject a dangling target.
+const PRIORITY_PRESETS = [
+  { group: "Melee", label: "Two-weapon (TWF)", priorities: ["Strength", "Doublestrike", "Melee Power", "Accuracy", "Deadly", "Seeker", "Constitution"] },
+  { group: "Melee", label: "Two-handed (THF)", priorities: ["Strength", "Melee Power", "Deadly", "Seeker", "Accuracy", "Constitution"] },
+  { group: "Melee", label: "Sword & board", priorities: ["Constitution", "Physical Sheltering", "Magical Sheltering", "Strength", "Melee Power", "Fortification"] },
+  { group: "Melee", label: "Assassin (sneak)", priorities: ["Dexterity", "Sneak Attack Dice", "Melee Power", "Doublestrike", "Accuracy", "Deadly"] },
+  { group: "Ranged", label: "Bow", priorities: ["Dexterity", "Ranged Power", "Doubleshot", "Accuracy", "Deadly", "Seeker", "Constitution"] },
+  { group: "Ranged", label: "Repeater / thrower", priorities: ["Dexterity", "Ranged Power", "Doubleshot", "Deadly", "Seeker", "Accuracy"] },
+  { group: "Caster", label: "DC caster — Int (Wizard)", priorities: ["Intelligence", "Spell Penetration", "Spell Focus Mastery", "Universal Spell Power", "Potency"] },
+  { group: "Caster", label: "DC caster — Wis (Cleric/Druid)", priorities: ["Wisdom", "Spell Penetration", "Spell Focus Mastery", "Universal Spell Power", "Potency"] },
+  { group: "Caster", label: "DC caster — Cha (Sorc/Bard/FvS)", priorities: ["Charisma", "Spell Penetration", "Spell Focus Mastery", "Universal Spell Power", "Potency"] },
+  { group: "Caster", label: "Spell-power nuker", priorities: ["Universal Spell Power", "Potency", "Spell Focus Mastery", "Spell Penetration"] },
+  { group: "Caster", label: "Healer", priorities: ["Devotion", "Universal Spell Power", "Potency", "Healing Amplification"] },
+  { group: "Tank", label: "Defensive", priorities: ["Constitution", "Physical Sheltering", "Magical Sheltering", "Fortification", "Dodge", "Healing Amplification"] },
+];
+
+/** Resolve a preset's priority list against the live dataset vocabulary: each name
+ *  canonicalized through the alias table, deduped, and dropped if the dataset does
+ *  not carry it (`vocab.known`). Returns [] for an unknown preset label. Pure. */
+function applyPreset(label, vocab) {
+  const p = PRIORITY_PRESETS.find((x) => x.label === label);
+  if (!p) return [];
+  const out = [];
+  for (const name of p.priorities) {
+    const c = vocab && vocab.canonical ? vocab.canonical(name) : name;
+    if (c && (!vocab || !vocab.known || vocab.known.has(c)) && !out.includes(c)) out.push(c);
+  }
+  return out;
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad, curatedStats, pickerVocabulary };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad, curatedStats, pickerVocabulary, PRIORITY_PRESETS, applyPreset };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -251,6 +285,15 @@ if (typeof window !== "undefined" && window.App) {
         <h2>Rank the stats you care about</h2>
         <p class="wz-lead">Add stats and order them — #1 is maximized first, then #2 without giving up any of #1,
           and so on. This ordering <em>is</em> the objective the solver optimizes.</p>
+        <div class="wz-preset">
+          <label class="wz-label" for="wz-preset">Start from a preset <span class="wz-sub">· optional</span></label>
+          <select id="wz-preset">
+            <option value="">Choose a build style…</option>
+            ${(() => { const g = {}; for (const p of PRIORITY_PRESETS) (g[p.group] = g[p.group] || []).push(p);
+              return Object.entries(g).map(([grp, ps]) => `<optgroup label="${esc(grp)}">${ps.map((p) => `<option value="${esc(p.label)}">${esc(p.label)}</option>`).join("")}</optgroup>`).join(""); })()}
+          </select>
+          <span class="wz-help">Fills the priority list for a common build — reorder or edit anything after.</span>
+        </div>
         <div class="wz-addrow">
           <input id="wz-add" list="wz-stats" placeholder="Add a stat — e.g. Constitution, Dodge, Melee Power…">
           <datalist id="wz-stats">${allStats.map((s) => `<option value="${esc(s)}">`).join("")}</datalist>
@@ -789,6 +832,12 @@ if (typeof window !== "undefined" && window.App) {
       }
       if (state.step === "priorities") {
         const add = document.getElementById("wz-add");
+        const preset = document.getElementById("wz-preset");
+        if (preset) preset.onchange = (e) => {
+          const list = applyPreset(e.target.value, vocab);   // canonicalized + dataset-filtered
+          if (list.length) { state.priorities = list; renderRanked(); }
+          e.target.value = "";   // reset to the placeholder; the list is now editable
+        };
         document.getElementById("wz-add-btn").onclick = () => { if (addPriority(add.value)) renderRanked(); add.value = ""; add.focus(); };
         add.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); if (addPriority(add.value)) renderRanked(); add.value = ""; } };
         renderRanked();
