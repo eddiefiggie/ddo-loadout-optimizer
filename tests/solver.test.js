@@ -1640,5 +1640,22 @@ function setPiece(id, slotName, affixes, setName, tiers) {
       "a hand-mutex `xA + xB <= 1` pairs the shared weapon's two pick-vars (load-bearing, not cosmetic)");
   });
 
+  await test("U2/B5: pinning two different rings equips BOTH (real solve)", async () => {
+    // R3 is the strongest ring; unpinned the solver would prefer it. Pinning R1
+    // and R2 via a Ring list must force both into the cardinality-2 slot instead.
+    const R1 = item("R1", "Ring", [["Intelligence", "Enhancement", 3]]);
+    const R2 = item("R2", "Ring", [["Intelligence", "Enhancement", 4]]);
+    const R3 = item("R3", "Ring", [["Intelligence", "Enhancement", 10]]);
+    const model = {
+      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      query: { slotConstraints: { Ring: { type: "pin", variant_ids: ["R1", "R2"] } } },
+      worn: [slot("Ring", [R1, R2, R3], 2)],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    const ringIds = r.chosen.filter((c) => c.slot === "Ring").map((c) => c.variant.variant_id).sort();
+    assert.deepStrictEqual(ringIds, ["R1", "R2"], "both pinned rings equipped, not the stronger R3");
+  });
+
   console.log(`\n${passed} passed`);
 })();

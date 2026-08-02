@@ -41,6 +41,14 @@ const _equivType = (typeof equivType !== "undefined")
   // eslint-disable-next-line global-require
   : require("./model.js").equivType;
 
+// U2 — the shared pin-normalize path (single `variant_id` or Ring `variant_ids`
+// list). Browser global; Node require. So the solver and model can never read a
+// list-shaped pin differently.
+const _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined")
+  ? pinnedVariantIds
+  // eslint-disable-next-line global-require
+  : require("./model.js").pinnedVariantIds;
+
 /** U6 — per-slot constraint bodies (pin / lock-empty) as raw LP strings, using
  *  the `extra` seam. Pin → the chosen variant's pick var = 1; lock-empty → the
  *  slot's pick vars sum to 0; free → nothing. Pure + exported for tests. A pin
@@ -60,9 +68,14 @@ function slotConstraintBodies(xVars, slotConstraints) {
     if (c.type === "empty") {
       if (group.length) bodies.push(`${group.map((x) => x.name).join(" + ")} = 0`);
     } else if (c.type === "pin") {
-      const xv = group.find(
-        (x) => (x.variant.variant_id || x.variant.source_item) === c.variant_id);
-      if (xv) bodies.push(`${xv.name} = 1`);
+      // One `x = 1` per pinned variant present in the slot group. Single-cardinality
+      // slots have one; the Ring slot may pin two different rings (B5). A pinned id
+      // absent from the pool is a silent no-op (stale pin; R17 reconciles it).
+      for (const vid of _pinnedVariantIds(c)) {
+        const xv = group.find(
+          (x) => (x.variant.variant_id || x.variant.source_item) === vid);
+        if (xv) bodies.push(`${xv.name} = 1`);
+      }
     }
   }
   return bodies;
@@ -146,9 +159,10 @@ function buildProgram(model) {
       if (!c || c.type === "free") return false;
       if (c.type === "empty") return true;
       if (c.type === "pin") {
-        if (!pinResolves(xv.slot, c.variant_id)) return false; // stale pin -> slot still free
-        if (c.variant_id === idOf(xv)) return false;   // this Artifact is the pin (forced on)
-        return (xv.cardinality || 1) <= 1;              // single slot already taken by another item
+        const resolving = _pinnedVariantIds(c).filter((vid) => pinResolves(xv.slot, vid));
+        if (!resolving.length) return false;            // all pins stale -> slot still free
+        if (resolving.includes(idOf(xv))) return false; // this Artifact IS one of the pins (forced on)
+        return resolving.length >= (xv.cardinality || 1); // slot capacity fully taken by other pins
       }
       return false;
     };
@@ -160,7 +174,7 @@ function buildProgram(model) {
     // the pins stand rather than wiping the build with a generic 'no set' error.
     const pinnedOnArtifacts = arts.filter((xv) => {
       const c = sc[xv.slot];
-      return c && c.type === "pin" && c.variant_id === idOf(xv) && pinResolves(xv.slot, c.variant_id);
+      return c && c.type === "pin" && _pinnedVariantIds(c).includes(idOf(xv)) && pinResolves(xv.slot, idOf(xv));
     }).length;
     if (pinnedOnArtifacts <= 1 && arts.some((xv) => !forcedToZero(xv))) {
       extraConstraints.push(`${arts.map((xv) => xv.name).join(" + ")} = 1`);

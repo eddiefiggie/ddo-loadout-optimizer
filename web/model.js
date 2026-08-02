@@ -232,6 +232,18 @@ function pinConflict(v, query) {
   return variantConflict(v, query);
 }
 
+// U2 — THE single normalize path for a slot's pin(s). A slot constraint pins ONE
+// item via `variant_id` (single-cardinality slots) OR several via `variant_ids`
+// (the Ring slot, cardinality 2 — two different rings). Returns the list of pinned
+// variant ids (empty for non-pin/empty/free). Every slotConstraints reader routes
+// through this so single- and list-shaped pins can never be read inconsistently.
+function pinnedVariantIds(c) {
+  if (!c || c.type !== "pin") return [];
+  if (Array.isArray(c.variant_ids)) return c.variant_ids.filter((id) => id != null);
+  if (c.variant_id != null) return [c.variant_id];
+  return [];
+}
+
 function eligible(variants, query) {
   const gates = queryGates(query);
   return variants.filter((v) => variantConflict(v, query, gates) === null);
@@ -414,7 +426,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // item's pick var always exists for its `= 1` constraint. Empty when absent.
   const pinnedIds = new Set();
   for (const c of Object.values(query.slotConstraints || {})) {
-    if (c && c.type === "pin" && c.variant_id) pinnedIds.add(c.variant_id);
+    for (const id of pinnedVariantIds(c)) pinnedIds.add(id);
   }
 
   // KTD2 — Artifact exemption: when the box is on, "exactly one Artifact" makes
@@ -527,7 +539,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
 // exports for node tests; harmless in the browser
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
-    buildModel, eligible, variantConflict, pinConflict, dominanceFilter, dominates,
+    buildModel, eligible, variantConflict, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys,
     isForgedRace, isDocent, variantKey, setStackEquiv, equivType,
     WORN_SLOTS, SLOT_CARDINALITY, ARMOR_DODGE_CAP,

@@ -659,13 +659,21 @@ if (typeof window !== "undefined" && window.App) {
         const result = await solveLexicographic(model, h);
         if (result.status === "optimal") result.solveMs = Math.round(performance.now() - t0);
         // R17 pin-invalidation: a pinned item that didn't land (e.g. a gate change
-        // made it ineligible) is dropped to "free" so its badge never lies.
+        // made it ineligible) is dropped so its badge never lies. For a list-shaped
+        // Ring pin, prune only the missing members; drop the whole slot only when
+        // none survive. Id resolution matches the solver (variant_id || source_item).
         Object.entries(state.slotConstraints).forEach(([slot, c]) => {
-          if (c && c.type === "pin" &&
-              !(result.chosen || []).some((ch) => ch.slot === slot && ch.variant.variant_id === c.variant_id)) {
-            delete state.slotConstraints[slot];
-            query.slotConstraints = { ...state.slotConstraints };
-          }
+          if (!c || c.type !== "pin") return;
+          // eslint-disable-next-line no-undef
+          const ids = pinnedVariantIds(c);
+          const landed = (vid) => (result.chosen || []).some(
+            (ch) => ch.slot === slot && (ch.variant.variant_id || ch.variant.source_item) === vid);
+          const survivors = ids.filter(landed);
+          if (survivors.length === ids.length) return;             // all landed -> unchanged
+          if (!survivors.length) delete state.slotConstraints[slot];
+          else if (Array.isArray(c.variant_ids)) state.slotConstraints[slot] = { type: "pin", variant_ids: survivors };
+          else state.slotConstraints[slot] = { type: "pin", variant_id: survivors[0] };
+          query.slotConstraints = { ...state.slotConstraints };
         });
         state.constraintsDirty = false;
         // fresh:true — this build was solved against the current catalog, so a
