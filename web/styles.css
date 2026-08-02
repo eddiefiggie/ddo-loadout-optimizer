@@ -644,8 +644,14 @@ input.bumped { background: rgba(91,140,255,0.16); border-color: var(--accent); }
   border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: 10px 12px; font-size: var(--fs-md); min-height: var(--tap); }
 .wz-field input:focus, .wz-field select:focus { outline: none; box-shadow: var(--ring); border-color: var(--accent); }
 input.wz-ml { width: 120px; }
-.wz-pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+.wz-pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); align-items: stretch; }
 @media (max-width: 520px) { .wz-pair { grid-template-columns: 1fr; } }
+/* Bottom-align the two controls in a pair so a taller help block on one side
+   (e.g. Alignment's two-line note vs Race's one line) doesn't stagger the row —
+   both selects/inputs sit on the same baseline. */
+.wz-pair > .wz-field { display: flex; flex-direction: column; height: 100%; }
+.wz-pair > .wz-field > select,
+.wz-pair > .wz-field > input { margin-top: auto; }
 
 /* opt-in checkbox: inline box-beside-label, deliberately NOT a .wz-field (whose
    input rule forces width:100%) so the box stays small; the whole row toggles it */
