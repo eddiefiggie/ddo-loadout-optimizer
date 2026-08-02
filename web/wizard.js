@@ -70,7 +70,7 @@ function buildQuery(state) {
 // U3 — the shared pin-normalize path, resolved once across runtimes (browser
 // global from model.js; Node require). So the wizard reads a list-shaped Ring pin
 // exactly as the solver does.
-const _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined")
+var _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined")
   ? pinnedVariantIds
   // eslint-disable-next-line global-require
   : (typeof require !== "undefined" ? require("./model.js").pinnedVariantIds : (c) => (c && c.type === "pin" ? (Array.isArray(c.variant_ids) ? c.variant_ids : c.variant_id != null ? [c.variant_id] : []) : []));
@@ -83,8 +83,10 @@ const _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined")
 // keeps the newest two; a duplicate variant is ignored.
 function pinWornSlotOf(v) { return v.category === "weapon" ? "Main Hand" : v.slot; }
 function pinIdOf(v) { return v.variant_id || v.source_item; }
-function applyPin(slotConstraints, v, cardOf) {
-  const slot = pinWornSlotOf(v), id = pinIdOf(v);
+// Pin one variant id into a known worn slot (used both by the Gear-pool search,
+// via applyPin, and by the results Deep-Dive per-row pin action). A full single
+// slot replaces; a full Ring keeps the newest two; a duplicate is ignored.
+function applyPinId(slotConstraints, slot, id, cardOf) {
   const card = (cardOf && cardOf(slot)) || 1;
   const c = slotConstraints[slot];
   const existing = (c && c.type === "pin") ? _pinnedVariantIds(c) : [];
@@ -93,6 +95,9 @@ function applyPin(slotConstraints, v, cardOf) {
   if (next.length > card) next = next.slice(next.length - card);  // single replaces; Ring keeps newest 2
   slotConstraints[slot] = card > 1 ? { type: "pin", variant_ids: next } : { type: "pin", variant_id: next[0] };
   return slotConstraints;
+}
+function applyPin(slotConstraints, v, cardOf) {
+  return applyPinId(slotConstraints, pinWornSlotOf(v), pinIdOf(v), cardOf);
 }
 function removePinFrom(slotConstraints, slot, id, cardOf) {
   const c = slotConstraints[slot];
@@ -202,7 +207,7 @@ function addBundle(key, current, vocab) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, removePinFrom };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, applyPinId, removePinFrom };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -1213,10 +1218,18 @@ if (typeof window !== "undefined" && window.App) {
           }
           const act = e.target.closest(".pd-menu button");
           if (!act || act.disabled) return;
-          const slot = act.dataset.slot;
-          if (act.dataset.act === "free") delete state.slotConstraints[slot];
-          else if (act.dataset.act === "empty") state.slotConstraints[slot] = { type: "empty" };
-          else if (act.dataset.act === "pin" && act.dataset.variant) state.slotConstraints[slot] = { type: "pin", variant_id: act.dataset.variant };
+          const slot = act.dataset.slot, variant = act.dataset.variant;
+          const cur = state.slotConstraints[slot];
+          if (act.dataset.act === "free") {
+            // Free THIS row: for a list-shaped Ring pin, prune only this row's
+            // member (the other ring survives); otherwise clear the whole slot.
+            if (cur && cur.type === "pin" && variant) removePin(slot, variant);
+            else delete state.slotConstraints[slot];
+          } else if (act.dataset.act === "empty") {
+            state.slotConstraints[slot] = { type: "empty" };   // slot-level lock clears any pins
+          } else if (act.dataset.act === "pin" && variant) {
+            applyPinId(state.slotConstraints, slot, variant, slotCardOf); // append (Ring) / replace (single)
+          }
           state.constraintsDirty = true;
           // refresh the equipped-list badges in place (no re-solve yet)
           if (state.lastRun) {

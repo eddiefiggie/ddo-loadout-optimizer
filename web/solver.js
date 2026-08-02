@@ -44,7 +44,7 @@ const _equivType = (typeof equivType !== "undefined")
 // U2 — the shared pin-normalize path (single `variant_id` or Ring `variant_ids`
 // list). Browser global; Node require. So the solver and model can never read a
 // list-shaped pin differently.
-const _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined")
+var _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined")
   ? pinnedVariantIds
   // eslint-disable-next-line global-require
   : require("./model.js").pinnedVariantIds;

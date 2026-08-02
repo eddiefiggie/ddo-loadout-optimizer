@@ -282,6 +282,13 @@ function safeUrl(u) {
 const CraftingReg = (typeof CraftingSystems !== "undefined") ? CraftingSystems
   : (typeof require !== "undefined" ? require("./crafting-systems.js") : null);
 
+// U2/U4 — the shared pin-normalize path (single variant_id or Ring variant_ids
+// list). Global from model.js in the browser; require()'d in Node tests. Lets a
+// per-row Deep-Dive badge test its OWN variant against the slot's pin(s).
+var _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined") ? pinnedVariantIds
+  : (typeof require !== "undefined" ? require("./model.js").pinnedVariantIds
+    : (c) => (c && c.type === "pin" ? (Array.isArray(c.variant_ids) ? c.variant_ids : c.variant_id != null ? [c.variant_id] : []) : []));
+
 // One craft option's value label (e.g. "Constitution +15"). Shared by every
 // craft-chip family so the Deep Dive and the equipped block read identically.
 function craftLbl(o) {
@@ -435,13 +442,18 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById) {
   const locked = c && c.type === "empty";
   const v = pick ? pick.variant : null;
   const canPin = v && !locked;
+  // U4/F1+F2 — per-ROW identity. A Ring slot shares the label "Ring" across both
+  // rows, so pin/free must target THIS row's variant (not the whole slot) and the
+  // "pinned" badge must fire only when THIS row's item is one of the slot's pins.
+  const rowId = v ? (v.variant_id || v.source_item) : "";
+  const rowPinned = !!(c && c.type === "pin" && rowId && _pinnedVariantIds(c).includes(rowId));
   const ctl = `<button class="pd-ctl" data-slot="${esc(label)}" title="constrain this slot" aria-label="constrain ${esc(label)}">&#8943;</button>`;
   const menu = `<div class="pd-menu" hidden>
-    <button data-act="pin" data-slot="${esc(label)}" data-variant="${canPin ? esc(v.variant_id) : ""}"${canPin ? "" : " disabled"}>Pin this item</button>
+    <button data-act="pin" data-slot="${esc(label)}" data-variant="${canPin ? esc(rowId) : ""}"${canPin ? "" : " disabled"}>Pin this item</button>
     <button data-act="empty" data-slot="${esc(label)}">Lock empty</button>
-    <button data-act="free" data-slot="${esc(label)}">Free (optimize)</button>
+    <button data-act="free" data-slot="${esc(label)}" data-variant="${v ? esc(rowId) : ""}">Free (optimize)</button>
   </div>`;
-  const badge = c && c.type === "pin" ? `<span class="pd-badge pin">pinned</span>`
+  const badge = rowPinned ? `<span class="pd-badge pin">pinned</span>`
     : locked ? `<span class="pd-badge empty">locked empty</span>` : "";
   const memberSets = v && !locked ? slotSetNames(v) : [];                          // U6: label = membership
   const glow = !!(v && !locked) && slotSetNames(v, satisfied).length > 0;          // glow = satisfaction (via helper)
@@ -458,7 +470,7 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById) {
   // comes from `maps` (keyed by the pick's chosen index); `augById` resolves an
   // augment's affixes by variant_id (the placed meta carries none).
   const body = (v && !locked) ? equippedBody(v, pick ? pick.idx : -1, maps, augById) : "";
-  const rowCls = `pd-row ${(!v || locked) ? "empty" : "occupied"}${glow ? " is-set" : ""}${isArtifact ? " is-artifact" : ""}${c ? " constrained" : ""}`;
+  const rowCls = `pd-row ${(!v || locked) ? "empty" : "occupied"}${glow ? " is-set" : ""}${isArtifact ? " is-artifact" : ""}${(rowPinned || locked) ? " constrained" : ""}`;
   return `<div class="${rowCls}">
     <div class="pd-rtop"><div class="pd-rlabel">${esc(label)}</div>${ctl}</div>
     <div class="${nameCls}"${v ? ` title="${esc(v.variant_id)}"` : ""}>${name}</div>

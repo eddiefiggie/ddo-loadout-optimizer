@@ -93,6 +93,19 @@ test("save -> list -> load round-trip preserves inputs + snapshot", () => {
   assert.strictEqual(back.snapshot.chosen[0].variant.variant_id, "Sight:heroic");
 });
 
+test("U4/B6: a two-ring pin list survives serialize -> save -> load intact", () => {
+  const st = fakeStorage();
+  const pinned = { ...state, slotConstraints: {
+    Trinket: { type: "pin", variant_id: "Hydra's Heart" },
+    Ring: { type: "pin", variant_ids: ["R1", "R2"] },
+  } };
+  saveCharacter(serializeCharacter("Pinned", pinned, lastRun, "idp"), st);
+  const back = loadCharacter("Pinned", st);
+  assert.deepStrictEqual(back.inputs.slotConstraints.Trinket, { type: "pin", variant_id: "Hydra's Heart" });
+  assert.deepStrictEqual(back.inputs.slotConstraints.Ring, { type: "pin", variant_ids: ["R1", "R2"] },
+    "the two-ring list is preserved verbatim (not collapsed to a single pin)");
+});
+
 test("save under an existing name replaces that entry only", () => {
   const st = fakeStorage();
   saveCharacter(serializeCharacter("Sook", state, lastRun, "id1"), st);
