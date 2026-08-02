@@ -368,10 +368,10 @@ if (typeof window !== "undefined" && window.App) {
               <div class="wz-pl-tags" data-pltags="${id}">${sel.map((t) => `<button class="wz-tag" data-pltag="${id}" data-val="${esc(t)}">${esc(lbl(t))}<span class="wz-tag-x" aria-hidden="true">×</span></button>`).join("")}</div></div>`;
             };
             return `<div class="wz-field"><span class="wz-label">Combat style <span class="wz-sub">· optional</span></span>
-            <span class="wz-help">Pick a style to narrow the weapon and off-hand. Click the selected style again to switch. Nothing picked within a list = any of it.</span>
+            <span class="wz-help">Pick a style to narrow the weapon and off-hand. Click the selected style again to switch. Each list below is optional — add types to narrow it; add nothing and any is allowed.</span>
             <div class="wz-seg" id="wz-style">${(state.style ? styles.filter((s) => s.id === state.style) : styles).map((s) => `<button class="wz-chip ${state.style === s.id ? "on" : ""}" data-style="${s.id}">${esc(s.label)}</button>`).join("")}</div>
             ${state.style ? `<div class="wz-subseg">
-              <span class="wz-sublabel">Weapon type <span class="wz-sub">· none = any</span></span>
+              <span class="wz-sublabel">Weapon type <span class="wz-sub">· optional — add none for any</span></span>
               ${pickList("weptypes", wtypes, state.weaponTypes)}
               ${ohOn ? (() => {
                 // One "Off hand" dropdown holding both off-hand ITEMS and (dual-wield)
@@ -380,7 +380,7 @@ if (typeof window !== "undefined" && window.App) {
                 const itemAvail = ["empty", ...ohTypes].filter((t) => !state.offHand.includes(t));
                 const wpnAvail = twfOn ? offWeaponTypes.filter((t) => !state.offHandWeapons.includes(t)) : [];
                 const any = itemAvail.length + wpnAvail.length;
-                return `<span class="wz-sublabel">Off hand <span class="wz-sub">· none = any${twfOn ? " — a shield, orb, rune arm, or a second weapon (dual-wield)" : ""}</span></span>
+                return `<span class="wz-sublabel">Off hand <span class="wz-sub">· optional — add none for any${twfOn ? "; a shield, orb, rune arm, or a second weapon (dual-wield)" : ""}</span></span>
               <div class="wz-picklist">
                 <select class="wz-pl-select" data-plsel="offhand"${any ? "" : " disabled"}>
                   <option value="">${any ? "Add…" : "All added"}</option>
