@@ -283,9 +283,17 @@ if (typeof window !== "undefined" && window.App) {
             const ohTypes = WT ? ((state.style && WT.offHandTypesForStyle(state.style)) || WT.OFF_HAND_TYPES) : [];
             const offWeaponTypes = twfOn ? WT.offHandWeaponTypes(weaponTypesInData) : [];
             // A filterable pick-list of toggle chips, for the long weapon lists.
-            const pickList = (id, opts, sel) => `<div class="wz-picklist">
-              <div class="wz-pl-opts" id="wz-${id}">${opts.map((t) => `<button class="wz-chip ${sel.includes(t) ? "on" : ""}" data-plopt="${id}" data-val="${esc(t)}">${esc(t)}</button>`).join("")}</div>
-              <span class="wz-pl-count" data-plcount="${id}">${sel.length ? esc(sel.length) + " selected" : "none = any"}</span></div>`;
+            // A dropdown pick-list: choose a type to add; picked types show as
+            // removable tags. The dropdown offers only the not-yet-picked types.
+            const pickList = (id, opts, sel) => {
+              const avail = opts.filter((t) => !sel.includes(t));
+              return `<div class="wz-picklist">
+              <select class="wz-pl-select" data-plsel="${id}"${avail.length ? "" : " disabled"}>
+                <option value="">${avail.length ? "Add a type…" : "All added"}</option>
+                ${avail.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join("")}
+              </select>
+              <div class="wz-pl-tags" data-pltags="${id}">${sel.map((t) => `<button class="wz-tag" data-pltag="${id}" data-val="${esc(t)}">${esc(t)}<span class="wz-tag-x" aria-hidden="true">×</span></button>`).join("")}</div></div>`;
+            };
             return `<div class="wz-field"><span class="wz-label">Combat style <span class="wz-sub">· optional</span></span>
             <span class="wz-help">Pick a style, then narrow the weapon and off-hand. Nothing picked within a list = any of it; leave the style unset to allow anything.</span>
             <div class="wz-seg" id="wz-style">${styles.map((s) => `<button class="wz-chip ${state.style === s.id ? "on" : ""}" data-style="${s.id}">${esc(s.label)}</button>`).join("")}</div>
@@ -905,16 +913,20 @@ if (typeof window !== "undefined" && window.App) {
         });
         // Permissive multi-select (toggle membership).
         const toggleIn = (arr, val) => arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
-        // Pick-lists (weapon type + off-hand weapon): each `data-plopt` names the
-        // list; map it to the backing state array. Toggling updates only the chip +
-        // the count, so the scroll position survives (no full re-render).
+        // Dropdown pick-lists (weapon type + off-hand weapon): `data-plsel`/`data-pltag`
+        // name the list; map it to the backing state array. Adding/removing re-renders
+        // so the dropdown drops the picked type and the tags refresh.
         const PL = { weptypes: "weaponTypes", offweapons: "offHandWeapons" };
-        root.querySelectorAll(".wz-pl-opts .wz-chip").forEach((c) => c.onclick = () => {
-          const key = PL[c.dataset.plopt]; if (!key) return;
-          state[key] = toggleIn(state[key], c.dataset.val);
-          c.classList.toggle("on", state[key].includes(c.dataset.val));
-          const count = root.querySelector(`[data-plcount="${c.dataset.plopt}"]`);
-          if (count) count.textContent = state[key].length ? state[key].length + " selected" : "none = any";
+        root.querySelectorAll(".wz-pl-select").forEach((sel) => sel.onchange = () => {
+          const key = PL[sel.dataset.plsel], val = sel.value;
+          if (!key || !val) return;
+          if (!state[key].includes(val)) state[key] = [...state[key], val];
+          render();
+        });
+        root.querySelectorAll(".wz-pl-tags .wz-tag").forEach((tag) => tag.onclick = () => {
+          const key = PL[tag.dataset.pltag]; if (!key) return;
+          state[key] = state[key].filter((x) => x !== tag.dataset.val);
+          render();
         });
         root.querySelectorAll("#wz-offhand .wz-chip").forEach((c) => c.onclick = () => {
           state.offHand = toggleIn(state.offHand, c.dataset.offhand);

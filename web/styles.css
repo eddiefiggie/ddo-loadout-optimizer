@@ -678,12 +678,16 @@ input.wz-ml { width: 120px; }
 .wz-sublabel { display: block; font-size: var(--fs-xs); font-weight: 600; color: var(--muted); }
 .wz-wrap .wz-chip { padding: 6px 11px; min-height: 0; font-size: var(--fs-sm); font-weight: 500; }
 .wz-note { font-style: italic; margin: var(--sp-1) 0 0; }
-/* TC — weapon/off-hand pick-list (scrollable toggle chips). */
-.wz-picklist { display: flex; flex-direction: column; gap: var(--sp-1); }
-.wz-pl-opts { display: flex; flex-wrap: wrap; gap: var(--sp-2); max-height: 168px; overflow-y: auto;
-  padding: var(--sp-2); border: 1px solid var(--border-2); border-radius: var(--radius-sm); background: var(--panel-2); }
-.wz-pl-opts .wz-chip { padding: 6px 11px; min-height: 0; font-size: var(--fs-sm); font-weight: 500; }
-.wz-pl-count { font-size: var(--fs-xs); color: var(--faint); }
+/* TC — weapon/off-hand dropdown pick-list (select + removable tags). */
+.wz-picklist { display: flex; flex-direction: column; gap: var(--sp-2); }
+.wz-field .wz-pl-select { max-width: 260px; }
+.wz-pl-tags { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.wz-pl-tags:empty { display: none; }
+.wz-tag { display: inline-flex; align-items: center; gap: 6px; background: var(--elev); color: var(--text);
+  border: 1px solid var(--accent); border-radius: var(--radius-sm); padding: 5px 8px 5px 11px;
+  font-size: var(--fs-sm); font-weight: 500; cursor: pointer; }
+.wz-tag-x { font-size: var(--fs-md); line-height: 1; color: var(--faint); }
+.wz-tag:hover .wz-tag-x { color: var(--text); }
 .wz-pool { gap: var(--sp-3); }
 
 .wz-file { cursor: pointer; max-width: 34rem; }
