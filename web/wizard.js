@@ -491,7 +491,14 @@ if (typeof window !== "undefined" && window.App) {
       const pins = currentPins();
       if (!pins.length) { box.innerHTML = `<p class="wz-pin-empty">No pinned items yet — search above to force a specific item into the build.</p>`; return; }
       const query = buildQuery(state);
-      box.innerHTML = pins.map(({ slot, id }) => {
+      // Aggregate guard: a character equips at most ONE Artifact, but each pin is
+      // honored, so pinning 2+ Artifacts with the opt-in on would force an illegal
+      // multi-Artifact build. Warn (don't block — the pins are the player's choice).
+      const artCount = pins.map((p) => itemByPinId(p.id)).filter((it) => it && it.artifact).length;
+      const artWarn = (query.includeArtifact && artCount > 1)
+        ? `<p class="wz-pin-artwarn">⚠ You've pinned ${artCount} Artifacts, but a character can equip only one — the solver honors every pin, so this forces an illegal build. Remove all but one.</p>`
+        : "";
+      box.innerHTML = artWarn + pins.map(({ slot, id }) => {
         const it = itemByPinId(id);
         const name = it ? (it.source_item || it.variant_id) : id;
         // eslint-disable-next-line no-undef

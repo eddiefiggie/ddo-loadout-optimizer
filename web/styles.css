@@ -714,6 +714,8 @@ input.wz-ml { width: 120px; }
 .wz-pin-name { font-weight: 600; }
 .wz-pin-slot { color: var(--faint); font-size: var(--fs-xs); }
 .wz-pin-warn { color: var(--quarantined); font-size: var(--fs-xs); margin-left: auto; }
+.wz-pin-artwarn { color: var(--quarantined); font-size: var(--fs-sm); margin: var(--sp-2) 0 0;
+  padding: var(--sp-2) var(--sp-3); background: rgba(224,164,74,0.10); border-radius: var(--radius-sm); }
 .wz-pin-x { margin-left: auto; appearance: none; background: transparent; border: none; color: var(--faint);
   font-size: var(--fs-lg); line-height: 1; cursor: pointer; padding: 0 4px; }
 .wz-pin-warn + .wz-pin-x { margin-left: var(--sp-2); }
