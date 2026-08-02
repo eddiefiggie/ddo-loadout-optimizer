@@ -529,16 +529,31 @@ test("U2/B5: a THF style builds no Off Hand slot and excludes 1H weapons", () =>
   assert.deepStrictEqual(mh.variants.map((x) => x.type), ["Falchions"], "one-hand weapon excluded under THF");
 });
 
-test("Ranged style builds no Off Hand slot (bow/crossbow takes both hands)", () => {
+test("Ranged (Bow) style: bows only, no Off Hand slot; crossbow excluded", () => {
   const model = M.buildModel([
     oh("Orb", "Orbs"),
     wt("Bow", "Long Bows", [["Strength", "Enhancement", 8]]),
-    wt("Xbow", "Light Crossbows", [["Dexterity", "Enhancement", 8]])],
-    { mlCap: 34, targets: ["Strength", "Dexterity"], style: "ranged" });
-  assert.ok(!model.worn.find((s) => s.slot === "Off Hand"), "ranged => no off-hand");
+    wt("Short", "Short Bows", [["Dexterity", "Enhancement", 8]]),
+    wt("Xbow", "Light Crossbows", [["Wisdom", "Enhancement", 8]])],
+    { mlCap: 34, targets: ["Strength", "Dexterity", "Wisdom"], style: "ranged" });
+  assert.ok(!model.worn.find((s) => s.slot === "Off Hand"), "a bow takes both hands => no off-hand");
   const mh = model.worn.find((s) => s.slot === "Main Hand");
-  assert.deepStrictEqual(mh.variants.map((x) => x.type).sort(), ["Light Crossbows", "Long Bows"],
-    "light crossbow is a Ranged main-hand option");
+  assert.deepStrictEqual(mh.variants.map((x) => x.type).sort(), ["Long Bows", "Short Bows"],
+    "bows only; the crossbow belongs to the Crossbow style, not Bow");
+});
+
+test("Crossbow style: off-hand restricted to a rune arm (no shields/orbs/weapon)", () => {
+  const model = M.buildModel([
+    wt("Xbow", "Light Crossbows", [["Strength", "Enhancement", 8]]),
+    oh("Rune", "Rune Arms", [["Strength", "Enhancement", 6]]),
+    oh("Orb", "Orbs", [["Wisdom", "Enhancement", 6]]),
+    oh("Tower", "Tower shields", [["Constitution", "Enhancement", 6]])],
+    { mlCap: 34, targets: ["Strength", "Wisdom", "Constitution"], style: "crossbow" });
+  const off = model.worn.find((s) => s.slot === "Off Hand");
+  assert.ok(off, "crossbow style builds an Off Hand slot for the rune arm");
+  assert.deepStrictEqual([...new Set(off.variants.map((v) => v.type))], ["Rune Arms"], "rune arm only — orb/shield excluded");
+  const mh = model.worn.find((s) => s.slot === "Main Hand");
+  assert.ok(mh.variants.some((v) => v.type === "Light Crossbows"), "the crossbow is the main-hand weapon");
 });
 
 test("TWF: a one-handed off-hand weapon competes in the Off Hand slot", () => {

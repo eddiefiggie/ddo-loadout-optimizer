@@ -15,9 +15,10 @@ const items = Array.isArray(raw) ? raw : raw.items;
 const weaponTypes = [...new Set(items.filter((v) => v.slot === "Weapon" && v.type).map((v) => v.type))];
 const offHandTypes = [...new Set(items.filter((v) => v.slot === "Off Hand" && v.type).map((v) => v.type))];
 
-test("four styles: one-hand, thf, ranged, unarmed", () => {
-  assert.deepStrictEqual(T.STYLES.map((s) => s.id), ["one-hand", "thf", "ranged", "unarmed"]);
-  assert.ok(T.STYLES.find((s) => s.id === "thf").label === "Two Handed Fighting");
+test("five styles: one-hand, thf, ranged(bow), crossbow, unarmed", () => {
+  assert.deepStrictEqual(T.STYLES.map((s) => s.id), ["one-hand", "thf", "ranged", "crossbow", "unarmed"]);
+  assert.strictEqual(T.STYLES.find((s) => s.id === "thf").label, "Two Handed Fighting");
+  assert.strictEqual(T.STYLES.find((s) => s.id === "crossbow").label, "Crossbow + Rune Arm");
 });
 
 test("every dataset weapon type has a style assignment (no orphan)", () => {
@@ -32,13 +33,23 @@ test("THF is two-handed melee only — no bows, no one-handers", () => {
   assert.ok(!thf.includes("Long Swords"));
 });
 
-test("Ranged holds bows and ALL crossbows (incl. light/heavy)", () => {
+test("Ranged (Bow) holds only bows; crossbows are their own style", () => {
   const r = T.weaponTypesForStyle("ranged", weaponTypes);
-  for (const t of ["Long Bows", "Short Bows", "Light Crossbows", "Heavy Crossbows",
-    "Great Crossbows", "Repeating Heavy Crossbows", "Repeating Light Crossbows"]) {
-    assert.ok(r.includes(t), `${t} should be Ranged`);
+  assert.deepStrictEqual(r.sort(), ["Long Bows", "Short Bows"]);
+  assert.strictEqual(T.offHandEnabledForStyle("ranged"), false, "a bow takes both hands");
+});
+
+test("Crossbow style holds ALL crossbows and allows a rune-arm off-hand only", () => {
+  const c = T.weaponTypesForStyle("crossbow", weaponTypes);
+  for (const t of ["Light Crossbows", "Heavy Crossbows", "Great Crossbows",
+    "Repeating Heavy Crossbows", "Repeating Light Crossbows"]) {
+    assert.ok(c.includes(t), `${t} should be a Crossbow-style weapon`);
   }
-  assert.ok(!r.includes("Long Swords"));
+  assert.ok(!c.includes("Long Bows"), "bows are not crossbows");
+  assert.strictEqual(T.offHandEnabledForStyle("crossbow"), true, "a crossbow can take a rune arm");
+  assert.deepStrictEqual(T.offHandTypesForStyle("crossbow"), ["Rune Arms"], "rune arm only — no shield/orb");
+  assert.strictEqual(T.twfWeaponAllowedForStyle("crossbow"), false, "no dual-wield with a crossbow");
+  assert.strictEqual(T.offHandTypesForStyle("one-hand"), null, "one-hand off-hand is unrestricted");
 });
 
 test("one-hand holds one-handed + light + thrown, not crossbows or two-handers", () => {

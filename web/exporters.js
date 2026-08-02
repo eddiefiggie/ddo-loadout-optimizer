@@ -19,7 +19,7 @@
   }
 
   const ARMOR = { cloth: "Cloth", light: "Light", medium: "Medium", heavy: "Heavy" };
-  const STYLE = { "one-hand": "One-hand / Dual-wield", thf: "Two Handed Fighting", ranged: "Ranged", unarmed: "Unarmed" };
+  const STYLE = { "one-hand": "One-hand / Dual-wield", thf: "Two Handed Fighting", ranged: "Bow", crossbow: "Crossbow + Rune Arm", unarmed: "Unarmed" };
   const OATH = { druid: "Druid — no metal (cloth/light approx.)" };
   const POOL = { all: "All gear", owned: "Only what I own" };
 
