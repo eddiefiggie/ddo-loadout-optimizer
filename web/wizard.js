@@ -7,7 +7,7 @@
 
 // ---- pure step machine (tested in tests/wizard.test.js) --------------------
 const WIZARD_STEPS = ["intro", "character", "pool", "priorities", "results"];
-const FORGED = new Set(["warforged", "bladeforged", "battleforged"]);
+const FORGED = new Set(["warforged", "bladeforged"]);
 
 /** Can the flow advance FROM `stepId` given the collected state? Gates the
  *  Continue/Solve buttons. Unknown steps are permissive. */
@@ -212,9 +212,15 @@ if (typeof module !== "undefined" && module.exports) {
 
 // ---- browser flow ----------------------------------------------------------
 if (typeof window !== "undefined" && window.App) {
-  const RACES = ["Human", "Elf", "Half-Elf", "Dwarf", "Halfling", "Gnome", "Deep Gnome", "Half-Orc",
-    "Drow", "Aasimar", "Eladrin", "Tiefling", "Dragonborn", "Shifter", "Shadar-kai", "Tabaxi",
-    "Warforged", "Bladeforged", "Battleforged"];
+  // Race lists sourced from the DDO wiki (ddowiki.com/page/Races): 30 playable
+  // races = 18 basic + 12 Iconic Heroes. Do not add unlisted races (there is no
+  // "Battleforged" race — Warforged and its Iconic, Bladeforged, are the two Forged).
+  const RACES_BASIC = ["Aasimar", "Dhampir", "Dragonborn", "Drow", "Duergar", "Dwarf",
+    "Eladrin", "Elf", "Gnome", "Halfling", "Half-Elf", "Half-Orc", "Human",
+    "Shifter", "Tabaxi", "Tiefling", "Warforged", "Wood Elf"];
+  const RACES_ICONIC = ["Aasimar Scourge", "Bladeforged", "Deep Gnome", "Dhampir Dark Bargainer",
+    "Duergar Mindcleaver", "Eladrin Chaosmancer", "Sun Elf (Morninglord)", "Purple Dragon Knight",
+    "Razorclaw Shifter", "Shadar-kai", "Tabaxi Trailblazer", "Tiefling Scoundrel"];
   const ALIGNMENTS = ["Lawful Good", "Neutral Good", "Chaotic Good",
     "Lawful Neutral", "True Neutral", "Chaotic Neutral"];
   const ARMOR = [["cloth", "Cloth"], ["light", "Light"], ["medium", "Medium"], ["heavy", "Heavy"]];
@@ -305,7 +311,8 @@ if (typeof window !== "undefined" && window.App) {
             <label class="wz-field"><span class="wz-label">Race</span>
               <span class="wz-help">Determines body-slot and race-locked gear.</span>
               <select id="wz-race"><option value="">Select a race…</option>
-                ${RACES.map((r) => `<option ${state.race === r ? "selected" : ""}>${r}</option>`).join("")}</select></label>
+                <optgroup label="Basic races">${RACES_BASIC.map((r) => `<option ${state.race === r ? "selected" : ""}>${r}</option>`).join("")}</optgroup>
+                <optgroup label="Iconic heroes">${RACES_ICONIC.map((r) => `<option ${state.race === r ? "selected" : ""}>${r}</option>`).join("")}</optgroup></select></label>
             <label class="wz-field"><span class="wz-label">Alignment <span class="wz-sub">· optional</span></span>
               <span class="wz-help">No alignment-gated gear is in the verified dataset yet, so this won't change results.</span>
               <select id="wz-align"><option value="">Select an alignment…</option>
