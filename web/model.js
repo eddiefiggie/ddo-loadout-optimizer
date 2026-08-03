@@ -383,7 +383,20 @@ function variantKey(v) {
   return (v && (v.variant_id || v.source_item)) || "";
 }
 
-function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinnedIds = null, includeArtifact = false) {
+// R1/R3 — a main-hand weapon that occupies BOTH hands: two-handed melee (THF),
+// bows (RANGED), or a weapon whose handedness can't be classified (the untyped Dino
+// Bone weapon host, `styleOfType` undefined). Defined by off-hand ENABLEMENT of the
+// weapon's own inherent style, so THF + RANGED + undefined all count while crossbows
+// (a rune-arm off-hand is legal) and one-handed/unarmed do not. Shared by the solver
+// hand-mutex (solver.js) and the dominance re-audit below so the two never drift.
+function isBothHandsWeapon(v) {
+  if (!v || v.category !== "weapon") return false;
+  const T = _taxonomy();
+  if (!T) return false;
+  return !T.offHandEnabledForStyle(T.styleOfType(v.type));
+}
+
+function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinnedIds = null, includeArtifact = false, handMutex = false) {
   const kept = [];
   for (let i = 0; i < slotVariants.length; i++) {
     const A = slotVariants[i];
@@ -405,6 +418,12 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinned
       // item once its Artifact "dominator" is forced off. (Artifacts themselves
       // are already exempt via pinnedIds and never reach this loop when on.)
       if (includeArtifact && B.artifact && !A.artifact) continue;
+      // KTD2 soundness: the hand mutex is a mutual exclusion — a both-hands weapon B
+      // (2H/bow/unclassifiable) is forced off whenever an off-hand is equipped, so it
+      // must not prune a one-handed peer A: once B is forced off, A may be the true
+      // best-available main hand. Mirrors the Artifact exemption above. Only fires for
+      // the Main Hand slot (handMutex passed true there).
+      if (handMutex && isBothHandsWeapon(B) && !isBothHandsWeapon(A)) continue;
       // B dominates A, and to break exact ties keep the lower index
       if (dominates(B, A, targetSet, mlCap) && !(dominates(A, B, targetSet, mlCap) && i < j)) {
         dominated = true;
@@ -464,7 +483,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   const offWeaponAllow = allowedOffHandWeaponTypes(query);
   const mainHand = dominanceFilter(
     elig.filter((v) => v.category === "weapon" && mainHandWeaponOk(v, weaponAllow)),
-    targetSet, mlCap, 1, pinnedIds, withArt);
+    targetSet, mlCap, 1, pinnedIds, withArt, true);   // handMutex: a both-hands weapon must not prune a 1H peer (KTD2)
   if (mainHand.length) worn.push({ slot: "Main Hand", cardinality: 1, variants: mainHand });
 
   // U2/B1 — Off Hand slot (at-most-one): orbs, shields (buckler/small/large/tower),
@@ -554,7 +573,7 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     buildModel, eligible, variantConflict, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys,
-    isForgedRace, isDocent, variantKey, setStackEquiv, equivType,
+    isForgedRace, isDocent, isBothHandsWeapon, variantKey, setStackEquiv, equivType,
     WORN_SLOTS, SLOT_CARDINALITY, ARMOR_DODGE_CAP,
   };
 }

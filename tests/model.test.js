@@ -463,6 +463,24 @@ test("catalog contract: each armor class is present in the built dataset (drift 
   }
 });
 
+test("U1 dominance: a both-hands weapon does not prune a one-handed peer (mutex re-audit)", () => {
+  // A 2H weapon strictly dominates a 1H on the target, but the hand mutex can force
+  // the 2H off (when an off-hand is equipped), so the 1H must survive as the true
+  // best-available main hand. The 7th arg (handMutex) turns on the re-audit.
+  const twoH = { ...v("Greatsword", "Main Hand", [["Strength", "Enhancement", 20]], { category: "weapon" }), type: "Great Swords" };
+  const oneH = { ...v("Longsword", "Main Hand", [["Strength", "Enhancement", 10]], { category: "weapon" }), type: "Long Swords" };
+  const kept = M.dominanceFilter([twoH, oneH], new Set(["Strength"]), 34, 1, null, false, true).map((x) => x.source_item);
+  assert.ok(kept.includes("Longsword"), "1H peer survives despite a dominating 2H");
+  assert.ok(kept.includes("Greatsword"), "2H still available when no off-hand is chosen");
+});
+
+test("U1 dominance control: without the mutex re-audit a 2H prunes a dominated 1H", () => {
+  const twoH = { ...v("Greatsword", "Main Hand", [["Strength", "Enhancement", 20]], { category: "weapon" }), type: "Great Swords" };
+  const oneH = { ...v("Longsword", "Main Hand", [["Strength", "Enhancement", 10]], { category: "weapon" }), type: "Long Swords" };
+  const kept = M.dominanceFilter([twoH, oneH], new Set(["Strength"]), 34, 1, null, false, false).map((x) => x.source_item);
+  assert.ok(!kept.includes("Longsword"), "default dominance prunes the dominated 1H");
+});
+
 test("U1 characterization: #90 does not reproduce — Heavy query excludes cloth end-to-end", () => {
   // Build-shaped items carry native `type`; normalizeDataset derives armor_type,
   // proving the runtime chain (type -> armor_type -> gate) excludes mismatched armor.

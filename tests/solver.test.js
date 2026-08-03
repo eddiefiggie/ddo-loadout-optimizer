@@ -1831,5 +1831,38 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.ok(!r.chosen.some((c) => c.variant.artifact), "the Artifact ring is forced to zero (none equipped)");
   });
 
+  // --- R1/R3 hand mutex (U1) — end-to-end against real HiGHS ---
+  await test("R1/R3: a two-handed main + an off-hand item can't co-occur (hand mutex)", async () => {
+    const twoH = { ...item("GS", "Main Hand", [["Strength", "Enhancement", 20]]), category: "weapon", type: "Great Swords" };
+    const shield = { ...item("Shield", "Off Hand", [["Constitution", "Enhancement", 20]]), type: "Large shields" };
+    const model = { targets: ["Strength", "Constitution"], worn: [slot("Main Hand", [twoH]), slot("Off Hand", [shield])] };
+    const chosen = ((await S.solveLexicographic(model, highs)).chosen || []).map((c) => c.variant.variant_id);
+    assert.ok(!(chosen.includes("GS") && chosen.includes("Shield")), "2H main + off-hand shield never co-occur");
+  });
+
+  await test("R1: a one-handed main + an off-hand shield DO co-occur (mutex doesn't fire)", async () => {
+    const oneH = { ...item("LS", "Main Hand", [["Strength", "Enhancement", 20]]), category: "weapon", type: "Long Swords" };
+    const shield = { ...item("Shield", "Off Hand", [["Constitution", "Enhancement", 20]]), type: "Large shields" };
+    const model = { targets: ["Strength", "Constitution"], worn: [slot("Main Hand", [oneH]), slot("Off Hand", [shield])] };
+    const chosen = ((await S.solveLexicographic(model, highs)).chosen || []).map((c) => c.variant.variant_id);
+    assert.ok(chosen.includes("LS") && chosen.includes("Shield"), "1H main + shield co-occur");
+  });
+
+  await test("R3: a bow main and an off-hand item can't co-occur (bows are both-hands)", async () => {
+    const bow = { ...item("Bow", "Main Hand", [["Strength", "Enhancement", 20]]), category: "weapon", type: "Long Bows" };
+    const shield = { ...item("Shield", "Off Hand", [["Constitution", "Enhancement", 20]]), type: "Large shields" };
+    const model = { targets: ["Strength", "Constitution"], worn: [slot("Main Hand", [bow]), slot("Off Hand", [shield])] };
+    const chosen = ((await S.solveLexicographic(model, highs)).chosen || []).map((c) => c.variant.variant_id);
+    assert.ok(!(chosen.includes("Bow") && chosen.includes("Shield")), "bow main + off-hand never co-occur");
+  });
+
+  await test("R3: an untyped Dino weapon host (type null) is both-hands — no off-hand alongside", async () => {
+    const dino = { ...item("DinoWeap", "Main Hand", [["Strength", "Enhancement", 20]]), category: "weapon", type: null };
+    const shield = { ...item("Shield", "Off Hand", [["Constitution", "Enhancement", 20]]), type: "Large shields" };
+    const model = { targets: ["Strength", "Constitution"], worn: [slot("Main Hand", [dino]), slot("Off Hand", [shield])] };
+    const chosen = ((await S.solveLexicographic(model, highs)).chosen || []).map((c) => c.variant.variant_id);
+    assert.ok(!(chosen.includes("DinoWeap") && chosen.includes("Shield")), "untyped host treated as two-handed (KTD3)");
+  });
+
   console.log(`\n${passed} passed`);
 })();

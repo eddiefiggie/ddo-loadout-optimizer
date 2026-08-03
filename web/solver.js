@@ -49,6 +49,13 @@ var _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined")
   // eslint-disable-next-line global-require
   : require("./model.js").pinnedVariantIds;
 
+// R1/R3 — both-hands weapon classifier for the hand mutex, resolved across runtimes
+// (browser global from model.js vs Node require), same as the helpers above.
+var _isBothHandsWeapon = (typeof isBothHandsWeapon !== "undefined")
+  ? isBothHandsWeapon
+  // eslint-disable-next-line global-require
+  : require("./model.js").isBothHandsWeapon;
+
 /** U6 — per-slot constraint bodies (pin / lock-empty) as raw LP strings, using
  *  the `extra` seam. Pin → the chosen variant's pick var = 1; lock-empty → the
  *  slot's pick vars sum to 0; free → nothing. Pure + exported for tests. A pin
@@ -303,6 +310,24 @@ function buildProgram(model) {
     handVars.get(id).push(xv.name);
   }
   for (const [, names] of handVars) if (names.length > 1) extraConstraints.push(`${names.join(" + ")} <= 1`);
+
+  // R1/R3 — HAND MUTEX: a both-hands main-hand weapon (two-handed melee, a bow, or an
+  // unclassifiable host like the untyped Dino weapon) and any off-hand item are
+  // mutually exclusive — a two-handed weapon occupies both hands. Cap the sum across
+  // {both-hands mains, off-hands} at 1, so at most one is picked. An inequality (<= 1)
+  // is always satisfiable (both zero), unlike the Artifact `= 1`, so no feasibility
+  // guard is needed. A ONE-handed main is not in the sum, so 1H main + off-hand stays
+  // legal. Off-hand pick vars include TWF second weapons, which is correct: a 2H main
+  // also excludes a TWF off-hand weapon. Classifier shared with dominanceFilter (KTD2).
+  const bothHandsMainVars = [];
+  const offHandVars = [];
+  for (const xv of xVars) {
+    if (xv.slot === "Main Hand" && _isBothHandsWeapon(xv.variant)) bothHandsMainVars.push(xv.name);
+    else if (xv.slot === "Off Hand") offHandVars.push(xv.name);
+  }
+  if (bothHandsMainVars.length && offHandVars.length) {
+    extraConstraints.push(`${[...bothHandsMainVars, ...offHandVars].join(" + ")} <= 1`);
+  }
 
   // U4 (Dino) — Isle of Dread Dino crafting. Structurally the augment mechanic
   // with a typed-slot vocabulary, TWO-KEYED by (dino_type, category) (KTD1): a
