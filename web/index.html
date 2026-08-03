@@ -3,10 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Always revalidate THIS document so a new deploy's ?v= asset refs are picked
+       up without a manual hard-refresh. GitHub Pages exposes no custom HTTP headers,
+       so this meta hint is the only lever; it is best-effort (browsers honor real
+       headers over meta http-equiv), but it meaningfully reduces stale-HTML loads.
+       The versioned assets below stay cacheable — the ?v= bump busts them. -->
+  <meta http-equiv="Cache-Control" content="no-cache, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>DDO Loadout Optimizer</title>
   <!-- ?v= is bumped on each UI deploy so browsers never serve a stale cached
        stylesheet/script after a release (GitHub Pages has no content hashing). -->
-  <link rel="stylesheet" href="styles.css?v=65" />
+  <link rel="stylesheet" href="styles.css?v=66" />
 </head>
 <body>
   <header class="app-header">
@@ -32,20 +40,20 @@
     </div>
   </footer>
 
-  <script src="dataset.js?v=65"></script>
-  <script src="app.js?v=65"></script>
-  <script src="weapon-taxonomy.js?v=65"></script>
-  <script src="model.js?v=65"></script>
-  <script src="solver.js?v=65"></script>
-  <script src="alternatives.js?v=65"></script>
+  <script src="dataset.js?v=66"></script>
+  <script src="app.js?v=66"></script>
+  <script src="weapon-taxonomy.js?v=66"></script>
+  <script src="model.js?v=66"></script>
+  <script src="solver.js?v=66"></script>
+  <script src="alternatives.js?v=66"></script>
   <script src="vendor/highs.js"></script>
-  <script src="crafting-systems.js?v=65"></script>
-  <script src="results.js?v=65"></script>
-  <script src="import.js?v=65"></script>
-  <script src="persist.js?v=65"></script>
-  <script src="backup.js?v=65"></script>
-  <script src="exporters.js?v=65"></script>
-  <script src="browse.js?v=65"></script>
-  <script src="wizard.js?v=65"></script>
+  <script src="crafting-systems.js?v=66"></script>
+  <script src="results.js?v=66"></script>
+  <script src="import.js?v=66"></script>
+  <script src="persist.js?v=66"></script>
+  <script src="backup.js?v=66"></script>
+  <script src="exporters.js?v=66"></script>
+  <script src="browse.js?v=66"></script>
+  <script src="wizard.js?v=66"></script>
 </body>
 </html>
