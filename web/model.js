@@ -146,10 +146,11 @@ function offHandGate(query) {
 
 // Character gate (U2). Every branch below is ADDITIVE and backward-compatible:
 // it only narrows the pool when the relevant query field is present AND the
-// variant carries concrete data. With the current query (no race/alignment) and
-// dataset (armor_type all "unknown", no alignment_req), every new branch is a
-// no-op, so live behavior is unchanged until the wizard supplies the fields and
-// the pipeline (U3) fills the data.
+// variant carries concrete data. The armor-type and docent/race gates are LIVE:
+// the wizard supplies query.race / query.armorTypes, and armor_type is concrete
+// (stamped at build from native `type` and re-derived by dataset.js at load), so
+// a Heavy character no longer sees cloth/robe body armor. The alignment gate is
+// still a no-op until alignment_req is sourced (fail-open by design).
 // U1 — Query-derived gate context, computed once per query so `eligible()` (which
 // runs over thousands of variants) does not recompute the style/off-hand sets per
 // item. `variantConflict` accepts it precomputed, or derives it on demand for the

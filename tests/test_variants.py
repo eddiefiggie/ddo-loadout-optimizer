@@ -66,7 +66,22 @@ def test_prose_only_tiered_item_is_flagged_not_fabricated():
 def test_variants_carry_default_restriction_and_armor_fields():
     armor = expand_item(_free_text(slot="Armor", enhancements=["Physical Sheltering +10"]))
     assert armor[0]["restrictions"] == "unknown"
+    # No native `type` -> armor_type stays "unknown" (fail-open)
     assert armor[0]["armor_type"] == "unknown"
+
+
+def test_native_armor_stamps_lowercase_armor_type():
+    # U2: native `type` -> lowercase armor class, matching web/dataset.js ARMOR_TYPE_MAP
+    heavy = expand_item(_native(name="Plate", slot="Armor", type="Heavy armor"))
+    assert heavy[0]["armor_type"] == "heavy"
+    cloth = expand_item(_native(name="Robe", slot="Armor", type="Cloth armor"))
+    assert cloth[0]["armor_type"] == "cloth"
+    # Docents stay "unknown" — handled by the race gate, not the armor-type filter
+    doc = expand_item(_native(name="Adamantine Docent", slot="Armor", type="Docents"))
+    assert doc[0]["armor_type"] == "unknown"
+    # non-armor slots carry no armor_type
+    ring = expand_item(_native(name="Ring", slot="Ring"))
+    assert ring[0]["armor_type"] is None
 
 
 def test_expand_dataset_covers_all_items():

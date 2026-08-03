@@ -453,6 +453,21 @@ test("a docent bypasses the armor-type proficiency filter", () => {
   assert.strictEqual(kept.length, 1); // docent kept despite armorTypes=[cloth]
 });
 
+test("U1 characterization: #90 does not reproduce — Heavy query excludes cloth end-to-end", () => {
+  // Build-shaped items carry native `type`; normalizeDataset derives armor_type,
+  // proving the runtime chain (type -> armor_type -> gate) excludes mismatched armor.
+  const ds = normalizeDataset({
+    items: [
+      { ...armorV("Aberrant Robe", "unknown"), type: "Cloth armor" },
+      { ...armorV("Argenti's Armor", "unknown"), type: "Heavy armor" },
+    ],
+    metadata: {},
+  });
+  assert.strictEqual(ds.items[0].armor_type, "cloth");
+  const kept = M.eligible(ds.items, { mlCap: 34, armorTypes: ["heavy"] }).map((x) => x.source_item);
+  assert.deepStrictEqual(kept, ["Argenti's Armor"]);
+});
+
 test("alignment_req of [] fails open (no gate)", () => {
   const item = { ...v("Trink", "Trinket", [["Melee Power", "Profane", 20]]), alignment_req: [] };
   assert.strictEqual(M.eligible([item], { mlCap: 34, alignment: "Chaotic Neutral" }).length, 1);
