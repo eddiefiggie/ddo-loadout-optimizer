@@ -453,6 +453,16 @@ test("a docent bypasses the armor-type proficiency filter", () => {
   assert.strictEqual(kept.length, 1); // docent kept despite armorTypes=[cloth]
 });
 
+test("catalog contract: each armor class is present in the built dataset (drift guard)", () => {
+  // If gear-planner's 4 armor `type` strings drift, ARMOR_TYPE_MAP misses and every
+  // armor item fails open to "unknown", silently disabling the R7 gate and regressing
+  // #90 while tests that pin literals stay green. Assert all 4 classes are represented.
+  const classes = new Set(data.items.filter((x) => x.slot === "Armor").map((x) => x.armor_type));
+  for (const cls of ["cloth", "light", "medium", "heavy"]) {
+    assert.ok(classes.has(cls), `no Armor item stamped "${cls}" — gear-planner type string may have drifted`);
+  }
+});
+
 test("U1 characterization: #90 does not reproduce — Heavy query excludes cloth end-to-end", () => {
   // Build-shaped items carry native `type`; normalizeDataset derives armor_type,
   // proving the runtime chain (type -> armor_type -> gate) excludes mismatched armor.

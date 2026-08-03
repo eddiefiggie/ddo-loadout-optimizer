@@ -76,6 +76,10 @@ def test_native_armor_stamps_lowercase_armor_type():
     assert heavy[0]["armor_type"] == "heavy"
     cloth = expand_item(_native(name="Robe", slot="Armor", type="Cloth armor"))
     assert cloth[0]["armor_type"] == "cloth"
+    light = expand_item(_native(name="Chain Shirt", slot="Armor", type="Light armor"))
+    assert light[0]["armor_type"] == "light"
+    medium = expand_item(_native(name="Breastplate", slot="Armor", type="Medium armor"))
+    assert medium[0]["armor_type"] == "medium"
     # Docents stay "unknown" — handled by the race gate, not the armor-type filter
     doc = expand_item(_native(name="Adamantine Docent", slot="Armor", type="Docents"))
     assert doc[0]["armor_type"] == "unknown"

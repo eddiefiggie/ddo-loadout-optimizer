@@ -384,3 +384,12 @@ test("R4a: reconcilePinLegality prunes one illegal Ring member, keeps the legal 
   assert.deepStrictEqual(dropped, [{ slot: "Ring", id: "R2" }]);   // R2 above ML cap
   assert.deepStrictEqual(sc.Ring, { type: "pin", variant_ids: ["R1"] }); // R2 pruned, R1 kept
 });
+
+test("R4a: reconcilePinLegality keeps an unresolvable (stale) pin — fail-open, not dropped", () => {
+  const query = buildQuery({ ...baseState(), race: "Human" });
+  const itemByPinId = () => null;                 // pin id resolves to no catalog item
+  const sc = { Trinket: { type: "pin", variant_id: "GHOST" } };
+  const dropped = reconcilePinLegality(sc, itemByPinId, query, () => 1);
+  assert.deepStrictEqual(dropped, []);            // nothing dropped (post-solve sweep owns stale)
+  assert.deepStrictEqual(sc.Trinket, { type: "pin", variant_id: "GHOST" }); // pin intact
+});
