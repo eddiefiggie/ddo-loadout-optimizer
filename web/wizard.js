@@ -221,7 +221,7 @@ function curatedStats(dataset) {
 // drops any our dataset doesn't carry, so a bundle can never inject a dead target.
 const PRESET_BUNDLES = {
   Basic: ["Healing Amplification", "Physical Sheltering", "Magical Sheltering", "Constitution", "Dodge", "Fortification", "False Life", "Resistance", "Freedom of Movement", "Blurry", "Ghostly", "Blindness Immunity"],
-  Melee: ["Melee Power", "Doublestrike", "Melee Alacrity", "Accuracy", "Deadly", "Armor-Piercing", "Armor Class"],
+  Melee: ["Melee Power", "Doublestrike", "Melee Alacrity", "Accuracy", "Deadly", "Seeker", "Armor-Piercing", "Armor Class"],
   Ranged: ["Ranged Power", "Doubleshot", "Ranged Alacrity", "Accuracy", "Deadly", "Armor-Piercing"],
   Caster: ["Universal Spell Power", "Universal Spell Lore", "Spell Penetration", "Spell Focus Mastery", "Wizardry", "Spellcraft"],
   Trapping: ["Open Lock", "Disable Device", "Spot", "Search"],

@@ -254,6 +254,12 @@ test("resolveBundle canonicalizes, dedupes, and drops dataset-absent names", () 
   assert.deepStrictEqual(resolveBundle("Nope", stub), [], "unknown bundle key -> []");
 });
 
+test("U1: Seeker is in the Melee preset and resolves against the dataset", () => {
+  const rv = buildPickerVocabulary(realData);
+  assert.ok(PRESET_BUNDLES.Melee.includes("Seeker"), "Seeker is listed in the Melee preset");
+  assert.ok(resolveBundle("Melee", rv).includes("Seeker"), "Seeker survives resolveBundle (dataset carries it)");
+});
+
 test("addBundle is additive: appends new affixes, preserves existing, no dupes", () => {
   const rv = buildPickerVocabulary(realData);
   const melee = resolveBundle("Melee", rv);
