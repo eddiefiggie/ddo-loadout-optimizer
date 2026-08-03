@@ -80,12 +80,12 @@
    "perTarget": {
     "Intelligence": 34,
     "Universal Spell Power": 94,
-    "Wisdom": 29
+    "Wisdom": 28
    },
    "effective": {
     "Intelligence": 34,
     "Universal Spell Power": 94,
-    "Wisdom": 29
+    "Wisdom": 28
    },
    "chosen": [
     {
@@ -119,10 +119,6 @@
     {
      "slot": "Helmet",
      "variant": "Circlet of Shar"
-    },
-    {
-     "slot": "Main Hand",
-     "variant": "Legendary Souleater"
     },
     {
      "slot": "Necklace",

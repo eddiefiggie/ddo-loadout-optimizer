@@ -15,8 +15,8 @@ const items = Array.isArray(raw) ? raw : raw.items;
 const weaponTypes = [...new Set(items.filter((v) => v.slot === "Weapon" && v.type).map((v) => v.type))];
 const offHandTypes = [...new Set(items.filter((v) => v.slot === "Off Hand" && v.type).map((v) => v.type))];
 
-test("five styles: one-hand, thf, ranged(bow), crossbow, unarmed", () => {
-  assert.deepStrictEqual(T.STYLES.map((s) => s.id), ["one-hand", "thf", "ranged", "crossbow", "unarmed"]);
+test("six styles: one-hand, sword-board, thf, ranged(bow), crossbow, unarmed", () => {
+  assert.deepStrictEqual(T.STYLES.map((s) => s.id), ["one-hand", "sword-board", "thf", "ranged", "crossbow", "unarmed"]);
   assert.strictEqual(T.STYLES.find((s) => s.id === "thf").label, "Two Handed Fighting");
   assert.strictEqual(T.STYLES.find((s) => s.id === "crossbow").label, "Crossbow + Rune Arm");
 });
@@ -90,3 +90,22 @@ test("OFF_HAND_TYPES matches the dataset's distinct off-hand types", () => {
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);
+
+// --- U2: Sword & Board style ---
+test("U2: Sword & Board is a selectable style", () => {
+  assert.ok(T.STYLES.some((s) => s.id === "sword-board" && /sword/i.test(s.label)));
+});
+test("U2: S&B off-hand is the four shield types only (no Orbs/Rune Arms)", () => {
+  assert.deepStrictEqual(T.offHandTypesForStyle("sword-board"),
+    ["Bucklers", "Small shields", "Large shields", "Tower shields"]);
+});
+test("U2: S&B enables the off hand and forbids a TWF second weapon", () => {
+  assert.strictEqual(T.offHandEnabledForStyle("sword-board"), true);
+  assert.strictEqual(T.twfWeaponAllowedForStyle("sword-board"), false);
+});
+test("U2: S&B main hand draws from the one-handed weapon bucket", () => {
+  const sb = T.weaponTypesForStyle("sword-board");
+  const one = T.weaponTypesForStyle("one-hand");
+  assert.deepStrictEqual(sb, one, "S&B main-hand weapon types equal the one-hand bucket");
+  assert.ok(!sb.includes("Great Swords") && !sb.includes("Quarterstaffs"), "no two-handers");
+});

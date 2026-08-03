@@ -101,6 +101,12 @@ var _pinConflict = (typeof pinConflict !== "undefined")
   // eslint-disable-next-line global-require
   : require("./model.js").pinConflict;
 
+// R12 — the both-hands classifier, for the dual-pin aggregate warning.
+var _isBothHandsWeapon = (typeof isBothHandsWeapon !== "undefined")
+  ? isBothHandsWeapon
+  // eslint-disable-next-line global-require
+  : require("./model.js").isBothHandsWeapon;
+
 // U3 — pure pin-mutation core (exported for tests; the wizard closure wraps these
 // with its live cardinality lookup). A pin forces an item into its WORN-slot label
 // (KTD4): a weapon's `variant.slot` is "Weapon", but the solver groups pick-vars by
@@ -134,6 +140,22 @@ function removePinFrom(slotConstraints, slot, id, cardOf) {
   else if (card > 1) slotConstraints[slot] = { type: "pin", variant_ids: remaining };
   else slotConstraints[slot] = { type: "pin", variant_id: remaining[0] };
   return slotConstraints;
+}
+
+// R12 — a pinned two-handed (both-hands) main-hand weapon and a pinned off-hand item
+// are mutually exclusive under the hand mutex: each passes its own per-item legality,
+// so the conflict is the COMBINATION and needs an aggregate check. `pins` is the
+// [{slot, id}] list from currentPins; `itemByPinId` resolves an id to its variant.
+// Exported so the aggregate warning is unit-tested (renderPinList is DOM-bound).
+function dualPinMutexConflict(pins, itemByPinId) {
+  let bothHandsMain = false, offHand = false;
+  for (const p of pins) {
+    const it = itemByPinId(p.id);
+    if (!it) continue;
+    if (p.slot === "Main Hand" && _isBothHandsWeapon(it)) bothHandsMain = true;
+    if (p.slot === "Off Hand") offHand = true;
+  }
+  return bothHandsMain && offHand;
 }
 
 // R4a — pre-solve pin-legality reconciliation. The post-solve "landed" sweep can't
@@ -255,7 +277,7 @@ function addBundle(key, current, vocab) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -556,7 +578,12 @@ if (typeof window !== "undefined" && window.App) {
       const artWarn = (query.includeArtifact && artCount > 1)
         ? `<p class="wz-pin-artwarn">⚠ You've pinned ${artCount} Artifacts, but a character can equip only one — the solver honors every pin, so this forces an illegal build. Remove all but one.</p>`
         : "";
-      box.innerHTML = artWarn + pins.map(({ slot, id }) => {
+      // R12 — dual-pin hand-mutex guard. Detection is the exported dualPinMutexConflict
+      // core (unit-tested); renderPinList only renders the warning.
+      const mutexWarn = dualPinMutexConflict(pins, itemByPinId)
+        ? `<p class="wz-pin-mutexwarn">⚠ You've pinned a two-handed weapon and an off-hand item, but a two-handed weapon uses both hands — the solver can't equip both. Unpin one.</p>`
+        : "";
+      box.innerHTML = mutexWarn + artWarn + pins.map(({ slot, id }) => {
         const it = itemByPinId(id);
         const name = it ? (it.source_item || it.variant_id) : id;
         // eslint-disable-next-line no-undef

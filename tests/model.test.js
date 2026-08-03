@@ -463,6 +463,60 @@ test("catalog contract: each armor class is present in the built dataset (drift 
   }
 });
 
+test("U1 dominance: a both-hands weapon does not prune a one-handed peer (mutex re-audit)", () => {
+  // A 2H weapon strictly dominates a 1H on the target, but the hand mutex can force
+  // the 2H off (when an off-hand is equipped), so the 1H must survive as the true
+  // best-available main hand. The 7th arg (handMutex) turns on the re-audit.
+  const twoH = { ...v("Greatsword", "Main Hand", [["Strength", "Enhancement", 20]], { category: "weapon" }), type: "Great Swords" };
+  const oneH = { ...v("Longsword", "Main Hand", [["Strength", "Enhancement", 10]], { category: "weapon" }), type: "Long Swords" };
+  const kept = M.dominanceFilter([twoH, oneH], new Set(["Strength"]), 34, 1, null, false, true).map((x) => x.source_item);
+  assert.ok(kept.includes("Longsword"), "1H peer survives despite a dominating 2H");
+  assert.ok(kept.includes("Greatsword"), "2H still available when no off-hand is chosen");
+});
+
+test("U1 dominance control: without the mutex re-audit a 2H prunes a dominated 1H", () => {
+  const twoH = { ...v("Greatsword", "Main Hand", [["Strength", "Enhancement", 20]], { category: "weapon" }), type: "Great Swords" };
+  const oneH = { ...v("Longsword", "Main Hand", [["Strength", "Enhancement", 10]], { category: "weapon" }), type: "Long Swords" };
+  const kept = M.dominanceFilter([twoH, oneH], new Set(["Strength"]), 34, 1, null, false, false).map((x) => x.source_item);
+  assert.ok(!kept.includes("Longsword"), "default dominance prunes the dominated 1H");
+});
+
+test("U3/AE5: a pinned below-floor item is eligible; an unpinned one is still filtered", () => {
+  const pinned = v("Pinned Ring", "Ring", [["Constitution", "Enhancement", 10]], { ml: 20 });
+  const unpinned = v("Other Ring", "Ring", [["Constitution", "Enhancement", 10]], { ml: 20 });
+  const query = { mlCap: 34, mlFloor: 30, slotConstraints: { Ring: { type: "pin", variant_id: "Pinned Ring" } } };
+  const kept = M.eligible([pinned, unpinned], query).map((x) => x.source_item);
+  assert.ok(kept.includes("Pinned Ring"), "pinned below-floor item is honored");
+  assert.ok(!kept.includes("Other Ring"), "unpinned below-floor item still hidden by the floor");
+});
+
+test("U3/AE6: a pinned above-cap item is NOT honored (only the floor is exempt)", () => {
+  const pinned = v("Overcap Ring", "Ring", [["Constitution", "Enhancement", 10]], { ml: 40 });
+  const query = { mlCap: 34, mlFloor: 30, slotConstraints: { Ring: { type: "pin", variant_id: "Overcap Ring" } } };
+  assert.strictEqual(M.eligible([pinned], query).length, 0, "above-cap pin stays invalid");
+});
+
+test("U3/AE8: a pinned below-floor item violating another dimension is still excluded", () => {
+  const pinned = { ...v("Cloth Robe", "Armor", [["Constitution", "Enhancement", 10]], { ml: 20 }), type: "Cloth armor", armor_type: "cloth" };
+  const query = { mlCap: 34, mlFloor: 30, armorTypes: ["heavy"], slotConstraints: { Armor: { type: "pin", variant_id: "Cloth Robe" } } };
+  assert.strictEqual(M.eligible([pinned], query).length, 0, "floor exempt, but armor-type legality still excludes");
+});
+
+test("U2/AE3: Sword & Board off hand keeps shields, excludes orbs and rune arms", () => {
+  const shield = { ...v("Tower Shield", "Off Hand", [["Constitution", "Enhancement", 20]]), type: "Tower shields" };
+  const orb = { ...v("Arcane Orb", "Off Hand", [["Intelligence", "Enhancement", 20]]), type: "Orbs" };
+  const runearm = { ...v("Rune Arm", "Off Hand", [["Strength", "Enhancement", 20]]), type: "Rune Arms" };
+  const kept = M.eligible([shield, orb, runearm], { mlCap: 34, style: "sword-board" }).map((x) => x.source_item);
+  assert.deepStrictEqual(kept, ["Tower Shield"], "only the shield survives S&B off-hand gate");
+});
+
+test("U2/AE3: Sword & Board excludes a two-handed main-hand weapon", () => {
+  const twoH = { ...v("Greatsword", "Main Hand", [["Strength", "Enhancement", 20]], { category: "weapon" }), type: "Great Swords" };
+  const oneH = { ...v("Longsword", "Main Hand", [["Strength", "Enhancement", 20]], { category: "weapon" }), type: "Long Swords" };
+  const kept = M.eligible([twoH, oneH], { mlCap: 34, style: "sword-board" }).map((x) => x.source_item);
+  assert.deepStrictEqual(kept, ["Longsword"], "S&B main hand is one-handed only");
+});
+
 test("U1 characterization: #90 does not reproduce — Heavy query excludes cloth end-to-end", () => {
   // Build-shaped items carry native `type`; normalizeDataset derives armor_type,
   // proving the runtime chain (type -> armor_type -> gate) excludes mismatched armor.

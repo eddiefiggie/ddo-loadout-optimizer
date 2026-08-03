@@ -17,10 +17,12 @@
 (function () {
   "use strict";
 
-  const ONE = "one-hand", THF = "thf", RANGED = "ranged", CROSSBOW = "crossbow", UNARMED = "unarmed";
+  const ONE = "one-hand", THF = "thf", RANGED = "ranged", CROSSBOW = "crossbow", UNARMED = "unarmed",
+    SB = "sword-board";
 
   const STYLES = [
     { id: ONE, label: "One-hand / Dual-wield" },
+    { id: SB, label: "Sword & Board" },
     { id: THF, label: "Two Handed Fighting" },
     { id: RANGED, label: "Bow" },
     { id: CROSSBOW, label: "Crossbow + Rune Arm" },
@@ -69,7 +71,10 @@
    *  intersection with what the dataset actually carries (never offer a type the
    *  dataset lacks; drift is observable). Sorted. */
   function weaponTypesForStyle(style, datasetTypes) {
-    const all = Object.keys(STYLE_OF_TYPE).filter((t) => STYLE_OF_TYPE[t] === style);
+    // Sword & Board wields a one-handed weapon in the main hand, so it draws from the
+    // one-hand bucket for main-hand weapon types (the shield lives in the off hand).
+    const bucketStyle = style === SB ? ONE : style;
+    const all = Object.keys(STYLE_OF_TYPE).filter((t) => STYLE_OF_TYPE[t] === bucketStyle);
     const list = datasetTypes ? all.filter((t) => datasetTypes.includes(t)) : all;
     return list.sort();
   }
@@ -77,7 +82,7 @@
   /** An off-hand ITEM is possible for one-hand, unarmed, and crossbow styles;
    *  two-handed (THF) and bows (ranged) occupy both hands. */
   function offHandEnabledForStyle(style) {
-    return style === ONE || style === UNARMED || style === CROSSBOW;
+    return style === ONE || style === UNARMED || style === CROSSBOW || style === SB;
   }
 
   /** The off-hand item types a style permits, or null for "any". A crossbow can
@@ -85,6 +90,15 @@
    *  unrestricted (the player's own picks constrain). */
   function offHandTypesForStyle(style) {
     if (style === CROSSBOW) return ["Rune Arms"];
+    // Sword & Board = one-handed weapon + a SHIELD. Orbs and rune arms aren't "board",
+    // so the off hand is restricted to the four shield types (R5). Like the CROSSBOW
+    // allow-list, this is a concrete positive list, NOT fail-open: the model.js gate
+    // (`allowed && !allowed.includes(v.type)`) excludes an off-hand item whose type is
+    // absent from the list, including an untyped one. Moot today — every dataset off-hand
+    // item carries one of the six concrete types — but a future untyped off-hand item
+    // would be excluded under S&B/crossbow, matching the "no positively-identified board"
+    // intent rather than the main-hand weapon gate's fail-open convention.
+    if (style === SB) return ["Bucklers", "Small shields", "Large shields", "Tower shields"];
     return null;
   }
 

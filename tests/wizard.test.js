@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, removePinFrom, reconcilePinLegality } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -392,4 +392,33 @@ test("R4a: reconcilePinLegality keeps an unresolvable (stale) pin — fail-open,
   const dropped = reconcilePinLegality(sc, itemByPinId, query, () => 1);
   assert.deepStrictEqual(dropped, []);            // nothing dropped (post-solve sweep owns stale)
   assert.deepStrictEqual(sc.Trinket, { type: "pin", variant_id: "GHOST" }); // pin intact
+});
+
+test("U2: buildQuery threads the Sword & Board style so the off-hand/main-hand gates fire", () => {
+  const q = buildQuery({ ...baseState(), style: "sword-board" });
+  assert.strictEqual(q.style, "sword-board");
+});
+
+test("U3: reconcilePinLegality keeps a pinned below-floor item (pin overrides the floor)", () => {
+  const sc = { Ring: { type: "pin", variant_id: "LOW" } };
+  // query.slotConstraints carries the pin so queryGates builds the pinnedIds set
+  const query = buildQuery({ ...baseState(), ml: 34, mlFloor: 30, slotConstraints: sc });
+  const items = { LOW: { source_item: "Low Ring", variant_id: "LOW", slot: "Ring", verification: "verified", ml: 20, affixes: [] } };
+  const itemByPinId = (id) => items[id] || null;
+  const dropped = reconcilePinLegality(sc, itemByPinId, query, () => 1);
+  assert.deepStrictEqual(dropped, [], "below-floor pin not suppressed by reconcile");
+  assert.deepStrictEqual(sc.Ring, { type: "pin", variant_id: "LOW" }, "pin intact");
+});
+
+test("U4/AE10: dual-pin mutex — a pinned 2H main + pinned off-hand conflicts; otherwise not", () => {
+  const items = {
+    GS: { source_item: "Greatsword", variant_id: "GS", category: "weapon", type: "Great Swords" },
+    SH: { source_item: "Shield", variant_id: "SH", type: "Large shields" },
+    LS: { source_item: "Longsword", variant_id: "LS", category: "weapon", type: "Long Swords" },
+  };
+  const byId = (id) => items[id] || null;
+  assert.strictEqual(dualPinMutexConflict([{ slot: "Main Hand", id: "GS" }, { slot: "Off Hand", id: "SH" }], byId), true, "2H main + off-hand conflicts");
+  assert.strictEqual(dualPinMutexConflict([{ slot: "Main Hand", id: "LS" }, { slot: "Off Hand", id: "SH" }], byId), false, "1H main + off-hand is fine");
+  assert.strictEqual(dualPinMutexConflict([{ slot: "Main Hand", id: "GS" }], byId), false, "only the 2H pinned: no conflict");
+  assert.strictEqual(dualPinMutexConflict([{ slot: "Off Hand", id: "SH" }], byId), false, "only the off-hand pinned: no conflict");
 });
