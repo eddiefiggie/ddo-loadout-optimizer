@@ -84,6 +84,26 @@ def _native_parsed(item):
             "flagged": item.get("structured_flagged") or []}
 
 
+# U2 — native gear-planner `type` -> lowercase armor class, matching
+# web/dataset.js ARMOR_TYPE_MAP and the wizard's query.armorTypes. Stamped at
+# build so items.json is honest at rest (the runtime normalizer re-derives the
+# same value; this is the single source of truth, not a parallel vocabulary).
+# Docents and any unmapped/absent type stay "unknown" — docents are handled by
+# the race gate, and "unknown" keeps the armor-type filter fail-open.
+_ARMOR_TYPE_MAP = {
+    "Cloth armor": "cloth",
+    "Light armor": "light",
+    "Medium armor": "medium",
+    "Heavy armor": "heavy",
+}
+
+
+def _armor_type_for(slot, typ):
+    if slot != "Armor":
+        return None
+    return _ARMOR_TYPE_MAP.get(typ, "unknown")
+
+
 def _make_variant(item, ml, tier_label, parsed):
     slot = item["slot"]
     return {
@@ -112,7 +132,7 @@ def _make_variant(item, ml, tier_label, parsed):
         "roll_groups": parsed["rolls"],
         "flagged": parsed["flagged"],
         "restrictions": "unknown",             # sourced later (R18); fail-open
-        "armor_type": "unknown" if slot == "Armor" else None,  # R11 dodge cap
+        "armor_type": _armor_type_for(slot, item.get("type")),  # U2 SSOT: from native `type`
         "tier_values_incomplete": False,
         "tier_ml_list": None,
         # U81 Nearly-Complete host marker (category) — propagated so the solver's

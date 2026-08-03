@@ -437,9 +437,10 @@ function loadoutDeepDive(result, query, maps, attr) {
 // item name (no truncation), ML, set membership, and a per-slot constraint
 // control (U6: pin the current item / lock empty / free). The wizard reads the
 // menu clicks via delegation, updates query.slotConstraints, and re-solves.
-function equippedRow(label, pick, slotConstraints, satisfied, maps, augById) {
+function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, ownedInfo) {
   const c = (slotConstraints || {})[label];
   const locked = c && c.type === "empty";
+  const owned = ownedInfo || { mode: false, slotsCovered: new Set() };
   const v = pick ? pick.variant : null;
   const canPin = v && !locked;
   // U4/F1+F2 — per-ROW identity. A Ring slot shares the label "Ring" across both
@@ -464,17 +465,31 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById) {
   const nameCls = (!v || locked) ? "pd-rname muted" : "pd-rname";
   const foot = (v && !locked)
     ? `<div class="pd-rfoot"><span class="pd-rml">ML ${esc(itemMl(v) ?? "?")}</span>${setLine}</div>` : "";
+  // R8/AE5/AE5a — empty-slot reason note. ONLY for an optimizer-left-empty slot,
+  // never for a user-locked-empty slot (that state is shown by the "locked empty"
+  // badge; a "no item improves…" note there would state a false cause). In owned
+  // mode, distinguish an empty owned pool for the slot from owned-but-no-help;
+  // never imply the owned pool limits crafting.
+  let reasonNote = "";
+  if (!v && !locked) {
+    const reason = owned.mode
+      ? (owned.slotsCovered.has(label)
+          ? "No owned item here improves your ranked priorities."
+          : "You own no item for this slot.")
+      : "No item here improves your ranked priorities.";
+    reasonNote = `<div class="pd-rnote muted">${esc(reason)}</div>`;
+  }
   // U9/U2: per-item stats + assigned augments (with their affixes) + assigned
   // craft slots, shown uniformly on every occupied block (empty blocks stay the
   // same height via the grid stretch + the .pd-row min-height). Assignment data
   // comes from `maps` (keyed by the pick's chosen index); `augById` resolves an
   // augment's affixes by variant_id (the placed meta carries none).
-  const body = (v && !locked) ? equippedBody(v, pick ? pick.idx : -1, maps, augById) : "";
+  const body = (v && !locked) ? equippedBody(v, pick ? pick.idx : -1, maps, augById, owned.mode) : "";
   const rowCls = `pd-row ${(!v || locked) ? "empty" : "occupied"}${glow ? " is-set" : ""}${isArtifact ? " is-artifact" : ""}${(rowPinned || locked) ? " constrained" : ""}`;
   return `<div class="${rowCls}">
     <div class="pd-rtop"><div class="pd-rlabel">${esc(label)}</div>${ctl}</div>
     <div class="${nameCls}"${v ? ` title="${esc(v.variant_id)}"` : ""}>${name}</div>
-    ${foot}${body}${artifactBadge}${badge}${menu}
+    ${foot}${reasonNote}${body}${artifactBadge}${badge}${menu}
   </div>`;
 }
 
@@ -484,7 +499,7 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById) {
 // and the item's assigned craft-upgrade slots (U2). `maps` (and the pick's `idx`)
 // are always supplied on the render path (buildViews -> equippedRow); a maps-less
 // call (only the pure test callers) simply renders no augment/craft section.
-function equippedBody(v, idx, maps, augById) {
+function equippedBody(v, idx, maps, augById, ownedMode) {
   const affixes = (v.affixes || []);
   const stats = affixes.length
     ? `<ul class="pd-stats">${affixes.map((a) => `<li>${esc(affixLabel(a))}</li>`).join("")}</ul>` : "";
@@ -518,7 +533,12 @@ function equippedBody(v, idx, maps, augById) {
     ? `<div class="pd-slots"><span class="pd-slabel">Craft</span>${craftArr.join("")}</div>` : "";
 
   if (!stats && !augs && !crafts) return "";
-  return `<div class="pd-rbody">${stats}${augs}${crafts}</div>`;
+  // R7/AE6 — in owned-inventory mode the base item is yours, but augments and
+  // crafting are RECOMMENDATIONS from the full catalog, not your inventory. Mark
+  // the augment/craft block so it reads as "craft/slot this", not "you own this".
+  const recNote = (ownedMode && (augs || crafts))
+    ? `<div class="pd-rec-note muted" title="Augments and crafting always come from the full catalog, not your imported inventory">Recommended (not owned)</div>` : "";
+  return `<div class="pd-rbody">${stats}${recNote}${augs}${crafts}</div>`;
 }
 
 // Front-facing armored-adventurer silhouette (retired from the results layout;
@@ -921,12 +941,16 @@ function buildViews(build, model, query) {
   // U2 — resolve an augment's affixes by variant_id (the placed meta carries the
   // id + color but no affixes); model.augments holds the full augment records.
   const augById = new Map((model.augments || []).map((a) => [a.variant_id, a]));
+  // U6/U7 — owned-mode signal for the empty-slot note and the recommended-augment
+  // marking (view layer). Plumbed on the query at solve time; falls back to
+  // non-owned when absent (loaded snapshots, pure-test callers).
+  const ownedInfo = { mode: !!query.ownedMode, slotsCovered: new Set(query.ownedSlotsCovered || []) };
   const rows = [];
   for (const slot of model.worn) {
     const picks = picksBySlot.get(slot.slot) || [];
     const cardinality = slot.cardinality || 1;
     for (let r = 0; r < cardinality; r++) {
-      rows.push(equippedRow(slot.slot, picks[r] || null, query.slotConstraints, satisfied, maps, augById));
+      rows.push(equippedRow(slot.slot, picks[r] || null, query.slotConstraints, satisfied, maps, augById, ownedInfo));
     }
   }
   const weapons = ""; // weapons are included in the equipped list above

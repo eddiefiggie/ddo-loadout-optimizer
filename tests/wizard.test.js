@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, removePinFrom } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, removePinFrom, reconcilePinLegality } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -355,3 +355,41 @@ test("U3: buildQuery emits the ML floor from state", () => {
 });
 
 console.log(`\n${passed} passed`);
+
+// --- R4a: pre-solve pin-legality reconciliation (U4) -----------------------
+test("R4a: reconcilePinLegality drops an illegal pin, keeps a legal one", () => {
+  const query = buildQuery({ ...baseState(), race: "Human", armor: "heavy" });
+  const items = {
+    DOC: { source_item: "Adamantine Docent", variant_id: "DOC", slot: "Armor", type: "Docents", verification: "verified", ml: 10, affixes: [] },
+    TRK: { source_item: "Good Trinket", variant_id: "TRK", slot: "Trinket", verification: "verified", ml: 10, affixes: [] },
+  };
+  const itemByPinId = (id) => items[id] || null;
+  const sc = { Armor: { type: "pin", variant_id: "DOC" }, Trinket: { type: "pin", variant_id: "TRK" } };
+  const dropped = reconcilePinLegality(sc, itemByPinId, query, () => 1);
+  assert.deepStrictEqual(dropped, [{ slot: "Armor", id: "DOC" }]); // docent illegal for non-Forged
+  assert.strictEqual(sc.Armor, undefined);                          // illegal pin freed
+  assert.deepStrictEqual(sc.Trinket, { type: "pin", variant_id: "TRK" }); // legal pin kept
+});
+
+test("R4a: reconcilePinLegality prunes one illegal Ring member, keeps the legal one", () => {
+  const query = buildQuery({ ...baseState(), race: "Human" }); // mlCap 34
+  const items = {
+    R1: { source_item: "Legal Ring", variant_id: "R1", slot: "Ring", verification: "verified", ml: 10, affixes: [] },
+    R2: { source_item: "Overcap Ring", variant_id: "R2", slot: "Ring", verification: "verified", ml: 99, affixes: [] },
+  };
+  const itemByPinId = (id) => items[id] || null;
+  const sc = { Ring: { type: "pin", variant_ids: ["R1", "R2"] } };
+  const cardOf = (slot) => (slot === "Ring" ? 2 : 1);
+  const dropped = reconcilePinLegality(sc, itemByPinId, query, cardOf);
+  assert.deepStrictEqual(dropped, [{ slot: "Ring", id: "R2" }]);   // R2 above ML cap
+  assert.deepStrictEqual(sc.Ring, { type: "pin", variant_ids: ["R1"] }); // R2 pruned, R1 kept
+});
+
+test("R4a: reconcilePinLegality keeps an unresolvable (stale) pin — fail-open, not dropped", () => {
+  const query = buildQuery({ ...baseState(), race: "Human" });
+  const itemByPinId = () => null;                 // pin id resolves to no catalog item
+  const sc = { Trinket: { type: "pin", variant_id: "GHOST" } };
+  const dropped = reconcilePinLegality(sc, itemByPinId, query, () => 1);
+  assert.deepStrictEqual(dropped, []);            // nothing dropped (post-solve sweep owns stale)
+  assert.deepStrictEqual(sc.Trinket, { type: "pin", variant_id: "GHOST" }); // pin intact
+});

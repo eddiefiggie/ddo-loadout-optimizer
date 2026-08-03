@@ -657,3 +657,39 @@ test("U5: boundNotice is empty when nothing bounded the solve", () => {
 });
 
 console.log(`\n${passed} passed`);
+
+// --- U6/U7: empty-slot reason note + owned-vs-recommended marking ----------
+test("U6/AE5: an optimizer-left-empty slot shows the improvement reason note", () => {
+  const html = R.equippedRow("Goggles", null, {});
+  assert.ok(/pd-rnote/.test(html), "renders a reason note");
+  assert.ok(/No item here improves your ranked priorities/.test(html));
+});
+
+test("U6: a user-locked-empty slot shows NO reason note (only the locked badge)", () => {
+  const html = R.equippedRow("Goggles", null, { Goggles: { type: "empty" } });
+  assert.ok(/locked empty/.test(html), "shows the locked-empty badge");
+  assert.ok(!/pd-rnote/.test(html), "no false 'improves' reason note on a locked slot");
+});
+
+test("U6/AE5a: owned mode with no owned item for the slot says 'you own no item'", () => {
+  const html = R.equippedRow("Goggles", null, {}, null, null, null, { mode: true, slotsCovered: new Set() });
+  assert.ok(/You own no item for this slot/.test(html));
+});
+
+test("U6/AE5a: owned mode with owned items that don't help says so distinctly", () => {
+  const html = R.equippedRow("Goggles", null, {}, null, null, null, { mode: true, slotsCovered: new Set(["Goggles"]) });
+  assert.ok(/No owned item here improves your ranked priorities/.test(html));
+});
+
+test("U7/AE6: owned mode marks augment/craft lines as recommended (not owned)", () => {
+  const v = { variant_id: "Owned Belt", affixes: [{ stat: "Constitution", bonus_type: "Enhancement", name: "Constitution", type: "Enhancement", value: 20, unit: "flat" }] };
+  const maps = {
+    augAssign: { byIndex: new Map([[0, [{ variant_id: "Topaz of Con", color: "Yellow", slot_color: "Yellow" }]]]), freeByIndex: new Map() },
+    dinoAssign: { byIndex: new Map() },
+    ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(),
+  };
+  const owned = R.equippedBody(v, 0, maps, new Map(), true);
+  assert.ok(/Recommended \(not owned\)/.test(owned), "owned mode marks the augment block");
+  const notOwned = R.equippedBody(v, 0, maps, new Map(), false);
+  assert.ok(!/Recommended \(not owned\)/.test(notOwned), "non-owned mode has no marker");
+});

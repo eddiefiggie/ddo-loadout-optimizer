@@ -453,6 +453,31 @@ test("a docent bypasses the armor-type proficiency filter", () => {
   assert.strictEqual(kept.length, 1); // docent kept despite armorTypes=[cloth]
 });
 
+test("catalog contract: each armor class is present in the built dataset (drift guard)", () => {
+  // If gear-planner's 4 armor `type` strings drift, ARMOR_TYPE_MAP misses and every
+  // armor item fails open to "unknown", silently disabling the R7 gate and regressing
+  // #90 while tests that pin literals stay green. Assert all 4 classes are represented.
+  const classes = new Set(data.items.filter((x) => x.slot === "Armor").map((x) => x.armor_type));
+  for (const cls of ["cloth", "light", "medium", "heavy"]) {
+    assert.ok(classes.has(cls), `no Armor item stamped "${cls}" — gear-planner type string may have drifted`);
+  }
+});
+
+test("U1 characterization: #90 does not reproduce — Heavy query excludes cloth end-to-end", () => {
+  // Build-shaped items carry native `type`; normalizeDataset derives armor_type,
+  // proving the runtime chain (type -> armor_type -> gate) excludes mismatched armor.
+  const ds = normalizeDataset({
+    items: [
+      { ...armorV("Aberrant Robe", "unknown"), type: "Cloth armor" },
+      { ...armorV("Argenti's Armor", "unknown"), type: "Heavy armor" },
+    ],
+    metadata: {},
+  });
+  assert.strictEqual(ds.items[0].armor_type, "cloth");
+  const kept = M.eligible(ds.items, { mlCap: 34, armorTypes: ["heavy"] }).map((x) => x.source_item);
+  assert.deepStrictEqual(kept, ["Argenti's Armor"]);
+});
+
 test("alignment_req of [] fails open (no gate)", () => {
   const item = { ...v("Trink", "Trinket", [["Melee Power", "Profane", 20]]), alignment_req: [] };
   assert.strictEqual(M.eligible([item], { mlCap: 34, alignment: "Chaotic Neutral" }).length, 1);

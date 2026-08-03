@@ -94,6 +94,13 @@ var _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined")
   // eslint-disable-next-line global-require
   : require("./model.js").pinnedVariantIds;
 
+// R4a — same cross-runtime resolve for the legality gate (browser global vs Node
+// require), so reconcilePinLegality works in tests and in the app.
+var _pinConflict = (typeof pinConflict !== "undefined")
+  ? pinConflict
+  // eslint-disable-next-line global-require
+  : require("./model.js").pinConflict;
+
 // U3 — pure pin-mutation core (exported for tests; the wizard closure wraps these
 // with its live cardinality lookup). A pin forces an item into its WORN-slot label
 // (KTD4): a weapon's `variant.slot` is "Weapon", but the solver groups pick-vars by
@@ -127,6 +134,28 @@ function removePinFrom(slotConstraints, slot, id, cardOf) {
   else if (card > 1) slotConstraints[slot] = { type: "pin", variant_ids: remaining };
   else slotConstraints[slot] = { type: "pin", variant_id: remaining[0] };
   return slotConstraints;
+}
+
+// R4a — pre-solve pin-legality reconciliation. The post-solve "landed" sweep can't
+// catch a forced-in illegal pin: a pinned item is forced to x=1, so it always lands.
+// Drop any pin illegal for the current character config BEFORE building the model,
+// mirroring the pin-list advisory (pinConflict) but acting on it so R1 holds under
+// pinning. Mutates slotConstraints through the tested removePinFrom core; returns
+// the dropped {slot, id} entries for disclosure. `itemByPinId` resolves a pin id to
+// its variant. Not a solver constraint (KTD1) — the pool is reconciled instead.
+function reconcilePinLegality(slotConstraints, itemByPinId, query, cardOf) {
+  const dropped = [];
+  Object.entries(slotConstraints).forEach(([slot, c]) => {
+    if (!c || c.type !== "pin") return;
+    _pinnedVariantIds(c).forEach((vid) => {
+      const it = itemByPinId(vid);
+      if (it && _pinConflict(it, query) !== null) {
+        removePinFrom(slotConstraints, slot, vid, cardOf);
+        dropped.push({ slot, id: vid });
+      }
+    });
+  });
+  return dropped;
 }
 
 // Resolve the shared picker-vocabulary builder across both runtimes: Node (require
@@ -226,7 +255,7 @@ function addBundle(key, current, vocab) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, applyPinId, removePinFrom };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -854,6 +883,26 @@ if (typeof window !== "undefined" && window.App) {
       try {
         const h = await getHighs();
         const query = buildQuery(state);
+        // R4a — suppress pins illegal for THIS config from the solve WITHOUT mutating
+        // persistent state: reconcile a COPY, so an illegal pin is only dropped for the
+        // current (illegal) solve and is honored again once the config makes it legal
+        // (a race/alignment/floor toggle-and-revert must never silently erase a pin).
+        // The pin-list advisory already shows the conflict via pinConflict.
+        query.slotConstraints = { ...state.slotConstraints };
+        reconcilePinLegality(query.slotConstraints, itemByPinId, query, slotCardOf);
+        // U6/U7 — owned-mode signal for the empty-slot note + recommended-augment
+        // marking (view layer). Which worn slots the owned base pool covers, so an empty
+        // slot can distinguish "you own no item for this slot" from "owned items don't
+        // improve it". A weapon can serve either hand (TWF off-hand), so it covers BOTH
+        // "Main Hand" and "Off Hand" — never collapse it to main-hand-only (that's right
+        // for pinning, wrong for coverage), else an owned dual-wield weapon would falsely
+        // read "you own no item" on an empty Off Hand. Plain/serializable (no Set saved).
+        query.ownedMode = state.pool === "owned" && !!state.ownedNames;
+        query.ownedSlotsCovered = query.ownedMode
+          ? [...new Set(dataset.items
+              .filter((v) => v.category !== "augment" && state.ownedNames.has(v.source_item || v.variant_id))
+              .flatMap((v) => v.category === "weapon" ? ["Main Hand", "Off Hand"] : [v.slot]))]
+          : [];
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
           dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel);
@@ -861,15 +910,19 @@ if (typeof window !== "undefined" && window.App) {
         // eslint-disable-next-line no-undef
         const result = await solveLexicographic(model, h);
         if (result.status === "optimal") result.solveMs = Math.round(performance.now() - t0);
-        // R17 pin-invalidation: a pinned item that didn't land (e.g. a gate change
-        // made it ineligible) is dropped so its badge never lies. For a list-shaped
-        // Ring pin, prune only the missing members; drop the whole slot only when
-        // none survive. Id resolution matches the solver (variant_id || source_item).
+        // R17 pin-invalidation: prune a pin that didn't land ONLY when its item is
+        // genuinely gone from the catalog (itemByPinId === null) — a stale reference
+        // whose badge would otherwise lie. A pin merely illegal for the current config
+        // (item present, suppressed pre-solve by R4a) is KEPT: its conflict shows in the
+        // pin list, and it is honored again once the config makes it legal, so a
+        // transient illegal config never silently erases a legal pin. For a list-shaped
+        // Ring pin, prune only the missing members; drop the whole slot only when none
+        // survive. Id resolution matches the solver (variant_id || source_item).
         Object.entries(state.slotConstraints).forEach(([slot, c]) => {
           if (!c || c.type !== "pin") return;
           const landed = (vid) => (result.chosen || []).some(
             (ch) => ch.slot === slot && (ch.variant.variant_id || ch.variant.source_item) === vid);
-          const stale = _pinnedVariantIds(c).filter((vid) => !landed(vid));
+          const stale = _pinnedVariantIds(c).filter((vid) => !landed(vid) && !itemByPinId(vid));
           if (!stale.length) return;                               // all landed -> unchanged
           // Prune each stale member through the tested pin-mutation core (one
           // shape-writer, cardinality-based predicate) — drops the slot when none survive.
