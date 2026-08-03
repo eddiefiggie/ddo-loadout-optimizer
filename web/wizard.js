@@ -94,6 +94,13 @@ var _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined")
   // eslint-disable-next-line global-require
   : require("./model.js").pinnedVariantIds;
 
+// R4a — same cross-runtime resolve for the legality gate (browser global vs Node
+// require), so reconcilePinLegality works in tests and in the app.
+var _pinConflict = (typeof pinConflict !== "undefined")
+  ? pinConflict
+  // eslint-disable-next-line global-require
+  : require("./model.js").pinConflict;
+
 // U3 — pure pin-mutation core (exported for tests; the wizard closure wraps these
 // with its live cardinality lookup). A pin forces an item into its WORN-slot label
 // (KTD4): a weapon's `variant.slot` is "Weapon", but the solver groups pick-vars by
@@ -127,6 +134,28 @@ function removePinFrom(slotConstraints, slot, id, cardOf) {
   else if (card > 1) slotConstraints[slot] = { type: "pin", variant_ids: remaining };
   else slotConstraints[slot] = { type: "pin", variant_id: remaining[0] };
   return slotConstraints;
+}
+
+// R4a — pre-solve pin-legality reconciliation. The post-solve "landed" sweep can't
+// catch a forced-in illegal pin: a pinned item is forced to x=1, so it always lands.
+// Drop any pin illegal for the current character config BEFORE building the model,
+// mirroring the pin-list advisory (pinConflict) but acting on it so R1 holds under
+// pinning. Mutates slotConstraints through the tested removePinFrom core; returns
+// the dropped {slot, id} entries for disclosure. `itemByPinId` resolves a pin id to
+// its variant. Not a solver constraint (KTD1) — the pool is reconciled instead.
+function reconcilePinLegality(slotConstraints, itemByPinId, query, cardOf) {
+  const dropped = [];
+  Object.entries(slotConstraints).forEach(([slot, c]) => {
+    if (!c || c.type !== "pin") return;
+    _pinnedVariantIds(c).forEach((vid) => {
+      const it = itemByPinId(vid);
+      if (it && _pinConflict(it, query) !== null) {
+        removePinFrom(slotConstraints, slot, vid, cardOf);
+        dropped.push({ slot, id: vid });
+      }
+    });
+  });
+  return dropped;
 }
 
 // Resolve the shared picker-vocabulary builder across both runtimes: Node (require
@@ -226,7 +255,7 @@ function addBundle(key, current, vocab) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, applyPinId, removePinFrom };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -854,6 +883,10 @@ if (typeof window !== "undefined" && window.App) {
       try {
         const h = await getHighs();
         const query = buildQuery(state);
+        // R4a — drop any pin illegal for this config before solving, so the solver
+        // never forces an illegal item in (the post-solve sweep below can't catch it).
+        reconcilePinLegality(state.slotConstraints, itemByPinId, query, slotCardOf);
+        query.slotConstraints = { ...state.slotConstraints };
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
           dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel);
