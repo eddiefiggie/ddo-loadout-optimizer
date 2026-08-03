@@ -481,6 +481,21 @@ test("U1 dominance control: without the mutex re-audit a 2H prunes a dominated 1
   assert.ok(!kept.includes("Longsword"), "default dominance prunes the dominated 1H");
 });
 
+test("U2/AE3: Sword & Board off hand keeps shields, excludes orbs and rune arms", () => {
+  const shield = { ...v("Tower Shield", "Off Hand", [["Constitution", "Enhancement", 20]]), type: "Tower shields" };
+  const orb = { ...v("Arcane Orb", "Off Hand", [["Intelligence", "Enhancement", 20]]), type: "Orbs" };
+  const runearm = { ...v("Rune Arm", "Off Hand", [["Strength", "Enhancement", 20]]), type: "Rune Arms" };
+  const kept = M.eligible([shield, orb, runearm], { mlCap: 34, style: "sword-board" }).map((x) => x.source_item);
+  assert.deepStrictEqual(kept, ["Tower Shield"], "only the shield survives S&B off-hand gate");
+});
+
+test("U2/AE3: Sword & Board excludes a two-handed main-hand weapon", () => {
+  const twoH = { ...v("Greatsword", "Main Hand", [["Strength", "Enhancement", 20]], { category: "weapon" }), type: "Great Swords" };
+  const oneH = { ...v("Longsword", "Main Hand", [["Strength", "Enhancement", 20]], { category: "weapon" }), type: "Long Swords" };
+  const kept = M.eligible([twoH, oneH], { mlCap: 34, style: "sword-board" }).map((x) => x.source_item);
+  assert.deepStrictEqual(kept, ["Longsword"], "S&B main hand is one-handed only");
+});
+
 test("U1 characterization: #90 does not reproduce — Heavy query excludes cloth end-to-end", () => {
   // Build-shaped items carry native `type`; normalizeDataset derives armor_type,
   // proving the runtime chain (type -> armor_type -> gate) excludes mismatched armor.

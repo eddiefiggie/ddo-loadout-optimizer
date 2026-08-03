@@ -393,3 +393,8 @@ test("R4a: reconcilePinLegality keeps an unresolvable (stale) pin — fail-open,
   assert.deepStrictEqual(dropped, []);            // nothing dropped (post-solve sweep owns stale)
   assert.deepStrictEqual(sc.Trinket, { type: "pin", variant_id: "GHOST" }); // pin intact
 });
+
+test("U2: buildQuery threads the Sword & Board style so the off-hand/main-hand gates fire", () => {
+  const q = buildQuery({ ...baseState(), style: "sword-board" });
+  assert.strictEqual(q.style, "sword-board");
+});
