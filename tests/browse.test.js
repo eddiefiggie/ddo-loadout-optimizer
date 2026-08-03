@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 
 const { filterVariants, variantStats, affixText, dinoInsertRow, ncRow, vikRow, compendiumRow, browsableItems } = require("../web/browse.js");
-const { normalizeDataset } = require("../web/dataset.js");
+const { normalizeDataset, normalizeItem, isNoiseAffix } = require("../web/dataset.js");
 const data = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")
 ));
@@ -200,6 +200,37 @@ test("indexed-only rows have collapsed under single-source completeness", () => 
   const filtered = filterVariants(list.concat(synth), { verification: "indexed", slot: "Ring" });
   assert.strictEqual(filtered.length, 1);
   assert.strictEqual(filtered[0].verification, "indexed");
+});
+
+// --- gear-planner passthrough noise: bare-number / placeholder affixes ---
+test("isNoiseAffix flags bare-number and placeholder names, spares real affixes", () => {
+  for (const n of ["+14", "+1", "-5", "9", "40%"]) {
+    assert.ok(isNoiseAffix({ name: n, type: "Bool", value: 1 }), `${n} is noise`);
+  }
+  assert.ok(isNoiseAffix({ name: "See the item description page for details.", type: "Bool" }));
+  for (const n of ["Wisdom", "Improved Destruction", "Armor Class", "DR", "Ki", "Enhancement Bonus (Armor)"]) {
+    assert.ok(!isNoiseAffix({ name: n, type: "Enhancement", value: "14" }), `${n} is a real affix`);
+  }
+  assert.ok(!isNoiseAffix(null) && !isNoiseAffix({ type: "Bool" }), "no name -> not noise");
+});
+
+test("normalizeItem drops noise affixes in place, keeps the real ones", () => {
+  const it = { type: "Hand items", ml: 31, affixes: [
+    { name: "Wisdom", type: "Enhancement", value: "14" },
+    { name: "+14", type: "Bool", value: 1 },
+    { name: "See the item description page for details.", type: "Bool", value: 1 },
+    { name: "Dark Restoration Lore", type: "Equipment", value: "23" },
+  ] };
+  normalizeItem(it);
+  assert.deepStrictEqual(it.affixes.map((a) => a.name), ["Wisdom", "Dark Restoration Lore"]);
+});
+
+test("real dataset carries no bare-number affix names after normalization", () => {
+  const bad = [];
+  for (const v of data.items) for (const a of (v.affixes || [])) {
+    if (isNoiseAffix(a)) bad.push({ item: v.source_item, name: a.name });
+  }
+  assert.deepStrictEqual(bad, [], `noise affixes survived normalization: ${JSON.stringify(bad.slice(0, 5))}`);
 });
 
 console.log(`\n${passed} passed`);

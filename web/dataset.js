@@ -70,12 +70,32 @@ function normalizeAffix(a) {
   return a;
 }
 
+// Upstream gear-planner passthrough noise: an affix whose NAME carries no
+// information — a bare enhancement "plus" the planner stored as its own name
+// (e.g. "+14", "+1"), or a wiki filler placeholder. These arrive as Bool
+// presence flags with no targetable stat, so they never enter the solver (the
+// picker vocabulary excludes them); they only clutter the raw browse affix list.
+// Dropped at normalize time so items.json at rest stays a faithful passthrough.
+var NOISE_AFFIX_NAMES = new Set(["See the item description page for details."]);
+function isNoiseAffix(a) {
+  if (!a || typeof a !== "object") return false;
+  var name = a.name != null ? a.name : a.stat;
+  if (name == null) return false;
+  name = String(name).trim();
+  if (NOISE_AFFIX_NAMES.has(name)) return true;
+  return /^[+-]?\d+%?$/.test(name); // bare number, optionally signed / percent
+}
+
 /** Normalize one item (variant): its affixes, and the item-level legacy
  *  aliases the character gate / UI read. In place. */
 function normalizeItem(it) {
   if (!it || typeof it !== "object") return it;
-  const affixes = it.affixes;
-  if (Array.isArray(affixes)) for (const a of affixes) normalizeAffix(a);
+  var affixes = it.affixes;
+  if (Array.isArray(affixes)) {
+    var cleaned = affixes.filter(function (a) { return !isNoiseAffix(a); });
+    if (cleaned.length !== affixes.length) { it.affixes = cleaned; affixes = cleaned; }
+    for (const a of affixes) normalizeAffix(a);
+  }
   // Every ML consumer reads native `ml` now (U7 removed the item minimum_level
   // alias); the reverse is kept so a PRE-OVERHAUL persisted loadout (only
   // minimum_level) still gains native `ml`.
@@ -284,8 +304,8 @@ function migrateLoadout(snapshot) {
 // Browser: expose a global so app.js can normalize the fetched dataset without a
 // module system. Node: CommonJS export for the tests + parity harness.
 if (typeof window !== "undefined") {
-  window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, parseAffixValue, buildPickerVocabulary, migrateLoadout };
+  window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, migrateLoadout };
 }
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, parseAffixValue, buildPickerVocabulary, migrateLoadout };
+  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, migrateLoadout };
 }
