@@ -323,7 +323,7 @@ if (typeof window !== "undefined" && window.App) {
     const weaponTypesInData = [...new Set((dataset.items || [])
       .filter((v) => v.slot === "Weapon" && v.type).map((v) => v.type))];
 
-    const state = { step: "intro", ml: 36, mlFloor: 32, mlFloorManual: false, race: "", alignment: "", armor: "", oath: "",
+    const state = { step: "intro", ml: 36, mlFloor: 31, mlFloorManual: false, race: "", alignment: "", armor: "", oath: "",
       style: "", weaponTypes: [], offHand: [], offHandWeapons: [],
       includeArtifact: false,
       // U1/U4 — per-priority stat caps (max) and floors (min), keyed by stat name so
@@ -376,8 +376,8 @@ if (typeof window !== "undefined" && window.App) {
             <label class="wz-field"><span class="wz-label">Minimum level (ML) cap</span>
               <span class="wz-help">Highest item level you can equip. Gear above this is excluded.</span>
               <input id="wz-ml" class="wz-ml" type="number" min="1" max="40" value="${esc(state.ml)}"></label>
-            <label class="wz-field"><span class="wz-label">Only items ML ≥ <span id="wz-mlfloor-auto" class="wz-sub"${state.mlFloorManual ? " hidden" : ""}>· auto (cap − 4)</span></span>
-              <span class="wz-help">Hide low-level gear — the solver ignores items below this. Defaults to your ML cap − 4 and follows the cap until you set it yourself; lower it to consider more gear.</span>
+            <label class="wz-field"><span class="wz-label">Only items ML ≥ <span id="wz-mlfloor-auto" class="wz-sub"${state.mlFloorManual ? " hidden" : ""}>· auto (cap − 5)</span></span>
+              <span class="wz-help">Hide low-level gear — the solver ignores items below this. Defaults to your ML cap − 5 and follows the cap until you set it yourself; lower it to consider more gear.</span>
               <input id="wz-mlfloor" class="wz-ml" type="number" min="1" max="40" value="${state.mlFloor ? esc(state.mlFloor) : ""}"></label>
           </div>
           <div class="wz-pair">
@@ -1037,8 +1037,8 @@ if (typeof window !== "undefined" && window.App) {
       state.characterName = rec.name;
       state.ml = i.ml;
       // U3 — restore the ML floor + its manual/auto flag. A pre-U3 save has no
-      // mlFloor: default to cap − 4 in auto mode. A saved explicit floor loads as manual.
-      var savedFloor = (i.mlFloor != null && i.mlFloor !== "") ? i.mlFloor : Math.max(1, (Number(i.ml) || 36) - 4);
+      // mlFloor: default to cap − 5 in auto mode. A saved explicit floor loads as manual.
+      var savedFloor = (i.mlFloor != null && i.mlFloor !== "") ? i.mlFloor : Math.max(1, (Number(i.ml) || 36) - 5);
       state.mlFloor = savedFloor;
       state.mlFloorManual = i.mlFloorManual != null ? !!i.mlFloorManual : (i.mlFloor != null && i.mlFloor !== "");
       state.race = i.race; state.alignment = i.alignment;
@@ -1217,21 +1217,21 @@ if (typeof window !== "undefined" && window.App) {
       });
 
       if (state.step === "character") {
-        // U3/R7 — the ML floor defaults to cap − 4 and follows the cap until the
+        // U3/R7 — the ML floor defaults to cap − 5 and follows the cap until the
         // user edits it. Clearing the floor re-enables auto-follow. Updates are made
         // directly (no re-render) so typing keeps focus.
         var floorAutoHint = () => { var h = document.getElementById("wz-mlfloor-auto"); if (h) h.hidden = !!state.mlFloorManual; };
         document.getElementById("wz-ml").oninput = (e) => {
           state.ml = e.target.value;
           if (!state.mlFloorManual) {
-            state.mlFloor = Math.max(1, (Number(e.target.value) || 0) - 4);
+            state.mlFloor = Math.max(1, (Number(e.target.value) || 0) - 5);
             var fi = document.getElementById("wz-mlfloor"); if (fi) fi.value = state.mlFloor;
           }
         };
         document.getElementById("wz-mlfloor").oninput = (e) => {
           if (e.target.value === "") {
             state.mlFloorManual = false;
-            state.mlFloor = Math.max(1, (Number(state.ml) || 0) - 4);
+            state.mlFloor = Math.max(1, (Number(state.ml) || 0) - 5);
             e.target.value = state.mlFloor;
           } else {
             state.mlFloor = e.target.value;
