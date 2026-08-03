@@ -3,20 +3,22 @@
 // now optimized and prescribed here; crafting/upgrade paths are a pending
 // follow-up, surfaced honestly in the coverage disclosure.
 
-// Shared affix formatter. Reads NAME/TYPE native-first (`{name,type}`) with the
-// legacy `{stat,bonus_type}` as a fallback, because it formats BOTH native item
-// affixes AND the not-yet-native crafting-pool / set-bonus / Dino affixes (and any
-// pre-overhaul persisted item) — mirroring the parity harness's affixTriple (U5).
-function affixLabel(a) {
-  if (!a) return "";
-  const name = a.name != null ? a.name : a.stat;
-  const bt = a.type != null ? a.type : a.bonus_type;
-  // Boolean feature (U4): presence, not a magnitude. Render a marker so it never
-  // reads as a broken "+N" next to real magnitudes.
-  if (bt === "boolean") return `✓ ${name}`;
-  const type = bt && bt !== "Enhancement" ? ` ${bt}` : "";
-  return `${name} +${a.value}${a.unit === "pct" ? "%" : ""}${type}`;
-}
+// The shared content projection (loaded before results.js in the browser;
+// require()'d in Node tests). The pure reconstruction primitives — affix/augment/
+// dino/attribution/set logic — live there as ONE definition (KTD2), bound here so
+// the live views and the exports can never drift. Their doc comments live in
+// projection.js.
+const Proj = (typeof Projection !== "undefined") ? Projection
+  : (typeof require !== "undefined" ? require("./projection.js") : null);
+const affixLabel = Proj.affixLabel;
+const assignAugments = Proj.assignAugments;
+const assignDinoInserts = Proj.assignDinoInserts;
+const attributionByTarget = Proj.attributionByTarget;
+const whyThis = Proj.whyThis;
+const satisfiedSets = Proj.satisfiedSets;
+const slotSetNames = Proj.slotSetNames;
+const activeSetDetail = Proj.activeSetDetail;
+const satisfiedSetDetail = Proj.satisfiedSetDetail;
 
 // Item-level ML read native-first (`ml`), falling back to the legacy `minimum_level`
 // alias for a pre-overhaul persisted item (U5).
@@ -25,154 +27,10 @@ function affixLabel(a) {
 // while each file keeps its own copy for node's module-scoped `require`.
 var itemMl = (v) => (v && v.ml != null) ? v.ml : (v && v.minimum_level);
 
-/** Which of a variant's affixes hit the query targets (for the "why" column). */
-function contributingAffixes(variant, targets) {
-  const t = new Set(targets);
-  return (variant.affixes || []).filter((a) => t.has(a.name != null ? a.name : a.stat));
-}
-
-/** Reconstruct a concrete augment->item assignment from the solver's aggregate
- *  per-color-capacity placements. The solver decides WHICH augments are placed and
- *  which slot COLOR each consumes (`slot_color` — multi-fit: a Red augment may
- *  consume an Orange slot); it does not pin the host item (that would need the
- *  per-slot variables we deliberately dropped for program size). Reconstruct the
- *  host deterministically: walk equipped items in order and drop each placed
- *  augment into the first item with remaining open capacity of the slot color it
- *  consumed. Capacity feasibility is guaranteed by the solver's per-color bound,
- *  so a placed augment always finds a home. Returns { byIndex, unplaced }. */
-function assignAugments(chosen, augmentsPlaced) {
-  const remaining = chosen.map((c) => {
-    const m = new Map();
-    for (const col of ((c.variant.augment_slots_norm || {}).colors) || []) m.set(col, (m.get(col) || 0) + 1);
-    return m;
-  });
-  const byIndex = new Map();
-  const unplaced = [];
-  for (const aug of augmentsPlaced || []) {
-    const want = aug.slot_color || aug.color; // the slot color consumed (falls back to own color)
-    let placed = false;
-    for (let i = 0; i < chosen.length; i++) {
-      if ((remaining[i].get(want) || 0) > 0) {
-        remaining[i].set(want, remaining[i].get(want) - 1);
-        if (!byIndex.has(i)) byIndex.set(i, []);
-        byIndex.get(i).push(aug);
-        placed = true;
-        break;
-      }
-    }
-    if (!placed) unplaced.push(aug);
-  }
-  // Slots left open per item after placement — the substrate for U10's
-  // "unused augment slot" / unrealized-upgrade note.
-  const freeByIndex = new Map();
-  remaining.forEach((m, i) => {
-    const cols = [];
-    for (const [col, n] of m) for (let k = 0; k < n; k++) cols.push(col);
-    if (cols.length) freeByIndex.set(i, cols);
-  });
-  return { byIndex, unplaced, freeByIndex };
-}
-
 // Standard fillable augment-slot colors — a generic augment can go here, so an
 // open one is a realizable upgrade. Named crafting slots (Lamordia, celestial)
 // need specific augments and are shown as craft slots, not flagged as unused.
 const STD_AUG_COLORS = new Set(["blue", "red", "yellow", "green", "orange", "purple", "colorless", "clear"]);
-
-/** Reconstruct a concrete Dino-insert -> item assignment from the solver's
- *  aggregate per-key placements (mirrors assignAugments). Slots are keyed by
- *  `dino_type||category` (KTD1). Walk equipped items in order and drop each
- *  placed insert unit into the first equipped item with a remaining open Dino
- *  slot matching the unit's (type, category). */
-function dinoInsertKey(ins) {
-  return `${ins.dino_type}||${ins.category || "Accessory"}`;
-}
-function assignDinoInserts(chosen, dinoPlaced) {
-  const remaining = chosen.map((c) => {
-    const m = new Map();
-    for (const t of c.variant.dino_slots_norm || []) m.set(t, (m.get(t) || 0) + 1);
-    return m;
-  });
-  const byIndex = new Map();
-  const unplaced = [];
-  for (const ins of dinoPlaced || []) {
-    const key = dinoInsertKey(ins);
-    let placed = false;
-    for (let i = 0; i < chosen.length; i++) {
-      if ((remaining[i].get(key) || 0) > 0) {
-        remaining[i].set(key, remaining[i].get(key) - 1);
-        if (!byIndex.has(i)) byIndex.set(i, []);
-        byIndex.get(i).push(ins);
-        placed = true;
-        break;
-      }
-    }
-    if (!placed) unplaced.push(ins);
-  }
-  return { byIndex, unplaced };
-}
-
-/** Per-target contributor attribution for the achieved-priority view (R11, R12,
- *  R16). Reads the solver's already-computed breakdown (which now carries the
- *  host slot for worn + item-crafts and the yielding slots for sets, KTD6) and
- *  fills the remaining augment host slot from the augment reconstruction. Returns
- *  { stat: [{ bonus_type, value, source, sourceKind, slots:[...], isSet }], ... },
- *  highest-value first — presentation only, no solve. */
-function attributionByTarget(result, augAssign) {
-  const breakdown = result.breakdown || {};
-  // augment host reconstruction (the paperdoll uses the same assignment). Map each
-  // placed augment to both its host slot (for display) and host variant_id (for
-  // precise per-item matching). Accept a precomputed assignment to avoid re-running it.
-  augAssign = augAssign || assignAugments(result.chosen, result.augmentsPlaced);
-  const augSlot = new Map(), augHost = new Map();
-  for (const [idx, augs] of augAssign.byIndex) {
-    const host = result.chosen[idx];
-    for (const a of augs) {
-      augSlot.set(a.variant_id, host && host.slot);
-      augHost.set(a.variant_id, host && host.variant && host.variant.variant_id);
-    }
-  }
-  const out = {};
-  for (const stat of Object.keys(breakdown)) {
-    out[stat] = breakdown[stat].map((p) => {
-      let slots = [];
-      let hostIds = p.hostIds ? p.hostIds.slice() : [];
-      if (p.setYieldingSlots && p.setYieldingSlots.length) slots = p.setYieldingSlots.slice();
-      else if (p.slot) slots = [p.slot];
-      else if (p.sourceKind === "augment" && augSlot.has(p.source)) slots = [augSlot.get(p.source)];
-      if (!hostIds.length && p.sourceKind === "augment" && augHost.has(p.source)) hostIds = [augHost.get(p.source)];
-      return {
-        bonus_type: p.bonus_type, value: p.value, source: p.source,
-        sourceKind: p.sourceKind, slots, hostIds, isSet: p.sourceKind === "set",
-      };
-    });
-  }
-  return out;
-}
-
-/** Which ranked targets a specific equipped item wins, and by how much (R8, R9)
- *  — the justification for a pick, especially a surprising low-ML one. `item` is
- *  { slot, variant_id }. Matches every contribution by HOST variant_id (worn, set,
- *  craft, and augment all carry their host id) so the two Rings — which share the
- *  slot name "Ring" — never claim each other's set/craft/augment wins. Pass the
- *  precomputed `attr` from renderResults to avoid re-deriving it per slot. Returns
- *  [{ stat, value, viaSet }], highest first; empty for a filler/tie-break pick. */
-function whyThis(result, item, attr) {
-  attr = attr || attributionByTarget(result);
-  const wins = [];
-  for (const stat of Object.keys(attr)) {
-    let val = 0, viaSet = false, boolean = false;
-    for (const p of attr[stat]) {
-      if ((p.hostIds || []).includes(item.variant_id)) {
-        val += p.value;
-        if (p.isSet) viaSet = true;
-        if (p.bonus_type === "boolean") boolean = true;   // U4: presence win
-      }
-    }
-    if (val > 0) wins.push({ stat, value: val, viaSet, boolean });
-  }
-  wins.sort((a, b) => b.value - a.value);
-  return wins;
-}
 
 function coverageNote(dataset) {
   const m = (dataset && dataset.metadata) || {};
@@ -289,32 +147,25 @@ var _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined") ? pinnedVarian
   // eslint-disable-next-line global-require
   : require("./model.js").pinnedVariantIds;
 
-// One craft option's value label (e.g. "Constitution +15"). Shared by every
-// craft-chip family so the Deep Dive and the equipped block read identically.
-function craftLbl(o) {
-  return esc(affixLabel({ stat: o.stat, bonus_type: o.bonus_type, value: o.value, unit: o.unit || "flat" }));
-}
-
 // The applied craft-upgrade chips for one item — Dino inserts, Nearly Completed,
 // choice slots, Viktranium, seals, Thunder-Forged, Green Steel — keyed by the
 // chosen index (dino) or variant_id (the rest). Assigned crafts only (the maps
 // carry no empty-slot inventory). Shared by the Loadout Deep Dive (craftChips)
 // and the equipped-block detail (equippedBody, U2) so these families never drift.
+// Each family's label text comes from Proj.craftLabel (the single label source,
+// KTD6); the whole label is wrapped in one esc() — byte-identical to the prior
+// inline templates because esc() distributes over string concatenation.
 // NOT included: the augment chips and the joker/membership (wildcard/set) chips —
 // craftChips keeps those, and the equipped block surfaces set state via its row
 // glow/setLine instead, so a joker/membership rendering change only hits the Deep Dive.
 function craftSlotChips(v, idx, maps) {
-  const dinos = (maps.dinoAssign.byIndex.get(idx) || []).map((d) => {
-    const affixes = (d.affixes && d.affixes.length) ? d.affixes : [d];
-    const label = affixes.map(craftLbl).join(", ");
-    return `<span class="chip dino" title="Isle of Dread insert">${esc(d.dino_type)}: ${d.name ? esc(d.name) + ", " : ""}${label}</span>`;
-  });
-  const ncs = (maps.ncByItem.get(v.variant_id) || []).map((n) => `<span class="chip nc" title="Terror of Demogorgon — Nearly Completed">Nearly Completed: ${craftLbl(n)}</span>`);
-  const rolls = (maps.rollByItem.get(v.variant_id) || []).map((r) => `<span class="chip roll" title="choice slot, best option selected">Choice: ${craftLbl(r)}</span>`);
-  const viks = (maps.vikByItem.get(v.variant_id) || []).map((n) => `<span class="chip lamordia" title="The Chill of Ravenloft — Viktranium Experiment crafting">Slot ${esc(n.slot_type)} Viktranium augment: ${craftLbl(n)}</span>`);
-  const seals = (maps.sealByItem.get(v.variant_id) || []).map((n) => `<span class="chip seal" title="unseal one effect at the crafting table">Sealed in ${esc(n.seal_type)}: ${craftLbl(n)}</span>`);
-  const tfs = ((maps.tfByItem && maps.tfByItem.get(v.variant_id)) || []).map((n) => `<span class="chip thunderforged" title="Legendary Thunder-Forged tier upgrade">Thunder-Forged T${esc(n.tier)}: ${craftLbl(n)}</span>`);
-  const gss = ((maps.gsByItem && maps.gsByItem.get(v.variant_id)) || []).map((n) => `<span class="chip greensteel" title="Legendary Green Steel craft">Green Steel: ${craftLbl(n)}</span>`);
+  const dinos = (maps.dinoAssign.byIndex.get(idx) || []).map((d) => `<span class="chip dino" title="Isle of Dread insert">${esc(Proj.craftLabel(d, "dino"))}</span>`);
+  const ncs = (maps.ncByItem.get(v.variant_id) || []).map((n) => `<span class="chip nc" title="Terror of Demogorgon — Nearly Completed">${esc(Proj.craftLabel(n, "nc"))}</span>`);
+  const rolls = (maps.rollByItem.get(v.variant_id) || []).map((r) => `<span class="chip roll" title="choice slot, best option selected">${esc(Proj.craftLabel(r, "roll"))}</span>`);
+  const viks = (maps.vikByItem.get(v.variant_id) || []).map((n) => `<span class="chip lamordia" title="The Chill of Ravenloft — Viktranium Experiment crafting">${esc(Proj.craftLabel(n, "vik"))}</span>`);
+  const seals = (maps.sealByItem.get(v.variant_id) || []).map((n) => `<span class="chip seal" title="unseal one effect at the crafting table">${esc(Proj.craftLabel(n, "seal"))}</span>`);
+  const tfs = ((maps.tfByItem && maps.tfByItem.get(v.variant_id)) || []).map((n) => `<span class="chip thunderforged" title="Legendary Thunder-Forged tier upgrade">${esc(Proj.craftLabel(n, "tf"))}</span>`);
+  const gss = ((maps.gsByItem && maps.gsByItem.get(v.variant_id)) || []).map((n) => `<span class="chip greensteel" title="Legendary Green Steel craft">${esc(Proj.craftLabel(n, "gs"))}</span>`);
   return [...dinos, ...ncs, ...rolls, ...viks, ...seals, ...tfs, ...gss];
 }
 
@@ -336,48 +187,12 @@ function craftChips(v, idx, maps) {
     // The label text comes from the registry (single source of truth), not a
     // hardcoded string — a terminology edit in crafting-systems.js now flows
     // straight to the chip instead of drifting from it.
-    const text = CraftingReg ? CraftingReg.actionLabel(sysId, { set_name: m.set }) : `Slot Set Bonus augment: ${m.set}`;
+    const text = Proj.craftLabel(m, "membership");
     const title = isVecna ? `awaken this set at the ${esc(m.station || "Cannith Repurposing Station")}`
       : `slot a Dinosaur Bone Set Bonus augment at ${esc(m.station || "Dinosaur Bone crafting")}`;
     return `<span class="${cls}" title="${title}">${esc(text)}${m.station ? ` <span class="muted">(${esc(m.station)})</span>` : ""}</span>`;
   });
   return [...augs, ...craftSlotChips(v, idx, maps), ...jokers, ...memberships];
-}
-
-/** Sets actually complete in the equipped loadout (U6) — the glow signal. Two
- *  sources, unioned: (1) a static set whose equipped piece count meets its lowest
- *  piece-threshold tier (covers a set that is threshold-met but advanced no ranked
- *  target, which `setsActive` alone would drop); (2) `setsActive`, the solver's
- *  authoritative active-set signal, which additionally covers sets completed by
- *  runtime pieces that carry no static `set_bonus`/`parsed_set_bonuses` — a Gem of
- *  Many Facets joker or a Vecna Lost Purpose awaken. Gating the glow on membership
- *  (the old behavior) lit pieces of an unsatisfied set; this gates on completion. */
-function satisfiedSets(chosen, setsActive) {
-  const counts = new Map();   // set -> equipped piece count
-  const minReq = new Map();   // set -> lowest pieces_required across its tiers
-  for (const c of chosen || []) {
-    for (const sb of c.variant.set_bonus || []) {
-      if (sb.set) counts.set(sb.set, (counts.get(sb.set) || 0) + 1);
-    }
-    for (const tier of c.variant.parsed_set_bonuses || []) {
-      if (tier.pieces_required == null) continue;
-      const cur = minReq.get(tier.set);
-      if (cur == null || tier.pieces_required < cur) minReq.set(tier.set, tier.pieces_required);
-    }
-  }
-  const out = new Set();
-  for (const [set, need] of minReq) if ((counts.get(set) || 0) >= need) out.add(set);
-  for (const s of setsActive || []) if (s.set) out.add(s.set);   // runtime-completed (joker/membership)
-  return out;
-}
-
-// The set(s) an equipped piece belongs to, stated on its slot (R15). When
-// `satisfied` (from satisfiedSets) is passed, only sets that are actually
-// complete are returned — so the .is-set glow (U6) fires on satisfaction, not
-// mere membership. Omitting `satisfied` keeps the raw membership list.
-function slotSetNames(v, satisfied) {
-  const names = [...new Set((v.set_bonus || []).map((s) => s.set).filter(Boolean))];
-  return satisfied ? names.filter((n) => satisfied.has(n)) : names;
 }
 
 // One paperdoll slot cell: uniform, fixed-size, showing only the item name, ML,
@@ -576,75 +391,6 @@ function attributionList(contribs) {
       <span class="attrib-where">${where}</span>
     </li>`;
   }).join("")}</ul>`;
-}
-
-/** Active set bonuses with the stats they grant and the slots that yield them
- *  (R16, R12). Derives the granted affixes from the equipped members' parsed
- *  tiers and the yielding slots from set membership among the chosen items. */
-function activeSetDetail(result) {
-  const yields = new Map();          // set -> [slots yielding it]
-  const tierAffixes = new Map();     // "set||N" -> granted affixes
-  for (const c of result.chosen) {
-    for (const sb of c.variant.set_bonus || []) {
-      if (!sb.set) continue;
-      if (!yields.has(sb.set)) yields.set(sb.set, []);
-      yields.get(sb.set).push(c.slot);
-    }
-    for (const t of c.variant.parsed_set_bonuses || []) {
-      if (t.pieces_required == null) continue;
-      const k = `${t.set}||${t.pieces_required}`;
-      if (!tierAffixes.has(k) && (t.affixes || []).length) tierAffixes.set(k, t.affixes);
-    }
-  }
-  return (result.setsActive || []).map((s) => ({
-    set: s.set, pieces: s.pieces_required,
-    slots: yields.get(s.set) || [],
-    // Prefer affixes derived from equipped members' static tiers (intrinsic sets);
-    // fall back to the affixes the solver carried on setsActive — the only source for
-    // a craftable-membership set (Vecna Lost Purpose awaken, Dino Set-Bonus), whose
-    // hosts have no static parsed_set_bonuses.
-    affixes: tierAffixes.get(`${s.set}||${s.pieces_required}`) || s.affixes || [],
-  }));
-}
-
-/** The Set Bonuses tab (U8): every set complete in the build, grouped by set,
- *  with its granted affixes and the equipped pieces (item names) composing it.
- *  Near-miss / non-set items are excluded (R9). Two sources are unioned so the
- *  tab matches the U6 glow and never drops an active set: (1) static
- *  threshold-satisfied sets (highest satisfied tier + member item names); (2) any
- *  remaining `setsActive` set via the shared `activeSetDetail` expander — this
- *  recovers sets completed by runtime pieces with no static `set_bonus`
- *  (a Gem of Many Facets joker, a Vecna Lost Purpose awaken). */
-function satisfiedSetDetail(build) {
-  const counts = new Map();    // set -> equipped piece count
-  const members = new Map();   // set -> [item names]
-  const tiers = new Map();     // set -> Map(pieces_required -> granted affixes)
-  for (const c of build.chosen || []) {
-    for (const sb of c.variant.set_bonus || []) {
-      if (!sb.set) continue;
-      counts.set(sb.set, (counts.get(sb.set) || 0) + 1);
-      if (!members.has(sb.set)) members.set(sb.set, []);
-      members.get(sb.set).push(c.variant.variant_id);
-    }
-    for (const t of c.variant.parsed_set_bonuses || []) {
-      if (t.pieces_required == null) continue;
-      if (!tiers.has(t.set)) tiers.set(t.set, new Map());
-      const byN = tiers.get(t.set);
-      if (!byN.has(t.pieces_required)) byN.set(t.pieces_required, t.affixes || []);
-    }
-  }
-  const bySet = new Map();
-  for (const [set, byN] of tiers) {
-    const have = counts.get(set) || 0;
-    let best = null;                                  // highest tier the count satisfies
-    for (const [n, affixes] of byN) if (n <= have && (best == null || n > best.pieces)) best = { pieces: n, affixes };
-    if (best) bySet.set(set, { set, pieces: best.pieces, affixes: best.affixes, members: members.get(set) || [] });
-  }
-  for (const s of activeSetDetail(build)) {           // recover runtime-completed sets
-    if (bySet.has(s.set)) continue;
-    bySet.set(s.set, { set: s.set, pieces: s.pieces, affixes: s.affixes, members: members.get(s.set) || [] });
-  }
-  return [...bySet.values()];
 }
 
 // The "why this?" line for an equipped item (R8, R9): the ranked target(s) it
@@ -886,32 +632,11 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
 // which carry the same fields (chosen, effective, breakdown, capped, setsActive,
 // the *Placed lists). Reused by renderBuild for select-to-inspect (U5).
 function buildViews(build, model, query) {
-  const augAssign = assignAugments(build.chosen, build.augmentsPlaced);
-  const dinoAssign = assignDinoInserts(build.chosen, build.dinoPlaced);
-  const byItemMap = (list) => {
-    const m = new Map();
-    for (const n of list || []) { if (!m.has(n.item)) m.set(n.item, []); m.get(n.item).push(n); }
-    return m;
-  };
-  const jokerByHost = new Map();
-  for (const j of build.jokerPlaced || []) {
-    if (!jokerByHost.has(j.host)) jokerByHost.set(j.host, []);
-    jokerByHost.get(j.host).push(j);
-  }
-  // Set-membership picks (Vecna Lost Purpose or Dinosaur Bone Set Bonus),
-  // keyed by host item like jokers.
-  const membershipByHost = new Map();
-  for (const m of build.membershipPlaced || []) {
-    if (!membershipByHost.has(m.host)) membershipByHost.set(m.host, []);
-    membershipByHost.get(m.host).push(m);
-  }
-  const maps = {
-    augAssign, dinoAssign,
-    ncByItem: byItemMap(build.ncPlaced), rollByItem: byItemMap(build.rollPlaced),
-    vikByItem: byItemMap(build.vikPlaced), sealByItem: byItemMap(build.sealPlaced),
-    tfByItem: byItemMap(build.tfPlaced), gsByItem: byItemMap(build.gsPlaced), jokerByHost,
-    membershipByHost,
-  };
+  // The craft-placement maps (augment/dino assignments + per-item craft groupings)
+  // come from the shared projection so the Deep Dive chips and the exports read from
+  // one builder (KTD6).
+  const maps = Proj.buildCraftMaps(build);
+  const augAssign = maps.augAssign;
   const picksBySlot = new Map();
   build.chosen.forEach((c, idx) => {
     if (!picksBySlot.has(c.slot)) picksBySlot.set(c.slot, []);
