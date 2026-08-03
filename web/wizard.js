@@ -719,9 +719,10 @@ if (typeof window !== "undefined" && window.App) {
     function sharePanelHTML() {
       return `<div class="wz-share">
           <p class="wz-help">Share <strong>this loadout with others</strong> — a forum-ready Markdown or BBCode post, a clean
-            CSV of the full detail, or a print-friendly page. Each carries the character name, constraints, and the active
-            set bonuses with the affixes they grant. (Backing up all your saved builds lives in the Character step's Export
-            &amp; Data Management.)</p>
+            CSV of the full detail, a print-friendly page, or a <strong>portable JSON</strong> file built to be re-imported and
+            compared later. Each carries the character name, constraints, the equipped items with their augments and crafting
+            upgrades, the active set bonuses with the affixes they grant, and a stat-by-stat breakdown of where each point comes
+            from. (Backing up all your saved builds lives in the Character step's Export &amp; Data Management.)</p>
           <div class="wz-share-pick">
             <label class="wz-label" for="wz-share-sel">Loadout</label>
             <select id="wz-share-sel"></select>
@@ -731,6 +732,7 @@ if (typeof window !== "undefined" && window.App) {
             <button class="btn ghost" id="wz-share-bb" type="button">BBCode</button>
             <button class="btn ghost" id="wz-share-csv" type="button">CSV</button>
             <button class="btn ghost" id="wz-share-print" type="button">Print</button>
+            <button class="btn ghost" id="wz-share-json" type="button" title="A portable file that captures this build exactly — designed to be re-imported and compared later.">Portable JSON</button>
           </div>
           <div id="wz-share-stat" class="wz-filestat"></div>
         </div>`;
@@ -771,9 +773,14 @@ if (typeof window !== "undefined" && window.App) {
       const bbBtn = document.getElementById("wz-share-bb");
       const csvBtn = document.getElementById("wz-share-csv");
       const printBtn = document.getElementById("wz-share-print");
+      const jsonBtn = document.getElementById("wz-share-json");
       if (mdBtn) mdBtn.onclick = () => { const rec = selected(); if (rec) downloadFile(`${slug(rec.name)}.md`, LoadoutExport.toMarkdown(rec), "text/markdown"); };
       if (csvBtn) csvBtn.onclick = () => { const rec = selected(); if (rec) downloadFile(`${slug(rec.name)}.csv`, LoadoutExport.toCsv(rec), "text/csv"); };
       if (printBtn) printBtn.onclick = () => { const rec = selected(); if (rec) printLoadout(rec); };
+      // Portable JSON (U5): the versioned ddo-loadout/v1 envelope — the proven save
+      // snapshot as an opaque `core` plus the resolved view — designed to be
+      // re-imported and compared later. Pretty-printed for readability.
+      if (jsonBtn) jsonBtn.onclick = () => { const rec = selected(); if (rec) downloadFile(`${slug(rec.name)}.json`, JSON.stringify(LoadoutExport.toPortableJSON(rec), null, 2), "application/json"); };
       // BBCode is meant to be pasted into a forum post — copy to clipboard (with a
       // .txt download fallback if the clipboard API is blocked), and confirm.
       if (bbBtn) bbBtn.onclick = () => {
