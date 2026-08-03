@@ -191,7 +191,15 @@ function variantConflict(v, query, gates) {
   // every other gate below still fires). Living in variantConflict means eligible()
   // (pool build), pinConflict (advisory), and reconcilePinLegality all honor a
   // below-floor pin consistently.
+  //
+  // An AUGMENT is likewise exempt from the floor. The floor hides OUTLEVELED worn gear;
+  // an augment is a slotted insert, not worn gear — a low-ML augment (e.g. a ML-22
+  // "Diamond of Festive <stat> +2") is still slottable at any level >= its ML, and its
+  // bonus may stack uniquely (Festive is its own bonus type), so a "hide low-ML gear"
+  // floor must not drop it. Only the cap (above) constrains an augment: an augment above
+  // the ML cap genuinely can't be slotted.
   if (g.floor != null && v.ml != null && v.ml < g.floor
+      && v.category !== "augment"
       && !(g.pinnedIds && g.pinnedIds.has(variantKey(v)))) return `below your ML ${g.floor} floor`;
 
   // R8 — Weapon-type / style lock. A weapon stays eligible if it can serve EITHER

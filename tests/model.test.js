@@ -116,6 +116,20 @@ test("eligible honors the optional mlFloor (hide low-level gear)", () => {
   assert.deepStrictEqual(none.map((x) => x.source_item).sort(), ["Hi", "Lo"]);
 });
 
+test("an AUGMENT is exempt from the mlFloor (a low-ML augment stays a candidate), but the cap still applies", () => {
+  // A ML-22 augment (e.g. a Festive +2) must survive a floor of 30 — it's a slotted
+  // insert, not outleveled worn gear. A same-ML WORN item is still floored.
+  const aug = v("Diamond of Festive Strength +2", "Colorless", [["Strength", "Festive", 2]], { ml: 22, category: "augment" });
+  const worn = v("Old Ring", "Ring", [["Strength", "Enhancement", 5]], { ml: 22, category: "item" });
+  const kept = M.eligible([aug, worn], { mlCap: 36, mlFloor: 30, targets: ["Strength"] }).map((x) => x.source_item);
+  assert.ok(kept.includes("Diamond of Festive Strength +2"), "low-ML augment exempt from the floor");
+  assert.ok(!kept.includes("Old Ring"), "a same-ML worn item is still floored");
+  // The cap is NOT exempt: an augment above the ML cap genuinely can't be slotted.
+  const overCap = v("Diamond of Future Strength", "Colorless", [["Strength", "Festive", 2]], { ml: 40, category: "augment" });
+  const capped = M.eligible([overCap], { mlCap: 36, mlFloor: 30, targets: ["Strength"] });
+  assert.strictEqual(capped.length, 0, "an above-cap augment is still excluded");
+});
+
 // artifact variant factory: a normal variant flagged as Artifact-quality.
 function art(name, slot, affixes, opts = {}) {
   const x = v(name, slot, affixes, opts);
