@@ -481,6 +481,27 @@ test("U1 dominance control: without the mutex re-audit a 2H prunes a dominated 1
   assert.ok(!kept.includes("Longsword"), "default dominance prunes the dominated 1H");
 });
 
+test("U3/AE5: a pinned below-floor item is eligible; an unpinned one is still filtered", () => {
+  const pinned = v("Pinned Ring", "Ring", [["Constitution", "Enhancement", 10]], { ml: 20 });
+  const unpinned = v("Other Ring", "Ring", [["Constitution", "Enhancement", 10]], { ml: 20 });
+  const query = { mlCap: 34, mlFloor: 30, slotConstraints: { Ring: { type: "pin", variant_id: "Pinned Ring" } } };
+  const kept = M.eligible([pinned, unpinned], query).map((x) => x.source_item);
+  assert.ok(kept.includes("Pinned Ring"), "pinned below-floor item is honored");
+  assert.ok(!kept.includes("Other Ring"), "unpinned below-floor item still hidden by the floor");
+});
+
+test("U3/AE6: a pinned above-cap item is NOT honored (only the floor is exempt)", () => {
+  const pinned = v("Overcap Ring", "Ring", [["Constitution", "Enhancement", 10]], { ml: 40 });
+  const query = { mlCap: 34, mlFloor: 30, slotConstraints: { Ring: { type: "pin", variant_id: "Overcap Ring" } } };
+  assert.strictEqual(M.eligible([pinned], query).length, 0, "above-cap pin stays invalid");
+});
+
+test("U3/AE8: a pinned below-floor item violating another dimension is still excluded", () => {
+  const pinned = { ...v("Cloth Robe", "Armor", [["Constitution", "Enhancement", 10]], { ml: 20 }), type: "Cloth armor", armor_type: "cloth" };
+  const query = { mlCap: 34, mlFloor: 30, armorTypes: ["heavy"], slotConstraints: { Armor: { type: "pin", variant_id: "Cloth Robe" } } };
+  assert.strictEqual(M.eligible([pinned], query).length, 0, "floor exempt, but armor-type legality still excludes");
+});
+
 test("U2/AE3: Sword & Board off hand keeps shields, excludes orbs and rune arms", () => {
   const shield = { ...v("Tower Shield", "Off Hand", [["Constitution", "Enhancement", 20]]), type: "Tower shields" };
   const orb = { ...v("Arcane Orb", "Off Hand", [["Intelligence", "Enhancement", 20]]), type: "Orbs" };

@@ -398,3 +398,14 @@ test("U2: buildQuery threads the Sword & Board style so the off-hand/main-hand g
   const q = buildQuery({ ...baseState(), style: "sword-board" });
   assert.strictEqual(q.style, "sword-board");
 });
+
+test("U3: reconcilePinLegality keeps a pinned below-floor item (pin overrides the floor)", () => {
+  const sc = { Ring: { type: "pin", variant_id: "LOW" } };
+  // query.slotConstraints carries the pin so queryGates builds the pinnedIds set
+  const query = buildQuery({ ...baseState(), ml: 34, mlFloor: 30, slotConstraints: sc });
+  const items = { LOW: { source_item: "Low Ring", variant_id: "LOW", slot: "Ring", verification: "verified", ml: 20, affixes: [] } };
+  const itemByPinId = (id) => items[id] || null;
+  const dropped = reconcilePinLegality(sc, itemByPinId, query, () => 1);
+  assert.deepStrictEqual(dropped, [], "below-floor pin not suppressed by reconcile");
+  assert.deepStrictEqual(sc.Ring, { type: "pin", variant_id: "LOW" }, "pin intact");
+});

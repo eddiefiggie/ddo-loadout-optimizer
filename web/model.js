@@ -156,9 +156,17 @@ function offHandGate(query) {
 // item. `variantConflict` accepts it precomputed, or derives it on demand for the
 // handful of calls `pinConflict` makes.
 function queryGates(query) {
+  // R8 — the set of pinned variant ids. A pin overrides the soft mlFloor (only), so
+  // the floor check below skips a pinned variant. Matched via variantKey, same as the
+  // dominance-filter pin exemption, so the two never drift.
+  const pinnedIds = new Set();
+  for (const c of Object.values(query.slotConstraints || {})) {
+    for (const id of pinnedVariantIds(c)) pinnedIds.add(id);
+  }
   return {
     cap: query.mlCap,
     floor: query.mlFloor,                                  // optional item-level floor
+    pinnedIds,                                             // R8 — pins bypass the floor
     forged: isForgedRace(query.race),
     weaponAllow: allowedWeaponTypes(query),                // main-hand set | null
     offWeaponAllow: allowedOffHandWeaponTypes(query),      // off-hand weapon set | null
@@ -178,7 +186,13 @@ function variantConflict(v, query, gates) {
   // the picker only offers verified items (KTD3), but kept here for eligible() parity.
   if (v.verification !== "verified") return "this item isn't verified";
   if (v.ml != null && v.ml > g.cap) return `above your ML ${g.cap} cap`;
-  if (g.floor != null && v.ml != null && v.ml < g.floor) return `below your ML ${g.floor} floor`;
+  // R8 — the mlFloor is a soft "hide low-ML gear" filter, so an explicit pin overrides
+  // it: a pinned variant skips ONLY this floor check (the cap above still applies, and
+  // every other gate below still fires). Living in variantConflict means eligible()
+  // (pool build), pinConflict (advisory), and reconcilePinLegality all honor a
+  // below-floor pin consistently.
+  if (g.floor != null && v.ml != null && v.ml < g.floor
+      && !(g.pinnedIds && g.pinnedIds.has(variantKey(v)))) return `below your ML ${g.floor} floor`;
 
   // R8 — Weapon-type / style lock. A weapon stays eligible if it can serve EITHER
   // hand: the main-hand lock, or (TWF) the off-hand-weapon lock. Untyped weapon
