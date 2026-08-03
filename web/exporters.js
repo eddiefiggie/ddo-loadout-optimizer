@@ -150,7 +150,7 @@
     const view = Proj.project(rec);
     let out = `# ${mdEsc(view.character.name)}\n\n`;
     out += `_Optimal loadout — built with the DDO Loadout Optimizer._\n\n`;
-    out += view.character.constraints.slice(1).map(([k, v]) => `**${mdEsc(k)}:** ${mdEsc(v)}`).join("  \n") + "\n\n";
+    out += view.character.constraints.filter(([k]) => k !== "Character").map(([k, v]) => `**${mdEsc(k)}:** ${mdEsc(v)}`).join("  \n") + "\n\n";
     out += `_${mdEsc(legendText("md"))}_\n\n`;
     out += `## Loadout\n\n`;
     for (const it of view.loadout) {
@@ -186,7 +186,7 @@
     const view = Proj.project(rec);
     let out = `[b]${bbEsc(view.character.name)}[/b]\n`;
     out += `[i]Optimal loadout — built with the DDO Loadout Optimizer.[/i]\n\n`;
-    out += view.character.constraints.slice(1).map(([k, v]) => `[b]${bbEsc(k)}:[/b] ${bbEsc(v)}`).join(" | ") + "\n\n";
+    out += view.character.constraints.filter(([k]) => k !== "Character").map(([k, v]) => `[b]${bbEsc(k)}:[/b] ${bbEsc(v)}`).join(" | ") + "\n\n";
     out += `[i]${legendText("bb")}[/i]\n\n`;
     out += `[b]Loadout[/b]\n[list]\n`;
     for (const it of view.loadout) {
@@ -266,7 +266,7 @@
   function toPrintHtml(rec) {
     const view = Proj.project(rec);
     let h = `<h1>${htmlEsc(view.character.name)}</h1>`;
-    h += `<p class="pc">${view.character.constraints.slice(1).map(([k, v]) => `<strong>${htmlEsc(k)}:</strong> ${htmlEsc(v)}`).join(" &middot; ")}</p>`;
+    h += `<p class="pc">${view.character.constraints.filter(([k]) => k !== "Character").map(([k, v]) => `<strong>${htmlEsc(k)}:</strong> ${htmlEsc(v)}`).join(" &middot; ")}</p>`;
     h += `<p class="legend">${htmlEsc(legendText("md"))}</p>`;
     h += `<table><thead><tr><th>Slot</th><th>Item</th><th>ML</th><th>Affixes</th><th>Augments</th><th>Crafting</th></tr></thead><tbody>`;
     for (const it of view.loadout) {
@@ -304,6 +304,10 @@
   // record (the shape backup.js already round-trips), and `resolved` is the shared
   // content projection for later compare/diff. `format` carries the identifier so a
   // future import reader can tell a portable loadout from a plain backup file.
+  // WRITE-ONCE: `core` aliases the live record and `resolved` shares its affix arrays
+  // by reference. The only caller stringifies immediately (safe). The future
+  // import/compare effort MUST deep-clone (or treat the envelope as read-only) before
+  // retaining or mutating it, or it would edit the user's saved build in place.
   function toPortableJSON(rec, nowIso) {
     return {
       format: "ddo-loadout/v1",

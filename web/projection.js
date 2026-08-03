@@ -190,7 +190,7 @@
   function activeSetDetail(result) {
     const yields = new Map();
     const tierAffixes = new Map();
-    for (const c of result.chosen) {
+    for (const c of result.chosen || []) {
       for (const sb of c.variant.set_bonus || []) {
         if (!sb.set) continue;
         if (!yields.has(sb.set)) yields.set(sb.set, []);

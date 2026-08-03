@@ -280,6 +280,47 @@ test("AE4: all four text formats + the portable JSON render the same items, augm
   assert.strictEqual(resolved.sets[0].set, "Vol Set");
 });
 
+test("R7/AE2: each priority stat's sources render with their value AND bonus type", () => {
+  const md = toMarkdown(richRec);
+  assert.ok(/Insightful \+9 — Epic Spectacles/.test(md), "worn source line carries type + signed value + source");
+  assert.ok(/Set \+3 — Vol Set \(set\)/.test(md), "set source line is tagged (set)");
+  const bb = toBBCode(richRec);
+  assert.ok(/Quality \+10 — Dodge Aug/.test(bb), "BBCode renders the same attributed source lines");
+});
+
+test("R12: no CSV cell begins with a raw spreadsheet formula, across old and new columns", () => {
+  const evil = JSON.parse(JSON.stringify(richRec));
+  // New-column content (augment name, source name) is always cue/type-prefixed, so a
+  // formula there is inert mid-cell; the item name is the reachable cell-start path.
+  evil.snapshot.augmentsPlaced[0].variant_id = "=cmd|'/c calc'!A1";   // Augments cell (mid, after cue)
+  evil.snapshot.breakdown.Deadly[0].source = "@SUM(A1)";             // Sources cell (mid, after type)
+  evil.snapshot.chosen[0].variant.variant_id = "=HYPERLINK(2)";      // Item cell (cell start)
+  const csv = toCsv(evil);
+  for (const line of csv.split("\n")) {
+    for (const cell of line.split(",")) {
+      assert.ok(!/^[=+@]/.test(cell.replace(/^"/, "")), `no cell begins with a raw formula: ${cell.slice(0, 20)}`);
+    }
+  }
+  assert.ok(/'=HYPERLINK\(2\)/.test(csv), "the formula-injecting item name is quote-neutralized at cell start");
+});
+
+test("R12: BBCode strips bracket tags injected via the new augment/craft/source content", () => {
+  const evil = JSON.parse(JSON.stringify(richRec));
+  evil.snapshot.augmentsPlaced[0].variant_id = "[url=x]evil[/url]";
+  evil.snapshot.vikPlaced[0].stat = "[b]pwn[/b]";
+  evil.snapshot.breakdown.Deadly[0].source = "[img]x[/img]";
+  const bb = toBBCode(evil);
+  assert.ok(!/\[url=x\]evil\[\/url\]/.test(bb), "augment name tags stripped");
+  assert.ok(!/\[b\]pwn\[\/b\]/.test(bb), "craft label tags stripped");
+  assert.ok(!/\[img\]x\[\/img\]/.test(bb), "source tags stripped");
+});
+
+test("Solar augment is cued (the ☀️ branch of the Lunar/Solar detector)", () => {
+  const solar = JSON.parse(JSON.stringify(richRec));
+  solar.snapshot.augmentsPlaced[1].variant_id = "Solar Insight Aug";
+  assert.ok(/☀️ Solar/.test(toMarkdown(solar)), "MD cues a Solar augment");
+});
+
 test("R10/R11: toPortableJSON emits the ddo-loadout/v1 envelope with a verbatim core", () => {
   const j = toPortableJSON(richRec, "2026-08-03T00:00:00Z");
   assert.strictEqual(j.format, "ddo-loadout/v1");

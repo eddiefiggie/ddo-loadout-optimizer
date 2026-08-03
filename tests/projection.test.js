@@ -87,6 +87,19 @@ test("AE2: attribution covers priority stats only, totals equal effective", () =
   assert.strictEqual(v.attribution.Deadly.sources.length, 3);
   const setSrc = v.attribution.Deadly.sources.find((s) => s.viaSet);
   assert.strictEqual(setSrc.source, "Vol Set");
+  // Each source carries its value + bonus type (the attributed detail R7/AE2 promise).
+  const worn = v.attribution.Deadly.sources.find((s) => s.source === "Epic Spectacles");
+  assert.strictEqual(worn.value, 9);
+  assert.strictEqual(worn.bonusType, "Insightful");
+});
+
+test("project() degrades quietly on a malformed snapshot (no chosen) instead of throwing", () => {
+  assert.doesNotThrow(() => P.project({}), "empty record projects without throwing");
+  assert.doesNotThrow(() => P.project({ name: "X", inputs: {}, snapshot: { setsActive: [{ set: "S", pieces_required: 2, affixes: [] }] } }),
+    "a snapshot with setsActive but no chosen still projects (activeSetDetail is guarded)");
+  const v = P.project({});
+  assert.deepStrictEqual(v.loadout, []);
+  assert.deepStrictEqual(v.sets, []);
 });
 
 test("AE3: a capped priority stat carries its cap alongside the raw contribution sum", () => {

@@ -11,9 +11,7 @@
 const Proj = (typeof Projection !== "undefined") ? Projection
   : (typeof require !== "undefined" ? require("./projection.js") : null);
 const affixLabel = Proj.affixLabel;
-const contributingAffixes = Proj.contributingAffixes;
 const assignAugments = Proj.assignAugments;
-const dinoInsertKey = Proj.dinoInsertKey;
 const assignDinoInserts = Proj.assignDinoInserts;
 const attributionByTarget = Proj.attributionByTarget;
 const whyThis = Proj.whyThis;
