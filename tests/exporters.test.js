@@ -1,6 +1,6 @@
 // U12 — Markdown + CSV loadout exporters. Run: node tests/exporters.test.js
 const assert = require("assert");
-const { toMarkdown, toCsv, toPrintHtml, toBBCode, setBonusDetail, bbEsc, csvSafe, constraintLines } = require("../web/exporters.js");
+const { toMarkdown, toCsv, toPrintHtml, toBBCode, toPortableJSON, setBonusDetail, bbEsc, csvSafe, constraintLines } = require("../web/exporters.js");
 
 let passed = 0;
 function test(name, fn) {
@@ -193,6 +193,101 @@ test("BBCode export: bbEsc strips brackets so a name can't inject forum tags", (
   assert.strictEqual(bbEsc("[url=x]evil[/url]"), "url=xevil/url");
   const bb = toBBCode({ ...setRec, name: "[b]Pwn[/b]" });
   assert.ok(bb.startsWith("[b]bPwn/b[/b]"), "the injected tags are neutralized inside the title");
+});
+
+// A rich record exercising the new universal content: a colored augment, a Lunar
+// augment, a Viktranium craft, a completed set, and a capped priority stat.
+const richRec = {
+  name: "Nightshade",
+  stampedBuildId: "08032026.1",
+  inputs: { ml: 32, race: "Elf", armor: "light", pool: "all", priorities: ["Deadly", "Dodge"] },
+  snapshot: {
+    status: "optimal",
+    chosen: [
+      { slot: "Goggles", variant: { variant_id: "Epic Spectacles", ml: 32,
+        affixes: [{ name: "Deadly", type: "Insightful", value: 9 }],
+        augment_slots_norm: { colors: ["red", "yellow"] },
+        set_bonus: [{ set: "Vol Set" }],
+        parsed_set_bonuses: [{ set: "Vol Set", pieces_required: 3, affixes: [{ name: "Wizardry", type: "Enhancement", value: 150 }] }] } },
+      { slot: "Ring", variant: { variant_id: "Moon Ring", ml: 30,
+        affixes: [{ name: "Dodge", type: "Enhancement", value: 5, unit: "pct" }], augment_slots_norm: { colors: ["blue"] },
+        set_bonus: [{ set: "Vol Set" }],
+        parsed_set_bonuses: [{ set: "Vol Set", pieces_required: 3, affixes: [{ name: "Wizardry", type: "Enhancement", value: 150 }] }] } },
+      { slot: "Trinket", variant: { variant_id: "Vol Amulet", ml: 30, affixes: [],
+        set_bonus: [{ set: "Vol Set" }],
+        parsed_set_bonuses: [{ set: "Vol Set", pieces_required: 3, affixes: [{ name: "Wizardry", type: "Enhancement", value: 150 }] }] } },
+    ],
+    effective: { Deadly: 21, Dodge: 20 },
+    capped: { Dodge: 20 },
+    breakdown: {
+      Deadly: [
+        { bonus_type: "Insightful", value: 9, source: "Epic Spectacles", sourceKind: "worn", slot: "Goggles", hostIds: ["Epic Spectacles"] },
+        { bonus_type: "Insight", value: 9, source: "Deadly Aug", sourceKind: "augment" },
+        { bonus_type: "Set", value: 3, source: "Vol Set", sourceKind: "set", setYieldingSlots: ["Goggles", "Ring", "Trinket"] },
+      ],
+      Dodge: [
+        { bonus_type: "Enhancement", value: 15, source: "Moon Ring", sourceKind: "worn", slot: "Ring", hostIds: ["Moon Ring"] },
+        { bonus_type: "Quality", value: 10, source: "Dodge Aug", sourceKind: "augment" },
+      ],
+    },
+    augmentsPlaced: [
+      { variant_id: "Deadly Aug", color: "red", slot_color: "red", affixes: [{ name: "Deadly", type: "Insight", value: 9 }] },
+      { variant_id: "Lunar Insight Aug", color: "yellow", slot_color: "yellow", affixes: [{ name: "Insightful Constitution", type: "Insight", value: 4 }] },
+      { variant_id: "Dodge Aug", color: "blue", slot_color: "blue", affixes: [{ name: "Dodge", type: "Quality", value: 10, unit: "pct" }] },
+    ],
+    setsActive: [],
+    dinoPlaced: [], ncPlaced: [], rollPlaced: [],
+    vikPlaced: [{ item: "Epic Spectacles", stat: "Resistance", bonus_type: "Enhancement", value: 3, slot_type: "Melancholic" }],
+    sealPlaced: [], tfPlaced: [], gsPlaced: [], jokerPlaced: [], membershipPlaced: [],
+  },
+};
+
+test("AE1: an item's Red augment, Lunar augment, and Viktranium craft are all cued in every format", () => {
+  const md = toMarkdown(richRec);
+  assert.ok(/🔴 Red:/.test(md), "MD cues the Red augment");
+  assert.ok(/🌙 Lunar/.test(md), "MD cues the Lunar augment");
+  assert.ok(/⚗️ Viktranium:/.test(md), "MD cues the Viktranium craft");
+  const bb = toBBCode(richRec);
+  assert.ok(/🔴 \[color=red\]Red\[\/color\]/.test(bb), "BBCode wraps the color word in a real [color] tag");
+  assert.ok(/🌙 Lunar/.test(bb), "BBCode cues Lunar");
+  const csv = toCsv(richRec);
+  assert.ok(/🔴 Red:/.test(csv) && /⚗️ Viktranium:/.test(csv), "CSV carries the same cued content");
+  const html = toPrintHtml(richRec);
+  assert.ok(/🔴 Red:/.test(html) && /⚗️ Viktranium:/.test(html), "print carries the same cued content");
+});
+
+test("AE2/AE3: the stat breakdown attributes each priority and shows the cap when clamped", () => {
+  const md = toMarkdown(richRec);
+  assert.ok(/## Stat breakdown/.test(md), "there is a stat-breakdown section");
+  assert.ok(/\*\*Deadly\*\* → \+21/.test(md), "Deadly total equals its effective value");
+  assert.ok(/\*\*Dodge\*\* → \+20 \(capped at 20 · raw 25\)/.test(md), "Dodge shows the cap and the raw sum");
+  const csv = toCsv(richRec);
+  assert.ok(/Stat,Total,Capped,Sources/.test(csv), "CSV has a stat-breakdown section");
+  assert.ok(/Dodge,20,capped at 20 \(raw 25\)/.test(csv), "CSV encodes the cap");
+});
+
+test("AE4: all four text formats + the portable JSON render the same items, augments, crafts, sets, stats", () => {
+  const md = toMarkdown(richRec), bb = toBBCode(richRec), csv = toCsv(richRec), html = toPrintHtml(richRec);
+  const resolved = toPortableJSON(richRec).resolved;
+  // Every format names every equipped item and the set, and the JSON resolved view agrees.
+  for (const s of [md, bb, csv, html]) {
+    for (const item of ["Epic Spectacles", "Moon Ring", "Vol Amulet"]) assert.ok(s.includes(item), `format includes ${item}`);
+    assert.ok(s.includes("Vol Set"), "format names the completed set");
+    assert.ok(s.includes("Deadly Aug") && s.includes("Lunar Insight Aug"), "format names both augments");
+  }
+  assert.deepStrictEqual(resolved.loadout.map((i) => i.item), ["Epic Spectacles", "Moon Ring", "Vol Amulet"]);
+  assert.deepStrictEqual(Object.keys(resolved.attribution), ["Deadly", "Dodge"]);
+  assert.strictEqual(resolved.sets[0].set, "Vol Set");
+});
+
+test("R10/R11: toPortableJSON emits the ddo-loadout/v1 envelope with a verbatim core", () => {
+  const j = toPortableJSON(richRec, "2026-08-03T00:00:00Z");
+  assert.strictEqual(j.format, "ddo-loadout/v1");
+  assert.strictEqual(j.schema_version, 1);
+  assert.strictEqual(j.exported_at, "2026-08-03T00:00:00Z");
+  assert.strictEqual(j.app_build_id, "08032026.1");
+  assert.strictEqual(j.core, richRec, "core is the verbatim record (round-trips)");
+  assert.ok(j.resolved && j.resolved.character.name === "Nightshade", "resolved view is present");
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);
