@@ -887,6 +887,16 @@ if (typeof window !== "undefined" && window.App) {
         // never forces an illegal item in (the post-solve sweep below can't catch it).
         reconcilePinLegality(state.slotConstraints, itemByPinId, query, slotCardOf);
         query.slotConstraints = { ...state.slotConstraints };
+        // U6/U7 — owned-mode signal for the empty-slot note + recommended-augment
+        // marking (view layer). Which worn slots the owned base pool covers, so an
+        // empty slot can distinguish "you own no item for this slot" from "owned
+        // items don't improve it". Plain/serializable (no Set on the saved query).
+        query.ownedMode = state.pool === "owned" && !!state.ownedNames;
+        query.ownedSlotsCovered = query.ownedMode
+          ? [...new Set(dataset.items
+              .filter((v) => v.category !== "augment" && state.ownedNames.has(v.source_item || v.variant_id))
+              .map((v) => pinWornSlotOf(v)))]
+          : [];
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
           dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel);
