@@ -17,6 +17,14 @@ Bugs:
 Enhancements:
 - #94  Stat floors, caps, and cap-awareness (min/max per stat)
 - #95  Input UX: build presets, max-level bound, content filter, default ML 36, abbreviation shortcuts
+- #106 Clarify that augments in "items I have" mode are recommendations, not owned
+- #110 Forbid specific items / block rare (hard-to-obtain) items
+- #111 Sword-and-board (S&B) combat style with shield size/type selection
+
+Bugs (filed 2026-08-02, second batch):
+- #107 Pinned shield still gets a two-handed weapon in the main hand
+- #108 Pinned items below the ML cap get unpinned and replaced
+- #109 "Enhancement Negative Amp" is not a real affix outside Lunar gems (data)
 
 Already shipped (reports that are resolved):
 - Item pinning — "pick pieces we definitely want" -> PR #86
@@ -49,3 +57,12 @@ I got a level 8 docent recommendation, no goggles, and no rings. I did get recom
 It would be cool if we could pick pieces that we definitely wanted (Hydra's Heart minor artifact trinket, for example) to be included in the loadout. Another user reported: should change default level to 36. have prr and mrr shortcut to their respective full names. "relentless fury" isnt there... at least in those terms.
 also would be nice to have a filter based on xpac content, for those that dont have it all. ... though that option  may be in there already and i just dont see it
 i noticed it didnt slot a Ravil's for false life... its cause its 'vitality' ... would be nice to some how have the solver know that when we say 'false life' we meant vitality (and whatever else) too. "greater heroism" doesnt come in from search bar. it should due to the aug we all want to slot. same w/normal heroism. does it consider raid aug sets? Also... another hitch... some effects like say SALT dont have a magnitude... like +1 +2 +3... so the solver cant score it. What I did as a work around is make those types of things default to +1....so it ensures at least one point is slotted for that affix assuming it can find a spot for it....based on priority, also, dont forget that 'salt' has a few names in different items but same result, well rounded is not coming up either, dodge bypass doesnt come up. legendary salt / legendary affirmation also dont,
+
+Enhancement / clarity: When solving from "items I have" (the owned-inventory / Trove-restricted pool), make it clear that the augments shown in the slots are NOT necessarily augments I already own — they are recommendations. The owned-inventory pool constrains the base items to what I have, but augments (and other crafting) still come from the full catalog, so an augment appearing in a slot is "what you should craft/slot here," not "one of yours." The results should say this plainly so users don't assume the suggested augments are already in their possession.
+
+New batch of reports:
+1) Forbid/block items: allow us to forbid specific items or block rare items. The user keeps getting Heartshard as a trinket and it is rare, which is unlikely to actually get. (Want an exclude-this-item control and/or a rarity filter that drops hard-to-obtain items.)
+2) Bug — shield + two-handed weapon conflict: building a tank with a shield (shield pinned), and the solver keeps putting a quarterstaff in the main hand. A pinned shield should forbid two-handed weapons in the main hand.
+3) Feature — add a S&B (sword and board) combat style where the user can pick the shield size/type.
+4) Bug — pinned items below the ML cap get unpinned and replaced. A pin should be honored regardless of the item's ML relative to the cap (or at least not silently dropped/replaced).
+5) Data — "Enhancement Negative Amp" isn't a real affix outside of Lunar gems (unless something new was added). Likely a bad affix/bonus-type entry to verify and quarantine.
