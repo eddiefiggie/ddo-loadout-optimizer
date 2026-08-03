@@ -314,18 +314,39 @@ function buildProgram(model) {
   // R1/R3 — HAND MUTEX: a both-hands main-hand weapon (two-handed melee, a bow, or an
   // unclassifiable host like the untyped Dino weapon) and any off-hand item are
   // mutually exclusive — a two-handed weapon occupies both hands. Cap the sum across
-  // {both-hands mains, off-hands} at 1, so at most one is picked. An inequality (<= 1)
-  // is always satisfiable (both zero), unlike the Artifact `= 1`, so no feasibility
-  // guard is needed. A ONE-handed main is not in the sum, so 1H main + off-hand stays
-  // legal. Off-hand pick vars include TWF second weapons, which is correct: a 2H main
-  // also excludes a TWF off-hand weapon. Classifier shared with dominanceFilter (KTD2).
+  // {both-hands mains, off-hands} at 1, so at most one is picked. A ONE-handed main is
+  // not in the sum, so 1H main + off-hand stays legal. Off-hand pick vars include TWF
+  // second weapons, which is correct: a 2H main also excludes a TWF off-hand weapon.
+  // Classifier shared with dominanceFilter (KTD2).
+  //
+  // Feasibility guard (mirrors the Artifact `pinnedOnArtifacts <= 1` guard above): the
+  // inequality is satisfiable at zero for the SOLVER's free picks, but a user who
+  // force-pins BOTH a two-handed main AND an off-hand gets `x = 1` on each from
+  // slotConstraintBodies, so the mutex would read `2 <= 1` and bail the ENTIRE solve to
+  // no-build. Each pin is individually legal, so reconcilePinLegality never drops one.
+  // When conflicting hand pins are present, relax the mutex and honor the user's
+  // (illegal, wizard-warned via dualPinMutexConflict) pins rather than returning nothing.
   const bothHandsMainVars = [];
   const offHandVars = [];
-  for (const xv of xVars) {
-    if (xv.slot === "Main Hand" && _isBothHandsWeapon(xv.variant)) bothHandsMainVars.push(xv.name);
-    else if (xv.slot === "Off Hand") offHandVars.push(xv.name);
+  const pinnedHandIds = new Set();
+  const handSlotConstraints = (model.query && model.query.slotConstraints) || {};
+  for (const slot of ["Main Hand", "Off Hand"]) {
+    const c = handSlotConstraints[slot];
+    if (c && c.type === "pin") for (const vid of _pinnedVariantIds(c)) pinnedHandIds.add(vid);
   }
-  if (bothHandsMainVars.length && offHandVars.length) {
+  const isPinned = (xv) => pinnedHandIds.has(xv.variant.variant_id || xv.variant.source_item);
+  let pinnedBothHandsMain = false;
+  let pinnedOffHand = false;
+  for (const xv of xVars) {
+    if (xv.slot === "Main Hand" && _isBothHandsWeapon(xv.variant)) {
+      bothHandsMainVars.push(xv.name);
+      if (isPinned(xv)) pinnedBothHandsMain = true;
+    } else if (xv.slot === "Off Hand") {
+      offHandVars.push(xv.name);
+      if (isPinned(xv)) pinnedOffHand = true;
+    }
+  }
+  if (bothHandsMainVars.length && offHandVars.length && !(pinnedBothHandsMain && pinnedOffHand)) {
     extraConstraints.push(`${[...bothHandsMainVars, ...offHandVars].join(" + ")} <= 1`);
   }
 

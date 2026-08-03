@@ -91,9 +91,13 @@
   function offHandTypesForStyle(style) {
     if (style === CROSSBOW) return ["Rune Arms"];
     // Sword & Board = one-handed weapon + a SHIELD. Orbs and rune arms aren't "board",
-    // so the off hand is restricted to the four shield types (R5). A dataset off-hand
-    // item with an unstamped/unknown type stays eligible (fail-open) since it isn't a
-    // positively-identified non-shield.
+    // so the off hand is restricted to the four shield types (R5). Like the CROSSBOW
+    // allow-list, this is a concrete positive list, NOT fail-open: the model.js gate
+    // (`allowed && !allowed.includes(v.type)`) excludes an off-hand item whose type is
+    // absent from the list, including an untyped one. Moot today — every dataset off-hand
+    // item carries one of the six concrete types — but a future untyped off-hand item
+    // would be excluded under S&B/crossbow, matching the "no positively-identified board"
+    // intent rather than the main-hand weapon gate's fail-open convention.
     if (style === SB) return ["Bucklers", "Small shields", "Large shields", "Tower shields"];
     return null;
   }

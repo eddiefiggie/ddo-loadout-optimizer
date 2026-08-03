@@ -1864,5 +1864,23 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.ok(!(chosen.includes("DinoWeap") && chosen.includes("Shield")), "untyped host treated as two-handed (KTD3)");
   });
 
+  await test("R1/R3 feasibility: conflicting hand pins (2H main + off-hand) relax the mutex, not no-build", async () => {
+    // A user force-pins BOTH a two-handed main AND an off-hand. Each pin is individually
+    // legal, so reconcilePinLegality drops neither; without the guard the mutex reads
+    // `2 <= 1` and the WHOLE solve bails to infeasible. The guard must relax the mutex so
+    // the user still gets their (illegal, wizard-warned) build rather than nothing.
+    const twoH = { ...item("GS", "Main Hand", [["Strength", "Enhancement", 20]]), category: "weapon", type: "Great Swords" };
+    const shield = { ...item("Shield", "Off Hand", [["Constitution", "Enhancement", 20]]), type: "Large shields" };
+    const model = {
+      targets: ["Strength", "Constitution"],
+      worn: [slot("Main Hand", [twoH]), slot("Off Hand", [shield])],
+      query: { slotConstraints: { "Main Hand": { type: "pin", variant_id: "GS" }, "Off Hand": { type: "pin", variant_id: "Shield" } } },
+    };
+    const res = await S.solveLexicographic(model, highs);
+    assert.notStrictEqual(res.status, "infeasible", "conflicting hand pins must not bail the whole solve");
+    const chosen = (res.chosen || []).map((c) => c.variant.variant_id);
+    assert.ok(chosen.includes("GS") && chosen.includes("Shield"), "both force-pinned hands are honored (relaxed mutex)");
+  });
+
   console.log(`\n${passed} passed`);
 })();
