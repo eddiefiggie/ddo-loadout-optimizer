@@ -418,6 +418,36 @@ function isBothHandsWeapon(v) {
   return !T.offHandEnabledForStyle(T.styleOfType(v.type));
 }
 
+// U1 (issue #107) — the canonical SHIELD off-hand types. Reused verbatim from the
+// taxonomy's Sword & Board off-hand allow-list (the four shield types) so shield
+// identity here can never drift from the picker. Empty if the taxonomy is absent.
+function shieldTypes() {
+  const T = _taxonomy();
+  return (T && T.offHandTypesForStyle && T.offHandTypesForStyle("sword-board")) || [];
+}
+
+// U1 (issue #107) — is the Off Hand constrained to hold a SHIELD? True when the
+// player's off-hand pick names a shield type, OR a shield variant is pinned to the
+// Off Hand slot. A shield occupies a hand, so a two-handed Main Hand weapon becomes
+// illegal — the symmetric partner of the R9/B5 block that forbids an off-hand item
+// under a two-hand style. `variants` is the full pool (needed to resolve a pinned
+// variant's type). Additive: returns false unless a shield is actually in the off hand.
+function offHandHasShield(query, variants) {
+  const shields = shieldTypes();
+  if (!shields.length) return false;
+  const set = new Set(shields);
+  // (a) explicit off-hand pick names a shield type (e.g. offHand: ["Tower shields"]).
+  const picks = Array.isArray(query.offHand) ? query.offHand : [];
+  if (picks.some((t) => set.has(t))) return true;
+  // (b) a shield variant is pinned to the Off Hand slot.
+  const pinned = pinnedVariantIds((query.slotConstraints || {})["Off Hand"]);
+  if (pinned.length && Array.isArray(variants)) {
+    const ids = new Set(pinned);
+    for (const v of variants) if (ids.has(variantKey(v)) && set.has(v.type)) return true;
+  }
+  return false;
+}
+
 function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinnedIds = null, includeArtifact = false, handMutex = false) {
   const kept = [];
   for (let i = 0; i < slotVariants.length; i++) {
@@ -503,8 +533,15 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // (elig now holds weapons eligible for EITHER hand, so re-apply the main-hand lock.)
   const weaponAllow = allowedWeaponTypes(query);
   const offWeaponAllow = allowedOffHandWeaponTypes(query);
+  // U1 (issue #107) — a SHIELD in the off hand forbids a two-handed Main Hand weapon
+  // (quarterstaff, greatsword, maul, THF bow, ...). Symmetric partner of the R9/B5
+  // off-hand block. Crossbows are NOT both-hands (a rune arm pairs with them), so the
+  // rune-arm style stays unaffected. Only narrows when a shield is actually locked in.
+  const shieldOffHand = offHandHasShield(query, variants);
+  let mainHandPool = elig.filter((v) => v.category === "weapon" && mainHandWeaponOk(v, weaponAllow));
+  if (shieldOffHand) mainHandPool = mainHandPool.filter((v) => !isBothHandsWeapon(v));
   const mainHand = dominanceFilter(
-    elig.filter((v) => v.category === "weapon" && mainHandWeaponOk(v, weaponAllow)),
+    mainHandPool,
     targetSet, mlCap, 1, pinnedIds, withArt, true);   // handMutex: a both-hands weapon must not prune a 1H peer (KTD2)
   if (mainHand.length) worn.push({ slot: "Main Hand", cardinality: 1, variants: mainHand });
 

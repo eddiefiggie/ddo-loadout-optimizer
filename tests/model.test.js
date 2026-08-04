@@ -531,6 +531,58 @@ test("U2/AE3: Sword & Board excludes a two-handed main-hand weapon", () => {
   assert.deepStrictEqual(kept, ["Longsword"], "S&B main hand is one-handed only");
 });
 
+// ---- U1 (issue #107) — a shield in the off hand forbids a 2H main-hand weapon ----
+function mhNames(model) {
+  const mh = model.worn.find((s) => s.slot === "Main Hand");
+  return mh ? mh.variants.map((x) => x.source_item).sort() : [];
+}
+const twoHW = { ...v("Quarterstaff", "Main Hand", [["Strength", "Enhancement", 20]], { category: "weapon" }), type: "Quarterstaffs" };
+const oneHW = { ...v("Longsword", "Main Hand", [["Strength", "Enhancement", 10]], { category: "weapon" }), type: "Long Swords" };
+const towerShield = { ...v("Tower Shield", "Off Hand", [["Constitution", "Enhancement", 20]]), type: "Tower shields" };
+
+test("U1/#107: an off-hand shield PICK excludes a two-handed Main Hand weapon", () => {
+  // No style set, so the main hand would normally allow a 2H weapon; picking a shield
+  // off-hand type must now forbid it (a shield occupies a hand). Regression: the solver
+  // used to recommend a quarterstaff alongside a shield.
+  const model = M.buildModel([twoHW, oneHW, towerShield],
+    { mlCap: 34, targets: ["Strength", "Constitution"], offHand: ["Tower shields"] });
+  assert.deepStrictEqual(mhNames(model), ["Longsword"],
+    "shield off-hand => 2H quarterstaff excluded, 1H longsword kept");
+});
+
+test("U1/#107: a PINNED off-hand shield excludes a two-handed Main Hand weapon", () => {
+  const model = M.buildModel([twoHW, oneHW, towerShield],
+    { mlCap: 34, targets: ["Strength", "Constitution"],
+      slotConstraints: { "Off Hand": { type: "pin", variant_id: "Tower Shield" } } });
+  assert.deepStrictEqual(mhNames(model), ["Longsword"],
+    "pinned shield => 2H quarterstaff excluded, 1H longsword kept");
+});
+
+test("U1/#107 regression: NO shield in off hand keeps 2H weapons available", () => {
+  // Pinning an ORB (not a shield) must not trigger the 2H exclusion; nor should a bare
+  // query with no off-hand constraint. A 2H main weapon stays available (hand mutex,
+  // enforced by the solver, lets it coexist with an empty off hand).
+  const orb = { ...v("Arcane Orb", "Off Hand", [["Intelligence", "Enhancement", 20]]), type: "Orbs" };
+  const bare = M.buildModel([twoHW, oneHW],
+    { mlCap: 34, targets: ["Strength"] });
+  assert.ok(mhNames(bare).includes("Quarterstaff"), "no off-hand constraint => 2H still available");
+  const withOrb = M.buildModel([twoHW, oneHW, orb],
+    { mlCap: 34, targets: ["Strength"], slotConstraints: { "Off Hand": { type: "pin", variant_id: "Arcane Orb" } } });
+  assert.ok(mhNames(withOrb).includes("Quarterstaff"), "a pinned ORB (not a shield) does not exclude 2H");
+});
+
+test("U1/#107: crossbows stay available with a shield off-hand (not both-hands)", () => {
+  // A crossbow is not a both-hands weapon (a rune arm pairs with it), so isBothHandsWeapon
+  // is false and the shield-off-hand filter must NOT drop it. (An off-hand shield + crossbow
+  // is an unusual pairing, but the exclusion targets ONLY two-handed weapons.)
+  const xbow = { ...v("Heavy Crossbow", "Main Hand", [["Dexterity", "Enhancement", 15]], { category: "weapon" }), type: "Heavy Crossbows" };
+  const model = M.buildModel([twoHW, oneHW, xbow, towerShield],
+    { mlCap: 34, targets: ["Strength", "Dexterity", "Constitution"], offHand: ["Tower shields"] });
+  const kept = mhNames(model);
+  assert.ok(kept.includes("Heavy Crossbow"), "crossbow survives the shield-off-hand 2H filter");
+  assert.ok(!kept.includes("Quarterstaff"), "the 2H quarterstaff is still excluded");
+});
+
 test("U1 characterization: #90 does not reproduce — Heavy query excludes cloth end-to-end", () => {
   // Build-shaped items carry native `type`; normalizeDataset derives armor_type,
   // proving the runtime chain (type -> armor_type -> gate) excludes mismatched armor.
