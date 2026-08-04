@@ -309,6 +309,7 @@ function buildProgram(model) {
   const setAugToSeed = new Map(); // set name -> { tier, ys:[y names] } for the Part-B threshold self-seed
   const setAugMeta = new Map();   // y var -> { set, host, wiki_url } — U7 reads placed hosts from the solve
   const yByHost = new Map();      // host x-var name -> [y names] — per-host Colorless cap; U4 suppression hook
+  const hostsVar = new Map();     // host x-var name -> hosts_i binary (U4 suppression flag)
   let yc = 0;
   if (presentColors.has("Colorless")) {
     for (const [setName, def] of Object.entries(augSetDefs)) {
@@ -344,6 +345,21 @@ function buildProgram(model) {
       const n = ((((xv || {}).variant || {}).augment_slots_norm || {}).colors || [])
         .filter((c) => c === "Colorless").length;
       extraConstraints.push(`${ys.join(" + ")} - ${n} ${xname} <= 0`);
+    }
+    // U4 — suppression flag hosts_i = "item i hosts at least one set-augment copy".
+    // hosts_i >= y for each copy y on i (written y - hosts_i <= 0); hosts_i is Binary
+    // so it is inherently clamped to {0,1} — an item hosting MULTIPLE copies (copies of
+    // different set augments) still suppresses its own set(s) exactly ONCE. Since y <= x_i,
+    // hosts_i <= x_i, so (x_i - hosts_i) in {0,1} = "equipped and not suppressed". The
+    // threshold loop below subtracts hosts_i from item i's intrinsic (x_i) set-piece terms.
+    // No spurious activation: hosts_i only ever RAISES a threshold constraint's LHS (harder
+    // to fire the suppressed set), and suppressing a set never helps any target, so the solver
+    // sets hosts_i to 1 only when forced up by a genuinely placed copy y.
+    for (const [xname, ys] of yByHost) {
+      const h = "hs" + hostsVar.size;
+      extraVars.push(h);
+      for (const y of ys) extraConstraints.push(`${y} - ${h} <= 0`); // hosts_i >= y
+      hostsVar.set(xname, h);
     }
   }
 
@@ -780,7 +796,18 @@ function buildProgram(model) {
         affixes: tier.affixes || [],
         realPieces: pieceVars.filter((p) => !p.startsWith("k")),  // non-joker pieces, for the joker load-bearing check
       });
-      extraConstraints.push(`${tier.pieces_required} ${sa} - ${pieceVars.join(" - ")} <= 0`);
+      // U4 — suppression rewrite: for each piece term that is an INTRINSIC member x-var
+      // (x_i, from set_bonus/parsed_set_bonuses) whose item hosts a set-augment copy,
+      // replace x_i with (x_i - hosts_i) — "equipped and not suppressed". Only intrinsic
+      // x_i pieces registered in hostsVar are rewritten; joker (k) / membership-pick (m) /
+      // and the augment-set's OWN copy (ya) piece terms are NOT in hostsVar and pass through
+      // unchanged (a copy must never suppress its own tier). In the `pr·sa - Σpieces <= 0`
+      // form, -(x_i - hosts_i) contributes `- x_i + hosts_i`.
+      let lhs = `${tier.pieces_required} ${sa}`;
+      for (const p of pieceVars) {
+        lhs += hostsVar.has(p) ? ` - ${p} + ${hostsVar.get(p)}` : ` - ${p}`;
+      }
+      extraConstraints.push(`${lhs} <= 0`);
       for (const [k, val] of best) {
         if (!zByBucket.has(k)) zByBucket.set(k, []);
         zByBucket.get(k).push({ name: "z" + zc++, gates: [sa], value: val });
@@ -790,7 +817,7 @@ function buildProgram(model) {
 
   return {
     xVars, zByBucket, cappedStats, targetList: model.targets, model,
-    extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, _zc: zc,
+    extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], _zc: zc,
   };
 }
 
@@ -828,7 +855,10 @@ function encodeStage(program, { objectiveStat, objTerms, sense, locks, tieBreak,
     // Joker AND membership vars are both minimized here so a wildcard pick or
     // a Cannith/Dino membership pick is set to 1 only when a locked constraint forces it (it is
     // the load-bearing Nth piece of a completed set), resolving ties deterministically.
-    const minVars = [...(program.jokerVars || []), ...(program.memberVars || [])];
+    // Set-augment copy vars (y) join jokers/members in the tie-break minimization so a copy
+    // is placed ONLY when its 3-piece tier is genuinely won (a locked stat forces it) — never
+    // gratuitously, which would suppress a host's own set (U4) for nothing.
+    const minVars = [...(program.jokerVars || []), ...(program.memberVars || []), ...(program.setAugVars || [])];
     const terms = program.xVars.map((xv, i) => `+ ${i + 1} ${xv.name}`)
       .concat(minVars.map((v, i) => `+ ${n + 1 + i} ${v}`));
     L.push(" obj: " + terms.join(" "));

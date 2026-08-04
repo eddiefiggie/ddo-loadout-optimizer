@@ -57,6 +57,13 @@ function setPiece(id, slotName, affixes, setName, tiers) {
   }));
   return v;
 }
+// an item that is BOTH an intrinsic set member AND a Colorless augment host (U4) —
+// slotting a set augment into it must override (suppress) its own named set bonus.
+function setHost(id, slotName, affixes, setName, tiers, colors) {
+  const v = setPiece(id, slotName, affixes, setName, tiers);
+  v.augment_slots_norm = { colors: colors || [], quarantined: [] };
+  return v;
+}
 
 (async () => {
   const highs = await Highs({ locateFile: (f) => vendor + f });
@@ -2026,6 +2033,100 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     };
     const rs = await S.solveLexicographic(stack, highs);
     assert.strictEqual(rs.effective.StatA, 16, "distinct types stack: 10 Artifact + 6 Enhancement");
+  });
+
+  // U4 — Suppression: slotting a Set Augment into a host item "overrides its Set
+  // Bonus" (DDO wiki). The host's OWN intrinsic named set(s) are suppressed while a
+  // copy sits in one of its Colorless slots. Modeled linearly: a per-host binary
+  // hosts_i (>= each copy y on i, clamped to 1) is subtracted from item i's intrinsic
+  // (x_i) piece terms in every set S it belongs to. The augment-set's OWN tier is
+  // built from y copies (never x_i), so it is naturally unaffected.
+  // ---------------------------------------------------------------------------
+  await test("U4 suppression: a set augment on an intrinsic member drops that member's own set bonus", async () => {
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
+    const S2 = [{ n: 2, affixes: [["StatS", "Set", 50]] }]; // SetS 2-piece bonus
+    // P1 & P2 are BOTH SetS members AND Colorless hosts; H3 is a set-less host.
+    // Maximizing StatA (ranked first) forces 3 copies onto P1,P2,H3 -> P1 & P2 each
+    // host a copy -> their intrinsic SetS membership is suppressed -> SetS drops out.
+    const model = {
+      targets: ["StatA", "StatS"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      worn: [slot("Ring", [setHost("P1", "Ring", [], "SetS", S2, ["Colorless"])]),
+             slot("Necklace", [setHost("P2", "Necklace", [], "SetS", S2, ["Colorless"])]),
+             slot("Trinket", [host("H3", "Trinket", [], ["Colorless"])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.StatA, 10, "3 copies -> augment 3-piece fires");
+    assert.strictEqual((r.setAugmentsPlaced || []).length, 3, "3 copies placed (on P1, P2, H3)");
+    assert.strictEqual(r.effective.StatS, 0, "P1 & P2 each host a copy -> their own SetS is overridden (suppressed)");
+  });
+
+  await test("U4 suppression: a set augment on a SET-LESS host suppresses nothing (no spurious change)", async () => {
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
+    const S2 = [{ n: 2, affixes: [["StatS", "Set", 50]] }];
+    // The 3 copies ride on set-less hosts; SetS members expose no Colorless slot, so
+    // they host no copy and their bonus must remain fully intact.
+    const model = {
+      targets: ["StatA", "StatS"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless"])]),
+             slot("Necklace", [host("H2", "Necklace", [], ["Colorless"])]),
+             slot("Trinket", [host("H3", "Trinket", [], ["Colorless"])]),
+             slot("Gloves", [setPiece("P1", "Gloves", [], "SetS", S2)]),
+             slot("Boots", [setPiece("P2", "Boots", [], "SetS", S2)])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.StatA, 10, "3 set-less hosts carry the copies");
+    assert.strictEqual(r.effective.StatS, 50, "SetS members host no copy -> bonus intact (no spurious suppression)");
+  });
+
+  await test("U4/R8: solver DECLINES to place a copy where it would suppress a HIGHER-ranked set", async () => {
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
+    const S2 = [{ n: 2, affixes: [["StatS", "Set", 50]] }];
+    // Only 3 Colorless hosts exist and TWO of them (P1,P2) are the SetS members, so
+    // the ONLY way to complete the augment set is to suppress SetS. With StatS ranked
+    // ABOVE StatA, the staged lexicographic solve must keep SetS and forgo the augment
+    // set entirely — no special rule, it emerges from suppression + priority ordering.
+    const model = {
+      targets: ["StatS", "StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      worn: [slot("Ring", [setHost("P1", "Ring", [], "SetS", S2, ["Colorless"])]),
+             slot("Necklace", [setHost("P2", "Necklace", [], "SetS", S2, ["Colorless"])]),
+             slot("Trinket", [host("H3", "Trinket", [], ["Colorless"])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.StatS, 50, "higher-ranked SetS is kept");
+    assert.strictEqual(r.effective.StatA, 0, "completing the augment set would suppress SetS -> declined");
+    assert.strictEqual((r.setAugmentsPlaced || []).length, 0, "no copy placed (partial copies buy nothing; tie-break minimizes y)");
+  });
+
+  await test("U4: an item hosting MULTIPLE copies suppresses its own set exactly once (hosts_i clamped)", async () => {
+    // The model creates one copy (y) per host per augment set, so "multiple copies on
+    // one host" means copies of DIFFERENT set augments. Item i (2 Colorless slots) is a
+    // SetS member AND hosts one AugA copy AND one AugB copy. hosts_i is a single clamped
+    // binary >= each copy, so i's SetS membership is removed ONCE (not per copy), and the
+    // multi-copy-single-host path stays feasible.
+    const def = { "AugA": augSetDef([["StatA", "Artifact", 10]]),
+                  "AugB": augSetDef([["StatB", "Artifact", 10]]) };
+    const S2 = [{ n: 2, affixes: [["StatS", "Set", 50]] }];
+    const model = {
+      targets: ["StatA", "StatB", "StatS"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      worn: [slot("Ring", [setHost("i", "Ring", [], "SetS", S2, ["Colorless", "Colorless"])]),
+             // AugA's other two hosts
+             slot("Necklace", [host("A1", "Necklace", [], ["Colorless"])]),
+             slot("Trinket", [host("A2", "Trinket", [], ["Colorless"])]),
+             // AugB's other two hosts
+             slot("Goggles", [host("B1", "Goggles", [], ["Colorless"])]),
+             slot("Belt", [host("B2", "Belt", [], ["Colorless"])]),
+             // the second SetS member (no Colorless -> not a host)
+             slot("Gloves", [setPiece("P2", "Gloves", [], "SetS", S2)])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.StatA, 10, "AugA 3-piece fires (i, A1, A2)");
+    assert.strictEqual(r.effective.StatB, 10, "AugB 3-piece fires (i, B1, B2)");
+    assert.strictEqual((r.setAugmentsPlaced || []).length, 6, "6 copies placed; i hosts 2 of them");
+    assert.strictEqual(r.effective.StatS, 0, "i hosts copies -> SetS suppressed once; P2 alone < 2 pieces");
   });
 
   console.log(`\n${passed} passed`);
