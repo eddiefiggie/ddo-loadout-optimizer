@@ -46,6 +46,9 @@ import collections
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 COMPENDIUM_DIR = os.path.join(HERE, "data", "seed", "compendium")
+# Wildcard set-piece pools (Gem of Many Facets family) — a small wiki-sourced seed,
+# since gear-planner carries 0 sets for the Gem (docs/wiki-evidence/gem-of-many-facets.md).
+JOKER_SEED_PATH = os.path.join(HERE, "data", "seed", "joker_sets.json")
 # Output lands inside web/ so that directory is a self-contained, deployable
 # site root (GitHub Pages serves web/ as the root; the app fetches data/ relatively).
 OUT_PATH = os.path.join(HERE, "web", "data", "items.json")
@@ -329,6 +332,27 @@ def build() -> dict:
     # block, color from the slot key). Replaces the retired augments.json seed.
     aug_pool = crafting_catalog_mod.augment_pool_records(crafting)
     variants = expand_dataset(enriched_items + aug_pool)  # native path (verbatim affixes)
+
+    # Wildcard set pieces (Gem of Many Facets, U6): the item rolls ONE set from each of
+    # two pools (rerollable; theoretical-BiS picks the best per group). The pools aren't
+    # in gear-planner (0 sets for the Gem), so they come from the wiki-sourced joker seed.
+    # Attach AFTER expand_dataset (variants rebuild from a fixed field list, so a base-seed
+    # field would be dropped) and clear the item's stale fixed set_bonus BEFORE set
+    # annotation runs below, so the joker is the item's only set contribution. Restores the
+    # mechanic dropped as an accepted loss in #70 (per the user report; wiki-cited).
+    _joker = {}
+    if os.path.exists(JOKER_SEED_PATH):
+        with open(JOKER_SEED_PATH, "r", encoding="utf-8") as _jfh:
+            _joker = json.load(_jfh).get("items", {})
+    for v in variants:
+        si = v.get("source_item") or ""
+        # A crafted-tier variant carries a " [Crafted]" suffix but is the same wildcard.
+        spec = _joker.get(si) or _joker.get(si.replace(" [Crafted]", ""))
+        if spec is None:
+            continue
+        v["joker_set_groups"] = [[set_catalog_mod.canonical(s) for s in group]
+                                 for group in spec.get("groups", [])]
+        v["set_bonus"] = []
 
     # Artifact item-quality flag: sourced NATIVELY — each gear-planner variant
     # already carries `artifact` (bool) from the dump, read through _make_variant.
