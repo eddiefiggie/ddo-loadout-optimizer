@@ -18,13 +18,34 @@ src/set_parser.py path as intrinsic sets, then umbrella-expands 'all Ability
 Scores' into the six abilities. Nothing is inferred; a tier with no numeric
 threshold or no parseable affix is dropped, never guessed.
 """
+import json
+import os
+
 from src.set_parser import parse_set_bonuses
+from src.affix_parser import BONUS_TYPES
 from src import umbrella
 from src import set_catalog
 from src import crafting_catalog
 
+HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = "Cannith Repurposing Station"
 DINO_STATION = "Dinosaur Bone crafting"
+
+# --- Augment Sets (21 "Set Augment: X" Colorless augments) -----------------
+# A DISTINCT system from Vecna/Dino chosen-membership: slotting 3 COPIES of the
+# same Set Augment across 3 items fires its single 3-piece Set Bonus (one tier
+# only, always 3 Pieces Equipped). The defs are seeded from wiki evidence in
+# data/seed/compendium/augment_sets.json with the bonus PRE-TYPED as
+# {stat, bonus_type, value} affixes (the wiki text is already parsed there), so
+# they build into the SAME def shape build_membership_set_defs emits and share
+# the same bonus-type vocabulary (affix_parser.BONUS_TYPES) and umbrella
+# expansion the intrinsic/membership sets use. This unit is data + defs only;
+# the solver wiring (bounded 0..3 duplicate placement, host-set suppression) is
+# a later unit.
+AUGMENT_SETS_PATH = os.path.join(HERE, "..", "data", "seed", "compendium", "augment_sets.json")
+# The catalog's explicit "no special bonus type" markers (mirrors set_catalog._clause):
+# an affix carrying one of these is untyped, not invalid.
+_UNTYPED_MARKERS = {None, "", "Untyped", "Enhancement"}
 
 # The 6 Isle of Dread "Dino Set-Bonus" sets. A Dinosaur Bone Armor/Helmet/Cloak host
 # with a Set-Bonus slot can be crafted to count toward ONE of these (chosen membership,
@@ -106,6 +127,70 @@ def build_membership_set_defs(catalog: dict = None) -> dict:
             })
         if kept:
             out[name] = {"tiers": kept, "tier": _tier_of(name), "wiki_url": sb.get("wiki_url")}
+    return out
+
+
+def _augment_affix(a: dict):
+    """Validate ONE pre-typed augment-set affix `{stat, bonus_type, value, unit}`.
+
+    Strict (exclude-until-verified, KTD5): a real magnitude only — non-empty stat,
+    an integer value, and a bonus type that is either a known DDO type
+    (affix_parser.BONUS_TYPES) or one of the explicit untyped markers. Anything
+    else returns None (the affix is dropped, never minted/defaulted). An untyped
+    marker canonicalizes to "Untyped" so the affix carries a valid stacking type.
+    """
+    stat = (a.get("stat") or "").strip()
+    bt = a.get("bonus_type")
+    val = a.get("value")
+    if not stat:
+        return None
+    if isinstance(val, bool) or not isinstance(val, int):
+        return None
+    if bt in _UNTYPED_MARKERS:
+        bt = "Untyped"
+    elif bt not in BONUS_TYPES:
+        return None
+    return {"stat": stat, "bonus_type": bt, "value": val, "unit": a.get("unit") or "flat"}
+
+
+def build_augment_set_defs(path: str = None, raw: dict = None) -> dict:
+    """Build the 21 Augment-Set defs into the SAME shape build_membership_set_defs
+    emits: {set_name: {tiers: [{pieces_required, pieces_label, affixes, wiki_url}],
+    tier, wiki_url}} with umbrella-expanded affixes.
+
+    Each seeded set is single-tier (pieces_required 3). A set whose affixes ALL
+    fail validation (no real typed magnitude survives) is EXCLUDED entirely —
+    never emitted as an empty/defaulted def — so it can't credit a phantom bonus.
+    `raw`/`path` allow injecting a doc for testing; default reads the seed file.
+    """
+    if raw is None:
+        p = path or AUGMENT_SETS_PATH
+        with open(p, "r", encoding="utf-8") as fh:
+            raw = json.load(fh)
+    sets = raw.get("sets", raw)
+    default_url = (raw.get("_meta") or {}).get("wiki_url")
+    out = {}
+    for name, spec in sets.items():
+        if name.startswith("_") or not isinstance(spec, dict):
+            continue
+        pr = spec.get("pieces_required")
+        if not isinstance(pr, int) or isinstance(pr, bool) or pr < 1:
+            continue
+        affixes = [va for va in (_augment_affix(a) for a in spec.get("affixes") or []) if va]
+        affixes = umbrella.expand_affixes(affixes)
+        if not affixes:
+            continue  # no verifiable typed bonus -> exclude, don't default
+        wiki = spec.get("wiki_url") or default_url
+        out[name] = {
+            "tiers": [{
+                "pieces_required": pr,
+                "pieces_label": f"{pr} Pieces Equipped",
+                "affixes": affixes,
+                "wiki_url": wiki,
+            }],
+            "tier": "augment",
+            "wiki_url": wiki,
+        }
     return out
 
 

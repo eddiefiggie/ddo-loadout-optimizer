@@ -1,0 +1,151 @@
+{
+  "_meta": {
+    "title": "Augment Sets — 21 Set Augment defs (3-piece bonuses)",
+    "description": "The 21 DDO 'Set Augment: X' Colorless augments. Slotting 3 copies of one across 3 items fires its single 3-piece Set Bonus (one tier only). Each def here is the CANONICAL set name + pieces_required:3 + the typed 3-piece bonus affix(es). Data/defs only (exclude-until-verified) — solver wiring is a later unit.",
+    "verified": "2026-08-04",
+    "method": "Chrome-MCP DOM read of rendered wiki pages (ddowiki 202-throttles background fetch)",
+    "evidence": "docs/wiki-evidence/augment-sets.md",
+    "wiki_url": "https://ddowiki.com/page/Augment_Slot/Set_Augment",
+    "wiki_url_sets": "https://ddowiki.com/page/Named_item_sets",
+    "notes": [
+      "All 21 are single-tier: pieces_required is always 3 (3 Pieces Equipped).",
+      "Bonus type is Artifact for 20 of them; Legendary Bulwark is a LEGENDARY bonus (+10% Max HP), not Artifact.",
+      "Multi-stat bonuses (Dusk Raider Melee & Ranged Power, Quickblade Doublestrike & Doubleshot) are split into two affixes, one per stat, mirroring how the intrinsic set catalog represents combined bonuses.",
+      "A Set Augment carries NO always-on stat — its sole contribution is this set-piece; slotting a copy suppresses the host item's own sets (correctness note for a later solver unit)."
+    ]
+  },
+  "sets": {
+    "Alluring Elocution": {
+      "pieces_required": 3,
+      "affixes": [{"stat": "Charisma", "bonus_type": "Artifact", "value": 3, "unit": "flat"}],
+      "original_item": "Tattered Scrolls of the Broken One (Bracers)",
+      "drop_site": "Too Hot to Handle"
+    },
+    "Arcane Barrier": {
+      "pieces_required": 3,
+      "affixes": [{"stat": "Magical Resistance Rating Cap", "bonus_type": "Artifact", "value": 30, "unit": "flat"}],
+      "original_item": "Mantle of Escher (Clothing)",
+      "drop_site": "The Curse of Strahd"
+    },
+    "Arcane Guardian": {
+      "pieces_required": 3,
+      "affixes": [{"stat": "Magical Resistance Rating", "bonus_type": "Artifact", "value": 30, "unit": "flat"}],
+      "original_item": "Citadel's Gaze (Helm)",
+      "drop_site": "Too Hot to Handle"
+    },
+    "Bold Tactician": {
+      "pieces_required": 3,
+      "affixes": [{"stat": "Tactical DCs", "bonus_type": "Artifact", "value": 3, "unit": "flat"}],
+      "original_item": "Page Regalia: Exiled Tactica",
+      "drop_site": "Fire Over Morgrave"
+    },
+    "Brutal Blows": {
+      "pieces_required": 3,
+      "affixes": [{"stat": "Strength", "bonus_type": "Artifact", "value": 3, "unit": "flat"}],
+      "original_item": "Mail of the Mroranon (Medium Armor)",
+      "drop_site": "Killing Time"
+    },
+    "Cruel Cut": {
+      "pieces_required": 3,
+      "affixes": [{"stat": "Damage vs. Helpless", "bonus_type": "Artifact", "value": 15, "unit": "pct"}],
+      "original_item": "The Family's Blessing (Necklace)",
+      "drop_site": "Project Nemesis"
+    },
+    "Cunning Impact": {
+      "pieces_required": 3,
+      "affixes": [{"stat": "Dexterity", "bonus_type": "Artifact", "value": 3, "unit": "flat"}],
+      "original_item": "Strange Tidings",
+      "drop_site": "Defiler of the Just"
+    },
+    "Dusk Raider": {
+      "pieces_required": 3,
+      "affixes": [
+        {"stat": "Melee Power", "bonus_type": "Artifact", "value": 15, "unit": "flat"},
+        {"stat": "Ranged Power", "bonus_type": "Artifact", "value": 15, "unit": "flat"}
+      ],
+      "original_item": "Coat of Van Richten",
+      "drop_site": "The Curse of Strahd"
+    },
+    "Esoterica": {
+      "pieces_required": 3,
+      "affixes": [{"stat": "Spell DCs", "bonus_type": "Artifact", "value": 3, "unit": "flat"}],
+      "original_item": "Cloak of the Mountain",
+      "drop_site": "Killing Time"
+    },
+    "Imbued Infusion": {
+      "pieces_required": 3,
+      "affixes": [{"stat": "Imbue Dice", "bonus_type": "Artifact", "value": 3, "unit": "flat"}],
+      "original_item": "Kelas' Volatile Mixture",
+      "drop_site": "Skeletons in the Closet"
+    },
+    "Legendary Bulwark": {
+      "pieces_required": 3,
+      "affixes": [{"stat": "Maximum Hit Points", "bonus_type": "Legendary", "value": 10, "unit": "pct"}],
+      "original_item": "The Stablestone",
+      "drop_site": "Hunt or Be Hunted"
+    },
+    "Paragon Guard": {
+      "pieces_required": 3,
+      "affixes": [{"stat": "Armor Class", "bonus_type": "Artifact", "value": 15, "unit": "pct"}],
+      "original_item": "Platemail of Strahd",
+      "drop_site": "The Curse of Strahd"
+    },
+    "Perfect Silence": {
+      "pieces_required": 3,
+      "affixes": [{"stat": "Sneak Attack Dice", "bonus_type": "Artifact", "value": 3, "unit": "flat"}],
+      "original_item": "Vestments of Ravenloft",
+      "drop_site": "Old Baba's Hut"
+    },
+    "Piercing Mind": {
+      "pieces_required": 3,
+      "affixes": [{"stat": "Intelligence", "bonus_type": "Artifact", "value": 3, "unit": "flat"}],
+      "original_item": "Staggershockers",
+      "drop_site": "Project Nemesis"
+    },
+    "Quickblade": {
+      "pieces_required": 3,
+      "affixes": [
+        {"stat": "Doublestrike", "bonus_type": "Artifact", "value": 15, "unit": "pct"},
+        {"stat": "Doubleshot", "bonus_type": "Artifact", "value": 15, "unit": "pct"}
+      ],
+      "original_item": "Guided Sight (Trinket)",
+      "drop_site": "Riding the Storm Out"
+    },
+    "Subtle Blade": {
+      "pieces_required": 3,
+      "affixes": [{"stat": "Assassinate DCs", "bonus_type": "Artifact", "value": 3, "unit": "flat"}],
+      "original_item": "Page Regalia: Unsanctioned Arcana",
+      "drop_site": "Fire Over Morgrave"
+    },
+    "Touch of Power": {
+      "pieces_required": 3,
+      "affixes": [{"stat": "Universal Spell Power", "bonus_type": "Artifact", "value": 25, "unit": "flat"}],
+      "original_item": "Attunement's Gaze (Goggles)",
+      "drop_site": "Project Nemesis"
+    },
+    "Tough Shields": {
+      "pieces_required": 3,
+      "affixes": [{"stat": "Physical Resistance Rating", "bonus_type": "Artifact", "value": 30, "unit": "flat"}],
+      "original_item": "Dumathoin's Bracers",
+      "drop_site": "Temple of the Deathwyrm"
+    },
+    "Truthful Blow": {
+      "pieces_required": 3,
+      "affixes": [{"stat": "Fortification Bypass", "bonus_type": "Artifact", "value": 30, "unit": "pct"}],
+      "original_item": "Helm of the Final Watcher",
+      "drop_site": "Project Nemesis"
+    },
+    "Visions of the Beyond": {
+      "pieces_required": 3,
+      "affixes": [{"stat": "Wisdom", "bonus_type": "Artifact", "value": 3, "unit": "flat"}],
+      "original_item": "Crystalline Gauntlets",
+      "drop_site": "Too Hot to Handle"
+    },
+    "Wild Fortitude": {
+      "pieces_required": 3,
+      "affixes": [{"stat": "Constitution", "bonus_type": "Artifact", "value": 3, "unit": "flat"}],
+      "original_item": "Quori-Infused Core",
+      "drop_site": "Legendary Lord of Blades"
+    }
+  }
+}
