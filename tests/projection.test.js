@@ -139,6 +139,38 @@ test("assignAugments reconstructs a deterministic augment->item host assignment"
   assert.strictEqual(byIndex.get(1)[0].variant_id, "B");
 });
 
+test("craftLabel augmentset names the set and any suppressed host set", () => {
+  assert.strictEqual(P.craftLabel({ set: "Vecna" }, "augmentset"), "Set Augment: Vecna");
+  assert.strictEqual(P.craftLabel({ set: "Vecna", suppresses: ["Legendary Might"] }, "augmentset"),
+    "Set Augment: Vecna (suppresses Legendary Might)");
+});
+
+test("U7: a placed Set Augment is emitted on its solver-decided host with the suppression note", () => {
+  const rec = makeRec();
+  rec.snapshot.setAugmentsPlaced = [{ set: "Legendary Might", host: "Vol Amulet", wiki_url: "https://ddowiki.com/x" }];
+  const v = P.project(rec);
+  const trinket = v.loadout.find((i) => i.item === "Vol Amulet");
+  const sa = trinket.crafting.find((c) => c.family === "augmentset");
+  assert.ok(sa, "the placed Set Augment rides in the host's crafting");
+  assert.strictEqual(sa.set, "Legendary Might");
+  assert.strictEqual(sa.host, "Vol Amulet", "host is the solver-decided host, read verbatim (KTD-6)");
+  assert.ok(/Set Augment: Legendary Might/.test(sa.label));
+  assert.ok(/suppresses Vol Set/.test(sa.label), "the host's own set is named suppressed inline");
+  assert.deepStrictEqual(trinket.suppressedSets, ["Vol Set"]);
+  // A non-host item carries no augmentset entry and nothing suppressed.
+  const goggles = v.loadout.find((i) => i.item === "Epic Spectacles");
+  assert.ok(!goggles.crafting.some((c) => c.family === "augmentset"));
+  assert.deepStrictEqual(goggles.suppressedSets, []);
+});
+
+test("U7: a host's suppressed set is dropped from the active sets output (shown suppressed, not active)", () => {
+  const rec = makeRec();
+  assert.ok(P.project(rec).sets.some((s) => s.set === "Vol Set"), "Vol Set is active with no suppression");
+  rec.snapshot.setAugmentsPlaced = [{ set: "Legendary Might", host: "Vol Amulet" }];
+  const v = P.project(rec);
+  assert.ok(!v.sets.some((s) => s.set === "Vol Set"), "Vol Set falls out once one member hosts a Set Augment");
+});
+
 test("results.js re-export surface is intact after the extraction (KTD2)", () => {
   for (const fn of ["attributionByTarget", "whyThis", "assignAugments", "satisfiedSetDetail", "affixLabel"]) {
     assert.strictEqual(typeof R[fn], "function", `results.js still exports ${fn}`);

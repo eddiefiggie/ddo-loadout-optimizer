@@ -175,6 +175,29 @@ test("craftChips uses 'Nearly Completed' and 'Viktranium' (not 'Nearly Complete'
   assert.ok(!/Lamordia [A-Z]/.test(chips), "no 'Lamordia {type}:' label");
 });
 
+test("U7: craftChips renders a placed Set Augment on its host with the suppression note", () => {
+  const v = { variant_id: "Vol Amulet", set_bonus: [{ set: "Vol Set" }] };
+  const maps = {
+    augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
+    ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(),
+    jokerByHost: new Map(), membershipByHost: new Map(),
+    setAugByHost: new Map([["Vol Amulet", [{ set: "Legendary Prowess", host: "Vol Amulet" }]]]),
+  };
+  const chips = R.craftChips(v, 0, maps).join(" ");
+  assert.ok(/Set Augment: Legendary Prowess/.test(chips), "renders the placed Set Augment");
+  assert.ok(/suppresses Vol Set/.test(chips), "names the suppressed own set");
+  assert.ok(!/Set Augment:/.test(R.craftChips({ variant_id: "Some Ring" }, 1, maps).join(" ")), "no chip for a non-host item");
+});
+
+test("U7: satisfiedSets drops a set whose remaining member hosts a Set Augment", () => {
+  const chosen = [
+    { variant: { variant_id: "A", set_bonus: [{ set: "S" }], parsed_set_bonuses: [{ set: "S", pieces_required: 2 }] } },
+    { variant: { variant_id: "B", set_bonus: [{ set: "S" }], parsed_set_bonuses: [{ set: "S", pieces_required: 2 }] } },
+  ];
+  assert.ok(R.satisfiedSets(chosen, []).has("S"), "S is complete at 2 pieces with no suppression");
+  assert.ok(!R.satisfiedSets(chosen, [], new Set(["B"])).has("S"), "S falls to 1 piece when B hosts a Set Augment");
+});
+
 test("coverageNote discloses set bonuses now applying to enriched gear", () => {
   const note = R.coverageNote({ metadata: { set_enrichment_coverage: {
     enriched_members_with_set_bonus: 602, distinct_enriched_sets: 79,
