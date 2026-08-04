@@ -12,6 +12,10 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src import membership  # noqa: E402
+from src import augment_sets  # noqa: E402
+from src import crafting_catalog  # noqa: E402
+from src.variants import expand_dataset  # noqa: E402
+from src import verify as verify_mod  # noqa: E402
 from src.affix_parser import BONUS_TYPES  # noqa: E402
 
 SEED_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "seed",
@@ -151,3 +155,88 @@ def test_umbrella_expansion_applied_to_augment_affixes():
                     "Intelligence", "Wisdom", "Charisma"):
         assert ability in stats
     assert "all Ability Scores" not in stats
+
+
+# --- U2: attach + un-quarantine the 21 Set Augment variants -------------------
+
+def _quarantined_set_augment_variants():
+    """The 21 native "Set Augment: X" augment variants, expanded and run through
+    the verification gate (which quarantines their empty affix list) — the exact
+    pre-attach state build_dataset feeds attach_augment_set_slots."""
+    pool = crafting_catalog.augment_pool_records(crafting_catalog.load_catalog())
+    variants = expand_dataset(pool)
+    variants, _cov = verify_mod.apply(variants)
+    return variants
+
+
+def _set_augments(variants):
+    return [v for v in variants if augment_sets.is_set_augment(v)]
+
+
+def test_pre_attach_set_augments_are_quarantined():
+    # Baseline: before attach, all 21 are quarantined (empty affixes) with no set data.
+    sa = _set_augments(_quarantined_set_augment_variants())
+    assert len(sa) == 21, f"exactly 21 Set Augment variants, got {len(sa)}"
+    assert all(v.get("verification") == "quarantined" for v in sa)
+    assert all("set" not in v for v in sa)
+
+
+def test_attach_flips_all_21_to_verified_with_set_data():
+    variants = _quarantined_set_augment_variants()
+    n = augment_sets.attach_augment_set_slots(variants, membership.build_augment_set_defs())
+    assert n == 21, f"attach stamps exactly 21, got {n}"
+    sa = _set_augments(variants)
+    assert len(sa) == 21
+    for v in sa:
+        assert v["verification"] == "verified", f"{v['source_item']} un-quarantined"
+        assert v["set"] == augment_sets.set_name_of(v), "set is the canonical name"
+        assert v["set"] in EXPECTED, f"{v['set']} is one of the 21 sets"
+        assert v["pieces_required"] == 3, "fires at 3 pieces"
+        assert v["set_augment"] is True, "carries the source-family marker"
+
+
+def test_attach_stamps_exactly_the_21_and_no_dupes():
+    # Count is exactly 21, one per canonical set name (no dupes, none dropped).
+    variants = _quarantined_set_augment_variants()
+    augment_sets.attach_augment_set_slots(variants, membership.build_augment_set_defs())
+    stamped = [v for v in _set_augments(variants) if v.get("set_augment")]
+    names = [v["set"] for v in stamped]
+    assert len(names) == 21
+    assert set(names) == EXPECTED, "each of the 21 sets stamped exactly once"
+    assert len(set(names)) == len(names), "no duplicate set names"
+
+
+def test_attach_after_verify_survives_and_is_not_requarantined():
+    # Stamping AFTER verify (the Dino-blank pattern) makes the flip stick: the
+    # empty affix list must NOT re-quarantine an already-stamped variant.
+    variants = _quarantined_set_augment_variants()
+    augment_sets.attach_augment_set_slots(variants, membership.build_augment_set_defs())
+    # Re-running the verify gate would quarantine empty-affix variants; the point of
+    # attaching after verify is that verify is NOT re-run. Confirm the stamped state
+    # is the final state seen by the solver.
+    sa = _set_augments(variants)
+    assert all(v["verification"] == "verified" for v in sa)
+    assert all(v.get("set_augment") for v in sa)
+
+
+def test_def_failing_validation_leaves_variant_quarantined():
+    # A Set Augment whose def is excluded (no valid affix survived) must NOT be
+    # force-verified — exclude-until-verified, no phantom bonus.
+    variants = _quarantined_set_augment_variants()
+    partial = membership.build_augment_set_defs()
+    dropped = partial.pop("Alluring Elocution")  # simulate a def that failed validation
+    assert dropped is not None
+    n = augment_sets.attach_augment_set_slots(variants, partial)
+    assert n == 20, f"only the 20 resolved sets are stamped, got {n}"
+    by_set = {augment_sets.set_name_of(v): v for v in _set_augments(variants)}
+    ae = by_set["Alluring Elocution"]
+    assert ae["verification"] == "quarantined", "unresolved def stays quarantined"
+    assert "set" not in ae and "set_augment" not in ae
+
+
+def test_augment_set_defs_emitted_with_21_entries():
+    # build_augment_set_defs (the source for the top-level augment_set_defs key)
+    # resolves exactly the 21 sets.
+    defs = membership.build_augment_set_defs()
+    assert len(defs) == 21, f"21 augment-set defs, got {len(defs)}"
+    assert set(defs) == EXPECTED
