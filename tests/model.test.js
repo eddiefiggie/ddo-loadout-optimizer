@@ -202,6 +202,77 @@ test("U2/KTD5: box off leaves pruning byte-for-byte unchanged (no exemption leak
   assert.deepStrictEqual(names(baseline), ["A"]);
 });
 
+// U6 — a synthetic Set Augment insert (mirrors the built items.json shape).
+function setAug(setName) {
+  const x = v(`Set Augment: ${setName}`, "Colorless", [], { category: "augment", ml: 30 });
+  x.set_augment = true;
+  x.set = setName;
+  x.pieces_required = 3;
+  x.aug_color = { color: "Colorless" };
+  return x;
+}
+
+test("U6: set augments are ineligible by default (empty ownedSetAugments)", () => {
+  const a = setAug("Alluring Elocution");
+  const b = setAug("Arcane Barrier");
+  const off = M.eligible([a, b], { mlCap: 34, targets: ["Charisma"] });
+  assert.deepStrictEqual(off.map((x) => x.source_item), [], "no set augment is considered by default");
+  // an explicit empty Set is also all-excluded
+  const emptySet = M.eligible([a, b], { mlCap: 34, targets: ["Charisma"], ownedSetAugments: new Set() });
+  assert.deepStrictEqual(emptySet.map((x) => x.source_item), []);
+});
+
+test("U6: marking a set makes only that set's augment eligible", () => {
+  const a = setAug("Alluring Elocution");
+  const b = setAug("Arcane Barrier");
+  const owned = new Set(["Alluring Elocution"]);
+  const kept = M.eligible([a, b], { mlCap: 34, targets: ["Charisma"], ownedSetAugments: owned });
+  assert.deepStrictEqual(kept.map((x) => x.set), ["Alluring Elocution"], "only the owned set augment survives");
+});
+
+test("U6: variantConflict reason mirrors the Artifact opt-in gate", () => {
+  const a = setAug("Arcane Barrier");
+  assert.ok(M.variantConflict(a, { mlCap: 34 }) != null, "excluded when unowned");
+  assert.strictEqual(
+    M.variantConflict(a, { mlCap: 34, ownedSetAugments: new Set(["Arcane Barrier"]) }), null,
+    "eligible once owned");
+});
+
+test("U6: ownedSetAugments tolerates an array (not just a Set)", () => {
+  const a = setAug("Arcane Barrier");
+  assert.strictEqual(
+    M.variantConflict(a, { mlCap: 34, ownedSetAugments: ["Arcane Barrier"] }), null);
+});
+
+test("U6: buildModel forwards augment_set_defs onto the model", () => {
+  const defs = { "Alluring Elocution": { tiers: [{ pieces_required: 3, affixes: [] }] } };
+  const model = M.buildModel(
+    [v("Ring", "Ring", [["Intelligence", "Enhancement", 5]])],
+    { mlCap: 34, targets: ["Intelligence"] },
+    [], [], [], [], {}, [], [], defs);
+  assert.deepStrictEqual(model.augment_set_defs, defs, "augment_set_defs must be populated on the model");
+});
+
+test("U6: buildModel augment_set_defs defaults to {} when omitted", () => {
+  const model = M.buildModel(
+    [v("Ring", "Ring", [["Intelligence", "Enhancement", 5]])],
+    { mlCap: 34, targets: ["Intelligence"] });
+  assert.deepStrictEqual(model.augment_set_defs, {});
+});
+
+test("U6: real dataset's set augments are all excluded by default, one owned survives", () => {
+  const names = Object.keys(data.augment_set_defs || {});
+  assert.ok(names.length >= 21, "expected the 21 augment_set_defs on the real dataset");
+  const q = { mlCap: 36, targets: ["Charisma", "Magical Sheltering"] };
+  const augPool = data.items.filter((x) => x.set_augment);
+  assert.ok(augPool.length >= 21, "expected 21 set_augment variants in the dataset");
+  const off = M.eligible(augPool, q);
+  assert.strictEqual(off.length, 0, "default: none considered");
+  const one = names[0];
+  const on = M.eligible(augPool, { ...q, ownedSetAugments: new Set([one]) });
+  assert.deepStrictEqual(on.map((x) => x.set), [one], "only the owned set augment is eligible");
+});
+
 test("scaledValue interpolates and clamps", () => {
   const s = { val_lo: 1, ml_lo: 1, val_hi: 14, ml_hi: 32 };
   assert.strictEqual(M.scaledValue(s, 1), 1);

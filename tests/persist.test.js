@@ -91,6 +91,21 @@ test("ownedNames Set serializes to a JSON-safe array", () => {
   assert.deepStrictEqual(JSON.parse(JSON.stringify(rec)).inputs.ownedNames, ["Item A", "Item B"]);
 });
 
+test("U6: ownedSetAugments Set serializes to a JSON-safe array and round-trips", () => {
+  const withSA = { ...state, ownedSetAugments: new Set(["Alluring Elocution", "Arcane Barrier"]) };
+  const rec = serializeCharacter("SA", withSA, lastRun, "id1");
+  assert.deepStrictEqual(rec.inputs.ownedSetAugments, ["Alluring Elocution", "Arcane Barrier"]);
+  // round-trips through JSON unchanged; the loader rebuilds the Set from this array
+  const back = JSON.parse(JSON.stringify(rec)).inputs.ownedSetAugments;
+  assert.deepStrictEqual(back, ["Alluring Elocution", "Arcane Barrier"]);
+  assert.deepStrictEqual([...new Set(back)].sort(), ["Alluring Elocution", "Arcane Barrier"]);
+});
+
+test("U6: ownedSetAugments defaults to [] when absent", () => {
+  const rec = serializeCharacter("None", state, lastRun, "id1");
+  assert.deepStrictEqual(rec.inputs.ownedSetAugments, []);
+});
+
 test("save -> list -> load round-trip preserves inputs + snapshot", () => {
   const st = fakeStorage();
   const rec = serializeCharacter("Sook", state, lastRun, "id1");
