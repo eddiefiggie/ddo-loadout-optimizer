@@ -111,6 +111,32 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     }
   });
 
+  await test("U3/#109: same-type Negative Amplification does NOT stack across channels (worn + augment)", async () => {
+    // The reported double-count (Hooves 'Negative Amplification Profane 61' + a Lamordia
+    // Viktranium 'Negative Amplification Profane 61') is a same-bucket collision: the
+    // wiki types neg-amp (Insight/Quality/Profane), so same type -> only the highest
+    // counts. Worn + a crafted/augment source share the "stat||type" bucket and the
+    // Σz<=1 constraint, so they collapse. (The spurious 'Enhancement' neg-amp of #109
+    // is already gone from the data, so the two real sources are both Profane.)
+    const collapse = {
+      targets: ["Negative Amplification"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [host("Hooves", "Trinket", [["Negative Amplification", "Profane", 61]], ["Colorless"])])],
+      augments: [augment("ProfaneNegAmpGem", "Colorless", [["Negative Amplification", "Profane", 61]])],
+    };
+    const rc = await S.solveLexicographic(collapse, highs);
+    assert.strictEqual(rc.status, "optimal");
+    assert.strictEqual(rc.effective["Negative Amplification"], 61, "same-type worn + augment collapse: max(61,61)=61, not 122");
+
+    // Control: genuinely different types (Profane worn + Insight augment) DO stack, per DDO rules.
+    const stackModel = {
+      targets: ["Negative Amplification"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [host("Hooves", "Trinket", [["Negative Amplification", "Profane", 61]], ["Colorless"])])],
+      augments: [augment("InsightNegAmpGem", "Colorless", [["Negative Amplification", "Insight", 20]])],
+    };
+    const rs = await S.solveLexicographic(stackModel, highs);
+    assert.strictEqual(rs.effective["Negative Amplification"], 81, "distinct types stack: 61 + 20");
+  });
+
   await test("U2/AE1: boolean feature is presence — two sources do NOT stack", async () => {
     const model = {
       targets: ["Salt"], mlCap: 34, dodgeCap: null,

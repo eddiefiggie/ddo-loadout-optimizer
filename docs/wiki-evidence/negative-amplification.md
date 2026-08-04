@@ -25,3 +25,14 @@ The wiki confirms the **channel model** (typed neg-amp; same-type dedup). The re
 3. The solver's `name || equivType(type)` dedup then handles the rest — no equivalence entry needed unless two genuinely-different wiki types must nonetheless not stack (not indicated here).
 
 **Status:** CHANNEL MODEL CONFIRMED. The specific Hooves-vs-Lamordia collapse depends on the Lamordia item's wiki-verified type — a per-item data check in the fix, NOT an inference. If that item cannot be identified/confirmed, its neg-amp entry is quarantined per #109 rather than guessed.
+
+## Resolution (2026-08-04) — ALREADY CORRECT, report was stale
+
+Identified the "separate Lamordia item with neg amp 61" from the data: it is a **Viktranium (Chill of Ravenloft = Lamordia) crafting option: Negative Amplification 61, type Profane** — the **same type and value** as Hooves of the Nightmare (base affix, Profane 61).
+
+- **The spurious `Enhancement`-typed neg-amp of #109 is already gone** from the current dataset (a full type scan shows only Profane / Artifact / Insight / Quality neg-amp — no Enhancement, no null).
+- Both real sources are now **Profane 61**, so they share the `Negative Amplification||Profane` bucket. The solver's `Σz ≤ 1` per-bucket constraint (`web/solver.js`) covers **all channels** pushed into `zByBucket[k]` (worn + Viktranium + augment), so two same-type sources **collapse to the max (61), never sum to 122**.
+- **Verified empirically:** `tests/solver.test.js` "U3/#109: same-type Negative Amplification does NOT stack across channels" — worn Profane 61 + augment Profane 61 → 61; a genuinely different type (Insight 20) stacks to 81 (correct per the wiki).
+
+**No code fix needed** — the double-count no longer reproduces in the current data + solver. Added a cross-channel regression guard. If the user still sees a stack live, the two items carry genuinely **different** bonus types, which SHOULD stack per DDO rules (only same-type collapses).
+
