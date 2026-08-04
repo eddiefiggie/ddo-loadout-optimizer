@@ -688,9 +688,24 @@ function buildViews(build, model, query) {
     const pieces = s.members.length ? `<div class="set-via">pieces: ${esc(s.members.join(", "))}</div>` : "";
     return `<li class="set-card"><strong>${esc(s.set)}</strong> <span class="meta">${esc(s.pieces)} pieces</span><div class="set-grants">${grants}</div>${pieces}</li>`;
   }).join("");
-  const setsPanel = activeSets
+  // Set-like bonuses (U8): active non-set solar/lunar-family augment bonuses that
+  // occupy their own channels and compete with completing a set. A transparency
+  // listing on the Set Bonuses tab — NOT a set-vs-augment comparison or near-miss.
+  const setLike = (build.augmentsPlaced || [])
+    .map((a) => ({ a, ls: Proj.lunarSolar(a) }))
+    .filter((x) => x.ls)
+    .map((x) => {
+      const eff = (x.a.affixes && x.a.affixes.length) ? esc(x.a.affixes.map(affixLabel).join(", ")) : "";
+      const glyph = x.ls === "Lunar" ? "🌙" : "☀️";
+      return `<li class="set-card setlike"><strong>${glyph} ${esc(x.ls)}</strong> <span class="meta">${esc(x.a.variant_id)}</span>${eff ? `<div class="set-grants">${eff}</div>` : ""}</li>`;
+    }).join("");
+
+  let setsPanel = activeSets
     ? `<ul class="sets">${activeSets}</ul>`
     : `<p class="dd-none muted">No set bonuses are active for this build.</p>`;
+  if (setLike) {
+    setsPanel += `<h3 class="setlike-h" title="non-set bonuses that occupy their own channels">Other set-like bonuses (compete with sets)</h3><ul class="sets setlike-list">${setLike}</ul>`;
+  }
 
   return { paperdoll: `<div class="pd-list">${rows.join("")}</div>`, weapons, cards, setsPanel, deepDive: loadoutDeepDive(build, query, maps, attr) };
 }
