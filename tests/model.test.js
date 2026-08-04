@@ -548,6 +548,57 @@ test("a docent bypasses the armor-type proficiency filter", () => {
   assert.strictEqual(kept.length, 1); // docent kept despite armorTypes=[cloth]
 });
 
+// --- #90 constraint-violation guards, exercised against the REAL built dataset ---
+// The R6 (race->body-slot) and R7 (armor-type) gates already enforce these; these
+// guards pin the *dataset tags* the gates depend on. A future re-tag that drops
+// `armor_type: "cloth"` off the robe, or `type: "Docents"` off a docent, would leak
+// the exact violations #90 reported (Docent on a Halfling, cloth robe under Heavy)
+// past a green synthetic suite — so assert directly on the shipped items.
+const REAL_ROBE = data.items.find((x) => x.source_item === "Epic Robe of Insight");
+const REAL_DOCENT = data.items.find((x) => x.type === "Docents" && x.slot === "Armor");
+
+test("#90 dataset tags: Epic Robe of Insight is a cloth body-armor Armor item", () => {
+  assert.ok(REAL_ROBE, "Epic Robe of Insight missing from dataset");
+  assert.strictEqual(REAL_ROBE.slot, "Armor");
+  assert.strictEqual(REAL_ROBE.armor_type, "cloth"); // concrete, not "unknown" (else R7 fails open)
+  assert.strictEqual(M.isDocent(REAL_ROBE), false);  // must NOT be mistaken for a docent
+});
+
+test("#90 case 2: Epic Robe of Insight (cloth) is excluded when Heavy armor is selected", () => {
+  const kept = M.eligible(data.items, { mlCap: 36, race: "human", armorTypes: ["heavy"] })
+    .filter((x) => x.source_item === "Epic Robe of Insight");
+  assert.strictEqual(kept.length, 0, "a cloth robe leaked into a Heavy-armor loadout");
+});
+
+test("#90 case 1: a real docent is rejected for a Halfling (non-Forged) with Light selected", () => {
+  assert.ok(REAL_DOCENT, "no docent in dataset");
+  const reason = M.variantConflict(REAL_DOCENT, { mlCap: 36, race: "halfling", armorTypes: ["light"] });
+  assert.strictEqual(reason, "docents are for Forged races");
+});
+
+test("#90 case 3: a real docent is eligible for a Bladeforged (and Warforged) at ML36", () => {
+  for (const race of ["bladeforged", "warforged"]) {
+    assert.strictEqual(M.variantConflict(REAL_DOCENT, { mlCap: 36, race }), null,
+      `docent should be equippable by a ${race}`);
+  }
+});
+
+test("#90 no forbidden body-slot pick leaks across the three constraint inputs (full dataset)", () => {
+  // 1) Halfling + Light: no docent, no non-light concrete body armor survives.
+  const halfling = M.eligible(data.items, { mlCap: 36, race: "halfling", armorTypes: ["light"] });
+  assert.strictEqual(halfling.filter((x) => x.slot === "Armor" && M.isDocent(x)).length, 0, "docent leaked to Halfling");
+  assert.strictEqual(halfling.filter((x) => x.slot === "Armor" && !M.isDocent(x)
+    && x.armor_type && !["light", "unknown"].includes(x.armor_type)).length, 0, "non-light body armor leaked");
+  // 2) Human + Heavy: no cloth/light/medium concrete body armor survives.
+  const heavy = M.eligible(data.items, { mlCap: 36, race: "human", armorTypes: ["heavy"] });
+  assert.strictEqual(heavy.filter((x) => x.slot === "Armor" && !M.isDocent(x)
+    && x.armor_type && !["heavy", "unknown"].includes(x.armor_type)).length, 0, "non-heavy body armor leaked to Heavy");
+  // 3) Warforged: no NON-docent body armor survives; docents remain available.
+  const wf = M.eligible(data.items, { mlCap: 36, race: "warforged" });
+  assert.strictEqual(wf.filter((x) => x.slot === "Armor" && !M.isDocent(x)).length, 0, "body armor leaked to Warforged");
+  assert.ok(wf.filter((x) => x.slot === "Armor" && M.isDocent(x)).length > 0, "no docent available to Warforged");
+});
+
 test("catalog contract: each armor class is present in the built dataset (drift guard)", () => {
   // If gear-planner's 4 armor `type` strings drift, ARMOR_TYPE_MAP misses and every
   // armor item fails open to "unknown", silently disabling the R7 gate and regressing
@@ -597,6 +648,53 @@ test("U3/AE8: a pinned below-floor item violating another dimension is still exc
   assert.strictEqual(M.eligible([pinned], query).length, 0, "floor exempt, but armor-type legality still excludes");
 });
 
+// U2 (#108) — a legal pin BELOW the character ML cap must survive the whole pool
+// build (eligible -> dominanceFilter) into model.worn, since that is the pick var the
+// solver's `x = 1` pin constraint binds to. A below-cap item is legal (the cap is an
+// upper bound), so it must NOT be silently dropped/replaced. These assert at the
+// buildModel layer (the solver test suite exercises the `x = 1` binding on the pool).
+// A helper: the kept variants for a slot after buildModel's filter+prune.
+function slotPool(model, slotName) {
+  const w = model.worn.find((x) => x.slot === slotName);
+  return w ? w.variants.map((x) => x.source_item) : [];
+}
+
+test("U2/#108: a legal pin BELOW the ML cap stays in its slot pool (survives filter + dominance)", () => {
+  // Character ML 34, auto floor (cap - 5 = 29). An ML-20 legal Necklace is pinned; an
+  // ML-34 Necklace strictly dominates it on the target. The pin must survive both the
+  // below-floor exemption AND dominance pruning so its pick var exists for `x = 1`.
+  const lowPin = v("Low Pinned Necklace", "Necklace", [["Constitution", "Enhancement", 5]], { ml: 20 });
+  const strong = v("Strong Necklace", "Necklace", [["Constitution", "Enhancement", 20]], { ml: 34 });
+  const query = { mlCap: 34, mlFloor: 29, targets: ["Constitution"],
+    slotConstraints: { Necklace: { type: "pin", variant_id: "Low Pinned Necklace" } } };
+  const pool = slotPool(M.buildModel([lowPin, strong], query), "Necklace");
+  assert.ok(pool.includes("Low Pinned Necklace"), "below-cap pin must remain in the solver's slot pool");
+});
+
+test("U2/#108: an ILLEGAL below-cap pin is STILL dropped (no regression on illegal-pin handling)", () => {
+  // Below the cap AND the floor (both exempt for a pin), but the item violates armor
+  // proficiency — an illegal-for-config pin. The pin exemption covers ONLY ML gates, so
+  // this pin must NOT reach the pool. Guards that the below-cap fix never weakens the
+  // legality drop.
+  const badPin = { ...v("Cloth Robe", "Armor", [["Constitution", "Enhancement", 10]], { ml: 20 }), type: "Cloth armor", armor_type: "cloth" };
+  const query = { mlCap: 34, mlFloor: 29, armorTypes: ["heavy"], targets: ["Constitution"],
+    slotConstraints: { Armor: { type: "pin", variant_id: "Cloth Robe" } } };
+  const pool = slotPool(M.buildModel([badPin], query), "Armor");
+  assert.ok(!pool.includes("Cloth Robe"), "an illegal (armor-type) pin is still excluded even below the cap");
+});
+
+test("U2/#108: a below-cap pin does not suppress a higher-priority legal pick in another slot", () => {
+  // Pinning a low item in one slot must not perturb another slot: a strong ML-34 Ring
+  // still wins its own slot's pool.
+  const lowPin = v("Low Pinned Necklace", "Necklace", [["Constitution", "Enhancement", 5]], { ml: 20 });
+  const strongRing = v("Strong Ring", "Ring", [["Constitution", "Enhancement", 20]], { ml: 34 });
+  const query = { mlCap: 34, mlFloor: 29, targets: ["Constitution"],
+    slotConstraints: { Necklace: { type: "pin", variant_id: "Low Pinned Necklace" } } };
+  const model = M.buildModel([lowPin, strongRing], query);
+  assert.ok(slotPool(model, "Necklace").includes("Low Pinned Necklace"), "the pinned low item is kept");
+  assert.ok(slotPool(model, "Ring").includes("Strong Ring"), "an unrelated strong slot is unaffected by the pin");
+});
+
 test("U2/AE3: Sword & Board off hand keeps shields, excludes orbs and rune arms", () => {
   const shield = { ...v("Tower Shield", "Off Hand", [["Constitution", "Enhancement", 20]]), type: "Tower shields" };
   const orb = { ...v("Arcane Orb", "Off Hand", [["Intelligence", "Enhancement", 20]]), type: "Orbs" };
@@ -610,6 +708,58 @@ test("U2/AE3: Sword & Board excludes a two-handed main-hand weapon", () => {
   const oneH = { ...v("Longsword", "Main Hand", [["Strength", "Enhancement", 20]], { category: "weapon" }), type: "Long Swords" };
   const kept = M.eligible([twoH, oneH], { mlCap: 34, style: "sword-board" }).map((x) => x.source_item);
   assert.deepStrictEqual(kept, ["Longsword"], "S&B main hand is one-handed only");
+});
+
+// ---- U1 (issue #107) — a shield in the off hand forbids a 2H main-hand weapon ----
+function mhNames(model) {
+  const mh = model.worn.find((s) => s.slot === "Main Hand");
+  return mh ? mh.variants.map((x) => x.source_item).sort() : [];
+}
+const twoHW = { ...v("Quarterstaff", "Main Hand", [["Strength", "Enhancement", 20]], { category: "weapon" }), type: "Quarterstaffs" };
+const oneHW = { ...v("Longsword", "Main Hand", [["Strength", "Enhancement", 10]], { category: "weapon" }), type: "Long Swords" };
+const towerShield = { ...v("Tower Shield", "Off Hand", [["Constitution", "Enhancement", 20]]), type: "Tower shields" };
+
+test("U1/#107: an off-hand shield PICK excludes a two-handed Main Hand weapon", () => {
+  // No style set, so the main hand would normally allow a 2H weapon; picking a shield
+  // off-hand type must now forbid it (a shield occupies a hand). Regression: the solver
+  // used to recommend a quarterstaff alongside a shield.
+  const model = M.buildModel([twoHW, oneHW, towerShield],
+    { mlCap: 34, targets: ["Strength", "Constitution"], offHand: ["Tower shields"] });
+  assert.deepStrictEqual(mhNames(model), ["Longsword"],
+    "shield off-hand => 2H quarterstaff excluded, 1H longsword kept");
+});
+
+test("U1/#107: a PINNED off-hand shield excludes a two-handed Main Hand weapon", () => {
+  const model = M.buildModel([twoHW, oneHW, towerShield],
+    { mlCap: 34, targets: ["Strength", "Constitution"],
+      slotConstraints: { "Off Hand": { type: "pin", variant_id: "Tower Shield" } } });
+  assert.deepStrictEqual(mhNames(model), ["Longsword"],
+    "pinned shield => 2H quarterstaff excluded, 1H longsword kept");
+});
+
+test("U1/#107 regression: NO shield in off hand keeps 2H weapons available", () => {
+  // Pinning an ORB (not a shield) must not trigger the 2H exclusion; nor should a bare
+  // query with no off-hand constraint. A 2H main weapon stays available (hand mutex,
+  // enforced by the solver, lets it coexist with an empty off hand).
+  const orb = { ...v("Arcane Orb", "Off Hand", [["Intelligence", "Enhancement", 20]]), type: "Orbs" };
+  const bare = M.buildModel([twoHW, oneHW],
+    { mlCap: 34, targets: ["Strength"] });
+  assert.ok(mhNames(bare).includes("Quarterstaff"), "no off-hand constraint => 2H still available");
+  const withOrb = M.buildModel([twoHW, oneHW, orb],
+    { mlCap: 34, targets: ["Strength"], slotConstraints: { "Off Hand": { type: "pin", variant_id: "Arcane Orb" } } });
+  assert.ok(mhNames(withOrb).includes("Quarterstaff"), "a pinned ORB (not a shield) does not exclude 2H");
+});
+
+test("U1/#107: crossbows stay available with a shield off-hand (not both-hands)", () => {
+  // A crossbow is not a both-hands weapon (a rune arm pairs with it), so isBothHandsWeapon
+  // is false and the shield-off-hand filter must NOT drop it. (An off-hand shield + crossbow
+  // is an unusual pairing, but the exclusion targets ONLY two-handed weapons.)
+  const xbow = { ...v("Heavy Crossbow", "Main Hand", [["Dexterity", "Enhancement", 15]], { category: "weapon" }), type: "Heavy Crossbows" };
+  const model = M.buildModel([twoHW, oneHW, xbow, towerShield],
+    { mlCap: 34, targets: ["Strength", "Dexterity", "Constitution"], offHand: ["Tower shields"] });
+  const kept = mhNames(model);
+  assert.ok(kept.includes("Heavy Crossbow"), "crossbow survives the shield-off-hand 2H filter");
+  assert.ok(!kept.includes("Quarterstaff"), "the 2H quarterstaff is still excluded");
 });
 
 test("U1 characterization: #90 does not reproduce — Heavy query excludes cloth end-to-end", () => {

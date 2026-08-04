@@ -428,3 +428,75 @@ test("U4/AE10: dual-pin mutex — a pinned 2H main + pinned off-hand conflicts; 
   assert.strictEqual(dualPinMutexConflict([{ slot: "Main Hand", id: "GS" }], byId), false, "only the 2H pinned: no conflict");
   assert.strictEqual(dualPinMutexConflict([{ slot: "Off Hand", id: "SH" }], byId), false, "only the off-hand pinned: no conflict");
 });
+
+// ---------------------------------------------------------------------------
+// U4 / issue #105 — consistent back/advance navigation on every wizard step.
+// The step render functions live inside the DOM-guarded closure (not exported),
+// so we assert on their source markup: every step must carry the shared
+// `.wz-actions` / `.wz-spacer` row with the ADVANCE control bottom-right (after
+// the spacer) and, where present, the BACK control bottom-left (before it).
+const WIZARD_SRC = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+
+// Slice a single step render function's returned <section>…</section> template.
+function stepTemplate(name) {
+  const start = WIZARD_SRC.indexOf(`function ${name}(`);
+  assert.ok(start !== -1, `${name} exists`);
+  const end = WIZARD_SRC.indexOf("</section>", start);
+  assert.ok(end !== -1, `${name} returns a <section>`);
+  return WIZARD_SRC.slice(start, end);
+}
+// The action row: from the (single) `class="wz-actions"` to the template end.
+function actionRow(name) {
+  const tpl = stepTemplate(name);
+  const i = tpl.indexOf('class="wz-actions"');
+  assert.ok(i !== -1, `${name} has a .wz-actions row`);
+  return tpl.slice(i);
+}
+
+// steps → { advance: token that must sit bottom-right, back: token bottom-left (or null) }
+const NAV = {
+  stepIntro: { advance: "data-next", back: null },
+  stepCharacter: { advance: "data-next", back: "data-back" },
+  stepPool: { advance: "data-next", back: "data-back" },
+  stepPriorities: { advance: "data-solve", back: "data-back" },
+  stepResults: { advance: 'data-goto="character"', back: 'data-goto="priorities"' },
+};
+
+test("U4/#105: every step exposes its advance control bottom-right (after the spacer)", () => {
+  for (const [name, nav] of Object.entries(NAV)) {
+    const row = actionRow(name);
+    const spacer = row.indexOf('class="wz-spacer"');
+    const adv = row.indexOf(nav.advance);
+    assert.ok(spacer !== -1, `${name} action row has a wz-spacer`);
+    assert.ok(adv !== -1, `${name} action row has its advance control (${nav.advance})`);
+    assert.ok(adv > spacer, `${name}: advance control sits AFTER the spacer (bottom-right)`);
+  }
+});
+
+test("U4/#105: steps with a back control expose it bottom-left (before the spacer)", () => {
+  for (const [name, nav] of Object.entries(NAV)) {
+    if (!nav.back) continue;
+    const row = actionRow(name);
+    const spacer = row.indexOf('class="wz-spacer"');
+    const back = row.indexOf(nav.back);
+    assert.ok(back !== -1, `${name} action row has its back control (${nav.back})`);
+    assert.ok(back < spacer, `${name}: back control sits BEFORE the spacer (bottom-left)`);
+  }
+});
+
+test("U4/#105: step 1 (intro) aligns like the others — action row + spacer, no back", () => {
+  const row = actionRow("stepIntro");
+  assert.ok(row.includes('class="wz-spacer"'), "intro has a spacer so advance is bottom-right");
+  assert.ok(!row.includes("data-back"), "intro has no back control (it is the first step)");
+});
+
+test("U4/#105: step 5 (results) nav is in the bottom action bar, not the header", () => {
+  const tpl = stepTemplate("stepResults");
+  // The results header must no longer host the nav buttons…
+  const head = tpl.slice(tpl.indexOf("wz-results-head"), tpl.indexOf('class="wz-actions"'));
+  assert.ok(!head.includes("data-goto"), "results header no longer carries the goto nav");
+  // …they now live in the bottom .wz-actions row, both preserved.
+  const row = actionRow("stepResults");
+  assert.ok(row.includes('data-goto="priorities"'), "Adjust-priorities relocated to the bottom bar");
+  assert.ok(row.includes('data-goto="character"'), "Edit-character relocated to the bottom bar");
+});
