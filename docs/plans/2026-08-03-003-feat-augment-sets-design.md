@@ -18,7 +18,28 @@ Deliverable of U7 from `docs/plans/2026-08-03-002-fix-user-reported-correctness-
 
 **But they are inert.** Each carries `sets: null`, `set_bonus: []`, `parsed_set_bonuses` empty, and `affixes: []` — so the augment grants nothing and contributes to no set today. `wiki_url` is the generic `https://ddowiki.com/page/Augment_Slot`.
 
-## 2. Wiki confirmation of the mechanic — NOT YET CONFIRMED (gate item)
+## 2. Wiki confirmation of the mechanic — CONFIRMED 2026-08-04: these are FILIGREE SETS, not a duplicate-augment mechanic
+
+**Source:** https://ddowiki.com/page/Sentient_Weapon/Filigrees. The "Set Augment: X" names (Bold Tactician, Brutal Blows, Quickblade, Subtle Blade, Touch of Power, Piercing Mind, …) are **Filigree set names** from the **Sentient Weapon** system (U37).
+
+The real mechanic is materially different from this design's original assumption:
+
+- Filigrees slot into a **Sentient Weapon or Minor Artifact** — NOT augment slots on ordinary gear.
+- **"A weapon can only have one of each filigree: two of the same filigree cannot be slotted."** So it is emphatically **NOT** "slot duplicate augments." The user's "duplicates" framing was imprecise.
+- Set bonuses come from slotting **multiple DIFFERENT filigrees of the same set**: thresholds at 3 pieces (some sets also 4 and 5). "Well over two dozen filigree sets, each with 4–9 unique filigrees." Set bonuses are unique bonuses that stack.
+- The 21 gear-planner **"Set Augment: X" entries are inert proxies** — empty affixes, no set-bonus data. They do not carry what each set grants.
+
+### Consequence for scope
+
+Modeling this correctly is **not** a small solver relaxation — it is a whole **Sentient Weapon + Filigree** feature:
+1. A Sentient Weapon (weapon-slot item) with a variable number of filigree slots.
+2. A filigree pool (each filigree = a stat contribution + a set membership).
+3. A set-threshold mechanic over slotted filigrees (3/4/5-piece), reusing the set-bonus machinery.
+4. **The filigree set-bonus data** (what each set grants at each threshold) — which is NOT in the current dataset and would need wiki-sourcing (exclude-until-verified), like the joker/Vecna/Dino set defs.
+
+This is its own feature-sized effort (recommend a fresh `ce-brainstorm`), not a follow-up build off this note. The 21 inert proxies are not a usable shortcut (no bonus data). **Original "relax one-augment-per-variant" design below is superseded** by this finding and retained only for history.
+
+### (Superseded) original mechanic question
 
 Attempted `ddowiki.com/page/Set_augment` and a sample set page (`Alluring_Elocution`) on 2026-08-03 — **neither exists under those names**. The precise rule — whether slotting **duplicate** `Set Augment: X` augments across multiple Colorless slots accrues pieces toward set X's threshold, and the max/color constraints — **is not confirmed from a clean wiki source**. Per the batch's hard gate (KTD2/R4), **the build MUST NOT proceed on this inferred rule**; a targeted wiki source (the actual set page, the augment's real page, or the Named-item-sets listing) must confirm it first. This is the single blocking item for the deferred build.
 
