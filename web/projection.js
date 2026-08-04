@@ -42,12 +42,20 @@
    *  per-color-capacity placements. Walk equipped items in order and drop each placed
    *  augment into the first item with remaining open capacity of the slot color it
    *  consumed. Returns { byIndex, unplaced, freeByIndex }. */
-  function assignAugments(chosen, augmentsPlaced) {
+  function assignAugments(chosen, augmentsPlaced, setAugmentsPlaced) {
     const remaining = chosen.map((c) => {
       const m = new Map();
       for (const col of ((c.variant.augment_slots_norm || {}).colors) || []) m.set(col, (m.get(col) || 0) + 1);
       return m;
     });
+    // Reserve the Colorless slots the solver already filled with set-augment copies
+    // (setAugmentsPlaced[].host is a variant_id) BEFORE greedily assigning ordinary
+    // augments, or an item whose only Colorless slot holds a set copy would be
+    // double-booked (ordinary augment attributed to a full slot) and reported as free.
+    for (const sa of setAugmentsPlaced || []) {
+      const i = chosen.findIndex((c) => c.variant && c.variant.variant_id === sa.host);
+      if (i >= 0 && (remaining[i].get("Colorless") || 0) > 0) remaining[i].set("Colorless", remaining[i].get("Colorless") - 1);
+    }
     const byIndex = new Map();
     const unplaced = [];
     for (const aug of augmentsPlaced || []) {
@@ -109,7 +117,7 @@
    *  sourceKind, slots, hostIds, isSet }], ... } — presentation only. */
   function attributionByTarget(result, augAssign) {
     const breakdown = result.breakdown || {};
-    augAssign = augAssign || assignAugments(result.chosen, result.augmentsPlaced);
+    augAssign = augAssign || assignAugments(result.chosen, result.augmentsPlaced, result.setAugmentsPlaced);
     const augSlot = new Map(), augHost = new Map();
     for (const [idx, augs] of augAssign.byIndex) {
       const host = result.chosen[idx];
@@ -157,15 +165,30 @@
     return wins;
   }
 
+  /** Variant_ids of host items that carry a solver-placed Set Augment. A Set Augment
+   *  overrides ("suppresses") the host item's OWN named set(s) — the solver already
+   *  dropped that set from setsActive/totals, so the set-satisfaction primitives must
+   *  not re-count the suppressed host's intrinsic membership (U7). Hosts are read from
+   *  `setAugmentsPlaced[].host` (solver-DECIDED, not greedily reconstructed, KTD-6). */
+  function suppressedHostIds(build) {
+    const s = new Set();
+    for (const sa of (build && build.setAugmentsPlaced) || []) if (sa.host) s.add(sa.host);
+    return s;
+  }
+
   /** Sets actually complete in the equipped loadout — the glow signal. Union of
    *  (1) a static set whose equipped piece count meets its lowest piece-threshold tier
-   *  and (2) `setsActive` (runtime joker/membership completions). */
-  function satisfiedSets(chosen, setsActive) {
+   *  and (2) `setsActive` (runtime joker/membership completions). A host carrying a
+   *  placed Set Augment does not count toward its own intrinsic set (U7 suppression);
+   *  pass `suppressed` (a Set of host variant_ids) to honor it. */
+  function satisfiedSets(chosen, setsActive, suppressed) {
+    suppressed = suppressed || new Set();
     const counts = new Map();
     const minReq = new Map();
     for (const c of chosen || []) {
+      const isSuppressed = suppressed.has(c.variant.variant_id);
       for (const sb of c.variant.set_bonus || []) {
-        if (sb.set) counts.set(sb.set, (counts.get(sb.set) || 0) + 1);
+        if (sb.set && !isSuppressed) counts.set(sb.set, (counts.get(sb.set) || 0) + 1);
       }
       for (const tier of c.variant.parsed_set_bonuses || []) {
         if (tier.pieces_required == null) continue;
@@ -214,9 +237,11 @@
     const counts = new Map();
     const members = new Map();
     const tiers = new Map();
+    const suppressed = suppressedHostIds(build);   // U7 — a Set-Augment host doesn't count toward its own set
     for (const c of build.chosen || []) {
+      const isSuppressed = suppressed.has(c.variant.variant_id);
       for (const sb of c.variant.set_bonus || []) {
-        if (!sb.set) continue;
+        if (!sb.set || isSuppressed) continue;
         counts.set(sb.set, (counts.get(sb.set) || 0) + 1);
         if (!members.has(sb.set)) members.set(sb.set, []);
         members.get(sb.set).push(c.variant.variant_id);
@@ -248,7 +273,7 @@
   // tf/gs) or host (joker/membership); dino/aug come pre-assigned by index. Extracted
   // verbatim from results.js buildViews so results.js and the exports share one builder.
   function buildCraftMaps(build, augAssign, dinoAssign) {
-    augAssign = augAssign || assignAugments(build.chosen, build.augmentsPlaced);
+    augAssign = augAssign || assignAugments(build.chosen, build.augmentsPlaced, build.setAugmentsPlaced);
     dinoAssign = dinoAssign || assignDinoInserts(build.chosen, build.dinoPlaced);
     const byItemMap = (list) => {
       const m = new Map();
@@ -265,12 +290,21 @@
       if (!membershipByHost.has(m.host)) membershipByHost.set(m.host, []);
       membershipByHost.get(m.host).push(m);
     }
+    // Placed Set Augments, grouped by their solver-DECIDED host variant_id (KTD-6:
+    // read `setAugmentsPlaced[].host` verbatim — do NOT run them through the greedy
+    // augment reconstruction, whose host could disagree with the item the solver
+    // actually suppressed).
+    const setAugByHost = new Map();
+    for (const s of build.setAugmentsPlaced || []) {
+      if (!setAugByHost.has(s.host)) setAugByHost.set(s.host, []);
+      setAugByHost.get(s.host).push(s);
+    }
     return {
       augAssign, dinoAssign,
       ncByItem: byItemMap(build.ncPlaced), rollByItem: byItemMap(build.rollPlaced),
       vikByItem: byItemMap(build.vikPlaced), sealByItem: byItemMap(build.sealPlaced),
       tfByItem: byItemMap(build.tfPlaced), gsByItem: byItemMap(build.gsPlaced), jokerByHost,
-      membershipByHost,
+      membershipByHost, setAugByHost,
     };
   }
 
@@ -300,6 +334,15 @@
       case "tf": return `Thunder-Forged T${o.tier}: ${craftValue(o)}`;
       case "gs": return `Green Steel: ${craftValue(o)}`;
       case "joker": return `Wildcard set: ${o.set}`;
+      case "augmentset": {
+        // A solver-placed Set Augment (host is solver-DECIDED, read from
+        // setAugmentsPlaced — never greedily reconstructed, KTD-6). When the host
+        // item is itself a member of a named set, that own set is suppressed while
+        // the augment occupies it (the solver already dropped it from setsActive),
+        // so name the suppression inline — carrying it into every text export.
+        const supp = (o.suppresses && o.suppresses.length) ? ` (suppresses ${o.suppresses.join(", ")})` : "";
+        return `Set Augment: ${o.set}${supp}`;
+      }
       case "membership": {
         const sysId = (Craft && Craft.systemForStation(o.station)) || "isle-of-dread-set-bonus";
         return Craft ? Craft.actionLabel(sysId, { set_name: o.set }) : `Slot Set Bonus augment: ${o.set}`;
@@ -386,6 +429,18 @@
     for (const n of maps.gsByItem.get(v.variant_id) || []) out.push({ family: "gs", label: craftLabel(n, "gs") });
     for (const j of maps.jokerByHost.get(v.variant_id) || []) out.push({ family: "joker", label: craftLabel(j, "joker") });
     for (const m of maps.membershipByHost.get(v.variant_id) || []) out.push({ family: "membership", label: craftLabel(m, "membership"), station: m.station || null });
+    // Solver-placed Set Augments on this host (KTD-6: host read from the solve, not
+    // reconstructed). Each of the (up to 3) copies lives on a different item, so a
+    // host shows its one copy. The host's own named set is suppressed once — annotate
+    // it on the first copy so the note isn't repeated when a host carries several.
+    const setAugs = (maps.setAugByHost && maps.setAugByHost.get(v.variant_id)) || [];
+    const suppresses = setAugs.length ? slotSetNames(v) : [];
+    setAugs.forEach((s, i) => out.push({
+      family: "augmentset",
+      label: craftLabel({ set: s.set, suppresses: i === 0 ? suppresses : [] }, "augmentset"),
+      set: s.set, host: s.host, wiki_url: s.wiki_url || null,
+      suppresses: i === 0 ? suppresses : [],
+    }));
     return out;
   }
 
@@ -395,12 +450,13 @@
   function project(rec) {
     const snap = (rec && rec.snapshot) || {};
     const chosen = snap.chosen || [];
-    const augAssign = assignAugments(chosen, snap.augmentsPlaced);
+    const augAssign = assignAugments(chosen, snap.augmentsPlaced, snap.setAugmentsPlaced);
     const dinoAssign = assignDinoInserts(chosen, snap.dinoPlaced);
     const maps = buildCraftMaps(snap, augAssign, dinoAssign);
     const attr = attributionByTarget(snap, augAssign);
     const priorities = (rec && rec.inputs && rec.inputs.priorities) || [];
 
+    const suppressed = suppressedHostIds(snap);
     const loadout = chosen.map((c, idx) => {
       const v = c.variant || {};
       return {
@@ -410,6 +466,10 @@
         affixes: v.affixes || [],
         augments: (augAssign.byIndex.get(idx) || []).map(augView),
         crafting: craftingForItem(v, idx, maps),
+        // The item's own named set(s) suppressed because it hosts a placed Set Augment
+        // (empty otherwise). The placement + this suppression also ride in `crafting`
+        // (family "augmentset") so every text export surfaces them without change.
+        suppressedSets: suppressed.has(v.variant_id) ? slotSetNames(v) : [],
       };
     });
 
@@ -437,7 +497,7 @@
     project,
     // pure primitives (results.js binds these; single definition, no drift)
     affixLabel, itemMl, contributingAffixes, assignAugments, dinoInsertKey, assignDinoInserts,
-    attributionByTarget, whyThis, satisfiedSets, slotSetNames, activeSetDetail, satisfiedSetDetail,
+    attributionByTarget, whyThis, satisfiedSets, suppressedHostIds, slotSetNames, activeSetDetail, satisfiedSetDetail,
     // craft + cue helpers
     buildCraftMaps, craftLabel, craftValue, lunarSolar,
     // constraint header helpers (exporters delegates to these)

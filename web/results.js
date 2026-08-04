@@ -16,6 +16,7 @@ const assignDinoInserts = Proj.assignDinoInserts;
 const attributionByTarget = Proj.attributionByTarget;
 const whyThis = Proj.whyThis;
 const satisfiedSets = Proj.satisfiedSets;
+const suppressedHostIds = Proj.suppressedHostIds;
 const slotSetNames = Proj.slotSetNames;
 const activeSetDetail = Proj.activeSetDetail;
 const satisfiedSetDetail = Proj.satisfiedSetDetail;
@@ -192,7 +193,20 @@ function craftChips(v, idx, maps) {
       : `slot a Dinosaur Bone Set Bonus augment at ${esc(m.station || "Dinosaur Bone crafting")}`;
     return `<span class="${cls}" title="${title}">${esc(text)}${m.station ? ` <span class="muted">(${esc(m.station)})</span>` : ""}</span>`;
   });
-  return [...augs, ...craftSlotChips(v, idx, maps), ...jokers, ...memberships];
+  // Set-Augment chips (U7): a solver-placed Set Augment attributed to its
+  // solver-DECIDED host (KTD-6 — keyed by setAugmentsPlaced[].host, never a greedy
+  // reconstruction). The label comes from the single source (Proj.craftLabel), so it
+  // matches every export byte-for-byte, including the inline suppression note. Only
+  // the first copy on a host carries the suppression note (a host suppresses its own
+  // set once).
+  const setAugs = ((maps.setAugByHost && maps.setAugByHost.get(v.variant_id)) || []).map((s, i) => {
+    const suppresses = i === 0 ? slotSetNames(v) : [];
+    const title = suppresses.length
+      ? `Set Augment — overrides this item's own set bonus (${esc(suppresses.join(", "))})`
+      : "solver-placed Set Augment";
+    return `<span class="chip setaug" title="${title}">${esc(Proj.craftLabel({ set: s.set, suppresses }, "augmentset"))}</span>`;
+  });
+  return [...augs, ...craftSlotChips(v, idx, maps), ...jokers, ...memberships, ...setAugs];
 }
 
 // One paperdoll slot cell: uniform, fixed-size, showing only the item name, ML,
@@ -218,7 +232,8 @@ function paperdollSlot(label, pos, pick, satisfied) {
 // off the paperdoll cell into this tab).
 function loadoutDeepDive(result, query, maps, attr) {
   if (!result.chosen.length) return `<p class="dd-none muted">No items equipped for this build.</p>`;
-  const satisfied = satisfiedSets(result.chosen, result.setsActive);   // U6: glow on completion, not membership
+  const suppressed = suppressedHostIds(result);                        // U7: a Set-Augment host suppresses its own set
+  const satisfied = satisfiedSets(result.chosen, result.setsActive, suppressed);   // U6/U7: glow on completion, honoring suppression
   const freeByIndex = (maps && maps.augAssign && maps.augAssign.freeByIndex) || new Map();
   return `<div class="deepdive">${result.chosen.map((c, idx) => {
     const v = c.variant;
@@ -240,7 +255,7 @@ function loadoutDeepDive(result, query, maps, attr) {
     return `<div class="dd-item${glow ? " is-set" : ""}${v.artifact ? " is-artifact" : ""}">
       <div class="dd-head"><span class="dd-slot">${esc(c.slot)}</span><span class="dd-name">${esc(v.variant_id)}</span>${artifactTag}<span class="dd-ml">ML ${esc(itemMl(v) ?? "?")}</span>${wiki}</div>
       ${whyThisLine(result, { slot: c.slot, variant_id: v.variant_id }, attr)}
-      ${memberSets.length ? `<div class="dd-set"><span class="setpip"></span>Part of set: ${esc(memberSets.join(", "))}</div>` : ""}
+      ${memberSets.length ? `<div class="dd-set"><span class="setpip"></span>Part of set: ${esc(memberSets.join(", "))}${suppressed.has(v.variant_id) ? ` <span class="dd-suppressed" title="a Set Augment slotted here overrides this item's own set bonus">(suppressed by Set Augment)</span>` : ""}</div>` : ""}
       ${upgradeNote}
       <div class="dd-affixes"><h5>Affixes</h5>${affixes}</div>
       ${craftBlock}
@@ -662,7 +677,7 @@ function buildViews(build, model, query) {
   // Equipped list (prototype layout): a plain stacked list of every slot the
   // model considered, occupied or empty — no humanoid figure, full item names
   // (no truncation). Weapons are folded into the same list in slot order.
-  const satisfied = satisfiedSets(build.chosen, build.setsActive);   // U6: glow only completed-set pieces
+  const satisfied = satisfiedSets(build.chosen, build.setsActive, suppressedHostIds(build));   // U6/U7: glow only completed-set pieces, honoring Set-Augment suppression
   // U2 — resolve an augment's affixes by variant_id (the placed meta carries the
   // id + color but no affixes); model.augments holds the full augment records.
   const augById = new Map((model.augments || []).map((a) => [a.variant_id, a]));

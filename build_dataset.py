@@ -31,6 +31,7 @@ from src import seal as seal_mod
 from src import thunder_forged as tf_mod
 from src import green_steel as gs_mod
 from src import membership as membership_mod
+from src import augment_sets as augment_sets_mod
 from src import compendium as compendium_mod
 from src import band_frontier as band_mod
 from src import set_catalog as set_catalog_mod
@@ -399,6 +400,16 @@ def build() -> dict:
     # sets are self-seeded from the same catalog, crafted at the Dinosaur Bone station.
     membership_mod.attach_dino_set_bonus_slots(dino_blanks, membership_defs)
 
+    # U2 — Augment Sets: stamp the 21 "Set Augment: X" Colorless augment variants
+    # with their set linkage (canonical `set` name, `pieces_required`, and the
+    # `set_augment` source-family marker) and flip them verified so they enter the
+    # solve. Run AFTER verify (like the Dino blanks): a Set Augment ships an empty
+    # affix list, so passing back through verify quarantines it; stamping verified
+    # here makes the flip stick. The defs come from the SAME augment_sets seed that
+    # the top-level `augment_set_defs` key (emitted below) exposes to the solver.
+    augment_set_defs = membership_mod.build_augment_set_defs()
+    augment_sets_mod.attach_augment_set_slots(variants, augment_set_defs)
+
     # U81 Nearly Complete: expose the parametric choice-slot effect pool. Items
     # carrying a `nearly_complete: <category>` field draw one option from it (host
     # items pending wiki; the pool + machinery ship now).
@@ -526,6 +537,7 @@ def build() -> dict:
             "thunder_forged_coverage": tf["coverage"],
             "green_steel_coverage": gs["coverage"],
             "membership_coverage": membership_mod.coverage(membership_defs),
+            "augment_set_coverage": membership_mod.coverage(augment_set_defs),
             "augment_coverage": augment_coverage,
             "compendium_coverage": comp_cov,
             "band_coverage": band_cov,
@@ -570,6 +582,10 @@ def build() -> dict:
         "thunder_forged": tf["records"],
         "green_steel": gs["records"],
         "membership_set_defs": membership_defs,
+        # U2 — the 21 Augment-Set defs (3-piece Set Bonuses), same shape as
+        # membership_set_defs. A later solver unit reads these together with each
+        # verified "Set Augment: X" variant's `set` marker.
+        "augment_set_defs": augment_set_defs,
         "compendium": comp_records,
     }
 

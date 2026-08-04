@@ -49,6 +49,12 @@ test("stripResult drops program and keeps the panel subset", () => {
   assert.strictEqual(s.effective.Constitution, 12);
 });
 
+test("stripResult keeps setAugmentsPlaced so saved-record exports carry set augments", () => {
+  const placed = [{ set: "Quickblade", host: "some-variant-id", wiki_url: "https://ddowiki.com/page/Augment_Slot/Set_Augment" }];
+  const s = stripResult({ status: "optimal", chosen: [], effective: {}, setAugmentsPlaced: placed });
+  assert.deepStrictEqual(s.setAugmentsPlaced, placed);
+});
+
 test("serializeCharacter carries inputs, query, snapshot, build stamp; item ref keyed on variant_id", () => {
   const rec = serializeCharacter("Sook - Reaper", state, lastRun, "abc123def456");
   assert.strictEqual(rec.name, "Sook - Reaper");
@@ -89,6 +95,21 @@ test("ownedNames Set serializes to a JSON-safe array", () => {
   assert.deepStrictEqual(rec.inputs.ownedNames, ["Item A", "Item B"]);
   // round-trips through JSON unchanged
   assert.deepStrictEqual(JSON.parse(JSON.stringify(rec)).inputs.ownedNames, ["Item A", "Item B"]);
+});
+
+test("U6: ownedSetAugments Set serializes to a JSON-safe array and round-trips", () => {
+  const withSA = { ...state, ownedSetAugments: new Set(["Alluring Elocution", "Arcane Barrier"]) };
+  const rec = serializeCharacter("SA", withSA, lastRun, "id1");
+  assert.deepStrictEqual(rec.inputs.ownedSetAugments, ["Alluring Elocution", "Arcane Barrier"]);
+  // round-trips through JSON unchanged; the loader rebuilds the Set from this array
+  const back = JSON.parse(JSON.stringify(rec)).inputs.ownedSetAugments;
+  assert.deepStrictEqual(back, ["Alluring Elocution", "Arcane Barrier"]);
+  assert.deepStrictEqual([...new Set(back)].sort(), ["Alluring Elocution", "Arcane Barrier"]);
+});
+
+test("U6: ownedSetAugments defaults to [] when absent", () => {
+  const rec = serializeCharacter("None", state, lastRun, "id1");
+  assert.deepStrictEqual(rec.inputs.ownedSetAugments, []);
 });
 
 test("save -> list -> load round-trip preserves inputs + snapshot", () => {
