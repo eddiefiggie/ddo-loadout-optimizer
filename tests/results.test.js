@@ -608,6 +608,22 @@ test("U6: loadoutDeepDive glows only satisfied-set pieces, not mere membership",
   assert.ok(/class="dd-item is-set/.test(html2), "2/2 pieces -> glow");
 });
 
+test("U8: buildViews Set Bonuses panel lists active solar/lunar augments as set-like bonuses", () => {
+  const mkBuild = (augs) => ({
+    chosen: [{ slot: "Goggles", variant: { variant_id: "Specs", affixes: [], augment_slots_norm: { colors: ["blue"] } } }],
+    breakdown: {}, effective: {}, setsActive: [], augmentsPlaced: augs,
+  });
+  const model = { worn: [], augments: [] };
+  const withAug = mkBuild([{ variant_id: "Lunar Gem of Negative Amplification", color: "blue", affixes: [{ name: "Negative Amplification", type: "Enhancement", value: 61 }] }]);
+  const v1 = R.buildViews(withAug, model, { targets: [] });
+  assert.ok(/Other set-like bonuses/.test(v1.setsPanel), "the set-like section renders when a lunar/solar augment is placed");
+  assert.ok(/🌙 Lunar/.test(v1.setsPanel) && /Lunar Gem of Negative Amplification/.test(v1.setsPanel), "lists the lunar augment + its effect");
+
+  const noAug = mkBuild([{ variant_id: "Ruby of Deadly", color: "red", affixes: [{ name: "Deadly", type: "Insight", value: 9 }] }]);
+  const v2 = R.buildViews(noAug, model, { targets: [] });
+  assert.ok(!/Other set-like bonuses/.test(v2.setsPanel), "no set-like section when no solar/lunar augment is placed");
+});
+
 test("U6: a single-piece set (threshold 1) is satisfied when worn", () => {
   const chosen = [chosenItem("R", "Ring", [], ["Solo"],
     [{ set: "Solo", n: 1, affixes: [["Strength", "Enhancement", 5]] }])];
