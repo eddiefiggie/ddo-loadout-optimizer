@@ -11,9 +11,15 @@
 - **Investigation (build-time data check) overturned the scout's premise.** It is NOT stored as a literal `"Insightful Spell Lore"` name — insight bonuses are stored as `name` + `type`. Pomura's Memento in the generated dataset (`web/data/items.json`) carries **`Spell Lore | Insight | 5 | eligible=True`** — which *is* Insightful Spell Lore **V** (value 5 = level V). It is recognized (`Spell Lore` is in the vocab), eligible, and scored; **35 items** carry Insight-typed Spell Lore.
 - **Ruling: no code change.** The affix is already present and scored correctly. The "missing" report was a false positive from string-matching the literal name. Nothing added to the vocab (adding a duplicate `"Insightful Spell Lore"` name would create a phantom bucket that fails to match the correctly-typed data).
 
-### Adjacent finding (flagged to #89, NOT fixed here)
+### Adjacent finding (routed to #89) — RESOLVED 2026-08-04: correctly DISTINCT, no merge
 
-The data carries two un-aliased names that may be the same universal stat: **`"Spell Lore"` (112 items)** and **`"Universal Spell Lore"` (65 items)**, with **no alias between them** in `affix_aliases.json`. The wiki's Lore-strength note ("the universal Spell Lore (formerly Arcane Lore)") suggests base Spell Lore *is* the universal spell-crit stat — so these two may be synonyms that currently bucket separately (potential double-count + target-mismatch). This is **#89 synonym territory**, needs its own wiki confirmation, and is **NOT fixed under U4** (unconfirmed → not inferred).
+Investigated whether `"Spell Lore"` and `"Universal Spell Lore"` are the same stat that should be aliased. **Verdict: NO — they are correctly distinct, no fix.**
+
+- **Bonus-type breakdown (generated dataset):** `Spell Lore` → Equipment 73, Insight 35, Exceptional 1, Artifact 3. `Universal Spell Lore` → **Exceptional only (65)**. So `Universal Spell Lore` is the **"Exceptional Universal Spell Lore"** variant the wiki lists (Exceptional bonus type), NOT a synonym for base equipment Spell Lore.
+- **Co-occurrence:** 10 items (the *…Longsword of the Undying Age* family) carry BOTH names — on those, `Spell Lore = Equipment 13` and `Universal Spell Lore = Exceptional 5`. **Different bonus types → they legitimately STACK** (13 + 5), which is correct DDO behavior, not a double-count.
+- **Ruling:** aliasing/merging them would be a **bug** — it would risk collapsing two genuinely-stacking sources and it contradicts the co-occurrence evidence (`affix_aliases.json` rule: same-item co-occurrence ⇒ distinct, never merge). No alias added. The optimizer's current separate-bucket behavior is correct; a user wanting both can pick both names (both are targetable).
+
+**Status:** #89 (this Spell-Lore/Universal-Spell-Lore pair) VERIFIED correct — no double-count, no merge, no code change.
 
 **Status:** U4 VERIFIED correct — no fix. Surfaced a Spell-Lore/Universal-Spell-Lore synonym question for #89.
 
