@@ -103,11 +103,15 @@ function normalizeItem(it) {
     // model.js) because the affix alias table is one->one and cannot fan out.
     // Idempotent: the produced names are not "Sheltering", so a second pass is a no-op.
     if (affixes.some(function (a) { return a && a.name === "Sheltering"; })) {
+      // Skip an expanded name the item already carries explicitly (8 items hold both
+      // a bare Sheltering and an explicit Physical/Magical one) — avoids a duplicate
+      // browse line. The solver keeps the max per bucket either way, so this is tidiness.
+      var present = new Set(affixes.map(function (a) { return a && a.name; }));
       var expanded = [];
       for (const a of affixes) {
         if (a && a.name === "Sheltering") {
-          expanded.push(Object.assign({}, a, { name: "Physical Sheltering" }));
-          expanded.push(Object.assign({}, a, { name: "Magical Sheltering" }));
+          if (!present.has("Physical Sheltering")) expanded.push(Object.assign({}, a, { name: "Physical Sheltering" }));
+          if (!present.has("Magical Sheltering")) expanded.push(Object.assign({}, a, { name: "Magical Sheltering" }));
         } else {
           expanded.push(a);
         }
@@ -307,6 +311,12 @@ function buildPickerVocabulary(dataset) {
   for (const n of _allAffixNames(ds)) { const c = canonical(n); if (c) known.add(c); }
   for (const c of suggest) known.add(c);
   for (const n of (ds._affixRegistry || meta.affix_registry || [])) { const c = canonical(n); if (c) known.add(c); }
+  // U2 — bare "Sheltering" is expanded into Physical + Magical Sheltering at load
+  // (normalizeItem), so no item affix carries it anymore. Drop it as a standalone
+  // picker suggestion: it's a shorthand for both PRR and MRR, not a targetable stat,
+  // and offering it would point a priority at a target almost nothing satisfies.
+  // Physical/Magical Sheltering (and the PRR/MRR aliases) are the real targets.
+  suggest.delete("Sheltering");
   return { suggestions: [...suggest].sort(), known, canonical, presence };
 }
 

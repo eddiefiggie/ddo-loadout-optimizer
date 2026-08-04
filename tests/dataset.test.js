@@ -1,6 +1,6 @@
 // U2 — load-time dataset normalizer. Run: node tests/dataset.test.js
 const assert = require("assert");
-const { normalizeItem } = require("../web/dataset.js");
+const { normalizeItem, buildPickerVocabulary } = require("../web/dataset.js");
 
 let passed = 0;
 function test(name, fn) {
@@ -46,6 +46,25 @@ test("U2: expansion is idempotent (re-normalizing does not re-expand)", () => {
   const after1 = names(it).sort();
   normalizeItem(it);
   assert.deepStrictEqual(names(it).sort(), after1, "second pass is a no-op");
+});
+
+test("U2: an item with bare + explicit Physical Sheltering does not get a duplicate", () => {
+  const it = { affixes: [
+    { name: "Sheltering", value: 30, type: "Enhancement" },
+    { name: "Physical Sheltering", value: 45, type: "Enhancement" },
+  ] };
+  normalizeItem(it);
+  const phys = it.affixes.filter((a) => a.name === "Physical Sheltering");
+  assert.strictEqual(phys.length, 1, "no duplicate Physical Sheltering (explicit one kept)");
+  assert.strictEqual(phys[0].value, 45, "the explicit affix is preserved");
+  assert.ok(it.affixes.some((a) => a.name === "Magical Sheltering" && a.value === 30), "Magical still expanded");
+});
+
+test("U2: bare 'Sheltering' is not offered as a standalone picker suggestion", () => {
+  const ds = { metadata: { rankable_affixes: ["Sheltering", "Physical Sheltering", "Constitution"] } };
+  const vocab = buildPickerVocabulary(ds);
+  assert.ok(!vocab.suggestions.includes("Sheltering"), "bare Sheltering dropped from suggestions");
+  assert.ok(vocab.suggestions.includes("Physical Sheltering"), "Physical Sheltering stays a suggestion");
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);
