@@ -361,7 +361,7 @@ if (typeof window !== "undefined" && window.App) {
           <strong>single loadout that is mathematically optimal</strong> for your priorities — slot by slot,
           with the exact crafting steps to build it.</p>
         <p class="wz-lead">Four short steps, then the answer. No account; it runs entirely in your browser.</p>
-        <div class="wz-actions"><button class="btn primary" data-next>Get started →</button></div>
+        <div class="wz-actions"><span class="wz-spacer"></span><button class="btn primary" data-next>Get started →</button></div>
       </section>`;
     }
 
@@ -642,9 +642,6 @@ if (typeof window !== "undefined" && window.App) {
       return `<section class="wz-card wz-results">
         <div class="wz-results-head">
           <div><p class="wz-eyebrow">Your optimal loadout</p></div>
-          <span class="wz-spacer"></span>
-          <button class="btn ghost" data-goto="priorities">← Adjust priorities</button>
-          <button class="btn ghost" data-goto="character">Edit character</button>
         </div>
         <div class="wz-save" id="wz-save">
           <input id="wz-savename" type="text" value="${esc(state.characterName)}" placeholder="Name this character…">
@@ -658,6 +655,8 @@ if (typeof window !== "undefined" && window.App) {
           Slot constraints changed. <button class="btn primary" id="wz-cresolve">Re-solve ⚡</button>
         </div>
         <div id="wz-results"></div>
+        <div class="wz-actions"><button class="btn ghost" data-goto="priorities">← Adjust priorities</button><span class="wz-spacer"></span>
+          <button class="btn ghost" data-goto="character">Edit character</button></div>
       </section>`;
     }
 
