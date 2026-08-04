@@ -179,4 +179,17 @@ test("results.js re-export surface is intact after the extraction (KTD2)", () =>
   assert.strictEqual(R.affixLabel({ name: "Con", type: "Insight", value: 4 }), P.affixLabel({ name: "Con", type: "Insight", value: 4 }));
 });
 
+test("U7/P2: a Colorless slot filled by a set-augment copy is reserved (no double-book, no phantom free slot)", () => {
+  const chosen = [{ slot: "Belt", variant: { variant_id: "Belt1", augment_slots_norm: { colors: ["Colorless"] } } }];
+  const augmentsPlaced = [{ variant_id: "aug1", color: "Colorless" }];
+  const setAugmentsPlaced = [{ set: "Quickblade", host: "Belt1", wiki_url: "x" }];
+  const r = P.assignAugments(chosen, augmentsPlaced, setAugmentsPlaced);
+  assert.strictEqual(r.byIndex.has(0), false, "ordinary augment not double-booked onto the full item");
+  assert.deepStrictEqual(r.unplaced, augmentsPlaced, "ordinary augment reported unplaced, not on a taken slot");
+  assert.strictEqual(r.freeByIndex.has(0), false, "no phantom free Colorless slot on the fully-occupied item");
+  // discriminator: a spare Colorless slot still admits the ordinary augment
+  const chosen2 = [{ slot: "Belt", variant: { variant_id: "Belt1", augment_slots_norm: { colors: ["Colorless", "Colorless"] } } }];
+  assert.strictEqual(P.assignAugments(chosen2, augmentsPlaced, setAugmentsPlaced).byIndex.has(0), true, "with a spare Colorless slot the ordinary augment lands");
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

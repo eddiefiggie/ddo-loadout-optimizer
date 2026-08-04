@@ -222,6 +222,16 @@ test("U6: set augments are ineligible by default (empty ownedSetAugments)", () =
   assert.deepStrictEqual(emptySet.map((x) => x.source_item), []);
 });
 
+test("U6 (P1 regression): buildModel gates augment_set_defs on the VALUE path by ownership", () => {
+  // The solver's set-augment y-family reads model.augment_set_defs directly, not the
+  // worn/augment pool — so ownership must gate the defs dict, not just eligible().
+  const defs = { "Alluring Elocution": { tiers: [], tier: "augment" }, "Arcane Barrier": { tiers: [], tier: "augment" } };
+  const call = (q) => M.buildModel([], q, [], [], [], [], {}, [], [], defs).augment_set_defs;
+  assert.deepStrictEqual(Object.keys(call({ mlCap: 34, targets: ["Charisma"], ownedSetAugments: new Set() })), [], "empty ownership => no defs reach the solver");
+  assert.deepStrictEqual(Object.keys(call({ mlCap: 34, targets: ["Charisma"] })), [], "undefined ownership => no defs");
+  assert.deepStrictEqual(Object.keys(call({ mlCap: 34, targets: ["Charisma"], ownedSetAugments: new Set(["Arcane Barrier"]) })), ["Arcane Barrier"], "only the owned set's def reaches the value path");
+});
+
 test("U6: marking a set makes only that set's augment eligible", () => {
   const a = setAug("Alluring Elocution");
   const b = setAug("Arcane Barrier");
@@ -244,13 +254,13 @@ test("U6: ownedSetAugments tolerates an array (not just a Set)", () => {
     M.variantConflict(a, { mlCap: 34, ownedSetAugments: ["Arcane Barrier"] }), null);
 });
 
-test("U6: buildModel forwards augment_set_defs onto the model", () => {
+test("U6: buildModel forwards owned augment_set_defs onto the model", () => {
   const defs = { "Alluring Elocution": { tiers: [{ pieces_required: 3, affixes: [] }] } };
   const model = M.buildModel(
     [v("Ring", "Ring", [["Intelligence", "Enhancement", 5]])],
-    { mlCap: 34, targets: ["Intelligence"] },
+    { mlCap: 34, targets: ["Intelligence"], ownedSetAugments: new Set(["Alluring Elocution"]) },
     [], [], [], [], {}, [], [], defs);
-  assert.deepStrictEqual(model.augment_set_defs, defs, "augment_set_defs must be populated on the model");
+  assert.deepStrictEqual(model.augment_set_defs, defs, "an owned set's def must reach the model value path");
 });
 
 test("U6: buildModel augment_set_defs defaults to {} when omitted", () => {

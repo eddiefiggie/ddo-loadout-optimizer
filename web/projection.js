@@ -42,12 +42,20 @@
    *  per-color-capacity placements. Walk equipped items in order and drop each placed
    *  augment into the first item with remaining open capacity of the slot color it
    *  consumed. Returns { byIndex, unplaced, freeByIndex }. */
-  function assignAugments(chosen, augmentsPlaced) {
+  function assignAugments(chosen, augmentsPlaced, setAugmentsPlaced) {
     const remaining = chosen.map((c) => {
       const m = new Map();
       for (const col of ((c.variant.augment_slots_norm || {}).colors) || []) m.set(col, (m.get(col) || 0) + 1);
       return m;
     });
+    // Reserve the Colorless slots the solver already filled with set-augment copies
+    // (setAugmentsPlaced[].host is a variant_id) BEFORE greedily assigning ordinary
+    // augments, or an item whose only Colorless slot holds a set copy would be
+    // double-booked (ordinary augment attributed to a full slot) and reported as free.
+    for (const sa of setAugmentsPlaced || []) {
+      const i = chosen.findIndex((c) => c.variant && c.variant.variant_id === sa.host);
+      if (i >= 0 && (remaining[i].get("Colorless") || 0) > 0) remaining[i].set("Colorless", remaining[i].get("Colorless") - 1);
+    }
     const byIndex = new Map();
     const unplaced = [];
     for (const aug of augmentsPlaced || []) {
@@ -109,7 +117,7 @@
    *  sourceKind, slots, hostIds, isSet }], ... } — presentation only. */
   function attributionByTarget(result, augAssign) {
     const breakdown = result.breakdown || {};
-    augAssign = augAssign || assignAugments(result.chosen, result.augmentsPlaced);
+    augAssign = augAssign || assignAugments(result.chosen, result.augmentsPlaced, result.setAugmentsPlaced);
     const augSlot = new Map(), augHost = new Map();
     for (const [idx, augs] of augAssign.byIndex) {
       const host = result.chosen[idx];
@@ -265,7 +273,7 @@
   // tf/gs) or host (joker/membership); dino/aug come pre-assigned by index. Extracted
   // verbatim from results.js buildViews so results.js and the exports share one builder.
   function buildCraftMaps(build, augAssign, dinoAssign) {
-    augAssign = augAssign || assignAugments(build.chosen, build.augmentsPlaced);
+    augAssign = augAssign || assignAugments(build.chosen, build.augmentsPlaced, build.setAugmentsPlaced);
     dinoAssign = dinoAssign || assignDinoInserts(build.chosen, build.dinoPlaced);
     const byItemMap = (list) => {
       const m = new Map();
@@ -442,7 +450,7 @@
   function project(rec) {
     const snap = (rec && rec.snapshot) || {};
     const chosen = snap.chosen || [];
-    const augAssign = assignAugments(chosen, snap.augmentsPlaced);
+    const augAssign = assignAugments(chosen, snap.augmentsPlaced, snap.setAugmentsPlaced);
     const dinoAssign = assignDinoInserts(chosen, snap.dinoPlaced);
     const maps = buildCraftMaps(snap, augAssign, dinoAssign);
     const attr = attributionByTarget(snap, augAssign);

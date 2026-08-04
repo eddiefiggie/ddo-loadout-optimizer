@@ -597,7 +597,20 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     membershipSetDefs: membershipSetDefs || {},
     // U6 — set-augment definitions (piece thresholds + affixes), forwarded like
     // membershipSetDefs so the solver's set-augment family reads model.augment_set_defs.
-    augment_set_defs: augmentSetDefs || {},
+    // Ownership gate on the VALUE path: the solver's set-augment y-family reads
+    // model.augment_set_defs directly (not the worn/augment pool), so filtering the
+    // stat-less variants in variantConflict is not enough — the defs dict itself must
+    // be gated, or the solver would place & score set augments the player never marked
+    // owned. Mirror the variantConflict ownership key (`set` name); empty/undefined
+    // ownedSetAugments => no defs => family inert (default off).
+    augment_set_defs: (() => {
+      const owned = query.ownedSetAugments;
+      const has = (k) => owned && (typeof owned.has === "function" ? owned.has(k)
+        : Array.isArray(owned) ? owned.includes(k) : false);
+      const out = {};
+      for (const [name, def] of Object.entries(augmentSetDefs || {})) if (has(name)) out[name] = def;
+      return out;
+    })(),
     dodgeCap, mlCap,
     // U1 — user-set per-stat caps (clamp a stat's counted value); merged with the
     // armor dodge cap in buildProgram. U2 — user-set per-stat floors (best-effort).
