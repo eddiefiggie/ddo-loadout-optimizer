@@ -516,6 +516,53 @@ test("U3/AE8: a pinned below-floor item violating another dimension is still exc
   assert.strictEqual(M.eligible([pinned], query).length, 0, "floor exempt, but armor-type legality still excludes");
 });
 
+// U2 (#108) — a legal pin BELOW the character ML cap must survive the whole pool
+// build (eligible -> dominanceFilter) into model.worn, since that is the pick var the
+// solver's `x = 1` pin constraint binds to. A below-cap item is legal (the cap is an
+// upper bound), so it must NOT be silently dropped/replaced. These assert at the
+// buildModel layer (the solver test suite exercises the `x = 1` binding on the pool).
+// A helper: the kept variants for a slot after buildModel's filter+prune.
+function slotPool(model, slotName) {
+  const w = model.worn.find((x) => x.slot === slotName);
+  return w ? w.variants.map((x) => x.source_item) : [];
+}
+
+test("U2/#108: a legal pin BELOW the ML cap stays in its slot pool (survives filter + dominance)", () => {
+  // Character ML 34, auto floor (cap - 5 = 29). An ML-20 legal Necklace is pinned; an
+  // ML-34 Necklace strictly dominates it on the target. The pin must survive both the
+  // below-floor exemption AND dominance pruning so its pick var exists for `x = 1`.
+  const lowPin = v("Low Pinned Necklace", "Necklace", [["Constitution", "Enhancement", 5]], { ml: 20 });
+  const strong = v("Strong Necklace", "Necklace", [["Constitution", "Enhancement", 20]], { ml: 34 });
+  const query = { mlCap: 34, mlFloor: 29, targets: ["Constitution"],
+    slotConstraints: { Necklace: { type: "pin", variant_id: "Low Pinned Necklace" } } };
+  const pool = slotPool(M.buildModel([lowPin, strong], query), "Necklace");
+  assert.ok(pool.includes("Low Pinned Necklace"), "below-cap pin must remain in the solver's slot pool");
+});
+
+test("U2/#108: an ILLEGAL below-cap pin is STILL dropped (no regression on illegal-pin handling)", () => {
+  // Below the cap AND the floor (both exempt for a pin), but the item violates armor
+  // proficiency — an illegal-for-config pin. The pin exemption covers ONLY ML gates, so
+  // this pin must NOT reach the pool. Guards that the below-cap fix never weakens the
+  // legality drop.
+  const badPin = { ...v("Cloth Robe", "Armor", [["Constitution", "Enhancement", 10]], { ml: 20 }), type: "Cloth armor", armor_type: "cloth" };
+  const query = { mlCap: 34, mlFloor: 29, armorTypes: ["heavy"], targets: ["Constitution"],
+    slotConstraints: { Armor: { type: "pin", variant_id: "Cloth Robe" } } };
+  const pool = slotPool(M.buildModel([badPin], query), "Armor");
+  assert.ok(!pool.includes("Cloth Robe"), "an illegal (armor-type) pin is still excluded even below the cap");
+});
+
+test("U2/#108: a below-cap pin does not suppress a higher-priority legal pick in another slot", () => {
+  // Pinning a low item in one slot must not perturb another slot: a strong ML-34 Ring
+  // still wins its own slot's pool.
+  const lowPin = v("Low Pinned Necklace", "Necklace", [["Constitution", "Enhancement", 5]], { ml: 20 });
+  const strongRing = v("Strong Ring", "Ring", [["Constitution", "Enhancement", 20]], { ml: 34 });
+  const query = { mlCap: 34, mlFloor: 29, targets: ["Constitution"],
+    slotConstraints: { Necklace: { type: "pin", variant_id: "Low Pinned Necklace" } } };
+  const model = M.buildModel([lowPin, strongRing], query);
+  assert.ok(slotPool(model, "Necklace").includes("Low Pinned Necklace"), "the pinned low item is kept");
+  assert.ok(slotPool(model, "Ring").includes("Strong Ring"), "an unrelated strong slot is unaffected by the pin");
+});
+
 test("U2/AE3: Sword & Board off hand keeps shields, excludes orbs and rune arms", () => {
   const shield = { ...v("Tower Shield", "Off Hand", [["Constitution", "Enhancement", 20]]), type: "Tower shields" };
   const orb = { ...v("Arcane Orb", "Off Hand", [["Intelligence", "Enhancement", 20]]), type: "Orbs" };
