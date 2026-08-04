@@ -1908,5 +1908,125 @@ function setPiece(id, slotName, affixes, setName, tiers) {
     assert.ok(chosen.includes("GS") && chosen.includes("Shield"), "both force-pinned hands are honored (relaxed mutex)");
   });
 
+  // ---------------------------------------------------------------------------
+  // U3 — Set Augment source family. A Set Augment carries NO stats and may be
+  // slotted (into a Colorless slot) up to 3 times; the 3-piece Artifact bonus
+  // fires at exactly 3 owned copies. Copies feed the EXISTING set-threshold
+  // engine. Defs come from model.augment_set_defs (mirrors membershipSetDefs);
+  // hosts are equipped items exposing a Colorless slot.
+  // ---------------------------------------------------------------------------
+  // A set-augment def, shaped exactly like items.json augment_set_defs entries.
+  function augSetDef(affixes, pieces = 3) {
+    return {
+      tiers: [{
+        pieces_required: pieces, pieces_label: `${pieces} Pieces Equipped`,
+        affixes: affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, value, unit: "flat" })),
+        wiki_url: "https://ddowiki.com/page/Augment_Slot/Set_Augment",
+      }],
+      tier: "augment", wiki_url: "https://ddowiki.com/page/Augment_Slot/Set_Augment",
+    };
+  }
+
+  await test("U3 set-augment: 3-piece bonus ABSENT with 2 copies, PRESENT (once) with 3", async () => {
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
+    // 2 colorless-slot hosts -> at most 2 copies -> below the 3-piece threshold.
+    const two = {
+      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless"])]),
+             slot("Necklace", [host("H2", "Necklace", [], ["Colorless"])])],
+    };
+    const r2 = await S.solveLexicographic(two, highs);
+    assert.strictEqual(r2.status, "optimal");
+    assert.strictEqual(r2.effective.StatA, 0, "2 copies < 3-piece threshold -> no bonus");
+
+    // 3 colorless-slot hosts -> exactly 3 copies -> the 3-piece bonus fires ONCE.
+    const three = {
+      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless"])]),
+             slot("Necklace", [host("H2", "Necklace", [], ["Colorless"])]),
+             slot("Trinket", [host("H3", "Trinket", [], ["Colorless"])])],
+    };
+    const r3 = await S.solveLexicographic(three, highs);
+    assert.strictEqual(r3.status, "optimal");
+    assert.strictEqual(r3.effective.StatA, 10, "3 copies -> 3-piece bonus applied exactly once (10, not 30)");
+  });
+
+  await test("U3 set-augment: Σ_i y ≤ 3 — never more than 3 copies even with 4 hosts", async () => {
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
+    const model = {
+      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless"])]),
+             slot("Necklace", [host("H2", "Necklace", [], ["Colorless"])]),
+             slot("Trinket", [host("H3", "Trinket", [], ["Colorless"])]),
+             slot("Goggles", [host("H4", "Goggles", [], ["Colorless"])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.StatA, 10, "bonus fires (>=3 hosts available)");
+    assert.strictEqual((r.setAugmentsPlaced || []).length, 3, "at most 3 copies owned, never 4");
+  });
+
+  await test("U3 set-augment: a copy requires its host equipped (y ≤ x)", async () => {
+    // Slot 2 offers TWO mutually-exclusive colorless hosts (cardinality 1), so only
+    // ONE equips -> at most 2 distinct equipped hosts -> 2 copies -> no 3-piece. If
+    // y<=x were absent, the solver could count a copy on the UNequipped variant to
+    // fabricate a 3rd piece and wrongly activate the set.
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
+    const model = {
+      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless"])]),
+             slot("Necklace", [host("H2", "Necklace", [], ["Colorless"]),
+                               host("H3", "Necklace", [], ["Colorless"])], 1)],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.StatA, 0, "only 2 hosts can be equipped -> no 3rd copy, no bonus");
+    assert.ok((r.setAugmentsPlaced || []).length <= 2, "never more copies than equipped hosts");
+  });
+
+  await test("U3 set-augment: Colorless capacity is shared, not double-booked", async () => {
+    // 3 colorless-slot hosts = 3 physical Colorless slots. The set 3-piece (StatA)
+    // needs all 3 slots for its copies; an ordinary Colorless augment (StatB) also
+    // wants a Colorless slot. Lexicographic StatA first -> 3 set copies consume all 3
+    // slots, so StatB cannot ALSO be served. If the copies did not consume Colorless
+    // supply, the ordinary augment would slot "for free" and StatB would be 7.
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
+    const model = {
+      targets: ["StatA", "StatB"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      augments: [augment("ord", "Colorless", [["StatB", "Enhancement", 7]])],
+      worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless"])]),
+             slot("Necklace", [host("H2", "Necklace", [], ["Colorless"])]),
+             slot("Trinket", [host("H3", "Trinket", [], ["Colorless"])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.StatA, 10, "priority StatA: 3 copies fill all 3 Colorless slots");
+    assert.strictEqual(r.effective.StatB, 0, "no Colorless slot left for the ordinary augment (shared supply)");
+  });
+
+  await test("U3 set-augment: 3-piece Artifact bonus lands in its bucket — collapses vs a competing Artifact, stacks vs a distinct type", async () => {
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
+    const hosts = () => [
+      slot("Ring", [host("H1", "Ring", [], ["Colorless"])]),
+      slot("Necklace", [host("H2", "Necklace", [], ["Colorless"])]),
+      slot("Trinket", [host("H3", "Trinket", [], ["Colorless"])]),
+    ];
+    // Same bucket (StatA||Artifact): a worn Artifact +6 must NOT stack with the set's
+    // Artifact +10 — only the highest counts.
+    const collapse = {
+      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      worn: [...hosts(), slot("Gloves", [item("W", "Gloves", [["StatA", "Artifact", 6]])])],
+    };
+    const rc = await S.solveLexicographic(collapse, highs);
+    assert.strictEqual(rc.effective.StatA, 10, "same bucket: max(10 set, 6 worn) = 10, not 16");
+    // Distinct type (Enhancement) still stacks with the set's Artifact bonus.
+    const stack = {
+      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      worn: [...hosts(), slot("Gloves", [item("W", "Gloves", [["StatA", "Enhancement", 6]])])],
+    };
+    const rs = await S.solveLexicographic(stack, highs);
+    assert.strictEqual(rs.effective.StatA, 16, "distinct types stack: 10 Artifact + 6 Enhancement");
+  });
+
   console.log(`\n${passed} passed`);
 })();
