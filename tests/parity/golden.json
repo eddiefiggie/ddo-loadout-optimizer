@@ -146,13 +146,13 @@
    "status": "optimal",
    "perTarget": {
     "Constitution": 37,
-    "Physical Sheltering": 125,
+    "Physical Sheltering": 126,
     "Magical Sheltering": 133,
     "Fortification": 283
    },
    "effective": {
     "Constitution": 37,
-    "Physical Sheltering": 125,
+    "Physical Sheltering": 126,
     "Magical Sheltering": 133,
     "Fortification": 283
    },
@@ -163,7 +163,7 @@
     },
     {
      "slot": "Belt",
-     "variant": "Legendary Jetscale Belt"
+     "variant": "Lindal's Mighty Belt"
     },
     {
      "slot": "Bracers",
@@ -174,8 +174,16 @@
      "variant": "Mysterious Cloak (level 21)"
     },
     {
+     "slot": "Gloves",
+     "variant": "Legendary Grick-skin Gauntlets"
+    },
+    {
+     "slot": "Goggles",
+     "variant": "Legendary Mining Lenses"
+    },
+    {
      "slot": "Helmet",
-     "variant": "Legendary Downcast Bowler"
+     "variant": "Cowl of the Drow Devotee"
     },
     {
      "slot": "Main Hand",
@@ -184,10 +192,6 @@
     {
      "slot": "Necklace",
      "variant": "Legendary Climber's Remembrance"
-    },
-    {
-     "slot": "Trinket",
-     "variant": "Bauble of Draconic Resistance"
     }
    ]
   },
@@ -196,12 +200,12 @@
    "perTarget": {
     "Dexterity": 37,
     "Dodge": 36,
-    "Physical Sheltering": 134
+    "Physical Sheltering": 136
    },
    "effective": {
     "Dexterity": 37,
     "Dodge": 36,
-    "Physical Sheltering": 134
+    "Physical Sheltering": 136
    },
    "chosen": [
     {
@@ -214,11 +218,11 @@
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Doctor Gustav's Warped Lenses"
+     "variant": "Discerning Gaze"
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Duergarcraft Helm"
+     "variant": "Legendary Duergarcraft Cowl"
     },
     {
      "slot": "Main Hand",
@@ -230,7 +234,7 @@
     },
     {
      "slot": "Trinket",
-     "variant": "Legendary Periapt of Dexterity"
+     "variant": "Legendary Abyssal Compass"
     }
    ]
   },
