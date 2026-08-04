@@ -12,7 +12,18 @@
       "Bonus type is Artifact for 20 of them; Legendary Bulwark is a LEGENDARY bonus (+10% Max HP), not Artifact.",
       "Multi-stat bonuses (Dusk Raider Melee & Ranged Power, Quickblade Doublestrike & Doubleshot) are split into two affixes, one per stat, mirroring how the intrinsic set catalog represents combined bonuses.",
       "A Set Augment carries NO always-on stat — its sole contribution is this set-piece; slotting a copy suppresses the host item's own sets (correctness note for a later solver unit)."
-    ]
+    ],
+    "unscored_stats": {
+      "_note": "U9: these bonus stats have NO canonical target in the optimizer's scoring vocabulary today, so their set bonuses safely do NOT score. Left as-is deliberately (adding them to the target vocabulary is out of scope — it would expand what the optimizer optimizes). Disclosed here so the gap is transparent, not a silent miss; a future vocab addition must be a deliberate change (guarded by tests/test_augment_sets.py). The other 3 formerly-unreconciled stats (Magical/Physical Resistance Rating, Fortification Bypass) WERE canonicalized to Magical Sheltering / Physical Sheltering / Armor-Piercing (see affix_aliases.json) and now score.",
+      "stats": [
+        "Assassinate DCs",
+        "Damage vs. Helpless",
+        "Magical Resistance Rating Cap",
+        "Maximum Hit Points",
+        "Spell DCs",
+        "Tactical DCs"
+      ]
+    }
   },
   "sets": {
     "Alluring Elocution": {
@@ -29,7 +40,7 @@
     },
     "Arcane Guardian": {
       "pieces_required": 3,
-      "affixes": [{"stat": "Magical Resistance Rating", "bonus_type": "Artifact", "value": 30, "unit": "flat"}],
+      "affixes": [{"stat": "Magical Sheltering", "bonus_type": "Artifact", "value": 30, "unit": "flat"}],
       "original_item": "Citadel's Gaze (Helm)",
       "drop_site": "Too Hot to Handle"
     },
@@ -125,13 +136,13 @@
     },
     "Tough Shields": {
       "pieces_required": 3,
-      "affixes": [{"stat": "Physical Resistance Rating", "bonus_type": "Artifact", "value": 30, "unit": "flat"}],
+      "affixes": [{"stat": "Physical Sheltering", "bonus_type": "Artifact", "value": 30, "unit": "flat"}],
       "original_item": "Dumathoin's Bracers",
       "drop_site": "Temple of the Deathwyrm"
     },
     "Truthful Blow": {
       "pieces_required": 3,
-      "affixes": [{"stat": "Fortification Bypass", "bonus_type": "Artifact", "value": 30, "unit": "pct"}],
+      "affixes": [{"stat": "Armor-Piercing", "bonus_type": "Artifact", "value": 30, "unit": "pct"}],
       "original_item": "Helm of the Final Watcher",
       "drop_site": "Project Nemesis"
     },

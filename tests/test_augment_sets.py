@@ -62,7 +62,7 @@ def test_bonus_values_match_the_wiki_evidence():
 
     assert ("Charisma", "Artifact", 3) in affix_set("Alluring Elocution")
     assert ("Universal Spell Power", "Artifact", 25) in affix_set("Touch of Power")
-    assert ("Physical Resistance Rating", "Artifact", 30) in affix_set("Tough Shields")
+    assert ("Physical Sheltering", "Artifact", 30) in affix_set("Tough Shields")
     # multi-stat bonuses split into one affix per stat
     assert ("Melee Power", "Artifact", 15) in affix_set("Dusk Raider")
     assert ("Ranged Power", "Artifact", 15) in affix_set("Dusk Raider")
@@ -240,3 +240,57 @@ def test_augment_set_defs_emitted_with_21_entries():
     defs = membership.build_augment_set_defs()
     assert len(defs) == 21, f"21 augment-set defs, got {len(defs)}"
     assert set(defs) == EXPECTED
+
+
+# --- U9: canonicalize set-def stat names so the bonuses actually score --------
+
+# The 3 formerly-unreconciled stats that DO have a canonical target in the
+# scoring vocabulary. Their raw seed names were rewritten to these canonical
+# forms so the bonuses now score (canonical verified against
+# data/seed/compendium/affix_aliases.json and vocab_registries.json).
+CANONICALIZED = {
+    "Arcane Guardian": "Magical Sheltering",   # was "Magical Resistance Rating"
+    "Tough Shields": "Physical Sheltering",    # was "Physical Resistance Rating"
+    "Truthful Blow": "Armor-Piercing",         # was "Fortification Bypass"
+}
+
+# The former raw names must NOT appear anywhere in the built defs anymore.
+FORMER_RAW_NAMES = {
+    "Magical Resistance Rating", "Physical Resistance Rating", "Fortification Bypass",
+}
+
+# The 6 bonus stats with NO canonical scoring target today. They safely do not
+# score and are DISCLOSED in the seed _meta.unscored_stats. Locking this set here
+# makes any future vocab addition a DELIBERATE change (update both places).
+KNOWN_UNSCORED = {
+    "Assassinate DCs", "Damage vs. Helpless", "Magical Resistance Rating Cap",
+    "Maximum Hit Points", "Spell DCs", "Tactical DCs",
+}
+
+
+def test_aliasable_stats_now_carry_canonical_names():
+    # The 3 formerly-unreconciled-but-aliasable stats now use their canonical
+    # scoring-vocabulary names (so the set bonuses actually score); the old raw
+    # names are gone from every def.
+    defs = membership.build_augment_set_defs()
+    for set_name, canonical in CANONICALIZED.items():
+        stats = {a["stat"] for a in defs[set_name]["tiers"][0]["affixes"]}
+        assert canonical in stats, f"{set_name} now carries canonical stat {canonical!r}"
+    all_stats = {a["stat"] for d in defs.values() for a in d["tiers"][0]["affixes"]}
+    leaked = FORMER_RAW_NAMES & all_stats
+    assert not leaked, f"no def still uses a pre-canonical raw stat name: {sorted(leaked)}"
+
+
+def test_known_unscored_stats_are_the_disclosed_set():
+    # The 6 stats with no canonical scoring target are exactly the set disclosed
+    # in the seed _meta.unscored_stats, and each still appears verbatim in a built
+    # def (left as-is, safely unscored). Any future vocab addition must be a
+    # deliberate change to BOTH the seed disclosure and this test.
+    seed = json.load(open(SEED_PATH, encoding="utf-8"))
+    disclosed = set(seed["_meta"]["unscored_stats"]["stats"])
+    assert disclosed == KNOWN_UNSCORED, (
+        "seed _meta.unscored_stats.stats matches the documented known-unscored set")
+    defs = membership.build_augment_set_defs()
+    all_stats = {a["stat"] for d in defs.values() for a in d["tiers"][0]["affixes"]}
+    missing = KNOWN_UNSCORED - all_stats
+    assert not missing, f"each disclosed unscored stat is still present in a def: {sorted(missing)}"
