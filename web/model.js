@@ -245,6 +245,19 @@ function variantConflict(v, query, gates) {
   // so this is a no-op until the seed is populated AND the box is checked.
   if (v.artifact && !query.includeArtifact) return 'needs the "Include an Artifact" option';
 
+  // U6/AE — Set-augment ownership gate (v1): a Set Augment insert is only
+  // considered when the player has marked it available. `ownedSetAugments` is a
+  // Set of set-augment `set` names (array tolerated for robustness); empty or
+  // undefined => none of the 21 are eligible (default off), mirroring the Artifact
+  // opt-in above so the family is inert until a set is explicitly owned.
+  if (v.set_augment) {
+    const owned = query.ownedSetAugments;
+    const key = v.set || v.name || v.variant_id;
+    const has = owned && (typeof owned.has === "function" ? owned.has(key)
+      : Array.isArray(owned) ? owned.includes(key) : false);
+    if (!has) return "mark this Set Augment as available to consider it";
+  }
+
   return null;
 }
 
@@ -489,7 +502,7 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinned
 
 /** Build the abstract model. Returns worn slots (filtered + pruned), the
  *  augment source pool, the Dino insert pool, target list, and the dodge cap. */
-function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}, thunderForged = [], greenSteel = []) {
+function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}, thunderForged = [], greenSteel = [], augmentSetDefs = {}) {
   // U1/U2 (KTD3) — a user cap or floor can name a stat outside the priority list;
   // union those into targetSet so the dominance pre-filter and pools keep items
   // competitive on them and their buckets get built. model.targets (the strict
@@ -619,6 +632,22 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     dinoInserts: dinoPool, nearlyComplete: ncPool, viktranium: vikPool, seal: sealPool,
     thunderForged: tfPool, greenSteel: gsPool,
     membershipSetDefs: membershipSetDefs || {},
+    // U6 — set-augment definitions (piece thresholds + affixes), forwarded like
+    // membershipSetDefs so the solver's set-augment family reads model.augment_set_defs.
+    // Ownership gate on the VALUE path: the solver's set-augment y-family reads
+    // model.augment_set_defs directly (not the worn/augment pool), so filtering the
+    // stat-less variants in variantConflict is not enough — the defs dict itself must
+    // be gated, or the solver would place & score set augments the player never marked
+    // owned. Mirror the variantConflict ownership key (`set` name); empty/undefined
+    // ownedSetAugments => no defs => family inert (default off).
+    augment_set_defs: (() => {
+      const owned = query.ownedSetAugments;
+      const has = (k) => owned && (typeof owned.has === "function" ? owned.has(k)
+        : Array.isArray(owned) ? owned.includes(k) : false);
+      const out = {};
+      for (const [name, def] of Object.entries(augmentSetDefs || {})) if (has(name)) out[name] = def;
+      return out;
+    })(),
     dodgeCap, mlCap,
     // U1 — user-set per-stat caps (clamp a stat's counted value); merged with the
     // armor dodge cap in buildProgram. U2 — user-set per-stat floors (best-effort).

@@ -139,12 +139,57 @@ test("assignAugments reconstructs a deterministic augment->item host assignment"
   assert.strictEqual(byIndex.get(1)[0].variant_id, "B");
 });
 
+test("craftLabel augmentset names the set and any suppressed host set", () => {
+  assert.strictEqual(P.craftLabel({ set: "Vecna" }, "augmentset"), "Set Augment: Vecna");
+  assert.strictEqual(P.craftLabel({ set: "Vecna", suppresses: ["Legendary Might"] }, "augmentset"),
+    "Set Augment: Vecna (suppresses Legendary Might)");
+});
+
+test("U7: a placed Set Augment is emitted on its solver-decided host with the suppression note", () => {
+  const rec = makeRec();
+  rec.snapshot.setAugmentsPlaced = [{ set: "Legendary Might", host: "Vol Amulet", wiki_url: "https://ddowiki.com/x" }];
+  const v = P.project(rec);
+  const trinket = v.loadout.find((i) => i.item === "Vol Amulet");
+  const sa = trinket.crafting.find((c) => c.family === "augmentset");
+  assert.ok(sa, "the placed Set Augment rides in the host's crafting");
+  assert.strictEqual(sa.set, "Legendary Might");
+  assert.strictEqual(sa.host, "Vol Amulet", "host is the solver-decided host, read verbatim (KTD-6)");
+  assert.ok(/Set Augment: Legendary Might/.test(sa.label));
+  assert.ok(/suppresses Vol Set/.test(sa.label), "the host's own set is named suppressed inline");
+  assert.deepStrictEqual(trinket.suppressedSets, ["Vol Set"]);
+  // A non-host item carries no augmentset entry and nothing suppressed.
+  const goggles = v.loadout.find((i) => i.item === "Epic Spectacles");
+  assert.ok(!goggles.crafting.some((c) => c.family === "augmentset"));
+  assert.deepStrictEqual(goggles.suppressedSets, []);
+});
+
+test("U7: a host's suppressed set is dropped from the active sets output (shown suppressed, not active)", () => {
+  const rec = makeRec();
+  assert.ok(P.project(rec).sets.some((s) => s.set === "Vol Set"), "Vol Set is active with no suppression");
+  rec.snapshot.setAugmentsPlaced = [{ set: "Legendary Might", host: "Vol Amulet" }];
+  const v = P.project(rec);
+  assert.ok(!v.sets.some((s) => s.set === "Vol Set"), "Vol Set falls out once one member hosts a Set Augment");
+});
+
 test("results.js re-export surface is intact after the extraction (KTD2)", () => {
   for (const fn of ["attributionByTarget", "whyThis", "assignAugments", "satisfiedSetDetail", "affixLabel"]) {
     assert.strictEqual(typeof R[fn], "function", `results.js still exports ${fn}`);
   }
   // And the bound copy behaves identically to the projection's definition.
   assert.strictEqual(R.affixLabel({ name: "Con", type: "Insight", value: 4 }), P.affixLabel({ name: "Con", type: "Insight", value: 4 }));
+});
+
+test("U7/P2: a Colorless slot filled by a set-augment copy is reserved (no double-book, no phantom free slot)", () => {
+  const chosen = [{ slot: "Belt", variant: { variant_id: "Belt1", augment_slots_norm: { colors: ["Colorless"] } } }];
+  const augmentsPlaced = [{ variant_id: "aug1", color: "Colorless" }];
+  const setAugmentsPlaced = [{ set: "Quickblade", host: "Belt1", wiki_url: "x" }];
+  const r = P.assignAugments(chosen, augmentsPlaced, setAugmentsPlaced);
+  assert.strictEqual(r.byIndex.has(0), false, "ordinary augment not double-booked onto the full item");
+  assert.deepStrictEqual(r.unplaced, augmentsPlaced, "ordinary augment reported unplaced, not on a taken slot");
+  assert.strictEqual(r.freeByIndex.has(0), false, "no phantom free Colorless slot on the fully-occupied item");
+  // discriminator: a spare Colorless slot still admits the ordinary augment
+  const chosen2 = [{ slot: "Belt", variant: { variant_id: "Belt1", augment_slots_norm: { colors: ["Colorless", "Colorless"] } } }];
+  assert.strictEqual(P.assignAugments(chosen2, augmentsPlaced, setAugmentsPlaced).byIndex.has(0), true, "with a spare Colorless slot the ordinary augment lands");
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);

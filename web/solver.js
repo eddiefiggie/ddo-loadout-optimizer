@@ -287,6 +287,82 @@ function buildProgram(model) {
       augByUnique.get(id).push(place);
     }
   }
+
+  // U3 — Set Augment source family (parallel to the aggregate-augment path above,
+  // NOT folded into it). A Set Augment (model.augment_set_defs) carries NO stats of
+  // its own; its value is a 3-piece Artifact bonus that fires ONLY when 3 COPIES are
+  // slotted. The aggregate path can't model it — it values an augment solely by its
+  // stat buckets (a stat-less augment is dropped) and caps every augment at one
+  // placement. So model each set augment as its own family: a binary y[aug,i] per set
+  // augment and per equipped host item i exposing a Colorless slot, with y <= x_i
+  // (host equipped), Σ_i y <= 3 (own at most three copies), and a per-host cap so an
+  // item never hosts more copies than it has Colorless slots (keeps host attribution
+  // physically valid for U4 suppression / U7 exports). Copies SHARE the physical
+  // Colorless slots with ordinary colorless-augment demand, so each y is appended to
+  // placeByColor['Colorless'] and the per-color capacity constraint below bounds
+  // ordinary + set-augment consumption together (no double-booking). The 3-piece tier
+  // is self-seeded into the set-threshold engine further down (Part B, mirroring the
+  // chosen-membership self-seed), so the EXISTING threshold constraint fires the bonus
+  // at exactly 3 pieces. Only for the ~21 set augments (bounded), so the placement-var
+  // blowup that forced the aggregate model for ordinary augments does not apply here.
+  const augSetDefs = model.augment_set_defs || {};
+  const setAugToSeed = new Map(); // set name -> { tier, ys:[y names] } for the Part-B threshold self-seed
+  const setAugMeta = new Map();   // y var -> { set, host, wiki_url } — U7 reads placed hosts from the solve
+  const yByHost = new Map();      // host x-var name -> [y names] — per-host Colorless cap; U4 suppression hook
+  const hostsVar = new Map();     // host x-var name -> hosts_i binary (U4 suppression flag)
+  let yc = 0;
+  if (presentColors.has("Colorless")) {
+    for (const [setName, def] of Object.entries(augSetDefs)) {
+      // The 3-piece tier, kept only if it advances a ranked target — else its
+      // placement vars would be free vars buying nothing (strict: never fabricate).
+      const tier = (def.tiers || []).find((t) => t.pieces_required != null && (t.affixes || []).length);
+      if (!tier) continue;
+      if (!(tier.affixes || []).some((a) => targetSet.has(a.stat) && a.value > 0)) continue;
+      const ys = [];
+      for (const xv of xVars) {
+        const nColorless = (((xv.variant.augment_slots_norm || {}).colors) || [])
+          .filter((c) => c === "Colorless").length;
+        if (!nColorless) continue; // host exposes no Colorless slot -> cannot hold a copy
+        const y = "ya" + yc++;
+        extraVars.push(y);
+        ys.push(y);
+        extraConstraints.push(`${y} - ${xv.name} <= 0`);        // a copy only if its host is equipped
+        if (!placeByColor.has("Colorless")) placeByColor.set("Colorless", []);
+        placeByColor.get("Colorless").push(y);                  // consumes a physical Colorless slot
+        if (!yByHost.has(xv.name)) yByHost.set(xv.name, []);
+        yByHost.get(xv.name).push(y);
+        setAugMeta.set(y, { set: setName, host: xv.variant.variant_id, wiki_url: tier.wiki_url });
+      }
+      if (!ys.length) continue;                                 // no Colorless host anywhere -> unplaceable
+      extraConstraints.push(`${ys.join(" + ")} <= 3`);          // own at most three copies of this set augment
+      setAugToSeed.set(setName, { tier, ys });
+    }
+    // Per-host Colorless cap: Σ_aug y[aug,i] ≤ (Colorless slots on i)·x_i. Bounds an
+    // item's hosted copies by its Colorless slots so a copy's host attribution is
+    // always physically realizable (U4 suppression / U7 exports read placed hosts).
+    for (const [xname, ys] of yByHost) {
+      const xv = xVars.find((v) => v.name === xname);
+      const n = ((((xv || {}).variant || {}).augment_slots_norm || {}).colors || [])
+        .filter((c) => c === "Colorless").length;
+      extraConstraints.push(`${ys.join(" + ")} - ${n} ${xname} <= 0`);
+    }
+    // U4 — suppression flag hosts_i = "item i hosts at least one set-augment copy".
+    // hosts_i >= y for each copy y on i (written y - hosts_i <= 0); hosts_i is Binary
+    // so it is inherently clamped to {0,1} — an item hosting MULTIPLE copies (copies of
+    // different set augments) still suppresses its own set(s) exactly ONCE. Since y <= x_i,
+    // hosts_i <= x_i, so (x_i - hosts_i) in {0,1} = "equipped and not suppressed". The
+    // threshold loop below subtracts hosts_i from item i's intrinsic (x_i) set-piece terms.
+    // No spurious activation: hosts_i only ever RAISES a threshold constraint's LHS (harder
+    // to fire the suppressed set), and suppressing a set never helps any target, so the solver
+    // sets hosts_i to 1 only when forced up by a genuinely placed copy y.
+    for (const [xname, ys] of yByHost) {
+      const h = "hs" + hostsVar.size;
+      extraVars.push(h);
+      for (const y of ys) extraConstraints.push(`${y} - ${h} <= 0`); // hosts_i >= y
+      hostsVar.set(xname, h);
+    }
+  }
+
   // Per-color capacity: Σ placements of a color ≤ that color's open slots equipped.
   for (const [sc, ps] of placeByColor) {
     extraConstraints.push(`${ps.join(" + ")} - ${supplyTerms.get(sc).join(" - ")} <= 0`);
@@ -683,6 +759,21 @@ function buildProgram(model) {
     if (opts.length) extraConstraints.push(`${opts.join(" + ")} <= 1`); // single membership pick per host
   }
 
+  // U3 Part B — self-seed each Set Augment's 3-piece tier into the set-threshold
+  // engine (mirrors the chosen-membership self-seed above) and register its placed
+  // copies (the y vars built in Part A) as set pieces, so the EXISTING threshold
+  // constraint below fires the Artifact bonus at exactly 3 copies. A set augment is
+  // an awaken-only set — no intrinsic member exists — so the tier is reachable purely
+  // from these copies; self-seeding is idempotent if a same-named set were ever
+  // already registered.
+  for (const [setName, { tier, ys }] of setAugToSeed) {
+    if (!setTiers.has(setName)) setTiers.set(setName, new Map());
+    const byLabel = setTiers.get(setName);
+    if (!byLabel.has(tier.pieces_label)) byLabel.set(tier.pieces_label, tier);
+    if (!setPieces.has(setName)) setPieces.set(setName, []);
+    for (const y of ys) setPieces.get(setName).push(y);
+  }
+
   let sc = 0;
   for (const [setName, byLabel] of setTiers) {
     const pieceVars = setPieces.get(setName) || [];
@@ -705,7 +796,18 @@ function buildProgram(model) {
         affixes: tier.affixes || [],
         realPieces: pieceVars.filter((p) => !p.startsWith("k")),  // non-joker pieces, for the joker load-bearing check
       });
-      extraConstraints.push(`${tier.pieces_required} ${sa} - ${pieceVars.join(" - ")} <= 0`);
+      // U4 — suppression rewrite: for each piece term that is an INTRINSIC member x-var
+      // (x_i, from set_bonus/parsed_set_bonuses) whose item hosts a set-augment copy,
+      // replace x_i with (x_i - hosts_i) — "equipped and not suppressed". Only intrinsic
+      // x_i pieces registered in hostsVar are rewritten; joker (k) / membership-pick (m) /
+      // and the augment-set's OWN copy (ya) piece terms are NOT in hostsVar and pass through
+      // unchanged (a copy must never suppress its own tier). In the `pr·sa - Σpieces <= 0`
+      // form, -(x_i - hosts_i) contributes `- x_i + hosts_i`.
+      let lhs = `${tier.pieces_required} ${sa}`;
+      for (const p of pieceVars) {
+        lhs += hostsVar.has(p) ? ` - ${p} + ${hostsVar.get(p)}` : ` - ${p}`;
+      }
+      extraConstraints.push(`${lhs} <= 0`);
       for (const [k, val] of best) {
         if (!zByBucket.has(k)) zByBucket.set(k, []);
         zByBucket.get(k).push({ name: "z" + zc++, gates: [sa], value: val });
@@ -715,7 +817,7 @@ function buildProgram(model) {
 
   return {
     xVars, zByBucket, cappedStats, targetList: model.targets, model,
-    extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, jokerMeta, jokerVars, memberMeta, memberVars, _zc: zc,
+    extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], _zc: zc,
   };
 }
 
@@ -753,7 +855,10 @@ function encodeStage(program, { objectiveStat, objTerms, sense, locks, tieBreak,
     // Joker AND membership vars are both minimized here so a wildcard pick or
     // a Cannith/Dino membership pick is set to 1 only when a locked constraint forces it (it is
     // the load-bearing Nth piece of a completed set), resolving ties deterministically.
-    const minVars = [...(program.jokerVars || []), ...(program.memberVars || [])];
+    // Set-augment copy vars (y) join jokers/members in the tie-break minimization so a copy
+    // is placed ONLY when its 3-piece tier is genuinely won (a locked stat forces it) — never
+    // gratuitously, which would suppress a host's own set (U4) for nothing.
+    const minVars = [...(program.jokerVars || []), ...(program.memberVars || []), ...(program.setAugVars || [])];
     const terms = program.xVars.map((xv, i) => `+ ${i + 1} ${xv.name}`)
       .concat(minVars.map((v, i) => `+ ${n + 1 + i} ${v}`));
     L.push(" obj: " + terms.join(" "));
@@ -956,7 +1061,14 @@ function readSolution(res, program) {
   for (const [m, meta] of program.memberMeta || []) {
     if (prim(m) > 0.5 && activeSetNames.has(meta.set)) membershipPlaced.push(meta);
   }
-  return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, tfPlaced, gsPlaced, jokerPlaced, membershipPlaced };
+  // U3 — placed Set Augment copies (each {set, host, wiki_url}). A copy is reported
+  // whenever its y var is set, INDEPENDENT of whether the 3-piece set activated: the
+  // solve places copies only where load-bearing (its set advances a target and needs
+  // the copies to reach threshold), and U7/exports read the actual placed hosts from
+  // the solve rather than reconstructing them greedily.
+  const setAugmentsPlaced = [];
+  for (const [y, meta] of program.setAugMeta || []) if (prim(y) > 0.5) setAugmentsPlaced.push(meta);
+  return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, tfPlaced, gsPlaced, jokerPlaced, membershipPlaced, setAugmentsPlaced };
 }
 
 /** Achieved value of `stat` under a set of floor locks (0 if the solve is not
@@ -1029,7 +1141,7 @@ async function solveLexicographic(model, highs) {
     dinoPlaced: sol.dinoPlaced, ncPlaced: sol.ncPlaced, rollPlaced: sol.rollPlaced,
     vikPlaced: sol.vikPlaced, sealPlaced: sol.sealPlaced, jokerPlaced: sol.jokerPlaced,
     tfPlaced: sol.tfPlaced, gsPlaced: sol.gsPlaced,
-    membershipPlaced: sol.membershipPlaced,
+    membershipPlaced: sol.membershipPlaced, setAugmentsPlaced: sol.setAugmentsPlaced,
     breakdown: breakdownByTarget(program, prim), computeScale: computeScale(program),
     capped: { ...program.cappedStats }, floorReport, program,
   };

@@ -321,6 +321,37 @@ test("Solar augment is cued (the ☀️ branch of the Lunar/Solar detector)", ()
   assert.ok(/☀️ Solar/.test(toMarkdown(solar)), "MD cues a Solar augment");
 });
 
+test("U7: a placed Set Augment + host-set suppression appear in all five outputs", () => {
+  const augRec = JSON.parse(JSON.stringify(richRec));
+  augRec.snapshot.setAugmentsPlaced = [{ set: "Legendary Prowess", host: "Vol Amulet", wiki_url: "https://ddowiki.com/x" }];
+  const outs = [["md", toMarkdown(augRec)], ["bb", toBBCode(augRec)], ["csv", toCsv(augRec)], ["print", toPrintHtml(augRec)]];
+  for (const [fmt, s] of outs) {
+    assert.ok(/Set Augment: Legendary Prowess/.test(s), `${fmt} shows the placed Set Augment`);
+    assert.ok(/suppresses Vol Set/.test(s), `${fmt} shows the suppressed host set`);
+  }
+  // Portable JSON: core carries the placement verbatim (round-trips); resolved view
+  // attributes it to the solver-decided host and drops the suppressed set.
+  const j = toPortableJSON(augRec, "2026-08-04T00:00:00Z");
+  assert.strictEqual(j.core.snapshot.setAugmentsPlaced[0].host, "Vol Amulet", "core carries the placement verbatim");
+  const trinket = j.resolved.loadout.find((i) => i.item === "Vol Amulet");
+  assert.ok(trinket.crafting.some((c) => c.family === "augmentset" && c.set === "Legendary Prowess"),
+    "resolved view attributes the augment to its host");
+  assert.deepStrictEqual(trinket.suppressedSets, ["Vol Set"]);
+  assert.ok(!j.resolved.sets.some((st) => st.set === "Vol Set"), "the suppressed set is no longer active");
+});
+
+test("U7: the displayed host matches the solver-decided host, not a greedy reconstruction", () => {
+  const augRec = JSON.parse(JSON.stringify(richRec));
+  // Target the Ring even though several equipped items also have open augment slots —
+  // the host must be read verbatim from setAugmentsPlaced[].host, never reconstructed.
+  augRec.snapshot.setAugmentsPlaced = [{ set: "Legendary Prowess", host: "Moon Ring" }];
+  const resolved = toPortableJSON(augRec).resolved;
+  const onRing = resolved.loadout.find((i) => i.item === "Moon Ring");
+  const others = resolved.loadout.filter((i) => i.item !== "Moon Ring");
+  assert.ok(onRing.crafting.some((c) => c.family === "augmentset"), "the Set Augment sits on the solver's chosen host");
+  assert.ok(!others.some((i) => i.crafting.some((c) => c.family === "augmentset")), "no other item shows it");
+});
+
 test("R10/R11: toPortableJSON emits the ddo-loadout/v1 envelope with a verbatim core", () => {
   const j = toPortableJSON(richRec, "2026-08-03T00:00:00Z");
   assert.strictEqual(j.format, "ddo-loadout/v1");

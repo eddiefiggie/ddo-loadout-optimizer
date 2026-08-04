@@ -78,6 +78,11 @@ function buildQuery(state) {
     race: state.race || null,
     alignment: state.alignment || null,
     includeArtifact: !!state.includeArtifact,           // U4 — Artifact opt-in
+    // U6 — set-augment ownership gate. A Set of owned set-augment `set` names;
+    // empty => none of the 21 set augments are considered (default off).
+    ownedSetAugments: state.ownedSetAugments instanceof Set
+      ? new Set(state.ownedSetAugments)
+      : new Set(Array.isArray(state.ownedSetAugments) ? state.ownedSetAugments : []),
     slotConstraints: state.slotConstraints,
     // U1/U4 — per-priority stat caps (max) and floors (min), stat-keyed. Only clean,
     // non-negative entries are emitted; empty maps mean "no caps/floors" (default).
@@ -326,6 +331,9 @@ if (typeof window !== "undefined" && window.App) {
     const state = { step: "intro", ml: 36, mlFloor: 31, mlFloorManual: false, race: "", alignment: "", armor: "", oath: "",
       style: "", weaponTypes: [], offHand: [], offHandWeapons: [],
       includeArtifact: false,
+      // U6 — set-augment availability. A Set of owned set-augment `set` names;
+      // empty by default so the set-augment family stays inert until opted in.
+      ownedSetAugments: new Set(),
       // U1/U4 — per-priority stat caps (max) and floors (min), keyed by stat name so
       // they survive priority reordering.
       targetCaps: {}, targetFloors: {},
@@ -446,6 +454,26 @@ if (typeof window !== "undefined" && window.App) {
           <label class="wz-check"><input type="checkbox" id="wz-artifact"${state.includeArtifact ? " checked" : ""}>
             <span class="wz-check-body"><span class="wz-label">Include an Artifact</span>
             <span class="wz-help">Build around your one equippable Artifact — the optimizer picks the best-scoring one and tags its slot. Off by default.</span></span></label>
+          ${(() => {
+            // U6 — Set Augment availability. The 21 set-augment names come from the
+            // dataset's augment_set_defs (single source of truth). A checked name is
+            // added to state.ownedSetAugments; only owned set augments are considered
+            // by the solver. Collapsed by default so it stays out of the way.
+            const setNames = Object.keys(dataset.augment_set_defs || {}).sort();
+            if (!setNames.length) return "";
+            const owned = state.ownedSetAugments instanceof Set ? state.ownedSetAugments : new Set();
+            const n = owned.size;
+            return `<details class="wz-data" id="wz-setaug">
+              <summary>Set Augments I own${n ? ` · ${n} selected` : ""}</summary>
+              <div class="wz-data-body">
+                <p class="wz-help">Check the <strong>Set Augments</strong> you own. Only checked ones are considered — each grants
+                  its bonus once 3 pieces of its set are equipped. None are considered by default.</p>
+                <div class="wz-seg wz-setaug-list" id="wz-setaug-list">${setNames.map((s) =>
+                  `<label class="wz-check wz-check-inline"><input type="checkbox" data-setaug="${esc(s)}"${owned.has(s) ? " checked" : ""}>
+                    <span class="wz-check-body"><span class="wz-label">${esc(s)}</span></span></label>`).join("")}</div>
+              </div>
+            </details>`;
+          })()}
           <label class="wz-field"><span class="wz-label">Character name <span class="wz-sub">· optional</span></span>
             <span class="wz-help">Name this character to save its build and reload it later. Saved only in this browser
               (no account, cleared if you clear browser data) — use Export &amp; Data Management to move a copy between devices.</span>
@@ -938,7 +966,7 @@ if (typeof window !== "undefined" && window.App) {
           : [];
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
-          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel);
+          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs);
         const t0 = performance.now();
         // eslint-disable-next-line no-undef
         const result = await solveLexicographic(model, h);
@@ -1057,6 +1085,8 @@ if (typeof window !== "undefined" && window.App) {
       state.offHand = Array.isArray(i.offHand) ? i.offHand.slice() : [];
       state.offHandWeapons = Array.isArray(i.offHandWeapons) ? i.offHandWeapons.slice() : [];
       state.includeArtifact = !!i.includeArtifact;
+      // U6 — restore owned set augments (stored as an array; rebuilt as a Set).
+      state.ownedSetAugments = Array.isArray(i.ownedSetAugments) ? new Set(i.ownedSetAugments) : new Set();
       state.pool = i.pool || "all";
       state.ownedNames = Array.isArray(i.ownedNames) ? new Set(i.ownedNames) : null;
       state.priorities = Array.isArray(i.priorities) ? i.priorities.slice() : [];
@@ -1076,7 +1106,7 @@ if (typeof window !== "undefined" && window.App) {
         const query = rec.query || buildQuery(state);
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
-          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel);
+          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs);
         // fresh:false + the original stamp so a later Save preserves staleness (see saveCurrentCharacter).
         state.lastRun = { model, result: snap, query, fresh: false, stampedBuildId: rec.stampedBuildId || null };
         state.loadedStale = !!(rec.stampedBuildId && currentBuildId() && rec.stampedBuildId !== currentBuildId());
@@ -1248,6 +1278,16 @@ if (typeof window !== "undefined" && window.App) {
         document.getElementById("wz-race").onchange = (e) => { state.race = e.target.value; if (wizIsForged(state.race)) { state.armor = ""; state.oath = ""; } render(); };
         document.getElementById("wz-align").onchange = (e) => state.alignment = e.target.value;
         document.getElementById("wz-artifact").onchange = (e) => state.includeArtifact = e.target.checked;
+        // U6 — set-augment availability checkboxes write into state.ownedSetAugments (a Set).
+        root.querySelectorAll("#wz-setaug-list input[data-setaug]").forEach((cb) => cb.onchange = (e) => {
+          if (!(state.ownedSetAugments instanceof Set)) state.ownedSetAugments = new Set();
+          const name = e.target.getAttribute("data-setaug");
+          if (e.target.checked) state.ownedSetAugments.add(name);
+          else state.ownedSetAugments.delete(name);
+          // Refresh the summary count without re-rendering the whole step.
+          const sum = document.querySelector("#wz-setaug > summary");
+          if (sum) sum.textContent = `Set Augments I own${state.ownedSetAugments.size ? ` · ${state.ownedSetAugments.size} selected` : ""}`;
+        });
         root.querySelectorAll("#wz-armor .wz-chip").forEach((c) => c.onclick = () => {
           if (c.disabled) return; state.armor = state.armor === c.dataset.armor ? "" : c.dataset.armor;
           root.querySelectorAll("#wz-armor .wz-chip").forEach((x) => x.classList.toggle("on", x.dataset.armor === state.armor));

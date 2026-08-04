@@ -16,7 +16,7 @@
     "status", "chosen", "effective", "perTarget", "breakdown", "setsActive",
     "computeScale", "capped", "augmentsPlaced", "dinoPlaced", "ncPlaced",
     "rollPlaced", "vikPlaced", "sealPlaced", "jokerPlaced", "tfPlaced",
-    "gsPlaced", "membershipPlaced",
+    "gsPlaced", "membershipPlaced", "setAugmentsPlaced",
   ];
 
   function stripResult(result) {
@@ -34,7 +34,7 @@
   const INPUT_KEYS = [
     "characterName", "ml", "mlFloor", "mlFloorManual", "race", "alignment", "armor", "oath",
     "style", "weaponTypes", "offHand", "offHandWeapons",
-    "includeArtifact", "pool", "ownedNames", "priorities", "slotConstraints",
+    "includeArtifact", "ownedSetAugments", "pool", "ownedNames", "priorities", "slotConstraints",
     "targetCaps", "targetFloors",
   ];
 
@@ -48,6 +48,11 @@
         // array and let the loader rebuild the Set.
         inputs.ownedNames = s.ownedNames instanceof Set ? Array.from(s.ownedNames)
           : (Array.isArray(s.ownedNames) ? s.ownedNames : null);
+      } else if (k === "ownedSetAugments") {
+        // U6 — same Set-as-array precedent as ownedNames: stored as an array, the
+        // loader rebuilds the Set. Absent/other -> [] (default: none owned).
+        inputs.ownedSetAugments = s.ownedSetAugments instanceof Set ? Array.from(s.ownedSetAugments)
+          : (Array.isArray(s.ownedSetAugments) ? s.ownedSetAugments : []);
       } else {
         inputs[k] = src[k];
       }

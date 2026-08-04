@@ -35,6 +35,15 @@ test("export -> import round-trip restores characters", () => {
   assert.strictEqual(res.characters.Sook.inputs.ml, 34);
 });
 
+test("U6: ownedSetAugments (array) survives export -> import round-trip", () => {
+  const r = rec("SA", 34);
+  r.inputs.ownedSetAugments = ["Alluring Elocution", "Arcane Barrier"];
+  const text = JSON.stringify(serializeAll({ SA: r }, {}));
+  const res = parseBackup(text);
+  assert.strictEqual(res.ok, true);
+  assert.deepStrictEqual(res.characters.SA.inputs.ownedSetAugments, ["Alluring Elocution", "Arcane Barrier"]);
+});
+
 test("a current-version file imports", () => {
   const text = JSON.stringify({ schema_version: 1, characters: { Sook: rec("Sook", 34) } });
   assert.strictEqual(parseBackup(text, { current: 1, window: 3 }).ok, true);
