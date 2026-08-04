@@ -467,6 +467,57 @@ test("a docent bypasses the armor-type proficiency filter", () => {
   assert.strictEqual(kept.length, 1); // docent kept despite armorTypes=[cloth]
 });
 
+// --- #90 constraint-violation guards, exercised against the REAL built dataset ---
+// The R6 (race->body-slot) and R7 (armor-type) gates already enforce these; these
+// guards pin the *dataset tags* the gates depend on. A future re-tag that drops
+// `armor_type: "cloth"` off the robe, or `type: "Docents"` off a docent, would leak
+// the exact violations #90 reported (Docent on a Halfling, cloth robe under Heavy)
+// past a green synthetic suite — so assert directly on the shipped items.
+const REAL_ROBE = data.items.find((x) => x.source_item === "Epic Robe of Insight");
+const REAL_DOCENT = data.items.find((x) => x.type === "Docents" && x.slot === "Armor");
+
+test("#90 dataset tags: Epic Robe of Insight is a cloth body-armor Armor item", () => {
+  assert.ok(REAL_ROBE, "Epic Robe of Insight missing from dataset");
+  assert.strictEqual(REAL_ROBE.slot, "Armor");
+  assert.strictEqual(REAL_ROBE.armor_type, "cloth"); // concrete, not "unknown" (else R7 fails open)
+  assert.strictEqual(M.isDocent(REAL_ROBE), false);  // must NOT be mistaken for a docent
+});
+
+test("#90 case 2: Epic Robe of Insight (cloth) is excluded when Heavy armor is selected", () => {
+  const kept = M.eligible(data.items, { mlCap: 36, race: "human", armorTypes: ["heavy"] })
+    .filter((x) => x.source_item === "Epic Robe of Insight");
+  assert.strictEqual(kept.length, 0, "a cloth robe leaked into a Heavy-armor loadout");
+});
+
+test("#90 case 1: a real docent is rejected for a Halfling (non-Forged) with Light selected", () => {
+  assert.ok(REAL_DOCENT, "no docent in dataset");
+  const reason = M.variantConflict(REAL_DOCENT, { mlCap: 36, race: "halfling", armorTypes: ["light"] });
+  assert.strictEqual(reason, "docents are for Forged races");
+});
+
+test("#90 case 3: a real docent is eligible for a Bladeforged (and Warforged) at ML36", () => {
+  for (const race of ["bladeforged", "warforged"]) {
+    assert.strictEqual(M.variantConflict(REAL_DOCENT, { mlCap: 36, race }), null,
+      `docent should be equippable by a ${race}`);
+  }
+});
+
+test("#90 no forbidden body-slot pick leaks across the three constraint inputs (full dataset)", () => {
+  // 1) Halfling + Light: no docent, no non-light concrete body armor survives.
+  const halfling = M.eligible(data.items, { mlCap: 36, race: "halfling", armorTypes: ["light"] });
+  assert.strictEqual(halfling.filter((x) => x.slot === "Armor" && M.isDocent(x)).length, 0, "docent leaked to Halfling");
+  assert.strictEqual(halfling.filter((x) => x.slot === "Armor" && !M.isDocent(x)
+    && x.armor_type && !["light", "unknown"].includes(x.armor_type)).length, 0, "non-light body armor leaked");
+  // 2) Human + Heavy: no cloth/light/medium concrete body armor survives.
+  const heavy = M.eligible(data.items, { mlCap: 36, race: "human", armorTypes: ["heavy"] });
+  assert.strictEqual(heavy.filter((x) => x.slot === "Armor" && !M.isDocent(x)
+    && x.armor_type && !["heavy", "unknown"].includes(x.armor_type)).length, 0, "non-heavy body armor leaked to Heavy");
+  // 3) Warforged: no NON-docent body armor survives; docents remain available.
+  const wf = M.eligible(data.items, { mlCap: 36, race: "warforged" });
+  assert.strictEqual(wf.filter((x) => x.slot === "Armor" && !M.isDocent(x)).length, 0, "body armor leaked to Warforged");
+  assert.ok(wf.filter((x) => x.slot === "Armor" && M.isDocent(x)).length > 0, "no docent available to Warforged");
+});
+
 test("catalog contract: each armor class is present in the built dataset (drift guard)", () => {
   // If gear-planner's 4 armor `type` strings drift, ARMOR_TYPE_MAP misses and every
   // armor item fails open to "unknown", silently disabling the R7 gate and regressing
