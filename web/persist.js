@@ -16,7 +16,7 @@
     "status", "chosen", "effective", "perTarget", "breakdown", "setsActive",
     "computeScale", "capped", "augmentsPlaced", "dinoPlaced", "ncPlaced",
     "rollPlaced", "vikPlaced", "sealPlaced", "jokerPlaced", "tfPlaced",
-    "gsPlaced", "membershipPlaced",
+    "gsPlaced", "membershipPlaced", "setAugmentsPlaced",
   ];
 
   function stripResult(result) {

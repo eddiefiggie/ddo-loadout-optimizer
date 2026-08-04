@@ -49,6 +49,12 @@ test("stripResult drops program and keeps the panel subset", () => {
   assert.strictEqual(s.effective.Constitution, 12);
 });
 
+test("stripResult keeps setAugmentsPlaced so saved-record exports carry set augments", () => {
+  const placed = [{ set: "Quickblade", host: "some-variant-id", wiki_url: "https://ddowiki.com/page/Augment_Slot/Set_Augment" }];
+  const s = stripResult({ status: "optimal", chosen: [], effective: {}, setAugmentsPlaced: placed });
+  assert.deepStrictEqual(s.setAugmentsPlaced, placed);
+});
+
 test("serializeCharacter carries inputs, query, snapshot, build stamp; item ref keyed on variant_id", () => {
   const rec = serializeCharacter("Sook - Reaper", state, lastRun, "abc123def456");
   assert.strictEqual(rec.name, "Sook - Reaper");
