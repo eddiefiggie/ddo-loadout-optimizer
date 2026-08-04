@@ -2129,5 +2129,118 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
     assert.strictEqual(r.effective.StatS, 0, "i hosts copies -> SetS suppressed once; P2 alone < 2 pieces");
   });
 
+  // U5 — Dominance guard audit for the Set-Augment source family. The risk (three
+  // recurrences documented in milp-encoding-for-gear-optimization.md): a pre-solve
+  // dominanceFilter prunes items by their OWN affix buckets, so an item whose only
+  // marginal worth is exposing a Colorless slot to HOST a needed set-augment copy
+  // could be pruned before it can host one — making a 3-piece set unreachable.
+  //
+  // FINDING: dominates() is ALREADY safe for this family — no new guard needed.
+  // "Exposes a Colorless slot" is not a new value dimension; it is augment-slot
+  // capacity, which dominates() already accounts for via its augment-color multiset
+  // check (variantAugColors -> the raw `augment_slots` list). For real-shaped data
+  // (norm.colors is DERIVED from raw augment_slots at build time, src/colors.py),
+  // "A dominates B" therefore implies A holds >= B's Colorless capacity, so A is
+  // itself a viable host — B is never wrongly pruned. These tests pin that, per the
+  // checklist's "prove it with a test" mandate, plus the objective-reads-the-tier
+  // and ordinary-dominance-still-works audits. (dominanceFilter/dominates live in
+  // model.js, out of this unit's edit scope; asserting them from here is deliberate.)
+  //
+  // A buildModel-ELIGIBLE worn item that mirrors REAL data: verified, ML in-band,
+  // and — the load-bearing detail for this audit — raw `augment_slots` populated in
+  // lockstep with augment_slots_norm.colors, so the dominance guard (reads raw) and
+  // the solver's set-augment host check (reads norm) see the same Colorless capacity.
+  function eligItem(id, slotName, affixes, colors) {
+    return {
+      variant_id: id, source_item: id, slot: slotName, category: "item",
+      ml: 30, minimum_level: 30, verification: "verified",
+      restrictions: "unknown", armor_type: null,
+      affixes: (affixes || []).map(([stat, bt, v]) => ({ stat, bonus_type: bt, name: stat, type: bt, value: v, unit: "flat" })),
+      scaling: [], set_bonus: [], parsed_set_bonuses: [],
+      augment_slots: (colors || []).map((c) => `${c} Augment Slot`),        // raw (guard reads this)
+      augment_slots_norm: { colors: colors || [], quarantined: [] },        // normalized (solver reads this)
+    };
+  }
+
+  await test("U5: dominates() already treats a Colorless slot as a value dimension (no new guard needed)", async () => {
+    const M = require("../web/model.js");
+    const ts = new Set(["StatA", "StatB"]);
+    const strong = eligItem("strong", "Trinket", [["StatB", "Enhancement", 5]], []);  // affix, NO Colorless slot
+    const clHost = eligItem("clHost", "Trinket", [], ["Colorless"]);                  // value-less, exposes a Colorless slot
+    const weak = eligItem("weak", "Trinket", [["StatB", "Enhancement", 1]], []);      // strictly worse, no slot
+    // The whole point: an affix item that lacks a Colorless slot must NOT dominate a
+    // value-less Colorless host, or a needed set-augment copy would lose its only host.
+    assert.strictEqual(M.dominates(strong, clHost, ts, 34), false,
+      "affix-without-slot must NOT dominate a value-less Colorless host (Colorless capacity is a value dimension)");
+    // Ordinary dominance is untouched: the strong item still beats a genuinely worse no-slot peer.
+    assert.strictEqual(M.dominates(strong, weak, ts, 34), true,
+      "ordinary dominance still prunes a strictly-worse no-slot peer");
+  });
+
+  await test("U5: a value-less Colorless host needed to host a set-augment copy is NOT pruned (end-to-end)", async () => {
+    // The set-augment 3-piece (StatA) is the top target; the ONLY way to reach 3
+    // copies is to keep all three Colorless hosts — including one that is bucket-
+    // dominated by its slot-mate and whose sole worth is its Colorless slot.
+    const M = require("../web/model.js");
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 30]]) };
+    const query = { mlCap: 34, targets: ["StatA", "StatB"], targetCaps: {}, targetFloors: {} };
+    const variants = [
+      eligItem("N", "Necklace", [], ["Colorless"]),                       // dedicated host
+      eligItem("C", "Cloak", [], ["Colorless"]),                          // dedicated host
+      eligItem("Taffix", "Trinket", [["StatB", "Enhancement", 5]], []),   // bucket-dominates its slot-mate, NO slot
+      eligItem("Thost", "Trinket", [], ["Colorless"]),                    // value-less, the 3rd (and only remaining) Colorless host
+    ];
+    const model = M.buildModel(variants, query);
+    model.augment_set_defs = def;
+    const trinket = model.worn.find((w) => w.slot === "Trinket");
+    assert.ok(trinket && trinket.variants.some((v) => v.variant_id === "Thost"),
+      "the value-less Colorless host survived dominanceFilter despite a bucket-dominating slot-mate");
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.StatA, 30,
+      "3rd Colorless host kept -> 3 copies -> set-augment 3-piece completes end-to-end (objective reads the tier)");
+    assert.strictEqual((r.setAugmentsPlaced || []).length, 3, "exactly 3 copies placed");
+  });
+
+  await test("U5: a full 3-piece set-augment build is reachable — every contested Colorless host survives", async () => {
+    // All three set slots are contested by an affix rival that bucket-dominates the
+    // value-less Colorless host. All three hosts must survive for the set to complete.
+    const M = require("../web/model.js");
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 30]]) };
+    const query = { mlCap: 34, targets: ["StatA", "StatB"], targetCaps: {}, targetFloors: {} };
+    const slots = ["Necklace", "Cloak", "Trinket"];
+    const variants = [];
+    for (const s of slots) {
+      variants.push(eligItem(`${s}_affix`, s, [["StatB", "Enhancement", 5]], []));  // affix, no slot
+      variants.push(eligItem(`${s}_host`, s, [], ["Colorless"]));                   // value-less Colorless host
+    }
+    const model = M.buildModel(variants, query);
+    model.augment_set_defs = def;
+    for (const s of slots) {
+      const w = model.worn.find((x) => x.slot === s);
+      assert.ok(w && w.variants.some((v) => v.variant_id === `${s}_host`),
+        `${s}'s Colorless host survived the pre-filter (mutually non-dominating with its affix rival)`);
+    }
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.StatA, 30, "3 hosts kept across contested slots -> the 3-piece set is reachable");
+    assert.strictEqual((r.setAugmentsPlaced || []).length, 3, "exactly 3 copies placed");
+  });
+
+  await test("U5 (regression): ordinary dominance still prunes a genuinely dominated item with no hosting value", async () => {
+    // Neither candidate exposes a Colorless slot; one is strictly better. The worse
+    // one has no set-augment-hosting value, so it must still be pruned (no over-guard).
+    const M = require("../web/model.js");
+    const query = { mlCap: 34, targets: ["StatB"], targetCaps: {}, targetFloors: {} };
+    const variants = [
+      eligItem("G_strong", "Goggles", [["StatB", "Enhancement", 10]], []),
+      eligItem("G_weak", "Goggles", [["StatB", "Enhancement", 5]], []),  // strictly worse, no slot
+    ];
+    const model = M.buildModel(variants, query);
+    const g = model.worn.find((w) => w.slot === "Goggles");
+    assert.strictEqual(g.variants.length, 1, "the strictly-worse no-slot item is pruned by ordinary dominance");
+    assert.strictEqual(g.variants[0].variant_id, "G_strong", "the dominator is the survivor");
+  });
+
   console.log(`\n${passed} passed`);
 })();
