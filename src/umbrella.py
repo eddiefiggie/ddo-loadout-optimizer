@@ -22,6 +22,23 @@ def is_umbrella(stat: str) -> bool:
     return (stat or "").strip().lower() in _UMBRELLA
 
 
+def umbrella_expansion() -> dict:
+    """Public, read-only: ``{lowercased umbrella name: [the six ability names]}``.
+
+    Emitted to the dataset so the picker can (a) stop offering a name this module
+    expands away — no item can ever carry it, so ranking it scores nothing — and
+    (b) redirect the player to the concrete stats it becomes.
+
+    ``_UMBRELLA`` is the single source of truth and is deliberately NOT extended
+    for picker purposes: it drives :func:`_expand_affix`, so adding a name here
+    rewrites every matching affix into the six ability scores at build time. Bare
+    ``Sheltering`` is a different mechanism with a different expansion target
+    (Physical + Magical Sheltering, expanded at the web/dataset.js seam) and must
+    never be added to this set.
+    """
+    return {name: list(ABILITIES) for name in sorted(_UMBRELLA)}
+
+
 def _expand_affix(affix: dict) -> list:
     if is_umbrella(affix.get("stat", "")):
         return [{**affix, "stat": ab} for ab in ABILITIES]

@@ -907,6 +907,13 @@ if (typeof window !== "undefined" && window.App) {
       // known set (U5; also fixes the prior undefined-`statSet` reference).
       v = vocab.canonical((v || "").trim()); const status = document.getElementById("wz-status");
       if (!v) return false;
+      // U1 (#136) — an expanded-away name (Well Rounded, All Ability Scores) is still
+      // in `known` via the affix registry, so the known-check below would accept it and
+      // the player would rank a priority no item can ever satisfy. Refuse it here and
+      // point at the concrete stats it becomes. Must precede the `known` check.
+      const _dn = _datasetNormalizer();
+      const awayMsg = (_dn && _dn.expandedAwayMessage) ? _dn.expandedAwayMessage(vocab, v) : null;
+      if (awayMsg) { if (status) status.textContent = awayMsg; return false; }
       if (!vocab.known.has(v)) { if (status) status.textContent = `"${v}" isn't a known affix in the dataset.`; return false; }
       if (state.priorities.includes(v)) return false;
       state.priorities.push(v); if (status) status.textContent = ""; return true;

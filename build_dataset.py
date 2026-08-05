@@ -234,6 +234,11 @@ def rankable_affixes(planner_records) -> list:
         counts.update(seen)
     names = {s for s, c in counts.items() if c >= 2}
     names |= set(CORE_STATS)
+    # U1 (#136) — drop umbrella names. `src/umbrella.py` expands them into the six
+    # concrete abilities at build time, so NO item can ever carry one; offering the
+    # name gives the player a priority guaranteed to score zero. The picker
+    # redirects to the abilities instead (metadata.expanded_away_names).
+    names = {s for s in names if not umbrella_mod.is_umbrella(s)}
     return sorted(names)
 
 
@@ -554,6 +559,10 @@ def build() -> dict:
             # minimal exception to gear-planner sole-authority).
             "gap_corrections_coverage": _gap_coverage,
             "rankable_affixes": rankable_affixes(planner_records),
+            # U1 (#136) — names this build EXPANDS AWAY, mapped to what they become.
+            # The picker drops them from suggestions and redirects the player to the
+            # replacements, instead of offering a priority no item can satisfy.
+            "expanded_away_names": umbrella_mod.umbrella_expansion(),
             # U5 — the shared affix-name registry + variant->canonical alias table.
             # The web picker unions every affix source (gear, augments, set bonuses,
             # ALL crafting pools) and canonicalizes each through the alias table, so a
