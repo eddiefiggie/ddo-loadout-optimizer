@@ -19,6 +19,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 
 from src.variants import expand_dataset
 from src import verify as verify_mod
@@ -78,6 +79,23 @@ GEARPLANNER_ITEMS_PATH = os.path.join(HERE, "data", "seed", "compendium", "raw",
 VOCAB_REGISTRIES_PATH = os.path.join(HERE, "data", "seed", "compendium", "vocab_registries.json")
 
 
+# U2 (#136 batch) — upstream gear-planner passthrough noise: an affix NAME that
+# carries no information (a wiki filler placeholder, or a bare enhancement "plus"
+# the planner stored as its own name). Mirrors `isNoiseAffix` in web/dataset.js
+# EXACTLY — that filter drops these from item affixes at load, and this one keeps
+# them out of the EMITTED registry, which is the last surface still offering them
+# to the picker's free-typed `known` set. Keep the two rules in sync: if they
+# drift, a name the client strips can still be typed as a priority.
+NOISE_AFFIX_NAMES = frozenset({"See the item description page for details."})
+_BARE_NUMBER_NAME = re.compile(r"^[+-]?\d+%?$")
+
+
+def is_noise_affix_name(name: str) -> bool:
+    """True for an affix NAME that is passthrough noise rather than a stat."""
+    n = (name or "").strip()
+    return n in NOISE_AFFIX_NAMES or bool(_BARE_NUMBER_NAME.match(n))
+
+
 def load_affix_vocabulary() -> tuple:
     """U5 — the affix-name registry + the variant->canonical alias table the web
     priority-picker consumes. The registry is the frozen checked-in affix-name
@@ -87,6 +105,13 @@ def load_affix_vocabulary() -> tuple:
     augments, and crafting all carry — so a single target matches every source.
     Deterministic (sorted list from a checked-in file; dict order from the file)."""
     registry = vocabulary_mod._load(VOCAB_REGISTRIES_PATH).get("affix_names", [])
+    # U2 — filter noise names HERE, at the emit site, not in generate_registries().
+    # `check_referential_integrity()` validates every raw affix name against the
+    # frozen checked-in registry as its baseline, so removing names at generation
+    # would make that baseline reject data it must accept. Filtering on the way out
+    # keeps the frozen file intact as the integrity baseline while keeping the
+    # noise out of the picker's free-typed `known` set.
+    registry = [n for n in registry if not is_noise_affix_name(n)]
     alias_map, _distinct = vocabulary_mod.load_affix_aliases()
     return registry, alias_map
 

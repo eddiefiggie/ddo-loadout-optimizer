@@ -73,3 +73,54 @@ def test_rankable_derivation_is_a_subset_signal_not_input_restriction():
     ra = ds["metadata"]["rankable_affixes"]
     all_stats = {a["stat"] for it in ds["items"] for a in it.get("affixes") or []}
     assert len(ra) < len(all_stats), (len(ra), len(all_stats))
+
+
+# ---------------------------------------------------------------------------
+# U1/U2 (plan 2026-08-05-001) — picker-vocabulary hygiene at the generator.
+# ---------------------------------------------------------------------------
+
+def test_umbrella_names_are_not_rankable_and_the_abilities_are():
+    """U1 (#136) — umbrella.py expands these away at build time, so no item can
+    carry one; offering the name gives the player a priority that scores zero."""
+    ds = _build()
+    ra = set(ds["metadata"]["rankable_affixes"])
+    assert "Well Rounded" not in ra
+    assert "All Ability Scores" not in ra
+    for ability in ["Strength", "Dexterity", "Constitution",
+                    "Intelligence", "Wisdom", "Charisma"]:
+        assert ability in ra, f"{ability} must stay rankable — it is the redirect target"
+
+
+def test_expanded_away_names_are_emitted_with_their_replacements():
+    """U1 — the picker reads this to drop the name AND redirect the player."""
+    meta = _build()["metadata"]
+    away = meta.get("expanded_away_names")
+    assert away, "expanded_away_names must be emitted"
+    assert "well rounded" in away, "keyed lowercase for case-insensitive matching"
+    assert away["well rounded"] == ["Strength", "Dexterity", "Constitution",
+                                    "Intelligence", "Wisdom", "Charisma"]
+    assert "sheltering" not in away, (
+        "Sheltering expands to Physical/Magical Sheltering, NOT the six abilities -- "
+        "routing it here would zero out PRR/MRR on every Sheltering item"
+    )
+
+
+def test_noise_names_are_absent_from_the_emitted_affix_registry():
+    """U2 — the emitted registry feeds the picker's free-typed `known` set."""
+    import build_dataset as B
+    reg = _build()["metadata"]["affix_registry"]
+    assert "See the item description page for details." not in reg
+    assert not [n for n in reg if B._BARE_NUMBER_NAME.match(n or "")], "bare-number names leaked"
+
+
+def test_noise_filter_is_at_the_emit_site_leaving_the_frozen_baseline_intact():
+    """U2 — filtering inside generate_registries() would make the referential-
+    integrity gate reject data it must accept, since that gate validates against
+    the frozen checked-in registry as its baseline."""
+    import json
+    import build_dataset as B
+    frozen = json.load(open(B.VOCAB_REGISTRIES_PATH))["affix_names"]
+    assert "See the item description page for details." in frozen, (
+        "the frozen baseline must still carry the noise name -- it is what the "
+        "integrity gate validates raw data against"
+    )
