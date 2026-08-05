@@ -1,6 +1,6 @@
 // U2 — load-time dataset normalizer. Run: node tests/dataset.test.js
 const assert = require("assert");
-const { normalizeItem, buildPickerVocabulary } = require("../web/dataset.js");
+const { normalizeItem, buildPickerVocabulary, expandedAwayFor, expandedAwayMessage } = require("../web/dataset.js");
 
 let passed = 0;
 function test(name, fn) {
@@ -120,14 +120,72 @@ test("U6/R4: a sentence-shaped proc line stays out of suggestions but remains fr
   assert.ok(v.known.has("On a Critical Hit, this weapon applies the Shaken debuff."), "but it stays free-typeable");
 });
 
-// R1 — the umbrella dead end U1 must close. Documents the CURRENT (broken)
-// state: `Well Rounded` is still offered even though umbrella.py expands it
-// away, so no item can ever carry it. U1 flips this assertion.
-test("U6/R1: `Well Rounded` is still offered today — the dead end U1 closes", () => {
+// ---------------------------------------------------------------------------
+// U1 (plan 2026-08-05-001, #136) — retire names the build expands away.
+// `src/umbrella.py` rewrites "Well Rounded" / "All Ability Scores" into the six
+// ability affixes at build time, so NO item can carry them. Offering the name
+// gave the player a priority guaranteed to score zero.
+// ---------------------------------------------------------------------------
+
+test("U1/R1: an expanded-away name is not offered as a suggestion", () => {
   const v = builtVocab();
   if (!v) return console.log("  (skipped — web/data/items.json not built)");
-  assert.ok(v.suggestions.includes("Well Rounded"), "characterizes the pre-U1 state");
-  assert.ok(v.known.has("Well Rounded"), "and it is free-typeable via the registry");
+  assert.ok(!v.suggestions.includes("Well Rounded"), "Well Rounded is retired from suggestions");
+  assert.ok(!v.suggestions.includes("All Ability Scores"), "All Ability Scores likewise");
+});
+
+test("U1/R1: the six ability scores stay rankable — the redirect target exists", () => {
+  const v = builtVocab();
+  if (!v) return console.log("  (skipped — web/data/items.json not built)");
+  for (const ab of ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"]) {
+    assert.ok(v.suggestions.includes(ab), `${ab} is still offered`);
+  }
+});
+
+test("U1/R1: an expanded-away name is still free-typeable, so the redirect can fire", () => {
+  const v = builtVocab();
+  if (!v) return console.log("  (skipped — web/data/items.json not built)");
+  // It stays in `known` via the affix registry. That is WHY addPriority needs its
+  // own guard — the known-check alone would accept it.
+  assert.ok(v.known.has("Well Rounded"), "still in the free-typed known set");
+  assert.ok(expandedAwayFor(v, "Well Rounded"), "and the guard recognizes it");
+});
+
+test("U1/R1: the redirect names the six ability scores", () => {
+  const v = builtVocab();
+  if (!v) return console.log("  (skipped — web/data/items.json not built)");
+  const msg = expandedAwayMessage(v, "Well Rounded");
+  assert.ok(msg, "a redirect message is produced");
+  for (const ab of ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"]) {
+    assert.ok(msg.includes(ab), `the redirect names ${ab}`);
+  }
+});
+
+test("U1/R1: the guard is case-insensitive (a free-typed value may not match casing)", () => {
+  const v = builtVocab();
+  if (!v) return console.log("  (skipped — web/data/items.json not built)");
+  assert.ok(expandedAwayFor(v, "well rounded"), "lowercase matches");
+  assert.ok(expandedAwayFor(v, "  WELL ROUNDED  "), "uppercase and padded matches");
+  assert.strictEqual(expandedAwayFor(v, "Constitution"), null, "a real stat is not caught");
+});
+
+test("U1/KTD2: a stale dataset without the metadata field still drops the names", () => {
+  // Defense in depth — the hardcoded fallback path.
+  const stale = buildPickerVocabulary({ metadata: { rankable_affixes: ["Well Rounded", "Constitution"] } });
+  assert.ok(!stale.suggestions.includes("Well Rounded"), "dropped via the fallback constant");
+  assert.ok(stale.suggestions.includes("Constitution"), "an ordinary stat is untouched");
+});
+
+test("U1/KTD2: `Sheltering` is NOT routed through the expanded-away set", () => {
+  const v = builtVocab();
+  if (!v) return console.log("  (skipped — web/data/items.json not built)");
+  // Sheltering expands to Physical/Magical Sheltering, NOT the six abilities.
+  // Its own suggest.delete line owns it. If it ever appears here, someone folded
+  // it into umbrella handling — which would rewrite every Sheltering affix into
+  // ability scores at build time and zero out PRR/MRR.
+  assert.strictEqual(expandedAwayFor(v, "Sheltering"), null, "Sheltering is not an umbrella name");
+  assert.ok(!v.suggestions.includes("Sheltering"), "but it is still not suggested (its own line)");
+  assert.ok(v.suggestions.includes("Physical Sheltering"), "and PRR/MRR remain rankable");
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);

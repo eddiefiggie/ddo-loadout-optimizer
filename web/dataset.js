@@ -77,6 +77,15 @@ function normalizeAffix(a) {
 // picker vocabulary excludes them); they only clutter the raw browse affix list.
 // Dropped at normalize time so items.json at rest stays a faithful passthrough.
 var NOISE_AFFIX_NAMES = new Set(["See the item description page for details."]);
+// U1 (#136) — fallback for `metadata.expanded_away_names` on a dataset built before
+// that field existed. Mirrors src/umbrella.py `_UMBRELLA` -> ABILITIES. Keyed lowercase.
+// Bare "Sheltering" is NOT here: it expands to Physical/Magical Sheltering, a different
+// mechanism, and is dropped by its own line in buildPickerVocabulary.
+var EXPANDED_AWAY_FALLBACK = {
+  "all ability scores": ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"],
+  "all ability score": ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"],
+  "well rounded": ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"],
+};
 function isNoiseAffix(a) {
   if (!a || typeof a !== "object") return false;
   var name = a.name != null ? a.name : a.stat;
@@ -316,8 +325,38 @@ function buildPickerVocabulary(dataset) {
   // picker suggestion: it's a shorthand for both PRR and MRR, not a targetable stat,
   // and offering it would point a priority at a target almost nothing satisfies.
   // Physical/Magical Sheltering (and the PRR/MRR aliases) are the real targets.
+  // NOTE: this line stands on its own. It is deliberately NOT folded into the
+  // expanded-away set below — Sheltering expands to PRR/MRR, umbrella names expand
+  // to the six abilities, and src/umbrella.py's set drives that build-time rewrite.
   suggest.delete("Sheltering");
-  return { suggestions: [...suggest].sort(), known, canonical, presence };
+  // U1 (#136) — names the build expands away, so no item can carry them. Authoritative
+  // source is metadata.expanded_away_names; the constant is the fallback for a stale
+  // cached dataset built before that field existed. Keyed lowercase.
+  const expandedAway = {};
+  const emitted = meta.expanded_away_names;
+  const src = (emitted && typeof emitted === "object" && Object.keys(emitted).length)
+    ? emitted : EXPANDED_AWAY_FALLBACK;
+  for (const k of Object.keys(src)) expandedAway[String(k).trim().toLowerCase()] = src[k].slice();
+  for (const s of [...suggest]) {
+    if (expandedAway[String(s).trim().toLowerCase()]) suggest.delete(s);
+  }
+  return { suggestions: [...suggest].sort(), known, canonical, presence, expandedAway };
+}
+
+/** U1 (#136) — the concrete stats an expanded-away name becomes, or null.
+ *  Case-insensitive, because a free-typed value may not match the picker's casing.
+ *  Shared by every add-a-priority path (wizard, query) and by the saved-character
+ *  load check, so the rule lives in ONE place. */
+function expandedAwayFor(vocab, name) {
+  const map = (vocab && vocab.expandedAway) || {};
+  const hit = map[String(name == null ? "" : name).trim().toLowerCase()];
+  return (hit && hit.length) ? hit : null;
+}
+
+/** U1 (#136) — the player-facing redirect for an expanded-away name, or null. */
+function expandedAwayMessage(vocab, name) {
+  const to = expandedAwayFor(vocab, name);
+  return to ? `"${name}" is shorthand for ${to.join(", ")} — rank those instead.` : null;
 }
 
 /** U5, Part C — one-time load migration for a persisted loadout snapshot. Runs the
@@ -333,8 +372,8 @@ function migrateLoadout(snapshot) {
 // Browser: expose a global so app.js can normalize the fetched dataset without a
 // module system. Node: CommonJS export for the tests + parity harness.
 if (typeof window !== "undefined") {
-  window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, migrateLoadout };
+  window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, migrateLoadout, expandedAwayFor, expandedAwayMessage };
 }
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, migrateLoadout };
+  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, migrateLoadout, expandedAwayFor, expandedAwayMessage };
 }

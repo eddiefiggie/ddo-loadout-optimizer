@@ -295,3 +295,27 @@ def test_no_alias_maps_between_a_recorded_distinct_pair():
         assert frozenset([variant, canonical]) not in pairs, (
             f"alias {variant!r} -> {canonical!r} merges a pair recorded as distinct"
         )
+
+
+# ---------------------------------------------------------------------------
+# U1 (plan 2026-08-05-001, #136) — names the build expands away must not be
+# offered as rankable priorities: umbrella.py rewrites them into the six
+# abilities, so no item can ever carry one.
+# ---------------------------------------------------------------------------
+
+def test_umbrella_expansion_maps_every_umbrella_name_to_the_six_abilities():
+    from src import umbrella as U
+    exp = U.umbrella_expansion()
+    assert exp, "the expansion map is non-empty"
+    for name, replacements in exp.items():
+        assert U.is_umbrella(name), f"{name!r} must be an umbrella name"
+        assert replacements == U.ABILITIES, f"{name!r} expands to the six abilities"
+
+
+def test_sheltering_is_not_an_umbrella_name():
+    """Guard: adding Sheltering to _UMBRELLA would make _expand_affix rewrite every
+    Sheltering affix into the six ability scores, zeroing PRR/MRR on all gear.
+    Sheltering expands to Physical/Magical Sheltering at the web/dataset.js seam."""
+    from src import umbrella as U
+    assert not U.is_umbrella("Sheltering")
+    assert "sheltering" not in U.umbrella_expansion()

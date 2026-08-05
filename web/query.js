@@ -80,6 +80,12 @@ window.App && window.App.ready((dataset) => {
     // so it matches the ONE name gear/augments/crafting carry (U5).
     stat = vocab.canonical((stat || "").trim());
     if (!stat || ranked.includes(stat)) return;
+    // U1 (#136) — an expanded-away name is still in `known` via the affix registry, so
+    // the known-check below would accept a priority no item can ever satisfy. Refuse it
+    // and point at the concrete stats it becomes. Must precede the `known` check.
+    const DN = window.DatasetNormalizer;
+    const awayMsg = (DN && DN.expandedAwayMessage) ? DN.expandedAwayMessage(vocab, stat) : null;
+    if (awayMsg) { $("q-status").textContent = awayMsg; return; }
     if (!vocab.known.has(stat)) { $("q-status").textContent = `"${stat}" isn't a known affix in the dataset.`; return; }
     ranked.push(stat);
     $("q-add").value = "";
