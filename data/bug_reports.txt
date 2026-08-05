@@ -66,3 +66,23 @@ New batch of reports:
 3) Feature — add a S&B (sword and board) combat style where the user can pick the shield size/type.
 4) Bug — pinned items below the ML cap get unpinned and replaced. A pin should be honored regardless of the item's ML relative to the cap (or at least not silently dropped/replaced).
 5) Data — "Enhancement Negative Amp" isn't a real affix outside of Lunar gems (unless something new was added). Likely a bad affix/bonus-type entry to verify and quarantine.
+
+New batch of reports (2026-08-05):
+1) Speed items are not counting towards Melee and Ranged Alacrity. Topaz of Swiftness 15% is missing the Melee Alacrity affix. Check other related items.
+2) Perfect Silence Colorless 30 — verified no solver-eligible affixes. They are there, look accurate, but set bonuses are not listed in the inventory (which is itself a gap imo).
+3) "Profane Well Rounded" does not seem to exist properly as an affix. After having chosen it, it doesn't return any items with that attribute.
+4) A user couldn't pin a longsword in the off-hand — some builds make this possible. Some builds have two weapon fighting; confirm the mechanic with the DDO wiki. The current logic keeps putting a shield or rune arm in the off-hand.
+5) When building for spell critical rate it doesn't seem to have the typing on solar augments; it doesn't seem to use the solar crit rate augment at all.
+6) The Gem of Many Facets and its set-bonus variability doesn't seem to work correctly. Is it able to consider the set bonus variables, and does it have access to the other set pieces that make a set bonus? The question stems because users have not seen builds with it being used.
+7) Some affixes have a composite nature — confirm the mechanics on the DDO wiki for Crown of Summer, Parry, Riposte, Good Luck and Greater Heroism; those are the ones I have noticed but there likely are far more. These do not seem to be considered.
+
+Standing rule for this batch: as we handle these observations, all should be validated by the DDO wiki for correctness.
+
+Filed 2026-08-05 (tracking issue #141):
+- #134 (report 1) Topaz of Swiftness 15% missing Melee Alacrity — confirmed data gap
+- #135 (report 2) Set bonuses absent from browse — confirmed, also unfindable via the stat filter
+- #136 (report 3) "Profane Well Rounded" — data correct by design (umbrella.py); the picker offer is the bug
+- #137 (report 4) Longsword in the off hand — confirmed, two independent causes (opt-in gate + pin routing)
+- #138 (report 5) Solar augment typing — premise does not hold; gems are typed, the cause is naming
+- #139 (report 6) Gem of Many Facets — mechanic already confirmed; only the Legendary tier is wired
+- #140 (report 7) Composite affixes — splits: 2 of 5 are Bool, 3 already score magnitude
