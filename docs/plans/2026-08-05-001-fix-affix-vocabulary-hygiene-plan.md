@@ -4,7 +4,7 @@ type: fix
 date: 2026-08-05
 topic: affix-vocabulary-hygiene
 artifact_contract: ce-unified-plan/v1
-artifact_readiness: requirements-only
+artifact_readiness: implementation-ready
 product_contract_source: ce-brainstorm
 execution: code
 ---
@@ -17,6 +17,7 @@ execution: code
 - **Product authority:** eddiefiggie (project owner).
 - **Open blockers:** None.
 - **Reports addressed:** 2026-08-05 batch reports 3 (Profane Well Rounded), 5 (solar spell crit naming), and the naming half of 7 (Parry/Riposte/Good Luck). Also the standing §3-C recommendation from `docs/reports/2026-08-01-bug-report-audit.md`.
+- **Product Contract preservation:** Product Contract unchanged — R1–R11, AE1–AE4, and the three Key Decisions are carried verbatim. Planning added the Planning Contract, Implementation Units, Verification Contract, and Definition of Done below. Two Problem Frame claims are superseded by planning research and corrected here rather than edited in place: the §3-C allowlist recommendation is **not** unimplemented — PR #71 shipped the auto-classification mechanism, with curation still outstanding (KTD6) — and R4/R9 are already satisfied by shipped code, so no work is planned for them.
 
 ---
 
@@ -97,10 +98,14 @@ The standing audit calls the boolean-suggestion exclusion "the single most-repea
 
 ### Scope Boundaries
 
+- **R6/R7 are bounded to four composites for this batch** — `Crown of Summer`, `Greater Heroism`, `Blurry`, `Lesser Displacement`. The remaining presence-flagged names (791 after normalization) are a later batch; the wiki throttles after roughly eight rapid calls, so an unbounded harvest cannot land here.
+- **R5's curated allowlist.** `PRESENCE_ALLOW`/`PRESENCE_DENY` ship empty as override hooks; populating them deliberately is its own pass (KTD6).
+- **Retiring the shipped `suggest.delete("Sheltering")` one-off.** It works, no report asked for it, and folding it in risks the six-ability-score expansion (KTD2).
 - Reports 1, 2, 4, and 6 — covered by the sibling plans for data reconciliation and off-hand dual-wield.
 - A general silent-zero audit across the whole vocabulary. R3 covers the player-facing case; a repeatable census is a later idea, not this batch.
-- Changing how the solver buckets stats. R9 explicitly leaves working buckets alone.
+- Changing how the solver buckets stats. R9 explicitly leaves working buckets alone, and KTD4b's vocabulary addition touches no solver code.
 - Relaxing the boolean suggestion filter wholesale, which is what R5's curation exists to prevent.
+- **Report 5 resolves by diagnosis, not code.** The reported spell-crit terms are wrong names rather than missing affixes — the effect lives under DDO's real names, and the Solar Gem's Artifact-typed lore is correctly modeled per `docs/wiki-evidence/spell-lore.md`. The alias Key Decision forbids a meaning-merging alias, so no code change closes it.
 
 ### Success Criteria
 
@@ -130,3 +135,205 @@ The standing audit calls the boolean-suggestion exclusion "the single most-repea
 - `web/dataset.js` — the picker vocabulary builder, its suggestion and known sets, the presence filter, and the noise-affix filter.
 - `src/vocabulary.py` — affix registry generation and the curated alias/distinct records.
 - `data/bug_reports.txt` — the verbatim 2026-08-05 reports.
+- `web/dataset.js` `buildPickerVocabulary` — the shipped `suggest.delete("Sheltering")` precedent that U1 generalizes, and the `PRESENCE_ALLOW`/`PRESENCE_DENY`/`_isPresenceTargetable` path that already satisfies R4/R5.
+- `build_dataset.py` `rankable_affixes()` — where `Well Rounded` enters `metadata.rankable_affixes`.
+- `web/results.js` — `artifactNotice(result, query)` and `boundNotice(query, result)` rendered together, the per-loadout notice family U3 joins; `coverageNote(dataset)` is dataset-scoped with no render call site and is not U3's home.
+- `docs/solutions/design-patterns/bonus-type-vocabulary-collides-with-bare-stat.md` — prior vocabulary-collision learning.
+
+---
+
+## Planning Contract
+
+### Key Technical Decisions
+
+- KTD1. **R1 is fixed at generation time, with the client-side delete as defense in depth.** The authoritative fix excludes umbrella names from `rankable_affixes()` in `build_dataset.py` so the name never reaches `metadata.rankable_affixes`. `buildPickerVocabulary` additionally drops them from suggestions, generalizing its existing one-off `suggest.delete("Sheltering")`. Both because an older cached dataset would otherwise keep offering the name. Grounds R1.
+- KTD2. **Umbrella names get their own emitted metadata field; `_UMBRELLA` and the shipped `Sheltering` line are both left untouched.** `build_dataset.py` emits `metadata.expanded_away_names` from `src/umbrella.py`'s umbrella set, and `buildPickerVocabulary` reads it. `_UMBRELLA` is **read-only for this purpose and must not gain `"Sheltering"`** — it drives `_expand_affix`, so adding a name there rewrites every matching affix into the six ability scores at build time. Bare `Sheltering` is a different mechanism with a different expansion target (Physical + Magical Sheltering at the JS seam), and its shipped `suggest.delete("Sheltering")` line stays exactly as it is: retiring a working one-off is scope none of the three reports asked for, and folding it in here would undo recent verified work. `web/dataset.js` keeps a small hardcoded fallback constant used **only** when the metadata field is absent, which is the stale-cached-dataset path KTD1's rationale depends on. Grounds R1.
+- KTD3. **R3 renders as a new per-loadout notice taking `(query, result, model)`, not in the coverage note.** `coverageNote(dataset)` takes only the dataset, is dataset-scoped, and has no render call site — it is invoked solely from tests. The notice joins the `artifactNotice`/`boundNotice` family rendered together in the loadout view, but needs a third argument those two do not: `result` reports only what the chosen loadout achieved, so a zero there cannot distinguish "nothing in the pool supplies this" from "sources existed but higher priorities took the slots." The pool lives in `model`, which is available at both render call sites. `web/persist.js` drops the MILP program from saved snapshots, so the notice must derive the zero-source set from `model` rather than the program. Grounds R3.
+- KTD4. **Composite decomposition is additive and deliberately diverges from the `Sheltering` precedent.** The shipped bare-`Sheltering` expansion *replaces* the affix and deletes it from suggestions. Composite decomposition must keep the boolean on the item and in the presence set, so the effect stays targetable as presence per R8. The divergence is intentional and must be stated in the code comment so a future reader does not "fix" it into consistency. Grounds R6, R8. (session-settled: user-approved — chosen over following the Sheltering precedent.)
+- KTD4b. **A written component stat is made rankable through `CORE_STATS`, and that touches no solver code.** Writing a component onto an item is not enough — the picker vocabulary is generated Python-side and never sees a JS-written affix, so `Concealment` would be unrankable and AE3 could not pass. Union each U4-verified component name into `CORE_STATS` in `build_dataset.py`, the existing "always included regardless of item count" hook that flows into `rankable_affixes` and the picker. **Blast radius is zero for existing solves:** `web/solver.js` and `web/model.js` never read `CORE_STATS` or `rankable_affixes`, and every bucket site is gated on `targetSet.has(...)`, so an affix written onto an item contributes nothing unless a player ranks that stat. A player who never asks for the component gets a byte-identical solve. Grounds R6.
+- KTD5. **Component bonus types are exclude-until-verified.** A component whose bonus type the wiki does not state is not written at all, rather than written untyped. An untyped or novel-typed component would land in its own bucket and stack on top of a same-stat affix already on the item, converting an under-counting bug into an over-counting one. Grounds R7.
+- KTD6. **R4 and R9 are satisfied by shipped code; R5's curation is deferred.** Measured through the app's real load path (after `normalizeDataset`): `buildPickerVocabulary` returns 1,028 suggestions with 791 presence-flagged, and `Blurry`, `Lesser Displacement`, `Greater Heroism`, and `Crown of Summer` are each `suggested=Y presence=Y`. `Parrying`, `Riposte`, and `Good Luck` are each `suggested=Y` and score under their own magnitude buckets — R9 needs no work. **R4 is satisfied by mechanism, not by curation:** what PR #71 shipped as the §3-C follow-up is name-shape auto-classification (`_isPresenceTargetable` — a noise regex plus a four-word cap), with `PRESENCE_ALLOW` and `PRESENCE_DENY` shipped as empty override hooks. Zero curated entries exist today, so R5's "entries added deliberately" is unmet and is deferred out of this batch rather than claimed. U6's guard pins the satisfied parts so a later change cannot silently regress them.
+
+### High-Level Technical Design
+
+Each fix lands at a different stage of the vocabulary pipeline. The stages already exist; no new layer is introduced.
+
+```mermaid
+flowchart TB
+  RAW[gear-planner raw records] --> GEN[build_dataset.py rankable_affixes]
+  RAW --> REG[src/vocabulary.py generate_registries]
+  UMB[src/umbrella.py _UMBRELLA] --> GEN
+  UMB --> META[metadata.umbrella_names emitted]
+  GEN --> META2[metadata.rankable_affixes]
+  REG --> META3[metadata.affix_registry]
+  META2 --> BPV[web/dataset.js buildPickerVocabulary]
+  META3 --> BPV
+  META --> BPV
+  BPV --> SUG[suggestions - offered in the picker]
+  BPV --> KNOWN[known - free-typeable]
+  WIKI[wiki-verified composite components] --> NORM[web/dataset.js normalizeItem]
+  NORM --> ITEM[item affix records, boolean retained]
+  ITEM --> SOLVE[lexicographic solve]
+  SUG --> SOLVE
+  SOLVE --> NOTICE[web/results.js per-loadout notices]
+
+  GEN -. U1 excludes umbrella names .-> META2
+  BPV -. U1 drops them from suggestions .-> SUG
+  REG -. U2 excludes noise names .-> META3
+  NORM -. U5 writes components additively .-> ITEM
+  NOTICE -. U3 adds the zero-source notice .-> SOLVE
+```
+
+### Assumptions
+
+- `metadata` is a suitable carrier for the umbrella-name list; if the build already emits an equivalent, U1 reuses it rather than adding a second field.
+- The four boolean composites in scope for U4 are `Crown of Summer`, `Greater Heroism`, `Blurry`, and `Lesser Displacement`. If the wiki shows any of them grants no numeric magnitude, that one drops out of U5 and is recorded as verified-boolean rather than forced.
+- `data/seed/compendium/vocab_registries.json` is the **frozen** integrity baseline, not a rebuildable artifact. U2 leaves it untouched and filters at the emit site, so no regeneration entrypoint is needed and the referential-integrity gate keeps its teeth.
+- R10/R11 may add zero alias entries. Their value is the guard, not new data.
+
+### Sequencing
+
+U1 and U2 are independent generation-time fixes and can land together. U3 is independent and is the only unit needing a new UI surface. U4 gates U5 — no component is written before the wiki states it. U6 is independent and can land first as a characterization guard, which is the recommended order since it pins the R4/R5/R9 verification before any other change touches the vocabulary.
+
+---
+
+## Implementation Units
+
+### U1. Retire umbrella names from picker suggestions
+
+- **Goal:** Stop offering a name the build pipeline guarantees will never appear on an item, and point the player at the concrete stats instead.
+- **Requirements:** R1 (KTD1, KTD2).
+- **Dependencies:** none.
+- **Files:** `build_dataset.py` (exclude umbrella names in `rankable_affixes()`; emit `metadata.expanded_away_names`), `src/umbrella.py` (read-only — expose the umbrella set for the generator; **do not add `"Sheltering"`**), `web/dataset.js` (`buildPickerVocabulary` reads the emitted set and drops those names from `suggestions`, **in addition to** the existing `suggest.delete("Sheltering")`, which stays unchanged), `web/wizard.js` and `web/query.js` (the redirect on the free-typed path), `tests/dataset.test.js`, `tests/test_build_metadata.py`.
+- **Approach:** The generator is authoritative — an umbrella name should never enter `metadata.rankable_affixes`. The client-side drop stays as defense in depth for a stale cached dataset, reading the emitted field when present and falling back to a small hardcoded constant when it is absent. Removing the name from suggestions is not sufficient on its own: `addPriority` validates typed input against `known`, which carries umbrella names via `affix_registry` independently, so an umbrella name must also be refused on the free-typed path — refused with the redirect, not silently accepted as a priority guaranteed to score zero. `buildPickerVocabulary` returns an `expandedAway` map from each retired name to its replacement stats so the redirect has a data channel; the message renders through the existing `#wz-status` element that `addPriority` already uses to report an unknown affix.
+- **Patterns to follow:** the existing `suggest.delete("Sheltering")` block and its comment in `web/dataset.js` — same reasoning, extended to a data-driven set alongside it rather than replacing it.
+- **Test scenarios:**
+  - `Well Rounded` is absent from `metadata.rankable_affixes` after a rebuild. Covers AE1.
+  - `Well Rounded` is absent from `buildPickerVocabulary().suggestions`. Covers AE1.
+  - `All Ability Scores` is likewise absent from both.
+  - The shipped `suggest.delete("Sheltering")` line is still present and `Sheltering` is still absent from suggestions — the new data-driven path sits alongside it, not in place of it.
+  - `"sheltering"` is absent from `src/umbrella.py`'s umbrella set, so `_expand_affix` still leaves Sheltering affixes alone (guards against the six-ability-score corruption).
+  - Typing `Well Rounded` into the priority input is refused with the redirect rather than accepted, even though the name is still in `known`.
+  - The redirect names the six ability scores for `Well Rounded`.
+  - Loading a saved character whose priorities already contain an umbrella name keeps the priority but flags it in the ranked-list row with the same redirect text — flagged, never silently rewritten or dropped, so the player chooses the replacement. Covers the `loadCharacter` and backup-restore paths, which bypass `addPriority`.
+  - The six ability scores remain present and rankable, so the redirect target exists.
+  - A dataset lacking the emitted umbrella metadata still drops the names, exercising the defense-in-depth path.
+
+### U2. Exclude noise names from the generated affix registry
+
+- **Goal:** Stop a parse-failure string from being free-typeable as a priority.
+- **Requirements:** R2.
+- **Dependencies:** none.
+- **Files:** `build_dataset.py` (`load_affix_vocabulary()` — filter noise names as the registry is emitted), `tests/test_build_metadata.py`.
+- **Approach:** Filter noise names where `metadata.affix_registry` is **emitted**, not where the registry is generated. `web/dataset.js` already drops them from item affixes at normalize time via `NOISE_AFFIX_NAMES`, and they are already absent from suggestions — the emitted registry is the one surface still leaking them into the free-typed `known` set. Keep the noise definition aligned with the shipped `isNoiseAffix` rule (the named string plus bare-number names) so the two filters cannot drift.
+- **Execution note:** Do **not** filter inside `src/vocabulary.py` `generate_registries()`. `check_referential_integrity()` validates every raw affix name against the frozen checked-in registry as its baseline, and `tests/test_vocabulary.py` builds that baseline from `generate_registries()`. Filtering there makes the baseline reject data it must accept and turns `python3 tests/run_tests.py` red. Filtering at the emit site leaves `data/seed/compendium/vocab_registries.json` untouched, so no regeneration or recommit is needed.
+- **Test scenarios:**
+  - `See the item description page for details.` is absent from `metadata.affix_registry` after a rebuild.
+  - `data/seed/compendium/vocab_registries.json` is unchanged by this unit — the frozen integrity baseline still contains the noise name.
+  - `python3 tests/run_tests.py` stays green, including the referential-integrity gate.
+  - It is absent from `buildPickerVocabulary().known`.
+  - A bare-number name (e.g. `+14`) is likewise absent from the registry.
+  - A legitimate affix name that merely contains digits is retained, guarding against an over-broad filter.
+
+### U3. Zero-source priority disclosure
+
+- **Goal:** A priority no source in the active pool can contribute to is named as such, rather than reporting zero without explanation.
+- **Requirements:** R3 (KTD3).
+- **Dependencies:** none.
+- **Files:** `web/results.js` (new notice function beside `artifactNotice`/`boundNotice`, rendered in the same block), `tests/results.test.js`.
+- **Approach:** Add a per-loadout notice taking `(query, result, model)` that determines which ranked priorities received no contributing source from the active pool and names them with a stated reason. Render it alongside the existing artifact and bound notices, carrying `role="status"` as both of those do. The stated reason distinguishes the two causes a player can act on differently: **nothing in the dataset carries the affix at all**, versus **the active pool filtered out every source** (owned-only mode, or the ML band). Those prompt different actions — drop the priority versus widen the pool — so a single generic line is not sufficient. The notice fires only on genuinely zero contributing sources, never on a priority that merely lost slots to higher-ranked ones.
+- **Patterns to follow:** `artifactNotice(result, query)` and `boundNotice(query, result)` in `web/results.js` — same signature shape, same render site, same "distinct callout, not buried in the coverage note" convention their comments establish.
+- **Test scenarios:**
+  - A priority with zero contributing sources renders the notice naming that priority. Covers the R3 half of the never-silent guarantee.
+  - A priority with sources that simply lost slots to higher priorities does **not** fire the notice — it is a different case and must not be conflated.
+  - Multiple zero-source priorities are all named, not just the first.
+  - No notice renders when every priority has at least one contributing source.
+  - The notice renders alongside an artifact notice without either suppressing the other.
+  - A priority whose sources exist in the dataset but are excluded by the active pool reports the **pool** cause, not the dataset cause.
+  - The rendered element carries `role="status"`, matching `artifactNotice` and `boundNotice`.
+  - A result restored from a saved snapshot — which carries no MILP program — still renders the notice correctly from `model`.
+
+### U4. Wiki-harvest the four boolean composites
+
+- **Goal:** Establish, with citations, what numeric effect each in-scope boolean composite actually grants and at what bonus type.
+- **Requirements:** R6, R7 (KTD5).
+- **Dependencies:** none.
+- **Files:** `docs/wiki-evidence/boolean-composites.md` (new) — the sole deliverable. U5 transcribes the verified components into its constant table from this document.
+- **Approach:** Harvest `Crown of Summer`, `Greater Heroism`, `Blurry`, and `Lesser Displacement` from the DDO Wiki, recording the quoted rule and the URL per the existing wiki-evidence format. For each, record every component as `(stat, bonus_type, value)`. A component whose bonus type the wiki does not state is recorded as excluded with the reason, not written. If a composite turns out to grant no numeric magnitude, record it as verified-boolean and drop it from U5.
+- **Execution note:** The wiki throttles after roughly eight rapid calls with multi-minute blocks. Pace the harvest across four pages with waits; do not batch.
+- **Patterns to follow:** `docs/wiki-evidence/sheltering.md` and `docs/wiki-evidence/spell-lore.md` — quoted rule, source URL, explicit ruling, status line.
+- **Test scenarios:**
+  - Test expectation: none — this unit produces evidence and seed data, not behavior. U5 carries the behavioral coverage.
+
+### U5. Write composite components onto item records, additively
+
+- **Goal:** Make the wiki-stated magnitude score, without losing the boolean's presence targetability.
+- **Requirements:** R6, R7, R8 (KTD4, KTD5).
+- **Dependencies:** U4.
+- **Files:** `web/dataset.js` (`normalizeItem` seam, plus a constant table keyed by composite name to its `{stat, bonus_type, value}` components, transcribed from U4's evidence document exactly as the shipped Sheltering expansion stores its verified values), `build_dataset.py` (union the verified component names into `CORE_STATS` per KTD4b), `tests/dataset.test.js`, `tests/solver.test.js` for the end-to-end scoring proof.
+- **Approach:** At the same seam that expands bare `Sheltering`, write each wiki-verified component affix onto an item carrying an in-scope boolean composite — but **additively**, leaving the boolean affix in place so it stays in the presence set. State the divergence from the `Sheltering` precedent in the comment: that expansion replaces and deletes; this one adds and retains. Skip a component the item already carries explicitly, matching the shipped Sheltering behavior, so no duplicate browse line appears. Idempotent on a second pass.
+- **Execution note:** Write a failing end-to-end test first — an item carrying only the boolean contributes zero to the component stat today, and should contribute the wiki value after. That failure is the proof the unit exists to fix.
+- **Patterns to follow:** the bare-`Sheltering` expansion block in `web/dataset.js` `normalizeItem` — same seam and same skip-if-already-present guard, opposite retention behavior.
+- **Test scenarios:**
+  - An item carrying an in-scope boolean composite contributes the wiki-stated component value at the wiki-stated bonus type. Covers AE3.
+  - The boolean affix is still present on the item after normalization, and still appears in `buildPickerVocabulary().presence`. Covers AE3.
+  - A second normalization pass is a no-op — no duplicated component affixes.
+  - An item that already carries a component explicitly does not gain a duplicate line.
+  - A component excluded by U4 for an unstated bonus type is not written.
+  - Each written component stat is present in `metadata.rankable_affixes`, `buildPickerVocabulary().suggestions`, and `.known` after a rebuild — otherwise the player cannot rank it (KTD4b).
+  - End-to-end (real HiGHS): ranking the component stat now selects the composite-carrying item where it previously scored zero. Covers AE3.
+  - End-to-end (real HiGHS): a solve that does **not** rank any written component returns the same loadout as before the change — the no-regression guard for KTD4b's zero-blast-radius claim.
+
+### U6. Alias-discipline and vocabulary regression guard
+
+- **Goal:** Pin the rulings that make this area safe, so a later change cannot silently re-introduce a known-bad merge or regress the already-satisfied requirements.
+- **Requirements:** R4, R5, R9, R10, R11; verifies KTD6.
+- **Dependencies:** none.
+- **Files:** `data/seed/compendium/affix_aliases.json` (record the two rulings in its `distinct` list), `tests/dataset.test.js`, `tests/test_vocabulary.py`.
+- **Approach:** First record both rulings where R11 says they live — neither `Vitality`/`False Life` nor `Spell Lore`/`Universal Spell Lore` is currently in the curated `distinct` list, so a generic "no alias between a recorded distinct pair" assertion would not cover them today. Add both with their reasons (the Blood Rage/Bloodrage false-merge lesson; the co-occurrence evidence in `docs/wiki-evidence/spell-lore.md`). Then assert generically that no alias entry maps either direction between a recorded distinct pair, which now covers them. Separately pin the KTD6 verification: `Blurry`, `Lesser Displacement`, `Greater Heroism`, and `Crown of Summer` are suggested and presence-flagged; `Parrying`, `Riposte`, and `Good Luck` are suggested and carry magnitude buckets.
+- **Execution note:** Land this first. It characterizes the current good state before any other unit touches the vocabulary.
+- **Patterns to follow:** the co-occurrence-implies-distinct rule recorded in the curated alias table, and the ruling in `docs/wiki-evidence/spell-lore.md`.
+- **Test scenarios:**
+  - No alias entry maps either direction between a recorded distinct pair. Covers AE4.
+  - No alias exists from `Vitality` to `False Life`. Covers AE4.
+  - No alias exists between `Spell Lore` and `Universal Spell Lore`. Covers AE4.
+  - Both rulings are present in the curated `distinct` list with their reasons.
+  - The four in-scope composites are each suggested and presence-flagged (KTD6). Covers AE2.
+  - A one-off proc or clicky description is present in `known` but absent from `buildPickerVocabulary().suggestions` — the filter still excludes flavor lines. Covers AE2.
+  - `Parrying`, `Riposte`, and `Good Luck` are each suggested and score into a magnitude bucket, not a presence bucket (KTD6).
+
+---
+
+## Verification Contract
+
+| Gate | Command | Applies to |
+|---|---|---|
+| Dataset / picker-vocabulary suite | `node tests/dataset.test.js` | U1, U2, U5, U6 — this is where `buildPickerVocabulary` and `normalizeItem` are exercised |
+| Model suite | `node tests/model.test.js` | U5 |
+| Browse suite | `node tests/browse.test.js` | U5 |
+| Results suite | `node tests/results.test.js` | U3 |
+| Solver suite (real HiGHS) | `node tests/solver.test.js` | U5 |
+| Python suite | `python3 tests/run_tests.py` | U1, U2, U6 |
+| Dataset rebuild | `python3 build_dataset.py` | U1, U2, U5 — all three change generated metadata |
+| Syntax check | `node --check` on each edited `web/*.js` | all JS units |
+| Browser smoke | serve `web/` on localhost; confirm `Well Rounded` is no longer offered, the four composites still appear as on/off targets, and a zero-source priority renders its notice | U1, U3, U5 |
+
+`web/data/items.json` is a generated artifact — U1 and U2 change the generator and the committed seed, never the built JSON directly.
+
+---
+
+## Definition of Done
+
+- R1, R2, R3, R8, R10, and R11 satisfied; R6 and R7 satisfied for the four in-scope composites; R4 and R9 verified already-satisfied and pinned by U6's guard; R5's curation explicitly deferred (KTD6).
+- `python3 tests/run_tests.py` is green, including the referential-integrity gate — U2 filtered at the emit site and left the frozen registry seed untouched.
+- Both naming rulings are recorded in the curated distinct records, so the generic no-merge assertion covers them.
+- AE1–AE4 each covered by an enumerated test.
+- `Well Rounded` and `All Ability Scores` are absent from both `rankable_affixes` and picker suggestions, are refused with the redirect on the free-typed path, and the six ability scores remain rankable.
+- `src/umbrella.py`'s umbrella set is unchanged and the shipped `suggest.delete("Sheltering")` line still stands — no recently-verified behavior was undone to deliver R1.
+- Every written composite component is rankable in the picker after a rebuild, and a solve that ranks no written component returns the same loadout as before the change.
+- The noise string is absent from the regenerated, committed `affix_registry` and from the free-typed `known` set.
+- A zero-source priority renders a distinct per-loadout notice; a merely-outranked priority does not.
+- Every written composite component traces to a citation in `docs/wiki-evidence/boolean-composites.md`; components with an unstated bonus type are recorded as excluded, not written untyped.
+- Composite decomposition is additive — the boolean affix survives on the item and in the presence set — and the divergence from the `Sheltering` precedent is stated in the code.
+- The alias guard passes, including the `Vitality`/`False Life` and `Spell Lore`/`Universal Spell Lore` rulings.
+- All listed gates green; edited `web/*.js` pass `node --check`; the dataset rebuilds cleanly.
