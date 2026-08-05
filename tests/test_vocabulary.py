@@ -267,3 +267,31 @@ def test_evidence_bundle_reports_without_mutating():
     # a report-only structure: it surfaces co-occurrence + unit + bonus-type evidence
     # for at least one real candidate
     assert any(c["cooccurs"] for c in bundle["candidates"])
+
+
+# ---------------------------------------------------------------------------
+# U6 (plan 2026-08-05-001) — anti-false-merge guard for the two standing rulings.
+# Both were adjudicated outside this file (2026-08-01 bug-report audit;
+# 2026-08-04 spell-lore wiki evidence) and are now recorded in the curated
+# `distinct` list so the generic no-merge rule below actually covers them.
+# ---------------------------------------------------------------------------
+
+def test_standing_rulings_are_recorded_as_distinct():
+    _, pairs = V.load_affix_aliases()  # already a set of frozenset pairs
+    assert frozenset(["Vitality", "False Life"]) in pairs, (
+        "Vitality/False Life must stay recorded distinct -- Vitality is a bonus TYPE on "
+        "False Life, not a synonym; aliasing is a false merge (2026-08-01 audit)"
+    )
+    assert frozenset(["Spell Lore", "Universal Spell Lore"]) in pairs, (
+        "Spell Lore/Universal Spell Lore must stay recorded distinct -- they are separate "
+        "bonus-type channels that legitimately stack (2026-08-04 wiki evidence)"
+    )
+
+
+def test_no_alias_maps_between_a_recorded_distinct_pair():
+    """The generic rule: a curated alias must never merge a pair ruled distinct."""
+    aliases, pairs = V.load_affix_aliases()
+    for variant, canonical in aliases.items():
+        assert frozenset([variant, canonical]) not in pairs, (
+            f"alias {variant!r} -> {canonical!r} merges a pair recorded as distinct"
+        )
