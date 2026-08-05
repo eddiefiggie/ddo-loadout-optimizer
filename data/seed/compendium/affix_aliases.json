@@ -351,6 +351,20 @@
         "Wisdom Skills"
       ],
       "reason": "co-occurs on Incandescent Blue Ioun Stone (unsuppressed)"
+    },
+    {
+      "pair": [
+        "Vitality",
+        "False Life"
+      ],
+      "reason": "bonus TYPE vs affix NAME, not synonyms -- Ravil's Book grants False Life with bonus type Vitality natively, so targeting False Life already catches it; the literal Vitality-named affixes (Chimera's Vitality, Pirate Vitality) are unrelated Bool procs. Aliasing would be a false merge (cf. the Blood Rage/Bloodrage lesson). Ruled 2026-08-01, docs/reports/2026-08-01-bug-report-audit.md section 2."
+    },
+    {
+      "pair": [
+        "Spell Lore",
+        "Universal Spell Lore"
+      ],
+      "reason": "different bonus-type channels that legitimately stack, not synonyms -- Spell Lore is Equipment/Insight/Exceptional/Artifact, Universal Spell Lore is Exceptional-only, and ten items (the Longsword of the Undying Age family) carry BOTH at different bonus types. Merging would collapse two genuinely-stacking sources. Ruled 2026-08-04, docs/wiki-evidence/spell-lore.md."
     }
   ]
 }
