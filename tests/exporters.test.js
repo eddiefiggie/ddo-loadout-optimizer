@@ -86,6 +86,26 @@ test("U5: an unconstrained build omits the weapon/off-hand/oath lines", () => {
     "no empty constraint lines for an unconstrained build");
 });
 
+// ---- plan 003 U1 — the declaration travels with a shared/exported loadout (R9, AE4) ----
+test("U1/003 (R9/AE4): a declared build carries the feat into every export format", () => {
+  const declared = { name: "Twin", inputs: Object.assign({}, rec.inputs, { twoWeaponFighting: true }),
+    snapshot: rec.snapshot };
+  const lines = constraintLines(declared).join("\n");
+  assert.ok(/Two Weapon Fighting: Declared/.test(lines), "the declaration is a constraint line");
+  // Every format inherits it via the shared constraintPairs header — solve-visible
+  // must never mean share-invisible.
+  assert.ok(/Two Weapon Fighting/.test(toMarkdown(declared)), "markdown header");
+  assert.ok(/Two Weapon Fighting/.test(toCsv(declared)), "csv preamble");
+  assert.ok(/Two Weapon Fighting/.test(toPrintHtml(declared)), "print header");
+  const portable = toPortableJSON(declared);
+  assert.strictEqual(portable.core.inputs.twoWeaponFighting, true, "portable JSON carries the declaration");
+});
+
+test("U1/003: an undeclared build omits the line entirely", () => {
+  assert.ok(!/Two Weapon Fighting/.test(constraintLines(rec).join("\n")),
+    "no empty declaration line for a build that never declared");
+});
+
 test("toMarkdown has a name heading, a constraints header, and per-slot loadout", () => {
   const md = toMarkdown(rec);
   assert.ok(md.startsWith("# Sook - Reaper"), md.slice(0, 40));

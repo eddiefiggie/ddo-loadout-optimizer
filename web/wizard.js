@@ -75,6 +75,12 @@ function buildQuery(state) {
     weaponTypes: Array.isArray(state.weaponTypes) ? state.weaponTypes.slice() : [],
     offHand: Array.isArray(state.offHand) ? state.offHand.slice() : [],
     offHandWeapons: Array.isArray(state.offHandWeapons) ? state.offHandWeapons.slice() : [],
+    // plan 003 U1 — the Two Weapon Fighting declaration (R1). Dual-wield used to
+    // switch on as a side effect of picking an off-hand weapon type, which nothing
+    // signposted; it is now an explicit character-level feat declaration. Always a
+    // boolean, never undefined, so a pre-U1 state resolves to undeclared rather
+    // than to a stray truthy value downstream.
+    twoWeaponFighting: !!state.twoWeaponFighting,
     race: state.race || null,
     alignment: state.alignment || null,
     includeArtifact: !!state.includeArtifact,           // U4 — Artifact opt-in
@@ -112,13 +118,70 @@ var _isBothHandsWeapon = (typeof isBothHandsWeapon !== "undefined")
   // eslint-disable-next-line global-require
   : require("./model.js").isBothHandsWeapon;
 
+// plan 003 U5/KTD6 — the SLOT-AWARE pin predicate, resolved the same way. Layered on
+// top of _pinConflict rather than folded into it: see model.js for why the shield
+// exclusion must stay out of variantConflict.
+var _pinSlotConflict = (typeof pinSlotConflict !== "undefined")
+  ? pinSlotConflict
+  // eslint-disable-next-line global-require
+  : require("./model.js").pinSlotConflict;
+// plan 003 U5 — U2's exported advisory predicate, so the R8 override flag and the
+// U6 results notice read ONE authority and cannot drift.
+var _offHandItemsExcluded = (typeof offHandItemsExcluded !== "undefined")
+  ? offHandItemsExcluded
+  // eslint-disable-next-line global-require
+  : require("./model.js").offHandItemsExcluded;
+// plan 003 U5 — handedness, for the pin flow's hand target.
+function _weaponTaxonomy() {
+  if (typeof WeaponTaxonomy !== "undefined") return WeaponTaxonomy;
+  if (typeof require !== "undefined") {
+    try { return require("./weapon-taxonomy.js"); } catch (e) { /* absent */ }
+  }
+  return null;
+}
+
 // U3 — pure pin-mutation core (exported for tests; the wizard closure wraps these
 // with its live cardinality lookup). A pin forces an item into its WORN-slot label
 // (KTD4): a weapon's `variant.slot` is "Weapon", but the solver groups pick-vars by
 // "Main Hand", so pinning by the raw slot would silently no-op. `cardOf(slot)` gives
 // the slot cardinality (Ring = 2, else 1): a full single slot replaces, a full Ring
 // keeps the newest two; a duplicate variant is ignored.
-function pinWornSlotOf(v) { return v.category === "weapon" ? "Main Hand" : v.slot; }
+//
+// plan 003 U5 (R6, KTD5) — the hand target. This line used to send EVERY weapon to
+// "Main Hand" unconditionally, so an off-hand weapon pin could not be expressed at
+// all: a longsword pinned as a second weapon silently landed in the main hand. That
+// is the second, independent half of the reported bug (U2 fixed the first). `hand`
+// is honored only for weapons; a shield or a ring keeps its own worn slot whatever
+// is passed. Absent `hand` => Main Hand, so every existing call site is unchanged.
+function pinWornSlotOf(v, hand) {
+  if (v.category !== "weapon") return v.slot;
+  return hand === "Off Hand" ? "Off Hand" : "Main Hand";
+}
+/** The worn slots a pinnable item can be pinned to, in offer order. Only a
+ *  ONE-HANDED weapon offers a choice; everything else has exactly one home.
+ *  An untyped weapon host has unknown handedness — it could be crafted two-handed,
+ *  which cannot be dual-wielded — so it is not offered as an off-hand pin, matching
+ *  offHandWeaponOk's "concrete type match required" rule in model.js. */
+function pinHandsFor(v) {
+  if (!v || v.category !== "weapon") return [v ? v.slot : null];
+  const T = _weaponTaxonomy();
+  const oneHanded = !!T && v.type != null && T.styleOfType(v.type) === T.ONE_HAND;
+  return oneHanded ? ["Main Hand", "Off Hand"] : ["Main Hand"];
+}
+/** plan 003 U4 (R9) — does this saved character need the Two Weapon Fighting
+ *  migration? True only for a save written BEFORE U1: no `twoWeaponFighting` field
+ *  at all, but a non-empty `offHandWeapons` list, which was the old opt-in trigger.
+ *  Those characters had dual-wield ON; leaving them undeclared would silently put a
+ *  shield back in their off hand on the next solve.
+ *
+ *  Idempotent by construction: persist.js coerces the field to a boolean on every
+ *  save, so its PRESENCE means the player has a stored choice — including an explicit
+ *  `false`, which is honored rather than overwritten. */
+function twfMigrationNeeded(inputs) {
+  const i = inputs || {};
+  if (i.twoWeaponFighting !== undefined) return false;
+  return Array.isArray(i.offHandWeapons) && i.offHandWeapons.length > 0;
+}
 function pinIdOf(v) { return v.variant_id || v.source_item; }
 // Pin one variant id into a known worn slot (used both by the Gear-pool search,
 // via applyPin, and by the results Deep-Dive per-row pin action). A full single
@@ -133,8 +196,8 @@ function applyPinId(slotConstraints, slot, id, cardOf) {
   slotConstraints[slot] = card > 1 ? { type: "pin", variant_ids: next } : { type: "pin", variant_id: next[0] };
   return slotConstraints;
 }
-function applyPin(slotConstraints, v, cardOf) {
-  return applyPinId(slotConstraints, pinWornSlotOf(v), pinIdOf(v), cardOf);
+function applyPin(slotConstraints, v, cardOf, hand) {
+  return applyPinId(slotConstraints, pinWornSlotOf(v, hand), pinIdOf(v), cardOf);
 }
 function removePinFrom(slotConstraints, slot, id, cardOf) {
   const c = slotConstraints[slot];
@@ -176,7 +239,13 @@ function reconcilePinLegality(slotConstraints, itemByPinId, query, cardOf) {
     if (!c || c.type !== "pin") return;
     _pinnedVariantIds(c).forEach((vid) => {
       const it = itemByPinId(vid);
-      if (it && _pinConflict(it, query) !== null) {
+      // plan 003 U5/KTD6 — two authorities, both consulted. `_pinConflict` is the
+      // per-variant gate list; `_pinSlotConflict` adds the slot-aware layer, which is
+      // what makes R7 real: an off-hand weapon pin without the declaration is dropped
+      // here instead of surviving into the solve as a constraint on a variant that is
+      // absent from its own pool (a no-build). It deliberately returns null for a
+      // pinned shield on a declared build, so the escape hatch is never swept.
+      if (it && (_pinConflict(it, query) !== null || _pinSlotConflict(it, slot, query) !== null)) {
         removePinFrom(slotConstraints, slot, vid, cardOf);
         dropped.push({ slot, id: vid });
       }
@@ -282,7 +351,7 @@ function addBundle(key, current, vocab) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -330,6 +399,10 @@ if (typeof window !== "undefined" && window.App) {
 
     const state = { step: "intro", ml: 36, mlFloor: 31, mlFloorManual: false, race: "", alignment: "", armor: "", oath: "",
       style: "", weaponTypes: [], offHand: [], offHandWeapons: [],
+      // plan 003 U1 — the Two Weapon Fighting declaration. Character state, not gear
+      // state: the combat-style handler clears weaponTypes/offHand/offHandWeapons but
+      // must never clear this (R2).
+      twoWeaponFighting: false,
       includeArtifact: false,
       // U6 — set-augment availability. A Set of owned set-augment `set` names;
       // empty by default so the set-augment family stays inert until opted in.
@@ -338,7 +411,9 @@ if (typeof window !== "undefined" && window.App) {
       // they survive priority reordering.
       targetCaps: {}, targetFloors: {},
       pool: "all", ownedNames: null, priorities: [], slotConstraints: {}, constraintsDirty: false, lastRun: null,
-      characterName: "", loadedStale: false };
+      characterName: "", loadedStale: false,
+      // plan 003 U4 — set on load when a pre-U1 save is migrated to declared.
+      twfMigrated: false };
 
     let highs = null;
     async function getHighs() {
@@ -406,6 +481,29 @@ if (typeof window !== "undefined" && window.App) {
             <span class="wz-help">A class oath that forbids certain armor. Approximated by armor type — see the note when on.</span>
             <div class="wz-seg" id="wz-oath"><button class="wz-chip ${state.oath === "druid" ? "on" : ""}" data-oath="druid" ${forged ? "disabled" : ""}>Druid — no metal</button></div>
             ${state.oath === "druid" && !forged ? `<p class="wz-help wz-note">Druidic oath: body armor restricted to cloth + light. Metal vs non-metal medium/heavy (e.g. Darkleaf, Dragonhide) isn't distinguishable in our data, so this is a conservative approximation.</p>` : ""}</div>
+          ${(() => {
+            // plan 003 U3 (R4) — three style states, and the control ACCEPTS INPUT in
+            // all three. "Inert" here means the declaration currently has no effect and
+            // says so; it is deliberately NOT `disabled`, for two reasons: a player must
+            // be able to declare before choosing a style or while on another one (AE3
+            // declares, then switches), and a disabled control reads as "your character
+            // can't have this feat" rather than "this style doesn't use it".
+            //
+            // Which styles permit a second weapon is the shipped taxonomy's call, not a
+            // new list here (KTD2) — twfWeaponAllowedForStyle is true for `one-hand` only.
+            const twfActive = !!(WT && WT.twfWeaponAllowedForStyle(state.style));
+            const styleLabel = (WT && state.style)
+              ? ((WT.STYLES.find((s) => s.id === state.style) || {}).label || state.style) : "";
+            const inert = state.twoWeaponFighting && !twfActive
+              ? (state.style
+                ? `<p class="wz-help wz-note wz-twf-inert">Declared, but it has no effect under <strong>${esc(styleLabel)}</strong> — that style doesn't wield a second weapon. Your declaration is kept; switch to One-hand / Dual-wield to use it.</p>`
+                : `<p class="wz-help wz-note wz-twf-inert">Declared. It has no effect until you pick a combat style that wields a second weapon.</p>`)
+              : "";
+            return `<div class="wz-field"><span class="wz-label">Two Weapon Fighting <span class="wz-sub">· optional</span></span>
+            <span class="wz-help">Declare the feat if your character fights with a weapon in each hand. Dual-wielding used to switch on only when you added a second weapon type below — declaring it here is the explicit way.</span>
+            <div class="wz-seg" id="wz-twf"><button class="wz-chip ${state.twoWeaponFighting ? "on" : ""}" data-twf="1" aria-pressed="${state.twoWeaponFighting ? "true" : "false"}">Two Weapon Fighting</button></div>
+            ${inert}</div>`;
+          })()}
           ${(() => {
             const styles = WT ? WT.STYLES : [];
             const wtypes = (WT && state.style) ? WT.weaponTypesForStyle(state.style, weaponTypesInData) : [];
@@ -558,7 +656,7 @@ if (typeof window !== "undefined" && window.App) {
 
     // Thin wrappers over the exported pure core; they add the live cardinality
     // lookup and the constraintsDirty flag (so a re-solve is offered).
-    function addPin(v) { applyPin(state.slotConstraints, v, slotCardOf); state.constraintsDirty = true; }
+    function addPin(v, hand) { applyPin(state.slotConstraints, v, slotCardOf, hand); state.constraintsDirty = true; }
     function removePin(slot, id) { removePinFrom(state.slotConstraints, slot, id, slotCardOf); state.constraintsDirty = true; }
 
     // KTD3 — name-only match (filterVariants also matches stats/ids, so post-filter
@@ -581,14 +679,23 @@ if (typeof window !== "undefined" && window.App) {
       const pinned = new Set(currentPins().map((p) => p.id));
       const shown = matches.slice(0, PIN_CAP);
       box.innerHTML = shown.map((v) => {
-        const id = pinIdOf(v), already = pinned.has(id);
-        return `<button type="button" class="wz-pin-hit" data-pin-id="${esc(id)}"${already ? " disabled" : ""}>
-          <span class="wz-pin-hit-name">${esc(v.source_item || v.variant_id)}</span>
-          <span class="wz-pin-hit-slot">${esc(pinWornSlotOf(v))}${already ? " · pinned" : ""}</span></button>`;
+        const id = pinIdOf(v), already = pinned.has(id), name = v.source_item || v.variant_id;
+        // plan 003 U5 (R6) — one action per hand the item can go to. For every item
+        // but a one-handed weapon that is still exactly one action labelled with its
+        // worn slot, so nothing changes; a one-handed weapon gets Main hand FIRST
+        // (the default, preserving existing muscle memory) plus an Off hand action.
+        const hands = pinHandsFor(v);
+        const acts = hands.map((h, i) => `<button type="button" class="wz-pin-hit${i ? " wz-pin-hit-alt" : ""}"
+            data-pin-id="${esc(id)}" data-pin-hand="${esc(h)}"${already ? " disabled" : ""}
+            aria-label="Pin ${esc(name)} to ${esc(h)}">
+            ${i ? "" : `<span class="wz-pin-hit-name">${esc(name)}</span>`}
+            <span class="wz-pin-hit-slot">${esc(h)}${already && !i ? " · pinned" : ""}</span></button>`).join("");
+        return hands.length > 1 ? `<div class="wz-pin-hit-pair">${acts}</div>` : acts;
       }).join("")
         + (matches.length > PIN_CAP ? `<p class="wz-pin-more">Showing top ${PIN_CAP} of ${matches.length.toLocaleString()} — refine your search.</p>` : "");
       box.querySelectorAll(".wz-pin-hit[data-pin-id]").forEach((b) => b.onclick = () => {
-        const it = itemByPinId(b.dataset.pinId); if (it) { addPin(it); renderPinList(); renderPinResults(); }
+        const it = itemByPinId(b.dataset.pinId);
+        if (it) { addPin(it, b.dataset.pinHand); renderPinList(); renderPinResults(); }
       });
     }
 
@@ -614,9 +721,19 @@ if (typeof window !== "undefined" && window.App) {
       box.innerHTML = mutexWarn + artWarn + pins.map(({ slot, id }) => {
         const it = itemByPinId(id);
         const name = it ? (it.source_item || it.variant_id) : id;
+        // plan 003 U5 — three states, in precedence order. The per-variant gate list
+        // first, then the slot-aware layer (R7: this pin will be dropped from the
+        // solve), then the R8 note that an honored pin overrode the declaration's
+        // off-hand rule. The override reads U2's exported predicate, not a copy.
         // eslint-disable-next-line no-undef
-        const why = it ? pinConflict(it, query) : "not in the current catalog";
-        const flag = why ? `<span class="wz-pin-warn">⚠ ${esc(why)}</span>` : "";
+        const why = it ? (pinConflict(it, query) || _pinSlotConflict(it, slot, query)) : "not in the current catalog";
+        const overrides = !why && it && slot === "Off Hand" && it.category !== "weapon"
+          && _offHandItemsExcluded(query);
+        const flag = why
+          ? `<span class="wz-pin-warn">⚠ ${esc(why)} — this pin is dropped from the solve</span>`
+          : (overrides
+            ? `<span class="wz-pin-note">Overrides your Two Weapon Fighting off-hand rule — equipped because you pinned it</span>`
+            : "");
         return `<div class="wz-pin-row"><span class="wz-pin-name">${esc(name)}</span><span class="wz-pin-slot">${esc(slot)}</span>${flag}<button type="button" class="wz-pin-x" data-unpin-slot="${esc(slot)}" data-unpin-id="${esc(id)}" aria-label="Remove ${esc(name)}">×</button></div>`;
       }).join("");
       box.querySelectorAll(".wz-pin-x").forEach((b) => b.onclick = () => {
@@ -678,6 +795,12 @@ if (typeof window !== "undefined" && window.App) {
         </div>
         <div id="wz-stale" class="wz-cbar wz-hidden">
           This saved build predates the current gear catalog. <button class="btn primary" id="wz-staleresolve">Re-solve ⚡</button>
+        </div>
+        <div id="wz-twfmig" class="wz-cbar${state.twfMigrated ? "" : " wz-hidden"}">
+          This character had off-hand weapon types picked, which is how dual-wielding used to switch on — so
+          <strong>Two Weapon Fighting</strong> is now declared on the character step. The build below was solved
+          under the old rules; re-solve to apply it, or turn the declaration off.
+          <button class="btn primary" id="wz-twfmigresolve">Re-solve ⚡</button>
         </div>
         <div id="wz-cbar" class="wz-cbar${state.constraintsDirty ? "" : " wz-hidden"}">
           Slot constraints changed. <button class="btn primary" id="wz-cresolve">Re-solve ⚡</button>
@@ -1091,6 +1214,15 @@ if (typeof window !== "undefined" && window.App) {
       state.weaponTypes = Array.isArray(i.weaponTypes) ? i.weaponTypes.slice() : [];
       state.offHand = Array.isArray(i.offHand) ? i.offHand.slice() : [];
       state.offHandWeapons = Array.isArray(i.offHandWeapons) ? i.offHandWeapons.slice() : [];
+      // plan 003 U1 — the Two Weapon Fighting declaration (R9). A pre-U1 save has no
+      // field; `!!` loads it as undeclared.
+      // plan 003 U4 — …unless the save used the OLD opt-in (off-hand weapon types
+      // picked, no declaration field), in which case dual-wield was already on for
+      // that character and staying undeclared would silently put a shield back in
+      // their off hand. Migrate, and record it so the load discloses it: a feat must
+      // never appear on a character sheet without the player being told.
+      state.twfMigrated = twfMigrationNeeded(i);
+      state.twoWeaponFighting = state.twfMigrated || !!i.twoWeaponFighting;
       state.includeArtifact = !!i.includeArtifact;
       // U6 — restore owned set augments (stored as an array; rebuilt as a Set).
       state.ownedSetAugments = Array.isArray(i.ownedSetAugments) ? new Set(i.ownedSetAugments) : new Set();
@@ -1299,6 +1431,13 @@ if (typeof window !== "undefined" && window.App) {
           if (c.disabled) return; state.armor = state.armor === c.dataset.armor ? "" : c.dataset.armor;
           root.querySelectorAll("#wz-armor .wz-chip").forEach((x) => x.classList.toggle("on", x.dataset.armor === state.armor));
         });
+        // plan 003 U1 — the Two Weapon Fighting declaration: a plain toggle. It is
+        // character state, so nothing else resets it (R2) — in particular the style
+        // handler above clears the gear picks and deliberately leaves this alone.
+        root.querySelectorAll("#wz-twf .wz-chip").forEach((c) => c.onclick = () => {
+          state.twoWeaponFighting = !state.twoWeaponFighting;
+          render();
+        });
         // U4 — oath: single-select; toggling shows/hides the approximation note.
         root.querySelectorAll("#wz-oath .wz-chip").forEach((c) => c.onclick = () => {
           if (c.disabled) return;
@@ -1435,6 +1574,17 @@ if (typeof window !== "undefined" && window.App) {
           state.loadedStale = false;
           const stale = document.getElementById("wz-stale");
           if (stale) stale.classList.add("wz-hidden");
+          solve(false);
+        };
+        // plan 003 U4 — same view-only re-solve for the TWF migration notice. The
+        // restored snapshot was solved under the OLD rules, so its off hand may still
+        // hold a shield the declaration would now exclude; re-solving is what makes the
+        // shown build agree with the declaration the load just turned on.
+        const migBtn = document.getElementById("wz-twfmigresolve");
+        if (migBtn) migBtn.onclick = () => {
+          state.twfMigrated = false;
+          const bar = document.getElementById("wz-twfmig");
+          if (bar) bar.classList.add("wz-hidden");
           solve(false);
         };
         // Per-slot constraint controls (U6), wired by delegation so they survive

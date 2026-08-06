@@ -881,11 +881,15 @@ test("Crossbow style: off-hand restricted to a rune arm (no shields/orbs/weapon)
 });
 
 test("TWF: a one-handed off-hand weapon competes in the Off Hand slot", () => {
+  // plan 003 U2/KTD3 — the DECLARATION is now the switch, not the presence of an
+  // off-hand weapon-type pick. The pick survives as refinement (Short Swords only),
+  // and with the declaration on, off-hand ITEMS leave candidacy (R3) — so the Orb is
+  // gone and only the second weapon remains.
   const model = M.buildModel(
     [wt("Rapier", "Rapiers", [["Strength", "Enhancement", 8]]),
      wt("Shortsword", "Short Swords", [["Constitution", "Enhancement", 8]]),
      oh("Orb", "Orbs", [["Wisdom", "Enhancement", 6]])],
-    { mlCap: 34, targets: ["Strength", "Constitution"], style: "one-hand",
+    { mlCap: 34, targets: ["Strength", "Constitution"], style: "one-hand", twoWeaponFighting: true,
       weaponTypes: ["Rapiers"], offHandWeapons: ["Short Swords"] });
   const off = model.worn.find((s) => s.slot === "Off Hand");
   assert.ok(off, "an Off Hand slot exists");
@@ -895,12 +899,27 @@ test("TWF: a one-handed off-hand weapon competes in the Off Hand slot", () => {
   assert.ok(!mh.variants.some((x) => x.type === "Short Swords"), "the off-hand-only type isn't a main-hand candidate");
 });
 
-test("TWF: off-hand weapons are excluded when offHandWeapons is empty (opt-in)", () => {
+test("TWF/003: picking off-hand weapon types WITHOUT declaring no longer enables dual-wield", () => {
+  // The old opt-in. It is exactly the undiscoverable trigger plan 003 replaces:
+  // a pick alone must no longer put a weapon in the off hand, and the off-hand
+  // items must still be there (nothing was excluded — nothing was declared).
+  const model = M.buildModel(
+    [wt("Rapier", "Rapiers", [["Strength", "Enhancement", 8]]),
+     wt("Shortsword", "Short Swords", [["Constitution", "Enhancement", 8]]),
+     oh("Orb", "Orbs", [["Wisdom", "Enhancement", 6]])],
+    { mlCap: 34, targets: ["Strength", "Constitution", "Wisdom"], style: "one-hand",
+      offHandWeapons: ["Short Swords"] });
+  const off = model.worn.find((s) => s.slot === "Off Hand");
+  assert.ok(!off.variants.some((x) => x.category === "weapon"), "a pick alone no longer enables dual-wield");
+  assert.ok(off.variants.some((x) => x.type === "Orbs"), "and the off-hand item is untouched");
+});
+
+test("TWF: no weapon in the off hand without the declaration, picks or not", () => {
   const model = M.buildModel(
     [wt("Rapier", "Rapiers"), wt("Shortsword", "Short Swords"), oh("Orb", "Orbs")],
     { mlCap: 34, targets: ["Strength"], style: "one-hand", offHandWeapons: [] });
   const off = model.worn.find((s) => s.slot === "Off Hand");
-  assert.ok(off && !off.variants.some((x) => x.category === "weapon"), "no weapon in the off hand without an opt-in");
+  assert.ok(off && !off.variants.some((x) => x.category === "weapon"), "no weapon in the off hand undeclared");
 });
 
 test("U2/KTD4: empty-only builds no Off Hand slot; a set with empty keeps its types", () => {
@@ -1031,6 +1050,134 @@ test("U1 parity: eligible() equals filtering by variantConflict === null", () =>
   const kept = M.eligible(pool, q).map((x) => x.source_item).sort();
   const byCore = pool.filter((x) => M.variantConflict(x, q) === null).map((x) => x.source_item).sort();
   assert.deepStrictEqual(kept, byCore, "eligible() and the shared core must agree exactly");
+});
+
+// ---- plan 003 U2 — off-hand candidacy follows the Two Weapon Fighting declaration ----
+
+// A one-handed weapon and the three off-hand item families, all carrying the same
+// ranked stat so the shield genuinely out-values the weapon: that is the reported
+// bug (a shield usually carries more ranked stats than a longsword), and the reason
+// "let weapons compete on merit" would not have fixed it.
+// Each carries a DISTINCT ranked stat so the single-cardinality dominance filter
+// never prunes one for another — otherwise a collapsed pool would masquerade as the
+// exclusion working (or not working).
+const twfSword = { ...v("Longsword", "Main Hand", [["Constitution", "Enhancement", 8]], { category: "weapon" }), type: "Long Swords" };
+const twfDagger = { ...v("Dagger", "Main Hand", [["Dexterity", "Enhancement", 6]], { category: "weapon" }), type: "Daggers" };
+const twfShield = { ...v("Big Shield", "Off Hand", [["Constitution", "Enhancement", 20]]), type: "Tower shields" };
+const twfOrb = { ...v("Orb", "Off Hand", [["Intelligence", "Enhancement", 18]]), type: "Orbs" };
+const twfRuneArm = { ...v("Rune Arm", "Off Hand", [["Strength", "Enhancement", 16]]), type: "Rune Arms" };
+const twfPool = [twfSword, twfDagger, twfShield, twfOrb, twfRuneArm];
+const twfQuery = (extra) => Object.assign(
+  { mlCap: 34, targets: ["Constitution", "Dexterity", "Intelligence", "Strength"] }, extra);
+
+test("U2/003 (R3): a declared one-hand build drops shields, orbs, and rune arms from the off hand", () => {
+  const model = M.buildModel(twfPool, twfQuery({ style: "one-hand", twoWeaponFighting: true }));
+  const off = slotPool(model, "Off Hand");
+  assert.ok(!off.includes("Big Shield") && !off.includes("Orb") && !off.includes("Rune Arm"),
+    "no off-hand ITEM survives a declared build");
+  assert.ok(off.length, "the off hand is not empty — a one-handed weapon fills it");
+  assert.ok(off.some((n) => n === "Longsword" || n === "Dagger"), "a one-handed weapon is the candidate");
+});
+
+test("U2/003 (R3): an UNDECLARED one-hand build is unchanged — shields still compete", () => {
+  const model = M.buildModel(twfPool, twfQuery({ style: "one-hand" }));
+  const off = slotPool(model, "Off Hand");
+  assert.ok(off.includes("Big Shield"), "the shield is still a candidate without the declaration");
+  assert.ok(!off.includes("Longsword"), "and no second weapon competes — dual-wield is off");
+});
+
+test("U2/003 (R5/AE3): the declaration never overrides another style's allow-list", () => {
+  // Sword & Board keeps its four shield types; crossbow keeps rune arms only. The
+  // exclusion is keyed on the style that permits a second weapon, not on the flag.
+  const sb = slotPool(M.buildModel(twfPool, twfQuery({ style: "sword-board", twoWeaponFighting: true })), "Off Hand");
+  assert.deepStrictEqual(sb, ["Big Shield"], "S&B still takes its shield");
+  const xb = slotPool(M.buildModel(twfPool, twfQuery({ style: "crossbow", twoWeaponFighting: true })), "Off Hand");
+  assert.deepStrictEqual(xb, ["Rune Arm"], "crossbow still takes its rune arm");
+});
+
+test("U2/003 (R5): `unarmed` — the OTHER unrestricted off-hand style — is untouched", () => {
+  // offHandTypesForStyle("unarmed") is null, so unarmed is exactly the style a
+  // declaration-keyed exclusion would silently empty if it forgot the style guard.
+  const off = slotPool(M.buildModel(twfPool, twfQuery({ style: "unarmed", twoWeaponFighting: true })), "Off Hand");
+  assert.ok(off.includes("Big Shield") && off.includes("Orb") && off.includes("Rune Arm"),
+    "unarmed keeps every off-hand item under a declared build");
+});
+
+test("U2/003: picked off-hand weapon types narrow which weapons compete", () => {
+  const model = M.buildModel(twfPool, twfQuery({ style: "one-hand", twoWeaponFighting: true, offHandWeapons: ["Daggers"] }));
+  const off = slotPool(model, "Off Hand");
+  assert.deepStrictEqual(off, ["Dagger"], "only the picked type is an off-hand candidate");
+  // …and with no picks, every one-handed type competes (the declaration alone is enough).
+  const wide = slotPool(M.buildModel(twfPool, twfQuery({ style: "one-hand", twoWeaponFighting: true })), "Off Hand");
+  assert.ok(wide.includes("Longsword") && wide.includes("Dagger"), "no picks => every one-handed type");
+});
+
+test("U2/003 (R8): a PINNED shield overrides the exclusion — the escape hatch holds", () => {
+  const model = M.buildModel(twfPool, twfQuery({ style: "one-hand", twoWeaponFighting: true,
+    slotConstraints: { "Off Hand": { type: "pin", variant_id: "Big Shield" } } }));
+  const off = slotPool(model, "Off Hand");
+  assert.ok(off.includes("Big Shield"), "the player's explicit pin survives the exclusion");
+  assert.ok(!off.includes("Orb") && !off.includes("Rune Arm"), "but only the pinned one — not off-hand items generally");
+});
+
+test("U2/003: the Artifact exemption must NOT smuggle an unpinned shield past the exclusion", () => {
+  // includeArtifact widens the shared `pinnedIds` set with every eligible Artifact so
+  // the pre-filter can't prune one. R3's escape hatch is "unless the PLAYER pins one",
+  // so the exclusion must read the explicit pins only — reusing the widened set would
+  // let an Artifact shield sit in a declared build's off hand with nobody pinning it.
+  const artShield = { ...twfShield, source_item: "Artifact Shield", variant_id: "Artifact Shield", artifact: true };
+  const model = M.buildModel([...twfPool, artShield],
+    twfQuery({ style: "one-hand", twoWeaponFighting: true, includeArtifact: true }));
+  assert.ok(!slotPool(model, "Off Hand").includes("Artifact Shield"),
+    "an Artifact shield is still excluded from a declared build's off hand");
+});
+
+test("U2/003: offHandItemsExcluded is the single advisory authority (U5 flag + U6 notice)", () => {
+  assert.strictEqual(M.offHandItemsExcluded({ style: "one-hand", twoWeaponFighting: true }), true);
+  assert.strictEqual(M.offHandItemsExcluded({ style: "one-hand" }), false, "undeclared");
+  assert.strictEqual(M.offHandItemsExcluded({ style: "sword-board", twoWeaponFighting: true }), false, "wrong style");
+  assert.strictEqual(M.offHandItemsExcluded({ style: "unarmed", twoWeaponFighting: true }), false, "wrong style");
+  assert.strictEqual(M.offHandItemsExcluded({}), false, "no style, no declaration");
+});
+
+// ---- plan 003 U5 (KTD6) — slot-aware pin legality, layered on variantConflict ----
+
+test("U5/003 (R7): an off-hand WEAPON pin without the declaration is a slot conflict", () => {
+  const q = { mlCap: 34, targets: ["Constitution"], style: "one-hand" };
+  // variantConflict is slot-blind: a one-handed weapon passes the main-hand gate and
+  // returns null, so nothing would suppress the pin — while the weapon is absent from
+  // the off-hand pool, making the pin a constraint on a variant not in its own slot.
+  // That is a NO-BUILD, not R7's graceful suppression. This predicate is the fix.
+  assert.strictEqual(M.variantConflict(twfSword, q), null, "variantConflict alone sees nothing wrong");
+  assert.ok(M.pinSlotConflict(twfSword, "Off Hand", q), "the slot-aware predicate catches it");
+  assert.strictEqual(M.pinSlotConflict(twfSword, "Main Hand", q), null, "the same weapon is fine in the main hand");
+});
+
+test("U5/003 (R7): declaring makes the same off-hand weapon pin legal", () => {
+  const q = { mlCap: 34, targets: ["Constitution"], style: "one-hand", twoWeaponFighting: true };
+  assert.strictEqual(M.pinSlotConflict(twfSword, "Off Hand", q), null, "declared: the pin is honored");
+  // …and the off-hand weapon-type picks still narrow it.
+  const narrowed = Object.assign({}, q, { offHandWeapons: ["Daggers"] });
+  assert.ok(M.pinSlotConflict(twfSword, "Off Hand", narrowed), "a type outside the picks is flagged");
+  assert.strictEqual(M.pinSlotConflict(twfDagger, "Off Hand", narrowed), null, "a picked type is fine");
+});
+
+test("U5/003 (R8/KTD1): a pinned SHIELD on a declared build is NOT a conflict", () => {
+  // This is the load-bearing case. If the exclusion were expressed as a conflict,
+  // reconcilePinLegality would drop the pin — the feature would delete its own
+  // escape hatch. The shield is honored; U5 flags it as an override instead.
+  const q = { mlCap: 34, targets: ["Constitution"], style: "one-hand", twoWeaponFighting: true };
+  assert.strictEqual(M.pinSlotConflict(twfShield, "Off Hand", q), null, "the pinned shield survives");
+  assert.strictEqual(M.variantConflict(twfShield, q), null, "and no variant-level conflict either");
+});
+
+test("U5/003: the predicate is inert everywhere it should be", () => {
+  const q = { mlCap: 34, targets: ["Constitution"], style: "sword-board", twoWeaponFighting: true };
+  assert.strictEqual(M.pinSlotConflict(twfShield, "Off Hand", q), null, "S&B shield pin");
+  assert.strictEqual(M.pinSlotConflict(twfSword, "Main Hand", q), null, "main-hand weapon pin");
+  const ring = v("Ring", "Ring", [["Constitution", "Enhancement", 5]]);
+  assert.strictEqual(M.pinSlotConflict(ring, "Ring", q), null, "a non-hand pin is never touched");
+  assert.strictEqual(M.pinSlotConflict(null, "Off Hand", q), null, "a missing variant is not a crash");
 });
 
 console.log(`\n${passed} passed`);

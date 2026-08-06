@@ -104,13 +104,31 @@ function allowedWeaponTypes(query) {
   return null;
 }
 /** Allowed OFF-HAND weapon types (two-weapon fighting), or null when no off-hand
- *  weapon is permitted. TWF is one-hand-style only and OPT-IN: it turns on when the
- *  player picks at least one off-hand weapon type. */
+ *  weapon is permitted. TWF is one-hand-style only.
+ *
+ *  plan 003 U2 (KTD3) — the DECLARATION is the switch. Dual-wield used to turn on
+ *  when the player happened to pick an off-hand weapon type, which nothing
+ *  signposted, so the feature was unreachable by default. The off-hand weapon-type
+ *  picker survives as optional REFINEMENT: picks narrow the allowed list; with no
+ *  picks every one-handed type competes. */
 function allowedOffHandWeaponTypes(query) {
   const T = _taxonomy();
   if (!T || !T.twfWeaponAllowedForStyle(query.style)) return null;
+  if (!query.twoWeaponFighting) return null;
   const set = Array.isArray(query.offHandWeapons) ? query.offHandWeapons : [];
-  return set.length ? set : null;
+  return set.length ? set : T.offHandWeaponTypes();
+}
+
+/** plan 003 U2 (R3) — does this query exclude off-hand ITEMS (shields, orbs, rune
+ *  arms) from off-hand candidacy? True only when the feat is declared AND the style
+ *  permits a second weapon, so no other style's allow-list is ever overridden (R5).
+ *
+ *  THE single advisory authority: U5's pin flag and U6's results disclosure both read
+ *  this rather than re-deriving it, so what the pin list says and what the results
+ *  notice says cannot drift apart. */
+function offHandItemsExcluded(query) {
+  const T = _taxonomy();
+  return !!(query && query.twoWeaponFighting) && !!T && T.twfWeaponAllowedForStyle(query.style);
 }
 /** Can this weapon fill the Main Hand under the query's main-hand lock? Untyped
  *  hosts (Dino Bone Weapon) always can. */
@@ -266,6 +284,30 @@ function variantConflict(v, query, gates) {
 // a stable name distinct from the solver-facing helper.
 function pinConflict(v, query) {
   return variantConflict(v, query);
+}
+
+/** plan 003 U5 (KTD6, R7) — SLOT-AWARE pin legality, layered ON TOP of
+ *  variantConflict rather than inside it. Returns null (the pin is legal in that
+ *  slot) or a short human reason.
+ *
+ *  Why a second predicate rather than a new gate in variantConflict:
+ *
+ *  - variantConflict is per-VARIANT and slot-blind. An off-hand weapon pin made
+ *    without the declaration is a one-handed weapon that passes the main-hand gate,
+ *    so variantConflict returns null and nothing suppresses the pin — while the
+ *    weapon is absent from the off-hand pool. The pin then constrains a variant that
+ *    is not in its own slot: a NO-BUILD, not R7's graceful suppression.
+ *  - The exclusion of shields/orbs/rune arms from a declared build must NOT live in
+ *    variantConflict (KTD1) — reconcilePinLegality drops any pin whose
+ *    variantConflict is non-null, so it would sweep the pinned-shield escape hatch.
+ *    This predicate deliberately returns null for a pinned SHIELD on a declared
+ *    build: it is honored, and the UI flags it as overriding the exclusion (R8). */
+function pinSlotConflict(v, slotKey, query) {
+  if (!v || slotKey !== "Off Hand" || v.category !== "weapon") return null;
+  const allow = allowedOffHandWeaponTypes(query || {});
+  if (allow == null) return "your character hasn't declared Two Weapon Fighting";
+  if (!offHandWeaponOk(v, allow)) return "this weapon type isn't in your off-hand weapon picks";
+  return null;
 }
 
 // U2 — THE single normalize path for a slot's pin(s). A slot constraint pins ONE
@@ -521,6 +563,12 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   for (const c of Object.values(query.slotConstraints || {})) {
     for (const id of pinnedVariantIds(c)) pinnedIds.add(id);
   }
+  // plan 003 U2 — the player's EXPLICIT pins, snapshotted before the Artifact
+  // exemption below widens `pinnedIds`. R3's off-hand escape hatch is "unless the
+  // player pins one", so it must read this narrow set: reusing the widened one would
+  // let every eligible Artifact shield sit in a declared build's off hand with nobody
+  // having pinned it.
+  const explicitPins = new Set(pinnedIds);
 
   // KTD2 — Artifact exemption: when the box is on, "exactly one Artifact" makes
   // Artifact-ness a value dimension, so a non-Artifact beating an Artifact on
@@ -566,6 +614,16 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // also compete here (the hand-mutex in solver.js stops the same item filling both
   // hands). The Off Hand slot then optimizes the best second weapon vs shield/orb.
   let offHandPool = elig.filter((v) => v.slot === "Off Hand");
+  // plan 003 U2 (R3) — a DECLARED build's off hand holds a weapon. Shields, orbs, and
+  // rune arms leave candidacy unless the player pinned one (R8's escape hatch).
+  //
+  // Why here and NOT in variantConflict (KTD1): reconcilePinLegality drops any pin
+  // whose variantConflict is non-null, so expressing the exclusion there would sweep
+  // the very pins the escape hatch exists to protect — the feature would delete its
+  // own override. Candidacy is a pool question, not an equippability question.
+  if (offHandItemsExcluded(query)) {
+    offHandPool = offHandPool.filter((v) => explicitPins.has(variantKey(v)));
+  }
   if (offWeaponAllow != null) {
     offHandPool = offHandPool.concat(
       elig.filter((v) => v.category === "weapon" && offHandWeaponOk(v, offWeaponAllow)));
@@ -660,6 +718,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     buildModel, eligible, variantConflict, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
+    offHandItemsExcluded, allowedOffHandWeaponTypes, pinSlotConflict,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys,
     isForgedRace, isDocent, isBothHandsWeapon, variantKey, setStackEquiv, equivType,
     WORN_SLOTS, SLOT_CARDINALITY, ARMOR_DODGE_CAP,

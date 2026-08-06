@@ -2,7 +2,7 @@
 const assert = require("assert");
 const {
   serializeCharacter, stripResult, saveCharacter, listCharacters, loadCharacter, deleteCharacter,
-  allCharacters, saveMany,
+  allCharacters, saveMany, INPUT_KEYS, pickInputs,
 } = require("../web/persist.js");
 const { migrateLoadout } = require("../web/dataset.js");
 
@@ -219,6 +219,21 @@ test("migrateLoadout is a no-op on a native (current) snapshot and tolerates emp
   // U7 removed the native->legacy affix aliases: a native affix stays {name,type},
   // no stat/bonus_type back-fill.
   assert.strictEqual(a.stat, undefined, "no legacy alias back-filled for a native affix");
+});
+
+
+// ---- plan 003 U1 — the declaration round-trips with the saved character (R9) ----
+
+test("U1/003 (R9): the declaration is a saved input and survives the round trip", () => {
+  assert.ok(INPUT_KEYS.includes("twoWeaponFighting"), "the declaration joins the saved-input allowlist");
+  const declared = pickInputs(Object.assign({}, state, { twoWeaponFighting: true }), "Rogue");
+  assert.strictEqual(declared.twoWeaponFighting, true, "a declared character saves it as true");
+  const plain = pickInputs(state, "Rogue");
+  assert.strictEqual(plain.twoWeaponFighting, false, "an undeclared character saves false, not undefined");
+  // A pre-U1 save carries no field at all; it must load as undeclared rather than
+  // as a stray truthy value.
+  const legacy = Object.assign({}, state); delete legacy.twoWeaponFighting;
+  assert.strictEqual(pickInputs(legacy, "Rogue").twoWeaponFighting, false, "a pre-U1 save defaults to undeclared");
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);

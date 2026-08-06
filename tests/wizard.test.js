@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -499,4 +499,224 @@ test("U4/#105: step 5 (results) nav is in the bottom action bar, not the header"
   const row = actionRow("stepResults");
   assert.ok(row.includes('data-goto="priorities"'), "Adjust-priorities relocated to the bottom bar");
   assert.ok(row.includes('data-goto="character"'), "Edit-character relocated to the bottom bar");
+});
+
+// ---- plan 003 U1 — Two Weapon Fighting declaration (R1, R2, R9, R11) ----
+
+test("U1/003: buildQuery emits the declaration; undeclared is false", () => {
+  const on = buildQuery(Object.assign(baseState(), { twoWeaponFighting: true }));
+  assert.strictEqual(on.twoWeaponFighting, true, "a declared build emits the flag");
+  const off = buildQuery(baseState());
+  assert.strictEqual(off.twoWeaponFighting, false, "an undeclared build emits false, never undefined");
+  // A pre-U1 state object has no field at all and must still resolve to false.
+  const legacy = baseState(); delete legacy.twoWeaponFighting;
+  assert.strictEqual(buildQuery(legacy).twoWeaponFighting, false, "a state without the field defaults to undeclared");
+});
+
+test("U1/003 (R1): the declaration is a character-step control, not an off-hand one", () => {
+  const tpl = stepTemplate("stepCharacter");
+  assert.ok(tpl.includes('id="wz-twf"'), "the declaration control renders on the character step");
+  assert.ok(/Two Weapon Fighting/.test(tpl), "the control names the feat it declares");
+});
+
+test("U1/003 (R11): the declaration control is announced and keyboard-operable", () => {
+  const tpl = stepTemplate("stepCharacter");
+  const i = tpl.indexOf('id="wz-twf"');
+  assert.ok(i !== -1, "the control exists");
+  // The shipped chip convention is a real <button> (focusable, Enter/Space native).
+  // aria-pressed is what makes its on/off state audible to a screen reader.
+  const control = tpl.slice(i, i + 600);
+  assert.ok(/<button/.test(control), "a real button, so it is focusable and Enter/Space works");
+  assert.ok(/aria-pressed=/.test(control), "aria-pressed announces the declared state");
+});
+
+test("U1/003 (R2): changing combat style resets gear picks but never the declaration", () => {
+  // The style handler is the one site that clears adjacent gear state. The
+  // declaration is character state (Product Contract Key Decision 2), so it must
+  // not join that reset — a style switch cannot silently un-declare a feat.
+  const h = WIZARD_SRC.slice(WIZARD_SRC.indexOf("#wz-style .wz-chip"));
+  const body = h.slice(0, h.indexOf("});"));
+  assert.ok(/state\.offHandWeapons\s*=\s*\[\]/.test(body), "the style reset still clears off-hand weapon picks");
+  assert.ok(!/twoWeaponFighting/.test(body), "the style reset must not touch the declaration");
+});
+
+test("U1/003 (R9): the declaration is restored on load, defaulting to undeclared", () => {
+  const load = WIZARD_SRC.slice(WIZARD_SRC.indexOf("state.offHandWeapons = Array.isArray(i.offHandWeapons)"));
+  const near = load.slice(0, 1200);
+  // U4 layered the migration on top; a save with neither the field nor the old
+  // opt-in still resolves to undeclared through both terms.
+  assert.ok(/state\.twoWeaponFighting\s*=\s*state\.twfMigrated \|\| !!i\.twoWeaponFighting/.test(near),
+    "the load path restores the declaration, coercing a missing field to false");
+  assert.strictEqual(twfMigrationNeeded({}), false, "…and a bare pre-U1 save does not migrate");
+});
+
+// ---- plan 003 U5 — a hand target in the pin flow (R6, R7, R8, R11) ----
+
+const oneHandWeapon = { source_item: "Longsword", variant_id: "Longsword", slot: "Weapon",
+  category: "weapon", type: "Long Swords", ml: 20, minimum_level: 20, verification: "verified",
+  affixes: [{ name: "Constitution", type: "Enhancement", value: 8, unit: "flat" }],
+  scaling: [], set_bonus: [], augment_slots: [] };
+const twoHandWeapon = { ...oneHandWeapon, source_item: "Greatsword", variant_id: "Greatsword", type: "Great Swords" };
+const pinShield = { source_item: "Tower Shield", variant_id: "Tower Shield", slot: "Off Hand",
+  type: "Tower shields", ml: 20, minimum_level: 20, verification: "verified",
+  affixes: [{ name: "Constitution", type: "Enhancement", value: 25, unit: "flat" }],
+  scaling: [], set_bonus: [], augment_slots: [] };
+const pinRing = { source_item: "Ring", variant_id: "Ring", slot: "Ring", ml: 20, minimum_level: 20,
+  verification: "verified", affixes: [], scaling: [], set_bonus: [], augment_slots: [] };
+
+test("U5/003 (R6): pinWornSlotOf routes a weapon to the hand it was pinned to", () => {
+  // The shipped line sent EVERY weapon to "Main Hand" unconditionally, so an
+  // off-hand weapon pin could not be expressed at all — half the reported bug.
+  assert.strictEqual(pinWornSlotOf(oneHandWeapon), "Main Hand", "default is unchanged: Main hand");
+  assert.strictEqual(pinWornSlotOf(oneHandWeapon, "Off Hand"), "Off Hand", "an explicit off-hand target is honored");
+  assert.strictEqual(pinWornSlotOf(pinShield, "Off Hand"), "Off Hand", "a non-weapon still uses its own slot");
+  assert.strictEqual(pinWornSlotOf(pinRing, "Off Hand"), "Ring", "a hand target never moves a non-weapon");
+});
+
+test("U5/003 (R6): only a ONE-HANDED weapon offers both hands", () => {
+  assert.deepStrictEqual(pinHandsFor(oneHandWeapon), ["Main Hand", "Off Hand"], "one-handed: two actions");
+  assert.deepStrictEqual(pinHandsFor(twoHandWeapon), ["Main Hand"], "two-handed: main hand only");
+  assert.deepStrictEqual(pinHandsFor(pinShield), ["Off Hand"], "a shield keeps its single worn slot");
+  assert.deepStrictEqual(pinHandsFor(pinRing), ["Ring"], "a non-weapon keeps its single worn slot");
+  // An UNTYPED weapon host has unknown handedness — it could be crafted two-handed,
+  // which cannot be dual-wielded — so it is not offered as an off-hand pin.
+  assert.deepStrictEqual(pinHandsFor({ ...oneHandWeapon, type: null }), ["Main Hand"], "untyped host: main hand only");
+});
+
+test("U5/003 (R6): applyPin honors the hand target", () => {
+  const sc = {};
+  applyPin(sc, oneHandWeapon, () => 1, "Off Hand");
+  assert.deepStrictEqual(sc, { "Off Hand": { type: "pin", variant_id: "Longsword" } },
+    "the weapon lands in the OFF hand, not silently in the main hand");
+  const sc2 = {};
+  applyPin(sc2, oneHandWeapon, () => 1);
+  assert.deepStrictEqual(sc2, { "Main Hand": { type: "pin", variant_id: "Longsword" } },
+    "with no target, existing behavior is unchanged");
+});
+
+test("U5/003 (R7): reconcile DROPS an off-hand weapon pin made without the declaration", () => {
+  const byId = (id) => ({ Longsword: oneHandWeapon, "Tower Shield": pinShield }[id] || null);
+  const sc = { "Off Hand": { type: "pin", variant_id: "Longsword" } };
+  const dropped = reconcilePinLegality(sc, byId, { mlCap: 34, style: "one-hand" }, () => 1);
+  assert.deepStrictEqual(dropped, [{ slot: "Off Hand", id: "Longsword" }], "the illegal pin is reported");
+  assert.deepStrictEqual(sc, {}, "and actually removed, so the solve is not constrained to an absent variant");
+});
+
+test("U5/003 (R7): the same pin SURVIVES once the feat is declared", () => {
+  const byId = (id) => ({ Longsword: oneHandWeapon }[id] || null);
+  const sc = { "Off Hand": { type: "pin", variant_id: "Longsword" } };
+  const dropped = reconcilePinLegality(sc, byId, { mlCap: 34, style: "one-hand", twoWeaponFighting: true }, () => 1);
+  assert.deepStrictEqual(dropped, [], "nothing dropped");
+  assert.ok(sc["Off Hand"], "the pin is honored");
+});
+
+test("U5/003 (R8/KTD1): reconcile must NEVER sweep a pinned shield on a declared build", () => {
+  // The escape hatch. If the exclusion had been expressed through variantConflict,
+  // this pin would be dropped here and the feature would delete its own override.
+  const byId = (id) => ({ "Tower Shield": pinShield }[id] || null);
+  const sc = { "Off Hand": { type: "pin", variant_id: "Tower Shield" } };
+  const dropped = reconcilePinLegality(sc, byId, { mlCap: 34, style: "one-hand", twoWeaponFighting: true }, () => 1);
+  assert.deepStrictEqual(dropped, [], "the pinned shield is not swept");
+  assert.ok(sc["Off Hand"], "the player's override stands");
+});
+
+test("U5/003 (R6/R11): the pin search offers a labelled hand action per weapon", () => {
+  const src = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderPinResults("));
+  const body = src.slice(0, src.indexOf("function renderPinList("));
+  assert.ok(/data-pin-hand=/.test(body), "each action carries its hand target");
+  assert.ok(/pinHandsFor\(/.test(body), "the action list comes from the shared handedness helper");
+  assert.ok(/aria-label=/.test(body), "each action is labelled for screen readers");
+});
+
+test("U5/003 (R7/R8): the pin list flags both the illegal pin and the override", () => {
+  const src = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderPinList("));
+  const body = src.slice(0, src.indexOf("function stepPriorities("));
+  assert.ok(/pinSlotConflict\(/.test(body), "the slot-aware reason is surfaced, not just variantConflict");
+  assert.ok(/offHandItemsExcluded\(/.test(body),
+    "the override flag reads U2's exported advisory predicate, not a view-layer copy");
+});
+
+// ---- plan 003 U3 — the declaration across combat-style states (R4) ----
+
+test("U3/003 (R4): the control states its three style cases in the markup", () => {
+  const tpl = stepTemplate("stepCharacter");
+  const i = tpl.indexOf('id="wz-twf"');
+  assert.ok(i !== -1, "the control exists");
+  // "Inert" is settable-but-without-effect, NOT disabled: a player must be able to
+  // declare from any style (AE3 declares, then switches), and disabling would also
+  // read as "you can't have this feat".
+  assert.ok(!/data-twf="1"[^>]*\bdisabled\b/.test(tpl), "the control is never disabled");
+  // The IIFE that wraps the field computes twfActive from the taxonomy and branches
+  // on it — that branch is the whole of R4's behavior.
+  const block = tpl.slice(0, i);
+  assert.ok(/twfActive\s*=\s*!!\(WT && WT\.twfWeaponAllowedForStyle\(state\.style\)\)/.test(block),
+    "active-ness comes from the shipped taxonomy, not a new style list here (KTD2)");
+  assert.ok(/state\.twoWeaponFighting && !twfActive/.test(block),
+    "the reason renders exactly when the declaration is set but currently has no effect");
+});
+
+test("U3/003 (R4): a forbidding style renders a stated reason, an enabling one doesn't", () => {
+  const tpl = stepTemplate("stepCharacter");
+  // The reason names the style's constraint rather than just greying out.
+  assert.ok(/wz-twf-inert/.test(tpl), "a reason element exists for the inert case");
+  assert.ok(/no effect|doesn't apply|does not apply/i.test(tpl),
+    "the reason says the declaration has no effect under this style");
+});
+
+test("U3/003 (R2/R4): only `one-hand` makes the declaration active", () => {
+  // The single source is the shipped taxonomy — U3 adds no new style logic (KTD2).
+  const WT = require("../web/weapon-taxonomy.js");
+  const active = WT.STYLES.map((s) => s.id).filter((id) => WT.twfWeaponAllowedForStyle(id));
+  assert.deepStrictEqual(active, ["one-hand"], "exactly one style permits a second weapon");
+  for (const id of ["thf", "ranged", "crossbow", "sword-board", "unarmed"]) {
+    assert.strictEqual(WT.twfWeaponAllowedForStyle(id), false, `${id} forbids a second weapon`);
+  }
+  assert.strictEqual(WT.twfWeaponAllowedForStyle(""), false, "no style chosen: not yet active");
+});
+
+test("U3/003 (R2): the toggle handler still only flips the flag — no style coupling", () => {
+  const h = WIZARD_SRC.slice(WIZARD_SRC.indexOf("#wz-twf .wz-chip"));
+  const body = h.slice(0, h.indexOf("});"));
+  assert.ok(/state\.twoWeaponFighting = !state\.twoWeaponFighting/.test(body), "a plain toggle");
+  assert.ok(!/state\.style/.test(body), "declaring never reads or writes the combat style");
+});
+
+// ---- plan 003 U4 — migrate saved characters that used the old opt-in (R9) ----
+
+test("U4/003: a save that used the old opt-in migrates to declared", () => {
+  // Those players HAD dual-wield on under the pre-U1 trigger (a non-empty
+  // offHandWeapons list). Leaving them undeclared would silently return a shield on
+  // their next solve — a regression they never asked for and can't see coming.
+  assert.strictEqual(twfMigrationNeeded({ offHandWeapons: ["Short Swords"] }), true);
+});
+
+test("U4/003: a save with no off-hand weapon picks does NOT migrate", () => {
+  assert.strictEqual(twfMigrationNeeded({ offHandWeapons: [] }), false, "empty list: dual-wield was off");
+  assert.strictEqual(twfMigrationNeeded({}), false, "no field at all");
+  assert.strictEqual(twfMigrationNeeded({ offHandWeapons: null }), false, "null is not a pick list");
+  assert.strictEqual(twfMigrationNeeded(null), false, "a missing record is not a crash");
+});
+
+test("U4/003: the migration is idempotent — a post-U1 save is never re-migrated", () => {
+  // pickInputs always writes a boolean, so ANY save made after U1 carries the field.
+  // Its presence is exactly the "already migrated / made a choice" signal, which is
+  // why persist.js coerces rather than passing undefined through.
+  assert.strictEqual(twfMigrationNeeded({ twoWeaponFighting: false, offHandWeapons: ["Short Swords"] }), false,
+    "an explicit false is the player's choice and is honored, not overwritten");
+  assert.strictEqual(twfMigrationNeeded({ twoWeaponFighting: true, offHandWeapons: ["Short Swords"] }), false,
+    "already declared: nothing to do");
+});
+
+test("U4/003 (R9): the load path applies the migration and flags it for disclosure", () => {
+  const load = WIZARD_SRC.slice(WIZARD_SRC.indexOf("state.twfMigrated = twfMigrationNeeded(i)"));
+  const near = load.slice(0, 700);
+  assert.ok(/twfMigrationNeeded\(i\)/.test(near), "the load path consults the migration helper");
+  assert.ok(/state\.twfMigrated/.test(near), "and records it so the notice can render");
+});
+
+test("U4/003: the migration notice is a distinct message, not the catalog-staleness one", () => {
+  const tpl = stepTemplate("stepResults");
+  assert.ok(/wz-twfmig/.test(tpl), "its own bar");
+  assert.ok(/Two Weapon Fighting/.test(tpl), "naming what was turned on");
+  assert.ok(/predates the current gear catalog/.test(tpl), "the catalog-staleness bar still exists separately");
 });
