@@ -197,7 +197,7 @@ function buildProgram(model) {
       extraConstraints.push(`${arts.map((xv) => xv.name).join(" + ")} = 1`);
     }
   }
-  const augMeta = new Map(); // color-placement var -> {variant_id, color, slot_color, wiki_url}
+  const augMeta = new Map(); // color-placement var -> {variant_id, color, slot_color, affixes, wiki_url}
   const placeMeta = new Map(); // augment place indicator (pu) -> {variant_id, color, wiki_url}
   const setMeta = new Map(); // set_active var -> {set, pieces_required, pieces_label, wiki_url}
   const jokerMeta = new Map(); // joker option var -> {host, group, set} (wildcard set piece)
@@ -263,9 +263,16 @@ function buildProgram(model) {
     for (const sc of fits) {
       const p = "p" + pc++;
       extraVars.push(p);
+      // `affixes` rides along so the placement record is SELF-DESCRIBING. Every
+      // downstream surface names what an augment grants, but only the paperdoll
+      // had the catalog in hand to re-resolve it by variant_id — the Set Bonuses
+      // set-like list and every text export read `.affixes` straight off this
+      // record and silently rendered nothing. It also has to be here rather than
+      // re-resolved per surface: `persist.js` keeps `augmentsPlaced` but drops
+      // `model`, so a snapshot reloaded later has no catalog to resolve against.
       augMeta.set(p, {
         variant_id: aug.variant_id, color: (aug.aug_color || {}).color,
-        slot_color: sc, wiki_url: aug.wiki_url,
+        slot_color: sc, affixes: aug.affixes || [], wiki_url: aug.wiki_url,
       });
       colorVars.push(p);
       if (!placeByColor.has(sc)) placeByColor.set(sc, []);
