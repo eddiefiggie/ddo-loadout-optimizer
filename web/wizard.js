@@ -75,6 +75,12 @@ function buildQuery(state) {
     weaponTypes: Array.isArray(state.weaponTypes) ? state.weaponTypes.slice() : [],
     offHand: Array.isArray(state.offHand) ? state.offHand.slice() : [],
     offHandWeapons: Array.isArray(state.offHandWeapons) ? state.offHandWeapons.slice() : [],
+    // plan 003 U1 — the Two Weapon Fighting declaration (R1). Dual-wield used to
+    // switch on as a side effect of picking an off-hand weapon type, which nothing
+    // signposted; it is now an explicit character-level feat declaration. Always a
+    // boolean, never undefined, so a pre-U1 state resolves to undeclared rather
+    // than to a stray truthy value downstream.
+    twoWeaponFighting: !!state.twoWeaponFighting,
     race: state.race || null,
     alignment: state.alignment || null,
     includeArtifact: !!state.includeArtifact,           // U4 — Artifact opt-in
@@ -330,6 +336,10 @@ if (typeof window !== "undefined" && window.App) {
 
     const state = { step: "intro", ml: 36, mlFloor: 31, mlFloorManual: false, race: "", alignment: "", armor: "", oath: "",
       style: "", weaponTypes: [], offHand: [], offHandWeapons: [],
+      // plan 003 U1 — the Two Weapon Fighting declaration. Character state, not gear
+      // state: the combat-style handler clears weaponTypes/offHand/offHandWeapons but
+      // must never clear this (R2).
+      twoWeaponFighting: false,
       includeArtifact: false,
       // U6 — set-augment availability. A Set of owned set-augment `set` names;
       // empty by default so the set-augment family stays inert until opted in.
@@ -406,6 +416,9 @@ if (typeof window !== "undefined" && window.App) {
             <span class="wz-help">A class oath that forbids certain armor. Approximated by armor type — see the note when on.</span>
             <div class="wz-seg" id="wz-oath"><button class="wz-chip ${state.oath === "druid" ? "on" : ""}" data-oath="druid" ${forged ? "disabled" : ""}>Druid — no metal</button></div>
             ${state.oath === "druid" && !forged ? `<p class="wz-help wz-note">Druidic oath: body armor restricted to cloth + light. Metal vs non-metal medium/heavy (e.g. Darkleaf, Dragonhide) isn't distinguishable in our data, so this is a conservative approximation.</p>` : ""}</div>
+          <div class="wz-field"><span class="wz-label">Two Weapon Fighting <span class="wz-sub">· optional</span></span>
+            <span class="wz-help">Declare the feat if your character fights with a weapon in each hand. Dual-wielding used to switch on only when you added a second weapon type below — declaring it here is the explicit way.</span>
+            <div class="wz-seg" id="wz-twf"><button class="wz-chip ${state.twoWeaponFighting ? "on" : ""}" data-twf="1" aria-pressed="${state.twoWeaponFighting ? "true" : "false"}">Two Weapon Fighting</button></div></div>
           ${(() => {
             const styles = WT ? WT.STYLES : [];
             const wtypes = (WT && state.style) ? WT.weaponTypesForStyle(state.style, weaponTypesInData) : [];
@@ -1091,6 +1104,10 @@ if (typeof window !== "undefined" && window.App) {
       state.weaponTypes = Array.isArray(i.weaponTypes) ? i.weaponTypes.slice() : [];
       state.offHand = Array.isArray(i.offHand) ? i.offHand.slice() : [];
       state.offHandWeapons = Array.isArray(i.offHandWeapons) ? i.offHandWeapons.slice() : [];
+      // plan 003 U1 — the Two Weapon Fighting declaration (R9). A pre-U1 save has no
+      // field; `!!` loads it as undeclared. U4 layers the migration for saves that
+      // used the old off-hand-weapon-types opt-in on top of this default.
+      state.twoWeaponFighting = !!i.twoWeaponFighting;
       state.includeArtifact = !!i.includeArtifact;
       // U6 — restore owned set augments (stored as an array; rebuilt as a Set).
       state.ownedSetAugments = Array.isArray(i.ownedSetAugments) ? new Set(i.ownedSetAugments) : new Set();
@@ -1298,6 +1315,13 @@ if (typeof window !== "undefined" && window.App) {
         root.querySelectorAll("#wz-armor .wz-chip").forEach((c) => c.onclick = () => {
           if (c.disabled) return; state.armor = state.armor === c.dataset.armor ? "" : c.dataset.armor;
           root.querySelectorAll("#wz-armor .wz-chip").forEach((x) => x.classList.toggle("on", x.dataset.armor === state.armor));
+        });
+        // plan 003 U1 — the Two Weapon Fighting declaration: a plain toggle. It is
+        // character state, so nothing else resets it (R2) — in particular the style
+        // handler above clears the gear picks and deliberately leaves this alone.
+        root.querySelectorAll("#wz-twf .wz-chip").forEach((c) => c.onclick = () => {
+          state.twoWeaponFighting = !state.twoWeaponFighting;
+          render();
         });
         // U4 — oath: single-select; toggling shows/hides the approximation note.
         root.querySelectorAll("#wz-oath .wz-chip").forEach((c) => c.onclick = () => {

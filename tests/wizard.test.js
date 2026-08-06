@@ -500,3 +500,49 @@ test("U4/#105: step 5 (results) nav is in the bottom action bar, not the header"
   assert.ok(row.includes('data-goto="priorities"'), "Adjust-priorities relocated to the bottom bar");
   assert.ok(row.includes('data-goto="character"'), "Edit-character relocated to the bottom bar");
 });
+
+// ---- plan 003 U1 — Two Weapon Fighting declaration (R1, R2, R9, R11) ----
+
+test("U1/003: buildQuery emits the declaration; undeclared is false", () => {
+  const on = buildQuery(Object.assign(baseState(), { twoWeaponFighting: true }));
+  assert.strictEqual(on.twoWeaponFighting, true, "a declared build emits the flag");
+  const off = buildQuery(baseState());
+  assert.strictEqual(off.twoWeaponFighting, false, "an undeclared build emits false, never undefined");
+  // A pre-U1 state object has no field at all and must still resolve to false.
+  const legacy = baseState(); delete legacy.twoWeaponFighting;
+  assert.strictEqual(buildQuery(legacy).twoWeaponFighting, false, "a state without the field defaults to undeclared");
+});
+
+test("U1/003 (R1): the declaration is a character-step control, not an off-hand one", () => {
+  const tpl = stepTemplate("stepCharacter");
+  assert.ok(tpl.includes('id="wz-twf"'), "the declaration control renders on the character step");
+  assert.ok(/Two Weapon Fighting/.test(tpl), "the control names the feat it declares");
+});
+
+test("U1/003 (R11): the declaration control is announced and keyboard-operable", () => {
+  const tpl = stepTemplate("stepCharacter");
+  const i = tpl.indexOf('id="wz-twf"');
+  assert.ok(i !== -1, "the control exists");
+  // The shipped chip convention is a real <button> (focusable, Enter/Space native).
+  // aria-pressed is what makes its on/off state audible to a screen reader.
+  const control = tpl.slice(i, i + 600);
+  assert.ok(/<button/.test(control), "a real button, so it is focusable and Enter/Space works");
+  assert.ok(/aria-pressed=/.test(control), "aria-pressed announces the declared state");
+});
+
+test("U1/003 (R2): changing combat style resets gear picks but never the declaration", () => {
+  // The style handler is the one site that clears adjacent gear state. The
+  // declaration is character state (Product Contract Key Decision 2), so it must
+  // not join that reset — a style switch cannot silently un-declare a feat.
+  const h = WIZARD_SRC.slice(WIZARD_SRC.indexOf("#wz-style .wz-chip"));
+  const body = h.slice(0, h.indexOf("});"));
+  assert.ok(/state\.offHandWeapons\s*=\s*\[\]/.test(body), "the style reset still clears off-hand weapon picks");
+  assert.ok(!/twoWeaponFighting/.test(body), "the style reset must not touch the declaration");
+});
+
+test("U1/003 (R9): the declaration is restored on load, defaulting to undeclared", () => {
+  const load = WIZARD_SRC.slice(WIZARD_SRC.indexOf("state.offHandWeapons = Array.isArray(i.offHandWeapons)"));
+  const near = load.slice(0, 900);
+  assert.ok(/state\.twoWeaponFighting\s*=\s*!!\s*i\.twoWeaponFighting/.test(near),
+    "the load path restores the declaration, coercing a missing field to false");
+});

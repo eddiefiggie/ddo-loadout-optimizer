@@ -395,6 +395,10 @@
       ["Weapon", weaponLine(i)],
       ["Off hand", offHandLine(i)],
       ["Off-hand weapon", offHandWeaponLine(i)],
+      // plan 003 U1 (R9) — the Two Weapon Fighting declaration travels with a shared
+      // loadout. Empty string when undeclared, so the trailing filter drops the line
+      // rather than printing "Two Weapon Fighting: No" on every non-dual-wield build.
+      ["Two Weapon Fighting", i.twoWeaponFighting ? "Declared" : ""],
       ["Gear pool", POOL[i.pool] || i.pool || "all"],
       ["Priorities", (i.priorities || []).join(" > ")],
     ].filter(([, v]) => v !== "" && v != null);

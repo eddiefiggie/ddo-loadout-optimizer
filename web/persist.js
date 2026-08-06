@@ -33,7 +33,7 @@
   // never silently strip a field the save path keeps (the two lists cannot drift).
   const INPUT_KEYS = [
     "characterName", "ml", "mlFloor", "mlFloorManual", "race", "alignment", "armor", "oath",
-    "style", "weaponTypes", "offHand", "offHandWeapons",
+    "style", "weaponTypes", "offHand", "offHandWeapons", "twoWeaponFighting",
     "includeArtifact", "ownedSetAugments", "pool", "ownedNames", "priorities", "slotConstraints",
     "targetCaps", "targetFloors",
   ];
@@ -53,6 +53,11 @@
         // loader rebuilds the Set. Absent/other -> [] (default: none owned).
         inputs.ownedSetAugments = s.ownedSetAugments instanceof Set ? Array.from(s.ownedSetAugments)
           : (Array.isArray(s.ownedSetAugments) ? s.ownedSetAugments : []);
+      } else if (k === "twoWeaponFighting") {
+        // plan 003 U1 — always a boolean. A pre-U1 state has no field, and storing
+        // `undefined` would drop the key from the JSON entirely, leaving the loader
+        // unable to tell "saved as undeclared" from "saved before the feature".
+        inputs.twoWeaponFighting = !!s.twoWeaponFighting;
       } else {
         inputs[k] = src[k];
       }
