@@ -63,9 +63,23 @@ CORE_STATS = {
     "Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma",
     "Deadly", "Seeker", "Accuracy", "Dodge", "PRR", "MRR",
     "Physical Sheltering", "Magical Sheltering", "Fortification",
-    "Melee Power", "Ranged Power", "Spell Power", "Doublestrike", "Doubleshot",
+    "Melee Power", "Ranged Power", "Doublestrike", "Doubleshot",
     "Sheltering", "Well Rounded", "False Life", "Healing Amplification",
-    "Armor-Piercing", "Vitality", "Devotion", "Nullification", "Potency",
+    "Armor-Piercing", "Devotion", "Nullification", "Potency",
+    # NOT here, deliberately — both were offered in the picker and could never score:
+    #
+    #   "Spell Power" — no item carries a bare "Spell Power"; the catalog stores the
+    #     CONCRETE spell powers, and the ones worth ranking (Devotion, Nullification,
+    #     Potency) are listed above. Do NOT "fix" this by adding the name to
+    #     src/umbrella.py's _UMBRELLA — that set drives _expand_affix, so it would
+    #     rewrite every matching affix into the six ability scores.
+    #   "Vitality" — a bonus TYPE, not a stat name. It appears ~149 times as
+    #     affixes[].type (the Vitality-typed False Life family) and zero times as an
+    #     affix NAME, so ranking it was guaranteed zero. This is the collision
+    #     documented in docs/solutions/logic-errors/bonus-type-vocabulary-collides-
+    #     with-bare-stat.md. It stays on the curated `distinct` list so it is still
+    #     never merged into False Life — that ruling is unchanged; it simply is not
+    #     a rankable target.
     # U5 (#140) — minted by boolean-composite decomposition. `Concealment` appears
     # on no item affix directly; it is written onto items carrying Blurry / Lesser
     # Displacement at the web/dataset.js normalize seam (see
