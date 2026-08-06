@@ -319,3 +319,59 @@ def test_sheltering_is_not_an_umbrella_name():
     from src import umbrella as U
     assert not U.is_umbrella("Sheltering")
     assert "sheltering" not in U.umbrella_expansion()
+
+
+# ---------------------------------------------------------------------------
+# U2 (plan 2026-08-05-002, #134) — sibling differencing for numeric-suffix pools.
+# Fixture-based on purpose: the assertions must hold regardless of whether any
+# correction has landed against the live catalog.
+# ---------------------------------------------------------------------------
+
+_TOPAZ_GAP = [
+    {"name": "Topaz of Swiftness 5%", "affixes": [{"name": "Speed"}, {"name": "Melee Alacrity"}]},
+    {"name": "Topaz of Swiftness 10%", "affixes": [{"name": "Speed"}, {"name": "Melee Alacrity"}]},
+    {"name": "Topaz of Swiftness 15%", "affixes": [{"name": "Speed"}]},
+]
+
+
+def test_sibling_differencing_reports_the_topaz_shaped_gap():
+    """The reported shape: one sibling lacks an affix its peers carry."""
+    out = V.sibling_affix_gaps(_TOPAZ_GAP)
+    assert len(out) == 1, out
+    f = out[0]
+    assert f["family"] == "Topaz of Swiftness"
+    assert f["option"] == "Topaz of Swiftness 15%"
+    assert f["missing"] == "Melee Alacrity"
+    assert f["siblings_with_it"] == ["Topaz of Swiftness 10%", "Topaz of Swiftness 5%"]
+
+
+def test_sibling_differencing_is_silent_once_the_affix_is_present():
+    filled = [dict(o) for o in _TOPAZ_GAP]
+    filled[2] = {"name": "Topaz of Swiftness 15%",
+                 "affixes": [{"name": "Speed"}, {"name": "Melee Alacrity"}]}
+    assert V.sibling_affix_gaps(filled) == []
+
+
+def test_sibling_differencing_ignores_a_family_of_one():
+    """No peer to differ from — a lone suffixed option is not a finding."""
+    assert V.sibling_affix_gaps([{"name": "Lone Gem 10%", "affixes": [{"name": "Speed"}]}]) == []
+
+
+def test_sibling_differencing_does_not_group_non_suffix_digits():
+    """`Litany of the Dead II` and `Docent of Quickening` are not tier siblings of
+    anything — grouping them would invent findings across unrelated options."""
+    opts = [
+        {"name": "Litany of the Dead II", "affixes": [{"name": "Strength"}]},
+        {"name": "Docent of Quickening", "affixes": [{"name": "Melee Alacrity"}]},
+    ]
+    assert V.sibling_affix_gaps(opts) == []
+
+
+def test_sibling_differencing_never_mutates_its_input():
+    """Report-only (KTD10): a finding is a candidate for wiki confirmation, never a
+    correction. The #134 investigation proved why — the wiki did NOT corroborate the
+    reported Topaz gap, so an auto-correcting version would have written a bad value."""
+    import copy
+    before = copy.deepcopy(_TOPAZ_GAP)
+    V.sibling_affix_gaps(_TOPAZ_GAP)
+    assert _TOPAZ_GAP == before
