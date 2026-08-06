@@ -833,3 +833,54 @@ test("U3: set-granted and crafting-pool stats count as sourced", () => {
     { targets: ["Sonic Lore", "Ice Lore"] }, _okResult, model, _datasetWith([]));
   assert.strictEqual(html, "", "a set tier and a crafting pool both count as sources");
 });
+
+// ---- plan 003 U6 — a declared build discloses BOTH of its limits (R10) ----
+
+const _declared = { mlFloor: 0, targetCaps: {}, style: "one-hand", twoWeaponFighting: true };
+const _plainResult = { perTarget: {}, floorReport: [], chosen: [] };
+const _withOffHand = (variant) => ({ perTarget: {}, floorReport: [],
+  chosen: [{ slot: "Off Hand", variant }] });
+
+test("U6/003 (R10): a declared build discloses the exclusion AND the unscored penalty", () => {
+  const note = R.boundNotice(_declared, _withOffHand(
+    { source_item: "Longsword", category: "weapon", type: "Long Swords" }));
+  assert.ok(/shields, orbs, and rune arms/i.test(note), "names what left off-hand candidacy");
+  assert.ok(/pin/i.test(note), "and that a pin restores them");
+  assert.ok(/doesn't score|does not score/i.test(note),
+    "discloses that the Two Weapon Fighting penalty itself is unscored");
+});
+
+test("U6/003 (R10): an UNDECLARED build says neither", () => {
+  const note = R.boundNotice({ mlFloor: 0, targetCaps: {}, style: "one-hand" }, _plainResult);
+  assert.ok(!/shields, orbs, and rune arms/i.test(note), "no exclusion sentence");
+  assert.ok(!/Two Weapon Fighting/i.test(note), "no penalty sentence");
+});
+
+test("U6/003: a declared build under another style says neither — the exclusion never fired", () => {
+  // The notice must read the SAME authority the pool used (offHandItemsExcluded),
+  // not the raw flag: under sword-board nothing was excluded, so claiming it was
+  // would be a false disclosure.
+  const note = R.boundNotice(Object.assign({}, _declared, { style: "sword-board" }), _plainResult);
+  assert.ok(!/shields, orbs, and rune arms/i.test(note), "no exclusion claimed under S&B");
+});
+
+test("U6/003 (R8): a pinned shield that overrode the exclusion is stated", () => {
+  const note = R.boundNotice(_declared, _withOffHand(
+    { source_item: "Tower Shield", type: "Tower shields" }));
+  assert.ok(/pinned/i.test(note) && /overr/i.test(note),
+    "says the pin overrode the exclusion, so the off-hand item is explained");
+});
+
+test("U6/003: the disclosure keeps role=status, like its sibling notices", () => {
+  const note = R.boundNotice(_declared, _plainResult);
+  assert.ok(/role="status"/.test(note), "announced");
+});
+
+test("U6/003: the declared disclosure composes with the existing ML/floor/cap parts", () => {
+  const note = R.boundNotice(
+    Object.assign({}, _declared, { mlFloor: 32, targetCaps: { Dodge: 4 } }),
+    { perTarget: { Dodge: 4 }, floorReport: [], chosen: [] });
+  assert.ok(/ML ≥ 32/.test(note), "the ML band still shows");
+  assert.ok(/Held at your cap: Dodge 4/.test(note), "the held cap still shows");
+  assert.ok(/shields, orbs, and rune arms/i.test(note), "alongside the new disclosure");
+});
