@@ -66,6 +66,12 @@ CORE_STATS = {
     "Melee Power", "Ranged Power", "Spell Power", "Doublestrike", "Doubleshot",
     "Sheltering", "Well Rounded", "False Life", "Healing Amplification",
     "Armor-Piercing", "Vitality", "Devotion", "Nullification", "Potency",
+    # U5 (#140) — minted by boolean-composite decomposition. `Concealment` appears
+    # on no item affix directly; it is written onto items carrying Blurry / Lesser
+    # Displacement at the web/dataset.js normalize seam (see
+    # docs/wiki-evidence/boolean-composites.md). Without it here the components
+    # would be written and still be unrankable, so the player could not ask for it.
+    "Concealment",
 }
 # Recognized-but-not-rankable bonus types: present on items but kept out of the
 # picker vocabulary (a user never ranks a weapon-damage/penalty descriptor).

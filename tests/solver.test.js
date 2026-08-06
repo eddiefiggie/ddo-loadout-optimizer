@@ -2242,5 +2242,83 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
     assert.strictEqual(g.variants[0].variant_id, "G_strong", "the dominator is the survivor");
   });
 
+  // -------------------------------------------------------------------------
+  // U5 (plan 2026-08-05-001, #140) — boolean composites carry a wiki-verified
+  // magnitude that is now written onto the item. Evidence:
+  // docs/wiki-evidence/boolean-composites.md
+  // -------------------------------------------------------------------------
+
+  await test("U5: a Blurry item now contributes Concealment where it scored zero before", async () => {
+    const { normalizeItem } = require("../web/dataset.js");
+    const carrier = item("BLUR", "Cloak", []);
+    carrier.affixes = [{ name: "Blurry", type: "Bool", value: 1 }];
+    normalizeItem(carrier);
+    const model = {
+      targets: ["Concealment"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Cloak", [carrier])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.Concealment, 20, "the wiki-stated 20% is scored");
+  });
+
+  await test("U5: two concealment composites take the MAX, not the sum (wiki stacking rule)", async () => {
+    const { normalizeItem } = require("../web/dataset.js");
+    const a = item("BLUR", "Cloak", []);
+    a.affixes = [{ name: "Blurry", type: "Bool", value: 1 }];
+    const b = item("LD", "Goggles", []);
+    b.affixes = [{ name: "Lesser Displacement", type: "Bool", value: 1 }];
+    normalizeItem(a); normalizeItem(b);
+    const model = {
+      targets: ["Concealment"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Cloak", [a]), slot("Goggles", [b])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.Concealment, 25, "same bonus type buckets to max(20,25), never 45");
+  });
+
+  await test("U5: Crown of Summer contributes all three verified components", async () => {
+    const { normalizeItem } = require("../web/dataset.js");
+    const helm = item("COS", "Helmet", []);
+    helm.affixes = [{ name: "Crown of Summer", type: "Bool", value: 1 }];
+    normalizeItem(helm);
+    const model = {
+      targets: ["Healing Amplification", "Melee Power", "Ranged Power"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Helmet", [helm])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective["Healing Amplification"], 15);
+    assert.strictEqual(r.effective["Melee Power"], 10);
+    assert.strictEqual(r.effective["Ranged Power"], 5);
+  });
+
+  await test("U5/KTD4b: a solve ranking no written component is unchanged (no-regression)", async () => {
+    const { normalizeItem } = require("../web/dataset.js");
+    // Same two items, solved for a stat the decomposition never touches. Adding
+    // affixes to an item must not perturb a solve that does not target them —
+    // buckets are only built for targetSet stats.
+    const mk = () => {
+      const a = item("BLUR", "Cloak", [["Constitution", "Enhancement", 8]]);
+      a.affixes.push({ name: "Blurry", type: "Bool", value: 1 });
+      const b = item("PLAIN", "Cloak", [["Constitution", "Enhancement", 6]]);
+      return [a, b];
+    };
+    const withComposite = mk(); withComposite.forEach(normalizeItem);
+    const model = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Cloak", withComposite)],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.Constitution, 8, "the Constitution answer is untouched by U5");
+  });
+
+  await test("U5: Greater Heroism stays QUARANTINED — no components written", async () => {
+    const { normalizeItem } = require("../web/dataset.js");
+    const it = { affixes: [{ name: "Greater Heroism", type: "Bool", value: 1 }] };
+    normalizeItem(it);
+    assert.deepStrictEqual(it.affixes.map((a) => a.name), ["Greater Heroism"],
+      "the wiki states a magnitude for the SPELL, not the item enchantment");
+  });
+
   console.log(`\n${passed} passed`);
 })();
