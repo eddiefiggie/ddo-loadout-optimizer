@@ -188,4 +188,77 @@ test("U1/KTD2: `Sheltering` is NOT routed through the expanded-away set", () => 
   assert.ok(v.suggestions.includes("Physical Sheltering"), "and PRR/MRR remain rankable");
 });
 
+// ---------------------------------------------------------------------------
+// U5 (plan 2026-08-05-001, #140) — write a boolean composite's wiki-verified
+// components onto the item, ADDITIVELY. Evidence:
+// docs/wiki-evidence/boolean-composites.md
+// ---------------------------------------------------------------------------
+
+test("U5: a composite keeps its boolean AND gains its components (additive)", () => {
+  const it = { affixes: [{ name: "Blurry", type: "Bool", value: 1 }] };
+  normalizeItem(it);
+  assert.ok(names(it).includes("Blurry"), "the boolean survives — still targetable as presence");
+  const c = find(it, "Concealment");
+  assert.ok(c, "the component is written");
+  assert.strictEqual(c.value, 20);
+  assert.strictEqual(c.type, "Enhancement");
+  assert.strictEqual(c.unit, "flat", "percentages store as bare numbers, like Dodge");
+});
+
+test("U5: Crown of Summer writes all three components", () => {
+  const it = { affixes: [{ name: "Crown of Summer", type: "Bool", value: 1 }] };
+  normalizeItem(it);
+  assert.ok(names(it).includes("Crown of Summer"), "boolean survives");
+  assert.strictEqual(find(it, "Healing Amplification").value, 15);
+  assert.strictEqual(find(it, "Melee Power").value, 10);
+  assert.strictEqual(find(it, "Ranged Power").value, 5);
+});
+
+test("U5: two composites contributing one stat write it once, at the higher value", () => {
+  const it = { affixes: [
+    { name: "Blurry", type: "Bool", value: 1 },
+    { name: "Lesser Displacement", type: "Bool", value: 1 },
+  ] };
+  normalizeItem(it);
+  const conceal = it.affixes.filter((a) => a.name === "Concealment");
+  assert.strictEqual(conceal.length, 1, "one line, not two");
+  assert.strictEqual(conceal[0].value, 25, "the higher wins (the solver would max anyway)");
+});
+
+test("U5: an explicitly stated component is never shadowed by a derived one", () => {
+  const it = { affixes: [
+    { name: "Blurry", type: "Bool", value: 1 },
+    { name: "Concealment", type: "Insight", value: 7 },
+  ] };
+  normalizeItem(it);
+  const conceal = it.affixes.filter((a) => a.name === "Concealment");
+  assert.strictEqual(conceal.length, 1, "no duplicate line");
+  assert.strictEqual(conceal[0].type, "Insight", "the item's own affix is preserved");
+  assert.strictEqual(conceal[0].value, 7);
+});
+
+test("U5: expansion is idempotent", () => {
+  const it = { affixes: [{ name: "Crown of Summer", type: "Bool", value: 1 }] };
+  normalizeItem(it);
+  const after1 = names(it).sort();
+  normalizeItem(it);
+  assert.deepStrictEqual(names(it).sort(), after1, "second pass adds nothing");
+});
+
+test("U5: Greater Heroism is QUARANTINED — the spell's numbers are not borrowed", () => {
+  const it = { affixes: [{ name: "Greater Heroism", type: "Bool", value: 1 }] };
+  normalizeItem(it);
+  assert.deepStrictEqual(names(it), ["Greater Heroism"],
+    "the wiki states a magnitude for the SPELL, not the item enchantment (KTD5)");
+});
+
+test("U5: composites remain presence-flagged after decomposition", () => {
+  const v = builtVocab();
+  if (!v) return console.log("  (skipped — web/data/items.json not built)");
+  for (const n of ["Blurry", "Lesser Displacement", "Crown of Summer", "Greater Heroism"]) {
+    assert.ok(v.presence.has(n), `${n} is still an on/off target`);
+  }
+  assert.ok(v.suggestions.includes("Concealment"), "the minted component stat is rankable (KTD4b)");
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

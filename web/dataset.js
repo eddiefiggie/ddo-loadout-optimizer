@@ -86,6 +86,25 @@ var EXPANDED_AWAY_FALLBACK = {
   "all ability score": ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"],
   "well rounded": ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"],
 };
+// U5 (#140) — boolean composites that carry a wiki-verified numeric effect but are
+// stored as `Bool` presence, so the solver could not weigh them. Values and bonus
+// types are transcribed from docs/wiki-evidence/boolean-composites.md; nothing here
+// is inferred. Percentages store as bare numbers with unit "flat", matching Dodge
+// and Fortification.
+//
+// `Greater Heroism` is deliberately ABSENT: the wiki states a magnitude for the
+// SPELL but not for the item enchantment, so it stays QUARANTINED per KTD5. Do not
+// add it from the spell page — that would be inference (see the evidence doc).
+var COMPOSITE_COMPONENTS = {
+  "Blurry": [{ name: "Concealment", type: "Enhancement", value: 20, unit: "flat" }],
+  "Lesser Displacement": [{ name: "Concealment", type: "Enhancement", value: 25, unit: "flat" }],
+  "Crown of Summer": [
+    { name: "Healing Amplification", type: "Enhancement", value: 15, unit: "flat" },
+    { name: "Melee Power", type: "Enhancement", value: 10, unit: "flat" },
+    { name: "Ranged Power", type: "Enhancement", value: 5, unit: "flat" },
+  ],
+};
+
 function isNoiseAffix(a) {
   if (!a || typeof a !== "object") return false;
   var name = a.name != null ? a.name : a.stat;
@@ -126,6 +145,37 @@ function normalizeItem(it) {
         }
       }
       it.affixes = expanded;
+      affixes = expanded;
+    }
+    // U5 (#140) — write the wiki-verified components of a boolean composite onto the
+    // item so its real value can be weighed. ADDITIVE, and deliberately UNLIKE the
+    // bare-Sheltering expansion above: that one REPLACES the affix and drops the name
+    // from picker suggestions; this one KEEPS the boolean, so the effect stays
+    // targetable as presence. The originating report wanted the ITEM secured, not just
+    // its numbers — once components can be satisfied from unrelated gear, a
+    // presence-only target is the only thing that still forces the carrier in.
+    // Do NOT "fix" this into consistency with Sheltering.
+    if (affixes.some(function (a) { return a && COMPOSITE_COMPONENTS[a.name]; })) {
+      // Never shadow a component the item states explicitly (its own value wins), and
+      // when two composites contribute the same stat keep the HIGHEST — the solver
+      // maxes per bucket anyway, so this only avoids a redundant browse line.
+      var stated = new Set(affixes.map(function (a) { return a && a.name; }));
+      var derived = new Map();
+      for (const a of affixes) {
+        var comps = a && COMPOSITE_COMPONENTS[a.name];
+        if (!comps) continue;
+        for (const c of comps) {
+          if (stated.has(c.name)) continue;
+          var prev = derived.get(c.name);
+          if (!prev || c.value > prev.value) derived.set(c.name, c);
+        }
+      }
+      // Idempotent: a second pass sees the derived names in `stated` and adds nothing.
+      if (derived.size) {
+        var added = [];
+        derived.forEach(function (c) { added.push(Object.assign({}, c)); });
+        it.affixes = affixes.concat(added);
+      }
     }
   }
   // Every ML consumer reads native `ml` now (U7 removed the item minimum_level
