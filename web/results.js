@@ -480,6 +480,93 @@ function boundNotice(query, result) {
   return parts.length ? `<p class="scope-note bound-note" role="status">${parts.join(" ")}</p>` : "";
 }
 
+// U3 (plan 2026-08-05-001) — a priority NOTHING in the active pool can contribute
+// to used to score zero with no explanation, which reads as the tool being broken.
+// This names it and says which of the two causes applies, because they call for
+// different actions: widen the pool, versus drop the priority.
+//
+// Deliberately NOT in coverageNote — that is dataset-scoped, takes no query or
+// result, and has no render call site. This joins the artifactNotice/boundNotice
+// family rendered with the loadout, and takes `model` because `result` reports only
+// what the CHOSEN loadout achieved: a zero there cannot tell "nothing supplies this"
+// from "higher priorities took the slots". The pool lives in `model`, which survives
+// a saved-snapshot restore (persist.js drops the MILP program, not the model).
+function _collectStatNames(into, affixes) {
+  for (const a of affixes || []) {
+    const n = a && (a.name != null ? a.name : a.stat);
+    if (n) into.add(n);
+  }
+}
+
+/** Every stat name any source in the ACTIVE pool can contribute. */
+function poolStatNames(model) {
+  const out = new Set();
+  for (const slot of (model && model.worn) || []) {
+    for (const v of slot.variants || []) {
+      _collectStatNames(out, v.affixes);
+      for (const s of v.scaling || []) if (s && s.stat) out.add(s.stat);
+      for (const t of v.parsed_set_bonuses || []) _collectStatNames(out, t.affixes);
+    }
+  }
+  const pools = [model.augments, model.dinoInserts, model.nearlyComplete, model.viktranium,
+                 model.seal, model.thunderForged, model.greenSteel];
+  for (const pool of pools) {
+    for (const o of pool || []) {
+      if (o && o.stat) out.add(o.stat);
+      _collectStatNames(out, o && o.affixes);
+    }
+  }
+  for (const defs of [model.membershipSetDefs, model.augment_set_defs]) {
+    for (const def of Object.values(defs || {})) {
+      for (const t of (def && def.tiers) || []) _collectStatNames(out, t.affixes);
+    }
+  }
+  return out;
+}
+
+/** True when the whole dataset carries the stat somewhere — used only to tell the
+ *  two causes apart, and only for stats already known to be pool-unreachable. */
+function datasetHasStat(dataset, stat) {
+  for (const v of (dataset && dataset.items) || []) {
+    for (const a of v.affixes || []) if ((a.name != null ? a.name : a.stat) === stat) return true;
+    for (const s of v.scaling || []) if (s && s.stat === stat) return true;
+    for (const t of v.parsed_set_bonuses || []) {
+      for (const a of t.affixes || []) if ((a.stat != null ? a.stat : a.name) === stat) return true;
+    }
+  }
+  return false;
+}
+
+function zeroSourceNotice(query, result, model, dataset) {
+  if (!result || result.status !== "optimal") return "";
+  const targets = (query && query.targets) || (model && model.targets) || [];
+  if (!targets.length || !model) return "";
+  const reachable = poolStatNames(model);
+  const unsourced = targets.filter((t) => !reachable.has(t));
+  if (!unsourced.length) return "";
+  // Two causes, two different player actions.
+  const absent = [], filtered = [];
+  for (const t of unsourced) (datasetHasStat(dataset, t) ? filtered : absent).push(t);
+  const parts = [];
+  if (absent.length) {
+    parts.push(`Nothing in the current data carries ${absent.map(esc).join(", ")} — ranking it can't change your build.`);
+  }
+  if (filtered.length) {
+    // Deliberately does NOT name a single cause. The pool the solver sees is the
+    // product of the ML band, the gear pool, the character gates AND the dominance
+    // pre-filter, and this function cannot tell which one removed the last source.
+    // Naming "your ML band" was wrong for a verified ML-29 item well inside a cap of
+    // 34 that the dominance filter had pruned. Only the owned-pool case is named,
+    // because opting into it is an explicit, single, reversible choice.
+    const owned = query && query.pool === "owned";
+    const where = owned ? "your owned-gear pool" : "your current filters";
+    parts.push(`No source of ${filtered.map(esc).join(", ")} is available in ${where} — `
+      + `${owned ? "the full catalog may have one" : "widening the ML band or character filters may reach "
+        + (filtered.length > 1 ? "them" : "it")}.`);
+  }
+  return `<p class="scope-note zero-source-note" role="status">${parts.join(" ")}</p>`;
+}
+
 function renderResults(container, { model, result, query, dataset, highs, onAfterRender }) {
   if (result.status !== "optimal") {
     // Keep the Adjust & re-solve control available on a non-optimal result — this
@@ -519,6 +606,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     ${banner}
     ${artifactNotice(result, query)}
     ${boundNotice(query, result)}
+    ${zeroSourceNotice(query, result, model, dataset)}
     <div class="active-build-bar" hidden>
       <span class="active-build-msg"></span>
       <button class="return-optimum" type="button">Return to optimum</button>
@@ -809,5 +897,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }

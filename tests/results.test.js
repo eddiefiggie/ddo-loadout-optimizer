@@ -732,3 +732,104 @@ test("U7/AE6: owned mode marks augment/craft lines as recommended (not owned)", 
   const notOwned = R.equippedBody(v, 0, maps, new Map(), false);
   assert.ok(!/Recommended \(not owned\)/.test(notOwned), "non-owned mode has no marker");
 });
+
+// ---------------------------------------------------------------------------
+// U3 (plan 2026-08-05-001) — zero-source priority disclosure. A priority NOTHING
+// in the active pool can contribute to used to score zero with no explanation.
+// ---------------------------------------------------------------------------
+
+const _okResult = { status: "optimal", perTarget: {}, chosen: [] };
+const _modelWith = (statNames) => ({
+  targets: [],
+  worn: [{ slot: "Ring", variants: [{ affixes: statNames.map((n) => ({ name: n, type: "Enhancement", value: 5 })) }] }],
+  augments: [], dinoInserts: [], nearlyComplete: [], viktranium: [],
+  seal: [], thunderForged: [], greenSteel: [],
+  membershipSetDefs: {}, augment_set_defs: {},
+});
+const _datasetWith = (statNames) => ({
+  items: [{ affixes: statNames.map((n) => ({ name: n, type: "Enhancement", value: 5 })) }],
+});
+
+test("U3: a priority nothing in the pool supplies is named", () => {
+  const html = R.zeroSourceNotice(
+    { targets: ["Constitution", "Sonic Lore"] }, _okResult,
+    _modelWith(["Constitution"]), _datasetWith(["Constitution"]));
+  assert.ok(html, "a notice renders");
+  assert.ok(/Sonic Lore/.test(html), "names the unsourced priority");
+  assert.ok(!/Constitution/.test(html), "does not name the one that is sourced");
+});
+
+test("U3: a priority with sources that merely lost slots does NOT fire", () => {
+  // Constitution IS reachable in the pool; it just achieved nothing this solve.
+  // That is a different case and must not be conflated.
+  const html = R.zeroSourceNotice(
+    { targets: ["Constitution"] }, { status: "optimal", perTarget: { Constitution: 0 }, chosen: [] },
+    _modelWith(["Constitution"]), _datasetWith(["Constitution"]));
+  assert.strictEqual(html, "", "no notice — the stat has sources, it just lost the slots");
+});
+
+test("U3: no notice when every priority has a source", () => {
+  const html = R.zeroSourceNotice(
+    { targets: ["Constitution"] }, _okResult, _modelWith(["Constitution"]), _datasetWith(["Constitution"]));
+  assert.strictEqual(html, "");
+});
+
+test("U3: multiple unsourced priorities are all named", () => {
+  const html = R.zeroSourceNotice(
+    { targets: ["Sonic Lore", "Ice Lore"] }, _okResult, _modelWith(["Constitution"]), _datasetWith([]));
+  assert.ok(/Sonic Lore/.test(html) && /Ice Lore/.test(html), "both named");
+});
+
+test("U3: the two causes are distinguished — dataset-absent vs pool-filtered", () => {
+  // Present in the dataset but filtered out of the pool -> the actionable cause.
+  const filtered = R.zeroSourceNotice(
+    { targets: ["Sonic Lore"], pool: "owned" }, _okResult,
+    _modelWith(["Constitution"]), _datasetWith(["Sonic Lore"]));
+  assert.ok(/owned-gear pool/.test(filtered), `pool cause: ${filtered}`);
+  assert.ok(!/Nothing in the current data/.test(filtered), "not the dataset cause");
+
+  // Outside owned mode the notice must NOT blame one filter: the pool the solver
+  // sees is the product of the ML band, character gates AND the dominance prune,
+  // and this function cannot tell which removed the last source. Blaming the ML
+  // band was wrong for a verified ML-29 item inside a cap of 34 that dominance
+  // had pruned.
+  const vague = R.zeroSourceNotice(
+    { targets: ["Sonic Lore"], mlCap: 34 }, _okResult,
+    _modelWith(["Constitution"]), _datasetWith(["Sonic Lore"]));
+  assert.ok(/current filters/.test(vague), `unattributed cause: ${vague}`);
+  assert.ok(!/ML band survived|survived your ML band/.test(vague), "does not blame the ML band alone");
+
+  // Absent from the dataset entirely -> nothing the player can do about it.
+  const absent = R.zeroSourceNotice(
+    { targets: ["Sonic Lore"] }, _okResult, _modelWith(["Constitution"]), _datasetWith([]));
+  assert.ok(/Nothing in the current data/.test(absent), `dataset cause: ${absent}`);
+});
+
+test("U3: the notice carries role=status, matching its sibling notices", () => {
+  const html = R.zeroSourceNotice(
+    { targets: ["Sonic Lore"] }, _okResult, _modelWith([]), _datasetWith([]));
+  assert.ok(/role="status"/.test(html), "announced like artifactNotice and boundNotice");
+});
+
+test("U3: a restored snapshot with no MILP program still renders from the model", () => {
+  // persist.js drops `program` from a saved loadout; the notice must not depend on it.
+  const restored = { status: "optimal", perTarget: {}, chosen: [] };  // no .program
+  const html = R.zeroSourceNotice(
+    { targets: ["Sonic Lore"] }, restored, _modelWith(["Constitution"]), _datasetWith([]));
+  assert.ok(/Sonic Lore/.test(html), "derived from model, not the program");
+});
+
+test("U3: nothing renders on a non-optimal solve", () => {
+  const html = R.zeroSourceNotice(
+    { targets: ["Sonic Lore"] }, { status: "infeasible" }, _modelWith([]), _datasetWith([]));
+  assert.strictEqual(html, "");
+});
+
+test("U3: set-granted and crafting-pool stats count as sourced", () => {
+  const model = _modelWith([]);
+  model.worn[0].variants[0].parsed_set_bonuses = [{ affixes: [{ stat: "Sonic Lore", value: 3 }] }];
+  model.seal = [{ stat: "Ice Lore", value: 2 }];
+  const html = R.zeroSourceNotice(
+    { targets: ["Sonic Lore", "Ice Lore"] }, _okResult, model, _datasetWith([]));
+  assert.strictEqual(html, "", "a set tier and a crafting pool both count as sources");
+});
