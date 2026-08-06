@@ -33,6 +33,14 @@ MediaWiki API (server-side fetch is blocked; use Claude-in-Chrome / the API brid
    **U55 → Isle of Dread** (Dinosaur Bone / "Dread Isle's Curse"), **U69 → Myth
    Drannor**, **U81 → U81** (Demonweb / Abyss). (Ravenloft/Lamordia is U75/U79 —
    a *different* expansion, already enriched via `batch11`; not in this batch.)
+> **Note (2026-08-06):** the intermediate working files named in the steps below —
+> `band_worklist.json`, the `solver_active_baseline.json` snapshot, `raw/batch_r4.json`, and
+> `scripts/enrich_batch_r4.py` — were transient artifacts of that one-off run and were removed by
+> the gear-planner native-schema refactor ([PR #70](https://github.com/eddiefiggie/ddo-loadout-optimizer/pull/70)).
+> The **method** below still describes how a band enrichment is done; those paths are historical and
+> will not resolve in the current tree. `{{Named item}}` and `{{Named item sets|...}}` are DDO wiki
+> template names, not unfilled placeholders.
+
 3. **Intersect** ML band × target updates × roster (for slot/armor type) →
    `data/seed/compendium/band_worklist.json` (188 items). Name matching is exact
    against wiki page titles (both sides come from the categorymembers namespace).

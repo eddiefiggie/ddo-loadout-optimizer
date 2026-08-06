@@ -80,3 +80,4 @@ const stale = _pinnedVariantIds(c).filter((vid) => !landed(vid) && !itemByPinId(
 
 - [[milp-encoding-for-gear-optimization]] — the pinning / dominance-filter machinery this reconciliation feeds.
 - [[browse-visibility-for-separate-source-pools]] — another "compute the true state at the view/derivation layer, don't mutate the canonical store" instance.
+- [[where-a-per-item-gate-may-live-in-the-solver]] — the suppression contract established here can silently fail to *engage*: the legality predicate is slot-blind, so a pin that is wrong only for the slot it was placed in is never seen. `pinSlotConflict` is the slot-aware layer that closes that gap.

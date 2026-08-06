@@ -154,3 +154,14 @@ assert.ok(chosen.includes("GS") && chosen.includes("Shield"), "both force-pinned
 
 When you add any auto-constraint over pinnable slots, add its pin-both-sides test alongside
 the ordinary "the rule fires" test — the feasibility escape hatch is invisible without it.
+
+## Related
+
+- [`where-a-per-item-gate-may-live-in-the-solver.md`](where-a-per-item-gate-may-live-in-the-solver.md)
+  — the same audit extended from **constraints** to **gates**. Note the two invert on the same
+  function: here `reconcilePinLegality` catches too little (two individually-legal pins), there it
+  catches too much (it drops any pin whose gate is non-null). It also supplies a third case for the
+  suppress-vs-honor decision below — a pin that is legal per-variant but wrong for the slot it was
+  placed in.
+- [`suppress-dont-erase-user-constraints-on-transient-invalidity.md`](suppress-dont-erase-user-constraints-on-transient-invalidity.md)
+  — the reconciliation contract this escape hatch operates alongside.
