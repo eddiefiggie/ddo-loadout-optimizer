@@ -104,13 +104,31 @@ function allowedWeaponTypes(query) {
   return null;
 }
 /** Allowed OFF-HAND weapon types (two-weapon fighting), or null when no off-hand
- *  weapon is permitted. TWF is one-hand-style only and OPT-IN: it turns on when the
- *  player picks at least one off-hand weapon type. */
+ *  weapon is permitted. TWF is one-hand-style only.
+ *
+ *  plan 003 U2 (KTD3) — the DECLARATION is the switch. Dual-wield used to turn on
+ *  when the player happened to pick an off-hand weapon type, which nothing
+ *  signposted, so the feature was unreachable by default. The off-hand weapon-type
+ *  picker survives as optional REFINEMENT: picks narrow the allowed list; with no
+ *  picks every one-handed type competes. */
 function allowedOffHandWeaponTypes(query) {
   const T = _taxonomy();
   if (!T || !T.twfWeaponAllowedForStyle(query.style)) return null;
+  if (!query.twoWeaponFighting) return null;
   const set = Array.isArray(query.offHandWeapons) ? query.offHandWeapons : [];
-  return set.length ? set : null;
+  return set.length ? set : T.offHandWeaponTypes();
+}
+
+/** plan 003 U2 (R3) — does this query exclude off-hand ITEMS (shields, orbs, rune
+ *  arms) from off-hand candidacy? True only when the feat is declared AND the style
+ *  permits a second weapon, so no other style's allow-list is ever overridden (R5).
+ *
+ *  THE single advisory authority: U5's pin flag and U6's results disclosure both read
+ *  this rather than re-deriving it, so what the pin list says and what the results
+ *  notice says cannot drift apart. */
+function offHandItemsExcluded(query) {
+  const T = _taxonomy();
+  return !!(query && query.twoWeaponFighting) && !!T && T.twfWeaponAllowedForStyle(query.style);
 }
 /** Can this weapon fill the Main Hand under the query's main-hand lock? Untyped
  *  hosts (Dino Bone Weapon) always can. */
@@ -521,6 +539,12 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   for (const c of Object.values(query.slotConstraints || {})) {
     for (const id of pinnedVariantIds(c)) pinnedIds.add(id);
   }
+  // plan 003 U2 — the player's EXPLICIT pins, snapshotted before the Artifact
+  // exemption below widens `pinnedIds`. R3's off-hand escape hatch is "unless the
+  // player pins one", so it must read this narrow set: reusing the widened one would
+  // let every eligible Artifact shield sit in a declared build's off hand with nobody
+  // having pinned it.
+  const explicitPins = new Set(pinnedIds);
 
   // KTD2 — Artifact exemption: when the box is on, "exactly one Artifact" makes
   // Artifact-ness a value dimension, so a non-Artifact beating an Artifact on
@@ -566,6 +590,16 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // also compete here (the hand-mutex in solver.js stops the same item filling both
   // hands). The Off Hand slot then optimizes the best second weapon vs shield/orb.
   let offHandPool = elig.filter((v) => v.slot === "Off Hand");
+  // plan 003 U2 (R3) — a DECLARED build's off hand holds a weapon. Shields, orbs, and
+  // rune arms leave candidacy unless the player pinned one (R8's escape hatch).
+  //
+  // Why here and NOT in variantConflict (KTD1): reconcilePinLegality drops any pin
+  // whose variantConflict is non-null, so expressing the exclusion there would sweep
+  // the very pins the escape hatch exists to protect — the feature would delete its
+  // own override. Candidacy is a pool question, not an equippability question.
+  if (offHandItemsExcluded(query)) {
+    offHandPool = offHandPool.filter((v) => explicitPins.has(variantKey(v)));
+  }
   if (offWeaponAllow != null) {
     offHandPool = offHandPool.concat(
       elig.filter((v) => v.category === "weapon" && offHandWeaponOk(v, offWeaponAllow)));
@@ -660,6 +694,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     buildModel, eligible, variantConflict, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
+    offHandItemsExcluded, allowedOffHandWeaponTypes,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys,
     isForgedRace, isDocent, isBothHandsWeapon, variantKey, setStackEquiv, equivType,
     WORN_SLOTS, SLOT_CARDINALITY, ARMOR_DODGE_CAP,

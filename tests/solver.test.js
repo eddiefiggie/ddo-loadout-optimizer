@@ -1861,8 +1861,10 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
       category: "weapon", type: "Rapiers", minimum_level: 10, ml: 10, verification: "verified",
       affixes: [{ name: "Strength", type: "Enhancement", value: 8, unit: "flat" }],
       scaling: [], set_bonus: [], augment_slots: [] };
+    // plan 003 U2/KTD3 — the declaration is now what enables the off-hand weapon;
+    // the type picks stay as refinement.
     const model = M.buildModel([rapier], { mlCap: 34, targets: ["Strength"], style: "one-hand",
-      weaponTypes: ["Rapiers"], offHandWeapons: ["Rapiers"] });
+      twoWeaponFighting: true, weaponTypes: ["Rapiers"], offHandWeapons: ["Rapiers"] });
     const mh = model.worn.find((s) => s.slot === "Main Hand");
     const oh = model.worn.find((s) => s.slot === "Off Hand");
     assert.ok(mh && oh, "both hand slots are built");
@@ -2365,6 +2367,61 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
     normalizeItem(it);
     assert.deepStrictEqual(it.affixes.map((a) => a.name), ["Greater Heroism"],
       "the wiki states a magnitude for the SPELL, not the item enchantment");
+  });
+
+  // ---- plan 003 U2 — the reported bug, end to end on the real HiGHS engine ----
+
+  await test("U2/003 (R3/AE1): a declared build takes a WEAPON off-hand where it used to take a shield", async () => {
+    const M = require("../web/model.js");
+    // The reported shape: the shield genuinely out-values the second weapon on the
+    // ranked stat. That is why "let one-handed weapons compete on merit" would NOT
+    // have fixed this — the solver has no weapon-versus-shield value model, so the
+    // shield wins on stats every time and the bug survives the fix.
+    const mk = () => {
+      const sword = item("Longsword", "Main Hand", [["Constitution", "Enhancement", 8]]);
+      sword.category = "weapon"; sword.type = "Long Swords"; sword.verification = "verified"; sword.ml = 20;
+      // Distinct ranked stats, so single-cardinality dominance keeps BOTH weapons in
+      // the pool — otherwise the surviving one would be the only candidate for both
+      // hands and the mutex would leave the off hand empty for the wrong reason.
+      const offSword = item("Shortsword", "Main Hand", [["Dexterity", "Enhancement", 7]]);
+      offSword.category = "weapon"; offSword.type = "Short Swords"; offSword.verification = "verified"; offSword.ml = 20;
+      const shield = item("Tower Shield", "Off Hand", [["Constitution", "Enhancement", 25]]);
+      shield.type = "Tower shields"; shield.verification = "verified"; shield.ml = 20;
+      return [sword, offSword, shield];
+    };
+    const q = (extra) => Object.assign({ mlCap: 34, targets: ["Constitution", "Dexterity"], style: "one-hand" }, extra);
+    const offHandOf = (r) => (r.chosen.find((c) => c.slot === "Off Hand") || {}).variant;
+
+    // BEFORE the declaration: the shield wins the off hand. This is the reported bug.
+    const before = await S.solveLexicographic(M.buildModel(mk(), q({})), highs);
+    assert.strictEqual(offHandOf(before).source_item, "Tower Shield",
+      "undeclared: the shield still wins the off hand, exactly as today");
+
+    // AFTER declaring: the off hand holds a one-handed weapon instead.
+    const after = await S.solveLexicographic(M.buildModel(mk(), q({ twoWeaponFighting: true })), highs);
+    const off = offHandOf(after);
+    assert.ok(off, "a declared build still fills the off hand");
+    assert.strictEqual(off.category, "weapon", "a declared build's off hand holds a WEAPON");
+    // …and the hand mutex still stops one item filling both hands.
+    const main = (after.chosen.find((c) => c.slot === "Main Hand") || {}).variant;
+    assert.notStrictEqual(main.variant_id, off.variant_id, "the same weapon cannot fill both hands");
+  });
+
+  await test("U2/003 (R8): a pinned shield still equips on a declared build", async () => {
+    const M = require("../web/model.js");
+    const sword = item("Longsword", "Main Hand", [["Constitution", "Enhancement", 8]]);
+    sword.category = "weapon"; sword.type = "Long Swords"; sword.verification = "verified"; sword.ml = 20;
+    const offSword = item("Shortsword", "Main Hand", [["Dexterity", "Enhancement", 7]]);
+    offSword.category = "weapon"; offSword.type = "Short Swords"; offSword.verification = "verified"; offSword.ml = 20;
+    const shield = item("Tower Shield", "Off Hand", [["Constitution", "Enhancement", 25]]);
+    shield.type = "Tower shields"; shield.verification = "verified"; shield.ml = 20;
+    const model = M.buildModel([sword, offSword, shield],
+      { mlCap: 34, targets: ["Constitution", "Dexterity"], style: "one-hand", twoWeaponFighting: true,
+        slotConstraints: { "Off Hand": { type: "pin", variant_id: "Tower Shield" } } });
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal", "the pin does not make the query unsolvable");
+    assert.strictEqual((r.chosen.find((c) => c.slot === "Off Hand") || {}).variant.source_item, "Tower Shield",
+      "the player's pin overrides the exclusion");
   });
 
   console.log(`\n${passed} passed`);
