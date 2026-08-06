@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 
 const { filterVariants, variantStats, affixText, dinoInsertRow, ncRow, vikRow, compendiumRow, browsableItems } = require("../web/browse.js");
+const B = require("../web/browse.js");
 const { normalizeDataset, normalizeItem, isNoiseAffix } = require("../web/dataset.js");
 const data = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")
@@ -231,6 +232,67 @@ test("real dataset carries no bare-number affix names after normalization", () =
     if (isNoiseAffix(a)) bad.push({ item: v.source_item, name: a.name });
   }
   assert.deepStrictEqual(bad, [], `noise affixes survived normalization: ${JSON.stringify(bad.slice(0, 5))}`);
+});
+
+// ---------------------------------------------------------------------------
+// U3/U4 (plan 2026-08-05-002, #135) — set-granted value in browse.
+// An item's worth can route through a set definition instead of its own affixes,
+// so a Set Augment read as an empty row and was unfindable by the stat it grants.
+// ---------------------------------------------------------------------------
+
+const _ds = { augment_set_defs: { "Perfect Silence": { tiers: [
+  { pieces_required: 3, pieces_label: "3 Pieces Equipped",
+    affixes: [{ stat: "Sneak Attack Dice", bonus_type: "Artifact", value: 3 }] }] } },
+  items: [
+    { variant_id: "SA", source_item: "Set Augment: Perfect Silence", slot: "Colorless", set: "Perfect Silence", affixes: [] },
+    { variant_id: "PLAIN", source_item: "Plain Ring", slot: "Ring",
+      affixes: [{ name: "Sneak Attack Dice", type: "Enhancement", value: 2 }] },
+  ] };
+
+test("U3: a set-routed item stops reading as empty", () => {
+  const rows = B.browsableItems(_ds);
+  const sa = rows.find((r) => r.variant_id === "SA");
+  assert.strictEqual((sa.affixes || []).length, 0, "it genuinely carries no affixes");
+  assert.strictEqual(sa._setGranted.length, 1, "but its set bonus resolves");
+  assert.strictEqual(sa._setGranted[0].stats[0], "Sneak Attack Dice");
+});
+
+test("U3: the chip's visible TEXT carries the set and its piece condition", () => {
+  const rows = B.browsableItems(_ds);
+  const text = B.setChipText(rows.find((r) => r.variant_id === "SA")._setGranted[0]);
+  assert.ok(text.includes("Perfect Silence"), "names the set");
+  assert.ok(/with 3 pieces/i.test(text), "states the condition, not a bare label");
+  assert.ok(!text.startsWith("\u2713"), "does not reuse the boolean-presence checkmark");
+  // Distinguishable from an item-carried chip by TEXT, not only by CSS class.
+  assert.notStrictEqual(text, B.affixText(rows.find((r) => r.variant_id === "PLAIN"))[0]);
+});
+
+test("U3: a wildcard renders one chip per pool, not one per candidate set", () => {
+  const ds = { items: [{ variant_id: "GEM", slot: "Trinket", affixes: [],
+    joker_set_groups: [["A", "B", "C"], ["D", "E"]] }] };
+  const gem = B.browsableItems(ds)[0];
+  assert.strictEqual(gem._setGranted.length, 2, "two groups, two chips — never five");
+  const t = B.setChipText(gem._setGranted[0]);
+  assert.ok(/1 of 3/.test(t), `states the choice: ${t}`);
+});
+
+test("U4: the two filter modes stay separate — an item-affix search is unchanged", () => {
+  const rows = B.browsableItems(_ds);
+  const affix = B.filterVariants(rows, { stat: "Sneak Attack Dice" });
+  const set = B.filterVariants(rows, { setStat: "Sneak Attack Dice" });
+  assert.deepStrictEqual(affix.map((r) => r.variant_id), ["PLAIN"], "affix mode: only the carrier");
+  assert.deepStrictEqual(set.map((r) => r.variant_id), ["SA"], "set mode: only the set-routed row");
+});
+
+test("U4: free text matches the set's own name", () => {
+  const rows = B.browsableItems(_ds);
+  const hits = B.filterVariants(rows, { query: "perfect silence" });
+  assert.deepStrictEqual(hits.map((r) => r.variant_id), ["SA"]);
+});
+
+test("U4: variantSetStats is empty for an item with no set involvement", () => {
+  const rows = B.browsableItems(_ds);
+  assert.deepStrictEqual(B.variantSetStats(rows.find((r) => r.variant_id === "PLAIN")), []);
 });
 
 console.log(`\n${passed} passed`);
