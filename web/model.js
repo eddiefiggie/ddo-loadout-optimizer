@@ -286,6 +286,30 @@ function pinConflict(v, query) {
   return variantConflict(v, query);
 }
 
+/** plan 003 U5 (KTD6, R7) — SLOT-AWARE pin legality, layered ON TOP of
+ *  variantConflict rather than inside it. Returns null (the pin is legal in that
+ *  slot) or a short human reason.
+ *
+ *  Why a second predicate rather than a new gate in variantConflict:
+ *
+ *  - variantConflict is per-VARIANT and slot-blind. An off-hand weapon pin made
+ *    without the declaration is a one-handed weapon that passes the main-hand gate,
+ *    so variantConflict returns null and nothing suppresses the pin — while the
+ *    weapon is absent from the off-hand pool. The pin then constrains a variant that
+ *    is not in its own slot: a NO-BUILD, not R7's graceful suppression.
+ *  - The exclusion of shields/orbs/rune arms from a declared build must NOT live in
+ *    variantConflict (KTD1) — reconcilePinLegality drops any pin whose
+ *    variantConflict is non-null, so it would sweep the pinned-shield escape hatch.
+ *    This predicate deliberately returns null for a pinned SHIELD on a declared
+ *    build: it is honored, and the UI flags it as overriding the exclusion (R8). */
+function pinSlotConflict(v, slotKey, query) {
+  if (!v || slotKey !== "Off Hand" || v.category !== "weapon") return null;
+  const allow = allowedOffHandWeaponTypes(query || {});
+  if (allow == null) return "your character hasn't declared Two Weapon Fighting";
+  if (!offHandWeaponOk(v, allow)) return "this weapon type isn't in your off-hand weapon picks";
+  return null;
+}
+
 // U2 — THE single normalize path for a slot's pin(s). A slot constraint pins ONE
 // item via `variant_id` (single-cardinality slots) OR several via `variant_ids`
 // (the Ring slot, cardinality 2 — two different rings). Returns the list of pinned
@@ -694,7 +718,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     buildModel, eligible, variantConflict, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
-    offHandItemsExcluded, allowedOffHandWeaponTypes,
+    offHandItemsExcluded, allowedOffHandWeaponTypes, pinSlotConflict,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys,
     isForgedRace, isDocent, isBothHandsWeapon, variantKey, setStackEquiv, equivType,
     WORN_SLOTS, SLOT_CARDINALITY, ARMOR_DODGE_CAP,

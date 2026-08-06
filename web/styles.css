@@ -708,6 +708,14 @@ input.wz-ml { width: 120px; }
 .wz-pin-hit:hover:not([disabled]) { border-color: var(--accent); }
 .wz-pin-hit[disabled] { opacity: 0.55; cursor: default; }
 .wz-pin-hit-slot { color: var(--faint); font-size: var(--fs-xs); white-space: nowrap; }
+/* plan 003 U5 (R6) — a one-handed weapon offers a hand target: the primary action
+   stays Main hand (unchanged muscle memory) and the Off hand action sits beside it. */
+.wz-pin-hit-pair { display: flex; align-items: stretch; gap: var(--sp-2); }
+.wz-pin-hit-pair .wz-pin-hit { flex: 1 1 auto; }
+.wz-pin-hit-alt { flex: 0 0 auto; width: auto; justify-content: center;
+  border-color: var(--border); }
+.wz-pin-note { color: var(--faint); font-size: var(--fs-xs); margin-left: auto; }
+.wz-pin-note + .wz-pin-x { margin-left: var(--sp-2); }
 .wz-pin-list { display: flex; flex-direction: column; gap: var(--sp-2); margin-top: var(--sp-3); }
 .wz-pin-row { display: flex; align-items: center; gap: var(--sp-2); background: var(--elev);
   border: 1px solid var(--accent); border-radius: var(--radius-sm); padding: 6px 6px 6px 11px; font-size: var(--fs-sm); }

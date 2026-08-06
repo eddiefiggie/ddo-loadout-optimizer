@@ -1140,4 +1140,44 @@ test("U2/003: offHandItemsExcluded is the single advisory authority (U5 flag + U
   assert.strictEqual(M.offHandItemsExcluded({}), false, "no style, no declaration");
 });
 
+// ---- plan 003 U5 (KTD6) — slot-aware pin legality, layered on variantConflict ----
+
+test("U5/003 (R7): an off-hand WEAPON pin without the declaration is a slot conflict", () => {
+  const q = { mlCap: 34, targets: ["Constitution"], style: "one-hand" };
+  // variantConflict is slot-blind: a one-handed weapon passes the main-hand gate and
+  // returns null, so nothing would suppress the pin — while the weapon is absent from
+  // the off-hand pool, making the pin a constraint on a variant not in its own slot.
+  // That is a NO-BUILD, not R7's graceful suppression. This predicate is the fix.
+  assert.strictEqual(M.variantConflict(twfSword, q), null, "variantConflict alone sees nothing wrong");
+  assert.ok(M.pinSlotConflict(twfSword, "Off Hand", q), "the slot-aware predicate catches it");
+  assert.strictEqual(M.pinSlotConflict(twfSword, "Main Hand", q), null, "the same weapon is fine in the main hand");
+});
+
+test("U5/003 (R7): declaring makes the same off-hand weapon pin legal", () => {
+  const q = { mlCap: 34, targets: ["Constitution"], style: "one-hand", twoWeaponFighting: true };
+  assert.strictEqual(M.pinSlotConflict(twfSword, "Off Hand", q), null, "declared: the pin is honored");
+  // …and the off-hand weapon-type picks still narrow it.
+  const narrowed = Object.assign({}, q, { offHandWeapons: ["Daggers"] });
+  assert.ok(M.pinSlotConflict(twfSword, "Off Hand", narrowed), "a type outside the picks is flagged");
+  assert.strictEqual(M.pinSlotConflict(twfDagger, "Off Hand", narrowed), null, "a picked type is fine");
+});
+
+test("U5/003 (R8/KTD1): a pinned SHIELD on a declared build is NOT a conflict", () => {
+  // This is the load-bearing case. If the exclusion were expressed as a conflict,
+  // reconcilePinLegality would drop the pin — the feature would delete its own
+  // escape hatch. The shield is honored; U5 flags it as an override instead.
+  const q = { mlCap: 34, targets: ["Constitution"], style: "one-hand", twoWeaponFighting: true };
+  assert.strictEqual(M.pinSlotConflict(twfShield, "Off Hand", q), null, "the pinned shield survives");
+  assert.strictEqual(M.variantConflict(twfShield, q), null, "and no variant-level conflict either");
+});
+
+test("U5/003: the predicate is inert everywhere it should be", () => {
+  const q = { mlCap: 34, targets: ["Constitution"], style: "sword-board", twoWeaponFighting: true };
+  assert.strictEqual(M.pinSlotConflict(twfShield, "Off Hand", q), null, "S&B shield pin");
+  assert.strictEqual(M.pinSlotConflict(twfSword, "Main Hand", q), null, "main-hand weapon pin");
+  const ring = v("Ring", "Ring", [["Constitution", "Enhancement", 5]]);
+  assert.strictEqual(M.pinSlotConflict(ring, "Ring", q), null, "a non-hand pin is never touched");
+  assert.strictEqual(M.pinSlotConflict(null, "Off Hand", q), null, "a missing variant is not a crash");
+});
+
 console.log(`\n${passed} passed`);

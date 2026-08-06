@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinIdOf, applyPin, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -545,4 +545,90 @@ test("U1/003 (R9): the declaration is restored on load, defaulting to undeclared
   const near = load.slice(0, 900);
   assert.ok(/state\.twoWeaponFighting\s*=\s*!!\s*i\.twoWeaponFighting/.test(near),
     "the load path restores the declaration, coercing a missing field to false");
+});
+
+// ---- plan 003 U5 — a hand target in the pin flow (R6, R7, R8, R11) ----
+
+const oneHandWeapon = { source_item: "Longsword", variant_id: "Longsword", slot: "Weapon",
+  category: "weapon", type: "Long Swords", ml: 20, minimum_level: 20, verification: "verified",
+  affixes: [{ name: "Constitution", type: "Enhancement", value: 8, unit: "flat" }],
+  scaling: [], set_bonus: [], augment_slots: [] };
+const twoHandWeapon = { ...oneHandWeapon, source_item: "Greatsword", variant_id: "Greatsword", type: "Great Swords" };
+const pinShield = { source_item: "Tower Shield", variant_id: "Tower Shield", slot: "Off Hand",
+  type: "Tower shields", ml: 20, minimum_level: 20, verification: "verified",
+  affixes: [{ name: "Constitution", type: "Enhancement", value: 25, unit: "flat" }],
+  scaling: [], set_bonus: [], augment_slots: [] };
+const pinRing = { source_item: "Ring", variant_id: "Ring", slot: "Ring", ml: 20, minimum_level: 20,
+  verification: "verified", affixes: [], scaling: [], set_bonus: [], augment_slots: [] };
+
+test("U5/003 (R6): pinWornSlotOf routes a weapon to the hand it was pinned to", () => {
+  // The shipped line sent EVERY weapon to "Main Hand" unconditionally, so an
+  // off-hand weapon pin could not be expressed at all — half the reported bug.
+  assert.strictEqual(pinWornSlotOf(oneHandWeapon), "Main Hand", "default is unchanged: Main hand");
+  assert.strictEqual(pinWornSlotOf(oneHandWeapon, "Off Hand"), "Off Hand", "an explicit off-hand target is honored");
+  assert.strictEqual(pinWornSlotOf(pinShield, "Off Hand"), "Off Hand", "a non-weapon still uses its own slot");
+  assert.strictEqual(pinWornSlotOf(pinRing, "Off Hand"), "Ring", "a hand target never moves a non-weapon");
+});
+
+test("U5/003 (R6): only a ONE-HANDED weapon offers both hands", () => {
+  assert.deepStrictEqual(pinHandsFor(oneHandWeapon), ["Main Hand", "Off Hand"], "one-handed: two actions");
+  assert.deepStrictEqual(pinHandsFor(twoHandWeapon), ["Main Hand"], "two-handed: main hand only");
+  assert.deepStrictEqual(pinHandsFor(pinShield), ["Off Hand"], "a shield keeps its single worn slot");
+  assert.deepStrictEqual(pinHandsFor(pinRing), ["Ring"], "a non-weapon keeps its single worn slot");
+  // An UNTYPED weapon host has unknown handedness — it could be crafted two-handed,
+  // which cannot be dual-wielded — so it is not offered as an off-hand pin.
+  assert.deepStrictEqual(pinHandsFor({ ...oneHandWeapon, type: null }), ["Main Hand"], "untyped host: main hand only");
+});
+
+test("U5/003 (R6): applyPin honors the hand target", () => {
+  const sc = {};
+  applyPin(sc, oneHandWeapon, () => 1, "Off Hand");
+  assert.deepStrictEqual(sc, { "Off Hand": { type: "pin", variant_id: "Longsword" } },
+    "the weapon lands in the OFF hand, not silently in the main hand");
+  const sc2 = {};
+  applyPin(sc2, oneHandWeapon, () => 1);
+  assert.deepStrictEqual(sc2, { "Main Hand": { type: "pin", variant_id: "Longsword" } },
+    "with no target, existing behavior is unchanged");
+});
+
+test("U5/003 (R7): reconcile DROPS an off-hand weapon pin made without the declaration", () => {
+  const byId = (id) => ({ Longsword: oneHandWeapon, "Tower Shield": pinShield }[id] || null);
+  const sc = { "Off Hand": { type: "pin", variant_id: "Longsword" } };
+  const dropped = reconcilePinLegality(sc, byId, { mlCap: 34, style: "one-hand" }, () => 1);
+  assert.deepStrictEqual(dropped, [{ slot: "Off Hand", id: "Longsword" }], "the illegal pin is reported");
+  assert.deepStrictEqual(sc, {}, "and actually removed, so the solve is not constrained to an absent variant");
+});
+
+test("U5/003 (R7): the same pin SURVIVES once the feat is declared", () => {
+  const byId = (id) => ({ Longsword: oneHandWeapon }[id] || null);
+  const sc = { "Off Hand": { type: "pin", variant_id: "Longsword" } };
+  const dropped = reconcilePinLegality(sc, byId, { mlCap: 34, style: "one-hand", twoWeaponFighting: true }, () => 1);
+  assert.deepStrictEqual(dropped, [], "nothing dropped");
+  assert.ok(sc["Off Hand"], "the pin is honored");
+});
+
+test("U5/003 (R8/KTD1): reconcile must NEVER sweep a pinned shield on a declared build", () => {
+  // The escape hatch. If the exclusion had been expressed through variantConflict,
+  // this pin would be dropped here and the feature would delete its own override.
+  const byId = (id) => ({ "Tower Shield": pinShield }[id] || null);
+  const sc = { "Off Hand": { type: "pin", variant_id: "Tower Shield" } };
+  const dropped = reconcilePinLegality(sc, byId, { mlCap: 34, style: "one-hand", twoWeaponFighting: true }, () => 1);
+  assert.deepStrictEqual(dropped, [], "the pinned shield is not swept");
+  assert.ok(sc["Off Hand"], "the player's override stands");
+});
+
+test("U5/003 (R6/R11): the pin search offers a labelled hand action per weapon", () => {
+  const src = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderPinResults("));
+  const body = src.slice(0, src.indexOf("function renderPinList("));
+  assert.ok(/data-pin-hand=/.test(body), "each action carries its hand target");
+  assert.ok(/pinHandsFor\(/.test(body), "the action list comes from the shared handedness helper");
+  assert.ok(/aria-label=/.test(body), "each action is labelled for screen readers");
+});
+
+test("U5/003 (R7/R8): the pin list flags both the illegal pin and the override", () => {
+  const src = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderPinList("));
+  const body = src.slice(0, src.indexOf("function stepPriorities("));
+  assert.ok(/pinSlotConflict\(/.test(body), "the slot-aware reason is surfaced, not just variantConflict");
+  assert.ok(/offHandItemsExcluded\(/.test(body),
+    "the override flag reads U2's exported advisory predicate, not a view-layer copy");
 });
