@@ -3,7 +3,7 @@
   "layer": "joker-set-pools",
   "system": "wildcard set pieces (Gem of Many Facets family)",
   "note": "A wildcard item rolls ONE set from each pool (rerollable at will). Under theoretical-BiS the solver picks the best set per group. Pools are disjoint; a chosen set contributes +1 piece toward its threshold. Sourced from the DDO wiki item pages.",
-  "harvested": "2026-07-27"
+  "harvested": "2026-07-27; heroic re-verified and Epic added 2026-08-05"
  },
  "items": {
   "Legendary Gem of Many Facets": {
@@ -35,6 +35,70 @@
      "Legendary Oasis of Morality",
      "Legendary Vulkoor's Chosen",
      "Legendary Windlasher's Ferocity"
+    ]
+   ]
+  },
+  "Gem of Many Facets": {
+   "wiki_url": "https://ddowiki.com/page/Item:Gem_of_Many_Facets",
+   "source": "ddowiki Item:Gem_of_Many_Facets (Random set 1 / Random set 2), re-verified 2026-08-05",
+   "groups": [
+    [
+     "Divine Blessing",
+     "Elder's Knowledge",
+     "Marshwalker",
+     "Raven's Eye",
+     "Shaman's Fury",
+     "Siren's Ward",
+     "Vulkoor's Cunning",
+     "Vulkoor's Might",
+     "Kundarak Delving Equipment",
+     "Mroranon's Might",
+     "Silver Concord's Subtlety",
+     "Wards of House Kundarak",
+     "Draconic Prophecy"
+    ],
+    [
+     "Might of the Abishai",
+     "The Desert's Biting Sands",
+     "The Desert's Burning Sun",
+     "The Desert's Starless Nights",
+     "The Desert's Writhing Storm",
+     "Menechtarun Scavenger",
+     "Oasis of Morality",
+     "Vulkoor's Chosen",
+     "Windlasher's Ferocity"
+    ]
+   ]
+  },
+  "Epic Gem of Many Facets": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Gem_of_Many_Facets",
+   "source": "ddowiki Item:Epic_Gem_of_Many_Facets (Random set 1 / Random set 2), harvested 2026-08-05",
+   "groups": [
+    [
+     "Epic Divine Blessing",
+     "Epic Elder's Knowledge",
+     "Epic Marshwalker",
+     "Epic Raven's Eye",
+     "Epic Shaman's Fury",
+     "Epic Siren's Ward",
+     "Epic Vulkoor's Cunning",
+     "Epic Vulkoor's Might",
+     "Epic Kundarak Delving Equipment",
+     "Epic Mroranon's Might",
+     "Epic Silver Concord's Subtlety",
+     "Epic Wards of House Kundarak",
+     "Epic Draconic Prophecy"
+    ],
+    [
+     "Epic Might of the Abishai",
+     "The Epic Desert's Biting Sands",
+     "The Epic Desert's Burning Sun",
+     "The Epic Desert's Starless Nights",
+     "The Epic Desert's Writhing Storm",
+     "Epic Menechtarun Scavenger",
+     "Epic Oasis of Morality",
+     "Epic Vulkoor's Chosen",
+     "Epic Windlasher's Ferocity"
     ]
    ]
   }

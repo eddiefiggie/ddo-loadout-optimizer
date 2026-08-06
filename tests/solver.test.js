@@ -1329,9 +1329,56 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
     assert.ok(!r4.setsActive.some(s => s.set === SET), "4 pieces do NOT activate the set (threshold honored)");
   });
 
-  // (Retired U7) The Gem of Many Facets wildcard-set (joker) feature was removed —
-  // the joker_sets.json seed is not in gear-planner's set model (accepted loss,
-  // logged in the migration manifest). The solver's joker code path remains inert.
+  // U6 (plan 2026-08-05-002, #139) — the joker path is LIVE, not retired. The
+  // wildcard-set feature was restored and every Gem of Many Facets tier is now
+  // wired (docs/wiki-evidence/gem-of-many-facets.md); solver.js builds joker vars
+  // and model.js accounts for joker groups in dominance. The tests below reproduce
+  // the reported behavior against correct per-tier data BEFORE any solver change —
+  // per the plan, the solver is touched only if the data-correct case still fails.
+
+  await test("U6: a wildcard completes one set from EACH of its two pools", async () => {
+    // Two sets, each one piece short. The Gem's pools offer both, one per group —
+    // so a correct solve completes both at once, which is the two-set behavior the
+    // report said users never saw.
+    const A = "Vulkoor's Might", B = "Might of the Abishai";
+    const tiersA = [{ n: 2, affixes: [["Strength", "Artifact", 4]] }];
+    const tiersB = [{ n: 2, affixes: [["Constitution", "Artifact", 6]] }];
+    const gem = item("GEM", "Trinket", []);
+    gem.joker_set_groups = [[A, "Marshwalker"], [B, "Oasis of Morality"]];
+    const model = {
+      targets: ["Strength", "Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Ring", [setPiece("RA", "Ring", [["Strength", "Enhancement", 1]], A, tiersA)]),
+        slot("Necklace", [setPiece("NB", "Necklace", [["Constitution", "Enhancement", 1]], B, tiersB)]),
+        slot("Trinket", [gem]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    const active = (r.setsActive || []).map((s) => s.set);
+    assert.ok(active.includes(A), `${A} completed via the wildcard: ${JSON.stringify(active)}`);
+    assert.ok(active.includes(B), `${B} completed via the wildcard: ${JSON.stringify(active)}`);
+  });
+
+  await test("U6: a wildcard picks at most ONE set per pool (no double-count)", async () => {
+    // Both candidates in the SAME group are one piece short. Only one may complete —
+    // the one-pick-per-group rule — so the wildcard cannot satisfy both.
+    const A = "Vulkoor's Might", B = "Marshwalker";
+    const t = (stat) => [{ n: 2, affixes: [[stat, "Artifact", 5]] }];
+    const gem = item("GEM", "Trinket", []);
+    gem.joker_set_groups = [[A, B]];   // one group holding both
+    const model = {
+      targets: ["Strength", "Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Ring", [setPiece("RA", "Ring", [["Strength", "Enhancement", 1]], A, t("Strength"))]),
+        slot("Necklace", [setPiece("NB", "Necklace", [["Constitution", "Enhancement", 1]], B, t("Constitution"))]),
+        slot("Trinket", [gem]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    const active = (r.setsActive || []).map((s) => s.set).filter((n) => n === A || n === B);
+    assert.strictEqual(active.length, 1, `exactly one set per pool, got ${JSON.stringify(active)}`);
+  });
 
   // ---- Chosen set-membership slot (Cannith Repurposing Station / Dino Set-Bonus) ----
   function memberHost(id, slotName, pool, affixes, station) {
