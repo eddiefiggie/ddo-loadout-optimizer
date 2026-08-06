@@ -339,7 +339,13 @@
   // otherwise split into an unprefixed second line. Today that line still sits
   // below the terminator and is inert, but the invariant is what keeps it inert
   // if the record block ever moves.
-  function gsText(s) { return String(s == null ? "" : s).replace(/[\r\n]+/g, " ").trim(); }
+  //
+  // Deliberately does NOT trim. An item name is compared by DDOBuilder with ==
+  // against a catalog built from the same Gear Planner source ours is, so any
+  // whitespace a name carries is carried on BOTH sides — trimming ours would turn
+  // a match into a miss, which is the exact failure the verbatim-name rule exists
+  // to prevent. Trimming also flattened the record block's indentation.
+  function gsInline(s) { return String(s == null ? "" : s).replace(/[\r\n]+/g, " "); }
 
   // One placed augment as a brace entry: bonus type, stat, value, lowercased.
   // DDOBuilder splits on whitespace and requires EVERY token to appear in the
@@ -375,13 +381,14 @@
       if (!row) continue;                       // slot left empty -> no line at all
       placed.add(row);
       const augs = (row.augments || []).map(gearsetAug).filter(Boolean).join("");
-      gear.push(`${label}:${gsText(row.item)}${augs}`);
+      gear.push(`${label}:${gsInline(row.item)}${augs}`);
     }
     const unmapped = view.loadout.filter((it) => !placed.has(it));
 
     // ---- the record block: commentary only, never parsed ----
     const rl = [];
-    const say = (s) => rl.push(`# ${gsText(s)}`);
+    // Right-trim only, so intentional leading indentation survives.
+    const say = (s) => rl.push(`# ${gsInline(s)}`.replace(/\s+$/, ""));
     say(`${view.character.name} — DDO Loadout Optimizer`);
     say("Everything below this point is ignored by DDOBuilderV2's importer.");
     rl.push("#");

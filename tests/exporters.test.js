@@ -458,6 +458,44 @@ test("U1: an unequipped slot emits no line", () => {
   assert.ok(!/^Waist:/m.test(gear), "no bare label for a slot the solver left empty");
 });
 
+test("U1: the two Ring rows fill Finger1 and Finger2 in solver order", () => {
+  // The only app slot that maps to two labels, and the only place emission depends
+  // on consuming rows in order. A regression that dropped the second entry or filled
+  // both Finger slots from the same row would otherwise pass the whole suite.
+  const rings = JSON.parse(JSON.stringify(gsRec));
+  rings.snapshot.chosen.push(
+    { slot: "Ring", variant: { variant_id: "Legendary Lantern of the Abyss", ml: 34, affixes: [], augment_slots_norm: { colors: [] } } },
+    { slot: "Ring", variant: { variant_id: "Legendary The Earth and the Sky", ml: 34, affixes: [], augment_slots_norm: { colors: [] } } },
+  );
+  const gear = toGearset(rings).split("\n\n")[0];
+  assert.ok(/^Finger1:Legendary Lantern of the Abyss$/m.test(gear), "first Ring row lands on Finger1");
+  assert.ok(/^Finger2:Legendary The Earth and the Sky$/m.test(gear), "second lands on Finger2, not a repeat of the first");
+});
+
+test("U1: a single Ring emits Finger1 only, never an empty Finger2", () => {
+  const one = JSON.parse(JSON.stringify(gsRec));
+  one.snapshot.chosen.push({ slot: "Ring", variant: { variant_id: "Solo Band", ml: 30, affixes: [], augment_slots_norm: { colors: [] } } });
+  const gear = toGearset(one).split("\n\n")[0];
+  assert.ok(/^Finger1:Solo Band$/m.test(gear), "the one ring lands on Finger1");
+  assert.ok(!/^Finger2:/m.test(gear), "no bare Finger2 line");
+});
+
+test("U1: item names are NOT trimmed — the importer compares them with equality", () => {
+  // Both catalogs come from the Gear Planner, so whitespace in a name exists on
+  // BOTH sides; normalizing ours would turn a match into a miss.
+  const padded = JSON.parse(JSON.stringify(gsRec));
+  padded.snapshot.chosen = [{ slot: "Goggles", variant: { variant_id: " Odd Name ", ml: 30, affixes: [], augment_slots_norm: { colors: [] } } }];
+  padded.snapshot.augmentsPlaced = [];
+  const gear = toGearset(padded).split("\n\n")[0];
+  assert.ok(gear.split("\n").includes("Eye: Odd Name "), `name emitted verbatim, got: ${JSON.stringify(gear)}`);
+});
+
+test("U3: record-block indentation survives (hierarchy is not flattened)", () => {
+  const { record } = gsBlocks();
+  assert.ok(/^# {2,}ML 36/m.test(record), "nested lines keep their indent under their heading");
+  assert.ok(!/ $/m.test(record), "and no line carries trailing whitespace");
+});
+
 test("U2: augments append as brace entries with no space before the first brace", () => {
   const { gear } = gsBlocks();
   const head = gear.split("\n").find((l) => l.startsWith("Head:"));
