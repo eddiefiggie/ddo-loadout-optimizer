@@ -883,6 +883,7 @@ if (typeof window !== "undefined" && window.App) {
             <button class="btn ghost" id="wz-share-csv" type="button">CSV</button>
             <button class="btn ghost" id="wz-share-print" type="button">Print</button>
             <button class="btn ghost" id="wz-share-json" type="button" title="A portable file that captures this build exactly — designed to be re-imported and compared later.">Portable JSON</button>
+            <button class="btn ghost" id="wz-share-gearset" type="button" title="A .gearset file DDOBuilderV2 can import directly (Gear → Import). Crafting and your solve inputs ride below the import, as notes.">DDOBuilderV2</button>
           </div>
           <div id="wz-share-stat" class="wz-filestat"></div>
         </div>`;
@@ -924,6 +925,7 @@ if (typeof window !== "undefined" && window.App) {
       const csvBtn = document.getElementById("wz-share-csv");
       const printBtn = document.getElementById("wz-share-print");
       const jsonBtn = document.getElementById("wz-share-json");
+      const gearsetBtn = document.getElementById("wz-share-gearset");
       if (mdBtn) mdBtn.onclick = () => { const rec = selected(); if (rec) downloadFile(`${slug(rec.name)}.md`, LoadoutExport.toMarkdown(rec), "text/markdown"); };
       if (csvBtn) csvBtn.onclick = () => { const rec = selected(); if (rec) downloadFile(`${slug(rec.name)}.csv`, LoadoutExport.toCsv(rec), "text/csv"); };
       if (printBtn) printBtn.onclick = () => { const rec = selected(); if (rec) printLoadout(rec); };
@@ -931,6 +933,10 @@ if (typeof window !== "undefined" && window.App) {
       // snapshot as an opaque `core` plus the resolved view — designed to be
       // re-imported and compared later. Pretty-printed for readability.
       if (jsonBtn) jsonBtn.onclick = () => { const rec = selected(); if (rec) downloadFile(`${slug(rec.name)}.json`, JSON.stringify(LoadoutExport.toPortableJSON(rec), null, 2), "application/json"); };
+      // DDOBuilderV2: the `.gearset` extension is what its file picker filters on
+      // (Gear Planner Files (*.gearset)), so the download must carry it or the user
+      // has to switch the dialog to "All files" to see their own export.
+      if (gearsetBtn) gearsetBtn.onclick = () => { const rec = selected(); if (rec) downloadFile(`${slug(rec.name)}.gearset`, LoadoutExport.toGearset(rec), "text/plain"); };
       // BBCode is meant to be pasted into a forum post — copy to clipboard (with a
       // .txt download fallback if the clipboard API is blocked), and confirm.
       if (bbBtn) bbBtn.onclick = () => {

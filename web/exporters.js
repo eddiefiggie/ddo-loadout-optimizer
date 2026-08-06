@@ -319,6 +319,150 @@
     };
   }
 
+  // ---- DDOBuilderV2 .gearset (U1-U3) ----
+
+  // App slot -> DDOBuilderV2 file-grammar label, in the order the file emits them.
+  // `Ring` appears twice because DDOBuilder names the two ring slots separately;
+  // the two chosen Ring rows are consumed in solver order. Slots absent from this
+  // table (Quiver, Rune Arm) have no file-grammar label and go to the record block.
+  // `Main Hand` MUST render as `Weapon` — the parser tests `Hand:` before
+  // `Weapon:`, so emitting the app's own label would file a weapon under Gloves.
+  const GEARSET_SLOTS = [
+    ["Goggles", "Eye"], ["Helmet", "Head"], ["Necklace", "Neck"], ["Trinket", "Trinket"],
+    ["Armor", "Body"], ["Cloak", "Back"], ["Bracers", "Wrist"], ["Belt", "Waist"],
+    ["Ring", "Finger1"], ["Boots", "Feet"], ["Gloves", "Hand"], ["Ring", "Finger2"],
+    ["Main Hand", "Weapon"], ["Off Hand", "Offhand"],
+  ];
+
+  // Collapse any user-derived text to a single physical line. The record block
+  // prefixes every line to read as commentary; a value carrying a newline would
+  // otherwise split into an unprefixed second line. Today that line still sits
+  // below the terminator and is inert, but the invariant is what keeps it inert
+  // if the record block ever moves.
+  //
+  // Deliberately does NOT trim. An item name is compared by DDOBuilder with ==
+  // against a catalog built from the same Gear Planner source ours is, so any
+  // whitespace a name carries is carried on BOTH sides — trimming ours would turn
+  // a match into a miss, which is the exact failure the verbatim-name rule exists
+  // to prevent. Trimming also flattened the record block's indentation.
+  function gsInline(s) { return String(s == null ? "" : s).replace(/[\r\n]+/g, " "); }
+
+  // One placed augment as a brace entry: bonus type, stat, value, lowercased.
+  // DDOBuilder splits on whitespace and requires EVERY token to appear in the
+  // candidate augment's description text, placing one augment per entry — so a
+  // multi-affix gem gets ONE entry built from its first affix, whose tokens all
+  // appear in that gem's single combined description.
+  function gearsetAug(aug) {
+    const a = (aug.affixes || [])[0];
+    if (!a || a.value == null) return "";
+    const name = a.name != null ? a.name : a.stat;
+    const type = a.type != null ? a.type : a.bonus_type;
+    if (!name || !type) return "";
+    return `{${String(type).toLowerCase()} ${String(name).toLowerCase()} ${a.value}}`;
+  }
+
+  // The importable half plus the record half, split by a single blank line —
+  // DDOBuilder's file parser stops at the first empty line, so everything below
+  // is invisible to it and fully visible to a reader.
+  function toGearset(rec) {
+    const view = Proj.project(rec);
+    const inputs = (rec && rec.inputs) || {};
+
+    // Group chosen items by app slot so the two Ring rows can be consumed in order.
+    const bySlot = new Map();
+    for (const it of view.loadout) {
+      if (!bySlot.has(it.slot)) bySlot.set(it.slot, []);
+      bySlot.get(it.slot).push(it);
+    }
+    const gear = [];
+    const placed = new Set();
+    for (const [appSlot, label] of GEARSET_SLOTS) {
+      const row = (bySlot.get(appSlot) || []).shift();
+      if (!row) continue;                       // slot left empty -> no line at all
+      placed.add(row);
+      const augs = (row.augments || []).map(gearsetAug).filter(Boolean).join("");
+      gear.push(`${label}:${gsInline(row.item)}${augs}`);
+    }
+    const unmapped = view.loadout.filter((it) => !placed.has(it));
+
+    // ---- the record block: commentary only, never parsed ----
+    const rl = [];
+    // Right-trim only, so intentional leading indentation survives.
+    const say = (s) => rl.push(`# ${gsInline(s)}`.replace(/\s+$/, ""));
+    say(`${view.character.name} — DDO Loadout Optimizer`);
+    say("Everything below this point is ignored by DDOBuilderV2's importer.");
+    rl.push("#");
+    say("Solve inputs");
+    const ml = inputs.ml == null ? null : inputs.ml;
+    if (ml != null) say(`  ML ${ml}${inputs.mlFloor == null ? "" : ` (floor ${inputs.mlFloor})`}`);
+    for (const [k, v] of view.character.constraints) {
+      if (k === "Character" || k === "ML" || k === "Priorities") continue;
+      say(`  ${k}: ${v}`);
+    }
+    for (const [slot, c] of Object.entries(inputs.slotConstraints || {})) {
+      if (!c || !c.type) continue;
+      const what = c.type === "empty" ? "locked empty"
+        : c.type === "pin" ? `pinned to ${[].concat(c.variant || c.variantIds || c.pinnedVariantIds || []).join(", ")}`
+          : c.type;
+      say(`  ${slot} — ${what}`);
+    }
+
+    const priorities = (inputs.priorities || []);
+    if (priorities.length) {
+      rl.push("#");
+      say("Ranked priorities and achieved values");
+      priorities.forEach((stat, i) => {
+        const a = view.attribution[stat] || {};
+        const bounds = [];
+        if ((inputs.targetFloors || {})[stat] != null) bounds.push(`min ${inputs.targetFloors[stat]}`);
+        if ((inputs.targetCaps || {})[stat] != null) bounds.push(`max ${inputs.targetCaps[stat]}`);
+        const cap = (a.cap != null && a.total != null) ? ` (capped at ${a.cap})` : "";
+        say(`  ${i + 1}. ${stat}  ${a.total == null ? "-" : a.total}${cap}${bounds.length ? ` [${bounds.join(", ")}]` : ""}`);
+      });
+    }
+
+    const augLines = [];
+    const craftLines = [];
+    for (const it of view.loadout) {
+      for (const aug of it.augments || []) {
+        const eff = affixList(aug.affixes, (s) => s);
+        augLines.push(`  ${it.slot} (${it.item}) — ${aug.name}${eff ? `: ${eff}` : ""}`);
+      }
+      for (const cr of it.crafting || []) craftLines.push(`  ${it.slot} (${it.item}) — ${cr.label}`);
+    }
+    // Augments are listed here as well as on the gear lines: DDOBuilder matches an
+    // augment by scanning its own description text, and our affix vocabulary does
+    // not always agree with that prose, so a placement can silently no-op. This
+    // listing is what makes an unplaced augment recoverable by hand.
+    if (augLines.length) {
+      rl.push("#");
+      say("Augments (also emitted above; re-enter by hand if one did not import)");
+      augLines.forEach(say);
+    }
+    // Crafting NEVER appears above the split. As a brace entry it would consume a
+    // real augment slot and produce a build that differs from the solved one while
+    // reporting success.
+    if (craftLines.length) {
+      rl.push("#");
+      say("Crafting (not importable — apply these by hand)");
+      craftLines.forEach(say);
+    }
+    if (unmapped.length) {
+      rl.push("#");
+      say("Not importable — no DDOBuilderV2 file-grammar slot label");
+      for (const it of unmapped) say(`  ${it.slot} (${it.item})`);
+    }
+    if (view.sets.length) {
+      rl.push("#");
+      say("Set bonuses active");
+      for (const s of view.sets) {
+        const eff = affixList(s.affixes, (s2) => s2);
+        say(`  ${s.set}${s.pieces ? ` (${s.pieces} pieces)` : ""}${eff ? `: ${eff}` : ""}`);
+      }
+    }
+    return `${gear.join("\n")}\n\n${rl.join("\n")}\n`;
+  }
+
   // ---- back-compat: the active set-bonus summary in the old string-affix shape ----
 
   function setBonusDetail(rec) {
@@ -328,7 +472,7 @@
   }
 
   const api = {
-    toMarkdown, toCsv, toPrintHtml, toBBCode, toPortableJSON,
+    toMarkdown, toCsv, toPrintHtml, toBBCode, toPortableJSON, toGearset,
     setBonusDetail, csvSafe, csvRow, htmlEsc, bbEsc, mdEsc,
     constraintPairs, constraintLines, fmtAffix, cue, legendText,
   };

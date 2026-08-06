@@ -1,6 +1,6 @@
 // U12 — Markdown + CSV loadout exporters. Run: node tests/exporters.test.js
 const assert = require("assert");
-const { toMarkdown, toCsv, toPrintHtml, toBBCode, toPortableJSON, setBonusDetail, bbEsc, csvSafe, constraintLines } = require("../web/exporters.js");
+const { toMarkdown, toCsv, toPrintHtml, toBBCode, toPortableJSON, toGearset, setBonusDetail, bbEsc, csvSafe, constraintLines } = require("../web/exporters.js");
 
 let passed = 0;
 function test(name, fn) {
@@ -380,6 +380,184 @@ test("R10/R11: toPortableJSON emits the ddo-loadout/v1 envelope with a verbatim 
   assert.strictEqual(j.app_build_id, "08032026.1");
   assert.strictEqual(j.core, richRec, "core is the verbatim record (round-trips)");
   assert.ok(j.resolved && j.resolved.character.name === "Nightshade", "resolved view is present");
+});
+
+// ---- DDOBuilderV2 .gearset export (U1-U3) ----------------------------------
+// The grammar these pin comes from DDOBuilderV2's own parser, not from a sample
+// file: `ProcessFileLine` matches slot labels by substring and strips them, then
+// `FindItem` compares the remainder for EXACT equality with no trimming anywhere
+// in the chain. So "Head: Item" parses the name as " Item" and silently drops it.
+// The label order is load-bearing too — `Hand:` is tested before `Weapon:`.
+const gsRec = {
+  name: "Sook - Reaper",
+  inputs: {
+    ml: 36, mlFloor: 31, race: "Human", armor: "cloth", pool: "all",
+    priorities: ["Melee Power", "Doublestrike"],
+    targetFloors: { "Melee Power": 20 },
+    slotConstraints: { Trinket: { type: "empty" } },
+  },
+  snapshot: {
+    status: "optimal",
+    chosen: [
+      { slot: "Goggles", variant: { variant_id: "The Ruined Vision", ml: 34, affixes: [],
+        augment_slots_norm: { colors: [] } } },
+      { slot: "Helmet", variant: { variant_id: "Legendary Downcast Bowler", ml: 34, affixes: [],
+        augment_slots_norm: { colors: ["Sun", "Yellow"] } } },
+      { slot: "Armor", variant: { variant_id: "Dragonsoul Vestments (level 36)", ml: 36, affixes: [],
+        augment_slots_norm: { colors: [] } } },
+      { slot: "Main Hand", variant: { variant_id: "Sireth", ml: 34, affixes: [],
+        augment_slots_norm: { colors: [] } } },
+      { slot: "Quiver", variant: { variant_id: "Epic Purifying Quiver", ml: 32, affixes: [],
+        augment_slots_norm: { colors: [] } } },
+    ],
+    augmentsPlaced: [
+      { variant_id: "Solar Gem of Critical Confirmation (Legendary)", color: "Sun", slot_color: "Sun",
+        affixes: [{ name: "Seeker", type: "Artifact", value: 4 }] },
+      { variant_id: "Topaz of Melee Power +12", color: "Yellow", slot_color: "Yellow",
+        affixes: [{ name: "Melee Power", type: "Enhancement", value: 12 }] },
+    ],
+    vikPlaced: [{ item: "The Ruined Vision", stat: "Deadly", bonus_type: "Competence", value: 12, slot_type: "Dolorous" }],
+    setsActive: [],
+    effective: { "Melee Power": 45, Doublestrike: 18 },
+    perTarget: { "Melee Power": 45, Doublestrike: 18 },
+    breakdown: {},
+  },
+};
+const gsBlocks = () => {
+  const out = toGearset(gsRec);
+  const i = out.indexOf("\n\n");
+  return { all: out, gear: out.slice(0, i), record: out.slice(i + 2) };
+};
+
+test("U1: a gear line has no space after the colon (exact-equality item lookup)", () => {
+  const { gear } = gsBlocks();
+  assert.ok(/^Eye:The Ruined Vision/m.test(gear), "renders Eye:The Ruined Vision");
+  assert.ok(!/^\w+: /m.test(gear), "no gear line puts a space after the colon");
+});
+
+test("U1: item names survive verbatim, including parentheses and spaces", () => {
+  const { gear } = gsBlocks();
+  assert.ok(/^Body:Dragonsoul Vestments \(level 36\)$/m.test(gear), "no normalization or trimming");
+});
+
+test("U1: Main Hand renders as Weapon, never a label containing Hand:", () => {
+  const { gear, record } = gsBlocks();
+  assert.ok(/^Weapon:Sireth$/m.test(gear), "Main Hand maps to Weapon");
+  assert.ok(!/Main Hand:/.test(gear), "the app's own label would misparse as Gloves");
+  assert.ok(!/Main Hand:/.test(record), "and it does not leak into the record block either");
+});
+
+test("U1: a slot with no DDOBuilderV2 label is omitted and recorded instead", () => {
+  const { gear, record } = gsBlocks();
+  assert.ok(!/Quiver/.test(gear), "Quiver has no file-grammar label");
+  assert.ok(/Epic Purifying Quiver/.test(record), "but the item is still named below the split");
+});
+
+test("U1: an unequipped slot emits no line", () => {
+  const { gear } = gsBlocks();
+  assert.ok(!/^Waist:/m.test(gear), "no bare label for a slot the solver left empty");
+});
+
+test("U1: the two Ring rows fill Finger1 and Finger2 in solver order", () => {
+  // The only app slot that maps to two labels, and the only place emission depends
+  // on consuming rows in order. A regression that dropped the second entry or filled
+  // both Finger slots from the same row would otherwise pass the whole suite.
+  const rings = JSON.parse(JSON.stringify(gsRec));
+  rings.snapshot.chosen.push(
+    { slot: "Ring", variant: { variant_id: "Legendary Lantern of the Abyss", ml: 34, affixes: [], augment_slots_norm: { colors: [] } } },
+    { slot: "Ring", variant: { variant_id: "Legendary The Earth and the Sky", ml: 34, affixes: [], augment_slots_norm: { colors: [] } } },
+  );
+  const gear = toGearset(rings).split("\n\n")[0];
+  assert.ok(/^Finger1:Legendary Lantern of the Abyss$/m.test(gear), "first Ring row lands on Finger1");
+  assert.ok(/^Finger2:Legendary The Earth and the Sky$/m.test(gear), "second lands on Finger2, not a repeat of the first");
+});
+
+test("U1: a single Ring emits Finger1 only, never an empty Finger2", () => {
+  const one = JSON.parse(JSON.stringify(gsRec));
+  one.snapshot.chosen.push({ slot: "Ring", variant: { variant_id: "Solo Band", ml: 30, affixes: [], augment_slots_norm: { colors: [] } } });
+  const gear = toGearset(one).split("\n\n")[0];
+  assert.ok(/^Finger1:Solo Band$/m.test(gear), "the one ring lands on Finger1");
+  assert.ok(!/^Finger2:/m.test(gear), "no bare Finger2 line");
+});
+
+test("U1: item names are NOT trimmed — the importer compares them with equality", () => {
+  // Both catalogs come from the Gear Planner, so whitespace in a name exists on
+  // BOTH sides; normalizing ours would turn a match into a miss.
+  const padded = JSON.parse(JSON.stringify(gsRec));
+  padded.snapshot.chosen = [{ slot: "Goggles", variant: { variant_id: " Odd Name ", ml: 30, affixes: [], augment_slots_norm: { colors: [] } } }];
+  padded.snapshot.augmentsPlaced = [];
+  const gear = toGearset(padded).split("\n\n")[0];
+  assert.ok(gear.split("\n").includes("Eye: Odd Name "), `name emitted verbatim, got: ${JSON.stringify(gear)}`);
+});
+
+test("U3: record-block indentation survives (hierarchy is not flattened)", () => {
+  const { record } = gsBlocks();
+  assert.ok(/^# {2,}ML 36/m.test(record), "nested lines keep their indent under their heading");
+  assert.ok(!/ $/m.test(record), "and no line carries trailing whitespace");
+});
+
+test("U2: augments append as brace entries with no space before the first brace", () => {
+  const { gear } = gsBlocks();
+  const head = gear.split("\n").find((l) => l.startsWith("Head:"));
+  assert.ok(/^Head:Legendary Downcast Bowler\{/.test(head), `no space before the brace: ${head}`);
+  assert.ok(/\{artifact seeker 4\}/.test(head), "bonus type, stat, value — lowercased for the matcher");
+  assert.ok(/\{enhancement melee power 12\}/.test(head), "second augment on the same line");
+});
+
+test("U2: a multi-affix augment emits ONE entry, not one per affix", () => {
+  const multi = JSON.parse(JSON.stringify(gsRec));
+  multi.snapshot.augmentsPlaced = [{ variant_id: "Lunar Gem of Balance and Tumble (Legendary)",
+    color: "Moon", slot_color: "Sun",
+    affixes: [{ name: "Balance", type: "Profane", value: 6 }, { name: "Tumble", type: "Profane", value: 6 }] }];
+  const head = toGearset(multi).split("\n").find((l) => l.startsWith("Head:"));
+  assert.strictEqual((head.match(/\{/g) || []).length, 1, "one augment placed means one entry");
+  assert.ok(/\{profane balance 6\}/.test(head), "built from the first affix");
+});
+
+test("U2: a host with no augments renders a bare line", () => {
+  const { gear } = gsBlocks();
+  assert.ok(/^Eye:The Ruined Vision$/m.test(gear), "no trailing braces when nothing is placed");
+});
+
+test("U3: the first blank line is the terminator and nothing above it is a comment", () => {
+  const { all, gear, record } = gsBlocks();
+  assert.ok(!/^\s*$/m.test(gear), "no blank line above the terminator");
+  assert.ok(record.split("\n").filter((l) => l.length).every((l) => l.startsWith("#")),
+    "every record line reads as commentary");
+  assert.ok(all.indexOf("\n\n") > 0, "the terminator exists");
+});
+
+test("U3: the record block carries character, inputs, priorities and totals", () => {
+  const { record } = gsBlocks();
+  assert.ok(/Sook - Reaper/.test(record), "character name");
+  assert.ok(/ML 36/.test(record) && /31/.test(record), "level cap and floor");
+  assert.ok(/Melee Power/.test(record) && /Doublestrike/.test(record), "ranked priorities");
+  assert.ok(/Melee Power[^\n]*45/.test(record), "achieved total for a ranked stat");
+  assert.ok(/Trinket/.test(record), "a locked slot is disclosed");
+});
+
+test("U3: a craft decision is recorded and never becomes an importable augment", () => {
+  const { gear, record } = gsBlocks();
+  assert.ok(!/deadly/i.test(gear), "a Viktranium craft must not consume a real augment slot");
+  assert.ok(/Deadly \+12 Competence/.test(record), "it appears in the record, attributed to its slot");
+  assert.ok(/Ruined Vision/.test(record), "attribution names the host");
+});
+
+test("U3: every placed augment is listed in the record block (unplaceable ones recoverable)", () => {
+  const { record } = gsBlocks();
+  assert.ok(/Solar Gem of Critical Confirmation \(Legendary\)/.test(record), "named in the record");
+  assert.ok(/Seeker \+4 Artifact/.test(record), "with the affixes it grants");
+});
+
+test("U3: user text is newline-neutralized so it cannot forge a gear line", () => {
+  const evil = JSON.parse(JSON.stringify(gsRec));
+  evil.name = "Sook\nWeapon:Forged Item";
+  const out = toGearset(evil);
+  const gear = out.slice(0, out.indexOf("\n\n"));
+  assert.ok(!/Forged Item/.test(gear), "injected text never reaches the parseable half");
+  const record = out.slice(out.indexOf("\n\n") + 2);
+  assert.ok(record.split("\n").filter((l) => l.length).every((l) => l.startsWith("#")),
+    "and every physical line below stays commented");
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);
