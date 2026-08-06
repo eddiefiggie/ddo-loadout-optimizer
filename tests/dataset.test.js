@@ -1,6 +1,11 @@
 // U2 — load-time dataset normalizer. Run: node tests/dataset.test.js
 const assert = require("assert");
-const { normalizeItem, buildPickerVocabulary, expandedAwayFor, expandedAwayMessage } = require("../web/dataset.js");
+const fs = require("fs");
+const path = require("path");
+const { normalizeItem, buildPickerVocabulary, expandedAwayFor, expandedAwayMessage, normalizeDataset } = require("../web/dataset.js");
+// The built catalog, for the whole-vocabulary invariants at the bottom of this file.
+const realData = normalizeDataset(JSON.parse(
+  fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
 
 let passed = 0;
 function test(name, fn) {
@@ -259,6 +264,62 @@ test("U5: composites remain presence-flagged after decomposition", () => {
     assert.ok(v.presence.has(n), `${n} is still an on/off target`);
   }
   assert.ok(v.suggestions.includes("Concealment"), "the minted component stat is rankable (KTD4b)");
+});
+
+// ---- picker vocabulary: every offered stat must have a real source ----
+
+test("picker: no dropdown suggestion is unsourced (dead-entry guard)", () => {
+  // A name in the dropdown that nothing supplies is a priority guaranteed to score
+  // zero — the "Profane Well Rounded" failure class. This asserts the invariant over
+  // the WHOLE vocabulary rather than blacklisting known offenders, so a future
+  // CORE_STATS addition or seed change that reintroduces one fails here.
+  const v = buildPickerVocabulary(realData);
+  const supplied = new Set();
+  const add = (n) => { if (n) supplied.add(String(n).trim().toLowerCase()); };
+  for (const it of realData.items || []) {
+    for (const a of it.affixes || []) add(a.name || a.stat);
+    for (const sc of it.scaling || []) add(sc.stat);
+    for (const sb of it.set_bonus || []) for (const a of sb.affixes || []) add(a.name || a.stat);
+  }
+  // Crafting/insert pools carry their stat under `stat`, or `name` when they also
+  // carry a magnitude; walk them generically so a new pool is covered automatically.
+  const walk = (o) => {
+    if (o == null) return;
+    if (Array.isArray(o)) { o.forEach(walk); return; }
+    if (typeof o === "object") {
+      if (o.stat) add(o.stat);
+      if (o.name && o.value != null) add(o.name);
+      Object.values(o).forEach(walk);
+    }
+  };
+  for (const k of ["dino_inserts", "viktranium", "seal", "thunder_forged",
+                   "green_steel", "nearly_complete", "membership_set_defs", "augment_set_defs"]) {
+    walk(realData[k]);
+  }
+  const dead = v.suggestions.filter((s) => !supplied.has(s.trim().toLowerCase()));
+  assert.deepStrictEqual(dead, [],
+    `every picker suggestion must have a source; unsourced: ${JSON.stringify(dead)}`);
+});
+
+test("picker: a bonus TYPE is never offered as a rankable stat", () => {
+  // `Vitality` is the canonical case — ~149 occurrences as affixes[].type and zero
+  // as an affix name, so ranking it scored nothing. It stays on the curated
+  // `distinct` list (never merged into False Life); it is just not a target.
+  const v = buildPickerVocabulary(realData);
+  const types = new Set();
+  for (const it of realData.items || []) for (const a of it.affixes || []) {
+    if (a.type) types.add(String(a.type).trim().toLowerCase());
+  }
+  const names = new Set();
+  for (const it of realData.items || []) for (const a of it.affixes || []) {
+    const n = a.name || a.stat; if (n) names.add(String(n).trim().toLowerCase());
+  }
+  const typeOnly = v.suggestions.filter((s) => {
+    const k = s.trim().toLowerCase();
+    return types.has(k) && !names.has(k);
+  });
+  assert.deepStrictEqual(typeOnly, [],
+    `a name that only ever appears as a bonus type is not rankable; offered: ${JSON.stringify(typeOnly)}`);
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);
