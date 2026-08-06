@@ -15,7 +15,7 @@ execution: code
 
 - **Objective:** Let a player who dual-wields say so, and have the off hand follow. Replace an undiscoverable gear-control side effect with an explicit character-level declaration.
 - **Product authority:** eddiefiggie (project owner).
-- **Open blockers:** Whether a declared build excludes shields from the off hand — see Outstanding Questions.
+- **Open blockers:** None.
 - **Reports addressed:** 2026-08-05 batch report 4 (a longsword cannot be pinned to the off hand; shields and rune arms keep filling the slot).
 
 ---
@@ -40,6 +40,8 @@ The gate exists for a real reason: DDO penalizes off-hand attacks without the Tw
 
 - **The declaration is character state, not gear state.** Changing combat style never clears it. (user-approved — chosen over folding it into the existing style reset that clears weapon and off-hand selections: silently un-declaring a feat the character has would contradict its persistence and surprise the player.)
 
+- **A declared build excludes shields, orbs, and rune arms from the off hand.** Declaring Two Weapon Fighting means the off hand holds a weapon, not that weapons merely compete for it. (session-settled: user-directed — chosen over letting one-handed weapons compete on merit: the solver has no weapon-versus-shield value model, and a shield usually carries more ranked stats than a longsword, so "compete" would return a shield and the reported behavior would survive the fix. The player keeps an escape hatch — pinning a shield overrides the exclusion, flagged inline per R8 — and R10 discloses that the comparison was narrowed.)
+
 - **Per-style off-hand rules are preserved.** The declaration governs styles that permit a second weapon; every other style keeps its existing allow-list. (user-approved — chosen over a single global off-hand rule: shipped styles already restrict the off hand to shields, to rune arms, or to nothing, and a global rule would regress those constraints.)
 
 ### Requirements
@@ -48,7 +50,7 @@ The gate exists for a real reason: DDO penalizes off-hand attacks without the Tw
 
 - R1. Two Weapon Fighting is declared on the character step alongside race, armor, and weapon setup, rather than switching on as a side effect of the off-hand control.
 - R2. The declaration is a character property: changing combat style never clears it.
-- R3. Under a style that permits a second weapon, a declared build makes one-handed weapons candidates for the off hand.
+- R3. Under a style that permits a second weapon, a declared build fills the off hand with a one-handed weapon: shields, orbs, and rune arms leave off-hand candidacy unless the player pins one.
 - R4. Under a style that forbids a second weapon, the control stays set but renders inert with a stated reason.
 - R5. Every other style keeps its existing off-hand type allow-list unchanged.
 
@@ -61,7 +63,7 @@ The gate exists for a real reason: DDO penalizes off-hand attacks without the Tw
 **Persistence and disclosure**
 
 - R9. The declaration persists with the saved character and travels with a shared or exported loadout.
-- R10. Results disclose that the optimizer does not score the Two Weapon Fighting penalty, so the off-hand comparison is over item value only.
+- R10. Results disclose both limits of a declared build: shields, orbs, and rune arms were excluded from the off hand (and a pin restores them), and the optimizer does not score the Two Weapon Fighting penalty itself.
 - R11. The declaration control and the pin flow's hand target are keyboard-operable, focus-managed, and announced.
 
 ### Acceptance Examples
@@ -105,9 +107,9 @@ The gate exists for a real reason: DDO penalizes off-hand attacks without the Tw
 
 ### Outstanding Questions
 
-**Resolve before planning**
+**Resolved during planning**
 
-- Does a declared build *exclude* shields, orbs, and rune arms from off-hand candidacy, or merely add weapons as competitors? Excluding them answers the report directly, since a shield usually carries more ranked stats than a longsword and would otherwise still win the slot. But DDO permits an off-hand shield with the feat chain trained, so exclusion models the character more narrowly than the game does, and it narrows the solve in a way the optimality claim would need to disclose.
+- Whether a declared build excludes shields or merely lets weapons compete — **excluded** (see Key Decisions). Noted honestly: DDO does permit an off-hand shield with the feat chain trained, so this models the character more narrowly than the game does. The pin escape hatch and R10's disclosure are what keep that honest rather than hidden.
 
 **Deferred to planning**
 
