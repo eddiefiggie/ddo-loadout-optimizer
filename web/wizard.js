@@ -465,9 +465,29 @@ if (typeof window !== "undefined" && window.App) {
             <span class="wz-help">A class oath that forbids certain armor. Approximated by armor type — see the note when on.</span>
             <div class="wz-seg" id="wz-oath"><button class="wz-chip ${state.oath === "druid" ? "on" : ""}" data-oath="druid" ${forged ? "disabled" : ""}>Druid — no metal</button></div>
             ${state.oath === "druid" && !forged ? `<p class="wz-help wz-note">Druidic oath: body armor restricted to cloth + light. Metal vs non-metal medium/heavy (e.g. Darkleaf, Dragonhide) isn't distinguishable in our data, so this is a conservative approximation.</p>` : ""}</div>
-          <div class="wz-field"><span class="wz-label">Two Weapon Fighting <span class="wz-sub">· optional</span></span>
+          ${(() => {
+            // plan 003 U3 (R4) — three style states, and the control ACCEPTS INPUT in
+            // all three. "Inert" here means the declaration currently has no effect and
+            // says so; it is deliberately NOT `disabled`, for two reasons: a player must
+            // be able to declare before choosing a style or while on another one (AE3
+            // declares, then switches), and a disabled control reads as "your character
+            // can't have this feat" rather than "this style doesn't use it".
+            //
+            // Which styles permit a second weapon is the shipped taxonomy's call, not a
+            // new list here (KTD2) — twfWeaponAllowedForStyle is true for `one-hand` only.
+            const twfActive = !!(WT && WT.twfWeaponAllowedForStyle(state.style));
+            const styleLabel = (WT && state.style)
+              ? ((WT.STYLES.find((s) => s.id === state.style) || {}).label || state.style) : "";
+            const inert = state.twoWeaponFighting && !twfActive
+              ? (state.style
+                ? `<p class="wz-help wz-note wz-twf-inert">Declared, but it has no effect under <strong>${esc(styleLabel)}</strong> — that style doesn't wield a second weapon. Your declaration is kept; switch to One-hand / Dual-wield to use it.</p>`
+                : `<p class="wz-help wz-note wz-twf-inert">Declared. It has no effect until you pick a combat style that wields a second weapon.</p>`)
+              : "";
+            return `<div class="wz-field"><span class="wz-label">Two Weapon Fighting <span class="wz-sub">· optional</span></span>
             <span class="wz-help">Declare the feat if your character fights with a weapon in each hand. Dual-wielding used to switch on only when you added a second weapon type below — declaring it here is the explicit way.</span>
-            <div class="wz-seg" id="wz-twf"><button class="wz-chip ${state.twoWeaponFighting ? "on" : ""}" data-twf="1" aria-pressed="${state.twoWeaponFighting ? "true" : "false"}">Two Weapon Fighting</button></div></div>
+            <div class="wz-seg" id="wz-twf"><button class="wz-chip ${state.twoWeaponFighting ? "on" : ""}" data-twf="1" aria-pressed="${state.twoWeaponFighting ? "true" : "false"}">Two Weapon Fighting</button></div>
+            ${inert}</div>`;
+          })()}
           ${(() => {
             const styles = WT ? WT.STYLES : [];
             const wtypes = (WT && state.style) ? WT.weaponTypesForStyle(state.style, weaponTypesInData) : [];

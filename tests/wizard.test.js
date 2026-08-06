@@ -632,3 +632,48 @@ test("U5/003 (R7/R8): the pin list flags both the illegal pin and the override",
   assert.ok(/offHandItemsExcluded\(/.test(body),
     "the override flag reads U2's exported advisory predicate, not a view-layer copy");
 });
+
+// ---- plan 003 U3 — the declaration across combat-style states (R4) ----
+
+test("U3/003 (R4): the control states its three style cases in the markup", () => {
+  const tpl = stepTemplate("stepCharacter");
+  const i = tpl.indexOf('id="wz-twf"');
+  assert.ok(i !== -1, "the control exists");
+  // "Inert" is settable-but-without-effect, NOT disabled: a player must be able to
+  // declare from any style (AE3 declares, then switches), and disabling would also
+  // read as "you can't have this feat".
+  assert.ok(!/data-twf="1"[^>]*\bdisabled\b/.test(tpl), "the control is never disabled");
+  // The IIFE that wraps the field computes twfActive from the taxonomy and branches
+  // on it — that branch is the whole of R4's behavior.
+  const block = tpl.slice(0, i);
+  assert.ok(/twfActive\s*=\s*!!\(WT && WT\.twfWeaponAllowedForStyle\(state\.style\)\)/.test(block),
+    "active-ness comes from the shipped taxonomy, not a new style list here (KTD2)");
+  assert.ok(/state\.twoWeaponFighting && !twfActive/.test(block),
+    "the reason renders exactly when the declaration is set but currently has no effect");
+});
+
+test("U3/003 (R4): a forbidding style renders a stated reason, an enabling one doesn't", () => {
+  const tpl = stepTemplate("stepCharacter");
+  // The reason names the style's constraint rather than just greying out.
+  assert.ok(/wz-twf-inert/.test(tpl), "a reason element exists for the inert case");
+  assert.ok(/no effect|doesn't apply|does not apply/i.test(tpl),
+    "the reason says the declaration has no effect under this style");
+});
+
+test("U3/003 (R2/R4): only `one-hand` makes the declaration active", () => {
+  // The single source is the shipped taxonomy — U3 adds no new style logic (KTD2).
+  const WT = require("../web/weapon-taxonomy.js");
+  const active = WT.STYLES.map((s) => s.id).filter((id) => WT.twfWeaponAllowedForStyle(id));
+  assert.deepStrictEqual(active, ["one-hand"], "exactly one style permits a second weapon");
+  for (const id of ["thf", "ranged", "crossbow", "sword-board", "unarmed"]) {
+    assert.strictEqual(WT.twfWeaponAllowedForStyle(id), false, `${id} forbids a second weapon`);
+  }
+  assert.strictEqual(WT.twfWeaponAllowedForStyle(""), false, "no style chosen: not yet active");
+});
+
+test("U3/003 (R2): the toggle handler still only flips the flag — no style coupling", () => {
+  const h = WIZARD_SRC.slice(WIZARD_SRC.indexOf("#wz-twf .wz-chip"));
+  const body = h.slice(0, h.indexOf("});"));
+  assert.ok(/state\.twoWeaponFighting = !state\.twoWeaponFighting/.test(body), "a plain toggle");
+  assert.ok(!/state\.style/.test(body), "declaring never reads or writes the combat style");
+});
