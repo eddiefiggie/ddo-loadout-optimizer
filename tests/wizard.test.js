@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -542,9 +542,12 @@ test("U1/003 (R2): changing combat style resets gear picks but never the declara
 
 test("U1/003 (R9): the declaration is restored on load, defaulting to undeclared", () => {
   const load = WIZARD_SRC.slice(WIZARD_SRC.indexOf("state.offHandWeapons = Array.isArray(i.offHandWeapons)"));
-  const near = load.slice(0, 900);
-  assert.ok(/state\.twoWeaponFighting\s*=\s*!!\s*i\.twoWeaponFighting/.test(near),
+  const near = load.slice(0, 1200);
+  // U4 layered the migration on top; a save with neither the field nor the old
+  // opt-in still resolves to undeclared through both terms.
+  assert.ok(/state\.twoWeaponFighting\s*=\s*state\.twfMigrated \|\| !!i\.twoWeaponFighting/.test(near),
     "the load path restores the declaration, coercing a missing field to false");
+  assert.strictEqual(twfMigrationNeeded({}), false, "…and a bare pre-U1 save does not migrate");
 });
 
 // ---- plan 003 U5 — a hand target in the pin flow (R6, R7, R8, R11) ----
@@ -676,4 +679,44 @@ test("U3/003 (R2): the toggle handler still only flips the flag — no style cou
   const body = h.slice(0, h.indexOf("});"));
   assert.ok(/state\.twoWeaponFighting = !state\.twoWeaponFighting/.test(body), "a plain toggle");
   assert.ok(!/state\.style/.test(body), "declaring never reads or writes the combat style");
+});
+
+// ---- plan 003 U4 — migrate saved characters that used the old opt-in (R9) ----
+
+test("U4/003: a save that used the old opt-in migrates to declared", () => {
+  // Those players HAD dual-wield on under the pre-U1 trigger (a non-empty
+  // offHandWeapons list). Leaving them undeclared would silently return a shield on
+  // their next solve — a regression they never asked for and can't see coming.
+  assert.strictEqual(twfMigrationNeeded({ offHandWeapons: ["Short Swords"] }), true);
+});
+
+test("U4/003: a save with no off-hand weapon picks does NOT migrate", () => {
+  assert.strictEqual(twfMigrationNeeded({ offHandWeapons: [] }), false, "empty list: dual-wield was off");
+  assert.strictEqual(twfMigrationNeeded({}), false, "no field at all");
+  assert.strictEqual(twfMigrationNeeded({ offHandWeapons: null }), false, "null is not a pick list");
+  assert.strictEqual(twfMigrationNeeded(null), false, "a missing record is not a crash");
+});
+
+test("U4/003: the migration is idempotent — a post-U1 save is never re-migrated", () => {
+  // pickInputs always writes a boolean, so ANY save made after U1 carries the field.
+  // Its presence is exactly the "already migrated / made a choice" signal, which is
+  // why persist.js coerces rather than passing undefined through.
+  assert.strictEqual(twfMigrationNeeded({ twoWeaponFighting: false, offHandWeapons: ["Short Swords"] }), false,
+    "an explicit false is the player's choice and is honored, not overwritten");
+  assert.strictEqual(twfMigrationNeeded({ twoWeaponFighting: true, offHandWeapons: ["Short Swords"] }), false,
+    "already declared: nothing to do");
+});
+
+test("U4/003 (R9): the load path applies the migration and flags it for disclosure", () => {
+  const load = WIZARD_SRC.slice(WIZARD_SRC.indexOf("state.twfMigrated = twfMigrationNeeded(i)"));
+  const near = load.slice(0, 700);
+  assert.ok(/twfMigrationNeeded\(i\)/.test(near), "the load path consults the migration helper");
+  assert.ok(/state\.twfMigrated/.test(near), "and records it so the notice can render");
+});
+
+test("U4/003: the migration notice is a distinct message, not the catalog-staleness one", () => {
+  const tpl = stepTemplate("stepResults");
+  assert.ok(/wz-twfmig/.test(tpl), "its own bar");
+  assert.ok(/Two Weapon Fighting/.test(tpl), "naming what was turned on");
+  assert.ok(/predates the current gear catalog/.test(tpl), "the catalog-staleness bar still exists separately");
 });

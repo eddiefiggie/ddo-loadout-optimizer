@@ -491,13 +491,26 @@ function boundNotice(query, result) {
   const held = Object.keys(caps).filter((s) => per[s] != null && per[s] >= caps[s]);
   if (held.length) parts.push(`Held at your cap: ${held.map((s) => `${esc(s)} ${esc(caps[s])}`).join(", ")}.`);
   if (_offHandItemsExcluded(query || {})) {
-    // Did a pin override it? Derivable from the chosen loadout alone: an off-hand
-    // item survived a build that excluded off-hand items, which only a pin allows.
+    // Is there an off-hand ITEM in a build that excluded off-hand items? Two very
+    // different causes, and the notice must not conflate them:
+    //
+    //  - the player PINNED it (R8's escape hatch) — check the actual pin, do not
+    //    infer it from the item's presence;
+    //  - the shown loadout was solved BEFORE the declaration existed. A restored
+    //    snapshot is not re-solved on load, and plan 003 U4 migrates pre-U1 saves to
+    //    declared, so this is reachable, not theoretical. Inferring a pin here would
+    //    put a flatly false "your pinned X" in front of a player who pinned nothing.
     const offHand = ((result && result.chosen) || []).find((c) => c.slot === "Off Hand");
-    const overridden = !!(offHand && offHand.variant && offHand.variant.category !== "weapon");
-    parts.push(overridden
-      ? `You declared Two Weapon Fighting, so shields, orbs, and rune arms left off-hand candidacy — your pinned ${esc(offHand.variant.source_item || offHand.variant.variant_id)} overrode that and is equipped.`
-      : `You declared Two Weapon Fighting, so shields, orbs, and rune arms left off-hand candidacy — pin one to bring it back.`);
+    const offItem = offHand && offHand.variant && offHand.variant.category !== "weapon"
+      ? offHand.variant : null;
+    const offPins = _pinnedVariantIds(((query && query.slotConstraints) || {})["Off Hand"]);
+    const offName = offItem ? (offItem.source_item || offItem.variant_id) : "";
+    const pinned = !!offItem && offPins.includes(offItem.variant_id || offItem.source_item);
+    parts.push(pinned
+      ? `You declared Two Weapon Fighting, so shields, orbs, and rune arms left off-hand candidacy — your pinned ${esc(offName)} overrode that and is equipped.`
+      : offItem
+        ? `You declared Two Weapon Fighting, so shields, orbs, and rune arms leave off-hand candidacy — but this build still shows ${esc(offName)} in the off hand, so it was solved before the declaration. Re-solve to apply it.`
+        : `You declared Two Weapon Fighting, so shields, orbs, and rune arms left off-hand candidacy — pin one to bring it back.`);
     parts.push(`The optimizer doesn't score the Two Weapon Fighting penalty (or a shield's defense), so the off-hand pick was compared on ranked-stat value alone.`);
   }
   return parts.length ? `<p class="scope-note bound-note" role="status">${parts.join(" ")}</p>` : "";

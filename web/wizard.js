@@ -168,6 +168,20 @@ function pinHandsFor(v) {
   const oneHanded = !!T && v.type != null && T.styleOfType(v.type) === T.ONE_HAND;
   return oneHanded ? ["Main Hand", "Off Hand"] : ["Main Hand"];
 }
+/** plan 003 U4 (R9) — does this saved character need the Two Weapon Fighting
+ *  migration? True only for a save written BEFORE U1: no `twoWeaponFighting` field
+ *  at all, but a non-empty `offHandWeapons` list, which was the old opt-in trigger.
+ *  Those characters had dual-wield ON; leaving them undeclared would silently put a
+ *  shield back in their off hand on the next solve.
+ *
+ *  Idempotent by construction: persist.js coerces the field to a boolean on every
+ *  save, so its PRESENCE means the player has a stored choice — including an explicit
+ *  `false`, which is honored rather than overwritten. */
+function twfMigrationNeeded(inputs) {
+  const i = inputs || {};
+  if (i.twoWeaponFighting !== undefined) return false;
+  return Array.isArray(i.offHandWeapons) && i.offHandWeapons.length > 0;
+}
 function pinIdOf(v) { return v.variant_id || v.source_item; }
 // Pin one variant id into a known worn slot (used both by the Gear-pool search,
 // via applyPin, and by the results Deep-Dive per-row pin action). A full single
@@ -337,7 +351,7 @@ function addBundle(key, current, vocab) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -397,7 +411,9 @@ if (typeof window !== "undefined" && window.App) {
       // they survive priority reordering.
       targetCaps: {}, targetFloors: {},
       pool: "all", ownedNames: null, priorities: [], slotConstraints: {}, constraintsDirty: false, lastRun: null,
-      characterName: "", loadedStale: false };
+      characterName: "", loadedStale: false,
+      // plan 003 U4 — set on load when a pre-U1 save is migrated to declared.
+      twfMigrated: false };
 
     let highs = null;
     async function getHighs() {
@@ -779,6 +795,12 @@ if (typeof window !== "undefined" && window.App) {
         </div>
         <div id="wz-stale" class="wz-cbar wz-hidden">
           This saved build predates the current gear catalog. <button class="btn primary" id="wz-staleresolve">Re-solve ⚡</button>
+        </div>
+        <div id="wz-twfmig" class="wz-cbar${state.twfMigrated ? "" : " wz-hidden"}">
+          This character had off-hand weapon types picked, which is how dual-wielding used to switch on — so
+          <strong>Two Weapon Fighting</strong> is now declared on the character step. The build below was solved
+          under the old rules; re-solve to apply it, or turn the declaration off.
+          <button class="btn primary" id="wz-twfmigresolve">Re-solve ⚡</button>
         </div>
         <div id="wz-cbar" class="wz-cbar${state.constraintsDirty ? "" : " wz-hidden"}">
           Slot constraints changed. <button class="btn primary" id="wz-cresolve">Re-solve ⚡</button>
@@ -1193,9 +1215,14 @@ if (typeof window !== "undefined" && window.App) {
       state.offHand = Array.isArray(i.offHand) ? i.offHand.slice() : [];
       state.offHandWeapons = Array.isArray(i.offHandWeapons) ? i.offHandWeapons.slice() : [];
       // plan 003 U1 — the Two Weapon Fighting declaration (R9). A pre-U1 save has no
-      // field; `!!` loads it as undeclared. U4 layers the migration for saves that
-      // used the old off-hand-weapon-types opt-in on top of this default.
-      state.twoWeaponFighting = !!i.twoWeaponFighting;
+      // field; `!!` loads it as undeclared.
+      // plan 003 U4 — …unless the save used the OLD opt-in (off-hand weapon types
+      // picked, no declaration field), in which case dual-wield was already on for
+      // that character and staying undeclared would silently put a shield back in
+      // their off hand. Migrate, and record it so the load discloses it: a feat must
+      // never appear on a character sheet without the player being told.
+      state.twfMigrated = twfMigrationNeeded(i);
+      state.twoWeaponFighting = state.twfMigrated || !!i.twoWeaponFighting;
       state.includeArtifact = !!i.includeArtifact;
       // U6 — restore owned set augments (stored as an array; rebuilt as a Set).
       state.ownedSetAugments = Array.isArray(i.ownedSetAugments) ? new Set(i.ownedSetAugments) : new Set();
@@ -1547,6 +1574,17 @@ if (typeof window !== "undefined" && window.App) {
           state.loadedStale = false;
           const stale = document.getElementById("wz-stale");
           if (stale) stale.classList.add("wz-hidden");
+          solve(false);
+        };
+        // plan 003 U4 — same view-only re-solve for the TWF migration notice. The
+        // restored snapshot was solved under the OLD rules, so its off hand may still
+        // hold a shield the declaration would now exclude; re-solving is what makes the
+        // shown build agree with the declaration the load just turned on.
+        const migBtn = document.getElementById("wz-twfmigresolve");
+        if (migBtn) migBtn.onclick = () => {
+          state.twfMigrated = false;
+          const bar = document.getElementById("wz-twfmig");
+          if (bar) bar.classList.add("wz-hidden");
           solve(false);
         };
         // Per-slot constraint controls (U6), wired by delegation so they survive

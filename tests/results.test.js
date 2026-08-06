@@ -865,10 +865,24 @@ test("U6/003: a declared build under another style says neither — the exclusio
 });
 
 test("U6/003 (R8): a pinned shield that overrode the exclusion is stated", () => {
-  const note = R.boundNotice(_declared, _withOffHand(
-    { source_item: "Tower Shield", type: "Tower shields" }));
+  const note = R.boundNotice(
+    Object.assign({}, _declared, { slotConstraints: { "Off Hand": { type: "pin", variant_id: "Tower Shield" } } }),
+    _withOffHand({ source_item: "Tower Shield", variant_id: "Tower Shield", type: "Tower shields" }));
   assert.ok(/pinned/i.test(note) && /overr/i.test(note),
     "says the pin overrode the exclusion, so the off-hand item is explained");
+});
+
+test("U6/003+U4: an UNPINNED off-hand item must not be reported as a pin", () => {
+  // Reachable, not theoretical: a restored snapshot is not re-solved on load, and
+  // U4 migrates pre-U1 saves to declared — so a shield can sit in a declared build's
+  // off hand with nothing pinned. Inferring a pin from the item's presence would put
+  // a flatly false "your pinned Tower Shield" in front of a player who pinned nothing.
+  const note = R.boundNotice(
+    Object.assign({}, _declared, { slotConstraints: {} }),
+    _withOffHand({ source_item: "Tower Shield", variant_id: "Tower Shield", type: "Tower shields" }));
+  assert.ok(!/pinned/i.test(note), "no false pin claim");
+  assert.ok(/solved before the declaration/i.test(note), "names the real cause");
+  assert.ok(/Re-solve/i.test(note), "and the action that fixes it");
 });
 
 test("U6/003: the disclosure keeps role=status, like its sibling notices", () => {
