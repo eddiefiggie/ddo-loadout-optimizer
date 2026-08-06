@@ -31,7 +31,7 @@ Augment Sets (the Cauldron of Cadence set augments, PR #131) broke that assumpti
 source family**: the placed augments are *stat-less* variants, and their value comes entirely from the
 solver reading a model-level def dict — `model.augment_set_defs` — directly in the `y[aug,i]` family
 (`web/solver.js`), completely bypassing the worn/augment eligibility pool. An ownership gate was added
-to `variantConflict` (`web/model.js:253`, `if (v.set_augment) …`), and it correctly filtered the
+to `variantConflict` (`web/model.js:271-277`, `if (v.set_augment) …`), and it correctly filtered the
 stat-less variants. But those variants never carried the value — so the gate was a **no-op for the
 thing it was meant to gate**. A focused review proved it empirically: with an empty ownership set the
 solver still placed 3 copies and fired the bonus.
@@ -45,7 +45,7 @@ variants in `variantConflict`. The variant filter and the value path are two dif
 one the value actually comes through.
 
 Concretely for the def-dict case, filter the dict in `buildModel` before it reaches the model, keyed by
-the same ownership key the variant gate uses (`web/model.js:637-644`):
+the same ownership key the variant gate uses (`web/model.js:701-708`):
 
 ```js
 augment_set_defs: (() => {
@@ -61,6 +61,16 @@ augment_set_defs: (() => {
 Empty/undefined ownership → empty dict → the family is inert. Keep the `variantConflict` filter too
 (it's still correct for the stat-less variants and keeps them out of pickers), but do not rely on it
 for value gating.
+
+**Caveat added 2026-08-06 — "keep the `variantConflict` filter too" is safe here, not universally.**
+Set augments are *placed* by the solver, never pinned to a worn slot, so a redundant
+`variantConflict` entry costs nothing. For a gate a user **pin** must be able to override, keeping
+that copy is actively harmful: `reconcilePinLegality` drops any pin whose `variantConflict` is
+non-null, so the gate deletes the very pins its escape hatch exists to protect. Before adding a
+gate to `variantConflict`, check whether it needs a pin override or depends on the slot of inquiry
+— see
+[`where-a-per-item-gate-may-live-in-the-solver.md`](where-a-per-item-gate-may-live-in-the-solver.md)
+for that decision map. This doc covers the **value** door; that one covers the **candidacy** door.
 
 ## Why This Matters
 
@@ -99,4 +109,6 @@ is owned), or assert end-to-end that the solve places nothing.
   is marked.
 
 **Related:** `docs/solutions/design-patterns/milp-encoding-for-gear-optimization.md` (the new-source-family
-checklist this extends) and `docs/solutions/design-patterns/single-source-of-truth-for-set-definitions.md`.
+checklist this extends), `docs/solutions/design-patterns/single-source-of-truth-for-set-definitions.md`,
+and `docs/solutions/design-patterns/where-a-per-item-gate-may-live-in-the-solver.md` (the sibling
+placement rule for candidacy gates).
