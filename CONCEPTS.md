@@ -96,6 +96,18 @@ A candidate-pool option where the solve is restricted to the base items a player
 ### Slot constraint
 A per-session hard constraint the user places on an equipment slot before solving: **pin** it to a specific item, **lock** it empty (excluded from the loadout), or leave it **free** for the solver. The solve honors these exactly and optimizes the remaining free slots around them.
 
+A pin is the standing override for [[Candidacy]]: a rule that narrows which items compete for a slot yields to an explicit pin, so the player can always force an item the tool would otherwise not consider. It does **not** override [[Equippability]] — an item the character cannot wear at all stays unequippable however it is pinned, and such a pin is dropped with a stated reason rather than silently honored. Because a pin can be individually legal yet wrong for the slot it was placed in, pin legality is judged per-slot, not per-item alone.
+
+### Equippability
+Whether a character may wear a [[Variant]] **at all** under the current query — the ML band, race and armor proficiency, alignment, the [[Artifact (item type)]] opt-in, and the other character gates, judged one variant at a time without being told which slot it is being considered for.
+
+Equippability is slot-blind by construction, which is what makes it a single shared authority: the solve's candidate filter and the pin UI's warning text read the same answer, so what the tool enforces and what it tells the player cannot drift apart. It may still reason about a variant's own *home* slot — that is a property of the item — but it never learns the slot of inquiry, so it can never express "this item is fine, but not *here*". That is [[Candidacy]]'s job.
+
+### Candidacy
+Whether an equippable [[Variant]] competes for one **particular** slot. Narrower than [[Equippability]]: an item can be perfectly equippable and still not be a candidate for a given slot, because a combat style, a feat declaration, or a per-slot allow-list excluded it there.
+
+Candidacy is decided where each slot's candidate pool is assembled, after equippability has filtered the dataset. A pin overrides it (see [[Slot constraint]]); pruning exemptions do not — an item kept through the [[Dominance pre-filter]] for soundness reasons has not thereby been made a candidate anywhere, and treating a pruning exemption as evidence of user intent is a standing hazard.
+
 ### Artifact (item type)
 A DDO item quality — distinct from the **Artifact bonus type** carried by Lunar/Solar Gem augments — of which only one may be equipped at a time. Surfaced as an opt-in: an "Include an Artifact" setup checkbox (default off). Off excludes Artifact-flagged variants from the candidate pool; on requires **exactly one** Artifact in the loadout (the best-scoring one, tagged in the results). Backed by a per-variant `artifact` flag (exclude-until-verified; unflagged variants are treated as non-Artifact). Because "exactly one" is a hard constraint that can force any Artifact off, an Artifact is only *conditionally available*, so the per-slot [[Dominance pre-filter]] must both exempt every Artifact from pruning and bar an Artifact from pruning a non-Artifact peer (its third soundness obligation). The exactly-one constraint is itself emitted only when satisfiable — skipped when no Artifact is placeable (empty data, or the only Artifact's slot locked/pinned away) so the solve stays feasible and discloses that none was included, rather than going infeasible.
 
@@ -103,3 +115,8 @@ A DDO item quality — distinct from the **Artifact bonus type** carried by Luna
 A hard equip-legality rule that a two-handed main-hand weapon and any Off Hand item cannot be equipped together — a two-handed weapon occupies both hands. "Both-hands" covers two-handed melee, bows, and an unclassifiable/untyped weapon host; a one-handed main hand leaves the off hand free (a shield, orb, or two-weapon-fighting second weapon). Enforced as a solve-time at-most-one across the both-hands main and off-hand pick options.
 
 Because a user can [[Slot constraint|pin]] both a two-handed main **and** an off-hand — two individually-legal pins that *jointly* violate the rule — the mutex carries the same feasibility escape hatch as the [[Artifact (item type)]] exactly-one: it is emitted only when the conflict is not already pin-forced, so a user who pins both hands gets their (illegal, separately warned) build rather than an empty result. The classifier that decides "occupies both hands" is shared with the [[Dominance pre-filter]], so a two-handed weapon is exempted from pruning a one-handed peer it merely dominates — the same conditional-availability obligation, since the mutex can force the two-handed weapon off.
+
+### Two Weapon Fighting declaration
+A character-level assertion that the build fights with a weapon in each hand, declared alongside race and armor rather than inferred from gear choices. It is character state, so changing combat style never clears it, and it travels with a saved or shared character.
+
+The declaration changes [[Candidacy]], not [[Equippability]]: under a style that permits a second weapon it fills the off hand with a one-handed weapon and removes shields, orbs, and rune arms from off-hand candidacy — a pin brings one back. Every other style keeps its own off-hand allow-list unchanged, so the declaration narrows exactly one style and is inert (and says so) elsewhere. The optimizer does not score the feat's combat penalty, so the narrowing is disclosed with the result rather than modeled.
