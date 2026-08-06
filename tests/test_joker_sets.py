@@ -44,11 +44,18 @@ def test_build_attaches_joker_groups_and_clears_set_bonus():
         assert not it.get("set_bonus"), f"{it.get('variant_id')} has its stale fixed set_bonus cleared"
 
 
-def test_non_legendary_gem_tiers_are_not_attached():
-    """KTD4 — Legendary only this pass; Epic/Heroic remain unattached (no source)."""
+def test_every_gem_tier_is_attached():
+    """U5 (#139) — INVERTS the prior guard. The 2026-07-27 wildcard plan deferred the
+    heroic and Epic tiers for lack of a source; both pools are now wiki-harvested
+    (docs/wiki-evidence/gem-of-many-facets.md), so every offered variant is wired.
+    All six — three tiers, each plus its `[Crafted]` twin — must carry two groups."""
     d = json.load(open(ITEMS_PATH, encoding="utf-8"))
-    others = [it for it in _all_items(d)
-              if "Gem of Many Facets" in str(it.get("variant_id") or "")
-              and "Legendary" not in str(it.get("variant_id") or "")]
-    for it in others:
-        assert not it.get("joker_set_groups"), f"{it.get('variant_id')} is not attached (deferred tier)"
+    gems = [it for it in _all_items(d)
+            if "Gem of Many Facets" in str(it.get("variant_id") or "")]
+    assert len(gems) == 6, f"expected 6 Gem variants, found {len(gems)}"
+    for it in gems:
+        groups = it.get("joker_set_groups") or []
+        assert len(groups) == 2, f"{it.get('variant_id')} should carry two pools, got {len(groups)}"
+        for g in groups:
+            names = g.get("sets") if isinstance(g, dict) else g
+            assert names, f"{it.get('variant_id')} has an empty wildcard pool"
