@@ -517,3 +517,73 @@ def assert_freshness(expected_commit=None, source_path=SOURCE_PATH):
             f"raw mirror commit {recorded!r} != expected {expected_commit!r} — re-import"
         )
     return recorded
+
+
+# --- U2 (plan 2026-08-05-002, #134) — sibling differencing for numeric-suffix pools ---
+#
+# Crafting-pool options often come in tiers distinguished ONLY by a numeric suffix
+# ("Topaz of Swiftness 5% / 10% / 15%"). Those are separate records, not tier variants
+# of one item, so the variant-family machinery (source_item + tier_label) groups none
+# of them and a sibling missing an affix its peers carry goes unnoticed.
+#
+# REPORT ONLY. A finding is a candidate for wiki confirmation, never an automatic
+# correction — a sibling legitimately gaining an affix at a higher tier is normal, and
+# the #134 investigation proved the point: the wiki did NOT corroborate the reported
+# Topaz gap, so an auto-correcting version of this would have written a bad value.
+# Deliberately not wired into build_dataset.py: a finding never fails the build.
+
+_SUFFIX_RE = re.compile(r"^(?P<base>.*?)[\s\-]*(?P<num>[+-]?\d+(?:\.\d+)?)\s*%?$")
+
+
+def sibling_family_key(name: str):
+    """The family a numeric-suffix option belongs to, or None if it has no suffix.
+
+    "Topaz of Swiftness 15%" -> "Topaz of Swiftness". A name whose digits are not a
+    trailing suffix ("Docent of Quickening", "Litany of the Dead II") returns None, so
+    it can never be grouped with an unrelated option.
+    """
+    n = (name or "").strip()
+    if not n:
+        return None
+    m = _SUFFIX_RE.match(n)
+    if not m:
+        return None
+    base = m.group("base").strip().rstrip("-").strip()
+    return base or None
+
+
+def sibling_affix_gaps(pool_options):
+    """Report options missing an affix name their numeric-suffix siblings carry.
+
+    ``pool_options`` is an iterable of ``{"name": str, "affixes": [{"name": ...}]}``
+    (the native crafting-pool shape). Returns a list of findings sorted for
+    determinism, each ``{family, option, missing, siblings_with_it}``.
+
+    Families of one produce nothing — there is no peer to differ from.
+    """
+    families = {}
+    for opt in pool_options or []:
+        fam = sibling_family_key((opt or {}).get("name"))
+        if not fam:
+            continue
+        affixes = {(a or {}).get("name") for a in (opt.get("affixes") or [])}
+        families.setdefault(fam, []).append((opt.get("name"), {a for a in affixes if a}))
+
+    findings = []
+    for fam, members in sorted(families.items()):
+        if len(members) < 2:
+            continue
+        union = set()
+        for _, affixes in members:
+            union |= affixes
+        for opt_name, affixes in sorted(members):
+            missing = union - affixes
+            for affix in sorted(missing):
+                holders = sorted(n for n, a in members if affix in a)
+                findings.append({
+                    "family": fam,
+                    "option": opt_name,
+                    "missing": affix,
+                    "siblings_with_it": holders,
+                })
+    return findings
