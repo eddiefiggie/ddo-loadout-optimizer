@@ -640,7 +640,21 @@ test("U8: buildViews Set Bonuses panel lists active solar/lunar augments as set-
   const withAug = mkBuild([{ variant_id: "Lunar Gem of Negative Amplification", color: "blue", affixes: [{ name: "Negative Amplification", type: "Enhancement", value: 61 }] }]);
   const v1 = R.buildViews(withAug, model, { targets: [] });
   assert.ok(/Other set-like bonuses/.test(v1.setsPanel), "the set-like section renders when a lunar/solar augment is placed");
-  assert.ok(/🌙 Lunar/.test(v1.setsPanel) && /Lunar Gem of Negative Amplification/.test(v1.setsPanel), "lists the lunar augment + its effect");
+  assert.ok(/🌙 Lunar/.test(v1.setsPanel) && /Lunar Gem of Negative Amplification/.test(v1.setsPanel), "lists the lunar augment");
+  assert.ok(/Negative Amplification \+61/.test(v1.setsPanel),
+    "names the NUMBERS it grants, not just the augment name");
+
+  // Regression: the solver's placement record used to carry no `affixes` at all,
+  // so this panel rendered name-only in the real app while this test passed on a
+  // fixture that invented the field. Pin BOTH shapes — the enriched record above,
+  // and a legacy record (no affixes) that must recover them from the catalog.
+  const legacy = mkBuild([{ variant_id: "Lunar Gem of Melee Power (Legendary)", color: "Moon" }]);
+  const catalog = { worn: [], augments: [
+    { variant_id: "Lunar Gem of Melee Power (Legendary)", affixes: [{ name: "Melee Power", type: "Profane", value: 15 }] },
+  ] };
+  const v3 = R.buildViews(legacy, catalog, { targets: [] });
+  assert.ok(/Melee Power \+15 Profane/.test(v3.setsPanel),
+    "a build saved before the solver carried affixes still resolves them from the catalog");
 
   const noAug = mkBuild([{ variant_id: "Ruby of Deadly", color: "red", affixes: [{ name: "Deadly", type: "Insight", value: 9 }] }]);
   const v2 = R.buildViews(noAug, model, { targets: [] });

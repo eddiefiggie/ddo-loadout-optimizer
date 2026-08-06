@@ -540,6 +540,23 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
     assert.strictEqual((r.augmentsPlaced || []).length, 1, "placed at most once");
   });
 
+  await test("U3: a placement record is self-describing — it carries the augment's affixes", async () => {
+    // The record is what every surface downstream renders from, and `persist.js`
+    // stores it WITHOUT the catalog — so if the affixes don't ride along here,
+    // a reloaded build has no way back to them. Dropping this field is exactly
+    // how the Set Bonuses set-like list and the text exports went name-only.
+    const m = {
+      targets: ["Strength"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [host("R", "Ring", [], ["Orange"])])],
+      augments: [augment("SolarStr", "Red", [["Strength", "Enhancement", 15]])],
+    };
+    const placed = (await S.solveLexicographic(m, highs)).augmentsPlaced || [];
+    assert.strictEqual(placed.length, 1, "the augment is placed");
+    assert.deepStrictEqual((placed[0].affixes || []).map((a) => [a.name, a.type, a.value]),
+      [["Strength", "Enhancement", 15]],
+      "the placement record carries the affixes the augment grants");
+  });
+
   await test("U3: same bonus-type across two slots does NOT inflate one bucket (bucket-max)", async () => {
     // Two Orange slots and two same-typed augments (Con Enhancement 15 and 10).
     // Both can be placed (capacity allows), but they share the (Constitution,

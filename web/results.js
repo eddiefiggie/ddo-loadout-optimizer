@@ -834,7 +834,14 @@ function buildViews(build, model, query) {
     .map((a) => ({ a, ls: Proj.lunarSolar(a) }))
     .filter((x) => x.ls)
     .map((x) => {
-      const eff = (x.a.affixes && x.a.affixes.length) ? esc(x.a.affixes.map(affixLabel).join(", ")) : "";
+      // Prefer the affixes the placement record now carries; fall back to the
+      // catalog by variant_id so a build SAVED BEFORE that fix (its stored
+      // `augmentsPlaced` predates the field) still names its numbers on reload.
+      // Same augById the paperdoll uses, so the two surfaces can't disagree.
+      const from = (x.a.affixes && x.a.affixes.length)
+        ? x.a.affixes
+        : ((augById.get(x.a.variant_id) || {}).affixes || []);
+      const eff = from.length ? esc(from.map(affixLabel).join(", ")) : "";
       const glyph = x.ls === "Lunar" ? "🌙" : "☀️";
       return `<li class="set-card setlike"><strong>${glyph} ${esc(x.ls)}</strong> <span class="meta">${esc(x.a.variant_id)}</span>${eff ? `<div class="set-grants">${eff}</div>` : ""}</li>`;
     }).join("");
