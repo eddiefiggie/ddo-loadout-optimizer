@@ -36,6 +36,8 @@ from src import augment_sets as augment_sets_mod
 from src import compendium as compendium_mod
 from src import band_frontier as band_mod
 from src import set_catalog as set_catalog_mod
+from src import harvest as harvest_mod
+from src import speed_split as speed_split_mod
 from src import umbrella as umbrella_mod
 from src import planner_items as planner_mod
 from src import variants as variants_mod
@@ -163,6 +165,7 @@ def assert_affix_synonyms() -> int:
 
 
 GAP_CORRECTIONS_PATH = os.path.join(HERE, "data", "seed", "gap_corrections.json")
+SPEED_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_enchantment.json")
 
 
 def load_gap_corrections(path: str = GAP_CORRECTIONS_PATH) -> dict:
@@ -346,6 +349,15 @@ def build() -> dict:
     # (restores only affixes gear-planner genuinely LACKS; anti-double-count guarded).
     _gap_corrections = load_gap_corrections()
     _gap_coverage = apply_gap_corrections(planner_records, _gap_corrections)
+
+    # U3 (#154) — split the folded `Speed` affix back into the two mechanics
+    # upstream merged. BEFORE variant expansion and before rankable_affixes, so the
+    # corrected affix block flows into verify/coverage, the picker vocabulary, the
+    # solver, browse, and the exports from ONE place. A `Speed` item whose alacrity
+    # magnitude the wiki only defaults keeps its movement bonus and gains nothing.
+    _speed_shard = harvest_mod.load_shard(SPEED_SHARD_PATH, "speed")
+    _speed_coverage = speed_split_mod.apply(planner_records, _speed_shard)
+
     enriched_items = planner_records
 
     # Set bonuses (native): attach the authoritative gear-planner catalog def to
@@ -398,6 +410,11 @@ def build() -> dict:
     # menu pools in gearplanner_crafting.json (one stone per option, native affix
     # block, color from the slot key). Replaces the retired augments.json seed.
     aug_pool = crafting_catalog_mod.augment_pool_records(crafting)
+    # U3 (#154) — the same rename on the augment pool. Augments have no item page
+    # so they are not in the harvest shard, but the wiki augment table states
+    # "Striding" for every augment carrying this affix. Skipping them would leave
+    # augments unable to satisfy a `Movement Speed` target their hosts now match.
+    _speed_aug_coverage = speed_split_mod.apply_to_augments(aug_pool)
     variants = expand_dataset(enriched_items + aug_pool)  # native path (verbatim affixes)
 
     # Wildcard set pieces (Gem of Many Facets, U6): the item rolls ONE set from each of
@@ -623,7 +640,8 @@ def build() -> dict:
             # U1 (#136) — names this build EXPANDS AWAY, mapped to what they become.
             # The picker drops them from suggestions and redirects the player to the
             # replacements, instead of offering a priority no item can satisfy.
-            "expanded_away_names": umbrella_mod.umbrella_expansion(),
+            "expanded_away_names": {**umbrella_mod.umbrella_expansion(),
+                                    **speed_split_mod.EXPANDED_AWAY},
             # U5 — the shared affix-name registry + variant->canonical alias table.
             # The web picker unions every affix source (gear, augments, set bonuses,
             # ALL crafting pools) and canonicalizes each through the alias table, so a
