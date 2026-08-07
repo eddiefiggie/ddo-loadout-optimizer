@@ -30,6 +30,8 @@ AFFIX_ALIASES_PATH = os.path.join(CURATED_DIR, "affix_aliases.json")
 TYPE_STACKING_PATH = os.path.join(CURATED_DIR, "type_stacking_equivalence.json")
 CRAFTING_SLOT_REGISTRY_PATH = os.path.join(CURATED_DIR, "crafting_slot_registry.json")
 AUGMENT_REGISTRY_PATH = os.path.join(CURATED_DIR, "augment_registry.json")
+AFFIX_SYNONYMS_PATH = os.path.join(RAW_DIR, "gearplanner_affix_synonyms.json")
+AFFIX_SYNONYMS_REGISTRY_PATH = os.path.join(CURATED_DIR, "affix_synonyms_registry.json")
 
 # The augment-stone pools share this key suffix (see crafting_catalog).
 _AUGMENT_SLOT_SUFFIX = "Augment Slot"
@@ -181,6 +183,67 @@ def check_crafting_integrity(items, crafting, slot_registry, augment_registry):
                         f"augment registry (new-augment event)")
                 checked += 1
     return checked
+
+
+def load_live_affix_synonyms(path=None):
+    """The VENDORED upstream affix-synonyms table (gear-planner
+    ``site/src/assets/affix-synonyms.json``), refreshed on a re-import."""
+    return _load(path or AFFIX_SYNONYMS_PATH)
+
+
+def _synonym_folds(table):
+    """Normalize either table shape into ``{synonym: canonical}``.
+
+    Accepts the upstream list (``[{"name": …, "synonyms": [...]}, …]``) or the
+    frozen registry dict wrapping the same list under ``affix_synonyms``. Keying
+    by SYNONYM (not canonical) is what makes a re-point detectable: moving a
+    synonym between canonicals leaves both the entry count and the mapping count
+    unchanged, so a count-only check would pass while the mechanic quietly
+    relocated under a different stat.
+    """
+    entries = table.get("affix_synonyms", []) if isinstance(table, dict) else (table or [])
+    folds = {}
+    for e in entries:
+        canonical = e.get("name")
+        for syn in e.get("synonyms") or []:
+            folds[syn] = canonical
+    return folds
+
+
+def check_affix_synonyms(live, frozen):
+    """Referential-integrity gate for upstream's affix-synonym table (U6), against
+    the FROZEN checked-in registry. Upstream folds several distinct game mechanics
+    under one affix name; ``Speed`` <- ``Striding`` is the fold that produced #154
+    (Striding grants movement only, the Speed enchantment also grants melee/ranged
+    attack speed, and collapsing them dropped the attack-speed half silently).
+
+    Any added, removed, or re-pointed fold raises ``IntegrityError`` naming both
+    sides, so the reviewer's question is concrete: are these the same mechanic?
+    Confirming one means re-freezing the registry in the same commit that handles
+    the consequences. Non-mutating; returns the count of folds validated."""
+    live_folds = _synonym_folds(live)
+    frozen_folds = _synonym_folds(frozen)
+
+    for syn in sorted(set(live_folds) - set(frozen_folds)):
+        raise IntegrityError(
+            f"upstream now folds {syn!r} into {live_folds[syn]!r}, a mapping absent from "
+            f"the frozen affix-synonym registry (new-fold event). Confirm the two names "
+            f"are the same game mechanic before re-freezing — a wrong fold silently "
+            f"merges two stats, which is how #154 happened.")
+
+    for syn in sorted(set(frozen_folds) - set(live_folds)):
+        raise IntegrityError(
+            f"upstream no longer folds {syn!r} into {frozen_folds[syn]!r} (dropped-fold "
+            f"event). Items carrying {syn!r} may now parse under their own name.")
+
+    for syn in sorted(set(live_folds) & set(frozen_folds)):
+        if live_folds[syn] != frozen_folds[syn]:
+            raise IntegrityError(
+                f"upstream re-pointed {syn!r} from {frozen_folds[syn]!r} to "
+                f"{live_folds[syn]!r} (re-pointed-fold event). The mapping count is "
+                f"unchanged, so only a per-synonym diff catches this.")
+
+    return len(live_folds)
 
 
 # ------------------------------------------------------------------------- curated tables

@@ -1,0 +1,146 @@
+#!/usr/bin/env python3
+"""Merge a browser-side wiki harvest dump into a seed shard, or list what is left.
+
+The harvest itself runs in the browser (same-origin MediaWiki API from a ddowiki
+tab) — see `docs/wiki-evidence/harvest-method.md`. This is the repo-side half:
+it validates the dump, merges it idempotently, and reports coverage. All the
+logic lives in `src/harvest.py`; this is a thin CLI over it.
+
+Usage:
+
+    # What still needs harvesting (the work order — delta-only by construction)
+    python3 scripts/merge_harvest.py --field speed --missing-only
+    python3 scripts/merge_harvest.py --field material --missing-only
+
+    # Merge a dump the browser loop produced
+    python3 scripts/merge_harvest.py --field speed --dump /path/to/dump.json
+
+    # Coverage of what is harvested so far
+    python3 scripts/merge_harvest.py --field material --coverage
+
+The dump is a JSON object keyed by wiki title:
+
+    {
+      "Item:Ash Boots":  {"value": {"movement": 30}, "provenance": "stated",
+                          "raw": "{{Striding|30}}"},
+      "Item:Brazenband": {"value": {"movement": 30, "alacrity": 7},
+                          "provenance": "stated", "raw": "{{Speed|VII}}"},
+      "Item:Cape of the Roc": {"value": null, "provenance": "defaulted",
+                               "raw": "{{Speed|21}}"}
+    }
+
+`provenance` is required on every record and is the whole point: only `stated`
+values are solver-eligible. `defaulted` records a value the wiki template filled
+in rather than recorded (Template:Speed silently renders 5% for any magnitude
+nobody entered), and `unsourced` records a page that simply does not say.
+"""
+from __future__ import annotations
+
+import argparse
+import datetime
+import json
+import os
+import sys
+import urllib.parse
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+sys.path.insert(0, ROOT)
+
+from src import harvest  # noqa: E402
+
+RAW_ITEMS = os.path.join(ROOT, "data", "seed", "compendium", "raw", "gearplanner_items.json")
+SHARD_DIR = os.path.join(ROOT, "data", "seed", "compendium")
+
+SHIELD_TYPES = {"Bucklers", "Small shields", "Large shields", "Tower shields"}
+# Docents are the Forged body slot; the oath gate already treats Forged as moot,
+# so they stay out of the material roster.
+BODY_ARMOR_TYPES = {"Cloth armor", "Light armor", "Medium armor", "Heavy armor"}
+
+FIELDS = {
+    "speed": {
+        "shard": os.path.join(SHARD_DIR, "speed_enchantment.json"),
+        "help": "items carrying a gear-planner `Speed` affix (#154)",
+    },
+    "material": {
+        "shard": os.path.join(SHARD_DIR, "item_material.json"),
+        "help": "shields and body armor (#162)",
+    },
+}
+
+
+def _title(url: str) -> str:
+    """`/page/Item:Ash_Boots` -> `Item:Ash Boots` (the MediaWiki API title)."""
+    return urllib.parse.unquote(url.replace("/page/", "")).replace("_", " ")
+
+
+def roster(field: str) -> set:
+    """The set of wiki titles this field must cover, from the pinned raw snapshot."""
+    with open(RAW_ITEMS, encoding="utf-8") as fh:
+        items = json.load(fh)
+
+    if field == "speed":
+        return {_title(i["url"]) for i in items
+                if any(a.get("name") == "Speed" for a in i.get("affixes") or [])}
+    if field == "material":
+        return {_title(i["url"]) for i in items
+                if (i.get("slot") == "Offhand" and i.get("type") in SHIELD_TYPES)
+                or (i.get("slot") == "Armor" and i.get("type") in BODY_ARMOR_TYPES)}
+    raise SystemExit(f"unknown field {field!r}; expected one of {sorted(FIELDS)}")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--field", required=True, choices=sorted(FIELDS),
+                    help="which harvest to operate on")
+    ap.add_argument("--dump", help="path to a raw harvest dump to merge")
+    ap.add_argument("--missing-only", action="store_true",
+                    help="print the roster titles not yet harvested, one per line")
+    ap.add_argument("--coverage", action="store_true",
+                    help="print per-provenance coverage counts")
+    ap.add_argument("--limit", type=int, default=0,
+                    help="with --missing-only, print at most N titles (0 = all)")
+    args = ap.parse_args()
+
+    shard_path = FIELDS[args.field]["shard"]
+    shard = harvest.load_shard(shard_path, args.field)
+    targets = roster(args.field)
+
+    if args.missing_only:
+        missing = harvest.missing_titles(shard, targets)
+        for t in (missing[: args.limit] if args.limit else missing):
+            print(t)
+        print(f"# {len(missing)} of {len(targets)} still unharvested", file=sys.stderr)
+        return 0
+
+    if args.coverage:
+        print(json.dumps(harvest.coverage(shard, targets), indent=2))
+        return 0
+
+    if not args.dump:
+        ap.error("one of --dump, --missing-only, or --coverage is required")
+
+    with open(args.dump, encoding="utf-8") as fh:
+        dump = json.load(fh)
+
+    today = datetime.date.today().isoformat()
+    try:
+        stats = harvest.merge(shard, dump, targets, today=today)
+    except harvest.HarvestError as exc:
+        print(f"harvest merge refused: {exc}", file=sys.stderr)
+        return 1
+
+    harvest.save_shard(shard_path, shard)
+    cov = harvest.coverage(shard, targets)
+    print(f"merged into {os.path.relpath(shard_path, ROOT)}: "
+          f"+{stats['added']} added, {stats['unchanged']} unchanged, "
+          f"{stats['off_roster']} off-roster ignored")
+    print(f"coverage: {cov['stated']} stated, {cov['defaulted']} defaulted, "
+          f"{cov['unsourced']} unsourced, {cov['missing']} still missing "
+          f"(roster {cov['roster']})")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

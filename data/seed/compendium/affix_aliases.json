@@ -88,6 +88,11 @@
       "variant": "Fortification Bypass (Armor-Piercing)",
       "canonical": "Armor-Piercing",
       "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+    },
+    {
+      "variant": "Striding",
+      "canonical": "Movement Speed",
+      "reason": "the DDO wiki's name for the movement-speed stat; upstream folds it into 'Speed', which in game names an enchantment granting three stats (#154)"
     }
   ],
   "distinct": [

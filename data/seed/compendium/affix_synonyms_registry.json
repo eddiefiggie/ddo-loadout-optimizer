@@ -1,0 +1,331 @@
+{
+  "_source": "FROZEN copy of data/seed/compendium/raw/gearplanner_affix_synonyms.json (upstream site/src/assets/affix-synonyms.json). The gate diffs the vendored live table against this frozen one; any added/removed/re-pointed fold fails the build until a human confirms the two names are the same game mechanic. Re-freeze only in the same commit that handles the change.",
+  "_why": "Upstream folds distinct mechanics under one affix name. Speed <- Striding is why #154 existed: Striding grants movement only, the Speed enchantment also grants melee/ranged attack speed, and the fold lost the attack-speed half silently.",
+  "count": 94,
+  "affix_synonyms": [
+    {
+      "name": "Accuracy",
+      "synonyms": [
+        "Attack",
+        "Attack Bonus",
+        "Hit",
+        "hit"
+      ]
+    },
+    {
+      "name": "Action Boost Charges",
+      "synonyms": [
+        "Action Boost Enhancement",
+        "Action Boosts"
+      ]
+    },
+    {
+      "name": "Arcane Casting Dexterity",
+      "synonyms": [
+        "Greater Arcane Casting Dexterity",
+        "Lesser Arcane Casting Dexterity"
+      ]
+    },
+    {
+      "name": "Arcane Casting Dexterity",
+      "synonyms": [
+        "Arcane Spell Failure",
+        "reduce your Arcane Spell Failure by"
+      ]
+    },
+    {
+      "name": "Armor Class",
+      "synonyms": [
+        "AC",
+        "Armor",
+        "Armor Bonus",
+        "Natural Armor",
+        "Natural Armor Bonus",
+        "Protection",
+        "Rough Hide",
+        "Shield",
+        "Shield Armor Class"
+      ]
+    },
+    {
+      "name": "Armor-Piercing",
+      "synonyms": [
+        "Armor Piercing",
+        "Fortification Bypass",
+        "Fortification bypass"
+      ]
+    },
+    {
+      "name": "Assassinate",
+      "synonyms": [
+        "Assassinate DCs"
+      ]
+    },
+    {
+      "name": "Deadly",
+      "synonyms": [
+        "Damage",
+        "Damage Bonus"
+      ]
+    },
+    {
+      "name": "Deception",
+      "synonyms": [
+        "Sneak Attacks"
+      ]
+    },
+    {
+      "name": "Devotion",
+      "synonyms": [
+        "Positive Spell Power",
+        "Positive Spellpower"
+      ]
+    },
+    {
+      "name": "Evocation Focus",
+      "synonyms": [
+        "Evocation Spell DCs"
+      ]
+    },
+    {
+      "name": "False Life",
+      "synonyms": [
+        "Hit Points",
+        "Lifeforce",
+        "Maximum HP",
+        "Maximum Hit Points",
+        "Vitality",
+        "maximum hitpoints",
+        "your maximum hit points"
+      ]
+    },
+    {
+      "name": "False Life (%)",
+      "synonyms": [
+        "Conditioning (%)"
+      ]
+    },
+    {
+      "name": "Force Spell Crit Damage",
+      "synonyms": [
+        "Force and Physical Spell Crit Damage"
+      ]
+    },
+    {
+      "name": "Fortitude Save",
+      "synonyms": [
+        "Fortitude saves"
+      ]
+    },
+    {
+      "name": "Greater Dragonmark Charges",
+      "synonyms": [
+        "Greater Dragonmark Enhancement"
+      ]
+    },
+    {
+      "name": "Healing Amplification",
+      "synonyms": [
+        "Positive Amplification",
+        "Positive Healing Amplification"
+      ]
+    },
+    {
+      "name": "Healing Lore",
+      "synonyms": [
+        "Positive Spell Crit Chance",
+        "Positive Spellcrit Chance"
+      ]
+    },
+    {
+      "name": "Lesser Dragonmark Charges",
+      "synonyms": [
+        "Lesser Dragonmark Enhancement",
+        "Lesser Dragonmarks"
+      ]
+    },
+    {
+      "name": "Light Spell Crit Damage",
+      "synonyms": [
+        "Light and Alignment Spell Crit Damage"
+      ]
+    },
+    {
+      "name": "Magical Efficiency",
+      "synonyms": [
+        "Power Store"
+      ]
+    },
+    {
+      "name": "Magical Sheltering",
+      "synonyms": [
+        "MRR",
+        "Magical Resistance Rating",
+        "your Magical Resistance Rating"
+      ]
+    },
+    {
+      "name": "Magical Sheltering Cap",
+      "synonyms": [
+        "MRR Cap",
+        "Magical Resistance Rating Cap"
+      ]
+    },
+    {
+      "name": "Negative Amplification",
+      "synonyms": [
+        "Negative Healing Amplification"
+      ]
+    },
+    {
+      "name": "Nullification",
+      "synonyms": [
+        "Negative Spell Power"
+      ]
+    },
+    {
+      "name": "Physical Sheltering",
+      "synonyms": [
+        "PRR",
+        "Physical Resistance Rating"
+      ]
+    },
+    {
+      "name": "Rage Charges",
+      "synonyms": [
+        "Anger",
+        "Minor Anger",
+        "Rages"
+      ]
+    },
+    {
+      "name": "Reflex Save",
+      "synonyms": [
+        "Reflex saves"
+      ]
+    },
+    {
+      "name": "Repair Amplification",
+      "synonyms": [
+        "Repair Healing Amplification"
+      ]
+    },
+    {
+      "name": "Seeker",
+      "synonyms": [
+        "Critical Confirmation and Critical Damage"
+      ]
+    },
+    {
+      "name": "Sheltering",
+      "synonyms": [
+        "Physical and Magical Resistance Rating"
+      ]
+    },
+    {
+      "name": "Silver",
+      "synonyms": [
+        "Silver , Alchemical"
+      ]
+    },
+    {
+      "name": "Smite Evil Charges",
+      "synonyms": [
+        "Extra Smites"
+      ]
+    },
+    {
+      "name": "Speed",
+      "synonyms": [
+        "Striding",
+        "movement speed"
+      ]
+    },
+    {
+      "name": "Spell Focus Mastery",
+      "synonyms": [
+        "DCs",
+        "Spell DC's",
+        "Spell DCs",
+        "all Spell DCs",
+        "all spell DCs"
+      ]
+    },
+    {
+      "name": "Spell Points",
+      "synonyms": [
+        "your maximum Spell Points"
+      ]
+    },
+    {
+      "name": "Stunning",
+      "synonyms": [
+        "Stunning DCs"
+      ]
+    },
+    {
+      "name": "Sunder",
+      "synonyms": [
+        "Sunder DCs"
+      ]
+    },
+    {
+      "name": "Sundering",
+      "synonyms": [
+        "Sunder",
+        "Sunder DC"
+      ]
+    },
+    {
+      "name": "Tactical Abilities",
+      "synonyms": [
+        "your Tactical Abilities"
+      ]
+    },
+    {
+      "name": "Trip",
+      "synonyms": [
+        "Trip DCs"
+      ]
+    },
+    {
+      "name": "Universal Spell Power",
+      "synonyms": [
+        "Spellcasting Implement",
+        "Universal Spellpower"
+      ]
+    },
+    {
+      "name": "Vertigo",
+      "synonyms": [
+        "Trip",
+        "Trip DC"
+      ]
+    },
+    {
+      "name": "Void Lore",
+      "synonyms": [
+        "Negative Lore",
+        "Negative Spell Crit Chance"
+      ]
+    },
+    {
+      "name": "Well Rounded",
+      "synonyms": [
+        "Ability stats",
+        "All Ability Scores",
+        "Well-Rounded",
+        "all Abilities",
+        "all Ability Scores",
+        "all of your Ability Scores",
+        "each Ability Score"
+      ]
+    },
+    {
+      "name": "Will Save",
+      "synonyms": [
+        "Will saves"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1837 @@
+{
+  "_meta": {
+    "field": "speed",
+    "note": "Wiki-harvested seed shard. Values are verbatim from the DDO wiki; `provenance` records whether the wiki stated the value, fell back to a template default, or is silent. Only `stated` is solver-eligible."
+  },
+  "harvested": {
+    "Item:Acrobat's Ring": {
+      "value": {
+        "movement": 10
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|10}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Admiral's Gumshoes": {
+      "value": {
+        "movement": 17
+      },
+      "provenance": "defaulted",
+      "raw": "{{Speed|17}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Ash Boots": {
+      "value": {
+        "movement": 30
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Beachcombers": {
+      "value": {
+        "movement": 17
+      },
+      "provenance": "defaulted",
+      "raw": "{{Speed|17}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Belt of the Ram": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "no Striding/Speed template found (NONE)",
+      "harvested": "2026-08-07"
+    },
+    "Item:Blackfeather Boots": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Bloodbark Bracers": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Book-Cover Beltstrap": {
+      "value": {
+        "movement": 28,
+        "melee": 13,
+        "ranged": 13
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|28}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Boots of Blessed Travels": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|XV}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Boots of Minor Striding": {
+      "value": {
+        "movement": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|5}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Boots of Striding and Springing": {
+      "value": {
+        "movement": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|15}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Boots of the Battlemaster": {
+      "value": {
+        "movement": 15
+      },
+      "provenance": "defaulted",
+      "raw": "{{Speed|15}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Boots of the Long Step": {
+      "value": {
+        "movement": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|5}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Boots of the Rose": {
+      "value": {
+        "movement": 26,
+        "melee": 12,
+        "ranged": 12
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|26}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Boots of the Woodsman": {
+      "value": {
+        "movement": 30
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Brazenband": {
+      "value": {
+        "movement": 30,
+        "melee": 7,
+        "ranged": 7
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|VII}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Breastplate of the Celestial Avenger": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|XV}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Brightlord, the Sigil of the Flame": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Cannith Boots of Propulsion": {
+      "value": {
+        "movement": 30
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Cape of the Roc": {
+      "value": {
+        "movement": 21,
+        "melee": 8,
+        "ranged": 8
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|21}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Certainty": {
+      "value": {
+        "movement": 25,
+        "melee": 5,
+        "ranged": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|V}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Chamber Boots": {
+      "value": {
+        "movement": 22,
+        "melee": 9,
+        "ranged": 9
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|22}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Cliffdiver Luck Charms": {
+      "value": {
+        "movement": 20
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|20}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Coat of the Wanderer (level 12)": {
+      "value": {
+        "movement": 22,
+        "melee": 9,
+        "ranged": 9
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|22}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Coat of the Wanderer (level 16)": {
+      "value": {
+        "movement": 26,
+        "melee": 12,
+        "ranged": 12
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|26}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Coat of the Wanderer (level 20)": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Coat of the Wanderer (level 24)": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Coat of the Wanderer (level 28)": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Coat of the Wanderer (level 32)": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Coat of the Wanderer (level 36)": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Coat of the Wanderer (level 4)": {
+      "value": {
+        "movement": 15
+      },
+      "provenance": "defaulted",
+      "raw": "{{Speed|15}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Coat of the Wanderer (level 8)": {
+      "value": {
+        "movement": 18,
+        "melee": 6,
+        "ranged": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|18}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Cobalt Pocketwatch": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Contraption Keyring": {
+      "value": {
+        "movement": 18,
+        "melee": 6,
+        "ranged": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|18}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Corsair's Galoshes": {
+      "value": {
+        "movement": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|15}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Cowl of the Giant Warriors": {
+      "value": {
+        "movement": 20,
+        "melee": 7,
+        "ranged": 7
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|20}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Creation Forge Sabatons": {
+      "value": {
+        "movement": 25,
+        "melee": 5,
+        "ranged": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|V}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Demonic Rush": {
+      "value": {
+        "movement": 22,
+        "melee": 9,
+        "ranged": 9
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|22}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Discerning Gaze": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Docent of Quickening": {
+      "value": {
+        "movement": 25
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|25}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Docent of the Celestial Avenger": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|XV}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Doctor Lifestone's Hunting Horn": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Dragonsoul Vestments (level 12)": {
+      "value": {
+        "movement": 22,
+        "melee": 9,
+        "ranged": 9
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|22}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Dragonsoul Vestments (level 16)": {
+      "value": {
+        "movement": 26,
+        "melee": 12,
+        "ranged": 12
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|26}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Dragonsoul Vestments (level 20)": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Dragonsoul Vestments (level 24)": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Dragonsoul Vestments (level 28)": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Dragonsoul Vestments (level 32)": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Dragonsoul Vestments (level 36)": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Dragonsoul Vestments (level 4)": {
+      "value": {
+        "movement": 15
+      },
+      "provenance": "defaulted",
+      "raw": "{{Speed|15}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Dragonsoul Vestments (level 8)": {
+      "value": {
+        "movement": 18,
+        "melee": 6,
+        "ranged": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|18}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Dustless Boots": {
+      "value": {
+        "movement": 21,
+        "melee": 8,
+        "ranged": 8
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|21}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Electric Eyes": {
+      "value": {
+        "movement": 20,
+        "melee": 7,
+        "ranged": 7
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|20}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Emerald Twilight": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|XV}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Epic Boots of Faith": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Epic Boots of the Innocent": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|XV}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Epic Cape of the Roc": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Epic Charged Gauntlets": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Epic Dustless Boots": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Epic Ethereal Bracers": {
+      "value": {
+        "movement": 30,
+        "melee": 14,
+        "ranged": 14
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|XIV}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Epic Ethereal Ring": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Epic Fanged Necklace": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Epic Firestorm Greaves": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Epic Goggles of Time-Sensing": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Epic Golden Greaves": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Epic Kundarak Delving Boots": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Epic Quiver of Alacrity": {
+      "value": {
+        "movement": 30,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|XV|Ranged}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Epic Sigil of Stormreach": {
+      "value": {
+        "movement": 30
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Epic Steelweave Shinguards": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Epic Voice of the Master": {
+      "value": {
+        "movement": 30
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Ethereal Ring": {
+      "value": {
+        "movement": 15
+      },
+      "provenance": "defaulted",
+      "raw": "{{Speed|15}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Faded Tracker's Boots": {
+      "value": {
+        "movement": 25,
+        "melee": 5,
+        "ranged": 5
+      },
+      "provenance": "stated",
+      "raw": "{{speed|V}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Fanged Necklace": {
+      "value": {
+        "movement": 16
+      },
+      "provenance": "defaulted",
+      "raw": "{{Speed|16}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Firemouth's Cloak": {
+      "value": {
+        "movement": 17
+      },
+      "provenance": "defaulted",
+      "raw": "{{Speed|17}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Firestorm Greaves": {
+      "value": {
+        "movement": 21,
+        "melee": 8,
+        "ranged": 8
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|21}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Flightfoot Greaves": {
+      "value": {
+        "movement": 20,
+        "melee": 7,
+        "ranged": 7
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|20}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Gilded Branches": {
+      "value": {
+        "movement": 25,
+        "melee": 5,
+        "ranged": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|V}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Gloves of the Graverobber": {
+      "value": {
+        "movement": 18,
+        "melee": 6,
+        "ranged": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|18}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Gloves of the Nimble": {
+      "value": {
+        "movement": 23,
+        "melee": 9,
+        "ranged": 9
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|23}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Gloves of the Resilient": {
+      "value": {
+        "movement": 23,
+        "melee": 9,
+        "ranged": 9
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|23}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Gloves of the Strong": {
+      "value": {
+        "movement": 23,
+        "melee": 9,
+        "ranged": 9
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|23}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Goatskin Boots (level 17)": {
+      "value": {
+        "movement": 30,
+        "melee": 8,
+        "ranged": 8
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|VIII}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Goatskin Boots (level 18)": {
+      "value": {
+        "movement": 30,
+        "melee": 10,
+        "ranged": 10
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|X}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Goatskin Boots (level 19)": {
+      "value": {
+        "movement": 30,
+        "melee": 11,
+        "ranged": 11
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|XI}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Goatskin Boots (level 26)": {
+      "value": {
+        "movement": 30,
+        "melee": 12,
+        "ranged": 12
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|XII}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Goatskin Boots (level 27)": {
+      "value": {
+        "movement": 30,
+        "melee": 14,
+        "ranged": 14
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|XIV}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Goatskin Boots (level 28)": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|XV}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Golden Greaves": {
+      "value": {
+        "movement": 21,
+        "melee": 8,
+        "ranged": 8
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|21}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Guardian's Boots (level 27)": {
+      "value": {
+        "movement": 30,
+        "melee": 9,
+        "ranged": 9
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|IX}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Gyroscopic Boots of Striding": {
+      "value": {
+        "movement": 30
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Halcyon Boots": {
+      "value": {
+        "movement": 30
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Hat of the Head Chef": {
+      "value": {
+        "movement": 28,
+        "melee": 13,
+        "ranged": 13
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|28}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Hurricane Insignia": {
+      "value": {
+        "movement": 18,
+        "melee": 6,
+        "ranged": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|18}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Jorgundal's Collar (level 12)": {
+      "value": {
+        "movement": 25
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|25}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Jorgundal's Collar (level 13)": {
+      "value": {
+        "movement": 25
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|25}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Jorgundal's Collar (level 14)": {
+      "value": {
+        "movement": 30
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Jorgundal's Collar (level 23)": {
+      "value": {
+        "movement": 30
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Jorgundal's Collar (level 24)": {
+      "value": {
+        "movement": 30
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Jorgundal's Collar (level 25)": {
+      "value": {
+        "movement": 30
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Knight's Sabatons": {
+      "value": {
+        "movement": 25,
+        "melee": 5,
+        "ranged": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|V}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Krugg's Spiked Boots": {
+      "value": {
+        "movement": 10
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|10}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Kundarak Delving Boots": {
+      "value": {
+        "movement": 19,
+        "melee": 6,
+        "ranged": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|19}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Leathers of the Celestial Archer": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|XV}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Admiral's Gumshoes": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Beachcombers": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Belt of the Ram": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Book-Cover Beltstrap": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Boots of the Battlemaster": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Boots of the Rose": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Bottle of Smoke": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Brazenband": {
+      "value": {
+        "movement": 30,
+        "melee": 14,
+        "ranged": 14
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|XIV}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Cape of the Roc": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Chamber Boots": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Charged Gauntlets": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Contraption Keyring": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Cowl of the Giant Warriors": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Demonic Rush": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Dustless Boots": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Electric Eyes": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Ethereal Ring": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Firemouth's Cloak": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Firestorm Greaves": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Flightfoot Greaves": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Gloves of the Graverobber": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Gloves of the Nimble": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Gloves of the Resilient": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Gloves of the Strong": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Goggles of Time-Sensing": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Golden Greaves": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Hat of the Head Chef": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Hurricane Insignia": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Kundarak Delving Boots": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Lenses of the Dark Depths": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Lightning Soles": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Magma Waders": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Mantle of Aosu'riel": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Many-Pouched Belt of the Healer": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Official Kobold Union Buckle": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Outpost Sniper's Belt": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Renovation Regalia": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Shadow Sprinters": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Steel-Toed Steps": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Thief's Escape": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Warded Sewer Waders": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Legendary Windriders": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Lenses of the Dark Depths": {
+      "value": {
+        "movement": 27,
+        "melee": 12,
+        "ranged": 12
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|27}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Lesser Boots of Striding and Springing": {
+      "value": {
+        "movement": 20
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|20}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Lightning Soles": {
+      "value": {
+        "movement": 21,
+        "melee": 8,
+        "ranged": 8
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|21}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Madstone Boots": {
+      "value": {
+        "movement": 20
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|20}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Magma Waders": {
+      "value": {
+        "movement": 17
+      },
+      "provenance": "defaulted",
+      "raw": "{{Speed|17}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Magmatic Grasp": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Mantle of Aosu'riel": {
+      "value": {
+        "movement": 22,
+        "melee": 9,
+        "ranged": 9
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|22}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Many-Pouched Belt of the Healer": {
+      "value": {
+        "movement": 20,
+        "melee": 7,
+        "ranged": 7
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|20}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Mithral Full Plate of Speed (Striding version)": {
+      "value": {
+        "movement": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|15}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Nimble Grasp": {
+      "value": {
+        "movement": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|5}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Official Kobold Union Buckle": {
+      "value": {
+        "movement": 15
+      },
+      "provenance": "defaulted",
+      "raw": "{{Speed|15}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Orcish Privateer's Boots": {
+      "value": {
+        "movement": 30,
+        "melee": 10,
+        "ranged": 10
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|X}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Outpost Sniper's Belt": {
+      "value": {
+        "movement": 25,
+        "melee": 11,
+        "ranged": 11
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|25}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Pathfinder's Boots": {
+      "value": {
+        "movement": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|5}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Perfected Charged Gauntlets": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Perfected Goggles of Time-Sensing": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Pointed Crown": {
+      "value": {
+        "movement": 25,
+        "melee": 5,
+        "ranged": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|V}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Quicksilver Cassock": {
+      "value": {
+        "movement": 25
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|25}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Reliable Duergar Boots": {
+      "value": {
+        "movement": 25,
+        "melee": 5,
+        "ranged": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|V}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Remlin's Step": {
+      "value": {
+        "movement": 20
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|20}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Renovation Regalia": {
+      "value": {
+        "movement": 28,
+        "melee": 13,
+        "ranged": 13
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|28}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Scalemail of the Celestial Avenger": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|XV}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Scuffed Scoundrel's Boots": {
+      "value": {
+        "movement": 25,
+        "melee": 5,
+        "ranged": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|V}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Shadow Sprinters": {
+      "value": {
+        "movement": 25,
+        "melee": 11,
+        "ranged": 11
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|25}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Silent Steps": {
+      "value": {
+        "movement": 25,
+        "melee": 5,
+        "ranged": 5
+      },
+      "provenance": "stated",
+      "raw": "{{speed|V}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Skirmisher's Belt (level 15)": {
+      "value": {
+        "movement": 30,
+        "melee": 8,
+        "ranged": 8
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|VIII}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Skirmisher's Belt (level 26)": {
+      "value": {
+        "movement": 30,
+        "melee": 9,
+        "ranged": 9
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|IX}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Steel-Toed Steps": {
+      "value": {
+        "movement": 28,
+        "melee": 13,
+        "ranged": 13
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|28}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Steelweave Shinguards": {
+      "value": {
+        "movement": 25
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|25}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Stone-steady Boots": {
+      "value": {
+        "movement": 25,
+        "melee": 5,
+        "ranged": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|V}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Surefooted Boots (level 12)": {
+      "value": {
+        "movement": 20
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|20}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Surefooted Boots (level 13)": {
+      "value": {
+        "movement": 25
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|25}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Surefooted Boots (level 14)": {
+      "value": {
+        "movement": 30
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Surefooted Boots (level 23)": {
+      "value": {
+        "movement": 30
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Surefooted Boots (level 24)": {
+      "value": {
+        "movement": 30
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Surefooted Boots (level 25)": {
+      "value": {
+        "movement": 30
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:The Repulsor Boots": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Thief's Escape": {
+      "value": {
+        "movement": 15
+      },
+      "provenance": "defaulted",
+      "raw": "{{Speed|15}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Trailblazer's Footwraps": {
+      "value": {
+        "movement": 25,
+        "melee": 5,
+        "ranged": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|V}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Treads of Falling Shadow (level 16)": {
+      "value": {
+        "movement": 25
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|25}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Treads of Falling Shadow (level 17)": {
+      "value": {
+        "movement": 30
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Treads of Falling Shadow (level 18)": {
+      "value": {
+        "movement": 30
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Treads of Falling Shadow (level 23)": {
+      "value": {
+        "movement": 30
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Treads of Falling Shadow (level 24)": {
+      "value": {
+        "movement": 30
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Treads of Falling Shadow (level 25)": {
+      "value": {
+        "movement": 30
+      },
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Twisted Metal": {
+      "value": {
+        "movement": 30,
+        "melee": 15,
+        "ranged": 15
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Warded Sewer Waders": {
+      "value": {
+        "movement": 28,
+        "melee": 13,
+        "ranged": 13
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|28}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Windriders": {
+      "value": {
+        "movement": 15
+      },
+      "provenance": "defaulted",
+      "raw": "{{Speed|15}}",
+      "harvested": "2026-08-07"
+    },
+    "Item:Worn Razorclaw's Boots": {
+      "value": {
+        "movement": 25,
+        "melee": 5,
+        "ranged": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Speed|V}}",
+      "harvested": "2026-08-07"
+    }
+  }
+}

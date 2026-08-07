@@ -1,81 +1,137 @@
-# Wiki evidence — Speed, Melee/Ranged Alacrity, and the Topaz of Swiftness family (U1)
+# Wiki evidence — Speed, Striding, and the alacrities
 
-**Verified:** 2026-08-05 (Chrome-MCP, interactive session)
-**Plan:** `docs/plans/2026-08-05-002-fix-data-reconciliation-set-visibility-plan.md` (U1)
-**Reports:** #134 — "Speed items are not counting towards Melee and Ranged Alacrity. Topaz of Swiftness 15% is missing the Melee Alacrity affix."
+**Verified:** 2026-08-05 (first pass), **superseded 2026-08-07** (Chrome-MCP, interactive)
+**Issues:** #154 (this ruling), #134 and #141 (originating reports)
+**Plan:** `docs/plans/2026-08-07-001-fix-speed-split-and-material-gate-plan.md`
 
 ## Outcome
 
-The report has two halves and they resolve in opposite directions.
+The 2026-08-05 ruling concluded the attack-speed magnitude was **not recoverable**
+and closed the matter. That conclusion is **wrong and is superseded here.** The
+magnitude is fully recoverable; the earlier pass misread the evidence.
 
-| Half | Verdict |
-|---|---|
-| "Speed items are not counting towards Melee and Ranged Alacrity" | **CONFIRMED** as a mechanism — but the magnitude is not recoverable from current data |
-| "Topaz of Swiftness 15% is missing the Melee Alacrity affix" | **NOT CONFIRMED** — the wiki does not list it as granting Melee Alacrity |
-
-Neither half can be fixed with a sourced value today. No correction was written.
-
----
-
-## 1. Speed grants attack speed — CONFIRMED mechanism
-
-**Source:** https://ddowiki.com/page/Speed
-
-> Effect: Passive:
-> +(5*X)% enhancement bonus to movement speed (max 30%)
-> **+X enhancement bonus to melee and ranged attack speed**
-> Does not stack with Haste.
-
-So an item with `Speed` **does** contribute to both melee and ranged attack speed. The dataset stores `Speed` as a single affix satisfying neither `Melee Alacrity` nor `Ranged Alacrity` targets, so the reporter's headline complaint is real: rank melee alacrity and a Speed item contributes nothing.
-
-Corroborating, from the same page:
-
-> A similar effect as Speed can be obtained by combining Striding and Melee / Ranged Alacrity.
-
-Speed is effectively an umbrella of movement speed plus melee and ranged attack speed.
-
-### Why it still cannot be fixed
-
-The expansion needs the attack-speed magnitude, and that number is **not stored**. The dataset's `Speed` value is the *movement* percentage: values range 5–30 across 200 item records. The wiki's formula would make attack speed `X` where movement is `5*X`, but the stored values include 7, 8, 9, 11, 12, 14, 16, 17, 18, 19, 21, 22, 23, 26, 27 and 28 — none of which is a multiple of 5, so the `5*X` relation does not describe what gear-planner captured. `X` is therefore not derivable, and inventing it would violate the standing exclude-until-verified rule.
-
-**This is an upstream data-source gap**, not a correction the sanctioned overlay can express: the overlay adds a missing affix with a known value, and here no value is known. Resolving it needs either per-item attack-speed values from the wiki, or a gear-planner import that captures both components of `Speed`.
-
----
-
-## 2. Topaz of Swiftness 15% — NOT CONFIRMED
-
-**Source:** https://ddowiki.com/page/Melee_Alacrity · https://ddowiki.com/page/Ranged_Alacrity
-
-The Melee Alacrity page groups items by value. `Topaz of Swiftness` appears in exactly two buckets:
-
-| Bucket | Contains |
-|---|---|
-| Melee Alacrity 5% items | `Topaz of Swiftness 5%` |
-| Melee Alacrity 10% items | `Topaz of Swiftness 10%` |
-| Melee Alacrity 15% items (19 items) | — **no Topaz entry** |
-
-The Ranged Alacrity page lists no Topaz variant at any value. There is no `Item:Topaz of Swiftness` page, and a site search for the exact phrase returns nothing.
-
-So the wiki does not corroborate that `Topaz of Swiftness 15%` grants Melee Alacrity. The dataset's records match the wiki exactly as they stand:
-
-| Variant | Dataset affixes | Wiki agrees? |
+| Claim | 2026-08-05 | 2026-08-07 |
 |---|---|---|
-| `Topaz of Swiftness 5%` | Speed 30, Melee Alacrity 5 | yes |
-| `Topaz of Swiftness 10%` | Speed 30, Melee Alacrity 10 | yes |
-| `Topaz of Swiftness 15%` | Speed 30 | yes — no Melee Alacrity listed |
-
-Two readings remain open, and the wiki cannot distinguish them: the category listing may simply be incomplete (DDO wiki item lists are category-generated and lag), or the 15% variant genuinely differs. Either way, **writing `Melee Alacrity 15` would be inference**, and the sanctioned correction overlay exists precisely to hold only spot-validated values.
-
-`Melee Alacrity` itself is confirmed as an **enhancement** bonus:
-
-> Effect: Gain X% enhancement bonus to Melee attack speed. Does not stack with the Haste spell.
-
-which matches the type already stored on the 5% and 10% variants.
+| Speed grants melee/ranged attack speed | confirmed | confirmed |
+| The magnitude is derivable | **no** | **yes** — see the classifier below |
+| `Topaz of Swiftness 15%` grants Melee Alacrity | not confirmed | still not confirmed (stronger citation) |
 
 ---
 
-## Consequence
+## 1. What actually went wrong
 
-- **R1 cannot be satisfied.** No correction is written for `Topaz of Swiftness 15%`. Reopening needs an item-level source stating its enchantments, or in-game verification.
-- **R2 is answered but not actionable here.** `Speed` and the alacrities are *not* separate unrelated stats — Speed grants both attack speeds — but the magnitude gear-planner captured is the movement component only. This is an import-completeness problem, not an affix-equivalence one, so it does **not** belong in plan 001's equivalence table either: an equivalence would wrongly claim `Speed 30` means 30 melee alacrity.
-- The sibling-differencing detector (U2) remains worth building: it correctly flags the Topaz family as an *anomaly worth checking*, which is exactly what it is. A finding is a candidate for confirmation, never an automatic correction — and this family is the case that proves why.
+Two different things are called "Speed" in our data, and they were never the same
+thing.
+
+Upstream gear-planner's `affix-synonyms.json` folds **`Striding` into `Speed`**:
+
+```json
+{"name": "Speed", "synonyms": ["Striding", "movement speed"]}
+```
+
+(`site/src/assets/affix-synonyms.json`, pinned commit `ec3e595d`; the parser
+stamps the Enhancement type at `data-builder/parse_affixes_from_cell.py:371`.)
+
+In game these are distinct enchantments:
+
+- **`{{Striding|N}}`** — `+N%` movement speed. Nothing else.
+- **`{{Speed|MAG}}`** — movement speed **and** melee/ranged attack speed.
+
+Both feed the same movement number, so the planner filed them under one name. Our
+dataset inherited the fold, and the attack-speed half vanished.
+
+**Why the earlier pass concluded "unrecoverable."** It observed that the stored
+values include 7, 8, 9, 11, 12, 14, 16, 17, 18, 19, 21, 22, 23, 26, 27, 28 — none a
+multiple of 5 — and reasoned that if the stored number were movement and the wiki's
+`5*X` formula held, `X` could not be derived. The inference was backwards. Those odd
+numbers are not movement percentages at all: they are **Roman-numeral ranks**
+converted to integers. `Goatskin Boots (level 19)` is `{{Speed|XI}}` and renders in
+game as **"Speed XI"** — rank 11, not 11% movement.
+
+## 2. The classifier
+
+Verified 2026-08-07 by reading the **rendered output of the wiki's own template
+examples** on `Template:Speed`, rather than reverse-engineering the template source.
+
+### Roman-numeral argument — the argument is a RANK
+
+| Wikitext | Renders |
+|---|---|
+| `{{Speed\|I}}` | +5% movement, **+1%** melee and ranged attack speed |
+| `{{Speed\|IV}}` | +20% movement, **+4%** melee and ranged attack speed |
+| `{{Speed\|XIX}}` | **+30%** movement, **+19%** melee and ranged attack speed |
+
+So: `movement = min(5 × rank, 30)`, `attack speed = rank%`.
+
+The movement cap does **not** cap attack speed — `Speed XIX` is 30% movement but
+19% attack speed. This is the single most important detail, and it is the one an
+implementer would most plausibly get wrong by assuming one cap governs both.
+
+### Optional Type parameter — narrows which alacrity applies
+
+| Wikitext | Renders |
+|---|---|
+| `{{Speed\|XX\|ranged}}` | +30% movement, **+20% ranged attack speed only** |
+
+`Template:Speed` documents the Type parameter as `melee`, `movement`, or `ranged`.
+`movement` suppresses the attack-speed component entirely. A harvest that ignores
+the second parameter will over-grant melee alacrity on ranged-only items.
+
+### Arabic-integer argument — the argument is the MOVEMENT PERCENTAGE
+
+Attack speed then comes from a **hand-maintained lookup**, not a formula:
+
+| Wikitext | Renders | Source |
+|---|---|---|
+| `{{Speed\|27}}` | +27% movement, **12%** attack speed | recorded in the switch |
+| `{{Speed\|30}}` | +30% movement, **15%** attack speed | recorded in the switch |
+| `{{Speed\|15}}` | +15% movement, **5%** attack speed | **the default — not recorded** |
+
+The recorded table is `18,19→6 · 20→7 · 21→8 · 22,23→9 · 24→10 · 25→11 · 26,27→12 ·
+28→13 · 30→15`, everything else `#default→5`.
+
+`Template:Speed` states this outright:
+
+> the formula by which the attack speed percentage of this enchantment is
+> calculated is unknown, so it must be added to the template manually for new
+> values. If no value has been recorded for an integer, the percentage defaults
+> to 5%.
+
+**So a 5% reading is not evidence of a 5% bonus.** Any Arabic magnitude outside the
+recorded table is `provenance: defaulted` and must be quarantined — the item keeps
+its movement bonus and contributes nothing to alacrity. This is the exclude-until-
+verified rule doing exactly its job: the wiki does not know, so neither do we.
+
+The two branches are **not contradictory** — they are two input conventions in one
+template, selected by the argument's numeral system.
+
+## 3. Topaz of Swiftness 15% — no correction (unchanged verdict, better citation)
+
+Authoritative source is `Raw data/Item augments`, the page gear-planner scrapes:
+
+| Augment | ML | Wiki effect cell |
+|---|---|---|
+| Topaz of Swiftness 5% | 12 | `Striding +30% Melee Alacrity 5%` |
+| Topaz of Swiftness 10% | 16 | `Striding +30% Melee Alacrity 10%` |
+| Topaz of Swiftness 15% | 20 | `Speed +30%` |
+
+The 15% row genuinely does not state Melee Alacrity. Writing it would be inference.
+
+Benign in practice: the 15% variant is strictly dominated by the 10% (same movement,
+no alacrity, higher ML), so the solver never picks it.
+
+**Correction to the prior ruling's method.** It cited a site search returning nothing
+as supporting evidence. That check is unreliable — `insource:` search is **disabled**
+on this wiki and returns empty even for strings that are demonstrably present
+(`"Topaz of Striding"` is on a live page and returns nothing). The verdict stands on
+the augment-table citation alone.
+
+## 4. Consequences
+
+- `Speed` in our dataset is the **movement** stat. It is correctly not satisfying
+  alacrity targets; the bug is that items with the real Speed enchantment lost their
+  attack-speed half, and that the name invites the wrong expectation.
+- Renaming is warranted: `Striding` and `Movement Speed` are the same stat and should
+  alias; `Speed` is not a stat at all but an enchantment granting three of them, which
+  is the umbrella case `src/umbrella.py` already handles.
+- A harvest must capture **both** template parameters, not just the magnitude.
