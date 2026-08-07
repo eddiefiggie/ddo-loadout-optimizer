@@ -37,6 +37,7 @@ from src import compendium as compendium_mod
 from src import band_frontier as band_mod
 from src import set_catalog as set_catalog_mod
 from src import harvest as harvest_mod
+from src import material as material_mod
 from src import speed_split as speed_split_mod
 from src import umbrella as umbrella_mod
 from src import planner_items as planner_mod
@@ -166,6 +167,12 @@ def assert_affix_synonyms() -> int:
 
 GAP_CORRECTIONS_PATH = os.path.join(HERE, "data", "seed", "gap_corrections.json")
 SPEED_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_enchantment.json")
+MATERIAL_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "item_material.json")
+MATERIAL_CLASS_PATH = os.path.join(HERE, "data", "seed", "compendium", "material_classification.json")
+# The slots the material gate covers (#162). Docents are the Forged body slot and
+# the oath is moot for Forged, so they stay out.
+SHIELD_TYPES = {"Bucklers", "Small shields", "Large shields", "Tower shields"}
+BODY_ARMOR_TYPES = {"Cloth armor", "Light armor", "Medium armor", "Heavy armor"}
 
 
 def load_gap_corrections(path: str = GAP_CORRECTIONS_PATH) -> dict:
@@ -357,6 +364,22 @@ def build() -> dict:
     # magnitude the wiki only defaults keeps its movement bonus and gains nothing.
     _speed_shard = harvest_mod.load_shard(SPEED_SHARD_PATH, "speed")
     _speed_coverage = speed_split_mod.apply(planner_records, _speed_shard)
+
+    # U5 (#162) — stamp wiki-sourced material onto shields + body armor. The
+    # gear-planner snapshot has no such field (its full item-field union is
+    # affixes/ml/name/quests/slot/type/url/crafting/sets/artifact), so this is the
+    # only route. Unsourced items keep no material and every gate fails open.
+    _material_shard = harvest_mod.load_shard(MATERIAL_SHARD_PATH, "material")
+    _material_class = vocabulary_mod._load(MATERIAL_CLASS_PATH)
+    _material_stamp = material_mod.apply(planner_records, _material_shard)
+    _material_coverage = material_mod.coverage(planner_records, _material_class)
+    # U7/R10 — material coverage gate. Every shield and body armor must resolve in
+    # the shard (a value, or a reviewed `unsourced` entry). A NEW item from a
+    # re-import fails the build listed by name rather than silently passing the
+    # druidic-oath gate. Delta-only: already-harvested items resolve.
+    _material_checked = material_mod.assert_coverage(
+        planner_records, _material_shard,
+        SHIELD_TYPES, BODY_ARMOR_TYPES)
 
     enriched_items = planner_records
 
@@ -633,6 +656,15 @@ def build() -> dict:
                 "references_validated": _crafting_vocab_checked,
             },
             "planner_coverage": planner_stats,
+            # #154 / #162 — wiki-harvest coverage, disclosed so a result can say what
+            # was and wasn't considered. `unclassified` on the material side is the
+            # honest measure of how complete the druidic-oath restriction actually is:
+            # those items pass the gate because their metalness is unsourced.
+            "speed_split_coverage": _speed_coverage,
+            "material_coverage": {**_material_stamp, **_material_coverage},
+            # The curated metal/non-metal map the druidic-oath gate reads. A
+            # material absent from this map is UNKNOWN, and the gate fails open.
+            "material_classification": material_mod.classification(_material_class),
             # U7.5 — wiki-validated gap-corrections overlay coverage (sanctioned
             # minimal exception to gear-planner sole-authority).
             "gap_corrections_coverage": _gap_coverage,

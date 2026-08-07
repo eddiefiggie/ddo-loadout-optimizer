@@ -62,13 +62,16 @@ function buildQuery(state) {
     mlFloor: Number(state.mlFloor) || null,   // optional item-level floor (hide low-ML gear)
     targets: state.priorities.slice(),
     armorType: forged ? null : (state.armor || null),   // dodge-cap input
-    // U4 — armor eligibility gate (R7). A druidic oath approximates "no metal" by
-    // restricting body armor to cloth + light (rides the existing armorTypes gate),
-    // overriding the single proficiency chip. Forged wear docents, so the gate is
-    // moot for them (docent handling lives in the R6 branch).
+    // U4 — armor eligibility gate (R7). A druidic oath now drives TWO independent
+    // things (#162): proficiency (light + medium body armor, non-Tower shields) via
+    // armorTypes here, and a metal restriction via `oath` + the wiki-sourced material
+    // map below. This replaces the old cloth+light approximation, which wrongly
+    // excluded every medium armor including non-metal ones. Forged wear docents, so
+    // the gate is moot for them (docent handling lives in the R6 branch).
     armorTypes: forged ? undefined
-      : (state.oath === "druid" ? ["cloth", "light"]
+      : (state.oath === "druid" ? ["cloth", "light", "medium"]
         : (state.armor ? [state.armor] : undefined)),
+    oath: forged ? null : (state.oath || null),
     // U3 — combat-style / weapon-type / off-hand constraints (replaces the inert
     // coarse `weaponSetup`). Empty arrays / unset style => unconstrained.
     style: state.style || null,
@@ -480,7 +483,7 @@ if (typeof window !== "undefined" && window.App) {
           <div class="wz-field"><span class="wz-label">Oath / anathema <span class="wz-sub">· optional</span></span>
             <span class="wz-help">A class oath that forbids certain armor. Approximated by armor type — see the note when on.</span>
             <div class="wz-seg" id="wz-oath"><button class="wz-chip ${state.oath === "druid" ? "on" : ""}" data-oath="druid" ${forged ? "disabled" : ""}>Druid — no metal</button></div>
-            ${state.oath === "druid" && !forged ? `<p class="wz-help wz-note">Druidic oath: body armor restricted to cloth + light. Metal vs non-metal medium/heavy (e.g. Darkleaf, Dragonhide) isn't distinguishable in our data, so this is a conservative approximation.</p>` : ""}</div>
+            ${state.oath === "druid" && !forged ? `<p class="wz-help wz-note">Druidic oath: no metal body armor, no metal shield, no rune arm — matched against each item's wiki-sourced material. Proficiency also limits you to light and medium armor and non-tower shields. A few items whose material the wiki doesn't state are left available rather than excluded on a guess.</p>` : ""}</div>
           ${(() => {
             // plan 003 U3 (R4) — three style states, and the control ACCEPTS INPUT in
             // all three. "Inert" here means the declaration currently has no effect and

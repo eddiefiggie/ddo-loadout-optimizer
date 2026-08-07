@@ -221,7 +221,18 @@ function normalizeDataset(dataset) {
   // that gear/augments/crafting share.
   dataset._affixRegistry = meta.affix_registry || [];
   dataset._affixAliases = meta.affix_aliases || {};
-  for (const it of dataset.items) normalizeItem(it);
+  // #162 — derive each item's metal/non-metal class from its wiki-sourced material.
+  // Logic-not-data at the load seam, the same shape as ARMOR_TYPE_MAP above: the
+  // curated map lives in metadata, the per-item class is derived from it here so the
+  // druidic-oath gate in model.js reads one field. An item with no material, or a
+  // material the map does not classify, gets NO class — and every consumer fails
+  // open on that, rather than treating unknown as non-metal.
+  const materialClass = meta.material_classification || {};
+  for (const it of dataset.items) {
+    const cls = it.material ? materialClass[it.material] : undefined;
+    if (cls) it.material_class = cls;
+    normalizeItem(it);
+  }
   return dataset;
 }
 

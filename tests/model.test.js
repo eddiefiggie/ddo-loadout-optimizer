@@ -1181,3 +1181,67 @@ test("U5/003: the predicate is inert everywhere it should be", () => {
 });
 
 console.log(`\n${passed} passed`);
+
+// ---- #162 — druidic oath: metal restriction + proficiency ------------------
+// Sourced from https://ddowiki.com/page/Druid: "A druid who wears metal armor, a
+// metal shield or a rune arm is unable to cast Druid spells..." Material is
+// wiki-sourced per item; an unsourced or unclassified material FAILS OPEN.
+{
+  const druid = { oath: "druid", armorTypes: ["cloth", "light", "medium"] };
+  const v = (o) => Object.assign(
+    { slot: "Off Hand", type: "Large shields", verification: "verified",
+      affixes: [], ml: 20 }, o);
+
+  test("#162: a metal shield is forbidden under a druidic oath", () => {
+    const r = M.variantConflict(v({ material: "Steel", material_class: "metal" }), druid);
+    assert.match(String(r), /metal shield/);
+  });
+
+  test("#162: metal body armor is forbidden under a druidic oath", () => {
+    // MEDIUM, deliberately: a druid IS proficient with medium armor, so the metal
+    // rule is what must block this. Heavy metal armor is a weaker test — the
+    // proficiency gate rejects it first and the metal rule never runs.
+    const r = M.variantConflict(
+      v({ slot: "Armor", type: "Medium armor", armor_type: "medium",
+          material: "Steel", material_class: "metal" }), druid);
+    assert.match(String(r), /metal armor/);
+  });
+
+  test("#162: heavy armor is rejected on proficiency before metalness matters", () => {
+    const r = M.variantConflict(
+      v({ slot: "Armor", type: "Heavy armor", armor_type: "heavy",
+          material: "Steel", material_class: "metal" }), druid);
+    assert.match(String(r), /proficiency/);
+  });
+
+  test("#162: non-metal MEDIUM armor is allowed (the approximation wrongly excluded it)", () => {
+    const r = M.variantConflict(
+      v({ slot: "Armor", type: "Medium armor", armor_type: "medium",
+          material: "Darkwood", material_class: "non_metal" }), druid);
+    assert.strictEqual(r, null, "Darkwood medium armor is legal for a druid");
+  });
+
+  test("#162: a tower shield is forbidden (no druid proficiency)", () => {
+    const r = M.variantConflict(
+      v({ type: "Tower shields", material: "Darkwood", material_class: "non_metal" }), druid);
+    assert.match(String(r), /tower shield/i);
+  });
+
+  test("#162: a rune arm is forbidden under a druidic oath", () => {
+    const r = M.variantConflict(v({ type: "Rune Arms" }), druid);
+    assert.match(String(r), /rune arm/i);
+  });
+
+  test("#162: an UNCLASSIFIED material fails open rather than guessing", () => {
+    // Crystal's metalness is not stated on the wiki, so it carries no material_class.
+    const r = M.variantConflict(v({ material: "Crystal" }), druid);
+    assert.strictEqual(r, null,
+      "an unsourced metalness must not silently narrow the pool");
+  });
+
+  test("#162: a character with no oath is unaffected by material", () => {
+    const r = M.variantConflict(
+      v({ material: "Steel", material_class: "metal" }), { armorTypes: undefined });
+    assert.strictEqual(r, null);
+  });
+}
