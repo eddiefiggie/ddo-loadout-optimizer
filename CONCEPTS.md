@@ -88,6 +88,13 @@ A variant the solver is allowed to equip. The usual path to this status is contr
 ### Quarantined
 A record excluded from the solver because it yields no explicitly-parseable value — its wiki text was ambiguous or value-less. Quarantined records stay in the dataset for browsing and coverage disclosure but never contribute to a solve; nothing is ever inferred to rescue one.
 
+### Integrity gate
+A build-time check that validates the incoming upstream snapshot against a frozen, checked-in copy of what was last reviewed, and **fails the build** on any difference rather than absorbing it. Distinct from a test: a test asserts our own behavior, while an integrity gate asserts that the *external* world has not changed underneath us.
+
+Each gate is non-mutating and reports how many references it validated. A difference is not presumed wrong — it is presumed *unreviewed*, and the resolution is a human confirming the change and re-freezing the registry in the same commit that handles its consequences. This is why the gates fail loudly instead of warning: a warning about a generated artifact is invisible by the time that artifact reaches the solver.
+
+Because a gate that matches nothing passes silently and looks identical to a clean run, a gate is only trustworthy once it has been observed to **fail** on deliberately corrupted input, and it should refuse to run when it inspects zero records.
+
 ### Harvest provenance
 The trust label carried by every value sourced directly from the wiki, recording *why* it is or is not usable: **stated** (the wiki asserts it outright), **defaulted** (the wiki displays a number, but its own template filled that number in because nobody recorded a real one), or **unsourced** (the page is silent). Only **stated** is solver-eligible.
 
