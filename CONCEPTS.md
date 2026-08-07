@@ -88,6 +88,11 @@ A variant the solver is allowed to equip. The usual path to this status is contr
 ### Quarantined
 A record excluded from the solver because it yields no explicitly-parseable value — its wiki text was ambiguous or value-less. Quarantined records stay in the dataset for browsing and coverage disclosure but never contribute to a solve; nothing is ever inferred to rescue one.
 
+### Harvest provenance
+The trust label carried by every value sourced directly from the wiki, recording *why* it is or is not usable: **stated** (the wiki asserts it outright), **defaulted** (the wiki displays a number, but its own template filled that number in because nobody recorded a real one), or **unsourced** (the page is silent). Only **stated** is solver-eligible.
+
+The **defaulted** state is the one that earns this concept its slot, and it is not the same as [[Quarantined]]. Quarantining answers "we could not parse a value"; defaulted answers "we parsed a value perfectly well, and it is still not evidence" — a source that renders a fallback is indistinguishable, at the character level, from one that renders a real measurement. Treating a displayed number as a sourced number is how a confident wrong value enters the dataset, which is worse than a visible gap. A defaulted value keeps whatever components *are* sourced and contributes nothing for the rest.
+
 ## Candidate pool & constraints
 
 ### Inventory mode ("What I own")
