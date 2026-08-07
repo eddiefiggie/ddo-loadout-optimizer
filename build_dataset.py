@@ -151,6 +151,17 @@ def assert_crafting_vocab() -> int:
     return vocabulary_mod.check_crafting_integrity(items, crafting, slot_reg, aug_reg)
 
 
+def assert_affix_synonyms() -> int:
+    """Referential-integrity gate for upstream's affix-synonym table (U6), against
+    the FROZEN checked-in registry. Upstream folds distinct game mechanics under one
+    affix name — `Speed` <- `Striding` is the fold that produced #154 — so a changed
+    fold is a data-semantics event that must not land silently. Any added, removed,
+    or re-pointed mapping fails the build. Non-mutating; returns the count validated."""
+    return vocabulary_mod.check_affix_synonyms(
+        vocabulary_mod.load_live_affix_synonyms(),
+        vocabulary_mod._load(vocabulary_mod.AFFIX_SYNONYMS_REGISTRY_PATH))
+
+
 GAP_CORRECTIONS_PATH = os.path.join(HERE, "data", "seed", "gap_corrections.json")
 
 
@@ -301,6 +312,11 @@ def build() -> dict:
     # registries BEFORE assembling the dataset; an unknown slot/augment fails the
     # build (new-slot/new-augment event forcing a reviewed regenerate). Non-mutating.
     _crafting_vocab_checked = assert_crafting_vocab()
+    # U6 — affix-synonym collision gate. Upstream folds distinct game mechanics under
+    # one affix name; a CHANGED fold silently merges or splits two stats, which is
+    # exactly how #154 (Speed <- Striding) went unnoticed. Diff the vendored upstream
+    # table against the frozen registry before anything reads an affix. Non-mutating.
+    _affix_synonyms_checked = assert_affix_synonyms()
     # The active crafting families source their option pools NATIVELY from
     # gearplanner_crafting.json (the gear-planner crafting catalog). Load once and
     # thread it into each family builder.

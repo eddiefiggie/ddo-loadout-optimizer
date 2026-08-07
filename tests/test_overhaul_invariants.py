@@ -15,9 +15,13 @@ Discovered + run by tests/run_tests.py.
 """
 import json
 import os
+import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATASET = os.path.join(ROOT, "web", "data", "items.json")
+
+sys.path.insert(0, ROOT)
+from src import vocabulary  # noqa: E402
 
 _LEGACY_AFFIX_KEYS = {"stat", "bonus_type", "unit", "minimum_level"}
 _ALLOWED_AFFIX_KEYS = {"name", "type", "value", "eligible"}
@@ -73,3 +77,73 @@ def test_stacking_equivalence_collapse_embedded():
         "Insight Natural must bucket as Insight (stacking-equivalence collapse)"
     assert equiv.get("Primal Natural") == "Primal", \
         "Primal Natural must bucket as Primal (stacking-equivalence collapse)"
+
+
+# --------------------------------------------------------------- U6: synonym-collision gate
+#
+# Upstream folds distinct game mechanics under one affix name via its
+# affix-synonyms table (`Speed` <- `Striding` is the one that produced #154:
+# Striding grants movement only, the Speed enchantment also grants melee/ranged
+# attack speed, and collapsing them lost the attack-speed half). The gate diffs
+# the vendored upstream table against a frozen registry so a future re-import
+# that changes a fold fails the build instead of silently re-merging mechanics.
+
+def test_affix_synonyms_frozen_matches_upstream():
+    """The frozen registry matches the vendored upstream table (no drift at rest)."""
+    checked = vocabulary.check_affix_synonyms(
+        vocabulary.load_live_affix_synonyms(),
+        vocabulary._load(vocabulary.AFFIX_SYNONYMS_REGISTRY_PATH))
+    assert checked > 0, "gate must validate at least one mapping"
+
+
+def test_affix_synonyms_registry_records_the_speed_fold():
+    """The Speed <- Striding fold is frozen — the case the gate exists to have caught."""
+    frozen = vocabulary._load(vocabulary.AFFIX_SYNONYMS_REGISTRY_PATH)
+    syns = {e["name"]: set(e["synonyms"]) for e in frozen["affix_synonyms"]}
+    assert "Striding" in syns.get("Speed", set()), \
+        "Speed <- Striding must be frozen; it is the fold that produced #154"
+
+
+def test_affix_synonyms_gate_flags_added_mapping():
+    """A synonym upstream did not fold before fails the build, naming both sides."""
+    frozen = vocabulary._load(vocabulary.AFFIX_SYNONYMS_REGISTRY_PATH)
+    live = [dict(e, synonyms=list(e["synonyms"])) for e in frozen["affix_synonyms"]]
+    live[0]["synonyms"].append("Zzz Invented Stat")
+    try:
+        vocabulary.check_affix_synonyms(live, frozen)
+    except vocabulary.IntegrityError as exc:
+        assert "Zzz Invented Stat" in str(exc) and live[0]["name"] in str(exc), \
+            f"message must name both sides of the fold, got: {exc}"
+    else:
+        raise AssertionError("an added synonym must raise IntegrityError")
+
+
+def test_affix_synonyms_gate_flags_removed_mapping():
+    """A synonym upstream stopped folding fails the build."""
+    frozen = vocabulary._load(vocabulary.AFFIX_SYNONYMS_REGISTRY_PATH)
+    live = [dict(e, synonyms=list(e["synonyms"])) for e in frozen["affix_synonyms"]]
+    dropped = live[0]["synonyms"].pop()
+    try:
+        vocabulary.check_affix_synonyms(live, frozen)
+    except vocabulary.IntegrityError as exc:
+        assert dropped in str(exc), f"message must name the removed synonym, got: {exc}"
+    else:
+        raise AssertionError("a removed synonym must raise IntegrityError")
+
+
+def test_affix_synonyms_gate_flags_repointed_synonym():
+    """A synonym re-pointed to a different canonical name fails the build.
+
+    The nastiest shape: the mapping count is unchanged, so a count-only check
+    would pass while the mechanic quietly moved under a different stat.
+    """
+    frozen = vocabulary._load(vocabulary.AFFIX_SYNONYMS_REGISTRY_PATH)
+    live = [dict(e, synonyms=list(e["synonyms"])) for e in frozen["affix_synonyms"]]
+    moved = live[0]["synonyms"].pop()
+    live[1]["synonyms"].append(moved)
+    try:
+        vocabulary.check_affix_synonyms(live, frozen)
+    except vocabulary.IntegrityError as exc:
+        assert moved in str(exc), f"message must name the re-pointed synonym, got: {exc}"
+    else:
+        raise AssertionError("a re-pointed synonym must raise IntegrityError")

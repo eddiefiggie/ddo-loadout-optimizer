@@ -5,13 +5,14 @@
   "upstream_commit": "ec3e595d0d879b29c13f3c34ffc155e71d0418c4",
   "upstream_commit_date": "2026-08-01",
   "imported": "2026-08-01",
-  "ddo_update_reflected": "Update 81 \u2014 Terror of Demogorgon",
+  "ddo_update_reflected": "Update 81 — Terror of Demogorgon",
   "ddo_update_released": "2026-07-22",
   "level_cap": 36,
   "files": [
     "gearplanner_items.json",
     "gearplanner_crafting.json",
-    "gearplanner_sets.json"
+    "gearplanner_sets.json",
+    "gearplanner_affix_synonyms.json"
   ],
   "item_count": 8188,
   "crafting_count": 83,
