@@ -97,15 +97,23 @@ test("U3: buildQuery copies the arrays (mutating the query never edits state)", 
   assert.deepStrictEqual(st.weaponTypes, ["Falchions"], "state array untouched");
 });
 
-// ---- U4 — druidic oath / anathema (armor-type approximation) ----
-test("U4: the Druid oath restricts armorTypes to cloth + light", () => {
+// ---- U4 — druidic oath / anathema ----
+// #162: the old cloth+light APPROXIMATION is superseded. Per
+// https://ddowiki.com/page/Druid a druid is proficient with Light AND Medium armor,
+// and separately cannot use metal armor, a metal shield, or a rune arm. Proficiency
+// rides armorTypes here; the metal restriction rides `oath` + the wiki-sourced
+// material map (see variantConflict in web/model.js).
+test("U4: the Druid oath allows cloth, light, and medium (proficiency, not metalness)", () => {
   const q = buildQuery({ ...baseState(), oath: "druid" });
-  assert.deepStrictEqual(q.armorTypes, ["cloth", "light"]);
+  assert.deepStrictEqual(q.armorTypes, ["cloth", "light", "medium"],
+    "medium is a druid proficiency; non-metal medium armor must stay available");
+  assert.strictEqual(q.oath, "druid", "the oath must reach the query for the metal gate");
 });
 
 test("U4: the oath overrides a conflicting armor-proficiency chip", () => {
   const q = buildQuery({ ...baseState(), armor: "heavy", oath: "druid" });
-  assert.deepStrictEqual(q.armorTypes, ["cloth", "light"], "oath wins over the heavy chip");
+  assert.deepStrictEqual(q.armorTypes, ["cloth", "light", "medium"],
+    "oath wins over the heavy chip — druids have no heavy proficiency");
 });
 
 test("U4: with no oath, armorTypes behaves exactly as before", () => {

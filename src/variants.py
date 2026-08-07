@@ -133,6 +133,10 @@ def _make_variant(item, ml, tier_label, parsed):
         "flagged": parsed["flagged"],
         "restrictions": "unknown",             # sourced later (R18); fail-open
         "armor_type": _armor_type_for(slot, item.get("type")),  # U2 SSOT: from native `type`
+        # #162 — wiki-sourced item material (shields + body armor), the field
+        # gear-planner has no equivalent for. Stamped at build so the artifact is
+        # honest at rest; absent/None means unsourced and every consumer fails open.
+        "material": item.get("material"),
         "tier_values_incomplete": False,
         "tier_ml_list": None,
         # U81 Nearly-Complete host marker (category) — propagated so the solver's

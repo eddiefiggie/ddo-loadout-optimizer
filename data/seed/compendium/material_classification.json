@@ -1,0 +1,29 @@
+{
+  "_README": "Metal vs non-metal classification for the druidic-oath gate (#162). Keyed by the wiki's own material vocabulary (Category:Item materials). Exclude-until-verified: a material absent from BOTH lists is UNCLASSIFIED and the gate fails open on it — the item stays eligible and the dataset discloses it. Never guess a material into a list to close a gap.",
+  "_source": "https://ddowiki.com/page/Druid — 'A druid who wears metal armor, a metal shield or a rune arm is unable to cast Druid spells, use any of his/her supernatural skills or class spell-like abilities.' Per-material metalness verified against each material's own wiki page; see _evidence.",
+  "_evidence": {
+    "Darkwood": "'This rare magic wood is harder then normal wood but very light' — wood.",
+    "Densewood": "'nearly as hard as weapons made of steel ... 2 less than Steel', but described throughout as a wood ('standard wood weapons') — wood, not an alloy.",
+    "Bone": "'An uncommon material in some maces, daggers, wands and shields.'",
+    "Stone": "'An unoften seen material used in the creation of simple weapons.'",
+    "Crystal": "DELIBERATELY UNCLASSIFIED. 'the crystal this item is made from comes from Riedra and has certain qualities in common with crysteel' — the wiki neither states nor denies that it counts as metal for the druid restriction. 13 roster items; the gate fails open on them."
+  },
+  "_unclassified_note": "Materials in the wiki's vocabulary but not listed below are unclassified by design, either because no roster item uses them or because their metalness is not stated: Blessed Cold Iron, Blessed Silver, Blueshine, Byeshk, Copper, Crystal, Darkleaf, Feyleather, Fire, Flesh, Force, Gem, Glass, Ice, Light, Magesteel, Paper, Planeforged Steel, Rust, Silver, Spiritcraft Leather, Spiritforged Iron. Add one only with a per-material citation in _evidence.",
+  "metal": [
+    "Adamantine",
+    "Cold Iron",
+    "Dwarven Iron",
+    "Flametouched Iron",
+    "Mithral",
+    "Steel"
+  ],
+  "non_metal": [
+    "Bone",
+    "Cloth",
+    "Darkwood",
+    "Densewood",
+    "Leather",
+    "Stone",
+    "Wood"
+  ]
+}

@@ -253,6 +253,31 @@ function variantConflict(v, query, gates) {
       v.armor_type && v.armor_type !== "unknown" &&
       !query.armorTypes.includes(v.armor_type)) return "armor type not in your proficiency";
 
+  // #162 — Druidic oath. Sourced from https://ddowiki.com/page/Druid: "A druid who
+  // wears metal armor, a metal shield or a rune arm is unable to cast Druid spells,
+  // use any of his/her supernatural skills or class spell-like abilities." Their
+  // proficiencies are Light armor, Medium armor, and non-Tower shields.
+  //
+  // This REPLACES the old cloth+light approximation, which was wrong in both
+  // directions: it excluded all medium armor (a druid may wear non-metal medium such
+  // as Darkwood or Densewood) and enforced nothing about metal, Tower shields, or
+  // rune arms. Material is wiki-sourced per item; a variant whose material is absent
+  // or unclassified FAILS OPEN — the dataset discloses that count rather than the
+  // gate silently narrowing the pool on an unsourced guess.
+  if (query.oath === "druid") {
+    // `material_class` is derived at the load seam by dataset.js from
+    // metadata.material_classification — absent means unsourced or unclassified.
+    const cls = v.material_class;
+    if (cls === "metal" && (v.slot === "Armor" || v.slot === "Off Hand"))
+      return v.slot === "Armor"
+        ? "a druidic oath forbids metal armor"
+        : "a druidic oath forbids a metal shield";
+    if (v.slot === "Off Hand" && v.type === "Tower shields")
+      return "druids are not proficient with tower shields";
+    if (v.slot === "Off Hand" && v.type === "Rune Arms")
+      return "a druidic oath forbids a rune arm";
+  }
+
   // R7/AE2 — Alignment: exclude items whose alignment requirement the
   // character does not meet. Fail-open until alignment_req is sourced (U3).
   if (query.alignment && Array.isArray(v.alignment_req) && v.alignment_req.length &&
