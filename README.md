@@ -124,6 +124,7 @@ Run the JS tests **file by file**. `node a.js b.js` executes only the first, whi
 - `docs/solutions/` — documented solutions to past problems (bugs, conventions, design patterns), organized by category with YAML frontmatter (`module`, `tags`, `problem_type`). Relevant when implementing or debugging in a documented area.
 - `docs/wiki-evidence/` — the harvest method and the standing rulings behind contested values.
 - `CONCEPTS.md` — shared domain vocabulary. Relevant when orienting to the codebase or discussing domain concepts.
+- `AGENTS.md` — operating context for coding agents: where the knowledge stores are and the standing rules that have each cost a real defect. `CLAUDE.md` is a symlink to it.
 
 ## Resume prompt
 
