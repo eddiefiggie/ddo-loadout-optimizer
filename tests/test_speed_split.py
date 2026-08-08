@@ -296,17 +296,22 @@ def test_guard_refuses_to_inspect_nothing():
         raise AssertionError("the guard must raise rather than pass over zero records")
 
 
-def test_guard_refuses_a_shard_with_no_gradeable_entries():
-    """A shard of only-unsourced rows would otherwise pass with zero checks."""
-    shard = {"snapshots": {"{{speed|30}}": {"tooltip": "x"}},
-             "harvested": {"Item:X": {"raw": "{{Speed|30}}", "provenance": "unsourced",
-                                      "value": None}}}
-    try:
-        speed_split.check_against_snapshots(shard)
-    except ValueError as exc:
-        assert "inspected no" in str(exc)
-    else:
-        raise AssertionError("the guard must raise when nothing was gradeable")
+def test_every_entry_is_either_graded_or_reported():
+    """No entry may pass through silently. `unsourced` rows are graded (they must
+    grant nothing) rather than skipped, and anything the guard cannot grade —
+    unknown provenance, a missing snapshot, an unreadable tooltip — becomes a
+    problem. So a non-empty shard always yields checks or problems, never a
+    clean pass over nothing."""
+    cases = [
+        {"raw": "{{Speed|30}}", "provenance": "unsourced", "value": None},
+        {"raw": "{{Speed|30}}", "provenance": "bogus", "value": None},
+        {"raw": "{{Speed|99}}", "provenance": "stated", "value": {"movement": 99}},
+    ]
+    for entry in cases:
+        shard = {"snapshots": {"{{speed|30}}": {"tooltip": "x"}},
+                 "harvested": {"Item:X": entry}}
+        result = speed_split.check_against_snapshots(shard)
+        assert result["checked"] or result["problems"], entry
 
 
 def test_every_invocation_in_the_shipped_shard_has_a_snapshot():
@@ -423,3 +428,88 @@ def test_every_folded_augment_in_the_catalog_is_covered_by_the_shard():
 def test_speed_is_declared_expanded_away_to_the_three_concrete_stats():
     assert speed_split.EXPANDED_AWAY["speed"] == [
         "Movement Speed", "Melee Alacrity", "Ranged Alacrity"]
+
+
+# --- Review-round regressions (#134 code review) -------------------------------
+# Each of these encodes a silent-pass hole the guard had on the first pass.
+
+def _aug_shipped():
+    import json
+    with open(os.path.join(ROOT, "data", "seed", "compendium",
+                           "speed_augment.json")) as fh:
+        return json.load(fh)
+
+
+def test_augment_shard_is_covered_by_the_same_guard_as_items():
+    """The augment shard once stored tooltips inline while the guard read a
+    `snapshots` block — two representations of one field, so the guard checked
+    zero augment entries and reported them all as unsnapshotted."""
+    shard = _aug_shipped()
+    assert speed_split.audit_snapshots(shard)["missing"] == 0
+    result = speed_split.check_against_snapshots(shard)
+    assert result["checked"] == 7, result
+    assert result["problems"] == [], result["problems"]
+
+
+def test_unknown_provenance_is_reported_not_skipped():
+    """A one-character retype fell through both branches unreported while the
+    classifier quarantined the entry and dropped its alacrity."""
+    shard = _guard_shard(
+        "{{Speed|30}}", "Stated", {"movement": 30},
+        "Speed +30%: +30% enhancement bonus to movement speed, 15% bonus to attack speed.")
+    problems = speed_split.check_against_snapshots(shard)["problems"]
+    assert any("unknown provenance" in p for p in problems), problems
+
+
+def test_unreadable_tooltip_cannot_verify_anything():
+    """A blank snapshot used to parse as {} — indistinguishable from 'the wiki
+    says no alacrity' — so an under-granting entry agreed with it and passed."""
+    shard = _guard_shard("{{Speed|30}}", "stated", {"movement": 30}, "")
+    problems = speed_split.check_against_snapshots(shard)["problems"]
+    assert any("matches no known dialect" in p for p in problems), problems
+    assert speed_split.tooltip_alacrity("") is None
+    assert speed_split.tooltip_alacrity("Striding +30%: ...movement speed.") == {}
+
+
+def test_stated_arabic_outside_the_switch_must_be_defaulted():
+    """The stated branch only compared tooltip-to-value, so labelling a
+    placeholder-5% entry `stated` with melee 5 matched and passed."""
+    shard = _guard_shard(
+        "{{Speed|17}}", "stated", {"movement": 17, "melee": 5, "ranged": 5},
+        "Speed +17%: +17% enhancement bonus to movement speed, 5% bonus to attack speed.")
+    problems = speed_split.check_against_snapshots(shard)["problems"]
+    assert any("must be labelled `defaulted`" in p for p in problems), problems
+
+
+def test_guard_asserts_movement_against_the_tooltip():
+    shard = _guard_shard(
+        "{{Speed|30}}", "stated", {"movement": 25, "melee": 15, "ranged": 15},
+        "Speed +30%: +30% enhancement bonus to movement speed, 15% bonus to attack speed.")
+    problems = speed_split.check_against_snapshots(shard)["problems"]
+    assert any("derived movement=25" in p for p in problems), problems
+
+
+def test_defaulted_entry_whose_tooltip_is_not_the_placeholder_is_reported():
+    """The defaulted branch never read the snapshot, so its placeholder claim
+    rested only on our own copy of the switch table."""
+    shard = _guard_shard(
+        "{{Speed|17}}", "defaulted", {"movement": 17},
+        "Speed +17%: +17% enhancement bonus to movement speed, 9% bonus to attack speed.")
+    problems = speed_split.check_against_snapshots(shard)["problems"]
+    assert any("not the 5% default" in p for p in problems), problems
+
+
+def test_unsourced_entry_needs_no_snapshot_and_does_not_fail_the_build():
+    shard = {"snapshots": {}, "harvested": {
+        "Item:Silent": {"raw": "", "provenance": "unsourced", "value": None}}}
+    result = speed_split.check_against_snapshots(shard)
+    assert result["problems"] == [], result["problems"]
+    assert result["checked"] == 1
+
+
+def test_unsourced_entry_granting_alacrity_is_reported():
+    shard = {"snapshots": {}, "harvested": {
+        "Item:Silent": {"raw": "", "provenance": "unsourced",
+                        "value": {"melee": 5}}}}
+    problems = speed_split.check_against_snapshots(shard)["problems"]
+    assert any("must grant no alacrity" in p for p in problems), problems

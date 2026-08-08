@@ -95,7 +95,35 @@ def roster(field: str) -> set:
         return {_title(i["url"]) for i in items
                 if (i.get("slot") == "Offhand" and i.get("type") in SHIELD_TYPES)
                 or (i.get("slot") == "Armor" and i.get("type") in BODY_ARMOR_TYPES)}
+    if field == "speed_augment":
+        # Augments join by NAME, not by wiki title — they have no item page and
+        # share one `Augment Slot` url. The roster is every augment upstream
+        # folds into `Speed`, read from the crafting catalog.
+        return _folded_augment_names()
     raise SystemExit(f"unknown field {field!r}; expected one of {sorted(FIELDS)}")
+
+
+def _folded_augment_names() -> set:
+    """Augment names carrying the folded `Speed` affix in the crafting catalog."""
+    path = os.path.join(SHARD_DIR, "raw", "gearplanner_crafting.json")
+    with open(path, encoding="utf-8") as fh:
+        catalog = json.load(fh)
+
+    names = set()
+
+    def walk(node):
+        if isinstance(node, dict):
+            if isinstance(node.get("name"), str) and isinstance(node.get("affixes"), list):
+                if any(a.get("name") == "Speed" for a in node["affixes"]):
+                    names.add(node["name"])
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(catalog)
+    return names
 
 
 def main() -> int:
@@ -170,6 +198,18 @@ def main() -> int:
         report = {"compared": len(rendered), "matched": matched,
                   "drifted": len(drift), "unknown": unknown, "drift": drift}
         print(json.dumps(report, indent=2))
+
+        # Refuse to report "no drift" over nothing. An empty dump, or one whose
+        # invocations all fall outside the stored set, compares zero snapshots —
+        # exiting 0 there reads identically to a clean check and is the same
+        # inspect-nothing failure the offline guard already refuses.
+        if matched == 0:
+            print(f"\nCompared {len(rendered)} invocation(s) but matched none against "
+                  f"the {len(stored)} stored snapshots. This is not a clean result — "
+                  "the dump is empty, mis-keyed, or from the wrong field.",
+                  file=sys.stderr)
+            return 1
+
         if drift:
             print("\nDrift is a review event, not an automatic update. The wiki may "
                   "have recorded a magnitude that was previously defaulted — re-harvest "

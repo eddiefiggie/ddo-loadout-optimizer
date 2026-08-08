@@ -15,7 +15,7 @@ magnitude is fully recoverable; the earlier pass misread the evidence.
 | Speed grants melee/ranged attack speed | confirmed | confirmed | confirmed |
 | The magnitude is derivable | **no** | **yes** — see the classifier below | yes |
 | `Topaz of Swiftness 15%` grants Melee Alacrity | not confirmed | still not confirmed | **yes — 15%, and 15% ranged too** (§3) |
-| §2's nine recorded switch rows are transcribed correctly | — | assumed | **verified against every tooltip** (§3) |
+| §2's recorded switch rows are transcribed correctly | — | assumed | **8 of 9 verified against tooltips; row 24 unexercised** (§3) |
 
 ---
 
@@ -151,9 +151,14 @@ either time.
 ### Verified 2026-08-08 — the switch table needs no correction
 
 All 30 distinct invocations in the shard were rendered in one `action=parse` call
-and stored as snapshots. Every one of §2's nine recorded Arabic rows matched its
-tooltip, as did every Roman rank and the ranged-only Type parameter. The
-transcription in §2 is correct as written.
+and stored as snapshots. Every recorded Arabic row **that live data exercises**
+matched its tooltip, as did every Roman rank and the ranged-only Type parameter.
+The transcription is correct for everything the shard can check.
+
+One row is **not** verified: `{{Speed|24}}` (transcribed `24 -> 10`) appears on
+zero harvested items, so nothing renders it and the guard cannot assert it. It
+stays unverified until an item using it enters the roster. Eight of the nine
+recorded rows are confirmed; the ninth is untested, not confirmed.
 
 `speed_split.check_against_snapshots()` now asserts this on every build, so a
 future divergence between our derived values and the wiki's rendered text fails

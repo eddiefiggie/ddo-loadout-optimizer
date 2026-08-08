@@ -174,14 +174,26 @@ _TIP_BOTH = re.compile(r"\+?(\d+)%\s+enhancement bonus to melee and ranged attac
 _TIP_RANGED = re.compile(r"\+?(\d+)%\s+enhancement bonus to ranged attack speed", re.I)
 _TIP_MELEE = re.compile(r"\+?(\d+)%\s+enhancement bonus to melee attack speed", re.I)
 _TIP_ARABIC = re.compile(r"(\d+)%\s+bonus to attack speed", re.I)
+# A Striding tooltip states movement and nothing else. Recognizing it is what
+# lets `{}` mean "the wiki says no alacrity" rather than "we could not read it".
+_TIP_STRIDING = re.compile(r"striding\s*\+?\d+%", re.I)
+# The wiki writes "bonus to movement speed" for Speed and "bonus your movement
+# speed" for Striding (its own typo); both forms must read.
+_TIP_MOVEMENT = re.compile(r"(\d+)%\s+enhancement bonus (?:to |your )?movement speed", re.I)
 
 
-def tooltip_alacrity(tooltip: str) -> dict:
+def tooltip_alacrity(tooltip: str):
     """The melee/ranged magnitudes a rendered tooltip states, as the wiki wrote them.
 
-    Returns `{}` for a Striding tooltip, which states movement only. A key is
-    absent when that component is not granted — `{{Speed|XV|Ranged}}` yields a
-    ranged entry and no melee entry.
+    Returns `{}` for a Striding tooltip, which states movement only — a real
+    reading of "no alacrity". Returns **None** when the text matches no known
+    dialect, which is a different thing entirely: we could not read it, so it
+    proves nothing. The caller must not treat the two alike. Conflating them
+    lets a blank or reworded snapshot silently agree with an under-granting
+    entry, which is the precise silent-pass this guard exists to prevent.
+
+    A key is absent when that component is not granted — `{{Speed|XV|Ranged}}`
+    yields a ranged entry and no melee entry.
     """
     text = tooltip or ""
     both = _TIP_BOTH.search(text)
@@ -201,7 +213,16 @@ def tooltip_alacrity(tooltip: str) -> dict:
     arabic = _TIP_ARABIC.search(text)
     if arabic:
         return {"melee": int(arabic.group(1)), "ranged": int(arabic.group(1))}
-    return {}
+
+    if _TIP_STRIDING.search(text):
+        return {}
+    return None
+
+
+def tooltip_movement(tooltip: str):
+    """The movement percentage a rendered tooltip states, or None if unreadable."""
+    match = _TIP_MOVEMENT.search(tooltip or "")
+    return int(match.group(1)) if match else None
 
 
 def arabic_magnitude(raw: str):
@@ -287,16 +308,58 @@ def check_against_snapshots(shard: dict) -> dict:
         raw = entry.get("raw") or ""
         provenance = entry.get("provenance")
         value = entry.get("value") or {}
-        snapshot = snapshot_for(shard, raw)
 
+        # Unknown provenance is a defect, not a skip. A one-character retype
+        # ("Stated") would otherwise fall past every branch while the classifier
+        # quarantines the entry and silently drops its alacrity — the same
+        # spelling-mismatch shape that let the material coverage gate pass.
+        if provenance not in (STATED, DEFAULTED, UNSOURCED):
+            problems.append(f"{title}: unknown provenance {provenance!r}")
+            continue
+
+        # `unsourced` means the page states nothing, so there is no tooltip to
+        # snapshot. It must still grant nothing, and audit_shard reports it as a
+        # harvest suspect — but it does not fail the build.
+        if provenance == UNSOURCED:
+            checked += 1
+            if value.get("melee") is not None or value.get("ranged") is not None:
+                problems.append(
+                    f"{title}: `unsourced` entries must grant no alacrity")
+            continue
+
+        snapshot = snapshot_for(shard, raw)
         if snapshot is None:
             problems.append(f"{title}: no tooltip snapshot for {raw!r}")
             continue
 
-        stated_tip = tooltip_alacrity(snapshot.get("tooltip"))
+        tooltip = snapshot.get("tooltip")
+        stated_tip = tooltip_alacrity(tooltip)
+        if stated_tip is None:
+            # Unreadable is not "no alacrity". Treating it as {} would let a blank
+            # or reworded snapshot agree with an under-granting entry.
+            problems.append(
+                f"{title}: tooltip for {raw!r} matches no known dialect, so it "
+                f"cannot verify anything: {(tooltip or '')[:80]!r}")
+            continue
+
+        checked += 1
+
+        expected_movement = tooltip_movement(tooltip)
+        if expected_movement is not None and value.get("movement") != expected_movement:
+            problems.append(
+                f"{title}: derived movement={value.get('movement')!r} but the "
+                f"tooltip states {expected_movement!r} for {raw!r}")
 
         if provenance == STATED:
-            checked += 1
+            magnitude = arabic_magnitude(raw)
+            if magnitude is not None and magnitude not in RECORDED_SWITCH:
+                # The tooltip renders 5% here because nobody recorded a value.
+                # Accepting a matching 5% would launder the placeholder into a
+                # sourced number, which is the inference this project forbids.
+                problems.append(
+                    f"{title}: {raw!r} is an Arabic magnitude outside the recorded "
+                    "switch, so its rendered attack speed is the template default — "
+                    "it must be labelled `defaulted`, not `stated`")
             for component in ("melee", "ranged"):
                 derived = value.get(component)
                 expected = stated_tip.get(component)
@@ -304,8 +367,7 @@ def check_against_snapshots(shard: dict) -> dict:
                     problems.append(
                         f"{title}: derived {component}={derived!r} but the tooltip "
                         f"states {expected!r} for {raw!r}")
-        elif provenance == DEFAULTED:
-            checked += 1
+        else:  # DEFAULTED
             magnitude = arabic_magnitude(raw)
             if is_roman(raw):
                 problems.append(
@@ -320,6 +382,14 @@ def check_against_snapshots(shard: dict) -> dict:
                     f"{title}: {raw!r} is a recorded switch row "
                     f"({magnitude} -> {RECORDED_SWITCH[magnitude]}%) and must not be "
                     "labelled `defaulted`")
+            # Confirm against the snapshot that the rendered value really is the
+            # 5% placeholder. Without this the `defaulted` claim rests only on our
+            # own copy of the switch table, never on the wiki's own output.
+            rendered = stated_tip.get("melee")
+            if rendered not in (None, 5):
+                problems.append(
+                    f"{title}: {raw!r} is labelled `defaulted` but its tooltip "
+                    f"states {rendered}% attack speed, which is not the 5% default")
             if value.get("melee") is not None or value.get("ranged") is not None:
                 problems.append(
                     f"{title}: `defaulted` entries must grant no alacrity, got "

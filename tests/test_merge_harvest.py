@@ -257,3 +257,31 @@ def test_tooltip_worklist_is_the_arabic_rows_only():
     assert all("Speed|" in r for r in rows)
     assert not any("Striding" in r for r in rows)
     assert "Roman ranks derive from a stable formula" in proc.stderr
+
+
+def test_speed_augment_field_resolves_a_roster():
+    """The field was registered in FIELDS but roster() had no branch, so every
+    mode aborted with `unknown field 'speed_augment'`."""
+    proc = _run_cli("--field", "speed_augment", "--coverage")
+    assert proc.returncode == 0, proc.stderr
+    import json
+    assert json.loads(proc.stdout)
+
+
+def test_compare_tooltips_refuses_to_call_zero_matches_clean():
+    """An all-unknown or empty dump compared nothing and exited 0, which reads
+    identically to a clean check."""
+    path = _write_tmp({"{{speed|999}}": "nonsense"})
+    try:
+        proc = _run_cli("--field", "speed", "--compare-tooltips", path)
+        assert proc.returncode == 1, "zero matches must not exit clean"
+        assert "matched none" in proc.stderr
+    finally:
+        os.unlink(path)
+
+    empty = _write_tmp({})
+    try:
+        proc = _run_cli("--field", "speed", "--compare-tooltips", empty)
+        assert proc.returncode == 1, "an empty dump must not exit clean"
+    finally:
+        os.unlink(empty)

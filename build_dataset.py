@@ -453,6 +453,13 @@ def build() -> dict:
     # wiki states 15% attack speed for it — melee and ranged both.
     _speed_aug_shard = harvest_mod.load_shard(SPEED_AUGMENT_SHARD_PATH, "speed_augment")
     _speed_aug_audit = speed_split_mod.audit_shard(_speed_aug_shard)
+    _speed_aug_snapshots = speed_split_mod.audit_snapshots(_speed_aug_shard)
+    # The augment shard runs the same guard as the item shard. Leaving it out
+    # would exempt the one record this whole fix exists to correct.
+    _speed_aug_guard = speed_split_mod.check_against_snapshots(_speed_aug_shard)
+    if _speed_aug_guard["problems"]:
+        raise SystemExit("speed augment snapshot guard failed:\n  " +
+                         "\n  ".join(_speed_aug_guard["problems"]))
     _speed_aug_coverage = speed_split_mod.apply_to_augments(aug_pool, _speed_aug_shard)
     variants = expand_dataset(enriched_items + aug_pool)  # native path (verbatim affixes)
 
@@ -682,7 +689,9 @@ def build() -> dict:
             # The augment half of the same split, disclosed separately because it
             # reads a different shard on a different join key.
             "speed_augment_coverage": {**_speed_aug_coverage,
-                                       "shard_audit": _speed_aug_audit},
+                                       "shard_audit": _speed_aug_audit,
+                                       "tooltip_snapshots": _speed_aug_snapshots,
+                                       "tooltip_guard_checked": _speed_aug_guard["checked"]},
             "material_coverage": {**_material_stamp, **_material_coverage},
             # The curated metal/non-metal map the druidic-oath gate reads. A
             # material absent from this map is UNKNOWN, and the gate fails open.

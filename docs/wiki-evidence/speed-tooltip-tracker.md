@@ -69,8 +69,10 @@ would write a confident number onto every item using that invocation.
 ## Snapshot state
 
 30 distinct invocations cover all 194 harvested entries. All 30 were rendered and
-stored on 2026-08-08, and all nine of the switch's recorded rows were confirmed
-against their tooltips in that pass — the transcription needed no correction.
+stored on 2026-08-08, and every recorded switch row that live data exercises was
+confirmed against its tooltip — the transcription needed no correction. The one
+exception is `{{Speed|24}}`, which no harvested item uses, so it renders nowhere
+and stays unverified.
 
 | Group | Invocations | Refresh scope |
 |---|---|---|
