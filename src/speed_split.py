@@ -25,6 +25,22 @@ Three outcomes, driven entirely by what the wiki states (see
   * `defaulted` / `unsourced`   -> `Template:Speed` renders 5% for any magnitude
     nobody recorded, so a 5% reading is not evidence of a 5% bonus. Rename and
     keep the movement bonus; grant NO alacrity.
+
+Two callers share one classifier (`_rewrite_all`), differing only in how a
+record resolves to a shard entry: items join by wiki title derived from their
+page url, augments by name against a sibling shard. Augments have no item page
+and share one `Augment Slot` url, so the title join cannot reach them — and
+keeping the two join keys in separate files is deliberate, because a predicate
+matching one representation of a field while running over another is how the
+material coverage gate passed on deliberately corrupted input.
+
+#134 added the verification half. Every distinct template invocation carries a
+verbatim rendered-tooltip snapshot, and `check_against_snapshots()` asserts our
+derived magnitudes against them on every build. The load-bearing assertion is
+the `defaulted` one: those entries must use an Arabic magnitude outside the
+recorded switch and grant nothing, because the 5% their tooltips render is the
+template's "nobody recorded one" placeholder. The discriminator is the numeral
+system, not the number — `{{Speed|V}}` legitimately states 5%.
 """
 from __future__ import annotations
 
@@ -44,6 +60,13 @@ RANGED_NAME = "Ranged Alacrity"
 EXPANDED_AWAY = {FOLDED_NAME.lower(): [MOVEMENT_NAME, MELEE_NAME, RANGED_NAME]}
 
 _ALACRITY_KEYS = (("melee", MELEE_NAME), ("ranged", RANGED_NAME))
+
+# Provenance labels, named rather than spelled inline. Four functions branch on
+# these; a bare literal drifting by one character in one of them is the failure
+# shape that let the material coverage gate pass on corrupted input.
+STATED = "stated"
+DEFAULTED = "defaulted"
+UNSOURCED = "unsourced"
 
 
 def title_for(url: str) -> str:
@@ -98,7 +121,7 @@ def _rewrite_all(records, shard: dict, key_of) -> dict:
             continue
 
         value = entry.get("value") or {}
-        eligible = entry.get("provenance") == "stated"
+        eligible = entry.get("provenance") == STATED
         # Names the record already carries explicitly win — never shadow an
         # upstream affix. Seeded BEFORE the loop so a pre-existing Melee
         # Alacrity blocks the melee add without blocking the ranged one.
@@ -272,7 +295,7 @@ def check_against_snapshots(shard: dict) -> dict:
 
         stated_tip = tooltip_alacrity(snapshot.get("tooltip"))
 
-        if provenance == "stated":
+        if provenance == STATED:
             checked += 1
             for component in ("melee", "ranged"):
                 derived = value.get(component)
@@ -281,7 +304,7 @@ def check_against_snapshots(shard: dict) -> dict:
                     problems.append(
                         f"{title}: derived {component}={derived!r} but the tooltip "
                         f"states {expected!r} for {raw!r}")
-        elif provenance == "defaulted":
+        elif provenance == DEFAULTED:
             checked += 1
             magnitude = arabic_magnitude(raw)
             if is_roman(raw):
@@ -333,7 +356,7 @@ def audit_shard(shard: dict) -> dict:
             "speed shard is empty — refusing to report a clean audit over zero records")
 
     suspects = sorted(title for title, entry in harvested.items()
-                      if (entry or {}).get("provenance") == "unsourced")
+                      if (entry or {}).get("provenance") == UNSOURCED)
     return {"inspected": len(harvested), "unsourced": len(suspects), "titles": suspects}
 
 
