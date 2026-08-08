@@ -105,7 +105,7 @@ the druid-oath tightening that material makes possible, and the three build guar
 
 **Outside this plan**
 
-- Any correction to `Topaz of Swiftness 15%`. The wiki's augment table genuinely omits Melee Alacrity for it; writing the value would be inference. It is also strictly dominated by the 10% variant (same movement, no alacrity, higher ML), so the solver never picks it.
+- ~~Any correction to `Topaz of Swiftness 15%`. The wiki's augment table genuinely omits Melee Alacrity for it; writing the value would be inference. It is also strictly dominated by the 10% variant (same movement, no alacrity, higher ML), so the solver never picks it.~~ **Overturned 2026-08-08 — both claims were wrong.** The cell was read but its tooltip never opened: `Speed +30%` states "15% bonus to attack speed", so the augment grants 15% melee and 15% ranged and beats the 10% rather than being dominated by it. Corrected by `docs/plans/2026-08-08-001-fix-augment-speed-alacrity-plan.md`; the ruling now lives in `docs/wiki-evidence/speed-and-alacrity.md` §3.
 - Re-deriving set definitions. Gear-planner's catalog stays authoritative.
 
 ### Sources

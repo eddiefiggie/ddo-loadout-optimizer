@@ -48,6 +48,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
 from src import harvest  # noqa: E402
+from src import speed_split  # noqa: E402
 
 RAW_ITEMS = os.path.join(ROOT, "data", "seed", "compendium", "raw", "gearplanner_items.json")
 SHARD_DIR = os.path.join(ROOT, "data", "seed", "compendium")
@@ -65,6 +66,14 @@ FIELDS = {
     "material": {
         "shard": os.path.join(SHARD_DIR, "item_material.json"),
         "help": "shields and body armor (#162)",
+    },
+    # Keyed by augment NAME, not wiki title — augments have no item page and
+    # share one `Augment Slot` url, so `roster()`'s title join cannot reach
+    # them. Separate shard keeps the two join keys from mixing in one file.
+    "speed_augment": {
+        "shard": os.path.join(SHARD_DIR, "speed_augment.json"),
+        "help": "augments carrying a gear-planner `Speed` affix (#134)",
+        "key": "name",
     },
 }
 
@@ -86,7 +95,35 @@ def roster(field: str) -> set:
         return {_title(i["url"]) for i in items
                 if (i.get("slot") == "Offhand" and i.get("type") in SHIELD_TYPES)
                 or (i.get("slot") == "Armor" and i.get("type") in BODY_ARMOR_TYPES)}
+    if field == "speed_augment":
+        # Augments join by NAME, not by wiki title — they have no item page and
+        # share one `Augment Slot` url. The roster is every augment upstream
+        # folds into `Speed`, read from the crafting catalog.
+        return _folded_augment_names()
     raise SystemExit(f"unknown field {field!r}; expected one of {sorted(FIELDS)}")
+
+
+def _folded_augment_names() -> set:
+    """Augment names carrying the folded `Speed` affix in the crafting catalog."""
+    path = os.path.join(SHARD_DIR, "raw", "gearplanner_crafting.json")
+    with open(path, encoding="utf-8") as fh:
+        catalog = json.load(fh)
+
+    names = set()
+
+    def walk(node):
+        if isinstance(node, dict):
+            if isinstance(node.get("name"), str) and isinstance(node.get("affixes"), list):
+                if any(a.get("name") == "Speed" for a in node["affixes"]):
+                    names.add(node["name"])
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(catalog)
+    return names
 
 
 def main() -> int:
@@ -101,6 +138,12 @@ def main() -> int:
                     help="print per-provenance coverage counts")
     ap.add_argument("--limit", type=int, default=0,
                     help="with --missing-only, print at most N titles (0 = all)")
+    ap.add_argument("--compare-tooltips", metavar="DUMP",
+                    help="report drift between stored tooltip snapshots and a "
+                         "browser-rendered dump; never writes")
+    ap.add_argument("--tooltip-worklist", action="store_true",
+                    help="print the invocations the refresher should re-render "
+                         "(the hand-maintained Arabic switch rows only)")
     args = ap.parse_args()
 
     shard_path = FIELDS[args.field]["shard"]
@@ -116,6 +159,63 @@ def main() -> int:
 
     if args.coverage:
         print(json.dumps(harvest.coverage(shard, targets), indent=2))
+        return 0
+
+    if args.tooltip_worklist:
+        # Roman ranks derive from a documented stable formula
+        # (movement = min(5 x rank, 30), attack speed = rank%); only the Arabic
+        # switch is hand-maintained on the wiki and can change under us. Refresh
+        # scope is therefore the Arabic rows, which roughly halves the recurring
+        # cost against a source that throttles after about eight rapid calls.
+        arabic = sorted({e["raw"] for e in (shard.get("harvested") or {}).values()
+                         if e.get("raw") and speed_split.arabic_magnitude(e["raw"]) is not None},
+                        key=lambda r: speed_split.arabic_magnitude(r))
+        for raw in arabic:
+            print(raw)
+        print(f"# {len(arabic)} Arabic invocations to re-render "
+              f"(Roman ranks derive from a stable formula and are skipped)",
+              file=sys.stderr)
+        return 0
+
+    if args.compare_tooltips:
+        with open(args.compare_tooltips, encoding="utf-8") as fh:
+            rendered = json.load(fh)
+
+        stored = shard.get("snapshots") or {}
+        drift, unknown, matched = [], [], 0
+        for raw, tooltip in sorted(rendered.items()):
+            key = speed_split.snapshot_key(raw)
+            if key not in stored:
+                unknown.append(raw)
+                continue
+            was = " ".join((stored[key].get("tooltip") or "").split())
+            now = " ".join(str(tooltip).split())
+            if was == now:
+                matched += 1
+            else:
+                drift.append({"invocation": raw, "stored": was, "rendered": now})
+
+        report = {"compared": len(rendered), "matched": matched,
+                  "drifted": len(drift), "unknown": unknown, "drift": drift}
+        print(json.dumps(report, indent=2))
+
+        # Refuse to report "no drift" over nothing. An empty dump, or one whose
+        # invocations all fall outside the stored set, compares zero snapshots —
+        # exiting 0 there reads identically to a clean check and is the same
+        # inspect-nothing failure the offline guard already refuses.
+        if matched == 0:
+            print(f"\nCompared {len(rendered)} invocation(s) but matched none against "
+                  f"the {len(stored)} stored snapshots. This is not a clean result — "
+                  "the dump is empty, mis-keyed, or from the wrong field.",
+                  file=sys.stderr)
+            return 1
+
+        if drift:
+            print("\nDrift is a review event, not an automatic update. The wiki may "
+                  "have recorded a magnitude that was previously defaulted — re-harvest "
+                  "deliberately and re-ratify the derived values; this command never "
+                  "writes.", file=sys.stderr)
+            return 1
         return 0
 
     if not args.dump:

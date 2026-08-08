@@ -100,6 +100,13 @@ The trust label carried by every value sourced directly from the wiki, recording
 
 The **defaulted** state is the one that earns this concept its slot, and it is not the same as [[Quarantined]]. Quarantining answers "we could not parse a value"; defaulted answers "we parsed a value perfectly well, and it is still not evidence" — a source that renders a fallback is indistinguishable, at the character level, from one that renders a real measurement. Treating a displayed number as a sourced number is how a confident wrong value enters the dataset, which is worse than a visible gap. A defaulted value keeps whatever components *are* sourced and contributes nothing for the rest.
 
+### Rendered-value authority
+A wiki effect cell has two layers, and the magnitude often lives in the second one. The **visible cell text** is what a scrape returns — `Speed +30%`. The **rendered tooltip** behind it is what the template actually computed — "+30% enhancement bonus to movement speed, 15% bonus to attack speed". When a template bundles several stats under one enchantment name, the visible text names the enchantment and the tooltip carries the numbers, so reading only the visible layer silently drops every stat that was not spelled out in the cell. Upstream gear-planner scrapes the visible layer, which is one reason its catalog is authoritative for [[Worn affix]] structure but not for bundled magnitudes.
+
+The tooltip is a pure function of the template invocation, not of the item — every page using `{{Speed|30}}` renders the same tooltip — so it snapshots per distinct invocation rather than per record, which is what makes re-checking it affordable against a rate-limited wiki.
+
+It settles magnitude and nothing else: a tooltip renders the template's fallback number just as confidently as a recorded one, so it cannot distinguish **stated** from **defaulted** (see [[Harvest provenance]]). Use it to verify a value we derived, never to promote a value the wiki never recorded.
+
 ## Candidate pool & constraints
 
 ### Inventory mode ("What I own")

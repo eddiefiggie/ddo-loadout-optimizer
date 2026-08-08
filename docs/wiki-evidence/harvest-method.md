@@ -49,7 +49,17 @@ What to extract per page:
 | Field | Source | Notes |
 |---|---|---|
 | `material` | `\| material =` in the item infobox | Record the raw value verbatim — do not normalize case or collapse synonyms. Classification is a separate, revisable step; keeping the raw value means a reclassification never needs a re-harvest. |
-| Speed enchantment | `{{Striding\|N}}` or `{{Speed\|MAG}}` in `enhancements` | Record the template name and its argument verbatim. |
+| Speed enchantment | `{{Striding\|N}}` or `{{Speed\|MAG}}` in `enhancements` | Record the template name and its argument verbatim, **and the rendered tooltip**. |
+
+**Non-negotiable: open the tooltip on any bundled-enchantment template.** A wiki
+effect cell has two layers — the visible text names the enchantment, the tooltip
+behind it carries the numbers. When one template grants several stats under one
+name, the visible layer silently omits every stat not spelled out in the cell.
+`Topaz of Swiftness 15%` renders `Speed +30%` and was ruled twice to grant no
+alacrity; its tooltip says "15% bonus to attack speed". Read `#mw-content-text`
+via `javascript_tool` and capture the tooltip text, not just the link label.
+This applies to any field whose value comes from a bundled template, not only
+Speed.
 
 ## 3. Merge the dump
 
@@ -124,11 +134,19 @@ Material, 4/4 sampled: Aegis of Flame → Mithral, Adherence → Steel, Azure
 Buckler → Steel, Alchemical Light Shield → Dwarven Iron. (`Material` is present
 on non-shields too — Goatskin Boots reads `Material: Leather`.)
 
-**No Speed records have been merged yet.** The magnitude reading is blocked on
-an unresolved contradiction between two wiki sources — see
-`speed-and-alacrity.md`. Recording a derived value before that resolves would
-write a confident wrong number onto every rank item, which is worse than the
-current gap.
+**Speed is fully merged: 194 records, 181 stated / 13 defaulted / 0 unsourced.**
+The contradiction that once blocked the magnitude reading was resolved on
+2026-08-07 and the derived values were confirmed against every rendered tooltip
+on 2026-08-08 — see `speed-and-alacrity.md` §3 and
+`speed-tooltip-tracker.md`.
+
+One caution from that pass: the worked-example list below recorded
+`Belt of the Ram 15` correctly, while the shard carried it as
+`unsourced` with "no Striding/Speed template found". The two sat in
+contradiction through a whole harvest cycle because nothing compared them.
+`speed_split.audit_shard()` now reports `unsourced` entries as harvest suspects
+for exactly this reason — an `unsourced` reading is a claim about a page, and it
+can be wrong.
 
 ---
 

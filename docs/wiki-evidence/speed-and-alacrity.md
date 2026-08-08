@@ -10,11 +10,12 @@ The 2026-08-05 ruling concluded the attack-speed magnitude was **not recoverable
 and closed the matter. That conclusion is **wrong and is superseded here.** The
 magnitude is fully recoverable; the earlier pass misread the evidence.
 
-| Claim | 2026-08-05 | 2026-08-07 |
-|---|---|---|
-| Speed grants melee/ranged attack speed | confirmed | confirmed |
-| The magnitude is derivable | **no** | **yes** — see the classifier below |
-| `Topaz of Swiftness 15%` grants Melee Alacrity | not confirmed | still not confirmed (stronger citation) |
+| Claim | 2026-08-05 | 2026-08-07 | 2026-08-08 |
+|---|---|---|---|
+| Speed grants melee/ranged attack speed | confirmed | confirmed | confirmed |
+| The magnitude is derivable | **no** | **yes** — see the classifier below | yes |
+| `Topaz of Swiftness 15%` grants Melee Alacrity | not confirmed | still not confirmed | **yes — 15%, and 15% ranged too** (§3) |
+| §2's recorded switch rows are transcribed correctly | — | assumed | **8 of 9 verified against tooltips; row 24 unexercised** (§3) |
 
 ---
 
@@ -105,26 +106,63 @@ verified rule doing exactly its job: the wiki does not know, so neither do we.
 The two branches are **not contradictory** — they are two input conventions in one
 template, selected by the argument's numeral system.
 
-## 3. Topaz of Swiftness 15% — no correction (unchanged verdict, better citation)
+## 3. Topaz of Swiftness 15% — SUPERSEDED 2026-08-08: it grants 15%
+
+**This section previously ruled that the augment grants no Melee Alacrity and is
+"strictly dominated by the 10%". Both claims are wrong.** The augment grants 15%
+melee AND 15% ranged attack speed, and it beats the 10% rather than being
+dominated by it. Issue #134 was closed on that bad ruling and a player reported
+the same defect a third time.
 
 Authoritative source is `Raw data/Item augments`, the page gear-planner scrapes:
 
-| Augment | ML | Wiki effect cell |
-|---|---|---|
-| Topaz of Swiftness 5% | 12 | `Striding +30% Melee Alacrity 5%` |
-| Topaz of Swiftness 10% | 16 | `Striding +30% Melee Alacrity 10%` |
-| Topaz of Swiftness 15% | 20 | `Speed +30%` |
+| Augment | ML | Wiki effect cell | Links to | Attack speed |
+|---|---|---|---|---|
+| Topaz of Swiftness 5% | 12 | `Striding +30% Melee Alacrity 5%` | Striding | none |
+| Topaz of Swiftness 10% | 16 | `Striding +30% Melee Alacrity 10%` | Striding | none |
+| Topaz of Swiftness 15% | 20 | `Speed +30%` | **Speed** | **15%** |
 
-The 15% row genuinely does not state Melee Alacrity. Writing it would be inference.
+The cell text was read correctly. The mistake was stopping there. The 15% row is
+the only one using the `{{Speed}}` template, and its rendered tooltip states the
+magnitude outright:
 
-Benign in practice: the 15% variant is strictly dominated by the 10% (same movement,
-no alacrity, higher ML), so the solver never picks it.
+> `Speed +30%`: +30% enhancement bonus to movement speed, **15% bonus to attack
+> speed.**
 
-**Correction to the prior ruling's method.** It cited a site search returning nothing
-as supporting evidence. That check is unreliable — `insource:` search is **disabled**
-on this wiki and returns empty even for strings that are demonstrably present
-(`"Topaz of Striding"` is on a live page and returns nothing). The verdict stands on
-the augment-table citation alone.
+That is `{{Speed|30}}`, and 30 is a **recorded** row in §2's switch table
+(`30 -> 15`). §2 already contained everything needed to reach the right answer;
+this section simply failed to apply it to itself. "Attack speed" is unqualified —
+no Type parameter narrows it — so both melee and ranged.
+
+**The method error, which is the durable lesson.** A wiki effect cell has two
+layers. The visible text names the enchantment; the tooltip behind it carries the
+numbers. When a template bundles several stats under one name, reading only the
+visible layer silently drops every stat not spelled out in the cell. Upstream
+gear-planner scrapes the visible layer, which is why its catalog cannot settle
+this and why `{{Speed}}` items lost their attack-speed half in the first place.
+See `CONCEPTS.md` -> Rendered-value authority.
+
+**Also corrected here:** the 2026-08-05 pass cited an empty `insource:` search as
+evidence of absence. That check is unreliable — `insource:` is **disabled** on
+this wiki and returns empty even for strings demonstrably present (`"Topaz of
+Striding"` is on a live page and returns nothing). It should not have been cited
+either time.
+
+### Verified 2026-08-08 — the switch table needs no correction
+
+All 30 distinct invocations in the shard were rendered in one `action=parse` call
+and stored as snapshots. Every recorded Arabic row **that live data exercises**
+matched its tooltip, as did every Roman rank and the ranged-only Type parameter.
+The transcription is correct for everything the shard can check.
+
+One row is **not** verified: `{{Speed|24}}` (transcribed `24 -> 10`) appears on
+zero harvested items, so nothing renders it and the guard cannot assert it. It
+stays unverified until an item using it enters the roster. Eight of the nine
+recorded rows are confirmed; the ninth is untested, not confirmed.
+
+`speed_split.check_against_snapshots()` now asserts this on every build, so a
+future divergence between our derived values and the wiki's rendered text fails
+loudly instead of waiting for a third player report.
 
 ## 4. Consequences
 
