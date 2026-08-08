@@ -195,6 +195,126 @@ def test_records_without_a_speed_affix_are_untouched():
     assert rec["affixes"] == [{"name": "Constitution", "type": "Enhancement", "value": "8"}]
 
 
+def _shipped_shard():
+    import json
+    with open(os.path.join(ROOT, "data", "seed", "compendium",
+                           "speed_enchantment.json")) as fh:
+        return json.load(fh)
+
+
+def _guard_shard(raw, provenance, value, tooltip):
+    return {"snapshots": {speed_split.snapshot_key(raw): {"tooltip": tooltip}},
+            "harvested": {"Item:Under Test": {"raw": raw, "provenance": provenance,
+                                              "value": value}}}
+
+
+def test_tooltip_alacrity_reads_both_wiki_dialects():
+    assert speed_split.tooltip_alacrity(
+        "Speed +30%: +30% enhancement bonus to movement speed, 15% bonus to attack speed."
+    ) == {"melee": 15, "ranged": 15}
+    assert speed_split.tooltip_alacrity(
+        "Speed XI: Passive: +30% enhancement bonus to movement speed, "
+        "+11% enhancement bonus to melee and ranged attack speed."
+    ) == {"melee": 11, "ranged": 11}
+    assert speed_split.tooltip_alacrity(
+        "Striding +30%: This item makes you more fleet of foot, giving you a "
+        "30% Enhancement bonus your movement speed.") == {}
+
+
+def test_tooltip_alacrity_honors_the_ranged_only_type_parameter():
+    """Covers AE5. `melee and ranged` must be matched before the ranged-only
+    pattern — the latter is a suffix of the former."""
+    assert speed_split.tooltip_alacrity(
+        "Speed XV: Passive: +30% enhancement bonus to movement speed, "
+        "+15% enhancement bonus to ranged attack speed.") == {"ranged": 15}
+
+
+def test_guard_passes_on_the_shipped_shard():
+    result = speed_split.check_against_snapshots(_shipped_shard())
+    assert result["checked"] == 194
+    assert result["problems"] == [], result["problems"]
+
+
+def test_guard_catches_a_derived_value_drifting_from_its_tooltip():
+    shard = _guard_shard(
+        "{{Speed|30}}", "stated", {"movement": 30, "melee": 14, "ranged": 15},
+        "Speed +30%: +30% enhancement bonus to movement speed, 15% bonus to attack speed.")
+    problems = speed_split.check_against_snapshots(shard)["problems"]
+    assert any("melee=14" in p for p in problems), problems
+
+
+def test_guard_accepts_a_defaulted_arabic_entry_granting_nothing():
+    """Covers AE4 — the placeholder inversion. The tooltip says 5%; that 5% is
+    the template's fallback, so granting nothing is correct and the guard passes."""
+    shard = _guard_shard(
+        "{{Speed|17}}", "defaulted", {"movement": 17},
+        "Speed +17%: +17% enhancement bonus to movement speed, 5% bonus to attack speed.")
+    assert speed_split.check_against_snapshots(shard)["problems"] == []
+
+
+def test_guard_rejects_a_defaulted_entry_that_granted_alacrity():
+    shard = _guard_shard(
+        "{{Speed|17}}", "defaulted", {"movement": 17, "melee": 5, "ranged": 5},
+        "Speed +17%: +17% enhancement bonus to movement speed, 5% bonus to attack speed.")
+    problems = speed_split.check_against_snapshots(shard)["problems"]
+    assert any("must grant no alacrity" in p for p in problems), problems
+
+
+def test_guard_rejects_a_roman_invocation_labelled_defaulted():
+    """The under-grant this guard exists to catch: `{{Speed|V}}` states 5%, it
+    does not default to it. Mislabelling it `defaulted` silently drops 5/5."""
+    shard = _guard_shard(
+        "{{Speed|V}}", "defaulted", {"movement": 25},
+        "Speed V: Passive: +25% enhancement bonus to movement speed, "
+        "+5% enhancement bonus to melee and ranged attack speed.")
+    problems = speed_split.check_against_snapshots(shard)["problems"]
+    assert any("Roman invocation labelled" in p for p in problems), problems
+
+
+def test_guard_rejects_a_recorded_switch_row_labelled_defaulted():
+    shard = _guard_shard(
+        "{{Speed|28}}", "defaulted", {"movement": 28},
+        "Speed +28%: +28% enhancement bonus to movement speed, 13% bonus to attack speed.")
+    problems = speed_split.check_against_snapshots(shard)["problems"]
+    assert any("recorded switch row" in p for p in problems), problems
+
+
+def test_guard_reports_an_entry_with_no_snapshot():
+    shard = {"snapshots": {}, "harvested": {
+        "Item:Under Test": {"raw": "{{Speed|30}}", "provenance": "stated",
+                            "value": {"movement": 30, "melee": 15, "ranged": 15}}}}
+    problems = speed_split.check_against_snapshots(shard)["problems"]
+    assert any("no tooltip snapshot" in p for p in problems), problems
+
+
+def test_guard_refuses_to_inspect_nothing():
+    try:
+        speed_split.check_against_snapshots(_shard())
+    except ValueError as exc:
+        assert "empty" in str(exc)
+    else:
+        raise AssertionError("the guard must raise rather than pass over zero records")
+
+
+def test_guard_refuses_a_shard_with_no_gradeable_entries():
+    """A shard of only-unsourced rows would otherwise pass with zero checks."""
+    shard = {"snapshots": {"{{speed|30}}": {"tooltip": "x"}},
+             "harvested": {"Item:X": {"raw": "{{Speed|30}}", "provenance": "unsourced",
+                                      "value": None}}}
+    try:
+        speed_split.check_against_snapshots(shard)
+    except ValueError as exc:
+        assert "inspected no" in str(exc)
+    else:
+        raise AssertionError("the guard must raise when nothing was gradeable")
+
+
+def test_every_invocation_in_the_shipped_shard_has_a_snapshot():
+    audit = speed_split.audit_snapshots(_shipped_shard())
+    assert audit["missing"] == 0, f"unsnapshotted invocations: {audit['missing_keys']}"
+    assert audit["snapshotted"] == 30
+
+
 def _aug(name, *affixes):
     return {"name": name, "affixes": [dict(a) for a in affixes]}
 

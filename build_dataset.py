@@ -368,6 +368,14 @@ def build() -> dict:
     # a harvest suspect, not a settled reading — Belt of the Ram carried one while
     # its page rendered `Speed +15%`. Surfaced in coverage so the next miss is seen.
     _speed_audit = speed_split_mod.audit_shard(_speed_shard)
+    _speed_snapshots = speed_split_mod.audit_snapshots(_speed_shard)
+    # Assert every derived value against the wiki's own rendered tooltip. Offline
+    # — the snapshots are on disk. A mismatch is a transcription defect in our
+    # switch table, not a guard defect, so it fails the build rather than warning.
+    _speed_guard = speed_split_mod.check_against_snapshots(_speed_shard)
+    if _speed_guard["problems"]:
+        raise SystemExit("speed snapshot guard failed:\n  " +
+                         "\n  ".join(_speed_guard["problems"]))
     _speed_coverage = speed_split_mod.apply(planner_records, _speed_shard)
 
     # U5 (#162) — stamp wiki-sourced material onto shields + body armor. The
@@ -668,7 +676,9 @@ def build() -> dict:
             # was and wasn't considered. `unclassified` on the material side is the
             # honest measure of how complete the druidic-oath restriction actually is:
             # those items pass the gate because their metalness is unsourced.
-            "speed_split_coverage": {**_speed_coverage, "shard_audit": _speed_audit},
+            "speed_split_coverage": {**_speed_coverage, "shard_audit": _speed_audit,
+                                     "tooltip_snapshots": _speed_snapshots,
+                                     "tooltip_guard_checked": _speed_guard["checked"]},
             # The augment half of the same split, disclosed separately because it
             # reads a different shard on a different join key.
             "speed_augment_coverage": {**_speed_aug_coverage,

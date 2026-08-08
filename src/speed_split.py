@@ -28,6 +28,7 @@ Three outcomes, driven entirely by what the wiki states (see
 """
 from __future__ import annotations
 
+import re
 import urllib.parse
 
 # The folded upstream name, and what it actually means.
@@ -130,6 +131,186 @@ def _rewrite_all(records, shard: dict, key_of) -> dict:
         rec["affixes"] = affixes
 
     return stats
+
+
+# The wiki's hand-maintained Arabic switch (Template:Speed). Any Arabic magnitude
+# absent from this map renders 5% — the template's "nobody recorded one" default,
+# which is not evidence. Verified row-by-row against rendered tooltips 2026-08-08.
+RECORDED_SWITCH = {18: 6, 19: 6, 20: 7, 21: 8, 22: 9, 23: 9, 24: 10,
+                   25: 11, 26: 12, 27: 12, 28: 13, 30: 15}
+
+_ROMAN = re.compile(r"^\{\{\s*speed\s*\|\s*([ivxlcdm]+)\s*(\|.*)?\}\}$", re.I)
+_ARABIC = re.compile(r"^\{\{\s*speed\s*\|\s*(\d+)\s*(\|.*)?\}\}$", re.I)
+_STRIDING = re.compile(r"^\{\{\s*striding\s*\|", re.I)
+
+# Two tooltip dialects: the Arabic branch renders "N% bonus to attack speed",
+# the Roman branch "+N% enhancement bonus to melee and ranged attack speed".
+# The melee-and-ranged pattern must be tried before the ranged-only one — the
+# latter is a suffix of the former and would match it.
+_TIP_BOTH = re.compile(r"\+?(\d+)%\s+enhancement bonus to melee and ranged attack speed", re.I)
+_TIP_RANGED = re.compile(r"\+?(\d+)%\s+enhancement bonus to ranged attack speed", re.I)
+_TIP_MELEE = re.compile(r"\+?(\d+)%\s+enhancement bonus to melee attack speed", re.I)
+_TIP_ARABIC = re.compile(r"(\d+)%\s+bonus to attack speed", re.I)
+
+
+def tooltip_alacrity(tooltip: str) -> dict:
+    """The melee/ranged magnitudes a rendered tooltip states, as the wiki wrote them.
+
+    Returns `{}` for a Striding tooltip, which states movement only. A key is
+    absent when that component is not granted — `{{Speed|XV|Ranged}}` yields a
+    ranged entry and no melee entry.
+    """
+    text = tooltip or ""
+    both = _TIP_BOTH.search(text)
+    if both:
+        return {"melee": int(both.group(1)), "ranged": int(both.group(1))}
+
+    out = {}
+    ranged = _TIP_RANGED.search(text)
+    if ranged:
+        out["ranged"] = int(ranged.group(1))
+    melee = _TIP_MELEE.search(text)
+    if melee:
+        out["melee"] = int(melee.group(1))
+    if out:
+        return out
+
+    arabic = _TIP_ARABIC.search(text)
+    if arabic:
+        return {"melee": int(arabic.group(1)), "ranged": int(arabic.group(1))}
+    return {}
+
+
+def arabic_magnitude(raw: str):
+    """The Arabic argument of a Speed invocation, or None for Roman/Striding."""
+    if _STRIDING.match(raw or ""):
+        return None
+    match = _ARABIC.match(raw or "")
+    return int(match.group(1)) if match else None
+
+
+def is_roman(raw: str) -> bool:
+    return bool(_ROMAN.match(raw or ""))
+
+
+def snapshot_key(raw: str) -> str:
+    """Normalize an invocation to its snapshot key.
+
+    Case only: `{{speed|V}}` appears lowercase in live wikitext alongside
+    `{{Speed|V}}`, and they are the same invocation rendering the same tooltip.
+    Nothing else is normalized — whitespace or argument differences are real
+    differences and must not be collapsed into one snapshot.
+    """
+    return (raw or "").strip().lower()
+
+
+def snapshot_for(shard: dict, raw: str):
+    """The stored tooltip snapshot for an invocation, or None when unharvested."""
+    snapshots = (shard or {}).get("snapshots") or {}
+    return snapshots.get(snapshot_key(raw))
+
+
+def audit_snapshots(shard: dict) -> dict:
+    """Report which invocations still lack a rendered-tooltip snapshot.
+
+    The snapshot store is exclude-until-verified: it ships empty and fills in as
+    invocations are rendered. While an invocation is unsnapshotted the guard has
+    nothing to compare against for it, so a green suite would otherwise imply a
+    coverage that does not exist
+    (`docs/solutions/conventions/exclude-until-verified-empty-seed-masks-consuming-bugs.md`).
+    This makes the shortfall a reported number rather than a silent pass.
+
+    Raises on an empty shard, for the same reason `audit_shard` does.
+    """
+    harvested = (shard or {}).get("harvested") or {}
+    if not harvested:
+        raise ValueError(
+            "speed shard is empty — refusing to report snapshot coverage over zero records")
+
+    invocations = {snapshot_key(entry.get("raw")) for entry in harvested.values()
+                   if (entry or {}).get("raw")}
+    stored = set((shard.get("snapshots") or {}))
+    missing = sorted(invocations - stored)
+    return {"invocations": len(invocations), "snapshotted": len(invocations) - len(missing),
+            "missing": len(missing), "missing_keys": missing}
+
+
+def check_against_snapshots(shard: dict) -> dict:
+    """Assert every derived value against the wiki's own rendered tooltip.
+
+    Two assertions, and the second is the one that matters. For a `stated`
+    entry the derived melee/ranged must equal what the tooltip says. For a
+    `defaulted` entry the invocation must be an Arabic magnitude *outside* the
+    recorded switch, and it must grant nothing — because the 5% such a tooltip
+    renders is `Template:Speed`'s "nobody recorded one" placeholder, not a
+    measurement. A guard that only compared tooltip-to-value would demand we
+    grant that 5% and would quietly reintroduce inference.
+
+    The discriminator is the numeral system, not the rendered number:
+    `{{Speed|V}}` legitimately *states* 5%. Labelling a Roman invocation
+    `defaulted` is therefore a defect, and this reports it.
+
+    Offline — reads only what is already on disk. Raises on an empty shard.
+    """
+    harvested = (shard or {}).get("harvested") or {}
+    if not harvested:
+        raise ValueError(
+            "speed shard is empty — refusing to report a clean guard over zero records")
+
+    problems = []
+    checked = 0
+    for title, entry in sorted(harvested.items()):
+        entry = entry or {}
+        raw = entry.get("raw") or ""
+        provenance = entry.get("provenance")
+        value = entry.get("value") or {}
+        snapshot = snapshot_for(shard, raw)
+
+        if snapshot is None:
+            problems.append(f"{title}: no tooltip snapshot for {raw!r}")
+            continue
+
+        stated_tip = tooltip_alacrity(snapshot.get("tooltip"))
+
+        if provenance == "stated":
+            checked += 1
+            for component in ("melee", "ranged"):
+                derived = value.get(component)
+                expected = stated_tip.get(component)
+                if derived != expected:
+                    problems.append(
+                        f"{title}: derived {component}={derived!r} but the tooltip "
+                        f"states {expected!r} for {raw!r}")
+        elif provenance == "defaulted":
+            checked += 1
+            magnitude = arabic_magnitude(raw)
+            if is_roman(raw):
+                problems.append(
+                    f"{title}: {raw!r} is a Roman invocation labelled `defaulted` — "
+                    "the 5% default belongs to the Arabic branch only")
+            elif magnitude is None:
+                problems.append(
+                    f"{title}: {raw!r} is labelled `defaulted` but is not an Arabic "
+                    "Speed invocation")
+            elif magnitude in RECORDED_SWITCH:
+                problems.append(
+                    f"{title}: {raw!r} is a recorded switch row "
+                    f"({magnitude} -> {RECORDED_SWITCH[magnitude]}%) and must not be "
+                    "labelled `defaulted`")
+            if value.get("melee") is not None or value.get("ranged") is not None:
+                problems.append(
+                    f"{title}: `defaulted` entries must grant no alacrity, got "
+                    f"melee={value.get('melee')!r} ranged={value.get('ranged')!r}")
+
+    # Refuse to report a clean run over nothing — but only when the run is
+    # otherwise clean. A shard whose entries all failed to resolve a snapshot
+    # has zero gradeable entries AND real problems to report; raising there
+    # would bury the actual diagnosis behind a confusing message.
+    if not checked and not problems:
+        raise ValueError(
+            "guard inspected no stated or defaulted entries — refusing to pass")
+
+    return {"checked": checked, "problems": problems}
 
 
 def audit_shard(shard: dict) -> dict:
