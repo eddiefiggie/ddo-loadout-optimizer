@@ -363,6 +363,10 @@ def build() -> dict:
     # solver, browse, and the exports from ONE place. A `Speed` item whose alacrity
     # magnitude the wiki only defaults keeps its movement bonus and gains nothing.
     _speed_shard = harvest_mod.load_shard(SPEED_SHARD_PATH, "speed")
+    # An `unsourced` entry claims the page has no Speed/Striding template. That is
+    # a harvest suspect, not a settled reading — Belt of the Ram carried one while
+    # its page rendered `Speed +15%`. Surfaced in coverage so the next miss is seen.
+    _speed_audit = speed_split_mod.audit_shard(_speed_shard)
     _speed_coverage = speed_split_mod.apply(planner_records, _speed_shard)
 
     # U5 (#162) — stamp wiki-sourced material onto shields + body armor. The
@@ -660,7 +664,7 @@ def build() -> dict:
             # was and wasn't considered. `unclassified` on the material side is the
             # honest measure of how complete the druidic-oath restriction actually is:
             # those items pass the gate because their metalness is unsourced.
-            "speed_split_coverage": _speed_coverage,
+            "speed_split_coverage": {**_speed_coverage, "shard_audit": _speed_audit},
             "material_coverage": {**_material_stamp, **_material_coverage},
             # The curated metal/non-metal map the druidic-oath gate reads. A
             # material absent from this map is UNKNOWN, and the gate fails open.

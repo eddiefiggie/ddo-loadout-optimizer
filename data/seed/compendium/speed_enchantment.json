@@ -37,10 +37,12 @@
       "harvested": "2026-08-07"
     },
     "Item:Belt of the Ram": {
-      "value": null,
-      "provenance": "unsourced",
-      "raw": "no Striding/Speed template found (NONE)",
-      "harvested": "2026-08-07"
+      "value": {
+        "movement": 15
+      },
+      "provenance": "defaulted",
+      "raw": "{{Speed|15}}",
+      "harvested": "2026-08-08"
     },
     "Item:Blackfeather Boots": {
       "value": {

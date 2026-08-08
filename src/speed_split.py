@@ -84,6 +84,30 @@ def apply_to_augments(records) -> dict:
     return stats
 
 
+def audit_shard(shard: dict) -> dict:
+    """Report `unsourced` entries as harvest suspects rather than accepting them.
+
+    An `unsourced` reading claims the page carries no Striding/Speed template.
+    That is sometimes true and sometimes a miss: `Item:Belt of the Ram` sat
+    `unsourced` through a whole harvest cycle while its page plainly renders
+    `Speed +15%`, and `harvest-method.md` had recorded the correct reading the
+    entire time. Nothing compared the two, so nothing noticed.
+
+    Raises on an empty shard. A check that inspects nothing passes
+    unconditionally and is indistinguishable from a clean run — the failure
+    mode `docs/solutions/conventions/prove-a-guard-fails-before-trusting-it.md`
+    exists to prevent.
+    """
+    harvested = (shard or {}).get("harvested") or {}
+    if not harvested:
+        raise ValueError(
+            "speed shard is empty — refusing to report a clean audit over zero records")
+
+    suspects = sorted(title for title, entry in harvested.items()
+                      if (entry or {}).get("provenance") == "unsourced")
+    return {"inspected": len(harvested), "unsourced": len(suspects), "titles": suspects}
+
+
 def apply(records, shard: dict) -> dict:
     """Rewrite the folded `Speed` affix on every record the shard covers, in place.
 

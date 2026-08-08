@@ -93,13 +93,64 @@ def test_defaulted_magnitude_keeps_movement_and_grants_no_alacrity():
 
 
 def test_unsourced_item_is_renamed_but_gains_nothing():
-    rec = _rec("Belt of the Ram", "/page/Item:Belt_of_the_Ram", _speed(15))
+    """Belt of the Ram used to be the fixture here. It was a bad reading — the
+    page renders `Speed +15%` — so this uses a synthetic title instead."""
+    rec = _rec("Silent Page", "/page/Item:Silent_Page", _speed(15))
     speed_split.apply([rec], _shard(**{
-        "Item:Belt of the Ram": {"value": None, "provenance": "unsourced"}}))
+        "Item:Silent Page": {"value": None, "provenance": "unsourced"}}))
 
     affixes = _by_name(rec)
     assert affixes["Movement Speed"]["value"] == "15", "keep gear-planner's value"
     assert "Melee Alacrity" not in affixes
+
+
+def test_audit_reports_unsourced_entries_as_harvest_suspects():
+    audit = speed_split.audit_shard(_shard(**{
+        "Item:Good": {"value": {"movement": 30}, "provenance": "stated",
+                      "raw": "{{Striding|30}}"},
+        "Item:Suspect": {"value": None, "provenance": "unsourced",
+                         "raw": "no Striding/Speed template found (NONE)"}}))
+
+    assert audit["inspected"] == 2
+    assert audit["unsourced"] == 1
+    assert audit["titles"] == ["Item:Suspect"]
+
+
+def test_audit_refuses_to_inspect_an_empty_shard():
+    """A check that scans nothing passes unconditionally and reads identical to a
+    clean run — the exact way the material coverage gate went green on corrupt
+    input (docs/solutions/conventions/prove-a-guard-fails-before-trusting-it.md)."""
+    try:
+        speed_split.audit_shard(_shard())
+    except ValueError as exc:
+        assert "empty" in str(exc)
+    else:
+        raise AssertionError("audit_shard must raise on an empty shard")
+
+
+def test_shipped_shard_has_no_unsourced_entries_left():
+    import json
+    with open(os.path.join(ROOT, "data", "seed", "compendium",
+                           "speed_enchantment.json")) as fh:
+        shard = json.load(fh)
+
+    audit = speed_split.audit_shard(shard)
+    assert audit["inspected"] == 194
+    assert audit["unsourced"] == 0, f"harvest suspects remain: {audit['titles']}"
+
+
+def test_belt_of_the_ram_derives_movement_from_a_real_invocation():
+    """Regression on the corrected entry: the wiki renders `Speed +15%`, and 15 is
+    outside the recorded switch table, so it is `defaulted` — movement only."""
+    rec = _rec("Belt of the Ram", "/page/Item:Belt_of_the_Ram", _speed(15))
+    speed_split.apply([rec], _shard(**{
+        "Item:Belt of the Ram": {"value": {"movement": 15},
+                                 "provenance": "defaulted", "raw": "{{Speed|15}}"}}))
+
+    affixes = _by_name(rec)
+    assert affixes["Movement Speed"]["value"] == "15"
+    assert "Melee Alacrity" not in affixes
+    assert "Ranged Alacrity" not in affixes
 
 
 def test_an_explicit_upstream_alacrity_is_never_shadowed():
