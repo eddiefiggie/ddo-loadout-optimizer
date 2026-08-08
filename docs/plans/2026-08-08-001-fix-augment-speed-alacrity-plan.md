@@ -122,7 +122,7 @@ flowchart TB
 ### Scope Boundaries
 
 - Replacing the switch-table derivation with a tooltip-derived formula. Individual rows are corrected under R8a; the mechanism stays the switch table.
-- Crafting-option records outside the augment pools. `The Changestone` and the six `Skullduggery Kit` levels in `gearplanner_crafting.json` also carry the folded `Speed` affix, but they sit outside `augment_pool_records()` and are reached by neither the item path nor the augment path. They keep the folded name after this work; splitting them is a separate pass.
+- Crafting-option records outside the augment pools. Checked during implementation and found empty: exactly seven records in `gearplanner_crafting.json` carry the folded `Speed` affix, and all seven are augments this work covers. A review finding claimed `The Changestone` and six `Skullduggery Kit` levels also carried it; they do not — the Kits carry `Intelligence Skills` / `Dexterity Skills` and live in `gearplanner_items.json`, which the item path already reaches. A test now asserts the shard covers every folded record in the catalog, so a genuine future case fails loudly instead of being scoped out on a guess.
 - Re-harvesting the 194-entry item shard. Existing derived values are unchanged by this work except where R8a corrects a transcription defect.
 - Auditing other affix families for the same read-the-cell-not-the-tooltip loss. A real question, deliberately not folded in.
 - The 12 `defaulted` entries stay non-contributing. Their tooltips state a placeholder, not a value.

@@ -66,6 +66,14 @@ FIELDS = {
         "shard": os.path.join(SHARD_DIR, "item_material.json"),
         "help": "shields and body armor (#162)",
     },
+    # Keyed by augment NAME, not wiki title — augments have no item page and
+    # share one `Augment Slot` url, so `roster()`'s title join cannot reach
+    # them. Separate shard keeps the two join keys from mixing in one file.
+    "speed_augment": {
+        "shard": os.path.join(SHARD_DIR, "speed_augment.json"),
+        "help": "augments carrying a gear-planner `Speed` affix (#134)",
+        "key": "name",
+    },
 }
 
 

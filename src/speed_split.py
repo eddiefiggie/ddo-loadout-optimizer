@@ -56,65 +56,31 @@ def _bonus_type(affix: dict) -> str:
     return affix.get("type") or "Enhancement"
 
 
-def apply_to_augments(records) -> dict:
-    """Rename the folded `Speed` affix on AUGMENT records (no shard lookup).
+def apply_to_augments(records, shard: dict) -> dict:
+    """Rewrite the folded `Speed` affix on AUGMENT records, from augment evidence.
 
-    Augments have no item page, so they are not in the harvest shard — but the
-    wiki's own augment table (`Raw data/Item augments`, the page gear-planner
-    scrapes) states the effect for every augment carrying this affix, and in
-    every case it is **Striding**, i.e. movement only:
+    Augments have no item page and every augment record shares one
+    `Augment Slot` url, so they cannot join the item shard by title the way
+    `apply()` does — they join by **name**, against their own sibling shard.
+    Keeping the two join keys in separate files is deliberate: a gate whose
+    predicate matched one representation of a field while running over the
+    other is exactly how the material coverage gate passed on corrupt input
+    (`docs/solutions/conventions/prove-a-guard-fails-before-trusting-it.md`).
 
-        Topaz of Striding 10/20/30%   -> "Striding +N%"
-        Sapphire of Snowpeaks Speed   -> "Striding +30%"
-        Topaz of Swiftness 5/10/15%   -> "Striding +30%" (+ Melee Alacrity, which
-                                          upstream already carries separately)
+    The classifier itself is shared with `apply()` — only the resolution step
+    differs — so provenance gating, the Roman-rank movement correction, and the
+    anti-shadow rule behave identically on both sides.
 
-    So this is a pure rename with no alacrity ever added — doing otherwise would
-    double-count the Swiftness family's existing Melee Alacrity. Without this pass
-    the augments would keep the old name and stop matching a `Movement Speed`
-    target that their host items now satisfy: a rename that reached items but not
-    augments would be worse than no rename at all.
+    This function used to assert that every Swiftness tier rendered
+    `Striding +30%` and could therefore never add alacrity. The wiki
+    contradicts that: `Topaz of Swiftness 15%` renders `{{Speed|30}}`, which is
+    30% movement AND 15% melee/ranged attack speed.
     """
-    stats = {"renamed": 0}
-    for rec in records or []:
-        for affix in rec.get("affixes") or []:
-            if affix.get("name") == FOLDED_NAME:
-                affix["name"] = MOVEMENT_NAME
-                stats["renamed"] += 1
-    return stats
+    return _rewrite_all(records, shard, lambda rec: rec.get("name"))
 
 
-def audit_shard(shard: dict) -> dict:
-    """Report `unsourced` entries as harvest suspects rather than accepting them.
-
-    An `unsourced` reading claims the page carries no Striding/Speed template.
-    That is sometimes true and sometimes a miss: `Item:Belt of the Ram` sat
-    `unsourced` through a whole harvest cycle while its page plainly renders
-    `Speed +15%`, and `harvest-method.md` had recorded the correct reading the
-    entire time. Nothing compared the two, so nothing noticed.
-
-    Raises on an empty shard. A check that inspects nothing passes
-    unconditionally and is indistinguishable from a clean run — the failure
-    mode `docs/solutions/conventions/prove-a-guard-fails-before-trusting-it.md`
-    exists to prevent.
-    """
-    harvested = (shard or {}).get("harvested") or {}
-    if not harvested:
-        raise ValueError(
-            "speed shard is empty — refusing to report a clean audit over zero records")
-
-    suspects = sorted(title for title, entry in harvested.items()
-                      if (entry or {}).get("provenance") == "unsourced")
-    return {"inspected": len(harvested), "unsourced": len(suspects), "titles": suspects}
-
-
-def apply(records, shard: dict) -> dict:
-    """Rewrite the folded `Speed` affix on every record the shard covers, in place.
-
-    Returns coverage stats. Records with no `Speed` affix are untouched, as are
-    records absent from the shard (they keep the folded affix — the coverage gate
-    is what makes that state visible rather than silent).
-    """
+def _rewrite_all(records, shard: dict, key_of) -> dict:
+    """Shared classifier. `key_of` maps a record to its shard key."""
     harvested = (shard or {}).get("harvested") or {}
     stats = {"renamed": 0, "movement_corrected": 0, "melee_added": 0,
              "ranged_added": 0, "quarantined": 0, "uncovered": 0}
@@ -125,17 +91,16 @@ def apply(records, shard: dict) -> dict:
         if not folded:
             continue
 
-        entry = harvested.get(title_for(rec.get("url")))
+        entry = harvested.get(key_of(rec))
         if entry is None:
             stats["uncovered"] += 1
             continue
 
         value = entry.get("value") or {}
         eligible = entry.get("provenance") == "stated"
-        # Names the item already carries explicitly win — never shadow an upstream
-        # affix (Jorgundal's Collar and the Mithral Full Plate Striding version both
-        # carry Melee Alacrity natively). Same anti-double-count rule the
-        # gap-correction overlay uses.
+        # Names the record already carries explicitly win — never shadow an
+        # upstream affix. Seeded BEFORE the loop so a pre-existing Melee
+        # Alacrity blocks the melee add without blocking the ranged one.
         present = {a.get("name") for a in affixes}
 
         for affix in folded:
@@ -165,3 +130,38 @@ def apply(records, shard: dict) -> dict:
         rec["affixes"] = affixes
 
     return stats
+
+
+def audit_shard(shard: dict) -> dict:
+    """Report `unsourced` entries as harvest suspects rather than accepting them.
+
+    An `unsourced` reading claims the page carries no Striding/Speed template.
+    That is sometimes true and sometimes a miss: `Item:Belt of the Ram` sat
+    `unsourced` through a whole harvest cycle while its page plainly renders
+    `Speed +15%`, and `harvest-method.md` had recorded the correct reading the
+    entire time. Nothing compared the two, so nothing noticed.
+
+    Raises on an empty shard. A check that inspects nothing passes
+    unconditionally and is indistinguishable from a clean run — the failure
+    mode `docs/solutions/conventions/prove-a-guard-fails-before-trusting-it.md`
+    exists to prevent.
+    """
+    harvested = (shard or {}).get("harvested") or {}
+    if not harvested:
+        raise ValueError(
+            "speed shard is empty — refusing to report a clean audit over zero records")
+
+    suspects = sorted(title for title, entry in harvested.items()
+                      if (entry or {}).get("provenance") == "unsourced")
+    return {"inspected": len(harvested), "unsourced": len(suspects), "titles": suspects}
+
+
+def apply(records, shard: dict) -> dict:
+    """Rewrite the folded `Speed` affix on every ITEM record the shard covers.
+
+    Items join the shard by wiki title derived from their page url. Records with
+    no `Speed` affix are untouched, as are records absent from the shard (they
+    keep the folded affix — the coverage gate is what makes that state visible
+    rather than the split silently inventing a reading).
+    """
+    return _rewrite_all(records, shard, lambda rec: title_for(rec.get("url")))

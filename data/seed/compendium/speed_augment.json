@@ -1,0 +1,63 @@
+{
+  "_meta": {
+    "field": "speed_augment",
+    "note": "Wiki-harvested seed shard for AUGMENTS carrying the folded `Speed` affix. Keyed by augment name, not wiki title: augments have no item page and every augment record shares one `Augment Slot` url, so the item shard's title join cannot reach them. Values are verbatim from `Raw data/Item augments`; `provenance` records whether the wiki stated the value or a template default filled it in. Only `stated` is solver-eligible.",
+    "source": "https://ddowiki.com/page/Raw_data/Item_augments",
+    "harvested": "2026-08-08"
+  },
+  "harvested": {
+    "Topaz of Striding 10%": {
+      "value": {"movement": 10},
+      "provenance": "stated",
+      "raw": "{{Striding|10}}",
+      "tooltip": "Striding +10%",
+      "harvested": "2026-08-08"
+    },
+    "Topaz of Striding 20%": {
+      "value": {"movement": 20},
+      "provenance": "stated",
+      "raw": "{{Striding|20}}",
+      "tooltip": "Striding +20%",
+      "harvested": "2026-08-08"
+    },
+    "Topaz of Striding 30%": {
+      "value": {"movement": 30},
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "tooltip": "Striding +30%",
+      "harvested": "2026-08-08"
+    },
+    "Sapphire of Snowpeaks Speed": {
+      "value": {"movement": 30},
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "tooltip": "Striding +30%",
+      "note": "Name says Speed; the cell renders Striding. Classification follows the template, never the augment name.",
+      "harvested": "2026-08-08"
+    },
+    "Topaz of Swiftness 5%": {
+      "value": {"movement": 30},
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "tooltip": "Striding +30% Melee Alacrity 5%",
+      "note": "Melee Alacrity 5 arrives separately from upstream and is never shadowed. Striding grants no ranged component.",
+      "harvested": "2026-08-08"
+    },
+    "Topaz of Swiftness 10%": {
+      "value": {"movement": 30},
+      "provenance": "stated",
+      "raw": "{{Striding|30}}",
+      "tooltip": "Striding +30% Melee Alacrity 10%",
+      "note": "Melee Alacrity 10 arrives separately from upstream and is never shadowed. Striding grants no ranged component.",
+      "harvested": "2026-08-08"
+    },
+    "Topaz of Swiftness 15%": {
+      "value": {"movement": 30, "melee": 15, "ranged": 15},
+      "provenance": "stated",
+      "raw": "{{Speed|30}}",
+      "tooltip": "Speed +30%: +30% enhancement bonus to movement speed, 15% bonus to attack speed.",
+      "note": "The only augment using the Speed template. 30 is a recorded switch row (30 -> 15), so the attack-speed magnitude is stated, not defaulted. Unqualified 'attack speed' means both melee and ranged.",
+      "harvested": "2026-08-08"
+    }
+  }
+}

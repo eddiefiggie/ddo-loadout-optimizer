@@ -195,6 +195,111 @@ def test_records_without_a_speed_affix_are_untouched():
     assert rec["affixes"] == [{"name": "Constitution", "type": "Enhancement", "value": "8"}]
 
 
+def _aug(name, *affixes):
+    return {"name": name, "affixes": [dict(a) for a in affixes]}
+
+
+def _aug_shard():
+    """The shipped augment shard, so these tests assert real seeded evidence."""
+    import json
+    with open(os.path.join(ROOT, "data", "seed", "compendium",
+                           "speed_augment.json")) as fh:
+        return json.load(fh)
+
+
+def test_swiftness_15_gains_both_alacrities():
+    """Covers AE1 — the reported defect. The wiki tooltip states 15% attack
+    speed, unqualified, so melee and ranged both."""
+    rec = _aug("Topaz of Swiftness 15%", _speed(30))
+    speed_split.apply_to_augments([rec], _aug_shard())
+
+    affixes = _by_name(rec)
+    assert affixes["Movement Speed"]["value"] == "30"
+    assert affixes["Melee Alacrity"]["value"] == "15"
+    assert affixes["Ranged Alacrity"]["value"] == "15"
+
+
+def test_swiftness_5_gains_no_phantom_ranged_alacrity():
+    """Covers AE2 — the double-count trap. Striding grants movement only, so the
+    upstream Melee Alacrity 5 stands alone and no ranged component appears."""
+    rec = _aug("Topaz of Swiftness 5%", _speed(30),
+               {"name": "Melee Alacrity", "type": "Enhancement", "value": "5"})
+    speed_split.apply_to_augments([rec], _aug_shard())
+
+    affixes = _by_name(rec)
+    assert affixes["Movement Speed"]["value"] == "30"
+    assert affixes["Melee Alacrity"]["value"] == "5", "upstream value wins"
+    assert "Ranged Alacrity" not in affixes, "Striding grants no ranged alacrity"
+    assert len([a for a in rec["affixes"] if a["name"] == "Melee Alacrity"]) == 1
+
+
+def test_snowpeaks_named_speed_is_classified_as_striding():
+    """Covers AE3 — the name trap. Classification follows the template in the
+    cell, never the augment's name."""
+    rec = _aug("Sapphire of Snowpeaks Speed", _speed(30))
+    speed_split.apply_to_augments([rec], _aug_shard())
+
+    affixes = _by_name(rec)
+    assert affixes["Movement Speed"]["value"] == "30"
+    assert "Melee Alacrity" not in affixes
+    assert "Ranged Alacrity" not in affixes
+
+
+def test_striding_augment_tiers_keep_their_own_magnitudes():
+    recs = [_aug("Topaz of Striding 10%", _speed(10)),
+            _aug("Topaz of Striding 20%", _speed(20))]
+    speed_split.apply_to_augments(recs, _aug_shard())
+
+    assert _by_name(recs[0])["Movement Speed"]["value"] == "10"
+    assert _by_name(recs[1])["Movement Speed"]["value"] == "20"
+    assert all("Melee Alacrity" not in _by_name(r) for r in recs)
+
+
+def test_augment_absent_from_the_shard_keeps_the_folded_affix():
+    rec = _aug("Topaz of Something Unharvested", _speed(30))
+    stats = speed_split.apply_to_augments([rec], _aug_shard())
+
+    assert stats["uncovered"] == 1
+    assert _by_name(rec)["Speed"]["value"] == "30"
+
+
+def test_apply_to_augments_is_idempotent():
+    rec = _aug("Topaz of Swiftness 15%", _speed(30))
+    shard = _aug_shard()
+    speed_split.apply_to_augments([rec], shard)
+    before = [dict(a) for a in rec["affixes"]]
+    speed_split.apply_to_augments([rec], shard)
+
+    assert rec["affixes"] == before, "a second pass must add nothing"
+
+
+def test_every_folded_augment_in_the_catalog_is_covered_by_the_shard():
+    """The shard must cover every augment upstream folds, or the classifier
+    silently leaves one behind — the state this whole fix exists to end."""
+    import json
+    with open(os.path.join(ROOT, "data", "seed", "compendium", "raw",
+                           "gearplanner_crafting.json")) as fh:
+        raw = json.load(fh)
+
+    folded = set()
+
+    def walk(node):
+        if isinstance(node, dict):
+            if "name" in node and isinstance(node.get("affixes"), list):
+                if any(a.get("name") == "Speed" for a in node["affixes"]):
+                    folded.add(node["name"])
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(raw.get("crafting_catalog", {}).get("augment_pool_records", raw))
+    covered = set(_aug_shard()["harvested"])
+    assert folded, "found no folded augments — the walk is matching nothing"
+    assert folded <= covered, f"augments upstream folds but the shard misses: {folded - covered}"
+
+
 def test_speed_is_declared_expanded_away_to_the_three_concrete_stats():
     assert speed_split.EXPANDED_AWAY["speed"] == [
         "Movement Speed", "Melee Alacrity", "Ranged Alacrity"]

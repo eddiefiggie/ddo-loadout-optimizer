@@ -167,6 +167,7 @@ def assert_affix_synonyms() -> int:
 
 GAP_CORRECTIONS_PATH = os.path.join(HERE, "data", "seed", "gap_corrections.json")
 SPEED_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_enchantment.json")
+SPEED_AUGMENT_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_augment.json")
 MATERIAL_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "item_material.json")
 MATERIAL_CLASS_PATH = os.path.join(HERE, "data", "seed", "compendium", "material_classification.json")
 # The slots the material gate covers (#162). Docents are the Forged body slot and
@@ -437,11 +438,14 @@ def build() -> dict:
     # menu pools in gearplanner_crafting.json (one stone per option, native affix
     # block, color from the slot key). Replaces the retired augments.json seed.
     aug_pool = crafting_catalog_mod.augment_pool_records(crafting)
-    # U3 (#154) — the same rename on the augment pool. Augments have no item page
-    # so they are not in the harvest shard, but the wiki augment table states
-    # "Striding" for every augment carrying this affix. Skipping them would leave
-    # augments unable to satisfy a `Movement Speed` target their hosts now match.
-    _speed_aug_coverage = speed_split_mod.apply_to_augments(aug_pool)
+    # U3 (#134) — the same classifier on the augment pool, against its own shard.
+    # Augments join by NAME: they have no item page and share one `Augment Slot`
+    # url, so the item shard's title join cannot reach them. `Topaz of Swiftness
+    # 15%` is the one augment using {{Speed}} rather than {{Striding}}, and the
+    # wiki states 15% attack speed for it — melee and ranged both.
+    _speed_aug_shard = harvest_mod.load_shard(SPEED_AUGMENT_SHARD_PATH, "speed_augment")
+    _speed_aug_audit = speed_split_mod.audit_shard(_speed_aug_shard)
+    _speed_aug_coverage = speed_split_mod.apply_to_augments(aug_pool, _speed_aug_shard)
     variants = expand_dataset(enriched_items + aug_pool)  # native path (verbatim affixes)
 
     # Wildcard set pieces (Gem of Many Facets, U6): the item rolls ONE set from each of
@@ -665,6 +669,10 @@ def build() -> dict:
             # honest measure of how complete the druidic-oath restriction actually is:
             # those items pass the gate because their metalness is unsourced.
             "speed_split_coverage": {**_speed_coverage, "shard_audit": _speed_audit},
+            # The augment half of the same split, disclosed separately because it
+            # reads a different shard on a different join key.
+            "speed_augment_coverage": {**_speed_aug_coverage,
+                                       "shard_audit": _speed_aug_audit},
             "material_coverage": {**_material_stamp, **_material_coverage},
             # The curated metal/non-metal map the druidic-oath gate reads. A
             # material absent from this map is UNKNOWN, and the gate fails open.
