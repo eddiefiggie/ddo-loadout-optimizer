@@ -1434,12 +1434,23 @@ if (typeof window !== "undefined" && window.App) {
         if (migrated.substitutions.length) {
           state.priorities = migrated.priorities;
           const droppedBounds = [];
+          const droppedCredits = [];
           for (const sub of migrated.substitutions) {
             for (const map of [state.targetCaps, state.targetFloors]) {
               if (map && map[sub.from] != null) { droppedBounds.push(sub.from); delete map[sub.from]; }
             }
+            // U5 — credits are keyed `stat||bonusType`, not by stat, so the
+            // stat-keyed loop above cannot reach them. A credit whose priority the
+            // migration substitutes away would otherwise survive as an orphan:
+            // still in the query, still competing in a bucket, for a stat the
+            // player can no longer see or remove. Match on the entry's own stat.
+            if (state.declaredCredits) {
+              for (const [k, c] of Object.entries(state.declaredCredits)) {
+                if (c && c.stat === sub.from) { droppedCredits.push(sub.from); delete state.declaredCredits[k]; }
+              }
+            }
           }
-          state.expandedAwayMigrated = _dnMig.migrationMessage(migrated.substitutions, droppedBounds);
+          state.expandedAwayMigrated = _dnMig.migrationMessage(migrated.substitutions, droppedBounds, droppedCredits);
         }
       }
       state.slotConstraints = i.slotConstraints || {};

@@ -125,4 +125,44 @@ test("mergeInto per-name updates collisions, adds new, keeps others; replace wip
   assert.deepStrictEqual(Object.keys(replaced).sort(), ["Sook", "Torin"]);
 });
 
+
+// ---- U5 — declared credits survive the backup round-trip (R11) --------------
+
+test("U5: declared credits survive export and import", () => {
+  // backup.js imports persist.js's INPUT_KEYS precisely so the save path and the
+  // import path cannot drift; this is the assertion that proves the new key rode
+  // along rather than being silently stripped on import.
+  const credits = {
+    "Combat Mastery||Insight": { stat: "Combat Mastery", bonus_type: "Insight", value: 7 },
+    "Devotion||Sacred": { stat: "Devotion", bonus_type: "Sacred", value: 12 },
+  };
+  const r = rec("Trance", 34);
+  r.inputs.declaredCredits = credits;
+  const parsed = parseBackup(JSON.stringify(serializeAll({ Trance: r }, {})));
+  assert.ok(parsed.ok, `backup must parse: ${parsed.error || ""}`);
+  assert.deepStrictEqual(parsed.characters.Trance.inputs.declaredCredits, credits,
+    "an imported character keeps the credits it was exported with");
+});
+
+test("U5: a hand-edited backup cannot smuggle an invalid credit into the solve", () => {
+  // A backup file is user-supplied. The allowlist and scrub() pass declaredCredits
+  // through by reference, so normalizeCredits at the query seam is the real gate —
+  // pin that, rather than asserting an absent field stays absent.
+  const { cleanCreditMap } = require("../web/wizard.js");
+  const r = rec("Hostile", 30);
+  r.inputs.declaredCredits = {
+    "__proto__||Insight": { stat: "__proto__", bonus_type: "Insight", value: 5 },
+    "CM||insight": { stat: "CM", bonus_type: "insight", value: 7 },
+    "CM||Insight": { stat: "CM", bonus_type: "Insight", value: "not a number" },
+    "X||Insight": { stat: "X", bonus_type: "Insight", value: 999999 },
+    "OK||Insight": { stat: "OK", bonus_type: "Insight", value: 6 },
+  };
+  const parsed = parseBackup(JSON.stringify(serializeAll({ Hostile: r }, {})));
+  assert.ok(parsed.ok);
+  const clean = cleanCreditMap(parsed.characters.Hostile.inputs.declaredCredits, { canonical: (v) => v });
+  assert.deepStrictEqual(Object.keys(clean), ["OK||Insight"],
+    `only the valid credit may reach the solver, got ${JSON.stringify(Object.keys(clean))}`);
+  assert.strictEqual({}.polluted, undefined, "no prototype pollution");
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

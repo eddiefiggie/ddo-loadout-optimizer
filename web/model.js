@@ -787,6 +787,12 @@ function normalizeCredits(declared) {
     // bucket, mirroring the `value > 0` filter gear affixes already pass through
     // — a zero contribution would occupy the one-contributor-per-bucket slot and
     // suppress real gear. A2 also makes a credit an integer.
+    // A backup file is user-supplied, so a stat name can be anything. A pollution
+    // key is inert here — `creditKey` makes it the ordinary own property
+    // `__proto__||Insight`, never a bare `__proto__` — but it would still mint an
+    // LP variable for a stat no gear can carry, so refuse it at the same gate
+    // backup.js's isPollutionKey refuses it structurally.
+    if (stat === "__proto__" || stat === "constructor" || stat === "prototype") continue;
     if (!stat || !Number.isFinite(value) || value <= 0) continue;
     if (!Number.isInteger(value) || value > MAX_CREDIT_VALUE) continue;
     if (!_CREDIT_TYPE_SET.has(bonusType)) continue;

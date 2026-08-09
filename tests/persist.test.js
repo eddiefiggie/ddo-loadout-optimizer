@@ -236,4 +236,40 @@ test("U1/003 (R9): the declaration is a saved input and survives the round trip"
   assert.strictEqual(pickInputs(legacy, "Rogue").twoWeaponFighting, false, "a pre-U1 save defaults to undeclared");
 });
 
+
+// ---- U5 — declared stat credits persist with the character (R11) ------------
+
+const CREDITS = {
+  "Combat Mastery||Insight": { stat: "Combat Mastery", bonus_type: "Insight", value: 7 },
+  "Combat Mastery||Sacred": { stat: "Combat Mastery", bonus_type: "Sacred", value: 4 },
+};
+
+test("U5: declared credits join the saved-input allowlist and round-trip", () => {
+  assert.ok(INPUT_KEYS.includes("declaredCredits"),
+    "the credit map must be in the single allowlist backup.js also imports, or save and import drift");
+  const rec = serializeCharacter("Trance", { ...state, declaredCredits: CREDITS }, lastRun, "idc");
+  assert.deepStrictEqual(rec.inputs.declaredCredits, CREDITS,
+    "both credits on one stat survive — the map is keyed (stat, bonus type), not by stat");
+});
+
+test("U5: a saved credit survives the full save -> JSON -> import chain", () => {
+  // The two halves are allowlisted separately in persist.js and backup.js, and the
+  // only thing keeping them aligned is that backup imports INPUT_KEYS. Assert the
+  // whole chain rather than each end: an absent-field test is unfalsifiable and
+  // passes on any branch.
+  const { serializeAll, parseBackup } = require("../web/backup.js");
+  const rec = serializeCharacter("Trance", { ...state, declaredCredits: CREDITS }, lastRun, "ide");
+  const parsed = parseBackup(JSON.stringify(serializeAll({ Trance: rec }, {})));
+  assert.ok(parsed.ok, `backup must parse: ${parsed.error || ""}`);
+  assert.deepStrictEqual(parsed.characters.Trance.inputs.declaredCredits, CREDITS,
+    "credits declared, saved, exported, and re-imported must be identical");
+});
+
+test("U5: the credit map is plain JSON — it survives a stringify round-trip", () => {
+  // Unlike ownedNames/ownedSetAugments it needs no Set handling, which is the
+  // reason it is a bare allowlist entry rather than a special case in pickInputs.
+  const rec = serializeCharacter("Trance", { ...state, declaredCredits: CREDITS }, lastRun, "idd");
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(rec.inputs.declaredCredits)), CREDITS);
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

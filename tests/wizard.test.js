@@ -962,4 +962,55 @@ test("U2: an unusable credit row neither reads as declared nor reserves its type
     "usedTypes counts only rows the solver would keep");
 });
 
+// ---- U5 — declared credits persist with the character (R11) -----------------
+
+test("credits are restored BEFORE the priority migration runs", () => {
+  // Same ordering constraint as the bounds (#169): the migration cleans stat-keyed
+  // state, so a restore that ran after it would overwrite the cleanup and bring
+  // the orphan back. Forward guard — the restore landed in U2, not U5, so this
+  // asserts the ordering stays correct rather than covering the U5 diff.
+  const cred = WIZARD_SRC.indexOf("state.declaredCredits = (i.declaredCredits");
+  const mig = WIZARD_SRC.indexOf("migratePriorities(state.priorities");
+  assert.ok(cred > 0, "the credit restore exists in loadCharacter");
+  assert.ok(mig > 0);
+  assert.ok(cred < mig,
+    "declaredCredits must be restored before the migration, or the restore undoes the sweep");
+});
+
+test("U5: a dropped credit is disclosed as a credit, not as a min/max", () => {
+  // The sweep is only half the job. Reusing the bounds channel told a player who
+  // had a credit but no cap/floor that "the min/max you had set was removed" — a
+  // limit they never set — and never mentioned the bonus that actually vanished.
+  const { migrationMessage } = require("../web/dataset.js");
+  const subs = [{ from: "Speed", to: ["Striding", "Movement Speed"] }];
+
+  const creditOnly = migrationMessage(subs, [], ["Speed"]);
+  assert.ok(/already have/.test(creditOnly), "the credit is named as a credit");
+  assert.ok(!/min\/max/.test(creditOnly),
+    `a dropped credit must not be reported as a dropped bound: ${creditOnly}`);
+
+  const boundOnly = migrationMessage(subs, ["Speed"], []);
+  assert.ok(/min\/max/.test(boundOnly) && !/already have/.test(boundOnly),
+    "and a dropped bound is still reported as a bound");
+
+  const both = migrationMessage(subs, ["Speed"], ["Speed"]);
+  assert.ok(/min\/max/.test(both) && /already have/.test(both), "both are disclosed when both drop");
+
+  // The stat-keyed bounds loop cannot reach a `stat||bonusType` key, so the sweep
+  // must match on the entry's own stat.
+  const at = WIZARD_SRC.indexOf("for (const sub of migrated.substitutions)");
+  const loop = WIZARD_SRC.slice(at, at + 1000);
+  assert.ok(/c\.stat === sub\.from/.test(loop) && /droppedCredits\.push/.test(loop),
+    "the sweep matches on the credit's stat and reports through its own channel");
+});
+
+test("U5: the credit map is in the persistence allowlist the wizard state feeds", () => {
+  const { INPUT_KEYS } = require("../web/persist.js");
+  assert.ok(INPUT_KEYS.includes("declaredCredits"));
+  // The state initializer must define the field, or a never-declared character
+  // saves `undefined` and the loader cannot tell it from a pre-feature save.
+  assert.ok(/declaredCredits: \{\},/.test(WIZARD_SRC),
+    "state initializes declaredCredits so the saved shape is always a map");
+});
+
 console.log(`\n${passed} passed`);

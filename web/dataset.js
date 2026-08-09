@@ -467,7 +467,7 @@ function migratePriorities(priorities, vocab) {
  *  `droppedBounds` names any min/max the substitution had to discard. Saying so
  *  is not optional: a floor the player set is a number they chose, and removing
  *  it silently changes what the solver optimizes for without telling them. */
-function migrationMessage(substitutions, droppedBounds) {
+function migrationMessage(substitutions, droppedBounds, droppedCredits) {
   if (!substitutions || !substitutions.length) return null;
   const parts = substitutions.map((s) => `"${s.from}" -> ${s.to.join(", ")}`);
   let msg = `This character ranked ${parts.length > 1 ? "names" : "a name"} that ` +
@@ -479,6 +479,18 @@ function migrationMessage(substitutions, droppedBounds) {
       `${dropped.length > 1 ? "were" : "was"} removed rather than copied onto the ` +
       `replacement stats — set ${dropped.length > 1 ? "them" : "it"} again if you still want ` +
       `${dropped.length > 1 ? "those limits" : "that limit"}.`;
+  }
+  // U5 — a dropped declared credit needs its OWN sentence. Folding it into the
+  // bounds list told the player a min/max they never set had been removed, and
+  // never mentioned the bonus that actually disappeared — the same silent-rewrite
+  // defect this disclosure exists to prevent, just misaddressed.
+  const credits = [...new Set(droppedCredits || [])];
+  if (credits.length) {
+    msg += ` The "already have" bonus${credits.length > 1 ? "es" : ""} you declared on ` +
+      `${credits.map((d) => `"${d}"`).join(", ")} ` +
+      `${credits.length > 1 ? "were" : "was"} removed rather than copied onto the ` +
+      `replacement stats — declare ${credits.length > 1 ? "them" : "it"} again on the new ` +
+      `stats if you still have ${credits.length > 1 ? "them" : "it"}.`;
   }
   return msg;
 }
