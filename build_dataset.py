@@ -558,9 +558,9 @@ def build() -> dict:
     # A set-bonus tier still naming an expanded-away stat grants something no
     # player can rank. `speed` is allowlisted: the Marshwalker sets have carried
     # that orphan since #134, this change did not cause it, and expanding it
-    # would move shipped Speed behavior — it needs its own decision. Anything
-    # NEW fails the build rather than going quiet.
-    _KNOWN_SET_BONUS_ORPHANS = ("speed",)
+    # would move shipped Speed behavior — tracked as #171. Anything NEW fails the
+    # build rather than going quiet.
+    _KNOWN_SET_BONUS_ORPHANS = ("speed",)   # see #171
     _set_orphans = enchantment_split_mod.set_bonus_orphans(
         variants,
         {**umbrella_mod.umbrella_expansion(),
