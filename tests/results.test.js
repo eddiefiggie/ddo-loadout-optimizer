@@ -946,3 +946,46 @@ test("U3: the declared row explains itself on hover", () => {
   assert.ok(/title="[^"]*not verified[^"]*"/i.test(html),
     "R9 — the player must be able to tell this number was not verified");
 });
+
+// ---- U4 — credit-aware disclosure (R9, R10) ---------------------------------
+
+const CR = [{ stat: "CM", bonus_type: "Insight", value: 7, won: true, beatGear: 5, floor: 10, gearOnly: 5 }];
+
+test("U4: the bound notice discloses the credit, what it beat, and the floor it carried", () => {
+  const note = R.boundNotice({}, { perTarget: { CM: 12 }, creditReport: CR });
+  assert.ok(/did not verify/.test(note), "R9 — the number is named as unverified");
+  assert.ok(/beat the best Insight CM gear available \(5\)/.test(note), "R10 — what it displaced");
+  assert.ok(/floor of 10 CM was met with the declared 7 counted in/.test(note), "the floor it carried");
+  assert.ok(/gear alone reaches 5/.test(note), "and the gear-only shortfall behind it");
+});
+
+test("U4: with no credit declared the bound notice is byte-identical to today's", () => {
+  const q = { mlFloor: 32, targetCaps: { Dodge: 4 } };
+  const res = { perTarget: { Dodge: 4 }, floorReport: [] };
+  const before = R.boundNotice(q, res);
+  const after = R.boundNotice(q, { ...res, creditReport: [] });
+  assert.strictEqual(after, before, "an empty report adds nothing");
+  assert.ok(!/did not verify/.test(before));
+});
+
+test("U4: the notice renders from creditReport alone — no live program needed", () => {
+  // KTD6 — a restored character is displayed WITHOUT re-solving, and `program` is
+  // excluded from the saved snapshot. A notice that read the program at render
+  // time would vanish exactly on the load path R11 creates.
+  const live = { perTarget: { CM: 12 }, creditReport: CR };
+  const restored = JSON.parse(JSON.stringify(live));
+  const note = R.boundNotice({}, restored);
+  assert.ok(/did not verify/.test(note),
+    "the restored result must actually produce a disclosure — two empty strings would match vacuously");
+  assert.strictEqual(note, R.boundNotice({}, live),
+    "a result read back off the allowlist discloses identically to a live solve");
+});
+
+test("U4: a credit that won nothing and carried no floor still discloses the qualifier", () => {
+  const note = R.boundNotice({}, { perTarget: { CM: 9 },
+    creditReport: [{ stat: "CM", bonus_type: "Insight", value: 4, won: false, beatGear: null, floor: null, gearOnly: 9 }] });
+  assert.ok(/did not verify/.test(note), "the honesty line is unconditional on a declaration");
+  assert.ok(!/beat the best/.test(note), "but no displacement is claimed");
+  assert.ok(!/floor of/.test(note), "and no floor is claimed");
+});
+

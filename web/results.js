@@ -497,6 +497,13 @@ function boundNotice(query, result) {
   const caps = (query && query.targetCaps) || {};
   const held = Object.keys(caps).filter((s) => per[s] != null && per[s] >= caps[s]);
   if (held.length) parts.push(`Held at your cap: ${held.map((s) => `${esc(s)} ${esc(caps[s])}`).join(", ")}.`);
+  // U4 (R9, R10) — this notice exists to keep "provably optimal" truthful, and a
+  // declared credit is the same class of qualifier as the ML band and a held cap:
+  // part of the answer rests on a number the player supplied, which the tool did
+  // not verify. Read from `creditReport` (plain JSON on the result) rather than
+  // the live program, so a restored character discloses identically without
+  // re-solving (KTD6).
+  for (const line of (Proj && Proj.creditNoticeLines ? Proj.creditNoticeLines(result) : [])) parts.push(esc(line));
   if (_offHandItemsExcluded(query || {})) {
     // Is there an off-hand ITEM in a build that excluded off-hand items? Two very
     // different causes, and the notice must not conflate them:

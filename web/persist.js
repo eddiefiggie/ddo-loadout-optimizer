@@ -17,6 +17,13 @@
     "computeScale", "capped", "augmentsPlaced", "dinoPlaced", "ncPlaced",
     "rollPlaced", "vikPlaced", "sealPlaced", "jokerPlaced", "tfPlaced",
     "gsPlaced", "membershipPlaced", "setAugmentsPlaced",
+    // U4/U5 — the declared-credit disclosure. Two allowlists, not one: the INPUT
+    // list below carries the declaration, this one carries what it DID. Without
+    // it the credit still solves correctly on load while the honesty line R9
+    // requires goes quiet, because `program` is dropped and KTD6 forbids
+    // re-solving a restored character. Plain JSON by construction (see
+    // buildCreditReport) precisely so it can live here.
+    "creditReport",
   ];
 
   function stripResult(result) {

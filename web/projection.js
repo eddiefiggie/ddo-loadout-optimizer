@@ -491,14 +491,59 @@
     }
 
     return {
-      character: { name: rec && rec.name, constraints: constraintPairs(rec) },
+      character: { name: rec && rec.name, constraints: constraintPairs(rec),
+        // U4 (R9) — the declared-credit qualifier travels with the shared
+        // content model, so every export renders it from the same source the
+        // app's bound notice does. Empty array when nothing was declared.
+        creditNotice: creditNoticeLines(snap) },
       loadout, sets, attribution,
     };
   }
 
+  /** U4 (R9, R10) — the declared-credit qualifier, as plain sentences.
+   *
+   *  ONE source for the app notice and every export. `boundNotice` returns HTML
+   *  from results.js and is not part of this content model, so a qualifier written
+   *  only there would be solve-visible but share-invisible: a recipient would see
+   *  a build asserting an optimal loadout with a player-typed number folded into
+   *  its totals and nothing saying the number was unverified. That is the failure
+   *  mode this repo holds as a standing invariant.
+   *
+   *  Reads `creditReport` (plain JSON on the result), never the live program, so a
+   *  restored character discloses identically without re-solving (KTD6).
+   */
+  function creditNoticeLines(result) {
+    const report = (result && result.creditReport) || [];
+    if (!report.length) return [];
+    const lines = [];
+    const label = (c) => `${c.value} ${c.bonus_type} ${c.stat}`;
+
+    lines.push(`You declared ${report.map(label).join(", ")} as already held. ` +
+      `The optimizer did not verify ${report.length > 1 ? "those numbers" : "that number"} — ` +
+      `${report.length > 1 ? "they are" : "it is"} yours, and the loadout below is optimal given ` +
+      `${report.length > 1 ? "them" : "it"}.`);
+
+    // R10, narrowed per A3: name the best gear the credit beat, read off the solve
+    // already run rather than a second credit-free solve.
+    for (const c of report) {
+      if (c.beatGear != null) {
+        lines.push(`Your declared ${c.bonus_type} ${c.stat} of ${c.value} beat the best ` +
+          `${c.bonus_type} ${c.stat} gear available (${c.beatGear}), so that slot went to another priority.`);
+      }
+    }
+    // R9's floor half: a floor met with the credit's help must not read as quietly met.
+    for (const c of report) {
+      if (c.floor != null) {
+        lines.push(`Your floor of ${c.floor} ${c.stat} was met with the declared ${c.value} counted in — ` +
+          `your gear alone reaches ${c.gearOnly}.`);
+      }
+    }
+    return lines;
+  }
+
   const api = {
     // resolved-view assembler
-    project,
+    project, creditNoticeLines,
     // pure primitives (results.js binds these; single definition, no drift)
     affixLabel, itemMl, contributingAffixes, assignAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, satisfiedSets, suppressedHostIds, slotSetNames, activeSetDetail, satisfiedSetDetail,

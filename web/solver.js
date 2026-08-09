@@ -1230,7 +1230,70 @@ async function solveLexicographic(model, highs) {
     membershipPlaced: sol.membershipPlaced, setAugmentsPlaced: sol.setAugmentsPlaced,
     breakdown: breakdownByTarget(program, prim), computeScale: computeScale(program),
     capped: { ...program.cappedStats }, floorReport, program,
+    creditReport: buildCreditReport(program, prim, model, floorReport),
   };
+}
+
+/** U4 (R9, R10) — what each declared credit did, as plain JSON on the result.
+ *
+ *  Deliberately DATA, not a render-time read. Both facts the notice needs — the
+ *  gear-only shortfall behind a floor and the best gear value the credit beat —
+ *  live in `program.zByBucket`, and `program` is excluded from the saved snapshot
+ *  as cyclic and non-JSON. KTD6 forbids re-solving a restored character, so a
+ *  notice computed at render time would simply vanish on load, taking the honesty
+ *  surface R9 exists to guarantee with it.
+ *
+ *  Per entry: the declaration, whether it won its bucket, the best eligible gear
+ *  it beat (null when gear won or there was none), the floor it carried (null when
+ *  gear alone already cleared it), and what gear alone reaches in that stat.
+ */
+function buildCreditReport(program, prim, model, floorReport) {
+  const credits = (program && program.creditMeta) ? [...program.creditMeta.values()] : [];
+  if (!credits.length) return [];
+  const unmet = new Set((floorReport || []).map((f) => f.stat));
+  const floors = (model && model.floors) || {};
+
+  return credits.map((c) => {
+    const key = `${c.stat}||${_equivType(c.bonus_type)}`;
+    const zs = program.zByBucket.get(key) || [];
+    // The best GEAR in the credit's own bucket: every contribution there except
+    // the credit itself. This is the narrowed R10 (A3) — what the credit beat,
+    // read off the solve already run, not a second counterfactual solve.
+    let bestGearInBucket = 0;
+    for (const z of zs) {
+      if (program.creditMeta.has(z.name)) continue;
+      if (z.value > bestGearInBucket) bestGearInBucket = z.value;
+    }
+    const creditZ = zs.find((z) => program.creditMeta.get(z.name) === c);
+    const won = !!creditZ && prim(creditZ.name) > 0.5;
+
+    // What the player's GEAR alone reaches on this stat: every selected
+    // contribution except the credit. The credit's bucket falls back to its best
+    // gear, since without the credit that is what would have been taken.
+    let gearOnly = 0;
+    for (const [k, list] of program.zByBucket) {
+      if (k.split("||")[0] !== c.stat) continue;
+      let best = 0;
+      for (const z of list) {
+        if (program.creditMeta.has(z.name)) continue;
+        if (k === key) { if (z.value > best) best = z.value; }         // the contested bucket
+        else if (prim(z.name) > 0.5 && z.value > best) best = z.value; // as actually solved
+      }
+      gearOnly += best;
+    }
+
+    const floor = Number(floors[c.stat]) || null;
+    // A floor is "carried" by the credit only when gear alone would MISS it and
+    // the floor was actually met. Gear that already clears it owes the credit
+    // nothing, and an unmet floor is disclosed by floorReport instead.
+    const carriedFloor = (floor && !unmet.has(c.stat) && gearOnly < floor) ? floor : null;
+
+    return {
+      stat: c.stat, bonus_type: c.bonus_type, value: c.value,
+      won, beatGear: (won && bestGearInBucket > 0) ? bestGearInBucket : null,
+      floor: carriedFloor, gearOnly,
+    };
+  });
 }
 
 // U1 (alternatives) — solve the existing program with relaxed locks + forced
