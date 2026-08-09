@@ -150,6 +150,53 @@ def test_a_roman_variant_fails_rather_than_being_read_as_arabic():
     assert report["compared"] == 0
 
 
+def test_an_arabic_snapshot_paired_with_the_wrong_tooltip_is_reported():
+    """#173, the consistent-corruption shape. Move the value AND its reference
+    together: file `{{Heightened Awareness|4}}` under the +6 tooltip and derive 6
+    from it. Nothing disagrees with anything — the derived value matches the
+    snapshot it was read from — so the comparison passes by construction. Only a
+    binding between the snapshot and the key it is filed under catches it. This
+    shipped green in #169 because the fix its review made to `parrying_split`
+    never travelled to this sibling."""
+    shard = {"harvested": {"Anything": {"value": {"version": "4", "armor_class": 6},
+                                        "provenance": "stated",
+                                        "raw": "{{Heightened Awareness|4}}"}},
+             "snapshots": {"{{heightened awareness|4}}": {"tooltip": TIP % (6, 6)}}}
+    report = ha.check_against_snapshots(shard)
+
+    assert any("must state +4" in p for p in report["problems"]), report
+    assert report["compared"] == 1, "it must still count as compared, not skipped"
+
+
+def test_an_isolated_corruption_alone_does_not_prove_the_binding():
+    """The companion to the test above, and the reason it is not redundant. Moving
+    only the derived value is caught by the plain comparison, so a suite built
+    from isolated corruptions goes red without any binding assertion existing —
+    which is exactly how #169 shipped eight red corruptions over a real hole."""
+    shard = _shard(("Omniscience", 4))
+    shard["harvested"]["Omniscience"]["value"]["armor_class"] = 6
+    report = ha.check_against_snapshots(shard)
+
+    assert any("tooltip states 4" in p for p in report["problems"]), report
+    assert not any("must state +4" in p for p in report["problems"]), \
+        "an isolated break must be caught by the comparison, not by the binding"
+
+
+def test_every_shipped_arabic_snapshot_states_its_own_version():
+    from src import harvest
+    shard = harvest.load_shard(
+        os.path.join(ROOT, "data", "seed", "compendium", "heightened_awareness.json"),
+        "heightened_awareness")
+    seen = 0
+    for raw, snap in shard["snapshots"].items():
+        version = ha.invocation_version(raw)
+        if version and version.isdigit():
+            assert ha.tooltip_armor_class(snap["tooltip"]) == int(version), raw
+            seen += 1
+    assert seen == len(shard["snapshots"]) and seen, \
+        "every shipped snapshot is Arabic; a non-Arabic one means the wiki gained a variant"
+
+
 def test_the_guard_refuses_to_pass_over_an_empty_shard():
     for shard in ({}, {"harvested": {}}):
         try:
