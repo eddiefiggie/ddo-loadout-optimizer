@@ -92,6 +92,49 @@ CORE_STATS = {
     # docs/wiki-evidence/boolean-composites.md). Without it here the components
     # would be written and still be unrankable, so the player could not ask for it.
     "Concealment",
+    # Augment-only magnitude stats. `rankable_affixes` counts WORN items only, so a
+    # real stat that happens to ship exclusively on augments reads to the heuristic
+    # like a one-off weapon proc and is filtered out. Eldritch Blast Dice is the
+    # clearest case: it is the Warlock damage stat (wiki: "Each additional 'Blast
+    # Die' improves your base Eldritch Blast damage by 1d8"), it carries real
+    # magnitudes and bonus types (Profane 1/3 on the Lunar gems, Artifact 1/3 on the
+    # Solar), and it appears on four augments and zero worn items. Without this the
+    # solver scores those gems at nothing, leaves the Sun slot empty, and still
+    # reports the loadout as optimal — because no priority the player can express
+    # maps to what the gem grants.
+    #
+    # This is one instance of a class: 36 magnitude stats are currently invisible for
+    # the same reason. The rest are deliberately NOT added here — widening the gate
+    # to count augment sources is the general fix and wants its own review.
+    "Eldritch Blast Dice",
+    # The rest of the same class — each ships on a purpose-built named gem whose
+    # entire identity is granting that stat ("Solar Gem of Strikethrough", "Solar
+    # Gem of Sneak Attack Dice"), in Heroic/Epic/Legendary tiers. That is the
+    # opposite of the one-off weapon proc the two-item filter exists to reject; the
+    # filter misses them because it counts WORN items and these reach gear by
+    # other routes -- mostly augments, though Sneak Attack Dice also ships on
+    # worn armor via the Dolorous/Fang crafting families, so widening the gate
+    # to count augment sources alone would not cover every entry here.
+    "Imbue Dice",                    # Ranger/Inquisitive analogue of Blast Dice
+    "Strikethrough",
+    "Sneak Attack Dice",
+    "Sneak Attack Damage",
+    "Missile Deflection",
+    "Rune Arm DCs",
+    "Spell Intensity",               # universal spell crit damage; the Fire/Void/Kinetic
+                                     # Intensity family is already rankable
+    "Damage to helpless enemies",
+    "Dodge Cap",
+    "Magical Sheltering Cap",
+    "Max Dex Bonus",
+    # DELIBERATELY EXCLUDED — `Armor Class (%)`, `False Life (%)`, and
+    # `Maximum Spell Points (%)`. Each carries `unit: None`, so the solver would
+    # score a percentage as a flat magnitude, and each shadows a flat sibling under
+    # a different affix name — so a player ranking both `Armor Class` and
+    # `Armor Class (%)` gets two independent buckets that never compose, and a
+    # reported total whose meaning the model does not carry. `Maximum Spell
+    # Points (%)` is worse: its flat base has zero sources and is not tracked at
+    # all. Ranking them needs percentage-unit support first.
 }
 # Recognized-but-not-rankable bonus types: present on items but kept out of the
 # picker vocabulary (a user never ranks a weapon-damage/penalty descriptor).
