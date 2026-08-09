@@ -54,8 +54,69 @@ function cleanBoundMap(m) {
   return out;
 }
 
-/** Pure state -> solver query mapping (no DOM). Exported for unit tests. */
-function buildQuery(state) {
+// U2 (declared stat credits) — the curated bonus-type vocabulary and the shared
+// sanitizer, resolved across runtimes (browser global from model.js; Node
+// require) exactly as the pin helpers below are. The wizard must offer and accept
+// precisely what the solver will honor: a selector built from a second list would
+// drift, and a near-miss type is silently WRONG rather than rejected — it forms
+// its own bucket, so the credit stops competing with gear and adds to it instead.
+var _creditBonusTypes = (typeof CREDIT_BONUS_TYPES !== "undefined")
+  ? CREDIT_BONUS_TYPES
+  // eslint-disable-next-line global-require
+  : require("./model.js").CREDIT_BONUS_TYPES;
+var _maxCreditValue = (typeof MAX_CREDIT_VALUE !== "undefined")
+  ? MAX_CREDIT_VALUE
+  // eslint-disable-next-line global-require
+  : require("./model.js").MAX_CREDIT_VALUE;
+var _normalizeCreditsW = (typeof normalizeCredits !== "undefined")
+  ? normalizeCredits
+  // eslint-disable-next-line global-require
+  : require("./model.js").normalizeCredits;
+
+/** The state key for a credit. `(stat, bonus type)` is the uniqueness key (A2),
+ *  so a stat-keyed map cannot express R2's "more than one credit on one stat". */
+function creditKey(stat, bonusType) {
+  return `${String(stat == null ? "" : stat).trim()}||${String(bonusType == null ? "" : bonusType).trim()}`;
+}
+
+/** Clean a declared-credit map on the way to the query, mirroring `cleanBoundMap`.
+ *
+ *  Canonicalizes the stat through the picker vocabulary first (KTD4): the solver
+ *  matches a bucket's stat half by EXACT string and applies no aliasing, so a
+ *  non-canonical name does not error — it forms an orphan bucket that silently
+ *  contributes nothing. Validation itself is delegated to the same
+ *  `normalizeCredits` the solver uses, so the wizard cannot accept a credit the
+ *  solver would drop, or vice versa. Pure; unit-tested. */
+function cleanCreditMap(m, vocab) {
+  const canonical = vocab && typeof vocab.canonical === "function" ? vocab.canonical : (s) => s;
+  const presence = vocab && vocab.presence && typeof vocab.presence.has === "function" ? vocab.presence : null;
+  const rows = [];
+  if (m && typeof m === "object") {
+    for (const row of Object.values(m)) {
+      if (!row) continue;
+      const stat = canonical(String(row.stat == null ? "" : row.stat).trim()) || row.stat;
+      // A presence (on/off) stat has no magnitude to declare. Its gear lands in a
+      // `stat||boolean` bucket, and the curated vocabulary has no boolean member,
+      // so a magnitude credit would occupy a SEPARATE bucket and stack additively:
+      // a declared Insight 3 on Blurry reported Blurry 4, and with a floor set the
+      // meaningless magnitude satisfied it, so the solver stopped securing the item
+      // that actually grants the feature. The UI does not offer the control here;
+      // this is the second gate, for a credit that predates it or arrives restored.
+      if (presence && presence.has(stat)) continue;
+      rows.push({ stat, bonus_type: row.bonus_type, value: row.value });
+    }
+  }
+  const out = {};
+  for (const c of _normalizeCreditsW(rows)) out[creditKey(c.stat, c.bonus_type)] = c;
+  return out;
+}
+
+/** Pure state -> solver query mapping (no DOM). Exported for unit tests.
+ *  `vocab` is the picker vocabulary; callers inside the wizard closure pass it so
+ *  a declared credit's stat is canonicalized to the ONE name gear carries (KTD4)
+ *  and a presence stat is refused. Omitted in unit tests that supply already-
+ *  canonical stats. */
+function buildQuery(state, vocab) {
   const forged = wizIsForged(state.race);
   return {
     mlCap: Number(state.ml) || 36,
@@ -97,6 +158,12 @@ function buildQuery(state) {
     // non-negative entries are emitted; empty maps mean "no caps/floors" (default).
     targetCaps: cleanBoundMap(state.targetCaps),
     targetFloors: cleanBoundMap(state.targetFloors),
+    // U2 — declared stat credits, `(stat, bonus type)`-keyed. Always emitted; an
+    // empty map is inert, because buildModel normalizes it to no credits — so an
+    // undeclared build solves exactly as it did before this feature (R3). The key
+    // is present either way, so the query object is not byte-identical to a
+    // pre-feature one; nothing hashes or diffs it.
+    declaredCredits: cleanCreditMap(state.declaredCredits, vocab),
   };
 }
 
@@ -354,7 +421,7 @@ function addBundle(key, current, vocab) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -413,6 +480,9 @@ if (typeof window !== "undefined" && window.App) {
       // U1/U4 — per-priority stat caps (max) and floors (min), keyed by stat name so
       // they survive priority reordering.
       targetCaps: {}, targetFloors: {},
+      // U2 — declared stat credits, keyed `stat||bonusType` so a stat can carry
+      // more than one and reordering priorities cannot mis-associate them.
+      declaredCredits: {},
       pool: "all", ownedNames: null, priorities: [], slotConstraints: {}, constraintsDirty: false, lastRun: null,
       characterName: "", loadedStale: false,
       // plan 003 U4 — set on load when a pre-U1 save is migrated to declared.
@@ -711,7 +781,7 @@ if (typeof window !== "undefined" && window.App) {
       if (!box) return;
       const pins = currentPins();
       if (!pins.length) { box.innerHTML = `<p class="wz-pin-empty">No pinned items yet — search above to force a specific item into the build.</p>`; return; }
-      const query = buildQuery(state);
+      const query = buildQuery(state, vocab);
       // Aggregate guard: a character equips at most ONE Artifact, but each pin is
       // honored, so pinning 2+ Artifacts with the opt-in on would force an illegal
       // multi-Artifact build. Warn (don't block — the pins are the player's choice).
@@ -988,8 +1058,43 @@ if (typeof window !== "undefined" && window.App) {
           <input class="wz-bound" type="number" min="0" step="1" inputmode="numeric" data-max="${i}" value="${esc(capV)}" placeholder="max" aria-label="${esc(p)} maximum (cap)" draggable="false"></span>
         <span class="wz-ctl"><button data-up="${i}" ${i === 0 ? "disabled" : ""} aria-label="move up">↑</button>
           <button data-down="${i}" ${i === state.priorities.length - 1 ? "disabled" : ""} aria-label="move down">↓</button>
-          <button data-del="${i}" aria-label="remove">✕</button></span></li>`;
+          <button data-del="${i}" aria-label="remove">✕</button></span>
+        ${vocab.presence && vocab.presence.has(p) ? "" : creditsHTML(p)}</li>`;
       }).join("");
+    }
+
+    // U2 — the declared-credit sub-rows for one priority. Repeatable, unlike the
+    // fixed min/max pair: R2 allows more than one credit on a stat when the bonus
+    // types differ, and A2 makes `(stat, bonus type)` the uniqueness key. Each row
+    // carries its own key so editing the TYPE is a rekey rather than an edit in
+    // place; a rekey onto an existing pair replaces it rather than duplicating.
+    function creditsHTML(stat) {
+      const all = state.declaredCredits || {};
+      const mine = Object.entries(all).filter(([, c]) => c && c.stat === stat);
+      // A row whose value the solver would drop must not READ as declared, and must
+      // not reserve its bonus type against its siblings — otherwise a "have: 0" or
+      // an over-range magnitude looks like a live declaration, silently contributes
+      // nothing, and blocks the type it is occupying.
+      const usable = (v) => Number.isInteger(Number(v)) && Number(v) > 0 && Number(v) <= _maxCreditValue;
+      const usedTypes = new Set(mine.filter(([, c]) => usable(c.value)).map(([, c]) => c.bonus_type));
+      const rows = mine.map(([key, c]) => {
+        const opts = _creditBonusTypes.map((t) =>
+          `<option value="${esc(t)}"${t === c.bonus_type ? " selected" : ""}${(t !== c.bonus_type && usedTypes.has(t)) ? " disabled" : ""}>${esc(t)}</option>`).join("");
+        return `<span class="wz-credit${usable(c.value) ? "" : " is-incomplete"}">
+          <input class="wz-credit-val" type="number" min="1" step="1" max="${esc(_maxCreditValue)}" inputmode="numeric" data-cval="${esc(key)}"
+            value="${esc(c.value)}" placeholder="have" aria-label="${esc(stat)} ${esc(c.bonus_type)} bonus you already have" draggable="false">
+          <select class="wz-credit-type" data-ctype="${esc(key)}" aria-label="${esc(stat)} credit bonus type" draggable="false">${opts}</select>
+          <button type="button" data-crem="${esc(key)}" aria-label="remove ${esc(stat)} ${esc(c.bonus_type)} credit">✕</button></span>`;
+      }).join("");
+      // Offer the add affordance only while an unused bonus type remains, so the
+      // UI cannot produce the duplicate `(stat, type)` pair A2 forbids.
+      const free = _creditBonusTypes.find((t) => !usedTypes.has(t));
+      const add = free
+        ? `<button type="button" class="wz-credit-add" data-cadd="${esc(stat)}"
+             aria-label="add a non-gear bonus you already have for ${esc(stat)}"
+             title="Already have this from a trance, past life, filigree, or ship buff? Declare it and the solver stops spending a slot on gear that cannot beat it.">+ already have</button>`
+        : "";
+      return `<span class="wz-credits">${rows}${add}</span>`;
     }
     // Generic ranked-list renderer: reused by the priorities step and the
     // in-results "Adjust & re-solve" panel (U3). `rerender` re-renders that
@@ -1005,6 +1110,25 @@ if (typeof window !== "undefined" && window.App) {
           state.priorities.splice(+b.dataset.del, 1);
           if (state.targetCaps) delete state.targetCaps[p];   // drop the removed stat's bounds
           if (state.targetFloors) delete state.targetFloors[p];
+          // U2 / AE5 — drop EVERY credit on that stat, not one: a stat can carry
+          // several, and a keyed input that outlives its row is the orphaned-bound
+          // defect this repo already recorded. A1 resolves "a credit on an unranked
+          // stat" by removal, which is exactly this branch.
+          if (state.declaredCredits) {
+            for (const [k, c] of Object.entries(state.declaredCredits)) {
+              if (c && c.stat === p) delete state.declaredCredits[k];
+            }
+          }
+        }
+        else if (b.dataset.cadd != null) {
+          const stat = b.dataset.cadd;
+          const map = state.declaredCredits || (state.declaredCredits = {});
+          const used = new Set(Object.values(map).filter((c) => c && c.stat === stat).map((c) => c.bonus_type));
+          const type = _creditBonusTypes.find((t) => !used.has(t));
+          if (type) map[creditKey(stat, type)] = { stat, bonus_type: type, value: "" };
+        }
+        else if (b.dataset.crem != null) {
+          if (state.declaredCredits) delete state.declaredCredits[b.dataset.crem];
         }
         rerender();
       });
@@ -1025,9 +1149,44 @@ if (typeof window !== "undefined" && window.App) {
           map[p] = Math.max(0, Math.floor(num));
         };
       });
+      // U2 — the credit value field. Blank or unusable clears the VALUE but keeps
+      // the row, so a half-typed entry does not vanish under the cursor; the
+      // shared normalizeCredits then drops it on the way to the query.
+      ol.querySelectorAll("input.wz-credit-val").forEach((inp) => {
+        inp.onpointerdown = (e) => e.stopPropagation();
+        inp.oninput = () => {
+          const c = (state.declaredCredits || {})[inp.dataset.cval];
+          if (!c) return;
+          if (inp.value === "") { c.value = ""; return; }
+          const num = Number(inp.value);
+          c.value = Number.isFinite(num) ? Math.max(0, Math.floor(num)) : "";
+        };
+      });
+      // U2 — changing the bonus type REKEYS the entry, because the key is
+      // `(stat, bonus type)`. Landing on a pair that already exists replaces it
+      // rather than duplicating (A2). The add affordance disables used types, so
+      // this is reachable only via keyboard on a stale render.
+      ol.querySelectorAll("select.wz-credit-type").forEach((sel) => {
+        sel.onpointerdown = (e) => e.stopPropagation();
+        sel.onchange = () => {
+          const map = state.declaredCredits || {};
+          const oldKey = sel.dataset.ctype;
+          const c = map[oldKey];
+          if (!c) return;
+          const next = creditKey(c.stat, sel.value);
+          delete map[oldKey];
+          map[next] = { stat: c.stat, bonus_type: sel.value, value: c.value };
+          rerender();
+        };
+      });
       let from = null;
       ol.querySelectorAll("li[draggable]").forEach((li) => {
-        li.ondragstart = (e) => { if (e.target && e.target.tagName === "INPUT") { e.preventDefault(); return; } from = +li.dataset.i; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", ""); };
+        // The tagName test is the part that actually suppresses the drag —
+        // `draggable="false"` on a child does not stop the nearest draggable
+        // ancestor from becoming the drag source, and stopPropagation on
+        // pointerdown does not suppress the native drag either. U2 adds a
+        // <select>, which `tagName === "INPUT"` does not match, so match both.
+        li.ondragstart = (e) => { if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "SELECT")) { e.preventDefault(); return; } from = +li.dataset.i; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", ""); };
         li.ondragend = () => { li.classList.remove("dragging"); from = null; };
         li.ondragover = (e) => e.preventDefault();
         li.ondrop = (e) => { e.preventDefault(); const to = +li.dataset.i; if (from === null || to === from) return; const m = state.priorities.splice(from, 1)[0]; state.priorities.splice(to, 0, m); from = null; rerender(); };
@@ -1085,7 +1244,7 @@ if (typeof window !== "undefined" && window.App) {
       overlay(true, "Solving your loadout…", firstRun ? `searching ${n.toLocaleString()} eligible items · exact MILP` : "re-solving…");
       try {
         const h = await getHighs();
-        const query = buildQuery(state);
+        const query = buildQuery(state, vocab);
         // R4a — suppress pins illegal for THIS config from the solve WITHOUT mutating
         // persistent state: reconcile a COPY, so an illegal pin is only dropped for the
         // current (illegal) solve and is honored again once the config makes it legal
@@ -1244,6 +1403,14 @@ if (typeof window !== "undefined" && window.App) {
       // U4 — restore per-priority caps/floors (absent on pre-U4 saves -> empty).
       state.targetCaps = (i.targetCaps && typeof i.targetCaps === "object") ? { ...i.targetCaps } : {};
       state.targetFloors = (i.targetFloors && typeof i.targetFloors === "object") ? { ...i.targetFloors } : {};
+      // U2 — declared credits are per-character state and must be reset here like
+      // every sibling map above. `state` is long-lived, so without this a credit
+      // declared on the previous character stays live: the initial render uses the
+      // stored query and looks right, then the first Re-solve reads live state and
+      // silently solves the loaded character with a bonus nobody declared for it.
+      // (U5 will populate this from the save; the RESET is what makes it safe, and
+      // is correct now because nothing writes declaredCredits into `inputs` yet.)
+      state.declaredCredits = (i.declaredCredits && typeof i.declaredCredits === "object") ? { ...i.declaredCredits } : {};
       // #169 — a saved character may rank a name that has since been EXPANDED
       // AWAY (`Speed`, `Parrying`, `Heightened Awareness`, the umbrella ability
       // names). The add-a-priority paths refuse those, but this one restored them
@@ -1285,7 +1452,7 @@ if (typeof window !== "undefined" && window.App) {
       // U1/R1 — an optimal snapshot lands directly on Results; anything else
       // routes to priorities to re-solve (never a blank results view).
       if (stepAfterLoad(snap) === "results") {
-        const query = rec.query || buildQuery(state);
+        const query = rec.query || buildQuery(state, vocab);
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
           dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs);

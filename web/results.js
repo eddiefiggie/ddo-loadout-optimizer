@@ -395,10 +395,17 @@ function paperdollFigure() {
 function attributionList(contribs) {
   if (!contribs.length) return `<div class="stat-empty">no contributing gear for this target</div>`;
   return `<ul class="attrib">${contribs.map((c) => {
-    const kind = c.isSet ? "is-set" : c.sourceKind === "augment" ? "is-augment" : "";
-    const where = c.isSet
-      ? `<span class="attrib-set">set: ${esc(c.source)}</span>${c.slots.length ? `<span class="attrib-slots"> via ${c.slots.map(esc).join(", ")}</span>` : ""}`
-      : `<span class="attrib-slots">${c.slots.length ? c.slots.map(esc).join(", ") : "—"}</span><span class="attrib-src"> · ${esc(c.source)}</span>`;
+    // U3 (R8) — a declared credit gets its own presentation, like set and augment.
+    // It has no slot, so the generic branch would render a bare "— · " with an
+    // undefined source; and it is the one contributor the player supplied rather
+    // than the tool sourcing it, which must be visible without consulting docs.
+    const isDeclared = c.sourceKind === "declared";
+    const kind = isDeclared ? "is-declared" : c.isSet ? "is-set" : c.sourceKind === "augment" ? "is-augment" : "";
+    const where = isDeclared
+      ? `<span class="attrib-declared" title="You told the optimizer you already have this, so it was not verified against the wiki. It competes in its bonus-type bucket exactly as gear does.">${esc(c.source)}</span>`
+      : c.isSet
+        ? `<span class="attrib-set">set: ${esc(c.source)}</span>${c.slots.length ? `<span class="attrib-slots"> via ${c.slots.map(esc).join(", ")}</span>` : ""}`
+        : `<span class="attrib-slots">${c.slots.length ? c.slots.map(esc).join(", ") : "—"}</span><span class="attrib-src"> · ${esc(c.source)}</span>`;
     const isBool = c.bonus_type === "boolean";   // U4: presence, not a magnitude
     return `<li class="attrib-row ${kind}">
       <span class="attrib-type">${esc(isBool ? "feature" : c.bonus_type)}</span>

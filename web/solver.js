@@ -1004,6 +1004,11 @@ function encodeStage(program, { objectiveStat, objTerms, sense, locks, tieBreak,
  *  z per bucket + its gate's source meta); it does NOT change the optimization, so
  *  the "presentation only" contract holds. Returns { stat: [{bonus_type, value,
  *  source, sourceKind}], ... }, each list highest-value first. */
+// U3 (R8) — how a declared credit names itself wherever contributors are listed.
+// One string so the app and every export agree, and so a reader can tell a
+// player-asserted number from a wiki-sourced one without consulting anything.
+const DECLARED_LABEL = "declared, not from gear";
+
 function breakdownByTarget(program, prim) {
   const xByName = new Map(program.xVars.map((xv) => [xv.name, xv]));
   // Equipped item identity -> its worn slot, so an item-craft (nc/roll/vik/seal)
@@ -1052,7 +1057,14 @@ function breakdownByTarget(program, prim) {
       const bonusType = key.split("||")[1];
       for (const z of zs) {
         if (prim(z.name) > 0.5) {
-          const src = sourceOf(z.gates[0]);
+          // U3 — a declared credit is resolved from the CONTRIBUTION, not from a
+          // gate. It has none, so `sourceOf(z.gates[0])` reads `undefined` and
+          // falls through every branch to `{kind:"other", label: undefined}` —
+          // which rendered as a bare "— ·" the moment U2 made credits reachable.
+          // `creditMeta` is keyed by z name for exactly this lookup.
+          const src = (program.creditMeta && program.creditMeta.has(z.name))
+            ? { kind: "declared", label: DECLARED_LABEL }
+            : sourceOf(z.gates[0]);
           parts.push({
             bonus_type: bonusType, value: z.value, source: src.label, sourceKind: src.kind,
             slot: src.slot != null ? src.slot : null,
@@ -1384,5 +1396,5 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, computeScale, slotConstraintBodies };
+  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, DECLARED_LABEL, computeScale, slotConstraintBodies };
 }

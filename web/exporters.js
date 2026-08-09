@@ -134,6 +134,10 @@
     const val = isBool ? "✓" : "+" + esc(p.value);
     const slots = (p.slots && p.slots.length) ? ` via ${p.slots.map(esc).join(", ")}` : "";
     const tag = p.viaSet ? " (set)" : "";
+    // U3 (R8) — a declared credit carries its own label and no slot, so a shared
+    // loadout shows which numbers the recipient's own gear produces and which one
+    // the sender asserted. The label comes from the solver, so the app and every
+    // export format cannot drift apart.
     return `${type} ${val} — ${esc(p.source)}${tag}${slots}`;
   }
 

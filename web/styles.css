@@ -756,7 +756,7 @@ input.wz-ml { width: 120px; }
   border-radius: var(--radius-sm); padding: 10px 12px; min-height: var(--tap); }
 .wz-addrow input:focus { outline: none; box-shadow: var(--ring); border-color: var(--accent); }
 .wz-ranked { list-style: none; padding: 0; margin: var(--sp-3) 0 0; max-width: 34rem; }
-.wz-ranked li { display: flex; align-items: center; gap: var(--sp-2); background: var(--panel-2);
+.wz-ranked li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); background: var(--panel-2);
   border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: 9px 12px; margin-bottom: var(--sp-2); }
 .wz-ranked li.dragging { opacity: 0.5; border-color: var(--accent); }
 .wz-grip { color: var(--faint); cursor: grab; letter-spacing: -2px; }
@@ -774,6 +774,28 @@ input.wz-ml { width: 120px; }
 .wz-bounds-help summary:hover { color: var(--text); }
 .wz-bounds-help p { margin: var(--sp-2) 0 0; }
 .wz-bounds-help strong { color: var(--text); }
+/* U2 — declared stat credits. Repeatable, unlike the fixed min/max pair, so the
+   group takes a full-width line below the row rather than competing for space on
+   it. `flex-basis: 100%` is what drops it; the li gains `flex-wrap` for that. */
+.wz-credits { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+  margin-top: 2px; padding-top: 6px; border-top: 1px dashed var(--border-2); }
+.wz-credit { display: flex; align-items: center; gap: 3px; }
+.wz-credit.is-incomplete { opacity: 0.55; }
+.wz-credit.is-incomplete .wz-credit-val { border-style: dashed; }
+.wz-credit-val { width: 3.4rem; background: var(--panel); color: var(--text); border: 1px solid var(--border-2);
+  border-radius: var(--r-1, 6px); padding: 2px 4px; font-size: 0.85em; text-align: center; }
+.wz-credit-val::placeholder { color: var(--faint); }
+.wz-credit-val:focus, .wz-credit-type:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
+.wz-credit-type { background: var(--panel); color: var(--text); border: 1px solid var(--border-2);
+  border-radius: var(--r-1, 6px); padding: 2px 4px; font-size: 0.85em; max-width: 9rem; }
+.wz-credit button, .wz-credit-add { background: none; border: 1px dashed var(--border-2); color: var(--faint);
+  border-radius: var(--r-1, 6px); padding: 1px 6px; font-size: 0.8em; min-height: 0; cursor: pointer; }
+.wz-credit button:hover, .wz-credit-add:hover { color: var(--text); border-color: var(--accent); }
+/* U3 — a declared credit in the contributor list. Its own treatment, like a set
+   bonus, because it is the one contributor the player supplied rather than the
+   tool sourcing it from the wiki. */
+.attrib-row.is-declared .attrib-type { font-style: italic; }
+.attrib-declared { color: var(--muted); font-style: italic; border-bottom: 1px dotted var(--border-2); cursor: help; }
 .wz-ctl { display: flex; gap: 4px; }
 .wz-ctl button { background: var(--panel); border: 1px solid var(--border-2); color: var(--muted);
   width: 32px; height: 32px; min-height: 0; padding: 0; flex: none; display: flex; align-items: center;

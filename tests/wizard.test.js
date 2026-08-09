@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -368,7 +368,6 @@ test("U3: buildQuery emits the ML floor from state", () => {
   assert.strictEqual(buildQuery({ ...baseState(), mlFloor: 0 }).mlFloor, null, "0/blank means consider all");
 });
 
-console.log(`\n${passed} passed`);
 
 // --- R4a: pre-solve pin-legality reconciliation (U4) -----------------------
 test("R4a: reconcilePinLegality drops an illegal pin, keeps a legal one", () => {
@@ -766,3 +765,201 @@ test("#169: the disclosure banner escapes its message", () => {
   assert.ok(/esc\(state\.expandedAwayMigrated\)/.test(fn),
     "the message carries user-typed stat names into innerHTML and must be escaped");
 });
+
+
+// ---- U2 (declared stat credits) — declaration input and query plumbing -------
+{
+  const M = require("../web/model.js");
+  const K = (s, t) => creditKey(s, t);
+
+  test("U2: creditKey pairs stat and bonus type — a stat alone cannot key R2", () => {
+    assert.strictEqual(K("Combat Mastery", "Insight"), "Combat Mastery||Insight");
+    assert.notStrictEqual(K("Combat Mastery", "Insight"), K("Combat Mastery", "Sacred"),
+      "two bonus types on one stat must be distinct entries");
+    assert.strictEqual(K(" Combat Mastery ", " Insight "), K("Combat Mastery", "Insight"));
+  });
+
+  test("U2: a declared credit reaches the query with its stat canonicalized", () => {
+    // KTD4 — the solver matches a bucket's stat half by EXACT string with no
+    // aliasing, so a non-canonical name does not error: it forms an orphan bucket
+    // that silently contributes nothing.
+    const vocab = { canonical: (v) => (v === "PRR" ? "Physical Resistance Rating" : v) };
+    const out = cleanCreditMap({ "PRR||Insight": { stat: "PRR", bonus_type: "Insight", value: 7 } }, vocab);
+    assert.deepStrictEqual(Object.keys(out), ["Physical Resistance Rating||Insight"]);
+    assert.strictEqual(out["Physical Resistance Rating||Insight"].stat, "Physical Resistance Rating");
+  });
+
+  test("U2: empty, non-numeric, zero, and negative values are dropped", () => {
+    for (const bad of ["", " ", "abc", 0, -1, null, undefined, NaN]) {
+      const out = cleanCreditMap({ "CM||Insight": { stat: "CM", bonus_type: "Insight", value: bad } });
+      assert.deepStrictEqual(out, {}, `value ${JSON.stringify(bad)} must not reach the query`);
+    }
+  });
+
+  test("U2: the wizard cannot accept a credit the solver would drop", () => {
+    // cleanCreditMap delegates to the SAME normalizeCredits the solver uses, so the
+    // two cannot disagree about validity — the divergence class that shipped a
+    // `stat||undefined` bucket and a string-valued coefficient in U1.
+    for (const bad of ["insight", "Insightful", "", "Bool"]) {
+      assert.deepStrictEqual(cleanCreditMap({ k: { stat: "CM", bonus_type: bad, value: 7 } }), {},
+        `bonus type ${JSON.stringify(bad)} must be refused`);
+    }
+    assert.strictEqual(Object.keys(cleanCreditMap({ k: { stat: "CM", bonus_type: "Insight", value: "7" } })).length, 1,
+      "a numeric string is coerced, not refused");
+  });
+
+  test("U2: Morale is declarable — the additive-only case must be reachable", () => {
+    // No item in the catalog carries Morale, so a vocabulary derived from the data
+    // would make the Spell Song Trance credit undeclarable. AE4 depends on this.
+    assert.ok(M.CREDIT_BONUS_TYPES.includes("Morale"));
+    const out = cleanCreditMap({ k: { stat: "Spell DC", bonus_type: "Morale", value: 1 } });
+    assert.strictEqual(Object.keys(out).length, 1);
+    const names = new Set(realData.items.flatMap((i) => (i.affixes || [])
+      .filter((a) => a.type === "Morale").map((a) => a.name)));
+    assert.strictEqual(names.size, 0, "premise: no shipped item carries a Morale-typed affix");
+  });
+
+  test("U2: two bonus types on one stat both survive; the same type collapses", () => {
+    const two = cleanCreditMap({
+      a: { stat: "CM", bonus_type: "Insight", value: 7 },
+      b: { stat: "CM", bonus_type: "Sacred", value: 4 },
+    });
+    assert.strictEqual(Object.keys(two).length, 2, "R2 — distinct bonus types are distinct credits");
+    const dup = cleanCreditMap({
+      a: { stat: "CM", bonus_type: "Insight", value: 4 },
+      b: { stat: "CM", bonus_type: "Insight", value: 9 },
+    });
+    assert.strictEqual(Object.keys(dup).length, 1, "the same pair does not duplicate");
+    assert.strictEqual(dup["CM||Insight"].value, 9, "and keeps the larger, matching max-of-type");
+  });
+
+  test("U2: Covers R3 — an undeclared build's query is unchanged from today", () => {
+    const s = baseState();
+    const q = buildQuery(s);
+    assert.deepStrictEqual(q.declaredCredits, {}, "no credits declared => an empty map");
+    const withEmpty = buildQuery({ ...s, declaredCredits: {} });
+    assert.deepStrictEqual(withEmpty, q, "an empty map is indistinguishable from absent");
+  });
+
+  test("U2: buildQuery carries a declared credit through", () => {
+    const q = buildQuery({ ...baseState(),
+      declaredCredits: { "Constitution||Insight": { stat: "Constitution", bonus_type: "Insight", value: 6 } } });
+    assert.deepStrictEqual(q.declaredCredits,
+      { "Constitution||Insight": { stat: "Constitution", bonus_type: "Insight", value: 6 } });
+  });
+
+  // ---- DOM behaviour, asserted against the source (this suite has no jsdom) ----
+
+  test("U2: the drag guard matches SELECT as well as INPUT", () => {
+    // draggable="false" on a child does not stop the nearest draggable ancestor
+    // from becoming the drag source, and stopPropagation on pointerdown does not
+    // suppress the native drag — the tagName test is the part that works, and a
+    // <select> does not match `tagName === "INPUT"`.
+    const at = WIZARD_SRC.indexOf("li.ondragstart");
+    assert.ok(at > 0, "the drag handler exists");
+    const fn = WIZARD_SRC.slice(at, at + 260);
+    assert.ok(/tagName === "SELECT"/.test(fn),
+      "the bonus-type <select> would otherwise start a row reorder when dragged");
+    assert.ok(/tagName === "INPUT"/.test(fn), "and the original input guard is intact");
+  });
+
+  test("U2: deleting a priority row drops EVERY credit on that stat", () => {
+    // AE5 via A1 — a keyed input that outlives its row is the orphaned-bound
+    // defect already recorded in this repo, and a stat can carry several credits.
+    const at = WIZARD_SRC.indexOf("dataset.del != null");
+    assert.ok(at > 0);
+    const branch = WIZARD_SRC.slice(at, at + 900);
+    assert.ok(/declaredCredits/.test(branch), "the delete branch sweeps credits");
+    assert.ok(/for \(const \[k, c\] of Object\.entries\(state\.declaredCredits\)\)/.test(branch),
+      "it iterates rather than deleting a single stat-keyed entry");
+  });
+
+  test("U2: the add affordance cannot produce a duplicate (stat, type) pair", () => {
+    const at = WIZARD_SRC.indexOf("dataset.cadd != null");
+    assert.ok(at > 0, "the add handler exists");
+    const branch = WIZARD_SRC.slice(at, at + 500);
+    assert.ok(/used\.has\(t\)/.test(branch), "it picks the first UNUSED bonus type");
+    assert.ok(/_creditBonusTypes/.test(branch), "from the curated vocabulary, not a literal");
+  });
+
+  test("U2: the selector renders from the curated vocabulary and marks used types", () => {
+    const at = WIZARD_SRC.indexOf("function creditsHTML");
+    assert.ok(at > 0, "the sub-row renderer exists");
+    const fn = WIZARD_SRC.slice(at, WIZARD_SRC.indexOf("\n    }", at));
+    assert.ok(/_creditBonusTypes\.map/.test(fn), "options come from the shared list");
+    assert.ok(/usedTypes\.has\(t\)/.test(fn), "already-declared types are disabled");
+    assert.ok(/esc\(/.test(fn), "stat and type names reach innerHTML and must be escaped");
+  });
+
+  test("U2: the credit controls are labelled for screen readers", () => {
+    const at = WIZARD_SRC.indexOf("function creditsHTML");
+    const fn = WIZARD_SRC.slice(at, WIZARD_SRC.indexOf("\n    }", at));
+    for (const needle of ["wz-credit-val", "wz-credit-type", "data-crem", "data-cadd"]) {
+      assert.ok(fn.includes(needle), `${needle} is rendered`);
+    }
+    const labels = fn.match(/aria-label=/g) || [];
+    assert.ok(labels.length >= 4,
+      `every credit control needs a label; found ${labels.length}`);
+  });
+}
+
+test("U2: the wizard's own call sites pass the real vocabulary", () => {
+  // Regression: buildQuery originally read `state.canonical`, which nothing ever
+  // sets — so the KTD4 canonicalization silently never ran in the app while the
+  // unit test passed its own function and looked green. It now takes the whole
+  // vocabulary, because the presence set gates credits too.
+  assert.ok(!/state\.canonical/.test(WIZARD_SRC),
+    "state.canonical does not exist; reading it is dead code");
+  const calls = (WIZARD_SRC.match(/(?<!function )buildQuery\(state[^)]*\)/g) || []);
+  assert.ok(calls.length >= 3, `expected the in-app call sites; found ${calls.length}`);
+  for (const c of calls) {
+    assert.ok(/\bvocab\b/.test(c),
+      `every in-app buildQuery call must pass the vocabulary, got: ${c}`);
+  }
+});
+
+test("U2: a presence (on/off) stat cannot carry a magnitude credit", () => {
+  // Reproduced before the gate: targets ["Constitution","Blurry"], floor Blurry>=1,
+  // one Goggles slot offering the Blurry item or a Constitution item. Declaring
+  // Insight 3 on Blurry moved the solve from {Constitution:0, Blurry:1} with the
+  // Blurry item equipped, to {Constitution:10, Blurry:3} WITHOUT it — the
+  // meaningless magnitude satisfied the floor and the feature was dropped, while
+  // the result still claimed Blurry at 3.
+  const vocab = { canonical: (v) => v, presence: new Set(["Blurry"]) };
+  const out = cleanCreditMap({
+    "Blurry||Insight": { stat: "Blurry", bonus_type: "Insight", value: 3 },
+    "Constitution||Insight": { stat: "Constitution", bonus_type: "Insight", value: 6 },
+  }, vocab);
+  assert.deepStrictEqual(Object.keys(out), ["Constitution||Insight"],
+    "a presence stat's credit must never reach the query");
+});
+
+test("U2: the credit control is not offered on a presence row", () => {
+  const at = WIZARD_SRC.indexOf("${creditsHTML(p)}");
+  assert.ok(at > 0 || /presence.*creditsHTML/.test(WIZARD_SRC), "the sub-row is rendered somewhere");
+  const call = WIZARD_SRC.match(/[^\n]*creditsHTML\(p\)[^\n]*/)[0];
+  assert.ok(/vocab\.presence/.test(call),
+    `the render must be gated on the presence set, got: ${call.trim()}`);
+});
+
+test("U2: loading a character resets declared credits", () => {
+  // state is long-lived. Without a reset, a credit declared on the previous
+  // character stays live: the first render uses the stored query and looks right,
+  // then Re-solve reads live state and solves the loaded character with a bonus
+  // nobody declared for it.
+  const at = WIZARD_SRC.indexOf("state.targetFloors = (i.targetFloors");
+  assert.ok(at > 0, "the restore block exists");
+  const block = WIZARD_SRC.slice(at, at + 900);
+  assert.ok(/state\.declaredCredits\s*=/.test(block),
+    "declaredCredits must be reset alongside its sibling maps in loadCharacter");
+});
+
+test("U2: an unusable credit row neither reads as declared nor reserves its type", () => {
+  const at = WIZARD_SRC.indexOf("function creditsHTML");
+  const fn = WIZARD_SRC.slice(at, WIZARD_SRC.indexOf("\n    }", at));
+  assert.ok(/is-incomplete/.test(fn), "an unusable row is visually marked");
+  assert.ok(/filter\(\[, c\]\) => usable\(c\.value\)\)|filter\(\(\[, c\]\) => usable\(c\.value\)\)/.test(fn),
+    "usedTypes counts only rows the solver would keep");
+});
+
+console.log(`\n${passed} passed`);
