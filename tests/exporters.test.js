@@ -621,12 +621,16 @@ test("U4: every export that claims an optimal loadout carries the qualifier", ()
   const r = {
     name: "Trance", inputs: { ml: 34, pool: "all", priorities: ["CM"] },
     snapshot: { status: "optimal", chosen: [], setsActive: [], effective: { CM: 12 }, breakdown: { CM: [] },
-      creditReport: [{ stat: "CM", bonus_type: "Insight", value: 7, won: true, beatGear: 5, floor: 10, gearOnly: 5 }] },
+      creditReport: [{ stat: "CM", bonus_type: "Insight", value: 7, won: true, beatGear: 5, floor: 10, gearInLoadout: 5 }] },
   };
   for (const [fmt, fn] of [["markdown", toMarkdown], ["bbcode", toBBCode], ["csv", toCsv], ["print", toPrintHtml]]) {
     const out = fn(r);
     assert.ok(/did not verify/.test(out),
       `${fmt} asserts an optimal loadout, so it must also say the declared number was unverified`);
+    // The sentences carrying actual numbers must travel too — the qualifier alone
+    // says a number was declared, not what it did.
+    assert.ok(/which is 5/.test(out), `${fmt} carries the displacement figure`);
+    assert.ok(/the gear in this loadout supplies 5/.test(out), `${fmt} carries the floor attribution`);
   }
 });
 

@@ -524,19 +524,36 @@
       `${report.length > 1 ? "them" : "it"}.`);
 
     // R10, narrowed per A3: name the best gear the credit beat, read off the solve
-    // already run rather than a second credit-free solve.
+    // already run rather than a second credit-free solve. "In your pool" rather
+    // than "available" — the value is the best the build could field, and saying
+    // more than that would overclaim.
     for (const c of report) {
       if (c.beatGear != null) {
-        lines.push(`Your declared ${c.bonus_type} ${c.stat} of ${c.value} beat the best ` +
-          `${c.bonus_type} ${c.stat} gear available (${c.beatGear}), so that slot went to another priority.`);
+        // No parentheses: markdown escapes them, so raw text people paste into
+        // forums reads "your gear pool \(5\)". Same trap as DECLARED_LABEL.
+        lines.push(`Your declared ${c.bonus_type} ${c.stat} of ${c.value} beat your best ` +
+          `${c.bonus_type} ${c.stat} gear, which is ${c.beatGear}, so that slot went to another priority.`);
       }
     }
-    // R9's floor half: a floor met with the credit's help must not read as quietly met.
+    // R9's floor half. Grouped by STAT, not per credit: two credits on one stat
+    // each carry the same floor, and one sentence per credit would read as two
+    // independent explanations of the same verdict.
+    //
+    // The claim is ATTRIBUTION, not necessity. Saying "your gear alone reaches N"
+    // would assert what a credit-free solve produces, which A3 forbids computing —
+    // and that solve is free to pick different gear entirely, so the assertion was
+    // demonstrably false. What the data supports is what the shown loadout's gear
+    // supplies, with the declaration counted alongside it.
+    const byStat = new Map();
     for (const c of report) {
-      if (c.floor != null) {
-        lines.push(`Your floor of ${c.floor} ${c.stat} was met with the declared ${c.value} counted in — ` +
-          `your gear alone reaches ${c.gearOnly}.`);
-      }
+      if (c.floor == null) continue;
+      if (!byStat.has(c.stat)) byStat.set(c.stat, []);
+      byStat.get(c.stat).push(c);
+    }
+    for (const [stat, cs] of byStat) {
+      const declared = cs.map((c) => `${c.value} ${c.bonus_type}`).join(" and ");
+      lines.push(`Your floor of ${cs[0].floor} ${stat} counts the declared ${declared} — ` +
+        `the gear in this loadout supplies ${cs[0].gearInLoadout}.`);
     }
     return lines;
   }

@@ -2727,7 +2727,7 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
     assert.deepStrictEqual(r.floorReport, [], "the floor is met, so it is not reported unmet");
   });
 
-  await test("U4: a floor met partly by a credit is disclosed with the gear-only shortfall", async () => {
+  await test("U4: a floor a credit counts toward reports the loadout's gear contribution", async () => {
     const model = {
       targets: ["CM"], mlCap: 34, dodgeCap: null,
       credits: [credit("CM", "Insight", 7)],
@@ -2740,22 +2740,22 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
     assert.strictEqual(entry.value, 7);
     assert.strictEqual(entry.bonus_type, "Insight");
     assert.strictEqual(entry.floor, 10, "the floor it helped meet");
-    assert.strictEqual(entry.gearOnly, 5,
-      "without the credit the player's gear reaches only 5 — the shortfall the notice must state");
+    assert.strictEqual(entry.gearInLoadout, 5,
+      "the gear in THIS loadout supplies 5 — an attribution the data supports, not a counterfactual");
   });
 
-  await test("U4: a floor met entirely by gear produces no credit floor claim", async () => {
+  await test("U4: a credit that lost its bucket claims no floor", async () => {
     const model = {
       targets: ["CM"], mlCap: 34, dodgeCap: null,
       credits: [credit("CM", "Insight", 2)],
       floors: { CM: 5 },
-      worn: [slot("Ring", [item("enh", "Ring", [["CM", "Enhancement", 9]])])],
+      worn: [slot("Ring", [item("ins", "Ring", [["CM", "Insight", 9]])])],
     };
     const r = await S.solveLexicographic(model, highs);
     const entry = (r.creditReport || []).find((c) => c.stat === "CM");
     assert.ok(entry, "the credit is still reported as present");
-    assert.strictEqual(entry.floor, null,
-      "gear alone (9) clears the floor of 5, so the credit did not carry it");
+    assert.strictEqual(entry.won, false, "the Insight 9 gear beat the declared 2");
+    assert.strictEqual(entry.floor, null, "a credit that contributes nothing counts toward no floor");
   });
 
   await test("U4: a floor still unmet with a credit reports unmet, credit counted", async () => {
@@ -2813,7 +2813,8 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
       worn: [slot("Ring", [item("enh", "Ring", [["CM", "Enhancement", 5]])])],
     };
     const r = await S.solveLexicographic(model, highs);
-    assert.deepStrictEqual(r.creditReport || [], [], "R3 — nothing added when nothing is declared");
+    assert.ok(Array.isArray(r.creditReport), "the field is always present, so its absence cannot pass for empty");
+    assert.deepStrictEqual(r.creditReport, [], "R3 — nothing added when nothing is declared");
   });
 
   function creditModelU4() {
@@ -2824,6 +2825,79 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
       worn: [slot("Ring", [item("enh", "Ring", [["CM", "Enhancement", 5]])])],
     };
   }
+
+
+  // --- U4 review findings: the arithmetic must survive its own counterexamples ---
+
+  await test("U4: gearInLoadout never sums picks that compete for one slot", async () => {
+    // Reported 11 (an Insight 6 plus an Enhancement 5) for a player who owns ONE
+    // ring slot. Reading the credit's own bucket as "best present" while reading
+    // every other bucket as "best selected" mixed a hypothetical with an actual.
+    const model = {
+      targets: ["CM"], mlCap: 34, dodgeCap: null, floors: { CM: 12 },
+      credits: [credit("CM", "Insight", 7)],
+      worn: [slot("Ring", [item("ins", "Ring", [["CM", "Insight", 6]]),
+                           item("enh", "Ring", [["CM", "Enhancement", 5]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    const e = r.creditReport[0];
+    assert.strictEqual(e.gearInLoadout, 5, "one slot supplies one contribution");
+    assert.ok(e.gearInLoadout <= r.effective.CM,
+      "the gear figure can never exceed the total it is a part of");
+  });
+
+  await test("U4: gearInLoadout matches the gear actually in the shown loadout", async () => {
+    // Ground truth. A3 forbids a counterfactual solve at RUNTIME; a test may run
+    // one, and this is the check that would have caught the false floor claim.
+    const base = () => ({
+      targets: ["Dodge", "CM"], mlCap: 34, dodgeCap: null, floors: { CM: 10 },
+      worn: [slot("Ring", [item("a", "Ring", [["CM", "Enhancement", 5], ["Dodge", "Enhancement", 3]]),
+                           item("b", "Ring", [["CM", "Enhancement", 12]])])],
+    });
+    const withC = await S.solveLexicographic({ ...base(), credits: [credit("CM", "Insight", 7)] }, highs);
+    const e = withC.creditReport[0];
+    // The claim is about THIS loadout, so it must equal this loadout's gear sum.
+    const gearSum = withC.breakdown.CM.filter((p) => p.sourceKind !== "declared")
+      .reduce((n, p) => n + p.value, 0);
+    assert.strictEqual(e.gearInLoadout, gearSum,
+      "the reported figure is the shown loadout's gear, verifiable from its own breakdown");
+
+    // And the number must NOT be read as "what gear alone would reach" — a
+    // credit-free solve of the same inputs reaches more, by picking differently.
+    const without = await S.solveLexicographic(base(), highs);
+    assert.ok(without.effective.CM > e.gearInLoadout,
+      `premise of the fix: a credit-free solve reaches ${without.effective.CM}, not ${e.gearInLoadout} — ` +
+      "which is why the sentence must not claim to describe it");
+  });
+
+  await test("U4: beatGear ignores gear the player locked out of the build", async () => {
+    const model = {
+      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      credits: [credit("CM", "Insight", 7)],
+      query: { slotConstraints: { Ring: { type: "empty" } } },
+      worn: [slot("Ring", [item("ins", "Ring", [["CM", "Insight", 6]])]),
+             slot("Gloves", [item("g", "Gloves", [["CM", "Enhancement", 5]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.creditReport[0].beatGear, null,
+      "an item in a slot the player emptied is not gear the credit beat");
+    assert.ok(!r.chosen.some((c) => c.slot === "Ring"), "premise: the ring slot is empty");
+  });
+
+  await test("U4: two credits on one stat report one floor between them", async () => {
+    const model = {
+      targets: ["CM"], mlCap: 34, dodgeCap: null, floors: { CM: 10 },
+      credits: [credit("CM", "Insight", 7), credit("CM", "Profane", 4)],
+      worn: [slot("Ring", [item("enh", "Ring", [["CM", "Enhancement", 2]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.creditReport.length, 2, "both are reported");
+    const Proj = require("../web/projection.js");
+    const floorLines = Proj.creditNoticeLines(r).filter((l) => /Your floor of/.test(l));
+    assert.strictEqual(floorLines.length, 1,
+      `one floor, one sentence — two would each read as a sufficient explanation: ${JSON.stringify(floorLines)}`);
+    assert.ok(/7 Insight and 4 Profane/.test(floorLines[0]), "and it names both declarations");
+  });
 
   console.log(`\n${passed} passed`);
 })();

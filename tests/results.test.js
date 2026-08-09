@@ -949,14 +949,15 @@ test("U3: the declared row explains itself on hover", () => {
 
 // ---- U4 — credit-aware disclosure (R9, R10) ---------------------------------
 
-const CR = [{ stat: "CM", bonus_type: "Insight", value: 7, won: true, beatGear: 5, floor: 10, gearOnly: 5 }];
+const CR = [{ stat: "CM", bonus_type: "Insight", value: 7, won: true, beatGear: 5, floor: 10, gearInLoadout: 5 }];
 
 test("U4: the bound notice discloses the credit, what it beat, and the floor it carried", () => {
   const note = R.boundNotice({}, { perTarget: { CM: 12 }, creditReport: CR });
   assert.ok(/did not verify/.test(note), "R9 — the number is named as unverified");
-  assert.ok(/beat the best Insight CM gear available \(5\)/.test(note), "R10 — what it displaced");
-  assert.ok(/floor of 10 CM was met with the declared 7 counted in/.test(note), "the floor it carried");
-  assert.ok(/gear alone reaches 5/.test(note), "and the gear-only shortfall behind it");
+  assert.ok(/beat your best Insight CM gear, which is 5/.test(note), "R10 — what it displaced");
+  assert.ok(/floor of 10 CM counts the declared 7 Insight/.test(note), "the floor it counts toward");
+  assert.ok(/the gear in this loadout supplies 5/.test(note),
+    "an attribution of the shown loadout — NOT a claim about what gear alone would reach");
 });
 
 test("U4: with no credit declared the bound notice is byte-identical to today's", () => {
@@ -983,7 +984,7 @@ test("U4: the notice renders from creditReport alone — no live program needed"
 
 test("U4: a credit that won nothing and carried no floor still discloses the qualifier", () => {
   const note = R.boundNotice({}, { perTarget: { CM: 9 },
-    creditReport: [{ stat: "CM", bonus_type: "Insight", value: 4, won: false, beatGear: null, floor: null, gearOnly: 9 }] });
+    creditReport: [{ stat: "CM", bonus_type: "Insight", value: 4, won: false, beatGear: null, floor: null, gearInLoadout: 9 }] });
   assert.ok(/did not verify/.test(note), "the honesty line is unconditional on a declaration");
   assert.ok(!/beat the best/.test(note), "but no displacement is claimed");
   assert.ok(!/floor of/.test(note), "and no floor is claimed");
