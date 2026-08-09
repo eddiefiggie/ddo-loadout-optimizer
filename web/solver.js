@@ -49,6 +49,18 @@ var _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined")
   // eslint-disable-next-line global-require
   : require("./model.js").pinnedVariantIds;
 
+// U1 (declared stat credits) — the SAME sanitizer buildModel uses. Resolved here
+// rather than re-filtering inline so the two layers cannot disagree about what a
+// valid credit is. They did: an inline `c.stat && c.value > 0` check admitted a
+// missing bonus_type (keying a `stat||undefined` bucket no gear can join, so the
+// credit stacked instead of competing) and a numeric STRING (which formats into
+// valid LP, then concatenates in readSolution's accumulator and turns the headline
+// total into "07"). A caller reaching buildProgram directly gets the same rules.
+var _normalizeCredits = (typeof normalizeCredits !== "undefined")
+  ? normalizeCredits
+  // eslint-disable-next-line global-require
+  : require("./model.js").normalizeCredits;
+
 // R1/R3 — both-hands weapon classifier for the hand mutex, resolved across runtimes
 // (browser global from model.js vs Node require), same as the helpers above.
 var _isBothHandsWeapon = (typeof isBothHandsWeapon !== "undefined")
@@ -106,7 +118,7 @@ function buildProgram(model) {
   // stat's does. `_equivType` on the type half is what keeps a credit in the
   // SAME bucket gear would land in (KTD2); forming the key any other way would
   // drift the moment the equivalence table changes.
-  const credits = (model.credits || []).filter((c) => c && c.stat && c.value > 0);
+  const credits = _normalizeCredits(model.credits);
   const targetSet = new Set([...model.targets, ...Object.keys(cappedStats), ...Object.keys(model.floors || {}),
     ...credits.map((c) => c.stat)]);
 

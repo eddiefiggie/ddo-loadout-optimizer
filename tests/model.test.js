@@ -1180,8 +1180,6 @@ test("U5/003: the predicate is inert everywhere it should be", () => {
   assert.strictEqual(M.pinSlotConflict(null, "Off Hand", q), null, "a missing variant is not a crash");
 });
 
-console.log(`\n${passed} passed`);
-
 // ---- #162 — druidic oath: metal restriction + proficiency ------------------
 // Sourced from https://ddowiki.com/page/Druid: "A druid who wears metal armor, a
 // metal shield or a rune arm is unable to cast Druid spells..." Material is
@@ -1245,3 +1243,88 @@ console.log(`\n${passed} passed`);
     assert.strictEqual(r, null);
   });
 }
+
+
+// ---- U1 (declared stat credits) — the sanitizer every producer crosses -------
+// normalizeCredits is the only thing between a player-typed number and an LP
+// coefficient. U2's selector defends the wizard; it cannot defend the restore
+// and import producers, so the rules live here and are tested here.
+{
+  const N = M.normalizeCredits;
+  const one = (rows) => N(rows);
+
+  test("U1: a well-formed credit survives, trimmed and coerced", () => {
+    assert.deepStrictEqual(one([{ stat: " Combat Mastery ", bonus_type: " Insight ", value: "7" }]),
+      [{ stat: "Combat Mastery", bonus_type: "Insight", value: 7 }]);
+    assert.strictEqual(typeof one([{ stat: "CM", bonus_type: "Insight", value: "7" }])[0].value, "number",
+      "a numeric string must become a NUMBER — a string coefficient concatenates in readSolution's accumulator and turns the reported total into \"07\"");
+  });
+
+  test("U1: the keyed-map and array shapes normalize identically", () => {
+    const rows = [{ stat: "CM", bonus_type: "Insight", value: 7 }];
+    assert.deepStrictEqual(N({ "CM||Insight": rows[0] }), N(rows));
+    assert.deepStrictEqual(N(null), []);
+    assert.deepStrictEqual(N(undefined), []);
+  });
+
+  test("U1: a bonus type outside the curated vocabulary is dropped", () => {
+    // Wrong-HIGH and silent if admitted: `insight` forms its own bucket key, so
+    // the credit stops competing with Insight gear and ADDS to it. Case-folding
+    // is NOT the fix — an unrecognized type stacking additively is correct for a
+    // real type no gear carries, so only membership separates the two.
+    for (const bad of ["insight", "Insightful", "Insights", "", "  ", "Bool", "-"]) {
+      assert.deepStrictEqual(one([{ stat: "CM", bonus_type: bad, value: 7 }]), [],
+        `bonus type ${JSON.stringify(bad)} must not reach a bucket`);
+    }
+  });
+
+  test("U1: a type no gear carries is still declarable", () => {
+    // AE4's additive case. Morale appears nowhere in the dataset; a vocabulary
+    // derived from the data would make the Spell Song Trance credit undeclarable.
+    assert.strictEqual(one([{ stat: "Spell DC", bonus_type: "Morale", value: 1 }]).length, 1);
+    assert.ok(M.CREDIT_BONUS_TYPES.includes("Morale"));
+  });
+
+  test("U1: unusable magnitudes are dropped rather than reaching the LP", () => {
+    for (const bad of [0, -1, NaN, Infinity, -Infinity, "abc", null, undefined, 7.5, 1e-7]) {
+      assert.deepStrictEqual(one([{ stat: "CM", bonus_type: "Insight", value: bad }]), [],
+        `value ${String(bad)} must be dropped`);
+    }
+    // Above ~1e15 the value stringifies into LP text HiGHS refuses, and solve
+    // THROWS instead of returning infeasible. Bound it well below that.
+    assert.deepStrictEqual(one([{ stat: "CM", bonus_type: "Insight", value: 1e15 }]), []);
+    assert.strictEqual(one([{ stat: "CM", bonus_type: "Insight", value: M.MAX_CREDIT_VALUE }]).length, 1);
+    assert.deepStrictEqual(one([{ stat: "CM", bonus_type: "Insight", value: M.MAX_CREDIT_VALUE + 1 }]), []);
+  });
+
+  test("U1: two rows on one key keep the LARGER, not the last", () => {
+    // The bucket resolves max-of-type, so last-wins would contradict the rule the
+    // credit participates under.
+    assert.strictEqual(one([{ stat: "CM", bonus_type: "Insight", value: 9 },
+                            { stat: "CM", bonus_type: "Insight", value: 4 }])[0].value, 9);
+    assert.strictEqual(one([{ stat: "CM", bonus_type: "Insight", value: 4 },
+                            { stat: "CM", bonus_type: "Insight", value: 9 }])[0].value, 9);
+  });
+
+  test("U1: distinct bonus types on one stat are kept separate", () => {
+    assert.strictEqual(one([{ stat: "CM", bonus_type: "Insight", value: 7 },
+                            { stat: "CM", bonus_type: "Sacred", value: 4 }]).length, 2);
+  });
+
+  test("U1: buildModel carries declaredCredits through to the model", () => {
+    const ring = {
+      source_item: "R", variant_id: "R", slot: "Ring", category: "item",
+      minimum_level: 30, ml: 30, verification: "verified",
+      affixes: [{ stat: "Intelligence", bonus_type: "Enhancement", name: "Intelligence", type: "Enhancement", value: 20, unit: "flat" }],
+      scaling: [], set_bonus: [], augment_slots: [], restrictions: "unknown", armor_type: null,
+    };
+    const q = { mlCap: 34, targets: ["Intelligence"], targetCaps: {}, targetFloors: {},
+      declaredCredits: { "Intelligence||Insight": { stat: "Intelligence", bonus_type: "Insight", value: 6 } } };
+    assert.deepStrictEqual(M.buildModel([ring], q).credits,
+      [{ stat: "Intelligence", bonus_type: "Insight", value: 6 }]);
+    // The shipping no-credit case is an ABSENT key, not an empty array.
+    assert.deepStrictEqual(M.buildModel([ring], { ...q, declaredCredits: undefined }).credits, []);
+  });
+}
+
+console.log(`\n${passed} passed`);
