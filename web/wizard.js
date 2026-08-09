@@ -530,8 +530,16 @@ function curatedStats(dataset) {
 // "pick a bundle of affixes to save time"). Picking a bundle APPENDS its affixes
 // to the priority list (deduped, in the bundle's order); the user then reorders /
 // adds / removes. Additive + layered, NOT one-shot archetype templates:
-//   * top packages: Basic / Melee / Ranged / Caster / Trapping
-//   * Melee reveals TACTICS; Caster reveals SPELL SCHOOLS + damage-type SPELL POWER
+//   * top packages: Basic / Melee / Ranged / Caster / Trapping / Warlock
+//
+// EVERY ROW IS VISIBLE AT ALL TIMES — deliberate, not an oversight. This once
+// described Melee revealing TACTICS and Caster revealing SCHOOLS + SPELL POWER,
+// but that disclosure never actually worked: `.wz-bundle-row { display: flex }`
+// is a class rule and beat the UA stylesheet's `[hidden] { display: none }`, so
+// the rows always rendered. Making it work removed three rows players had been
+// using for the life of the feature, and the flat layout is the chosen behavior.
+// Do not reinstate the reveal. (The `.wz-bundle-row[hidden]` CSS rule stays — it
+// is correct, and a row marked hidden in future should hide.)
 // Affix lists are the gear planner's, verbatim; resolveBundle canonicalizes +
 // drops any our dataset doesn't carry, so a bundle can never inject a dead target.
 const PRESET_BUNDLES = {
@@ -547,10 +555,18 @@ const PRESET_BUNDLES = {
   // eldritch blast rather than a role the other packages already cover. Blast
   // damage type is set by pact, so all three families ship together and the
   // player drops the two that don't apply.
-  Warlock: ["Power in Pact", "Eldritch Blast Dice", "Charisma", "Spell Focus Mastery", "Spell Penetration", "Potency", "Universal Spell Power", "Constitution", "Nullification", "Void Lore", "Radiance", "Radiance Lore", "Impulse", "Kinetic Lore"],
+  // The two warlock-mechanic stats the catalog actually carries as rankable.
+  // There is no third: every other "Blast" affix is a weapon proc, not a pact
+  // mechanic. An earlier revision padded this with generic caster stats and three
+  // elemental families rather than reporting that the list is short.
+  Warlock: ["Power in Pact", "Eldritch Blast Dice"],
   // The six ability scores, as one click. Its own row above Tactics — always
   // visible, revealed by nothing, since every build wants some of these.
-  Attributes: ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"],
+  // One bundle per ability score, not a batch. These exist to save typing a stat
+  // the player always wants — ranking all six at once is not something anyone asks
+  // for, so each button adds exactly itself (same shape as the tactics singles).
+  Strength: ["Strength"], Dexterity: ["Dexterity"], Constitution: ["Constitution"],
+  Intelligence: ["Intelligence"], Wisdom: ["Wisdom"], Charisma: ["Charisma"],
   // tactics (revealed by Melee) — each is a single presence affix
   Stunning: ["Stunning"], Sundering: ["Sundering"], Vertigo: ["Vertigo"],
   // spell schools (revealed by Caster) — the button label is the school, the affix is "<School> Focus"
@@ -572,12 +588,11 @@ const PRESET_BUNDLES = {
 // UI groupings + progressive disclosure (which top package reveals which extra row).
 const BUNDLE_GROUPS = {
   packages: ["Basic", "Melee", "Ranged", "Caster", "Trapping", "Warlock"],
-  attributes: ["Attributes"],
+  attributes: ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"],
   tactics: ["Stunning", "Sundering", "Vertigo"],
   schools: ["Evocation", "Transmutation", "Abjuration", "Conjuration", "Enchantment", "Illusion", "Necromancy"],
   spellpower: ["Healing", "Kinetic", "Fire", "Cold", "Electric", "Acid", "Sonic", "Negative", "Light", "Repair", "Poison"],
 };
-const BUNDLE_REVEALS = { Melee: ["tactics"], Caster: ["schools", "spellpower"] };
 
 /** Resolve a bundle key to a canonicalized, dataset-filtered, deduped affix list.
  *  Each affix is canonicalized through the alias table and dropped if the dataset
@@ -604,7 +619,7 @@ function addBundle(key, current, vocab) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -1015,15 +1030,15 @@ if (typeof window !== "undefined" && window.App) {
             <span class="wz-bundle-tag">Ability scores</span>
             ${BUNDLE_GROUPS.attributes.map((k) => `<button type="button" class="wz-bundle" data-bundle="${esc(k)}">${esc(k)}</button>`).join("")}
           </div>
-          <div class="wz-bundle-row wz-bundle-sub" data-group="tactics" hidden>
+          <div class="wz-bundle-row wz-bundle-sub" data-group="tactics">
             <span class="wz-bundle-tag">Tactics</span>
             ${BUNDLE_GROUPS.tactics.map((k) => `<button type="button" class="wz-bundle" data-bundle="${esc(k)}">${esc(k)}</button>`).join("")}
           </div>
-          <div class="wz-bundle-row wz-bundle-sub" data-group="spellpower" hidden>
+          <div class="wz-bundle-row wz-bundle-sub" data-group="spellpower">
             <span class="wz-bundle-tag">Spell power</span>
             ${BUNDLE_GROUPS.spellpower.map((k) => `<button type="button" class="wz-bundle" data-bundle="${esc(k)}">${esc(k)}</button>`).join("")}
           </div>
-          <div class="wz-bundle-row wz-bundle-sub" data-group="schools" hidden>
+          <div class="wz-bundle-row wz-bundle-sub" data-group="schools">
             <span class="wz-bundle-tag">Spell schools (DC)</span>
             ${BUNDLE_GROUPS.schools.map((k) => `<button type="button" class="wz-bundle" data-bundle="${esc(k)}">${esc(k)}</button>`).join("")}
           </div>
@@ -2030,17 +2045,11 @@ if (typeof window !== "undefined" && window.App) {
       if (state.step === "priorities") {
         const add = document.getElementById("wz-add");
         // Composable bundle buttons: append the bundle's affixes to the priority
-        // list (deduped), then reveal any layered rows (Melee -> tactics, Caster ->
-        // spell power + schools) — the picked selection lands in the priority order,
-        // editable after.
+        // list (deduped); the picked selection lands in the priority order, editable
+        // after. Every row is on screen from the start, so nothing reveals anything.
         root.querySelectorAll(".wz-bundle").forEach((btn) => {
           btn.onclick = () => {
-            const key = btn.dataset.bundle;
-            state.priorities = addBundle(key, state.priorities, vocab);
-            for (const group of (BUNDLE_REVEALS[key] || [])) {
-              const row = root.querySelector(`.wz-bundle-row[data-group="${group}"]`);
-              if (row) row.hidden = false;
-            }
+            state.priorities = addBundle(btn.dataset.bundle, state.priorities, vocab);
             renderRanked();
           };
         });

@@ -192,4 +192,107 @@ test("U7/P2: a Colorless slot filled by a set-augment copy is reserved (no doubl
   assert.strictEqual(P.assignAugments(chosen2, augmentsPlaced, setAugmentsPlaced).byIndex.has(0), true, "with a spare Colorless slot the ordinary augment lands");
 });
 
+// ---- U3 — the set-contributor resolver ---------------------------------------
+// CONCEPTS.md "Set contributor": three kinds, only the first in item data. A
+// display reading `set_bonus` alone omits a piece the solve counted.
+
+const _sc = (over) => Object.assign({
+  chosen: [
+    { slot: "Ring 1", variant: { variant_id: "RingA", set_bonus: [{ set: "Marshwalker" }] } },
+    { slot: "Trinket", variant: { variant_id: "Gem", set_bonus: [] } },
+  ],
+  membershipPlaced: [], jokerPlaced: [], setAugmentsPlaced: [],
+}, over || {});
+
+test("U3: an intrinsic member reports its static set", () => {
+  const m = P.setContributors(_sc());
+  assert.deepStrictEqual(m.get("Ring 1||RingA"), [{ set: "Marshwalker", kind: "intrinsic" }]);
+  assert.deepStrictEqual(m.get("Trinket||Gem"), []);
+});
+
+test("U3: a wildcard pick is attributed to its slot", () => {
+  const m = P.setContributors(_sc({ jokerPlaced: [{ host: "Gem", group: 0, set: "Marshwalker" }] }));
+  assert.deepStrictEqual(m.get("Trinket||Gem"), [{ set: "Marshwalker", kind: "wildcard" }]);
+});
+
+test("U3: a membership pick is attributed to its slot", () => {
+  const m = P.setContributors(_sc({ membershipPlaced: [{ host: "Gem", set: "Lost Purpose", station: "vecna" }] }));
+  assert.deepStrictEqual(m.get("Trinket||Gem"), [{ set: "Lost Purpose", kind: "membership" }]);
+});
+
+test("U3: one Gem feeds TWO sets — the resolver returns a list", () => {
+  // The Gem takes one membership from EACH of two independent pools, so a singular
+  // "the set it is feeding" is wrong on the common case.
+  const m = P.setContributors(_sc({
+    jokerPlaced: [{ host: "Gem", group: 0, set: "Marshwalker" }, { host: "Gem", group: 1, set: "Dino" }],
+  }));
+  assert.deepStrictEqual(m.get("Trinket||Gem").map((e) => e.set).sort(), ["Dino", "Marshwalker"]);
+});
+
+test("U3: suppression drops the INTRINSIC set but keeps a runtime pick", () => {
+  // A Set Augment suppresses its host's own sets and the solver already dropped
+  // them; re-adding here resurrects a piece the solve removed. A runtime pick on
+  // the same host is a separate decision and survives.
+  const m = P.setContributors(_sc({
+    setAugmentsPlaced: [{ set: "Vecna Unleashed", host: "RingA" }],
+    membershipPlaced: [{ host: "RingA", set: "Lost Purpose", station: "vecna" }],
+  }));
+  assert.deepStrictEqual(m.get("Ring 1||RingA"), [{ set: "Lost Purpose", kind: "membership" }],
+    "the suppressed intrinsic Marshwalker is gone; the runtime pick remains");
+});
+
+test("U3: a duplicate variant reports the pick once, not on both slots", () => {
+  const build = _sc({
+    chosen: [
+      { slot: "Ring 1", variant: { variant_id: "RingA", set_bonus: [] } },
+      { slot: "Ring 2", variant: { variant_id: "RingA", set_bonus: [] } },
+    ],
+    membershipPlaced: [{ host: "RingA", set: "Lost Purpose", station: "cannith" }],
+  });
+  const m = P.setContributors(build);
+  const hits = [...m.values()].filter((l) => l.length > 0);
+  assert.strictEqual(hits.length, 1, "the pick exists once and is reported once");
+});
+
+test("U3: with no runtime picks the resolver agrees with slotSetNames", () => {
+  // The no-change guard: an ordinary build must attribute exactly as before.
+  const build = _sc();
+  const m = P.setContributors(build);
+  for (const c of build.chosen) {
+    assert.deepStrictEqual(m.get(`${c.slot}||${c.variant.variant_id}`).map((e) => e.set),
+      P.slotSetNames(c.variant));
+  }
+});
+
+test("U3: a build with nothing equipped does not throw", () => {
+  assert.doesNotThrow(() => P.setContributors({}));
+  assert.doesNotThrow(() => P.setContributors(null));
+  assert.strictEqual(P.setContributors({}).size, 0);
+});
+
+test("U4: a wildcard-completed set reports the tier its members prove", () => {
+  // counts was static-only while members unioned runtime picks, so a set completed
+  // BY a wildcard reported the LOWER tier's grant beside a member list proving the
+  // higher one — and every export printed that contradiction as a shared number.
+  const mk = (id, slot, set) => ({ slot, variant: { variant_id: id, set_bonus: set ? [{ set }] : [],
+    parsed_set_bonuses: set ? [{ set, pieces_required: 2, affixes: [{ stat: "Strength", value: 2 }] },
+                               { set, pieces_required: 3, affixes: [{ stat: "Strength", value: 10 }] }] : [] } });
+  const build = { chosen: [mk("A", "Ring 1", "S3"), mk("B", "Goggles", "S3"), mk("Gem", "Trinket", null)],
+    jokerPlaced: [{ host: "Gem", group: 0, set: "S3" }], membershipPlaced: [], setAugmentsPlaced: [],
+    setsActive: [{ set: "S3", pieces_required: 3, affixes: [{ stat: "Strength", value: 10 }] }] };
+  const d = P.satisfiedSetDetail(build).find((x) => x.set === "S3");
+  assert.strictEqual(d.pieces, 3, "the wildcard counts toward the threshold, as the solver counted it");
+  assert.strictEqual(d.members.length, 3);
+  assert.deepStrictEqual(d.affixes, [{ stat: "Strength", value: 10 }], "and the grant is the tier actually active");
+});
+
+test("U4: one host holding two picks for the same set counts once", () => {
+  const build = { chosen: [{ slot: "Trinket", variant: { variant_id: "Gem", set_bonus: [],
+      parsed_set_bonuses: [{ set: "S2", pieces_required: 1, affixes: [] }, { set: "S2", pieces_required: 2, affixes: [] }] } }],
+    jokerPlaced: [{ host: "Gem", group: 0, set: "S2" }, { host: "Gem", group: 1, set: "S2" }],
+    membershipPlaced: [], setAugmentsPlaced: [], setsActive: [] };
+  const d = P.satisfiedSetDetail(build).find((x) => x.set === "S2");
+  assert.strictEqual(d.pieces, 1, "one host is one piece, not two");
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

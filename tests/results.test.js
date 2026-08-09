@@ -566,7 +566,12 @@ test("U8: satisfiedSetDetail lists only satisfied sets with grants and member pi
   assert.strictEqual(d.length, 1, "only Alpha (2/2) is satisfied; Beta (1/3) is excluded");
   assert.strictEqual(d[0].set, "Alpha");
   assert.strictEqual(d[0].pieces, 2);
-  assert.deepStrictEqual(d[0].members.slice().sort(), ["Neck Alpha", "Ring Alpha"], "lists the equipped pieces composing the set");
+  // U4/R10 — a member is {slot, item, kind}, so the tab can name the slot each
+  // piece occupies rather than a bare item name.
+  assert.deepStrictEqual(d[0].members.slice().sort((a, b) => a.item < b.item ? -1 : 1), [
+    { slot: "Necklace", item: "Neck Alpha", kind: "intrinsic" },
+    { slot: "Ring", item: "Ring Alpha", kind: "intrinsic" },
+  ], "lists the equipped pieces composing the set, each with its slot");
   assert.deepStrictEqual(d[0].affixes.map((a) => a.stat), ["Constitution"], "carries the satisfied tier's granted affixes");
 });
 
@@ -990,3 +995,156 @@ test("U4: a credit that won nothing and carried no floor still discloses the qua
   assert.ok(!/floor of/.test(note), "and no floor is claimed");
 });
 
+
+// ---------------------------------------------------------------------------
+// U4 (plan 2026-08-09-002) — wildcard set attribution reaches the three in-app
+// surfaces. The solver already counts a Gem of Many Facets toward a set
+// (`web/solver.js:776` self-seeds the threshold); every display read the item's
+// STATIC `set_bonus` and so denied the piece that made the bonus happen.
+// ---------------------------------------------------------------------------
+
+const Pj = require("../web/projection.js");
+
+// A Gem of Many Facets in the Trinket slot taking one wildcard pick from EACH of
+// two independent pools, plus an intrinsic Marshwalker ring. Both sets are active.
+function gemBuild(over) {
+  return Object.assign({
+    chosen: [
+      { slot: "Ring", variant: { variant_id: "Marsh Ring", affixes: [], set_bonus: [{ set: "Marshwalker" }], parsed_set_bonuses: [] } },
+      { slot: "Trinket", variant: { variant_id: "Gem of Many Facets", affixes: [], set_bonus: [], parsed_set_bonuses: [] } },
+    ],
+    jokerPlaced: [
+      { host: "Gem of Many Facets", group: 0, set: "Marshwalker" },
+      { host: "Gem of Many Facets", group: 1, set: "Legendary Dread Isle" },
+    ],
+    membershipPlaced: [], setAugmentsPlaced: [], augmentsPlaced: [],
+    setsActive: [{ set: "Marshwalker", pieces_required: 2 }, { set: "Legendary Dread Isle", pieces_required: 2 }],
+    breakdown: {}, effective: {},
+  }, over || {});
+}
+
+test("U4/R7: the gem's row carries the set frame and names BOTH sets it feeds", () => {
+  const build = gemBuild();
+  const contributors = Pj.setContributors(build);
+  const satisfied = R.satisfiedSets(build.chosen, build.setsActive);
+  const gem = { variant: build.chosen[1].variant };
+  const html = R.equippedRow("Trinket", gem, {}, satisfied, null, null, null, contributors);
+  assert.ok(/is-set/.test(html), "a wildcard piece completing a set gets the same frame as any other piece");
+  assert.ok(/Marshwalker/.test(html) && /Legendary Dread Isle/.test(html),
+    "a Gem takes one membership from each of two pools — BOTH sets are named");
+  assert.ok(/wildcard/.test(html), "R8 — it is a contributor, but not shown as interchangeable with an intrinsic member");
+  // Discriminator: without the resolver map the same row is unframed and unnamed,
+  // which is exactly the bug — so the assertion above is not passing for free.
+  const blind = R.equippedRow("Trinket", gem, {}, satisfied, null, null, null, null);
+  assert.ok(!/is-set/.test(blind) && !/Marshwalker/.test(blind), "reading set_bonus alone still shows nothing");
+});
+
+test("U4/R7+R8: the deep dive frames the gem, names both sets, and keeps its wildcard chip", () => {
+  const build = gemBuild();
+  const maps = Pj.buildCraftMaps(build);
+  const html = R.loadoutDeepDive(build, { targets: [] }, maps, R.attributionByTarget(build));
+  const gemBlock = html.split('<div class="dd-item').find((b) => /Gem of Many Facets/.test(b));
+  assert.ok(/^ is-set/.test(gemBlock), "the gem's block is framed as a set piece");
+  assert.ok(/Part of set: [^<]*Marshwalker/.test(gemBlock) && /Legendary Dread Isle/.test(gemBlock), "names both sets");
+  assert.ok(/Wildcard set: Marshwalker/.test(gemBlock), "R8 — the existing wildcard chip is retained alongside the frame");
+});
+
+test("U4/R9: Ranked Priorities names the gem's slot among a set bonus's sources", () => {
+  // The solver's setYieldingSlots lists x-var (intrinsic) pieces only, so the gem
+  // that completed the set was missing from the source list: the player saw "via
+  // Ring" and no sign of the piece doing the work.
+  const build = gemBuild({ breakdown: { Constitution: [
+    { bonus_type: "Insightful", value: 5, source: "Marshwalker", sourceKind: "set", setYieldingSlots: ["Ring"], hostIds: ["Marsh Ring"] },
+  ] } });
+  const attr = R.attributionByTarget(build);
+  assert.deepStrictEqual(attr.Constitution[0].slots, ["Ring", "Trinket"], "the gem's slot joins the intrinsic piece");
+  assert.ok(/via Ring, Trinket/.test(R.attributionList(attr.Constitution)), "and it renders in the source line");
+  // A build with no runtime pick is untouched — the no-change guard.
+  const plain = gemBuild({ jokerPlaced: [], breakdown: build.breakdown });
+  assert.deepStrictEqual(R.attributionByTarget(plain).Constitution[0].slots, ["Ring"]);
+});
+
+test("U4/R10: a Set Bonuses card names every piece with its slot — never a bare count", () => {
+  const build = gemBuild();
+  const panel = R.buildViews(build, { worn: [], augments: [] }, { targets: [] }).setsPanel;
+  assert.ok(/Marsh Ring \(Ring\)/.test(panel), "the intrinsic piece is named with its slot");
+  assert.ok(/Gem of Many Facets \(Trinket\) — wildcard/.test(panel), "so is the wildcard piece");
+  const dread = panel.split("<li").find((c) => /Legendary Dread Isle/.test(c));
+  assert.ok(/Gem of Many Facets \(Trinket\)/.test(dread), "the gem-only set names the gem rather than nothing");
+  assert.ok(!/no contributing piece reported/.test(panel), "no card falls through to the empty disclosure");
+});
+
+test("U4/R10: an Augment Set names its copies and the item each is slotted into", () => {
+  // An Augment Set has NO worn member: three Set Augment copies sit in three
+  // different items, and the set's card had nothing to name at all.
+  const build = {
+    chosen: [
+      { slot: "Ring", variant: { variant_id: "Plain Ring", affixes: [], augment_slots_norm: { colors: ["Colorless"] }, set_bonus: [], parsed_set_bonuses: [] } },
+      { slot: "Necklace", variant: { variant_id: "Plain Neck", affixes: [], augment_slots_norm: { colors: ["Colorless"] }, set_bonus: [], parsed_set_bonuses: [] } },
+      { slot: "Boots", variant: { variant_id: "Plain Boots", affixes: [], augment_slots_norm: { colors: ["Colorless"] }, set_bonus: [], parsed_set_bonuses: [] } },
+    ],
+    setAugmentsPlaced: [
+      { set: "Legendary Prowess", host: "Plain Ring" },
+      { set: "Legendary Prowess", host: "Plain Neck" },
+      { set: "Legendary Prowess", host: "Plain Boots" },
+    ],
+    jokerPlaced: [], membershipPlaced: [], augmentsPlaced: [], breakdown: {}, effective: {},
+    setsActive: [{ set: "Legendary Prowess", pieces_required: 3, affixes: [] }],
+  };
+  const panel = R.buildViews(build, { worn: [], augments: [] }, { targets: [] }).setsPanel;
+  for (const [item, slot] of [["Plain Ring", "Ring"], ["Plain Neck", "Necklace"], ["Plain Boots", "Boots"]]) {
+    assert.ok(new RegExp(`Set Augment in ${item} \\(${slot}\\)`).test(panel),
+      `names the copy in ${item} and the slot it occupies`);
+  }
+  assert.ok(!/no contributing piece reported/.test(panel), "the card is not empty");
+});
+
+test("U4: a suppressed host is NOT named as a member of the set it gave up", () => {
+  // KTD2 — the solver already dropped the suppressed intrinsic set; naming the host
+  // as a member would resurrect a piece the solve removed.
+  const build = {
+    chosen: [
+      { slot: "Trinket", variant: { variant_id: "Vol Amulet", affixes: [], set_bonus: [{ set: "Vol Set" }],
+        parsed_set_bonuses: [{ set: "Vol Set", pieces_required: 1, affixes: [{ stat: "Dodge", bonus_type: "Insightful", value: 3, unit: "flat" }] }] } },
+    ],
+    setAugmentsPlaced: [{ set: "Legendary Might", host: "Vol Amulet" }],
+    jokerPlaced: [], membershipPlaced: [], setsActive: [{ set: "Legendary Might", pieces_required: 1, affixes: [] }],
+  };
+  const d = R.satisfiedSetDetail(build);
+  assert.ok(!d.some((s) => s.set === "Vol Set"), "the suppressed set is not active at all");
+  const might = d.find((s) => s.set === "Legendary Might");
+  assert.deepStrictEqual(might.members, [{ slot: "Trinket", item: "Vol Amulet", kind: "augmentset" }],
+    "the host appears only as the Augment Set's copy, never as a Vol Set member");
+});
+
+test("U4/Q1: a redundant membership pick still shows — the asymmetry is behavior, not a bug", () => {
+  // membershipPlaced is filtered only on the set being active, so a pick on an
+  // already-complete set is reported and must be displayed. jokerPlaced is filtered
+  // by realShort (web/solver.js:1140-1163), so a redundant joker never gets here.
+  const build = {
+    chosen: [
+      { slot: "Ring", variant: { variant_id: "Marsh Ring", affixes: [], set_bonus: [{ set: "Marshwalker" }], parsed_set_bonuses: [] } },
+      { slot: "Belt", variant: { variant_id: "Dino Belt", affixes: [], set_bonus: [], parsed_set_bonuses: [] } },
+    ],
+    membershipPlaced: [{ host: "Dino Belt", set: "Marshwalker", station: "Dinosaur Bone crafting" }],
+    jokerPlaced: [], setAugmentsPlaced: [], augmentsPlaced: [], breakdown: {}, effective: {},
+    setsActive: [{ set: "Marshwalker", pieces_required: 2, affixes: [] }],
+  };
+  const members = R.satisfiedSetDetail(build).find((s) => s.set === "Marshwalker").members;
+  assert.deepStrictEqual(members, [
+    { slot: "Ring", item: "Marsh Ring", kind: "intrinsic" },
+    { slot: "Belt", item: "Dino Belt", kind: "membership" },
+  ], "both the intrinsic piece and the runtime membership pick are named");
+});
+
+test("U4: a build with no runtime picks renders its sets exactly as before", () => {
+  // The no-change guard: attribution for an ordinary build must not move.
+  const build = { chosen: [
+    chosenItem("Ring Alpha", "Ring", [], ["Alpha"], [{ set: "Alpha", n: 2, affixes: [["Constitution", "Insightful", 3]] }]),
+    chosenItem("Neck Alpha", "Necklace", [], ["Alpha"], [{ set: "Alpha", n: 2, affixes: [["Constitution", "Insightful", 3]] }]),
+  ], setsActive: [], breakdown: {}, effective: {}, augmentsPlaced: [] };
+  const d = R.satisfiedSetDetail(build);
+  assert.deepStrictEqual(d[0].members.map((m) => m.kind), ["intrinsic", "intrinsic"]);
+  assert.deepStrictEqual(R.activeSetDetail({ chosen: build.chosen, setsActive: [{ set: "Alpha", pieces_required: 2 }] })[0].slots,
+    ["Ring", "Necklace"], "yielding slots are unchanged for a purely intrinsic set");
+});

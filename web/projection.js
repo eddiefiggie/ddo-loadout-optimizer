@@ -126,6 +126,21 @@
         augHost.set(a.variant_id, host && host.variant && host.variant.variant_id);
       }
     }
+    // U4 (R9) — the runtime half of a set's sources. `setYieldingSlots` comes from
+    // the solver's `realPieces`, which are x-var (intrinsic) pieces only: a wildcard
+    // or chosen-membership pick has no x-var, so the very piece that completed the
+    // set was missing from its source list and the player saw "via Ring" alone.
+    // Union the resolver's non-intrinsic contributors in; the intrinsic ones the
+    // solver already named are left to it, so an ordinary build is untouched.
+    const runtimeBySet = new Map();
+    const contributors = setContributors(result);
+    for (const c of (result && result.chosen) || []) {
+      for (const e of contributorsFor(contributors, c.slot, c.variant.variant_id)) {
+        if (e.kind === "intrinsic") continue;
+        if (!runtimeBySet.has(e.set)) runtimeBySet.set(e.set, []);
+        runtimeBySet.get(e.set).push({ slot: c.slot, host: c.variant.variant_id });
+      }
+    }
     const out = {};
     for (const stat of Object.keys(breakdown)) {
       out[stat] = breakdown[stat].map((p) => {
@@ -135,6 +150,13 @@
         else if (p.slot) slots = [p.slot];
         else if (p.sourceKind === "augment" && augSlot.has(p.source)) slots = [augSlot.get(p.source)];
         if (!hostIds.length && p.sourceKind === "augment" && augHost.has(p.source)) hostIds = [augHost.get(p.source)];
+        if (p.sourceKind === "set") {
+          for (const r of runtimeBySet.get(p.source) || []) {
+            if (hostIds.includes(r.host)) continue;   // already credited for this set
+            slots.push(r.slot);
+            hostIds.push(r.host);
+          }
+        }
         return {
           bonus_type: p.bonus_type, value: p.value, source: p.source,
           sourceKind: p.sourceKind, slots, hostIds, isSet: p.sourceKind === "set",
@@ -209,15 +231,97 @@
     return satisfied ? names.filter((n) => satisfied.has(n)) : names;
   }
 
-  /** Active set bonuses with the stats they grant and the slots that yield them. */
+  /** Every set each equipped slot contributes to — the SET CONTRIBUTOR resolver.
+   *
+   *  `CONCEPTS.md` names three kinds and only the first lives in item data: an
+   *  intrinsic member (`set_bonus` at rest), a chosen-membership host (Vecna Lost
+   *  Purpose, Cannith Repurposing Station, Dino Set-Bonus), and a wildcard piece
+   *  (the Gem of Many Facets family). The latter two are solver decisions reported
+   *  in `membershipPlaced` / `jokerPlaced` and appear nowhere in the catalog —
+   *  deliberately, since writing a runtime pick into item data would make the
+   *  catalog assert something untrue. A display that reads `set_bonus` alone omits
+   *  a piece the solve counted.
+   *
+   *  Returns a Map keyed `${slot}||${variant_id}` -> [{set, kind}]. A LIST, because
+   *  a Gem takes one membership from each of two independent pools, so one slot
+   *  commonly feeds two sets at once.
+   *
+   *  Suppression applies to the INTRINSIC component only. A Set Augment slotted
+   *  into an item suppresses that item's own sets, and the solver has already
+   *  dropped them; re-adding them here would resurrect a piece the solve removed.
+   *  A runtime pick on a suppressed host is a separate decision and survives.
+   *
+   *  Duplicate-variant caveat: runtime picks key on host variant_id, not slot, so
+   *  when one variant occupies two slots the pick is attributed to the first of
+   *  them. The pick exists once and is reported once — never on both slots. */
+  function setContributors(build) {
+    const suppressed = suppressedHostIds(build);
+    const out = new Map();
+    const keyOf = (c) => contributorKey(c.slot, c.variant.variant_id);
+    for (const c of (build && build.chosen) || []) {
+      const list = [];
+      if (!suppressed.has(c.variant.variant_id)) {
+        for (const sb of c.variant.set_bonus || []) {
+          if (sb.set && !list.some((e) => e.set === sb.set)) list.push({ set: sb.set, kind: "intrinsic" });
+        }
+      }
+      out.set(keyOf(c), list);
+    }
+    // Attach each runtime pick to the first equipped slot holding its host.
+    const attach = (placed, kind) => {
+      for (const pick of placed || []) {
+        if (!pick || !pick.set || !pick.host) continue;
+        const c = ((build && build.chosen) || []).find((x) => x.variant.variant_id === pick.host);
+        if (!c) continue;
+        const list = out.get(keyOf(c));
+        if (list && !list.some((e) => e.set === pick.set && e.kind === kind)) list.push({ set: pick.set, kind });
+      }
+    };
+    attach(build && build.membershipPlaced, "membership");
+    attach(build && build.jokerPlaced, "wildcard");
+    return out;
+  }
+
+  /** The `setContributors` map key. Private format, one definition: a display that
+   *  hand-rolled `${slot}||${id}` would silently miss every lookup the day the key
+   *  changes, and a missed lookup here reads as "this slot feeds no set". */
+  function contributorKey(slot, variantId) { return `${slot}||${variantId}`; }
+
+  /** The contributor entries for one equipped slot — `[{set, kind}]`, never null. */
+  function contributorsFor(contributors, slot, variantId) {
+    return (contributors && contributors.get(contributorKey(slot, variantId))) || [];
+  }
+
+  /** One Set-Bonuses member as plain text: the piece, the slot it occupies, and how
+   *  it contributes (U4/R10). ONE definition so the app card and every export name a
+   *  piece identically. Never escapes — each caller applies its own escaper.
+   *
+   *  A wildcard or chosen-membership pick is named as such (R8): it counts toward
+   *  the set exactly as an intrinsic member does, but the two are not
+   *  interchangeable and the text must not imply they are. An Augment Set has no
+   *  worn member at all — its copies are named by the item each sits in. */
+  function setMemberLabel(m) {
+    const where = m.slot ? ` (${m.slot})` : "";
+    if (m.kind === "augmentset") return `Set Augment in ${m.item}${where}`;
+    if (m.kind === "wildcard") return `${m.item}${where} — wildcard`;
+    if (m.kind === "membership") return `${m.item}${where} — set-bonus pick`;
+    return `${m.item}${where}`;
+  }
+
+  /** Active set bonuses with the stats they grant and the slots that yield them.
+   *
+   *  U4 (R7, R9) — the yielding slots come from the SET-CONTRIBUTOR resolver, not
+   *  from `set_bonus`. A wildcard/chosen-membership slot completes a set without
+   *  carrying it in item data, so reading the static field alone dropped the piece
+   *  that made the bonus happen out of every source list. */
   function activeSetDetail(result) {
+    const contributors = setContributors(result);
     const yields = new Map();
     const tierAffixes = new Map();
-    for (const c of result.chosen || []) {
-      for (const sb of c.variant.set_bonus || []) {
-        if (!sb.set) continue;
-        if (!yields.has(sb.set)) yields.set(sb.set, []);
-        yields.get(sb.set).push(c.slot);
+    for (const c of (result && result.chosen) || []) {
+      for (const e of contributorsFor(contributors, c.slot, c.variant.variant_id)) {
+        if (!yields.has(e.set)) yields.set(e.set, []);
+        yields.get(e.set).push(c.slot);
       }
       for (const t of c.variant.parsed_set_bonuses || []) {
         if (t.pieces_required == null) continue;
@@ -225,26 +329,56 @@
         if (!tierAffixes.has(k) && (t.affixes || []).length) tierAffixes.set(k, t.affixes);
       }
     }
-    return (result.setsActive || []).map((s) => ({
+    return ((result && result.setsActive) || []).map((s) => ({
       set: s.set, pieces: s.pieces_required,
       slots: yields.get(s.set) || [],
       affixes: tierAffixes.get(`${s.set}||${s.pieces_required}`) || s.affixes || [],
     }));
   }
 
-  /** Every set complete in the build: granted affixes + composing member item names. */
+  /** Every set complete in the build: granted affixes + the pieces composing it.
+   *
+   *  U4 (R10) — a member is `{slot, item, kind}`, not a bare variant_id, and the
+   *  list comes from the SET-CONTRIBUTOR resolver so a wildcard/chosen-membership
+   *  piece is named alongside the intrinsic ones. An AUGMENT SET has no worn member
+   *  whatsoever: it is named by its placed copies and the item each occupies, read
+   *  verbatim from `setAugmentsPlaced[].host` (KTD-6). Without that, its card showed
+   *  a tier number and named nothing at all.
+   *
+   *  `counts` stays STATIC-only on purpose: it selects which tier is satisfied, and
+   *  the tab's "N pieces" is that tier THRESHOLD, not a count of equipped items.
+   *  R10 adds the member list; it does not redefine that number. */
   function satisfiedSetDetail(build) {
+    build = build || {};
+    const contributors = setContributors(build);
     const counts = new Map();
     const members = new Map();
     const tiers = new Map();
     const suppressed = suppressedHostIds(build);   // U7 — a Set-Augment host doesn't count toward its own set
+    const addMember = (set, m) => {
+      if (!members.has(set)) members.set(set, []);
+      members.get(set).push(m);
+    };
+    const countedRuntime = new Set();
     for (const c of build.chosen || []) {
       const isSuppressed = suppressed.has(c.variant.variant_id);
       for (const sb of c.variant.set_bonus || []) {
         if (!sb.set || isSuppressed) continue;
         counts.set(sb.set, (counts.get(sb.set) || 0) + 1);
-        if (!members.has(sb.set)) members.set(sb.set, []);
-        members.get(sb.set).push(c.variant.variant_id);
+      }
+      for (const e of contributorsFor(contributors, c.slot, c.variant.variant_id)) {
+        addMember(e.set, { slot: c.slot, item: c.variant.variant_id, kind: e.kind });
+        // A runtime pick counts toward the threshold exactly as an intrinsic piece
+        // does — the solver already counted it. Leaving `counts` static-only made
+        // the tier disagree with the member list it sits beside: a set completed BY
+        // a wildcard reported the LOWER tier's grant while naming enough pieces for
+        // the higher one, and every export printed that contradiction. Deduped per
+        // (set, host) so one host holding two picks for the same set counts once.
+        if (e.kind === "intrinsic") continue;
+        const ck = `${e.set}||${c.variant.variant_id}`;
+        if (countedRuntime.has(ck)) continue;
+        countedRuntime.add(ck);
+        counts.set(e.set, (counts.get(e.set) || 0) + 1);
       }
       for (const t of c.variant.parsed_set_bonuses || []) {
         if (t.pieces_required == null) continue;
@@ -252,6 +386,18 @@
         const byN = tiers.get(t.set);
         if (!byN.has(t.pieces_required)) byN.set(t.pieces_required, t.affixes || []);
       }
+    }
+    // Augment Set copies: the set's only "pieces". Host read verbatim from the
+    // placement (KTD-6); the slot is the host's worn slot, or null when the host
+    // isn't in `chosen` (never fabricated).
+    const slotOfHost = new Map();
+    for (const c of build.chosen || []) {
+      const id = c.variant && c.variant.variant_id;
+      if (id != null && !slotOfHost.has(id)) slotOfHost.set(id, c.slot);
+    }
+    for (const sa of build.setAugmentsPlaced || []) {
+      if (!sa || !sa.set) continue;
+      addMember(sa.set, { slot: slotOfHost.get(sa.host) || null, item: sa.host, kind: "augmentset" });
     }
     const bySet = new Map();
     for (const [set, byN] of tiers) {
@@ -508,7 +654,13 @@
       };
     });
 
-    const sets = satisfiedSetDetail(snap).map((s) => ({ set: s.set, pieces: s.pieces, affixes: s.affixes }));
+    // U5 (R11) — `members` rides along, so every export can name the pieces that
+    // composed the set and the portable JSON inherits them for free. Dropping it
+    // here made a wildcard/chosen-membership piece solve-visible but
+    // share-invisible: the recipient of a Gem-completed set saw the bonus and no
+    // way to learn which item produced it. Each renderer must still print it —
+    // carrying it through the model is necessary, not sufficient.
+    const sets = satisfiedSetDetail(snap).map((s) => ({ set: s.set, pieces: s.pieces, affixes: s.affixes, members: s.members || [] }));
 
     const attribution = {};
     for (const stat of priorities) {
@@ -594,7 +746,8 @@
     project, creditNoticeLines, declaredCreditsLine,
     // pure primitives (results.js binds these; single definition, no drift)
     affixLabel, itemMl, contributingAffixes, assignAugments, dinoInsertKey, assignDinoInserts,
-    attributionByTarget, whyThis, satisfiedSets, suppressedHostIds, slotSetNames, activeSetDetail, satisfiedSetDetail,
+    attributionByTarget, whyThis, satisfiedSets, suppressedHostIds, slotSetNames,
+    setContributors, contributorsFor, setMemberLabel, activeSetDetail, satisfiedSetDetail,
     // craft + cue helpers
     buildCraftMaps, craftLabel, craftValue, lunarSolar,
     // constraint header helpers (exporters delegates to these)
