@@ -95,12 +95,16 @@ looking and no test was written for the drift.
 
 **Count what the guard verified, not what it iterated over.** A counter incremented before
 the guard reaches the thing it compares against will report a healthy number having
-verified nothing — which defeats this rule using this rule's own recipe. `speed_split`
-still has that shape: it increments `checked` for an `unsourced` entry and moves on
-(`src/speed_split.py:241`) *before* the snapshot lookup two lines later, and `checked` is
-what its vacuity assertion reads (`:319`). A shard whose entries all failed to resolve a
-snapshot therefore passes with a confident count. Tracked as #170; the newer split modules
-report `compared` separately from `checked` for this reason.
+verified nothing — which defeats this rule using this rule's own recipe. `speed_split` had
+exactly that shape: it incremented `checked` for an `unsourced` entry *before* the snapshot
+lookup, and `checked` was what its vacuity assertion read, so a shard whose entries all
+failed to resolve a snapshot passed with a confident count. Fixed in #170 — every split
+module now reports `compared` (values actually matched against a parsed tooltip) separately
+from `checked`, and refuses to pass when `compared` is zero.
+
+The count to distrust is the one incremented on a path that skips the comparison. Grep for
+where a counter is bumped relative to the lookup it is supposed to vouch for; if any branch
+increments and `continue`s, that counter is not evidence.
 
 **3. When a field has two representations, say so at both sites.** The mismatch was not a
 typo — both spellings are correct in their own context. Leave a comment naming the other

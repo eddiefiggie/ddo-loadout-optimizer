@@ -122,7 +122,22 @@ shorthand live in `parrying-versions.md`. Summary:
 
 Both were rendered and stored on 2026-08-08, and every entry is compared against
 its own tooltip on every build (`compared` is reported separately from `checked`,
-so a shard that resolved no snapshot cannot report a healthy count).
+so a shard that resolved no snapshot cannot report a healthy count). As of #170
+every guard in the family reports both counts, Speed included.
+
+**Every guard also binds each snapshot to the key it is filed under**, so a
+snapshot harvested against the wrong invocation is reported rather than compared
+against itself. The anchors differ per affix and all come from evidence already
+recorded here:
+
+| Field | Arabic anchor | Roman anchor |
+|---|---|---|
+| `speed` | argument is the movement %; attack speed from the recorded switch | `attack = rank%`, `movement = min(5 x rank, 30)` |
+| `parrying_version` | the argument is the magnitude | `ROMAN_MAGNITUDE` lookup (I/IV/VIII) |
+| `heightened_awareness` | the argument is the magnitude | none exists — a Roman rank is refused |
+
+A new invocation must be checked against its anchor before being stored. Where no
+anchor exists, the rank is refused rather than trusted.
 
 **Watch for:** a `Parrying II` or any Roman numeral outside I/IV/VIII, and any
 Heightened Awareness Roman variant. Both currently fail the build by design —
