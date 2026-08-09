@@ -376,6 +376,21 @@ function buildPickerVocabulary(dataset) {
   for (const [name, type] of _craftingAffixTriples(ds)) {
     if (PRESENCE_TYPES.has(type) && _isPresenceTargetable(name)) { const c = canonical(name); suggest.add(c); presence.add(c); }
   }
+  // `presence` means "appears as Bool on at least one item" — NOT "has no
+  // magnitude". Four stats are both: Deception, Smoke Screen, Protection from
+  // Evil, and Underwater Action ship a Bool line on some items and a real typed
+  // magnitude on others (Deception carries Enhancement 3 and Enhancement 7).
+  // A UI or query gate that reads `presence` alone treats those as on/off and
+  // silently strips a floor the player set on a stat that genuinely has one.
+  // `magnitude` is the set with a real rankable bucket, so `presence` minus
+  // `magnitude` is the honest "on/off only, nothing to bound or declare" test.
+  const magnitude = new Set();
+  for (const [name, type] of _itemAffixTriples(ds)) {
+    if (_rankableType(type)) magnitude.add(canonical(name));
+  }
+  for (const [name, type, value] of _craftingAffixTriples(ds)) {
+    if (_rankableType(type) && _isMagnitude(value)) magnitude.add(canonical(name));
+  }
   // known = the unfiltered union (canonicalized), plus every suggestion.
   const known = new Set();
   for (const n of _allAffixNames(ds)) { const c = canonical(n); if (c) known.add(c); }
@@ -401,7 +416,7 @@ function buildPickerVocabulary(dataset) {
   for (const s of [...suggest]) {
     if (expandedAway[String(s).trim().toLowerCase()]) suggest.delete(s);
   }
-  return { suggestions: [...suggest].sort(), known, canonical, presence, expandedAway };
+  return { suggestions: [...suggest].sort(), known, canonical, presence, magnitude, expandedAway };
 }
 
 /** U1 (#136) — the concrete stats an expanded-away name becomes, or null.

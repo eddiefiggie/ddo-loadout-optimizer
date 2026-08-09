@@ -39,6 +39,23 @@ function stepAfterLoad(snapshot) {
   return snapshot && snapshot.status === "optimal" ? "results" : "priorities";
 }
 
+/** Is this stat on/off ONLY — no magnitude to floor, cap, or declare?
+ *
+ *  `vocab.presence` alone is the wrong test. It means "appears as Bool on at
+ *  least one item", and four stats are in it while also carrying a real typed
+ *  magnitude elsewhere: Deception, Smoke Screen, Protection from Evil, and
+ *  Underwater Action. Gating on `presence` alone hid the min/max control for
+ *  those four AND stripped any floor already set on them — a bound the player
+ *  could no longer see, clear, or re-enter, on a stat that genuinely has one.
+ *
+ *  A vocab without `magnitude` (hand-built test fixtures, older cached shape)
+ *  falls back to the bare presence test, which is the prior behavior. */
+function isPresenceOnly(stat, vocab) {
+  if (!vocab || !vocab.presence || typeof vocab.presence.has !== "function") return false;
+  if (!vocab.presence.has(stat)) return false;
+  return !(vocab.magnitude && typeof vocab.magnitude.has === "function" && vocab.magnitude.has(stat));
+}
+
 /** Clean a stat->value bound map (caps/floors): keep only entries whose value is a
  *  finite number >= 0. Blank, null, negative, or non-numeric entries are dropped so
  *  a stray input never reaches the solver as a cap/floor.
@@ -54,16 +71,19 @@ function stepAfterLoad(snapshot) {
  *  Callers without a vocab (unit tests supplying canonical names) get the prior
  *  behavior exactly. Pure; unit-tested. */
 function cleanBoundMap(m, vocab) {
-  const canonical = vocab && typeof vocab.canonical === "function" ? vocab.canonical : (s) => s;
-  const presence = vocab && vocab.presence && typeof vocab.presence.has === "function" ? vocab.presence : null;
   const out = {};
   if (m && typeof m === "object") {
-    for (const [rawStat, v] of Object.entries(m)) {
+    for (const [stat, v] of Object.entries(m)) {
       if (v === "" || v == null) continue;
       const n = Number(v);
       if (!Number.isFinite(n) || n < 0) continue;
-      const stat = canonical(String(rawStat).trim()) || rawStat;
-      if (presence && presence.has(stat)) continue;
+      // Deliberately NOT canonicalized, unlike cleanCreditMap. Bound keys come
+      // from `state.priorities`, which addPriority already canonicalized, so a
+      // rewrite here buys nothing — and it is not free: buildModel derives solver
+      // targets from bound-map keys, so rewriting a stale non-canonical key
+      // would resurrect a dead orphan bound AND mint a target the player never
+      // ranked. Credits have no such path, which is why they canonicalize.
+      if (isPresenceOnly(stat, vocab)) continue;
       out[stat] = n;
     }
   }
@@ -105,7 +125,6 @@ function creditKey(stat, bonusType) {
  *  solver would drop, or vice versa. Pure; unit-tested. */
 function cleanCreditMap(m, vocab) {
   const canonical = vocab && typeof vocab.canonical === "function" ? vocab.canonical : (s) => s;
-  const presence = vocab && vocab.presence && typeof vocab.presence.has === "function" ? vocab.presence : null;
   const rows = [];
   if (m && typeof m === "object") {
     for (const row of Object.values(m)) {
@@ -118,7 +137,10 @@ function cleanCreditMap(m, vocab) {
       // meaningless magnitude satisfied it, so the solver stopped securing the item
       // that actually grants the feature. The UI does not offer the control here;
       // this is the second gate, for a credit that predates it or arrives restored.
-      if (presence && presence.has(stat)) continue;
+      // Presence-ONLY, not merely presence-flagged: a stat with a real magnitude
+      // bucket can carry a credit that competes in that bucket correctly. The
+      // defect above is specific to a stat whose ONLY bucket is `stat||boolean`.
+      if (isPresenceOnly(stat, vocab)) continue;
       rows.push({ stat, bonus_type: row.bonus_type, value: row.value });
     }
   }
@@ -159,10 +181,11 @@ function creditIsUsable(v) {
  *  — so a half-typed credit row does not inflate the badge. Pure; unit-tested. */
 function advancedRowModel(stat, state, vocab) {
   const s = state || {};
-  const presence = vocab && vocab.presence && typeof vocab.presence.has === "function" ? vocab.presence : null;
-  // R6 — a presence (on/off) stat has no magnitude to floor or cap, and already
-  // suppresses declared credits, so its panel would be empty. No control at all.
-  if (presence && presence.has(stat)) {
+  // R6 — an on/off-ONLY stat has no magnitude to floor or cap, and suppresses
+  // declared credits too, so its panel would be empty. No control at all. A stat
+  // that is Bool on some items but carries a real magnitude on others keeps its
+  // panel: it has something to bound.
+  if (isPresenceOnly(stat, vocab)) {
     return { hasAdvanced: false, floor: null, cap: null, credits: [], badgeCount: 0 };
   }
   const pick = (map) => {
@@ -568,7 +591,7 @@ function addBundle(key, current, vocab) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -1638,6 +1661,16 @@ if (typeof window !== "undefined" && window.App) {
       // KTD1 — the whole priority list is being replaced, so any row left open
       // belongs to the build being discarded. Ephemeral state, cleared not restored.
       openPanelClear();
+      // Drop bounds on on/off-only stats from STATE, not just from the query.
+      // cleanBoundMap refuses them at the solver seam, but the share exports read
+      // the raw saved inputs (exporters.js reads rec.inputs.targetFloors), so a
+      // legacy floor on a presence-only stat would print "[min 3]" on a loadout
+      // the solve produced while ignoring it — a constraint the math never
+      // applied. Same rule the #169 migration below follows: clean the state.
+      for (const map of [state.targetCaps, state.targetFloors]) {
+        if (!map) continue;
+        for (const stat of Object.keys(map)) if (isPresenceOnly(stat, vocab)) delete map[stat];
+      }
       // #169 — a saved character may rank a name that has since been EXPANDED
       // AWAY (`Speed`, `Parrying`, `Heightened Awareness`, the umbrella ability
       // names). The add-a-priority paths refuse those, but this one restored them

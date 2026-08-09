@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -1130,6 +1130,54 @@ test("F2: a presence-stat floor never reaches the query", () => {
   const q = buildQuery(state, presenceVocab);
   assert.deepStrictEqual(q.targetFloors, { Constitution: 20 });
   assert.deepStrictEqual(q.targetCaps, {});
+});
+
+test("F2: every rankable stat keeps its Advanced control against the REAL vocab", () => {
+  // The bug this catches: `vocab.presence` means "appears as Bool on at least one
+  // item", not "has no magnitude". Four stats are in both sets — Deception, Smoke
+  // Screen, Protection from Evil, Underwater Action — and gating on `presence`
+  // alone hid their min/max AND silently dropped any floor already set on them.
+  // The hand-built presenceVocab above could never surface this; only the real one can.
+  const rv = buildPickerVocabulary(realData);
+  const both = realData.metadata.rankable_affixes.filter((s) => rv.presence.has(s));
+  assert.ok(both.length > 0, "the dual-nature case is real in the shipped dataset");
+  for (const stat of realData.metadata.rankable_affixes) {
+    assert.strictEqual(advancedRowModel(stat, {}, rv).hasAdvanced, true,
+      `${stat} is rankable, so it must keep its Advanced control`);
+    assert.strictEqual(isPresenceOnly(stat, rv), false, `${stat} has a magnitude bucket`);
+  }
+  // and a genuinely on/off-only stat is still refused
+  const onOff = [...rv.presence].find((s) => !rv.magnitude.has(s));
+  assert.ok(onOff, "the dataset has at least one on/off-only stat");
+  assert.strictEqual(isPresenceOnly(onOff, rv), true);
+  assert.strictEqual(advancedRowModel(onOff, {}, rv).hasAdvanced, false);
+});
+
+test("F2: a floor on a dual-nature stat survives to the query", () => {
+  const rv = buildPickerVocabulary(realData);
+  const dual = realData.metadata.rankable_affixes.find((s) => rv.presence.has(s));
+  const state = Object.assign(baseState(), { priorities: [dual], targetFloors: { [dual]: 5 } });
+  assert.deepStrictEqual(buildQuery(state, rv).targetFloors, { [dual]: 5 },
+    `${dual} carries a real magnitude, so its floor must reach the solver`);
+});
+
+test("F2: cleanBoundMap does not canonicalize keys", () => {
+  // buildModel derives solver targets from bound-map keys, so rewriting a stale
+  // non-canonical key would both resurrect a dead bound and mint a target the
+  // player never ranked. Credits canonicalize; bounds must not.
+  const aliasVocab = { canonical: (v) => (v === "PRR" ? "Physical Sheltering" : v), presence: new Set(), magnitude: new Set() };
+  assert.deepStrictEqual(cleanBoundMap({ PRR: 50 }, aliasVocab), { PRR: 50 });
+});
+
+test("R1/R2: the Advanced panel is ordered after the reorder controls", () => {
+  // `.wz-adv` precedes `.wz-ctl` in DOM order and takes a full flex line, so
+  // without an explicit order it pushed ↑ ↓ ✕ onto a third line on every
+  // magnitude row while presence rows stayed on one — the exact misalignment
+  // this change exists to remove.
+  const css = fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf-8");
+  const rule = css.slice(css.indexOf(".wz-adv {"), css.indexOf(".wz-adv >"));
+  assert.ok(/order:\s*1/.test(rule), ".wz-adv carries an explicit order so it lays out last");
+  assert.ok(/flex-basis:\s*100%/.test(rule), "and still takes its own line");
 });
 
 // ---- U2/KTD1 — the open-panel set --------------------------------------------

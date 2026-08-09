@@ -779,7 +779,13 @@ input.wz-ml { width: 120px; }
 
    Quieter than the reorder controls by design. The row's job is the ORDER; this
    is the affordance you reach for only when you have a specific number in mind. */
-.wz-adv { flex-basis: 100%; margin-top: 2px; padding-top: 6px;
+/* `order: 1` is load-bearing, not cosmetic. `.wz-adv` sits before `.wz-ctl` in
+   DOM order (the panel belongs to the row it describes), and `flex-basis: 100%`
+   makes it consume a whole flex line — which pushed the reorder buttons onto a
+   THIRD line on every magnitude row, while presence rows stayed on one. That is
+   exactly the misalignment R1 and R2 exist to remove. Ordering it last puts the
+   controls back inline and leaves the panel on its own line beneath them. */
+.wz-adv { order: 1; flex-basis: 100%; margin-top: 2px; padding-top: 6px;
   border-top: 1px dashed var(--border-2); font-size: 0.88em; color: var(--muted); }
 .wz-adv > summary { cursor: pointer; color: var(--faint); list-style-position: outside;
   padding: 2px 0; min-height: var(--tap-sm, 24px); display: flex; align-items: center; gap: 4px; }
