@@ -1,8 +1,8 @@
 {
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
- "generated": "2026-08-01",
+ "generated": "2026-08-09",
  "dataset": "web/data/items.json (9045 items)",
- "fixture_count": 6,
+ "fixture_count": 10,
  "solves": {
   "heroic-str-melee": {
    "status": "optimal",
@@ -369,6 +369,262 @@
     {
      "slot": "Trinket",
      "variant": "Epic Piece of Shattered Horn"
+    }
+   ]
+  },
+  "trance-credit-displaces-ml34-baseline": {
+   "status": "optimal",
+   "perTarget": {
+    "Combat Mastery": 29,
+    "Constitution": 37,
+    "Physical Sheltering": 126
+   },
+   "effective": {
+    "Combat Mastery": 29,
+    "Constitution": 37,
+    "Physical Sheltering": 126
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Firefly Garb"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Lindal's Mighty Belt"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Adamantine Cloak of the Bear"
+    },
+    {
+     "slot": "Gloves",
+     "variant": "The Cruel Hands of Fate"
+    },
+    {
+     "slot": "Goggles",
+     "variant": "Legendary Mining Lenses"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Aspect of the Wild Hunt"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Legendary Calamitous Bastard Sword"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Legendary Pendant of Crippling Strikes"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Lionheart Ring"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Ring of Summer's Heat"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Bauble of Draconic Resistance"
+    }
+   ]
+  },
+  "trance-credit-displaces-ml34": {
+   "status": "optimal",
+   "perTarget": {
+    "Combat Mastery": 30,
+    "Constitution": 37,
+    "Physical Sheltering": 126
+   },
+   "effective": {
+    "Combat Mastery": 30,
+    "Constitution": 37,
+    "Physical Sheltering": 126
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Firefly Garb"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Lindal's Mighty Belt"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Legendary Cloak of Summer"
+    },
+    {
+     "slot": "Gloves",
+     "variant": "The Cruel Hands of Fate"
+    },
+    {
+     "slot": "Goggles",
+     "variant": "Legendary Mining Lenses"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Aspect of the Wild Hunt"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Legendary Calamitous Bastard Sword"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Legendary Pendant of Crippling Strikes"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Lionheart Ring"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Bauble of Draconic Resistance"
+    }
+   ]
+  },
+  "trance-credit-additive-ml32": {
+   "status": "optimal",
+   "perTarget": {
+    "Devotion": 321,
+    "Wisdom": 34,
+    "Universal Spell Power": 97
+   },
+   "effective": {
+    "Devotion": 321,
+    "Wisdom": 34,
+    "Universal Spell Power": 97
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Legendary Darkmoss"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Legendary Bladesworn Bandolier"
+    },
+    {
+     "slot": "Boots",
+     "variant": "Flower Boots"
+    },
+    {
+     "slot": "Bracers",
+     "variant": "Legendary World-Weary Wrappings"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Chilling Sash of Tailara"
+    },
+    {
+     "slot": "Gloves",
+     "variant": "Legendary Absorption Gauntlet"
+    },
+    {
+     "slot": "Goggles",
+     "variant": "Legendary Goggles of Dusk"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Epic Sacred Helm"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Marro, the Bone of Demons"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Astral Spore Pendant"
+    },
+    {
+     "slot": "Off Hand",
+     "variant": "Legendary Liturgy of the Dark Six"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Epic Sacred Band"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Deathwarden"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Bottled Rainstorm"
+    }
+   ]
+  },
+  "trance-credit-additive-ml32-baseline": {
+   "status": "optimal",
+   "perTarget": {
+    "Devotion": 309,
+    "Wisdom": 34,
+    "Universal Spell Power": 97
+   },
+   "effective": {
+    "Devotion": 309,
+    "Wisdom": 34,
+    "Universal Spell Power": 97
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Legendary Darkmoss"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Legendary Bladesworn Bandolier"
+    },
+    {
+     "slot": "Boots",
+     "variant": "Flower Boots"
+    },
+    {
+     "slot": "Bracers",
+     "variant": "Legendary World-Weary Wrappings"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Chilling Sash of Tailara"
+    },
+    {
+     "slot": "Gloves",
+     "variant": "Legendary Absorption Gauntlet"
+    },
+    {
+     "slot": "Goggles",
+     "variant": "Legendary Goggles of Dusk"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Epic Sacred Helm"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Marro, the Bone of Demons"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Astral Spore Pendant"
+    },
+    {
+     "slot": "Off Hand",
+     "variant": "Legendary Liturgy of the Dark Six"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Epic Sacred Band"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Deathwarden"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Bottled Rainstorm"
     }
    ]
   }

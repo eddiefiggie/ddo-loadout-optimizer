@@ -63,7 +63,7 @@ if (require.main === module) {
   solveAll().then(({ solves, count }) => {
     const snapshot = {
       schema_note: "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
-      generated: "2026-08-01",
+      generated: "2026-08-09",
       dataset: "web/data/items.json (9045 items)",
       fixture_count: count,
       solves,
