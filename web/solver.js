@@ -101,7 +101,14 @@ function buildProgram(model) {
   }
   // A capped OR floored stat must have its buckets built even if it is not a priority
   // target, so its raw expression exists for the clamp / floor constraint (KTD3).
-  const targetSet = new Set([...model.targets, ...Object.keys(cappedStats), ...Object.keys(model.floors || {})]);
+  // U1 (declared stat credits) — a credit is a contribution the player already
+  // holds, so its bucket must exist for the same reason a capped or floored
+  // stat's does. `_equivType` on the type half is what keeps a credit in the
+  // SAME bucket gear would land in (KTD2); forming the key any other way would
+  // drift the moment the equivalence table changes.
+  const credits = (model.credits || []).filter((c) => c && c.stat && c.value > 0);
+  const targetSet = new Set([...model.targets, ...Object.keys(cappedStats), ...Object.keys(model.floors || {}),
+    ...credits.map((c) => c.stat)]);
 
   const xVars = [];
   model.worn.forEach((group) => {
@@ -132,16 +139,52 @@ function buildProgram(model) {
     }
   }
 
+  // A declared credit joins the bucket map as a contribution with an EMPTY gate
+  // list — nothing has to be equipped for the player to have it. The existing
+  // one-contributor-per-bucket cap then produces max-of-type for free (KTD1).
+  const creditBuckets = new Map();
+  for (const c of credits) {
+    const k = `${c.stat}||${_equivType(c.bonus_type)}`;
+    if (!buckets.has(k)) buckets.set(k, []);
+    buckets.get(k).push({ gates: [], value: c.value, credit: c });
+    creditBuckets.set(k, Math.max(creditBuckets.get(k) || 0, c.value));
+  }
+
   let zc = 0;
   const zByBucket = new Map();
+  const creditMeta = new Map();          // z name -> the credit it represents (U3 reads this)
   for (const [key, sources] of buckets) {
-    zByBucket.set(key, sources.map((src) => ({ name: "z" + zc++, gates: src.gates, value: src.value })));
+    zByBucket.set(key, sources.map((src) => {
+      const z = { name: "z" + zc++, gates: src.gates, value: src.value };
+      if (src.credit) creditMeta.set(z.name, src.credit);
+      return z;
+    }));
   }
+
 
   // Extension seam (U1): extraVars are structural binaries; extraConstraints are
   // raw LP constraint bodies that encodeStage injects verbatim.
   const extraVars = [];
   const extraConstraints = [];
+
+  // The empty gate list makes a credit AVAILABLE; it does not make it TAKEN.
+  // `encodeStage` bounds each z by the bucket cap plus one `z - gate <= 0` per
+  // gate, so a gateless z is a free binary that only an objective pulls to 1.
+  // That holds on the optimum path — every stage maximizes its stat and then
+  // locks it exactly — but every alternatives generator runs `tieBreak:false`
+  // with relaxed `>= value - give` locks, where a credited stat that is not the
+  // current gain objective carries no objective coefficient and settles at its
+  // lower bound. `readSolution` sums value*z, so that alternative would report a
+  // total missing a bonus the player unconditionally holds. For gear, `z = 0`
+  // truthfully means "not equipped"; for a credit it asserts something false
+  // about the character — the one invariant a credit does NOT inherit from gear.
+  // Pin each credited bucket at or above its credit. Always feasible (the
+  // credit's own z satisfies it), one constraint per credited bucket.
+  for (const [key, floorValue] of creditBuckets) {
+    const zs = zByBucket.get(key) || [];
+    if (!zs.length) continue;
+    extraConstraints.push(`${zs.map((z) => `+ ${z.value} ${z.name}`).join(" ")} >= ${floorValue}`);
+  }
 
   // U6 — per-slot pin/lock constraints hold across every lexicographic stage.
   // No-op when the query carries no slotConstraints (current live behavior).
@@ -823,7 +866,7 @@ function buildProgram(model) {
   }
 
   return {
-    xVars, zByBucket, cappedStats, targetList: model.targets, model,
+    xVars, zByBucket, cappedStats, targetList: model.targets, model, creditMeta,
     extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], _zc: zc,
   };
 }

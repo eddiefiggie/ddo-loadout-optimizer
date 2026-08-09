@@ -2491,5 +2491,179 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
     assert.strictEqual(r.effective["Armor Class"], 10, "different buckets sum: 2 + 8");
   });
 
+  // --- U1 (#171-adjacent, declared stat credits) --------------------------------
+  // A credit is a contribution with an EMPTY gate list. Everything here rides on
+  // the existing one-contributor-per-bucket cap, except the last three, which
+  // pin the free-binary defect: with no gates, nothing forces z_credit to 1, so
+  // on a tieBreak:false path it can settle at 0 and the reported total silently
+  // omits a bonus the player unconditionally holds.
+
+  const credit = (stat, bonus_type, value) => ({ stat, bonus_type, value });
+
+  await test("U1: Covers AE1. a credit displaces weaker same-bucket gear", async () => {
+    const model = {
+      targets: ["CM", "KI"], mlCap: 34, dodgeCap: null,
+      credits: [credit("CM", "Insight", 7)],
+      worn: [
+        slot("Ring", [item("cmWeak", "Ring", [["CM", "Insight", 5]])]),
+        slot("Necklace", [item("kiX", "Necklace", [["KI", "Enhancement", 10]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.CM, 7, "the bucket resolves to the credit, not the item");
+    assert.ok(!r.chosen.some((c) => c.variant.variant_id === "cmWeak"), "the beaten item is not equipped");
+    assert.strictEqual(r.effective.KI, 10, "the freed slot serves the next priority");
+  });
+
+  await test("U1: Covers AE2. stronger gear still wins its bucket", async () => {
+    const model = {
+      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      credits: [credit("CM", "Insight", 7)],
+      worn: [slot("Ring", [item("cmStrong", "Ring", [["CM", "Insight", 9]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.CM, 9, "max-of-type, not the credit");
+    assert.ok(r.chosen.some((c) => c.variant.variant_id === "cmStrong"), "the stronger item is equipped");
+  });
+
+  await test("U1: Covers AE4. a credit stacks across buckets, never within one", async () => {
+    const model = {
+      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      credits: [credit("CM", "Insight", 7)],
+      worn: [slot("Ring", [item("cmEnh", "Ring", [["CM", "Enhancement", 5]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.CM, 12, "Insight 7 + Enhancement 5 occupy different buckets");
+  });
+
+  await test("U1: a credit equal to its gear does not double the bucket", async () => {
+    const model = {
+      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      credits: [credit("CM", "Insight", 7)],
+      worn: [slot("Ring", [item("cmEqual", "Ring", [["CM", "Insight", 7]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.CM, 7, "one contributor per bucket, counted once");
+  });
+
+  await test("U1: two credits on one stat in different buckets both contribute", async () => {
+    const model = {
+      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      credits: [credit("CM", "Insight", 7), credit("CM", "Sacred", 4)],
+      worn: [slot("Ring", [item("none", "Ring", [["KI", "Enhancement", 1]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.CM, 11, "distinct bonus types stack");
+  });
+
+  await test("U1: a stacking-equivalent bonus type competes rather than stacks", async () => {
+    const M = require("../web/model.js");
+    M.setStackEquiv({ Insightful: "Insight" });
+    try {
+      const model = {
+        targets: ["CM"], mlCap: 34, dodgeCap: null,
+        credits: [credit("CM", "Insight", 7)],
+        worn: [slot("Ring", [item("cmEquiv", "Ring", [["CM", "Insightful", 5]])])],
+      };
+      const r = await S.solveLexicographic(model, highs);
+      assert.strictEqual(r.effective.CM, 7, "the equivalence table collapses both into one bucket");
+    } finally {
+      M.setStackEquiv({});
+    }
+  });
+
+  await test("U1: Covers R3. no declared credits leaves the solve unchanged", async () => {
+    const base = () => ({
+      targets: ["CM", "KI"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Ring", [item("cmA", "Ring", [["CM", "Insight", 5]])]),
+        slot("Necklace", [item("kiX", "Necklace", [["KI", "Enhancement", 10]])]),
+      ],
+    });
+    const without = await S.solveLexicographic(base(), highs);
+    const empty = await S.solveLexicographic({ ...base(), credits: [] }, highs);
+    assert.deepStrictEqual(empty.effective, without.effective, "an empty credit list changes nothing");
+    assert.deepStrictEqual(
+      empty.chosen.map((c) => c.variant.variant_id).sort(),
+      without.chosen.map((c) => c.variant.variant_id).sort(),
+      "the same items are equipped");
+    assert.strictEqual(without.effective.CM, 5, "and the pre-feature answer is unchanged");
+  });
+
+  await test("U1: a credited stat holds its floor with the tie-break disabled", async () => {
+    // The free-binary defect's home. With tieBreak:false and a relaxed lock, a
+    // credit that is not the gain objective carries no objective coefficient, so
+    // nothing pulls its z to 1 unless a constraint does.
+    const model = {
+      targets: ["CM", "KI"], mlCap: 34, dodgeCap: null,
+      credits: [credit("CM", "Insight", 7)],
+      worn: [
+        slot("Ring", [item("cmWeak", "Ring", [["CM", "Insight", 5]])]),
+        slot("Necklace", [item("kiX", "Necklace", [["KI", "Enhancement", 10]])]),
+      ],
+    };
+    const program = S.buildProgram(model);
+    // Mirrors the alternatives call shape: maximize a DIFFERENT stat while holding
+    // the credited one only within a give. Nothing then rewards z_credit.
+    const r = S.solveConstrained(program, highs, {
+      objectiveStat: "KI", sense: "max", tieBreak: false,
+      locks: [{ stat: "CM", value: 7, give: 7 }],
+    });
+    assert.strictEqual(r.status, "optimal");
+    assert.ok(r.effective.CM >= 7,
+      `a credited stat must never report below its credit; got ${r.effective.CM}`);
+  });
+
+  await test("U1: every alternative loadout reports the credited stat at or above its credit", async () => {
+    // The credited stat must rank BELOW the maximized one. `rebalance` locks only
+    // `targets.slice(0, j)` and maximizes target j, so a credited stat after j is
+    // neither locked nor rewarded — the one place z_credit is genuinely free. The
+    // set-activation family does not expose it: setGive(7) is 4, so its lock
+    // (CM >= 3) already forces z_credit to 1.
+    // The necklace trade has to fit inside alternativeGive (10% of the leader) or
+    // rebalance proves infeasible and produces nothing: Con 22 -> give 2 -> the
+    // Con-2 necklace can be swapped for the KI-8 one and still clear Con >= 20.
+    const model = {
+      targets: ["Con", "KI", "CM"], mlCap: 34, dodgeCap: null,
+      credits: [credit("CM", "Insight", 7)],
+      worn: [
+        slot("Ring", [item("conR", "Ring", [["Con", "Enhancement", 20]])]),
+        slot("Necklace", [
+          // Insight-typed so it STACKS with the ring's Enhancement Con — a
+          // same-bucket duplicate would add nothing and the optimum would already
+          // have taken the trade, leaving rebalance no candidate to produce.
+          item("conN", "Necklace", [["Con", "Insight", 2]]),
+          item("kiN", "Necklace", [["KI", "Enhancement", 8]]),
+        ]),
+      ],
+      augments: [],
+    };
+    const optimum = await S.solveLexicographic(model, highs);
+    assert.strictEqual(optimum.effective.CM, 7, "the optimum credits CM");
+    const alts = await S.generateAlternatives(optimum, model, highs);
+    assert.ok(Array.isArray(alts) && alts.length, "the generators produced alternatives to check");
+    for (const alt of alts) {
+      const eff = (alt.sol && alt.sol.effective) || {};
+      assert.ok((eff.CM || 0) >= 7,
+        `the ${alt.gainAxis} alternative reported CM=${eff.CM}, below the declared 7`);
+    }
+  });
+
+  await test("U1: a credit on a bucketed-but-untargeted stat never contributes silently", async () => {
+    // targetList is model.targets, NOT the widened targetSet, so a credit on a
+    // stat that is bucketed but not a target would not surface in `effective`.
+    // It must either be reported or be provably absent — never counted invisibly.
+    const model = {
+      targets: ["KI"], mlCap: 34, dodgeCap: null,
+      credits: [credit("CM", "Insight", 7)],
+      worn: [slot("Ring", [item("kiX", "Ring", [["KI", "Enhancement", 10]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.KI, 10, "the targeted stat is unaffected");
+    const cm = r.effective.CM;
+    assert.ok(cm === undefined || cm === 7,
+      `an untargeted credit must be absent or fully reported, got ${cm}`);
+  });
+
   console.log(`\n${passed} passed`);
 })();

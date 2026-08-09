@@ -736,13 +736,38 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     // armor dodge cap in buildProgram. U2 — user-set per-stat floors (best-effort).
     userCaps: query.targetCaps || {},
     floors: query.targetFloors || {},
+    // U1 (declared stat credits) — what the player already holds from a non-gear
+    // source. Normalized to an array here so the solver has one shape to read;
+    // the query carries a `(stat, bonus type)`-keyed map so the UI can address a
+    // single credit for edit and removal.
+    credits: normalizeCredits(query.declaredCredits),
   };
+}
+
+/** Declared credits as a deduped array, from either the keyed map or an array. */
+function normalizeCredits(declared) {
+  if (!declared) return [];
+  const rows = Array.isArray(declared) ? declared : Object.values(declared);
+  const byKey = new Map();
+  for (const row of rows) {
+    if (!row) continue;
+    const stat = String(row.stat == null ? "" : row.stat).trim();
+    const bonusType = String(row.bonus_type == null ? "" : row.bonus_type).trim();
+    const value = Number(row.value);
+    // A non-positive or unreadable credit is dropped rather than entering a
+    // bucket, mirroring the `value > 0` filter gear affixes already pass through
+    // — a zero contribution would occupy the one-contributor-per-bucket slot and
+    // suppress real gear.
+    if (!stat || !bonusType || !Number.isFinite(value) || value <= 0) continue;
+    byKey.set(`${stat}||${bonusType}`, { stat, bonus_type: bonusType, value });
+  }
+  return [...byKey.values()];
 }
 
 // exports for node tests; harmless in the browser
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
-    buildModel, eligible, variantConflict, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
+    buildModel, normalizeCredits, eligible, variantConflict, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
     offHandItemsExcluded, allowedOffHandWeaponTypes, pinSlotConflict,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys,
     isForgedRace, isDocent, isBothHandsWeapon, variantKey, setStackEquiv, equivType,
