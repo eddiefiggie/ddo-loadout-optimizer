@@ -2,6 +2,7 @@
 title: "Prove a new test fails against the pre-change tree — a green suite can cover none of the diff"
 module: tests
 date: 2026-08-09
+last_updated: 2026-08-09
 problem_type: convention
 component: testing_framework
 severity: high
@@ -13,6 +14,8 @@ tags:
   - test-fidelity
   - coverage
   - workflow
+  - mutation-testing
+  - source-assertion
 applies_when:
   - "Writing or reviewing the tests for a new unit of work before opening a PR"
   - "A test hand-builds its input instead of driving the production entry point end to end"
@@ -20,6 +23,8 @@ applies_when:
   - "A test asserts an absent field, an empty array, or that nothing changed"
   - "Adding golden or parity fixtures to pin behavior a new constraint is meant to protect"
   - "A green suite is being offered as evidence that a diff is covered"
+  - "A test asserts against source text, an identifier's existence, or a file's contents rather than a produced value"
+  - "Working in a suite with no DOM harness, where source slicing is the only way to reach UI wiring"
 ---
 
 # A green suite is not coverage — run new tests against the pre-change tree
@@ -84,6 +89,42 @@ When a test does pass against base and it is *not* a deliberate guard, the fix i
 - **Import the constant from the module under test** rather than restating it in the fixture. `tests/exporters.test.js:573` now does `const { DECLARED_LABEL } = require("../web/solver.js")`, which converts two echo tests into a real cross-module contract against `web/solver.js:1025`.
 - **Make absence distinguishable from emptiness.** `assert.ok(Array.isArray(r.creditReport))` before `deepStrictEqual(r.creditReport, [])` (`tests/solver.test.js:2816-2817`) is what removed the `|| []` escape hatch; `buildCreditReport` returns `[]` rather than nothing at `web/solver.js:1267`, so the field's presence is now itself the assertion.
 - **Corrupt the production code** when the surface is a golden/parity fixture set rather than a unit test — see the scope limit below.
+
+## The recipe is necessary, not sufficient — a source-regex test passes it and still proves nothing
+
+Everything above is correct and still leaves a hole, found the next day on the Priorities-UI branch ([#185](https://github.com/eddiefiggie/ddo-loadout-optimizer/pull/185)). Eighteen new tests were run against the pre-change tree and twenty went red, exactly as this doc prescribes. Eight regressions still shipped green.
+
+The reason is mechanical. `tests/wizard.test.js` has no jsdom (`tests/wizard.test.js:851` says so), so DOM behavior is asserted by slicing `web/wizard.js`'s **source text** — the established local idiom. A test like `assert.ok(/refreshBadge\(/.test(wire))` **necessarily** fails against the pre-change tree, because the identifier it greps for did not exist yet. It clears this doc's gate on the first try, for a reason that has nothing to do with behavior. Then it goes on passing against an implementation whose body has been gutted, because the identifier is still spelled the same.
+
+The pre-change run answers *"is this test new?"* A source regex is always new. It does not answer *"does this test constrain anything?"*
+
+**The check that closes it: mutate the implementation and confirm the suite goes red.** Break the specific line the test claims to cover — delete the guard, empty the function body, revert the condition — and run. This is cheap to script against a scratch copy:
+
+```bash
+S=$(mktemp -d -t mut-XXXXXX); cp -r web tests "$S/"
+python3 - "$S" <<'PY'
+import sys; d=sys.argv[1]; p=d+"/web/wizard.js"; s=open(p).read()
+open(p,"w").write(s.replace('if (!isPresenceOnly(stat, vocab)) continue;', 'if (false) continue;', 1))
+PY
+(cd "$S" && node tests/wizard.test.js | grep -c '^FAIL')   # 0 == the test proves nothing
+```
+
+Eight mutations, all previously green, on that branch:
+
+| Mutation | What it silently reverted |
+|---|---|
+| delete the `isPresenceOnly` guard in the load sweep | erased **every** bound the player had ever set, on every stat |
+| replace `delete map[stat]` with a no-op | the disclosure banner claimed a removal that never happened |
+| delete `${openPanels.has(stat) ? " open" : ""}` | reverted the whole disclosure feature — every panel renders closed |
+| delete the `ontoggle` binding | nothing ever records an open panel |
+| empty `refreshBadge`'s body | the badge is one render stale again — the bug it was written for |
+| revert the credit gate to bare `presence` | silently dropped credits on the four dual-nature stats |
+| drop the `closest("details.wz-adv")` drag clause | dragging the count badge starts a row reorder |
+| drop the focus restoration | focus falls to `<body>` after adding a credit |
+
+**Prefer extraction over a tighter regex.** Three of the eight were fixed by pulling the logic into a pure exported function and testing it behaviorally — `sweepPresenceBounds` returning what it dropped, `presenceBoundNotice` returning the banner text, `panelOpenAttr` returning the open-state read. That is the same move `KTD3` had already made for the row model, applied to the seams the first pass left inside the closure. A regex tightened to `/innerHTML\s*=\s*advSummaryHTML\(advancedRowModel\(/` does survive its mutation, but it pins the *shape of the code*, so a correct refactor reddens it for nothing. Reach for the regex only where extraction genuinely is not available.
+
+**Scope.** This applies wherever a test asserts against source text, a file's presence, or an identifier's existence rather than against a value the production path produced. It is not an argument against source assertions — with no jsdom they are the only option for DOM wiring — it is the check that tells you which of them are load-bearing.
 
 ## Why This Matters
 
