@@ -191,6 +191,38 @@ def is_roman(raw: str) -> bool:
     return bool(_ROMAN.match(raw or ""))
 
 
+_ROMAN_DIGIT = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000}
+
+
+def roman_rank(raw: str):
+    """The rank a Roman Speed invocation names, or None when it is not Roman.
+
+    `docs/wiki-evidence/speed-and-alacrity.md` records the rendering rule from
+    `Template:Speed`'s own worked examples: `attack speed = rank%` and
+    `movement = min(5 x rank, 30)`. The movement cap does not cap attack speed —
+    `Speed XIX` renders 30% movement and 19% attack speed.
+    """
+    match = _ROMAN.match(raw or "")
+    if not match:
+        return None
+    token = match.group(1).upper()
+    total = 0
+    for i, ch in enumerate(token):
+        value = _ROMAN_DIGIT[ch]
+        nxt = _ROMAN_DIGIT.get(token[i + 1]) if i + 1 < len(token) else None
+        total += -value if nxt is not None and nxt > value else value
+    return total
+
+
+def invocation_type(raw: str):
+    """The optional Type parameter (`melee`/`ranged`/`movement`), or None."""
+    match = _ROMAN.match(raw or "") or _ARABIC.match(raw or "")
+    if not match:
+        return None
+    tail = match.group(2) or ""
+    return tail.lstrip("|").strip().lower() or None
+
+
 def audit_snapshots(shard: dict) -> dict:
     """Speed's snapshot-coverage audit, over the shared skeleton."""
     return _es.audit_snapshots(shard, label="speed shard")
@@ -220,6 +252,8 @@ def check_against_snapshots(shard: dict) -> dict:
 
     problems = []
     checked = 0
+    compared = 0
+    stated = 0
     for title, entry in sorted(harvested.items()):
         entry = entry or {}
         raw = entry.get("raw") or ""
@@ -233,6 +267,9 @@ def check_against_snapshots(shard: dict) -> dict:
         if provenance not in (STATED, DEFAULTED, UNSOURCED):
             problems.append(f"{title}: unknown provenance {provenance!r}")
             continue
+
+        if provenance == STATED:
+            stated += 1
 
         # `unsourced` means the page states nothing, so there is no tooltip to
         # snapshot. It must still grant nothing, and audit_shard reports it as a
@@ -260,6 +297,17 @@ def check_against_snapshots(shard: dict) -> dict:
             continue
 
         checked += 1
+        compared += 1
+
+        # Bind the snapshot to the key it is filed under. Everything below this
+        # point compares a derived value against the tooltip it was read from,
+        # which proves the two agree — not that either is right. Move a snapshot
+        # and the values that read it together and that comparison passes by
+        # construction: swapping `{{Speed|30}}`'s tooltip for `{{Speed|20}}`'s and
+        # following it across all 73 entries reported 194 checked, 0 problems
+        # while shipping 7% where the switch says 15%. Both branches have a
+        # wiki-recorded anchor, so both are checkable.
+        _bind_invocation_to_tooltip(title, raw, tooltip, problems)
 
         expected_movement = tooltip_movement(tooltip)
         if expected_movement is not None and value.get("movement") != expected_movement:
@@ -312,15 +360,82 @@ def check_against_snapshots(shard: dict) -> dict:
                     f"{title}: `defaulted` entries must grant no alacrity, got "
                     f"melee={value.get('melee')!r} ranged={value.get('ranged')!r}")
 
+    # `checked` counts entries the guard reached a verdict on, including
+    # `unsourced` ones verified to grant nothing — and that count is incremented
+    # before any snapshot is resolved, so it cannot reach zero and is useless as
+    # a vacuity tripwire. `compared` counts only values actually matched against
+    # a parsed tooltip. Reporting both is what the two newer split modules do;
+    # #170 is this module having kept the old single count.
+    if compared < stated:
+        problems.append(
+            f"{stated - compared} `stated` entr(ies) were never compared against a "
+            "tooltip — the guard cannot vouch for them")
+
     # Refuse to report a clean run over nothing — but only when the run is
     # otherwise clean. A shard whose entries all failed to resolve a snapshot
     # has zero gradeable entries AND real problems to report; raising there
     # would bury the actual diagnosis behind a confusing message.
-    if not checked and not problems:
+    if not compared and not problems:
         raise ValueError(
-            "guard inspected no stated or defaulted entries — refusing to pass")
+            "speed guard compared no derived value against a tooltip — refusing to pass")
 
-    return {"checked": checked, "problems": problems}
+    return {"checked": checked, "compared": compared, "problems": problems}
+
+
+def _bind_invocation_to_tooltip(title, raw, tooltip, problems):
+    """Assert the snapshot states what its own invocation names.
+
+    Both dialects have a wiki-recorded anchor (`docs/wiki-evidence/speed-and-alacrity.md`):
+
+      * **Arabic** — the argument IS the movement percent, and the attack speed
+        comes from `Template:Speed`'s switch. A magnitude outside the switch
+        renders the 5% placeholder, which the `defaulted` branch already polices,
+        so only recorded rows are anchored here.
+      * **Roman** — the argument is a RANK: `attack speed = rank%` and
+        `movement = min(5 x rank, 30)`. The movement cap does not cap attack
+        speed, which is the detail an implementer is most likely to get wrong.
+
+    Verified against all 24 shipped snapshots with zero violations before being
+    turned into an assertion.
+    """
+    alacrity = tooltip_alacrity(tooltip) or {}
+    movement = tooltip_movement(tooltip)
+    kind = invocation_type(raw)
+
+    magnitude = arabic_magnitude(raw)
+    if magnitude is not None:
+        if movement is not None and movement != magnitude:
+            problems.append(
+                f"{title}: {raw!r} names {magnitude}% movement but its tooltip states "
+                f"{movement}% — the snapshot is paired with the wrong invocation")
+        expected = RECORDED_SWITCH.get(magnitude)
+        if expected is not None and alacrity.get("melee") not in (None, expected):
+            problems.append(
+                f"{title}: {raw!r} is a recorded switch row ({magnitude} -> {expected}%) "
+                f"but its tooltip states {alacrity.get('melee')}% attack speed — the "
+                "snapshot is paired with the wrong invocation")
+        return
+
+    rank = roman_rank(raw)
+    if rank is None:
+        return
+    expected_movement = min(5 * rank, 30)
+    if movement is not None and movement != expected_movement:
+        problems.append(
+            f"{title}: {raw!r} is rank {rank}, so it must state {expected_movement}% "
+            f"movement, but its tooltip states {movement}% — the snapshot is paired "
+            "with the wrong invocation")
+    # The Type parameter narrows which component the tooltip carries; absent it,
+    # both are stated. Only assert the components this invocation actually names.
+    components = ("melee", "ranged") if kind is None else (
+        () if kind == "movement" else (kind,))
+    for component in components:
+        got = alacrity.get(component)
+        if got is not None and got != rank:
+            problems.append(
+                f"{title}: {raw!r} is rank {rank}, so it must state {rank}% {component} "
+                f"attack speed, but its tooltip states {got}% — the snapshot is paired "
+                "with the wrong invocation")
 
 
 def audit_shard(shard: dict) -> dict:

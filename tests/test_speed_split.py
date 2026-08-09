@@ -300,18 +300,33 @@ def test_every_entry_is_either_graded_or_reported():
     """No entry may pass through silently. `unsourced` rows are graded (they must
     grant nothing) rather than skipped, and anything the guard cannot grade —
     unknown provenance, a missing snapshot, an unreadable tooltip — becomes a
-    problem. So a non-empty shard always yields checks or problems, never a
-    clean pass over nothing."""
-    cases = [
-        {"raw": "{{Speed|30}}", "provenance": "unsourced", "value": None},
+    problem.
+
+    #170 rewrote the assertion. It read `result["checked"] or result["problems"]`,
+    which is satisfied by a count incremented before any snapshot is resolved —
+    the tripwire endorsing the hole it was meant to catch. A lone `unsourced`
+    entry now raises rather than passing with a healthy count, so the cases split
+    by whether anything was actually comparable.
+    """
+    ungradeable = [
         {"raw": "{{Speed|30}}", "provenance": "bogus", "value": None},
         {"raw": "{{Speed|99}}", "provenance": "stated", "value": {"movement": 99}},
     ]
-    for entry in cases:
+    for entry in ungradeable:
         shard = {"snapshots": {"{{speed|30}}": {"tooltip": "x"}},
                  "harvested": {"Item:X": entry}}
         result = speed_split.check_against_snapshots(shard)
-        assert result["checked"] or result["problems"], entry
+        assert result["problems"], entry
+
+    lone_unsourced = {"snapshots": {"{{speed|30}}": {"tooltip": "x"}},
+                      "harvested": {"Item:X": {"raw": "{{Speed|30}}",
+                                               "provenance": "unsourced", "value": None}}}
+    try:
+        speed_split.check_against_snapshots(lone_unsourced)
+    except ValueError as exc:
+        assert "compared no derived value" in str(exc)
+    else:
+        raise AssertionError("a shard that compared nothing must not pass")
 
 
 def test_every_invocation_in_the_shipped_shard_has_a_snapshot():
@@ -499,12 +514,117 @@ def test_defaulted_entry_whose_tooltip_is_not_the_placeholder_is_reported():
     assert any("not the 5% default" in p for p in problems), problems
 
 
+def test_an_arabic_snapshot_paired_with_the_wrong_tooltip_is_reported():
+    """#170's second, unlisted hole — the binding shape from #173, found in Speed
+    while fixing the vacuity one.
+
+    Move the snapshot AND every value that reads it together and the plain
+    comparison passes by construction: on the shipped shard, swapping
+    `{{Speed|30}}`'s tooltip for `{{Speed|20}}`'s and following it across all 73
+    entries reported `checked=194, problems=0` while shipping 7% attack speed
+    where the switch says 15%. The Arabic argument IS the movement percent and
+    the switch names the attack speed, so both are anchored to the key.
+    """
+    shard = _guard_shard(
+        "{{Speed|30}}", "stated", {"movement": 20, "melee": 7, "ranged": 7},
+        "Speed +20%: +20% enhancement bonus to movement speed, 7% bonus to attack speed.")
+    result = speed_split.check_against_snapshots(shard)
+
+    assert any("names 30% movement but its tooltip states 20%" in p
+               for p in result["problems"]), result["problems"]
+    assert any("recorded switch row (30 -> 15%)" in p
+               for p in result["problems"]), result["problems"]
+    assert result["compared"] == 1, "it must still count as compared, not skipped"
+
+
+def test_a_roman_snapshot_paired_with_the_wrong_tooltip_is_reported():
+    """The Roman branch is anchored too: `attack speed = rank%` and
+    `movement = min(5 x rank, 30)`, per Template:Speed's worked examples."""
+    shard = _guard_shard(
+        "{{Speed|XI}}", "stated", {"movement": 25, "melee": 5, "ranged": 5},
+        "Speed V: +25% enhancement bonus to movement speed, "
+        "+5% enhancement bonus to melee and ranged attack speed.")
+    problems = speed_split.check_against_snapshots(shard)["problems"]
+
+    assert any("rank 11, so it must state 30% movement" in p for p in problems), problems
+    assert any("must state 11% melee attack speed" in p for p in problems), problems
+
+
+def test_the_roman_movement_cap_does_not_cap_attack_speed():
+    """Speed XIX is 30% movement but 19% attack speed. Assuming one cap governs
+    both is the mistake the evidence doc singles out as most likely."""
+    assert speed_split.roman_rank("{{Speed|XIX}}") == 19
+    shard = _guard_shard(
+        "{{Speed|XIX}}", "stated", {"movement": 30, "melee": 19, "ranged": 19},
+        "Speed XIX: +30% enhancement bonus to movement speed, "
+        "+19% enhancement bonus to melee and ranged attack speed.")
+    assert speed_split.check_against_snapshots(shard)["problems"] == []
+
+
+def test_a_ranged_only_invocation_is_bound_on_ranged_alone():
+    """`{{Speed|XV|ranged}}` states ranged only; asserting melee too would
+    manufacture a problem on a correct snapshot."""
+    shard = _guard_shard(
+        "{{Speed|XV|ranged}}", "stated", {"movement": 30, "ranged": 15},
+        "Speed XV: +30% enhancement bonus to movement speed, "
+        "+15% enhancement bonus to ranged attack speed.")
+    assert speed_split.check_against_snapshots(shard)["problems"] == []
+
+
+def test_every_shipped_snapshot_states_what_its_own_invocation_names():
+    """The whole-shard invariant. Verified at zero violations across all 24
+    Speed snapshots before the assertion was written."""
+    for shard in (_shipped_shard(), _aug_shipped()):
+        for raw, snap in shard["snapshots"].items():
+            if raw.startswith("{{striding"):
+                continue
+            problems = []
+            speed_split._bind_invocation_to_tooltip(
+                "shipped", raw, snap.get("tooltip"), problems)
+            assert not problems, (raw, problems)
+
+
 def test_unsourced_entry_needs_no_snapshot_and_does_not_fail_the_build():
-    shard = {"snapshots": {}, "harvested": {
-        "Item:Silent": {"raw": "", "provenance": "unsourced", "value": None}}}
+    """An `unsourced` entry is graded, not skipped, and is not itself a problem.
+
+    It must sit alongside something the guard actually compared. #170: this test
+    used to assert a lone `unsourced` entry passed with `checked == 1`, which is
+    precisely the vacuous pass — the guard reported a healthy count having
+    verified no magnitude at all. See the companion test below.
+    """
+    shard = _guard_shard(
+        "{{Speed|30}}", "stated", {"movement": 30, "melee": 15, "ranged": 15},
+        "Speed +30%: +30% enhancement bonus to movement speed, 15% bonus to attack speed.")
+    shard["harvested"]["Item:Silent"] = {
+        "raw": "", "provenance": "unsourced", "value": None}
+
     result = speed_split.check_against_snapshots(shard)
     assert result["problems"] == [], result["problems"]
-    assert result["checked"] == 1
+    assert result["checked"] == 2, "the unsourced entry is graded"
+    assert result["compared"] == 1, "but only the stated one was compared"
+
+
+def test_a_shard_of_only_unsourced_entries_refuses_to_pass():
+    """#170. `checked` counts an `unsourced` entry before any snapshot lookup, so
+    it can never reach zero and is useless as a vacuity tripwire. `compared`
+    counts only values matched against a parsed tooltip."""
+    shard = {"snapshots": {}, "harvested": {
+        "Item:Silent": {"raw": "", "provenance": "unsourced", "value": None},
+        "Item:Quiet": {"raw": "", "provenance": "unsourced", "value": None}}}
+    try:
+        speed_split.check_against_snapshots(shard)
+    except ValueError as exc:
+        assert "compared no derived value" in str(exc)
+        return
+    raise AssertionError("a shard that compared nothing must not report a clean guard")
+
+
+def test_a_stated_entry_that_never_reached_a_comparison_is_reported():
+    shard = {"snapshots": {}, "harvested": {
+        "Item:Under Test": {"raw": "{{Speed|30}}", "provenance": "stated",
+                            "value": {"movement": 30, "melee": 15, "ranged": 15}}}}
+    problems = speed_split.check_against_snapshots(shard)["problems"]
+    assert any("never compared against a tooltip" in p for p in problems), problems
 
 
 def test_unsourced_entry_granting_alacrity_is_reported():

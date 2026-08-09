@@ -212,10 +212,35 @@ is 6 returns:
 ```
 
 There is no equivalent of `tests/test_parrying_split.py:391` in
-`tests/test_heightened_awareness.py`. This is a different gap from the tracked #170, which is
-about Speed's guard counting `checked` rather than `compared` and so being able to pass
-having verified nothing at all; this one compares, and compares the wrong pair. The fix is
-the same four lines and the same whole-shard invariant.
+`tests/test_heightened_awareness.py`. This is a different gap from #170, which is about
+Speed's guard counting `checked` rather than `compared` and so being able to pass having
+verified nothing at all; this one compares, and compares the wrong pair. The fix is the same
+four lines and the same whole-shard invariant. Fixed in #174.
+
+**Third instance — Speed, found by looking rather than by failing (#170).** The two failures
+above are twins, and finding one is a reason to check its sibling for the *other*. Fixing
+#170's vacuity gap, `speed_split` was probed for the binding gap as well and had it. Its blast
+radius is the largest of the three, because a Speed snapshot is shared by every item at that
+invocation: moving `{{Speed|30}}`'s snapshot to `{{Speed|20}}`'s tooltip **and all 73 entries
+that read it** returned
+
+```
+{'checked': 194, 'compared': 194, 'problems': []}
+```
+
+while shipping 7% attack speed where `Template:Speed`'s switch says 15%. Note that a
+*partial* consistent corruption — moving the snapshot and only one of the 73 — is caught, by
+the other 72 disagreeing. Shared references raise the bar for what "consistent" means: the
+corruption has to move every value that reads the snapshot before the binding is the only
+thing left standing. A negative test that moves one entry against a shared snapshot is
+testing the other entries, not the binding.
+
+Both branches turned out to be anchorable from evidence already on disk — Arabic states its
+own movement percent and takes attack speed from the recorded switch; Roman states
+`attack = rank%` and `movement = min(5 x rank, 30)`. Neither anchor was being asserted. The
+rules were validated against all 24 shipped snapshots at zero violations *before* being
+turned into assertions, which is the order that keeps a new guard from encoding today's
+mistakes as tomorrow's baseline.
 
 **What the Roman branch was doing right, and why it does not generalize for free.** The
 anchor at `src/parrying_split.py:264-273` is deliberately a three-entry lookup and not a
@@ -240,5 +265,6 @@ you copy a pattern from an anchored branch, copy the *binding*, not just the bra
 - `docs/wiki-evidence/speed-tooltip-tracker.md` — the two-link chain (wiki -> snapshot ->
   derived value). A consistent corruption enters at link 1 and is invisible to link 2, which
   is the only link that runs on every build.
-- GitHub #170 — the same guard family's *vacuity* twin: Speed counts `checked` rather than
-  `compared`, so it can pass having verified nothing at all.
+- GitHub #170 — the same guard family's *vacuity* twin: Speed counted `checked` rather than
+  `compared`, so it could pass having verified nothing at all. Fixed alongside the binding gap
+  found in the same module while fixing it — the third instance above.
