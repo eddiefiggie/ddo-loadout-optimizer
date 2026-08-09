@@ -3,7 +3,8 @@
 // JSON envelope, all rendered from ONE shared content model — `Projection.project(rec)`
 // — so their content never drifts (U4). Each item shows its worn affixes, assigned
 // augments (with color + Lunar/Solar cues), and crafting upgrades; every build lists
-// its completed set bonuses and a priority-stat attribution section. The portable JSON
+// its completed set bonuses — with the pieces that composed them, wildcard and
+// chosen-membership picks included — and a priority-stat attribution section. The portable JSON
 // (U5) carries the proven save-snapshot `core` verbatim plus the resolved view, so it
 // can be re-imported later. User-derived text stays escaped/neutralized per format
 // (formula-injection for CSV, tag-stripping for BBCode, entity-escaping for MD/HTML).
@@ -110,6 +111,22 @@
     return (affixes || []).map((a) => esc(fmtAffix(a))).filter(Boolean).join(", ");
   }
 
+  // U5 (R11) — the pieces that composed one set, rendered through projection's
+  // SINGLE member label (`Proj.setMemberLabel`) so the Set Bonuses card and all
+  // five text formats name a piece identically. A wildcard or chosen-membership
+  // pick carries the set in no item data whatsoever, so a format that printed only
+  // the set name told a recipient a bonus was active and refused to say what
+  // produced it — solve-visible but share-invisible.
+  //
+  // Only the user-derived item/slot text is escaped; the label's own punctuation is
+  // structural and trusted, exactly as cue markup is. Escaping the finished label
+  // would turn markdown's "(Trinket)" into a literal "\(Trinket\)".
+  function memberList(members, esc) {
+    return (members || []).map((m) => Proj.setMemberLabel({
+      item: esc(m.item), slot: m.slot == null ? null : esc(m.slot), kind: m.kind,
+    })).join(", ");
+  }
+
   // One placed augment: color cue [· Lunar/Solar cue]: name [— granted affixes].
   function augStr(aug, esc, fmt) {
     const head = [];
@@ -175,6 +192,8 @@
         out += `- **${mdEsc(s.set)}**${s.pieces ? ` (${mdEsc(s.pieces)} pieces)` : ""}\n`;
         const aff = affixList(s.affixes, mdEsc);
         if (aff) out += `  - ${aff}\n`;
+        const mem = memberList(s.members, mdEsc);
+        if (mem) out += `  - Pieces: ${mem}\n`;
       }
     }
     const stats = Object.keys(view.attribution);
@@ -214,6 +233,8 @@
         out += `[*][b]${bbEsc(s.set)}[/b]${s.pieces ? ` (${bbEsc(s.pieces)} pieces)` : ""}`;
         const aff = affixList(s.affixes, bbEsc);
         if (aff) out += `: ${aff}`;
+        const mem = memberList(s.members, bbEsc);
+        if (mem) out += `\n  [*]Pieces: ${mem}`;
         out += `\n`;
       }
       out += `[/list]\n`;
@@ -253,8 +274,14 @@
     }
     if (view.sets.length) {
       rows.push("");
-      rows.push(csvRow(["Set bonus", "Pieces", "Grants"]));
-      for (const s of view.sets) rows.push(csvRow([s.set, s.pieces == null ? "" : s.pieces, affixListCsv(s.affixes)]));
+      // "Pieces" is the satisfied TIER THRESHOLD; "From" names the actual items.
+      // Distinct columns on purpose — they are different facts and a build can
+      // complete a 3-piece tier with two worn items and one wildcard pick.
+      rows.push(csvRow(["Set bonus", "Pieces", "Grants", "From"]));
+      for (const s of view.sets) {
+        rows.push(csvRow([s.set, s.pieces == null ? "" : s.pieces, affixListCsv(s.affixes),
+          memberList(s.members, (x) => x)]));
+      }
     }
     const stats = Object.keys(view.attribution);
     if (stats.length) {
@@ -292,7 +319,9 @@
       h += `<h2>Set bonuses</h2><ul>`;
       for (const s of view.sets) {
         const aff = affixList(s.affixes, htmlEsc);
-        h += `<li><strong>${htmlEsc(s.set)}</strong>${s.pieces ? ` (${htmlEsc(s.pieces)} pieces)` : ""}${aff ? ` — ${aff}` : ""}</li>`;
+        const mem = memberList(s.members, htmlEsc);
+        h += `<li><strong>${htmlEsc(s.set)}</strong>${s.pieces ? ` (${htmlEsc(s.pieces)} pieces)` : ""}${aff ? ` — ${aff}` : ""}`
+          + `${mem ? `<div class="set-via">Pieces: ${mem}</div>` : ""}</li>`;
       }
       h += `</ul>`;
     }
@@ -470,6 +499,11 @@
       for (const s of view.sets) {
         const eff = affixList(s.affixes, (s2) => s2);
         say(`  ${s.set}${s.pieces ? ` (${s.pieces} pieces)` : ""}${eff ? `: ${eff}` : ""}`);
+        // Indented under its set. A wildcard piece is unimportable by definition —
+        // DDOBuilder has no grammar for a runtime set pick — so naming it here is
+        // the only way the recipient learns to reproduce the set by hand.
+        const mem = memberList(s.members, (s2) => s2);
+        if (mem) say(`    Pieces: ${mem}`);
       }
     }
     return `${gear.join("\n")}\n\n${rl.join("\n")}\n`;

@@ -642,7 +642,13 @@
       };
     });
 
-    const sets = satisfiedSetDetail(snap).map((s) => ({ set: s.set, pieces: s.pieces, affixes: s.affixes }));
+    // U5 (R11) — `members` rides along, so every export can name the pieces that
+    // composed the set and the portable JSON inherits them for free. Dropping it
+    // here made a wildcard/chosen-membership piece solve-visible but
+    // share-invisible: the recipient of a Gem-completed set saw the bonus and no
+    // way to learn which item produced it. Each renderer must still print it —
+    // carrying it through the model is necessary, not sufficient.
+    const sets = satisfiedSetDetail(snap).map((s) => ({ set: s.set, pieces: s.pieces, affixes: s.affixes, members: s.members || [] }));
 
     const attribution = {};
     for (const stat of priorities) {

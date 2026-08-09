@@ -1,6 +1,6 @@
 // U12 — Markdown + CSV loadout exporters. Run: node tests/exporters.test.js
 const assert = require("assert");
-const { toMarkdown, toCsv, toPrintHtml, toBBCode, toPortableJSON, toGearset, setBonusDetail, bbEsc, csvSafe, constraintLines } = require("../web/exporters.js");
+const { toMarkdown, toCsv, toPrintHtml, toBBCode, toPortableJSON, toGearset, setBonusDetail, bbEsc, mdEsc, htmlEsc, csvSafe, constraintLines } = require("../web/exporters.js");
 
 let passed = 0;
 function test(name, fn) {
@@ -737,6 +737,131 @@ test("U6: a hostile stat name cannot break out of any format", () => {
   const csvLine = toCsv(rec).split("\n").find((l) => /Already have/.test(l));
   assert.ok(/"'=cmd/.test(csvLine) || /'=cmd/.test(csvLine),
     `a formula-leading cell must be neutralized: ${csvLine}`);
+});
+
+// ---- U5/002 — the set-piece attribution reaches every export (R11) ----------
+// Same standing invariant as U3 above: never solve-visible but share-invisible.
+// The solver completes a set with a Gem of Many Facets even though the gem carries
+// the set in NO item data, so a format that printed the set name alone handed a
+// recipient a bonus they could not reproduce.
+//
+// The member text is imported from projection's SINGLE label function rather than
+// restated here — restating it would let each exporter drift into its own format
+// while the tests stayed green, which is the exact failure U4 exported
+// `setMemberLabel` to prevent.
+const Projection = require("../web/projection.js");
+
+// Two intrinsic pieces plus a wildcard pick. The static count is 2 against a
+// 3-piece tier, so the set is satisfied only via `setsActive` — the runtime path.
+const GEM_TIER = [{ set: "Legendary Vol's Influence", pieces_required: 3,
+  affixes: [{ name: "Wizardry", type: "Enhancement", value: 150 }] }];
+const gemRec = () => ({
+  name: "Facets",
+  inputs: { ml: 34, race: "Elf", pool: "all", priorities: ["Wizardry"] },
+  snapshot: {
+    status: "optimal",
+    setsActive: [{ set: "Legendary Vol's Influence", pieces_required: 3 }],
+    chosen: [
+      { slot: "Helmet", variant: { variant_id: "Legendary University Mage's Hat", ml: 34, affixes: [],
+        set_bonus: [{ set: "Legendary Vol's Influence" }], parsed_set_bonuses: GEM_TIER } },
+      { slot: "Necklace", variant: { variant_id: "Legendary Collar of the Vol", ml: 34, affixes: [],
+        set_bonus: [{ set: "Legendary Vol's Influence" }], parsed_set_bonuses: GEM_TIER } },
+      { slot: "Trinket", variant: { variant_id: "Gem of Many Facets", ml: 34, affixes: [] } },
+    ],
+    jokerPlaced: [{ host: "Gem of Many Facets", set: "Legendary Vol's Influence" }],
+    membershipPlaced: [],
+    effective: { Wizardry: 150 },
+    breakdown: { Wizardry: [{ bonus_type: "Enhancement", value: 150, source: "Legendary Vol's Influence",
+      sourceKind: "set", setYieldingSlots: ["Helmet", "Necklace"] }] },
+  },
+});
+const GEM_LABEL = Projection.setMemberLabel({ slot: "Trinket", item: "Gem of Many Facets", kind: "wildcard" });
+
+test("U5/002 (R11): the portable JSON carries each set's members with their slots", () => {
+  const sets = toPortableJSON(gemRec()).resolved.sets;
+  const vol = sets.find((s) => s.set === "Legendary Vol's Influence");
+  assert.ok(vol, "the gem-completed set is in the envelope");
+  assert.deepStrictEqual(vol.members, [
+    { slot: "Helmet", item: "Legendary University Mage's Hat", kind: "intrinsic" },
+    { slot: "Necklace", item: "Legendary Collar of the Vol", kind: "intrinsic" },
+    { slot: "Trinket", item: "Gem of Many Facets", kind: "wildcard" },
+  ], "every counted piece rides along, each with the slot it occupies and how it counts");
+});
+
+// The one physical line on which a format names a set's pieces. CSV puts them in a
+// column of the set-bonus row; the other four use a labelled "Pieces:" line.
+function memberLine(fmt, out) {
+  if (fmt === "csv") return (out.split("\n").find((l) => l.startsWith("Legendary Vol's Influence,")) || "");
+  return (out.match(/[^\n]*Pieces: [^\n]*/) || [""])[0];
+}
+
+// [name, renderer, the format's escaper for user-derived text]. Names travel
+// escaped, so an expectation must be escaped the same way — print entity-escapes
+// the apostrophe in "Mage's Hat".
+const FORMATS = [["markdown", toMarkdown, mdEsc], ["bbcode", toBBCode, bbEsc],
+  ["csv", toCsv, (s) => s], ["print", toPrintHtml, htmlEsc], ["gearset", toGearset, (s) => s]];
+
+test("U5/002 (R11): all five text formats name the gem among that set's pieces", () => {
+  // Assert EVERY format, not a sample: each renders view.sets by hand, so fixing
+  // the projection satisfies none of them on its own.
+  for (const [fmt, fn, esc] of FORMATS) {
+    const line = memberLine(fmt, fn(gemRec()));
+    assert.ok(line, `${fmt} must carry a set-pieces line`);
+    assert.ok(line.includes("Gem of Many Facets"),
+      `${fmt} must name the wildcard piece the solve counted, got: ${line.trim().slice(0, 200)}`);
+    assert.ok(/wildcard/.test(line),
+      `${fmt} must say the gem is a wildcard, not imply it carries the set intrinsically`);
+    for (const worn of ["Legendary University Mage's Hat", "Legendary Collar of the Vol"]) {
+      assert.ok(line.includes(esc(worn)),
+        `${fmt} names the intrinsic piece ${worn} too, got: ${line.trim().slice(0, 200)}`);
+    }
+  }
+});
+
+test("U5/002 (R11): every format uses projection's single member label, not its own", () => {
+  for (const [fmt, fn, esc] of FORMATS) {
+    // The label's own punctuation is structural; only the item/slot text is escaped.
+    const want = Projection.setMemberLabel({ slot: esc("Trinket"), item: esc("Gem of Many Facets"), kind: "wildcard" });
+    assert.ok(fn(gemRec()).includes(want),
+      `${fmt} must render Proj.setMemberLabel verbatim (want ${JSON.stringify(want)})`);
+  }
+});
+
+test("U5/002 (R11): the CSV set-bonus row carries a members column", () => {
+  const csv = toCsv(gemRec());
+  const header = csv.split("\n").find((l) => l.startsWith("Set bonus,"));
+  assert.strictEqual(header, "Set bonus,Pieces,Grants,From", "the section gains a members column");
+  const row = csv.split("\n").find((l) => l.startsWith("Legendary Vol's Influence,"));
+  assert.ok(row.includes("Gem of Many Facets (Trinket) — wildcard"),
+    `the row's last cell names the counted pieces, got: ${row}`);
+  // The cell holds commas, so RFC-4180 quoting must survive the new column.
+  assert.ok(/,"[^"]*Gem of Many Facets[^"]*"$/.test(row), `the members cell stays quoted: ${row}`);
+});
+
+test("U5/002 (R11): a chosen-membership pick is named as a pick, not as intrinsic", () => {
+  // Vecna Lost Purpose / Cannith Repurposing / Dino Set-Bonus take the same path
+  // as the gem but are a different `kind`, and the text must not conflate them.
+  const r = gemRec();
+  r.snapshot.jokerPlaced = [];
+  r.snapshot.membershipPlaced = [{ host: "Gem of Many Facets", set: "Legendary Vol's Influence",
+    station: "Cannith Repurposing Station" }];
+  const line = (toMarkdown(r).match(/[^\n]*Pieces: [^\n]*/) || [""])[0];
+  assert.ok(line.includes(Projection.setMemberLabel(
+    { slot: "Trinket", item: "Gem of Many Facets", kind: "membership" })),
+  `a membership pick is labelled as a set-bonus pick, got: ${line.trim()}`);
+  assert.ok(!/wildcard/.test(line), "and is not mislabelled a wildcard");
+});
+
+test("U5/002: a build with no completed set gains nothing in any format", () => {
+  // The no-change guard. Verified byte-identical against the pre-change tree by
+  // diffing full captures of all six outputs; this pins the observable half.
+  for (const [fmt, fn] of [["markdown", toMarkdown], ["bbcode", toBBCode],
+                           ["csv", toCsv], ["print", toPrintHtml], ["gearset", toGearset]]) {
+    const out = fn(rec);
+    assert.ok(!/Pieces: /.test(out), `${fmt} adds no set-pieces line when no set is complete`);
+    assert.ok(!/Set bonus,Pieces,Grants,From/.test(out), `${fmt} adds no members column either`);
+  }
+  assert.deepStrictEqual(toPortableJSON(rec).resolved.sets, [], "and the envelope still lists no sets");
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);
