@@ -69,6 +69,14 @@ python3 build_dataset.py    # and MUST pass again
 Both directions matter. A gate that fails on everything is as useless as one that fails
 on nothing, and only the restore step distinguishes them.
 
+Red-and-green is not the only axis, though. The corruption above moves **one** field and
+leaves its reference untouched, which is the weakest possible negative test for a gate that
+compares a value against a stored reference — such a gate rejects a single-sided break by
+construction. A later incident showed that eight corruptions of exactly this shape can all
+go red while a real hole survives; see
+`corrupt-the-value-and-its-reference-together.md` for the corruption shape this recipe
+misses.
+
 **2. Make the guard refuse to inspect nothing.** The failure above is silent by
 construction — a predicate that matches zero records produces zero findings, which is
 byte-identical to a clean run. Assert the scan happened at all:
@@ -84,6 +92,15 @@ if not checked:
 This is the durable half. The negative test proves the gate works *today*; the
 zero-inspection guard is what catches the vocabulary drifting *later*, when nobody is
 looking and no test was written for the drift.
+
+**Count what the guard verified, not what it iterated over.** A counter incremented before
+the guard reaches the thing it compares against will report a healthy number having
+verified nothing — which defeats this rule using this rule's own recipe. `speed_split`
+still has that shape: it increments `checked` for an `unsourced` entry and moves on
+(`src/speed_split.py:241`) *before* the snapshot lookup two lines later, and `checked` is
+what its vacuity assertion reads (`:319`). A shard whose entries all failed to resolve a
+snapshot therefore passes with a confident count. Tracked as #170; the newer split modules
+report `compared` separately from `checked` for this reason.
 
 **3. When a field has two representations, say so at both sites.** The mismatch was not a
 typo — both spellings are correct in their own context. Leave a comment naming the other
@@ -106,8 +123,9 @@ trap has now appeared in three shapes in this repo:
 | Structural | tooltips at a top-level `snapshots` block vs inline at `harvested[name].tooltip` |
 
 Naming a value in one place rather than spelling it at each branch removes the casing
-class outright. `src/speed_split.py` now declares `STATED` / `DEFAULTED` / `UNSOURCED`
-as constants for exactly this reason.
+class outright. `src/enchantment_split.py` declares `STATED` / `DEFAULTED` / `UNSOURCED`
+as constants for exactly this reason, and every split module imports them rather than
+spelling the strings at each branch.
 
 **4. A guard that refuses to inspect nothing still has to be invoked.** Rule 2 protects a
 guard from silently matching zero records *within a source it runs over*. It does nothing
@@ -115,6 +133,13 @@ about a source the guard was never pointed at. When you add a second shard, tabl
 pool that an existing guard is supposed to cover, wire it and assert a non-zero inspected
 count for that source specifically — coverage of source A is not evidence of coverage of
 source B.
+
+The same asymmetry applies when you **fix** a guard rather than wire one. A defect found in
+one guard is a defect to look for in every sibling built from the same template, and the fix
+does not travel on its own. #169 shipped two near-identical split modules; a review found a
+missing assertion in `src/parrying_split.py`, it was fixed there, and
+`src/heightened_awareness.py` — same shape, same author, same session — kept the hole. When
+a guard gets a new assertion, grep for its siblings before closing the work.
 
 ## Why This Matters
 
@@ -152,9 +177,16 @@ to: **do not infer that a check is working from the absence of complaints.**
   affix layer has more.
 - Adding a second data source an existing guard should cover. Wire it and confirm a
   non-zero inspected count for that source; do not infer coverage from the first one.
+- Fixing a defect in one guard. Check its siblings for the same defect before closing the
+  work.
 
-The cost is a minute per gate. The alternative is a guard that reports success for the
-lifetime of the repository.
+The cheapest version of this costs a minute per gate, and it is still worth more than the
+alternative — a guard that reports success for the lifetime of the repository. But do not
+read "a minute" as "one corruption and you are done." The count is not what makes the check
+trustworthy; the **shape** is. A batch of corruptions that all break the same single thing
+buys far less confidence than its size suggests — see
+`corrupt-the-value-and-its-reference-together.md`, where eight of them went red and a real
+hole survived.
 
 ## Second case study, 2026-08-08 — the structural shape (#168)
 
@@ -213,6 +245,11 @@ and neither was trustworthy until it had been run.
 
 ## Related
 
+- `docs/solutions/conventions/corrupt-the-value-and-its-reference-together.md` — the direct
+  extension of rule 1. These rules govern **vacuity** (a guard that inspects nothing, or was
+  never pointed at the source); that one governs **binding** (a guard that inspects the right
+  number of things and compares the wrong pair). Following this doc is necessary and not
+  sufficient.
 - `docs/solutions/conventions/exclude-until-verified-empty-seed-masks-consuming-bugs.md` —
   adjacent, different cause: empty seed vs. wrong predicate.
 - `docs/solutions/conventions/data-at-rest-can-look-inert-while-runtime-normalizes-it.md` —
