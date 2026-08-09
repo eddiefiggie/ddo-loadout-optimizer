@@ -633,3 +633,76 @@ def test_unsourced_entry_granting_alacrity_is_reported():
                         "value": {"melee": 5}}}}
     problems = speed_split.check_against_snapshots(shard)["problems"]
     assert any("must grant no alacrity" in p for p in problems), problems
+
+
+# --- set-bonus channel (#171) ---------------------------------------------------
+
+def _tier(*affixes):
+    return {"parsed_set_bonuses": [{"set": "Test Set", "affixes": list(affixes)}]}
+
+
+def test_a_set_bonus_speed_expands_to_movement_only():
+    """#171. The wiki writes the Marshwalker bonus as prose — "+30% Enhancement
+    bonus to movement speed" — not as `{{Speed|30}}`, so the attack-speed half
+    the enchantment carries is NOT stated for this bonus. gear-planner's affix
+    name is a collision, not a shared mechanic.
+    See `docs/wiki-evidence/marshwalker-set-speed.md`."""
+    v = _tier({"stat": "Jump", "bonus_type": "Artifact", "value": 3},
+              {"stat": "Speed", "bonus_type": "Enhancement", "value": "30"})
+    stats = speed_split.expand_set_bonuses([v])
+
+    out = {(a["stat"], a["value"]) for a in v["parsed_set_bonuses"][0]["affixes"]}
+    assert stats == {"expanded": 1, "quarantined": 0}
+    assert out == {("Jump", 3), ("Movement Speed", 30)}
+
+
+def test_a_set_bonus_speed_grants_no_alacrity():
+    """The over-grant this fix exists to avoid. Reusing the item path would read
+    the value as `{{Speed|30}}` and add 15% melee + 15% ranged from the recorded
+    switch — 30 IS in the switch, so it would resolve cleanly and ship silently
+    on three sets."""
+    v = _tier({"stat": "Speed", "bonus_type": "Enhancement", "value": "30"})
+    speed_split.expand_set_bonuses([v])
+
+    stats = {a["stat"] for a in v["parsed_set_bonuses"][0]["affixes"]}
+    assert "Melee Alacrity" not in stats and "Ranged Alacrity" not in stats, stats
+    assert speed_split.RECORDED_SWITCH[30] == 15, \
+        "the switch still says 15 — this test guards the reading, not the table"
+
+
+def test_a_set_bonus_speed_value_nobody_harvested_is_quarantined():
+    """Only 30 has been read off the wiki. Another magnitude must drop rather
+    than scale from it."""
+    v = _tier({"stat": "Speed", "bonus_type": "Enhancement", "value": "20"})
+    stats = speed_split.expand_set_bonuses([v])
+
+    assert stats == {"expanded": 0, "quarantined": 1}
+    assert v["parsed_set_bonuses"][0]["affixes"] == []
+
+
+def test_the_built_dataset_has_no_set_bonus_speed_orphan():
+    import json
+    path = os.path.join(ROOT, "web", "data", "items.json")
+    if not os.path.exists(path):
+        return
+    with open(path) as fh:
+        data = json.load(fh)
+
+    away = set(data["metadata"]["expanded_away_names"])
+    orphans, marshwalker = set(), set()
+    for item in data["items"]:
+        for tier in item.get("parsed_set_bonuses") or []:
+            for affix in tier.get("affixes") or []:
+                stat = (affix.get("stat") or "").strip()
+                if stat.lower() in away:
+                    orphans.add((tier.get("set"), stat))
+                if "Marshwalker" in str(tier.get("set")):
+                    marshwalker.add((tier["set"], stat, str(affix.get("value"))))
+
+    assert not orphans, f"set-bonus affixes name an expanded-away stat: {sorted(orphans)}"
+    speed_rows = {r for r in marshwalker if "Speed" in r[1] or "Alacrity" in r[1]}
+    assert speed_rows == {
+        ("Epic Marshwalker", "Movement Speed", "30"),
+        ("Legendary Marshwalker", "Movement Speed", "30"),
+        ("Marshwalker", "Movement Speed", "30"),
+    }, sorted(speed_rows)

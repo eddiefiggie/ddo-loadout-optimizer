@@ -554,13 +554,35 @@ def build() -> dict:
     # no longer offers — until this ran.
     _parrying_sets = parrying_split_mod.expand_set_bonuses(variants, _parrying_shard)
     _ha_sets = heightened_awareness_mod.expand_set_bonuses(variants, _ha_shard)
+    # #171 — Speed's set-bonus channel. Note it expands to MOVEMENT ONLY, not to
+    # the three stats the item channel produces: the wiki writes the Marshwalker
+    # bonus as prose ("+30% Enhancement bonus to movement speed"), not as a
+    # `{{Speed|30}}` invocation, so the attack-speed half the enchantment carries
+    # is not stated here. gear-planner's affix name is a collision, not the same
+    # mechanic. Takes no shard for the same reason — there is no tooltip to read.
+    _speed_sets = speed_split_mod.expand_set_bonuses(variants)
+
+    # A quarantined tier affix is DROPPED, so the set silently loses that bonus
+    # rather than granting a guessed one. Quarantining is the right call — it is
+    # exclude-until-verified — but a silent one defeats the point: the rule is
+    # that a visible gap beats a confident wrong number, and a dropped affix is
+    # not visible. Nothing asserted this before, and #171 adds a value-keyed
+    # quarantine path for Speed that would have been the first to go quiet.
+    _set_quarantined = {"parrying": _parrying_sets["quarantined"],
+                        "heightened_awareness": _ha_sets["quarantined"],
+                        "speed": _speed_sets["quarantined"]}
+    if any(_set_quarantined.values()):
+        raise SystemExit(
+            "set-bonus affixes were quarantined — the wiki has not stated those "
+            "magnitudes, so those sets silently lost a bonus. Harvest them or "
+            "record the reading:\n  " +
+            "\n  ".join(f"{name}: {n}" for name, n in _set_quarantined.items() if n))
 
     # A set-bonus tier still naming an expanded-away stat grants something no
-    # player can rank. `speed` is allowlisted: the Marshwalker sets have carried
-    # that orphan since #134, this change did not cause it, and expanding it
-    # would move shipped Speed behavior — tracked as #171. Anything NEW fails the
-    # build rather than going quiet.
-    _KNOWN_SET_BONUS_ORPHANS = ("speed",)   # see #171
+    # player can rank. The allowlist is empty: `speed` was the last entry and is
+    # expanded above as of #171, so any NEW orphan fails the build rather than
+    # going quiet.
+    _KNOWN_SET_BONUS_ORPHANS = ()
     _set_orphans = enchantment_split_mod.set_bonus_orphans(
         variants,
         {**umbrella_mod.umbrella_expansion(),
@@ -762,6 +784,7 @@ def build() -> dict:
             # magnitude was a flattened Roman rank.
             "parrying_set_bonus_coverage": _parrying_sets,
             "heightened_awareness_set_bonus_coverage": _ha_sets,
+            "speed_set_bonus_coverage": _speed_sets,
             "parrying_split_coverage": {**_parrying_coverage,
                                         "shard_audit": _parrying_audit,
                                         "tooltip_snapshots": _parrying_snapshots,
