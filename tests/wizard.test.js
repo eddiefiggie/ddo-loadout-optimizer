@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, advancedRowModel, openPanels, openPanelToggle, openPanelSweep, openPanelClear, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -10,6 +10,11 @@ const realData = normalizeDataset(JSON.parse(
 const baseState = () => ({ ml: 34, race: "Human", armor: "", oath: "", alignment: "",
   style: "", weaponTypes: [], offHand: [], offHandWeapons: [],
   priorities: ["Constitution"], slotConstraints: {} });
+
+// plan 005 — a minimal picker vocabulary with two known presence stats, for the
+// Advanced-row model and the presence-bound guard. Declared up here because tests
+// run at call time, and several call sites precede the plan-005 block below.
+const presenceVocab = { canonical: (v) => v, presence: new Set(["Blurry", "Ghostly"]) };
 
 let passed = 0;
 function test(name, fn) {
@@ -935,11 +940,17 @@ test("U2: a presence (on/off) stat cannot carry a magnitude credit", () => {
 });
 
 test("U2: the credit control is not offered on a presence row", () => {
-  const at = WIZARD_SRC.indexOf("${creditsHTML(p)}");
-  assert.ok(at > 0 || /presence.*creditsHTML/.test(WIZARD_SRC), "the sub-row is rendered somewhere");
-  const call = WIZARD_SRC.match(/[^\n]*creditsHTML\(p\)[^\n]*/)[0];
-  assert.ok(/vocab\.presence/.test(call),
-    `the render must be gated on the presence set, got: ${call.trim()}`);
+  // plan 005 moved the gate: credits now render only inside the Advanced panel,
+  // and R6 gives a presence row no panel at all. So the guarantee is one step
+  // removed from the markup — assert both halves.
+  assert.strictEqual(advancedRowModel("Blurry", {
+    declaredCredits: { [creditKey("Blurry", "Insight")]: { stat: "Blurry", bonus_type: "Insight", value: 3 } },
+  }, presenceVocab).hasAdvanced, false, "a presence row gets no panel");
+  const rows = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function rankedHTML"), WIZARD_SRC.indexOf("function advancedHTML"));
+  assert.ok(!/creditsHTML/.test(rows), "the row body never renders credits directly");
+  assert.ok(/adv\.hasAdvanced \? advancedHTML/.test(rows), "the panel is gated on hasAdvanced");
+  const panel = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function advancedHTML"), WIZARD_SRC.indexOf("function creditsHTML"));
+  assert.ok(/creditsHTML\(stat/.test(panel), "credits render inside the panel, nowhere else");
 });
 
 test("U2: loading a character resets declared credits", () => {
@@ -958,8 +969,13 @@ test("U2: an unusable credit row neither reads as declared nor reserves its type
   const at = WIZARD_SRC.indexOf("function creditsHTML");
   const fn = WIZARD_SRC.slice(at, WIZARD_SRC.indexOf("\n    }", at));
   assert.ok(/is-incomplete/.test(fn), "an unusable row is visually marked");
-  assert.ok(/filter\(\[, c\]\) => usable\(c\.value\)\)|filter\(\(\[, c\]\) => usable\(c\.value\)\)/.test(fn),
+  assert.ok(/filter\(\(c\) => c\.usable\)/.test(fn),
     "usedTypes counts only rows the solver would keep");
+  // The `usable` flag now comes from the shared module-scope predicate via the
+  // row model, so the markup and the badge cannot disagree about the same row.
+  assert.ok(/creditIsUsable\(/.test(WIZARD_SRC.slice(
+    WIZARD_SRC.indexOf("function advancedRowModel"), WIZARD_SRC.indexOf("const openPanels"))),
+    "the row model decides usability with the shared predicate");
 });
 
 // ---- U5 — declared credits persist with the character (R11) -----------------
@@ -1012,5 +1028,214 @@ test("U5: the credit map is in the persistence allowlist the wizard state feeds"
   assert.ok(/declaredCredits: \{\},/.test(WIZARD_SRC),
     "state initializes declaredCredits so the saved shape is always a map");
 });
+
+// ---- plan 005 U1 — the pure Advanced-row model -------------------------------
+// These exist because rankedHTML/renderRankedList live inside the DOM closure and
+// this suite has no jsdom: without the extraction, R5's badge and R6's presence
+// rule could only ever be eyeballed in a browser.
+
+test("U1: a presence stat gets no Advanced control, a magnitude stat does", () => {
+  assert.strictEqual(advancedRowModel("Blurry", {}, presenceVocab).hasAdvanced, false);
+  assert.strictEqual(advancedRowModel("Constitution", {}, presenceVocab).hasAdvanced, true);
+});
+
+test("U1: badgeCount counts a floor, a cap, and each usable credit", () => {
+  const stat = "Constitution";
+  assert.strictEqual(advancedRowModel(stat, {}, presenceVocab).badgeCount, 0);
+  assert.strictEqual(advancedRowModel(stat, { targetFloors: { [stat]: 20 } }, presenceVocab).badgeCount, 1);
+  assert.strictEqual(
+    advancedRowModel(stat, { targetFloors: { [stat]: 20 }, targetCaps: { [stat]: 40 } }, presenceVocab).badgeCount, 2);
+  const withCredits = advancedRowModel(stat, {
+    targetFloors: { [stat]: 20 }, targetCaps: { [stat]: 40 },
+    declaredCredits: {
+      [creditKey(stat, "Insight")]: { stat, bonus_type: "Insight", value: 7 },
+      [creditKey(stat, "Quality")]: { stat, bonus_type: "Quality", value: 3 },
+    },
+  }, presenceVocab);
+  assert.strictEqual(withCredits.badgeCount, 4);
+});
+
+test("U1: an unusable credit never inflates the badge", () => {
+  // The badge is a claim that N settings are applied. A blank, zero, or
+  // over-range credit is dropped by normalizeCredits on the way to the query, so
+  // counting it would advertise a setting the solve refuses.
+  const stat = "Combat Mastery";
+  for (const bad of ["", 0, -3, 1.5, 99999]) {
+    const m = advancedRowModel(stat, {
+      declaredCredits: { [creditKey(stat, "Insight")]: { stat, bonus_type: "Insight", value: bad } },
+    }, presenceVocab);
+    assert.strictEqual(m.badgeCount, 0, `value ${JSON.stringify(bad)} must not count`);
+    assert.strictEqual(m.credits.length, 1, "the row is still rendered, just not counted");
+    assert.strictEqual(m.credits[0].usable, false);
+  }
+  const good = advancedRowModel(stat, {
+    declaredCredits: { [creditKey(stat, "Insight")]: { stat, bonus_type: "Insight", value: 7 } },
+  }, presenceVocab);
+  assert.strictEqual(good.badgeCount, 1);
+  assert.strictEqual(good.credits[0].usable, true);
+});
+
+test("U1: absent bound/credit maps do not throw", () => {
+  const m = advancedRowModel("Dodge", {}, presenceVocab);
+  assert.strictEqual(m.floor, null);
+  assert.strictEqual(m.cap, null);
+  assert.deepStrictEqual(m.credits, []);
+  assert.doesNotThrow(() => advancedRowModel("Dodge", null, null));
+  assert.doesNotThrow(() => advancedRowModel("Dodge", { targetCaps: "nope" }, null));
+});
+
+test("U1: a stat named __proto__ does not read Object.prototype as a bound", () => {
+  // `{}["__proto__"]` is Object.prototype, which is neither null nor "", so a
+  // plain truthiness read would report a floor nobody set.
+  const m = advancedRowModel("__proto__", { targetFloors: {}, targetCaps: {} }, null);
+  assert.strictEqual(m.floor, null);
+  assert.strictEqual(m.cap, null);
+  assert.strictEqual(m.badgeCount, 0);
+});
+
+test("U1: the wizard markup and the row model share one usable-credit predicate", () => {
+  // Two copies of this rule would drift, and the drift is invisible: the badge
+  // would count a credit the row is simultaneously dimming as incomplete.
+  assert.ok(/function creditIsUsable\(/.test(WIZARD_SRC));
+  assert.ok(!/const usable = \(v\) =>/.test(WIZARD_SRC),
+    "creditsHTML's local `usable` arrow is gone — it calls the shared predicate");
+});
+
+// ---- F2 — a bound on a presence stat cannot survive R6 ------------------------
+
+test("F2: cleanBoundMap drops a bound on a presence stat when given a vocab", () => {
+  // R6 removes the min/max control from presence rows. The VALUE behind it
+  // persists through INPUT_KEYS, so without this guard a floor set before the
+  // change keeps constraining every solve with nothing on screen to clear it.
+  const out = cleanBoundMap({ Blurry: 3, Constitution: 20 }, presenceVocab);
+  assert.deepStrictEqual(out, { Constitution: 20 });
+});
+
+test("F2: cleanBoundMap without a vocab keeps its prior behavior exactly", () => {
+  assert.deepStrictEqual(cleanBoundMap({ Blurry: 3, Constitution: 20 }), { Blurry: 3, Constitution: 20 });
+  assert.deepStrictEqual(cleanBoundMap({ a: "", b: null, c: -1, d: "x", e: 0 }), { e: 0 });
+});
+
+test("F2: a presence-stat floor never reaches the query", () => {
+  const state = Object.assign(baseState(), {
+    priorities: ["Blurry", "Constitution"],
+    targetFloors: { Blurry: 1, Constitution: 20 },
+    targetCaps: { Blurry: 5 },
+  });
+  const q = buildQuery(state, presenceVocab);
+  assert.deepStrictEqual(q.targetFloors, { Constitution: 20 });
+  assert.deepStrictEqual(q.targetCaps, {});
+});
+
+// ---- U2/KTD1 — the open-panel set --------------------------------------------
+
+test("KTD1: the open set survives a list rebuild", () => {
+  // renderRankedList does `ol.innerHTML = rankedHTML()` and four handlers call
+  // rerender(); a <details open> would snap shut the moment the player clicks
+  // "+ already have" inside the panel they just opened. The set is what carries
+  // the state across that rebuild, so it must live outside the rebuilt markup.
+  openPanelClear();
+  openPanelToggle("Constitution", true);
+  assert.ok(openPanels.has("Constitution"));
+  assert.ok(!/openPanels\.clear\(\)/.test(
+    WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderRankedList"),
+      WIZARD_SRC.indexOf("function renderRanked("))),
+    "renderRankedList must not clear the open set while rebuilding");
+  openPanelClear();
+});
+
+test("KTD1: toggle, sweep, and clear behave as the row lifecycle needs", () => {
+  openPanelClear();
+  openPanelToggle("Dodge", true);
+  openPanelToggle("Constitution", true);
+  assert.strictEqual(openPanels.size, 2);
+  openPanelToggle("Dodge", false);
+  assert.ok(!openPanels.has("Dodge"));
+  openPanelSweep("Constitution");
+  assert.strictEqual(openPanels.size, 0);
+  openPanelToggle("Dodge", true);
+  openPanelClear();
+  assert.strictEqual(openPanels.size, 0);
+});
+
+test("KTD1: the open set is keyed by stat, so reordering does not move a panel", () => {
+  // Keyed by index, moving Constitution from row 3 to row 1 would leave the panel
+  // open on whatever stat landed in row 3.
+  openPanelClear();
+  const priorities = ["Dodge", "Fortification", "Constitution"];
+  openPanelToggle("Constitution", true);
+  const moved = priorities.slice();
+  moved.splice(0, 0, moved.splice(2, 1)[0]);
+  assert.deepStrictEqual(moved, ["Constitution", "Dodge", "Fortification"]);
+  assert.ok(openPanels.has("Constitution"), "the panel followed the stat, not the index");
+  assert.strictEqual(openPanels.size, 1);
+  openPanelClear();
+});
+
+test("KTD1: deleting a priority sweeps its open panel alongside its bounds", () => {
+  const del = WIZARD_SRC.slice(WIZARD_SRC.indexOf("b.dataset.del != null"),
+    WIZARD_SRC.indexOf("b.dataset.cadd != null"));
+  assert.ok(/openPanelSweep\(/.test(del),
+    "the delete branch sweeps the open set, like it already does for bounds and credits");
+});
+
+test("KTD1: loading a character clears every open panel", () => {
+  assert.ok(/openPanelClear\(\)/.test(WIZARD_SRC.slice(WIZARD_SRC.indexOf("function loadCharacter"))),
+    "loadCharacter clears the open set — a carried-over row belongs to the old build");
+});
+
+test("KTD1: the open set is ephemeral — never persisted, never queried", () => {
+  assert.ok(!/openPanels/.test(fs.readFileSync(path.join(__dirname, "..", "web", "persist.js"), "utf-8")));
+  openPanelClear();
+  openPanelToggle("Constitution", true);
+  const q = buildQuery(Object.assign(baseState(), { priorities: ["Constitution"] }), presenceVocab);
+  assert.ok(!JSON.stringify(Object.keys(q)).includes("open"), "the open set never reaches the solver query");
+  openPanelClear();
+});
+
+// ---- U3 — the panel's prose, relocated not duplicated -------------------------
+
+test("U3: the stranded bottom explainer is gone from the step", () => {
+  // stepPriorities lives inside the DOM closure and Node cannot call it, so slice
+  // its source the way the rest of this suite does.
+  const step = stepTemplate("stepPriorities");
+  assert.ok(!/wz-bounds-help/.test(step), "the standalone explainer block is removed");
+  assert.ok(!/wz-bounds-help/.test(WIZARD_SRC), "and nothing else still renders it");
+});
+
+test("U3: the explainer is DEFINED once, even though it renders per row", () => {
+  // R3 is about relocation, not deduplication in the DOM: the panel is closed by
+  // default and a player opens one row at a time, so the text belongs next to the
+  // inputs. What must not happen is two copies of the prose drifting apart — so
+  // the criterion is one definition in source, interpolated everywhere it appears.
+  const occurrences = WIZARD_SRC.split("Min is a hard floor.").length - 1;
+  assert.strictEqual(occurrences, 1, "the min explainer has exactly one definition");
+  assert.strictEqual(WIZARD_SRC.split("Max is a cap.").length - 1, 1);
+  assert.ok(/ADVANCED_PANEL_HELP\.min/.test(WIZARD_SRC), "the panel interpolates it rather than restating it");
+});
+
+test("U3: the panel leads with the no-min-no-max default (R4)", () => {
+  const panel = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function advancedHTML"), WIZARD_SRC.indexOf("function creditsHTML"));
+  const leadAt = panel.indexOf("ADVANCED_PANEL_HELP.lead");
+  assert.ok(leadAt > 0, "the default line is in the panel");
+  assert.ok(leadAt < panel.indexOf("wz-bounds"), "and it comes before the inputs it describes");
+  assert.ok(/Nothing set is the default/.test(ADVANCED_HELP_SRC()), "it states the default plainly");
+});
+
+test("U3: 'already have' names its sources on screen, not only in a tooltip (R7)", () => {
+  const help = ADVANCED_HELP_SRC();
+  for (const source of ["trances", "enhancements", "epic destinies"]) {
+    assert.ok(help.includes(source), `the visible context names ${source}`);
+  }
+  // The tooltip named a different set entirely; broadened so the two agree.
+  const tip = WIZARD_SRC.match(/title="Already have this from[^"]*"/)[0];
+  for (const source of ["enhancement", "epic destiny", "past life", "filigree", "ship buff"]) {
+    assert.ok(tip.includes(source), `the tooltip still covers ${source}`);
+  }
+});
+
+function ADVANCED_HELP_SRC() {
+  return WIZARD_SRC.slice(WIZARD_SRC.indexOf("const ADVANCED_PANEL_HELP"), WIZARD_SRC.indexOf("// U2/KTD1"));
+}
 
 console.log(`\n${passed} passed`);

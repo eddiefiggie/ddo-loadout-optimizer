@@ -41,14 +41,30 @@ function stepAfterLoad(snapshot) {
 
 /** Clean a stat->value bound map (caps/floors): keep only entries whose value is a
  *  finite number >= 0. Blank, null, negative, or non-numeric entries are dropped so
- *  a stray input never reaches the solver as a cap/floor. Pure; unit-tested. */
-function cleanBoundMap(m) {
+ *  a stray input never reaches the solver as a cap/floor.
+ *
+ *  `vocab` is optional and mirrors `cleanCreditMap`: given one, the stat is
+ *  canonicalized and a PRESENCE stat is refused. R6 removes the min/max control
+ *  from presence rows, but removing a control does not remove the value behind it
+ *  — `targetCaps`/`targetFloors` persist through `INPUT_KEYS`, so a floor set on
+ *  an on/off stat before this change would keep constraining every solve with no
+ *  on-screen way to see or clear it. That is the orphaned-bound defect this repo
+ *  already recorded. A bound on a binary stat is meaningless anyway: the stat's
+ *  gear lands in a `stat||boolean` bucket with no magnitude to floor or cap.
+ *  Callers without a vocab (unit tests supplying canonical names) get the prior
+ *  behavior exactly. Pure; unit-tested. */
+function cleanBoundMap(m, vocab) {
+  const canonical = vocab && typeof vocab.canonical === "function" ? vocab.canonical : (s) => s;
+  const presence = vocab && vocab.presence && typeof vocab.presence.has === "function" ? vocab.presence : null;
   const out = {};
   if (m && typeof m === "object") {
-    for (const [stat, v] of Object.entries(m)) {
+    for (const [rawStat, v] of Object.entries(m)) {
       if (v === "" || v == null) continue;
       const n = Number(v);
-      if (Number.isFinite(n) && n >= 0) out[stat] = n;
+      if (!Number.isFinite(n) || n < 0) continue;
+      const stat = canonical(String(rawStat).trim()) || rawStat;
+      if (presence && presence.has(stat)) continue;
+      out[stat] = n;
     }
   }
   return out;
@@ -111,6 +127,114 @@ function cleanCreditMap(m, vocab) {
   return out;
 }
 
+/** Is a declared credit's typed value one the solver will actually honor?
+ *
+ *  Hoisted to module scope so the row model below and the row markup share ONE
+ *  predicate. They must agree: the badge counts a credit as an applied setting
+ *  and the markup dims it as incomplete, and a row reading "1" whose only credit
+ *  the solver drops is exactly the kind of claim this repo refuses to make. Lives
+ *  beside `_maxCreditValue`, which is already resolved at module scope. Pure. */
+function creditIsUsable(v) {
+  const n = Number(v);
+  return Number.isInteger(n) && n > 0 && n <= _maxCreditValue;
+}
+
+/** What one ranked row's Advanced panel holds, as plain data (no DOM).
+ *
+ *  Exists so R5's collapsed badge and R6's presence-row rule are unit-testable:
+ *  `rankedHTML` and `renderRankedList` live inside the wizard's DOM closure and
+ *  are not exported, and this suite has no jsdom, so behavior asserted only
+ *  through them cannot be tested at all. The markup renders FROM this; it does
+ *  not re-derive any of it.
+ *
+ *  `badgeCount` counts applied settings — a floor, a cap, and each USABLE credit
+ *  — so a half-typed credit row does not inflate the badge. Pure; unit-tested. */
+function advancedRowModel(stat, state, vocab) {
+  const s = state || {};
+  const presence = vocab && vocab.presence && typeof vocab.presence.has === "function" ? vocab.presence : null;
+  // R6 — a presence (on/off) stat has no magnitude to floor or cap, and already
+  // suppresses declared credits, so its panel would be empty. No control at all.
+  if (presence && presence.has(stat)) {
+    return { hasAdvanced: false, floor: null, cap: null, credits: [], badgeCount: 0 };
+  }
+  const pick = (map) => {
+    if (!map || typeof map !== "object") return null;
+    // hasOwnProperty, not `map[stat] != null`: a stat named "__proto__" would
+    // otherwise resolve to Object.prototype and read as a set bound.
+    if (!Object.prototype.hasOwnProperty.call(map, stat)) return null;
+    const v = map[stat];
+    return (v == null || v === "") ? null : v;
+  };
+  const floor = pick(s.targetFloors);
+  const cap = pick(s.targetCaps);
+  const all = (s.declaredCredits && typeof s.declaredCredits === "object") ? s.declaredCredits : {};
+  const credits = Object.entries(all)
+    .filter(([, c]) => c && c.stat === stat)
+    .map(([key, c]) => ({
+      key, stat: c.stat, bonus_type: c.bonus_type, value: c.value, usable: creditIsUsable(c.value),
+    }));
+  const badgeCount = (floor != null ? 1 : 0) + (cap != null ? 1 : 0)
+    + credits.filter((c) => c.usable).length;
+  return { hasAdvanced: true, floor, cap, credits, badgeCount };
+}
+
+// U3 — the Advanced panel's prose, defined ONCE here and interpolated per row.
+//
+// It renders once per magnitude row by design: the panel is closed by default and
+// a player opens one at a time, so the explanation lands next to the inputs it
+// describes instead of stranded at the bottom of the list. "Appears exactly once"
+// is therefore a claim about this source, not about the rendered DOM — a twelve-
+// row list has twelve copies in the markup and one definition here.
+//
+// `lead` states the default first (R4). Most solves want neither bound, and an
+// empty box reads as unfinished, which invites players to constrain a solve they
+// had no reason to constrain.
+const ADVANCED_PANEL_HELP = {
+  lead: "<strong>Nothing set is the default.</strong> With no min and no max, the solver takes as much of this stat as it can fit without giving up anything ranked above it. Leave both blank unless you have a specific number in mind.",
+  min: "<strong>Min is a hard floor.</strong> The solver sacrifices your lower priorities to reach it, and if it can't, it chases that stat above everything else. Use it only for a number you truly must hit (e.g. a survivability threshold like PRR).",
+  max: "<strong>Max is a cap.</strong> Stop valuing a stat past a breakpoint you know is real (e.g. 100% doublestrike). The tool can't verify in-game caps for you — set one only when you know the breakpoint.",
+  // R7 — the sources this covers, on screen rather than only in a tooltip. The
+  // feature exists because these bonuses are invisible to the tool, so a label
+  // that does not name them cannot be found by the player who needs it.
+  credit: "<strong>Already have some of this?</strong> Character effects the tool can't see — trances, enhancements, epic destinies, past lives, filigrees, ship buffs — won't be found in your gear. Declare the amount and the solver stops spending a slot to beat it.",
+};
+
+// U2/KTD1 — which rows currently have their Advanced panel open.
+//
+// `renderRankedList` rebuilds the whole list with `ol.innerHTML = rankedHTML()`,
+// and every credit mutation (add, remove, retype) plus reorder and drop calls
+// `rerender()`. A `<details open>` would therefore snap shut the instant the
+// player clicks "+ already have" INSIDE the panel they just opened — the single
+// most likely interaction. So the open set lives out here, survives the rebuild,
+// and the markup sets `open` from it.
+//
+// Keyed by STAT NAME, not row index: reordering changes indices, and a panel
+// should follow its stat up and down the list rather than staying at position 3.
+//
+// Ephemeral by design — never enters `state`, `INPUT_KEYS`, or the query. Module
+// scope (not the DOM closure) so the sweep semantics are unit-testable at all;
+// the Priorities step and the in-results Adjust panel share one set, which is
+// correct because the same stat in both is the same stat and they are never
+// visible at once.
+const openPanels = new Set();
+/** Record a panel's open state. Pure w.r.t. everything but the module set. */
+function openPanelToggle(stat, isOpen) {
+  if (isOpen) openPanels.add(stat); else openPanels.delete(stat);
+  return openPanels;
+}
+/** Drop one stat's entry — called when its priority is removed, so a deleted
+ *  stat leaves nothing behind (mirrors the bounds/credits cleanup beside it). */
+function openPanelSweep(stat) {
+  openPanels.delete(stat);
+  return openPanels;
+}
+/** Reset every entry — called on character load, where the whole priority list
+ *  is replaced and any carried-over open row would belong to the old build. */
+function openPanelClear() {
+  openPanels.clear();
+  return openPanels;
+}
+
 /** Pure state -> solver query mapping (no DOM). Exported for unit tests.
  *  `vocab` is the picker vocabulary; callers inside the wizard closure pass it so
  *  a declared credit's stat is canonicalized to the ONE name gear carries (KTD4)
@@ -156,8 +280,11 @@ function buildQuery(state, vocab) {
     slotConstraints: state.slotConstraints,
     // U1/U4 — per-priority stat caps (max) and floors (min), stat-keyed. Only clean,
     // non-negative entries are emitted; empty maps mean "no caps/floors" (default).
-    targetCaps: cleanBoundMap(state.targetCaps),
-    targetFloors: cleanBoundMap(state.targetFloors),
+    // `vocab` is passed for the same reason cleanCreditMap gets it: canonicalize
+    // the stat, and refuse a bound on a presence stat now that R6 has removed the
+    // control that set it (see cleanBoundMap).
+    targetCaps: cleanBoundMap(state.targetCaps, vocab),
+    targetFloors: cleanBoundMap(state.targetFloors, vocab),
     // U2 — declared stat credits, `(stat, bonus type)`-keyed. Always emitted; an
     // empty map is inert, because buildModel normalizes it to no credits — so an
     // undeclared build solves exactly as it did before this feature (R3). The key
@@ -421,7 +548,7 @@ function addBundle(key, current, vocab) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, advancedRowModel, openPanels, openPanelToggle, openPanelSweep, openPanelClear, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -848,11 +975,6 @@ if (typeof window !== "undefined" && window.App) {
         </div>
         <ol class="wz-ranked" id="wz-ranked"></ol>
         <p class="wz-draghelp">Drag the ⋮⋮ handle to reorder, or use the ↑ ↓ buttons (they work on touch and keyboard).</p>
-        <details class="wz-bounds-help">
-          <summary>Optional <strong>min / max</strong> per row — advanced</summary>
-          <p><strong>Min is a hard floor.</strong> The solver sacrifices your lower priorities to reach it, and if it can't, it chases that stat above everything else. Use it only for a number you truly must hit (e.g. a survivability threshold like PRR).</p>
-          <p><strong>Max is a cap.</strong> Stop valuing a stat past a breakpoint you know is real (e.g. 100% doublestrike). The tool can't verify in-game caps for you — set one only when you know the breakpoint.</p>
-        </details>
         <p id="wz-status" class="wz-status"></p>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
           <button class="btn primary" data-solve>Solve ⚡</button></div>
@@ -1047,20 +1169,46 @@ if (typeof window !== "undefined" && window.App) {
     function rankedHTML() {
       if (!state.priorities.length) return `<li class="wz-hint">Add at least one stat to optimize for.</li>`;
       return state.priorities.map((p, i) => {
-        // U4 — optional per-priority min (floor) and max (cap), keyed by stat name.
-        const capV = state.targetCaps && state.targetCaps[p] != null ? state.targetCaps[p] : "";
-        const flrV = state.targetFloors && state.targetFloors[p] != null ? state.targetFloors[p] : "";
+        // U1 — the row's optional settings as data. The markup renders FROM this
+        // and re-derives none of it, so the badge and the presence rule are the
+        // same decision the unit tests assert.
+        const adv = advancedRowModel(p, state, vocab);
         return `<li data-i="${i}" draggable="true">
         <span class="wz-grip" title="drag to reorder">⋮⋮</span>
-        <span class="wz-rk">${i + 1}</span><span class="wz-nm">${esc(p)}${vocab.presence && vocab.presence.has(p) ? ` <span class="rank-tag" title="On/off effect — the solver secures an item that has it, in priority order (no magnitude to maximize).">on/off</span>` : ""}</span>
-        <span class="wz-bounds">
-          <input class="wz-bound" type="number" min="0" step="1" inputmode="numeric" data-min="${i}" value="${esc(flrV)}" placeholder="min" aria-label="${esc(p)} minimum (floor)" draggable="false">
-          <input class="wz-bound" type="number" min="0" step="1" inputmode="numeric" data-max="${i}" value="${esc(capV)}" placeholder="max" aria-label="${esc(p)} maximum (cap)" draggable="false"></span>
+        <span class="wz-rk">${i + 1}</span><span class="wz-nm">${esc(p)}${adv.hasAdvanced ? "" : ` <span class="rank-tag" title="On/off effect — the solver secures an item that has it, in priority order (no magnitude to maximize).">on/off</span>`}</span>
+        ${adv.hasAdvanced ? advancedHTML(p, i, adv) : `<span class="wz-adv-none"></span>`}
         <span class="wz-ctl"><button data-up="${i}" ${i === 0 ? "disabled" : ""} aria-label="move up">↑</button>
           <button data-down="${i}" ${i === state.priorities.length - 1 ? "disabled" : ""} aria-label="move down">↓</button>
-          <button data-del="${i}" aria-label="remove">✕</button></span>
-        ${vocab.presence && vocab.presence.has(p) ? "" : creditsHTML(p)}</li>`;
+          <button data-del="${i}" aria-label="remove">✕</button></span></li>`;
       }).join("");
+    }
+
+    // U2/U3 — one row's Advanced panel: everything optional, behind one closed
+    // disclosure, so the default row is just rank, name, and reorder (R1).
+    //
+    // `<details>`/`<summary>` rather than a button plus a hidden div: keyboard
+    // operation and AT semantics come free, and `toggle` is the write point for
+    // the open set (KTD1). A presence row renders `.wz-adv-none` instead — R6
+    // gives it no control, but R2 keeps the column so every row lines up (KTD5).
+    //
+    // The badge is part of the summary's TEXT, not a visual-only chip: R5 is
+    // about not losing a setting when the panel closes, and a purely visual mark
+    // would lose it for screen-reader users instead of for everyone.
+    function advancedHTML(stat, i, adv) {
+      const n = adv.badgeCount;
+      const badge = n > 0 ? ` <span class="wz-adv-badge">· ${n} ${n === 1 ? "setting" : "settings"}</span>` : "";
+      return `<details class="wz-adv" data-adv="${esc(stat)}"${openPanels.has(stat) ? " open" : ""}>
+        <summary>Advanced${badge}</summary>
+        <div class="wz-adv-body">
+          <p class="wz-adv-lead">${ADVANCED_PANEL_HELP.lead}</p>
+          <span class="wz-bounds">
+            <input class="wz-bound" type="number" min="0" step="1" inputmode="numeric" data-min="${i}" value="${esc(adv.floor == null ? "" : adv.floor)}" placeholder="min" aria-label="${esc(stat)} minimum (floor)" draggable="false">
+            <input class="wz-bound" type="number" min="0" step="1" inputmode="numeric" data-max="${i}" value="${esc(adv.cap == null ? "" : adv.cap)}" placeholder="max" aria-label="${esc(stat)} maximum (cap)" draggable="false"></span>
+          <p class="wz-adv-note">${ADVANCED_PANEL_HELP.min}</p>
+          <p class="wz-adv-note">${ADVANCED_PANEL_HELP.max}</p>
+          <p class="wz-adv-note">${ADVANCED_PANEL_HELP.credit}</p>
+          ${creditsHTML(stat, adv)}
+        </div></details>`;
     }
 
     // U2 — the declared-credit sub-rows for one priority. Repeatable, unlike the
@@ -1068,19 +1216,18 @@ if (typeof window !== "undefined" && window.App) {
     // types differ, and A2 makes `(stat, bonus type)` the uniqueness key. Each row
     // carries its own key so editing the TYPE is a rekey rather than an edit in
     // place; a rekey onto an existing pair replaces it rather than duplicating.
-    function creditsHTML(stat) {
-      const all = state.declaredCredits || {};
-      const mine = Object.entries(all).filter(([, c]) => c && c.stat === stat);
+    function creditsHTML(stat, adv) {
       // A row whose value the solver would drop must not READ as declared, and must
       // not reserve its bonus type against its siblings — otherwise a "have: 0" or
       // an over-range magnitude looks like a live declaration, silently contributes
-      // nothing, and blocks the type it is occupying.
-      const usable = (v) => Number.isInteger(Number(v)) && Number(v) > 0 && Number(v) <= _maxCreditValue;
-      const usedTypes = new Set(mine.filter(([, c]) => usable(c.value)).map(([, c]) => c.bonus_type));
-      const rows = mine.map(([key, c]) => {
+      // nothing, and blocks the type it is occupying. `creditIsUsable` is the same
+      // module-scope predicate the badge counts with, so the two cannot disagree.
+      const mine = (adv || advancedRowModel(stat, state, vocab)).credits;
+      const usedTypes = new Set(mine.filter((c) => c.usable).map((c) => c.bonus_type));
+      const rows = mine.map(({ key, ...c }) => {
         const opts = _creditBonusTypes.map((t) =>
           `<option value="${esc(t)}"${t === c.bonus_type ? " selected" : ""}${(t !== c.bonus_type && usedTypes.has(t)) ? " disabled" : ""}>${esc(t)}</option>`).join("");
-        return `<span class="wz-credit${usable(c.value) ? "" : " is-incomplete"}">
+        return `<span class="wz-credit${c.usable ? "" : " is-incomplete"}">
           <input class="wz-credit-val" type="number" min="1" step="1" max="${esc(_maxCreditValue)}" inputmode="numeric" data-cval="${esc(key)}"
             value="${esc(c.value)}" placeholder="have" aria-label="${esc(stat)} ${esc(c.bonus_type)} bonus you already have" draggable="false">
           <select class="wz-credit-type" data-ctype="${esc(key)}" aria-label="${esc(stat)} credit bonus type" draggable="false">${opts}</select>
@@ -1092,7 +1239,7 @@ if (typeof window !== "undefined" && window.App) {
       const add = free
         ? `<button type="button" class="wz-credit-add" data-cadd="${esc(stat)}"
              aria-label="add a non-gear bonus you already have for ${esc(stat)}"
-             title="Already have this from a trance, past life, filigree, or ship buff? Declare it and the solver stops spending a slot on gear that cannot beat it.">+ already have</button>`
+             title="Already have this from a trance, enhancement, epic destiny, past life, filigree, or ship buff? Declare it and the solver stops spending a slot on gear that cannot beat it.">+ already have</button>`
         : "";
       return `<span class="wz-credits">${rows}${add}</span>`;
     }
@@ -1102,7 +1249,23 @@ if (typeof window !== "undefined" && window.App) {
     function renderRankedList(ol, rerender) {
       if (!ol) return;
       ol.innerHTML = rankedHTML();
+      // U2/KTD1 — the open set is the only thing that carries panel state across
+      // the `innerHTML` rebuild above, so bind the write point on every render.
+      ol.querySelectorAll("details.wz-adv").forEach((d) => {
+        d.ontoggle = () => openPanelToggle(d.dataset.adv, d.open);
+      });
+      // D1 — the rebuild destroys the focused element. Without restoring focus, a
+      // player who clicks "+ already have" gets the panel they expect but a caret
+      // nowhere: focus falls to <body> and they must re-find the field by mouse or
+      // tab from the top of the list. Re-query AFTER the rebuild, by data
+      // attribute rather than a built selector, so a stat name never needs escaping.
+      const focusCreditValue = (key) => ol.querySelectorAll("input.wz-credit-val")
+        .forEach((el) => { if (el.dataset.cval === key) el.focus(); });
+      const focusSummary = (stat) => ol.querySelectorAll("details.wz-adv")
+        .forEach((d) => { if (d.dataset.adv === stat) { const s = d.querySelector("summary"); if (s) s.focus(); } });
+
       ol.querySelectorAll("button").forEach((b) => b.onclick = () => {
+        let after = null;
         if (b.dataset.up != null) { const i = +b.dataset.up;[state.priorities[i - 1], state.priorities[i]] = [state.priorities[i], state.priorities[i - 1]]; }
         else if (b.dataset.down != null) { const i = +b.dataset.down;[state.priorities[i + 1], state.priorities[i]] = [state.priorities[i], state.priorities[i + 1]]; }
         else if (b.dataset.del != null) {
@@ -1119,18 +1282,27 @@ if (typeof window !== "undefined" && window.App) {
               if (c && c.stat === p) delete state.declaredCredits[k];
             }
           }
+          openPanelSweep(p);   // KTD1 — and its open-panel entry, for the same reason
         }
         else if (b.dataset.cadd != null) {
           const stat = b.dataset.cadd;
           const map = state.declaredCredits || (state.declaredCredits = {});
           const used = new Set(Object.values(map).filter((c) => c && c.stat === stat).map((c) => c.bonus_type));
           const type = _creditBonusTypes.find((t) => !used.has(t));
-          if (type) map[creditKey(stat, type)] = { stat, bonus_type: type, value: "" };
+          if (type) {
+            const key = creditKey(stat, type);
+            map[key] = { stat, bonus_type: type, value: "" };
+            after = () => focusCreditValue(key);   // land the caret in the new field
+          }
         }
         else if (b.dataset.crem != null) {
+          const gone = (state.declaredCredits || {})[b.dataset.crem];
+          const stat = gone && gone.stat;
           if (state.declaredCredits) delete state.declaredCredits[b.dataset.crem];
+          if (stat) after = () => focusSummary(stat);   // the removed control is gone; go up a level
         }
         rerender();
+        if (after) after();
       });
       // U4 — min/max bound inputs. Write to the stat-keyed maps (clamped to a
       // non-negative integer); a blank clears the bound. Stop pointer propagation so
@@ -1177,6 +1349,10 @@ if (typeof window !== "undefined" && window.App) {
           delete map[oldKey];
           map[next] = { stat: c.stat, bonus_type: sel.value, value: c.value };
           rerender();
+          // D1 — the rekey rebuilds the list too; put focus back on the selector
+          // the player just changed rather than dropping it to <body>.
+          ol.querySelectorAll("select.wz-credit-type")
+            .forEach((el) => { if (el.dataset.ctype === next) el.focus(); });
         };
       });
       let from = null;
@@ -1186,7 +1362,12 @@ if (typeof window !== "undefined" && window.App) {
         // ancestor from becoming the drag source, and stopPropagation on
         // pointerdown does not suppress the native drag either. U2 adds a
         // <select>, which `tagName === "INPUT"` does not match, so match both.
-        li.ondragstart = (e) => { if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "SELECT")) { e.preventDefault(); return; } from = +li.dataset.i; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", ""); };
+        // U2/KTD6 adds a subtree clause. The tagName test alone is not enough once
+        // the panel exists: a click on the count badge inside the <summary> has
+        // `tagName === "SPAN"`, and a drag on the relocated explainer prose has
+        // "P", so both would start a row reorder instead of toggling or selecting.
+        // Anything inside the panel is panel interaction, never a drag handle.
+        li.ondragstart = (e) => { const t = e.target; if (t && (t.tagName === "INPUT" || t.tagName === "SELECT" || (t.closest && t.closest("details.wz-adv")))) { e.preventDefault(); return; } from = +li.dataset.i; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", ""); };
         li.ondragend = () => { li.classList.remove("dragging"); from = null; };
         li.ondragover = (e) => e.preventDefault();
         li.ondrop = (e) => { e.preventDefault(); const to = +li.dataset.i; if (from === null || to === from) return; const m = state.priorities.splice(from, 1)[0]; state.priorities.splice(to, 0, m); from = null; rerender(); };
@@ -1411,6 +1592,9 @@ if (typeof window !== "undefined" && window.App) {
       // (U5 will populate this from the save; the RESET is what makes it safe, and
       // is correct now because nothing writes declaredCredits into `inputs` yet.)
       state.declaredCredits = (i.declaredCredits && typeof i.declaredCredits === "object") ? { ...i.declaredCredits } : {};
+      // KTD1 — the whole priority list is being replaced, so any row left open
+      // belongs to the build being discarded. Ephemeral state, cleared not restored.
+      openPanelClear();
       // #169 — a saved character may rank a name that has since been EXPANDED
       // AWAY (`Speed`, `Parrying`, `Heightened Awareness`, the umbrella ability
       // names). The add-a-priority paths refuse those, but this one restored them
