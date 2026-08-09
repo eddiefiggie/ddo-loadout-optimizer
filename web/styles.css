@@ -769,16 +769,41 @@ input.wz-ml { width: 120px; }
   border-radius: var(--r-1, 6px); padding: 2px 4px; font-size: 0.85em; text-align: center; }
 .wz-bound::placeholder { color: var(--faint); }
 .wz-bound:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
-.wz-bounds-help { max-width: 34rem; margin: var(--sp-2) 0 0; font-size: 0.88em; color: var(--muted); }
-.wz-bounds-help summary { cursor: pointer; color: var(--faint); }
-.wz-bounds-help summary:hover { color: var(--text); }
-.wz-bounds-help p { margin: var(--sp-2) 0 0; }
-.wz-bounds-help strong { color: var(--text); }
+/* plan 005 — the per-row Advanced disclosure. Takes its own full-width line
+   below the row rather than competing for space on it: `.wz-ranked li` is a flex
+   container, so an auto-width <details> would size to its collapsed summary and
+   render the open panel as a ~5rem column of wrapped text. `flex-basis: 100%` is
+   what drops it to its own line — the same mechanism `.wz-credits` uses below,
+   and the reason it stays on the details rather than moving to `[open]`: a
+   width that changes on open would make the summary jump lines under the cursor.
+
+   Quieter than the reorder controls by design. The row's job is the ORDER; this
+   is the affordance you reach for only when you have a specific number in mind. */
+.wz-adv { flex-basis: 100%; margin-top: 2px; padding-top: 6px;
+  border-top: 1px dashed var(--border-2); font-size: 0.88em; color: var(--muted); }
+.wz-adv > summary { cursor: pointer; color: var(--faint); list-style-position: outside;
+  padding: 2px 0; min-height: var(--tap-sm, 24px); display: flex; align-items: center; gap: 4px; }
+.wz-adv > summary:hover { color: var(--text); }
+.wz-adv > summary:focus-visible { outline: none; box-shadow: var(--ring); border-radius: var(--r-1, 6px); }
+/* R5 — the collapsed row still shows that settings are applied. Part of the
+   summary's TEXT, not a decorative dot: a purely visual mark would hide the
+   state from screen-reader users instead of from everyone. */
+.wz-adv-badge { color: var(--accent); font-weight: 600; }
+.wz-adv[open] > summary { color: var(--text); margin-bottom: var(--sp-2); }
+.wz-adv-body { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); padding-bottom: 2px; }
+.wz-adv-lead, .wz-adv-note { flex-basis: 100%; margin: 0; line-height: 1.45; }
+.wz-adv-lead { color: var(--text); }
+.wz-adv-note { color: var(--muted); }
+.wz-adv-lead strong, .wz-adv-note strong { color: var(--text); }
+/* R6/KTD5 — a presence row carries no control. The main row still lines up
+   without it, because `.wz-nm` is the flex-grow element and the disclosure was
+   never in that line to begin with. */
+.wz-adv-none { display: none; }
 /* U2 — declared stat credits. Repeatable, unlike the fixed min/max pair, so the
-   group takes a full-width line below the row rather than competing for space on
-   it. `flex-basis: 100%` is what drops it; the li gains `flex-wrap` for that. */
+   group takes a full-width line inside the panel rather than competing for space
+   with the bound inputs. */
 .wz-credits { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
-  margin-top: 2px; padding-top: 6px; border-top: 1px dashed var(--border-2); }
+  margin-top: 2px; }
 .wz-credit { display: flex; align-items: center; gap: 3px; }
 .wz-credit.is-incomplete { opacity: 0.55; }
 .wz-credit.is-incomplete .wz-credit-val { border-style: dashed; }

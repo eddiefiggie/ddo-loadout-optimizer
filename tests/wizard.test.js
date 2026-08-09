@@ -249,7 +249,12 @@ test("U5 pickerVocabulary (wizard) delegates to the shared builder", () => {
 
 test("bundles: every UI bundle resolves to >=1 known target in the dataset", () => {
   const rv = buildPickerVocabulary(realData);
-  const allKeys = [...BUNDLE_GROUPS.packages, ...BUNDLE_GROUPS.tactics, ...BUNDLE_GROUPS.schools, ...BUNDLE_GROUPS.spellpower];
+  // Enumerate from BUNDLE_GROUPS itself rather than a hardcoded list of group
+  // names: the hardcoded version silently skipped any NEW group, so plan 005's
+  // `attributes` row would have shipped unguarded and a later dead target in it
+  // would have gone green.
+  const allKeys = Object.values(BUNDLE_GROUPS).flat();
+  assert.deepStrictEqual([...new Set(allKeys)].length, allKeys.length, "no bundle is listed in two groups");
   assert.ok(allKeys.length >= 20, "a rich set of bundles exists");
   for (const key of allKeys) {
     assert.ok(PRESET_BUNDLES[key], `bundle "${key}" is defined`);
@@ -1232,6 +1237,64 @@ test("U3: 'already have' names its sources on screen, not only in a tooltip (R7)
   for (const source of ["enhancement", "epic destiny", "past life", "filigree", "ship buff"]) {
     assert.ok(tip.includes(source), `the tooltip still covers ${source}`);
   }
+});
+
+// ---- U4 — bundle reorder, Attributes, Warlock ---------------------------------
+
+test("U4: Basic and Ranged are REORDERED — no affix silently dropped", () => {
+  // A reorder edits a literal array by hand, which is exactly how an affix goes
+  // missing. Assert the lead order AND that membership is untouched.
+  assert.deepStrictEqual(PRESET_BUNDLES.Basic.slice(0, 6),
+    ["Constitution", "Healing Amplification", "Physical Sheltering", "Magical Sheltering", "Dodge", "Fortification"]);
+  assert.deepStrictEqual([...PRESET_BUNDLES.Basic].sort(), [
+    "Blindness Immunity", "Blurry", "Constitution", "Dodge", "False Life", "Fortification",
+    "Freedom of Movement", "Ghostly", "Healing Amplification", "Magical Sheltering",
+    "Physical Sheltering", "Resistance"].sort());
+  assert.deepStrictEqual(PRESET_BUNDLES.Ranged.slice(0, 4),
+    ["Ranged Power", "Doubleshot", "Deadly", "Armor-Piercing"]);
+  assert.deepStrictEqual([...PRESET_BUNDLES.Ranged].sort(),
+    ["Accuracy", "Armor-Piercing", "Deadly", "Doubleshot", "Ranged Alacrity", "Ranged Power"].sort());
+});
+
+test("U4: Warlock resolves to all fourteen affixes — none dropped by the dataset", () => {
+  // resolveBundle silently drops anything the dataset doesn't carry, so a typo or
+  // a stat that is not rankable would shrink the bundle without any error. This is
+  // the test that catches it. Eldritch Blast Dice in particular only became
+  // rankable when the augment-only stats were added to CORE_STATS.
+  const rv = buildPickerVocabulary(realData);
+  const resolved = resolveBundle("Warlock", rv);
+  assert.strictEqual(resolved.length, 14, `expected 14, got ${resolved.length}: ${resolved.join(", ")}`);
+  for (const a of ["Power in Pact", "Eldritch Blast Dice", "Nullification", "Radiance", "Impulse"]) {
+    assert.ok(resolved.includes(a), `${a} survived resolution`);
+  }
+});
+
+test("U4: Attributes resolves to the six ability scores", () => {
+  const rv = buildPickerVocabulary(realData);
+  assert.deepStrictEqual(resolveBundle("Attributes", rv),
+    ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"]);
+});
+
+test("U4: adding a bundle never duplicates a stat already ranked", () => {
+  const rv = buildPickerVocabulary(realData);
+  const next = addBundle("Warlock", ["Charisma"], rv);
+  assert.strictEqual(next.indexOf("Charisma"), 0, "the existing entry keeps its position");
+  assert.strictEqual(next.filter((s) => s === "Charisma").length, 1);
+  assert.strictEqual(next.length, 14, "the other thirteen are appended");
+});
+
+test("U4: Warlock sits on the packages row; Attributes is above Tactics", () => {
+  assert.ok(BUNDLE_GROUPS.packages.includes("Warlock"));
+  assert.deepStrictEqual(BUNDLE_GROUPS.attributes, ["Attributes"]);
+  // Attributes is always visible — no package reveals it, unlike tactics/schools.
+  assert.ok(!Object.values(BUNDLE_REVEALS).flat().includes("attributes"),
+    "Attributes is not gated behind a reveal");
+  const step = stepTemplate("stepPriorities");
+  const attrAt = step.indexOf('data-group="attributes"');
+  const tacticsAt = step.indexOf('data-group="tactics"');
+  assert.ok(attrAt > 0 && tacticsAt > 0, "both rows render");
+  assert.ok(attrAt < tacticsAt, "the Attributes row comes before Tactics");
+  assert.ok(!/data-group="attributes"[^>]*hidden/.test(step), "the Attributes row is not hidden");
 });
 
 function ADVANCED_HELP_SRC() {

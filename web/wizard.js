@@ -491,11 +491,22 @@ function curatedStats(dataset) {
 // Affix lists are the gear planner's, verbatim; resolveBundle canonicalizes +
 // drops any our dataset doesn't carry, so a bundle can never inject a dead target.
 const PRESET_BUNDLES = {
-  Basic: ["Healing Amplification", "Physical Sheltering", "Magical Sheltering", "Constitution", "Dodge", "Fortification", "False Life", "Resistance", "Freedom of Movement", "Blurry", "Ghostly", "Blindness Immunity"],
+  // Order within a bundle is the order it lands in the priority list, and #1 is
+  // maximized first — so a bundle's lead affixes are a real recommendation, not
+  // cosmetics. Basic and Ranged lead with what players actually want first.
+  Basic: ["Constitution", "Healing Amplification", "Physical Sheltering", "Magical Sheltering", "Dodge", "Fortification", "False Life", "Resistance", "Freedom of Movement", "Blurry", "Ghostly", "Blindness Immunity"],
   Melee: ["Melee Power", "Doublestrike", "Melee Alacrity", "Accuracy", "Deadly", "Seeker", "Armor-Piercing", "Armor Class"],
-  Ranged: ["Ranged Power", "Doubleshot", "Ranged Alacrity", "Accuracy", "Deadly", "Armor-Piercing"],
+  Ranged: ["Ranged Power", "Doubleshot", "Deadly", "Armor-Piercing", "Ranged Alacrity", "Accuracy"],
   Caster: ["Universal Spell Power", "Universal Spell Lore", "Spell Penetration", "Spell Focus Mastery", "Wizardry", "Spellcraft"],
   Trapping: ["Open Lock", "Disable Device", "Spot", "Search"],
+  // Warlock is the one class-named package: its damage identity is pact dice and
+  // eldritch blast rather than a role the other packages already cover. Blast
+  // damage type is set by pact, so all three families ship together and the
+  // player drops the two that don't apply.
+  Warlock: ["Power in Pact", "Eldritch Blast Dice", "Charisma", "Spell Focus Mastery", "Spell Penetration", "Potency", "Universal Spell Power", "Constitution", "Nullification", "Void Lore", "Radiance", "Radiance Lore", "Impulse", "Kinetic Lore"],
+  // The six ability scores, as one click. Its own row above Tactics — always
+  // visible, revealed by nothing, since every build wants some of these.
+  Attributes: ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"],
   // tactics (revealed by Melee) — each is a single presence affix
   Stunning: ["Stunning"], Sundering: ["Sundering"], Vertigo: ["Vertigo"],
   // spell schools (revealed by Caster) — the button label is the school, the affix is "<School> Focus"
@@ -516,7 +527,8 @@ const PRESET_BUNDLES = {
 };
 // UI groupings + progressive disclosure (which top package reveals which extra row).
 const BUNDLE_GROUPS = {
-  packages: ["Basic", "Melee", "Ranged", "Caster", "Trapping"],
+  packages: ["Basic", "Melee", "Ranged", "Caster", "Trapping", "Warlock"],
+  attributes: ["Attributes"],
   tactics: ["Stunning", "Sundering", "Vertigo"],
   schools: ["Evocation", "Transmutation", "Abjuration", "Conjuration", "Enchantment", "Illusion", "Necromancy"],
   spellpower: ["Healing", "Kinetic", "Fire", "Cold", "Electric", "Acid", "Sonic", "Negative", "Light", "Repair", "Poison"],
@@ -954,6 +966,10 @@ if (typeof window !== "undefined" && window.App) {
           <span class="wz-label">Start from a bundle <span class="wz-sub">· optional · adds to your list — reorder or edit after</span></span>
           <div class="wz-bundle-row">
             ${BUNDLE_GROUPS.packages.map((k) => `<button type="button" class="wz-bundle" data-bundle="${esc(k)}">${esc(k)}</button>`).join("")}
+          </div>
+          <div class="wz-bundle-row wz-bundle-sub" data-group="attributes">
+            <span class="wz-bundle-tag">Ability scores</span>
+            ${BUNDLE_GROUPS.attributes.map((k) => `<button type="button" class="wz-bundle" data-bundle="${esc(k)}">${esc(k)}</button>`).join("")}
           </div>
           <div class="wz-bundle-row wz-bundle-sub" data-group="tactics" hidden>
             <span class="wz-bundle-tag">Tactics</span>
