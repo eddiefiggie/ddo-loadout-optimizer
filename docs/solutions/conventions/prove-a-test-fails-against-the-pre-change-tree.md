@@ -190,6 +190,6 @@ Covered above. The countermeasure that worked was corrupting the solver, not rea
 - `docs/solutions/conventions/prove-a-guard-fails-before-trusting-it.md` — the vacuity case for build guards; verified by corrupting input data.
 - `docs/solutions/conventions/corrupt-the-value-and-its-reference-together.md` — the binding case for build guards; verified by corrupting the value and its reference together. Its core insight IS this doc's echo shape, one layer down.
 - `docs/solutions/developer-experience/browser-verify-against-real-data-not-just-unit-tests.md` — the synthetic-input shape with a worked example predating this feature.
-- `docs/solutions/workflow-issues/golden-solve-guard-missing-from-local-test-sweep.md` — partly superseded: it warns about forgetting to RUN the golden guard; instance 3 is the worse case of running it, seeing green, and having deleted the constraint it protected. Flagged for refresh.
+- `docs/solutions/workflow-issues/golden-solve-guard-missing-from-local-test-sweep.md` — the complement: it covers forgetting to RUN the golden guard; instance 3 here is the worse case of running it, seeing green, and having deleted the constraint it protected. That doc now carries the scope limit and points back here.
 - PRs #179 (U1), #180 (U2+U3), #181 (U5), #182 (U4) — the feature these five instances came from.
 - The project's testing instructions: run the JS tests file by file; re-ratify golden/parity diffs deliberately.
