@@ -94,9 +94,11 @@ A record excluded from the solver because it yields no explicitly-parseable valu
 ### Integrity gate
 A build-time check that validates the incoming upstream snapshot against a frozen, checked-in copy of what was last reviewed, and **fails the build** on any difference rather than absorbing it. Distinct from a test: a test asserts our own behavior, while an integrity gate asserts that the *external* world has not changed underneath us.
 
-Each gate is non-mutating and reports how many references it validated. A difference is not presumed wrong — it is presumed *unreviewed*, and the resolution is a human confirming the change and re-freezing the registry in the same commit that handles its consequences. This is why the gates fail loudly instead of warning: a warning about a generated artifact is invisible by the time that artifact reaches the solver.
+Each gate is non-mutating and reports how many references it validated — and that count must mean *validated*, not *iterated over*. A counter incremented before the gate reaches the thing it compares against reports confidence it did not earn, which turns the count itself into the thing that hides the gap. A difference is not presumed wrong — it is presumed *unreviewed*, and the resolution is a human confirming the change and re-freezing the registry in the same commit that handles its consequences. This is why the gates fail loudly instead of warning: a warning about a generated artifact is invisible by the time that artifact reaches the solver.
 
 Because a gate that matches nothing passes silently and looks identical to a clean run, a gate is only trustworthy once it has been observed to **fail** on deliberately corrupted input, and it should refuse to run when it inspects zero records.
+
+Corrupting one field in isolation does not establish that. A gate comparing a value against a stored reference rejects a single-sided break by construction — only one side moved, so of course they disagree. The corruption that actually tests such a gate moves the value **and** its reference together, which is also the shape a bad harvest produces, since both are written from the same wrong source.
 
 ### Harvest provenance
 The trust label carried by every value sourced directly from the wiki, recording *why* it is or is not usable: **stated** (the wiki asserts it outright), **defaulted** (the wiki displays a number, but its own template filled that number in because nobody recorded a real one), or **unsourced** (the page is silent). Only **stated** is solver-eligible.
@@ -109,6 +111,8 @@ A wiki effect cell has two layers, and the magnitude often lives in the second o
 The tooltip is a pure function of the template invocation, not of the item — every page using `{{Speed|30}}` renders the same tooltip — so it snapshots per distinct invocation rather than per record, which is what makes re-checking it affordable against a rate-limited wiki. Store the two layers in separate fields: three augments share `{{Striding|30}}` while their cells differ, so filing cell text under a tooltip key makes one invocation look like several conflicting ones.
 
 It settles magnitude and nothing else: a tooltip renders the template's fallback number just as confidently as a recorded one, so it cannot distinguish **stated** from **defaulted** (see [[Harvest provenance]]). Use it to verify a value we derived, never to promote a value the wiki never recorded.
+
+And it settles even magnitude only while the stored tooltip is **bound to the invocation it is filed under**. A tooltip captured against the wrong invocation still agrees with a value derived from that same capture, so comparing the two proves only that they were produced together — not that either is right. Where an invocation states its own magnitude, assert that separately; a snapshot whose number disagrees with its own key is mis-filed, and nothing else in the chain will notice.
 
 ### Enchantment version
 One enchantment name carrying two formats whose magnitudes differ — an Arabic form where the number is the bonus, and a Roman form where it is not. DDO introduced these splits when it reworked older enchantments, leaving legacy Roman items in circulation alongside current Arabic ones under the same name. Speed and Parrying both have one.
