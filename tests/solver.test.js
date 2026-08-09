@@ -2441,5 +2441,55 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
       "the player's pin overrides the exclusion");
   });
 
+  // --- #169 U5: the wiki's cross-affix non-stacking note, against SHIPPED data ---
+  // The Heightened Awareness page states: "Does not stack with the insight bonus
+  // to AC provided by the parrying suffix." Nothing implements that rule. Both
+  // affixes now emit Armor Class typed Insight, and the bucket-max core caps each
+  // (stat, bonus_type) bucket at one contributor, so it enforces itself. This
+  // pins that: retyping either affix would silently restore double-counting, and
+  // the six golden fixtures cannot catch it because none of them ranks Armor Class.
+  await test("#169: Parrying and Heightened Awareness Insight AC take the max, not the sum", async () => {
+    const fs = require("fs");
+    const dsPath = path.join(__dirname, "..", "web", "data", "items.json");
+    if (!fs.existsSync(dsPath)) return console.log("    (skipped — dataset not built)");
+    const data = normalizeDataset(JSON.parse(fs.readFileSync(dsPath, "utf8")));
+
+    // Admiral's Cummerbund (Belt) carries Parrying +2; Crown of Bone (Helmet)
+    // carries Heightened Awareness 6. Both are Insight AC after the expansion.
+    const pick = (name) => {
+      const v = data.items.find((i) => i.source_item === name);
+      assert.ok(v, `${name} must be in the built dataset`);
+      const ac = (v.affixes || []).find((a) => a.name === "Armor Class" && a.type === "Insight");
+      assert.ok(ac, `${name} must carry an Insight Armor Class after the expansion`);
+      return { v, ac };
+    };
+    const parry = pick("Admiral's Cummerbund");
+    const aware = pick("Crown of Bone");
+    assert.strictEqual(Number(parry.ac.value), 2);
+    assert.strictEqual(Number(aware.ac.value), 6);
+
+    const model = {
+      targets: ["Armor Class"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Belt", [parry.v]), slot("Helmet", [aware.v])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective["Armor Class"], 6,
+      "max(2, 6) — the wiki says these do not stack; 8 would be the double-count");
+  });
+
+  await test("#169: Insight AC still stacks with a differently-typed Armor Class", async () => {
+    // The other half. Suppressing on stat name alone would collapse these too,
+    // withholding the fix from the 86 Parrying items carrying an Armor-typed AC.
+    const model = {
+      targets: ["Armor Class"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Belt", [item("P", "Belt", [["Armor Class", "Insight", 2]])]),
+             slot("Armor", [item("A", "Armor", [["Armor Class", "Armor", 8]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective["Armor Class"], 10, "different buckets sum: 2 + 8");
+  });
+
   console.log(`\n${passed} passed`);
 })();
