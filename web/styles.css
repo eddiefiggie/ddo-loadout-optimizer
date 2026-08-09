@@ -807,10 +807,6 @@ input.wz-ml { width: 120px; }
 .wz-adv-lead { color: var(--text); }
 .wz-adv-note { color: var(--muted); }
 .wz-adv-lead strong, .wz-adv-note strong { color: var(--text); }
-/* R6/KTD5 — a presence row carries no control. The main row still lines up
-   without it, because `.wz-nm` is the flex-grow element and the disclosure was
-   never in that line to begin with. */
-.wz-adv-none { display: none; }
 /* U2 — declared stat credits. Repeatable, unlike the fixed min/max pair, so the
    group takes a full-width line inside the panel rather than competing for space
    with the bound inputs. */

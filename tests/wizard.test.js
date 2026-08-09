@@ -1042,10 +1042,17 @@ test("U1: an on/off row keeps min/max but is offered no credit", () => {
   // R6 as planned removed the whole control from on/off rows. That was wrong: the
   // Bool bucket is part of the stat's solver expression, so `min 1 Ghostly` is a
   // working hard constraint. Only credits are refused there.
-  const m = advancedRowModel("Blurry", { targetFloors: { Blurry: 1 } }, presenceVocab);
-  assert.strictEqual(m.hasAdvanced, true, "the row keeps its bounds control");
-  assert.strictEqual(m.floor, 1, "and the floor is live");
+  const m = advancedRowModel("Blurry", {
+    targetFloors: { Blurry: 1 },
+    declaredCredits: { [creditKey("Blurry", "Insight")]: { stat: "Blurry", bonus_type: "Insight", value: 3 } },
+  }, presenceVocab);
+  assert.strictEqual(m.floor, 1, "the floor is live — min 1 is a hard 'must have this'");
   assert.deepStrictEqual(m.credits, [], "but no credit is offered");
+  // and the row still reads as on/off in the markup
+  const rows = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function rankedHTML"), WIZARD_SRC.indexOf("function advancedHTML"));
+  assert.ok(/isPresenceOnly\(p, vocab\) \? ` <span class="rank-tag"/.test(rows),
+    "the on/off badge keys on the presence test, not on a field that is always true");
+  assert.ok(!/hasAdvanced/.test(rows), "no dead always-true branch left in the row markup");
 });
 
 test("U1: badgeCount counts a floor, a cap, and each usable credit", () => {

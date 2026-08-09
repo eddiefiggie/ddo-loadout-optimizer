@@ -60,17 +60,11 @@ function isPresenceOnly(stat, vocab) {
  *  finite number >= 0. Blank, null, negative, or non-numeric entries are dropped so
  *  a stray input never reaches the solver as a cap/floor.
  *
- *  `vocab` is optional and mirrors `cleanCreditMap`: given one, the stat is
- *  canonicalized and a PRESENCE stat is refused. R6 removes the min/max control
- *  from presence rows, but removing a control does not remove the value behind it
- *  — `targetCaps`/`targetFloors` persist through `INPUT_KEYS`, so a floor set on
- *  an on/off stat before this change would keep constraining every solve with no
- *  on-screen way to see or clear it. That is the orphaned-bound defect this repo
- *  already recorded. A bound on a binary stat is meaningless anyway: the stat's
- *  gear lands in a `stat||boolean` bucket with no magnitude to floor or cap.
- *  Callers without a vocab (unit tests supplying canonical names) get the prior
- *  behavior exactly. Pure; unit-tested. */
-function cleanBoundMap(m, vocab) {
+ *  Takes no vocab. An earlier revision refused bounds on presence stats here;
+ *  that was reverted because a floor on a Bool bucket is a WORKING constraint —
+ *  `min 1 Ghostly` forces the solver to equip an item carrying the effect, since
+ *  the Bool bucket is part of the stat's solver expression. Pure; unit-tested. */
+function cleanBoundMap(m) {
   const out = {};
   if (m && typeof m === "object") {
     for (const [stat, v] of Object.entries(m)) {
@@ -215,7 +209,7 @@ function advancedRowModel(stat, state, vocab) {
     }));
   const badgeCount = (floor != null ? 1 : 0) + (cap != null ? 1 : 0)
     + credits.filter((c) => c.usable).length;
-  return { hasAdvanced: true, floor, cap, credits, badgeCount };
+  return { floor, cap, credits, badgeCount };
 }
 
 // U3 — the Advanced panel's prose, defined ONCE here and interpolated per row.
@@ -329,11 +323,8 @@ function buildQuery(state, vocab) {
     slotConstraints: state.slotConstraints,
     // U1/U4 — per-priority stat caps (max) and floors (min), stat-keyed. Only clean,
     // non-negative entries are emitted; empty maps mean "no caps/floors" (default).
-    // `vocab` is passed for the same reason cleanCreditMap gets it: canonicalize
-    // the stat, and refuse a bound on a presence stat now that R6 has removed the
-    // control that set it (see cleanBoundMap).
-    targetCaps: cleanBoundMap(state.targetCaps, vocab),
-    targetFloors: cleanBoundMap(state.targetFloors, vocab),
+    targetCaps: cleanBoundMap(state.targetCaps),
+    targetFloors: cleanBoundMap(state.targetFloors),
     // U2 — declared stat credits, `(stat, bonus type)`-keyed. Always emitted; an
     // empty map is inert, because buildModel normalizes it to no credits — so an
     // undeclared build solves exactly as it did before this feature (R3). The key
@@ -1240,8 +1231,8 @@ if (typeof window !== "undefined" && window.App) {
         const adv = advancedRowModel(p, state, vocab);
         return `<li data-i="${i}" draggable="true">
         <span class="wz-grip" title="drag to reorder">⋮⋮</span>
-        <span class="wz-rk">${i + 1}</span><span class="wz-nm">${esc(p)}${adv.hasAdvanced ? "" : ` <span class="rank-tag" title="On/off effect — the solver secures an item that has it, in priority order (no magnitude to maximize).">on/off</span>`}</span>
-        ${adv.hasAdvanced ? advancedHTML(p, i, adv) : `<span class="wz-adv-none"></span>`}
+        <span class="wz-rk">${i + 1}</span><span class="wz-nm">${esc(p)}${isPresenceOnly(p, vocab) ? ` <span class="rank-tag" title="On/off effect — the solver secures an item that has it. A min of 1 makes it a hard requirement; there is no magnitude to maximize.">on/off</span>` : ""}</span>
+        ${advancedHTML(p, i, adv)}
         <span class="wz-ctl"><button data-up="${i}" ${i === 0 ? "disabled" : ""} aria-label="move up">↑</button>
           <button data-down="${i}" ${i === state.priorities.length - 1 ? "disabled" : ""} aria-label="move down">↓</button>
           <button data-del="${i}" aria-label="remove">✕</button></span></li>`;
@@ -1723,8 +1714,6 @@ if (typeof window !== "undefined" && window.App) {
           state.expandedAwayMigrated = _dnMig.migrationMessage(migrated.substitutions, droppedBounds, droppedCredits);
         }
       }
-      // Append the presence-bound disclosure to the same banner, so one load
-      // never produces two competing notices.
       state.slotConstraints = i.slotConstraints || {};
       state.constraintsDirty = false;   // loaded constraints are the saved state, not a pending change
       // U5, Part C — one-time load migration: a PRE-OVERHAUL saved snapshot embedded
