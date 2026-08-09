@@ -1241,6 +1241,9 @@ if (typeof window !== "undefined" && window.App) {
       state.pool = i.pool || "all";
       state.ownedNames = Array.isArray(i.ownedNames) ? new Set(i.ownedNames) : null;
       state.priorities = Array.isArray(i.priorities) ? i.priorities.slice() : [];
+      // U4 — restore per-priority caps/floors (absent on pre-U4 saves -> empty).
+      state.targetCaps = (i.targetCaps && typeof i.targetCaps === "object") ? { ...i.targetCaps } : {};
+      state.targetFloors = (i.targetFloors && typeof i.targetFloors === "object") ? { ...i.targetFloors } : {};
       // #169 — a saved character may rank a name that has since been EXPANDED
       // AWAY (`Speed`, `Parrying`, `Heightened Awareness`, the umbrella ability
       // names). The add-a-priority paths refuse those, but this one restored them
@@ -1248,18 +1251,30 @@ if (typeof window !== "undefined" && window.App) {
       // indistinguishable from a target no item happens to carry. Substitute the
       // stats it actually became, and disclose it — a silent rewrite of someone's
       // saved character is the same defect in a different coat.
+      //
+      // Runs AFTER the bound maps are restored, because it has to clean them: a
+      // cap or floor keyed to the old name is stranded once that name leaves the
+      // priority list. `model.js` still unions it into the target set and the
+      // solver reports a floor it can never satisfy, while the UI offers no row
+      // to delete it — bounds are only removable through their priority row.
+      // They are DROPPED rather than remapped: "min 4 Parrying" is not
+      // "min 4 Armor Class", and copying it onto four stats would invent four
+      // constraints the player never set.
       const _dnMig = _datasetNormalizer();
       state.expandedAwayMigrated = null;
       if (_dnMig && _dnMig.migratePriorities) {
         const migrated = _dnMig.migratePriorities(state.priorities, pickerVocabulary(dataset));
         if (migrated.substitutions.length) {
           state.priorities = migrated.priorities;
-          state.expandedAwayMigrated = _dnMig.migrationMessage(migrated.substitutions);
+          const droppedBounds = [];
+          for (const sub of migrated.substitutions) {
+            for (const map of [state.targetCaps, state.targetFloors]) {
+              if (map && map[sub.from] != null) { droppedBounds.push(sub.from); delete map[sub.from]; }
+            }
+          }
+          state.expandedAwayMigrated = _dnMig.migrationMessage(migrated.substitutions, droppedBounds);
         }
       }
-      // U4 — restore per-priority caps/floors (absent on pre-U4 saves -> empty).
-      state.targetCaps = (i.targetCaps && typeof i.targetCaps === "object") ? { ...i.targetCaps } : {};
-      state.targetFloors = (i.targetFloors && typeof i.targetFloors === "object") ? { ...i.targetFloors } : {};
       state.slotConstraints = i.slotConstraints || {};
       state.constraintsDirty = false;   // loaded constraints are the saved state, not a pending change
       // U5, Part C — one-time load migration: a PRE-OVERHAUL saved snapshot embedded

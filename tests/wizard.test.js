@@ -728,3 +728,41 @@ test("U4/003: the migration notice is a distinct message, not the catalog-stalen
   assert.ok(/Two Weapon Fighting/.test(tpl), "naming what was turned on");
   assert.ok(/predates the current gear catalog/.test(tpl), "the catalog-staleness bar still exists separately");
 });
+
+// --- review #169: the load path applies the expanded-away priority migration ---
+// Mirrors the U4/003 twfMigrated precedent above: loadCharacter lives inside a
+// window-gated IIFE that Node cannot reach, so the wiring is asserted against the
+// source text. Without this, the player-facing half of #169 -- the part that stops
+// a saved `Parrying` priority from silently scoring zero -- had no coverage at all.
+
+test("#169: the load path migrates expanded-away priorities and flags the disclosure", () => {
+  const at = WIZARD_SRC.indexOf("migratePriorities(state.priorities");
+  assert.ok(at > 0, "loadCharacter consults the migration helper");
+  const near = WIZARD_SRC.slice(at, at + 1200);
+  assert.ok(/state\.priorities = migrated\.priorities/.test(near), "it adopts the substitution");
+  assert.ok(/state\.expandedAwayMigrated = /.test(near), "and records it so the notice can render");
+});
+
+test("#169: the migration drops bounds stranded on the old name, and discloses it", () => {
+  const at = WIZARD_SRC.indexOf("migratePriorities(state.priorities");
+  const near = WIZARD_SRC.slice(at, at + 1200);
+  assert.ok(/delete map\[sub\.from\]/.test(near), "a cap/floor keyed to the old name is removed");
+  assert.ok(/droppedBounds/.test(near), "and passed to the disclosure rather than dropped silently");
+});
+
+test("#169: bounds are restored BEFORE the migration runs, or it cannot clean them", () => {
+  const caps = WIZARD_SRC.indexOf("state.targetCaps = (i.targetCaps");
+  const mig = WIZARD_SRC.indexOf("migratePriorities(state.priorities");
+  assert.ok(caps > 0 && mig > 0);
+  assert.ok(caps < mig,
+    "targetCaps/targetFloors must be restored before the migration, otherwise the " +
+    "restore overwrites the cleanup and the orphaned bound comes back");
+});
+
+test("#169: the disclosure banner escapes its message", () => {
+  const at = WIZARD_SRC.indexOf("function migrationBanner");
+  assert.ok(at > 0, "the banner helper exists");
+  const fn = WIZARD_SRC.slice(at, at + 500);
+  assert.ok(/esc\(state\.expandedAwayMigrated\)/.test(fn),
+    "the message carries user-typed stat names into innerHTML and must be escaped");
+});

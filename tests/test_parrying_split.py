@@ -167,15 +167,36 @@ def test_a_name_keyed_rule_would_have_withheld_that_contribution():
 
 # --- quarantine and coverage ---------------------------------------------------
 
-def test_an_unsourced_item_keeps_nothing_and_is_quarantined():
+def test_an_unsourced_item_grants_nothing_at_all():
+    """The whole affix is dropped, not renamed.
+
+    This test used to assert only that the SAVES were absent, and passed while the
+    folded affix was quietly renamed into `Armor Class` carrying gear-planner's
+    unverified magnitude. That number may be a flattened Roman rank -- `8` means
+    4 -- so publishing it as a scored stat is the inference this project forbids,
+    with a `quarantined` counter as cover. Assert the primary's fate too.
+    """
     rec = _rec("Mystery Item", _parrying(6))
     stats = parrying_split.apply([rec], _shard(**{
         "Mystery Item": {"value": {}, "provenance": "unsourced",
                          "raw": ""}}))
 
     affixes = _by_name(rec)
-    assert stats["quarantined"] == 1
+    assert stats["quarantined"] == 1 and stats["dropped_unstated"] == 1
+    assert "Parrying" not in affixes, "the folded name must not survive"
+    assert "Armor Class" not in affixes, \
+        "an unverified magnitude must not ship as a scored Armor Class"
     assert all(save not in affixes for save in SAVES), "quarantined items grant no saves"
+    assert rec["affixes"] == [], "the record keeps nothing from a quarantined entry"
+
+
+def test_a_defaulted_item_also_grants_nothing():
+    rec = _rec("Placeholder", _parrying(3))
+    stats = parrying_split.apply([rec], _shard(**{
+        "Placeholder": {"value": {}, "provenance": "defaulted", "raw": "{{Parrying|3}}"}}))
+
+    assert stats["quarantined"] == 1 and stats["dropped_unstated"] == 1
+    assert rec["affixes"] == []
 
 
 def test_an_item_absent_from_the_shard_keeps_the_folded_affix_and_is_counted():
@@ -349,3 +370,119 @@ def test_the_guard_makes_no_network_call():
         parrying_split.check_against_snapshots(shard)
     finally:
         socket.socket = real
+
+
+# --- review #169: fixes from the code-review pass -------------------------------
+
+def test_an_arabic_snapshot_paired_with_the_wrong_tooltip_is_reported():
+    """The guard's ninth hole. The Roman branch asserted its magnitude against the
+    confirmed lookup; the Arabic branch compared the tooltip only against itself,
+    so a snapshot harvested under the wrong key shipped a wrong value to every
+    item using that invocation with the build green."""
+    shard = {"harvested": {"Anything": _entry("4", 6)},
+             "snapshots": {"{{parrying|4}}": {"tooltip": (
+                 "Parrying +6: +6 Insight bonus to Armor Class, +6 Insight bonus to Saves.")}}}
+    report = parrying_split.check_against_snapshots(shard)
+
+    assert any("must state +4" in p for p in report["problems"]), report
+    assert report["compared"] == 1, "it must still count as compared, not skipped"
+
+
+def test_every_shipped_arabic_snapshot_states_its_own_version():
+    from src import harvest
+    shard = harvest.load_shard(
+        os.path.join(ROOT, "data", "seed", "compendium", "parrying_version.json"),
+        "parrying_version")
+    for raw, snap in shard["snapshots"].items():
+        version = parrying_split.invocation_version(raw)
+        if version and version.isdigit():
+            assert parrying_split.tooltip_armor_class(snap["tooltip"]) == int(version), raw
+            assert parrying_split.tooltip_saves(snap["tooltip"]) == int(version), raw
+
+
+def test_dedupe_keeps_the_larger_magnitude_not_the_incumbent():
+    """Suppressing on presence alone discarded a bigger wiki-verified value behind
+    a smaller pre-existing one in the same bucket."""
+    rec = _rec("Hypothetical", _affix("Armor Class", "Insight", 1), _parrying(6))
+    stats = parrying_split.apply([rec], _shard(**{"Hypothetical": _entry("6", 6)}))
+
+    acs = _by_name(rec)["Armor Class"]
+    assert len(acs) == 1, "still exactly one contributor in the bucket"
+    assert acs[0]["value"] == "6", "the larger verified magnitude wins"
+    assert stats["primary_suppressed"] == 1
+
+
+def test_dedupe_still_yields_to_a_larger_incumbent():
+    rec = _rec("Hypothetical", _affix("Armor Class", "Insight", 9), _parrying(2))
+    stats = parrying_split.apply([rec], _shard(**{"Hypothetical": _entry("2", 2)}))
+
+    acs = _by_name(rec)["Armor Class"]
+    assert len(acs) == 1 and acs[0]["value"] == "9"
+    assert stats["primary_suppressed"] == 1
+    for save in SAVES:
+        assert _by_name(rec)[save][0]["value"] == "2", "saves are granted either way"
+
+
+# --- set-bonus channel ---------------------------------------------------------
+
+def _tier(*affixes):
+    return {"parsed_set_bonuses": [{"set": "Test Set", "affixes": list(affixes)}]}
+
+
+def test_a_set_bonus_parrying_expands_into_the_four_stats():
+    from src import harvest
+    shard = harvest.load_shard(
+        os.path.join(ROOT, "data", "seed", "compendium", "parrying_version.json"),
+        "parrying_version")
+    v = _tier({"stat": "Fortification", "bonus_type": "Enhancement", "value": 25},
+              {"stat": "Parrying", "bonus_type": "Insight", "value": 1})
+    stats = parrying_split.expand_set_bonuses([v], shard)
+
+    out = {(a["stat"], a["value"]) for a in v["parsed_set_bonuses"][0]["affixes"]}
+    assert stats == {"expanded": 1, "quarantined": 0}
+    assert out == {("Fortification", 25), ("Armor Class", 1),
+                   ("Fortitude Save", 1), ("Reflex Save", 1), ("Will Save", 1)}
+
+
+def test_a_set_bonus_value_the_wiki_never_rendered_is_quarantined():
+    """`Parrying 8` has no Arabic tooltip — no Arabic Parrying 8 exists. It must
+    drop rather than resolve to the stored number."""
+    from src import harvest
+    shard = harvest.load_shard(
+        os.path.join(ROOT, "data", "seed", "compendium", "parrying_version.json"),
+        "parrying_version")
+    v = _tier({"stat": "Parrying", "bonus_type": "Insight", "value": 8})
+    stats = parrying_split.expand_set_bonuses([v], shard)
+
+    assert stats == {"expanded": 0, "quarantined": 1}
+    assert v["parsed_set_bonuses"][0]["affixes"] == []
+
+
+def test_set_bonus_orphans_are_detected_and_allowlistable():
+    from src import enchantment_split
+    v = _tier({"stat": "Parrying", "bonus_type": "Insight", "value": 1},
+              {"stat": "Speed", "bonus_type": "Enhancement", "value": 30})
+    away = {"parrying": ["Armor Class"], "speed": ["Movement Speed"]}
+
+    assert enchantment_split.set_bonus_orphans([v], away) == [
+        ("Test Set", "Parrying", "1"), ("Test Set", "Speed", "30")]
+    assert enchantment_split.set_bonus_orphans([v], away, allow=("speed",)) == [
+        ("Test Set", "Parrying", "1")]
+
+
+def test_the_built_dataset_has_no_unexpected_set_bonus_orphan():
+    from src import enchantment_split
+    path = os.path.join(ROOT, "web", "data", "items.json")
+    if not os.path.exists(path):
+        return
+    with open(path) as fh:
+        data = json.load(fh)
+
+    orphans = enchantment_split.set_bonus_orphans(
+        data["items"], data["metadata"]["expanded_away_names"], allow=("speed",))
+    assert orphans == [], orphans
+
+    # And the Parrying set bonus really did expand, rather than merely vanishing.
+    brooch = next(i for i in data["items"] if i.get("source_item") == "Protector's Brooch")
+    stats = {a["stat"] for t in brooch["parsed_set_bonuses"] for a in t["affixes"]}
+    assert {"Armor Class", "Fortitude Save", "Reflex Save", "Will Save"} <= stats

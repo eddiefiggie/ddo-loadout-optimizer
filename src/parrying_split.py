@@ -88,7 +88,11 @@ _CONFIG = _es.SplitConfig(
     shadow_key=_es.name_and_bucket(_bucket),
     label="parrying shard",
     dedupe_primary=True,
+    rename_requires_stated=True,
 )
+
+# The stats a set-bonus `Parrying N` expands into, in a stable order.
+SET_BONUS_OUTPUTS = (AC_NAME, FORTITUDE_NAME, REFLEX_NAME, WILL_NAME)
 
 _INVOCATION = re.compile(r"^\{\{\s*parrying\s*\|\s*([0-9ivxlcdm]+)\s*\}\}$", re.I)
 
@@ -240,7 +244,24 @@ def check_against_snapshots(shard: dict) -> dict:
                 f"{title}: derived saves={value.get('saves')!r} but the tooltip "
                 f"states {stated_saves!r} for {raw!r}")
 
-        if not version.isdigit():
+        if version.isdigit():
+            # Arabic states its own magnitude: `{{Parrying|4}}` renders "+4". Tie
+            # the two together, or the guard only proves a tooltip agrees with
+            # itself. Without this, a snapshot harvested under the wrong key —
+            # `{{Parrying|4}}` paired with the +6 tooltip — compares clean and
+            # ships 6 to every Parrying-4 item with the build green. That is the
+            # green-while-red failure this guard exists to prevent, and it was
+            # only closed on the Roman side.
+            if stated_ac != int(version):
+                problems.append(
+                    f"{title}: {raw!r} is Arabic, so it must state +{version}, but "
+                    f"its tooltip states +{stated_ac} armor class — the snapshot is "
+                    "paired with the wrong invocation")
+            if stated_saves != int(version):
+                problems.append(
+                    f"{title}: {raw!r} is Arabic, so it must state +{version} saves, "
+                    f"but its tooltip states +{stated_saves}")
+        else:
             expected = ROMAN_MAGNITUDE.get(version)
             if expected is None:
                 problems.append(
@@ -266,6 +287,38 @@ def check_against_snapshots(shard: dict) -> dict:
             "parrying guard compared no derived value against a tooltip — refusing to pass")
 
     return {"checked": checked, "compared": compared, "problems": problems}
+
+
+def set_bonus_magnitudes(shard: dict, value):
+    """What a set bonus written `Parrying N` grants, or None when unstated.
+
+    Set bonuses carry no per-item shard entry, so the magnitude is read from the
+    shard's own harvested tooltip for that invocation rather than from a second
+    table. `Parrying 1` resolves because `{{parrying|1}}` is snapshotted; a value
+    the wiki has never rendered resolves to None and is quarantined.
+
+    Only the Arabic form is consulted. A set bonus spelled with a bare integer is
+    an Arabic invocation — and at the one value the catalog actually uses the two
+    readings agree anyway (Arabic 1 and Roman I both grant 1), so nothing here
+    rests on choosing between them.
+    """
+    snapshot = snapshot_for(shard, "{{Parrying|%s}}" % value)
+    if snapshot is None:
+        return None
+    tooltip = snapshot.get("tooltip")
+    armor_class = tooltip_armor_class(tooltip)
+    saves = tooltip_saves(tooltip)
+    if armor_class is None or saves is None:
+        return None
+    return {AC_NAME: armor_class, FORTITUDE_NAME: saves,
+            REFLEX_NAME: saves, WILL_NAME: saves}
+
+
+def expand_set_bonuses(variants, shard: dict) -> dict:
+    """Expand `Parrying` inside set-bonus tiers, which the item split cannot reach."""
+    return _es.expand_set_bonus_affixes(
+        variants, FOLDED_NAME, lambda v: set_bonus_magnitudes(shard, v),
+        SET_BONUS_OUTPUTS)
 
 
 def apply(records, shard: dict) -> dict:

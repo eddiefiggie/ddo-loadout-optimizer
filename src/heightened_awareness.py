@@ -57,7 +57,10 @@ _CONFIG = _es.SplitConfig(
     shadow_key=_es.name_and_bucket(_bucket),
     label="heightened awareness shard",
     dedupe_primary=True,
+    rename_requires_stated=True,
 )
+
+SET_BONUS_OUTPUTS = (AC_NAME,)
 
 _INVOCATION = re.compile(r"^\{\{\s*heightened awareness\s*\|\s*([0-9ivxlcdm]+)\s*\}\}$", re.I)
 _TIP_AC = re.compile(r"\+(\d+)\s+Insight bonus to AC\b", re.I)
@@ -177,6 +180,27 @@ def check_against_snapshots(shard: dict) -> dict:
             "— refusing to pass")
 
     return {"checked": checked, "compared": compared, "problems": problems}
+
+
+def set_bonus_magnitudes(shard: dict, value):
+    """What a set bonus written `Heightened Awareness N` grants, or None.
+
+    Read from the shard's own harvested tooltip for that invocation, never from a
+    second table. No set bonus carries this affix today; the path exists so the
+    channel is covered rather than silently skipped if one appears.
+    """
+    snapshot = snapshot_for(shard, "{{Heightened Awareness|%s}}" % value)
+    if snapshot is None:
+        return None
+    armor_class = tooltip_armor_class(snapshot.get("tooltip"))
+    return None if armor_class is None else {AC_NAME: armor_class}
+
+
+def expand_set_bonuses(variants, shard: dict) -> dict:
+    """Expand the folded affix inside set-bonus tiers, which the item split misses."""
+    return _es.expand_set_bonus_affixes(
+        variants, FOLDED_NAME, lambda v: set_bonus_magnitudes(shard, v),
+        SET_BONUS_OUTPUTS)
 
 
 def apply(records, shard: dict) -> dict:

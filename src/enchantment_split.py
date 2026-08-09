@@ -49,6 +49,19 @@ def bonus_type(affix: dict) -> str:
     return affix.get("type") or "Enhancement"
 
 
+def _numeric(value) -> float:
+    """A comparable magnitude for an affix value, or -inf when unreadable.
+
+    Values arrive as native strings ("6", "15%"). An unreadable value sorts
+    lowest so it never wins a magnitude comparison it cannot justify.
+    """
+    text = str(value if value is not None else "").strip().rstrip("%")
+    try:
+        return float(text)
+    except ValueError:
+        return float("-inf")
+
+
 def name_only(affix: dict):
     """Suppress on stat name alone. Correct only when the output stat cannot
     already appear on the record under a different bonus type."""
@@ -89,6 +102,17 @@ class SplitConfig:
     # Off for Speed, whose primary (`Movement Speed`) appears on no Speed item —
     # turning it on there would be a behavior change dressed as a default.
     dedupe_primary: bool = False
+    # Whether a non-`stated` entry may still be renamed into the primary stat,
+    # carrying the upstream magnitude.
+    #
+    # Off for Speed, ON for the version-bearing affixes, and the difference is
+    # the whole point. Speed's upstream number IS its movement percentage, so
+    # keeping it on a quarantined entry preserves a real value. Parrying's may
+    # be a flattened Roman RANK — `8` means 4 — so renaming a quarantined entry
+    # publishes a number the wiki never stated as a scored Armor Class. That is
+    # the inference this project forbids, wearing a `quarantined` counter as
+    # cover.
+    rename_requires_stated: bool = False
 
     def empty_stats(self) -> dict:
         stats = {"renamed": 0, self.primary_corrected_stat: 0}
@@ -96,6 +120,8 @@ class SplitConfig:
             stats[stat] = 0
         if self.dedupe_primary:
             stats["primary_suppressed"] = 0
+        if self.rename_requires_stated:
+            stats["dropped_unstated"] = 0
         stats["quarantined"] = 0
         stats["uncovered"] = 0
         return stats
@@ -133,17 +159,39 @@ def rewrite_all(records, shard: dict, key_of, cfg: SplitConfig) -> dict:
         for affix in folded:
             btype = bonus_type(affix)
 
-            # R2a: a same-stat, same-bucket affix already on the record wins.
-            # Renaming into a duplicate would be harmless only because the solver
-            # buckets by max downstream, and "correct because something later
-            # cleans up" is not a property this pipeline relies on. Only the
-            # PRIMARY is dropped — the extras are separate stats and are still
-            # granted.
+            # A quarantined entry has no wiki-stated magnitude. For an affix whose
+            # upstream number may be a rank rather than the granted amount, the
+            # only honest outcome is to grant NOTHING — drop the affix rather than
+            # rename it into a confidently-typed wrong stat.
+            if cfg.rename_requires_stated and not eligible:
+                affixes.remove(affix)
+                stats["dropped_unstated"] += 1
+                stats["quarantined"] += 1
+                continue
+
+            # R2a: a same-stat, same-bucket affix already on the record competes
+            # rather than stacks, so only the LARGER counts. Suppress on presence
+            # alone and a bigger wiki-verified magnitude can be discarded by a
+            # smaller pre-existing one.
             suppressed = False
             if cfg.dedupe_primary:
                 candidate = {"name": cfg.primary_name, "type": btype}
-                already = {cfg.shadow_key(a) for a in affixes if a is not affix}
-                suppressed = cfg.shadow_key(candidate) in already
+                rival = None
+                for other in affixes:
+                    if other is affix:
+                        continue
+                    if cfg.shadow_key(other) == cfg.shadow_key(candidate):
+                        rival = other
+                        break
+                if rival is not None:
+                    stated = value.get(cfg.primary_key)
+                    mine = stated if stated is not None else affix.get("value")
+                    suppressed = _numeric(rival.get("value")) >= _numeric(mine)
+                    if not suppressed:
+                        # Ours is larger: drop the rival instead, so the bucket
+                        # keeps the higher value rather than the incumbent one.
+                        affixes.remove(rival)
+                        stats["primary_suppressed"] += 1
 
             if suppressed:
                 affixes.remove(affix)
@@ -177,6 +225,63 @@ def rewrite_all(records, shard: dict, key_of, cfg: SplitConfig) -> dict:
         rec["affixes"] = affixes
 
     return stats
+
+
+def expand_set_bonus_affixes(variants, folded_name: str, magnitudes_for, outputs) -> dict:
+    """Expand a folded affix inside `parsed_set_bonuses`, in place.
+
+    A set-bonus tier carries the SAME enchantment under a DIFFERENT field shape:
+    `{"stat": ..., "bonus_type": ...}` rather than an item affix's
+    `{"name": ..., "type": ...}`. That mismatch is why the item split missed this
+    channel entirely — the predicate read `name` while running over records that
+    only carry `stat`, the exact two-representations trap
+    `docs/solutions/conventions/prove-a-guard-fails-before-trusting-it.md`
+    records. `src/umbrella.py:expand_variants` is the working precedent.
+
+    `magnitudes_for(value)` returns `{output_stat: magnitude}` read from the
+    shard's own harvested tooltips, or None when the wiki has not stated that
+    invocation. None quarantines: the affix is dropped rather than expanded at a
+    guessed magnitude, and the caller's build assertion reports it.
+    """
+    stats = {"expanded": 0, "quarantined": 0}
+    for variant in variants or []:
+        for tier in variant.get("parsed_set_bonuses") or []:
+            affixes = tier.get("affixes")
+            if not affixes:
+                continue
+            out = []
+            for affix in affixes:
+                if (affix.get("stat") or "") != folded_name:
+                    out.append(affix)
+                    continue
+                resolved = magnitudes_for(affix.get("value"))
+                if resolved is None:
+                    stats["quarantined"] += 1
+                    continue
+                for stat in outputs:
+                    out.append({**affix, "stat": stat, "value": resolved[stat]})
+                stats["expanded"] += 1
+            tier["affixes"] = out
+    return stats
+
+
+def set_bonus_orphans(variants, expanded_away_names, allow=()) -> list:
+    """Set-bonus affixes still naming an expanded-away stat, minus an allowlist.
+
+    An expanded-away name is removed from the picker dataset-wide, so a set-bonus
+    tier still emitting one grants a stat no player can rank. Reported as
+    `(set, stat, value)` triples so the build can name them.
+    """
+    allowed = {str(a).strip().lower() for a in allow}
+    away = {str(n).strip().lower() for n in expanded_away_names} - allowed
+    found = set()
+    for variant in variants or []:
+        for tier in variant.get("parsed_set_bonuses") or []:
+            for affix in tier.get("affixes") or []:
+                stat = (affix.get("stat") or "").strip()
+                if stat.lower() in away:
+                    found.add((tier.get("set"), stat, str(affix.get("value"))))
+    return sorted(found, key=lambda t: (str(t[0]), t[1], t[2]))
 
 
 def snapshot_key(raw: str) -> str:

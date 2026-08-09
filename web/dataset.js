@@ -410,8 +410,17 @@ function buildPickerVocabulary(dataset) {
  *  load check, so the rule lives in ONE place. */
 function expandedAwayFor(vocab, name) {
   const map = (vocab && vocab.expandedAway) || {};
-  const hit = map[String(name == null ? "" : name).trim().toLowerCase()];
-  return (hit && hit.length) ? hit : null;
+  const key = String(name == null ? "" : name).trim().toLowerCase();
+  // Own-property only. A plain object literal inherits `constructor`, `toString`,
+  // `valueOf` and friends from Object.prototype, and `Object.length === 1` sails
+  // straight past a bare `hit && hit.length` check — so a priority named
+  // "constructor" resolved to the Object *function*, and the load-path caller
+  // then threw on `.slice()`, leaving the character permanently unloadable with
+  // its priorities already half-overwritten. Priority names reach here from
+  // localStorage and from imported character files, so they are not trusted input.
+  if (!Object.prototype.hasOwnProperty.call(map, key)) return null;
+  const hit = map[key];
+  return (Array.isArray(hit) && hit.length) ? hit : null;
 }
 
 /** U1 (#136) — the player-facing redirect for an expanded-away name, or null. */
@@ -453,13 +462,25 @@ function migratePriorities(priorities, vocab) {
   return { priorities: out, substitutions };
 }
 
-/** #169 — the player-facing sentence for a set of load-time substitutions. */
-function migrationMessage(substitutions) {
+/** #169 — the player-facing sentence for a set of load-time substitutions.
+ *
+ *  `droppedBounds` names any min/max the substitution had to discard. Saying so
+ *  is not optional: a floor the player set is a number they chose, and removing
+ *  it silently changes what the solver optimizes for without telling them. */
+function migrationMessage(substitutions, droppedBounds) {
   if (!substitutions || !substitutions.length) return null;
-  const parts = substitutions.map((s) => `"${s.from}" → ${s.to.join(", ")}`);
-  return `This character ranked ${parts.length > 1 ? "names" : "a name"} that ` +
+  const parts = substitutions.map((s) => `"${s.from}" -> ${s.to.join(", ")}`);
+  let msg = `This character ranked ${parts.length > 1 ? "names" : "a name"} that ` +
     `now expand${parts.length > 1 ? "" : "s"} into the stats they actually grant: ` +
     `${parts.join("; ")}. Your priorities were updated to match.`;
+  const dropped = [...new Set(droppedBounds || [])];
+  if (dropped.length) {
+    msg += ` The min/max you had set on ${dropped.map((d) => `"${d}"`).join(", ")} ` +
+      `${dropped.length > 1 ? "were" : "was"} removed rather than copied onto the ` +
+      `replacement stats — set ${dropped.length > 1 ? "them" : "it"} again if you still want ` +
+      `${dropped.length > 1 ? "those limits" : "that limit"}.`;
+  }
+  return msg;
 }
 
 /** U5, Part C — one-time load migration for a persisted loadout snapshot. Runs the

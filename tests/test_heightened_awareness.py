@@ -72,13 +72,17 @@ def test_it_grants_no_saves():
 
 def test_a_rank_with_no_harvested_tooltip_contributes_nothing():
     """R2. gear-planner's stored number is not evidence — the affix page has to
-    state it."""
+    state it, and "contributes nothing" has to include the PRIMARY stat. This
+    test previously asserted only the quarantine counter while the affix was
+    renamed into a scored `Armor Class` carrying the unverified number.
+    """
     rec = _rec("Mystery", _folded(6))
     shard = {"harvested": {"Mystery": {"value": {}, "provenance": "unsourced",
                                        "raw": ""}}, "snapshots": {}}
     stats = ha.apply([rec], shard)
 
-    assert stats["quarantined"] == 1
+    assert stats["quarantined"] == 1 and stats["dropped_unstated"] == 1
+    assert rec["affixes"] == [], "an unverified magnitude must not ship as Armor Class"
     audit = ha.audit_shard(shard)
     assert audit["unsourced"] == 1 and audit["titles"] == ["Mystery"]
 

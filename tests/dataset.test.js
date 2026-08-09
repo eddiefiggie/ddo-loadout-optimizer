@@ -341,7 +341,6 @@ test("picker: a bonus TYPE is never offered as a rankable stat", () => {
     `a name that only ever appears as a bonus type is not rankable; offered: ${JSON.stringify(typeOnly)}`);
 });
 
-if (!process.exitCode) console.log(`\n${passed} passed`);
 
 // --- #169: saved-character priority migration ---------------------------------
 // loadCharacter() restored `priorities` verbatim and never consulted the
@@ -426,3 +425,37 @@ test("#169: the built dataset's real map drives the migration", () => {
     assert.ok(v.suggestions.includes(p), `${p} is a real rankable target`);
   }
 });
+
+
+// --- review #169: prototype-chain hazard + bound-map cleanup --------------------
+
+test("#169: a priority colliding with Object.prototype does not resolve or throw", () => {
+  const { migratePriorities, expandedAwayFor } = require("../web/dataset.js");
+  // `Object.length === 1`, so a bare `hit && hit.length` check let the inherited
+  // `constructor` through and the caller threw on `.slice()` -- a saved or
+  // imported character became permanently unloadable.
+  for (const hostile of ["constructor", "toString", "valueOf", "__proto__", "hasOwnProperty"]) {
+    assert.strictEqual(expandedAwayFor(AWAY_VOCAB, hostile), null, `${hostile} must not resolve`);
+    const out = migratePriorities([hostile], AWAY_VOCAB);
+    assert.deepStrictEqual(out.priorities, [hostile], `${hostile} passes through untouched`);
+    assert.strictEqual(out.substitutions.length, 0);
+  }
+});
+
+test("#169: a non-array map value is rejected rather than trusted", () => {
+  const { expandedAwayFor } = require("../web/dataset.js");
+  assert.strictEqual(expandedAwayFor({ expandedAway: { parrying: "Armor Class" } }, "Parrying"), null,
+    "a bare string has .length and would have passed the old check");
+});
+
+test("#169: the disclosure names a dropped bound", () => {
+  const { migratePriorities, migrationMessage } = require("../web/dataset.js");
+  const subs = migratePriorities(["Parrying"], AWAY_VOCAB).substitutions;
+  const msg = migrationMessage(subs, ["Parrying"]);
+  assert.ok(/removed rather than copied/.test(msg), "the drop is disclosed, not silent");
+  assert.ok(msg.includes('"Parrying"'));
+  const quiet = migrationMessage(subs, []);
+  assert.ok(!/removed rather than copied/.test(quiet), "no bound, no bound sentence");
+});
+
+if (!process.exitCode) console.log(`\n${passed} passed`);
