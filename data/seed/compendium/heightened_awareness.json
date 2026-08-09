@@ -1,0 +1,270 @@
+{
+  "_meta": {
+    "field": "heightened_awareness",
+    "note": "Wiki-harvested seed shard. Values are verbatim from the DDO wiki; `provenance` records whether the wiki stated the value, fell back to a template default, or is silent. Only `stated` is solver-eligible.",
+    "snapshots_note": "Rendered-tooltip snapshots keyed by case-normalized template invocation. The tooltip is a pure function of the invocation, so this is keyed per invocation, not per item. Exclude-until-verified: ships empty and fills as invocations are rendered; audit_snapshots() reports the shortfall so an empty store cannot read as coverage.",
+    "stacking_note": "Wiki-stated interaction (Heightened Awareness page, Notes): \"Does not stack with the insight bonus to AC provided by the parrying suffix.\" Both affixes emit Armor Class as an Insight bonus, so the solver's bucket-max core (sum(z) <= 1 per (stat, bonus_type) bucket) enforces this without a special case -- provided both keep emitting the SAME stat name and the SAME bonus type. Retyping either one silently restores double-counting."
+  },
+  "snapshots": {
+    "{{heightened awareness|1}}": {
+      "tooltip": "Heightened Awareness 1: This item helps you to quickly read situations with sharpness and clarity, allowing you to predict actions before they occur. You gain a +1 Insight bonus to AC.",
+      "harvested": "2026-08-08"
+    },
+    "{{heightened awareness|2}}": {
+      "tooltip": "Heightened Awareness 2: This item helps you to quickly read situations with sharpness and clarity, allowing you to predict actions before they occur. You gain a +2 Insight bonus to AC.",
+      "harvested": "2026-08-08"
+    },
+    "{{heightened awareness|3}}": {
+      "tooltip": "Heightened Awareness 3: This item helps you to quickly read situations with sharpness and clarity, allowing you to predict actions before they occur. You gain a +3 Insight bonus to AC.",
+      "harvested": "2026-08-08"
+    },
+    "{{heightened awareness|4}}": {
+      "tooltip": "Heightened Awareness 4: This item helps you to quickly read situations with sharpness and clarity, allowing you to predict actions before they occur. You gain a +4 Insight bonus to AC.",
+      "harvested": "2026-08-08"
+    },
+    "{{heightened awareness|5}}": {
+      "tooltip": "Heightened Awareness 5: This item helps you to quickly read situations with sharpness and clarity, allowing you to predict actions before they occur. You gain a +5 Insight bonus to AC.",
+      "harvested": "2026-08-08"
+    },
+    "{{heightened awareness|6}}": {
+      "tooltip": "Heightened Awareness 6: This item helps you to quickly read situations with sharpness and clarity, allowing you to predict actions before they occur. You gain a +6 Insight bonus to AC.",
+      "harvested": "2026-08-08"
+    }
+  },
+  "harvested": {
+    "Cloak of Flames (level 3)": {
+      "value": {
+        "version": "1",
+        "armor_class": 1
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|1}}",
+      "harvested": "2026-08-08"
+    },
+    "Crown of Bone": {
+      "value": {
+        "version": "6",
+        "armor_class": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Epic Gloves of the Falcon": {
+      "value": {
+        "version": "4",
+        "armor_class": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Epic Rakshasa Hide": {
+      "value": {
+        "version": "4",
+        "armor_class": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Epic Wolf Whistle": {
+      "value": {
+        "version": "4",
+        "armor_class": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Gloves of the Falcon": {
+      "value": {
+        "version": "2",
+        "armor_class": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Kardin's Eye (level 12)": {
+      "value": {
+        "version": "2",
+        "armor_class": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Kardin's Eye (level 13)": {
+      "value": {
+        "version": "3",
+        "armor_class": 3
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|3}}",
+      "harvested": "2026-08-08"
+    },
+    "Kardin's Eye (level 14)": {
+      "value": {
+        "version": "4",
+        "armor_class": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Kardin's Eye (level 23)": {
+      "value": {
+        "version": "5",
+        "armor_class": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|5}}",
+      "harvested": "2026-08-08"
+    },
+    "Kardin's Eye (level 24)": {
+      "value": {
+        "version": "6",
+        "armor_class": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Kardin's Eye (level 25)": {
+      "value": {
+        "version": "6",
+        "armor_class": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Gloves of the Falcon": {
+      "value": {
+        "version": "6",
+        "armor_class": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Rakshasa Hide": {
+      "value": {
+        "version": "6",
+        "armor_class": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Wolf Whistle": {
+      "value": {
+        "version": "6",
+        "armor_class": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Lorinthor's Belt": {
+      "value": {
+        "version": "1",
+        "armor_class": 1
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|1}}",
+      "harvested": "2026-08-08"
+    },
+    "Omniscience": {
+      "value": {
+        "version": "4",
+        "armor_class": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Rakshasa Hide": {
+      "value": {
+        "version": "3",
+        "armor_class": 3
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|3}}",
+      "harvested": "2026-08-08"
+    },
+    "Watcher's Blade": {
+      "value": {
+        "version": "4",
+        "armor_class": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Whisperchain (level 16)": {
+      "value": {
+        "version": "3",
+        "armor_class": 3
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|3}}",
+      "harvested": "2026-08-08"
+    },
+    "Whisperchain (level 17)": {
+      "value": {
+        "version": "3",
+        "armor_class": 3
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|3}}",
+      "harvested": "2026-08-08"
+    },
+    "Whisperchain (level 18)": {
+      "value": {
+        "version": "4",
+        "armor_class": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Whisperchain (level 23)": {
+      "value": {
+        "version": "4",
+        "armor_class": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Whisperchain (level 24)": {
+      "value": {
+        "version": "4",
+        "armor_class": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Whisperchain (level 25)": {
+      "value": {
+        "version": "5",
+        "armor_class": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|5}}",
+      "harvested": "2026-08-08"
+    },
+    "Wolf Whistle": {
+      "value": {
+        "version": "2",
+        "armor_class": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Heightened Awareness|2}}",
+      "harvested": "2026-08-08"
+    }
+  }
+}

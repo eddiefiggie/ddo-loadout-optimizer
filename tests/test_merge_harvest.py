@@ -285,3 +285,120 @@ def test_compare_tooltips_refuses_to_call_zero_matches_clean():
         assert proc.returncode == 1, "an empty dump must not exit clean"
     finally:
         os.unlink(empty)
+
+
+# --- U1 (#169): the Parrying and Heightened Awareness evidence shards -----------
+# Both affixes fold a versioned wiki template into one stored stat. The shard
+# records the version because the magnitude is a property of the version, not of
+# the number upstream happened to store — so `version` has to survive a merge, and
+# a version-only difference has to be a contradiction rather than a silent win.
+
+AFFIX_SHARDS = [("parrying_version", "Parrying"),
+                ("heightened_awareness", "Heightened Awareness")]
+
+
+def _shard(field):
+    import json
+    with open(os.path.join(ROOT, "data", "seed", "compendium", f"{field}.json")) as fh:
+        return json.load(fh)
+
+
+def _raw_items():
+    import json
+    with open(os.path.join(ROOT, "data", "seed", "compendium", "raw",
+                           "gearplanner_items.json")) as fh:
+        return json.load(fh)
+
+
+def test_version_only_difference_is_a_contradiction_not_a_merge():
+    """Proves `version` actually persists. `harvest.merge()` diffs only `value`,
+    so a version written beside it would be dropped and this would pass while the
+    shard silently held the old version."""
+    shard = harvest.new_shard("parrying_version")
+    roster = {"Oathblade"}
+    base = {"Oathblade": {"value": {"version": "VIII", "armor_class": 4, "saves": 4},
+                          "provenance": "stated", "raw": "{{Parrying|VIII}}"}}
+    harvest.merge(shard, base, roster, today=TODAY)
+
+    clash = {"Oathblade": {"value": {"version": "IV", "armor_class": 4, "saves": 4},
+                           "provenance": "stated", "raw": "{{Parrying|IV}}"}}
+    try:
+        harvest.merge(shard, clash, roster, today=TODAY)
+    except Exception:
+        pass
+    else:
+        raise AssertionError("a version-only change must not merge silently")
+
+    assert shard["harvested"]["Oathblade"]["value"]["version"] == "VIII"
+
+
+def test_every_folded_instance_resolves_to_a_shard_entry():
+    """Coverage of the real catalog, not a fixture — an item carrying the affix
+    with no shard entry has no wiki-stated magnitude and would be invented."""
+    items = _raw_items()
+    for field, affix in AFFIX_SHARDS:
+        harvested = _shard(field)["harvested"]
+        carrying = {i["name"] for i in items
+                    if any(a.get("name") == affix for a in i.get("affixes") or [])}
+        assert carrying, f"{affix}: roster is empty — the check would inspect nothing"
+        assert not (carrying - set(harvested)), \
+            f"{affix}: uncovered items {sorted(carrying - set(harvested))[:5]}"
+        assert not (set(harvested) - carrying), \
+            f"{affix}: shard entries with no catalog item {sorted(set(harvested) - carrying)[:5]}"
+
+
+def test_every_shard_entry_is_stated_and_matches_its_snapshot():
+    """The magnitude must be readable out of the stored tooltip. A number that
+    does not appear in its own snapshot was derived, not harvested."""
+    for field, _affix in AFFIX_SHARDS:
+        shard = _shard(field)
+        snapshots = shard["snapshots"]
+        assert snapshots, f"{field}: no snapshots — nothing to verify against"
+        for name, entry in shard["harvested"].items():
+            assert entry["provenance"] == "stated", f"{field}/{name}"
+            snap = snapshots.get(entry["raw"].strip().lower())
+            assert snap, f"{field}/{name}: no snapshot for {entry['raw']}"
+            value = entry["value"]
+            assert f"+{value['armor_class']} Insight" in snap["tooltip"], \
+                f"{field}/{name}: AC {value['armor_class']} not stated in its tooltip"
+            if "saves" in value:
+                assert f"+{value['saves']} Insight bonus to" in snap["tooltip"], \
+                    f"{field}/{name}: saves {value['saves']} not stated in its tooltip"
+
+
+def test_an_item_absent_from_every_wiki_group_is_reported_as_a_suspect():
+    from src import enchantment_split
+    shard = harvest.new_shard("parrying_version")
+    harvest.merge(shard, {
+        "Oathblade": {"value": {"version": "VIII", "armor_class": 4, "saves": 4},
+                      "provenance": "stated", "raw": "{{Parrying|VIII}}"},
+        "Nicked Longsword": {"provenance": "unsourced"},
+    }, {"Oathblade", "Nicked Longsword"}, today=TODAY)
+
+    audit = enchantment_split.audit_shard(shard, label="parrying shard")
+    assert audit["unsourced"] == 1
+    assert audit["titles"] == ["Nicked Longsword"]
+
+
+def test_remerging_an_affix_shard_dump_changes_nothing():
+    import copy
+    for field, _affix in AFFIX_SHARDS:
+        shard = _shard(field)
+        roster = set(shard["harvested"])
+        before = copy.deepcopy(shard)
+        dump = {name: {k: entry[k] for k in ("value", "provenance", "raw")}
+                for name, entry in shard["harvested"].items()}
+        stats = harvest.merge(shard, dump, roster, today="2099-01-01")
+        assert stats["added"] == 0, f"{field}: {stats}"
+        assert shard == before, f"{field}: re-merge mutated the shard"
+
+
+def test_affix_coverage_runs_without_aborting():
+    import json
+    for field, _affix in AFFIX_SHARDS:
+        proc = _run_cli("--field", field, "--coverage")
+        assert proc.returncode == 0, f"{field}: {proc.stderr}"
+        cov = json.loads(proc.stdout)
+        assert cov["missing"] == 0, f"{field}: {cov}"
+        assert cov["defaulted"] == 0 and cov["unsourced"] == 0, f"{field}: {cov}"
+        assert cov["stated"] == cov["roster"] > 0, f"{field}: {cov}"
