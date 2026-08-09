@@ -8,7 +8,7 @@ See `README.md` for what the tool does and how to run it.
 
 This repo carries two knowledge stores that exist specifically so problems are not re-solved or re-litigated:
 
-- **`docs/solutions/`** — 31 documented solutions to past problems, organized by category (`conventions/`, `design-patterns/`, `logic-errors/`, `developer-experience/`, `workflow-issues/`, `security-issues/`, `best-practices/`). Each carries YAML frontmatter with `module`, `component`, `problem_type`, `tags`, and `applies_when` — grep those fields to find relevant prior work. Relevant when implementing, debugging, or making a decision in an area these cover.
+- **`docs/solutions/`** — 32 documented solutions to past problems, organized by category (`conventions/`, `design-patterns/`, `logic-errors/`, `developer-experience/`, `workflow-issues/`, `security-issues/`, `best-practices/`). Each carries YAML frontmatter with `module`, `component`, `problem_type`, `tags`, and `applies_when` — grep those fields to find relevant prior work. Relevant when implementing, debugging, or making a decision in an area these cover.
 - **`CONCEPTS.md`** — shared domain vocabulary, 37 entries. Use these names for domain entities and processes rather than inventing synonyms. Relevant when orienting to the codebase or discussing domain concepts.
 
 Two more evidence stores worth knowing:
