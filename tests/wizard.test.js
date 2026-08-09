@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, sweepPresenceBounds, presenceBoundNotice, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -948,12 +948,11 @@ test("U2: the credit control is not offered on a presence row", () => {
   // plan 005 moved the gate: credits now render only inside the Advanced panel,
   // and R6 gives a presence row no panel at all. So the guarantee is one step
   // removed from the markup — assert both halves.
-  assert.strictEqual(advancedRowModel("Blurry", {
+  assert.deepStrictEqual(advancedRowModel("Blurry", {
     declaredCredits: { [creditKey("Blurry", "Insight")]: { stat: "Blurry", bonus_type: "Insight", value: 3 } },
-  }, presenceVocab).hasAdvanced, false, "a presence row gets no panel");
+  }, presenceVocab).credits, [], "a presence row is offered no credit, panel or not");
   const rows = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function rankedHTML"), WIZARD_SRC.indexOf("function advancedHTML"));
   assert.ok(!/creditsHTML/.test(rows), "the row body never renders credits directly");
-  assert.ok(/adv\.hasAdvanced \? advancedHTML/.test(rows), "the panel is gated on hasAdvanced");
   const panel = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function advancedHTML"), WIZARD_SRC.indexOf("function creditsHTML"));
   assert.ok(/creditsHTML\(stat/.test(panel), "credits render inside the panel, nowhere else");
 });
@@ -1039,9 +1038,14 @@ test("U5: the credit map is in the persistence allowlist the wizard state feeds"
 // this suite has no jsdom: without the extraction, R5's badge and R6's presence
 // rule could only ever be eyeballed in a browser.
 
-test("U1: a presence stat gets no Advanced control, a magnitude stat does", () => {
-  assert.strictEqual(advancedRowModel("Blurry", {}, presenceVocab).hasAdvanced, false);
-  assert.strictEqual(advancedRowModel("Constitution", {}, presenceVocab).hasAdvanced, true);
+test("U1: an on/off row keeps min/max but is offered no credit", () => {
+  // R6 as planned removed the whole control from on/off rows. That was wrong: the
+  // Bool bucket is part of the stat's solver expression, so `min 1 Ghostly` is a
+  // working hard constraint. Only credits are refused there.
+  const m = advancedRowModel("Blurry", { targetFloors: { Blurry: 1 } }, presenceVocab);
+  assert.strictEqual(m.hasAdvanced, true, "the row keeps its bounds control");
+  assert.strictEqual(m.floor, 1, "and the floor is live");
+  assert.deepStrictEqual(m.credits, [], "but no credit is offered");
 });
 
 test("U1: badgeCount counts a floor, a cap, and each usable credit", () => {
@@ -1108,29 +1112,12 @@ test("U1: the wizard markup and the row model share one usable-credit predicate"
 
 // ---- F2 — a bound on a presence stat cannot survive R6 ------------------------
 
-test("F2: cleanBoundMap drops a bound on a presence stat when given a vocab", () => {
-  // R6 removes the min/max control from presence rows. The VALUE behind it
-  // persists through INPUT_KEYS, so without this guard a floor set before the
-  // change keeps constraining every solve with nothing on screen to clear it.
-  const out = cleanBoundMap({ Blurry: 3, Constitution: 20 }, presenceVocab);
-  assert.deepStrictEqual(out, { Constitution: 20 });
-});
 
 test("F2: cleanBoundMap without a vocab keeps its prior behavior exactly", () => {
   assert.deepStrictEqual(cleanBoundMap({ Blurry: 3, Constitution: 20 }), { Blurry: 3, Constitution: 20 });
   assert.deepStrictEqual(cleanBoundMap({ a: "", b: null, c: -1, d: "x", e: 0 }), { e: 0 });
 });
 
-test("F2: a presence-stat floor never reaches the query", () => {
-  const state = Object.assign(baseState(), {
-    priorities: ["Blurry", "Constitution"],
-    targetFloors: { Blurry: 1, Constitution: 20 },
-    targetCaps: { Blurry: 5 },
-  });
-  const q = buildQuery(state, presenceVocab);
-  assert.deepStrictEqual(q.targetFloors, { Constitution: 20 });
-  assert.deepStrictEqual(q.targetCaps, {});
-});
 
 test("F2: every rankable stat keeps its Advanced control against the REAL vocab", () => {
   // The bug this catches: `vocab.presence` means "appears as Bool on at least one
@@ -1139,18 +1126,24 @@ test("F2: every rankable stat keeps its Advanced control against the REAL vocab"
   // alone hid their min/max AND silently dropped any floor already set on them.
   // The hand-built presenceVocab above could never surface this; only the real one can.
   const rv = buildPickerVocabulary(realData);
-  const both = realData.metadata.rankable_affixes.filter((s) => rv.presence.has(s));
-  assert.ok(both.length > 0, "the dual-nature case is real in the shipped dataset");
+  // The magnitude set must come from the CURATED rankable list. A raw
+  // `_rankableType` scan calls an untyped affix row rankable, and most on/off
+  // weapon effects carry one alongside their Bool line — that pulled 57 extra
+  // stats (Holy, Vampirism, Wounding, the Bane lines) out of the credit gate and
+  // reopened the defect it exists to block. Intended overlap is exactly the
+  // dual-nature four.
+  const leaked = [...rv.presence].filter((x) => rv.magnitude.has(x));
+  assert.deepStrictEqual(leaked.sort(),
+    ["Deception", "Protection from Evil", "Smoke Screen", "Underwater Action"],
+    `only the dual-nature stats may escape the presence gate; got ${leaked.length}`);
   for (const stat of realData.metadata.rankable_affixes) {
-    assert.strictEqual(advancedRowModel(stat, {}, rv).hasAdvanced, true,
-      `${stat} is rankable, so it must keep its Advanced control`);
     assert.strictEqual(isPresenceOnly(stat, rv), false, `${stat} has a magnitude bucket`);
   }
-  // and a genuinely on/off-only stat is still refused
-  const onOff = [...rv.presence].find((s) => !rv.magnitude.has(s));
-  assert.ok(onOff, "the dataset has at least one on/off-only stat");
-  assert.strictEqual(isPresenceOnly(onOff, rv), true);
-  assert.strictEqual(advancedRowModel(onOff, {}, rv).hasAdvanced, false);
+  for (const weapon of ["Holy", "Vampirism", "Wounding", "Paralyzing"]) {
+    if (!rv.presence.has(weapon)) continue;
+    assert.strictEqual(isPresenceOnly(weapon, rv), true,
+      `${weapon} is an on/off effect and must stay behind the credit gate`);
+  }
 });
 
 test("F2: a floor on a dual-nature stat survives to the query", () => {
@@ -1169,48 +1162,8 @@ test("F2: cleanBoundMap does not canonicalize keys", () => {
   assert.deepStrictEqual(cleanBoundMap({ PRR: 50 }, aliasVocab), { PRR: 50 });
 });
 
-test("F2: the sweep drops ONLY presence-only bounds, and reports them", () => {
-  // Behavioral, not a source regex. Mutation testing showed the regex version
-  // survived both deleting the isPresenceOnly guard (which erases EVERY bound
-  // the player ever set) and deleting the delete (which leaves the notice
-  // claiming a removal that never happened). Both are silent data loss.
-  const rv = buildPickerVocabulary(realData);
-  const onOff = [...rv.presence].find((s) => !rv.magnitude.has(s));
-  const dual = realData.metadata.rankable_affixes.find((s) => rv.presence.has(s));
-  const state = {
-    targetFloors: { [onOff]: 3, Constitution: 20, [dual]: 5 },
-    targetCaps: { [onOff]: 9, Dodge: 40 },
-  };
-  const dropped = sweepPresenceBounds(state, rv);
-  assert.deepStrictEqual(dropped, [onOff], "only the on/off-only stat is reported");
-  assert.deepStrictEqual(state.targetFloors, { Constitution: 20, [dual]: 5 },
-    "a plain magnitude stat and a dual-nature stat both keep their floor");
-  assert.deepStrictEqual(state.targetCaps, { Dodge: 40 });
-});
 
-test("F2: a clean character load sweeps nothing and shows no banner", () => {
-  const rv = buildPickerVocabulary(realData);
-  const state = { targetFloors: { Constitution: 20 }, targetCaps: {} };
-  assert.deepStrictEqual(sweepPresenceBounds(state, rv), []);
-  assert.deepStrictEqual(state.targetFloors, { Constitution: 20 });
-  assert.strictEqual(presenceBoundNotice([]), "", "no banner when nothing was dropped");
-  assert.strictEqual(presenceBoundNotice(undefined), "");
-  assert.doesNotThrow(() => sweepPresenceBounds(null, rv));
-  assert.doesNotThrow(() => sweepPresenceBounds({ targetCaps: "nope" }, rv));
-});
 
-test("F2: the disclosure names the stat and agrees in number", () => {
-  const one = presenceBoundNotice(["Blurry"]);
-  assert.ok(one.includes('"Blurry"') && /\bwas removed\b/.test(one) && /that stat is an on\/off effect/.test(one));
-  const two = presenceBoundNotice(["Blurry", "Ghostly"]);
-  assert.ok(two.includes('"Blurry", "Ghostly"') && /\bwere removed\b/.test(two) && /those stats are on\/off effects/.test(two));
-  // it appends to the migration banner rather than replacing it
-  const load = WIZARD_SRC.slice(WIZARD_SRC.indexOf("const droppedPresenceBounds"),
-    WIZARD_SRC.indexOf("state.slotConstraints = i.slotConstraints"));
-  assert.ok(/sweepPresenceBounds\(state, vocab\)/.test(load), "the load path calls the tested sweep");
-  assert.ok(/\$\{state\.expandedAwayMigrated\} \$\{presenceNotice\}/.test(load),
-    "one load never produces two competing notices");
-});
 
 test("KTD1: the markup READS the open set — the seam, not just the Set", () => {
   // The mutation that reverts KTD1 entirely is deleting the read from the

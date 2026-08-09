@@ -83,7 +83,6 @@ function cleanBoundMap(m, vocab) {
       // targets from bound-map keys, so rewriting a stale non-canonical key
       // would resurrect a dead orphan bound AND mint a target the player never
       // ranked. Credits have no such path, which is why they canonicalize.
-      if (isPresenceOnly(stat, vocab)) continue;
       out[stat] = n;
     }
   }
@@ -181,24 +180,34 @@ function creditIsUsable(v) {
  *  — so a half-typed credit row does not inflate the badge. Pure; unit-tested. */
 function advancedRowModel(stat, state, vocab) {
   const s = state || {};
-  // R6 — an on/off-ONLY stat has no magnitude to floor or cap, and suppresses
-  // declared credits too, so its panel would be empty. No control at all. A stat
-  // that is Bool on some items but carries a real magnitude on others keeps its
-  // panel: it has something to bound.
-  if (isPresenceOnly(stat, vocab)) {
-    return { hasAdvanced: false, floor: null, cap: null, credits: [], badgeCount: 0 };
-  }
+  // R6 as planned said an on/off row gets no control at all, on the premise that
+  // a bound on a binary stat is meaningless. That premise is FALSE: the Bool
+  // bucket is part of the stat's solver expression, so `min 1 Ghostly` is a
+  // working hard constraint that forces the solver to equip an item carrying the
+  // effect. Those rows keep their min/max. Only CREDITS are refused there, which
+  // is the documented U2/U3 defect — a declared magnitude on a Bool-only stat
+  // forms a separate additive bucket and satisfies the floor without the item.
   const pick = (map) => {
     if (!map || typeof map !== "object") return null;
     // hasOwnProperty, not `map[stat] != null`: a stat named "__proto__" would
     // otherwise resolve to Object.prototype and read as a set bound.
     if (!Object.prototype.hasOwnProperty.call(map, stat)) return null;
     const v = map[stat];
-    return (v == null || v === "") ? null : v;
+    if (v == null || v === "") return null;
+    // Same predicate cleanBoundMap applies. Otherwise an imported backup holding
+    // `{Dodge: -5}` renders a live-looking min box and counts "1 setting" for a
+    // bound the query drops — a row asserting a constraint the solve never got.
+    const n = Number(v);
+    return (Number.isFinite(n) && n >= 0) ? n : null;
   };
   const floor = pick(s.targetFloors);
   const cap = pick(s.targetCaps);
-  const all = (s.declaredCredits && typeof s.declaredCredits === "object") ? s.declaredCredits : {};
+  // Credits stay refused on an on/off-only stat even though bounds do not: a
+  // declared magnitude there forms a SEPARATE additive bucket and satisfies a
+  // floor without the item that grants the effect (the documented U2/U3 defect,
+  // reproduced end-to-end against HiGHS during review).
+  const all = (!isPresenceOnly(stat, vocab) && s.declaredCredits && typeof s.declaredCredits === "object")
+    ? s.declaredCredits : {};
   const credits = Object.entries(all)
     .filter(([, c]) => c && c.stat === stat)
     .map(([key, c]) => ({
@@ -273,40 +282,6 @@ function openPanelClear() {
  *  still passes. */
 function panelOpenAttr(stat) {
   return openPanels.has(stat) ? " open" : "";
-}
-
-/** Drop bounds on on/off-only stats from a character's state, returning the stat
- *  names dropped so the caller can disclose them.
- *
- *  Pure over `state`'s two bound maps, and exported, because the load-time
- *  version of this lived inside the DOM closure where only its source text could
- *  be asserted — and a source assertion happily survives both deleting the
- *  `isPresenceOnly` guard (which then erases EVERY bound the player ever set)
- *  and deleting the delete itself (which leaves the notice claiming a removal
- *  that never happened). Both are silent, total-data-loss-shaped regressions. */
-function sweepPresenceBounds(state, vocab) {
-  const dropped = [];
-  const s = state || {};
-  for (const map of [s.targetCaps, s.targetFloors]) {
-    if (!map || typeof map !== "object") continue;
-    for (const stat of Object.keys(map)) {
-      if (!isPresenceOnly(stat, vocab)) continue;
-      if (!dropped.includes(stat)) dropped.push(stat);
-      delete map[stat];
-    }
-  }
-  return dropped;
-}
-
-/** The load banner sentence for swept presence bounds — "" when none. Pure and
- *  exported so the disclosure's wording and its not-firing-on-a-clean-load are
- *  both real assertions. */
-function presenceBoundNotice(dropped) {
-  if (!dropped || !dropped.length) return "";
-  const names = dropped.map((s) => `"${s}"`).join(", ");
-  const one = dropped.length === 1;
-  return `The min/max you had set on ${names} ${one ? "was" : "were"} removed — `
-    + `${one ? "that stat is an on/off effect" : "those stats are on/off effects"} with no value to bound.`;
 }
 
 /** Pure state -> solver query mapping (no DOM). Exported for unit tests.
@@ -634,7 +609,7 @@ function addBundle(key, current, vocab) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, sweepPresenceBounds, presenceBoundNotice, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -1706,21 +1681,6 @@ if (typeof window !== "undefined" && window.App) {
       // KTD1 — the whole priority list is being replaced, so any row left open
       // belongs to the build being discarded. Ephemeral state, cleared not restored.
       openPanelClear();
-      // Drop bounds on on/off-only stats from STATE, not just from the query.
-      // cleanBoundMap refuses them at the solver seam, but the share exports read
-      // the raw saved inputs (exporters.js reads rec.inputs.targetFloors), so a
-      // legacy floor on a presence-only stat would print "[min 3]" on a loadout
-      // the solve produced while ignoring it — a constraint the math never
-      // applied. Same rule the #169 migration below follows: clean the state.
-      //
-      // DISCLOSED, never silent. `suppress-dont-erase-user-constraints-on-
-      // transient-invalidity` allows dropping a user constraint from persistent
-      // state only if the drop is surfaced. It matters more here than usual:
-      // "presence-only" is derived from the dataset and provably moves — this
-      // very change found four stats previously misread as on/off that carry
-      // real magnitudes — so a bound erased on one build could be legitimate on
-      // the next, with nothing left to restore.
-      const droppedPresenceBounds = sweepPresenceBounds(state, vocab);
       // #169 — a saved character may rank a name that has since been EXPANDED
       // AWAY (`Speed`, `Parrying`, `Heightened Awareness`, the umbrella ability
       // names). The add-a-priority paths refuse those, but this one restored them
@@ -1765,11 +1725,6 @@ if (typeof window !== "undefined" && window.App) {
       }
       // Append the presence-bound disclosure to the same banner, so one load
       // never produces two competing notices.
-      const presenceNotice = presenceBoundNotice(droppedPresenceBounds);
-      if (presenceNotice) {
-        state.expandedAwayMigrated = state.expandedAwayMigrated
-          ? `${state.expandedAwayMigrated} ${presenceNotice}` : presenceNotice;
-      }
       state.slotConstraints = i.slotConstraints || {};
       state.constraintsDirty = false;   // loaded constraints are the saved state, not a pending change
       // U5, Part C — one-time load migration: a PRE-OVERHAUL saved snapshot embedded

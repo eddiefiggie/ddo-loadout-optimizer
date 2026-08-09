@@ -384,13 +384,25 @@ function buildPickerVocabulary(dataset) {
   // silently strips a floor the player set on a stat that genuinely has one.
   // `magnitude` is the set with a real rankable bucket, so `presence` minus
   // `magnitude` is the honest "on/off only, nothing to bound or declare" test.
+  // Built from the CURATED rankable list, not from a raw `_rankableType` scan.
+  // The raw scan treats an untyped affix row as rankable (`_rankableType(null)`
+  // is true), and most on/off weapon effects carry an untyped damage line
+  // alongside their Bool line — Holy ships `Bool 1` on 11 items and an untyped
+  // `6` on 95. A raw-scan magnitude set therefore claims 61 presence stats have
+  // magnitudes when the curated vocabulary recognizes 4, and every one of the
+  // extra 57 (Holy, Vampirism, Wounding, Paralyzing, the Bane lines) would be
+  // handed a declared-credit control. That reopens the exact defect the credit
+  // presence gate exists to block: declaring "Holy 5" satisfies a `min 1 Holy`
+  // floor arithmetically, so the solver drops the item that actually grants it.
   const magnitude = new Set();
-  for (const [name, type] of _itemAffixTriples(ds)) {
-    if (_rankableType(type)) magnitude.add(canonical(name));
+  for (const n of (meta.rankable_affixes || [])) { const c = canonical(n); if (c) magnitude.add(c); }
+  if (!magnitude.size) {
+    // Fallback only for a cached dataset built before rankable_affixes existed.
+    for (const [name, type] of _itemAffixTriples(ds)) {
+      if (_rankableType(type) && !PRESENCE_TYPES.has(type)) magnitude.add(canonical(name));
+    }
   }
-  for (const [name, type, value] of _craftingAffixTriples(ds)) {
-    if (_rankableType(type) && _isMagnitude(value)) magnitude.add(canonical(name));
-  }
+
   // known = the unfiltered union (canonicalized), plus every suggestion.
   const known = new Set();
   for (const n of _allAffixNames(ds)) { const c = canonical(n); if (c) known.add(c); }
