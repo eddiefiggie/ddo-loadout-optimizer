@@ -209,7 +209,11 @@ function advancedRowModel(stat, state, vocab) {
     }));
   const badgeCount = (floor != null ? 1 : 0) + (cap != null ? 1 : 0)
     + credits.filter((c) => c.usable).length;
-  return { floor, cap, credits, badgeCount };
+  // `canCredit` drives the AFFORDANCE, not just the list. Suppressing the rows
+  // while still rendering "+ already have" left a button that silently wrote
+  // state the query then discarded: clicking it on an on/off row produced no
+  // visible row, no error, and one more orphan entry per click.
+  return { canCredit: !isPresenceOnly(stat, vocab), floor, cap, credits, badgeCount };
 }
 
 // U3 — the Advanced panel's prose, defined ONCE here and interpolated per row.
@@ -1271,8 +1275,8 @@ if (typeof window !== "undefined" && window.App) {
             <input class="wz-bound" type="number" min="0" step="1" inputmode="numeric" data-max="${i}" value="${esc(adv.cap == null ? "" : adv.cap)}" placeholder="max" aria-label="${esc(stat)} maximum (cap)" draggable="false"></span>
           <p class="wz-adv-note">${ADVANCED_PANEL_HELP.min}</p>
           <p class="wz-adv-note">${ADVANCED_PANEL_HELP.max}</p>
-          <p class="wz-adv-note">${ADVANCED_PANEL_HELP.credit}</p>
-          ${creditsHTML(stat, adv)}
+          ${adv.canCredit ? `<p class="wz-adv-note">${ADVANCED_PANEL_HELP.credit}</p>
+          ${creditsHTML(stat, adv)}` : ""}
         </div></details>`;
     }
 

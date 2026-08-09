@@ -1048,6 +1048,12 @@ test("U1: an on/off row keeps min/max but is offered no credit", () => {
   }, presenceVocab);
   assert.strictEqual(m.floor, 1, "the floor is live — min 1 is a hard 'must have this'");
   assert.deepStrictEqual(m.credits, [], "but no credit is offered");
+  assert.strictEqual(m.canCredit, false, "and the affordance itself is suppressed");
+  assert.strictEqual(advancedRowModel("Constitution", {}, presenceVocab).canCredit, true);
+  // The button must be gated too, not just the rows: rendering it while the model
+  // refuses the result gave a control that wrote invisible state on every click.
+  const panel = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function advancedHTML"), WIZARD_SRC.indexOf("function creditsHTML"));
+  assert.ok(/adv\.canCredit \? /.test(panel), "the credit block renders only when the stat can carry one");
   // and the row still reads as on/off in the markup
   const rows = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function rankedHTML"), WIZARD_SRC.indexOf("function advancedHTML"));
   assert.ok(/isPresenceOnly\(p, vocab\) \? ` <span class="rank-tag"/.test(rows),
