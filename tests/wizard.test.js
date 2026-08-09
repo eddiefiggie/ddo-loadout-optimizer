@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, advancedRowModel, openPanels, openPanelToggle, openPanelSweep, openPanelClear, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -1196,6 +1196,29 @@ test("KTD1: the open set is ephemeral — never persisted, never queried", () =>
   const q = buildQuery(Object.assign(baseState(), { priorities: ["Constitution"] }), presenceVocab);
   assert.ok(!JSON.stringify(Object.keys(q)).includes("open"), "the open set never reaches the solver query");
   openPanelClear();
+});
+
+test("R5: the collapsed badge stays current when a bound is typed", () => {
+  // Caught in the browser, not here: the bound and credit inputs skip rerender so
+  // they don't destroy the field under the caret, which also skipped the badge —
+  // it sat one render behind, so typing a floor and collapsing the row showed
+  // nothing. The in-place refresh must read the same model the render does.
+  assert.strictEqual(advancedBadgeText(0), "");
+  assert.strictEqual(advancedBadgeText(1), "· 1 setting");
+  assert.strictEqual(advancedBadgeText(2), "· 2 settings");
+  const wire = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderRankedList"));
+  assert.ok(/const refreshBadge = /.test(wire), "an in-place badge refresh exists");
+  // Anchor on text unique to each handler body — "input.wz-bound" and
+  // "input.wz-credit-val" also appear in the focus helpers above them.
+  for (const [what, anchor] of [["the bound inputs", "const isMax = inp.dataset.max"],
+    ["the credit value field", "state.declaredCredits || {})[inp.dataset.cval]"]]) {
+    const at = wire.indexOf(anchor);
+    assert.ok(at > 0, `${what} handler found`);
+    assert.ok(/refreshBadge\(/.test(wire.slice(at, at + 700)), `${what} refreshes the badge`);
+  }
+  // One definition of the summary contents, or the patched and rendered forms drift.
+  assert.strictEqual(WIZARD_SRC.split("advancedBadgeText(").length - 1, 2,
+    "advancedBadgeText is defined once and called once, from advSummaryHTML");
 });
 
 // ---- U3 — the panel's prose, relocated not duplicated -------------------------

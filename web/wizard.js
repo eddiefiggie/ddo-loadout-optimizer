@@ -127,6 +127,14 @@ function cleanCreditMap(m, vocab) {
   return out;
 }
 
+/** The count phrase on a collapsed row's Advanced summary — "" when nothing is
+ *  set. Pure and exported so the initial render and the in-place refresh below
+ *  cannot word it differently, and so R5's pluralization is unit-tested. */
+function advancedBadgeText(n) {
+  if (!n) return "";
+  return `· ${n} ${n === 1 ? "setting" : "settings"}`;
+}
+
 /** Is a declared credit's typed value one the solver will actually honor?
  *
  *  Hoisted to module scope so the row model below and the row markup share ONE
@@ -560,7 +568,7 @@ function addBundle(key, current, vocab) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, advancedRowModel, openPanels, openPanelToggle, openPanelSweep, openPanelClear, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -1210,11 +1218,18 @@ if (typeof window !== "undefined" && window.App) {
     // The badge is part of the summary's TEXT, not a visual-only chip: R5 is
     // about not losing a setting when the panel closes, and a purely visual mark
     // would lose it for screen-reader users instead of for everyone.
+    // One definition of the summary's contents, used by the initial render AND by
+    // the in-place refresh in renderRankedList. Two copies would drift, and the
+    // drift is silent: a badge that words the same state differently depending on
+    // whether the list was rebuilt or patched.
+    function advSummaryHTML(adv) {
+      const t = advancedBadgeText(adv.badgeCount);
+      return `Advanced${t ? ` <span class="wz-adv-badge">${esc(t)}</span>` : ""}`;
+    }
+
     function advancedHTML(stat, i, adv) {
-      const n = adv.badgeCount;
-      const badge = n > 0 ? ` <span class="wz-adv-badge">· ${n} ${n === 1 ? "setting" : "settings"}</span>` : "";
       return `<details class="wz-adv" data-adv="${esc(stat)}"${openPanels.has(stat) ? " open" : ""}>
-        <summary>Advanced${badge}</summary>
+        <summary>${advSummaryHTML(adv)}</summary>
         <div class="wz-adv-body">
           <p class="wz-adv-lead">${ADVANCED_PANEL_HELP.lead}</p>
           <span class="wz-bounds">
@@ -1279,6 +1294,16 @@ if (typeof window !== "undefined" && window.App) {
         .forEach((el) => { if (el.dataset.cval === key) el.focus(); });
       const focusSummary = (stat) => ol.querySelectorAll("details.wz-adv")
         .forEach((d) => { if (d.dataset.adv === stat) { const s = d.querySelector("summary"); if (s) s.focus(); } });
+      // R5 — the bound and credit-value inputs deliberately do NOT rerender: a
+      // rebuild mid-keystroke would destroy the field under the caret. But the
+      // badge is computed during the rebuild, so without this it stays one render
+      // behind — a player types a floor, collapses the row, and sees nothing.
+      // Patch just the summary instead, from the same model the render uses.
+      const refreshBadge = (stat) => ol.querySelectorAll("details.wz-adv").forEach((d) => {
+        if (d.dataset.adv !== stat) return;
+        const s = d.querySelector("summary");
+        if (s) s.innerHTML = advSummaryHTML(advancedRowModel(stat, state, vocab));
+      });
 
       ol.querySelectorAll("button").forEach((b) => b.onclick = () => {
         let after = null;
@@ -1331,10 +1356,11 @@ if (typeof window !== "undefined" && window.App) {
           const p = state.priorities[i];
           if (!p) return;
           const map = isMax ? (state.targetCaps || (state.targetCaps = {})) : (state.targetFloors || (state.targetFloors = {}));
-          if (inp.value === "") { delete map[p]; return; }
+          if (inp.value === "") { delete map[p]; refreshBadge(p); return; }
           const num = Number(inp.value);
-          if (!Number.isFinite(num)) { delete map[p]; return; }
+          if (!Number.isFinite(num)) { delete map[p]; refreshBadge(p); return; }
           map[p] = Math.max(0, Math.floor(num));
+          refreshBadge(p);
         };
       });
       // U2 — the credit value field. Blank or unusable clears the VALUE but keeps
@@ -1345,9 +1371,10 @@ if (typeof window !== "undefined" && window.App) {
         inp.oninput = () => {
           const c = (state.declaredCredits || {})[inp.dataset.cval];
           if (!c) return;
-          if (inp.value === "") { c.value = ""; return; }
+          if (inp.value === "") { c.value = ""; refreshBadge(c.stat); return; }
           const num = Number(inp.value);
           c.value = Number.isFinite(num) ? Math.max(0, Math.floor(num)) : "";
+          refreshBadge(c.stat);
         };
       });
       // U2 — changing the bonus type REKEYS the entry, because the key is
