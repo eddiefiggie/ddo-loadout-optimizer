@@ -8,8 +8,8 @@ See `README.md` for what the tool does and how to run it.
 
 This repo carries two knowledge stores that exist specifically so problems are not re-solved or re-litigated:
 
-- **`docs/solutions/`** — 30 documented solutions to past problems, organized by category (`conventions/`, `design-patterns/`, `logic-errors/`, `developer-experience/`, `workflow-issues/`, `security-issues/`, `best-practices/`). Each carries YAML frontmatter with `module`, `component`, `problem_type`, `tags`, and `applies_when` — grep those fields to find relevant prior work. Relevant when implementing, debugging, or making a decision in an area these cover.
-- **`CONCEPTS.md`** — shared domain vocabulary, 34 entries. Use these names for domain entities and processes rather than inventing synonyms. Relevant when orienting to the codebase or discussing domain concepts.
+- **`docs/solutions/`** — 31 documented solutions to past problems, organized by category (`conventions/`, `design-patterns/`, `logic-errors/`, `developer-experience/`, `workflow-issues/`, `security-issues/`, `best-practices/`). Each carries YAML frontmatter with `module`, `component`, `problem_type`, `tags`, and `applies_when` — grep those fields to find relevant prior work. Relevant when implementing, debugging, or making a decision in an area these cover.
+- **`CONCEPTS.md`** — shared domain vocabulary, 37 entries. Use these names for domain entities and processes rather than inventing synonyms. Relevant when orienting to the codebase or discussing domain concepts.
 
 Two more evidence stores worth knowing:
 
@@ -25,6 +25,8 @@ These are non-obvious and each one has cost a real defect.
 **A rendered number is not automatically a value.** Some wiki templates render a placeholder when nobody recorded the real number, and a bundled template hides its numbers in the tooltip rather than the visible cell. See `docs/solutions/conventions/bundled-template-values-live-in-the-tooltip-not-the-cell.md`.
 
 **Prove a guard fails before trusting it.** Corrupt the input a new gate exists to reject and confirm it goes red, then restore. Make it refuse to inspect zero records — and remember that coverage of one data source is not coverage of another. See `docs/solutions/conventions/prove-a-guard-fails-before-trusting-it.md`.
+
+**Prove a new test fails against the pre-change tree.** A fully green suite can cover none of the diff. Export the base commit to a scratch dir, copy the new tests over it, and run them — anything that still passes is covering nothing. Copy the gitignored generated data in first, or the suite crashes and the crash reads as a pass. Deliberate "nothing changed" guards are the exception; every test claiming new behavior is not. See `docs/solutions/conventions/prove-a-test-fails-against-the-pre-change-tree.md`.
 
 **`web/data/items.json` is generated and gitignored.** Edit `build_dataset.py`, `src/`, or the seed data under `data/seed/` — never the JSON.
 
