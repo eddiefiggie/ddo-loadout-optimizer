@@ -402,3 +402,76 @@ def test_affix_coverage_runs_without_aborting():
         assert cov["missing"] == 0, f"{field}: {cov}"
         assert cov["defaulted"] == 0 and cov["unsourced"] == 0, f"{field}: {cov}"
         assert cov["stated"] == cov["roster"] > 0, f"{field}: {cov}"
+
+
+# --- U6 (#169): the tooltip worklist is per-field -------------------------------
+# It used to filter EVERY field through a `speed`-anchored regex, so any other
+# shard printed an empty list and exited 0 — indistinguishable from "no work".
+
+def test_the_worklist_emits_every_parrying_invocation_including_roman():
+    proc = _run_cli("--field", "parrying_version", "--tooltip-worklist")
+    assert proc.returncode == 0, proc.stderr
+    lines = [l for l in proc.stdout.splitlines() if l.strip()]
+
+    assert len(lines) == 9, lines
+    for roman in ("{{Parrying|I}}", "{{Parrying|IV}}", "{{Parrying|VIII}}"):
+        assert roman in lines, f"{roman} must be refreshed — the lookup is not a formula"
+
+
+def test_the_worklist_covers_heightened_awareness():
+    proc = _run_cli("--field", "heightened_awareness", "--tooltip-worklist")
+    assert proc.returncode == 0, proc.stderr
+    lines = [l for l in proc.stdout.splitlines() if l.strip()]
+    assert len(lines) == 6, lines
+
+
+def test_speed_still_skips_its_derivable_roman_rows():
+    """Speed's Roman ranks DO derive from a documented formula, so its narrower
+    scope is correct and must not be swept up by the generalization."""
+    proc = _run_cli("--field", "speed", "--tooltip-worklist")
+    assert proc.returncode == 0, proc.stderr
+    lines = [l for l in proc.stdout.splitlines() if l.strip()]
+
+    assert lines, "speed must still produce work"
+    assert all("{{Speed|" in l for l in lines)
+    assert not [l for l in lines if any(c in l for c in "IVXLCDM")], \
+        "Roman Speed rows derive from a formula and are skipped"
+
+
+def test_an_empty_worklist_exits_nonzero_rather_than_printing_nothing():
+    """A shard with no invocations cannot be refreshed. Printing an empty list and
+    exiting 0 is the inspect-nothing shape this repo bans."""
+    import json
+    import shutil
+    import tempfile
+    shard_path = os.path.join(ROOT, "data", "seed", "compendium", "parrying_version.json")
+    backup = tempfile.NamedTemporaryFile(suffix=".json", delete=False).name
+    shutil.copy(shard_path, backup)
+    try:
+        with open(shard_path) as fh:
+            shard = json.load(fh)
+        for entry in shard["harvested"].values():
+            entry["raw"] = ""
+        with open(shard_path, "w") as fh:
+            json.dump(shard, fh, indent=2)
+
+        proc = _run_cli("--field", "parrying_version", "--tooltip-worklist")
+        assert proc.returncode == 1, "an empty worklist must not exit clean"
+        assert "refusing to report an empty worklist" in proc.stderr
+    finally:
+        shutil.copy(backup, shard_path)
+        os.unlink(backup)
+
+
+def test_compare_tooltips_works_on_the_new_fields():
+    import json
+    for field in ("parrying_version", "heightened_awareness"):
+        shard = _shard(field)
+        path = _write_tmp({k: v["tooltip"] for k, v in shard["snapshots"].items()})
+        try:
+            proc = _run_cli("--field", field, "--compare-tooltips", path)
+            assert proc.returncode == 0, f"{field}: {proc.stderr}"
+            report = json.loads(proc.stdout)
+            assert report["drifted"] == 0 and report["compared"] > 0, f"{field}: {report}"
+        finally:
+            os.unlink(path)

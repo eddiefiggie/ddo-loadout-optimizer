@@ -1,8 +1,19 @@
-# Speed tooltip snapshots — refresh tracker
+# Tooltip snapshots — refresh tracker
 
-**Established:** 2026-08-08 (issue #134)
-**Snapshot store:** `data/seed/compendium/speed_enchantment.json` -> `snapshots`
-**Guard:** `speed_split.check_against_snapshots()`, run on every build
+**Established:** 2026-08-08 (issue #134), extended to Parrying and Heightened
+Awareness 2026-08-08 (issue #169).
+
+| Field | Snapshot store | Guard |
+|---|---|---|
+| `speed` | `speed_enchantment.json` -> `snapshots` | `speed_split.check_against_snapshots()` |
+| `speed_augment` | `speed_augment.json` -> `snapshots` | `speed_split.check_against_snapshots()` |
+| `parrying_version` | `parrying_version.json` -> `snapshots` | `parrying_split.check_against_snapshots()` |
+| `heightened_awareness` | `heightened_awareness.json` -> `snapshots` | `heightened_awareness.check_against_snapshots()` |
+
+All guards run on every build. All are offline — they read the stored snapshot,
+never the wiki. Each affix keeps its OWN guard rather than sharing one: the
+tooltip dialects, provenance rules, and lookups differ, and a generalization
+covering all of them would have to drop assertions one of them needs (KTD1).
 
 This is the registration point for the tooltip refresher. It is a step in the
 wiki-validation loop, not a scheduled job — standing automation against a
@@ -38,6 +49,18 @@ the hand-maintained Arabic rows can move:
 
 ```
 python3 scripts/merge_harvest.py --field speed --tooltip-worklist
+```
+
+**The scope differs per field, and the difference is load-bearing.** Speed skips
+its Roman rows because they derive from a formula. Parrying does NOT: its
+I -> 1, IV -> 2, VIII -> 4 is a three-entry lookup that no formula fits (I breaks
+every ratio), so every invocation including the Roman ones is refreshed. A field
+with no invocations exits **non-zero** rather than printing an empty list, which
+would read identically to "nothing to do".
+
+```
+python3 scripts/merge_harvest.py --field parrying_version --tooltip-worklist
+python3 scripts/merge_harvest.py --field heightened_awareness --tooltip-worklist
 ```
 
 Render them. ddowiki has no server-side transport — `curl` and WebFetch return
@@ -86,3 +109,23 @@ Note: 30 keys rather than 31 raw strings, because `{{Speed|V}}` and
 | Last refreshed | By | Result |
 |---|---|---|
 | 2026-08-08 | initial harvest (#134) | 30/30 stored; no drift to compare against |
+
+## Parrying and Heightened Awareness snapshot state (#169)
+
+Full evidence, per-item citations, and the reasoning behind the Arabic "Saves"
+shorthand live in `parrying-versions.md`. Summary:
+
+| Field | Invocations | Entries | Provenance | Refresh scope |
+|---|---|---|---|---|
+| `parrying_version` | 9 (Arabic 1-6, Roman I/IV/VIII) | 139 | 139 `stated` | **All 9** — the Roman mapping is a lookup, not a formula |
+| `heightened_awareness` | 6 (Arabic 1-6) | 26 | 26 `stated` | All 6 |
+
+Both were rendered and stored on 2026-08-08, and every entry is compared against
+its own tooltip on every build (`compared` is reported separately from `checked`,
+so a shard that resolved no snapshot cannot report a healthy count).
+
+**Watch for:** a `Parrying II` or any Roman numeral outside I/IV/VIII, and any
+Heightened Awareness Roman variant. Both currently fail the build by design —
+they must be harvested, never extrapolated. A new Arabic `Parrying 8` would also
+be significant: its absence today is what makes every stored 8 a flattened
+Roman VIII.

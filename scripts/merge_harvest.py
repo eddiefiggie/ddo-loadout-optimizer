@@ -186,19 +186,39 @@ def main() -> int:
         return 0
 
     if args.tooltip_worklist:
-        # Roman ranks derive from a documented stable formula
-        # (movement = min(5 x rank, 30), attack speed = rank%); only the Arabic
-        # switch is hand-maintained on the wiki and can change under us. Refresh
-        # scope is therefore the Arabic rows, which roughly halves the recurring
-        # cost against a source that throttles after about eight rapid calls.
-        arabic = sorted({e["raw"] for e in (shard.get("harvested") or {}).values()
-                         if e.get("raw") and speed_split.arabic_magnitude(e["raw"]) is not None},
-                        key=lambda r: speed_split.arabic_magnitude(r))
-        for raw in arabic:
+        # Per-field (#169). This used to filter EVERY field's entries through a
+        # `speed`-anchored regex, so any other shard printed an empty list and
+        # exited 0 — the inspect-nothing shape this repo bans, and indistinguishable
+        # from "no work to do".
+        raws = sorted({e["raw"] for e in (shard.get("harvested") or {}).values()
+                       if e.get("raw")})
+        if args.field == "speed":
+            # Speed's Roman ranks derive from a documented stable formula
+            # (movement = min(5 x rank, 30), attack speed = rank%); only the Arabic
+            # switch is hand-maintained on the wiki and can change under us.
+            # Halving the refresh scope matters against a source that throttles
+            # after about eight rapid calls.
+            selected = sorted((r for r in raws
+                               if speed_split.arabic_magnitude(r) is not None),
+                              key=speed_split.arabic_magnitude)
+            note = ("Arabic invocations to re-render "
+                    "(Roman ranks derive from a stable formula and are skipped)")
+        else:
+            # Every other field emits ALL its invocations, Roman included. Parrying's
+            # I -> 1, IV -> 2, VIII -> 4 is a three-entry lookup, NOT a formula
+            # (KTD5) — nothing derives a skipped Roman row, so skipping one would
+            # leave a value nobody ever re-checks.
+            selected = raws
+            note = "invocations to re-render (no derivable rows to skip)"
+
+        for raw in selected:
             print(raw)
-        print(f"# {len(arabic)} Arabic invocations to re-render "
-              f"(Roman ranks derive from a stable formula and are skipped)",
-              file=sys.stderr)
+        print(f"# {len(selected)} {note}", file=sys.stderr)
+        if not selected:
+            print(f"# refusing to report an empty worklist for {args.field!r} — a shard "
+                  "with no invocations cannot be refreshed, and an empty list reads "
+                  "identically to 'nothing to do'", file=sys.stderr)
+            return 1
         return 0
 
     if args.compare_tooltips:
