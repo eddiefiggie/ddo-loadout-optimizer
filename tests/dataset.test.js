@@ -100,12 +100,31 @@ test("U6/KTD6: the four in-scope composites are suggested and presence-flagged",
 
 // KTD6 — R9: these already carry magnitude buckets. The plan must NOT convert
 // them to presence-only; that would strip scoring that works today.
-test("U6/KTD6: Parrying, Riposte and Good Luck score as magnitude, not presence", () => {
+//
+// Re-ratified for #169. `Parrying` left this list because it is now EXPANDED
+// AWAY, not because it became presence-only. The original intent — that its
+// magnitude keeps scoring — is preserved and strengthened: the enchantment
+// grants Insight Armor Class and three Insight saves, and it now scores against
+// those four real stats instead of against its own name. The assertion below
+// pins that replacement, so dropping the expansion would fail here too.
+test("U6/KTD6: Riposte and Good Luck score as magnitude, not presence", () => {
   const v = builtVocab();
   if (!v) return console.log("  (skipped — web/data/items.json not built)");
-  for (const n of ["Parrying", "Riposte", "Good Luck"]) {
+  for (const n of ["Riposte", "Good Luck"]) {
     assert.ok(v.suggestions.includes(n), `${n} is offered as a suggestion`);
     assert.ok(!v.presence.has(n), `${n} is NOT presence-only — it carries a magnitude bucket`);
+  }
+});
+
+test("#169: Parrying's magnitude still scores, via its four expanded stats", () => {
+  const v = builtVocab();
+  if (!v) return console.log("  (skipped — web/data/items.json not built)");
+  assert.ok(!v.suggestions.includes("Parrying"),
+    "Parrying names an enchantment, not a stat — it must not be offered");
+  assert.ok(!v.presence.has("Parrying"), "and it must not have become presence-only");
+  for (const n of ["Armor Class", "Fortitude Save", "Reflex Save", "Will Save"]) {
+    assert.ok(v.suggestions.includes(n), `${n} is rankable — the redirect target exists`);
+    assert.ok(!v.presence.has(n), `${n} scores as a magnitude`);
   }
 });
 

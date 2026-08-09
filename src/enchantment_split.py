@@ -84,11 +84,18 @@ class SplitConfig:
     extras: tuple = ()
     shadow_key: Callable[[dict], object] = field(default=name_only)
     label: str = "shard"
+    # When the record ALREADY carries the primary stat in the same stacking
+    # bucket, drop the folded affix instead of renaming it into a duplicate.
+    # Off for Speed, whose primary (`Movement Speed`) appears on no Speed item —
+    # turning it on there would be a behavior change dressed as a default.
+    dedupe_primary: bool = False
 
     def empty_stats(self) -> dict:
         stats = {"renamed": 0, self.primary_corrected_stat: 0}
         for _key, _name, stat in self.extras:
             stats[stat] = 0
+        if self.dedupe_primary:
+            stats["primary_suppressed"] = 0
         stats["quarantined"] = 0
         stats["uncovered"] = 0
         return stats
@@ -125,15 +132,32 @@ def rewrite_all(records, shard: dict, key_of, cfg: SplitConfig) -> dict:
 
         for affix in folded:
             btype = bonus_type(affix)
-            affix["name"] = cfg.primary_name
-            stats["renamed"] += 1
 
-            primary = value.get(cfg.primary_key)
-            if primary is not None and str(primary) != str(affix.get("value")):
-                # The wiki-stated value wins over the upstream magnitude, which
-                # may be a flattened rank rather than the granted amount.
-                affix["value"] = str(primary)
-                stats[cfg.primary_corrected_stat] += 1
+            # R2a: a same-stat, same-bucket affix already on the record wins.
+            # Renaming into a duplicate would be harmless only because the solver
+            # buckets by max downstream, and "correct because something later
+            # cleans up" is not a property this pipeline relies on. Only the
+            # PRIMARY is dropped — the extras are separate stats and are still
+            # granted.
+            suppressed = False
+            if cfg.dedupe_primary:
+                candidate = {"name": cfg.primary_name, "type": btype}
+                already = {cfg.shadow_key(a) for a in affixes if a is not affix}
+                suppressed = cfg.shadow_key(candidate) in already
+
+            if suppressed:
+                affixes.remove(affix)
+                stats["primary_suppressed"] += 1
+            else:
+                affix["name"] = cfg.primary_name
+                stats["renamed"] += 1
+
+                primary = value.get(cfg.primary_key)
+                if primary is not None and str(primary) != str(affix.get("value")):
+                    # The wiki-stated value wins over the upstream magnitude,
+                    # which may be a flattened rank rather than the granted amount.
+                    affix["value"] = str(primary)
+                    stats[cfg.primary_corrected_stat] += 1
 
             if not eligible:
                 stats["quarantined"] += 1

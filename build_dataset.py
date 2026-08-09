@@ -39,6 +39,7 @@ from src import set_catalog as set_catalog_mod
 from src import harvest as harvest_mod
 from src import material as material_mod
 from src import speed_split as speed_split_mod
+from src import parrying_split as parrying_split_mod
 from src import umbrella as umbrella_mod
 from src import planner_items as planner_mod
 from src import variants as variants_mod
@@ -167,6 +168,7 @@ def assert_affix_synonyms() -> int:
 
 GAP_CORRECTIONS_PATH = os.path.join(HERE, "data", "seed", "gap_corrections.json")
 SPEED_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_enchantment.json")
+PARRYING_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "parrying_version.json")
 SPEED_AUGMENT_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_augment.json")
 MATERIAL_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "item_material.json")
 MATERIAL_CLASS_PATH = os.path.join(HERE, "data", "seed", "compendium", "material_classification.json")
@@ -377,6 +379,23 @@ def build() -> dict:
         raise SystemExit("speed snapshot guard failed:\n  " +
                          "\n  ".join(_speed_guard["problems"]))
     _speed_coverage = speed_split_mod.apply(planner_records, _speed_shard)
+
+    # U7 (#169) — expand the folded `Parrying` affix into the Insight Armor Class
+    # and three Insight saves it actually grants. Same seam and same reasons as the
+    # Speed split above: before variant expansion and before rankable_affixes, so
+    # one corrected affix block flows everywhere downstream.
+    #
+    # The magnitude is a property of the enchantment VERSION, not of the number
+    # upstream stored — nineteen items store 4 and one of them is Roman IV, which
+    # grants 2. The version is per-item wiki evidence; this build never derives it.
+    _parrying_shard = harvest_mod.load_shard(PARRYING_SHARD_PATH, "parrying_version")
+    _parrying_audit = parrying_split_mod.audit_shard(_parrying_shard)
+    _parrying_snapshots = parrying_split_mod.audit_snapshots(_parrying_shard)
+    _parrying_guard = parrying_split_mod.check_against_snapshots(_parrying_shard)
+    if _parrying_guard["problems"]:
+        raise SystemExit("parrying snapshot guard failed:\n  " +
+                         "\n  ".join(_parrying_guard["problems"]))
+    _parrying_coverage = parrying_split_mod.apply(planner_records, _parrying_shard)
 
     # U5 (#162) — stamp wiki-sourced material onto shields + body armor. The
     # gear-planner snapshot has no such field (its full item-field union is
@@ -692,6 +711,14 @@ def build() -> dict:
                                        "shard_audit": _speed_aug_audit,
                                        "tooltip_snapshots": _speed_aug_snapshots,
                                        "tooltip_guard_checked": _speed_aug_guard["checked"]},
+            # The Parrying half (#169). Joins by item NAME, because the wiki page
+            # groups its items by version and the name is the key that grouping
+            # publishes. `armor_class_corrected` counts the items whose stored
+            # magnitude was a flattened Roman rank.
+            "parrying_split_coverage": {**_parrying_coverage,
+                                        "shard_audit": _parrying_audit,
+                                        "tooltip_snapshots": _parrying_snapshots,
+                                        "tooltip_guard_checked": _parrying_guard["checked"]},
             "material_coverage": {**_material_stamp, **_material_coverage},
             # The curated metal/non-metal map the druidic-oath gate reads. A
             # material absent from this map is UNKNOWN, and the gate fails open.
@@ -704,7 +731,8 @@ def build() -> dict:
             # The picker drops them from suggestions and redirects the player to the
             # replacements, instead of offering a priority no item can satisfy.
             "expanded_away_names": {**umbrella_mod.umbrella_expansion(),
-                                    **speed_split_mod.EXPANDED_AWAY},
+                                    **speed_split_mod.EXPANDED_AWAY,
+                                    **parrying_split_mod.EXPANDED_AWAY},
             # U5 — the shared affix-name registry + variant->canonical alias table.
             # The web picker unions every affix source (gear, augments, set bonuses,
             # ALL crafting pools) and canonicalizes each through the alias table, so a
