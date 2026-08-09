@@ -29,6 +29,12 @@ Two exceptions, both of which mean **do not file**:
 - **A note recorded specifically so a later audit does not re-raise it.** Filing it re-raises exactly what the note prevents. `Seeker`'s unmodelled components are the standing example.
 - **A non-goal.** See below.
 
+**A PR that resolves an issue closes it with a keyword — `Closes #N`, not a bare `#N`.** GitHub only auto-closes on `Closes` / `Fixes` / `Resolves`. A bare `#N` links the issue and leaves it open, so closing then depends on somebody remembering days later.
+
+That dependency has already failed. A 2026-08-09 sweep found **five open issues that were fixed and shipped** — #90, #94, #105, #108, and #109 — each named in a merged PR's title or body with no closing keyword. #108 is the sharpest case: PR #113 fixed #107, #111, and #108 together; the first two were closed by hand on two different later days, and the third was simply missed. Across the 60 merged PRs before that sweep, 43 referenced an issue and only 13 used a keyword.
+
+**An issue resolved as already-correct still gets closed, with the evidence.** Some investigations end in "no code change" — #109 closed that way once the reported stacking pair turned out to share a bonus type. That is a result, not an absence of one; record it and close, or the issue reads as untouched forever.
+
 `data/bug_reports.txt` is raw verbatim user feedback and remains the source of record for the *reports*; its issue index is a pointer, not a queue. `docs/solutions/` and `docs/wiki-evidence/` hold resolved knowledge, never open work.
 
 ## Non-goals
@@ -74,4 +80,5 @@ A golden or parity diff after a data change is sometimes expected rather than a 
 
 - Conventional commit prefixes, classified by intent rather than file type. Data and docs changes that fix broken behavior are `fix:`.
 - Work lands through PRs, squash-merged. `main` deploys on every push, so a red build blocks the site.
+- A PR that resolves an issue writes `Closes #N` in the body — a bare `#N` links without closing. See *Open work lives in GitHub Issues*.
 - Markdown tables are pipe-delimited; no box-drawing characters.
