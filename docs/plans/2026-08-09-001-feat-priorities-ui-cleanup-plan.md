@@ -122,7 +122,7 @@ inherits the Advanced control from the same change. No divergence to manage.
 - Percentage-unit support in the solver, which would let `Armor Class (%)`,
   `False Life (%)`, and `Maximum Spell Points (%)` become rankable. Out of scope
   here; noted because it is the reason those three sat out the `CORE_STATS`
-  addition on this branch.
+  addition on this branch. **Tracked as #189.**
 
 ### Success criteria
 

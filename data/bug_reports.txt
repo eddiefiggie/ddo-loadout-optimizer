@@ -4,6 +4,11 @@ Raw, verbatim feedback aggregated from users/testers. This file is the source of
 record for the reports; each cluster is now tracked as a GitHub issue. Add new
 raw reports below the divider; open/annotate issues rather than deleting text here.
 
+GitHub Issues is the single source of truth for open work (see AGENTS.md). The
+index below is a POINTER into it, not a queue — it is not kept current as issues
+close, and it is not the place to check what is still open. Nothing should be
+tracked only here.
+
 ## Tracking issues (filed 2026-08-02 from the reports below)
 
 Bugs:
