@@ -160,6 +160,14 @@ def check_against_snapshots(shard: dict) -> dict:
     aspirational — a numeral outside I/IV/VIII would ride through on whatever
     number the harvest happened to record.
 
+    Reports `compared` separately from `checked`, and refuses to pass when it is
+    zero. `checked` counts entries the guard reached a verdict on, including
+    quarantined ones verified to grant nothing; only `compared` counts a value
+    actually matched against a parsed tooltip. Speed's guard increments its
+    counter for an `unsourced` entry before any snapshot lookup, so a shard whose
+    entries all failed to resolve returns a healthy-looking count having verified
+    no magnitude at all — that is the vacuous pass this split avoids.
+
     Offline — reads only what is already on disk. Raises on an empty shard.
     """
     harvested = (shard or {}).get("harvested") or {}
@@ -169,6 +177,8 @@ def check_against_snapshots(shard: dict) -> dict:
 
     problems = []
     checked = 0
+    compared = 0
+    stated = 0
     for title, entry in sorted(harvested.items()):
         entry = entry or {}
         raw = entry.get("raw") or ""
@@ -181,6 +191,9 @@ def check_against_snapshots(shard: dict) -> dict:
         if provenance not in (STATED, DEFAULTED, UNSOURCED):
             problems.append(f"{title}: unknown provenance {provenance!r}")
             continue
+
+        if provenance == STATED:
+            stated += 1
 
         # Nothing on the wiki page to snapshot. Must grant nothing; audit_shard
         # reports it as a harvest suspect without failing the build.
@@ -216,6 +229,7 @@ def check_against_snapshots(shard: dict) -> dict:
             continue
 
         checked += 1
+        compared += 1
 
         if value.get("armor_class") != stated_ac:
             problems.append(
@@ -237,13 +251,21 @@ def check_against_snapshots(shard: dict) -> dict:
                     f"{title}: Parrying {version} must grant {expected}, but its "
                     f"tooltip states {stated_ac}")
 
-    # Refuse to report a clean run over nothing — but only when the run is
-    # otherwise clean, so a real diagnosis is never buried behind this message.
-    if not checked and not problems:
-        raise ValueError(
-            "parrying guard inspected no entries — refusing to pass")
+    # Every `stated` entry must have reached a comparison. Each failure path
+    # above already appends a problem, so this is belt-and-braces — it catches a
+    # future branch that skips an entry without recording why.
+    if compared < stated:
+        problems.append(
+            f"{stated - compared} `stated` entr(ies) were never compared against a "
+            "tooltip — the guard cannot vouch for them")
 
-    return {"checked": checked, "problems": problems}
+    # Refuse to report a clean run that verified no magnitude — but only when the
+    # run is otherwise clean, so a real diagnosis is never buried behind this.
+    if not compared and not problems:
+        raise ValueError(
+            "parrying guard compared no derived value against a tooltip — refusing to pass")
+
+    return {"checked": checked, "compared": compared, "problems": problems}
 
 
 def apply(records, shard: dict) -> dict:

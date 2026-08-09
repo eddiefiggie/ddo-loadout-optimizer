@@ -146,18 +146,6 @@ def test_a_roman_variant_fails_rather_than_being_read_as_arabic():
     assert report["compared"] == 0
 
 
-def test_compared_is_zero_when_every_entry_is_quarantined():
-    """`checked` alone would report a healthy count over a shard that verified no
-    magnitude at all."""
-    shard = {"harvested": {"A": {"value": {}, "provenance": "unsourced", "raw": ""},
-                           "B": {"value": {}, "provenance": "unsourced", "raw": ""}},
-             "snapshots": {}}
-    report = ha.check_against_snapshots(shard)
-
-    assert report["checked"] == 2 and report["compared"] == 0
-    assert not report["problems"]
-
-
 def test_the_guard_refuses_to_pass_over_an_empty_shard():
     for shard in ({}, {"harvested": {}}):
         try:
@@ -187,3 +175,44 @@ def test_the_built_dataset_expands_every_instance():
     assert coverage["uncovered"] == 0 and coverage["quarantined"] == 0
     assert coverage["tooltip_guard_compared"] == 26, \
         "every entry must have been matched against a parsed tooltip"
+
+
+def test_an_all_unsourced_shard_fails_rather_than_reporting_a_clean_count():
+    shard = {"harvested": {"A": {"value": {}, "provenance": "unsourced", "raw": ""}},
+             "snapshots": {}}
+    try:
+        ha.check_against_snapshots(shard)
+    except ValueError as exc:
+        assert "compared no derived value" in str(exc)
+        return
+    raise AssertionError("a shard that compared nothing must not pass")
+
+
+def test_the_shipped_shard_compares_every_entry():
+    from src import harvest
+    shard = harvest.load_shard(
+        os.path.join(ROOT, "data", "seed", "compendium", "heightened_awareness.json"),
+        "heightened_awareness")
+    report = ha.check_against_snapshots(shard)
+
+    assert not report["problems"], report["problems"][:3]
+    assert report["compared"] == len(shard["harvested"]) == 26
+
+
+def test_the_guard_makes_no_network_call():
+    import socket
+    from src import harvest
+    shard = harvest.load_shard(
+        os.path.join(ROOT, "data", "seed", "compendium", "heightened_awareness.json"),
+        "heightened_awareness")
+
+    real = socket.socket
+
+    def _forbidden(*a, **k):
+        raise AssertionError("the guard must not open a socket")
+
+    socket.socket = _forbidden
+    try:
+        ha.check_against_snapshots(shard)
+    finally:
+        socket.socket = real

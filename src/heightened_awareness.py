@@ -113,6 +113,7 @@ def check_against_snapshots(shard: dict) -> dict:
     problems = []
     checked = 0
     compared = 0
+    stated = 0
     for title, entry in sorted(harvested.items()):
         entry = entry or {}
         raw = entry.get("raw") or ""
@@ -122,6 +123,9 @@ def check_against_snapshots(shard: dict) -> dict:
         if provenance not in (STATED, DEFAULTED, UNSOURCED):
             problems.append(f"{title}: unknown provenance {provenance!r}")
             continue
+
+        if provenance == STATED:
+            stated += 1
 
         # R2: a rank whose tooltip nobody harvested is quarantined. gear-planner's
         # stored number is not evidence — the affix page has to state it.
@@ -162,9 +166,15 @@ def check_against_snapshots(shard: dict) -> dict:
                 f"{title}: derived armor_class={value.get('armor_class')!r} but the "
                 f"tooltip states {stated_ac!r} for {raw!r}")
 
-    if not checked and not problems:
+    if compared < stated:
+        problems.append(
+            f"{stated - compared} `stated` entr(ies) were never compared against a "
+            "tooltip — the guard cannot vouch for them")
+
+    if not compared and not problems:
         raise ValueError(
-            "heightened awareness guard inspected no entries — refusing to pass")
+            "heightened awareness guard compared no derived value against a tooltip "
+            "— refusing to pass")
 
     return {"checked": checked, "compared": compared, "problems": problems}
 

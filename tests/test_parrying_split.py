@@ -292,3 +292,60 @@ def test_the_built_dataset_carries_the_correction_and_no_folded_affix():
                 if a.get("name") == "Armor Class" and a.get("type") == "Insight":
                     seen[it["source_item"]] = a["value"]
     assert seen == want, seen
+
+
+# --- U4: the guard cannot pass vacuously ---------------------------------------
+
+def test_an_all_unsourced_shard_fails_rather_than_reporting_a_clean_count():
+    """Speed's guard increments its counter for an `unsourced` entry BEFORE any
+    snapshot lookup, so a shard that verified nothing returns a healthy-looking
+    number. `compared` is what makes that impossible here."""
+    shard = {"harvested": {"A": {"value": {}, "provenance": "unsourced", "raw": ""},
+                           "B": {"value": {}, "provenance": "unsourced", "raw": ""}},
+             "snapshots": {}}
+    try:
+        parrying_split.check_against_snapshots(shard)
+    except ValueError as exc:
+        assert "compared no derived value" in str(exc)
+        return
+    raise AssertionError("a shard that compared nothing must not pass")
+
+
+def test_a_stated_entry_that_never_reached_a_comparison_is_reported():
+    shard = {"harvested": {"Oathblade": _entry("VIII", 4)}, "snapshots": {}}
+    report = parrying_split.check_against_snapshots(shard)
+
+    assert report["compared"] == 0
+    assert any("no tooltip snapshot" in p for p in report["problems"]), report
+
+
+def test_the_shipped_shard_compares_every_entry():
+    from src import harvest
+    shard = harvest.load_shard(
+        os.path.join(ROOT, "data", "seed", "compendium", "parrying_version.json"),
+        "parrying_version")
+    report = parrying_split.check_against_snapshots(shard)
+
+    assert not report["problems"], report["problems"][:3]
+    assert report["compared"] == len(shard["harvested"]) == 139
+
+
+def test_the_guard_makes_no_network_call():
+    """Offline by construction — it reads a dict. Pinned so a future 'just fetch
+    the tooltip' convenience cannot make the build depend on a throttled wiki."""
+    import socket
+    from src import harvest
+    shard = harvest.load_shard(
+        os.path.join(ROOT, "data", "seed", "compendium", "parrying_version.json"),
+        "parrying_version")
+
+    real = socket.socket
+
+    def _forbidden(*a, **k):
+        raise AssertionError("the guard must not open a socket")
+
+    socket.socket = _forbidden
+    try:
+        parrying_split.check_against_snapshots(shard)
+    finally:
+        socket.socket = real

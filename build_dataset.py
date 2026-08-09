@@ -736,7 +736,8 @@ def build() -> dict:
             "parrying_split_coverage": {**_parrying_coverage,
                                         "shard_audit": _parrying_audit,
                                         "tooltip_snapshots": _parrying_snapshots,
-                                        "tooltip_guard_checked": _parrying_guard["checked"]},
+                                        "tooltip_guard_checked": _parrying_guard["checked"],
+                                        "tooltip_guard_compared": _parrying_guard["compared"]},
             # The Heightened Awareness half (#169). One output stat, no version
             # branch. `compared` counts values actually matched against a parsed
             # tooltip, which `checked` alone would overstate.
