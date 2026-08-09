@@ -86,10 +86,17 @@ function test(name, fn) {
       "the declared 7 beats every Insight item (they cap at 6), netting +1");
     assert.strictEqual(on.chosen.length, off.chosen.length - 1,
       `the beaten item's slot is freed: ${off.chosen.length} -> ${on.chosen.length}`);
+    // U7 — a credit moves ONLY the stat it occupies. `>=` would also accept a
+    // silent gain elsewhere, which is drift the guard exists to catch; the freed
+    // slot serving another priority would show up here and demand attribution.
     for (const stat of ["Constitution", "Physical Sheltering"]) {
-      assert.ok(on.perTarget[stat] >= off.perTarget[stat],
-        `${stat} must not regress when a credit frees a slot (${off.perTarget[stat]} -> ${on.perTarget[stat]})`);
+      assert.strictEqual(on.perTarget[stat], off.perTarget[stat],
+        `${stat} must be untouched by a Combat Mastery credit (${off.perTarget[stat]} -> ${on.perTarget[stat]})`);
     }
+    assert.deepStrictEqual(
+      Object.keys(on.perTarget).filter((k) => on.perTarget[k] !== off.perTarget[k]),
+      ["Combat Mastery"],
+      "exactly one stat moves, and it is the one the credit occupies");
   });
 
   test("AE4 — an empty-bucket credit adds its full value and disturbs nothing", () => {

@@ -383,6 +383,18 @@
   }
 
   // Name + character constraints as [label, value] pairs — the shared export header.
+  /** U6 — declared credits as one readable line, or "" when none are declared.
+   *  Sorted so two exports of the same build compare byte-for-byte regardless of
+   *  the order the player happened to declare them in. */
+  function declaredCreditsLine(declared) {
+    const rows = Object.values(declared || {}).filter(Boolean);
+    if (!rows.length) return "";
+    return rows
+      .map((c) => `${c.stat} +${c.value} ${c.bonus_type}`)
+      .sort()
+      .join("; ");
+  }
+
   function constraintPairs(rec) {
     const i = (rec && rec.inputs) || {};
     return [
@@ -399,6 +411,12 @@
       // loadout. Empty string when undeclared, so the trailing filter drops the line
       // rather than printing "Two Weapon Fighting: No" on every non-dual-wield build.
       ["Two Weapon Fighting", i.twoWeaponFighting ? "Declared" : ""],
+      // U6 (R12) — the declared credits themselves, so a recipient can reproduce
+      // the solve. Distinct from U4's qualifier, which says a number was declared
+      // and unverified; this is the number. Same omit-when-unset idiom as the Two
+      // Weapon Fighting line above — the trailing filter drops it when nothing is
+      // declared, so an undeclared build's exports are unchanged (R3).
+      ["Already have", declaredCreditsLine(i.declaredCredits)],
       ["Gear pool", POOL[i.pool] || i.pool || "all"],
       ["Priorities", (i.priorities || []).join(" > ")],
     ].filter(([, v]) => v !== "" && v != null);
@@ -560,7 +578,7 @@
 
   const api = {
     // resolved-view assembler
-    project, creditNoticeLines,
+    project, creditNoticeLines, declaredCreditsLine,
     // pure primitives (results.js binds these; single definition, no drift)
     affixLabel, itemMl, contributingAffixes, assignAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, satisfiedSets, suppressedHostIds, slotSetNames, activeSetDetail, satisfiedSetDetail,

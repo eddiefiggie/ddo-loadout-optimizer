@@ -640,4 +640,62 @@ test("U4: an undeclared build's exports carry no qualifier", () => {
   }
 });
 
+
+// ---- U6 — the DECLARATION travels with a shared loadout (R12) ----------------
+// Distinct from U4's qualifier, which says a number was declared and unverified.
+// This is the number itself, so a recipient can reproduce the solve.
+
+const DECLARED = {
+  "Combat Mastery||Insight": { stat: "Combat Mastery", bonus_type: "Insight", value: 7 },
+  "Devotion||Sacred": { stat: "Devotion", bonus_type: "Sacred", value: 12 },
+};
+const sharedRec = () => ({
+  name: "Trance Build",
+  inputs: { ml: 34, pool: "all", priorities: ["Combat Mastery", "Devotion"],
+    declaredCredits: JSON.parse(JSON.stringify(DECLARED)) },
+  snapshot: { status: "optimal", chosen: [], setsActive: [],
+    effective: { "Combat Mastery": 12 }, breakdown: {} },
+});
+
+test("U6: every text export carries the declared credits themselves", () => {
+  for (const [fmt, fn] of [["markdown", toMarkdown], ["bbcode", toBBCode],
+                           ["csv", toCsv], ["print", toPrintHtml], ["gearset", toGearset]]) {
+    const out = fn(sharedRec());
+    // Assert the LINE, not just the substrings — "Combat Mastery" also appears in
+    // the priorities list, so a substring check would pass without the credit.
+    const line = (out.match(/[^\n]*[Aa]lready have[^\n]*/) || [""])[0];
+    assert.ok(line, `${fmt} must carry an 'already have' line`);
+    assert.ok(/Combat Mastery \+7 Insight/.test(line),
+      `${fmt} must carry the declared value on that line, got: ${line.trim().slice(0, 120)}`);
+    assert.ok(/Devotion \+12 Sacred/.test(line), `${fmt} carries the second credit too`);
+  }
+});
+
+test("U6: an undeclared build's exports are unchanged", () => {
+  const bare = sharedRec();
+  delete bare.inputs.declaredCredits;
+  for (const [fmt, fn] of [["markdown", toMarkdown], ["bbcode", toBBCode],
+                           ["csv", toCsv], ["print", toPrintHtml], ["gearset", toGearset]]) {
+    const out = fn(bare);
+    assert.ok(!/[Aa]lready have/.test(out), `${fmt} adds no credit line when none is declared`);
+  }
+});
+
+test("U6: the portable JSON carries the credits verbatim in core.inputs", () => {
+  // No round-trip test: there is no reader for the ddo-loadout/v1 envelope, and
+  // exporters.js records import/compare as deferred. Assert the contents; the
+  // backup path (tests/backup.test.js) owns the round-trip.
+  const portable = toPortableJSON(sharedRec());
+  assert.deepStrictEqual(portable.core.inputs.declaredCredits, DECLARED,
+    "the envelope carries the saved record verbatim, so U5's persistence suffices");
+});
+
+test("U6: the credit line lists stat, value and bonus type per declaration", () => {
+  const md = toMarkdown(sharedRec());
+  const line = md.split("\n").find((l) => /[Aa]lready have/.test(l));
+  assert.ok(line, `an 'already have' line must exist; got:\n${md.slice(0, 400)}`);
+  assert.ok(/Combat Mastery/.test(line) && /Devotion/.test(line),
+    `both declarations on one line: ${line}`);
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);
