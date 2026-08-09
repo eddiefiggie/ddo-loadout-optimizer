@@ -491,14 +491,76 @@
     }
 
     return {
-      character: { name: rec && rec.name, constraints: constraintPairs(rec) },
+      character: { name: rec && rec.name, constraints: constraintPairs(rec),
+        // U4 (R9) — the declared-credit qualifier travels with the shared
+        // content model, so every export renders it from the same source the
+        // app's bound notice does. Empty array when nothing was declared.
+        creditNotice: creditNoticeLines(snap) },
       loadout, sets, attribution,
     };
   }
 
+  /** U4 (R9, R10) — the declared-credit qualifier, as plain sentences.
+   *
+   *  ONE source for the app notice and every export. `boundNotice` returns HTML
+   *  from results.js and is not part of this content model, so a qualifier written
+   *  only there would be solve-visible but share-invisible: a recipient would see
+   *  a build asserting an optimal loadout with a player-typed number folded into
+   *  its totals and nothing saying the number was unverified. That is the failure
+   *  mode this repo holds as a standing invariant.
+   *
+   *  Reads `creditReport` (plain JSON on the result), never the live program, so a
+   *  restored character discloses identically without re-solving (KTD6).
+   */
+  function creditNoticeLines(result) {
+    const report = (result && result.creditReport) || [];
+    if (!report.length) return [];
+    const lines = [];
+    const label = (c) => `${c.value} ${c.bonus_type} ${c.stat}`;
+
+    lines.push(`You declared ${report.map(label).join(", ")} as already held. ` +
+      `The optimizer did not verify ${report.length > 1 ? "those numbers" : "that number"} — ` +
+      `${report.length > 1 ? "they are" : "it is"} yours, and the loadout below is optimal given ` +
+      `${report.length > 1 ? "them" : "it"}.`);
+
+    // R10, narrowed per A3: name the best gear the credit beat, read off the solve
+    // already run rather than a second credit-free solve. "In your pool" rather
+    // than "available" — the value is the best the build could field, and saying
+    // more than that would overclaim.
+    for (const c of report) {
+      if (c.beatGear != null) {
+        // No parentheses: markdown escapes them, so raw text people paste into
+        // forums reads "your gear pool \(5\)". Same trap as DECLARED_LABEL.
+        lines.push(`Your declared ${c.bonus_type} ${c.stat} of ${c.value} beat your best ` +
+          `${c.bonus_type} ${c.stat} gear, which is ${c.beatGear}, so that slot went to another priority.`);
+      }
+    }
+    // R9's floor half. Grouped by STAT, not per credit: two credits on one stat
+    // each carry the same floor, and one sentence per credit would read as two
+    // independent explanations of the same verdict.
+    //
+    // The claim is ATTRIBUTION, not necessity. Saying "your gear alone reaches N"
+    // would assert what a credit-free solve produces, which A3 forbids computing —
+    // and that solve is free to pick different gear entirely, so the assertion was
+    // demonstrably false. What the data supports is what the shown loadout's gear
+    // supplies, with the declaration counted alongside it.
+    const byStat = new Map();
+    for (const c of report) {
+      if (c.floor == null) continue;
+      if (!byStat.has(c.stat)) byStat.set(c.stat, []);
+      byStat.get(c.stat).push(c);
+    }
+    for (const [stat, cs] of byStat) {
+      const declared = cs.map((c) => `${c.value} ${c.bonus_type}`).join(" and ");
+      lines.push(`Your floor of ${cs[0].floor} ${stat} counts the declared ${declared} — ` +
+        `the gear in this loadout supplies ${cs[0].gearInLoadout}.`);
+    }
+    return lines;
+  }
+
   const api = {
     // resolved-view assembler
-    project,
+    project, creditNoticeLines,
     // pure primitives (results.js binds these; single definition, no drift)
     affixLabel, itemMl, contributingAffixes, assignAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, satisfiedSets, suppressedHostIds, slotSetNames, activeSetDetail, satisfiedSetDetail,

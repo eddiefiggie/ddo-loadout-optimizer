@@ -73,6 +73,20 @@ var _isBothHandsWeapon = (typeof isBothHandsWeapon !== "undefined")
  *  slot's pick vars sum to 0; free → nothing. Pure + exported for tests. A pin
  *  whose variant isn't in the pool is a silent no-op (the wizard drops an
  *  ineligible pin to free before solving, R17). */
+/** U4 — the x-vars a slot constraint forces OFF, so a disclosure never names gear
+ *  the player locked out. `slotConstraintBodies` emits these as `= 0` bodies; this
+ *  reports the same set as names, because a notice claiming a credit "beat the best
+ *  gear available" must not count an item this build can never equip. */
+function forcedOffSlotVars(xVars, slotConstraints) {
+  const off = new Set();
+  if (!slotConstraints) return off;
+  for (const [slot, c] of Object.entries(slotConstraints)) {
+    if (!c || c.type !== "empty") continue;
+    for (const xv of xVars) if (xv.slot === slot) off.add(xv.name);
+  }
+  return off;
+}
+
 function slotConstraintBodies(xVars, slotConstraints) {
   if (!slotConstraints) return [];
   const bySlot = new Map();
@@ -891,6 +905,7 @@ function buildProgram(model) {
 
   return {
     xVars, zByBucket, cappedStats, targetList: model.targets, model, creditMeta,
+    forcedOffVars: forcedOffSlotVars(xVars, model.query && model.query.slotConstraints),
     extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], _zc: zc,
   };
 }
@@ -1230,8 +1245,83 @@ async function solveLexicographic(model, highs) {
     membershipPlaced: sol.membershipPlaced, setAugmentsPlaced: sol.setAugmentsPlaced,
     breakdown: breakdownByTarget(program, prim), computeScale: computeScale(program),
     capped: { ...program.cappedStats }, floorReport, program,
+    creditReport: buildCreditReport(program, prim, model, floorReport),
   };
 }
+
+/** U4 (R9, R10) — what each declared credit did, as plain JSON on the result.
+ *
+ *  Deliberately DATA, not a render-time read. Both facts the notice needs — the
+ *  gear-only shortfall behind a floor and the best gear value the credit beat —
+ *  live in `program.zByBucket`, and `program` is excluded from the saved snapshot
+ *  as cyclic and non-JSON. KTD6 forbids re-solving a restored character, so a
+ *  notice computed at render time would simply vanish on load, taking the honesty
+ *  surface R9 exists to guarantee with it.
+ *
+ *  Per entry: the declaration, whether it won its bucket, the best eligible gear
+ *  it beat (null when gear won or there was none), the floor it carried (null when
+ *  gear alone already cleared it), and what gear alone reaches in that stat.
+ */
+function buildCreditReport(program, prim, model, floorReport) {
+  const credits = (program && program.creditMeta) ? [...program.creditMeta.values()] : [];
+  if (!credits.length) return [];
+  const unmet = new Set((floorReport || []).map((f) => f.stat));
+  const floors = (model && model.floors) || {};
+  const forcedOff = program.forcedOffVars || new Set();
+  const reachable = (z) => !(z.gates || []).some((g) => forcedOff.has(g));
+
+  return credits.map((c) => {
+    const key = `${c.stat}||${_equivType(c.bonus_type)}`;
+    const zs = program.zByBucket.get(key) || [];
+    // R10 (narrowed per A3): the best gear in the credit's own bucket that this
+    // build could actually field. A contribution gated on a slot the player locked
+    // empty is not "available" to them, and naming it would be flatly false.
+    let bestGearInBucket = 0;
+    for (const z of zs) {
+      if (program.creditMeta.has(z.name)) continue;
+      if (!reachable(z)) continue;
+      if (z.value > bestGearInBucket) bestGearInBucket = z.value;
+    }
+    const creditZ = zs.find((z) => program.creditMeta.get(z.name) === c);
+    const won = !!creditZ && prim(creditZ.name) > 0.5;
+
+    // What the GEAR IN THIS LOADOUT supplies for the stat: the selected non-credit
+    // contribution in each of its buckets.
+    //
+    // This is deliberately NOT "what your gear alone would reach". That is a
+    // counterfactual, and A3 forbids the second solve it would require. An earlier
+    // cut approximated it by substituting the credit's bucket with its best gear
+    // while reading every other bucket off the credit-enabled loadout, which was
+    // wrong twice over: it mixed contributions that compete for one slot (adding a
+    // 6 and a 5 the player cannot wear together), and it ignored that a credit-free
+    // solve is free to pick different items entirely — a model where it reported
+    // "gear alone reaches 5" actually reached 12 without the credit. A number that
+    // describes the shown loadout is one the data supports; the counterfactual is not.
+    let gearInLoadout = 0;
+    for (const [k, list] of program.zByBucket) {
+      if (k.split("||")[0] !== c.stat) continue;
+      let best = 0;
+      for (const z of list) {
+        if (program.creditMeta.has(z.name)) continue;
+        if (prim(z.name) > 0.5 && z.value > best) best = z.value;
+      }
+      gearInLoadout += best;
+    }
+
+    // A floor is ATTRIBUTED to the credit when the credit is counted in a floored
+    // stat's total — not inferred to have been NECESSARY, which needs the solve A3
+    // forbids. An unmet floor is disclosed by floorReport instead.
+    const floor = Number(floors[c.stat]) || null;
+    const countedTowardFloor = (floor && !unmet.has(c.stat) && won) ? floor : null;
+
+    return {
+      stat: c.stat, bonus_type: c.bonus_type, value: c.value,
+      won, beatGear: (won && bestGearInBucket > 0) ? bestGearInBucket : null,
+      floor: countedTowardFloor, gearInLoadout,
+    };
+  });
+}
+
 
 // U1 (alternatives) — solve the existing program with relaxed locks + forced
 // constraints + a chosen gain objective, then a second tie-break minimize to pin
@@ -1396,5 +1486,5 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, DECLARED_LABEL, computeScale, slotConstraintBodies };
+  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars };
 }

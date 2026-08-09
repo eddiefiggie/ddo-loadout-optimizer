@@ -272,4 +272,16 @@ test("U5: the credit map is plain JSON — it survives a stringify round-trip", 
   assert.deepStrictEqual(JSON.parse(JSON.stringify(rec.inputs.declaredCredits)), CREDITS);
 });
 
+
+test("U4/U5: the credit disclosure survives the save path", () => {
+  // The second allowlist. Without creditReport in RESULT_KEEP the credit still
+  // solves correctly on load while the honesty line goes quiet — `program` is
+  // dropped and KTD6 forbids re-solving a restored character.
+  const { stripResult } = require("../web/persist.js");
+  const report = [{ stat: "CM", bonus_type: "Insight", value: 7, won: true, beatGear: 5, floor: 10, gearInLoadout: 5 }];
+  const kept = stripResult({ status: "optimal", creditReport: report, program: { cyclic: true } });
+  assert.deepStrictEqual(kept.creditReport, report, "the disclosure is persisted");
+  assert.strictEqual(kept.program, undefined, "and the program still is not");
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

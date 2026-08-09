@@ -154,6 +154,11 @@
     const view = Proj.project(rec);
     let out = `# ${mdEsc(view.character.name)}\n\n`;
     out += `_Optimal loadout — built with the DDO Loadout Optimizer._\n\n`;
+    // U4 (R9) — the qualifier must ride with the claim it qualifies. A shared build
+    // asserting an optimal loadout, with a player-typed number folded into its
+    // totals and no statement that it was unverified, is exactly the
+    // solve-visible-but-share-invisible failure this repo forbids.
+    for (const line of view.character.creditNotice || []) out += `> ${mdEsc(line)}\n\n`;
     out += view.character.constraints.filter(([k]) => k !== "Character").map(([k, v]) => `**${mdEsc(k)}:** ${mdEsc(v)}`).join("  \n") + "\n\n";
     out += `_${mdEsc(legendText("md"))}_\n\n`;
     out += `## Loadout\n\n`;
@@ -190,6 +195,7 @@
     const view = Proj.project(rec);
     let out = `[b]${bbEsc(view.character.name)}[/b]\n`;
     out += `[i]Optimal loadout — built with the DDO Loadout Optimizer.[/i]\n\n`;
+    for (const line of view.character.creditNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
     out += view.character.constraints.filter(([k]) => k !== "Character").map(([k, v]) => `[b]${bbEsc(k)}:[/b] ${bbEsc(v)}`).join(" | ") + "\n\n";
     out += `[i]${legendText("bb")}[/i]\n\n`;
     out += `[b]Loadout[/b]\n[list]\n`;
@@ -232,6 +238,7 @@
     const view = Proj.project(rec);
     const rows = [];
     for (const [k, v] of view.character.constraints) rows.push(csvRow([k, v]));
+    for (const line of view.character.creditNotice || []) rows.push(csvRow(["Declared", line]));
     rows.push("");
     rows.push(csvRow(["Legend", legendText("csv")]));
     rows.push("");
@@ -271,6 +278,7 @@
     const view = Proj.project(rec);
     let h = `<h1>${htmlEsc(view.character.name)}</h1>`;
     h += `<p class="pc">${view.character.constraints.filter(([k]) => k !== "Character").map(([k, v]) => `<strong>${htmlEsc(k)}:</strong> ${htmlEsc(v)}`).join(" &middot; ")}</p>`;
+    for (const line of view.character.creditNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
     h += `<p class="legend">${htmlEsc(legendText("md"))}</p>`;
     h += `<table><thead><tr><th>Slot</th><th>Item</th><th>ML</th><th>Affixes</th><th>Augments</th><th>Crafting</th></tr></thead><tbody>`;
     for (const it of view.loadout) {

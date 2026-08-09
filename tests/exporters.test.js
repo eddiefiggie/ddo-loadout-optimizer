@@ -614,4 +614,30 @@ test("U3: an undeclared build's exports carry no declared label", () => {
   }
 });
 
+
+// ---- U4 — the declared-credit qualifier reaches every export (R9) -----------
+
+test("U4: every export that claims an optimal loadout carries the qualifier", () => {
+  const r = {
+    name: "Trance", inputs: { ml: 34, pool: "all", priorities: ["CM"] },
+    snapshot: { status: "optimal", chosen: [], setsActive: [], effective: { CM: 12 }, breakdown: { CM: [] },
+      creditReport: [{ stat: "CM", bonus_type: "Insight", value: 7, won: true, beatGear: 5, floor: 10, gearInLoadout: 5 }] },
+  };
+  for (const [fmt, fn] of [["markdown", toMarkdown], ["bbcode", toBBCode], ["csv", toCsv], ["print", toPrintHtml]]) {
+    const out = fn(r);
+    assert.ok(/did not verify/.test(out),
+      `${fmt} asserts an optimal loadout, so it must also say the declared number was unverified`);
+    // The sentences carrying actual numbers must travel too — the qualifier alone
+    // says a number was declared, not what it did.
+    assert.ok(/which is 5/.test(out), `${fmt} carries the displacement figure`);
+    assert.ok(/the gear in this loadout supplies 5/.test(out), `${fmt} carries the floor attribution`);
+  }
+});
+
+test("U4: an undeclared build's exports carry no qualifier", () => {
+  for (const out of [toMarkdown(rec), toBBCode(rec), toCsv(rec), toPrintHtml(rec)]) {
+    assert.ok(!/did not verify/.test(out), "R3 — nothing added when nothing is declared");
+  }
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);
