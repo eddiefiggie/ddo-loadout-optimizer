@@ -209,6 +209,57 @@
     return satisfied ? names.filter((n) => satisfied.has(n)) : names;
   }
 
+  /** Every set each equipped slot contributes to — the SET CONTRIBUTOR resolver.
+   *
+   *  `CONCEPTS.md` names three kinds and only the first lives in item data: an
+   *  intrinsic member (`set_bonus` at rest), a chosen-membership host (Vecna Lost
+   *  Purpose, Cannith Repurposing Station, Dino Set-Bonus), and a wildcard piece
+   *  (the Gem of Many Facets family). The latter two are solver decisions reported
+   *  in `membershipPlaced` / `jokerPlaced` and appear nowhere in the catalog —
+   *  deliberately, since writing a runtime pick into item data would make the
+   *  catalog assert something untrue. A display that reads `set_bonus` alone omits
+   *  a piece the solve counted.
+   *
+   *  Returns a Map keyed `${slot}||${variant_id}` -> [{set, kind}]. A LIST, because
+   *  a Gem takes one membership from each of two independent pools, so one slot
+   *  commonly feeds two sets at once.
+   *
+   *  Suppression applies to the INTRINSIC component only. A Set Augment slotted
+   *  into an item suppresses that item's own sets, and the solver has already
+   *  dropped them; re-adding them here would resurrect a piece the solve removed.
+   *  A runtime pick on a suppressed host is a separate decision and survives.
+   *
+   *  Duplicate-variant caveat: runtime picks key on host variant_id, not slot, so
+   *  when one variant occupies two slots the pick is attributed to the first of
+   *  them. The pick exists once and is reported once — never on both slots. */
+  function setContributors(build) {
+    const suppressed = suppressedHostIds(build);
+    const out = new Map();
+    const keyOf = (c) => `${c.slot}||${c.variant.variant_id}`;
+    for (const c of (build && build.chosen) || []) {
+      const list = [];
+      if (!suppressed.has(c.variant.variant_id)) {
+        for (const sb of c.variant.set_bonus || []) {
+          if (sb.set && !list.some((e) => e.set === sb.set)) list.push({ set: sb.set, kind: "intrinsic" });
+        }
+      }
+      out.set(keyOf(c), list);
+    }
+    // Attach each runtime pick to the first equipped slot holding its host.
+    const attach = (placed, kind) => {
+      for (const pick of placed || []) {
+        if (!pick || !pick.set || !pick.host) continue;
+        const c = ((build && build.chosen) || []).find((x) => x.variant.variant_id === pick.host);
+        if (!c) continue;
+        const list = out.get(keyOf(c));
+        if (list && !list.some((e) => e.set === pick.set && e.kind === kind)) list.push({ set: pick.set, kind });
+      }
+    };
+    attach(build && build.membershipPlaced, "membership");
+    attach(build && build.jokerPlaced, "wildcard");
+    return out;
+  }
+
   /** Active set bonuses with the stats they grant and the slots that yield them. */
   function activeSetDetail(result) {
     const yields = new Map();
@@ -594,7 +645,7 @@
     project, creditNoticeLines, declaredCreditsLine,
     // pure primitives (results.js binds these; single definition, no drift)
     affixLabel, itemMl, contributingAffixes, assignAugments, dinoInsertKey, assignDinoInserts,
-    attributionByTarget, whyThis, satisfiedSets, suppressedHostIds, slotSetNames, activeSetDetail, satisfiedSetDetail,
+    attributionByTarget, whyThis, satisfiedSets, suppressedHostIds, slotSetNames, setContributors, activeSetDetail, satisfiedSetDetail,
     // craft + cue helpers
     buildCraftMaps, craftLabel, craftValue, lunarSolar,
     // constraint header helpers (exporters delegates to these)

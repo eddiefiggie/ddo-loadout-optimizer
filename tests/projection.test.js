@@ -5,7 +5,7 @@ const R = require("../web/results.js");
 
 let passed = 0;
 function test(name, fn) {
-  try { fn(); console.log(`PASS ${name}`); passed++; }
+  try { fn(); if (!process.exitCode) console.log(`PASS ${name}`); passed++; }
   catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); process.exitCode = 1; }
 }
 
@@ -192,4 +192,82 @@ test("U7/P2: a Colorless slot filled by a set-augment copy is reserved (no doubl
   assert.strictEqual(P.assignAugments(chosen2, augmentsPlaced, setAugmentsPlaced).byIndex.has(0), true, "with a spare Colorless slot the ordinary augment lands");
 });
 
-if (!process.exitCode) console.log(`\n${passed} passed`);
+// ---- U3 — the set-contributor resolver ---------------------------------------
+// CONCEPTS.md "Set contributor": three kinds, only the first in item data. A
+// display reading `set_bonus` alone omits a piece the solve counted.
+
+const _sc = (over) => Object.assign({
+  chosen: [
+    { slot: "Ring 1", variant: { variant_id: "RingA", set_bonus: [{ set: "Marshwalker" }] } },
+    { slot: "Trinket", variant: { variant_id: "Gem", set_bonus: [] } },
+  ],
+  membershipPlaced: [], jokerPlaced: [], setAugmentsPlaced: [],
+}, over || {});
+
+test("U3: an intrinsic member reports its static set", () => {
+  const m = P.setContributors(_sc());
+  assert.deepStrictEqual(m.get("Ring 1||RingA"), [{ set: "Marshwalker", kind: "intrinsic" }]);
+  assert.deepStrictEqual(m.get("Trinket||Gem"), []);
+});
+
+test("U3: a wildcard pick is attributed to its slot", () => {
+  const m = P.setContributors(_sc({ jokerPlaced: [{ host: "Gem", group: 0, set: "Marshwalker" }] }));
+  assert.deepStrictEqual(m.get("Trinket||Gem"), [{ set: "Marshwalker", kind: "wildcard" }]);
+});
+
+test("U3: a membership pick is attributed to its slot", () => {
+  const m = P.setContributors(_sc({ membershipPlaced: [{ host: "Gem", set: "Lost Purpose", station: "vecna" }] }));
+  assert.deepStrictEqual(m.get("Trinket||Gem"), [{ set: "Lost Purpose", kind: "membership" }]);
+});
+
+test("U3: one Gem feeds TWO sets — the resolver returns a list", () => {
+  // The Gem takes one membership from EACH of two independent pools, so a singular
+  // "the set it is feeding" is wrong on the common case.
+  const m = P.setContributors(_sc({
+    jokerPlaced: [{ host: "Gem", group: 0, set: "Marshwalker" }, { host: "Gem", group: 1, set: "Dino" }],
+  }));
+  assert.deepStrictEqual(m.get("Trinket||Gem").map((e) => e.set).sort(), ["Dino", "Marshwalker"]);
+});
+
+test("U3: suppression drops the INTRINSIC set but keeps a runtime pick", () => {
+  // A Set Augment suppresses its host's own sets and the solver already dropped
+  // them; re-adding here resurrects a piece the solve removed. A runtime pick on
+  // the same host is a separate decision and survives.
+  const m = P.setContributors(_sc({
+    setAugmentsPlaced: [{ set: "Vecna Unleashed", host: "RingA" }],
+    membershipPlaced: [{ host: "RingA", set: "Lost Purpose", station: "vecna" }],
+  }));
+  assert.deepStrictEqual(m.get("Ring 1||RingA"), [{ set: "Lost Purpose", kind: "membership" }],
+    "the suppressed intrinsic Marshwalker is gone; the runtime pick remains");
+});
+
+test("U3: a duplicate variant reports the pick once, not on both slots", () => {
+  const build = _sc({
+    chosen: [
+      { slot: "Ring 1", variant: { variant_id: "RingA", set_bonus: [] } },
+      { slot: "Ring 2", variant: { variant_id: "RingA", set_bonus: [] } },
+    ],
+    membershipPlaced: [{ host: "RingA", set: "Lost Purpose", station: "cannith" }],
+  });
+  const m = P.setContributors(build);
+  const hits = [...m.values()].filter((l) => l.length > 0);
+  assert.strictEqual(hits.length, 1, "the pick exists once and is reported once");
+});
+
+test("U3: with no runtime picks the resolver agrees with slotSetNames", () => {
+  // The no-change guard: an ordinary build must attribute exactly as before.
+  const build = _sc();
+  const m = P.setContributors(build);
+  for (const c of build.chosen) {
+    assert.deepStrictEqual(m.get(`${c.slot}||${c.variant.variant_id}`).map((e) => e.set),
+      P.slotSetNames(c.variant));
+  }
+});
+
+test("U3: a build with nothing equipped does not throw", () => {
+  assert.doesNotThrow(() => P.setContributors({}));
+  assert.doesNotThrow(() => P.setContributors(null));
+  assert.strictEqual(P.setContributors({}).size, 0);
+});
+
+console.log(`\n${passed} passed`);
