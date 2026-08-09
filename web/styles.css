@@ -793,8 +793,17 @@ input.wz-ml { width: 120px; }
    controls back inline and leaves the panel on its own line beneath them. */
 .wz-adv { order: 1; flex-basis: 100%; margin-top: 2px; padding-top: 6px;
   border-top: 1px dashed var(--border-2); font-size: 0.88em; color: var(--muted); }
-.wz-adv > summary { cursor: pointer; color: var(--faint); list-style-position: outside;
-  padding: 2px 0; min-height: var(--tap-sm, 24px); display: flex; align-items: center; gap: 4px; }
+/* NOT `display: flex`. Chrome drops the disclosure triangle entirely when a
+   <summary> is a flex container, so the control rendered as plain grey text with
+   nothing marking it as expandable — the one affordance the whole row depends on.
+   Left as the default list-item, with an explicit marker so the open/closed state
+   is visible in every engine rather than relying on the UA default. */
+.wz-adv > summary { cursor: pointer; color: var(--faint); padding: 2px 0;
+  min-height: var(--tap-sm, 24px); list-style: none; }
+.wz-adv > summary::-webkit-details-marker { display: none; }
+.wz-adv > summary::before { content: "▸"; display: inline-block; width: 1em;
+  color: var(--faint); transition: transform 0.12s ease; }
+.wz-adv[open] > summary::before { transform: rotate(90deg); }
 .wz-adv > summary:hover { color: var(--text); }
 .wz-adv > summary:focus-visible { outline: none; box-shadow: var(--ring); border-radius: var(--r-1, 6px); }
 /* R5 — the collapsed row still shows that settings are applied. Part of the
