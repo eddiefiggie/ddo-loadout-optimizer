@@ -1236,7 +1236,9 @@ if (typeof window !== "undefined" && window.App) {
     // `<details>`/`<summary>` rather than a button plus a hidden div: keyboard
     // operation and AT semantics come free, and `toggle` is the write point for
     // the open set (KTD1). A presence row renders `.wz-adv-none` instead — R6
-    // gives it no control, but R2 keeps the column so every row lines up (KTD5).
+    // gives it no control. The placeholder is a zero-width marker, NOT a reserved
+    // column — `.wz-adv-none` is display:none, and R2's alignment comes from
+    // `.wz-nm` being the flex-grow element (see styles.css).
     //
     // The badge is part of the summary's TEXT, not a visual-only chip: R5 is
     // about not losing a setting when the panel closes, and a purely visual mark
@@ -1667,9 +1669,22 @@ if (typeof window !== "undefined" && window.App) {
       // legacy floor on a presence-only stat would print "[min 3]" on a loadout
       // the solve produced while ignoring it — a constraint the math never
       // applied. Same rule the #169 migration below follows: clean the state.
+      //
+      // DISCLOSED, never silent. `suppress-dont-erase-user-constraints-on-
+      // transient-invalidity` allows dropping a user constraint from persistent
+      // state only if the drop is surfaced. It matters more here than usual:
+      // "presence-only" is derived from the dataset and provably moves — this
+      // very change found four stats previously misread as on/off that carry
+      // real magnitudes — so a bound erased on one build could be legitimate on
+      // the next, with nothing left to restore.
+      const droppedPresenceBounds = [];
       for (const map of [state.targetCaps, state.targetFloors]) {
         if (!map) continue;
-        for (const stat of Object.keys(map)) if (isPresenceOnly(stat, vocab)) delete map[stat];
+        for (const stat of Object.keys(map)) {
+          if (!isPresenceOnly(stat, vocab)) continue;
+          if (!droppedPresenceBounds.includes(stat)) droppedPresenceBounds.push(stat);
+          delete map[stat];
+        }
       }
       // #169 — a saved character may rank a name that has since been EXPANDED
       // AWAY (`Speed`, `Parrying`, `Heightened Awareness`, the umbrella ability
@@ -1712,6 +1727,16 @@ if (typeof window !== "undefined" && window.App) {
           }
           state.expandedAwayMigrated = _dnMig.migrationMessage(migrated.substitutions, droppedBounds, droppedCredits);
         }
+      }
+      // Append the presence-bound disclosure to the same banner, so one load
+      // never produces two competing notices.
+      if (droppedPresenceBounds.length) {
+        const names = droppedPresenceBounds.map((s) => `"${s}"`).join(", ");
+        const one = droppedPresenceBounds.length === 1;
+        const sentence = `The min/max you had set on ${names} ${one ? "was" : "were"} removed — `
+          + `${one ? "that stat is an on/off effect" : "those stats are on/off effects"} with no value to bound.`;
+        state.expandedAwayMigrated = state.expandedAwayMigrated
+          ? `${state.expandedAwayMigrated} ${sentence}` : sentence;
       }
       state.slotConstraints = i.slotConstraints || {};
       state.constraintsDirty = false;   // loaded constraints are the saved state, not a pending change

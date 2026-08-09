@@ -1169,6 +1169,22 @@ test("F2: cleanBoundMap does not canonicalize keys", () => {
   assert.deepStrictEqual(cleanBoundMap({ PRR: 50 }, aliasVocab), { PRR: 50 });
 });
 
+test("F2: a swept presence bound is DISCLOSED, never silently deleted", () => {
+  // suppress-dont-erase-user-constraints-on-transient-invalidity: dropping a
+  // user constraint from persistent state is allowed only if the drop is
+  // surfaced. It matters especially here because "presence-only" is derived
+  // from the dataset and moves — this change itself reclassified four stats.
+  const load = WIZARD_SRC.slice(WIZARD_SRC.indexOf("const droppedPresenceBounds"),
+    WIZARD_SRC.indexOf("state.slotConstraints = i.slotConstraints"));
+  assert.ok(/droppedPresenceBounds\.push\(stat\)/.test(load), "the swept stats are collected");
+  assert.ok(/state\.expandedAwayMigrated\s*\n?\s*\?/.test(load) || /expandedAwayMigrated\s*=\s*state\.expandedAwayMigrated/.test(load),
+    "the disclosure appends to the existing migration banner rather than replacing it");
+  assert.ok(/min\/max you had set on/.test(load), "the notice names the constraint that was removed");
+  // and it must not fire when nothing was swept
+  assert.ok(/if \(droppedPresenceBounds\.length\)/.test(load),
+    "no banner on a clean load");
+});
+
 test("bundles: a hidden sub-row is actually hidden", () => {
   // Pre-existing: `.wz-bundle-row { display: flex }` is a class rule, so it beats
   // the UA stylesheet's `[hidden] { display: none }`. The tactics/schools/spell-power

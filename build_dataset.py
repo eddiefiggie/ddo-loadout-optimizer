@@ -111,7 +111,10 @@ CORE_STATS = {
     # entire identity is granting that stat ("Solar Gem of Strikethrough", "Solar
     # Gem of Sneak Attack Dice"), in Heroic/Epic/Legendary tiers. That is the
     # opposite of the one-off weapon proc the two-item filter exists to reject; the
-    # filter misses them only because it counts worn items and these are augments.
+    # filter misses them because it counts WORN items and these reach gear by
+    # other routes -- mostly augments, though Sneak Attack Dice also ships on
+    # worn armor via the Dolorous/Fang crafting families, so widening the gate
+    # to count augment sources alone would not cover every entry here.
     "Imbue Dice",                    # Ranger/Inquisitive analogue of Blast Dice
     "Strikethrough",
     "Sneak Attack Dice",
