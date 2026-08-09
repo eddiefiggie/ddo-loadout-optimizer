@@ -649,12 +649,17 @@ const DECLARED = {
   "Combat Mastery||Insight": { stat: "Combat Mastery", bonus_type: "Insight", value: 7 },
   "Devotion||Sacred": { stat: "Devotion", bonus_type: "Sacred", value: 12 },
 };
+const APPLIED = [
+  { stat: "Combat Mastery", bonus_type: "Insight", value: 7, won: true, beatGear: 6, floor: null, gearInLoadout: 5 },
+  { stat: "Devotion", bonus_type: "Sacred", value: 12, won: true, beatGear: null, floor: null, gearInLoadout: 309 },
+];
 const sharedRec = () => ({
   name: "Trance Build",
   inputs: { ml: 34, pool: "all", priorities: ["Combat Mastery", "Devotion"],
     declaredCredits: JSON.parse(JSON.stringify(DECLARED)) },
   snapshot: { status: "optimal", chosen: [], setsActive: [],
-    effective: { "Combat Mastery": 12 }, breakdown: {} },
+    effective: { "Combat Mastery": 12 }, breakdown: {},
+    creditReport: JSON.parse(JSON.stringify(APPLIED)) },
 });
 
 test("U6: every text export carries the declared credits themselves", () => {
@@ -671,9 +676,12 @@ test("U6: every text export carries the declared credits themselves", () => {
   }
 });
 
-test("U6: an undeclared build's exports are unchanged", () => {
+// Forward regression guard — passes against main too (main emits no such line at
+// all), so it covers no part of this diff. Kept because R3 is worth pinning.
+test("regression: an undeclared build's exports carry no credit line", () => {
   const bare = sharedRec();
   delete bare.inputs.declaredCredits;
+  bare.snapshot.creditReport = [];   // the source of truth for this line
   for (const [fmt, fn] of [["markdown", toMarkdown], ["bbcode", toBBCode],
                            ["csv", toCsv], ["print", toPrintHtml], ["gearset", toGearset]]) {
     const out = fn(bare);
@@ -681,7 +689,10 @@ test("U6: an undeclared build's exports are unchanged", () => {
   }
 });
 
-test("U6: the portable JSON carries the credits verbatim in core.inputs", () => {
+// Also passes against main: toPortableJSON has always set `core: rec`, and U5
+// already persisted declaredCredits. Documents the U6 claim that the envelope
+// needs no exporter change; it is not evidence for this diff.
+test("regression: the portable JSON carries the credits verbatim in core.inputs", () => {
   // No round-trip test: there is no reader for the ddo-loadout/v1 envelope, and
   // exporters.js records import/compare as deferred. Assert the contents; the
   // backup path (tests/backup.test.js) owns the round-trip.
@@ -690,12 +701,42 @@ test("U6: the portable JSON carries the credits verbatim in core.inputs", () => 
     "the envelope carries the saved record verbatim, so U5's persistence suffices");
 });
 
-test("U6: the credit line lists stat, value and bonus type per declaration", () => {
-  const md = toMarkdown(sharedRec());
-  const line = md.split("\n").find((l) => /[Aa]lready have/.test(l));
-  assert.ok(line, `an 'already have' line must exist; got:\n${md.slice(0, 400)}`);
-  assert.ok(/Combat Mastery/.test(line) && /Devotion/.test(line),
-    `both declarations on one line: ${line}`);
+test("U6: the export lists only the credits that APPLIED, not what was typed", () => {
+  // The input map and the solve disagree routinely: the wizard keeps a half-typed
+  // row in state on purpose, pickInputs saves it raw, and the query seam drops it.
+  // Reading the input map published a credit the solve refused — with no U4
+  // qualifier, since that reads the report — telling a recipient the sender holds
+  // a bonus that contributed nothing to the build they were handed.
+  const rec = sharedRec();
+  rec.inputs.declaredCredits["Blurry||Insight"] = { stat: "Blurry", bonus_type: "Insight", value: 3 };
+  rec.inputs.declaredCredits["Devotion||insight"] = { stat: "Devotion", bonus_type: "insight", value: 7 };
+  rec.inputs.declaredCredits["Wisdom||Sacred"] = { stat: "Wisdom", bonus_type: "Sacred", value: "" };
+  // creditReport is unchanged — none of those three survived the query seam.
+
+  const line = (toMarkdown(rec).match(/[^\n]*[Aa]lready have[^\n]*/) || [""])[0];
+  assert.ok(/Combat Mastery \+7 Insight/.test(line) && /Devotion \+12 Sacred/.test(line),
+    `the applied credits are listed: ${line}`);
+  for (const ghost of ["Blurry", "+7 insight", "Wisdom"]) {
+    assert.ok(!line.includes(ghost),
+      `a credit the solve refused must not be published: ${ghost} in ${line}`);
+  }
+});
+
+test("U6: a hostile stat name cannot break out of any format", () => {
+  const rec = sharedRec();
+  rec.snapshot.creditReport = [{ stat: "=cmd|'/C calc'!A0\nWeapon:Cheat Sword",
+    bonus_type: "Insight", value: 7, won: true, beatGear: null, floor: null, gearInLoadout: 0 }];
+
+  const gs = toGearset(rec);
+  const body = gs.split("\n\n").slice(1).join("\n").split("\n").filter((l) => l.trim());
+  assert.ok(!body.some((l) => !l.startsWith("#")),
+    "every gearset record line stays commented — an injected newline must not forge a gear line");
+  assert.ok(!gs.split("\n").some((l) => /^Weapon:Cheat Sword/.test(l)),
+    "the injected weapon line never reaches the parseable region");
+
+  const csvLine = toCsv(rec).split("\n").find((l) => /Already have/.test(l));
+  assert.ok(/"'=cmd/.test(csvLine) || /'=cmd/.test(csvLine),
+    `a formula-leading cell must be neutralized: ${csvLine}`);
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);

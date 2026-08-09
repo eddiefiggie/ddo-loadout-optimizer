@@ -383,11 +383,24 @@
   }
 
   // Name + character constraints as [label, value] pairs — the shared export header.
-  /** U6 — declared credits as one readable line, or "" when none are declared.
-   *  Sorted so two exports of the same build compare byte-for-byte regardless of
-   *  the order the player happened to declare them in. */
-  function declaredCreditsLine(declared) {
-    const rows = Object.values(declared || {}).filter(Boolean);
+  /** U6 — the credits that ACTUALLY APPLIED, as one readable line, or "" when
+   *  none did.
+   *
+   *  Reads `creditReport` — the solver's own output — deliberately, NOT the saved
+   *  `inputs.declaredCredits` map. Those two disagree, and the disagreement is
+   *  routine rather than exotic: the wizard keeps a half-typed credit row in state
+   *  on purpose so it does not vanish under the cursor, `pickInputs` saves the raw
+   *  map verbatim, and the query seam then drops anything blank, zero,
+   *  non-integer, out-of-vocabulary, or on a presence stat. Rendering the input
+   *  map published a credit the solve refused — with no accompanying qualifier,
+   *  since U4's notice reads the report — so a recipient was told the sender holds
+   *  a bonus that contributed nothing to the build they were handed. R12 exists so
+   *  a recipient can REPRODUCE the solve; only the applied set can do that.
+   *
+   *  Sorted, so two exports of the same build compare byte-for-byte regardless of
+   *  the order the player declared them in. */
+  function declaredCreditsLine(creditReport) {
+    const rows = (creditReport || []).filter(Boolean);
     if (!rows.length) return "";
     return rows
       .map((c) => `${c.stat} +${c.value} ${c.bonus_type}`)
@@ -416,7 +429,7 @@
       // and unverified; this is the number. Same omit-when-unset idiom as the Two
       // Weapon Fighting line above — the trailing filter drops it when nothing is
       // declared, so an undeclared build's exports are unchanged (R3).
-      ["Already have", declaredCreditsLine(i.declaredCredits)],
+      ["Already have", declaredCreditsLine(((rec && rec.snapshot) || {}).creditReport)],
       ["Gear pool", POOL[i.pool] || i.pool || "all"],
       ["Priorities", (i.priorities || []).join(" > ")],
     ].filter(([, v]) => v !== "" && v != null);
