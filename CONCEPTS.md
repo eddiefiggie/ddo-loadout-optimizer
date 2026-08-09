@@ -28,6 +28,11 @@ A floor is enforced only after a joint-feasibility check confirms the whole set 
 ### Gated contribution
 The unifying primitive for every stat source: a `(stat, bonus_type, value)` that enters the objective only when all of its enabling binaries hold. A worn affix has one gate (its item is equipped); an augment, set bonus, or Dino insert adds more gates (placement chosen, piece threshold met, slot filled). This is what lets heterogeneous sources share one exact model instead of a code path each.
 
+### Declared credit
+A `(stat, bonus_type, value)` the player asserts they already hold from a source the optimizer cannot see — a trance, a past life, a filigree, a ship buff. It is a [[Gated contribution]] with an **empty** gate list: nothing has to be equipped for it to apply, so it competes inside its [[Bonus-type bucket]] exactly as gear does and never sums with gear of the same type.
+
+Two properties follow from the empty gate list and neither is optional. An ungated binary is *available* but not *taken* — only an objective pulls it up, so on any solve path that does not reward the stat it would settle at zero and the reported total would silently omit a bonus the character actually has; the model therefore pins each credited bucket at or above its credit. And it is the only contribution whose value does not trace to the wiki, so it is labelled as declared wherever contributors are shown and qualified wherever the tool claims a proven answer — a player-supplied number folded into a total that is presented as verified is the failure this labelling exists to prevent.
+
 ### Bonus-type bucket
 The `(stat, bonus_type)` group in which at most one contributing value counts. Within a bucket only the single highest *selected* value applies; across buckets (different bonus types on the same stat) values sum. This encodes DDO stacking: same-type does not stack (max), different-type does (add).
 
@@ -99,6 +104,8 @@ Each gate is non-mutating and reports how many references it validated — and t
 Because a gate that matches nothing passes silently and looks identical to a clean run, a gate is only trustworthy once it has been observed to **fail** on deliberately corrupted input, and it should refuse to run when it inspects zero records.
 
 Corrupting one field in isolation does not establish that. A gate comparing a value against a stored reference rejects a single-sided break by construction — only one side moved, so of course they disagree. The corruption that actually tests such a gate moves the value **and** its reference together, which is also the shape a bad harvest produces, since both are written from the same wrong source.
+
+The underlying principle — a check is not trustworthy until it has been watched to fail — applies to ordinary tests too, but the perturbation does not carry across. A gate reads data supplied from outside it, so corrupting that data is the available lever; a test authors the input it consumes, so corrupting the input merely edits the test. What perturbs a test is reverting the *subject*: running it against the code as it stood before the change, where anything that still passes is covering none of it.
 
 ### Harvest provenance
 The trust label carried by every value sourced directly from the wiki, recording *why* it is or is not usable: **stated** (the wiki asserts it outright), **defaulted** (the wiki displays a number, but its own template filled that number in because nobody recorded a real one), or **unsourced** (the page is silent). Only **stated** is solver-eligible.
