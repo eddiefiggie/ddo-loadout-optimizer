@@ -359,6 +359,7 @@
       if (!members.has(set)) members.set(set, []);
       members.get(set).push(m);
     };
+    const countedRuntime = new Set();
     for (const c of build.chosen || []) {
       const isSuppressed = suppressed.has(c.variant.variant_id);
       for (const sb of c.variant.set_bonus || []) {
@@ -367,6 +368,17 @@
       }
       for (const e of contributorsFor(contributors, c.slot, c.variant.variant_id)) {
         addMember(e.set, { slot: c.slot, item: c.variant.variant_id, kind: e.kind });
+        // A runtime pick counts toward the threshold exactly as an intrinsic piece
+        // does — the solver already counted it. Leaving `counts` static-only made
+        // the tier disagree with the member list it sits beside: a set completed BY
+        // a wildcard reported the LOWER tier's grant while naming enough pieces for
+        // the higher one, and every export printed that contradiction. Deduped per
+        // (set, host) so one host holding two picks for the same set counts once.
+        if (e.kind === "intrinsic") continue;
+        const ck = `${e.set}||${c.variant.variant_id}`;
+        if (countedRuntime.has(ck)) continue;
+        countedRuntime.add(ck);
+        counts.set(e.set, (counts.get(e.set) || 0) + 1);
       }
       for (const t of c.variant.parsed_set_bonuses || []) {
         if (t.pieces_required == null) continue;

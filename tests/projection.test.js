@@ -270,4 +270,29 @@ test("U3: a build with nothing equipped does not throw", () => {
   assert.strictEqual(P.setContributors({}).size, 0);
 });
 
+test("U4: a wildcard-completed set reports the tier its members prove", () => {
+  // counts was static-only while members unioned runtime picks, so a set completed
+  // BY a wildcard reported the LOWER tier's grant beside a member list proving the
+  // higher one — and every export printed that contradiction as a shared number.
+  const mk = (id, slot, set) => ({ slot, variant: { variant_id: id, set_bonus: set ? [{ set }] : [],
+    parsed_set_bonuses: set ? [{ set, pieces_required: 2, affixes: [{ stat: "Strength", value: 2 }] },
+                               { set, pieces_required: 3, affixes: [{ stat: "Strength", value: 10 }] }] : [] } });
+  const build = { chosen: [mk("A", "Ring 1", "S3"), mk("B", "Goggles", "S3"), mk("Gem", "Trinket", null)],
+    jokerPlaced: [{ host: "Gem", group: 0, set: "S3" }], membershipPlaced: [], setAugmentsPlaced: [],
+    setsActive: [{ set: "S3", pieces_required: 3, affixes: [{ stat: "Strength", value: 10 }] }] };
+  const d = P.satisfiedSetDetail(build).find((x) => x.set === "S3");
+  assert.strictEqual(d.pieces, 3, "the wildcard counts toward the threshold, as the solver counted it");
+  assert.strictEqual(d.members.length, 3);
+  assert.deepStrictEqual(d.affixes, [{ stat: "Strength", value: 10 }], "and the grant is the tier actually active");
+});
+
+test("U4: one host holding two picks for the same set counts once", () => {
+  const build = { chosen: [{ slot: "Trinket", variant: { variant_id: "Gem", set_bonus: [],
+      parsed_set_bonuses: [{ set: "S2", pieces_required: 1, affixes: [] }, { set: "S2", pieces_required: 2, affixes: [] }] } }],
+    jokerPlaced: [{ host: "Gem", group: 0, set: "S2" }, { host: "Gem", group: 1, set: "S2" }],
+    membershipPlaced: [], setAugmentsPlaced: [], setsActive: [] };
+  const d = P.satisfiedSetDetail(build).find((x) => x.set === "S2");
+  assert.strictEqual(d.pieces, 1, "one host is one piece, not two");
+});
+
 console.log(`\n${passed} passed`);
