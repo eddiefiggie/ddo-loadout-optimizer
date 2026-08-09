@@ -125,4 +125,31 @@ test("mergeInto per-name updates collisions, adds new, keeps others; replace wip
   assert.deepStrictEqual(Object.keys(replaced).sort(), ["Sook", "Torin"]);
 });
 
+
+// ---- U5 — declared credits survive the backup round-trip (R11) --------------
+
+test("U5: declared credits survive export and import", () => {
+  // backup.js imports persist.js's INPUT_KEYS precisely so the save path and the
+  // import path cannot drift; this is the assertion that proves the new key rode
+  // along rather than being silently stripped on import.
+  const credits = {
+    "Combat Mastery||Insight": { stat: "Combat Mastery", bonus_type: "Insight", value: 7 },
+    "Devotion||Sacred": { stat: "Devotion", bonus_type: "Sacred", value: 12 },
+  };
+  const r = rec("Trance", 34);
+  r.inputs.declaredCredits = credits;
+  const parsed = parseBackup(JSON.stringify(serializeAll({ Trance: r }, {})));
+  assert.ok(parsed.ok, `backup must parse: ${parsed.error || ""}`);
+  assert.deepStrictEqual(parsed.characters.Trance.inputs.declaredCredits, credits,
+    "an imported character keeps the credits it was exported with");
+});
+
+test("U5: a backup with no credits imports as having none", () => {
+  const parsed = parseBackup(JSON.stringify(serializeAll({ Old: rec("Old", 30) }, {})));
+  assert.ok(parsed.ok);
+  const out = parsed.characters.Old.inputs.declaredCredits;
+  assert.ok(out === undefined || (out && Object.keys(out).length === 0),
+    `a pre-feature backup must not gain credits, got ${JSON.stringify(out)}`);
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

@@ -962,4 +962,40 @@ test("U2: an unusable credit row neither reads as declared nor reserves its type
     "usedTypes counts only rows the solver would keep");
 });
 
+// ---- U5 — declared credits persist with the character (R11) -----------------
+
+test("U5: credits are restored BEFORE the priority migration runs", () => {
+  // Same ordering constraint as the bounds (#169): the migration cleans stat-keyed
+  // state, so a restore that ran after it would overwrite the cleanup and bring
+  // the orphan back.
+  const cred = WIZARD_SRC.indexOf("state.declaredCredits = (i.declaredCredits");
+  const mig = WIZARD_SRC.indexOf("migratePriorities(state.priorities");
+  assert.ok(cred > 0, "the credit restore exists in loadCharacter");
+  assert.ok(mig > 0);
+  assert.ok(cred < mig,
+    "declaredCredits must be restored before the migration, or the restore undoes the sweep");
+});
+
+test("U5: a credit whose priority the migration drops does not survive as an orphan", () => {
+  // Credits are keyed `stat||bonusType`, so the stat-keyed cleanup loop that
+  // handles targetCaps/targetFloors cannot reach them — an expanded-away priority
+  // would leave a credit in the query for a stat the player can no longer see or
+  // remove.
+  const at = WIZARD_SRC.indexOf("for (const sub of migrated.substitutions)");
+  assert.ok(at > 0, "the migration cleanup loop exists");
+  const loop = WIZARD_SRC.slice(at, at + 900);
+  assert.ok(/state\.declaredCredits/.test(loop), "the cleanup sweeps credits too");
+  assert.ok(/c\.stat === sub\.from/.test(loop),
+    "and matches on the credit's own stat, since the key is not the stat alone");
+});
+
+test("U5: the credit map is in the persistence allowlist the wizard state feeds", () => {
+  const { INPUT_KEYS } = require("../web/persist.js");
+  assert.ok(INPUT_KEYS.includes("declaredCredits"));
+  // The state initializer must define the field, or a never-declared character
+  // saves `undefined` and the loader cannot tell it from a pre-feature save.
+  assert.ok(/declaredCredits: \{\},/.test(WIZARD_SRC),
+    "state initializes declaredCredits so the saved shape is always a map");
+});
+
 console.log(`\n${passed} passed`);

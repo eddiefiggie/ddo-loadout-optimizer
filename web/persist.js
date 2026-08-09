@@ -36,6 +36,9 @@
     "style", "weaponTypes", "offHand", "offHandWeapons", "twoWeaponFighting",
     "includeArtifact", "ownedSetAugments", "pool", "ownedNames", "priorities", "slotConstraints",
     "targetCaps", "targetFloors",
+    // U2/U5 — declared stat credits, keyed `stat||bonusType`. Plain JSON, so it
+    // needs no special serialization the way the two Sets above do.
+    "declaredCredits",
   ];
 
   function pickInputs(state, name) {

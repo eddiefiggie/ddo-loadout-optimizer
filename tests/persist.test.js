@@ -236,4 +236,35 @@ test("U1/003 (R9): the declaration is a saved input and survives the round trip"
   assert.strictEqual(pickInputs(legacy, "Rogue").twoWeaponFighting, false, "a pre-U1 save defaults to undeclared");
 });
 
+
+// ---- U5 — declared stat credits persist with the character (R11) ------------
+
+const CREDITS = {
+  "Combat Mastery||Insight": { stat: "Combat Mastery", bonus_type: "Insight", value: 7 },
+  "Combat Mastery||Sacred": { stat: "Combat Mastery", bonus_type: "Sacred", value: 4 },
+};
+
+test("U5: declared credits join the saved-input allowlist and round-trip", () => {
+  assert.ok(INPUT_KEYS.includes("declaredCredits"),
+    "the credit map must be in the single allowlist backup.js also imports, or save and import drift");
+  const rec = serializeCharacter("Trance", { ...state, declaredCredits: CREDITS }, lastRun, "idc");
+  assert.deepStrictEqual(rec.inputs.declaredCredits, CREDITS,
+    "both credits on one stat survive — the map is keyed (stat, bonus type), not by stat");
+});
+
+test("U5: a character saved before this feature loads as having no credits", () => {
+  const legacy = { ...state };
+  delete legacy.declaredCredits;
+  const out = pickInputs(legacy, "Old").declaredCredits;
+  assert.ok(out === undefined || (out && Object.keys(out).length === 0),
+    `a pre-feature save must not resurrect credits, got ${JSON.stringify(out)}`);
+});
+
+test("U5: the credit map is plain JSON — it survives a stringify round-trip", () => {
+  // Unlike ownedNames/ownedSetAugments it needs no Set handling, which is the
+  // reason it is a bare allowlist entry rather than a special case in pickInputs.
+  const rec = serializeCharacter("Trance", { ...state, declaredCredits: CREDITS }, lastRun, "idd");
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(rec.inputs.declaredCredits)), CREDITS);
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);
