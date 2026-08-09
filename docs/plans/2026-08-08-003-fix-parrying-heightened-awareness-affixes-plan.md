@@ -100,9 +100,9 @@ Verifying at the wiki rather than from the audit's single-value template render 
 
 ### Scope Boundaries
 
-- `Command`. Its template grants a Charisma-skills bonus *and* a −6 Hide penalty, and penalties may not be representable at all today. That is a product decision to settle before any modelling.
-- The audit's six unresolved templates — `Combustion`, `Concealment`, `Search`, `Elemental Resistance`, `Enhancement Bonus`, `Spell Lore`. Each needs a type or element argument to render and remains unknown, not clean.
-- `Seeker`. Its components are not modelled as separate stats, so nothing is currently dropped. Recorded so a later audit does not re-raise it.
+- `Command`. Its template grants a Charisma-skills bonus *and* a −6 Hide penalty, and penalties may not be representable at all today. That is a product decision to settle before any modelling. **Tracked as #192** — note the issue records that this "not representable" premise looks stale (`src/affix_parser.py:59` captures sign so penalties keep their negative value).
+- The audit's six unresolved templates — `Combustion`, `Concealment`, `Search`, `Elemental Resistance`, `Enhancement Bonus`, `Spell Lore`. Each needs a type or element argument to render and remains unknown, not clean. **Tracked as #191, for four of the six:** `Concealment` was resolved downstream by #140/U5 (boolean-composite decomposition) and `Spell Lore` carries a standing no-fix ruling (`docs/wiki-evidence/spell-lore.md`), so both are deliberately excluded.
+- `Seeker`. Its components are not modelled as separate stats, so nothing is currently dropped. Recorded so a later audit does not re-raise it. **Deliberately not filed** — filing it would re-raise exactly what this note prevents (see the Open-work rule in `AGENTS.md`).
 - Parrying items the dataset does not carry. The wiki's Roman groups hold fourteen entries but twelve unique names — `Epic Swashbuckler (legacy) (level 20)` and `Swashbuckler (legacy) (level 16)` each appear under both IV and VIII. Five are in the dataset, so nine entries across seven names are absent; they need no correction until they arrive.
 
 ### Dependencies and Assumptions

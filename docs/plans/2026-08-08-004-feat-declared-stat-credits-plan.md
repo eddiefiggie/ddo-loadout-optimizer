@@ -339,7 +339,7 @@ Baseline capture is a prerequisite, not a step: the no-credit-equivalence gate c
   - The portable JSON's verbatim record includes credits without an exporter change.
   - Every export asserting an optimal loadout carries the declared-credit qualifier from U4.
 - **Verification:** the portable JSON's `core.inputs` carries the credits verbatim, and the backup export/import round-trip restores them.
-- **Execution note:** Do not write a round-trip test against the portable envelope. There is no reader for `ddo-loadout/v1` — `web/import.js` parses the Trove inventory CSV, `web/backup.js` reads the backup format, and `web/exporters.js` records import/compare as deferred future work. Assert the envelope's contents directly, and use the backup path for the round-trip.
+- **Execution note:** Do not write a round-trip test against the portable envelope. There is no reader for `ddo-loadout/v1` — `web/import.js` parses the Trove inventory CSV, `web/backup.js` reads the backup format, and `web/exporters.js` records import/compare as deferred future work (**tracked as #190**). Assert the envelope's contents directly, and use the backup path for the round-trip.
 
 ### U7. Re-ratify golden and parity fixtures
 
