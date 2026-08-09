@@ -560,4 +560,52 @@ test("U3: user text is newline-neutralized so it cannot forge a gear line", () =
     "and every physical line below stays commented");
 });
 
+
+// ---- U3 — a declared credit is labelled in EVERY export (R8) ----------------
+// The invariant this repo holds: a mechanic must never be solve-visible but
+// share-invisible. A shared loadout has to show which numbers the recipient's own
+// gear produces and which one the sender asserted.
+
+const creditRec = {
+  name: "Trance Build",
+  inputs: { ml: 34, race: "Human", pool: "all", priorities: ["Combat Mastery"],
+    declaredCredits: { "Combat Mastery||Insight": { stat: "Combat Mastery", bonus_type: "Insight", value: 7 } } },
+  snapshot: {
+    status: "optimal",
+    chosen: [{ slot: "Ring", variant: { variant_id: "Plain Ring", ml: 30,
+      affixes: [{ name: "Combat Mastery", type: "Enhancement", value: 5 }] } }],
+    setsActive: [],
+    effective: { "Combat Mastery": 12 },
+    breakdown: {
+      "Combat Mastery": [
+        { bonus_type: "Enhancement", value: 5, source: "Plain Ring", sourceKind: "worn", slot: "Ring", hostIds: ["Plain Ring"] },
+        { bonus_type: "Insight", value: 7, source: "declared, not from gear", sourceKind: "declared", slot: null, hostIds: null },
+      ],
+    },
+  },
+};
+
+test("U3: every text export labels a declared credit as declared", () => {
+  const outs = { markdown: toMarkdown(creditRec), bbcode: toBBCode(creditRec),
+    csv: toCsv(creditRec), print: toPrintHtml(creditRec) };
+  for (const [fmt, out] of Object.entries(outs)) {
+    assert.ok(/declared, not from gear/.test(out),
+      `${fmt} must name the declared credit — a shared build that hides it presents a player-typed number as sourced`);
+    assert.ok(/Insight/.test(out) && /\+7/.test(out), `${fmt} keeps the credit's type and value`);
+  }
+});
+
+test("U3: a declared credit is not attributed to a slot in exports", () => {
+  const md = toMarkdown(creditRec);
+  const line = md.split("\n").find((l) => /declared, not from gear/.test(l));
+  assert.ok(line, "the declared line exists");
+  assert.ok(!/ via /.test(line), `a credit occupies no slot, got: ${line.trim()}`);
+});
+
+test("U3: an undeclared build's exports carry no declared label", () => {
+  for (const out of [toMarkdown(rec), toBBCode(rec), toCsv(rec), toPrintHtml(rec)]) {
+    assert.ok(!/declared, not from gear/.test(out), "R3 — nothing added when nothing is declared");
+  }
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

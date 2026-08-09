@@ -912,3 +912,37 @@ test("U6/003: the declared disclosure composes with the existing ML/floor/cap pa
   assert.ok(/Held at your cap: Dodge 4/.test(note), "the held cap still shows");
   assert.ok(/shields, orbs, and rune arms/i.test(note), "alongside the new disclosure");
 });
+
+// ---- U3 — a declared credit renders distinguishably (R8) ---------------------
+
+test("U3: a declared contributor renders its own label, not a bare em-dash", () => {
+  // Before U3 a credit resolved to {kind:"other", label: undefined} and rendered
+  // as "— · " — an unexplained row the moment U2 made credits reachable.
+  const html = R.attributionList([
+    { bonus_type: "Insight", value: 7, source: "declared, not from gear",
+      sourceKind: "declared", slots: [], hostIds: [], isSet: false },
+  ]);
+  assert.ok(/is-declared/.test(html), "it carries its own row class");
+  assert.ok(/declared, not from gear/.test(html), "and says so in words");
+  assert.ok(!/—\s*<\/span>/.test(html), "no empty slot cell");
+  assert.ok(!/undefined/.test(html), "and no undefined source");
+  assert.ok(/\+7/.test(html) && /Insight/.test(html), "value and bonus type still shown");
+});
+
+test("U3: a declared contributor is distinguishable from identical gear", () => {
+  const common = { bonus_type: "Insight", value: 7, slots: [], hostIds: [], isSet: false };
+  const dec = R.attributionList([{ ...common, source: "declared, not from gear", sourceKind: "declared" }]);
+  const gear = R.attributionList([{ ...common, source: "Some Ring", sourceKind: "worn", slots: ["Ring"] }]);
+  assert.notStrictEqual(dec, gear, "the two must not render identically");
+  assert.ok(/is-declared/.test(dec) && !/is-declared/.test(gear));
+  assert.ok(/attrib-declared/.test(dec), "and gets its own span, like a set bonus does");
+});
+
+test("U3: the declared row explains itself on hover", () => {
+  const html = R.attributionList([
+    { bonus_type: "Insight", value: 7, source: "declared, not from gear",
+      sourceKind: "declared", slots: [], hostIds: [], isSet: false },
+  ]);
+  assert.ok(/title="[^"]*not verified[^"]*"/i.test(html),
+    "R9 — the player must be able to tell this number was not verified");
+});

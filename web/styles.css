@@ -789,6 +789,11 @@ input.wz-ml { width: 120px; }
 .wz-credit button, .wz-credit-add { background: none; border: 1px dashed var(--border-2); color: var(--faint);
   border-radius: var(--r-1, 6px); padding: 1px 6px; font-size: 0.8em; min-height: 0; cursor: pointer; }
 .wz-credit button:hover, .wz-credit-add:hover { color: var(--text); border-color: var(--accent); }
+/* U3 — a declared credit in the contributor list. Its own treatment, like a set
+   bonus, because it is the one contributor the player supplied rather than the
+   tool sourcing it from the wiki. */
+.attrib-row.is-declared .attrib-type { font-style: italic; }
+.attrib-declared { color: var(--muted); font-style: italic; border-bottom: 1px dotted var(--border-2); cursor: help; }
 .wz-ctl { display: flex; gap: 4px; }
 .wz-ctl button { background: var(--panel); border: 1px solid var(--border-2); color: var(--muted);
   width: 32px; height: 32px; min-height: 0; padding: 0; flex: none; display: flex; align-items: center;

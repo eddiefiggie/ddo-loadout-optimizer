@@ -148,5 +148,84 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
     assert.ok(!html.includes("+1"), "no +1 for a boolean contribution");
   });
 
+
+  // ---- U3 — a declared credit is attributed AS declared (R8) ------------------
+  const Proj = require("../web/projection.js");
+  const credit = (stat, bonus_type, value) => ({ stat, bonus_type, value });
+  const creditModel = (extra) => Object.assign({
+    targets: ["CM"], mlCap: 34, dodgeCap: null,
+    credits: [credit("CM", "Insight", 7)],
+    worn: [slot("Ring", [item("ring", "Ring", [["CM", "Enhancement", 5]])])],
+  }, extra || {});
+
+  await test("U3: a credit appears as a contributor marked declared, with no slot", async () => {
+    const r = await S.solveLexicographic(creditModel(), highs);
+    assert.strictEqual(r.effective.CM, 12, "premise: 7 credit + 5 enhancement across buckets");
+
+    const part = r.breakdown.CM.find((p) => p.bonus_type === "Insight");
+    assert.ok(part, "the credit is present in the breakdown");
+    assert.strictEqual(part.sourceKind, "declared",
+      `a gateless contribution must resolve to the declared kind, got ${part.sourceKind}`);
+    assert.ok(part.source && /declar/i.test(part.source),
+      `its label must say it was declared, got ${JSON.stringify(part.source)}`);
+    assert.strictEqual(part.slot, null, "a credit occupies no slot");
+    assert.strictEqual(part.hostIds, null, "and is driven by no item");
+  });
+
+  await test("U3: a credit is distinguishable from gear with the same value", async () => {
+    // Same stat AND same bonus type is impossible (one bucket, one contributor),
+    // so the honest comparison is same stat + same value in a different bucket.
+    const r = await S.solveLexicographic(creditModel({ credits: [credit("CM", "Insight", 5)] }), highs);
+    const parts = r.breakdown.CM;
+    assert.strictEqual(parts.length, 2);
+    const dec = parts.find((p) => p.sourceKind === "declared");
+    const gear = parts.find((p) => p.sourceKind === "worn");
+    assert.ok(dec && gear, "one of each kind");
+    assert.strictEqual(dec.value, gear.value, "premise: identical magnitudes");
+    assert.notStrictEqual(dec.source, gear.source, "but they must not read the same");
+  });
+
+  await test("U3: a credit that lost its bucket does not appear as a contributor", async () => {
+    const r = await S.solveLexicographic(creditModel({
+      credits: [credit("CM", "Insight", 4)],
+      worn: [slot("Ring", [item("ring", "Ring", [["CM", "Insight", 9]])])],
+    }), highs);
+    assert.strictEqual(r.effective.CM, 9);
+    assert.ok(!r.breakdown.CM.some((p) => p.sourceKind === "declared"),
+      "the beaten credit contributes nothing and must not be listed");
+  });
+
+  await test("U3: the credit stays in the breakdown under a cap, and the sum reconciles", async () => {
+    // Under a cap nothing forces a contributor's z to 1 once the stat reaches its
+    // bound. Pre-existing for gear, but a CREDIT vanishing from a clamped breakdown
+    // reads as a new bug — U1's per-bucket floor is what keeps it pinned.
+    const r = await S.solveLexicographic(creditModel({ userCaps: { CM: 9 } }), highs);
+    assert.strictEqual(r.effective.CM, 9, "clamped to the cap");
+    const dec = r.breakdown.CM.find((p) => p.sourceKind === "declared");
+    assert.ok(dec, "the credit must still be listed under a clamped total");
+    assert.strictEqual(dec.value, 7);
+    const raw = r.breakdown.CM.reduce((s, p) => s + p.value, 0);
+    assert.ok(raw >= r.effective.CM, `raw ${raw} must be >= clamped ${r.effective.CM}`);
+  });
+
+  await test("U3: the equipped-item explanation never attributes a credit to an item", async () => {
+    const r = await S.solveLexicographic(creditModel(), highs);
+    assert.ok(r.chosen.some((c) => c.variant.variant_id === "ring"), "premise: the ring is equipped");
+    const wins = Proj.whyThis(r, { slot: "Ring", variant_id: "ring" });
+    const cm = wins.find((w) => w.stat === "CM");
+    assert.ok(cm, "the ring wins CM");
+    assert.strictEqual(cm.value, 5, `the ring is credited with 5, not the credit's 7 — got ${cm.value}`);
+  });
+
+  await test("U3: the projection carries the declared kind through to the view", async () => {
+    const r = await S.solveLexicographic(creditModel(), highs);
+    const attr = Proj.attributionByTarget(r);
+    const dec = (attr.CM || []).find((c) => c.sourceKind === "declared");
+    assert.ok(dec, "attributionByTarget must surface the declared contributor");
+    assert.deepStrictEqual(dec.slots, [], "no slots to show");
+    assert.deepStrictEqual(dec.hostIds, [], "and no host item");
+    assert.strictEqual(dec.isSet, false);
+  });
+
   console.log(`\n${passed} passed`);
 })();
