@@ -265,6 +265,49 @@ function openPanelClear() {
   openPanels.clear();
   return openPanels;
 }
+/** The `open` attribute text for one row's panel — the READ side of the set.
+ *  Exported so the read seam is covered by behavior rather than by a regex over
+ *  the markup: deleting the read is the mutation that silently reverts KTD1
+ *  entirely (every panel renders closed, so the panel snaps shut on the click
+ *  it exists to survive) while a source assertion on the surrounding template
+ *  still passes. */
+function panelOpenAttr(stat) {
+  return openPanels.has(stat) ? " open" : "";
+}
+
+/** Drop bounds on on/off-only stats from a character's state, returning the stat
+ *  names dropped so the caller can disclose them.
+ *
+ *  Pure over `state`'s two bound maps, and exported, because the load-time
+ *  version of this lived inside the DOM closure where only its source text could
+ *  be asserted — and a source assertion happily survives both deleting the
+ *  `isPresenceOnly` guard (which then erases EVERY bound the player ever set)
+ *  and deleting the delete itself (which leaves the notice claiming a removal
+ *  that never happened). Both are silent, total-data-loss-shaped regressions. */
+function sweepPresenceBounds(state, vocab) {
+  const dropped = [];
+  const s = state || {};
+  for (const map of [s.targetCaps, s.targetFloors]) {
+    if (!map || typeof map !== "object") continue;
+    for (const stat of Object.keys(map)) {
+      if (!isPresenceOnly(stat, vocab)) continue;
+      if (!dropped.includes(stat)) dropped.push(stat);
+      delete map[stat];
+    }
+  }
+  return dropped;
+}
+
+/** The load banner sentence for swept presence bounds — "" when none. Pure and
+ *  exported so the disclosure's wording and its not-firing-on-a-clean-load are
+ *  both real assertions. */
+function presenceBoundNotice(dropped) {
+  if (!dropped || !dropped.length) return "";
+  const names = dropped.map((s) => `"${s}"`).join(", ");
+  const one = dropped.length === 1;
+  return `The min/max you had set on ${names} ${one ? "was" : "were"} removed — `
+    + `${one ? "that stat is an on/off effect" : "those stats are on/off effects"} with no value to bound.`;
+}
 
 /** Pure state -> solver query mapping (no DOM). Exported for unit tests.
  *  `vocab` is the picker vocabulary; callers inside the wizard closure pass it so
@@ -591,7 +634,7 @@ function addBundle(key, current, vocab) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, sweepPresenceBounds, presenceBoundNotice, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -1253,7 +1296,7 @@ if (typeof window !== "undefined" && window.App) {
     }
 
     function advancedHTML(stat, i, adv) {
-      return `<details class="wz-adv" data-adv="${esc(stat)}"${openPanels.has(stat) ? " open" : ""}>
+      return `<details class="wz-adv" data-adv="${esc(stat)}"${panelOpenAttr(stat)}>
         <summary>${advSummaryHTML(adv)}</summary>
         <div class="wz-adv-body">
           <p class="wz-adv-lead">${ADVANCED_PANEL_HELP.lead}</p>
@@ -1677,15 +1720,7 @@ if (typeof window !== "undefined" && window.App) {
       // very change found four stats previously misread as on/off that carry
       // real magnitudes — so a bound erased on one build could be legitimate on
       // the next, with nothing left to restore.
-      const droppedPresenceBounds = [];
-      for (const map of [state.targetCaps, state.targetFloors]) {
-        if (!map) continue;
-        for (const stat of Object.keys(map)) {
-          if (!isPresenceOnly(stat, vocab)) continue;
-          if (!droppedPresenceBounds.includes(stat)) droppedPresenceBounds.push(stat);
-          delete map[stat];
-        }
-      }
+      const droppedPresenceBounds = sweepPresenceBounds(state, vocab);
       // #169 — a saved character may rank a name that has since been EXPANDED
       // AWAY (`Speed`, `Parrying`, `Heightened Awareness`, the umbrella ability
       // names). The add-a-priority paths refuse those, but this one restored them
@@ -1730,13 +1765,10 @@ if (typeof window !== "undefined" && window.App) {
       }
       // Append the presence-bound disclosure to the same banner, so one load
       // never produces two competing notices.
-      if (droppedPresenceBounds.length) {
-        const names = droppedPresenceBounds.map((s) => `"${s}"`).join(", ");
-        const one = droppedPresenceBounds.length === 1;
-        const sentence = `The min/max you had set on ${names} ${one ? "was" : "were"} removed — `
-          + `${one ? "that stat is an on/off effect" : "those stats are on/off effects"} with no value to bound.`;
+      const presenceNotice = presenceBoundNotice(droppedPresenceBounds);
+      if (presenceNotice) {
         state.expandedAwayMigrated = state.expandedAwayMigrated
-          ? `${state.expandedAwayMigrated} ${sentence}` : sentence;
+          ? `${state.expandedAwayMigrated} ${presenceNotice}` : presenceNotice;
       }
       state.slotConstraints = i.slotConstraints || {};
       state.constraintsDirty = false;   // loaded constraints are the saved state, not a pending change

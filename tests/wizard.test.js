@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, sweepPresenceBounds, presenceBoundNotice, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_REVEALS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -867,7 +867,7 @@ test("#169: the disclosure banner escapes its message", () => {
     // <select> does not match `tagName === "INPUT"`.
     const at = WIZARD_SRC.indexOf("li.ondragstart");
     assert.ok(at > 0, "the drag handler exists");
-    const fn = WIZARD_SRC.slice(at, at + 260);
+    const fn = WIZARD_SRC.slice(at, at + 420);
     assert.ok(/tagName === "SELECT"/.test(fn),
       "the bonus-type <select> would otherwise start a row reorder when dragged");
     assert.ok(/tagName === "INPUT"/.test(fn), "and the original input guard is intact");
@@ -1169,20 +1169,124 @@ test("F2: cleanBoundMap does not canonicalize keys", () => {
   assert.deepStrictEqual(cleanBoundMap({ PRR: 50 }, aliasVocab), { PRR: 50 });
 });
 
-test("F2: a swept presence bound is DISCLOSED, never silently deleted", () => {
-  // suppress-dont-erase-user-constraints-on-transient-invalidity: dropping a
-  // user constraint from persistent state is allowed only if the drop is
-  // surfaced. It matters especially here because "presence-only" is derived
-  // from the dataset and moves — this change itself reclassified four stats.
+test("F2: the sweep drops ONLY presence-only bounds, and reports them", () => {
+  // Behavioral, not a source regex. Mutation testing showed the regex version
+  // survived both deleting the isPresenceOnly guard (which erases EVERY bound
+  // the player ever set) and deleting the delete (which leaves the notice
+  // claiming a removal that never happened). Both are silent data loss.
+  const rv = buildPickerVocabulary(realData);
+  const onOff = [...rv.presence].find((s) => !rv.magnitude.has(s));
+  const dual = realData.metadata.rankable_affixes.find((s) => rv.presence.has(s));
+  const state = {
+    targetFloors: { [onOff]: 3, Constitution: 20, [dual]: 5 },
+    targetCaps: { [onOff]: 9, Dodge: 40 },
+  };
+  const dropped = sweepPresenceBounds(state, rv);
+  assert.deepStrictEqual(dropped, [onOff], "only the on/off-only stat is reported");
+  assert.deepStrictEqual(state.targetFloors, { Constitution: 20, [dual]: 5 },
+    "a plain magnitude stat and a dual-nature stat both keep their floor");
+  assert.deepStrictEqual(state.targetCaps, { Dodge: 40 });
+});
+
+test("F2: a clean character load sweeps nothing and shows no banner", () => {
+  const rv = buildPickerVocabulary(realData);
+  const state = { targetFloors: { Constitution: 20 }, targetCaps: {} };
+  assert.deepStrictEqual(sweepPresenceBounds(state, rv), []);
+  assert.deepStrictEqual(state.targetFloors, { Constitution: 20 });
+  assert.strictEqual(presenceBoundNotice([]), "", "no banner when nothing was dropped");
+  assert.strictEqual(presenceBoundNotice(undefined), "");
+  assert.doesNotThrow(() => sweepPresenceBounds(null, rv));
+  assert.doesNotThrow(() => sweepPresenceBounds({ targetCaps: "nope" }, rv));
+});
+
+test("F2: the disclosure names the stat and agrees in number", () => {
+  const one = presenceBoundNotice(["Blurry"]);
+  assert.ok(one.includes('"Blurry"') && /\bwas removed\b/.test(one) && /that stat is an on\/off effect/.test(one));
+  const two = presenceBoundNotice(["Blurry", "Ghostly"]);
+  assert.ok(two.includes('"Blurry", "Ghostly"') && /\bwere removed\b/.test(two) && /those stats are on\/off effects/.test(two));
+  // it appends to the migration banner rather than replacing it
   const load = WIZARD_SRC.slice(WIZARD_SRC.indexOf("const droppedPresenceBounds"),
     WIZARD_SRC.indexOf("state.slotConstraints = i.slotConstraints"));
-  assert.ok(/droppedPresenceBounds\.push\(stat\)/.test(load), "the swept stats are collected");
-  assert.ok(/state\.expandedAwayMigrated\s*\n?\s*\?/.test(load) || /expandedAwayMigrated\s*=\s*state\.expandedAwayMigrated/.test(load),
-    "the disclosure appends to the existing migration banner rather than replacing it");
-  assert.ok(/min\/max you had set on/.test(load), "the notice names the constraint that was removed");
-  // and it must not fire when nothing was swept
-  assert.ok(/if \(droppedPresenceBounds\.length\)/.test(load),
-    "no banner on a clean load");
+  assert.ok(/sweepPresenceBounds\(state, vocab\)/.test(load), "the load path calls the tested sweep");
+  assert.ok(/\$\{state\.expandedAwayMigrated\} \$\{presenceNotice\}/.test(load),
+    "one load never produces two competing notices");
+});
+
+test("KTD1: the markup READS the open set — the seam, not just the Set", () => {
+  // The mutation that reverts KTD1 entirely is deleting the read from the
+  // template: every panel then renders closed, so the panel snaps shut on the
+  // very click it exists to survive. The Set-API tests below cannot see that.
+  openPanelClear();
+  assert.strictEqual(panelOpenAttr("Constitution"), "", "closed by default");
+  openPanelToggle("Constitution", true);
+  assert.strictEqual(panelOpenAttr("Constitution"), " open");
+  assert.strictEqual(panelOpenAttr("Dodge"), "", "only the opened stat");
+  openPanelClear();
+  assert.strictEqual(panelOpenAttr("Constitution"), "");
+  const panel = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function advancedHTML"), WIZARD_SRC.indexOf("function creditsHTML"));
+  assert.ok(/\$\{panelOpenAttr\(stat\)\}/.test(panel), "the markup renders that attribute");
+});
+
+test("KTD1: opening a panel WRITES to the set", () => {
+  // The other half of the seam: without the toggle binding nothing is ever
+  // recorded, so every rebuild renders every panel closed.
+  const wire = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderRankedList"));
+  assert.ok(/ontoggle\s*=\s*\(\)\s*=>\s*openPanelToggle\(d\.dataset\.adv,\s*d\.open\)/.test(wire),
+    "each panel's toggle records its own stat and open state");
+});
+
+test("R5: refreshBadge writes the shared summary, not just anything", () => {
+  // Asserting the call sites is not enough — a refreshBadge whose body does
+  // nothing leaves the badge one render stale, which is the original bug.
+  const wire = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderRankedList"));
+  const body = wire.slice(wire.indexOf("const refreshBadge"), wire.indexOf("const refreshBadge") + 400);
+  assert.ok(/innerHTML\s*=\s*advSummaryHTML\(advancedRowModel\(/.test(body),
+    "the patched summary comes from the same model the full render uses");
+});
+
+test("F2: a declared credit on a dual-nature stat survives to the query", () => {
+  // The credit gate was loosened from bare `presence` to `isPresenceOnly` for
+  // the same reason the bound gate was. Without this, reverting that one line
+  // silently drops the player's credit on those four stats.
+  const rv = buildPickerVocabulary(realData);
+  const dual = realData.metadata.rankable_affixes.find((s) => rv.presence.has(s));
+  const state = Object.assign(baseState(), {
+    priorities: [dual],
+    declaredCredits: { [creditKey(dual, "Insight")]: { stat: dual, bonus_type: "Insight", value: 4 } },
+  });
+  const out = buildQuery(state, rv).declaredCredits;
+  assert.strictEqual(Object.keys(out).length, 1, `${dual} carries a magnitude, so its credit is valid`);
+  // and an on/off-only stat's credit is still refused
+  const onOff = [...rv.presence].find((s) => !rv.magnitude.has(s));
+  const s2 = Object.assign(baseState(), {
+    priorities: [onOff],
+    declaredCredits: { [creditKey(onOff, "Insight")]: { stat: onOff, bonus_type: "Insight", value: 4 } },
+  });
+  assert.deepStrictEqual(buildQuery(s2, rv).declaredCredits, {});
+});
+
+test("KTD6: the drag guard covers the whole panel, not just INPUT/SELECT", () => {
+  // A click on the count badge has tagName SPAN and a drag on the relocated
+  // prose has P — the tagName allowlist misses both, so either would start a
+  // row reorder instead of toggling or selecting.
+  const at = WIZARD_SRC.indexOf("li.ondragstart");
+  const guard = WIZARD_SRC.slice(at, at + 320);
+  assert.ok(/closest\("details\.wz-adv"\)/.test(guard),
+    "anything inside the panel is panel interaction, never a drag handle");
+  assert.ok(/tagName === "INPUT"/.test(guard) && /tagName === "SELECT"/.test(guard),
+    "and the original tagName clauses survive for controls outside the panel");
+});
+
+test("D1: adding or removing a credit restores focus after the rebuild", () => {
+  // ol.innerHTML = rankedHTML() destroys the focused element, so without this a
+  // player who clicks "+ already have" gets the panel they expect and a caret
+  // nowhere — focus falls to <body>.
+  const wire = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderRankedList"));
+  const cadd = wire.slice(wire.indexOf("b.dataset.cadd != null"), wire.indexOf("b.dataset.crem != null"));
+  assert.ok(/after = \(\) => focusCreditValue\(key\)/.test(cadd), "add lands the caret in the new field");
+  const crem = wire.slice(wire.indexOf("b.dataset.crem != null"), wire.indexOf("rerender();"));
+  assert.ok(/after = \(\) => focusSummary\(stat\)/.test(crem), "remove goes up a level");
+  assert.ok(/rerender\(\);\s*\n\s*if \(after\) after\(\);/.test(wire), "and it runs AFTER the rebuild");
 });
 
 test("bundles: a hidden sub-row is actually hidden", () => {
