@@ -227,5 +227,27 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
     assert.strictEqual(dec.isSet, false);
   });
 
+
+  await test("U3: a credited SOLVE reaches every export labelled — no hand-built breakdown", async () => {
+    // The end-to-end guard. The per-format tests in exporters.test.js hand-build a
+    // breakdown, so they prove only that the exporter echoes its input — they pass
+    // against the pre-U3 tree. This one runs a real solve through
+    // breakdownByTarget -> projection.project -> each exporter, which is the chain
+    // U3 claims "cannot drift apart".
+    const X = require("../web/exporters.js");
+    const r = await S.solveLexicographic(creditModel(), highs);
+    assert.strictEqual(r.breakdown.CM.find((p) => p.sourceKind === "declared").source,
+      S.DECLARED_LABEL, "premise: the solver tagged it");
+
+    const rec = { name: "E2E", inputs: { ml: 34, pool: "all", priorities: ["CM"] }, snapshot: r };
+    for (const [fmt, fn] of [["markdown", X.toMarkdown], ["bbcode", X.toBBCode],
+                             ["csv", X.toCsv], ["print", X.toPrintHtml]]) {
+      const out = fn(rec);
+      assert.ok(out.includes(S.DECLARED_LABEL),
+        `${fmt} must carry the solver's declared label end to end`);
+      assert.ok(!/undefined/.test(out), `${fmt} must not leak an undefined source`);
+    }
+  });
+
   console.log(`\n${passed} passed`);
 })();

@@ -565,6 +565,12 @@ test("U3: user text is newline-neutralized so it cannot forge a gear line", () =
 // The invariant this repo holds: a mechanic must never be solve-visible but
 // share-invisible. A shared loadout has to show which numbers the recipient's own
 // gear produces and which one the sender asserted.
+//
+// The label is imported from the SOLVER, not restated here. Restating it made
+// these tests pass against the pre-U3 tree: the fixture supplied the string and
+// the assertion looked for it, so they only proved the exporter echoes its input.
+// Importing the constant turns them into a real cross-module contract.
+const { DECLARED_LABEL } = require("../web/solver.js");
 
 const creditRec = {
   name: "Trance Build",
@@ -579,7 +585,7 @@ const creditRec = {
     breakdown: {
       "Combat Mastery": [
         { bonus_type: "Enhancement", value: 5, source: "Plain Ring", sourceKind: "worn", slot: "Ring", hostIds: ["Plain Ring"] },
-        { bonus_type: "Insight", value: 7, source: "declared, not from gear", sourceKind: "declared", slot: null, hostIds: null },
+        { bonus_type: "Insight", value: 7, source: DECLARED_LABEL, sourceKind: "declared", slot: null, hostIds: null },
       ],
     },
   },
@@ -589,7 +595,7 @@ test("U3: every text export labels a declared credit as declared", () => {
   const outs = { markdown: toMarkdown(creditRec), bbcode: toBBCode(creditRec),
     csv: toCsv(creditRec), print: toPrintHtml(creditRec) };
   for (const [fmt, out] of Object.entries(outs)) {
-    assert.ok(/declared, not from gear/.test(out),
+    assert.ok(out.includes(DECLARED_LABEL),
       `${fmt} must name the declared credit — a shared build that hides it presents a player-typed number as sourced`);
     assert.ok(/Insight/.test(out) && /\+7/.test(out), `${fmt} keeps the credit's type and value`);
   }
@@ -597,14 +603,14 @@ test("U3: every text export labels a declared credit as declared", () => {
 
 test("U3: a declared credit is not attributed to a slot in exports", () => {
   const md = toMarkdown(creditRec);
-  const line = md.split("\n").find((l) => /declared, not from gear/.test(l));
+  const line = md.split("\n").find((l) => l.includes(DECLARED_LABEL));
   assert.ok(line, "the declared line exists");
   assert.ok(!/ via /.test(line), `a credit occupies no slot, got: ${line.trim()}`);
 });
 
 test("U3: an undeclared build's exports carry no declared label", () => {
   for (const out of [toMarkdown(rec), toBBCode(rec), toCsv(rec), toPrintHtml(rec)]) {
-    assert.ok(!/declared, not from gear/.test(out), "R3 — nothing added when nothing is declared");
+    assert.ok(!out.includes(DECLARED_LABEL), "R3 — nothing added when nothing is declared");
   }
 });
 

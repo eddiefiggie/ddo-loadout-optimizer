@@ -783,8 +783,8 @@ test("#169: the disclosure banner escapes its message", () => {
     // KTD4 — the solver matches a bucket's stat half by EXACT string with no
     // aliasing, so a non-canonical name does not error: it forms an orphan bucket
     // that silently contributes nothing.
-    const canonical = (v) => (v === "PRR" ? "Physical Resistance Rating" : v);
-    const out = cleanCreditMap({ "PRR||Insight": { stat: "PRR", bonus_type: "Insight", value: 7 } }, canonical);
+    const vocab = { canonical: (v) => (v === "PRR" ? "Physical Resistance Rating" : v) };
+    const out = cleanCreditMap({ "PRR||Insight": { stat: "PRR", bonus_type: "Insight", value: 7 } }, vocab);
     assert.deepStrictEqual(Object.keys(out), ["Physical Resistance Rating||Insight"]);
     assert.strictEqual(out["Physical Resistance Rating||Insight"].stat, "Physical Resistance Rating");
   });
@@ -903,18 +903,63 @@ test("#169: the disclosure banner escapes its message", () => {
   });
 }
 
-test("U2: the wizard's own call sites pass the real canonicalizer", () => {
+test("U2: the wizard's own call sites pass the real vocabulary", () => {
   // Regression: buildQuery originally read `state.canonical`, which nothing ever
   // sets — so the KTD4 canonicalization silently never ran in the app while the
-  // unit test passed its own function and looked green.
+  // unit test passed its own function and looked green. It now takes the whole
+  // vocabulary, because the presence set gates credits too.
   assert.ok(!/state\.canonical/.test(WIZARD_SRC),
     "state.canonical does not exist; reading it is dead code");
   const calls = (WIZARD_SRC.match(/(?<!function )buildQuery\(state[^)]*\)/g) || []);
   assert.ok(calls.length >= 3, `expected the in-app call sites; found ${calls.length}`);
   for (const c of calls) {
-    assert.ok(/vocab\.canonical/.test(c),
-      `every in-app buildQuery call must pass the canonicalizer, got: ${c}`);
+    assert.ok(/\bvocab\b/.test(c),
+      `every in-app buildQuery call must pass the vocabulary, got: ${c}`);
   }
+});
+
+test("U2: a presence (on/off) stat cannot carry a magnitude credit", () => {
+  // Reproduced before the gate: targets ["Constitution","Blurry"], floor Blurry>=1,
+  // one Goggles slot offering the Blurry item or a Constitution item. Declaring
+  // Insight 3 on Blurry moved the solve from {Constitution:0, Blurry:1} with the
+  // Blurry item equipped, to {Constitution:10, Blurry:3} WITHOUT it — the
+  // meaningless magnitude satisfied the floor and the feature was dropped, while
+  // the result still claimed Blurry at 3.
+  const vocab = { canonical: (v) => v, presence: new Set(["Blurry"]) };
+  const out = cleanCreditMap({
+    "Blurry||Insight": { stat: "Blurry", bonus_type: "Insight", value: 3 },
+    "Constitution||Insight": { stat: "Constitution", bonus_type: "Insight", value: 6 },
+  }, vocab);
+  assert.deepStrictEqual(Object.keys(out), ["Constitution||Insight"],
+    "a presence stat's credit must never reach the query");
+});
+
+test("U2: the credit control is not offered on a presence row", () => {
+  const at = WIZARD_SRC.indexOf("${creditsHTML(p)}");
+  assert.ok(at > 0 || /presence.*creditsHTML/.test(WIZARD_SRC), "the sub-row is rendered somewhere");
+  const call = WIZARD_SRC.match(/[^\n]*creditsHTML\(p\)[^\n]*/)[0];
+  assert.ok(/vocab\.presence/.test(call),
+    `the render must be gated on the presence set, got: ${call.trim()}`);
+});
+
+test("U2: loading a character resets declared credits", () => {
+  // state is long-lived. Without a reset, a credit declared on the previous
+  // character stays live: the first render uses the stored query and looks right,
+  // then Re-solve reads live state and solves the loaded character with a bonus
+  // nobody declared for it.
+  const at = WIZARD_SRC.indexOf("state.targetFloors = (i.targetFloors");
+  assert.ok(at > 0, "the restore block exists");
+  const block = WIZARD_SRC.slice(at, at + 900);
+  assert.ok(/state\.declaredCredits\s*=/.test(block),
+    "declaredCredits must be reset alongside its sibling maps in loadCharacter");
+});
+
+test("U2: an unusable credit row neither reads as declared nor reserves its type", () => {
+  const at = WIZARD_SRC.indexOf("function creditsHTML");
+  const fn = WIZARD_SRC.slice(at, WIZARD_SRC.indexOf("\n    }", at));
+  assert.ok(/is-incomplete/.test(fn), "an unusable row is visually marked");
+  assert.ok(/filter\(\[, c\]\) => usable\(c\.value\)\)|filter\(\(\[, c\]\) => usable\(c\.value\)\)/.test(fn),
+    "usedTypes counts only rows the solver would keep");
 });
 
 console.log(`\n${passed} passed`);

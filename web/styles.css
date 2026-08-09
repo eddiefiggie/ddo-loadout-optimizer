@@ -780,6 +780,8 @@ input.wz-ml { width: 120px; }
 .wz-credits { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
   margin-top: 2px; padding-top: 6px; border-top: 1px dashed var(--border-2); }
 .wz-credit { display: flex; align-items: center; gap: 3px; }
+.wz-credit.is-incomplete { opacity: 0.55; }
+.wz-credit.is-incomplete .wz-credit-val { border-style: dashed; }
 .wz-credit-val { width: 3.4rem; background: var(--panel); color: var(--text); border: 1px solid var(--border-2);
   border-radius: var(--r-1, 6px); padding: 2px 4px; font-size: 0.85em; text-align: center; }
 .wz-credit-val::placeholder { color: var(--faint); }
