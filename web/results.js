@@ -209,17 +209,44 @@ function craftChips(v, idx, maps) {
   return [...augs, ...craftSlotChips(v, idx, maps), ...jokers, ...memberships, ...setAugs];
 }
 
+// U4 (R7) — the sets one equipped slot CONTRIBUTES to, as [{set, kind}], from the
+// shared set-contributor resolver. A wildcard (Gem of Many Facets) or
+// chosen-membership piece completes a set without carrying it in item data, so
+// every surface that read `set_bonus` alone left it unframed and unnamed.
+// `contributors` is `Proj.setContributors(build)`; when a caller has no build in
+// hand (the pure unit-test callers) the item's static sets stand in unchanged.
+// Reached as `Proj.*` — a per-file alias for a shared identifier is what blanked
+// the app twice (KTD1).
+function slotContribs(slot, v, contributors) {
+  if (contributors) return Proj.contributorsFor(contributors, slot, v.variant_id);
+  return slotSetNames(v).map((set) => ({ set, kind: "intrinsic" }));
+}
+// The frame decision: does this slot feed a COMPLETED set? `satisfied` absent means
+// "no satisfaction filter" — the long-standing behavior of slotSetNames(v, undefined).
+function contribGlow(contribs, satisfied) {
+  return contribs.some((e) => !satisfied || satisfied.has(e.set));
+}
+// The set-name line. A wildcard/membership contribution is marked (R8): it counts
+// exactly as an intrinsic member does, but the two are not interchangeable and the
+// label must not imply they are.
+function contribSetLabel(contribs) {
+  return [...new Set(contribs.map((e) =>
+    e.kind === "wildcard" ? `${e.set} (wildcard)`
+      : e.kind === "membership" ? `${e.set} (set-bonus pick)`
+        : e.set))].join(", ");
+}
+
 // One paperdoll slot cell: uniform, fixed-size, showing only the item name, ML,
 // and the set it belongs to. A set piece gets a themed highlight frame (.is-set).
 // Full affixes/crafts live in the Loadout Deep Dive tab, not on the cell.
-function paperdollSlot(label, pos, pick, satisfied) {
+function paperdollSlot(label, pos, pick, satisfied, contributors) {
   if (!pick) {
     return `<div class="pd-slot empty pos-${pos}"><div class="pd-label">${esc(label)}</div><div class="pd-item muted">empty</div></div>`;
   }
   const v = pick.variant;
-  const memberSets = slotSetNames(v);                          // U6: label = membership
-  const glow = slotSetNames(v, satisfied).length > 0;          // U6: glow = satisfaction (via helper)
-  const setLine = memberSets.length ? `<div class="pd-setname" title="part of a set bonus">${esc(memberSets.join(", "))}</div>` : "";
+  const contribs = slotContribs(label, v, contributors);       // U4: every set this slot feeds
+  const glow = contribGlow(contribs, satisfied);               // U6: glow = satisfaction
+  const setLine = contribs.length ? `<div class="pd-setname" title="part of a set bonus">${esc(contribSetLabel(contribs))}</div>` : "";
   return `<div class="pd-slot occupied pos-${pos}${glow ? " is-set" : ""}">
     <div class="pd-label">${esc(label)}</div>
     <div class="pd-item" title="${esc(v.variant_id)}">${esc(v.variant_id)}</div>
@@ -234,6 +261,7 @@ function loadoutDeepDive(result, query, maps, attr) {
   if (!result.chosen.length) return `<p class="dd-none muted">No items equipped for this build.</p>`;
   const suppressed = suppressedHostIds(result);                        // U7: a Set-Augment host suppresses its own set
   const satisfied = satisfiedSets(result.chosen, result.setsActive, suppressed);   // U6/U7: glow on completion, honoring suppression
+  const contributors = Proj.setContributors(result);                   // U4/R7: wildcard + membership pieces, not just static set_bonus
   const freeByIndex = (maps && maps.augAssign && maps.augAssign.freeByIndex) || new Map();
   return `<div class="deepdive">${result.chosen.map((c, idx) => {
     const v = c.variant;
@@ -242,8 +270,16 @@ function loadoutDeepDive(result, query, maps, attr) {
     const upgradeNote = openAug.length
       ? `<div class="dd-upgrade"><span class="dd-upgrade-tag">Unrealized upgrade</span> ${openAug.length} open augment slot${openAug.length === 1 ? "" : "s"} (${esc(openAug.join(", "))}) — slot an augment here for more stats.</div>`
       : "";
-    const memberSets = slotSetNames(v);                        // U6: label = raw membership (informative)
-    const glow = slotSetNames(v, satisfied).length > 0;        // U6: is-set glow = satisfaction (via the helper)
+    const contribs = slotContribs(c.slot, v, contributors);    // U4/R7: intrinsic + wildcard + membership
+    const glow = contribGlow(contribs, satisfied);             // U6: is-set glow = satisfaction
+    // The intrinsic sets this host GAVE UP to a Set Augment — a static-only read on
+    // purpose (KTD3): the resolver has already dropped them, so the disclosure has
+    // nowhere else to come from, and dropping it would hide what the augment cost.
+    const gaveUp = suppressed.has(v.variant_id) ? slotSetNames(v) : [];
+    const suppressNote = gaveUp.length
+      ? ` <span class="dd-suppressed" title="a Set Augment slotted here overrides this item's own set bonus">(suppressed by Set Augment${contribs.length ? `: ${esc(gaveUp.join(", "))}` : ""})</span>` : "";
+    const setLine = (contribs.length || gaveUp.length)
+      ? `<div class="dd-set"><span class="setpip"></span>Part of set: ${esc(contribs.length ? contribSetLabel(contribs) : gaveUp.join(", "))}${suppressNote}</div>` : "";
     const affixes = (v.affixes || []).length
       ? `<ul class="dd-list">${v.affixes.map((a) => `<li>${esc(affixLabel(a))}</li>`).join("")}</ul>`
       : `<p class="dd-none muted">No parsed affixes on this item.</p>`;
@@ -255,7 +291,7 @@ function loadoutDeepDive(result, query, maps, attr) {
     return `<div class="dd-item${glow ? " is-set" : ""}${v.artifact ? " is-artifact" : ""}">
       <div class="dd-head"><span class="dd-slot">${esc(c.slot)}</span><span class="dd-name">${esc(v.variant_id)}</span>${artifactTag}<span class="dd-ml">ML ${esc(itemMl(v) ?? "?")}</span>${wiki}</div>
       ${whyThisLine(result, { slot: c.slot, variant_id: v.variant_id }, attr)}
-      ${memberSets.length ? `<div class="dd-set"><span class="setpip"></span>Part of set: ${esc(memberSets.join(", "))}${suppressed.has(v.variant_id) ? ` <span class="dd-suppressed" title="a Set Augment slotted here overrides this item's own set bonus">(suppressed by Set Augment)</span>` : ""}</div>` : ""}
+      ${setLine}
       ${upgradeNote}
       <div class="dd-affixes"><h5>Affixes</h5>${affixes}</div>
       ${craftBlock}
@@ -267,7 +303,7 @@ function loadoutDeepDive(result, query, maps, attr) {
 // item name (no truncation), ML, set membership, and a per-slot constraint
 // control (U6: pin the current item / lock empty / free). The wizard reads the
 // menu clicks via delegation, updates query.slotConstraints, and re-solves.
-function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, ownedInfo) {
+function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, ownedInfo, contributors) {
   const c = (slotConstraints || {})[label];
   const locked = c && c.type === "empty";
   const owned = ownedInfo || { mode: false, slotsCovered: new Set() };
@@ -286,9 +322,9 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
   </div>`;
   const badge = rowPinned ? `<span class="pd-badge pin">pinned</span>`
     : locked ? `<span class="pd-badge empty">locked empty</span>` : "";
-  const memberSets = v && !locked ? slotSetNames(v) : [];                          // U6: label = membership
-  const glow = !!(v && !locked) && slotSetNames(v, satisfied).length > 0;          // glow = satisfaction (via helper)
-  const setLine = memberSets.length ? `<span class="pd-rset" title="part of a set bonus">${esc(memberSets.join(", "))}</span>` : "";
+  const contribs = (v && !locked) ? slotContribs(label, v, contributors) : [];     // U4/R7: every set this slot feeds
+  const glow = contribs.length > 0 && contribGlow(contribs, satisfied);            // glow = satisfaction
+  const setLine = contribs.length ? `<span class="pd-rset" title="part of a set bonus">${esc(contribSetLabel(contribs))}</span>` : "";
   const isArtifact = !!(v && !locked && v.artifact);   // U5/R5 — tag the equipped Artifact's slot
   const artifactBadge = isArtifact ? `<span class="pd-badge artifact" title="your one equipped Artifact">Artifact</span>` : "";
   const name = locked ? "locked empty" : (v ? esc(v.variant_id) : "empty");
@@ -816,6 +852,9 @@ function buildViews(build, model, query) {
   // model considered, occupied or empty — no humanoid figure, full item names
   // (no truncation). Weapons are folded into the same list in slot order.
   const satisfied = satisfiedSets(build.chosen, build.setsActive, suppressedHostIds(build));   // U6/U7: glow only completed-set pieces, honoring Set-Augment suppression
+  // U4/R7 — the set-contributor resolver, computed once and handed to every row: a
+  // wildcard/chosen-membership slot feeds a set that appears nowhere in its item data.
+  const contributors = Proj.setContributors(build);
   // U2 — resolve an augment's affixes by variant_id (the placed meta carries the
   // id + color but no affixes); model.augments holds the full augment records.
   const augById = new Map((model.augments || []).map((a) => [a.variant_id, a]));
@@ -828,7 +867,7 @@ function buildViews(build, model, query) {
     const picks = picksBySlot.get(slot.slot) || [];
     const cardinality = slot.cardinality || 1;
     for (let r = 0; r < cardinality; r++) {
-      rows.push(equippedRow(slot.slot, picks[r] || null, query.slotConstraints, satisfied, maps, augById, ownedInfo));
+      rows.push(equippedRow(slot.slot, picks[r] || null, query.slotConstraints, satisfied, maps, augById, ownedInfo, contributors));
     }
   }
   const weapons = ""; // weapons are included in the equipped list above
@@ -836,9 +875,16 @@ function buildViews(build, model, query) {
   // Set Bonuses tab (U8): only satisfied sets, each showing its granted affixes
   // and the equipped pieces composing it (grouped by set). No near-miss hints,
   // no non-set items.
+  // R10 — every contributing piece is named with the slot it occupies, wildcard and
+  // chosen-membership picks included, and an Augment Set names its copies and their
+  // hosts. A card that named nothing while stating a tier number told the player a
+  // bonus was active and refused to say what produced it; when the resolver truly
+  // reports no piece, the card says so rather than going quiet.
   const activeSets = satisfiedSetDetail(build).map((s) => {
     const grants = s.affixes.length ? esc(s.affixes.map(affixLabel).join(", ")) : "bonus active";
-    const pieces = s.members.length ? `<div class="set-via">pieces: ${esc(s.members.join(", "))}</div>` : "";
+    const pieces = s.members.length
+      ? `<div class="set-via">pieces: ${esc(s.members.map(Proj.setMemberLabel).join(", "))}</div>`
+      : `<div class="set-via muted">no contributing piece reported for this set</div>`;
     return `<li class="set-card"><strong>${esc(s.set)}</strong> <span class="meta">${esc(s.pieces)} pieces</span><div class="set-grants">${grants}</div>${pieces}</li>`;
   }).join("");
   // Set-like bonuses (U8): active non-set solar/lunar-family augment bonuses that
