@@ -69,6 +69,18 @@ python3 build_dataset.py    # and MUST pass again
 Both directions matter. A gate that fails on everything is as useless as one that fails
 on nothing, and only the restore step distinguishes them.
 
+**Two ways the restore step itself goes wrong**, both hit while proving #171's gates:
+
+- **`git checkout -- <file>` restores from HEAD, not from your work.** It is safe on a
+  committed, unmodified seed file — the case above. Run it on a source file carrying
+  *uncommitted* edits and it silently deletes them. Corrupt data files, not the code you
+  are writing; if the corruption has to go in code, commit a checkpoint first, or copy the
+  file aside and restore from the copy.
+- **A stale `__pycache__` can outlive the restore.** `.pyc` invalidation keys on mtime with
+  coarse granularity, so a corrupt-build-restore cycle completing inside one tick reuses the
+  corrupted bytecode and the restored tree still fails. That reads exactly like "the fix did
+  not take". Clear the cache before concluding a green run went red.
+
 Red-and-green is not the only axis, though. The corruption above moves **one** field and
 leaves its reference untouched, which is the weakest possible negative test for a gate that
 compares a value against a stored reference — such a gate rejects a single-sided break by

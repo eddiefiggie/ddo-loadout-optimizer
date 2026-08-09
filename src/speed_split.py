@@ -191,6 +191,43 @@ def is_roman(raw: str) -> bool:
     return bool(_ROMAN.match(raw or ""))
 
 
+# #171 — set-bonus `Speed` is NOT the Speed enchantment, and must not be expanded
+# as one. Harvested 2026-08-09 from `Named item sets` wikitext (`action=raw`,
+# same-origin): all three Marshwalker tiers render
+#
+#     {{InlineWht|dark=y|+30% Enhancement bonus to movement speed (all tier)}}
+#
+# Plain prose, no `{{Speed|N}}` invocation, and **movement only**. gear-planner
+# normalizes it to the affix name `Speed`, which collides with the enchantment
+# name — a naming collision, not the same mechanic. Reading it as `{{Speed|30}}`
+# would grant 15% melee and 15% ranged alacrity the wiki does not state, across
+# three sets. See `docs/wiki-evidence/marshwalker-set-speed.md`.
+#
+# Keyed by the stated value so an unseen one quarantines rather than being
+# expanded at a guessed magnitude — a new value has to be harvested first.
+SET_BONUS_MOVEMENT_ONLY = {"30": 30}
+
+SET_BONUS_OUTPUTS = (MOVEMENT_NAME,)
+
+
+def set_bonus_magnitudes(value):
+    """What a set-bonus `Speed N` grants, or None when the wiki has not stated it.
+
+    Movement only — see `SET_BONUS_MOVEMENT_ONLY`. Deliberately takes no shard:
+    there is no tooltip snapshot to read because the wiki writes this bonus as
+    prose rather than as a template invocation, which is exactly why it cannot
+    reuse the item path.
+    """
+    magnitude = SET_BONUS_MOVEMENT_ONLY.get(str(value).strip())
+    return None if magnitude is None else {MOVEMENT_NAME: magnitude}
+
+
+def expand_set_bonuses(variants) -> dict:
+    """Expand the folded `Speed` affix inside set-bonus tiers, which the item split misses."""
+    return _es.expand_set_bonus_affixes(
+        variants, FOLDED_NAME, set_bonus_magnitudes, SET_BONUS_OUTPUTS)
+
+
 _ROMAN_DIGIT = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000}
 
 
