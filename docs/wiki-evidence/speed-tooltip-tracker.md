@@ -1,7 +1,7 @@
 # Tooltip snapshots — refresh tracker
 
-**Established:** 2026-08-08 (issue #134), extended to Parrying and Heightened
-Awareness 2026-08-08 (issue #169).
+**Established:** 2026-08-08 (#134), extended to Parrying and Heightened
+Awareness 2026-08-08 (PR #169).
 
 | Field | Snapshot store | Guard |
 |---|---|---|
