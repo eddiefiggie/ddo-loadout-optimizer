@@ -410,14 +410,77 @@ function buildPickerVocabulary(dataset) {
  *  load check, so the rule lives in ONE place. */
 function expandedAwayFor(vocab, name) {
   const map = (vocab && vocab.expandedAway) || {};
-  const hit = map[String(name == null ? "" : name).trim().toLowerCase()];
-  return (hit && hit.length) ? hit : null;
+  const key = String(name == null ? "" : name).trim().toLowerCase();
+  // Own-property only. A plain object literal inherits `constructor`, `toString`,
+  // `valueOf` and friends from Object.prototype, and `Object.length === 1` sails
+  // straight past a bare `hit && hit.length` check — so a priority named
+  // "constructor" resolved to the Object *function*, and the load-path caller
+  // then threw on `.slice()`, leaving the character permanently unloadable with
+  // its priorities already half-overwritten. Priority names reach here from
+  // localStorage and from imported character files, so they are not trusted input.
+  if (!Object.prototype.hasOwnProperty.call(map, key)) return null;
+  const hit = map[key];
+  return (Array.isArray(hit) && hit.length) ? hit : null;
 }
 
 /** U1 (#136) — the player-facing redirect for an expanded-away name, or null. */
 function expandedAwayMessage(vocab, name) {
   const to = expandedAwayFor(vocab, name);
   return to ? `"${name}" is shorthand for ${to.join(", ")} — rank those instead.` : null;
+}
+
+/** #169 — load migration for a SAVED CHARACTER's ranked priorities.
+ *
+ *  The add-a-priority paths refuse an expanded-away name, but nothing guarded the
+ *  load path: `loadCharacter()` restored `priorities` verbatim. A player who
+ *  ranked `Parrying` before it expanded would have loaded a priority that now
+ *  matches no item — scoring zero, silently, with no way to tell it apart from a
+ *  target nothing happens to carry.
+ *
+ *  Substitutes each expanded-away name with the concrete stats it became,
+ *  preserving rank order and dropping duplicates (ranking both `Parrying` and
+ *  `Heightened Awareness` must not yield `Armor Class` twice). Returns what
+ *  changed so the caller can disclose it — a silent rewrite of a saved character
+ *  is the same defect wearing different clothes.
+ *
+ *  Idempotent: replacements are concrete stats, which are never themselves
+ *  expanded away. */
+function migratePriorities(priorities, vocab) {
+  const out = [];
+  const seen = new Set();
+  const substitutions = [];
+  for (const p of (Array.isArray(priorities) ? priorities : [])) {
+    const to = expandedAwayFor(vocab, p);
+    if (to) substitutions.push({ from: p, to: to.slice() });
+    for (const name of (to || [p])) {
+      const key = String(name == null ? "" : name).trim().toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(name);
+    }
+  }
+  return { priorities: out, substitutions };
+}
+
+/** #169 — the player-facing sentence for a set of load-time substitutions.
+ *
+ *  `droppedBounds` names any min/max the substitution had to discard. Saying so
+ *  is not optional: a floor the player set is a number they chose, and removing
+ *  it silently changes what the solver optimizes for without telling them. */
+function migrationMessage(substitutions, droppedBounds) {
+  if (!substitutions || !substitutions.length) return null;
+  const parts = substitutions.map((s) => `"${s.from}" -> ${s.to.join(", ")}`);
+  let msg = `This character ranked ${parts.length > 1 ? "names" : "a name"} that ` +
+    `now expand${parts.length > 1 ? "" : "s"} into the stats they actually grant: ` +
+    `${parts.join("; ")}. Your priorities were updated to match.`;
+  const dropped = [...new Set(droppedBounds || [])];
+  if (dropped.length) {
+    msg += ` The min/max you had set on ${dropped.map((d) => `"${d}"`).join(", ")} ` +
+      `${dropped.length > 1 ? "were" : "was"} removed rather than copied onto the ` +
+      `replacement stats — set ${dropped.length > 1 ? "them" : "it"} again if you still want ` +
+      `${dropped.length > 1 ? "those limits" : "that limit"}.`;
+  }
+  return msg;
 }
 
 /** U5, Part C — one-time load migration for a persisted loadout snapshot. Runs the
@@ -433,8 +496,8 @@ function migrateLoadout(snapshot) {
 // Browser: expose a global so app.js can normalize the fetched dataset without a
 // module system. Node: CommonJS export for the tests + parity harness.
 if (typeof window !== "undefined") {
-  window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, migrateLoadout, expandedAwayFor, expandedAwayMessage };
+  window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage };
 }
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, migrateLoadout, expandedAwayFor, expandedAwayMessage };
+  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage };
 }

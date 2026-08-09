@@ -39,6 +39,9 @@ from src import set_catalog as set_catalog_mod
 from src import harvest as harvest_mod
 from src import material as material_mod
 from src import speed_split as speed_split_mod
+from src import parrying_split as parrying_split_mod
+from src import heightened_awareness as heightened_awareness_mod
+from src import enchantment_split as enchantment_split_mod
 from src import umbrella as umbrella_mod
 from src import planner_items as planner_mod
 from src import variants as variants_mod
@@ -167,6 +170,9 @@ def assert_affix_synonyms() -> int:
 
 GAP_CORRECTIONS_PATH = os.path.join(HERE, "data", "seed", "gap_corrections.json")
 SPEED_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_enchantment.json")
+PARRYING_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "parrying_version.json")
+HEIGHTENED_AWARENESS_SHARD_PATH = os.path.join(
+    HERE, "data", "seed", "compendium", "heightened_awareness.json")
 SPEED_AUGMENT_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_augment.json")
 MATERIAL_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "item_material.json")
 MATERIAL_CLASS_PATH = os.path.join(HERE, "data", "seed", "compendium", "material_classification.json")
@@ -378,6 +384,38 @@ def build() -> dict:
                          "\n  ".join(_speed_guard["problems"]))
     _speed_coverage = speed_split_mod.apply(planner_records, _speed_shard)
 
+    # U7 (#169) — expand the folded `Parrying` affix into the Insight Armor Class
+    # and three Insight saves it actually grants. Same seam and same reasons as the
+    # Speed split above: before variant expansion and before rankable_affixes, so
+    # one corrected affix block flows everywhere downstream.
+    #
+    # The magnitude is a property of the enchantment VERSION, not of the number
+    # upstream stored — nineteen items store 4 and one of them is Roman IV, which
+    # grants 2. The version is per-item wiki evidence; this build never derives it.
+    _parrying_shard = harvest_mod.load_shard(PARRYING_SHARD_PATH, "parrying_version")
+    _parrying_audit = parrying_split_mod.audit_shard(_parrying_shard)
+    _parrying_snapshots = parrying_split_mod.audit_snapshots(_parrying_shard)
+    _parrying_guard = parrying_split_mod.check_against_snapshots(_parrying_shard)
+    if _parrying_guard["problems"]:
+        raise SystemExit("parrying snapshot guard failed:\n  " +
+                         "\n  ".join(_parrying_guard["problems"]))
+    _parrying_coverage = parrying_split_mod.apply(planner_records, _parrying_shard)
+
+    # U3 (#169) — the other half of the same defect. `Heightened Awareness` grants
+    # one thing, an Insight bonus to AC, and stored as an enchantment name it
+    # scored nothing. No version branch: the wiki lists Arabic ranks only, and the
+    # guard asserts each derived value against its own rendered tooltip so a Roman
+    # variant appearing later fails rather than being read as Arabic.
+    _ha_shard = harvest_mod.load_shard(HEIGHTENED_AWARENESS_SHARD_PATH,
+                                       "heightened_awareness")
+    _ha_audit = heightened_awareness_mod.audit_shard(_ha_shard)
+    _ha_snapshots = heightened_awareness_mod.audit_snapshots(_ha_shard)
+    _ha_guard = heightened_awareness_mod.check_against_snapshots(_ha_shard)
+    if _ha_guard["problems"]:
+        raise SystemExit("heightened awareness snapshot guard failed:\n  " +
+                         "\n  ".join(_ha_guard["problems"]))
+    _ha_coverage = heightened_awareness_mod.apply(planner_records, _ha_shard)
+
     # U5 (#162) — stamp wiki-sourced material onto shields + body armor. The
     # gear-planner snapshot has no such field (its full item-field union is
     # affixes/ml/name/quests/slot/type/url/crafting/sets/artifact), so this is the
@@ -508,6 +546,32 @@ def build() -> dict:
     # Expand umbrella ability affixes ("All Ability Scores +15", "Well Rounded")
     # into the six concrete abilities so single-ability targets get credited.
     umbrella_mod.expand_variants(variants)
+    # #169 — the same treatment for the version-bearing affixes inside SET BONUS
+    # tiers. The item split above cannot reach this channel: a tier affix is
+    # `{"stat": ..., "bonus_type": ...}` while an item affix is
+    # `{"name": ..., "type": ...}`, so a name-keyed predicate runs over it and
+    # matches nothing. Protector's Heart granted `Parrying` — a name the picker
+    # no longer offers — until this ran.
+    _parrying_sets = parrying_split_mod.expand_set_bonuses(variants, _parrying_shard)
+    _ha_sets = heightened_awareness_mod.expand_set_bonuses(variants, _ha_shard)
+
+    # A set-bonus tier still naming an expanded-away stat grants something no
+    # player can rank. `speed` is allowlisted: the Marshwalker sets have carried
+    # that orphan since #134, this change did not cause it, and expanding it
+    # would move shipped Speed behavior — tracked as #171. Anything NEW fails the
+    # build rather than going quiet.
+    _KNOWN_SET_BONUS_ORPHANS = ("speed",)   # see #171
+    _set_orphans = enchantment_split_mod.set_bonus_orphans(
+        variants,
+        {**umbrella_mod.umbrella_expansion(),
+         **speed_split_mod.EXPANDED_AWAY,
+         **parrying_split_mod.EXPANDED_AWAY,
+         **heightened_awareness_mod.EXPANDED_AWAY},
+        allow=_KNOWN_SET_BONUS_ORPHANS)
+    if _set_orphans:
+        raise SystemExit(
+            "set-bonus affixes name an expanded-away stat no player can rank:\n  " +
+            "\n  ".join(f"{s} — {stat} {val}" for s, stat, val in _set_orphans))
     # Vecna Lost Purpose: the membership set defs come from the SAME set catalog that feeds
     # intrinsic set members (single source of truth), so an awakened Lost Purpose set gives the
     # identical bonus + stat vocabulary as an intrinsically-completed one. Attach the
@@ -692,6 +756,25 @@ def build() -> dict:
                                        "shard_audit": _speed_aug_audit,
                                        "tooltip_snapshots": _speed_aug_snapshots,
                                        "tooltip_guard_checked": _speed_aug_guard["checked"]},
+            # The Parrying half (#169). Joins by item NAME, because the wiki page
+            # groups its items by version and the name is the key that grouping
+            # publishes. `armor_class_corrected` counts the items whose stored
+            # magnitude was a flattened Roman rank.
+            "parrying_set_bonus_coverage": _parrying_sets,
+            "heightened_awareness_set_bonus_coverage": _ha_sets,
+            "parrying_split_coverage": {**_parrying_coverage,
+                                        "shard_audit": _parrying_audit,
+                                        "tooltip_snapshots": _parrying_snapshots,
+                                        "tooltip_guard_checked": _parrying_guard["checked"],
+                                        "tooltip_guard_compared": _parrying_guard["compared"]},
+            # The Heightened Awareness half (#169). One output stat, no version
+            # branch. `compared` counts values actually matched against a parsed
+            # tooltip, which `checked` alone would overstate.
+            "heightened_awareness_coverage": {
+                **_ha_coverage, "shard_audit": _ha_audit,
+                "tooltip_snapshots": _ha_snapshots,
+                "tooltip_guard_checked": _ha_guard["checked"],
+                "tooltip_guard_compared": _ha_guard["compared"]},
             "material_coverage": {**_material_stamp, **_material_coverage},
             # The curated metal/non-metal map the druidic-oath gate reads. A
             # material absent from this map is UNKNOWN, and the gate fails open.
@@ -704,7 +787,9 @@ def build() -> dict:
             # The picker drops them from suggestions and redirects the player to the
             # replacements, instead of offering a priority no item can satisfy.
             "expanded_away_names": {**umbrella_mod.umbrella_expansion(),
-                                    **speed_split_mod.EXPANDED_AWAY},
+                                    **speed_split_mod.EXPANDED_AWAY,
+                                    **parrying_split_mod.EXPANDED_AWAY,
+                                    **heightened_awareness_mod.EXPANDED_AWAY},
             # U5 — the shared affix-name registry + variant->canonical alias table.
             # The web picker unions every affix source (gear, augments, set bonuses,
             # ALL crafting pools) and canonicalizes each through the alias table, so a

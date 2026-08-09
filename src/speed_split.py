@@ -45,7 +45,12 @@ system, not the number — `{{Speed|V}}` legitimately states 5%.
 from __future__ import annotations
 
 import re
-import urllib.parse
+
+from src import enchantment_split as _es
+# Re-exported so existing callers and tests keep importing these from here.
+from src.enchantment_split import (  # noqa: F401
+    STATED, DEFAULTED, UNSOURCED, title_for, snapshot_key, snapshot_for,
+)
 
 # The folded upstream name, and what it actually means.
 FOLDED_NAME = "Speed"
@@ -61,23 +66,20 @@ EXPANDED_AWAY = {FOLDED_NAME.lower(): [MOVEMENT_NAME, MELEE_NAME, RANGED_NAME]}
 
 _ALACRITY_KEYS = (("melee", MELEE_NAME), ("ranged", RANGED_NAME))
 
-# Provenance labels, named rather than spelled inline. Four functions branch on
-# these; a bare literal drifting by one character in one of them is the failure
-# shape that let the material coverage gate pass on corrupted input.
-STATED = "stated"
-DEFAULTED = "defaulted"
-UNSOURCED = "unsourced"
-
-
-def title_for(url: str) -> str:
-    """`/page/Item:Ash_Boots` -> `Item:Ash Boots` (the shard's key)."""
-    return urllib.parse.unquote((url or "").replace("/page/", "")).replace("_", " ")
-
-
-def _bonus_type(affix: dict) -> str:
-    # Every observed Striding/Speed affix is Enhancement-typed upstream; preserve
-    # whatever the record carries rather than hardcoding, so a future retype rides.
-    return affix.get("type") or "Enhancement"
+# How the folded `Speed` affix expands. Speed suppresses on stat name alone,
+# which is safe here only because no Speed item carries a `Movement Speed`
+# affix; an affix whose output collides with a common stat needs the
+# name-and-bucket key instead.
+_CONFIG = _es.SplitConfig(
+    folded_name=FOLDED_NAME,
+    primary_name=MOVEMENT_NAME,
+    primary_key="movement",
+    primary_corrected_stat="movement_corrected",
+    extras=(("melee", MELEE_NAME, "melee_added"),
+            ("ranged", RANGED_NAME, "ranged_added")),
+    shadow_key=_es.name_only,
+    label="speed shard",
+)
 
 
 def apply_to_augments(records, shard: dict) -> dict:
@@ -104,56 +106,8 @@ def apply_to_augments(records, shard: dict) -> dict:
 
 
 def _rewrite_all(records, shard: dict, key_of) -> dict:
-    """Shared classifier. `key_of` maps a record to its shard key."""
-    harvested = (shard or {}).get("harvested") or {}
-    stats = {"renamed": 0, "movement_corrected": 0, "melee_added": 0,
-             "ranged_added": 0, "quarantined": 0, "uncovered": 0}
-
-    for rec in records or []:
-        affixes = rec.get("affixes") or []
-        folded = [a for a in affixes if a.get("name") == FOLDED_NAME]
-        if not folded:
-            continue
-
-        entry = harvested.get(key_of(rec))
-        if entry is None:
-            stats["uncovered"] += 1
-            continue
-
-        value = entry.get("value") or {}
-        eligible = entry.get("provenance") == STATED
-        # Names the record already carries explicitly win — never shadow an
-        # upstream affix. Seeded BEFORE the loop so a pre-existing Melee
-        # Alacrity blocks the melee add without blocking the ranged one.
-        present = {a.get("name") for a in affixes}
-
-        for affix in folded:
-            btype = _bonus_type(affix)
-            affix["name"] = MOVEMENT_NAME
-            stats["renamed"] += 1
-
-            movement = value.get("movement")
-            if movement is not None and str(movement) != str(affix.get("value")):
-                # The Roman-rank correction: gear-planner stored the rank as if it
-                # were a percentage (Speed XI -> 11, actually 30% movement).
-                affix["value"] = str(movement)
-                stats["movement_corrected"] += 1
-
-            if not eligible:
-                stats["quarantined"] += 1
-                continue
-
-            for key, name in _ALACRITY_KEYS:
-                magnitude = value.get(key)
-                if magnitude is None or name in present:
-                    continue
-                affixes.append({"name": name, "type": btype, "value": str(magnitude)})
-                present.add(name)
-                stats["melee_added" if key == "melee" else "ranged_added"] += 1
-
-        rec["affixes"] = affixes
-
-    return stats
+    """Speed's rewrite, over the shared skeleton."""
+    return _es.rewrite_all(records, shard, key_of, _CONFIG)
 
 
 # The wiki's hand-maintained Arabic switch (Template:Speed). Any Arabic magnitude
@@ -237,46 +191,9 @@ def is_roman(raw: str) -> bool:
     return bool(_ROMAN.match(raw or ""))
 
 
-def snapshot_key(raw: str) -> str:
-    """Normalize an invocation to its snapshot key.
-
-    Case only: `{{speed|V}}` appears lowercase in live wikitext alongside
-    `{{Speed|V}}`, and they are the same invocation rendering the same tooltip.
-    Nothing else is normalized — whitespace or argument differences are real
-    differences and must not be collapsed into one snapshot.
-    """
-    return (raw or "").strip().lower()
-
-
-def snapshot_for(shard: dict, raw: str):
-    """The stored tooltip snapshot for an invocation, or None when unharvested."""
-    snapshots = (shard or {}).get("snapshots") or {}
-    return snapshots.get(snapshot_key(raw))
-
-
 def audit_snapshots(shard: dict) -> dict:
-    """Report which invocations still lack a rendered-tooltip snapshot.
-
-    The snapshot store is exclude-until-verified: it ships empty and fills in as
-    invocations are rendered. While an invocation is unsnapshotted the guard has
-    nothing to compare against for it, so a green suite would otherwise imply a
-    coverage that does not exist
-    (`docs/solutions/conventions/exclude-until-verified-empty-seed-masks-consuming-bugs.md`).
-    This makes the shortfall a reported number rather than a silent pass.
-
-    Raises on an empty shard, for the same reason `audit_shard` does.
-    """
-    harvested = (shard or {}).get("harvested") or {}
-    if not harvested:
-        raise ValueError(
-            "speed shard is empty — refusing to report snapshot coverage over zero records")
-
-    invocations = {snapshot_key(entry.get("raw")) for entry in harvested.values()
-                   if (entry or {}).get("raw")}
-    stored = set((shard.get("snapshots") or {}))
-    missing = sorted(invocations - stored)
-    return {"invocations": len(invocations), "snapshotted": len(invocations) - len(missing),
-            "missing": len(missing), "missing_keys": missing}
+    """Speed's snapshot-coverage audit, over the shared skeleton."""
+    return _es.audit_snapshots(shard, label="speed shard")
 
 
 def check_against_snapshots(shard: dict) -> dict:
@@ -407,27 +324,8 @@ def check_against_snapshots(shard: dict) -> dict:
 
 
 def audit_shard(shard: dict) -> dict:
-    """Report `unsourced` entries as harvest suspects rather than accepting them.
-
-    An `unsourced` reading claims the page carries no Striding/Speed template.
-    That is sometimes true and sometimes a miss: `Item:Belt of the Ram` sat
-    `unsourced` through a whole harvest cycle while its page plainly renders
-    `Speed +15%`, and `harvest-method.md` had recorded the correct reading the
-    entire time. Nothing compared the two, so nothing noticed.
-
-    Raises on an empty shard. A check that inspects nothing passes
-    unconditionally and is indistinguishable from a clean run — the failure
-    mode `docs/solutions/conventions/prove-a-guard-fails-before-trusting-it.md`
-    exists to prevent.
-    """
-    harvested = (shard or {}).get("harvested") or {}
-    if not harvested:
-        raise ValueError(
-            "speed shard is empty — refusing to report a clean audit over zero records")
-
-    suspects = sorted(title for title, entry in harvested.items()
-                      if (entry or {}).get("provenance") == UNSOURCED)
-    return {"inspected": len(harvested), "unsourced": len(suspects), "titles": suspects}
+    """Speed's harvest-suspect audit, over the shared skeleton."""
+    return _es.audit_shard(shard, label="speed shard")
 
 
 def apply(records, shard: dict) -> dict:

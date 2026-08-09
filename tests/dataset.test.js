@@ -100,12 +100,31 @@ test("U6/KTD6: the four in-scope composites are suggested and presence-flagged",
 
 // KTD6 — R9: these already carry magnitude buckets. The plan must NOT convert
 // them to presence-only; that would strip scoring that works today.
-test("U6/KTD6: Parrying, Riposte and Good Luck score as magnitude, not presence", () => {
+//
+// Re-ratified for #169. `Parrying` left this list because it is now EXPANDED
+// AWAY, not because it became presence-only. The original intent — that its
+// magnitude keeps scoring — is preserved and strengthened: the enchantment
+// grants Insight Armor Class and three Insight saves, and it now scores against
+// those four real stats instead of against its own name. The assertion below
+// pins that replacement, so dropping the expansion would fail here too.
+test("U6/KTD6: Riposte and Good Luck score as magnitude, not presence", () => {
   const v = builtVocab();
   if (!v) return console.log("  (skipped — web/data/items.json not built)");
-  for (const n of ["Parrying", "Riposte", "Good Luck"]) {
+  for (const n of ["Riposte", "Good Luck"]) {
     assert.ok(v.suggestions.includes(n), `${n} is offered as a suggestion`);
     assert.ok(!v.presence.has(n), `${n} is NOT presence-only — it carries a magnitude bucket`);
+  }
+});
+
+test("#169: Parrying's magnitude still scores, via its four expanded stats", () => {
+  const v = builtVocab();
+  if (!v) return console.log("  (skipped — web/data/items.json not built)");
+  assert.ok(!v.suggestions.includes("Parrying"),
+    "Parrying names an enchantment, not a stat — it must not be offered");
+  assert.ok(!v.presence.has("Parrying"), "and it must not have become presence-only");
+  for (const n of ["Armor Class", "Fortitude Save", "Reflex Save", "Will Save"]) {
+    assert.ok(v.suggestions.includes(n), `${n} is rankable — the redirect target exists`);
+    assert.ok(!v.presence.has(n), `${n} scores as a magnitude`);
   }
 });
 
@@ -320,6 +339,123 @@ test("picker: a bonus TYPE is never offered as a rankable stat", () => {
   });
   assert.deepStrictEqual(typeOnly, [],
     `a name that only ever appears as a bonus type is not rankable; offered: ${JSON.stringify(typeOnly)}`);
+});
+
+
+// --- #169: saved-character priority migration ---------------------------------
+// loadCharacter() restored `priorities` verbatim and never consulted the
+// expanded-away map, so a character who ranked `Parrying` before it expanded
+// would load a priority matching no item — scoring zero, indistinguishable from
+// a target nothing happens to carry.
+
+const AWAY_VOCAB = { expandedAway: {
+  "parrying": ["Armor Class", "Fortitude Save", "Reflex Save", "Will Save"],
+  "heightened awareness": ["Armor Class"],
+  "speed": ["Movement Speed", "Melee Alacrity", "Ranged Alacrity"],
+} };
+
+test("#169: an expanded-away priority is substituted, preserving rank order", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const out = migratePriorities(["Strength", "Parrying", "Dodge"], AWAY_VOCAB);
+  assert.deepStrictEqual(out.priorities,
+    ["Strength", "Armor Class", "Fortitude Save", "Reflex Save", "Will Save", "Dodge"]);
+  assert.deepStrictEqual(out.substitutions,
+    [{ from: "Parrying", to: ["Armor Class", "Fortitude Save", "Reflex Save", "Will Save"] }]);
+});
+
+test("#169: two names expanding to the same stat do not duplicate it", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const out = migratePriorities(["Parrying", "Heightened Awareness"], AWAY_VOCAB);
+  assert.strictEqual(out.priorities.filter((p) => p === "Armor Class").length, 1);
+  assert.strictEqual(out.substitutions.length, 2, "both substitutions are still disclosed");
+});
+
+test("#169: an existing concrete priority is not duplicated by the expansion", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const out = migratePriorities(["Armor Class", "Heightened Awareness"], AWAY_VOCAB);
+  assert.deepStrictEqual(out.priorities, ["Armor Class"]);
+});
+
+test("#169: a character with no expanded-away priority is untouched", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const out = migratePriorities(["Strength", "Dodge"], AWAY_VOCAB);
+  assert.deepStrictEqual(out.priorities, ["Strength", "Dodge"]);
+  assert.strictEqual(out.substitutions.length, 0, "no disclosure when nothing changed");
+});
+
+test("#169: migration is idempotent", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const once = migratePriorities(["Parrying"], AWAY_VOCAB).priorities;
+  const twice = migratePriorities(once, AWAY_VOCAB);
+  assert.deepStrictEqual(twice.priorities, once);
+  assert.strictEqual(twice.substitutions.length, 0);
+});
+
+test("#169: matching is case-insensitive, because priorities were free-typeable", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  assert.strictEqual(migratePriorities(["parrying"], AWAY_VOCAB).substitutions.length, 1);
+  assert.strictEqual(migratePriorities(["  PARRYING "], AWAY_VOCAB).substitutions.length, 1);
+});
+
+test("#169: empty and malformed priority lists do not throw", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  for (const input of [undefined, null, [], "nonsense"]) {
+    assert.deepStrictEqual(migratePriorities(input, AWAY_VOCAB).priorities, []);
+  }
+});
+
+test("#169: the disclosure names both the old target and its replacements", () => {
+  const { migratePriorities, migrationMessage } = require("../web/dataset.js");
+  const msg = migrationMessage(migratePriorities(["Parrying"], AWAY_VOCAB).substitutions);
+  assert.ok(msg.includes("Parrying"), "names what the player had ranked");
+  for (const s of ["Armor Class", "Fortitude Save", "Reflex Save", "Will Save"]) {
+    assert.ok(msg.includes(s), `names the replacement ${s}`);
+  }
+  assert.strictEqual(migrationMessage([]), null, "no message when nothing changed");
+});
+
+test("#169: the built dataset's real map drives the migration", () => {
+  const v = builtVocab();
+  if (!v) return console.log("  (skipped — web/data/items.json not built)");
+  const { migratePriorities } = require("../web/dataset.js");
+  const out = migratePriorities(["Parrying", "Heightened Awareness", "Speed"], v);
+  assert.strictEqual(out.substitutions.length, 3,
+    "all three expanded names migrate off the shipped metadata");
+  for (const p of out.priorities) {
+    assert.ok(v.suggestions.includes(p), `${p} is a real rankable target`);
+  }
+});
+
+
+// --- review #169: prototype-chain hazard + bound-map cleanup --------------------
+
+test("#169: a priority colliding with Object.prototype does not resolve or throw", () => {
+  const { migratePriorities, expandedAwayFor } = require("../web/dataset.js");
+  // `Object.length === 1`, so a bare `hit && hit.length` check let the inherited
+  // `constructor` through and the caller threw on `.slice()` -- a saved or
+  // imported character became permanently unloadable.
+  for (const hostile of ["constructor", "toString", "valueOf", "__proto__", "hasOwnProperty"]) {
+    assert.strictEqual(expandedAwayFor(AWAY_VOCAB, hostile), null, `${hostile} must not resolve`);
+    const out = migratePriorities([hostile], AWAY_VOCAB);
+    assert.deepStrictEqual(out.priorities, [hostile], `${hostile} passes through untouched`);
+    assert.strictEqual(out.substitutions.length, 0);
+  }
+});
+
+test("#169: a non-array map value is rejected rather than trusted", () => {
+  const { expandedAwayFor } = require("../web/dataset.js");
+  assert.strictEqual(expandedAwayFor({ expandedAway: { parrying: "Armor Class" } }, "Parrying"), null,
+    "a bare string has .length and would have passed the old check");
+});
+
+test("#169: the disclosure names a dropped bound", () => {
+  const { migratePriorities, migrationMessage } = require("../web/dataset.js");
+  const subs = migratePriorities(["Parrying"], AWAY_VOCAB).substitutions;
+  const msg = migrationMessage(subs, ["Parrying"]);
+  assert.ok(/removed rather than copied/.test(msg), "the drop is disclosed, not silent");
+  assert.ok(msg.includes('"Parrying"'));
+  const quiet = migrationMessage(subs, []);
+  assert.ok(!/removed rather than copied/.test(quiet), "no bound, no bound sentence");
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);

@@ -1,0 +1,1438 @@
+{
+  "_meta": {
+    "field": "parrying_version",
+    "note": "Wiki-harvested seed shard. Values are verbatim from the DDO wiki; `provenance` records whether the wiki stated the value, fell back to a template default, or is silent. Only `stated` is solver-eligible.",
+    "snapshots_note": "Rendered-tooltip snapshots keyed by case-normalized template invocation. The tooltip is a pure function of the invocation, so this is keyed per invocation, not per item. Exclude-until-verified: ships empty and fills as invocations are rendered; audit_snapshots() reports the shortfall so an empty store cannot read as coverage.",
+    "stacking_note": "Wiki-stated interaction (Heightened Awareness page, Notes): \"Does not stack with the insight bonus to AC provided by the parrying suffix.\" Both affixes emit Armor Class as an Insight bonus, so the solver's bucket-max core (sum(z) <= 1 per (stat, bonus_type) bucket) enforces this without a special case -- provided both keep emitting the SAME stat name and the SAME bonus type. Retyping either one silently restores double-counting."
+  },
+  "snapshots": {
+    "{{parrying|1}}": {
+      "tooltip": "Parrying +1: +1 Insight bonus to Armor Class, +1 Insight bonus to Saves.",
+      "harvested": "2026-08-08"
+    },
+    "{{parrying|2}}": {
+      "tooltip": "Parrying +2: +2 Insight bonus to Armor Class, +2 Insight bonus to Saves.",
+      "harvested": "2026-08-08"
+    },
+    "{{parrying|3}}": {
+      "tooltip": "Parrying +3: +3 Insight bonus to Armor Class, +3 Insight bonus to Saves.",
+      "harvested": "2026-08-08"
+    },
+    "{{parrying|4}}": {
+      "tooltip": "Parrying +4: +4 Insight bonus to Armor Class, +4 Insight bonus to Saves.",
+      "harvested": "2026-08-08"
+    },
+    "{{parrying|5}}": {
+      "tooltip": "Parrying +5: +5 Insight bonus to Armor Class, +5 Insight bonus to Saves.",
+      "harvested": "2026-08-08"
+    },
+    "{{parrying|6}}": {
+      "tooltip": "Parrying +6: +6 Insight bonus to Armor Class, +6 Insight bonus to Saves.",
+      "harvested": "2026-08-08"
+    },
+    "{{parrying|iv}}": {
+      "tooltip": "Parrying IV: Passive: +2 Insight bonus to Armor Class, +2 Insight bonus to Fortitude, Reflex, and Will Saving throws.",
+      "harvested": "2026-08-08"
+    },
+    "{{parrying|i}}": {
+      "tooltip": "Parrying I: Passive: +1 Insight bonus to Armor Class, +1 Insight bonus to Fortitude, Reflex, and Will Saving throws.",
+      "harvested": "2026-08-08"
+    },
+    "{{parrying|viii}}": {
+      "tooltip": "Parrying VIII: Passive: +4 Insight bonus to Armor Class, +4 Insight bonus to Fortitude, Reflex, and Will Saving throws.",
+      "harvested": "2026-08-08"
+    }
+  },
+  "harvested": {
+    "Admiral's Cummerbund": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Balizarde, Protector of the King": {
+      "value": {
+        "version": "VIII",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|VIII}}",
+      "harvested": "2026-08-08"
+    },
+    "Bittersnow": {
+      "value": {
+        "version": "1",
+        "armor_class": 1,
+        "saves": 1
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|1}}",
+      "harvested": "2026-08-08"
+    },
+    "Blackfeather Cloak": {
+      "value": {
+        "version": "4",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Bladed Steel Ring": {
+      "value": {
+        "version": "IV",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|IV}}",
+      "harvested": "2026-08-08"
+    },
+    "Bracers of the Sun Soul": {
+      "value": {
+        "version": "VIII",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|VIII}}",
+      "harvested": "2026-08-08"
+    },
+    "Breastplate of the Celestial Avenger": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Breastplate of the Celestial Sage": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Brightsun": {
+      "value": {
+        "version": "1",
+        "armor_class": 1,
+        "saves": 1
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|1}}",
+      "harvested": "2026-08-08"
+    },
+    "Celestial Topaz Ring": {
+      "value": {
+        "version": "3",
+        "armor_class": 3,
+        "saves": 3
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|3}}",
+      "harvested": "2026-08-08"
+    },
+    "Cerulean Guard": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Champion of the Twins": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Cladding of Dead Leaves": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Cloak of Balance": {
+      "value": {
+        "version": "3",
+        "armor_class": 3,
+        "saves": 3
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|3}}",
+      "harvested": "2026-08-08"
+    },
+    "Cloak of Spring": {
+      "value": {
+        "version": "1",
+        "armor_class": 1,
+        "saves": 1
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|1}}",
+      "harvested": "2026-08-08"
+    },
+    "Cloak of the City's Champion": {
+      "value": {
+        "version": "3",
+        "armor_class": 3,
+        "saves": 3
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|3}}",
+      "harvested": "2026-08-08"
+    },
+    "Coat of the Traveler": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Dark Bargainer's Armor": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Darkmoss": {
+      "value": {
+        "version": "1",
+        "armor_class": 1,
+        "saves": 1
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|1}}",
+      "harvested": "2026-08-08"
+    },
+    "Disciple of the Dawn": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Docent of the Celestial Avenger": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Docent of the Celestial Sage": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Dread Stalker's Skullcap": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Epic Bracers of the Claw": {
+      "value": {
+        "version": "4",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Epic Coronach": {
+      "value": {
+        "version": "5",
+        "armor_class": 5,
+        "saves": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|5}}",
+      "harvested": "2026-08-08"
+    },
+    "Epic Delera's Vestment": {
+      "value": {
+        "version": "5",
+        "armor_class": 5,
+        "saves": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|5}}",
+      "harvested": "2026-08-08"
+    },
+    "Epic Ring of the Silver Concord": {
+      "value": {
+        "version": "4",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Epic Smash 'n Grabber": {
+      "value": {
+        "version": "4",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Epic Snakeskin Belt": {
+      "value": {
+        "version": "4",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Epic Swashbuckler (level 20)": {
+      "value": {
+        "version": "4",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Epic Swashbuckler (level 24)": {
+      "value": {
+        "version": "5",
+        "armor_class": 5,
+        "saves": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|5}}",
+      "harvested": "2026-08-08"
+    },
+    "Epic Swashbuckler (level 28)": {
+      "value": {
+        "version": "5",
+        "armor_class": 5,
+        "saves": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|5}}",
+      "harvested": "2026-08-08"
+    },
+    "Epic Tourney Armor": {
+      "value": {
+        "version": "4",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Ethereal Bracers": {
+      "value": {
+        "version": "I",
+        "armor_class": 1,
+        "saves": 1
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|I}}",
+      "harvested": "2026-08-08"
+    },
+    "Focal Point": {
+      "value": {
+        "version": "4",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Gossamer Gloves": {
+      "value": {
+        "version": "4",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Hector's Bracer": {
+      "value": {
+        "version": "4",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Hunter's Hide": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Ir'Kesslan's Most Prescient Lens": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Leathers of the Celestial Archer": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Leathers of the Celestial Avenger": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Leathers of the Celestial Sage": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Admiral's Cummerbund": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Bittersnow": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Bracers of the Claw": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Brightsun": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Bronze Figurine": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Celestial Topaz Ring": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Cloak of Balance": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Cloak of Spring": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Cloak of the City's Champion": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Coat of the Traveler": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Darkmoss": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Disciple of the Dawn": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Dread Stalker's Skullcap": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Ironclad Armbands": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Mantle of Aosu'riel": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Memory of Hiding in Darkness": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Mist-laden Vestment": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Necromancer's Bracers": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Plate of the Summer Solstice": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Plate of the Winter Solstice": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Platemail of the Barovian Lord": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Ring of the Silver Concord": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Robe of the Autumn Winds": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Scale-Stone of Avarice": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Scale-Stone of Malice": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Scales of Avarice": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Scales of Malice": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Scales of the Exile": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Shield of Reflecting": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Smash 'n Grabber": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Snakeskin Belt": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Snowscale": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Standard Issue Sigil": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Stone Shoes": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Stonemeld Plate Armor": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary String of Ears": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Sunscale": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Swashbuckler (level 32)": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Tharne's Bracers": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Tourney Armor": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary University Bulwark's Coat": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary University Bulwark's Docent": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary University Bulwark's Outfit": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary University Bulwark's Platemail": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary University Bulwark's Reinforced Shirt": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary University Bulwark's Robe": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Legendary Vishral's Signet": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Mantle of Aosu'riel": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Memory of Hiding in Darkness": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Mindcleaver's Armor": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Mist-laden Vestment": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Necromancer's Bracers": {
+      "value": {
+        "version": "3",
+        "armor_class": 3,
+        "saves": 3
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|3}}",
+      "harvested": "2026-08-08"
+    },
+    "Nicked Longsword": {
+      "value": {
+        "version": "1",
+        "armor_class": 1,
+        "saves": 1
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|1}}",
+      "harvested": "2026-08-08"
+    },
+    "Oathblade": {
+      "value": {
+        "version": "VIII",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|VIII}}",
+      "harvested": "2026-08-08"
+    },
+    "Outfit of the Celestial Avenger": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Outfit of the Celestial Guardian": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Plate of the Summer Solstice": {
+      "value": {
+        "version": "1",
+        "armor_class": 1,
+        "saves": 1
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|1}}",
+      "harvested": "2026-08-08"
+    },
+    "Plate of the Winter Solstice": {
+      "value": {
+        "version": "1",
+        "armor_class": 1,
+        "saves": 1
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|1}}",
+      "harvested": "2026-08-08"
+    },
+    "Platemail of the Barovian Lord": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Platemail of the Celestial Avenger": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Platemail of the Celestial Sage": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Ring of the Silver Concord": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Robe of the Autumn Winds": {
+      "value": {
+        "version": "1",
+        "armor_class": 1,
+        "saves": 1
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|1}}",
+      "harvested": "2026-08-08"
+    },
+    "Robe of the Celestial Sage": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Scale-Stone of Avarice": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Scale-Stone of Malice": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Scalemail of the Celestial Avenger": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Scalemail of the Celestial Sage": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Scales of Avarice": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Scales of Malice": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Scales of the Exile": {
+      "value": {
+        "version": "3",
+        "armor_class": 3,
+        "saves": 3
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|3}}",
+      "harvested": "2026-08-08"
+    },
+    "Scoundrel's Duelist's Leathers": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Scourge's Guise": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Shield of Reflecting": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Silver Sigil Gloves": {
+      "value": {
+        "version": "4",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Snowscale": {
+      "value": {
+        "version": "1",
+        "armor_class": 1,
+        "saves": 1
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|1}}",
+      "harvested": "2026-08-08"
+    },
+    "Sphere of Souls": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Staggershockers": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Standard Issue Sigil": {
+      "value": {
+        "version": "3",
+        "armor_class": 3,
+        "saves": 3
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|3}}",
+      "harvested": "2026-08-08"
+    },
+    "Stone Shoes": {
+      "value": {
+        "version": "3",
+        "armor_class": 3,
+        "saves": 3
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|3}}",
+      "harvested": "2026-08-08"
+    },
+    "Sunscale": {
+      "value": {
+        "version": "1",
+        "armor_class": 1,
+        "saves": 1
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|1}}",
+      "harvested": "2026-08-08"
+    },
+    "Swashbuckler (level 12)": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Swashbuckler (level 16)": {
+      "value": {
+        "version": "3",
+        "armor_class": 3,
+        "saves": 3
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|3}}",
+      "harvested": "2026-08-08"
+    },
+    "Swashbuckler (level 4)": {
+      "value": {
+        "version": "1",
+        "armor_class": 1,
+        "saves": 1
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|1}}",
+      "harvested": "2026-08-08"
+    },
+    "Swashbuckler (level 8)": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Sworn Aegis": {
+      "value": {
+        "version": "4",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|4}}",
+      "harvested": "2026-08-08"
+    },
+    "The Leaf Mail": {
+      "value": {
+        "version": "1",
+        "armor_class": 1,
+        "saves": 1
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|1}}",
+      "harvested": "2026-08-08"
+    },
+    "The Legendary Leaf Mail": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|6}}",
+      "harvested": "2026-08-08"
+    },
+    "Tourney Armor": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "Trailblazer's Outfit": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|2}}",
+      "harvested": "2026-08-08"
+    },
+    "University Bulwark's Coat": {
+      "value": {
+        "version": "4",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|4}}",
+      "harvested": "2026-08-08"
+    },
+    "University Bulwark's Docent": {
+      "value": {
+        "version": "4",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|4}}",
+      "harvested": "2026-08-08"
+    },
+    "University Bulwark's Outfit": {
+      "value": {
+        "version": "4",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|4}}",
+      "harvested": "2026-08-08"
+    },
+    "University Bulwark's Platemail": {
+      "value": {
+        "version": "4",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|4}}",
+      "harvested": "2026-08-08"
+    },
+    "University Bulwark's Reinforced Shirt": {
+      "value": {
+        "version": "4",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|4}}",
+      "harvested": "2026-08-08"
+    },
+    "University Bulwark's Robe": {
+      "value": {
+        "version": "4",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|4}}",
+      "harvested": "2026-08-08"
+    },
+    "Vishral's Signet": {
+      "value": {
+        "version": "3",
+        "armor_class": 3,
+        "saves": 3
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|3}}",
+      "harvested": "2026-08-08"
+    }
+  }
+}

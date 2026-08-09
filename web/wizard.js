@@ -416,7 +416,10 @@ if (typeof window !== "undefined" && window.App) {
       pool: "all", ownedNames: null, priorities: [], slotConstraints: {}, constraintsDirty: false, lastRun: null,
       characterName: "", loadedStale: false,
       // plan 003 U4 — set on load when a pre-U1 save is migrated to declared.
-      twfMigrated: false };
+      twfMigrated: false,
+      // #169 — set on load when a saved character ranked an expanded-away name;
+      // holds the disclosure sentence, or null when nothing was substituted.
+      expandedAwayMigrated: null };
 
     let highs = null;
     async function getHighs() {
@@ -1241,6 +1244,37 @@ if (typeof window !== "undefined" && window.App) {
       // U4 — restore per-priority caps/floors (absent on pre-U4 saves -> empty).
       state.targetCaps = (i.targetCaps && typeof i.targetCaps === "object") ? { ...i.targetCaps } : {};
       state.targetFloors = (i.targetFloors && typeof i.targetFloors === "object") ? { ...i.targetFloors } : {};
+      // #169 — a saved character may rank a name that has since been EXPANDED
+      // AWAY (`Speed`, `Parrying`, `Heightened Awareness`, the umbrella ability
+      // names). The add-a-priority paths refuse those, but this one restored them
+      // verbatim: the priority would load looking normal and score zero forever,
+      // indistinguishable from a target no item happens to carry. Substitute the
+      // stats it actually became, and disclose it — a silent rewrite of someone's
+      // saved character is the same defect in a different coat.
+      //
+      // Runs AFTER the bound maps are restored, because it has to clean them: a
+      // cap or floor keyed to the old name is stranded once that name leaves the
+      // priority list. `model.js` still unions it into the target set and the
+      // solver reports a floor it can never satisfy, while the UI offers no row
+      // to delete it — bounds are only removable through their priority row.
+      // They are DROPPED rather than remapped: "min 4 Parrying" is not
+      // "min 4 Armor Class", and copying it onto four stats would invent four
+      // constraints the player never set.
+      const _dnMig = _datasetNormalizer();
+      state.expandedAwayMigrated = null;
+      if (_dnMig && _dnMig.migratePriorities) {
+        const migrated = _dnMig.migratePriorities(state.priorities, pickerVocabulary(dataset));
+        if (migrated.substitutions.length) {
+          state.priorities = migrated.priorities;
+          const droppedBounds = [];
+          for (const sub of migrated.substitutions) {
+            for (const map of [state.targetCaps, state.targetFloors]) {
+              if (map && map[sub.from] != null) { droppedBounds.push(sub.from); delete map[sub.from]; }
+            }
+          }
+          state.expandedAwayMigrated = _dnMig.migrationMessage(migrated.substitutions, droppedBounds);
+        }
+      }
       state.slotConstraints = i.slotConstraints || {};
       state.constraintsDirty = false;   // loaded constraints are the saved state, not a pending change
       // U5, Part C — one-time load migration: a PRE-OVERHAUL saved snapshot embedded
@@ -1379,15 +1413,32 @@ if (typeof window !== "undefined" && window.App) {
     }
 
     // ---- master render + wiring -------------------------------------------
+    // #169 — the load-time priority substitution notice. Rendered ABOVE the step
+    // body rather than inside the results card, because a loaded character routes
+    // to either results or priorities depending on its snapshot, and the player
+    // needs to be told their ranking changed on both paths.
+    function migrationBanner() {
+      if (!state.expandedAwayMigrated) return "";
+      return `<div id="wz-awaymig" class="wz-cbar">${esc(state.expandedAwayMigrated)}
+        <button class="btn ghost" id="wz-awaymig-ok" type="button">Got it</button></div>`;
+    }
+
     function render() {
       const bodies = { intro: stepIntro, character: stepCharacter, pool: stepPool, priorities: stepPriorities, results: stepResults };
       root.innerHTML = `<div class="wz-topbar">${renderStepper()}<button class="btn ghost wz-browse-btn" data-browse type="button">Browse items</button></div>`
+        + migrationBanner()
         + (bodies[state.step] || stepIntro)();
       wire();
     }
     function go(step) { state.step = step; render(); }
 
     function wire() {
+      const awayOk = document.getElementById("wz-awaymig-ok");
+      if (awayOk) awayOk.onclick = () => {
+        state.expandedAwayMigrated = null;
+        const bar = document.getElementById("wz-awaymig");
+        if (bar) bar.remove();
+      };
       root.querySelectorAll("[data-browse]").forEach((b) => b.onclick = openBrowser);
       root.querySelectorAll("[data-goto]").forEach((b) => b.onclick = () => { if (!b.disabled) go(b.dataset.goto); });
       root.querySelectorAll("[data-back]").forEach((b) => b.onclick = () => go(prevStep(state.step)));
