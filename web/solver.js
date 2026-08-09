@@ -167,25 +167,6 @@ function buildProgram(model) {
   const extraVars = [];
   const extraConstraints = [];
 
-  // The empty gate list makes a credit AVAILABLE; it does not make it TAKEN.
-  // `encodeStage` bounds each z by the bucket cap plus one `z - gate <= 0` per
-  // gate, so a gateless z is a free binary that only an objective pulls to 1.
-  // That holds on the optimum path — every stage maximizes its stat and then
-  // locks it exactly — but every alternatives generator runs `tieBreak:false`
-  // with relaxed `>= value - give` locks, where a credited stat that is not the
-  // current gain objective carries no objective coefficient and settles at its
-  // lower bound. `readSolution` sums value*z, so that alternative would report a
-  // total missing a bonus the player unconditionally holds. For gear, `z = 0`
-  // truthfully means "not equipped"; for a credit it asserts something false
-  // about the character — the one invariant a credit does NOT inherit from gear.
-  // Pin each credited bucket at or above its credit. Always feasible (the
-  // credit's own z satisfies it), one constraint per credited bucket.
-  for (const [key, floorValue] of creditBuckets) {
-    const zs = zByBucket.get(key) || [];
-    if (!zs.length) continue;
-    extraConstraints.push(`${zs.map((z) => `+ ${z.value} ${z.name}`).join(" ")} >= ${floorValue}`);
-  }
-
   // U6 — per-slot pin/lock constraints hold across every lexicographic stage.
   // No-op when the query carries no slotConstraints (current live behavior).
   for (const body of slotConstraintBodies(xVars, model.query && model.query.slotConstraints)) {
@@ -863,6 +844,37 @@ function buildProgram(model) {
         zByBucket.get(k).push({ name: "z" + zc++, gates: [sa], value: val });
       }
     }
+  }
+
+  // The empty gate list makes a credit AVAILABLE; it does not make it TAKEN.
+  // `encodeStage` bounds each z by the bucket cap plus one `z - gate <= 0` per
+  // gate, so a gateless z is a free binary that only an objective pulls to 1.
+  // That holds on the optimum path — every stage maximizes its stat and then
+  // locks it exactly — but every alternatives generator runs `tieBreak:false`
+  // with relaxed `>= value - give` locks, where a credited stat that is not the
+  // current gain objective carries no objective coefficient and settles at its
+  // lower bound. `readSolution` sums value*z, so that alternative would report a
+  // total missing a bonus the player unconditionally holds. For gear, `z = 0`
+  // truthfully means "not equipped"; for a credit it asserts something false
+  // about the character — the one invariant a credit does NOT inherit from gear.
+  // Pin each credited bucket at or above its credit. Always feasible (the
+  // credit's own z satisfies it), one constraint per credited bucket.
+  //
+  // EMITTED LAST, and that placement is load-bearing — do not hoist it up to the
+  // bucket build. Worn affixes are bucketed near the top of this function, but
+  // augments, set tiers, crafting, and set augments push into `zByBucket`
+  // throughout the body above. Emitted any earlier, this sums only the
+  // contributions that existed at that point while `encodeStage`'s
+  // `sum(z) <= 1` covers the whole bucket — so choosing a later-added
+  // contribution drives the constrained subset to zero and violates the bound,
+  // and the solver is forced onto the weaker credit. Shipped exactly that way
+  // once: a credit of 7 against an Insight-10 augment resolved to 7 with the
+  // augment unequipped, breaking R5. Worn-only tests cannot catch it; the
+  // augment and set-tier regressions in tests/solver.test.js pin it.
+  for (const [key, floorValue] of creditBuckets) {
+    const zs = zByBucket.get(key) || [];
+    if (!zs.length) continue;
+    extraConstraints.push(`${zs.map((z) => `+ ${z.value} ${z.name}`).join(" ")} >= ${floorValue}`);
   }
 
   return {

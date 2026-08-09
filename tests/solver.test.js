@@ -2649,6 +2649,50 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
     }
   });
 
+  await test("U1: a stronger AUGMENT in the credited bucket still wins", async () => {
+    // Regression: the credit lower bound was emitted before augments/sets/crafting
+    // joined zByBucket, so it summed only the worn+credit subset while the bucket
+    // cap covered everything. Choosing the augment drove the constrained subset to
+    // zero and violated the bound, forcing the solver onto the weaker credit —
+    // CM resolved to 7 against an Insight-10 augment, breaking R5. The constraint
+    // is now emitted after every push. Worn-only tests cannot catch this.
+    const model = {
+      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      credits: [credit("CM", "Insight", 7)],
+      worn: [slot("Ring", [host("ringHost", "Ring", [], ["Colorless"])])],
+      augments: [augment("augCM", "Colorless", [["CM", "Insight", 10]])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.CM, 10, "the augment beats the credit and must be used");
+    assert.ok(r.chosen.some((c) => c.variant.variant_id === "ringHost"), "its host is equipped");
+  });
+
+  await test("U1: a weaker augment in the credited bucket does not drag the total down", async () => {
+    const model = {
+      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      credits: [credit("CM", "Insight", 7)],
+      worn: [slot("Ring", [host("ringHost", "Ring", [], ["Colorless"])])],
+      augments: [augment("augWeak", "Colorless", [["CM", "Insight", 3]])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.CM, 7, "the credit still holds the bucket");
+  });
+
+  await test("U1: a stronger SET-TIER bonus in the credited bucket still wins", async () => {
+    // The same ordering trap on a different late-pushed channel.
+    const tier = [{ n: 2, affixes: [["CM", "Insight", 11]] }];
+    const model = {
+      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      credits: [credit("CM", "Insight", 7)],
+      worn: [
+        slot("Ring", [setPiece("rA", "Ring", [], "Alpha", tier)]),
+        slot("Necklace", [setPiece("nA", "Necklace", [], "Alpha", tier)]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.CM, 11, "the completed set tier beats the credit");
+  });
+
   await test("U1: a credit on a bucketed-but-untargeted stat never contributes silently", async () => {
     // targetList is model.targets, NOT the widened targetSet, so a credit on a
     // stat that is bucketed but not a target would not surface in `effective`.
