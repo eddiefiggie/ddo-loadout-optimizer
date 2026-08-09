@@ -736,13 +736,74 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     // armor dodge cap in buildProgram. U2 — user-set per-stat floors (best-effort).
     userCaps: query.targetCaps || {},
     floors: query.targetFloors || {},
+    // U1 (declared stat credits) — what the player already holds from a non-gear
+    // source. Normalized to an array here so the solver has one shape to read;
+    // the query carries a `(stat, bonus type)`-keyed map so the UI can address a
+    // single credit for edit and removal.
+    credits: normalizeCredits(query.declaredCredits),
   };
+}
+
+// KTD3 — the closed bonus-type vocabulary a declared credit may name. Curated,
+// NOT derived from the dataset: the dataset's `type` column carries `Bool`,
+// `Penalty`, `-`, and damage/material tokens, and omits types no gear happens to
+// carry (`Morale`) — and a credit in a bucket no gear occupies is precisely the
+// additive case AE4 exists for. Kept beside `_STACK_EQUIV` so the vocabulary and
+// the equivalence table are maintained together.
+//
+// This list is the choke point, not the UI. A near-miss string is wrong-HIGH and
+// silent: `insight` forms its own bucket key, so the credit stops competing with
+// Insight gear and ADDS to it — a credit of 7 beside an Insight-5 ring reported
+// 12 with the ring still equipped, violating R5 and R6 in one solve. Case-folding
+// is not the fix, because an unrecognized type stacking additively is CORRECT for
+// a real type no gear carries; only membership separates "Morale, legitimately
+// additive" from "insight, a typo". U2's selector renders from this same list.
+const CREDIT_BONUS_TYPES = [
+  "Enhancement", "Insight", "Quality", "Competence", "Exceptional", "Profane",
+  "Sacred", "Morale", "Luck", "Resistance", "Deflection", "Armor", "Shield",
+  "Natural", "Artifact", "Vitality", "Equipment", "Untyped", "Implement",
+  "Legendary", "Alchemical", "Primal", "Festive",
+];
+const _CREDIT_TYPE_SET = new Set(CREDIT_BONUS_TYPES);
+
+// A player-typed magnitude is the first number in this system that does not trace
+// to the wiki, so it is bounded as well as validated. Above ~1e15 the value
+// stringifies into LP text HiGHS refuses to parse, and `highs.solve` THROWS out of
+// the solver rather than returning `{status:"infeasible"}` — a hard crash instead
+// of a graceful failure. No real DDO bonus approaches four digits.
+const MAX_CREDIT_VALUE = 9999;
+
+/** Declared credits as a deduped array, from either the keyed map or an array. */
+function normalizeCredits(declared) {
+  if (!declared) return [];
+  const rows = Array.isArray(declared) ? declared : Object.values(declared);
+  const byKey = new Map();
+  for (const row of rows) {
+    if (!row) continue;
+    const stat = String(row.stat == null ? "" : row.stat).trim();
+    const bonusType = String(row.bonus_type == null ? "" : row.bonus_type).trim();
+    const value = Number(row.value);
+    // A non-positive or unreadable credit is dropped rather than entering a
+    // bucket, mirroring the `value > 0` filter gear affixes already pass through
+    // — a zero contribution would occupy the one-contributor-per-bucket slot and
+    // suppress real gear. A2 also makes a credit an integer.
+    if (!stat || !Number.isFinite(value) || value <= 0) continue;
+    if (!Number.isInteger(value) || value > MAX_CREDIT_VALUE) continue;
+    if (!_CREDIT_TYPE_SET.has(bonusType)) continue;
+    // Keep the LARGER of two rows on one key rather than last-wins: the bucket
+    // resolves max-of-type, so silently dropping the bigger declaration would
+    // contradict the very rule the credit participates under.
+    const key = `${stat}||${bonusType}`;
+    const prev = byKey.get(key);
+    if (!prev || prev.value < value) byKey.set(key, { stat, bonus_type: bonusType, value });
+  }
+  return [...byKey.values()];
 }
 
 // exports for node tests; harmless in the browser
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
-    buildModel, eligible, variantConflict, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
+    buildModel, normalizeCredits, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
     offHandItemsExcluded, allowedOffHandWeaponTypes, pinSlotConflict,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys,
     isForgedRace, isDocent, isBothHandsWeapon, variantKey, setStackEquiv, equivType,

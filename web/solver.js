@@ -49,6 +49,18 @@ var _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined")
   // eslint-disable-next-line global-require
   : require("./model.js").pinnedVariantIds;
 
+// U1 (declared stat credits) — the SAME sanitizer buildModel uses. Resolved here
+// rather than re-filtering inline so the two layers cannot disagree about what a
+// valid credit is. They did: an inline `c.stat && c.value > 0` check admitted a
+// missing bonus_type (keying a `stat||undefined` bucket no gear can join, so the
+// credit stacked instead of competing) and a numeric STRING (which formats into
+// valid LP, then concatenates in readSolution's accumulator and turns the headline
+// total into "07"). A caller reaching buildProgram directly gets the same rules.
+var _normalizeCredits = (typeof normalizeCredits !== "undefined")
+  ? normalizeCredits
+  // eslint-disable-next-line global-require
+  : require("./model.js").normalizeCredits;
+
 // R1/R3 — both-hands weapon classifier for the hand mutex, resolved across runtimes
 // (browser global from model.js vs Node require), same as the helpers above.
 var _isBothHandsWeapon = (typeof isBothHandsWeapon !== "undefined")
@@ -101,7 +113,14 @@ function buildProgram(model) {
   }
   // A capped OR floored stat must have its buckets built even if it is not a priority
   // target, so its raw expression exists for the clamp / floor constraint (KTD3).
-  const targetSet = new Set([...model.targets, ...Object.keys(cappedStats), ...Object.keys(model.floors || {})]);
+  // U1 (declared stat credits) — a credit is a contribution the player already
+  // holds, so its bucket must exist for the same reason a capped or floored
+  // stat's does. `_equivType` on the type half is what keeps a credit in the
+  // SAME bucket gear would land in (KTD2); forming the key any other way would
+  // drift the moment the equivalence table changes.
+  const credits = _normalizeCredits(model.credits);
+  const targetSet = new Set([...model.targets, ...Object.keys(cappedStats), ...Object.keys(model.floors || {}),
+    ...credits.map((c) => c.stat)]);
 
   const xVars = [];
   model.worn.forEach((group) => {
@@ -132,11 +151,28 @@ function buildProgram(model) {
     }
   }
 
+  // A declared credit joins the bucket map as a contribution with an EMPTY gate
+  // list — nothing has to be equipped for the player to have it. The existing
+  // one-contributor-per-bucket cap then produces max-of-type for free (KTD1).
+  const creditBuckets = new Map();
+  for (const c of credits) {
+    const k = `${c.stat}||${_equivType(c.bonus_type)}`;
+    if (!buckets.has(k)) buckets.set(k, []);
+    buckets.get(k).push({ gates: [], value: c.value, credit: c });
+    creditBuckets.set(k, Math.max(creditBuckets.get(k) || 0, c.value));
+  }
+
   let zc = 0;
   const zByBucket = new Map();
+  const creditMeta = new Map();          // z name -> the credit it represents (U3 reads this)
   for (const [key, sources] of buckets) {
-    zByBucket.set(key, sources.map((src) => ({ name: "z" + zc++, gates: src.gates, value: src.value })));
+    zByBucket.set(key, sources.map((src) => {
+      const z = { name: "z" + zc++, gates: src.gates, value: src.value };
+      if (src.credit) creditMeta.set(z.name, src.credit);
+      return z;
+    }));
   }
+
 
   // Extension seam (U1): extraVars are structural binaries; extraConstraints are
   // raw LP constraint bodies that encodeStage injects verbatim.
@@ -822,8 +858,39 @@ function buildProgram(model) {
     }
   }
 
+  // The empty gate list makes a credit AVAILABLE; it does not make it TAKEN.
+  // `encodeStage` bounds each z by the bucket cap plus one `z - gate <= 0` per
+  // gate, so a gateless z is a free binary that only an objective pulls to 1.
+  // That holds on the optimum path — every stage maximizes its stat and then
+  // locks it exactly — but every alternatives generator runs `tieBreak:false`
+  // with relaxed `>= value - give` locks, where a credited stat that is not the
+  // current gain objective carries no objective coefficient and settles at its
+  // lower bound. `readSolution` sums value*z, so that alternative would report a
+  // total missing a bonus the player unconditionally holds. For gear, `z = 0`
+  // truthfully means "not equipped"; for a credit it asserts something false
+  // about the character — the one invariant a credit does NOT inherit from gear.
+  // Pin each credited bucket at or above its credit. Always feasible (the
+  // credit's own z satisfies it), one constraint per credited bucket.
+  //
+  // EMITTED LAST, and that placement is load-bearing — do not hoist it up to the
+  // bucket build. Worn affixes are bucketed near the top of this function, but
+  // augments, set tiers, crafting, and set augments push into `zByBucket`
+  // throughout the body above. Emitted any earlier, this sums only the
+  // contributions that existed at that point while `encodeStage`'s
+  // `sum(z) <= 1` covers the whole bucket — so choosing a later-added
+  // contribution drives the constrained subset to zero and violates the bound,
+  // and the solver is forced onto the weaker credit. Shipped exactly that way
+  // once: a credit of 7 against an Insight-10 augment resolved to 7 with the
+  // augment unequipped, breaking R5. Worn-only tests cannot catch it; the
+  // augment and set-tier regressions in tests/solver.test.js pin it.
+  for (const [key, floorValue] of creditBuckets) {
+    const zs = zByBucket.get(key) || [];
+    if (!zs.length) continue;
+    extraConstraints.push(`${zs.map((z) => `+ ${z.value} ${z.name}`).join(" ")} >= ${floorValue}`);
+  }
+
   return {
-    xVars, zByBucket, cappedStats, targetList: model.targets, model,
+    xVars, zByBucket, cappedStats, targetList: model.targets, model, creditMeta,
     extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], _zc: zc,
   };
 }
