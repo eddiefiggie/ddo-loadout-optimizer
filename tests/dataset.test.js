@@ -342,3 +342,87 @@ test("picker: a bonus TYPE is never offered as a rankable stat", () => {
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);
+
+// --- #169: saved-character priority migration ---------------------------------
+// loadCharacter() restored `priorities` verbatim and never consulted the
+// expanded-away map, so a character who ranked `Parrying` before it expanded
+// would load a priority matching no item — scoring zero, indistinguishable from
+// a target nothing happens to carry.
+
+const AWAY_VOCAB = { expandedAway: {
+  "parrying": ["Armor Class", "Fortitude Save", "Reflex Save", "Will Save"],
+  "heightened awareness": ["Armor Class"],
+  "speed": ["Movement Speed", "Melee Alacrity", "Ranged Alacrity"],
+} };
+
+test("#169: an expanded-away priority is substituted, preserving rank order", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const out = migratePriorities(["Strength", "Parrying", "Dodge"], AWAY_VOCAB);
+  assert.deepStrictEqual(out.priorities,
+    ["Strength", "Armor Class", "Fortitude Save", "Reflex Save", "Will Save", "Dodge"]);
+  assert.deepStrictEqual(out.substitutions,
+    [{ from: "Parrying", to: ["Armor Class", "Fortitude Save", "Reflex Save", "Will Save"] }]);
+});
+
+test("#169: two names expanding to the same stat do not duplicate it", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const out = migratePriorities(["Parrying", "Heightened Awareness"], AWAY_VOCAB);
+  assert.strictEqual(out.priorities.filter((p) => p === "Armor Class").length, 1);
+  assert.strictEqual(out.substitutions.length, 2, "both substitutions are still disclosed");
+});
+
+test("#169: an existing concrete priority is not duplicated by the expansion", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const out = migratePriorities(["Armor Class", "Heightened Awareness"], AWAY_VOCAB);
+  assert.deepStrictEqual(out.priorities, ["Armor Class"]);
+});
+
+test("#169: a character with no expanded-away priority is untouched", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const out = migratePriorities(["Strength", "Dodge"], AWAY_VOCAB);
+  assert.deepStrictEqual(out.priorities, ["Strength", "Dodge"]);
+  assert.strictEqual(out.substitutions.length, 0, "no disclosure when nothing changed");
+});
+
+test("#169: migration is idempotent", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const once = migratePriorities(["Parrying"], AWAY_VOCAB).priorities;
+  const twice = migratePriorities(once, AWAY_VOCAB);
+  assert.deepStrictEqual(twice.priorities, once);
+  assert.strictEqual(twice.substitutions.length, 0);
+});
+
+test("#169: matching is case-insensitive, because priorities were free-typeable", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  assert.strictEqual(migratePriorities(["parrying"], AWAY_VOCAB).substitutions.length, 1);
+  assert.strictEqual(migratePriorities(["  PARRYING "], AWAY_VOCAB).substitutions.length, 1);
+});
+
+test("#169: empty and malformed priority lists do not throw", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  for (const input of [undefined, null, [], "nonsense"]) {
+    assert.deepStrictEqual(migratePriorities(input, AWAY_VOCAB).priorities, []);
+  }
+});
+
+test("#169: the disclosure names both the old target and its replacements", () => {
+  const { migratePriorities, migrationMessage } = require("../web/dataset.js");
+  const msg = migrationMessage(migratePriorities(["Parrying"], AWAY_VOCAB).substitutions);
+  assert.ok(msg.includes("Parrying"), "names what the player had ranked");
+  for (const s of ["Armor Class", "Fortitude Save", "Reflex Save", "Will Save"]) {
+    assert.ok(msg.includes(s), `names the replacement ${s}`);
+  }
+  assert.strictEqual(migrationMessage([]), null, "no message when nothing changed");
+});
+
+test("#169: the built dataset's real map drives the migration", () => {
+  const v = builtVocab();
+  if (!v) return console.log("  (skipped — web/data/items.json not built)");
+  const { migratePriorities } = require("../web/dataset.js");
+  const out = migratePriorities(["Parrying", "Heightened Awareness", "Speed"], v);
+  assert.strictEqual(out.substitutions.length, 3,
+    "all three expanded names migrate off the shipped metadata");
+  for (const p of out.priorities) {
+    assert.ok(v.suggestions.includes(p), `${p} is a real rankable target`);
+  }
+});

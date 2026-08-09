@@ -420,6 +420,48 @@ function expandedAwayMessage(vocab, name) {
   return to ? `"${name}" is shorthand for ${to.join(", ")} — rank those instead.` : null;
 }
 
+/** #169 — load migration for a SAVED CHARACTER's ranked priorities.
+ *
+ *  The add-a-priority paths refuse an expanded-away name, but nothing guarded the
+ *  load path: `loadCharacter()` restored `priorities` verbatim. A player who
+ *  ranked `Parrying` before it expanded would have loaded a priority that now
+ *  matches no item — scoring zero, silently, with no way to tell it apart from a
+ *  target nothing happens to carry.
+ *
+ *  Substitutes each expanded-away name with the concrete stats it became,
+ *  preserving rank order and dropping duplicates (ranking both `Parrying` and
+ *  `Heightened Awareness` must not yield `Armor Class` twice). Returns what
+ *  changed so the caller can disclose it — a silent rewrite of a saved character
+ *  is the same defect wearing different clothes.
+ *
+ *  Idempotent: replacements are concrete stats, which are never themselves
+ *  expanded away. */
+function migratePriorities(priorities, vocab) {
+  const out = [];
+  const seen = new Set();
+  const substitutions = [];
+  for (const p of (Array.isArray(priorities) ? priorities : [])) {
+    const to = expandedAwayFor(vocab, p);
+    if (to) substitutions.push({ from: p, to: to.slice() });
+    for (const name of (to || [p])) {
+      const key = String(name == null ? "" : name).trim().toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(name);
+    }
+  }
+  return { priorities: out, substitutions };
+}
+
+/** #169 — the player-facing sentence for a set of load-time substitutions. */
+function migrationMessage(substitutions) {
+  if (!substitutions || !substitutions.length) return null;
+  const parts = substitutions.map((s) => `"${s.from}" → ${s.to.join(", ")}`);
+  return `This character ranked ${parts.length > 1 ? "names" : "a name"} that ` +
+    `now expand${parts.length > 1 ? "" : "s"} into the stats they actually grant: ` +
+    `${parts.join("; ")}. Your priorities were updated to match.`;
+}
+
 /** U5, Part C — one-time load migration for a persisted loadout snapshot. Runs the
  *  bidirectional affix/item normalizer over each chosen variant so a PRE-OVERHAUL
  *  save (embedded items carrying only legacy `stat`/`bonus_type`/`minimum_level`)
@@ -433,8 +475,8 @@ function migrateLoadout(snapshot) {
 // Browser: expose a global so app.js can normalize the fetched dataset without a
 // module system. Node: CommonJS export for the tests + parity harness.
 if (typeof window !== "undefined") {
-  window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, migrateLoadout, expandedAwayFor, expandedAwayMessage };
+  window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage };
 }
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, migrateLoadout, expandedAwayFor, expandedAwayMessage };
+  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage };
 }
