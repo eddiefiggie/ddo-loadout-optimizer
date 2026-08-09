@@ -5,7 +5,7 @@ const R = require("../web/results.js");
 
 let passed = 0;
 function test(name, fn) {
-  try { fn(); if (!process.exitCode) console.log(`PASS ${name}`); passed++; }
+  try { fn(); console.log(`PASS ${name}`); passed++; }
   catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); process.exitCode = 1; }
 }
 
@@ -295,4 +295,4 @@ test("U4: one host holding two picks for the same set counts once", () => {
   assert.strictEqual(d.pieces, 1, "one host is one piece, not two");
 });
 
-console.log(`\n${passed} passed`);
+if (!process.exitCode) console.log(`\n${passed} passed`);

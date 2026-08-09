@@ -841,15 +841,18 @@ test("U5/002 (R11): the CSV set-bonus row carries a members column", () => {
 test("U5/002 (R11): a chosen-membership pick is named as a pick, not as intrinsic", () => {
   // Vecna Lost Purpose / Cannith Repurposing / Dino Set-Bonus take the same path
   // as the gem but are a different `kind`, and the text must not conflate them.
+  // The expected string is written out LITERALLY, not computed by calling the
+  // function under test — an echo test passes whatever that function returns,
+  // including a label identical to an intrinsic member's, which is the exact
+  // confusion this assertion exists to prevent.
   const r = gemRec();
   r.snapshot.jokerPlaced = [];
   r.snapshot.membershipPlaced = [{ host: "Gem of Many Facets", set: "Legendary Vol's Influence",
     station: "Cannith Repurposing Station" }];
   const line = (toMarkdown(r).match(/[^\n]*Pieces: [^\n]*/) || [""])[0];
-  assert.ok(line.includes(Projection.setMemberLabel(
-    { slot: "Trinket", item: "Gem of Many Facets", kind: "membership" })),
-  `a membership pick is labelled as a set-bonus pick, got: ${line.trim()}`);
-  assert.ok(!/wildcard/.test(line), "and is not mislabelled a wildcard");
+  assert.ok(line.includes("Gem of Many Facets (Trinket) \u2014 set-bonus pick"),
+    `membership pick must be labelled distinctly; got: ${line}`);
+  assert.ok(!/wildcard/.test(line), "and must not be labelled a wildcard");
 });
 
 test("U5/002: a build with no completed set gains nothing in any format", () => {
