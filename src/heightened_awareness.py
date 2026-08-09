@@ -169,6 +169,29 @@ def check_against_snapshots(shard: dict) -> dict:
                 f"{title}: derived armor_class={value.get('armor_class')!r} but the "
                 f"tooltip states {stated_ac!r} for {raw!r}")
 
+        if version.isdigit():
+            # Bind the snapshot to the key it is filed under. Arabic states its
+            # own magnitude: `{{Heightened Awareness|4}}` renders "+4". Without
+            # this the guard only proves a tooltip agrees with the value derived
+            # from it — a snapshot harvested under the wrong key compares clean,
+            # ships the wrong AC to every item at that rank, and leaves `compared`
+            # looking healthy because it genuinely did compare. It compared the
+            # wrong pair. This is the sibling of the assertion #169's review added
+            # to `parrying_split`; it did not travel here on its own.
+            if stated_ac != int(version):
+                problems.append(
+                    f"{title}: {raw!r} is Arabic, so it must state +{version}, but "
+                    f"its tooltip states +{stated_ac} Insight AC — the snapshot is "
+                    "paired with the wrong invocation")
+        else:
+            # No Roman anchor exists to check against. Parrying can verify its
+            # Roman ranks because `ROMAN_MAGNITUDE` records what each one grants;
+            # the wiki lists no Roman Heightened Awareness variant, so there is
+            # nothing to anchor to and an unanchored rank must not pass silently.
+            problems.append(
+                f"{title}: {raw!r} is a non-Arabic rank, which the wiki does not "
+                "list for this affix — harvest its magnitude before trusting it")
+
     if compared < stated:
         problems.append(
             f"{stated - compared} `stated` entr(ies) were never compared against a "
