@@ -744,6 +744,12 @@ input.wz-ml { width: 120px; }
 /* composable affix-bundle picker (gear-planner style) */
 .wz-bundles { margin-bottom: var(--sp-4); }
 .wz-bundle-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin-top: var(--sp-2); }
+/* A class rule with `display` beats the UA stylesheet's `[hidden] { display: none }`,
+   so the sub-rows shipped with `hidden` set and still rendered — the progressive
+   disclosure (Melee reveals Tactics, Caster reveals schools + spell power) has
+   never actually hidden anything. Pre-existing; found while verifying the new
+   Attributes row, which is deliberately always visible and needs no reveal. */
+.wz-bundle-row[hidden] { display: none; }
 .wz-bundle-sub { padding-left: var(--sp-2); border-left: 2px solid var(--border); margin-left: 2px; }
 .wz-bundle-tag { color: var(--muted); font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; margin-right: var(--sp-1); }
 .wz-bundle {

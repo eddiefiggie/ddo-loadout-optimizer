@@ -1169,6 +1169,20 @@ test("F2: cleanBoundMap does not canonicalize keys", () => {
   assert.deepStrictEqual(cleanBoundMap({ PRR: 50 }, aliasVocab), { PRR: 50 });
 });
 
+test("bundles: a hidden sub-row is actually hidden", () => {
+  // Pre-existing: `.wz-bundle-row { display: flex }` is a class rule, so it beats
+  // the UA stylesheet's `[hidden] { display: none }`. The tactics/schools/spell-power
+  // rows shipped with `hidden` set and rendered anyway, so the reveal wired in
+  // BUNDLE_REVEALS never hid anything. Found while verifying the Attributes row.
+  const css = fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf-8");
+  assert.ok(/\.wz-bundle-row\[hidden\]\s*\{[^}]*display:\s*none/.test(css),
+    "an explicit [hidden] rule overrides the class display");
+  // The Attributes row is the one sub-row that must NOT carry hidden.
+  const step = stepTemplate("stepPriorities");
+  const attrRow = step.slice(step.indexOf('data-group="attributes"') - 120, step.indexOf('data-group="attributes"') + 40);
+  assert.ok(!/hidden/.test(attrRow), "the Attributes row is always visible");
+});
+
 test("R1/R2: the Advanced panel is ordered after the reorder controls", () => {
   // `.wz-adv` precedes `.wz-ctl` in DOM order and takes a full flex line, so
   // without an explicit order it pushed ↑ ↓ ✕ onto a third line on every
