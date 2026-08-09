@@ -12,6 +12,9 @@ A single candidate the solver may equip in a slot — one item expanded to one s
 ### Target
 A stat on the user's **ranked** priority list that a solve maximizes. Priority is strict and lexicographic, not weighted — target 1 is maximized first, then target 2 without giving up any of target 1, and so on.
 
+### Rankable affix
+An affix name eligible to become a [[Target]] — the set the priority picker offers. It is a strict subset of the affix names the dataset stores, and much smaller: most stored names are variant spellings, bonus-type-qualified forms, or names nothing can actually supply, and offering those would let a player rank something no item scores against. A name can therefore contribute to a solve without being rankable itself, which is why a flattened or mis-modelled affix still corrupts a loadout even when no player could have ranked it directly.
+
 ### Stat cap
 An optional user-set maximum on a Target's counted value — the solve stops crediting the stat past the cap, so it clamps rather than forbids.
 
@@ -106,6 +109,11 @@ A wiki effect cell has two layers, and the magnitude often lives in the second o
 The tooltip is a pure function of the template invocation, not of the item — every page using `{{Speed|30}}` renders the same tooltip — so it snapshots per distinct invocation rather than per record, which is what makes re-checking it affordable against a rate-limited wiki. Store the two layers in separate fields: three augments share `{{Striding|30}}` while their cells differ, so filing cell text under a tooltip key makes one invocation look like several conflicting ones.
 
 It settles magnitude and nothing else: a tooltip renders the template's fallback number just as confidently as a recorded one, so it cannot distinguish **stated** from **defaulted** (see [[Harvest provenance]]). Use it to verify a value we derived, never to promote a value the wiki never recorded.
+
+### Enchantment version
+One enchantment name carrying two formats whose magnitudes differ — an Arabic form where the number is the bonus, and a Roman form where it is not. DDO introduced these splits when it reworked older enchantments, leaving legacy Roman items in circulation alongside current Arabic ones under the same name. Speed and Parrying both have one.
+
+The consequence is the part that matters: **the stored number cannot tell you which version produced it.** Upstream flattens the Roman numeral to an integer, so a legacy item and a current item can arrive carrying the identical value while granting different amounts — and reading that number as the bonus over-grants on every legacy item. Version is therefore per-item evidence, harvested and recorded with [[Harvest provenance]] like any other wiki-sourced value, never derived from the magnitude. Roman magnitudes resolve through a confirmed per-numeral lookup rather than a formula; the observed mappings are not a uniform ratio, so a numeral nobody has checked is quarantined rather than computed.
 
 ## Candidate pool & constraints
 
