@@ -1434,6 +1434,7 @@ if (typeof window !== "undefined" && window.App) {
         if (migrated.substitutions.length) {
           state.priorities = migrated.priorities;
           const droppedBounds = [];
+          const droppedCredits = [];
           for (const sub of migrated.substitutions) {
             for (const map of [state.targetCaps, state.targetFloors]) {
               if (map && map[sub.from] != null) { droppedBounds.push(sub.from); delete map[sub.from]; }
@@ -1445,11 +1446,11 @@ if (typeof window !== "undefined" && window.App) {
             // player can no longer see or remove. Match on the entry's own stat.
             if (state.declaredCredits) {
               for (const [k, c] of Object.entries(state.declaredCredits)) {
-                if (c && c.stat === sub.from) { droppedBounds.push(sub.from); delete state.declaredCredits[k]; }
+                if (c && c.stat === sub.from) { droppedCredits.push(sub.from); delete state.declaredCredits[k]; }
               }
             }
           }
-          state.expandedAwayMigrated = _dnMig.migrationMessage(migrated.substitutions, droppedBounds);
+          state.expandedAwayMigrated = _dnMig.migrationMessage(migrated.substitutions, droppedBounds, droppedCredits);
         }
       }
       state.slotConstraints = i.slotConstraints || {};

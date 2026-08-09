@@ -252,12 +252,17 @@ test("U5: declared credits join the saved-input allowlist and round-trip", () =>
     "both credits on one stat survive — the map is keyed (stat, bonus type), not by stat");
 });
 
-test("U5: a character saved before this feature loads as having no credits", () => {
-  const legacy = { ...state };
-  delete legacy.declaredCredits;
-  const out = pickInputs(legacy, "Old").declaredCredits;
-  assert.ok(out === undefined || (out && Object.keys(out).length === 0),
-    `a pre-feature save must not resurrect credits, got ${JSON.stringify(out)}`);
+test("U5: a saved credit survives the full save -> JSON -> import chain", () => {
+  // The two halves are allowlisted separately in persist.js and backup.js, and the
+  // only thing keeping them aligned is that backup imports INPUT_KEYS. Assert the
+  // whole chain rather than each end: an absent-field test is unfalsifiable and
+  // passes on any branch.
+  const { serializeAll, parseBackup } = require("../web/backup.js");
+  const rec = serializeCharacter("Trance", { ...state, declaredCredits: CREDITS }, lastRun, "ide");
+  const parsed = parseBackup(JSON.stringify(serializeAll({ Trance: rec }, {})));
+  assert.ok(parsed.ok, `backup must parse: ${parsed.error || ""}`);
+  assert.deepStrictEqual(parsed.characters.Trance.inputs.declaredCredits, CREDITS,
+    "credits declared, saved, exported, and re-imported must be identical");
 });
 
 test("U5: the credit map is plain JSON — it survives a stringify round-trip", () => {
