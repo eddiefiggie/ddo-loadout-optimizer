@@ -82,3 +82,4 @@ A golden or parity diff after a data change is sometimes expected rather than a 
 - Work lands through PRs, squash-merged. `main` deploys on every push, so a red build blocks the site.
 - A PR that resolves an issue writes `Closes #N` in the body — a bare `#N` links without closing. See *Open work lives in GitHub Issues*.
 - Markdown tables are pipe-delimited; no box-drawing characters.
+- **Shipping anything under `web/` bumps three things together:** the `?v=` cache-busts in `web/index.html` (Pages has no content hashing, so a stale one keeps serving cached code), the footer `BUILD` in `web/app.js`, and the `**Current build:**` line in `README.md`. `tests/test_build_stamp.py` fails the build when they disagree — the rule predates the guard, and was skipped by four PRs that left the footer under-reporting for two days.
