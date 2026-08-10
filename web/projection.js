@@ -160,6 +160,10 @@
         return {
           bonus_type: p.bonus_type, value: p.value, source: p.source,
           sourceKind: p.sourceKind, slots, hostIds, isSet: p.sourceKind === "set",
+          // #205 — when this contribution came from a universal spell-DC
+          // enchantment, the name the player will find on the item. Null for a
+          // native affix, whose own stat name is already what is engraved.
+          via: p.via || null,
         };
       });
     }
@@ -669,6 +673,9 @@
       const sources = (attr[stat] || []).map((p) => ({
         source: p.source, kind: p.sourceKind, value: p.value,
         bonusType: p.bonus_type, slots: p.slots, viaSet: p.isSet,
+        // #205 — carried into every export, not just the live panel: a shared
+        // build must name the enchantment the reader will look for on the item.
+        viaAffix: p.via || null,
       }));
       attribution[stat] = { total, cap, sources };
     }

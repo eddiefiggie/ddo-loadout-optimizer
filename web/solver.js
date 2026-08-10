@@ -149,19 +149,28 @@ function buildProgram(model) {
   // alongside their backing extraVars/extraConstraints.
   const buckets = new Map();
   for (const xv of xVars) {
+    // Each entry is {value, via}. `via` (#205) names the enchantment an expanded
+    // universal spell-DC affix came from ("Sacred Spell Focus Mastery") and rides
+    // through to the breakdown so the receipts can show what is engraved on the
+    // item rather than the school the value was credited to. Presentation only —
+    // it never affects which contribution wins.
     const best = new Map();
     for (const a of xv.variant.affixes || []) {
       const k = `${a.name}||${_equivType(a.type)}`;
-      if (targetSet.has(a.name) && a.value > 0 && (!best.has(k) || best.get(k) < a.value)) best.set(k, a.value);
+      if (targetSet.has(a.name) && a.value > 0 && (!best.has(k) || best.get(k).value < a.value)) {
+        best.set(k, { value: a.value, via: a.via || null });
+      }
     }
     for (const s of xv.variant.scaling || []) {
       const val = scaleAt(s, mlCap);
       const k = `${s.stat}||${_equivType(s.bonus_type)}`;
-      if (targetSet.has(s.stat) && val > 0 && (!best.has(k) || best.get(k) < val)) best.set(k, val);
+      if (targetSet.has(s.stat) && val > 0 && (!best.has(k) || best.get(k).value < val)) {
+        best.set(k, { value: val, via: null });
+      }
     }
-    for (const [k, val] of best) {
+    for (const [k, b] of best) {
       if (!buckets.has(k)) buckets.set(k, []);
-      buckets.get(k).push({ gates: [xv.name], value: val });
+      buckets.get(k).push({ gates: [xv.name], value: b.value, via: b.via });
     }
   }
 
@@ -182,6 +191,7 @@ function buildProgram(model) {
   for (const [key, sources] of buckets) {
     zByBucket.set(key, sources.map((src) => {
       const z = { name: "z" + zc++, gates: src.gates, value: src.value };
+      if (src.via) z.via = src.via;
       if (src.credit) creditMeta.set(z.name, src.credit);
       return z;
     }));
@@ -1087,6 +1097,8 @@ function breakdownByTarget(program, prim) {
             // host variant_id(s) driving this contribution — worn is its own item;
             // sets/crafts carry their hosts; augment/dino are resolved in results.js.
             hostIds: src.hostIds || (src.kind === "worn" ? [src.label] : null),
+            // #205 — the enchantment this contribution is actually printed as.
+            via: z.via || null,
           });
         }
       }
