@@ -1034,6 +1034,52 @@ function encodeStage(program, { objectiveStat, objTerms, sense, locks, tieBreak,
 // player-asserted number from a wiki-sourced one without consulting anything.
 const DECLARED_LABEL = "declared, not from gear";
 
+/** #206 — drop augments whose contribution is zero given the settled loadout.
+ *
+ *  An augment worth nothing is not a scoring error — the bucket already takes the
+ *  max, so the reported total is right — but recommending it tells the player to
+ *  farm and spend an augment that does nothing, and consumes a slot that could
+ *  hold something useful. The reported case was a +8 Conjuration Topaz alongside
+ *  a +13 same-type craft.
+ *
+ *  Nothing in the model forbade it. The tie-break minimizes item picks, jokers,
+ *  members, and set-augment copies, so each of those is placed only when
+ *  load-bearing; ordinary augment placements were left out, so whether a useless
+ *  one got slotted was decided by HiGHS's branch order rather than by us.
+ *
+ *  This runs as its own stage rather than by adding the placement vars to that
+ *  tie-break. Those vars carry coefficients larger than any item's, so folding
+ *  them in makes "avoid one augment" outweigh "keep the item set small": measured
+ *  across the golden fixtures it left every target value identical but reshuffled
+ *  5 of 11 loadouts, one of them equipping two MORE items to shed one augment.
+ *  Same score, different gear, for a defect that has never been observed — churn
+ *  is a real cost and that trade is not worth making.
+ *
+ *  Here the whole loadout is pinned first — every item, joker, membership, and
+ *  craft pick fixed at the value the tie-break chose — and only then are
+ *  placements minimized. The result is identical items and identical totals by
+ *  construction; the only thing that can move is an augment that was contributing
+ *  nothing. Falls back to the tie-break solution if this stage does not solve.
+ */
+function dropNoOpAugments(program, highs, tbRes, locks) {
+  const placeVars = program.placeMeta ? [...program.placeMeta.keys()] : [];
+  if (!placeVars.length || tbRes.Status !== "Optimal") return tbRes;
+  const at = (name) => (tbRes.Columns[name] ? tbRes.Columns[name].Primal : 0);
+  // Pin every structural pick. Augment placements are deliberately NOT pinned —
+  // they are the only degree of freedom this stage has.
+  const pin = [];
+  for (const xv of program.xVars) pin.push(`${xv.name} = ${at(xv.name) > 0.5 ? 1 : 0}`);
+  for (const v of [...(program.jokerVars || []), ...(program.memberVars || []),
+                   ...(program.setAugVars || [])]) {
+    pin.push(`${v} = ${at(v) > 0.5 ? 1 : 0}`);
+  }
+  const res = highs.solve(encodeStage(program, {
+    sense: "min", objTerms: placeVars.map((v) => ({ coef: 1, name: v })),
+    locks, extra: pin,
+  }));
+  return res.Status === "Optimal" ? res : tbRes;
+}
+
 function breakdownByTarget(program, prim) {
   const xByName = new Map(program.xVars.map((xv) => [xv.name, xv]));
   // Equipped item identity -> its worn slot, so an item-craft (nc/roll/vik/seal)
@@ -1244,7 +1290,8 @@ async function solveLexicographic(model, highs) {
   }
 
   const tb = highs.solve(encodeStage(program, { sense: "min", tieBreak: true, locks }));
-  const finalRes = tb.Status === "Optimal" ? tb : highs.solve(encodeStage(program, { objectiveStat: program.targetList.at(-1), sense: "max", locks }));
+  const tbRes = tb.Status === "Optimal" ? tb : highs.solve(encodeStage(program, { objectiveStat: program.targetList.at(-1), sense: "max", locks }));
+  const finalRes = dropNoOpAugments(program, highs, tbRes, locks);
   const sol = readSolution(finalRes, program);
   const prim = (name) => (finalRes.Columns[name] ? finalRes.Columns[name].Primal : 0);
 
