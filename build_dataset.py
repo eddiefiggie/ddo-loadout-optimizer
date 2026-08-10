@@ -43,6 +43,7 @@ from src import parrying_split as parrying_split_mod
 from src import heightened_awareness as heightened_awareness_mod
 from src import enchantment_split as enchantment_split_mod
 from src import umbrella as umbrella_mod
+from src import spell_focus as spell_focus_mod
 from src import planner_items as planner_mod
 from src import variants as variants_mod
 from src import vocabulary as vocabulary_mod
@@ -355,6 +356,9 @@ def rankable_affixes(planner_records) -> list:
     # name gives the player a priority guaranteed to score zero. The picker
     # redirects to the abilities instead (metadata.expanded_away_names).
     names = {s for s in names if not umbrella_mod.is_umbrella(s)}
+    # #205 — same rule for the universal spell-DC names, expanded into the seven
+    # schools by src/spell_focus.py.
+    names = {s for s in names if not spell_focus_mod.is_universal(s)}
     return sorted(names)
 
 
@@ -589,6 +593,14 @@ def build() -> dict:
     # Expand umbrella ability affixes ("All Ability Scores +15", "Well Rounded")
     # into the six concrete abilities so single-ability targets get credited.
     umbrella_mod.expand_variants(variants)
+    # #205 — the same treatment for universal spell-DC affixes. `Spell Focus
+    # Mastery` raises the DC of every school, but a school-ranked target credited
+    # only exact name matches, so no sacred/quality/insightful focus could ever be
+    # picked. Expanding into the seven schools at the same bonus type lets the
+    # existing max-per-(stat, stacking type) bucketing reproduce both wiki rules:
+    # same type collapses to the highest, different types stack. Covers BOTH the
+    # item and set-bonus channels (516 set tiers grant it).
+    _spell_focus_counts = spell_focus_mod.expand_variants(variants)
     # #169 — the same treatment for the version-bearing affixes inside SET BONUS
     # tiers. The item split above cannot reach this channel: a tier affix is
     # `{"stat": ..., "bonus_type": ...}` while an item affix is
@@ -629,6 +641,7 @@ def build() -> dict:
     _set_orphans = enchantment_split_mod.set_bonus_orphans(
         variants,
         {**umbrella_mod.umbrella_expansion(),
+         **spell_focus_mod.expanded_away(),
          **speed_split_mod.EXPANDED_AWAY,
          **parrying_split_mod.EXPANDED_AWAY,
          **heightened_awareness_mod.EXPANDED_AWAY},
@@ -853,6 +866,7 @@ def build() -> dict:
             # The picker drops them from suggestions and redirects the player to the
             # replacements, instead of offering a priority no item can satisfy.
             "expanded_away_names": {**umbrella_mod.umbrella_expansion(),
+                                    **spell_focus_mod.expanded_away(),
                                     **speed_split_mod.EXPANDED_AWAY,
                                     **parrying_split_mod.EXPANDED_AWAY,
                                     **heightened_awareness_mod.EXPANDED_AWAY},
@@ -916,6 +930,12 @@ def _native_affix(a: dict) -> dict:
     out = {"name": a.get("stat"), "type": a.get("bonus_type"), "value": native_value}
     if "eligible" in a:
         out["eligible"] = a["eligible"]
+    # #205 — an expanded universal spell-DC affix carries the enchantment name the
+    # player actually sees on the item ("Sacred Spell Focus Mastery"). Carried at
+    # rest because the proof panel and every share export must display it; without
+    # this the field dies here and the receipts name a stat no item bears.
+    if spell_focus_mod.PROVENANCE_KEY in a:
+        out[spell_focus_mod.PROVENANCE_KEY] = a[spell_focus_mod.PROVENANCE_KEY]
     return out
 
 

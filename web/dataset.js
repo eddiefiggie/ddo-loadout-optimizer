@@ -85,6 +85,10 @@ var EXPANDED_AWAY_FALLBACK = {
   "all ability scores": ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"],
   "all ability score": ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"],
   "well rounded": ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"],
+  // #205 — universal spell-DC names, expanded into the seven schools by
+  // src/spell_focus.py. Mirrors its `_UNIVERSAL` set.
+  "spell focus mastery": ["Abjuration Focus", "Conjuration Focus", "Enchantment Focus", "Evocation Focus", "Illusion Focus", "Necromancy Focus", "Transmutation Focus"],
+  "spell focus": ["Abjuration Focus", "Conjuration Focus", "Enchantment Focus", "Evocation Focus", "Illusion Focus", "Necromancy Focus", "Transmutation Focus"],
 };
 // U5 (#140) — boolean composites that carry a wiki-verified numeric effect but are
 // stored as `Bool` presence, so the solver could not weigh them. Values and bonus
