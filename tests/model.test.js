@@ -1327,4 +1327,36 @@ test("U5/003: the predicate is inert everywhere it should be", () => {
   });
 }
 
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// #235 — an absent bonus type is NOT folded into `Untyped`. A previous revision
+// did that to stop a declared credit double-counting, and it was wrong on the
+// wider rule: real untyped bonuses STACK (CONCEPTS.md), and 30 stats carry both
+// an absent type and an explicit `Untyped` — an item's own effect beside an
+// augment's — which are meant to add.
+
+test("#235: equivType leaves an absent bonus type alone", () => {
+  assert.strictEqual(M.equivType(null), null);
+  assert.strictEqual(M.equivType(undefined), undefined);
+  assert.strictEqual(M.equivType("Untyped"), "Untyped");
+  assert.strictEqual(M.equivType("Enhancement"), "Enhancement");
+  assert.strictEqual(M.equivType("Insight"), "Insight");
+});
+
+test("#235: an untyped affix and an explicit Untyped one keep separate buckets, so they sum", () => {
+  const item = {
+    variant_id: "i", source_item: "Weapon", slot: "Weapon", category: "weapon",
+    minimum_level: 34, ml: 34, verification: "verified",
+    affixes: [
+      { name: "Acidic", type: null, value: 6, unit: "flat" },       // the item's own effect
+      { name: "Acidic", type: "Untyped", value: 4, unit: "flat" },  // an augment's
+    ],
+    scaling: [], set_bonus: [], augment_slots: [], restrictions: "unknown", armor_type: null,
+  };
+  const keys = [...M.variantBuckets(item, new Set(["Acidic"]), 34).keys()].sort();
+  assert.strictEqual(keys.length, 2, "two buckets, so the two values add");
+  assert.ok(keys.includes("Acidic||Untyped"));
+});
+
+
 console.log(`\n${passed} passed`);

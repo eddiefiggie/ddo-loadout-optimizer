@@ -33,6 +33,14 @@ function setStackEquiv(map) {
 /** Canonicalize an affix `type` to its stacking bucket token (identity unless the
  *  curated equivalence table remaps it). Used ONLY to form bucket keys. */
 function equivType(type) {
+  // #235 — an absent bonus type is NOT folded into `Untyped`. A previous revision
+  // did that to stop a declared "Untyped" credit double-counting against untyped
+  // gear, and it was wrong on the wider rule: real untyped bonuses STACK
+  // (`CONCEPTS.md` Bucket, and the equivalence audit's None-vs-Untyped ruling),
+  // so collapsing the two turns a legitimate sum into a max. 30 stats carry both
+  // an absent type and an explicit `Untyped` — an item's own effect beside an
+  // augment's — and they are meant to add. The double-count is closed at its real
+  // source instead: a stat with no bonus type is not offered a bonus-type credit.
   return (type != null && _STACK_EQUIV[type] != null) ? _STACK_EQUIV[type] : type;
 }
 

@@ -45,6 +45,8 @@ from src import enchantment_split as enchantment_split_mod
 from src import umbrella as umbrella_mod
 from src import spell_focus as spell_focus_mod
 from src import value_corrections as value_corrections_mod
+from src import name_corrections as name_corrections_mod
+from src import untyped_rankable as untyped_rankable_mod
 from src import planner_items as planner_mod
 from src import variants as variants_mod
 from src import vocabulary as vocabulary_mod
@@ -216,6 +218,10 @@ def assert_affix_synonyms() -> int:
 GAP_CORRECTIONS_PATH = os.path.join(HERE, "data", "seed", "gap_corrections.json")
 VALUE_CORRECTIONS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "item_value_corrections.json")
+NAME_CORRECTIONS_PATH = os.path.join(
+    HERE, "data", "seed", "compendium", "affix_name_corrections.json")
+UNTYPED_RANKABLE_PATH = os.path.join(
+    HERE, "data", "seed", "compendium", "untyped_rankable.json")
 SPEED_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_enchantment.json")
 PARRYING_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "parrying_version.json")
 HEIGHTENED_AWARENESS_SHARD_PATH = os.path.join(
@@ -328,13 +334,17 @@ def _well_formed_stat(name: str) -> bool:
     return name.count("(") == name.count(")") and name.count("[") == name.count("]")
 
 
-def rankable_affixes(planner_records) -> list:
+def rankable_affixes(planner_records, untyped_allow=frozenset()) -> list:
     """Rankable-affix vocabulary: the affix names a user meaningfully ranks as a
     priority, read from the NATIVE gear-planner affix block. Filters: a magnitude
     bonus type (not Bool/boolean presence, not a non-rankable weapon/penalty
     descriptor), a numeric value, a well-formed name, and presence on at least two
     distinct items (a real stat is shared across gear; a one-off named proc is not).
-    CORE_STATS are always included regardless of item count."""
+    CORE_STATS are always included regardless of item count.
+
+    `untyped_allow` (#227) is the adjudicated exception to the untyped skip below —
+    names verified against the wiki as real worn-gear magnitudes. They still have to
+    clear every other filter; the allow-list only buys them past the type check."""
     counts = collections.Counter()
     for r in planner_records or []:
         seen = set()
@@ -344,7 +354,16 @@ def rankable_affixes(planner_records) -> list:
             # affixes — the latter are overwhelmingly weapon procs/banes (Holy,
             # Vampirism, ...), not rankable magnitude stats, so they stay out of the
             # picker suggestions (a user never ranks a proc).
-            if bt in (None, "", "boolean", "Bool") or bt in NON_RANKABLE_TYPES:
+            #
+            # #227 — the premise holds in aggregate but has exceptions: `Enhanced Ki`
+            # is a genuine worn magnitude on 19 variants that no player could rank
+            # because it happens to arrive untyped. An adjudicated, wiki-verified name
+            # is admitted; everything else untyped still goes. Membership is checked
+            # against the affix NAME, so the exception cannot widen to a whole type.
+            untyped = bt in (None, "")
+            if untyped and a.get("name") in untyped_allow:
+                pass
+            elif untyped or bt in ("boolean", "Bool") or bt in NON_RANKABLE_TYPES:
                 continue
             if not _is_numeric(a.get("value")):
                 continue
@@ -419,6 +438,23 @@ def build() -> dict:
     # `from` no longer matches upstream rather than pinning a stale number.
     _value_corrections = value_corrections_mod.load(VALUE_CORRECTIONS_PATH)
     _value_coverage = value_corrections_mod.apply(planner_records, _value_corrections)
+    # #227 — wiki-sourced NAME corrections. gear-planner stores some enchantments
+    # under a shortened name (`Ki` for the wiki's `Enhanced Ki`). Rename here, before
+    # variant expansion and before rankable_affixes, so the corrected name reaches the
+    # picker vocabulary, the solver, browse, and the exports from ONE place. An alias
+    # alone cannot do this: the solver matches item affixes by name, so a canonical
+    # name no item carries is a priority that scores zero.
+    _name_corrections = name_corrections_mod.load(NAME_CORRECTIONS_PATH)
+    _name_coverage = name_corrections_mod.apply(planner_records, _name_corrections)
+    # #227 — adjudicate the untyped affixes that look like real worn-gear magnitude
+    # stats. Runs AFTER the rename so the adjudication is keyed on the canonical
+    # name, and before rankable_affixes so the allow-list is available to it. A
+    # candidate on neither list fails the build: an untyped worn stat no player can
+    # rank is exactly the defect #227 reported, and it should surface here rather
+    # than in a bug report.
+    _untyped_allow, _untyped_quarantined = untyped_rankable_mod.load(UNTYPED_RANKABLE_PATH)
+    _untyped_checked = untyped_rankable_mod.assert_adjudicated(
+        planner_records, _untyped_allow, _untyped_quarantined)
 
     # U3 (#154) — split the folded `Speed` affix back into the two mechanics
     # upstream merged. BEFORE variant expansion and before rankable_affixes, so the
@@ -887,7 +923,13 @@ def build() -> dict:
             # minimal exception to gear-planner sole-authority).
             "gap_corrections_coverage": _gap_coverage,
             "value_corrections_coverage": _value_coverage,
-            "rankable_affixes": rankable_affixes(planner_records),
+            "name_corrections_coverage": _name_coverage,
+            "untyped_rankable_coverage": {
+                "candidates": _untyped_checked,
+                "allowed": len(_untyped_allow),
+                "quarantined": len(_untyped_quarantined),
+            },
+            "rankable_affixes": rankable_affixes(planner_records, _untyped_allow),
             # U1 (#136) — names this build EXPANDS AWAY, mapped to what they become.
             # The picker drops them from suggestions and redirects the player to the
             # replacements, instead of offering a priority no item can satisfy.
