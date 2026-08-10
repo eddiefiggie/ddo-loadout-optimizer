@@ -188,3 +188,50 @@ def test_expanded_away_returns_independent_lists():
     away = spell_focus.expanded_away()
     away["spell focus"].append("Tampered")
     assert spell_focus.expanded_away()["spell focus"] == spell_focus.SCHOOLS
+
+
+# ---- built-dataset invariant (the review catch) --------------------------------
+
+def test_no_universal_stat_survives_anywhere_in_the_built_dataset():
+    """Every pool, not just the two the variant pass reaches.
+
+    Crafting and choice pools (dino inserts, Viktranium, membership set defs) live
+    in their own top-level arrays rather than on a variant, so the variant pass
+    cannot see them. Once the universal names leave the picker, an unexpanded
+    option in ANY pool targets a stat no player can rank — reachable before the
+    expansion, unreachable after. The set-bonus orphan guard does not cover these
+    pools, so this is the check that does.
+    """
+    import json
+    path = os.path.join(ROOT, "web", "data", "items.json")
+    if not os.path.exists(path):
+        return  # generated artifact; the build job asserts it
+    with open(path, "r", encoding="utf-8") as fh:
+        data = json.load(fh)
+
+    offenders = []
+
+    def walk(node, trail):
+        if isinstance(node, dict):
+            stat = node.get("stat")
+            if isinstance(stat, str) and spell_focus.is_universal(stat):
+                offenders.append(trail)
+                return
+            name = node.get("name")
+            if isinstance(name, str) and spell_focus.is_universal(name):
+                offenders.append(trail)
+                return
+            for k, v in node.items():
+                walk(v, f"{trail}.{k}")
+        elif isinstance(node, list):
+            for i, v in enumerate(node):
+                walk(v, f"{trail}[{i}]")
+
+    for key, value in data.items():
+        if key == "metadata":
+            continue        # expanded_away_names legitimately NAMES them
+        walk(value, key)
+
+    assert not offenders, (
+        f"{len(offenders)} affix(es) still name an expanded-away universal spell "
+        f"focus, so no player can rank them: {offenders[:5]}")

@@ -601,6 +601,17 @@ def build() -> dict:
     # same type collapses to the highest, different types stack. Covers BOTH the
     # item and set-bonus channels (516 set tiers grant it).
     _spell_focus_counts = spell_focus_mod.expand_variants(variants)
+    # The crafting/choice pools are a THIRD channel the variant pass cannot reach:
+    # their options live in their own top-level arrays, not on a variant. Because
+    # the universal names leave the picker, an unexpanded option here would target a
+    # stat no player can rank — reachable before this change, unreachable after.
+    # That is a silent loss, and the set-bonus orphan guard does not cover these
+    # pools. Same `{stat, bonus_type, ...}` shape, so the same expander applies.
+    # Each pool is expanded where it is built; this one already exists here. A dino
+    # insert is a multi-affix record, so the expansion goes one level in.
+    for _insert in dino_inserts:
+        if _insert.get("affixes"):
+            _insert["affixes"] = spell_focus_mod.expand_affixes(_insert["affixes"])
     # #169 — the same treatment for the version-bearing affixes inside SET BONUS
     # tiers. The item split above cannot reach this channel: a tier affix is
     # `{"stat": ..., "bonus_type": ...}` while an item affix is
@@ -656,6 +667,10 @@ def build() -> dict:
     # chosen-set-membership slot (pool = same-tier Vecna sets that resolve to a def)
     # to every item carrying a `lost_purpose` tier marker.
     membership_defs = membership_mod.build_membership_set_defs(_set_catalog)  # reuse the catalog loaded above
+    for _mdef in membership_defs.values():                     # #205, third channel
+        for _tier in _mdef.get("tiers") or []:
+            if _tier.get("affixes"):
+                _tier["affixes"] = spell_focus_mod.expand_affixes(_tier["affixes"])
     membership_mod.attach_lost_purpose_slots(variants, membership_defs)
     variants, cov = verify_mod.apply(variants)          # per-affix verification gate
 
@@ -690,6 +705,7 @@ def build() -> dict:
     # keyed by (slot_type, item-category). Items carrying `lamordia_slots` draw
     # one option per slot from the matching pool (tier from host ML at solve time).
     vik = vik_mod.build_viktranium(crafting)
+    vik["records"] = spell_focus_mod.expand_affixes(vik["records"])   # #205, third channel
 
     # Seal-slot crafting ("Sealed in X"): expose the single-pick choice-slot pool
     # keyed by seal_type. Items carrying `seal_slots` unseal one option from the
