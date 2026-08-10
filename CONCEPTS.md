@@ -45,7 +45,9 @@ A stat source with no magnitude — a toggle an item either grants or it doesn't
 A per-slot Pareto reduction run before the model is built: a variant beaten by a same-slot peer on **every value-carrying dimension** is dropped, since it can never be uniquely optimal. Soundness has three standing obligations — it holds only while every objective is max-aggregation (a piece-*count* objective breaks it in a multi-pick slot); its comparison surface must stay a **superset** of every dimension the objective reads (a variant whose worth is a dimension the comparator ignores gets wrongly pruned); and every kept item's dominator must be **unconditionally available** to equip. The third breaks when a hard constraint can force a candidate off (an exactly-one-of-a-class, a mutual exclusion, a quota): such a candidate is only *conditionally* available, so it must be exempted from pruning AND barred from pruning the peers it merely dominates — once it is forced off, a peer it dominated may be the true best.
 
 ### Lexicographic solve
-The staged solve that realizes ranked-priority optimization: solve for target *k* with all earlier targets locked at the values they already won, then a final deterministic tie-break stage so repeated runs return the same canonical loadout.
+The staged solve that realizes ranked-priority optimization: solve for target *k* with all earlier targets locked at the values they already won, then a deterministic tie-break stage so repeated runs return the same canonical loadout, then a settle stage that pins that loadout and drops picks contributing nothing to it.
+
+The settle stage is separate on purpose. A preference about *which* of several equally-scoring solutions to return must not compete with the tie-break's own ordering — folded into that objective it changes which loadout wins, whereas pinning the loadout first bounds the change to the picks the preference is actually about.
 
 ## Stat sources
 
