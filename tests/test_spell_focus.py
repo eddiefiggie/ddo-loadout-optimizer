@@ -38,7 +38,10 @@ def test_rune_arm_focus_is_not_universal():
 
 
 def test_deific_focus_is_not_universal():
-    # No wiki article exists; quarantined rather than inferred from the name.
+    # Its carriers' tooltips: "On Spell Cast: +1 Sacred bonus to DC of that school
+    # for five seconds. Stacks up to III times. Casting a spell from another school
+    # clears all stacks." Conditional, ramping, single-school — expanding it would
+    # credit +3 Sacred to all seven schools permanently.
     assert not spell_focus.is_universal("Deific Focus")
 
 

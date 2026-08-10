@@ -33,8 +33,12 @@ out:
 
   * `Rune Arm Focus` — the same wiki page says it "isn't directly tied to a
     Spell School but to the Rune Arm itself".
-  * `Deific Focus` — https://ddowiki.com/page/Deific_Focus does not exist, so it
-    is quarantined and disclosed rather than inferred from its name.
+  * `Deific Focus` — NOT universal, and the tempting guess. Its own page does not
+    exist, but the carriers' tooltips state the mechanic: "On Spell Cast: +1
+    Sacred bonus to DC of that school for five seconds. Stacks up to III times.
+    Casting a spell from another school clears all stacks." A conditional,
+    ramping, single-school buff — expanding it would credit +3 Sacred to all
+    seven schools permanently. See docs/wiki-evidence/spell-focus-universal.md.
   * Spell **lore** of any kind. `docs/wiki-evidence/spell-lore.md` ruled that
     universal and element-specific lore genuinely STACK — different stats, not
     an umbrella. Expanding lore would collapse two stacking sources, which is a
