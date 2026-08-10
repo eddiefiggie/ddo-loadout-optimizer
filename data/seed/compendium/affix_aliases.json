@@ -93,6 +93,11 @@
       "variant": "Striding",
       "canonical": "Movement Speed",
       "reason": "the DDO wiki's name for the movement-speed stat; upstream folds it into 'Speed', which in game names an enchantment granting three stats (#154)"
+    },
+    {
+      "variant": "Ki",
+      "canonical": "Enhanced Ki",
+      "reason": "upstream shortens the wiki's 'Enhanced Ki' to bare 'Ki'; the pipeline mints the wiki name via affix_name_corrections.json, so this keeps the gear-planner name resolving for a free-typed priority (#227)"
     }
   ],
   "distinct": [

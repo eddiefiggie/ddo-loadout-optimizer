@@ -458,4 +458,127 @@ test("#169: the disclosure names a dropped bound", () => {
   assert.ok(!/removed rather than copied/.test(quiet), "no bound, no bound sentence");
 });
 
+// ---------------------------------------------------------------------------
+// #228 — the presence word cap. `_isPresenceTargetable` hides any Bool name
+// longer than four words, standing in for "is this a named effect or a
+// sentence". It splits the wrong way on a named effect with a long name, which
+// is how `Kick 'Em While They're Down` (five words, 12 wiki-confirmed items)
+// became unfindable: a player searching "kick" got nothing back.
+
+const KICK = "Kick 'Em While They're Down";
+
+// Every Bool name that clears the noise filter and is hidden only by the word
+// cap. PINNED: a rebuild that introduces a new named effect must fail here
+// rather than hide it silently. When this list changes, rule on the new name --
+// add it to PRESENCE_ALLOW in web/dataset.js if the DDO wiki names it as an
+// effect, otherwise update this fixture with the sentence-shaped addition.
+const WORD_CAP_CASUALTIES = [
+  "1 Positive Healing every minute",
+  "1 to 4 Light Damage",
+  "1 to 6 Bane damage on hit vs Undead",
+  "1 to 8 Cold Damage",
+  "6 to 36 bonus Rust damage on hit vs Constructs",
+  "Additional 2d8 Bane Damage to Fey creatures on hit",
+  "Brilliance of the Shattered Sun",
+  "Choco-Bacon-Berry Dream Bar (Lasting Bear's Endurance and Lasting Bear's Stamina, 1 hour)",
+  "Dark Chocolate 'Magma' Truffle (Lasting Haste, 3 minutes)",
+  "Embrace of the Spider Queen",
+  "Epic Slice 'n Dice Set",
+  "Final Litany of the Crimson Covenant",
+  "First Litany of the Crimson Covenant",
+  "Greater Bane of the Unnatural",
+  "If equipped on a character with Follower of the Blood of Vol",
+  "Inflicts a Negative Level on vorpal hits",
+  "Item becomes a Spellcasting Implement",
+  "Legendary Cooking By the Book",
+  "Legendary Tet-zik, The Enlightened Change",
+  "Legendary Vile Grip of the Hidden Hand",
+  "Lifeblood of the Undead Prince",
+  "Magnetism +108 (only from chest)",
+  "Magnetism +66 (only from chest)",
+  "Nut-hull Toffee Surprise (Lasting Stoneskin, CL 10, 10 minutes)",
+  "Path of the Fire Dragon",
+  "Path of the Guarding Stone",
+  "Second Litany of the Crimson Covenant",
+  "Third Litany of the Crimson Covenant",
+  "Vile Grip of the Hidden Hand",
+  "Vitality +20 (only from chain end reward)",
+  "Way of the Sun Soul",
+  "You also gain immunity to Mind-Altering Enchantments as if you were under the effects of the Protection from Evil spell",
+  "item becomes a Spellcasting Implement",
+  "ward against the Knockdowns and Slows of an Air Elemental",
+];
+
+test("#228: the reported effect is suggested, so searching for it finds it", () => {
+  const v = buildPickerVocabulary(realData);
+  assert.ok(v.suggestions.includes(KICK), "it is offered as a suggestion");
+  assert.deepStrictEqual(v.suggestions.filter((s) => /kick/i.test(s)), [KICK],
+    'searching "kick" returns it');
+});
+
+test("#228: it is flagged as presence, not as a magnitude", () => {
+  const v = buildPickerVocabulary(realData);
+  assert.ok(v.presence.has(KICK), "on/off, so the UI can badge it as a feature");
+  assert.ok(!v.magnitude.has(KICK), "no rankable bucket, so no declared-credit control");
+});
+
+test("#228: the word-cap casualty set is pinned, so a new named effect surfaces", () => {
+  const { presenceWordCapCasualties } = require("../web/dataset.js");
+  assert.deepStrictEqual(presenceWordCapCasualties(realData), WORD_CAP_CASUALTIES);
+});
+
+test("#228: allowing a name removes it from the casualty set and the cap still holds", () => {
+  const { presenceWordCapCasualties } = require("../web/dataset.js");
+  const casualties = presenceWordCapCasualties(realData);
+  assert.ok(!casualties.includes(KICK), "an adjudicated name is no longer a casualty");
+  // The cap is still the default: the sentence-shaped names stay hidden.
+  const v = buildPickerVocabulary(realData);
+  for (const hidden of ["Inflicts a Negative Level on vorpal hits",
+                        "ward against the Knockdowns and Slows of an Air Elemental"]) {
+    assert.ok(!v.suggestions.includes(hidden), `${hidden} stays hidden`);
+    assert.ok(v.known.has(hidden), `${hidden} stays free-typeable`);
+  }
+});
+
+test("#228: a five-word Bool name that is not adjudicated shows up as a casualty", () => {
+  const { presenceWordCapCasualties } = require("../web/dataset.js");
+  const synthetic = { items: [{ affixes: [{ name: "Song Of The Silent Deep", type: "Bool", value: 1 }] }] };
+  assert.deepStrictEqual(presenceWordCapCasualties(synthetic), ["Song Of The Silent Deep"]);
+  // ...and it is genuinely hidden from the picker, which is what the report is for.
+  assert.ok(!buildPickerVocabulary(synthetic).suggestions.includes("Song Of The Silent Deep"));
+});
+
+// ---------------------------------------------------------------------------
+// #227 — the untyped worn-gear magnitude, reachable under its wiki name.
+
+test("#227: Enhanced Ki is suggested under the wiki's name", () => {
+  const v = buildPickerVocabulary(realData);
+  assert.ok(v.suggestions.includes("Enhanced Ki"), "the wiki name is offered");
+  assert.ok(!v.suggestions.includes("Ki"), "the upstream shorthand is not a separate offer");
+});
+
+test("#227: the gear-planner name still resolves through the alias", () => {
+  const v = buildPickerVocabulary(realData);
+  assert.strictEqual(v.canonical("Ki"), "Enhanced Ki");
+  assert.ok(v.known.has(v.canonical("Ki")), "typing the upstream name is accepted");
+});
+
+test("#227: it carries a rankable magnitude, not a presence flag", () => {
+  const v = buildPickerVocabulary(realData);
+  assert.ok(v.magnitude.has("Enhanced Ki"), "it has a real bucket to rank");
+  assert.ok(!v.presence.has("Enhanced Ki"));
+});
+
+test("#227: admitting one untyped name gives the proc population no rankable bucket", () => {
+  const v = buildPickerVocabulary(realData);
+  // These are offered as on/off PRESENCE effects and always have been -- Holy
+  // ships `Bool 1` on 11 items alongside its untyped damage line on 95. What the
+  // allow-list must not do is hand them a magnitude bucket to rank, which is the
+  // failure mode the blanket untyped skip was protecting against.
+  for (const proc of ["Holy", "Vampirism", "Maiming", "Chilling", "Undead Bane"]) {
+    assert.ok(!v.magnitude.has(proc), `${proc} has no rankable magnitude bucket`);
+  }
+  assert.ok(v.magnitude.has("Enhanced Ki"), "the adjudicated name does");
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

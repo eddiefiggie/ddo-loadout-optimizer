@@ -447,6 +447,14 @@ test("attributionList shows a worn contributor with its slot", () => {
   assert.ok(/\+10/.test(html));
 });
 
+test("#227: an untyped contributor reads \"untyped\", not the literal null", () => {
+  const html = R.attributionList(
+    [{ bonus_type: null, value: 5, source: "Legendary Webs of the Drow Penitent", sourceKind: "worn", isSet: false, slots: ["Armor"] }]);
+  assert.ok(/untyped/.test(html), "names the bucket");
+  assert.ok(!/null/.test(html), "the raw value never reaches the receipts");
+  assert.ok(/\+5/.test(html), "and it is still a magnitude, not a feature tick");
+});
+
 test("attributionList escapes hostile source text (no raw HTML injection)", () => {
   const html = R.attributionList(
     [{ bonus_type: "Enhancement", value: 5, source: "<img src=x>", sourceKind: "worn", isSet: false, slots: ["<b>x</b>"] }]);

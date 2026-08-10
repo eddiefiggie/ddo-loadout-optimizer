@@ -91,3 +91,11 @@ Filed 2026-08-05 (tracking issue #141):
 - #138 (report 5) Solar augment typing — premise does not hold; gems are typed, the cause is naming
 - #139 (report 6) Gem of Many Facets — mechanic already confirmed; only the Legendary tier is wired
 - #140 (report 7) Composite affixes — splits: 2 of 5 are Bool, 3 already score magnitude
+
+New batch of reports (2026-08-10):
+1) "can't seem to find enhanced ki"
+2) "can't seem to find 'kick em while they're down'"
+
+Filed 2026-08-10:
+- #227 (report 1) Enhanced Ki — data present (19 variants, values 1-5) but unreachable by any path: gear-planner stores it as bare `Ki`, null-typed (so rankable_affixes drops it) with no alias (so the wiki/in-game name is rejected on free-typed input). Wiki-confirmed name via Item:Legendary_Icewalkers.
+- #228 (report 2) Kick 'Em While They're Down — data correct (12 variants, matching the wiki's item list exactly); the picker's presence 4-word cap hides it from suggestions. 34 other Bool names fail the same cap, ~10 of them real named effects.
