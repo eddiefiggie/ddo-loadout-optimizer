@@ -67,8 +67,33 @@ Sacred Spell Focus Mastery +3
 ```
 
 The `Sacred Spell Focus Mastery +3` matches our stored `Spell Focus Mastery |
-Sacred | 3`. **The base value does not match** — the wiki says +8, gear-planner
-says +5. Tracked separately as #207; this document does not resolve it.
+Sacred | 3`.
+
+### The base value — RESOLVED 2026-08-09 (#207)
+
+The wiki said +8; gear-planner said +5. Re-verified against the **rendered
+tooltip**, not just the visible cell, per the standing rule:
+
+> Spell Focus Mastery +8: +8 Equipment bonus to the DC of all your spells.
+
+Tooltip and cell agree, so this is not the bundled-template trap. The item has a
+single Spell Focus Mastery enchantment with no tier variants, and its other three
+enchantments match gear-planner exactly. The heroic **Argonnessen Eye Band**
+matches on all four (`+3 / +56 / +2 / Sacred +1`), so this was one stale row, not
+systematic drift.
+
+Corrected to 8 via `data/seed/compendium/item_value_corrections.json`. That
+mechanism exists because `gap_corrections.json` is additive-only and skips any
+`(name, type)` already present — a guard protecting removed double-counts, which
+must not be widened to overwrite. Each correction records the value gear-planner
+carries today and **fails the build when that no longer matches**, so it cannot
+go stale unnoticed the way the value it corrects did.
+
+**No solved loadout changed.** In the `endgame-necro-dc-ml34` fixture the ring's
+Equipment channel was already dominated by `Legendary Death's Anchor` at +12, so
+the ring earns its slot on Sacred +3, not Equipment. Same bonus type, only the
+highest applies — the correction is right regardless, and will matter in builds
+where nothing better occupies that channel.
 
 ## Measured effect
 

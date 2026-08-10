@@ -1,0 +1,21 @@
+{
+  "_meta": {
+    "title": "wiki-sourced item value corrections (#207)",
+    "note": "gear-planner is the single source of truth for WHICH affixes an item has, read structurally. The DDO Wiki is the source of truth for the VALUE. When the two disagree and the wiki's rendered tooltip is unambiguous, the wiki wins and the correction is recorded here with its evidence.",
+    "why_not_gap_corrections": "data/seed/gap_corrections.json is ADDITIVE ONLY — it appends affixes gear-planner is missing and deliberately SKIPS any (name, type) the item already carries, so it can never re-introduce the Insightful/Insight double-counts that removal fixed. It therefore cannot correct a value, and widening it to overwrite would put that guard at risk. This file overwrites, and nothing else does.",
+    "stale_guard": "Every entry records `from` — the value gear-planner currently carries. The build FAILS if `from` no longer matches, rather than silently pinning a number over a source that has since changed. That is what stops this file from quietly going stale the way the value it corrects did.",
+    "evidence_rule": "Every entry carries the verbatim rendered tooltip, not the visible cell. A bundled template hides its numbers in the tooltip; see docs/solutions/conventions/bundled-template-values-live-in-the-tooltip-not-the-cell.md."
+  },
+  "Legendary Argonnessen Eye Band": [
+    {
+      "name": "Spell Focus Mastery",
+      "type": "Equipment",
+      "from": "5",
+      "to": "8",
+      "tooltip": "Spell Focus Mastery +8: +8 Equipment bonus to the DC of all your spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Argonnessen_Eye_Band",
+      "verified": "2026-08-09",
+      "note": "The item's other three enchantments agree with gear-planner exactly (Insightful Wizardry 155, Insightful Spell Penetration 5, Sacred Spell Focus Mastery 3), and the heroic Argonnessen Eye Band agrees on all four. Only this row is stale."
+    }
+  ]
+}
