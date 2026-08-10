@@ -24,7 +24,11 @@ sys.path.insert(0, ROOT)
 from src import vocabulary  # noqa: E402
 
 _LEGACY_AFFIX_KEYS = {"stat", "bonus_type", "unit", "minimum_level"}
-_ALLOWED_AFFIX_KEYS = {"name", "type", "value", "eligible"}
+# `via` (#205) names the enchantment an expanded universal spell-DC affix came
+# from ("Sacred Spell Focus Mastery"). It is display provenance, not a legacy
+# key: the solver never reads it, but the proof panel and share exports must show
+# what is engraved on the item rather than the school the value was credited to.
+_ALLOWED_AFFIX_KEYS = {"name", "type", "value", "eligible", "via"}
 
 
 def _load():

@@ -29,10 +29,10 @@ function test(name, fn) {
   const goldenNames = Object.keys(golden.solves);
   const { solves, count } = await solveAll();
 
-  test("golden guard pins exactly 10 fixtures", () => {
-    assert.strictEqual(count, 10, "10 fixtures run against the live solver");
-    assert.strictEqual(golden.fixture_count, 10, "golden.json records 10 fixtures");
-    assert.strictEqual(goldenNames.length, 10, "golden.json carries 10 fixture solves");
+  test("golden guard pins exactly 11 fixtures", () => {
+    assert.strictEqual(count, 11, "11 fixtures run against the live solver");
+    assert.strictEqual(golden.fixture_count, 11, "golden.json records 11 fixtures");
+    assert.strictEqual(goldenNames.length, 11, "golden.json carries 11 fixture solves");
     assert.deepStrictEqual(Object.keys(solves).sort(), goldenNames.slice().sort(),
       "the same fixture names are solved and pinned");
   });

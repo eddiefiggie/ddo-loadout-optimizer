@@ -43,6 +43,7 @@ from src import parrying_split as parrying_split_mod
 from src import heightened_awareness as heightened_awareness_mod
 from src import enchantment_split as enchantment_split_mod
 from src import umbrella as umbrella_mod
+from src import spell_focus as spell_focus_mod
 from src import planner_items as planner_mod
 from src import variants as variants_mod
 from src import vocabulary as vocabulary_mod
@@ -355,6 +356,9 @@ def rankable_affixes(planner_records) -> list:
     # name gives the player a priority guaranteed to score zero. The picker
     # redirects to the abilities instead (metadata.expanded_away_names).
     names = {s for s in names if not umbrella_mod.is_umbrella(s)}
+    # #205 — same rule for the universal spell-DC names, expanded into the seven
+    # schools by src/spell_focus.py.
+    names = {s for s in names if not spell_focus_mod.is_universal(s)}
     return sorted(names)
 
 
@@ -589,6 +593,25 @@ def build() -> dict:
     # Expand umbrella ability affixes ("All Ability Scores +15", "Well Rounded")
     # into the six concrete abilities so single-ability targets get credited.
     umbrella_mod.expand_variants(variants)
+    # #205 — the same treatment for universal spell-DC affixes. `Spell Focus
+    # Mastery` raises the DC of every school, but a school-ranked target credited
+    # only exact name matches, so no sacred/quality/insightful focus could ever be
+    # picked. Expanding into the seven schools at the same bonus type lets the
+    # existing max-per-(stat, stacking type) bucketing reproduce both wiki rules:
+    # same type collapses to the highest, different types stack. Covers BOTH the
+    # item and set-bonus channels (516 set tiers grant it).
+    _spell_focus_counts = spell_focus_mod.expand_variants(variants)
+    # The crafting/choice pools are a THIRD channel the variant pass cannot reach:
+    # their options live in their own top-level arrays, not on a variant. Because
+    # the universal names leave the picker, an unexpanded option here would target a
+    # stat no player can rank — reachable before this change, unreachable after.
+    # That is a silent loss, and the set-bonus orphan guard does not cover these
+    # pools. Same `{stat, bonus_type, ...}` shape, so the same expander applies.
+    # Each pool is expanded where it is built; this one already exists here. A dino
+    # insert is a multi-affix record, so the expansion goes one level in.
+    for _insert in dino_inserts:
+        if _insert.get("affixes"):
+            _insert["affixes"] = spell_focus_mod.expand_affixes(_insert["affixes"])
     # #169 — the same treatment for the version-bearing affixes inside SET BONUS
     # tiers. The item split above cannot reach this channel: a tier affix is
     # `{"stat": ..., "bonus_type": ...}` while an item affix is
@@ -629,6 +652,7 @@ def build() -> dict:
     _set_orphans = enchantment_split_mod.set_bonus_orphans(
         variants,
         {**umbrella_mod.umbrella_expansion(),
+         **spell_focus_mod.expanded_away(),
          **speed_split_mod.EXPANDED_AWAY,
          **parrying_split_mod.EXPANDED_AWAY,
          **heightened_awareness_mod.EXPANDED_AWAY},
@@ -643,6 +667,10 @@ def build() -> dict:
     # chosen-set-membership slot (pool = same-tier Vecna sets that resolve to a def)
     # to every item carrying a `lost_purpose` tier marker.
     membership_defs = membership_mod.build_membership_set_defs(_set_catalog)  # reuse the catalog loaded above
+    for _mdef in membership_defs.values():                     # #205, third channel
+        for _tier in _mdef.get("tiers") or []:
+            if _tier.get("affixes"):
+                _tier["affixes"] = spell_focus_mod.expand_affixes(_tier["affixes"])
     membership_mod.attach_lost_purpose_slots(variants, membership_defs)
     variants, cov = verify_mod.apply(variants)          # per-affix verification gate
 
@@ -677,6 +705,7 @@ def build() -> dict:
     # keyed by (slot_type, item-category). Items carrying `lamordia_slots` draw
     # one option per slot from the matching pool (tier from host ML at solve time).
     vik = vik_mod.build_viktranium(crafting)
+    vik["records"] = spell_focus_mod.expand_affixes(vik["records"])   # #205, third channel
 
     # Seal-slot crafting ("Sealed in X"): expose the single-pick choice-slot pool
     # keyed by seal_type. Items carrying `seal_slots` unseal one option from the
@@ -853,6 +882,7 @@ def build() -> dict:
             # The picker drops them from suggestions and redirects the player to the
             # replacements, instead of offering a priority no item can satisfy.
             "expanded_away_names": {**umbrella_mod.umbrella_expansion(),
+                                    **spell_focus_mod.expanded_away(),
                                     **speed_split_mod.EXPANDED_AWAY,
                                     **parrying_split_mod.EXPANDED_AWAY,
                                     **heightened_awareness_mod.EXPANDED_AWAY},
@@ -916,6 +946,12 @@ def _native_affix(a: dict) -> dict:
     out = {"name": a.get("stat"), "type": a.get("bonus_type"), "value": native_value}
     if "eligible" in a:
         out["eligible"] = a["eligible"]
+    # #205 — an expanded universal spell-DC affix carries the enchantment name the
+    # player actually sees on the item ("Sacred Spell Focus Mastery"). Carried at
+    # rest because the proof panel and every share export must display it; without
+    # this the field dies here and the receipts name a stat no item bears.
+    if spell_focus_mod.PROVENANCE_KEY in a:
+        out[spell_focus_mod.PROVENANCE_KEY] = a[spell_focus_mod.PROVENANCE_KEY]
     return out
 
 

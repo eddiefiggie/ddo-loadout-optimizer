@@ -155,7 +155,11 @@
     // loadout shows which numbers the recipient's own gear produces and which one
     // the sender asserted. The label comes from the solver, so the app and every
     // export format cannot drift apart.
-    return `${type} ${val} — ${esc(p.source)}${tag}${slots}`;
+    // #205 — a universal spell-DC enchantment is credited to the ranked school but
+    // printed on the item under its own name. Naming it here means a shared build
+    // tells the reader what to look for on the item, in every export format.
+    const via = p.viaAffix ? ` as ${esc(p.viaAffix)}` : "";
+    return `${type} ${val} — ${esc(p.source)}${tag}${slots}${via}`;
   }
 
   // The cap note for a priority stat, matching results.js: shown only when a cap is

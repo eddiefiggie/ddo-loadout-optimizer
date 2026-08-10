@@ -443,10 +443,16 @@ function attributionList(contribs) {
         ? `<span class="attrib-set">set: ${esc(c.source)}</span>${c.slots.length ? `<span class="attrib-slots"> via ${c.slots.map(esc).join(", ")}</span>` : ""}`
         : `<span class="attrib-slots">${c.slots.length ? c.slots.map(esc).join(", ") : "—"}</span><span class="attrib-src"> · ${esc(c.source)}</span>`;
     const isBool = c.bonus_type === "boolean";   // U4: presence, not a magnitude
+    // #205 — a universal spell-DC enchantment is credited to the ranked school but
+    // is printed on the item under its own name. Show that name, or a player
+    // checking the tooltip finds text the item does not carry.
+    const via = c.via
+      ? `<span class="attrib-via" title="This item grants ${esc(c.via)}, which raises the DC of every school. It is credited here to the school you ranked.">as ${esc(c.via)}</span>`
+      : "";
     return `<li class="attrib-row ${kind}">
       <span class="attrib-type">${esc(isBool ? "feature" : c.bonus_type)}</span>
       <span class="attrib-val">${isBool ? "✓" : "+" + esc(c.value)}</span>
-      <span class="attrib-where">${where}</span>
+      <span class="attrib-where">${where}${via}</span>
     </li>`;
   }).join("")}</ul>`;
 }
