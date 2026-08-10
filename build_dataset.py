@@ -44,6 +44,7 @@ from src import heightened_awareness as heightened_awareness_mod
 from src import enchantment_split as enchantment_split_mod
 from src import umbrella as umbrella_mod
 from src import spell_focus as spell_focus_mod
+from src import value_corrections as value_corrections_mod
 from src import planner_items as planner_mod
 from src import variants as variants_mod
 from src import vocabulary as vocabulary_mod
@@ -213,6 +214,8 @@ def assert_affix_synonyms() -> int:
 
 
 GAP_CORRECTIONS_PATH = os.path.join(HERE, "data", "seed", "gap_corrections.json")
+VALUE_CORRECTIONS_PATH = os.path.join(
+    HERE, "data", "seed", "compendium", "item_value_corrections.json")
 SPEED_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_enchantment.json")
 PARRYING_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "parrying_version.json")
 HEIGHTENED_AWARENESS_SHARD_PATH = os.path.join(
@@ -410,6 +413,12 @@ def build() -> dict:
     # (restores only affixes gear-planner genuinely LACKS; anti-double-count guarded).
     _gap_corrections = load_gap_corrections()
     _gap_coverage = apply_gap_corrections(planner_records, _gap_corrections)
+    # #207 — wiki-sourced VALUE corrections. Separate from the additive overlay
+    # above, which cannot overwrite by design. Runs after it so a corrected value
+    # applies to the final affix block, and fails the build when its recorded
+    # `from` no longer matches upstream rather than pinning a stale number.
+    _value_corrections = value_corrections_mod.load(VALUE_CORRECTIONS_PATH)
+    _value_coverage = value_corrections_mod.apply(planner_records, _value_corrections)
 
     # U3 (#154) — split the folded `Speed` affix back into the two mechanics
     # upstream merged. BEFORE variant expansion and before rankable_affixes, so the
@@ -877,6 +886,7 @@ def build() -> dict:
             # U7.5 — wiki-validated gap-corrections overlay coverage (sanctioned
             # minimal exception to gear-planner sole-authority).
             "gap_corrections_coverage": _gap_coverage,
+            "value_corrections_coverage": _value_coverage,
             "rankable_affixes": rankable_affixes(planner_records),
             # U1 (#136) — names this build EXPANDS AWAY, mapped to what they become.
             # The picker drops them from suggestions and redirects the player to the
