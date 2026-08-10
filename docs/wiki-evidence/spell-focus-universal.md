@@ -45,7 +45,7 @@ required, and a change to that bucketing would mean the expansion is wrong.
 | `Spell Focus Mastery` | **Universal** | Stated outright above. 232 item affixes; also 516 set-bonus tiers (Profane and Artifact, matching "Set effects" above). |
 | `Spell Focus` (bare) | **Universal** | The same page's worked example credits `Stormreaver's Napkin` — stored `Spell Focus \| Equipment \| 1` — as "+1 to her DCs", plural. 19 item affixes. |
 | `Rune Arm Focus` | **NOT universal** | Same page: "Rune Arms have a similar but different type of Focus that isn't directly tied to a Spell School but to the Rune Arm itself." |
-| `Deific Focus` | **QUARANTINED** | https://ddowiki.com/page/Deific_Focus does not exist ("We don't currently have an article called Deific Focus"). Three items carry it as a Sacred bonus (Epic Deific Diadem, Morion of the Undying, Staff of Irian). The name and typing suggest universal, but under the exclude-until-verified gate it is disclosed, not inferred. Ships only if a future lookup states the rule outright. |
+| `Deific Focus` | **NOT universal — RESOLVED 2026-08-09, do not re-raise** | It is a conditional ramping buff, not a static bonus. See the ruling below. |
 | Spell **lore** | **NOT an umbrella** | `spell-lore.md` ruled universal and element-specific lore genuinely STACK — different stats. Expanding lore would collapse two real sources; it is a regression, not an extension. |
 
 The typed variants render with a bonus-type prefix the player sees on the item —
@@ -53,6 +53,45 @@ The typed variants render with a bonus-type prefix the player sees on the item �
 Focus Mastery` (Insight renders as "Insightful"), with Equipment unprefixed. Those
 strings are reproduced in the receipts so a player checking a tooltip finds the
 same text.
+
+## `Deific Focus` — NOT universal, resolved 2026-08-09
+
+**Recorded so a later audit does not re-raise it.** The name, the Sacred typing,
+and the absence of a wiki article all invite the guess that this is another
+universal DC bonus. It is not.
+
+https://ddowiki.com/page/Deific_Focus does not exist, but the items that carry it
+do, and their rendered tooltips state the mechanic outright.
+[I:Morion of the Undying](https://ddowiki.com/page/Item:Morion_of_the_Undying):
+
+> Deific Focus III: On Spell Cast: +1 Sacred bonus to DC of that school for five
+> seconds. Stacks up to III times. Casting a spell from another school clears all
+> stacks of this effect.
+
+So the +3 Sacred ceiling is real, but it is:
+
+- **conditional** — nothing until you cast;
+- **ramping** — +1 per cast, three casts to reach the cap;
+- **single-school** — "that school", not all seven;
+- **self-clearing** — casting from another school wipes every stack;
+- **temporary** — five seconds.
+
+Expanding it the way `Spell Focus Mastery` is expanded would credit +3 Sacred to
+all seven schools, permanently and simultaneously, on all three carriers (Epic
+Deific Diadem, Morion of the Undying, Staff of Irian). That is not a smaller
+error than leaving it out — it is a larger one, and it would be invisible in a
+finished loadout.
+
+A player report of "+3 Sacred to all spell DCs" is an accurate reading of the
+**cap** and the reason this is worth writing down: the summary a player carries in
+their head is the sustained value for their own playstyle, while the solver models
+static gear. Both are right about different things.
+
+**Consequence, deliberately not fixed here.** The dataset stores it as a static
+`Deific Focus | Sacred | 3`, which is a conditional effect modelled as a constant.
+It contributes to nothing today — no school target includes that stat name — so it
+is inert rather than inflating. The general question of conditional and ramping
+effects stored as flat numbers is out of scope for #205.
 
 ## Item confirmation
 
