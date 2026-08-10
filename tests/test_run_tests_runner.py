@@ -5,7 +5,7 @@ the one component in the tree with no coverage — every other test module is ru
 *by* it. That gap hid a runner that could stop early and read as clean:
 
   * `except Exception` does not catch `BaseException`, and this repo raises
-    `SystemExit` from sixteen build guards. An unexpected trip escaped the
+    `SystemExit` from thirteen build guards. An unexpected trip escaped the
     handler and unwound out of `run()`.
   * `importlib.import_module` sat outside every handler, so one typo'd import
     in one test file took the whole remaining suite with it.
@@ -96,7 +96,7 @@ def test_a_module_that_fails_to_import_does_not_take_the_suite_with_it():
 def test_a_zero_exit_inside_a_test_cannot_make_the_run_report_success():
     """The CI-green hole: `SystemExit(0)` used to unwind with returncode 0.
 
-    No guard raises a bare exit today (all sixteen carry a message, so they
+    No guard raises a bare exit today (all thirteen carry a message, so they
     exit 1), which is exactly why this is worth pinning — it is one bare
     `sys.exit()` away from a green CI run over a suite that never finished.
     """
