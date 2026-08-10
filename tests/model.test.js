@@ -1328,31 +1328,34 @@ test("U5/003: the predicate is inert everywhere it should be", () => {
 }
 
 // ---------------------------------------------------------------------------
-// #227 — an untyped affix and a declared "Untyped" credit are one bucket.
-// Unreachable until an untyped affix became rankable, because buckets are only
-// built for target stats. Before the fix, gear keyed `stat||null` and the credit
-// keyed `stat||Untyped`, so the two ADDED instead of taking the max.
+// ---------------------------------------------------------------------------
+// #235 — an absent bonus type is NOT folded into `Untyped`. A previous revision
+// did that to stop a declared credit double-counting, and it was wrong on the
+// wider rule: real untyped bonuses STACK (CONCEPTS.md), and 30 stats carry both
+// an absent type and an explicit `Untyped` — an item's own effect beside an
+// augment's — which are meant to add.
 
-test("#227: equivType normalizes an absent bonus type to Untyped", () => {
-  assert.strictEqual(M.equivType(null), "Untyped");
-  assert.strictEqual(M.equivType(undefined), "Untyped");
-  assert.strictEqual(M.equivType(""), "Untyped");
+test("#235: equivType leaves an absent bonus type alone", () => {
+  assert.strictEqual(M.equivType(null), null);
+  assert.strictEqual(M.equivType(undefined), undefined);
   assert.strictEqual(M.equivType("Untyped"), "Untyped");
-  // Every other type is untouched, including the curated equivalences.
   assert.strictEqual(M.equivType("Enhancement"), "Enhancement");
   assert.strictEqual(M.equivType("Insight"), "Insight");
 });
 
-test("#227: untyped gear and an Untyped credit share one bucket, so they take the max", () => {
-  const boots = {
-    variant_id: "boots", source_item: "Icewalkers", slot: "Boots", category: "item",
+test("#235: an untyped affix and an explicit Untyped one keep separate buckets, so they sum", () => {
+  const item = {
+    variant_id: "i", source_item: "Weapon", slot: "Weapon", category: "weapon",
     minimum_level: 34, ml: 34, verification: "verified",
-    affixes: [{ name: "Enhanced Ki", type: null, stat: "Enhanced Ki", bonus_type: null, value: 5, unit: "flat" }],
+    affixes: [
+      { name: "Acidic", type: null, value: 6, unit: "flat" },       // the item's own effect
+      { name: "Acidic", type: "Untyped", value: 4, unit: "flat" },  // an augment's
+    ],
     scaling: [], set_bonus: [], augment_slots: [], restrictions: "unknown", armor_type: null,
   };
-  const keys = [...M.variantBuckets(boots, new Set(["Enhanced Ki"]), 34).keys()];
-  assert.deepStrictEqual(keys, ["Enhanced Ki||Untyped"],
-    "gear keys the same bucket a declared Untyped credit would");
+  const keys = [...M.variantBuckets(item, new Set(["Acidic"]), 34).keys()].sort();
+  assert.strictEqual(keys.length, 2, "two buckets, so the two values add");
+  assert.ok(keys.includes("Acidic||Untyped"));
 });
 
 

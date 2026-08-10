@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -1468,5 +1468,49 @@ test("U4: Warlock sits on the packages row; ability scores are above Tactics", (
 function ADVANCED_HELP_SRC() {
   return WIZARD_SRC.slice(WIZARD_SRC.indexOf("const ADVANCED_PANEL_HELP"), WIZARD_SRC.indexOf("// U2/KTD1"));
 }
+
+// ---------------------------------------------------------------------------
+// #235 — a stat with a magnitude but NO bonus type anywhere gets no declared
+// credit. The control asks for a bonus type and this stat has none: `Untyped`
+// keys a bucket the gear cannot join (they would sum into a double-count), and
+// any other type names a bucket nothing supplies.
+
+test("#235: an untyped-only stat is refused a declared credit", () => {
+  const vocab = { presence: new Set(), magnitude: new Set(["Enhanced Ki", "Constitution"]),
+                  untypedOnly: new Set(["Enhanced Ki"]) };
+  assert.strictEqual(isUntypedOnly("Enhanced Ki", vocab), true);
+  assert.strictEqual(canDeclareCredit("Enhanced Ki", vocab), false);
+  assert.strictEqual(canDeclareCredit("Constitution", vocab), true, "a typed stat is unaffected");
+});
+
+test("#235: an untyped-only stat still accepts a floor and a cap", () => {
+  // Only the credit is refused. A bound is a working constraint on any bucket.
+  const vocab = { presence: new Set(), magnitude: new Set(["Enhanced Ki"]),
+                  untypedOnly: new Set(["Enhanced Ki"]) };
+  const state = { priorities: ["Enhanced Ki"], targetFloors: { "Enhanced Ki": 3 },
+                  targetCaps: { "Enhanced Ki": 9 }, declaredCredits: {} };
+  const row = advancedRowModel("Enhanced Ki", state, vocab);
+  assert.strictEqual(row.canCredit, false, "no credit control");
+  assert.strictEqual(row.floor, 3, "floor survives");
+  assert.strictEqual(row.cap, 9, "cap survives");
+});
+
+test("#235: an existing credit on an untyped-only stat is dropped, not honored", () => {
+  const vocab = { presence: new Set(), magnitude: new Set(["Enhanced Ki"]),
+                  untypedOnly: new Set(["Enhanced Ki"]) };
+  const state = { priorities: ["Enhanced Ki"], targetFloors: {}, targetCaps: {},
+                  declaredCredits: { "Enhanced Ki||Untyped": { stat: "Enhanced Ki", bonus_type: "Untyped", value: 3 } } };
+  assert.deepStrictEqual(advancedRowModel("Enhanced Ki", state, vocab).credits, [],
+    "a credit saved before this gate must not reach the solver");
+});
+
+test("#235: the real vocabulary marks Enhanced Ki untyped-only and nothing else", () => {
+  const rv = buildPickerVocabulary(realData);
+  assert.ok(rv.untypedOnly.has("Enhanced Ki"));
+  assert.strictEqual(rv.untypedOnly.size, 1);
+  assert.strictEqual(canDeclareCredit("Enhanced Ki", rv), false);
+  assert.strictEqual(canDeclareCredit("Constitution", rv), true);
+});
+
 
 console.log(`\n${passed} passed`);

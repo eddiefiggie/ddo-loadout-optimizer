@@ -33,17 +33,15 @@ function setStackEquiv(map) {
 /** Canonicalize an affix `type` to its stacking bucket token (identity unless the
  *  curated equivalence table remaps it). Used ONLY to form bucket keys. */
 function equivType(type) {
-  // #227 — an affix with no bonus type and a player's declared "Untyped" credit
-  // are the same stacking bucket: DDO's untyped bonuses stack with every typed
-  // bonus but not with each other. Before this, gear keyed `stat||null` while the
-  // credit keyed `stat||Untyped`, so the two ADDED instead of taking the max — a
-  // silent double-count, and the mirror of the defect the credit presence gate
-  // exists to block. Unreachable until an untyped affix became rankable, because
-  // buckets are only built for target stats. Normalizing here rather than in
-  // type_stacking_equivalence.json keeps it logic, not a data claim, and puts it
-  // at the one seam the solver and the dominance guard both read.
-  if (type == null || type === "") return "Untyped";
-  return (_STACK_EQUIV[type] != null) ? _STACK_EQUIV[type] : type;
+  // #235 — an absent bonus type is NOT folded into `Untyped`. A previous revision
+  // did that to stop a declared "Untyped" credit double-counting against untyped
+  // gear, and it was wrong on the wider rule: real untyped bonuses STACK
+  // (`CONCEPTS.md` Bucket, and the equivalence audit's None-vs-Untyped ruling),
+  // so collapsing the two turns a legitimate sum into a max. 30 stats carry both
+  // an absent type and an explicit `Untyped` — an item's own effect beside an
+  // augment's — and they are meant to add. The double-count is closed at its real
+  // source instead: a stat with no bonus type is not offered a bonus-type credit.
+  return (type != null && _STACK_EQUIV[type] != null) ? _STACK_EQUIV[type] : type;
 }
 
 /** Resolve an ML-scaling affix to its value at the query ML cap. */

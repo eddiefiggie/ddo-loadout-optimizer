@@ -437,6 +437,30 @@ function buildPickerVocabulary(dataset) {
     }
   }
 
+  // #235 — stats whose magnitude comes ONLY from affixes with no bonus type.
+  // `Enhanced Ki` is the first: gear-planner carries it untyped, and no source
+  // gives it a type. Such a stat must not be offered a declared-credit control,
+  // because that control asks the player to pick a bonus type. Picking `Untyped`
+  // keys a bucket the gear cannot join and the two would sum into a double-count;
+  // picking any other type is a bucket nothing in the game supplies.
+  //
+  // Deliberately NOT solved by folding an absent type into `Untyped` at the
+  // bucket key. Real untyped bonuses stack (`CONCEPTS.md`), and 30 stats carry
+  // both an absent type and an explicit `Untyped` — an item's own effect beside
+  // an augment's — which are meant to add. Collapsing them would turn those sums
+  // into maxes. The gate belongs on the control, not on the stacking rule.
+  const untypedOnly = new Set();
+  const typedSeen = new Set();
+  const untypedSeen = new Set();
+  for (const [name, type, value] of [..._itemAffixTriples(ds), ..._craftingAffixTriples(ds)]) {
+    if (PRESENCE_TYPES.has(type)) continue;      // on/off is `presence`, not this
+    const c = canonical(name);
+    if (!c) continue;
+    if (type == null || type === "") { if (_isMagnitude(value)) untypedSeen.add(c); }
+    else typedSeen.add(c);
+  }
+  for (const c of untypedSeen) if (!typedSeen.has(c) && magnitude.has(c)) untypedOnly.add(c);
+
   // known = the unfiltered union (canonicalized), plus every suggestion.
   const known = new Set();
   for (const n of _allAffixNames(ds)) { const c = canonical(n); if (c) known.add(c); }
@@ -462,7 +486,7 @@ function buildPickerVocabulary(dataset) {
   for (const s of [...suggest]) {
     if (expandedAway[String(s).trim().toLowerCase()]) suggest.delete(s);
   }
-  return { suggestions: [...suggest].sort(), known, canonical, presence, magnitude, expandedAway };
+  return { suggestions: [...suggest].sort(), known, canonical, presence, magnitude, untypedOnly, expandedAway };
 }
 
 /** U1 (#136) — the concrete stats an expanded-away name becomes, or null.
