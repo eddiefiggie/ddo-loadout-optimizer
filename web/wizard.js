@@ -618,7 +618,7 @@ function addBundle(key, current, vocab) {
   return next;
 }
 
-/** U1 (#218) — hand the browser one turn to paint before synchronous work runs.
+/** U1 (#218) — wait for the overlay to actually render before synchronous work runs.
  *
  *  `solve()` sets the overlay and then awaits HiGHS. On the FIRST solve the WASM
  *  module load is genuinely async, so the browser gets a turn and the overlay
@@ -627,14 +627,14 @@ function addBundle(key, current, vocab) {
  *  the synchronous MILP blocks the main thread. The overlay sat in the DOM with
  *  its `on` class set and never rendered, so a re-solve looked frozen.
  *
- *  **Must be a macrotask.** `queueMicrotask` or `await Promise.resolve()` reads
- *  like the same fix and changes nothing, because they resolve in the same drain
- *  that already runs before paint. That equivalence is the trap this helper exists
- *  to make untrappable: it is exported solely so `tests/wizard-yield.test.js` can
- *  fail when a microtask is substituted.
+ *  **Never a microtask.** `queueMicrotask` or `await Promise.resolve()` reads like
+ *  the same fix and changes nothing, because they resolve in the drain that
+ *  already runs before paint — the very mechanism that hid the overlay. That
+ *  equivalence is the trap this helper exists to make untrappable: it is exported
+ *  solely so `tests/wizard-yield.test.js` fails when a microtask is substituted.
  *
- *  `web/results.js` uses the same deferral for the alternatives spinner, for the
- *  same reason. */
+ *  `web/results.js` defers the alternatives spinner for the same reason, though
+ *  with a timer rather than frames. */
 function yieldToPaint() {
   return new Promise((resolve) => {
     // Two nested frames, not a bare `setTimeout(0)`. A timer yields the task queue
