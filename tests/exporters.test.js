@@ -867,4 +867,36 @@ test("U5/002: a build with no completed set gains nothing in any format", () => 
   assert.deepStrictEqual(toPortableJSON(rec).resolved.sets, [], "and the envelope still lists no sets");
 });
 
+// #227 — an adjudicated untyped affix has no bonus type. Every share format ran
+// it through `sourceStr`, which printed the raw value: the literal "null". The
+// label matches the on-screen receipts so a shared build reads the same as the
+// one it came from.
+test("#227: every share format labels an untyped contributor \"untyped\"", () => {
+  const untypedRec = {
+    name: "Monk",
+    inputs: { ml: 34, race: "Human", pool: "all", priorities: ["Enhanced Ki"] },
+    snapshot: {
+      status: "optimal",
+      chosen: [
+        { slot: "Boots", variant: { variant_id: "Legendary Icewalkers", ml: 34,
+          affixes: [{ name: "Enhanced Ki", type: null, value: 5 }],
+          augment_slots_norm: { colors: [] } } },
+      ],
+      setsActive: [],
+      breakdown: {
+        "Enhanced Ki": [{ bonus_type: null, value: 5, source: "Legendary Icewalkers",
+                          sourceKind: "worn", slot: "Boots" }],
+      },
+    },
+    stampedBuildId: "untyped1",
+  };
+  for (const [fmt, fn] of [["markdown", toMarkdown], ["csv", toCsv],
+                           ["print", toPrintHtml], ["bbcode", toBBCode]]) {
+    const out = fn(untypedRec);
+    assert.ok(/Enhanced Ki/.test(out), `${fmt} names the stat`);
+    assert.ok(/untyped/.test(out), `${fmt} labels the bucket`);
+    assert.ok(!/\bnull\b/.test(out), `${fmt} never prints the raw null`);
+  }
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

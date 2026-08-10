@@ -147,7 +147,11 @@
   // One attribution source line: "Type +Value — Source [ (set)] [ via slots]".
   function sourceStr(p, esc) {
     const isBool = p.bonusType === "boolean";
-    const type = isBool ? "feature" : esc(p.bonusType);
+    // #227 — an adjudicated untyped affix has no bonus type; without this every
+    // share format printed the literal "null". Matches the label results.js uses,
+    // so a shared loadout reads the same as the one on screen.
+    const type = isBool ? "feature"
+      : esc(p.bonusType == null || p.bonusType === "" ? "untyped" : p.bonusType);
     const val = isBool ? "✓" : "+" + esc(p.value);
     const slots = (p.slots && p.slots.length) ? ` via ${p.slots.map(esc).join(", ")}` : "";
     const tag = p.viaSet ? " (set)" : "";

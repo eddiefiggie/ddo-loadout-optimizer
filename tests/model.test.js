@@ -1327,4 +1327,33 @@ test("U5/003: the predicate is inert everywhere it should be", () => {
   });
 }
 
+// ---------------------------------------------------------------------------
+// #227 — an untyped affix and a declared "Untyped" credit are one bucket.
+// Unreachable until an untyped affix became rankable, because buckets are only
+// built for target stats. Before the fix, gear keyed `stat||null` and the credit
+// keyed `stat||Untyped`, so the two ADDED instead of taking the max.
+
+test("#227: equivType normalizes an absent bonus type to Untyped", () => {
+  assert.strictEqual(M.equivType(null), "Untyped");
+  assert.strictEqual(M.equivType(undefined), "Untyped");
+  assert.strictEqual(M.equivType(""), "Untyped");
+  assert.strictEqual(M.equivType("Untyped"), "Untyped");
+  // Every other type is untouched, including the curated equivalences.
+  assert.strictEqual(M.equivType("Enhancement"), "Enhancement");
+  assert.strictEqual(M.equivType("Insight"), "Insight");
+});
+
+test("#227: untyped gear and an Untyped credit share one bucket, so they take the max", () => {
+  const boots = {
+    variant_id: "boots", source_item: "Icewalkers", slot: "Boots", category: "item",
+    minimum_level: 34, ml: 34, verification: "verified",
+    affixes: [{ name: "Enhanced Ki", type: null, stat: "Enhanced Ki", bonus_type: null, value: 5, unit: "flat" }],
+    scaling: [], set_bonus: [], augment_slots: [], restrictions: "unknown", armor_type: null,
+  };
+  const keys = [...M.variantBuckets(boots, new Set(["Enhanced Ki"]), 34).keys()];
+  assert.deepStrictEqual(keys, ["Enhanced Ki||Untyped"],
+    "gear keys the same bucket a declared Untyped credit would");
+});
+
+
 console.log(`\n${passed} passed`);

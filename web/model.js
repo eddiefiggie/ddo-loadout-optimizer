@@ -33,7 +33,17 @@ function setStackEquiv(map) {
 /** Canonicalize an affix `type` to its stacking bucket token (identity unless the
  *  curated equivalence table remaps it). Used ONLY to form bucket keys. */
 function equivType(type) {
-  return (type != null && _STACK_EQUIV[type] != null) ? _STACK_EQUIV[type] : type;
+  // #227 — an affix with no bonus type and a player's declared "Untyped" credit
+  // are the same stacking bucket: DDO's untyped bonuses stack with every typed
+  // bonus but not with each other. Before this, gear keyed `stat||null` while the
+  // credit keyed `stat||Untyped`, so the two ADDED instead of taking the max — a
+  // silent double-count, and the mirror of the defect the credit presence gate
+  // exists to block. Unreachable until an untyped affix became rankable, because
+  // buckets are only built for target stats. Normalizing here rather than in
+  // type_stacking_equivalence.json keeps it logic, not a data claim, and puts it
+  // at the one seam the solver and the dominance guard both read.
+  if (type == null || type === "") return "Untyped";
+  return (_STACK_EQUIV[type] != null) ? _STACK_EQUIV[type] : type;
 }
 
 /** Resolve an ML-scaling affix to its value at the query ML cap. */
