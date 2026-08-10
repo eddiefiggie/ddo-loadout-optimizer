@@ -45,6 +45,11 @@
   --radius: 12px;
   --radius-sm: 7px;
   --tap: 44px;                /* minimum touch target */
+  /* Shared width for the two right-edge buttons that stack vertically — the
+     header's support button and the wizard's "Browse items". Sized to the wider
+     of the two labels so both can hold their text; they must move together or
+     they stop lining up. */
+  --stack-btn-w: 11.5rem;
   --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 6px 20px rgba(0,0,0,0.25);
   --ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
   --maxw: 1120px;
@@ -73,11 +78,27 @@ h1, h2, h3 { line-height: 1.25; }
 
 /* --- shell --------------------------------------------------------------- */
 .app-header {
-  padding: var(--sp-5) var(--sp-4) var(--sp-4);
+  /* Horizontal padding lives on `.wrap`, not here — see the rule below. */
+  padding: var(--sp-5) 0 var(--sp-4);
   border-bottom: 1px solid var(--border);
   background: linear-gradient(180deg, rgba(91,140,255,0.05), transparent);
 }
 .app-header .wrap, main, .app-footer .wrap { max-width: var(--maxw); margin: 0 auto; }
+/* Title on the left, support button opposite it on the right. Wraps to two rows
+   on narrow screens rather than squeezing the title.
+
+   The horizontal padding is `main`'s, moved off `.app-header` and onto this
+   element so the header column and main's content column are the same box in
+   every regime. They are not otherwise: padding on the header's OUTER element
+   drops out once `max-width` clamps the wrap, so a compensating margin that
+   lines the two up on a wide screen is 16px wrong on a narrow one. Keep these
+   values equal to `main`'s padding, including across the 640px breakpoint. */
+.app-header .wrap {
+  display: flex; flex-wrap: wrap; align-items: center;
+  justify-content: space-between; gap: var(--sp-3);
+  padding: 0 var(--sp-4);
+}
+.app-title { min-width: 0; }
 .app-header h1 {
   margin: 0; font-size: var(--fs-xl); letter-spacing: -0.01em;
   display: inline-flex; align-items: center; gap: var(--sp-2);
@@ -88,6 +109,44 @@ h1, h2, h3 { line-height: 1.25; }
   box-shadow: 0 0 16px rgba(91,140,255,0.5);
 }
 .tagline { margin: var(--sp-1) 0 0; color: var(--muted); font-size: var(--fs-sm); }
+
+/* Buy Me a Coffee button (header, opposite the title). The vendor script ships a
+   210x60 Poppins button and injects its own <style> AFTER this sheet, marking
+   color, background-color, and font-family `!important` — so those three need
+   `!important` back; everything else is won on specificity (`.header-support
+   .bmc-btn` beats its bare `.bmc-btn`). The box is matched to `.btn.ghost`
+   (the wizard's "Browse items", which sits directly below it): same padding,
+   radius, font, line box, and the 1px border that makes both 46.8px tall.
+   Keep in sync with `.btn` / `.btn.ghost` if those are ever restyled. */
+/* `margin-left: auto` keeps the button on the right edge once the header wraps
+   to two rows on a phone, matching "Browse items" instead of dropping left. */
+.header-support { flex: none; margin-left: auto; }
+.header-support .bmc-btn {
+  box-sizing: border-box;
+  min-width: 0; width: var(--stack-btn-w);   /* vendor pins min-width: 210px */
+  height: auto; min-height: var(--tap);      /* vendor pins height: 60px */
+  padding: 11px 20px; gap: var(--sp-2);
+  justify-content: center;
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  /* `line-height: inherit` picks up the body's unitless 1.5 — the same value the
+     bare buttons get via `font: inherit`. The vendor pins 27px here and 0 on the
+     label; either would mis-size the box. */
+  font-family: inherit !important;
+  font-size: var(--fs-md); font-weight: 650; line-height: inherit;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important;
+  color: var(--accent-ink) !important;
+  transition: transform 0.05s, filter 0.15s;
+}
+.header-support .bmc-btn:hover { filter: brightness(1.08); }
+.header-support .bmc-btn:active { transform: translateY(1px); }
+/* The cup keeps its brand colors but scales with the label instead of sitting at
+   a fixed 32px, which dominated a button this size. */
+.header-support .bmc-btn svg { height: 1.25em !important; transform: none; }
+.header-support .bmc-btn .bmc-btn-text {
+  font-family: inherit !important;
+  font-size: inherit; font-weight: inherit; line-height: inherit;
+  margin-left: 0; width: auto;   /* vendor stretches the label to 100% */
+}
 .wip {
   margin: var(--sp-3) 0 0; display: inline-block; color: var(--quarantined);
   font-size: var(--fs-xs); border: 1px solid rgba(224,164,74,0.4);
@@ -142,10 +201,6 @@ main { padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--s
 }
 .app-footer a { color: var(--accent); }
 .build-info { color: var(--faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
-/* Centers the injected Buy Me a Coffee button under the attribution block. Empty
-   when the vendor script does not load, so it adds no gap of its own. */
-.footer-support { display: flex; justify-content: center; }
-.footer-support:not(:empty) { margin-top: var(--sp-3); }
 
 /* --- controls / inputs (shared primitives) ------------------------------- */
 .controls { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
@@ -563,6 +618,7 @@ input.bumped { background: rgba(91,140,255,0.16); border-color: var(--accent); }
    ========================================================================== */
 @media (min-width: 640px) {
   main { padding: var(--sp-5); }
+  .app-header .wrap { padding: 0 var(--sp-5); }   /* stay equal to main's padding */
   .targets { grid-template-columns: repeat(2, 1fr); }
   .deepdive { grid-template-columns: repeat(2, 1fr); }
   .alt-list { grid-template-columns: repeat(2, 1fr); }
@@ -1027,7 +1083,9 @@ input.wz-ml { width: 120px; }
 /* Top bar (stepper + Browse trigger) and the on-demand Item Browser overlay (U9). */
 .wz-topbar { display: flex; align-items: center; gap: var(--sp-4); flex-wrap: wrap; }
 .wz-topbar .wz-steps { flex: 1; }
-.wz-browse-btn { flex: none; }
+/* Width is shared with the header support button directly above it, so the two
+   right-edge buttons line up as a column. */
+.wz-browse-btn { flex: none; width: var(--stack-btn-w); }
 .wz-browse-overlay { position: fixed; inset: 0; background: rgba(8,10,14,0.82); backdrop-filter: blur(3px);
   display: none; align-items: flex-start; justify-content: center; z-index: 70; padding: var(--sp-5) var(--sp-4);
   overflow-y: auto; }
