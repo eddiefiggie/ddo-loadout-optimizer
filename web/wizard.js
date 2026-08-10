@@ -56,6 +56,30 @@ function isPresenceOnly(stat, vocab) {
   return !(vocab.magnitude && typeof vocab.magnitude.has === "function" && vocab.magnitude.has(stat));
 }
 
+/** #235 — does this stat carry a real magnitude but NO bonus type anywhere?
+ *  `Enhanced Ki` is the first such stat to reach the picker.
+ *
+ *  A vocab without `untypedOnly` (hand-built fixtures, older cached shape) returns
+ *  false, which is the prior behavior. */
+function isUntypedOnly(stat, vocab) {
+  return !!(vocab && vocab.untypedOnly && typeof vocab.untypedOnly.has === "function"
+    && vocab.untypedOnly.has(stat));
+}
+
+/** #235 — may this stat be given a declared "I already have this" credit?
+ *
+ *  No for an on/off effect (a declared magnitude satisfies a floor without the
+ *  item that grants it), and no for an untyped-only stat: the credit control asks
+ *  the player to pick a BONUS TYPE, and this stat has none. Every choice is wrong
+ *  — `Untyped` keys a bucket the gear cannot join, so the two would sum into a
+ *  double-count, and any other type names a bucket nothing in the game supplies.
+ *
+ *  Floors and caps stay available on these stats; only the credit is refused. A
+ *  bound is a working constraint on any bucket, typed or not. */
+function canDeclareCredit(stat, vocab) {
+  return !isPresenceOnly(stat, vocab) && !isUntypedOnly(stat, vocab);
+}
+
 /** Clean a stat->value bound map (caps/floors): keep only entries whose value is a
  *  finite number >= 0. Blank, null, negative, or non-numeric entries are dropped so
  *  a stray input never reaches the solver as a cap/floor.
@@ -133,7 +157,7 @@ function cleanCreditMap(m, vocab) {
       // Presence-ONLY, not merely presence-flagged: a stat with a real magnitude
       // bucket can carry a credit that competes in that bucket correctly. The
       // defect above is specific to a stat whose ONLY bucket is `stat||boolean`.
-      if (isPresenceOnly(stat, vocab)) continue;
+      if (!canDeclareCredit(stat, vocab)) continue;
       rows.push({ stat, bonus_type: row.bonus_type, value: row.value });
     }
   }
@@ -200,7 +224,7 @@ function advancedRowModel(stat, state, vocab) {
   // declared magnitude there forms a SEPARATE additive bucket and satisfies a
   // floor without the item that grants the effect (the documented U2/U3 defect,
   // reproduced end-to-end against HiGHS during review).
-  const all = (!isPresenceOnly(stat, vocab) && s.declaredCredits && typeof s.declaredCredits === "object")
+  const all = (canDeclareCredit(stat, vocab) && s.declaredCredits && typeof s.declaredCredits === "object")
     ? s.declaredCredits : {};
   const credits = Object.entries(all)
     .filter(([, c]) => c && c.stat === stat)
@@ -213,7 +237,7 @@ function advancedRowModel(stat, state, vocab) {
   // while still rendering "+ already have" left a button that silently wrote
   // state the query then discarded: clicking it on an on/off row produced no
   // visible row, no error, and one more orphan entry per click.
-  return { canCredit: !isPresenceOnly(stat, vocab), floor, cap, credits, badgeCount };
+  return { canCredit: canDeclareCredit(stat, vocab), floor, cap, credits, badgeCount };
 }
 
 // U3 — the Advanced panel's prose, defined ONCE here and interpolated per row.
@@ -652,7 +676,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint };
 }
 
 // ---- browser flow ----------------------------------------------------------
