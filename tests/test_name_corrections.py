@@ -75,6 +75,36 @@ def test_the_rename_reaches_an_untyped_affix_the_registry_gate_cannot_see():
     assert records[0]["affixes"][0]["name"] == "Enhanced Ki"
 
 
+def test_an_item_named_like_the_source_affix_is_not_renamed():
+    # An item record carries a `name` too. Matching on the key alone renamed the
+    # 8,188 item names alongside the affixes, so a future correction whose source
+    # collides with an item name would silently rewrite items.
+    records = [_rec("Ki", [{"name": "Ki", "value": "1"}]),
+               _rec("Icewalkers", [{"name": "Ki", "value": "1"}])]
+    name_corrections.apply(records, [_corr()])
+    assert records[0]["name"] == "Ki", "the ITEM keeps its name"
+    assert records[0]["affixes"][0]["name"] == "Enhanced Ki", "the AFFIX is renamed"
+
+
+def test_an_item_named_like_the_canonical_does_not_trip_the_collision_guard():
+    # `present` was built from every dict with a `name`, so an item named like the
+    # canonical failed the build claiming gear-planner emits it as an affix.
+    records = [_rec("Enhanced Ki", [{"name": "Reinforced Fists", "type": "Bool", "value": 1}]),
+               _rec("Icewalkers", [{"name": "Ki", "value": "1"}]),
+               _rec("Moonrise Bracers", [{"name": "Ki", "value": "3"}])]
+    cov = name_corrections.apply(records, [_corr()])
+    assert cov["affixes_renamed"] == 2
+    assert records[0]["name"] == "Enhanced Ki"
+
+
+def test_the_real_roster_yields_only_affixes_never_item_records():
+    records = vocabulary._load(vocabulary.ITEMS_PATH)
+    yielded = list(name_corrections._iter_affix_dicts(records))
+    assert yielded, "refuses to inspect nothing"
+    assert not any("slot" in d or "affixes" in d for d in yielded), \
+        "an item record must never be treated as an affix"
+
+
 def test_no_corrections_is_a_no_op():
     records = [_rec("Icewalkers", [{"name": "Ki", "value": "1"}])]
     cov = name_corrections.apply(records, [])

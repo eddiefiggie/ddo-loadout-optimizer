@@ -62,12 +62,12 @@ In scope: the picker vocabulary paths for untyped magnitude stats and for named 
 
 #### Deferred to Follow-Up Work
 
-Each needs an issue filed before this plan's PR merges, per the Open work rule in `AGENTS.md`.
+Filed per the Open work rule in `AGENTS.md`: #229, #230, #231, #232.
 
-- **The `iter_affixes` blindspot.** `src/vocabulary.py:47` recognizes an affix only when `name`, `type`, and `value` are all present. A gear-planner affix with no `type` key therefore never enters the generated registry and is never validated by `check_referential_integrity` — a new untyped name can appear on re-import with no new-name event. This plan's guard reads the raw records directly and does not depend on that layer, so the two are independent.
-- **The unreviewed untyped backlog.** Roughly 25 untyped names besides `Enhanced Ki` are numeric, on two or more items, well-formed, and reach at least one worn slot (`Linguistics`, `Power`, `Spearblock`, `Axeblock`, `Fire Guard`, `Smite Evil Charges`, `Raging Strength`, `Minor Spell Penetration`, and the Guard/Augmentation/Incite families). They stay quarantined until adjudicated.
-- **The remaining word-cap casualties.** `Way of the Sun Soul`, `Embrace of the Spider Queen`, `Path of the Fire Dragon`, `Path of the Guarding Stone`, `Brilliance of the Shattered Sun`, `Greater Bane of the Unnatural`, `Lifeblood of the Undead Prince`, `Vile Grip of the Hidden Hand` (and its Legendary form), and the four `Litany of the Crimson Covenant` lines.
-- **What Enhanced Ki overrides.** The wiki states it does not stack with another enchantment and overrides that one's ki-generation portion; the link target was stripped by the privacy guard. No double-count risk exists today (see KTD4), so this is documentation, not correctness.
+- **The `iter_affixes` blindspot** (#229). `src/vocabulary.py:47` recognizes an affix only when `name`, `type`, and `value` are all present. A gear-planner affix with no `type` key therefore never enters the generated registry and is never validated by `check_referential_integrity` — a new untyped name can appear on re-import with no new-name event. This plan's guard reads the raw records directly and does not depend on that layer, so the two are independent.
+- **The unreviewed untyped backlog** (#230). Roughly 25 untyped names besides `Enhanced Ki` are numeric, on two or more items, well-formed, and reach at least one worn slot (`Linguistics`, `Power`, `Spearblock`, `Axeblock`, `Fire Guard`, `Smite Evil Charges`, `Raging Strength`, `Minor Spell Penetration`, and the Guard/Augmentation/Incite families). They stay quarantined until adjudicated.
+- **The remaining word-cap casualties** (#231). `Way of the Sun Soul`, `Embrace of the Spider Queen`, `Path of the Fire Dragon`, `Path of the Guarding Stone`, `Brilliance of the Shattered Sun`, `Greater Bane of the Unnatural`, `Lifeblood of the Undead Prince`, `Vile Grip of the Hidden Hand` (and its Legendary form), and the four `Litany of the Crimson Covenant` lines.
+- **What Enhanced Ki overrides** (#232). The wiki states it does not stack with another enchantment and overrides that one's ki-generation portion; the link target was stripped by the privacy guard. No double-count risk exists today (see KTD4), so this is documentation, not correctness.
 
 #### Outside this plan
 

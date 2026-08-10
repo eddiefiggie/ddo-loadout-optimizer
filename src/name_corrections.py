@@ -52,19 +52,27 @@ def load(path: str) -> list:
 
 
 def _iter_affix_dicts(obj):
-    """Yield every dict carrying a `name` key anywhere in a raw structure.
+    """Yield every affix dict — a member of an ``affixes`` list — anywhere in a
+    structure.
 
-    Deliberately looser than `vocabulary.iter_affixes`, which requires `name`,
-    `type`, and `value` together and therefore cannot see an untyped affix at all
-    — the exact blindness that hid this affix. A rename must reach the records
-    that gate misses, so it matches on `name` alone and lets the caller scope
-    which structures it walks.
+    Looser than `vocabulary.iter_affixes`, which requires `name`, `type`, and
+    `value` together and therefore cannot see an untyped affix at all: the exact
+    blindness that hid this enchantment. But scoped by CONTAINER rather than by
+    key shape, because an item record also carries a `name`. A rename matching on
+    `name` alone would rewrite the 8,188 item names alongside the affixes, so a
+    correction whose source collides with an item name (`Speed`, `Deadly`,
+    `Power` are all plausible DDO item names) would silently rename items. It
+    would also make the collision guard misfire, failing the build with the wrong
+    diagnosis when an ITEM happened to be named like the canonical affix.
     """
     if isinstance(obj, dict):
-        if "name" in obj:
-            yield obj
-        for v in obj.values():
-            yield from _iter_affix_dicts(v)
+        for key, value in obj.items():
+            if key == "affixes" and isinstance(value, list):
+                for a in value:
+                    if isinstance(a, dict) and "name" in a:
+                        yield a
+            else:
+                yield from _iter_affix_dicts(value)
     elif isinstance(obj, list):
         for v in obj:
             yield from _iter_affix_dicts(v)
