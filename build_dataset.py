@@ -45,6 +45,7 @@ from src import enchantment_split as enchantment_split_mod
 from src import umbrella as umbrella_mod
 from src import spell_focus as spell_focus_mod
 from src import value_corrections as value_corrections_mod
+from src import name_corrections as name_corrections_mod
 from src import planner_items as planner_mod
 from src import variants as variants_mod
 from src import vocabulary as vocabulary_mod
@@ -216,6 +217,8 @@ def assert_affix_synonyms() -> int:
 GAP_CORRECTIONS_PATH = os.path.join(HERE, "data", "seed", "gap_corrections.json")
 VALUE_CORRECTIONS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "item_value_corrections.json")
+NAME_CORRECTIONS_PATH = os.path.join(
+    HERE, "data", "seed", "compendium", "affix_name_corrections.json")
 SPEED_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_enchantment.json")
 PARRYING_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "parrying_version.json")
 HEIGHTENED_AWARENESS_SHARD_PATH = os.path.join(
@@ -419,6 +422,14 @@ def build() -> dict:
     # `from` no longer matches upstream rather than pinning a stale number.
     _value_corrections = value_corrections_mod.load(VALUE_CORRECTIONS_PATH)
     _value_coverage = value_corrections_mod.apply(planner_records, _value_corrections)
+    # #227 — wiki-sourced NAME corrections. gear-planner stores some enchantments
+    # under a shortened name (`Ki` for the wiki's `Enhanced Ki`). Rename here, before
+    # variant expansion and before rankable_affixes, so the corrected name reaches the
+    # picker vocabulary, the solver, browse, and the exports from ONE place. An alias
+    # alone cannot do this: the solver matches item affixes by name, so a canonical
+    # name no item carries is a priority that scores zero.
+    _name_corrections = name_corrections_mod.load(NAME_CORRECTIONS_PATH)
+    _name_coverage = name_corrections_mod.apply(planner_records, _name_corrections)
 
     # U3 (#154) — split the folded `Speed` affix back into the two mechanics
     # upstream merged. BEFORE variant expansion and before rankable_affixes, so the
@@ -887,6 +898,7 @@ def build() -> dict:
             # minimal exception to gear-planner sole-authority).
             "gap_corrections_coverage": _gap_coverage,
             "value_corrections_coverage": _value_coverage,
+            "name_corrections_coverage": _name_coverage,
             "rankable_affixes": rankable_affixes(planner_records),
             # U1 (#136) — names this build EXPANDS AWAY, mapped to what they become.
             # The picker drops them from suggestions and redirects the player to the

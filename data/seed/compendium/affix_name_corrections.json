@@ -1,0 +1,16 @@
+{
+  "_README": "Wiki-sourced corrections to a gear-planner affix NAME (#227). Global, not per-item: every occurrence of source_name becomes canonical_name. Applied by src/name_corrections.py BEFORE variant expansion and BEFORE rankable_affixes(), so one corrected affix block flows into verify/coverage, the picker vocabulary, the solver, browse, and the exports from one place. gear-planner remains the sole authority for WHICH affixes an item has; the wiki is the authority for what the enchantment is CALLED. Pair every entry with an affix_aliases.json entry mapping source_name -> canonical_name, so a player typing the gear-planner name still resolves.",
+  "_guards": "The build FAILS when source_name is no longer present upstream (the rename has become a silent no-op) or when canonical_name is ALREADY a native gear-planner name (renaming onto it would merge two affixes upstream keeps distinct). A correction file that cannot go stale unnoticed is the only kind worth having.",
+  "_precedent": "Movement Speed, Physical Sheltering, and Armor-Piercing are all native pipeline-minted names with the spoken variant (Striding, PRR, Fortification Bypass) aliased on top. An alias alone cannot do this job: the picker canonicalizes typed input, but the solver matches item affixes by name, so a canonical name no item carries scores zero.",
+  "corrections": [
+    {
+      "source_name": "Ki",
+      "canonical_name": "Enhanced Ki",
+      "wiki_url": "https://ddowiki.com/page/Enhanced_Ki",
+      "verified": "2026-08-10",
+      "evidence": "The Enhancements list on Item:Legendary_Icewalkers renders 'Enhanced Ki'; the Enhanced Ki page describes it as increasing the rate at which the user gains ki with each successful attack. gear-planner stores the same enchantment as bare 'Ki' with a magnitude and no type.",
+      "reason": "Reported by a player who could not find 'enhanced ki' in the priority picker. The stored name is a shortening, not a different enchantment: 19 worn variants across 5 slots carry values 1-5, matching the wiki's per-item values.",
+      "note": "This affix is untyped upstream, so it is ALSO gated by data/seed/compendium/untyped_rankable.json. Renaming it does not by itself make it rankable."
+    }
+  ]
+}
