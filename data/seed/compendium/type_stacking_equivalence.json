@@ -1,20 +1,33 @@
 {
-  "_README": "Curated type STACKING-EQUIVALENCE (KTD2). gear-planner's native affix `type` is the stacking bucket, verbatim, EXCEPT these pairs which do not stack independently in-game and must share one bucket. Inherited from the prior vocab.GEARPLANNER_TYPE_MAP collapses; VERIFY each vs the DDO wiki during U8 (marked unverified).",
+  "_README": "Curated type STACKING-EQUIVALENCE (KTD2). gear-planner's native affix `type` is the stacking bucket, verbatim, EXCEPT these pairs which do not stack independently in-game and must share one bucket. Every entry carries wiki evidence; see docs/wiki-evidence/bonus-type-equivalence.md for the rulings and the pages they came from. An entry with verified:false is a claim nobody has checked — do not add one without evidence.",
   "_meta": {
     "seeded": "2026-08-01",
     "source": "prior src/vocab.GEARPLANNER_TYPE_MAP collapses",
-    "status": "inherited-unverified"
+    "status": "wiki-verified",
+    "verified_on": "2026-08-10",
+    "ruling": "docs/wiki-evidence/bonus-type-equivalence.md"
   },
   "equivalences": [
     {
       "native_type": "Insight Natural",
       "stacks_as": "Insight",
-      "verified": false
+      "verified": true,
+      "evidence": "Natural armor bonus: 'there are also some stacking bonuses to natural armor with a different bonus type', listing Knight's Loyalty PDK set as '+3 insight bonus to natural armor'. Item:Lion's Mane carries {{NaturalArmor 2 prefix Insightful}}. The bonus type is Insight, so it stacks with plain natural armor but shares the Insight bucket.",
+      "source": "ddowiki Natural armor bonus; ddowiki Item:Lion's Mane"
     },
     {
       "native_type": "Primal Natural",
       "stacks_as": "Primal",
-      "verified": false
+      "verified": true,
+      "evidence": "Natural armor bonus lists a 'Primal bonus' heading sourced to Rough Hide items. Primal bonus: 'This bonus stacks with all other bonuses', i.e. it is its own type rather than plain natural armor. No plain 'Primal' type exists in the dataset today, so this collapse is currently inert; it is recorded because the type is real.",
+      "source": "ddowiki Natural armor bonus; ddowiki Primal bonus"
+    },
+    {
+      "native_type": "Profane Natural",
+      "stacks_as": "Profane",
+      "verified": true,
+      "evidence": "Natural armor bonus lists '+2 profane bonus to natural armor' (Abishai Destroyer) under Miscellaneous bonuses. Profane bonus: 'Multiple profane bonuses on the same character or object do not stack. Only the highest profane bonus applies', and names Lunar Gems as a source — the two affixes carrying this type are Lunar Gem of Natural Armor (Heroic/Legendary). LATENT at time of adding: the dataset has zero other Profane affixes on Armor Class, so this changes no current solve; it prevents a wrong sum the moment one is added.",
+      "source": "ddowiki Natural armor bonus; ddowiki Profane bonus"
     }
   ]
 }

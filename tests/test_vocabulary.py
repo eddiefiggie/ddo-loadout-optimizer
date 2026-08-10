@@ -90,9 +90,38 @@ def test_stacking_equivalence_groups_the_curated_pairs():
     eq = V.load_stacking_equivalence()
     assert V.stacking_bucket("Insight Natural", eq) == "Insight"
     assert V.stacking_bucket("Primal Natural", eq) == "Primal"
+    # Profane Natural completes the "X Natural" family (issue #88, wiki-verified
+    # 2026-08-10). The two Lunar Gems of Natural Armor grant a PROFANE bonus to
+    # natural armor, so they share the Profane bucket rather than standing alone.
+    # Latent when added — nothing else supplies a Profane bonus to Armor Class —
+    # which is exactly why it needs pinning: a silent regression here would not
+    # move the golden suite. See docs/wiki-evidence/bonus-type-equivalence.md.
+    assert V.stacking_bucket("Profane Natural", eq) == "Profane"
     # a normal type is its own bucket, verbatim
     assert V.stacking_bucket("Insight", eq) == "Insight"
     assert V.stacking_bucket("Enhancement", eq) == "Enhancement"
+
+
+def test_every_stacking_equivalence_entry_carries_wiki_evidence():
+    """An unverified collapse is a guess, and this map shipped with two of them.
+
+    Each entry must be marked verified and cite the page it came from, so a new
+    pair cannot be added on a hunch the way the original two were.
+    """
+    import json as _json
+    path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "data", "seed", "compendium", "type_stacking_equivalence.json",
+    )
+    with open(path) as fh:
+        doc = _json.load(fh)
+    entries = doc["equivalences"]
+    assert entries, "equivalence map is empty"
+    for e in entries:
+        native = e.get("native_type")
+        assert e.get("verified") is True, f"{native}: unverified collapse"
+        assert (e.get("evidence") or "").strip(), f"{native}: no evidence recorded"
+        assert (e.get("source") or "").strip(), f"{native}: no wiki source cited"
 
 
 def test_freshness_reads_and_detects_drift():
