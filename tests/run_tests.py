@@ -31,7 +31,7 @@ def run(filter_sub=None):
     """Run every discovered test, isolating each one from the rest of the run.
 
     Both the import and the call catch `BaseException`, not `Exception`. This
-    repo raises `SystemExit` from sixteen build guards, and an unexpected trip
+    repo raises `SystemExit` from thirteen build guards, and an unexpected trip
     used to unwind straight out of this function: no totals line, no `FAIL`,
     every later test silently skipped. Scanning the output for `FAIL` showed
     nothing, so the crash read as a pass. `KeyboardInterrupt` is the one
