@@ -1,5 +1,9 @@
 name: Deploy site to GitHub Pages
 
+# main auto-deploys, so this workflow's `build` job is the last gate before the live
+# site. ci.yml runs the SAME three gate steps on every pull request; keep the two in
+# sync — if you add or change a gate here, mirror it there, or PRs stop catching what
+# main catches.
 on:
   push:
     branches: [main]

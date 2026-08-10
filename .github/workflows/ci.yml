@@ -1,0 +1,53 @@
+name: CI
+
+# Runs the full gate on every pull request. Deploy (deploy.yml) runs the same gate
+# again on push to main before publishing, so this does not replace it — it moves the
+# signal to *before* the merge instead of after.
+#
+# Until this existed, `main` was the first place a red suite could surface, and main
+# auto-deploys: a failure there blocks the live site rather than a branch.
+#
+# KEEP THE THREE GATE STEPS BELOW IN SYNC WITH deploy.yml's `build` job. They are
+# duplicated deliberately rather than factored into a reusable workflow, because the
+# deploy job needs the dataset it builds in its own workspace to upload the Pages
+# artifact, and restructuring that path can only be validated by merging to main.
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A new push to a PR supersedes the run in flight.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Build dataset and run both suites
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      # web/data/items.json is generated and gitignored, so it must be built before
+      # either suite: several Python tests assert against the file on disk.
+      - name: Build dataset (parse -> expand -> verify)
+        run: python3 build_dataset.py
+
+      - name: Run Python tests
+        run: python3 tests/run_tests.py
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+
+      # One file per invocation. `node a.js b.js` runs ONLY the first and silently
+      # skips the rest, which has hidden the golden solver check before.
+      - name: Run JS tests (one file per invocation)
+        run: |
+          set -e
+          for t in tests/*.test.js; do echo "== $t =="; node "$t"; done
