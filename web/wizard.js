@@ -618,8 +618,41 @@ function addBundle(key, current, vocab) {
   return next;
 }
 
+/** U1 (#218) — wait for the overlay to actually render before synchronous work runs.
+ *
+ *  `solve()` sets the overlay and then awaits HiGHS. On the FIRST solve the WASM
+ *  module load is genuinely async, so the browser gets a turn and the overlay
+ *  appears. On every re-solve `getHighs()` returns the cached module, so that
+ *  await resolves as a microtask — and microtasks drain BEFORE paint — after which
+ *  the synchronous MILP blocks the main thread. The overlay sat in the DOM with
+ *  its `on` class set and never rendered, so a re-solve looked frozen.
+ *
+ *  **Never a microtask.** `queueMicrotask` or `await Promise.resolve()` reads like
+ *  the same fix and changes nothing, because they resolve in the drain that
+ *  already runs before paint — the very mechanism that hid the overlay. That
+ *  equivalence is the trap this helper exists to make untrappable: it is exported
+ *  solely so `tests/wizard-yield.test.js` fails when a microtask is substituted.
+ *
+ *  `web/results.js` defers the alternatives spinner for the same reason, though
+ *  with a timer rather than frames. */
+function yieldToPaint() {
+  return new Promise((resolve) => {
+    // Two nested frames, not a bare `setTimeout(0)`. A timer yields the task queue
+    // but promises nothing about rendering: the browser paints on its own
+    // schedule, so a solve that starts before the next frame can block straight
+    // through it. Nested frames are the actual guarantee — the first callback runs
+    // before a paint, the second only after that frame has been rendered — so by
+    // the time this resolves the overlay is on screen, not merely in the DOM.
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    } else {
+      setTimeout(resolve, 0);   // Node has no frames; the macrotask contract is what the tests pin
+    }
+  });
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -1520,6 +1553,13 @@ if (typeof window !== "undefined" && window.App) {
       const n = candidateItems().length;
       overlay(true, "Solving your loadout…", firstRun ? `searching ${n.toLocaleString()} eligible items · exact MILP` : "re-solving…");
       try {
+        // #218 — give the browser a turn to paint the overlay before anything
+        // blocking runs. Only the FIRST solve got one for free, from the async WASM
+        // load; on a re-solve HiGHS is cached, so without this the synchronous MILP
+        // blocks the main thread and the overlay never renders. Inside the try so
+        // the `finally` still clears `solving` and the overlay if it ever rejects —
+        // outside it, a rejection would wedge the UI with the guard stuck on.
+        await yieldToPaint();
         const h = await getHighs();
         const query = buildQuery(state, vocab);
         // R4a — suppress pins illegal for THIS config from the solve WITHOUT mutating
