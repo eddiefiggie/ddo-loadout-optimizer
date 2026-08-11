@@ -597,6 +597,20 @@ function saturationNotice(result) {
     : "";
 }
 
+/** U6/#249 — the compound-absorption exclusion. Pure (result), and identical on
+ *  a restored snapshot, for the same reason the ceiling fact above is.
+ *
+ *  Reads the SHARED sentences from projection, never a second wording. A notice
+ *  phrased once here and once in the exporters is how the app and a shared build
+ *  come to disagree about the same solve. */
+function absorptionQuarantineNotice(result) {
+  const lines = (Proj && Proj.absorptionQuarantineNoticeLines)
+    ? Proj.absorptionQuarantineNoticeLines(result) : [];
+  return lines.length
+    ? `<p class="scope-note absorption-quarantine-note" role="status">${lines.map(esc).join(" ")}</p>`
+    : "";
+}
+
 /** Stats the equipped items already supply that the player did NOT rank.
  *
  *  KTD5 — the invitation names these rather than a curated suggestion list. A
@@ -767,6 +781,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     ${zeroSourceNotice(query, result, model, dataset)}
     ${saturationNotice(result)}
     ${emptySlotNotice(query, result)}
+    ${absorptionQuarantineNotice(result)}
     <div class="active-build-bar" hidden>
       <span class="active-build-msg"></span>
       <button class="return-optimum" type="button">Return to optimum</button>
@@ -1074,5 +1089,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, emptySlotNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, emptySlotNotice, absorptionQuarantineNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }

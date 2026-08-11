@@ -1203,6 +1203,34 @@ test("U4/#239: the invitation still fires when the build supplies nothing extra"
   assert.ok(/Rank another stat/.test(html), "and so does the invitation, with no stat named");
 });
 
+test("U6/#249: the app renders the absorption-quarantine disclosure", () => {
+  // Carrying a fact through the content model is necessary but not sufficient —
+  // each renderer has to print it. That gap already shipped once, for set members.
+  const build = satBuild();
+  build.absorptionQuarantine = [{
+    item: "Cyran Guard (level 26)", stat: "Elemental Absorption", reason: "absent",
+    components: ["Acid Absorption", "Cold Absorption", "Fire Absorption",
+                 "Electric Absorption", "Sonic Absorption"],
+  }];
+  const html = R.absorptionQuarantineNotice(build);
+  assert.ok(/Elemental Absorption/.test(html), "names the excluded enchantment");
+  assert.ok(/Cyran Guard/.test(html), "names the item");
+  assert.ok(/scope-note/.test(html), "joins the artifactNotice/boundNotice family");
+  assert.strictEqual(R.absorptionQuarantineNotice(satBuild()), "",
+    "silent when nothing was quarantined");
+});
+
+test("U6/#249: the disclosure escapes item names rather than trusting them", () => {
+  const build = satBuild();
+  build.absorptionQuarantine = [{
+    item: '<img src=x onerror="alert(1)">', stat: "Elemental Absorption",
+    reason: "absent", components: ["Fire Absorption"],
+  }];
+  const html = R.absorptionQuarantineNotice(build);
+  assert.ok(!/<img/.test(html), "the item name is escaped");
+  assert.ok(/&lt;img/.test(html), "and rendered as text");
+});
+
 test("U4/#239: the two notices are independent", () => {
   const noEmpty = satBuild({ empty: false });
   assert.ok(R.saturationNotice(noEmpty) !== "", "saturation renders alone");

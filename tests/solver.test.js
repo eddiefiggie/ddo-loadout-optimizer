@@ -3206,5 +3206,85 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
     assert.deepStrictEqual(JSON.parse(JSON.stringify(r.emptySlots)), r.emptySlots);
   });
 
+  // ---- U6/#249: the compound-absorption quarantine report ------------------
+  //
+  // Quarantine is decided in Python against the seed shard, and neither the
+  // solver nor the model receives dataset metadata — so the build stamps the
+  // exclusion on the variant and the solver reads it back off `model.worn`.
+  // Built here rather than at render time for the reason `saturationReport` is:
+  // a restored character is never re-solved, so a render-time derivation from
+  // the pool would go quiet on load.
+
+  // A worn candidate the build excluded a compound absorption affix from.
+  function quarantined(id, slotName, stat, reason, components) {
+    const v = item(id, slotName, [["KL", "Equipment", 1]]);
+    v.absorption_quarantined = [{ stat, reason, components }];
+    return v;
+  }
+  const FIVE = ["Acid Absorption", "Cold Absorption", "Fire Absorption",
+                "Electric Absorption", "Sonic Absorption"];
+
+  await test("U6/#249: a quarantined carrier in the pool is reported when its stat is ranked", async () => {
+    const model = {
+      targets: ["Fire Absorption"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Goggles", [item("g", "Goggles", [["Fire Absorption", "Enhancement", 10]])]),
+        slot("Helmet", [quarantined("Cyran Guard", "Helmet", "Elemental Absorption", "absent", FIVE)]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.deepStrictEqual(r.absorptionQuarantine, [{
+      item: "Cyran Guard", stat: "Elemental Absorption", reason: "absent", components: FIVE,
+    }], "the exclusion is named with its reason");
+  });
+
+  await test("U6/#249: a quarantined carrier is silent when no component is ranked", async () => {
+    // The saturation report's KTD3 rule: a disclosure that fires regardless of
+    // what the player asked for is noise, and noise is how a real disclosure
+    // stops being read. Nothing here bears on a Dodge build.
+    const model = {
+      targets: ["Dodge"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Goggles", [item("g", "Goggles", [["Dodge", "Enhancement", 10]])]),
+        slot("Helmet", [quarantined("Cyran Guard", "Helmet", "Elemental Absorption", "absent", FIVE)]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.deepStrictEqual(r.absorptionQuarantine, []);
+  });
+
+  await test("U6/#249: the report is present and empty when nothing was quarantined", async () => {
+    const model = {
+      targets: ["Fire Absorption"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Goggles", [item("g", "Goggles", [["Fire Absorption", "Enhancement", 10]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.ok(Array.isArray(r.absorptionQuarantine),
+      "the field is always present, so its absence cannot pass for empty");
+    assert.strictEqual(r.absorptionQuarantine.length, 0);
+  });
+
+  await test("U6/#249: a carrier offered in two slots is reported once", async () => {
+    const model = {
+      targets: ["Cold Absorption"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Ring", [quarantined("Twin Ward", "Ring", "Elemental Absorption", "unconfirmed", FIVE)], 2),
+        slot("Helmet", [quarantined("Twin Ward", "Helmet", "Elemental Absorption", "unconfirmed", FIVE)]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.absorptionQuarantine.length, 1,
+      "one excluded affix is one disclosure, however many slots could host it");
+  });
+
+  await test("U6/#249: absorptionQuarantine is plain JSON", async () => {
+    const model = {
+      targets: ["Fire Absorption"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Helmet", [quarantined("Cyran Guard", "Helmet", "Elemental Absorption", "absent", FIVE)])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(r.absorptionQuarantine)), r.absorptionQuarantine);
+  });
+
   console.log(`\n${passed} passed`);
 })();

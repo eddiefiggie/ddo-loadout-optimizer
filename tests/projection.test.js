@@ -352,4 +352,60 @@ test("U9: the in-game order holds through project() (the exporters' path) as wel
   ], "Melancholic, then Dolorous, then Woeful — in-game order, not emission order");
 });
 
+// ---- U6/#249: the compound-absorption quarantine, as sentences --------------
+//
+// ONE source for the app notice and every export, the contract
+// `saturationNoticeLines` holds. Reads `absorptionQuarantine` (plain JSON on the
+// result), never the pool, so a restored character discloses identically without
+// re-solving.
+
+const QUARANTINE_ABSENT = [{
+  item: "Cyran Guard (level 26)", stat: "Elemental Absorption", reason: "absent",
+  components: ["Acid Absorption", "Cold Absorption", "Fire Absorption",
+               "Electric Absorption", "Sonic Absorption"],
+}];
+
+test("U6/#249: the notice names the item, the excluded enchantment, and the reason", () => {
+  const [line] = P.absorptionQuarantineNoticeLines({ absorptionQuarantine: QUARANTINE_ABSENT });
+  assert.ok(/Elemental Absorption/.test(line), "names what was excluded");
+  assert.ok(/Cyran Guard \(level 26\)/.test(line), "names which item it was excluded from");
+  assert.ok(/Fire Absorption/.test(line) && /Sonic Absorption/.test(line),
+    "names the stats it was not credited to");
+});
+
+test("U6/#249: the two reasons read differently", () => {
+  const absent = P.absorptionQuarantineNoticeLines({ absorptionQuarantine: QUARANTINE_ABSENT })[0];
+  const unconfirmed = P.absorptionQuarantineNoticeLines({
+    absorptionQuarantine: [{ ...QUARANTINE_ABSENT[0], reason: "unconfirmed" }],
+  })[0];
+  assert.notStrictEqual(absent, unconfirmed,
+    "an unharvested carrier and an unconfirmed one are different facts");
+  assert.ok(/wiki/i.test(absent) && /wiki/i.test(unconfirmed), "both cite the wiki record");
+});
+
+test("U6/#249: the notice asserts nothing about what the build would have scored", () => {
+  const line = P.absorptionQuarantineNoticeLines({ absorptionQuarantine: QUARANTINE_ABSENT })[0];
+  // docs/solutions/conventions/never-infer-a-claim-about-your-own-results.md —
+  // stating what a credit-free build "would" have reached is a claim about a
+  // solve that was never run.
+  for (const forbidden of [/would have/i, /could have/i, /higher/i, /better/i,
+                           /instead of/i, /missing out/i, /\bloss\b/i]) {
+    assert.ok(!forbidden.test(line), `speculates: ${forbidden} in ${line}`);
+  }
+});
+
+test("U6/#249: silent when nothing was quarantined", () => {
+  assert.deepStrictEqual(P.absorptionQuarantineNoticeLines({ absorptionQuarantine: [] }), []);
+  assert.deepStrictEqual(P.absorptionQuarantineNoticeLines({}), []);
+  assert.deepStrictEqual(P.absorptionQuarantineNoticeLines(null), []);
+});
+
+test("U6/#249: the disclosure rides on the shared content model", () => {
+  const rec = makeRec();
+  rec.snapshot.absorptionQuarantine = QUARANTINE_ABSENT;
+  const view = P.project(rec);
+  assert.strictEqual(view.character.absorptionQuarantineNotice.length, 1,
+    "every export reads it from here, so a renderer cannot invent a second wording");
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

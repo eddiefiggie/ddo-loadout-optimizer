@@ -925,6 +925,12 @@ function disclosureRec(opts) {
       ],
       emptySlots: (opts && opts.empty) === false ? { count: 0, slots: [] }
         : { count: 2, slots: ["Ring", "Trinket"] },
+      // U6/#249 — the third disclosure on the same channel.
+      absorptionQuarantine: (opts && opts.quarantine) === false ? [] : [
+        { item: "Cyran Guard (level 26)", stat: "Elemental Absorption", reason: "absent",
+          components: ["Acid Absorption", "Cold Absorption", "Fire Absorption",
+                       "Electric Absorption", "Sonic Absorption"] },
+      ],
     },
   };
 }
@@ -965,10 +971,42 @@ test("U3/#239: the portable envelope carries both, so a re-import discloses iden
 });
 
 test("U3/#239: a build with neither fact exports cleanly", () => {
-  const clean = disclosureRec({ saturation: false, empty: false });
+  const clean = disclosureRec({ saturation: false, empty: false, quarantine: false });
   const out = toMarkdown(clean);
   assert.ok(!/at its ceiling/.test(out) && !/slots are empty/.test(out), "neither fact appears");
   assert.ok(!/>\s*\n/.test(out.replace(/\n{3,}/g, "\n\n")), "and no empty blockquote is left behind");
+});
+
+// ---- U6/#249: the absorption quarantine reaches every share surface ---------
+
+test("U6/#249: every share format carries the absorption-quarantine disclosure", () => {
+  const rec = disclosureRec();
+  for (const [fmt, fn] of [["markdown", toMarkdown], ["csv", toCsv],
+                           ["print", toPrintHtml], ["bbcode", toBBCode]]) {
+    const out = fn(rec);
+    assert.ok(/Elemental Absorption/.test(out), `${fmt} names the excluded enchantment`);
+    // Escaping-agnostic: markdown escapes the parentheses an item name carries
+    // ("Cyran Guard \(level 26\)"), the same way it already does in the loadout
+    // table. That is the format's own quoting, not a lost fact.
+    assert.ok(/Cyran Guard/.test(out) && /level 26/.test(out), `${fmt} names the item`);
+    assert.ok(!/would have/i.test(out), `${fmt} asserts nothing about the score`);
+  }
+});
+
+test("U6/#249: the disclosure is independent of the other two", () => {
+  const only = toMarkdown(disclosureRec({ saturation: false, empty: false }));
+  assert.ok(/Elemental Absorption/.test(only), "renders alone");
+  assert.ok(!/at its ceiling/.test(only) && !/slots are empty/.test(only),
+    "and drags neither of the others in");
+
+  const without = toMarkdown(disclosureRec({ quarantine: false }));
+  assert.ok(!/Elemental Absorption/.test(without), "silent when nothing was quarantined");
+  assert.ok(/at its ceiling/.test(without), "while the others still render");
+});
+
+test("U6/#249: the portable envelope carries it, so a re-import discloses identically", () => {
+  const blob = JSON.stringify(toPortableJSON(disclosureRec(), "2026-08-11T00:00:00Z"));
+  assert.ok(/Elemental Absorption/.test(blob), "the quarantine rides in the envelope");
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);

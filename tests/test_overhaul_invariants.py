@@ -76,6 +76,13 @@ _EXPANSION_FAMILIES_AT_REST = {
     "parrying": lambda s: s == "Parrying",
     "speed": lambda s: s == "Speed",
     "heightened awareness": lambda s: s == "Heightened Awareness",
+    # #249 — the compound absorptions stamp at BIRTH rather than by retrofit, so
+    # this entry is the only thing that would catch the stamp being dropped on the
+    # newest family. Bare, like parrying and speed: the wiki's visible cell reads
+    # "Fire and Cold Absorption +22%" with the bonus type only in the tooltip.
+    "compound absorption": lambda s: s in (
+        "Fire and Cold Absorption", "Electricity and Acid Absorption",
+        "Elemental Absorption"),
 }
 
 
