@@ -48,4 +48,11 @@ test("only the Vecna system uses 'awaken' in its labels", () => {
   }
 });
 
+// U9/R16: viktranium's declared slot_types is the in-game order the results/exports
+// path (web/projection.js buildCraftMaps) sorts by — pin it here so a reordering of
+// this array is a deliberate, visible edit, not an incidental drift.
+test("viktranium's slot_types is the in-game order: Melancholic, Dolorous, Miserable, Woeful", () => {
+  assert.deepStrictEqual(get("viktranium").slot_types, ["Melancholic", "Dolorous", "Miserable", "Woeful"]);
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

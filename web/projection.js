@@ -449,10 +449,22 @@
       if (!setAugByHost.has(s.host)) setAugByHost.set(s.host, []);
       setAugByHost.get(s.host).push(s);
     }
+    // Viktranium crafts render in their in-game slot order (R16: Melancholic,
+    // Dolorous, Miserable, Woeful) wherever more than one lands on the same host,
+    // not the alphabetical order that falls out of solver-emission grouping. The
+    // order is already declared on the registry entry — sort each host's list by it
+    // rather than duplicating the sequence here.
+    const vikByItem = byItemMap(build.vikPlaced);
+    const vikOrder = Craft && Craft.get("viktranium") && Craft.get("viktranium").slot_types;
+    if (vikOrder && vikOrder.length) {
+      const rank = new Map(vikOrder.map((s, i) => [s, i]));
+      const rankOf = (slot_type) => (rank.has(slot_type) ? rank.get(slot_type) : vikOrder.length);
+      for (const list of vikByItem.values()) list.sort((a, b) => rankOf(a.slot_type) - rankOf(b.slot_type));
+    }
     return {
       augAssign, dinoAssign,
       ncByItem: byItemMap(build.ncPlaced), rollByItem: byItemMap(build.rollPlaced),
-      vikByItem: byItemMap(build.vikPlaced), sealByItem: byItemMap(build.sealPlaced),
+      vikByItem, sealByItem: byItemMap(build.sealPlaced),
       tfByItem: byItemMap(build.tfPlaced), gsByItem: byItemMap(build.gsPlaced), jokerByHost,
       membershipByHost, setAugByHost,
     };

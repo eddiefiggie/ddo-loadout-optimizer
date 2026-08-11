@@ -2,6 +2,7 @@
 const assert = require("assert");
 const P = require("../web/projection.js");
 const R = require("../web/results.js");
+const Craft = require("../web/crafting-systems.js");
 
 let passed = 0;
 function test(name, fn) {
@@ -293,6 +294,62 @@ test("U4: one host holding two picks for the same set counts once", () => {
     membershipPlaced: [], setAugmentsPlaced: [], setsActive: [] };
   const d = P.satisfiedSetDetail(build).find((x) => x.set === "S2");
   assert.strictEqual(d.pieces, 1, "one host is one piece, not two");
+});
+
+// ---- U9 — Viktranium crafts render in their in-game order, not host-item emission order ----
+// R16: a player reported the four Viktranium slots (Melancholic, Dolorous, Miserable,
+// Woeful) rendering alphabetically (Dolorous, Melancholic, Miserable, Woeful) instead of
+// the in-game slot order the registry already declares. buildCraftMaps groups vikPlaced
+// by host in solver-emission order; it must instead sort each host's list by the
+// registry's declared slot_types order.
+
+test("U9: buildCraftMaps orders one item's Viktranium crafts by in-game slot order, not emission order", () => {
+  // Emitted Woeful-before-Melancholic (solver/emission order); expect Melancholic first.
+  const build = {
+    chosen: [],
+    vikPlaced: [
+      { item: "Epic Spectacles", stat: "Resistance", bonus_type: "Enhancement", value: 3, slot_type: "Woeful" },
+      { item: "Epic Spectacles", stat: "Constitution", bonus_type: "Insight", value: 4, slot_type: "Melancholic" },
+    ],
+  };
+  const maps = P.buildCraftMaps(build);
+  const order = maps.vikByItem.get("Epic Spectacles").map((n) => n.slot_type);
+  assert.deepStrictEqual(order, ["Melancholic", "Woeful"], "Melancholic renders before Woeful, matching in-game order");
+});
+
+test("U9: the sorted order matches the registry's declared slot_types order across all four types", () => {
+  const declared = Craft.get("viktranium").slot_types;
+  assert.deepStrictEqual(declared, ["Melancholic", "Dolorous", "Miserable", "Woeful"], "registry order is the in-game order");
+  // Emit all four, reverse of declared order, on one host.
+  const build = {
+    chosen: [],
+    vikPlaced: [...declared].reverse().map((slot_type, i) => (
+      { item: "Cloak of Sorrow", stat: `Stat${i}`, bonus_type: "Enhancement", value: i + 1, slot_type }
+    )),
+  };
+  const maps = P.buildCraftMaps(build);
+  const order = maps.vikByItem.get("Cloak of Sorrow").map((n) => n.slot_type);
+  assert.deepStrictEqual(order, declared, "sorted list matches the registry's declared order exactly");
+});
+
+test("U9: the in-game order holds through project() (the exporters' path) as well as buildCraftMaps directly", () => {
+  const rec = makeRec();
+  // makeRec's Epic Spectacles already carries one Melancholic craft; add a Dolorous
+  // and a Woeful craft on the SAME host, emitted out of order, to prove project()'s
+  // loadout[].crafting — what every exporter and results.js's craftSlotChips reads —
+  // reflects the sorted order, not the emission order.
+  rec.snapshot.vikPlaced.push(
+    { item: "Epic Spectacles", stat: "Deception", bonus_type: "Insight", value: 2, slot_type: "Woeful" },
+    { item: "Epic Spectacles", stat: "Fortification", bonus_type: "Enhancement", value: 10, slot_type: "Dolorous" },
+  );
+  const v = P.project(rec);
+  const goggles = v.loadout.find((i) => i.item === "Epic Spectacles");
+  const vikLabels = goggles.crafting.filter((c) => c.family === "vik").map((c) => c.label);
+  assert.deepStrictEqual(vikLabels, [
+    "Slot Melancholic Viktranium augment: Resistance +3",
+    "Slot Dolorous Viktranium augment: Fortification +10",
+    "Slot Woeful Viktranium augment: Deception +2 Insight",
+  ], "Melancholic, then Dolorous, then Woeful — in-game order, not emission order");
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);
