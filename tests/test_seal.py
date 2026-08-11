@@ -30,9 +30,31 @@ def test_undeath_pool_sources_to_18_options():
 
 def test_stub_pools_are_pending_not_errors():
     cov = seal.build_seal()["coverage"]
-    assert cov["seal_types_sourced"] == ["Undeath"]
-    assert set(cov["seal_types_pending"]) == {"Fire", "Gloom", "Mist"}
-    assert cov["options_eligible"] == 18
+    assert cov["seal_types_sourced"] == ["Fire", "Undeath"]
+    assert set(cov["seal_types_pending"]) == {"Gloom", "Mist"}
+    assert cov["options_eligible"] == 24          # Undeath 18 + Fire 6
+
+
+def test_fire_pool_is_presence_not_invented_magnitude():
+    """Fire's six options are `{{Unique enchantment}}` procs.
+
+    Five reduce an ENEMY stat and one grants temporary hitpoints on a cooldown, so
+    none carries a magnitude the wearer receives. Recording them as presence is the
+    accurate reading, not a shortfall — crediting `-7 MRR` to the player would
+    invent a number the wiki states about the enemy. The same six names already
+    ship as Bool presence via Viktranium and the Dino inserts, so this is a third
+    route to effects the dataset already models.
+    See docs/wiki-evidence/sealed-in-fire.md.
+    """
+    fire = [r for r in seal.build_seal()["records"] if r["seal_type"] == "Fire"]
+    assert len(fire) == 6, fire
+    assert {r["stat"] for r in fire} == {
+        "Legendary Affirmation", "Legendary Ash", "Legendary Dust",
+        "Legendary Ooze", "Legendary Salt", "Legendary Vacuum"}
+    for r in fire:
+        assert r["bonus_type"] == "Bool", r
+        assert r["value"] == 1, r
+        assert r["domain"] == "weapons", r
 
 
 def test_bad_option_is_quarantined_not_guessed():
@@ -117,9 +139,24 @@ def test_seal_slots_flow_through_expand_dataset_onto_variant():
 
 def test_build_exposes_seal_pool_and_counts_hosts():
     out = build_dataset.build()
-    assert len(out["seal"]) == 18                       # Undeath pool exposed
+    assert len(out["seal"]) == 24                       # Undeath 18 + Fire 6
     assert out["metadata"]["seal_coverage"]["hosts_active"] >= 1
-    assert out["metadata"]["seal_coverage"]["seal_types_sourced"] == ["Undeath"]
+    assert out["metadata"]["seal_coverage"]["seal_types_sourced"] == ["Fire", "Undeath"]
+
+
+def test_fire_hosts_reach_the_solver():
+    """66 gear-planner items carried a Sealed in Fire marker against an unsourced
+    pool, so the whole Undying Age weapon family shipped with an inert slot. A
+    player ranking `Legendary Ash` saw Viktranium weapons respond and these stay
+    silent, which is what surfaced #195."""
+    out = build_dataset.build()
+    fire_hosts = [it for it in out["items"]
+                  if any(s.get("seal_type") == "Fire" for s in (it.get("seal_slots") or []))]
+    assert len(fire_hosts) >= 60, len(fire_hosts)
+    assert all(h["slot"] in ("Weapon", "Off Hand") for h in fire_hosts), \
+        "Fire is a weapon upgrade; a non-weapon host means the marker was misread"
+    names = {h["source_item"] for h in fire_hosts}
+    assert "Deathly Longsword of the Undying Age" in names, sorted(names)[:5]
 
 
 def test_undeath_hosts_reach_the_solver_natively():
