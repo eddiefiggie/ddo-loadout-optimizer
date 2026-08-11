@@ -32,12 +32,20 @@ SEAL_TYPES = {"Undeath", "Fire", "Gloom", "Mist"}
 
 # Native "Sealed in X" menu-pool key per seal type in gearplanner_crafting.json.
 _NATIVE_SEAL_KEY = {t: f"Sealed in {t}" for t in SEAL_TYPES}
-# Seal types with a hand-verified, solver-eligible pool. Native pools exist for
-# Fire/Gloom/Mist too, but they stay EXCLUDED (pending verification) — only the
-# Undeath Ritual-Table pool is wired live (verified-seal-type gating preserved).
-VERIFIED_SEAL_TYPES = {"Undeath"}
+# Seal types with a hand-verified, solver-eligible pool. Gloom and Mist have
+# native pools that stay EXCLUDED pending the same treatment.
+#
+# Fire's six options are all `{{Unique enchantment}}` procs — five reduce an enemy
+# stat, one grants temporary hitpoints on a cooldown — so none carries a wearer
+# magnitude and all six are presence. That is the accurate reading rather than a
+# concession: the numbers on those pages (`-7 MRR`, `-20 Universal Spell Power`)
+# are penalties applied to the enemy, and crediting one to the player would invent
+# a value the wiki never states about them. The same six names already ship as
+# `Bool` presence via Viktranium and the Dino inserts, so this is a third route to
+# effects the dataset already models. See docs/wiki-evidence/sealed-in-fire.md.
+VERIFIED_SEAL_TYPES = {"Undeath", "Fire"}
 # The gear domain each seal type's pool applies to (informational; carried for display).
-_SEAL_DOMAIN = {"Undeath": "clothing/jewelry"}
+_SEAL_DOMAIN = {"Undeath": "clothing/jewelry", "Fire": "weapons"}
 
 
 def normalize_seal_type(name):
@@ -169,10 +177,13 @@ def build_seal(catalog: dict = None) -> dict:
         "item_hosts": "resolved from a Sealed-in-X marker on gear-planner items "
                       "(crafting[] for Undeath/Mist/Gloom, affixes[] Bool for Fire)",
         "note": "single-pick choice-slot sourced natively from the gear-planner "
-                "crafting catalog. Undeath (Ritual Table) is verified live; "
-                "Fire/Gloom/Mist pools exist natively but stay pending verification. "
-                "Ability-Insight options are typed 'Insight' (native), correcting the "
-                "legacy seed's 'Insightful'.",
+                "crafting catalog. Undeath (Ritual Table, clothing/jewelry stat "
+                "options) and Fire (Ritual Table, weapon unique-enchantment procs) "
+                "are verified live; Gloom/Mist pools exist natively but stay pending "
+                "verification. Ability-Insight options are typed 'Insight' (native), "
+                "correcting the legacy seed's 'Insightful'. Fire's options carry no "
+                "wearer magnitude and ship as presence — see "
+                "docs/wiki-evidence/sealed-in-fire.md.",
     }
     return {"records": records, "quarantined": [], "coverage": coverage,
             "source_options": source_options}
