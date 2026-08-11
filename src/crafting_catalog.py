@@ -155,6 +155,18 @@ GREEN_STEEL_KEYS = ["T1 (Equipment)", "T2 (Equipment)", "T3 (Equipment)"]
 THUNDER_FORGED_KEYS = {1: "T1 (Weapon)", 2: "T2 (Weapon)", 3: "T3 (Weapon)"}
 
 
+def count_menu_options(keys, catalog: dict = None) -> int:
+    """How many SOURCE options the given ``"*"`` menu pools offer, in total.
+
+    The single-pick fan-out gate (``src/container_registry.py``) judges a pool by
+    option -> record cardinality, so every builder over these pools must be able to
+    say what it read, not only what it emitted. Absent keys are skipped exactly as
+    the builders skip them, so the count matches what was actually iterated.
+    """
+    catalog = load_catalog() if catalog is None else catalog
+    return sum(len(menu_options(k, catalog)) for k in keys if k in catalog)
+
+
 def green_steel_records(catalog: dict = None) -> list:
     """Flat Green Steel option records sourced natively from the ``T*(Equipment)``
     menu pools. One record per affix (single-pick model), legacy solver shape +

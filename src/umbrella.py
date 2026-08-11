@@ -9,8 +9,18 @@ same bonus type, value, and unit — fixes it at the data layer, so the objectiv
 the dominance pre-filter (variantBuckets), set thresholds, and browse all see the
 real per-ability contribution with correct bonus-type stacking. Done once here;
 no per-consumer umbrella logic needed downstream.
+R12 — each expanded affix carries the ORIGINATING enchantment name under the
+same key `src/spell_focus.py` writes (`PROVENANCE_KEY`), bonus-type-prefixed as
+the wiki writes it: "Profane Well Rounded", not six bare ability lines. Umbrella
+is a typed family (gear-planner carries Profane, Enhancement, Exceptional,
+Quality and Artifact spellings), so the type is part of the engraved name — the
+reported defect that produced this module was literally filed as
+"Profane Well Rounded". A consumer can collapse the six back to that one line,
+and can tell an expanded ability affix from a native one by the key's presence.
 """
 from __future__ import annotations
+
+from src.spell_focus import PROVENANCE_KEY, source_label
 
 ABILITIES = ["Strength", "Dexterity", "Constitution",
              "Intelligence", "Wisdom", "Charisma"]
@@ -41,7 +51,11 @@ def umbrella_expansion() -> dict:
 
 def _expand_affix(affix: dict) -> list:
     if is_umbrella(affix.get("stat", "")):
-        return [{**affix, "stat": ab} for ab in ABILITIES]
+        # The engraved name, e.g. "Profane Well Rounded". Read from the same
+        # renderer spell focus uses so the two families can never disagree about
+        # how a bonus type is spelled ("Insightful", not "Insight").
+        label = source_label(affix.get("stat"), affix.get("bonus_type"))
+        return [{**affix, "stat": ab, PROVENANCE_KEY: label} for ab in ABILITIES]
     return [affix]
 
 

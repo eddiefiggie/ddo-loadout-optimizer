@@ -89,7 +89,6 @@ test("OFF_HAND_TYPES matches the dataset's distinct off-hand types", () => {
   assert.strictEqual(T.OFF_HAND_EMPTY, "empty");
 });
 
-if (!process.exitCode) console.log(`\n${passed} passed`);
 
 // --- U2: Sword & Board style ---
 test("U2: Sword & Board is a selectable style", () => {
@@ -109,3 +108,6 @@ test("U2: S&B main hand draws from the one-handed weapon bucket", () => {
   assert.deepStrictEqual(sb, one, "S&B main-hand weapon types equal the one-hand bucket");
   assert.ok(!sb.includes("Great Swords") && !sb.includes("Quarterstaffs"), "no two-handers");
 });
+
+
+if (!process.exitCode) console.log(`\n${passed} passed`);

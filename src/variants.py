@@ -15,7 +15,9 @@ from __future__ import annotations
 
 import re
 
+from src.absorption_split import QUARANTINE_FIELD
 from src.affix_parser import parse_enhancements
+from src.spell_focus import PROVENANCE_KEY
 from src.viktranium import parse_base_lamordia, is_base_lamordia_line
 
 _TIER_PREFIX = re.compile(r"^(ML\d+[^:]*):\s*(.*)$")
@@ -64,20 +66,32 @@ def _native_parsed(item):
     weapon/alignment descriptors — so the ~11k affixes the old remap quarantined
     become live. `src.verify` still runs and stamps per-affix `eligible`. There are
     no roll-groups on this path; `structured_scaling`/`structured_flagged` (if any)
-    carry through unchanged."""
+    carry through unchanged.
+
+    R12: the rebuild is a WHITELIST, so any key not named here is destroyed. The
+    shard splits (Parrying / Speed / Heightened Awareness) stamp their expansion
+    provenance onto the PLANNER RECORDS, which reach this rebuild before anything
+    is serialized — so `via` is carried through explicitly, the same way
+    `build_dataset._native_affix` carries `eligible` and `via` at the
+    serialization seam. Miss this one and every shard-split stamp dies here,
+    silently, long before the serializer ever sees it. Spell focus escaped only
+    because it expands AFTER this rebuild."""
     affixes = []
     for a in item.get("affixes") or []:
         raw_val = a.get("value")
         unit = "pct" if isinstance(raw_val, str) and raw_val.strip().endswith("%") else "flat"
         name = a.get("name")
         atype = a.get("type")
-        affixes.append({
+        out = {
             "stat": name,
             "bonus_type": atype,
             "value": _coerce_value(raw_val),
             "unit": unit,
             "raw": f'{atype or ""} {name or ""} {"" if raw_val is None else raw_val}'.strip(),
-        })
+        }
+        if PROVENANCE_KEY in a:
+            out[PROVENANCE_KEY] = a[PROVENANCE_KEY]
+        affixes.append(out)
     return {"affixes": affixes,
             "scaling": item.get("structured_scaling") or [],
             "rolls": [],
@@ -137,6 +151,20 @@ def _make_variant(item, ml, tier_label, parsed):
         # gear-planner has no equivalent for. Stamped at build so the artifact is
         # honest at rest; absent/None means unsourced and every consumer fails open.
         "material": item.get("material"),
+        # #249 (U6) — compound-absorption carriers the wiki shard does not confirm.
+        # Stamped here for the same reason `material` directly above is: quarantine
+        # is decided in Python against the seed shard, and neither `web/solver.js`
+        # nor `web/model.js` receives dataset metadata — so the exclusion has to
+        # ride on the variant the solver already holds.
+        #
+        # Emitted ONLY when something was excluded, unlike `material` above, which
+        # is a real per-item property worth recording as unsourced. This is an
+        # exception marker: absent means nothing was excluded, which is the state
+        # of every item today. `web/solver.js` reads it as `(v && v.field) || []`,
+        # so absent and null are already indistinguishable to every consumer — and
+        # stamping the null anyway cost 353KB across 9,034 variants in an artifact
+        # every visitor downloads.
+        **({QUARANTINE_FIELD: item[QUARANTINE_FIELD]} if item.get(QUARANTINE_FIELD) else {}),
         "tier_values_incomplete": False,
         "tier_ml_list": None,
         # U81 Nearly-Complete host marker (category) — propagated so the solver's

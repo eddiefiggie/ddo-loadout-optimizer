@@ -297,35 +297,51 @@ def build_viktranium(catalog: dict = None) -> dict:
     """Native path (U4b-ii): source the Viktranium typed pools from
     ``gearplanner_crafting.json`` via ``crafting_catalog`` instead of the legacy
     ``viktranium.json`` seed. The strict parser gate is REMOVED, not swapped
-    (F1) — native affixes flow through verbatim via ``legacy_affix`` (so
-    un-quarantined multi-affix options now emit one record PER affix). The pool
+    (F1) — native affixes flow through verbatim via ``legacy_affix``. The pool
     key is the native ``<SlotType> (<Category>)`` menu, Category in
     (Accessory, Armor, Weapon); the specialized ``(quarterstaff)`` /
     ``(artifact)`` variant pools are out of scope (no host slot references them).
     Tier is derived from the option's native ``ml``. Returns the same
-    ``{records, quarantined, coverage}`` shape ``parse_viktranium`` does."""
+    ``{records, quarantined, coverage}`` shape ``parse_viktranium`` does.
+
+    **A choice-slot option is atomic**, so ONE native option becomes ONE record
+    carrying its whole affix list — the ``{..., affixes: [...]}`` shape
+    ``src/dino.py`` already proves for inserts. Removing the strict gate without
+    adding that container left this path emitting one record PER affix, which
+    told the solver a multi-affix option could be taken in halves and made the
+    seven schools of an expanded universal spell-DC option seven *competing*
+    options for the same slot. 23 of the 289 native options are genuinely
+    multi-affix."""
     catalog = crafting_catalog.load_catalog() if catalog is None else catalog
     records = []
+    # SOURCE option count, reported so the fan-out gate can hold this container to
+    # one record per option. ATOMIC shape alone does not prove that — two halves of
+    # a split option, each wrapped in a one-element `affixes` list, wear the same
+    # shape. Only the count catches it (src/container_registry.py).
+    source_options = 0
     for slot_type in sorted(SLOT_TYPES):
         for category in sorted(CATEGORIES):
             key = f"{slot_type} ({category})"
             if key not in catalog:
                 continue  # not every (type, category) combination has a pool
             for opt in crafting_catalog.menu_options(key, catalog):
-                tier = _vik_tier_from_ml(opt.get("ml"))
-                name = (opt.get("name") or "").strip()
-                for aff in crafting_catalog.iter_affixes(opt):
-                    rec = crafting_catalog.legacy_affix(aff)
-                    rec.update({
-                        "slot_type": slot_type, "category": category,
-                        "name": name, "tier": tier, "wiki_url": "",
-                    })
-                    records.append(rec)
+                source_options += 1
+                affixes = [crafting_catalog.legacy_affix(a)
+                           for a in crafting_catalog.iter_affixes(opt)]
+                if not affixes:
+                    continue
+                records.append({
+                    "slot_type": slot_type, "category": category,
+                    "name": (opt.get("name") or "").strip(),
+                    "tier": _vik_tier_from_ml(opt.get("ml")),
+                    "affixes": affixes, "wiki_url": "",
+                })
     by_pool = {}
     for r in records:
         k = f"{r['slot_type']}/{r['category']}"
         by_pool[k] = by_pool.get(k, 0) + 1
     coverage = {
+        "source_options": source_options,
         "slot_types_sourced": sorted({r["slot_type"] for r in records}),
         "categories_sourced": sorted({r["category"] for r in records}),
         "options_eligible": len(records),
@@ -340,4 +356,5 @@ def build_viktranium(catalog: dict = None) -> dict:
                      "references them); Cataclysmic weapon/shield creation is "
                      "item-creation (deferred to named-gear R4), not a choice-slot",
     }
-    return {"records": records, "quarantined": [], "coverage": coverage}
+    return {"records": records, "quarantined": [], "coverage": coverage,
+            "source_options": source_options}

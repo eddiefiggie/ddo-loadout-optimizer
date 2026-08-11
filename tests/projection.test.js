@@ -2,6 +2,7 @@
 const assert = require("assert");
 const P = require("../web/projection.js");
 const R = require("../web/results.js");
+const Craft = require("../web/crafting-systems.js");
 
 let passed = 0;
 function test(name, fn) {
@@ -293,6 +294,252 @@ test("U4: one host holding two picks for the same set counts once", () => {
     membershipPlaced: [], setAugmentsPlaced: [], setsActive: [] };
   const d = P.satisfiedSetDetail(build).find((x) => x.set === "S2");
   assert.strictEqual(d.pieces, 1, "one host is one piece, not two");
+});
+
+// ---- U9 — Viktranium crafts render in their in-game order, not host-item emission order ----
+// R16: a player reported the four Viktranium slots (Melancholic, Dolorous, Miserable,
+// Woeful) rendering alphabetically (Dolorous, Melancholic, Miserable, Woeful) instead of
+// the in-game slot order the registry already declares. buildCraftMaps groups vikPlaced
+// by host in solver-emission order; it must instead sort each host's list by the
+// registry's declared slot_types order.
+
+test("U9: buildCraftMaps orders one item's Viktranium crafts by in-game slot order, not emission order", () => {
+  // Emitted Woeful-before-Melancholic (solver/emission order); expect Melancholic first.
+  const build = {
+    chosen: [],
+    vikPlaced: [
+      { item: "Epic Spectacles", stat: "Resistance", bonus_type: "Enhancement", value: 3, slot_type: "Woeful" },
+      { item: "Epic Spectacles", stat: "Constitution", bonus_type: "Insight", value: 4, slot_type: "Melancholic" },
+    ],
+  };
+  const maps = P.buildCraftMaps(build);
+  const order = maps.vikByItem.get("Epic Spectacles").map((n) => n.slot_type);
+  assert.deepStrictEqual(order, ["Melancholic", "Woeful"], "Melancholic renders before Woeful, matching in-game order");
+});
+
+test("U9: the sorted order matches the registry's declared slot_types order across all four types", () => {
+  const declared = Craft.get("viktranium").slot_types;
+  assert.deepStrictEqual(declared, ["Melancholic", "Dolorous", "Miserable", "Woeful"], "registry order is the in-game order");
+  // Emit all four, reverse of declared order, on one host.
+  const build = {
+    chosen: [],
+    vikPlaced: [...declared].reverse().map((slot_type, i) => (
+      { item: "Cloak of Sorrow", stat: `Stat${i}`, bonus_type: "Enhancement", value: i + 1, slot_type }
+    )),
+  };
+  const maps = P.buildCraftMaps(build);
+  const order = maps.vikByItem.get("Cloak of Sorrow").map((n) => n.slot_type);
+  assert.deepStrictEqual(order, declared, "sorted list matches the registry's declared order exactly");
+});
+
+test("U9: the in-game order holds through project() (the exporters' path) as well as buildCraftMaps directly", () => {
+  const rec = makeRec();
+  // makeRec's Epic Spectacles already carries one Melancholic craft; add a Dolorous
+  // and a Woeful craft on the SAME host, emitted out of order, to prove project()'s
+  // loadout[].crafting — what every exporter and results.js's craftSlotChips reads —
+  // reflects the sorted order, not the emission order.
+  rec.snapshot.vikPlaced.push(
+    { item: "Epic Spectacles", stat: "Deception", bonus_type: "Insight", value: 2, slot_type: "Woeful" },
+    { item: "Epic Spectacles", stat: "Fortification", bonus_type: "Enhancement", value: 10, slot_type: "Dolorous" },
+  );
+  const v = P.project(rec);
+  const goggles = v.loadout.find((i) => i.item === "Epic Spectacles");
+  const vikLabels = goggles.crafting.filter((c) => c.family === "vik").map((c) => c.label);
+  assert.deepStrictEqual(vikLabels, [
+    "Slot Melancholic Viktranium augment: Resistance +3",
+    "Slot Dolorous Viktranium augment: Fortification +10",
+    "Slot Woeful Viktranium augment: Deception +2 Insight",
+  ], "Melancholic, then Dolorous, then Woeful — in-game order, not emission order");
+});
+
+// ---- U6/#249: the compound-absorption quarantine, as sentences --------------
+//
+// ONE source for the app notice and every export, the contract
+// `saturationNoticeLines` holds. Reads `absorptionQuarantine` (plain JSON on the
+// result), never the pool, so a restored character discloses identically without
+// re-solving.
+
+const QUARANTINE_ABSENT = [{
+  item: "Cyran Guard (level 26)", stat: "Elemental Absorption", reason: "absent",
+  components: ["Acid Absorption", "Cold Absorption", "Fire Absorption",
+               "Electric Absorption", "Sonic Absorption"],
+}];
+
+test("U6/#249: the notice names the item, the excluded enchantment, and the reason", () => {
+  const [line] = P.absorptionQuarantineNoticeLines({ absorptionQuarantine: QUARANTINE_ABSENT });
+  assert.ok(/Elemental Absorption/.test(line), "names what was excluded");
+  assert.ok(/Cyran Guard \(level 26\)/.test(line), "names which item it was excluded from");
+  assert.ok(/Fire Absorption/.test(line) && /Sonic Absorption/.test(line),
+    "names the stats it was not credited to");
+});
+
+test("U6/#249: the two reasons read differently", () => {
+  const absent = P.absorptionQuarantineNoticeLines({ absorptionQuarantine: QUARANTINE_ABSENT })[0];
+  const unconfirmed = P.absorptionQuarantineNoticeLines({
+    absorptionQuarantine: [{ ...QUARANTINE_ABSENT[0], reason: "unconfirmed" }],
+  })[0];
+  assert.notStrictEqual(absent, unconfirmed,
+    "an unharvested carrier and an unconfirmed one are different facts");
+  assert.ok(/wiki/i.test(absent) && /wiki/i.test(unconfirmed), "both cite the wiki record");
+});
+
+test("U6/#249: the notice asserts nothing about what the build would have scored", () => {
+  const line = P.absorptionQuarantineNoticeLines({ absorptionQuarantine: QUARANTINE_ABSENT })[0];
+  // docs/solutions/conventions/never-infer-a-claim-about-your-own-results.md —
+  // stating what a credit-free build "would" have reached is a claim about a
+  // solve that was never run.
+  for (const forbidden of [/would have/i, /could have/i, /higher/i, /better/i,
+                           /instead of/i, /missing out/i, /\bloss\b/i]) {
+    assert.ok(!forbidden.test(line), `speculates: ${forbidden} in ${line}`);
+  }
+});
+
+test("U6/#249: silent when nothing was quarantined", () => {
+  assert.deepStrictEqual(P.absorptionQuarantineNoticeLines({ absorptionQuarantine: [] }), []);
+  assert.deepStrictEqual(P.absorptionQuarantineNoticeLines({}), []);
+  assert.deepStrictEqual(P.absorptionQuarantineNoticeLines(null), []);
+});
+
+test("U6/#249: the disclosure rides on the shared content model", () => {
+  const rec = makeRec();
+  rec.snapshot.absorptionQuarantine = QUARANTINE_ABSENT;
+  const view = P.project(rec);
+  assert.strictEqual(view.character.absorptionQuarantineNotice.length, 1,
+    "every export reads it from here, so a renderer cannot invent a second wording");
+});
+
+
+// ---- U8 (R8, R9, R10) — collapse expanded affixes on item-centric surfaces ----
+//
+// One enchantment expands into several concrete affixes so the solver can match a
+// ranked stat. The player must read the name engraved on the item, not the model's
+// shape: a Woeful Viktranium craft reported "+2 Enchantment" on one item and "+2
+// Necromancy" on the off-hand, which is the same craft described by whichever
+// school happened to be ranked. Every expansion member carries `via` (the key
+// `src/spell_focus.py` exposes as PROVENANCE_KEY); these pin the collapse.
+
+// A typed universal spell-focus enchantment: seven schools, one magnitude.
+function focusMastery(label, type, value) {
+  return ["Abjuration", "Conjuration", "Enchantment", "Evocation", "Illusion", "Necromancy", "Transmutation"]
+    .map((s) => ({ name: `${s} Focus`, type, value, via: label }));
+}
+// A heterogeneous family: Armor Class at one magnitude, three saves at another.
+const PARRYING = [
+  { name: "Armor Class", type: "Insight", value: 5, via: "Parrying" },
+  { name: "Fortitude Save", type: "Insight", value: 2, via: "Parrying" },
+  { name: "Reflex Save", type: "Insight", value: 2, via: "Parrying" },
+  { name: "Will Save", type: "Insight", value: 2, via: "Parrying" },
+];
+
+test("U8/R8: a uniform expansion collapses to ONE entry naming the enchantment", () => {
+  const out = P.collapseExpansions(focusMastery("Sacred Spell Focus Mastery", "Sacred", 3));
+  assert.strictEqual(out.length, 1, "seven school affixes render as one line, not seven");
+  assert.strictEqual(P.affixLabel(out[0]), "Sacred Spell Focus Mastery +3",
+    "names the enchantment engraved on the item, carrying the shared magnitude");
+});
+
+test("U8/R8: a collapsed typed enchantment does NOT repeat its bonus type as a suffix", () => {
+  // affixLabel appends a non-Enhancement bonus type. Emitting the collapsed entry
+  // with `type: "Sacred"` would render "Sacred Spell Focus Mastery +3 Sacred".
+  const line = P.affixLabel(P.collapseExpansions(focusMastery("Sacred Spell Focus Mastery", "Sacred", 3))[0]);
+  assert.ok(!/Sacred.*Sacred/.test(line), `bonus type named twice: ${line}`);
+  assert.strictEqual(line, "Sacred Spell Focus Mastery +3");
+});
+
+test("U8/R8: a heterogeneous family lists its member values, inventing no single number", () => {
+  const out = P.collapseExpansions(PARRYING);
+  assert.strictEqual(out.length, 1, "still one line");
+  const line = P.affixLabel(out[0]);
+  assert.strictEqual(line,
+    "Parrying: Armor Class +5 Insight, Fortitude Save +2 Insight, Reflex Save +2 Insight, Will Save +2 Insight");
+  assert.ok(!/Parrying \+/.test(line), "never asserts a single magnitude the data does not have");
+});
+
+test("U8/R8: a native school-specific affix (no provenance) is untouched", () => {
+  const native = [{ name: "Necromancy Focus", type: "Equipment", value: 13 }];
+  const out = P.collapseExpansions(native);
+  assert.strictEqual(out.length, 1);
+  assert.strictEqual(out[0], native[0], "passed through by identity — not rebuilt");
+  assert.strictEqual(P.affixLabel(out[0]), "Necromancy Focus +13 Equipment");
+});
+
+test("U8/R8: a partially-relevant expansion still collapses to one line, beside its native neighbours", () => {
+  const affixes = [
+    { name: "Constitution", type: "Insightful", value: 7 },
+    ...focusMastery("Quality Spell Focus Mastery", "Quality", 2),
+    { name: "PRR", value: 15 },
+  ];
+  const out = P.collapseExpansions(affixes);
+  assert.deepStrictEqual(out.map(P.affixLabel), [
+    "Constitution +7 Insightful",
+    "Quality Spell Focus Mastery +2",
+    "PRR +15",
+  ], "the group collapses in place; unrelated affixes keep their order and text");
+});
+
+test("U8/R8: two different expansions on one item stay two distinct lines", () => {
+  const out = P.collapseExpansions([
+    ...focusMastery("Quality Spell Focus Mastery", "Quality", 2),
+    ...focusMastery("Insightful Spell Focus Mastery", "Insight", 1),
+  ]);
+  assert.deepStrictEqual(out.map(P.affixLabel),
+    ["Quality Spell Focus Mastery +2", "Insightful Spell Focus Mastery +1"],
+    "grouped by originating enchantment, not merged into one");
+});
+
+test("U8/R10: project()'s loadout affixes are collapsed, so no export can show the expanded shape", () => {
+  const rec = makeRec();
+  rec.snapshot.chosen[0].variant.affixes = [
+    { name: "Deadly", type: "Insightful", value: 9 },
+    ...focusMastery("Sacred Spell Focus Mastery", "Sacred", 3),
+  ];
+  const view = P.project(rec);
+  const goggles = view.loadout.find((i) => i.item === "Epic Spectacles");
+  assert.deepStrictEqual(goggles.affixes.map(P.affixLabel),
+    ["Deadly +9 Insightful", "Sacred Spell Focus Mastery +3"],
+    "the shared content model — the single source the exports read — is already collapsed");
+});
+
+test("U8/R9/AE5: a Viktranium craft of a universal option reads as the enchantment, not one school", () => {
+  // The reported symptom: the same craft described itself by whichever school was
+  // ranked, so one item said "+2 Enchantment" and the off-hand said "+2 Necromancy".
+  const opt = {
+    slot_type: "Woeful", item: "Cloak of Sorrow", name: "Woeful Invigorator (legendary)",
+    affixes: focusMastery("Profane Spell Focus Mastery", "Profane", 2)
+      .map((a) => ({ stat: a.name, bonus_type: a.type, value: a.value, unit: "flat", via: a.via })),
+    // vikMeta's legacy flat fields name the leading ON-TARGET affix — the very
+    // fields that made the label differ per item.
+    stat: "Enchantment Focus", bonus_type: "Profane", value: 2, unit: "flat",
+  };
+  assert.strictEqual(P.craftLabel(opt, "vik"),
+    "Slot Woeful Viktranium augment: Profane Spell Focus Mastery +2");
+});
+
+test("U8/R9: a single-affix Viktranium craft is unchanged", () => {
+  const opt = { slot_type: "Melancholic", stat: "Resistance", bonus_type: "Enhancement", value: 3, unit: "flat" };
+  assert.strictEqual(P.craftLabel(opt, "vik"), "Slot Melancholic Viktranium augment: Resistance +3");
+});
+
+test("U8/R9: a Dino insert whose affixes come from one expansion collapses the same way", () => {
+  const ins = {
+    dino_type: "Primal", name: "Ancient Insight",
+    affixes: focusMastery("Quality Spell Focus Mastery", "Quality", 2)
+      .map((a) => ({ stat: a.name, bonus_type: a.type, value: a.value, unit: "flat", via: a.via })),
+  };
+  assert.strictEqual(P.craftLabel(ins, "dino"),
+    "Primal: Ancient Insight, Quality Spell Focus Mastery +2");
+});
+
+test("U8/R9: a multi-affix craft with no provenance still lists each affix", () => {
+  const ins = {
+    dino_type: "Primal", name: "Mixed",
+    affixes: [
+      { stat: "Constitution", bonus_type: "Quality", value: 3, unit: "flat" },
+      { stat: "Dodge", bonus_type: "Quality", value: 2, unit: "pct" },
+    ],
+  };
+  assert.strictEqual(P.craftLabel(ins, "dino"),
+    "Primal: Mixed, Constitution +3 Quality, Dodge +2% Quality");
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);

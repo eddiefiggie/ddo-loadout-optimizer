@@ -98,4 +98,64 @@ test("exports name the enchantment, not just the school", () => {
   assert.strictEqual(exported.find((e) => e.bonusType === "Equipment").viaAffix, null);
 });
 
+// ---- U8 (R8, R9, R11) — the two surfaces answer different questions --------
+//
+// Ranked Priorities answers "where did this point come from", and must keep
+// attributing each ranked stat INDIVIDUALLY while naming the enchantment as its
+// source. The item-centric surfaces answer "what is engraved on this item", and
+// must collapse the expansion to the one name the player will read in-game.
+const R = require("../web/results.js");
+const X = require("../web/exporters.js");
+
+const SCHOOLS = ["Abjuration", "Conjuration", "Enchantment", "Evocation", "Illusion", "Necromancy", "Transmutation"];
+const expanded = (label, type, value) => SCHOOLS.map((s) => ({ name: `${s} Focus`, type, value, via: label }));
+
+test("AE3: the item surface shows ONE line naming the enchantment, not seven school lines", () => {
+  const affixes = expanded("Sacred Spell Focus Mastery", "Sacred", 3);
+  const lines = P.collapseExpansions(affixes).map(P.affixLabel);
+  assert.deepStrictEqual(lines, ["Sacred Spell Focus Mastery +3"],
+    "the player reads the name engraved on the item, not the model's shape");
+});
+
+test("AE3/R11: Ranked Priorities still attributes the ranked school individually — UNCHANGED", () => {
+  // This surface is deliberately NOT collapsed. It credits the Necromancy point
+  // to the school it was ranked on and names the enchantment as its source; a
+  // collapse here would destroy the answer it exists to give.
+  const attr = P.attributionByTarget(makeResult());
+  const rows = attr["Necromancy Focus"];
+  assert.strictEqual(rows.length, 2, "still one row per contributing source");
+  const expandedRow = rows.find((r) => r.bonus_type === "Sacred");
+  assert.strictEqual(expandedRow.value, 3, "credited to the ranked school, individually");
+  assert.strictEqual(expandedRow.via, "Sacred Spell Focus Mastery", "and names the enchantment as its source");
+});
+
+test("AE5: the reported symptom — a Viktranium craft names the enchantment, not one school", () => {
+  // Reported: the same Woeful Viktranium craft read "+2 Enchantment" on one item
+  // and "+2 Necromancy" on the off-hand. Both are the SAME option; the label was
+  // built from whichever affix the solve happened to rank, so it differed per item.
+  const option = (rankedSchool) => ({
+    slot_type: "Woeful", name: "Woeful Invigorator",
+    affixes: SCHOOLS.map((s) => ({ stat: `${s} Focus`, bonus_type: "Profane", value: 2, unit: "flat",
+      via: "Profane Spell Focus Mastery" })),
+    stat: `${rankedSchool} Focus`, bonus_type: "Profane", value: 2, unit: "flat",
+  });
+  const onItem = P.craftLabel(option("Enchantment"), "vik");
+  const onOffHand = P.craftLabel(option("Necromancy"), "vik");
+  assert.strictEqual(onItem, onOffHand, "one craft, one description — regardless of which school was ranked");
+  assert.strictEqual(onItem, "Slot Woeful Viktranium augment: Profane Spell Focus Mastery +2");
+});
+
+test("AE6: the Markdown export renders the SAME collapsed line the app renders", () => {
+  const affixes = expanded("Sacred Spell Focus Mastery", "Sacred", 3);
+  const appLine = P.affixLabel(P.collapseExpansions(affixes)[0]);
+  const html = R.equippedBody({ variant_id: "A Memento of Mori", affixes }, -1, null, new Map());
+  assert.ok(html.includes(appLine), "the app's Loadout block renders it");
+  const md = X.toMarkdown({
+    name: "Caster", inputs: { ml: 32, pool: "all", priorities: [] },
+    snapshot: { status: "optimal", setsActive: [],
+      chosen: [{ slot: "Trinket", variant: { variant_id: "A Memento of Mori", ml: 32, affixes } }] },
+  });
+  assert.ok(md.includes(appLine), "and the share export renders the same text, character for character");
+});
+
 console.log(`\n${passed} passed`);

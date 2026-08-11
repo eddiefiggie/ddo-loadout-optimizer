@@ -11,6 +11,11 @@
 const Proj = (typeof Projection !== "undefined") ? Projection
   : (typeof require !== "undefined" ? require("./projection.js") : null);
 const affixLabel = Proj.affixLabel;
+// U8 (R8) — bound like every other shared primitive. `renderResults` /
+// `equippedBody` / `loadoutDeepDive` run against the LIVE solve result and have no
+// saved record, so they cannot reach the collapse through `Proj.project(rec)`;
+// they call the same primitive that builds the content model instead.
+const collapseExpansions = Proj.collapseExpansions;
 const assignAugments = Proj.assignAugments;
 const assignDinoInserts = Proj.assignDinoInserts;
 const attributionByTarget = Proj.attributionByTarget;
@@ -280,8 +285,11 @@ function loadoutDeepDive(result, query, maps, attr) {
       ? ` <span class="dd-suppressed" title="a Set Augment slotted here overrides this item's own set bonus">(suppressed by Set Augment${contribs.length ? `: ${esc(gaveUp.join(", "))}` : ""})</span>` : "";
     const setLine = (contribs.length || gaveUp.length)
       ? `<div class="dd-set"><span class="setpip"></span>Part of set: ${esc(contribs.length ? contribSetLabel(contribs) : gaveUp.join(", "))}${suppressNote}</div>` : "";
-    const affixes = (v.affixes || []).length
-      ? `<ul class="dd-list">${v.affixes.map((a) => `<li>${esc(affixLabel(a))}</li>`).join("")}</ul>`
+    // U8/R8 — collapsed before render, so an expanded enchantment reads as the one
+    // name engraved on the item rather than as seven school lines.
+    const shownAffixes = collapseExpansions(v.affixes || []);
+    const affixes = shownAffixes.length
+      ? `<ul class="dd-list">${shownAffixes.map((a) => `<li>${esc(affixLabel(a))}</li>`).join("")}</ul>`
       : `<p class="dd-none muted">No parsed affixes on this item.</p>`;
     const crafts = craftChips(v, idx, maps);
     const craftBlock = crafts.length
@@ -366,7 +374,10 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
 // are always supplied on the render path (buildViews -> equippedRow); a maps-less
 // call (only the pure test callers) simply renders no augment/craft section.
 function equippedBody(v, idx, maps, augById, ownedMode) {
-  const affixes = (v.affixes || []);
+  // U8/R8 — the Loadout block collapses each expansion to its enchantment for the
+  // same reason the Deep Dive does: this is what the player compares against the
+  // in-game tooltip.
+  const affixes = collapseExpansions(v.affixes || []);
   const stats = affixes.length
     ? `<ul class="pd-stats">${affixes.map((a) => `<li>${esc(affixLabel(a))}</li>`).join("")}</ul>` : "";
 
@@ -449,11 +460,14 @@ function attributionList(contribs) {
     // nothing, so it always adds on top of every typed bonus to the same stat.
     const typeLabel = isBool ? "feature"
       : (c.bonus_type == null || c.bonus_type === "" ? "untyped" : c.bonus_type);
-    // #205 — a universal spell-DC enchantment is credited to the ranked school but
-    // is printed on the item under its own name. Show that name, or a player
-    // checking the tooltip finds text the item does not carry.
+    // #205 — an expanded enchantment is credited to the ranked stat but is printed
+    // on the item under its own name. Show that name, or a player checking the
+    // tooltip finds text the item does not carry. The sentence stays family-neutral:
+    // every expansion family now stamps this key (R12), so a claim about what the
+    // enchantment does — "raises the DC of every school" — would be true only for
+    // spell focus and false for Parrying, Speed, Well Rounded, and the rest.
     const via = c.via
-      ? `<span class="attrib-via" title="This item grants ${esc(c.via)}, which raises the DC of every school. It is credited here to the school you ranked.">as ${esc(c.via)}</span>`
+      ? `<span class="attrib-via" title="This item carries ${esc(c.via)}, which grants several effects at once. It is credited here to the one you ranked.">as ${esc(c.via)}</span>`
       : "";
     return `<li class="attrib-row ${kind}">
       <span class="attrib-type">${esc(typeLabel)}</span>
@@ -591,6 +605,20 @@ function saturationNotice(result) {
   const lines = (Proj && Proj.saturationNoticeLines) ? Proj.saturationNoticeLines(result) : [];
   return lines.length
     ? `<p class="scope-note saturation-note" role="status">${lines.map(esc).join(" ")}</p>`
+    : "";
+}
+
+/** U6/#249 — the compound-absorption exclusion. Pure (result), and identical on
+ *  a restored snapshot, for the same reason the ceiling fact above is.
+ *
+ *  Reads the SHARED sentences from projection, never a second wording. A notice
+ *  phrased once here and once in the exporters is how the app and a shared build
+ *  come to disagree about the same solve. */
+function absorptionQuarantineNotice(result) {
+  const lines = (Proj && Proj.absorptionQuarantineNoticeLines)
+    ? Proj.absorptionQuarantineNoticeLines(result) : [];
+  return lines.length
+    ? `<p class="scope-note absorption-quarantine-note" role="status">${lines.map(esc).join(" ")}</p>`
     : "";
 }
 
@@ -764,6 +792,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     ${zeroSourceNotice(query, result, model, dataset)}
     ${saturationNotice(result)}
     ${emptySlotNotice(query, result)}
+    ${absorptionQuarantineNotice(result)}
     <div class="active-build-bar" hidden>
       <span class="active-build-msg"></span>
       <button class="return-optimum" type="button">Return to optimum</button>
@@ -1071,5 +1100,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, emptySlotNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, emptySlotNotice, absorptionQuarantineNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }

@@ -394,6 +394,92 @@ test("dominates: an affix item does NOT dominate a Viktranium host it can't matc
   assert.strictEqual(kept.length, 2, "the Viktranium host survives per-slot dominance");
 });
 
+// ---------------------------------------------------------------------------
+// U2 — a Viktranium option became ATOMIC (one record carrying a whole affix list
+// instead of one record per affix). That is a new value-carrying shape in a source
+// family, which is the exact trigger for the new-source-family checklist in
+// docs/solutions/design-patterns/milp-encoding-for-gear-optimization.md — a failure
+// class that has recurred THREE times here (set-piece thresholds, Dino slots,
+// Nearly-Complete) and is invisible to any test that starts from an already-built
+// model. The three tests below run the checklist rather than assuming the answer.
+// ---------------------------------------------------------------------------
+
+// Fixtures shared by the three: a strictly-better plain rival, and a host whose only
+// edge is a Lamordia slot that can craft a 7-affix option.
+function vikMultiOption(slot_type, category, stats, tier) {
+  return {
+    slot_type, category, tier: tier || "legendary", name: `${slot_type} universal option`,
+    affixes: stats.map((s) => ({ stat: s, bonus_type: "Profane", value: 2, unit: "flat" })),
+  };
+}
+const VIK_SCHOOLS = ["Abjuration Focus", "Conjuration Focus", "Enchantment Focus",
+  "Evocation Focus", "Illusion Focus", "Necromancy Focus", "Transmutation Focus"];
+
+test("dominates: an affix rival does NOT dominate a Viktranium host carrying a MULTI-AFFIX option", () => {
+  // Checklist step 3. The host's craftable value is a seven-school option worth far
+  // more to this query than the rival's whole affix block — and it lives entirely
+  // outside variantBuckets. If dominance ever stopped reading lamordia_slots, the
+  // rival would prune the host here and the atomic option would have no host to sit
+  // on: the solve would report the rival's numbers as "provably optimal".
+  const targets = new Set(["Necromancy Focus", "Enchantment Focus"]);
+  const real = v("Rival", "Necklace", [
+    ["Necromancy Focus", "Profane", 12], ["Enchantment Focus", "Profane", 12],
+  ], { ml: 34 });
+  const host = v("Host", "Necklace", [
+    ["Necromancy Focus", "Profane", 1], ["Enchantment Focus", "Profane", 1],
+  ], { ml: 34 });
+  host.lamordia_slots = [{ type: "Woeful", category: "Accessory" }];
+
+  assert.strictEqual(M.dominates(real, host, targets, 36), false,
+    "a rival with no Lamordia slot cannot dominate a host that can craft the option");
+  assert.strictEqual(M.dominanceFilter([real, host], targets, 36, 1).length, 2,
+    "the multi-affix host survives per-slot dominance");
+
+  // Step 4: confirm END TO END, through buildModel — the prune happens there, and a
+  // pruning defect is invisible upstream of it.
+  const pool = [vikMultiOption("Woeful", "Accessory", VIK_SCHOOLS)];
+  const model = M.buildModel([real, host], { mlCap: 36, targets: [...targets] },
+    [], [], pool);
+  const neck = model.worn.find((w) => w.slot === "Necklace");
+  assert.ok(neck, "the Necklace slot survives into the model");
+  assert.deepStrictEqual(neck.variants.map((x) => x.variant_id).sort(), ["Host", "Rival"],
+    "buildModel keeps the host that owns the multi-affix craft");
+});
+
+test("dominance is BLIND to Viktranium OPTION stats — the option pool cannot change a verdict", () => {
+  // Prior analysis says the Viktranium dominance key is a `type||category||tier`
+  // slot multiset that never reads what an option grants, so making an option atomic
+  // leaves the comparator alone. VERIFY it rather than trust it.
+  //
+  // Structural evidence: `dominates(A, B, targetSet, mlCap)` is never handed the
+  // option pool at all, and buildModel calls dominanceFilter with only
+  // (candidates, targetSet, mlCap, cardinality, pinnedIds, includeArtifact). So the
+  // verdict is a pure function of the two variants. Pinned behaviourally by solving
+  // the same pair against three different pools — none, single-affix (the legacy
+  // flat shape), and the atomic multi-affix option — and requiring one kept set.
+  const targets = new Set(["Necromancy Focus", "Enchantment Focus"]);
+  const real = v("Rival", "Necklace", [["Necromancy Focus", "Profane", 12]], { ml: 34 });
+  const host = v("Host", "Necklace", [["Necromancy Focus", "Profane", 1]], { ml: 34 });
+  host.lamordia_slots = [{ type: "Woeful", category: "Accessory" }];
+
+  const pools = {
+    none: [],
+    flat: [{ slot_type: "Woeful", category: "Accessory", tier: "legendary",
+             stat: "Necromancy Focus", bonus_type: "Profane", value: 2, unit: "flat" }],
+    atomic: [vikMultiOption("Woeful", "Accessory", VIK_SCHOOLS)],
+  };
+  const keptFor = (pool) => M.buildModel([real, host], { mlCap: 36, targets: [...targets] },
+    [], [], pool).worn.find((w) => w.slot === "Necklace").variants.map((x) => x.variant_id).sort();
+  const base = keptFor(pools.none);
+  assert.deepStrictEqual(base, ["Host", "Rival"], "both kept with no pool at all");
+  assert.deepStrictEqual(keptFor(pools.flat), base, "legacy flat option pool changes nothing");
+  assert.deepStrictEqual(keptFor(pools.atomic), base, "atomic multi-affix pool changes nothing");
+
+  // And the comparator's own verdict is identical either way: it takes no pool.
+  assert.strictEqual(M.dominates(real, host, targets, 36), false);
+  assert.strictEqual(M.dominates(host, real, targets, 36), false);
+});
+
 test("dominates: an affix item does NOT dominate a seal host it can't match", () => {
   // Regression: a seal host's unseal value lives in seal_slots, outside
   // variantBuckets, so an intrinsically-better rival lacking the seal must NOT
@@ -470,12 +556,54 @@ test("dominates: a Viktranium host at a DIFFERENT tier is not matched", () => {
     "heroic slot cannot match a legendary slot (tier is part of the key)");
 });
 
+// A Viktranium option is an ATOMIC native option carrying an `affixes` list
+// (mirroring the Dino insert UNIT), not one record per affix.
+function vikOpt(slot_type, category, affixes, tier) {
+  return {
+    slot_type, category, tier: tier || "legendary", name: `${slot_type} option`,
+    affixes: affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, value, unit: "flat" })),
+  };
+}
+
 test("buildModel exposes a target-filtered Viktranium pool", () => {
   const model = M.buildModel([], { mlCap: 36, targets: ["Constitution"] }, [], [], [
-    { slot_type: "Melancholic", category: "Accessory", stat: "Constitution", bonus_type: "Enhancement", value: 15, tier: "legendary" },
-    { slot_type: "Dolorous", category: "Weapon", stat: "Attack", bonus_type: "Competence", value: 23, tier: "legendary" }, // not a target
+    vikOpt("Melancholic", "Accessory", [["Constitution", "Enhancement", 15]]),
+    vikOpt("Dolorous", "Weapon", [["Attack", "Competence", 23]]), // not a target
   ]);
   assert.strictEqual(model.viktranium.length, 1, "only target-relevant options kept");
+  assert.strictEqual(model.viktranium[0].affixes[0].stat, "Constitution");
+});
+
+test("Viktranium prefilter keeps an option whose match is on a NON-FIRST affix", () => {
+  // The universal spell-DC options carry seven school affixes in ONE record; a
+  // player ranking only Necromancy Focus matches the sixth affix, not the first.
+  // A prefilter reading a singular `o.stat` drops the whole option (R1/R2).
+  const universal = vikOpt("Dolorous", "Armor", [
+    ["Abjuration Focus", "Profane", 1], ["Conjuration Focus", "Profane", 1],
+    ["Enchantment Focus", "Profane", 1], ["Evocation Focus", "Profane", 1],
+    ["Illusion Focus", "Profane", 1], ["Necromancy Focus", "Profane", 1],
+    ["Transmutation Focus", "Profane", 1],
+  ]);
+  const model = M.buildModel([], { mlCap: 36, targets: ["Necromancy Focus"] }, [], [], [universal]);
+  assert.strictEqual(model.viktranium.length, 1, "an option matching on its 6th affix is kept");
+  assert.strictEqual(model.viktranium[0].affixes.length, 7, "the whole option rides through, not one affix");
+});
+
+test("Viktranium prefilter drops an option none of whose affixes are ranked", () => {
+  const model = M.buildModel([], { mlCap: 36, targets: ["Constitution"] }, [], [], [
+    vikOpt("Dolorous", "Armor", [["Assassinate", "Profane", 1], ["Combat Mastery", "Profane", 1]]),
+  ]);
+  assert.strictEqual(model.viktranium.length, 0, "no affix advances a ranked target");
+});
+
+test("Viktranium prefilter still admits a FLAT legacy record (back-compat)", () => {
+  // A stale cached dataset can still deliver the pre-atomicity one-record-per-affix
+  // shape; the same fallback the Dino pool carries must keep it readable.
+  const model = M.buildModel([], { mlCap: 36, targets: ["Constitution"] }, [], [], [
+    { slot_type: "Melancholic", category: "Accessory", stat: "Constitution", bonus_type: "Enhancement", value: 15, tier: "legendary" },
+    { slot_type: "Dolorous", category: "Weapon", stat: "Attack", bonus_type: "Competence", value: 23, tier: "legendary" },
+  ]);
+  assert.strictEqual(model.viktranium.length, 1, "flat legacy records still filter on their singular stat");
   assert.strictEqual(model.viktranium[0].stat, "Constitution");
 });
 

@@ -925,6 +925,12 @@ function disclosureRec(opts) {
       ],
       emptySlots: (opts && opts.empty) === false ? { count: 0, slots: [] }
         : { count: 2, slots: ["Ring", "Trinket"] },
+      // U6/#249 — the third disclosure on the same channel.
+      absorptionQuarantine: (opts && opts.quarantine) === false ? [] : [
+        { item: "Cyran Guard (level 26)", stat: "Elemental Absorption", reason: "absent",
+          components: ["Acid Absorption", "Cold Absorption", "Fire Absorption",
+                       "Electric Absorption", "Sonic Absorption"] },
+      ],
     },
   };
 }
@@ -965,10 +971,137 @@ test("U3/#239: the portable envelope carries both, so a re-import discloses iden
 });
 
 test("U3/#239: a build with neither fact exports cleanly", () => {
-  const clean = disclosureRec({ saturation: false, empty: false });
+  const clean = disclosureRec({ saturation: false, empty: false, quarantine: false });
   const out = toMarkdown(clean);
   assert.ok(!/at its ceiling/.test(out) && !/slots are empty/.test(out), "neither fact appears");
   assert.ok(!/>\s*\n/.test(out.replace(/\n{3,}/g, "\n\n")), "and no empty blockquote is left behind");
+});
+
+// ---- U6/#249: the absorption quarantine reaches every share surface ---------
+
+test("U6/#249: every share format carries the absorption-quarantine disclosure", () => {
+  const rec = disclosureRec();
+  for (const [fmt, fn] of [["markdown", toMarkdown], ["csv", toCsv],
+                           ["print", toPrintHtml], ["bbcode", toBBCode]]) {
+    const out = fn(rec);
+    assert.ok(/Elemental Absorption/.test(out), `${fmt} names the excluded enchantment`);
+    // Escaping-agnostic: markdown escapes the parentheses an item name carries
+    // ("Cyran Guard \(level 26\)"), the same way it already does in the loadout
+    // table. That is the format's own quoting, not a lost fact.
+    assert.ok(/Cyran Guard/.test(out) && /level 26/.test(out), `${fmt} names the item`);
+    assert.ok(!/would have/i.test(out), `${fmt} asserts nothing about the score`);
+  }
+});
+
+test("U6/#249: the disclosure is independent of the other two", () => {
+  const only = toMarkdown(disclosureRec({ saturation: false, empty: false }));
+  assert.ok(/Elemental Absorption/.test(only), "renders alone");
+  assert.ok(!/at its ceiling/.test(only) && !/slots are empty/.test(only),
+    "and drags neither of the others in");
+
+  const without = toMarkdown(disclosureRec({ quarantine: false }));
+  assert.ok(!/Elemental Absorption/.test(without), "silent when nothing was quarantined");
+  assert.ok(/at its ceiling/.test(without), "while the others still render");
+});
+
+test("U6/#249: the portable envelope carries it, so a re-import discloses identically", () => {
+  const blob = JSON.stringify(toPortableJSON(disclosureRec(), "2026-08-11T00:00:00Z"));
+  assert.ok(/Elemental Absorption/.test(blob), "the quarantine rides in the envelope");
+});
+
+// ---- U8 (R8, R10) — every share export renders the collapsed line ----------
+//
+// R10: the collapse is driven from the single content source the exports read
+// (`Proj.project`), so no export can show the expanded shape while the UI shows
+// the collapsed one. These pin each output individually anyway — carrying the
+// shape through the model is necessary, not sufficient, and each renderer still
+// has to print it.
+const SCHOOLS_U8 = ["Abjuration", "Conjuration", "Enchantment", "Evocation", "Illusion", "Necromancy", "Transmutation"];
+function expandedU8(label, type, value) {
+  return SCHOOLS_U8.map((s) => ({ name: `${s} Focus`, type, value, via: label }));
+}
+
+// A build whose Trinket carries a typed universal spell-focus enchantment, and
+// whose Cloak carries a Viktranium craft of the universal option (the reported
+// symptom's own shape).
+function expansionRec() {
+  return {
+    name: "Caster",
+    inputs: { ml: 34, race: "Elf", pool: "all", priorities: ["Necromancy Focus"] },
+    snapshot: {
+      status: "optimal",
+      chosen: [
+        { slot: "Trinket", variant: { variant_id: "A Memento of Mori", ml: 32,
+          affixes: expandedU8("Sacred Spell Focus Mastery", "Sacred", 3) } },
+        { slot: "Cloak", variant: { variant_id: "Cloak of Sorrow", ml: 34, affixes: [] } },
+      ],
+      effective: { "Necromancy Focus": 5 },
+      breakdown: { "Necromancy Focus": [
+        { bonus_type: "Sacred", value: 3, source: "A Memento of Mori", sourceKind: "worn",
+          slot: "Trinket", hostIds: ["A Memento of Mori"], via: "Sacred Spell Focus Mastery" },
+      ] },
+      augmentsPlaced: [], setsActive: [],
+      vikPlaced: [{ item: "Cloak of Sorrow", slot_type: "Woeful", name: "Woeful Invigorator",
+        affixes: SCHOOLS_U8.map((s) => ({ stat: `${s} Focus`, bonus_type: "Profane", value: 2,
+          unit: "flat", via: "Profane Spell Focus Mastery" })),
+        stat: "Necromancy Focus", bonus_type: "Profane", value: 2, unit: "flat" }],
+    },
+    stampedBuildId: "u8",
+  };
+}
+
+const COLLAPSED = "Sacred Spell Focus Mastery +3";
+const VIK_COLLAPSED = "Slot Woeful Viktranium augment: Profane Spell Focus Mastery +2";
+
+test("U8/R8/AE6: the Markdown export renders the collapsed worn line, not seven school lines", () => {
+  const md = toMarkdown(expansionRec());
+  assert.ok(md.includes(COLLAPSED), "names the enchantment engraved on the item");
+  assert.ok(!/Abjuration Focus/.test(md), "no expanded school leaks into the share text");
+  assert.ok(md.includes(VIK_COLLAPSED), "the crafted choice-slot option reads as the enchantment too");
+});
+
+test("U8/R8: the BBCode export renders the collapsed line", () => {
+  const bb = toBBCode(expansionRec());
+  assert.ok(bb.includes(COLLAPSED));
+  assert.ok(!/Abjuration Focus/.test(bb));
+  assert.ok(bb.includes(VIK_COLLAPSED));
+});
+
+test("U8/R8: the CSV export renders the collapsed line", () => {
+  const csv = toCsv(expansionRec());
+  assert.ok(csv.includes(COLLAPSED));
+  assert.ok(!/Abjuration Focus/.test(csv));
+  assert.ok(csv.includes(VIK_COLLAPSED));
+});
+
+test("U8/R8: the print HTML export renders the collapsed line", () => {
+  const html = toPrintHtml(expansionRec());
+  assert.ok(html.includes(COLLAPSED));
+  assert.ok(!/Abjuration Focus/.test(html));
+  assert.ok(html.includes(VIK_COLLAPSED));
+});
+
+test("U8/R10: the portable JSON's resolved block carries the collapsed affix, not the expansion", () => {
+  const portable = toPortableJSON(expansionRec(), "2026-08-11T00:00:00Z");
+  const trinket = portable.resolved.loadout.find((i) => i.item === "A Memento of Mori");
+  assert.strictEqual(trinket.affixes.length, 1, "one resolved affix entry, not seven");
+  const blob = JSON.stringify(portable.resolved);
+  assert.ok(/Sacred Spell Focus Mastery/.test(blob), "the enchantment name rides in the envelope");
+  assert.ok(/Profane Spell Focus Mastery \+2/.test(blob), "so does the collapsed craft label");
+});
+
+test("U8/R8: the .gearset carries the collapse through its CRAFTING line", () => {
+  // The .gearset has no worn-affix channel at all — it emits `label:item{augments}`
+  // plus crafting lines — so its behavior is asserted through the crafting line.
+  const gs = toGearset(expansionRec());
+  assert.ok(gs.includes(VIK_COLLAPSED), `crafting line names the enchantment; got:\n${gs}`);
+  assert.ok(!/Necromancy Focus \+2/.test(gs), "not the single ranked school the option happened to match");
+});
+
+test("U8/R8: an export of a build with no expanded affix is unchanged", () => {
+  const md = toMarkdown(rec);
+  assert.ok(/Constitution \+7 Insightful/.test(md) && /PRR \+15/.test(md) && /Dodge \+5/.test(md),
+    "native affixes render exactly as before");
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);

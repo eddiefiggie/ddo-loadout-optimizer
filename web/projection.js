@@ -16,6 +16,12 @@
 
   // ---- pure primitives (moved verbatim from results.js so there is one definition) ----
 
+  // The key each expansion family stamps on every affix it emits, naming the
+  // enchantment the affix came from. Spelled once here and imported from
+  // `src/spell_focus.py`'s `PROVENANCE_KEY` on the build side — a respelling on
+  // either side would silently stop grouping and quietly restore the expanded shape.
+  const PROVENANCE_KEY = "via";
+
   // Shared affix formatter. Reads NAME/TYPE native-first (`{name,type}`) with the
   // legacy `{stat,bonus_type}` fallback, because it formats native item affixes AND
   // the not-yet-native crafting-pool / set-bonus / Dino affixes (and any pre-overhaul
@@ -23,10 +29,72 @@
   function affixLabel(a) {
     if (!a) return "";
     const name = a.name != null ? a.name : a.stat;
+    // A COLLAPSED expansion whose members do not share one magnitude (see
+    // `collapseExpansions`). `parts` holds the member labels this same function
+    // already produced, so the enchantment is named once and its members are
+    // listed rather than reduced to a number the data does not have.
+    if (Array.isArray(a.parts) && a.parts.length) return `${name}: ${a.parts.join(", ")}`;
     const bt = a.type != null ? a.type : a.bonus_type;
     if (bt === "boolean") return `✓ ${name}`;
     const type = bt && bt !== "Enhancement" ? ` ${bt}` : "";
     return `${name} +${a.value}${a.unit === "pct" ? "%" : ""}${type}`;
+  }
+
+  /** U8 (R8) — collapse each EXPANSION back to the enchantment it came from.
+   *
+   *  One enchantment expands into several concrete affixes so the solver can match
+   *  a ranked stat: a universal spell focus becomes seven schools, the ability
+   *  umbrella becomes six abilities. That shape is a solver convenience, and it
+   *  leaked — a Woeful Viktranium craft reported "+2 Enchantment" on one item and
+   *  "+2 Necromancy" on the off-hand, which is ONE craft described by whichever
+   *  school happened to be ranked. On an item-centric surface the player must read
+   *  the name engraved on the item.
+   *
+   *  Members are grouped by `PROVENANCE_KEY`; an affix without one is a native
+   *  effect already engraved under its own name and passes through BY IDENTITY.
+   *  Each group collapses in place, at its first member's position, so unrelated
+   *  affixes keep their order.
+   *
+   *  Two shapes come out, and the difference is deliberate. Where the members
+   *  share one magnitude (spell focus, the ability umbrella) the entry carries
+   *  that value. Where they do NOT — `Parrying` grants Armor Class at one
+   *  magnitude and three saves at another; `Speed` and the boolean composites are
+   *  the same — the entry lists its members via `parts` instead. Reducing those to
+   *  a single number would publish a value the data never stated, which is the one
+   *  thing this repo refuses to do.
+   *
+   *  NOT for Ranked Priorities (R11). That surface answers "where did this point
+   *  come from" and must keep crediting the ranked stat individually; it names the
+   *  enchantment through the attribution's own `via` field instead.
+   */
+  function collapseExpansions(affixes) {
+    const out = [];
+    const groupAt = new Map();
+    for (const a of affixes || []) {
+      const via = a && a[PROVENANCE_KEY];
+      if (!via) { out.push(a); continue; }
+      if (groupAt.has(via)) { out[groupAt.get(via)].members.push(a); continue; }
+      groupAt.set(via, out.length);
+      out.push({ via, members: [a] });
+    }
+    if (!groupAt.size) return out;
+    // A group's magnitude is (value, unit, bonus type). Type is part of it on
+    // purpose: two members at the same value but different bonus types are not
+    // interchangeable, and naming one number for both would overclaim.
+    const magnitude = (a) => `${a.value}||${a.unit || "flat"}||${a.type != null ? a.type : a.bonus_type}`;
+    return out.map((e) => {
+      if (!e || !e.members) return e;
+      const ms = e.members;
+      const uniform = ms.every((m) => magnitude(m) === magnitude(ms[0]));
+      // `stat` as well as `name` so the legacy-shaped readers (craftValue and any
+      // pre-overhaul persisted surface) resolve the enchantment name too. No
+      // bonus type is emitted: it is already spoken by names like "Sacred Spell
+      // Focus Mastery", and appending it would render the type twice.
+      const base = { name: e.via, stat: e.via, [PROVENANCE_KEY]: e.via, collapsed: ms.length };
+      return uniform
+        ? { ...base, value: ms[0].value, unit: ms[0].unit || "flat" }
+        : { ...base, parts: ms.map(affixLabel) };
+    });
   }
 
   // Item-level ML read native-first (`ml`), legacy `minimum_level` fallback.
@@ -449,10 +517,22 @@
       if (!setAugByHost.has(s.host)) setAugByHost.set(s.host, []);
       setAugByHost.get(s.host).push(s);
     }
+    // Viktranium crafts render in their in-game slot order (R16: Melancholic,
+    // Dolorous, Miserable, Woeful) wherever more than one lands on the same host,
+    // not the alphabetical order that falls out of solver-emission grouping. The
+    // order is already declared on the registry entry — sort each host's list by it
+    // rather than duplicating the sequence here.
+    const vikByItem = byItemMap(build.vikPlaced);
+    const vikOrder = Craft && Craft.get("viktranium") && Craft.get("viktranium").slot_types;
+    if (vikOrder && vikOrder.length) {
+      const rank = new Map(vikOrder.map((s, i) => [s, i]));
+      const rankOf = (slot_type) => (rank.has(slot_type) ? rank.get(slot_type) : vikOrder.length);
+      for (const list of vikByItem.values()) list.sort((a, b) => rankOf(a.slot_type) - rankOf(b.slot_type));
+    }
     return {
       augAssign, dinoAssign,
       ncByItem: byItemMap(build.ncPlaced), rollByItem: byItemMap(build.rollPlaced),
-      vikByItem: byItemMap(build.vikPlaced), sealByItem: byItemMap(build.sealPlaced),
+      vikByItem, sealByItem: byItemMap(build.sealPlaced),
       tfByItem: byItemMap(build.tfPlaced), gsByItem: byItemMap(build.gsPlaced), jokerByHost,
       membershipByHost, setAugByHost,
     };
@@ -464,6 +544,17 @@
     return affixLabel({ stat: o.stat, bonus_type: o.bonus_type, value: o.value, unit: o.unit || "flat" });
   }
 
+  // U8 (R9) — the affixes a crafted option grants, collapsed so an option whose
+  // affixes come from one expansion reads as the enchantment rather than as
+  // whichever member the solve happened to rank. A crafted choice-slot option is a
+  // DIFFERENT render path from a worn affix, and it is the one the bug was reported
+  // from. `o.affixes || [o]` resolves the atomic multi-affix shape with the flat
+  // single-affix record as the fallback; for a flat record with no provenance this
+  // is `craftValue(o)` exactly, so every unexpanded craft label is byte-identical.
+  function craftAffixes(o) {
+    return collapseExpansions((o.affixes && o.affixes.length) ? o.affixes : [o]).map(affixLabel).join(", ");
+  }
+
   // The single, unescaped label for one crafting placement (KTD6). Membership routes
   // through the CraftingSystems registry (Vecna "Awaken" vs Dino "Slot Set Bonus");
   // every other family keeps its literal template, moved verbatim from
@@ -472,14 +563,10 @@
   // escaper — this function never escapes.
   function craftLabel(o, family) {
     switch (family) {
-      case "dino": {
-        const affixes = (o.affixes && o.affixes.length) ? o.affixes : [o];
-        const label = affixes.map(craftValue).join(", ");
-        return `${o.dino_type}: ${o.name ? o.name + ", " : ""}${label}`;
-      }
+      case "dino": return `${o.dino_type}: ${o.name ? o.name + ", " : ""}${craftAffixes(o)}`;
       case "nc": return `Nearly Completed: ${craftValue(o)}`;
       case "roll": return `Choice: ${craftValue(o)}`;
-      case "vik": return `Slot ${o.slot_type} Viktranium augment: ${craftValue(o)}`;
+      case "vik": return `Slot ${o.slot_type} Viktranium augment: ${craftAffixes(o)}`;
       case "seal": return `Sealed in ${o.seal_type}: ${craftValue(o)}`;
       case "tf": return `Thunder-Forged T${o.tier}: ${craftValue(o)}`;
       case "gs": return `Green Steel: ${craftValue(o)}`;
@@ -648,7 +735,11 @@
         slot: c.slot,
         item: v.variant_id,
         ml: itemMl(v),
-        affixes: v.affixes || [],
+        // U8 (R10) — collapsed HERE, in the single content source every export
+        // reads, so no export can print the expanded shape while the app prints
+        // the collapsed one. `results.js` calls the same primitive on its own
+        // live-result render paths (it has no `rec` to project).
+        affixes: collapseExpansions(v.affixes || []),
         augments: (augAssign.byIndex.get(idx) || []).map(augView),
         crafting: craftingForItem(v, idx, maps),
         // The item's own named set(s) suppressed because it hosts a placed Set Augment
@@ -692,7 +783,11 @@
         // optimal loadout with no way to learn that a stat was already at its
         // ceiling, or that slots were tie-broken rather than chosen.
         saturationNotice: saturationNoticeLines(snap),
-        emptySlotNotice: emptySlotNoticeLines(snap) },
+        emptySlotNotice: emptySlotNoticeLines(snap),
+        // U6/#249 — same channel, same reason: a recipient who cannot re-solve
+        // would otherwise get a build asserting an optimal loadout with no way
+        // to learn that an item's absorption enchantment was withheld from it.
+        absorptionQuarantineNotice: absorptionQuarantineNoticeLines(snap) },
       loadout, sets, attribution,
     };
   }
@@ -757,6 +852,43 @@
       + `nothing available for ${isOne ? "it" : "them"} improves these priorities.`];
   }
 
+  /** U6/#249 — the compound-absorption quarantine as plain sentences.
+   *
+   *  ONE source for the app notice and every export, the contract
+   *  `saturationNoticeLines` holds. Reads `absorptionQuarantine` (plain JSON on
+   *  the result), never the pool, so a restored character discloses identically
+   *  without re-solving.
+   *
+   *  Wording rule: `docs/solutions/conventions/never-infer-a-claim-about-your-own-results.md`.
+   *  Each sentence states three things, all verifiable from the data that
+   *  produced it — which affix was removed, from which item, and which stats it
+   *  was therefore not credited to. It says nothing about what the build WOULD
+   *  have scored with the carrier included: that is a solve nobody ran, and for
+   *  an unconfirmed carrier the element set is precisely what is unknown, so
+   *  even the direction of the difference is unknowable.
+   */
+  function absorptionQuarantineNoticeLines(result) {
+    const report = (result && result.absorptionQuarantine) || [];
+    return report.map((e) => {
+      // Branch on BOTH reasons by name, never on one with the other as an else.
+      // A third reason shipping from `src/absorption_split.py` would otherwise be
+      // silently rendered as "no wiki record", which is a different — and
+      // possibly false — claim about why the affix was dropped. An unrecognized
+      // reason says only what is certain.
+      const why = e.reason === "unconfirmed"
+        ? `the wiki record of which elements it covers is not confirmed`
+        : e.reason === "absent"
+          ? `there is no wiki record of which elements it covers`
+          : `which elements it covers is not established`;
+      const to = (e.components || []);
+      const named = to.length > 1
+        ? `${to.slice(0, -1).join(", ")} or ${to[to.length - 1]}`
+        : (to[0] || "any element");
+      return `${e.stat} on ${e.item} was excluded from this build because ${why}, `
+        + `so it was not credited to ${named}.`;
+    });
+  }
+
   function creditNoticeLines(result) {
     const report = (result && result.creditReport) || [];
     if (!report.length) return [];
@@ -805,9 +937,10 @@
 
   const api = {
     // resolved-view assembler
-    project, creditNoticeLines, saturationNoticeLines, emptySlotNoticeLines, declaredCreditsLine,
+    project, creditNoticeLines, saturationNoticeLines, emptySlotNoticeLines,
+    absorptionQuarantineNoticeLines, declaredCreditsLine,
     // pure primitives (results.js binds these; single definition, no drift)
-    affixLabel, itemMl, contributingAffixes, assignAugments, dinoInsertKey, assignDinoInserts,
+    affixLabel, collapseExpansions, itemMl, contributingAffixes, assignAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, satisfiedSets, suppressedHostIds, slotSetNames,
     setContributors, contributorsFor, setMemberLabel, activeSetDetail, satisfiedSetDetail,
     // craft + cue helpers

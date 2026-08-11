@@ -41,9 +41,11 @@ from src import material as material_mod
 from src import speed_split as speed_split_mod
 from src import parrying_split as parrying_split_mod
 from src import heightened_awareness as heightened_awareness_mod
+from src import absorption_split as absorption_split_mod
 from src import enchantment_split as enchantment_split_mod
 from src import umbrella as umbrella_mod
 from src import spell_focus as spell_focus_mod
+from src import provenance as provenance_mod
 from src import value_corrections as value_corrections_mod
 from src import name_corrections as name_corrections_mod
 from src import untyped_rankable as untyped_rankable_mod
@@ -52,6 +54,7 @@ from src import variants as variants_mod
 from src import vocabulary as vocabulary_mod
 from src import crafting_catalog as crafting_catalog_mod
 from src import dino_native as dino_native_mod
+from src import container_registry as container_registry_mod
 import re as _re
 
 import collections
@@ -227,6 +230,10 @@ PARRYING_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "parrying
 HEIGHTENED_AWARENESS_SHARD_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "heightened_awareness.json")
 SPEED_AUGMENT_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_augment.json")
+# #249 — per-item Sonic flag for `Elemental Absorption`, which names four elements
+# on some carriers and five on others behind an identical visible cell.
+ABSORPTION_SHARD_PATH = os.path.join(
+    HERE, "data", "seed", "compendium", "elemental_absorption.json")
 MATERIAL_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "item_material.json")
 MATERIAL_CLASS_PATH = os.path.join(HERE, "data", "seed", "compendium", "material_classification.json")
 # The slots the material gate covers (#162). Docents are the Forged body slot and
@@ -508,6 +515,27 @@ def build() -> dict:
                          "\n  ".join(_ha_guard["problems"]))
     _ha_coverage = heightened_awareness_mod.apply(planner_records, _ha_shard)
 
+    # U5/U6 (#249) — the compound absorption names. Three stat names cover several
+    # elements at once, so a player ranking `Fire Absorption` scored nothing from
+    # the seventeen affix records carrying one. The two paired names expand
+    # unconditionally at the compound's FULL magnitude (the template emits both
+    # `+N%` category memberships from one invocation); `Elemental Absorption`
+    # expands per item, reading the Sonic flag from the shard, because the visible
+    # cell reads the same for a four-element and a five-element carrier.
+    #
+    # Runs at the PLANNER-RECORD seam, before variants are built, so the emitted
+    # affixes and the quarantine marker both pass through `src/variants.py`'s
+    # whitelist rebuild — which carries them explicitly.
+    _absorption_shard = harvest_mod.load_shard(ABSORPTION_SHARD_PATH,
+                                               "elemental_absorption")
+    _absorption_audit = absorption_split_mod.audit_shard(_absorption_shard)
+    _absorption_snapshots = absorption_split_mod.audit_snapshots(_absorption_shard)
+    _absorption_guard = absorption_split_mod.check_against_snapshots(_absorption_shard)
+    if _absorption_guard["problems"]:
+        raise SystemExit("elemental absorption snapshot guard failed:\n  " +
+                         "\n  ".join(_absorption_guard["problems"]))
+    _absorption_coverage = absorption_split_mod.apply(planner_records, _absorption_shard)
+
     # U5 (#162) — stamp wiki-sourced material onto shields + body armor. The
     # gear-planner snapshot has no such field (its full item-field union is
     # affixes/ml/name/quests/slot/type/url/crafting/sets/artifact), so this is the
@@ -700,7 +728,12 @@ def build() -> dict:
          **spell_focus_mod.expanded_away(),
          **speed_split_mod.EXPANDED_AWAY,
          **parrying_split_mod.EXPANDED_AWAY,
-         **heightened_awareness_mod.EXPANDED_AWAY},
+         **heightened_awareness_mod.EXPANDED_AWAY,
+         # #249 — no set-bonus tier names a compound absorption stat today, so
+         # this registration is a standing gate rather than a live expansion: a
+         # set bonus carries no per-item shard key to read a Sonic flag from, so
+         # a future one must fail the build loudly rather than be guessed.
+         **absorption_split_mod.EXPANDED_AWAY},
         allow=_KNOWN_SET_BONUS_ORPHANS)
     if _set_orphans:
         raise SystemExit(
@@ -750,7 +783,15 @@ def build() -> dict:
     # keyed by (slot_type, item-category). Items carrying `lamordia_slots` draw
     # one option per slot from the matching pool (tier from host ML at solve time).
     vik = vik_mod.build_viktranium(crafting)
-    vik["records"] = spell_focus_mod.expand_affixes(vik["records"])   # #205, third channel
+    # #205, third channel. A Viktranium option is a multi-affix record like a dino
+    # insert, so the expansion goes one level IN — inside the option's own affix
+    # list, never across the record list. Expanding across records turned one
+    # universal spell-DC option into seven competing options for the same slot,
+    # so a player ranking two schools had to spend two Viktranium slots to get
+    # what one option grants in game.
+    for _opt in vik["records"]:
+        if _opt.get("affixes"):
+            _opt["affixes"] = spell_focus_mod.expand_affixes(_opt["affixes"])
 
     # Seal-slot crafting ("Sealed in X"): expose the single-pick choice-slot pool
     # keyed by seal_type. Items carrying `seal_slots` unseal one option from the
@@ -768,6 +809,30 @@ def build() -> dict:
     # inert (no host references them), so the solver behavior is unchanged.
     tf = tf_mod.build_thunder_forged()
     gs = gs_mod.build_green_steel()
+
+    # U3 (#205) — the fan-out gate. Every single-pick choice-slot container is
+    # declared in src/container_registry.py, and a container that turns ONE source
+    # option into more than one record fails the build. That is the reported defect:
+    # a choice slot takes exactly one record, so a split option delivers a fraction
+    # of what the craft grants in game — a Viktranium craft granting seven spell
+    # schools delivered one.
+    #
+    # The gate runs AFTER the dataset is assembled (see below, just before build_id),
+    # not here, so it discovers its own containers by walking the built structure
+    # instead of judging a hand-typed list of pools at this call site. That list was
+    # its own hole: `nearly_complete_per_item` shipped 43 hosts and 147 records
+    # without ever appearing in it, so nothing — including the pinned container
+    # count — could see it. What IS collected here is each builder's SOURCE option
+    # count, because only the builder knows how many options it read.
+    _container_source_options = {
+        "viktranium": vik["source_options"],
+        "dino_inserts": dino_cov["insert_source_options"],
+        "nearly_complete": nc["source_options"],
+        "nearly_complete_per_item": nc["per_item_source_options"],
+        "seal": sl["source_options"],
+        "green_steel": gs["source_options"],
+        "thunder_forged": tf["source_options"],
+    }
 
     # Compendium browse index (U6): derived from the NATIVE roster (the built
     # variants' own source_item + slot + wiki_url), not the legacy roster_*.json
@@ -882,6 +947,12 @@ def build() -> dict:
                 "references_validated": _crafting_vocab_checked,
             },
             "planner_coverage": planner_stats,
+            # U3 (#205) — the single-pick choice-slot fan-out gate. Filled in below,
+            # once the dataset is assembled and the gate has walked it. `compared`
+            # counts records whose shape was actually inspected; `checked` counts
+            # containers reached a verdict on, which alone would overstate coverage
+            # because a container declared unreachable contributes zero records.
+            "container_registry_coverage": None,
             # #154 / #162 — wiki-harvest coverage, disclosed so a result can say what
             # was and wasn't considered. `unclassified` on the material side is the
             # honest measure of how complete the druidic-oath restriction actually is:
@@ -915,6 +986,18 @@ def build() -> dict:
                 "tooltip_snapshots": _ha_snapshots,
                 "tooltip_guard_checked": _ha_guard["checked"],
                 "tooltip_guard_compared": _ha_guard["compared"]},
+            # The compound-absorption family (#249). `expanded` counts compound
+            # affixes turned into components; `components` counts the affixes
+            # emitted. `excluded` NAMES every quarantined carrier and why — the
+            # dataset-level half of R7's disclosure, whose per-result half rides
+            # on each variant's own quarantine marker. There is no `uncovered`
+            # counter by design: an uncovered carrier is a quarantined one.
+            "compound_absorption_coverage": {
+                **_absorption_coverage,
+                "shard_audit": _absorption_audit,
+                "tooltip_snapshots": _absorption_snapshots,
+                "tooltip_guard_checked": _absorption_guard["checked"],
+                "tooltip_guard_compared": _absorption_guard["compared"]},
             "material_coverage": {**_material_stamp, **_material_coverage},
             # The curated metal/non-metal map the druidic-oath gate reads. A
             # material absent from this map is UNKNOWN, and the gate fails open.
@@ -937,7 +1020,20 @@ def build() -> dict:
                                     **spell_focus_mod.expanded_away(),
                                     **speed_split_mod.EXPANDED_AWAY,
                                     **parrying_split_mod.EXPANDED_AWAY,
-                                    **heightened_awareness_mod.EXPANDED_AWAY},
+                                    **heightened_awareness_mod.EXPANDED_AWAY,
+                                    **absorption_split_mod.EXPANDED_AWAY},
+            # U10 (R13) — the ORIGINATING enchantment name every expansion stamps on
+            # the affixes it emits ("Sacred Spell Focus Mastery"), mapped to the stats
+            # it becomes. The item surfaces DISPLAY these names, so the picker must be
+            # able to rank them; without this the app prints a name its own picker
+            # refuses. Distinct from `expanded_away_names` above, which carries only the
+            # BARE keys a family declares — the displayed names are bonus-type prefixed.
+            #
+            # SCANNED from the built variants, never assembled from a family list: a
+            # scan includes the next expansion family the moment it stamps its first
+            # affix, whereas a list has a registration step somebody will forget. See
+            # src/provenance.py.
+            "provenance_labels": provenance_mod.label_expansions(variants),
             # U5 — the shared affix-name registry + variant->canonical alias table.
             # The web picker unions every affix source (gear, augments, set bonuses,
             # ALL crafting pools) and canonicalizes each through the alias table, so a
@@ -973,6 +1069,16 @@ def build() -> dict:
         "compendium": comp_records,
     }
 
+    # U3 (#205) — the fan-out gate, run over the ASSEMBLED dataset so it discovers
+    # its own containers. Every top-level key must be either a declared single-pick
+    # container or a declared non-container carrying the reason it is not one, so a
+    # pool added without an audit fails rather than shipping unjudged. Runs after
+    # every expansion pass, so a record-level provenance key is direct evidence an
+    # expander crossed an option boundary, and a container declaring a pass that
+    # left no stamp at all is evidence the pass was reverted to a no-op.
+    out["metadata"]["container_registry_coverage"] = container_registry_mod.check(
+        out, _container_source_options)
+
     # build_id hashes the full assembled dataset (everything except metadata) so
     # drift in sets, augments, or crafting inputs — not just base variants —
     # marks a saved snapshot stale.
@@ -998,10 +1104,13 @@ def _native_affix(a: dict) -> dict:
     out = {"name": a.get("stat"), "type": a.get("bonus_type"), "value": native_value}
     if "eligible" in a:
         out["eligible"] = a["eligible"]
-    # #205 — an expanded universal spell-DC affix carries the enchantment name the
-    # player actually sees on the item ("Sacred Spell Focus Mastery"). Carried at
-    # rest because the proof panel and every share export must display it; without
-    # this the field dies here and the receipts name a stat no item bears.
+    # R12 — an EXPANDED affix carries the enchantment name the player actually
+    # sees on the item ("Sacred Spell Focus Mastery", "Profane Well Rounded",
+    # "Parrying"). Carried at rest because the proof panel and every share export
+    # must display it; without this the field dies here and the receipts name a
+    # stat no item bears. This is the LATER of two carry points — the earlier one
+    # is `src/variants.py:_native_parsed`, which the shard splits reach first.
+    # The key check is generic on purpose: every expansion family stamps it.
     if spell_focus_mod.PROVENANCE_KEY in a:
         out[spell_focus_mod.PROVENANCE_KEY] = a[spell_focus_mod.PROVENANCE_KEY]
     return out

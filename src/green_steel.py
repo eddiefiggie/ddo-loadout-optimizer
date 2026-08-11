@@ -78,7 +78,15 @@ def build_green_steel(catalog=None):
     ``{records, quarantined, coverage}`` shape ``parse_green_steel`` does."""
     from src import crafting_catalog
     records = crafting_catalog.green_steel_records(catalog)
+    # The SOURCE option count, reported so the fan-out gate can judge option ->
+    # record cardinality. It does not match `len(records)`: this builder emits one
+    # record per AFFIX, so every multi-affix option is split into mutually
+    # exclusive siblings. See the `green_steel` entry in src/container_registry.py.
+    source_options = crafting_catalog.count_menu_options(
+        crafting_catalog.GREEN_STEEL_KEYS, catalog)
     coverage = {
+        "source_options": source_options,
+        "options_split": len(records) - source_options,
         "options_eligible": len(records),
         "options_quarantined": 0,
         "quarantined": [],
@@ -87,6 +95,10 @@ def build_green_steel(catalog=None):
         "source": "gearplanner_crafting.json: " + ", ".join(crafting_catalog.GREEN_STEEL_KEYS),
         "note": "single-pick choice-slot over the native Green Steel effect pool "
                 "(T1/T2/T3 Equipment). Sourced from the gear-planner crafting "
-                "catalog; host-marker surfacing lands with the native reader (U3).",
+                "catalog; host-marker surfacing lands with the native reader (U3). "
+                "KNOWN-UNSAFE: one record per AFFIX splits multi-affix options into "
+                "mutually exclusive siblings; inert only while no item carries "
+                "green_steel_slot (#194).",
     }
-    return {"records": records, "quarantined": [], "coverage": coverage}
+    return {"records": records, "quarantined": [], "coverage": coverage,
+            "source_options": source_options}

@@ -238,3 +238,45 @@ def test_no_universal_stat_survives_anywhere_in_the_built_dataset():
     assert not offenders, (
         f"{len(offenders)} affix(es) still name an expanded-away universal spell "
         f"focus, so no player can rank them: {offenders[:5]}")
+
+
+def test_viktranium_universal_option_expands_inside_one_record():
+    """R1/R2 — the expansion happens INSIDE a choice-slot option, never across it.
+
+    A Viktranium slot crafting a universal spell-DC option grants that option's
+    bonus type and value to all seven schools at once, so a player ranking two
+    schools spends ONE slot, not two. Expanding across records made the seven
+    schools seven competing options for the same slot — the solver could take
+    exactly one, and a two-school ranking needed two Viktranium slots to reach
+    what one option already grants in game.
+    """
+    import json
+    path = os.path.join(ROOT, "web", "data", "items.json")
+    if not os.path.exists(path):
+        return  # generated artifact; the build job asserts it
+    with open(path, "r", encoding="utf-8") as fh:
+        data = json.load(fh)
+
+    records = data.get("viktranium") or []
+    assert records, "expected Viktranium pool records in the built dataset"
+
+    universal = []
+    for rec in records:
+        affixes = rec.get("affixes")
+        assert isinstance(affixes, list), (
+            "a Viktranium pool record must carry its option's affix LIST — a "
+            f"choice-slot option is atomic; got keys {sorted(rec)}")
+        expanded = [a for a in affixes if a.get(VIA)]
+        if expanded:
+            universal.append((rec, expanded))
+
+    assert universal, "expected Viktranium options granting a universal spell DC"
+    for rec, expanded in universal:
+        assert [a["stat"] for a in expanded] == spell_focus.SCHOOLS, (
+            f"{rec.get('name')} must grant all seven schools from one option")
+        assert len({a["bonus_type"] for a in expanded}) == 1
+        assert len({a["value"] for a in expanded}) == 1
+    # The collapse, measured: 10 universal options, not the 70 flat records the
+    # across-records expansion produced.
+    assert len(universal) == 10, (
+        f"expected 10 universal Viktranium options, got {len(universal)}")

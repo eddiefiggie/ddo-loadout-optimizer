@@ -39,14 +39,21 @@ def _native_insert_records(catalog):
     option becomes ONE placeable unit carrying its affix list (multi-affix kept
     all-or-nothing — KTD4). The strict parser gate is REMOVED, not swapped (F1):
     native affixes flow through verbatim via ``legacy_affix``. Blank host BODIES
-    are NOT touched here — they stay generated from the seed (dino_parser)."""
+    are NOT touched here — they stay generated from the seed (dino_parser).
+
+    Returns ``(records, source_options)``: the fan-out gate judges this ATOMIC pool
+    by option -> record cardinality, and shape alone cannot prove one option stayed
+    one record (src/container_registry.py). Affix-less options are dropped, so
+    records <= source options."""
     records = []
+    source_options = 0
     for dino_type in _DINO_TYPES:
         for category in _DINO_CATEGORIES:
             key = f"{dino_type} ({category})"
             if key not in catalog:
                 continue  # not every (type, category) pool exists (e.g. Claw Armor)
             for opt in crafting_catalog.menu_options(key, catalog):
+                source_options += 1
                 affixes = [crafting_catalog.legacy_affix(a)
                            for a in crafting_catalog.iter_affixes(opt)]
                 if not affixes:
@@ -60,7 +67,7 @@ def _native_insert_records(catalog):
                 if opt.get("name"):
                     unit["name"] = opt["name"]
                 records.append(unit)
-    return records
+    return records, source_options
 
 # Dinosaur Bone accessory blanks map onto these worn slots (model.js WORN_SLOTS).
 _ACCESSORY_WORN = {"Belt", "Boots", "Bracers", "Gloves", "Necklace", "Ring",
@@ -169,11 +176,13 @@ def build_dino(seed, catalog=None):
     blanks = list(by_slot.values())
 
     # Insert option pool: NATIVE (gearplanner_crafting.json), not the seed's inserts.
-    insert_records = _native_insert_records(catalog)
+    insert_records, insert_source_options = _native_insert_records(catalog)
 
     coverage = dict(parsed["coverage"])
     # Override the seed-derived insert counts with the native pool's reality.
     coverage["inserts_eligible"] = len(insert_records)
+    # What the native pools OFFERED, for the fan-out gate's cardinality rule.
+    coverage["insert_source_options"] = insert_source_options
     coverage["inserts_quarantined"] = 0
     coverage["insert_source"] = "gearplanner_crafting.json: <Type> (<Category>) menus"
     coverage["by_type"] = {t: sum(1 for r in insert_records if r["dino_type"] == t)

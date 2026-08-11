@@ -6,10 +6,16 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from src import crafting_catalog  # noqa: E402
 from src import viktranium  # noqa: E402
 from src.variants import expand_item  # noqa: E402
 
 WIKI = "https://ddowiki.com/page/Viktranium_Experiment_crafting"
+
+
+def _menu(options, key="Melancholic (Accessory)"):
+    """A one-pool synthetic native catalog."""
+    return {key: {"*": options}}
 
 
 # --- native pool (gearplanner_crafting.json) ------------------------------
@@ -21,12 +27,75 @@ def test_native_pool_is_tier_expanded_and_two_dimensional():
     for r in recs:
         assert r["slot_type"] in viktranium.SLOT_TYPES
         assert r["category"] in viktranium.CATEGORIES
-        assert r["stat"] and r["bonus_type"]
         assert r["tier"] in ("heroic", "legendary")
+        assert r["affixes"], f"every option record carries its affix list: {r}"
+        for a in r["affixes"]:
+            assert a["stat"] and a["bonus_type"]
     cov = parsed["coverage"]
     assert any("/" in k for k in cov["by_pool"]), "pool keys must be type/category"
     assert len(cov["slot_types_sourced"]) >= 2
     assert len(cov["categories_sourced"]) >= 2
+
+
+def test_single_affix_option_becomes_one_record_with_a_one_entry_affix_list():
+    catalog = _menu([{"name": "Melancholic Charisma (legendary)", "ml": 34,
+                      "affixes": [{"name": "Charisma", "type": "Enhancement",
+                                   "value": "15"}]}])
+    recs = viktranium.build_viktranium(catalog)["records"]
+    assert len(recs) == 1
+    assert recs[0]["affixes"] == [{"stat": "Charisma", "bonus_type": "Enhancement",
+                                   "value": 15, "unit": "flat"}]
+
+
+def test_multi_affix_option_is_one_record_not_one_record_per_affix():
+    # A choice-slot option is ATOMIC: picking it grants everything it lists, so
+    # its affixes must live inside one record. Emitting one record per affix let
+    # the solver take half an option (and pay one slot for one affix).
+    catalog = _menu([{"name": "Melancholic Converter (legendary)", "ml": 34, "affixes": [
+        {"name": "Positive Healing Amplification", "type": "Competence", "value": "61"},
+        {"name": "Repair Amplification", "type": "Enhancement", "value": "61"},
+    ]}])
+    recs = viktranium.build_viktranium(catalog)["records"]
+    assert len(recs) == 1, "one native option must yield exactly one record"
+    assert [a["stat"] for a in recs[0]["affixes"]] == [
+        "Positive Healing Amplification", "Repair Amplification"]
+    assert [a["value"] for a in recs[0]["affixes"]] == [61, 61]
+
+
+def test_record_retains_slot_type_category_tier_and_name():
+    catalog = _menu([{"name": "Woeful Profane DCs (heroic)", "ml": 8,
+                      "affixes": [{"name": "Spell Focus Mastery", "type": "Profane",
+                                   "value": "1"}]}],
+                    key="Woeful (Weapon)")
+    rec = viktranium.build_viktranium(catalog)["records"][0]
+    assert rec["slot_type"] == "Woeful"
+    assert rec["category"] == "Weapon"
+    assert rec["tier"] == "heroic"
+    assert rec["name"] == "Woeful Profane DCs (heroic)"
+    assert "wiki_url" in rec
+
+
+def test_record_count_matches_native_option_count():
+    # The measurable collapse: 289 native options previously produced 320 flat
+    # records (23 options are genuinely multi-affix). One option, one record.
+    catalog = crafting_catalog.load_catalog()
+    options = multi = 0
+    for slot_type in sorted(viktranium.SLOT_TYPES):
+        for category in sorted(viktranium.CATEGORIES):
+            key = f"{slot_type} ({category})"
+            if key not in catalog:
+                continue
+            for opt in crafting_catalog.menu_options(key, catalog):
+                n = len(list(crafting_catalog.iter_affixes(opt)))
+                if n:
+                    options += 1
+                if n > 1:
+                    multi += 1
+    assert multi >= 20, ("the atomicity guarantee is only meaningful while the "
+                         f"pool holds multi-affix options; found {multi}")
+    recs = viktranium.build_viktranium(catalog)["records"]
+    assert len(recs) == options
+    assert sum(len(r["affixes"]) for r in recs) > options, "multi-affix options survive"
 
 
 def test_unknown_bonus_type_is_quarantined_not_inferred():

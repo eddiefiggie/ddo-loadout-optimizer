@@ -722,7 +722,6 @@ test("U5: boundNotice is empty when nothing bounded the solve", () => {
   assert.strictEqual(R.boundNotice({ mlFloor: 0, targetCaps: {} }, { perTarget: {}, floorReport: [] }), "");
 });
 
-console.log(`\n${passed} passed`);
 
 // --- U6/U7: empty-slot reason note + owned-vs-recommended marking ----------
 test("U6/AE5: an optimizer-left-empty slot shows the improvement reason note", () => {
@@ -1203,6 +1202,34 @@ test("U4/#239: the invitation still fires when the build supplies nothing extra"
   assert.ok(/Rank another stat/.test(html), "and so does the invitation, with no stat named");
 });
 
+test("U6/#249: the app renders the absorption-quarantine disclosure", () => {
+  // Carrying a fact through the content model is necessary but not sufficient —
+  // each renderer has to print it. That gap already shipped once, for set members.
+  const build = satBuild();
+  build.absorptionQuarantine = [{
+    item: "Cyran Guard (level 26)", stat: "Elemental Absorption", reason: "absent",
+    components: ["Acid Absorption", "Cold Absorption", "Fire Absorption",
+                 "Electric Absorption", "Sonic Absorption"],
+  }];
+  const html = R.absorptionQuarantineNotice(build);
+  assert.ok(/Elemental Absorption/.test(html), "names the excluded enchantment");
+  assert.ok(/Cyran Guard/.test(html), "names the item");
+  assert.ok(/scope-note/.test(html), "joins the artifactNotice/boundNotice family");
+  assert.strictEqual(R.absorptionQuarantineNotice(satBuild()), "",
+    "silent when nothing was quarantined");
+});
+
+test("U6/#249: the disclosure escapes item names rather than trusting them", () => {
+  const build = satBuild();
+  build.absorptionQuarantine = [{
+    item: '<img src=x onerror="alert(1)">', stat: "Elemental Absorption",
+    reason: "absent", components: ["Fire Absorption"],
+  }];
+  const html = R.absorptionQuarantineNotice(build);
+  assert.ok(!/<img/.test(html), "the item name is escaped");
+  assert.ok(/&lt;img/.test(html), "and rendered as text");
+});
+
 test("U4/#239: the two notices are independent", () => {
   const noEmpty = satBuild({ empty: false });
   assert.ok(R.saturationNotice(noEmpty) !== "", "saturation renders alone");
@@ -1217,3 +1244,90 @@ test("U4/#239: a ranked stat is never offered back as a suggestion", () => {
   assert.ok(!R.incidentalStats(q, satBuild()).includes("Physical Sheltering"),
     "suggesting a stat the player already ranked is noise");
 });
+
+// ---- U8 (R8) — the two item-centric render paths in results.js -------------
+//
+// `equippedBody` (the Loadout block) and `loadoutDeepDive` read `v.affixes`
+// directly; only the text exporters read the shared content model. Collapsing in
+// projection.js alone would fix every export and leave these two — the surfaces
+// R8 names first — still printing one line per expanded school.
+function focusMasteryAffixes(label, type, value) {
+  return ["Abjuration", "Conjuration", "Enchantment", "Evocation", "Illusion", "Necromancy", "Transmutation"]
+    .map((s) => ({ name: `${s} Focus`, type, value, via: label }));
+}
+
+test("U8/R8/AE3: equippedBody shows ONE line naming the enchantment, not seven school lines", () => {
+  const v = { variant_id: "A Memento of Mori",
+    affixes: focusMasteryAffixes("Sacred Spell Focus Mastery", "Sacred", 3) };
+  const html = R.equippedBody(v, 0, blockMaps(), new Map());
+  assert.ok(/Sacred Spell Focus Mastery \+3/.test(html), "names the enchantment engraved on the item");
+  assert.ok(!/Necromancy Focus/.test(html), "the model's expanded shape does not leak into the UI");
+  assert.strictEqual((html.match(/<li>/g) || []).length, 1, "exactly one affix line, not seven");
+});
+
+test("U8/R8/AE3: loadoutDeepDive collapses the same expansion the same way", () => {
+  const result = {
+    chosen: [{ slot: "Trinket", variant: { variant_id: "A Memento of Mori", minimum_level: 32,
+      set_bonus: [], affixes: focusMasteryAffixes("Sacred Spell Focus Mastery", "Sacred", 3) } }],
+    breakdown: {}, augmentsPlaced: [], effective: {}, perTarget: {},
+  };
+  const maps = { augAssign: { byIndex: new Map(), freeByIndex: new Map() }, dinoAssign: { byIndex: new Map() },
+    ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(), jokerByHost: new Map() };
+  const html = R.loadoutDeepDive(result, { targets: [] }, maps, R.attributionByTarget(result));
+  assert.ok(/Sacred Spell Focus Mastery \+3/.test(html));
+  assert.ok(!/Abjuration Focus/.test(html) && !/Necromancy Focus/.test(html),
+    "no school line survives the collapse");
+  assert.strictEqual((html.match(/<li>/g) || []).length, 1, "one affix line in the Deep Dive too");
+});
+
+test("U8/R8: a heterogeneous family renders its members inline on the Loadout block", () => {
+  const v = { variant_id: "Blackfeather Boots", affixes: [
+    { name: "Movement Speed", type: "Enhancement", value: 30, via: "Speed" },
+    { name: "Melee Alacrity", type: "Enhancement", value: 15, via: "Speed" },
+    { name: "Ranged Alacrity", type: "Enhancement", value: 15, via: "Speed" },
+  ] };
+  const html = R.equippedBody(v, 0, blockMaps(), new Map());
+  assert.ok(/Speed: Movement Speed \+30, Melee Alacrity \+15, Ranged Alacrity \+15/.test(html),
+    `member values listed inline; got ${html}`);
+  // Anchored to the start of the line: "Movement Speed +30" legitimately contains
+  // the substring "Speed +", so a bare /Speed \+/ would reject a correct render.
+  assert.ok(!/<li>Speed \+/.test(html), "the line never asserts a single invented magnitude");
+  assert.strictEqual((html.match(/<li>/g) || []).length, 1, "still one line");
+});
+
+test("U8/R8: an item with no expanded affix renders exactly as before", () => {
+  const v = { variant_id: "Ring1", affixes: [
+    { stat: "Constitution", bonus_type: "Enhancement", value: 10, unit: "flat" },
+    { stat: "Dodge", bonus_type: "Quality", value: 5, unit: "pct" },
+  ] };
+  const html = R.equippedBody(v, 0, blockMaps(), new Map());
+  assert.ok(/Constitution \+10/.test(html) && /Dodge \+5% Quality/.test(html));
+  assert.strictEqual((html.match(/<li>/g) || []).length, 2, "both native affixes still listed");
+});
+
+// The provenance tooltip is user-facing correctness, not decoration. It once
+// claimed the enchantment "raises the DC of every school", which was true while
+// only spell focus carried `via` and false the moment the stamp widened to
+// Parrying, Speed, Well Rounded and Heightened Awareness. Nothing asserted the
+// string, so the wrong claim shipped and the correction could silently revert.
+test("the provenance tooltip makes no family-specific claim", () => {
+  const html = R.attributionList([
+    { source: "Some Item", value: 3, bonus_type: "Insight", slots: ["Bracers"],
+      via: "Parrying" },
+  ]);
+  assert.ok(/as Parrying/.test(html), "the row still names the engraved enchantment");
+  assert.ok(!/DC of every school/.test(html),
+    "no spell-DC claim on a family that grants Armor Class and saves");
+  assert.ok(/grants several effects at once/.test(html),
+    "the wording holds for every expansion family");
+});
+
+test("a native affix gets no provenance tooltip at all", () => {
+  const html = R.attributionList([
+    { source: "Some Item", value: 3, bonus_type: "Insight", slots: ["Bracers"], via: null },
+  ]);
+  assert.ok(!/attrib-via/.test(html), "nothing to attribute when nothing expanded");
+});
+
+
+console.log(`\n${passed} passed`);
