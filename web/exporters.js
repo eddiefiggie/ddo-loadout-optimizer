@@ -189,6 +189,8 @@
     // sufficient; each renderer has to print them.
     for (const line of view.character.saturationNotice || []) out += `> ${mdEsc(line)}\n\n`;
     for (const line of view.character.emptySlotNotice || []) out += `> ${mdEsc(line)}\n\n`;
+    // U6/#249 — the third disclosure on the same channel.
+    for (const line of view.character.absorptionQuarantineNotice || []) out += `> ${mdEsc(line)}\n\n`;
     out += view.character.constraints.filter(([k]) => k !== "Character").map(([k, v]) => `**${mdEsc(k)}:** ${mdEsc(v)}`).join("  \n") + "\n\n";
     out += `_${mdEsc(legendText("md"))}_\n\n`;
     out += `## Loadout\n\n`;
@@ -230,6 +232,7 @@
     for (const line of view.character.creditNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
     for (const line of view.character.saturationNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
     for (const line of view.character.emptySlotNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
+    for (const line of view.character.absorptionQuarantineNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
     out += view.character.constraints.filter(([k]) => k !== "Character").map(([k, v]) => `[b]${bbEsc(k)}:[/b] ${bbEsc(v)}`).join(" | ") + "\n\n";
     out += `[i]${legendText("bb")}[/i]\n\n`;
     out += `[b]Loadout[/b]\n[list]\n`;
@@ -277,6 +280,7 @@
     for (const line of view.character.creditNotice || []) rows.push(csvRow(["Declared", line]));
     for (const line of view.character.saturationNotice || []) rows.push(csvRow(["Saturated", line]));
     for (const line of view.character.emptySlotNotice || []) rows.push(csvRow(["Free slots", line]));
+    for (const line of view.character.absorptionQuarantineNotice || []) rows.push(csvRow(["Excluded", line]));
     rows.push("");
     rows.push(csvRow(["Legend", legendText("csv")]));
     rows.push("");
@@ -325,6 +329,7 @@
     for (const line of view.character.creditNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
     for (const line of view.character.saturationNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
     for (const line of view.character.emptySlotNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
+    for (const line of view.character.absorptionQuarantineNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
     h += `<p class="legend">${htmlEsc(legendText("md"))}</p>`;
     h += `<table><thead><tr><th>Slot</th><th>Item</th><th>ML</th><th>Affixes</th><th>Augments</th><th>Crafting</th></tr></thead><tbody>`;
     for (const it of view.loadout) {

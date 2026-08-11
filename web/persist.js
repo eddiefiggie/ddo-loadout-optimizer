@@ -31,6 +31,11 @@
     "saturationReport",
     // #239 — same reason: computed from `model.worn`, and `model` is dropped.
     "emptySlots",
+    // U6/#249 — the compound-absorption quarantine, read off `model.worn` for the
+    // same reason as `emptySlots` directly above. A restored character must
+    // disclose the exclusion without re-solving, or a saved build quietly stops
+    // saying that an affix was withheld from it.
+    "absorptionQuarantine",
   ];
 
   function stripResult(result) {

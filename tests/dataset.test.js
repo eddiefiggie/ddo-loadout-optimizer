@@ -234,6 +234,40 @@ test("U1/KTD2: a stale dataset without the metadata field still drops the names"
   assert.ok(stale.suggestions.includes("Constitution"), "an ordinary stat is untouched");
 });
 
+test("U5/#249: the three compound absorption names are expanded away", () => {
+  const v = builtVocab();
+  if (!v) return console.log("  (skipped — web/data/items.json not built)");
+  for (const [compound, components] of [
+    ["Fire and Cold Absorption", ["Fire Absorption", "Cold Absorption"]],
+    ["Electricity and Acid Absorption", ["Electric Absorption", "Acid Absorption"]],
+    ["Elemental Absorption", ["Acid Absorption", "Cold Absorption", "Fire Absorption",
+                              "Electric Absorption", "Sonic Absorption"]],
+  ]) {
+    assert.ok(!v.suggestions.includes(compound), `${compound} is no longer suggested`);
+    const msg = expandedAwayMessage(v, compound);
+    assert.ok(msg, `${compound} produces a redirect`);
+    for (const c of components) assert.ok(msg.includes(c), `${compound} redirects to ${c}`);
+    assert.ok(v.suggestions.includes(components[0]),
+      `${components[0]} is rankable, which is the point of the redirect`);
+  }
+});
+
+test("U5/#249: a stale dataset still drops the compound absorption names", () => {
+  // The browser-side fallback. A cached dataset built before this family shipped
+  // carries the compound names in `rankable_affixes` with no metadata entry to
+  // remove them, so without the fallback the picker offers a name that — on the
+  // freshly-built dataset the solve runs against — no item carries.
+  const stale = buildPickerVocabulary({ metadata: { rankable_affixes: [
+    "Fire and Cold Absorption", "Electricity and Acid Absorption",
+    "Elemental Absorption", "Fire Absorption"] } });
+  for (const compound of ["Fire and Cold Absorption", "Electricity and Acid Absorption",
+                          "Elemental Absorption"]) {
+    assert.ok(!stale.suggestions.includes(compound), `${compound} dropped via the fallback constant`);
+    assert.ok(expandedAwayFor(stale, compound), `${compound} still redirects`);
+  }
+  assert.ok(stale.suggestions.includes("Fire Absorption"), "the component stat is untouched");
+});
+
 test("U1/KTD2: `Sheltering` is NOT routed through the expanded-away set", () => {
   const v = builtVocab();
   if (!v) return console.log("  (skipped — web/data/items.json not built)");

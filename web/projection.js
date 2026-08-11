@@ -704,7 +704,11 @@
         // optimal loadout with no way to learn that a stat was already at its
         // ceiling, or that slots were tie-broken rather than chosen.
         saturationNotice: saturationNoticeLines(snap),
-        emptySlotNotice: emptySlotNoticeLines(snap) },
+        emptySlotNotice: emptySlotNoticeLines(snap),
+        // U6/#249 — same channel, same reason: a recipient who cannot re-solve
+        // would otherwise get a build asserting an optimal loadout with no way
+        // to learn that an item's absorption enchantment was withheld from it.
+        absorptionQuarantineNotice: absorptionQuarantineNoticeLines(snap) },
       loadout, sets, attribution,
     };
   }
@@ -769,6 +773,43 @@
       + `nothing available for ${isOne ? "it" : "them"} improves these priorities.`];
   }
 
+  /** U6/#249 — the compound-absorption quarantine as plain sentences.
+   *
+   *  ONE source for the app notice and every export, the contract
+   *  `saturationNoticeLines` holds. Reads `absorptionQuarantine` (plain JSON on
+   *  the result), never the pool, so a restored character discloses identically
+   *  without re-solving.
+   *
+   *  Wording rule: `docs/solutions/conventions/never-infer-a-claim-about-your-own-results.md`.
+   *  Each sentence states three things, all verifiable from the data that
+   *  produced it — which affix was removed, from which item, and which stats it
+   *  was therefore not credited to. It says nothing about what the build WOULD
+   *  have scored with the carrier included: that is a solve nobody ran, and for
+   *  an unconfirmed carrier the element set is precisely what is unknown, so
+   *  even the direction of the difference is unknowable.
+   */
+  function absorptionQuarantineNoticeLines(result) {
+    const report = (result && result.absorptionQuarantine) || [];
+    return report.map((e) => {
+      // Branch on BOTH reasons by name, never on one with the other as an else.
+      // A third reason shipping from `src/absorption_split.py` would otherwise be
+      // silently rendered as "no wiki record", which is a different — and
+      // possibly false — claim about why the affix was dropped. An unrecognized
+      // reason says only what is certain.
+      const why = e.reason === "unconfirmed"
+        ? `the wiki record of which elements it covers is not confirmed`
+        : e.reason === "absent"
+          ? `there is no wiki record of which elements it covers`
+          : `which elements it covers is not established`;
+      const to = (e.components || []);
+      const named = to.length > 1
+        ? `${to.slice(0, -1).join(", ")} or ${to[to.length - 1]}`
+        : (to[0] || "any element");
+      return `${e.stat} on ${e.item} was excluded from this build because ${why}, `
+        + `so it was not credited to ${named}.`;
+    });
+  }
+
   function creditNoticeLines(result) {
     const report = (result && result.creditReport) || [];
     if (!report.length) return [];
@@ -817,7 +858,8 @@
 
   const api = {
     // resolved-view assembler
-    project, creditNoticeLines, saturationNoticeLines, emptySlotNoticeLines, declaredCreditsLine,
+    project, creditNoticeLines, saturationNoticeLines, emptySlotNoticeLines,
+    absorptionQuarantineNoticeLines, declaredCreditsLine,
     // pure primitives (results.js binds these; single definition, no drift)
     affixLabel, itemMl, contributingAffixes, assignAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, satisfiedSets, suppressedHostIds, slotSetNames,

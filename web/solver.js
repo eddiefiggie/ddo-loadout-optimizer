@@ -1331,7 +1331,62 @@ async function solveLexicographic(model, highs) {
     creditReport: buildCreditReport(program, prim, model, floorReport),
     saturationReport: buildSaturationReport(program, prim),
     emptySlots: buildEmptySlotReport(model, sol),
+    absorptionQuarantine: buildAbsorptionQuarantineReport(model, program),
   };
+}
+
+/** U6/#249 — compound-absorption affixes the build excluded from this pool.
+ *
+ *  `Elemental Absorption` names four elements on some items and five on others,
+ *  behind an identical visible cell. A carrier the wiki shard does not confirm
+ *  has its affix REMOVED at build time rather than left in place, because
+ *  registering the family strips the compound name from the picker dataset-wide
+ *  — an unexpanded carrier would ship an affix no player can rank.
+ *
+ *  The exclusion is decided in Python against the seed shard, and neither this
+ *  file nor `web/model.js` receives dataset metadata, so the build stamps it on
+ *  the variant (the way `material` is stamped) and this reads it back. Built
+ *  here rather than at render time for the reason `saturationReport` is:
+ *  `model` is dropped from the saved snapshot and a restored character is never
+ *  re-solved, so a render-time derivation would go quiet on load.
+ *
+ *  Gated on the ranked stats, following the saturation report's KTD3: a
+ *  disclosure that fires regardless of what the player asked for is noise, and
+ *  noise is how a real disclosure stops being read. `components` is what the
+ *  compound COULD have become — a fact about the name, not a claim about the
+ *  item, which is exactly why an unconfirmed carrier can be matched against the
+ *  priority list at all.
+ *
+ *  Reads the whole worn POOL, not `chosen`: an excluded affix is why an item may
+ *  not have been chosen, so reporting only chosen items would hide every case
+ *  the disclosure exists for.
+ */
+function buildAbsorptionQuarantineReport(model, program) {
+  const worn = (model && model.worn) || [];
+  const ranked = new Set((program && program.targetList) || []);
+  if (!worn.length || !ranked.size) return [];
+
+  const out = [];
+  const seen = new Set();
+  for (const s of worn) {
+    for (const v of s.variants || []) {
+      for (const q of (v && v.absorption_quarantined) || []) {
+        const components = (q.components || []).slice();
+        if (!components.some((c) => ranked.has(c))) continue;
+        const item = v.variant_id || v.source_item || null;
+        // One excluded affix is one disclosure, however many slots could host
+        // the item — the two ring slots offer the same variant twice.
+        const key = `${item}||${q.stat}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({ item, stat: q.stat, reason: q.reason, components });
+      }
+    }
+  }
+  // Deterministic, so a re-solve of the same pool discloses in the same order.
+  out.sort((a, b) => String(a.item).localeCompare(String(b.item))
+    || String(a.stat).localeCompare(String(b.stat)));
+  return out;
 }
 
 /** #239 — the worn slots the solve left empty.

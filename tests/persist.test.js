@@ -295,4 +295,16 @@ test("U1/#239: the saturation disclosure survives the save path", () => {
   assert.strictEqual(kept.program, undefined, "and the program still is not");
 });
 
+test("U6/#249: the absorption-quarantine disclosure survives the save path", () => {
+  // Same allowlist, same reason: it is read off `model.worn`, `model` is dropped
+  // by omission, and a restored character is never re-solved. Without it a
+  // saved build silently stops disclosing an exclusion it disclosed when solved.
+  const { stripResult } = require("../web/persist.js");
+  const report = [{ item: "Cyran Guard (level 26)", stat: "Elemental Absorption",
+    reason: "absent", components: ["Fire Absorption", "Sonic Absorption"] }];
+  const kept = stripResult({ status: "optimal", absorptionQuarantine: report, model: { worn: [] } });
+  assert.deepStrictEqual(kept.absorptionQuarantine, report, "the disclosure is persisted");
+  assert.strictEqual(kept.model, undefined, "and the model still is not");
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

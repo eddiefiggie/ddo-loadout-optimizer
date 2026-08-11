@@ -41,6 +41,7 @@ from src import material as material_mod
 from src import speed_split as speed_split_mod
 from src import parrying_split as parrying_split_mod
 from src import heightened_awareness as heightened_awareness_mod
+from src import absorption_split as absorption_split_mod
 from src import enchantment_split as enchantment_split_mod
 from src import umbrella as umbrella_mod
 from src import spell_focus as spell_focus_mod
@@ -228,6 +229,10 @@ PARRYING_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "parrying
 HEIGHTENED_AWARENESS_SHARD_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "heightened_awareness.json")
 SPEED_AUGMENT_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_augment.json")
+# #249 — per-item Sonic flag for `Elemental Absorption`, which names four elements
+# on some carriers and five on others behind an identical visible cell.
+ABSORPTION_SHARD_PATH = os.path.join(
+    HERE, "data", "seed", "compendium", "elemental_absorption.json")
 MATERIAL_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "item_material.json")
 MATERIAL_CLASS_PATH = os.path.join(HERE, "data", "seed", "compendium", "material_classification.json")
 # The slots the material gate covers (#162). Docents are the Forged body slot and
@@ -509,6 +514,27 @@ def build() -> dict:
                          "\n  ".join(_ha_guard["problems"]))
     _ha_coverage = heightened_awareness_mod.apply(planner_records, _ha_shard)
 
+    # U5/U6 (#249) — the compound absorption names. Three stat names cover several
+    # elements at once, so a player ranking `Fire Absorption` scored nothing from
+    # the seventeen affix records carrying one. The two paired names expand
+    # unconditionally at the compound's FULL magnitude (the template emits both
+    # `+N%` category memberships from one invocation); `Elemental Absorption`
+    # expands per item, reading the Sonic flag from the shard, because the visible
+    # cell reads the same for a four-element and a five-element carrier.
+    #
+    # Runs at the PLANNER-RECORD seam, before variants are built, so the emitted
+    # affixes and the quarantine marker both pass through `src/variants.py`'s
+    # whitelist rebuild — which carries them explicitly.
+    _absorption_shard = harvest_mod.load_shard(ABSORPTION_SHARD_PATH,
+                                               "elemental_absorption")
+    _absorption_audit = absorption_split_mod.audit_shard(_absorption_shard)
+    _absorption_snapshots = absorption_split_mod.audit_snapshots(_absorption_shard)
+    _absorption_guard = absorption_split_mod.check_against_snapshots(_absorption_shard)
+    if _absorption_guard["problems"]:
+        raise SystemExit("elemental absorption snapshot guard failed:\n  " +
+                         "\n  ".join(_absorption_guard["problems"]))
+    _absorption_coverage = absorption_split_mod.apply(planner_records, _absorption_shard)
+
     # U5 (#162) — stamp wiki-sourced material onto shields + body armor. The
     # gear-planner snapshot has no such field (its full item-field union is
     # affixes/ml/name/quests/slot/type/url/crafting/sets/artifact), so this is the
@@ -701,7 +727,12 @@ def build() -> dict:
          **spell_focus_mod.expanded_away(),
          **speed_split_mod.EXPANDED_AWAY,
          **parrying_split_mod.EXPANDED_AWAY,
-         **heightened_awareness_mod.EXPANDED_AWAY},
+         **heightened_awareness_mod.EXPANDED_AWAY,
+         # #249 — no set-bonus tier names a compound absorption stat today, so
+         # this registration is a standing gate rather than a live expansion: a
+         # set bonus carries no per-item shard key to read a Sonic flag from, so
+         # a future one must fail the build loudly rather than be guessed.
+         **absorption_split_mod.EXPANDED_AWAY},
         allow=_KNOWN_SET_BONUS_ORPHANS)
     if _set_orphans:
         raise SystemExit(
@@ -952,6 +983,18 @@ def build() -> dict:
                 "tooltip_snapshots": _ha_snapshots,
                 "tooltip_guard_checked": _ha_guard["checked"],
                 "tooltip_guard_compared": _ha_guard["compared"]},
+            # The compound-absorption family (#249). `expanded` counts compound
+            # affixes turned into components; `components` counts the affixes
+            # emitted. `excluded` NAMES every quarantined carrier and why — the
+            # dataset-level half of R7's disclosure, whose per-result half rides
+            # on each variant's own quarantine marker. There is no `uncovered`
+            # counter by design: an uncovered carrier is a quarantined one.
+            "compound_absorption_coverage": {
+                **_absorption_coverage,
+                "shard_audit": _absorption_audit,
+                "tooltip_snapshots": _absorption_snapshots,
+                "tooltip_guard_checked": _absorption_guard["checked"],
+                "tooltip_guard_compared": _absorption_guard["compared"]},
             "material_coverage": {**_material_stamp, **_material_coverage},
             # The curated metal/non-metal map the druidic-oath gate reads. A
             # material absent from this map is UNKNOWN, and the gate fails open.
@@ -974,7 +1017,8 @@ def build() -> dict:
                                     **spell_focus_mod.expanded_away(),
                                     **speed_split_mod.EXPANDED_AWAY,
                                     **parrying_split_mod.EXPANDED_AWAY,
-                                    **heightened_awareness_mod.EXPANDED_AWAY},
+                                    **heightened_awareness_mod.EXPANDED_AWAY,
+                                    **absorption_split_mod.EXPANDED_AWAY},
             # U5 — the shared affix-name registry + variant->canonical alias table.
             # The web picker unions every affix source (gear, augments, set bonuses,
             # ALL crafting pools) and canonicalizes each through the alias table, so a

@@ -89,6 +89,15 @@ var EXPANDED_AWAY_FALLBACK = {
   // src/spell_focus.py. Mirrors its `_UNIVERSAL` set.
   "spell focus mastery": ["Abjuration Focus", "Conjuration Focus", "Enchantment Focus", "Evocation Focus", "Illusion Focus", "Necromancy Focus", "Transmutation Focus"],
   "spell focus": ["Abjuration Focus", "Conjuration Focus", "Enchantment Focus", "Evocation Focus", "Illusion Focus", "Necromancy Focus", "Transmutation Focus"],
+  // #249 — the compound absorption names, expanded into their elements by
+  // src/absorption_split.py. Mirrors its `EXPANDED_AWAY`. `Electric Absorption`
+  // is the dataset's spelling of the component the compound calls "Electricity";
+  // redirecting to the compound's own wording would name a stat no item carries.
+  // `Elemental Absorption` redirects to the UNION of five — its element set is
+  // per-item, and five of the thirteen carriers do include Sonic.
+  "fire and cold absorption": ["Fire Absorption", "Cold Absorption"],
+  "electricity and acid absorption": ["Electric Absorption", "Acid Absorption"],
+  "elemental absorption": ["Acid Absorption", "Cold Absorption", "Fire Absorption", "Electric Absorption", "Sonic Absorption"],
 };
 // U5 (#140) — boolean composites that carry a wiki-verified numeric effect but are
 // stored as `Bool` presence, so the solver could not weigh them. Values and bonus

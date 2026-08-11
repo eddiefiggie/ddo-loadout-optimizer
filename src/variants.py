@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import re
 
+from src.absorption_split import QUARANTINE_FIELD
 from src.affix_parser import parse_enhancements
 from src.spell_focus import PROVENANCE_KEY
 from src.viktranium import parse_base_lamordia, is_base_lamordia_line
@@ -150,6 +151,13 @@ def _make_variant(item, ml, tier_label, parsed):
         # gear-planner has no equivalent for. Stamped at build so the artifact is
         # honest at rest; absent/None means unsourced and every consumer fails open.
         "material": item.get("material"),
+        # #249 (U6) — compound-absorption carriers the wiki shard does not confirm.
+        # Stamped here for the same reason `material` directly above is: quarantine
+        # is decided in Python against the seed shard, and neither `web/solver.js`
+        # nor `web/model.js` receives dataset metadata — so the exclusion has to
+        # ride on the variant the solver already holds. Absent means nothing was
+        # excluded, which is the state of every item today.
+        QUARANTINE_FIELD: item.get(QUARANTINE_FIELD),
         "tier_values_incomplete": False,
         "tier_ml_list": None,
         # U81 Nearly-Complete host marker (category) — propagated so the solver's
