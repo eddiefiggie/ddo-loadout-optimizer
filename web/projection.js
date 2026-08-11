@@ -685,7 +685,14 @@
         // U4 (R9) — the declared-credit qualifier travels with the shared
         // content model, so every export renders it from the same source the
         // app's bound notice does. Empty array when nothing was declared.
-        creditNotice: creditNoticeLines(snap) },
+        creditNotice: creditNoticeLines(snap),
+        // #239 — the saturation and free-slot disclosures travel with the shared
+        // content model for the same reason the credit qualifier does: a
+        // recipient who cannot re-solve would otherwise get a build asserting an
+        // optimal loadout with no way to learn that a stat was already at its
+        // ceiling, or that slots were tie-broken rather than chosen.
+        saturationNotice: saturationNoticeLines(snap),
+        emptySlotNotice: emptySlotNoticeLines(snap) },
       loadout, sets, attribution,
     };
   }
@@ -702,6 +709,54 @@
    *  Reads `creditReport` (plain JSON on the result), never the live program, so a
    *  restored character discloses identically without re-solving (KTD6).
    */
+  /** #239 — the saturation disclosure as plain sentences.
+   *
+   *  ONE source for the app notice and every export, the same contract
+   *  `creditNoticeLines` holds. Reads `saturationReport` (plain JSON on the
+   *  result), never the live program, so a restored character discloses
+   *  identically without re-solving.
+   *
+   *  KTD6 — facts only. It names which bonus types carry the stat and that they
+   *  are filled. It attributes no cause: the pool is the product of the ML band,
+   *  the gear pool, the character gates AND the dominance pre-filter, and naming
+   *  one was already wrong once. The unused-source count is deliberately not
+   *  spoken — it counts affix instances rather than items, so "56 unused
+   *  sources" would read as alarming and mean something other than it says. It
+   *  stays on the report for the portable export.
+   */
+  function saturationNoticeLines(result) {
+    const report = (result && result.saturationReport) || [];
+    return report.map((e) => {
+      const types = e.bonusTypes || [];
+      const art = (t) => `${/^[aeiou]/i.test(t) ? "an" : "a"} ${t} bonus`;
+      const named = types.length === 1
+        ? art(types[0])
+        : `${types.slice(0, -1).map(art).join(", ")} and ${art(types[types.length - 1])}`;
+      const verb = types.length === 1 ? "it is filled"
+        : types.length === 2 ? "both are filled" : "all of them are filled";
+      return `${e.stat} is at its ceiling of ${e.total} — it reaches you as ${named}, and ${verb}, `
+        + `so no other item in your pool can raise it.`;
+    });
+  }
+
+  /** #239 — the empty-slot disclosure as plain sentences.
+   *
+   *  Reads `emptySlots` (plain JSON on the result) rather than deriving it, for
+   *  the same reason the saturation line does: the worn-slot list lives on the
+   *  model, which a restored character no longer has.
+   *
+   *  States the fact only. The invitation to add priorities is app-side — a
+   *  shared export has no Adjust & re-solve panel, and pointing a reader at a
+   *  control that is not in front of them is worse than saying nothing.
+   */
+  function emptySlotNoticeLines(result) {
+    const e = (result && result.emptySlots) || { count: 0, slots: [] };
+    if (!e.count) return [];
+    const isOne = e.count === 1;
+    return [`${e.count} ${isOne ? "slot is" : "slots are"} empty (${(e.slots || []).join(", ")}) — `
+      + `nothing available for ${isOne ? "it" : "them"} improves these priorities.`];
+  }
+
   function creditNoticeLines(result) {
     const report = (result && result.creditReport) || [];
     if (!report.length) return [];
@@ -750,7 +805,7 @@
 
   const api = {
     // resolved-view assembler
-    project, creditNoticeLines, declaredCreditsLine,
+    project, creditNoticeLines, saturationNoticeLines, emptySlotNoticeLines, declaredCreditsLine,
     // pure primitives (results.js binds these; single definition, no drift)
     affixLabel, itemMl, contributingAffixes, assignAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, satisfiedSets, suppressedHostIds, slotSetNames,

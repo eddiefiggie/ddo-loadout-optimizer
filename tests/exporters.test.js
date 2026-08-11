@@ -899,4 +899,76 @@ test("#227: every share format labels an untyped contributor \"untyped\"", () =>
   }
 });
 
+// ---- #239 U3: both disclosures reach every share surface -------------------
+//
+// Carrying a fact through the content model is necessary but not sufficient —
+// each renderer has to print it. That gap already shipped once, for set members.
+function disclosureRec(opts) {
+  return {
+    name: "Warlock",
+    inputs: { ml: 34, race: "Human", pool: "all", priorities: ["Kinetic Lore"] },
+    stampedBuildId: "sat1",
+    snapshot: {
+      status: "optimal",
+      chosen: [
+        { slot: "Goggles", variant: { variant_id: "Red Wizard's Sight", ml: 34,
+          affixes: [{ name: "Kinetic Lore", type: "Equipment", value: 24 }],
+          augment_slots_norm: { colors: [] } } },
+        { slot: "Boots", variant: { variant_id: "Filler Boots", ml: 30, affixes: [],
+          augment_slots_norm: { colors: [] } } },
+      ],
+      setsActive: [],
+      breakdown: { "Kinetic Lore": [{ bonus_type: "Equipment", value: 24,
+        source: "Red Wizard's Sight", sourceKind: "worn", slot: "Goggles", hostIds: ["Red Wizard's Sight"] }] },
+      saturationReport: (opts && opts.saturation) === false ? [] : [
+        { stat: "Kinetic Lore", total: 30, bonusTypes: ["Equipment", "Artifact"], unusedSources: 56 },
+      ],
+      emptySlots: (opts && opts.empty) === false ? { count: 0, slots: [] }
+        : { count: 2, slots: ["Ring", "Trinket"] },
+    },
+  };
+}
+
+test("U3/#239: every share format carries both disclosures", () => {
+  const rec = disclosureRec();
+  for (const [fmt, fn] of [["markdown", toMarkdown], ["csv", toCsv],
+                           ["print", toPrintHtml], ["bbcode", toBBCode]]) {
+    const out = fn(rec);
+    assert.ok(/at its ceiling/.test(out), `${fmt} carries the saturation fact`);
+    assert.ok(/Equipment bonus/.test(out) && /Artifact bonus/.test(out),
+      `${fmt} names both carrying bonus types`);
+    assert.ok(/slots are empty/.test(out), `${fmt} carries the empty-slot fact`);
+    assert.ok(!/56/.test(out), `${fmt} does not speak the unused-source count`);
+    assert.ok(!/\bML band\b/i.test(out), `${fmt} attributes no cause`);
+  }
+});
+
+test("U3/#239: the two disclosures are independent", () => {
+  // Saturation with no free slots.
+  const noEmpty = disclosureRec({ empty: false });
+  const a = toMarkdown(noEmpty);
+  assert.ok(/at its ceiling/.test(a), "saturation still renders");
+  assert.ok(!/slots are empty/.test(a), "and does not drag the other in");
+
+  // Free slots with no saturation.
+  const noSat = disclosureRec({ saturation: false });
+  const b = toMarkdown(noSat);
+  assert.ok(!/at its ceiling/.test(b), "no saturation fact");
+  assert.ok(/slots are empty/.test(b), "the empty-slot fact still renders");
+});
+
+test("U3/#239: the portable envelope carries both, so a re-import discloses identically", () => {
+  const portable = toPortableJSON(disclosureRec(), "2026-08-10T00:00:00Z");
+  const blob = JSON.stringify(portable);
+  assert.ok(/at its ceiling/.test(blob), "saturation rides in the envelope");
+  assert.ok(/slots are empty/.test(blob), "so does the empty-slot fact");
+});
+
+test("U3/#239: a build with neither fact exports cleanly", () => {
+  const clean = disclosureRec({ saturation: false, empty: false });
+  const out = toMarkdown(clean);
+  assert.ok(!/at its ceiling/.test(out) && !/slots are empty/.test(out), "neither fact appears");
+  assert.ok(!/>\s*\n/.test(out.replace(/\n{3,}/g, "\n\n")), "and no empty blockquote is left behind");
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

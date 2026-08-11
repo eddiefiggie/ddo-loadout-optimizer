@@ -24,6 +24,13 @@
     // re-solving a restored character. Plain JSON by construction (see
     // buildCreditReport) precisely so it can live here.
     "creditReport",
+    // #239 U1 — the saturation disclosure, for the same reason as creditReport
+    // directly above: it is computed from `program.zByBucket`, `program` is
+    // dropped by omission, and a restored character is never re-solved. Without
+    // it the notice would render on a fresh solve and vanish on load.
+    "saturationReport",
+    // #239 — same reason: computed from `model.worn`, and `model` is dropped.
+    "emptySlots",
   ];
 
   function stripResult(result) {

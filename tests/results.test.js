@@ -1156,3 +1156,64 @@ test("U4: a build with no runtime picks renders its sets exactly as before", () 
   assert.deepStrictEqual(R.activeSetDetail({ chosen: build.chosen, setsActive: [{ set: "Alpha", pieces_required: 2 }] })[0].slots,
     ["Ring", "Necklace"], "yielding slots are unchanged for a purely intrinsic set");
 });
+
+// ---- #239 U4: the two notices and the invitation ---------------------------
+
+function satBuild(opts) {
+  const o = opts || {};
+  return {
+    status: "optimal",
+    chosen: [
+      { slot: "Goggles", variant: { variant_id: "Red Wizard's Sight",
+        affixes: [{ name: "Kinetic Lore", type: "Equipment", value: 24 }] } },
+      { slot: "Boots", variant: { variant_id: "Filler Boots",
+        affixes: o.bareFiller ? [] : [{ name: "Physical Sheltering", type: "Enhancement", value: 30 }] } },
+    ],
+    breakdown: { "Kinetic Lore": [{ bonus_type: "Equipment", value: 24, source: "Red Wizard's Sight",
+      sourceKind: "worn", slot: "Goggles", hostIds: ["Red Wizard's Sight"] }] },
+    setsActive: [], augmentsPlaced: [], setAugmentsPlaced: [], membershipPlaced: [],
+    saturationReport: o.saturation === false ? [] : [
+      { stat: "Kinetic Lore", total: 30, bonusTypes: ["Equipment", "Artifact"], unusedSources: 56 }],
+    emptySlots: o.empty === false ? { count: 0, slots: [] }
+      : { count: 11, slots: ["Armor", "Helmet", "Cloak", "Belt", "Gloves", "Bracers",
+                             "Trinket", "Ring 2", "Main Hand", "Off Hand", "Quiver"] },
+  };
+}
+const satQuery = { targets: ["Kinetic Lore"] };
+
+test("U4/#239: the saturation notice names both bonus types and no cause", () => {
+  const html = R.saturationNotice(satBuild());
+  assert.ok(/at its ceiling of 30/.test(html), "states the ceiling");
+  assert.ok(/Equipment bonus/.test(html) && /Artifact bonus/.test(html), "names both carrying types");
+  assert.ok(!/ML|level|cap/i.test(html), "attributes no cause — the dominance filter makes that unknowable");
+  assert.strictEqual(R.saturationNotice(satBuild({ saturation: false })), "", "silent when nothing saturated");
+});
+
+test("U4/#239: the empty-slot notice invites and names an incidentally-supplied stat", () => {
+  const html = R.emptySlotNotice(satQuery, satBuild());
+  assert.ok(/11 slots are empty/.test(html), "states the fact");
+  assert.ok(/Physical Sheltering/.test(html), "names a stat the build already carries");
+  assert.ok(/Adjust &amp; re-solve/.test(html), "points at the panel already on this screen");
+  assert.ok(!/56/.test(html), "does not speak the unused-source count");
+});
+
+test("U4/#239: the invitation still fires when the build supplies nothing extra", () => {
+  const html = R.emptySlotNotice(satQuery, satBuild({ bareFiller: true }));
+  assert.ok(/11 slots are empty/.test(html), "the fact still renders");
+  assert.ok(/Rank another stat/.test(html), "and so does the invitation, with no stat named");
+});
+
+test("U4/#239: the two notices are independent", () => {
+  const noEmpty = satBuild({ empty: false });
+  assert.ok(R.saturationNotice(noEmpty) !== "", "saturation renders alone");
+  assert.strictEqual(R.emptySlotNotice(satQuery, noEmpty), "", "with no empty-slot notice");
+  const noSat = satBuild({ saturation: false });
+  assert.strictEqual(R.saturationNotice(noSat), "", "no saturation");
+  assert.ok(R.emptySlotNotice(satQuery, noSat) !== "", "empty slots render alone");
+});
+
+test("U4/#239: a ranked stat is never offered back as a suggestion", () => {
+  const q = { targets: ["Kinetic Lore", "Physical Sheltering"] };
+  assert.ok(!R.incidentalStats(q, satBuild()).includes("Physical Sheltering"),
+    "suggesting a stat the player already ranked is noise");
+});

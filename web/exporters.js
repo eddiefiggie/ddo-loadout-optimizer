@@ -184,6 +184,11 @@
     // totals and no statement that it was unverified, is exactly the
     // solve-visible-but-share-invisible failure this repo forbids.
     for (const line of view.character.creditNotice || []) out += `> ${mdEsc(line)}\n\n`;
+    // #239 — same channel as the credit qualifier: solve-visible must not mean
+    // share-invisible. Carrying them through the model is necessary, not
+    // sufficient; each renderer has to print them.
+    for (const line of view.character.saturationNotice || []) out += `> ${mdEsc(line)}\n\n`;
+    for (const line of view.character.emptySlotNotice || []) out += `> ${mdEsc(line)}\n\n`;
     out += view.character.constraints.filter(([k]) => k !== "Character").map(([k, v]) => `**${mdEsc(k)}:** ${mdEsc(v)}`).join("  \n") + "\n\n";
     out += `_${mdEsc(legendText("md"))}_\n\n`;
     out += `## Loadout\n\n`;
@@ -223,6 +228,8 @@
     let out = `[b]${bbEsc(view.character.name)}[/b]\n`;
     out += `[i]Optimal loadout — built with the DDO Loadout Optimizer.[/i]\n\n`;
     for (const line of view.character.creditNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
+    for (const line of view.character.saturationNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
+    for (const line of view.character.emptySlotNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
     out += view.character.constraints.filter(([k]) => k !== "Character").map(([k, v]) => `[b]${bbEsc(k)}:[/b] ${bbEsc(v)}`).join(" | ") + "\n\n";
     out += `[i]${legendText("bb")}[/i]\n\n`;
     out += `[b]Loadout[/b]\n[list]\n`;
@@ -268,6 +275,8 @@
     const rows = [];
     for (const [k, v] of view.character.constraints) rows.push(csvRow([k, v]));
     for (const line of view.character.creditNotice || []) rows.push(csvRow(["Declared", line]));
+    for (const line of view.character.saturationNotice || []) rows.push(csvRow(["Saturated", line]));
+    for (const line of view.character.emptySlotNotice || []) rows.push(csvRow(["Free slots", line]));
     rows.push("");
     rows.push(csvRow(["Legend", legendText("csv")]));
     rows.push("");
@@ -314,6 +323,8 @@
     let h = `<h1>${htmlEsc(view.character.name)}</h1>`;
     h += `<p class="pc">${view.character.constraints.filter(([k]) => k !== "Character").map(([k, v]) => `<strong>${htmlEsc(k)}:</strong> ${htmlEsc(v)}`).join(" &middot; ")}</p>`;
     for (const line of view.character.creditNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
+    for (const line of view.character.saturationNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
+    for (const line of view.character.emptySlotNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
     h += `<p class="legend">${htmlEsc(legendText("md"))}</p>`;
     h += `<table><thead><tr><th>Slot</th><th>Item</th><th>ML</th><th>Affixes</th><th>Augments</th><th>Crafting</th></tr></thead><tbody>`;
     for (const it of view.loadout) {

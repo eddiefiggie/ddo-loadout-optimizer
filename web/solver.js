@@ -1305,7 +1305,105 @@ async function solveLexicographic(model, highs) {
     breakdown: breakdownByTarget(program, prim), computeScale: computeScale(program),
     capped: { ...program.cappedStats }, floorReport, program,
     creditReport: buildCreditReport(program, prim, model, floorReport),
+    saturationReport: buildSaturationReport(program, prim),
+    emptySlots: buildEmptySlotReport(model, sol),
   };
+}
+
+/** #239 — the worn slots the solve left empty.
+ *
+ *  Corrects the premise this feature was planned on. A short priority list does
+ *  NOT produce slots of arbitrary tie-broken gear: `chosen` carries only slots
+ *  where an item actually contributes, so the rest come back EMPTY. A single
+ *  `Kinetic Lore` priority at ML 34 fills 3 of 14. What a player is looking at
+ *  is a nearly bare character sheet, which is what "no other force lore stuff"
+ *  in the originating report was describing.
+ *
+ *  Slots the player locked empty are excluded — they chose that, and reporting
+ *  it back as "nothing could improve your priorities" would be wrong as well as
+ *  patronising.
+ *
+ *  Built here rather than in projection because it needs `model.worn`, and
+ *  `model` is dropped from the saved snapshot; a restored character must
+ *  disclose identically without re-solving.
+ */
+function buildEmptySlotReport(model, sol) {
+  const worn = (model && model.worn) || [];
+  if (!worn.length) return { count: 0, slots: [] };
+  const filled = new Set((sol.chosen || []).map((c) => c.slot));
+  const constraints = (model.query && model.query.slotConstraints) || {};
+  const slots = [];
+  for (const s of worn) {
+    if (filled.has(s.slot)) continue;
+    if (constraints[s.slot] && constraints[s.slot].type === "empty") continue;
+    slots.push(s.slot);
+  }
+  return { count: slots.length, slots };
+}
+
+/** #239 U1 — which ranked stats are at their ceiling with sources left over.
+ *
+ *  Reads `program.zByBucket`, which already IS the census: the solver builds it
+ *  only for target stats, keyed `${stat}||${equivType(type)}`, holding every
+ *  candidate contribution in the LIVE pool with its gates and value. There is no
+ *  second traversal of the pool here and there must not be — a parallel notion of
+ *  "the pool" is free to drift from the one the solve actually used.
+ *
+ *  Plain JSON, built here rather than at render time for the same reason
+ *  `creditReport` is: `program` is dropped from the saved snapshot, and a
+ *  restored character is never re-solved, so a render-time computation would go
+ *  quiet on load.
+ *
+ *  KTD3 — a stat is only reported when the pool still holds UNUSED sources for
+ *  it. Priority 1 is at its global maximum on every solve, so an ungated report
+ *  would fire constantly; the informative case is the one that generates the
+ *  complaint, where other gear carrying the stat went unused because it would
+ *  have shared a filled bucket.
+ *
+ *  KTD6 — facts only. No cause is attributed: the pool is the product of the ML
+ *  band, the gear pool, the character gates AND the dominance pre-filter, and
+ *  this cannot tell which one removed a source. Naming the ML band was already
+ *  wrong once for an ML-29 item well inside a cap of 34.
+ */
+function buildSaturationReport(program, prim) {
+  const zByBucket = (program && program.zByBucket) || new Map();
+  const forcedOff = (program && program.forcedOffVars) || new Set();
+  const reachable = (z) => !(z.gates || []).some((g) => forcedOff.has(g));
+  const out = [];
+
+  for (const stat of (program && program.targetList) || []) {
+    const prefix = `${stat}||`;
+    const bonusTypes = [];
+    let unusedSources = 0, total = 0, sawBucket = false, allFilled = true;
+
+    for (const [key, zs] of zByBucket) {
+      if (!key.startsWith(prefix)) continue;
+      const live = zs.filter(reachable);
+      if (!live.length) continue;
+      sawBucket = true;
+
+      let best = -Infinity, taken = 0;
+      for (const z of live) {
+        if (z.value > best) best = z.value;
+        // A bucket caps at one contributor, so at most one z is on.
+        if (prim(z.name) > 0.5) taken = z.value;
+      }
+      if (taken < best) allFilled = false;
+      total += taken;
+      unusedSources += live.filter((z) => prim(z.name) <= 0.5).length;
+
+      // The absent-bonus-type bucket keys as the string "null" (equivType returns
+      // the type unchanged, and it is null). Render it as a word — a player must
+      // never be shown the literal "null" as a bonus type.
+      const type = key.slice(prefix.length);
+      bonusTypes.push(type === "null" || type === "undefined" ? "untyped" : type);
+    }
+
+    if (sawBucket && allFilled && unusedSources > 0) {
+      out.push({ stat, total, bonusTypes, unusedSources });
+    }
+  }
+  return out;
 }
 
 /** U4 (R9, R10) — what each declared credit did, as plain JSON on the result.
