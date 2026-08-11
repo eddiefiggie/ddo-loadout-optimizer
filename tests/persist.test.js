@@ -284,4 +284,15 @@ test("U4/U5: the credit disclosure survives the save path", () => {
   assert.strictEqual(kept.program, undefined, "and the program still is not");
 });
 
+test("U1/#239: the saturation disclosure survives the save path", () => {
+  // Same allowlist, same reason as the credit disclosure above: built from
+  // `program.zByBucket`, and `program` is dropped. Omitted from RESULT_KEEP, the
+  // notice renders on a fresh solve and disappears on reload.
+  const { stripResult } = require("../web/persist.js");
+  const report = [{ stat: "Kinetic Lore", total: 30, bonusTypes: ["Equipment", "Artifact"], unusedSources: 56 }];
+  const kept = stripResult({ status: "optimal", saturationReport: report, program: { cyclic: true } });
+  assert.deepStrictEqual(kept.saturationReport, report, "the disclosure is persisted");
+  assert.strictEqual(kept.program, undefined, "and the program still is not");
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

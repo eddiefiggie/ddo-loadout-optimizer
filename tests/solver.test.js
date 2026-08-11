@@ -2899,5 +2899,115 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
     assert.ok(/7 Insight and 4 Profane/.test(floorLines[0]), "and it names both declarations");
   });
 
+  // ---- #239 U1: the saturation report -------------------------------------
+  //
+  // A ranked stat is "saturated" when every bonus-type bucket carrying it in the
+  // live pool is filled at that bucket's best reachable value. Priority 1 is at
+  // its global maximum on EVERY solve (stage 1 maximizes it), so saturation alone
+  // would fire constantly and read as noise. KTD3 gates the report on the pool
+  // still holding UNUSED sources for the stat — the case where a player has an
+  // actual reason to expect more gear to help. The negative tests below are the
+  // load-bearing half: an ungated report passes the positive test just as well.
+  const sat = (r, stat) => (r.saturationReport || []).find((e) => e.stat === stat);
+
+  await test("U1/#239: a stat whose buckets are full with sources left over is reported", async () => {
+    const model = {
+      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      worn: [
+        // Two Equipment sources, same bucket: only the best can ever count.
+        slot("Goggles", [item("best-equip", "Goggles", [["KL", "Equipment", 24]]),
+                         item("lesser-equip", "Goggles", [["KL", "Equipment", 20]])]),
+        // A second, different bucket — adds to the first rather than competing.
+        slot("Ring", [item("art", "Ring", [["KL", "Artifact", 6]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.KL, 30, "premise: 24 Equipment + 6 Artifact across two buckets");
+    const e = sat(r, "KL");
+    assert.ok(e, "the stat is reported saturated");
+    assert.deepStrictEqual(e.bonusTypes.slice().sort(), ["Artifact", "Equipment"],
+      "both carrying bonus types are named");
+    assert.strictEqual(e.unusedSources, 1, "the 20 Equipment source could never have helped");
+    assert.strictEqual(e.total, 30);
+  });
+
+  await test("U1/#239: a stat with no unused sources is NOT reported, though it is maxed", async () => {
+    const model = {
+      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Goggles", [item("only", "Goggles", [["KL", "Equipment", 24]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.KL, 24, "premise: it IS at its ceiling");
+    // Assert the field exists before asserting it is empty: "no entry" is
+    // trivially true when the feature is absent, which is how an unfalsifiable
+    // test passes against the pre-change tree and covers nothing.
+    assert.ok(Array.isArray(r.saturationReport), "the report exists");
+    assert.ok(!sat(r, "KL"),
+      "nothing went unused, so the player has no reason to expect more — reporting it would be noise on every solve");
+  });
+
+  await test("U1/#239: a bucket left unfilled means the stat is not saturated", async () => {
+    const model = {
+      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Goggles", [item("equip", "Goggles", [["KL", "Equipment", 24]])]),
+        // Two Artifact sources in ONE slot: the better one is taken, so the
+        // bucket IS filled at its best. Add a competing higher-value source in a
+        // slot the solve cannot also take, and the ceiling is not reached.
+        slot("Ring", [item("art-lo", "Ring", [["KL", "Artifact", 6]]),
+                      item("other", "Ring", [["Unranked", "Equipment", 99]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    // Both buckets are filled at their reachable best here, and one Ring source
+    // went unused — but it carries no KL, so it is not an unused KL source.
+    assert.ok(Array.isArray(r.saturationReport), "the report exists");
+    const e = sat(r, "KL");
+    assert.ok(!e || e.unusedSources > 0,
+      "an entry may only exist when a source carrying THIS stat went unused");
+  });
+
+  await test("U1/#239: an absent bonus type and an explicit Untyped stay separate buckets", async () => {
+    const model = {
+      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Goggles", [item("native", "Goggles", [["KL", null, 6]]),
+                         item("native-lo", "Goggles", [["KL", null, 4]])]),
+        slot("Ring", [item("aug", "Ring", [["KL", "Untyped", 4]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.KL, 10,
+      "6 + 4 — two buckets that SUM; collapsing them would read 6 and is the #235 revert");
+    const e = sat(r, "KL");
+    assert.ok(e, "saturated with the 4 native source unused");
+    assert.strictEqual(e.bonusTypes.length, 2, "two distinct buckets are named");
+    assert.ok(e.bonusTypes.includes("Untyped"), "the explicit Untyped bucket");
+    assert.ok(e.bonusTypes.includes("untyped"),
+      "the absent-type bucket renders as a word, never the literal string 'null'");
+  });
+
+  await test("U1/#239: a stat nothing in the pool carries produces no entry", async () => {
+    const model = {
+      targets: ["Absent"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [item("r", "Ring", [["Other", "Equipment", 5]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.ok(Array.isArray(r.saturationReport), "the field is always present, so its absence cannot pass for empty");
+    assert.ok(!sat(r, "Absent"), "the zero-source path owns this case, not saturation");
+  });
+
+  await test("U1/#239: saturationReport is plain JSON with no reference to the program", async () => {
+    const model = {
+      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Goggles", [item("a", "Goggles", [["KL", "Equipment", 24]]),
+                              item("b", "Goggles", [["KL", "Equipment", 20]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    const round = JSON.parse(JSON.stringify(r.saturationReport));
+    assert.deepStrictEqual(round, r.saturationReport, "survives a stringify round-trip unchanged");
+    assert.ok(!JSON.stringify(r.saturationReport).includes("zByBucket"));
+  });
+
   console.log(`\n${passed} passed`);
 })();
