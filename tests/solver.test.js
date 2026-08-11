@@ -3009,5 +3009,66 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
     assert.ok(!JSON.stringify(r.saturationReport).includes("zByBucket"));
   });
 
+  // ---- #239: the empty-slot report ----------------------------------------
+  //
+  // These drive a REAL solve. The first version of this feature counted
+  // "tie-broken filler" picks and was tested against hand-built `chosen` arrays
+  // containing filler items — a shape no solve produces. It passed every test
+  // and returned 0 on the live dataset. `chosen` carries only slots where an
+  // item contributes; the rest come back EMPTY, which is what a player with a
+  // short priority list is actually looking at.
+
+  await test("#239: worn slots the solve did not fill are reported empty", async () => {
+    const model = {
+      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Goggles", [item("g", "Goggles", [["KL", "Equipment", 24]])]),
+        slot("Ring", [item("r", "Ring", [["Unranked", "Equipment", 9]])]),
+        slot("Boots", [item("b", "Boots", [["Unranked", "Equipment", 9]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.chosen.length, 1, "premise: only the contributing slot is filled");
+    assert.strictEqual(r.emptySlots.count, 2, "the other two worn slots are empty");
+    assert.deepStrictEqual(r.emptySlots.slots.slice().sort(), ["Boots", "Ring"]);
+  });
+
+  await test("#239: a fully-used loadout reports no empty slots", async () => {
+    const model = {
+      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Goggles", [item("g", "Goggles", [["KL", "Equipment", 24]])]),
+        slot("Ring", [item("r", "Ring", [["KL", "Artifact", 6]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.chosen.length, 2, "premise: both slots contribute");
+    assert.strictEqual(r.emptySlots.count, 0);
+  });
+
+  await test("#239: a slot the player locked empty is not reported as empty", async () => {
+    const model = {
+      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      query: { slotConstraints: { Boots: { type: "empty" } } },
+      worn: [
+        slot("Goggles", [item("g", "Goggles", [["KL", "Equipment", 24]])]),
+        slot("Boots", [item("b", "Boots", [["KL", "Equipment", 20]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.emptySlots.count, 0,
+      "the player chose that — reporting it back as 'nothing could improve your priorities' is wrong");
+  });
+
+  await test("#239: emptySlots is plain JSON", async () => {
+    const model = {
+      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Goggles", [item("g", "Goggles", [["KL", "Equipment", 24]])]),
+             slot("Ring", [item("r", "Ring", [["Unranked", "Equipment", 9]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(r.emptySlots)), r.emptySlots);
+  });
+
   console.log(`\n${passed} passed`);
 })();

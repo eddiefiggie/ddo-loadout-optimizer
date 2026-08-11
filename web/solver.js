@@ -1306,7 +1306,39 @@ async function solveLexicographic(model, highs) {
     capped: { ...program.cappedStats }, floorReport, program,
     creditReport: buildCreditReport(program, prim, model, floorReport),
     saturationReport: buildSaturationReport(program, prim),
+    emptySlots: buildEmptySlotReport(model, sol),
   };
+}
+
+/** #239 — the worn slots the solve left empty.
+ *
+ *  Corrects the premise this feature was planned on. A short priority list does
+ *  NOT produce slots of arbitrary tie-broken gear: `chosen` carries only slots
+ *  where an item actually contributes, so the rest come back EMPTY. A single
+ *  `Kinetic Lore` priority at ML 34 fills 3 of 14. What a player is looking at
+ *  is a nearly bare character sheet, which is what "no other force lore stuff"
+ *  in the originating report was describing.
+ *
+ *  Slots the player locked empty are excluded — they chose that, and reporting
+ *  it back as "nothing could improve your priorities" would be wrong as well as
+ *  patronising.
+ *
+ *  Built here rather than in projection because it needs `model.worn`, and
+ *  `model` is dropped from the saved snapshot; a restored character must
+ *  disclose identically without re-solving.
+ */
+function buildEmptySlotReport(model, sol) {
+  const worn = (model && model.worn) || [];
+  if (!worn.length) return { count: 0, slots: [] };
+  const filled = new Set((sol.chosen || []).map((c) => c.slot));
+  const constraints = (model.query && model.query.slotConstraints) || {};
+  const slots = [];
+  for (const s of worn) {
+    if (filled.has(s.slot)) continue;
+    if (constraints[s.slot] && constraints[s.slot].type === "empty") continue;
+    slots.push(s.slot);
+  }
+  return { count: slots.length, slots };
 }
 
 /** #239 U1 — which ranked stats are at their ceiling with sources left over.

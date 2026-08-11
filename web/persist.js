@@ -29,6 +29,8 @@
     // dropped by omission, and a restored character is never re-solved. Without
     // it the notice would render on a fresh solve and vanish on load.
     "saturationReport",
+    // #239 — same reason: computed from `model.worn`, and `model` is dropped.
+    "emptySlots",
   ];
 
   function stripResult(result) {

@@ -191,38 +191,6 @@
     return wins;
   }
 
-  /** #239 U2 — the slots the ranked priorities did not constrain.
-   *
-   *  A free slot is one where every candidate tied on the ranked stats, so a
-   *  tie-break filled it rather than the objective. `whyThis` already identifies
-   *  exactly that — its contract is "empty for a filler/tie-break pick" — so this
-   *  composes it rather than introducing a second notion of "contributes
-   *  nothing" that could disagree with the per-slot line the panel renders.
-   *
-   *  A slot supplying a piece to a satisfied set is excluded even when it wins no
-   *  ranked target: the set is doing work the ranking does not capture, and
-   *  telling a player their set piece is dead weight reads as a bug rather than
-   *  as honesty.
-   *
-   *  Derived from the result alone, so it needs no persistence — unlike
-   *  `saturationReport`, which needs the pool and is built at solve time.
-   */
-  function freeSlots(result) {
-    if (!result || result.status !== "optimal") return { count: 0, slots: [] };
-    const chosen = result.chosen || [];
-    if (!chosen.length) return { count: 0, slots: [] };
-    const attr = attributionByTarget(result);
-    const contributors = setContributors(result);
-    const slots = [];
-    for (const c of chosen) {
-      const v = c.variant || {};
-      if (whyThis(result, { slot: c.slot, variant_id: v.variant_id }, attr).length) continue;
-      if (contributorsFor(contributors, c.slot, v.variant_id).length) continue;
-      slots.push(c.slot);
-    }
-    return { count: slots.length, slots };
-  }
-
   /** Variant_ids of host items that carry a solver-placed Set Augment. A Set Augment
    *  overrides ("suppresses") the host item's OWN named set(s) — the solver already
    *  dropped that set from setsActive/totals, so the set-satisfaction primitives must
@@ -724,7 +692,7 @@
         // optimal loadout with no way to learn that a stat was already at its
         // ceiling, or that slots were tie-broken rather than chosen.
         saturationNotice: saturationNoticeLines(snap),
-        freeSlotNotice: freeSlotNoticeLines(snap) },
+        emptySlotNotice: emptySlotNoticeLines(snap) },
       loadout, sets, attribution,
     };
   }
@@ -771,18 +739,22 @@
     });
   }
 
-  /** #239 — the free-slot disclosure as plain sentences.
+  /** #239 — the empty-slot disclosure as plain sentences.
    *
-   *  States the fact only. The invitation to add priorities is app-side: a
-   *  shared export has no Adjust & re-solve panel, and telling a reader to click
-   *  something that is not in front of them is worse than saying nothing.
+   *  Reads `emptySlots` (plain JSON on the result) rather than deriving it, for
+   *  the same reason the saturation line does: the worn-slot list lives on the
+   *  model, which a restored character no longer has.
+   *
+   *  States the fact only. The invitation to add priorities is app-side — a
+   *  shared export has no Adjust & re-solve panel, and pointing a reader at a
+   *  control that is not in front of them is worse than saying nothing.
    */
-  function freeSlotNoticeLines(result) {
-    const f = freeSlots(result);
-    if (!f.count) return [];
-    const isOne = f.count === 1;
-    return [`${f.count} ${isOne ? "slot is" : "slots are"} not constrained by these priorities `
-      + `(${f.slots.join(", ")}) — ${isOne ? "it was" : "they were"} filled by tie-break, not chosen.`];
+  function emptySlotNoticeLines(result) {
+    const e = (result && result.emptySlots) || { count: 0, slots: [] };
+    if (!e.count) return [];
+    const isOne = e.count === 1;
+    return [`${e.count} ${isOne ? "slot is" : "slots are"} empty (${(e.slots || []).join(", ")}) — `
+      + `nothing available for ${isOne ? "it" : "them"} improves these priorities.`];
   }
 
   function creditNoticeLines(result) {
@@ -833,10 +805,10 @@
 
   const api = {
     // resolved-view assembler
-    project, creditNoticeLines, saturationNoticeLines, freeSlotNoticeLines, declaredCreditsLine,
+    project, creditNoticeLines, saturationNoticeLines, emptySlotNoticeLines, declaredCreditsLine,
     // pure primitives (results.js binds these; single definition, no drift)
     affixLabel, itemMl, contributingAffixes, assignAugments, dinoInsertKey, assignDinoInserts,
-    attributionByTarget, whyThis, freeSlots, satisfiedSets, suppressedHostIds, slotSetNames,
+    attributionByTarget, whyThis, satisfiedSets, suppressedHostIds, slotSetNames,
     setContributors, contributorsFor, setMemberLabel, activeSetDetail, satisfiedSetDetail,
     // craft + cue helpers
     buildCraftMaps, craftLabel, craftValue, lunarSolar,

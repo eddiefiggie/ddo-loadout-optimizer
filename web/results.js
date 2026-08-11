@@ -620,18 +620,18 @@ function incidentalStats(query, result) {
   return [...counts.entries()].sort((a, b) => (b[1] - a[1]) || a[0].localeCompare(b[0])).map((e) => e[0]);
 }
 
-/** The free-slot fact, plus the invitation. The invitation is app-only — it
+/** The empty-slot fact, plus the invitation. The invitation is app-only — it
  *  points at the Adjust & re-solve panel already on this screen, which a shared
  *  export does not have. */
-function freeSlotNotice(query, result) {
-  const lines = (Proj && Proj.freeSlotNoticeLines) ? Proj.freeSlotNoticeLines(result) : [];
+function emptySlotNotice(query, result) {
+  const lines = (Proj && Proj.emptySlotNoticeLines) ? Proj.emptySlotNoticeLines(result) : [];
   if (!lines.length) return "";
   const names = incidentalStats(query, result).slice(0, 3);
   const invite = names.length
-    ? `Add another priority to put them to work — your gear already carries `
+    ? `Rank another stat to put them to work — your gear already carries `
       + `${names.map(esc).join(", ")}.`
-    : `Add another priority to put them to work.`;
-  return `<p class="scope-note free-slot-note" role="status">${lines.map(esc).join(" ")} `
+    : `Rank another stat to put them to work.`;
+  return `<p class="scope-note empty-slot-note" role="status">${lines.map(esc).join(" ")} `
     + `${invite} Open <strong>Adjust &amp; re-solve</strong> below.</p>`;
 }
 
@@ -763,7 +763,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     ${boundNotice(query, result)}
     ${zeroSourceNotice(query, result, model, dataset)}
     ${saturationNotice(result)}
-    ${freeSlotNotice(query, result)}
+    ${emptySlotNotice(query, result)}
     <div class="active-build-bar" hidden>
       <span class="active-build-msg"></span>
       <button class="return-optimum" type="button">Return to optimum</button>
@@ -1071,5 +1071,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, freeSlotNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, emptySlotNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }

@@ -1174,6 +1174,9 @@ function satBuild(opts) {
     setsActive: [], augmentsPlaced: [], setAugmentsPlaced: [], membershipPlaced: [],
     saturationReport: o.saturation === false ? [] : [
       { stat: "Kinetic Lore", total: 30, bonusTypes: ["Equipment", "Artifact"], unusedSources: 56 }],
+    emptySlots: o.empty === false ? { count: 0, slots: [] }
+      : { count: 11, slots: ["Armor", "Helmet", "Cloak", "Belt", "Gloves", "Bracers",
+                             "Trinket", "Ring 2", "Main Hand", "Off Hand", "Quiver"] },
   };
 }
 const satQuery = { targets: ["Kinetic Lore"] };
@@ -1186,28 +1189,27 @@ test("U4/#239: the saturation notice names both bonus types and no cause", () =>
   assert.strictEqual(R.saturationNotice(satBuild({ saturation: false })), "", "silent when nothing saturated");
 });
 
-test("U4/#239: the free-slot notice invites and names an incidentally-supplied stat", () => {
-  const html = R.freeSlotNotice(satQuery, satBuild());
-  assert.ok(/not constrained by these priorities/.test(html), "states the fact");
+test("U4/#239: the empty-slot notice invites and names an incidentally-supplied stat", () => {
+  const html = R.emptySlotNotice(satQuery, satBuild());
+  assert.ok(/11 slots are empty/.test(html), "states the fact");
   assert.ok(/Physical Sheltering/.test(html), "names a stat the build already carries");
   assert.ok(/Adjust &amp; re-solve/.test(html), "points at the panel already on this screen");
   assert.ok(!/56/.test(html), "does not speak the unused-source count");
 });
 
 test("U4/#239: the invitation still fires when the build supplies nothing extra", () => {
-  const html = R.freeSlotNotice(satQuery, satBuild({ bareFiller: true }));
-  assert.ok(/not constrained by these priorities/.test(html), "the fact still renders");
-  assert.ok(/Add another priority/.test(html), "and so does the invitation, with no stat named");
+  const html = R.emptySlotNotice(satQuery, satBuild({ bareFiller: true }));
+  assert.ok(/11 slots are empty/.test(html), "the fact still renders");
+  assert.ok(/Rank another stat/.test(html), "and so does the invitation, with no stat named");
 });
 
 test("U4/#239: the two notices are independent", () => {
-  const noFree = satBuild();
-  noFree.chosen = [noFree.chosen[0]];
-  assert.ok(R.saturationNotice(noFree) !== "", "saturation renders alone");
-  assert.strictEqual(R.freeSlotNotice(satQuery, noFree), "", "with no free-slot notice");
+  const noEmpty = satBuild({ empty: false });
+  assert.ok(R.saturationNotice(noEmpty) !== "", "saturation renders alone");
+  assert.strictEqual(R.emptySlotNotice(satQuery, noEmpty), "", "with no empty-slot notice");
   const noSat = satBuild({ saturation: false });
   assert.strictEqual(R.saturationNotice(noSat), "", "no saturation");
-  assert.ok(R.freeSlotNotice(satQuery, noSat) !== "", "free slots render alone");
+  assert.ok(R.emptySlotNotice(satQuery, noSat) !== "", "empty slots render alone");
 });
 
 test("U4/#239: a ranked stat is never offered back as a suggestion", () => {

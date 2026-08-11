@@ -923,6 +923,8 @@ function disclosureRec(opts) {
       saturationReport: (opts && opts.saturation) === false ? [] : [
         { stat: "Kinetic Lore", total: 30, bonusTypes: ["Equipment", "Artifact"], unusedSources: 56 },
       ],
+      emptySlots: (opts && opts.empty) === false ? { count: 0, slots: [] }
+        : { count: 2, slots: ["Ring", "Trinket"] },
     },
   };
 }
@@ -935,7 +937,7 @@ test("U3/#239: every share format carries both disclosures", () => {
     assert.ok(/at its ceiling/.test(out), `${fmt} carries the saturation fact`);
     assert.ok(/Equipment bonus/.test(out) && /Artifact bonus/.test(out),
       `${fmt} names both carrying bonus types`);
-    assert.ok(/not constrained by these priorities/.test(out), `${fmt} carries the free-slot fact`);
+    assert.ok(/slots are empty/.test(out), `${fmt} carries the empty-slot fact`);
     assert.ok(!/56/.test(out), `${fmt} does not speak the unused-source count`);
     assert.ok(!/\bML band\b/i.test(out), `${fmt} attributes no cause`);
   }
@@ -943,31 +945,29 @@ test("U3/#239: every share format carries both disclosures", () => {
 
 test("U3/#239: the two disclosures are independent", () => {
   // Saturation with no free slots.
-  const noFree = disclosureRec();
-  noFree.snapshot.chosen = [noFree.snapshot.chosen[0]];
-  const a = toMarkdown(noFree);
+  const noEmpty = disclosureRec({ empty: false });
+  const a = toMarkdown(noEmpty);
   assert.ok(/at its ceiling/.test(a), "saturation still renders");
-  assert.ok(!/not constrained by these priorities/.test(a), "and does not drag the other in");
+  assert.ok(!/slots are empty/.test(a), "and does not drag the other in");
 
   // Free slots with no saturation.
   const noSat = disclosureRec({ saturation: false });
   const b = toMarkdown(noSat);
   assert.ok(!/at its ceiling/.test(b), "no saturation fact");
-  assert.ok(/not constrained by these priorities/.test(b), "the free-slot fact still renders");
+  assert.ok(/slots are empty/.test(b), "the empty-slot fact still renders");
 });
 
 test("U3/#239: the portable envelope carries both, so a re-import discloses identically", () => {
   const portable = toPortableJSON(disclosureRec(), "2026-08-10T00:00:00Z");
   const blob = JSON.stringify(portable);
   assert.ok(/at its ceiling/.test(blob), "saturation rides in the envelope");
-  assert.ok(/not constrained by these priorities/.test(blob), "so does the free-slot fact");
+  assert.ok(/slots are empty/.test(blob), "so does the empty-slot fact");
 });
 
 test("U3/#239: a build with neither fact exports cleanly", () => {
-  const clean = disclosureRec({ saturation: false });
-  clean.snapshot.chosen = [clean.snapshot.chosen[0]];
+  const clean = disclosureRec({ saturation: false, empty: false });
   const out = toMarkdown(clean);
-  assert.ok(!/at its ceiling/.test(out) && !/not constrained/.test(out), "neither fact appears");
+  assert.ok(!/at its ceiling/.test(out) && !/slots are empty/.test(out), "neither fact appears");
   assert.ok(!/>\s*\n/.test(out.replace(/\n{3,}/g, "\n\n")), "and no empty blockquote is left behind");
 });
 
