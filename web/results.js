@@ -578,6 +578,63 @@ function boundNotice(query, result) {
   return parts.length ? `<p class="scope-note bound-note" role="status">${parts.join(" ")}</p>` : "";
 }
 
+// #239 — the two disclosures, rendered with the loadout rather than buried in the
+// dataset-scoped coverage note, joining the artifactNotice/boundNotice family for
+// the reason artifactNotice records: a player reads the build, not the scope note.
+//
+// Both read the SHARED sentences from projection, never a second wording. A
+// notice phrased once here and once in the exporters is how the app and a shared
+// build come to disagree about the same solve.
+
+/** The ceiling fact. Pure (result), and identical on a restored snapshot. */
+function saturationNotice(result) {
+  const lines = (Proj && Proj.saturationNoticeLines) ? Proj.saturationNoticeLines(result) : [];
+  return lines.length
+    ? `<p class="scope-note saturation-note" role="status">${lines.map(esc).join(" ")}</p>`
+    : "";
+}
+
+/** Stats the equipped items already supply that the player did NOT rank.
+ *
+ *  KTD5 — the invitation names these rather than a curated suggestion list. A
+ *  curated list would have the tool holding an opinion about which gear is good,
+ *  which is the thing "invite, don't auto-fill" exists to avoid. These come from
+ *  the player's own loadout, so every one is verifiably already in hand.
+ *  Ordered by how many equipped items carry it, so the strongest incidental
+ *  theme leads.
+ */
+function incidentalStats(query, result) {
+  const ranked = new Set((query && query.targets) || []);
+  const counts = new Map();
+  for (const c of (result && result.chosen) || []) {
+    const seen = new Set();
+    for (const a of (c.variant && c.variant.affixes) || []) {
+      const n = a && (a.name != null ? a.name : a.stat);
+      // Presence-only features have no magnitude to chase, so they make poor
+      // suggestions for a player trying to give the solver something to optimize.
+      if (!n || ranked.has(n) || seen.has(n) || a.type === "Bool" || a.type === "boolean") continue;
+      seen.add(n);
+      counts.set(n, (counts.get(n) || 0) + 1);
+    }
+  }
+  return [...counts.entries()].sort((a, b) => (b[1] - a[1]) || a[0].localeCompare(b[0])).map((e) => e[0]);
+}
+
+/** The free-slot fact, plus the invitation. The invitation is app-only — it
+ *  points at the Adjust & re-solve panel already on this screen, which a shared
+ *  export does not have. */
+function freeSlotNotice(query, result) {
+  const lines = (Proj && Proj.freeSlotNoticeLines) ? Proj.freeSlotNoticeLines(result) : [];
+  if (!lines.length) return "";
+  const names = incidentalStats(query, result).slice(0, 3);
+  const invite = names.length
+    ? `Add another priority to put them to work — your gear already carries `
+      + `${names.map(esc).join(", ")}.`
+    : `Add another priority to put them to work.`;
+  return `<p class="scope-note free-slot-note" role="status">${lines.map(esc).join(" ")} `
+    + `${invite} Open <strong>Adjust &amp; re-solve</strong> below.</p>`;
+}
+
 // U3 (plan 2026-08-05-001) — a priority NOTHING in the active pool can contribute
 // to used to score zero with no explanation, which reads as the tool being broken.
 // This names it and says which of the two causes applies, because they call for
@@ -705,6 +762,8 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     ${artifactNotice(result, query)}
     ${boundNotice(query, result)}
     ${zeroSourceNotice(query, result, model, dataset)}
+    ${saturationNotice(result)}
+    ${freeSlotNotice(query, result)}
     <div class="active-build-bar" hidden>
       <span class="active-build-msg"></span>
       <button class="return-optimum" type="button">Return to optimum</button>
@@ -1012,5 +1071,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, freeSlotNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }
