@@ -287,6 +287,49 @@ test("U5: composites remain presence-flagged after decomposition", () => {
 
 // ---- picker vocabulary: every offered stat must have a real source ----
 
+test("picker: a stat reachable only through a MULTI-AFFIX Viktranium option is offered", () => {
+  // A Viktranium option is atomic: one record carrying an `affixes` list. Reading
+  // only a singular `o.stat` leaves every affix of a multi-affix option
+  // unrankable — the player can never name the school the craft would grant.
+  const ds = {
+    metadata: { rankable_affixes: ["Constitution"] },
+    viktranium: [{
+      slot_type: "Dolorous", category: "Armor", tier: "legendary",
+      name: "Dolorous Invigorator (legendary)",
+      affixes: [
+        { stat: "Abjuration Focus", bonus_type: "Profane", value: 1, unit: "flat" },
+        { stat: "Necromancy Focus", bonus_type: "Profane", value: 1, unit: "flat" },
+        { stat: "Assassinate", bonus_type: "Profane", value: 1, unit: "flat" },
+      ],
+    }],
+  };
+  const v = buildPickerVocabulary(ds);
+  for (const stat of ["Abjuration Focus", "Necromancy Focus", "Assassinate"]) {
+    assert.ok(v.suggestions.includes(stat), `${stat} is offered as a rankable suggestion`);
+    assert.ok(v.known.has(stat), `${stat} is free-typeable`);
+  }
+});
+
+test("picker: a FLAT legacy Viktranium record still contributes its stat (back-compat)", () => {
+  const v = buildPickerVocabulary({
+    metadata: { rankable_affixes: ["Constitution"] },
+    viktranium: [{ slot_type: "Melancholic", category: "Accessory", tier: "legendary",
+      stat: "Necromancy Focus", bonus_type: "Profane", value: 1 }],
+  });
+  assert.ok(v.suggestions.includes("Necromancy Focus"), "the flat shape still sources its stat");
+});
+
+test("picker: every affix of every real multi-affix Viktranium option is known", () => {
+  const multi = (realData.viktranium || []).filter((o) => (o.affixes || []).length > 1);
+  assert.ok(multi.length > 0, "the real pool carries multi-affix options");
+  const v = buildPickerVocabulary(realData);
+  for (const o of multi) {
+    for (const a of o.affixes) {
+      assert.ok(v.known.has(a.stat), `${a.stat} (from ${o.name}) is in the picker vocabulary`);
+    }
+  }
+});
+
 test("picker: no dropdown suggestion is unsourced (dead-entry guard)", () => {
   // A name in the dropdown that nothing supplies is a priority guaranteed to score
   // zero — the "Profane Well Rounded" failure class. This asserts the invariant over

@@ -705,9 +705,20 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   const ncPool = (nearlyComplete || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
 
   // U81 Viktranium ("Lamordia"): the typed option pool keyed by (slot_type,
-  // category, tier). Keep only options advancing a ranked target; the solver
-  // attaches them per host via the item's `lamordia_slots` at the host's tier.
-  const vikPool = (viktranium || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
+  // category, tier). Each record is an ATOMIC craftable OPTION carrying one or
+  // more affixes (the same UNIT shape as a Dino insert) — crafting the universal
+  // spell-DC option grants all seven schools at once, so a caster ranking two
+  // schools spends ONE slot, not two. Keep an option when ANY of its affixes
+  // advances a ranked target; the solver attaches them per host via the item's
+  // `lamordia_slots` at the host's tier and gates the whole option on one binary.
+  const vikAdvances = (o) => {
+    const affixes = (o.affixes && o.affixes.length)
+      ? o.affixes
+      // back-compat: a flat single-affix record (pre-atomicity shape)
+      : (o.stat ? [{ stat: o.stat, value: o.value }] : []);
+    return affixes.some((a) => targetSet.has(a.stat) && a.value > 0);
+  };
+  const vikPool = (viktranium || []).filter((o) => o && vikAdvances(o));
 
   // Seal slots ("Sealed in X"): the single-pick option pool keyed by seal_type.
   // Keep only options advancing a ranked target; the solver unseals one option

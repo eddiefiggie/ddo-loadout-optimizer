@@ -980,9 +980,26 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
     v.minimum_level = v.ml = ml == null ? 35 : ml;
     return v;
   }
+  // FLAT legacy option (one record per affix) — the pre-atomicity shape a stale
+  // cached dataset can still deliver. The whole VIK_POOL block below is the
+  // back-compat regression guard: these must keep solving unchanged.
   function vikOpt(slot_type, category, stat, bonus_type, value, tier) {
     return { slot_type, category, stat, bonus_type, value, tier: tier || "legendary", unit: "flat" };
   }
+  // NATIVE atomic option (one record per craftable option, carrying its affix
+  // list) — mirrors the Dino insert UNIT. Several affixes ride ONE placement.
+  function vikMulti(slot_type, category, affixes, tier, name) {
+    return {
+      slot_type, category, tier: tier || "legendary", name: name || `${slot_type} option`,
+      affixes: affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, value, unit: "flat" })),
+    };
+  }
+  const SCHOOLS = ["Abjuration Focus", "Conjuration Focus", "Enchantment Focus", "Evocation Focus",
+    "Illusion Focus", "Necromancy Focus", "Transmutation Focus"];
+  // The real "universal spell DC" option: seven school affixes, one bonus type,
+  // one craft. Was seven competing records before atomicity.
+  const VIK_UNIVERSAL = vikMulti("Dolorous", "Armor",
+    SCHOOLS.map((s) => [s, "Profane", 1]), "legendary", "Dolorous Invigorator (legendary)");
   const VIK_POOL = [
     vikOpt("Melancholic", "Accessory", "Constitution", "Enhancement", 15, "legendary"),
     vikOpt("Melancholic", "Accessory", "Strength", "Enhancement", 15, "legendary"),
@@ -1098,6 +1115,112 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
     assert.strictEqual((r.vikPlaced || []).length, 0);
   });
 
+  // ---- Viktranium options are ATOMIC (R1/R2) -------------------------------
+  // A Viktranium option is one craftable native option carrying an affix list,
+  // not one record per affix. Crafting the universal spell-DC option grants its
+  // bonus type and value to all seven schools AT ONCE (R1), so a caster ranking
+  // two schools need not spend two Viktranium slots (R2).
+
+  await test("VIK/atomic R1: one craft of a universal option grants ALL seven schools", async () => {
+    const m = {
+      targets: ["Necromancy Focus", "Evocation Focus"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Armor", [vikHost("H", "Armor", [{ type: "Dolorous", category: "Armor" }])])],
+      viktranium: [VIK_UNIVERSAL],
+    };
+    const r = await S.solveLexicographic(m, highs);
+    assert.strictEqual(r.effective["Necromancy Focus"], 1, "priority-1 school crafted");
+    assert.strictEqual(r.effective["Evocation Focus"], 1,
+      "priority-2 school comes from the SAME craft — one option, all seven schools");
+    assert.strictEqual(r.vikPlaced.length, 1, "exactly ONE craft, not one per school");
+    assert.strictEqual((r.vikPlaced[0].affixes || []).length, 7,
+      "the placement record carries the option's whole affix list");
+  });
+
+  await test("VIK/atomic R2: two schools do not cost two Viktranium slots", async () => {
+    // Two hosts, one Dolorous/Armor slot each. Each host's craft grants BOTH
+    // ranked schools, so the second slot is free for something else — the
+    // reported bug (AE1) was a caster forced to burn a slot per school.
+    const m = {
+      targets: ["Necromancy Focus", "Evocation Focus", "Constitution"], mlCap: 36, dodgeCap: null,
+      worn: [
+        slot("Armor", [vikHost("A", "Armor", [{ type: "Dolorous", category: "Armor" }])]),
+        slot("Neck", [vikHost("B", "Neck", [{ type: "Dolorous", category: "Armor" }])]),
+      ],
+      viktranium: [
+        VIK_UNIVERSAL,
+        vikMulti("Dolorous", "Armor", [["Constitution", "Enhancement", 15]], "legendary", "Dolorous Con"),
+      ],
+    };
+    const r = await S.solveLexicographic(m, highs);
+    assert.strictEqual(r.effective["Necromancy Focus"], 1, "school 1 from the universal craft");
+    assert.strictEqual(r.effective["Evocation Focus"], 1, "school 2 from the SAME universal craft");
+    assert.strictEqual(r.effective.Constitution, 15,
+      "the second slot was free for Constitution — two schools cost ONE slot");
+  });
+
+  await test("VIK/atomic: ONE binary gates every on-target affix of an option", async () => {
+    const model = {
+      targets: ["Necromancy Focus", "Evocation Focus"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Armor", [vikHost("H", "Armor", [{ type: "Dolorous", category: "Armor" }])])],
+      viktranium: [VIK_UNIVERSAL],
+    };
+    const program = S.buildProgram(model);
+    const vks = [...program.vikMeta.keys()];
+    assert.strictEqual(vks.length, 1, "one option -> exactly one placement binary (not one per affix)");
+    for (const stat of ["Necromancy Focus", "Evocation Focus"]) {
+      const terms = [].concat(...[...program.zByBucket]
+        .filter(([k]) => k.split("||")[0] === stat).map(([, zs]) => zs));
+      assert.ok(terms.length >= 1, `${stat} has a bucket term`);
+      assert.ok(terms.every((z) => (z.gates || []).includes(vks[0])),
+        `every ${stat} contribution is gated on the single option binary ${vks[0]}`);
+    }
+  });
+
+  await test("VIK/atomic: an OFF-target affix of a selected option adds no objective term", async () => {
+    const model = {
+      targets: ["Necromancy Focus"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Armor", [vikHost("H", "Armor", [{ type: "Dolorous", category: "Armor" }])])],
+      viktranium: [vikMulti("Dolorous", "Armor", [
+        ["Necromancy Focus", "Profane", 1],
+        ["Assassinate", "Profane", 1],   // off-target: rides along, scores nothing
+      ])],
+    };
+    const program = S.buildProgram(model);
+    assert.ok([...program.zByBucket.keys()].some((k) => k.split("||")[0] === "Necromancy Focus"),
+      "the on-target affix is bucketed");
+    assert.ok(![...program.zByBucket.keys()].some((k) => k.split("||")[0] === "Assassinate"),
+      "the off-target affix contributes no bucket term");
+    assert.strictEqual([...program.vikMeta.keys()].length, 1, "still one binary for the option");
+  });
+
+  await test("VIK/atomic: Σn<=1 per slot still holds, and two slots still craft independently", async () => {
+    const pool = [
+      vikMulti("Melancholic", "Accessory", [["Constitution", "Enhancement", 15]]),
+      vikMulti("Melancholic", "Accessory", [["Strength", "Enhancement", 15]]),
+    ];
+    const one = {
+      targets: ["Constitution", "Strength"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Neck", [vikHost("H", "Neck", [{ type: "Melancholic", category: "Accessory" }])])],
+      viktranium: pool,
+    };
+    const a = await S.solveLexicographic(one, highs);
+    assert.strictEqual(a.effective.Constitution, 15, "priority-1 crafted");
+    assert.strictEqual(a.effective.Strength, 0, "one slot -> at most one option");
+    assert.strictEqual(a.vikPlaced.length, 1, "exactly one craft placed");
+
+    const two = {
+      ...one,
+      worn: [slot("Neck", [vikHost("H", "Neck", [
+        { type: "Melancholic", category: "Accessory" },
+        { type: "Melancholic", category: "Accessory" },
+      ])])],
+    };
+    const b = await S.solveLexicographic(two, highs);
+    assert.strictEqual(b.effective.Constitution, 15, "slot 1 crafts Con");
+    assert.strictEqual(b.effective.Strength, 15, "slot 2 crafts Str");
+    assert.strictEqual(b.vikPlaced.length, 2, "two slots -> two independent crafts");
+  });
+
   await test("U81 Viktranium crafts onto a real host end-to-end (real dataset)", async () => {
     const fs = require("fs");
     const { buildModel } = require("../web/model.js");
@@ -1116,40 +1239,53 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
     // (slot_type, category) pairs that a real item actually offers as a Lamordia slot.
     const hostKeys = new Set();
     for (const it of data.items) for (const ls of (it.lamordia_slots || [])) hostKeys.add(ls.type + "|" + ls.category);
-    // Pick a legendary option that (a) has a real host for its (slot_type, category),
-    // (b) out-values every worn item for its stat (so the craft is genuinely reached,
-    // not made redundant by an item), and (c) has a strictly weaker heroic counterpart
-    // (so "legendary magnitude > heroic" is a real assertion). Deterministic: strongest
-    // first, stat name as the tie-break.
-    const pick = data.viktranium
-      .filter((o) => o.tier === "legendary" && o.value > 35 && hostKeys.has(o.slot_type + "|" + o.category)
-        && o.value > itemMax(o.stat)
-        && data.viktranium.some((h) => h.stat === o.stat && h.slot_type === o.slot_type
-          && h.category === o.category && h.tier === "heroic" && h.value < o.value))
-      .sort((a, b) => b.value - a.value || (a.stat < b.stat ? -1 : 1))[0];
+    // An option is ATOMIC: one record per craftable option carrying an `affixes`
+    // list (flat single-affix records still read, for back-compat).
+    const affixesOf = (o) => (o.affixes && o.affixes.length) ? o.affixes : (o.stat ? [o] : []);
+    // Pick a legendary option affix that (a) has a real host for its (slot_type,
+    // category), (b) out-values every worn item for its stat (so the craft is
+    // genuinely reached, not made redundant by an item), and (c) has a strictly
+    // weaker heroic counterpart (so "legendary magnitude > heroic" is a real
+    // assertion). Deterministic: strongest first, stat name as the tie-break.
+    const cands = [];
+    for (const o of data.viktranium) {
+      if (o.tier !== "legendary" || !hostKeys.has(o.slot_type + "|" + o.category)) continue;
+      for (const a of affixesOf(o)) {
+        if (!(a.value > 35) || !(a.value > itemMax(a.stat))) continue;
+        const heroic = data.viktranium.find((h) => h.tier === "heroic" && h.slot_type === o.slot_type
+          && h.category === o.category && affixesOf(h).some((b) => b.stat === a.stat && b.value < a.value));
+        if (heroic) cands.push({ stat: a.stat, value: a.value, heroic });
+      }
+    }
+    const pick = cands.sort((a, b) => b.value - a.value || (a.stat < b.stat ? -1 : 1))[0];
     assert.ok(pick, "the native pool offers a hostable legendary option for the regression guard");
     const query = { mlCap: 36, targets: [pick.stat], armorType: null, weaponSetup: null, classRace: null };
     const model = buildModel(data.items, query, data.dino_inserts, data.nearly_complete, data.viktranium);
     const res = await S.solveLexicographic(model, highs);
     assert.strictEqual(res.status, "optimal");
     assert.ok((res.vikPlaced || []).length > 0, "at least one Viktranium craft was placed onto a host");
-    const craft = res.vikPlaced.find((n) => n.stat === pick.stat);
-    assert.ok(craft && craft.value > 0, `a Lamordia host crafted a ${pick.stat} option from its pool`);
+    // The placement record is self-describing: it carries the option's whole
+    // affix list, so a multi-affix craft is findable by any affix it grants.
+    // Several typed slots can each craft the stat under DIFFERENT bonus types
+    // (they stack), so take the strongest — that is the one the tier guard is about.
+    const valOf = (c) => c.affixes.find((a) => a.stat === pick.stat).value;
+    const crafts = res.vikPlaced.filter((n) => (n.affixes || []).some((a) => a.stat === pick.stat));
+    assert.ok(crafts.length, `a Lamordia host crafted a ${pick.stat} option from its pool`);
+    const craft = crafts.reduce((best, c) => (valOf(c) > valOf(best) ? c : best));
     assert.ok(craft.item, "the craft names its host item");
     // Every real host is a Legendary item, so the craft MUST pull the legendary
     // magnitude (a heroic value here would mean the legendary pool went unreachable —
     // the ML>=35 mis-tier bug). Assert the exact legendary value for the chosen
     // (slot_type, category), and that it beats the heroic magnitude of the same option.
     assert.strictEqual(craft.tier, "legendary", "a legendary host crafts at the legendary tier");
-    const expected = data.viktranium.find((o) => o.stat === pick.stat
-      && o.slot_type === craft.slot_type && o.category === craft.category && o.tier === "legendary");
-    assert.ok(expected && craft.value === expected.value,
-      `craft value ${craft.value} matches the legendary pool value ${expected && expected.value}`);
-    const heroicOpt = data.viktranium.find((o) => o.stat === pick.stat
-      && o.slot_type === craft.slot_type && o.category === craft.category && o.tier === "heroic");
-    assert.ok(heroicOpt && craft.value > heroicOpt.value,
-      `legendary magnitude ${craft.value} exceeds the heroic one ${heroicOpt && heroicOpt.value}`);
-    assert.ok(craft.value > 35, "legendary magnitude exceeds the heroic tier band");
+    const got = craft.affixes.find((a) => a.stat === pick.stat);
+    assert.strictEqual(got.value, pick.value,
+      `craft value ${got.value} matches the legendary pool value ${pick.value}`);
+    const heroicVal = affixesOf(pick.heroic).find((b) => b.stat === pick.stat).value;
+    assert.ok(got.value > heroicVal,
+      `legendary magnitude ${got.value} exceeds the heroic one ${heroicVal}`);
+    assert.ok(got.value > 35, "legendary magnitude exceeds the heroic tier band");
+    assert.ok(res.effective[pick.stat] >= pick.value, "the craft advances the ranked target");
   });
 
   await test("Dino crafts a multi-affix insert onto a real host end-to-end (real dataset)", async () => {

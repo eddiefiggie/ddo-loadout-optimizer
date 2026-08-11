@@ -122,13 +122,25 @@ function ncRow(opt) {
  *  so the typed effect pool is browsable. NOT an equippable item — a host's typed
  *  slot selects one option; this is inventory visibility only. */
 function vikRow(opt) {
+  // An option is an ATOMIC UNIT that may carry several affixes (the universal
+  // spell-DC craft grants all seven schools at once), so the row renders the
+  // option's WHOLE affix list — one row per OPTION, never one per affix. Falls
+  // back to a flat single-affix record for back-compat. Pool option objects are
+  // legacy-shaped ({stat,bonus_type}); the display row is built native
+  // ({name,type}) so the native readers above render it (U5).
+  const affixes = (opt.affixes && opt.affixes.length)
+    ? opt.affixes.map((a) => ({ name: a.stat, type: a.bonus_type, value: a.value, unit: a.unit || "flat" }))
+    : [{ name: opt.stat, type: opt.bonus_type, value: opt.value, unit: opt.unit || "flat" }];
+  const title = opt.name
+    ? `Slot ${opt.slot_type} Viktranium augment: ${opt.name}`
+    : `Slot ${opt.slot_type} Viktranium augment: ${affixes[0].name} (${opt.tier})`;
   return {
-    variant_id: `Slot ${opt.slot_type} Viktranium augment: ${opt.stat} (${opt.tier})`,
+    variant_id: title,
     source_item: `Viktranium — ${opt.slot_type} (${opt.category})`,
     slot: `Viktranium (${opt.slot_type} ${opt.category})`,
     ml: opt.tier === "legendary" ? 34 : 8,
     verification: "verified",
-    affixes: [{ name: opt.stat, type: opt.bonus_type, value: opt.value, unit: opt.unit || "flat" }],
+    affixes,
     scaling: [],
     wiki_url: opt.wiki_url,
     vik_option: true,
