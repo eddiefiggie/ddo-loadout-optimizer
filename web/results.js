@@ -449,11 +449,14 @@ function attributionList(contribs) {
     // nothing, so it always adds on top of every typed bonus to the same stat.
     const typeLabel = isBool ? "feature"
       : (c.bonus_type == null || c.bonus_type === "" ? "untyped" : c.bonus_type);
-    // #205 — a universal spell-DC enchantment is credited to the ranked school but
-    // is printed on the item under its own name. Show that name, or a player
-    // checking the tooltip finds text the item does not carry.
+    // #205 — an expanded enchantment is credited to the ranked stat but is printed
+    // on the item under its own name. Show that name, or a player checking the
+    // tooltip finds text the item does not carry. The sentence stays family-neutral:
+    // every expansion family now stamps this key (R12), so a claim about what the
+    // enchantment does — "raises the DC of every school" — would be true only for
+    // spell focus and false for Parrying, Speed, Well Rounded, and the rest.
     const via = c.via
-      ? `<span class="attrib-via" title="This item grants ${esc(c.via)}, which raises the DC of every school. It is credited here to the school you ranked.">as ${esc(c.via)}</span>`
+      ? `<span class="attrib-via" title="This item carries ${esc(c.via)}, which grants several effects at once. It is credited here to the one you ranked.">as ${esc(c.via)}</span>`
       : "";
     return `<li class="attrib-row ${kind}">
       <span class="attrib-type">${esc(typeLabel)}</span>
