@@ -155,9 +155,16 @@ def _make_variant(item, ml, tier_label, parsed):
         # Stamped here for the same reason `material` directly above is: quarantine
         # is decided in Python against the seed shard, and neither `web/solver.js`
         # nor `web/model.js` receives dataset metadata — so the exclusion has to
-        # ride on the variant the solver already holds. Absent means nothing was
-        # excluded, which is the state of every item today.
-        QUARANTINE_FIELD: item.get(QUARANTINE_FIELD),
+        # ride on the variant the solver already holds.
+        #
+        # Emitted ONLY when something was excluded, unlike `material` above, which
+        # is a real per-item property worth recording as unsourced. This is an
+        # exception marker: absent means nothing was excluded, which is the state
+        # of every item today. `web/solver.js` reads it as `(v && v.field) || []`,
+        # so absent and null are already indistinguishable to every consumer — and
+        # stamping the null anyway cost 353KB across 9,034 variants in an artifact
+        # every visitor downloads.
+        **({QUARANTINE_FIELD: item[QUARANTINE_FIELD]} if item.get(QUARANTINE_FIELD) else {}),
         "tier_values_incomplete": False,
         "tier_ml_list": None,
         # U81 Nearly-Complete host marker (category) — propagated so the solver's
