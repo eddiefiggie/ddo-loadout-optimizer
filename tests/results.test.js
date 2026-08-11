@@ -722,7 +722,6 @@ test("U5: boundNotice is empty when nothing bounded the solve", () => {
   assert.strictEqual(R.boundNotice({ mlFloor: 0, targetCaps: {} }, { perTarget: {}, floorReport: [] }), "");
 });
 
-console.log(`\n${passed} passed`);
 
 // --- U6/U7: empty-slot reason note + owned-vs-recommended marking ----------
 test("U6/AE5: an optimizer-left-empty slot shows the improvement reason note", () => {
@@ -1305,3 +1304,30 @@ test("U8/R8: an item with no expanded affix renders exactly as before", () => {
   assert.ok(/Constitution \+10/.test(html) && /Dodge \+5% Quality/.test(html));
   assert.strictEqual((html.match(/<li>/g) || []).length, 2, "both native affixes still listed");
 });
+
+// The provenance tooltip is user-facing correctness, not decoration. It once
+// claimed the enchantment "raises the DC of every school", which was true while
+// only spell focus carried `via` and false the moment the stamp widened to
+// Parrying, Speed, Well Rounded and Heightened Awareness. Nothing asserted the
+// string, so the wrong claim shipped and the correction could silently revert.
+test("the provenance tooltip makes no family-specific claim", () => {
+  const html = R.attributionList([
+    { source: "Some Item", value: 3, bonus_type: "Insight", slots: ["Bracers"],
+      via: "Parrying" },
+  ]);
+  assert.ok(/as Parrying/.test(html), "the row still names the engraved enchantment");
+  assert.ok(!/DC of every school/.test(html),
+    "no spell-DC claim on a family that grants Armor Class and saves");
+  assert.ok(/grants several effects at once/.test(html),
+    "the wording holds for every expansion family");
+});
+
+test("a native affix gets no provenance tooltip at all", () => {
+  const html = R.attributionList([
+    { source: "Some Item", value: 3, bonus_type: "Insight", slots: ["Bracers"], via: null },
+  ]);
+  assert.ok(!/attrib-via/.test(html), "nothing to attribute when nothing expanded");
+});
+
+
+console.log(`\n${passed} passed`);

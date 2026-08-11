@@ -93,6 +93,7 @@ EXPANSION_PASSES = (
     "parrying_split",        # src/parrying_split.py
     "heightened_awareness",  # src/heightened_awareness.py
     "speed_split",           # src/speed_split.py
+    "absorption_split",      # src/absorption_split.py — compound absorption -> elements
 )
 
 # --- verdicts -----------------------------------------------------------------

@@ -53,6 +53,7 @@ from __future__ import annotations
 
 import re
 
+from src import enchantment_split
 from src.enchantment_split import STATED, DEFAULTED, UNSOURCED  # noqa: F401
 from src.spell_focus import PROVENANCE_KEY
 
@@ -307,16 +308,12 @@ def apply(records, shard: dict) -> dict:
 def audit_shard(shard: dict) -> dict:
     """Report `unsourced` entries as harvest suspects rather than accepting them.
 
-    Raises on an empty shard. A check that inspects nothing passes
-    unconditionally and is indistinguishable from a clean run.
+    Thin wrapper over the shared implementation, which was already parameterised
+    on `label` for exactly this reuse. Kept as a named function so call sites read
+    in this module's vocabulary; the body must not be re-inlined — a second copy
+    is a place a fix to the shared logic silently would not reach.
     """
-    harvested = (shard or {}).get("harvested") or {}
-    if not harvested:
-        raise ValueError("elemental absorption shard is empty — refusing to report "
-                         "a clean audit over zero records")
-    suspects = sorted(title for title, entry in harvested.items()
-                      if (entry or {}).get("provenance") == UNSOURCED)
-    return {"inspected": len(harvested), "unsourced": len(suspects), "titles": suspects}
+    return enchantment_split.audit_shard(shard, label="elemental absorption shard")
 
 
 def audit_snapshots(shard: dict) -> dict:
