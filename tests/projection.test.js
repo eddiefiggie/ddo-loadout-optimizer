@@ -352,4 +352,138 @@ test("U9: the in-game order holds through project() (the exporters' path) as wel
   ], "Melancholic, then Dolorous, then Woeful — in-game order, not emission order");
 });
 
+
+// ---- U8 (R8, R9, R10) — collapse expanded affixes on item-centric surfaces ----
+//
+// One enchantment expands into several concrete affixes so the solver can match a
+// ranked stat. The player must read the name engraved on the item, not the model's
+// shape: a Woeful Viktranium craft reported "+2 Enchantment" on one item and "+2
+// Necromancy" on the off-hand, which is the same craft described by whichever
+// school happened to be ranked. Every expansion member carries `via` (the key
+// `src/spell_focus.py` exposes as PROVENANCE_KEY); these pin the collapse.
+
+// A typed universal spell-focus enchantment: seven schools, one magnitude.
+function focusMastery(label, type, value) {
+  return ["Abjuration", "Conjuration", "Enchantment", "Evocation", "Illusion", "Necromancy", "Transmutation"]
+    .map((s) => ({ name: `${s} Focus`, type, value, via: label }));
+}
+// A heterogeneous family: Armor Class at one magnitude, three saves at another.
+const PARRYING = [
+  { name: "Armor Class", type: "Insight", value: 5, via: "Parrying" },
+  { name: "Fortitude Save", type: "Insight", value: 2, via: "Parrying" },
+  { name: "Reflex Save", type: "Insight", value: 2, via: "Parrying" },
+  { name: "Will Save", type: "Insight", value: 2, via: "Parrying" },
+];
+
+test("U8/R8: a uniform expansion collapses to ONE entry naming the enchantment", () => {
+  const out = P.collapseExpansions(focusMastery("Sacred Spell Focus Mastery", "Sacred", 3));
+  assert.strictEqual(out.length, 1, "seven school affixes render as one line, not seven");
+  assert.strictEqual(P.affixLabel(out[0]), "Sacred Spell Focus Mastery +3",
+    "names the enchantment engraved on the item, carrying the shared magnitude");
+});
+
+test("U8/R8: a collapsed typed enchantment does NOT repeat its bonus type as a suffix", () => {
+  // affixLabel appends a non-Enhancement bonus type. Emitting the collapsed entry
+  // with `type: "Sacred"` would render "Sacred Spell Focus Mastery +3 Sacred".
+  const line = P.affixLabel(P.collapseExpansions(focusMastery("Sacred Spell Focus Mastery", "Sacred", 3))[0]);
+  assert.ok(!/Sacred.*Sacred/.test(line), `bonus type named twice: ${line}`);
+  assert.strictEqual(line, "Sacred Spell Focus Mastery +3");
+});
+
+test("U8/R8: a heterogeneous family lists its member values, inventing no single number", () => {
+  const out = P.collapseExpansions(PARRYING);
+  assert.strictEqual(out.length, 1, "still one line");
+  const line = P.affixLabel(out[0]);
+  assert.strictEqual(line,
+    "Parrying: Armor Class +5 Insight, Fortitude Save +2 Insight, Reflex Save +2 Insight, Will Save +2 Insight");
+  assert.ok(!/Parrying \+/.test(line), "never asserts a single magnitude the data does not have");
+});
+
+test("U8/R8: a native school-specific affix (no provenance) is untouched", () => {
+  const native = [{ name: "Necromancy Focus", type: "Equipment", value: 13 }];
+  const out = P.collapseExpansions(native);
+  assert.strictEqual(out.length, 1);
+  assert.strictEqual(out[0], native[0], "passed through by identity — not rebuilt");
+  assert.strictEqual(P.affixLabel(out[0]), "Necromancy Focus +13 Equipment");
+});
+
+test("U8/R8: a partially-relevant expansion still collapses to one line, beside its native neighbours", () => {
+  const affixes = [
+    { name: "Constitution", type: "Insightful", value: 7 },
+    ...focusMastery("Quality Spell Focus Mastery", "Quality", 2),
+    { name: "PRR", value: 15 },
+  ];
+  const out = P.collapseExpansions(affixes);
+  assert.deepStrictEqual(out.map(P.affixLabel), [
+    "Constitution +7 Insightful",
+    "Quality Spell Focus Mastery +2",
+    "PRR +15",
+  ], "the group collapses in place; unrelated affixes keep their order and text");
+});
+
+test("U8/R8: two different expansions on one item stay two distinct lines", () => {
+  const out = P.collapseExpansions([
+    ...focusMastery("Quality Spell Focus Mastery", "Quality", 2),
+    ...focusMastery("Insightful Spell Focus Mastery", "Insight", 1),
+  ]);
+  assert.deepStrictEqual(out.map(P.affixLabel),
+    ["Quality Spell Focus Mastery +2", "Insightful Spell Focus Mastery +1"],
+    "grouped by originating enchantment, not merged into one");
+});
+
+test("U8/R10: project()'s loadout affixes are collapsed, so no export can show the expanded shape", () => {
+  const rec = makeRec();
+  rec.snapshot.chosen[0].variant.affixes = [
+    { name: "Deadly", type: "Insightful", value: 9 },
+    ...focusMastery("Sacred Spell Focus Mastery", "Sacred", 3),
+  ];
+  const view = P.project(rec);
+  const goggles = view.loadout.find((i) => i.item === "Epic Spectacles");
+  assert.deepStrictEqual(goggles.affixes.map(P.affixLabel),
+    ["Deadly +9 Insightful", "Sacred Spell Focus Mastery +3"],
+    "the shared content model — the single source the exports read — is already collapsed");
+});
+
+test("U8/R9/AE5: a Viktranium craft of a universal option reads as the enchantment, not one school", () => {
+  // The reported symptom: the same craft described itself by whichever school was
+  // ranked, so one item said "+2 Enchantment" and the off-hand said "+2 Necromancy".
+  const opt = {
+    slot_type: "Woeful", item: "Cloak of Sorrow", name: "Woeful Invigorator (legendary)",
+    affixes: focusMastery("Profane Spell Focus Mastery", "Profane", 2)
+      .map((a) => ({ stat: a.name, bonus_type: a.type, value: a.value, unit: "flat", via: a.via })),
+    // vikMeta's legacy flat fields name the leading ON-TARGET affix — the very
+    // fields that made the label differ per item.
+    stat: "Enchantment Focus", bonus_type: "Profane", value: 2, unit: "flat",
+  };
+  assert.strictEqual(P.craftLabel(opt, "vik"),
+    "Slot Woeful Viktranium augment: Profane Spell Focus Mastery +2");
+});
+
+test("U8/R9: a single-affix Viktranium craft is unchanged", () => {
+  const opt = { slot_type: "Melancholic", stat: "Resistance", bonus_type: "Enhancement", value: 3, unit: "flat" };
+  assert.strictEqual(P.craftLabel(opt, "vik"), "Slot Melancholic Viktranium augment: Resistance +3");
+});
+
+test("U8/R9: a Dino insert whose affixes come from one expansion collapses the same way", () => {
+  const ins = {
+    dino_type: "Primal", name: "Ancient Insight",
+    affixes: focusMastery("Quality Spell Focus Mastery", "Quality", 2)
+      .map((a) => ({ stat: a.name, bonus_type: a.type, value: a.value, unit: "flat", via: a.via })),
+  };
+  assert.strictEqual(P.craftLabel(ins, "dino"),
+    "Primal: Ancient Insight, Quality Spell Focus Mastery +2");
+});
+
+test("U8/R9: a multi-affix craft with no provenance still lists each affix", () => {
+  const ins = {
+    dino_type: "Primal", name: "Mixed",
+    affixes: [
+      { stat: "Constitution", bonus_type: "Quality", value: 3, unit: "flat" },
+      { stat: "Dodge", bonus_type: "Quality", value: 2, unit: "pct" },
+    ],
+  };
+  assert.strictEqual(P.craftLabel(ins, "dino"),
+    "Primal: Mixed, Constitution +3 Quality, Dodge +2% Quality");
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);
