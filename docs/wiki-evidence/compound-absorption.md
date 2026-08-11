@@ -17,7 +17,7 @@ and, for one of the three, why it cannot be expanded from the dataset alone.
 |---|---|---|
 | `Fire and Cold Absorption` | Fire + Cold, same magnitude each | **CONFIRMED** |
 | `Electricity and Acid Absorption` | Electric + Acid, same magnitude each | **CONFIRMED** |
-| `Elemental Absorption` | Acid + Cold + Fire + Electric, **and Sonic on some items only** | **CONFIRMED (mechanic) / BLOCKED (per-item)** |
+| `Elemental Absorption` | Acid + Cold + Fire + Electric, **and Sonic on some items only** | **CONFIRMED (mechanic and per-item)** |
 
 ## `Elemental Absorption` — the sonic parameter is per-item and the data drops it
 
@@ -70,14 +70,20 @@ from the wiki.
 | Golden Orb of Death (level 7) | 10 | `{{Absorption Elemental 10 yes}}` | **yes** |
 | Golden Orb of Death (level 26) | 20 | `{{Absorption Elemental 20 yes}}` | **yes** |
 
-Wizard's Ward levels 17, 18, 24 and Cyran Guard level 27 were not opened
-individually; their templates are read from the sibling levels on the same tier
-table and carry the same third-parameter state. Confirm on harvest before the
-shard ships.
+**All thirteen rows were opened individually and read from their own rendered
+tooltip on 2026-08-11.** The four that were originally inferred from sibling tier
+rows — Wizard's Ward 17, 18, 24 and Cyran Guard 27 — each confirmed the inferred
+state, but they are recorded as `stated` because they were verified, not because
+the inference looked safe. The shard is `data/seed/compendium/elemental_absorption.json`;
+every entry carries `provenance: "stated"`, so no carrier is currently quarantined.
 
 **Consequence:** a blanket four-element expansion under-credits Sonic on five
 records; a blanket five-element expansion over-credits Sonic on eight. Neither
 is safe. Expansion is per-item, keyed to the harvested table above.
+
+A new carrier that ships without a shard entry is quarantined and disclosed
+rather than defaulted, so the failure mode of an un-harvested item is a visible
+gap rather than a wrong number in either direction.
 
 ## `Fire and Cold Absorption` and `Electricity and Acid Absorption` — components at full magnitude
 

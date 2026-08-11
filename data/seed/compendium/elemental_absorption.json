@@ -1,0 +1,106 @@
+{
+  "_meta": {
+    "field": "elemental_absorption",
+    "note": "Wiki-harvested seed shard. `Elemental Absorption` names a different set of elements on different items: the {{Absorption|Elemental|N}} template takes a third parameter deciding whether Sonic is included, and the distinction lives in the RENDERED TOOLTIP, not the visible cell -- which reads `Elemental Absorption +N%` either way. gear-planner stores nothing that distinguishes them, so the flag has to be sourced per item. Only `stated` is solver-eligible; an entry that is absent or non-stated is quarantined rather than defaulted in either direction, because a four-way expansion under-credits a Sonic carrier and a five-way over-credits the rest. See docs/wiki-evidence/compound-absorption.md.",
+    "sonic_true_elements": ["Acid Absorption", "Cold Absorption", "Fire Absorption", "Electric Absorption", "Sonic Absorption"],
+    "sonic_false_elements": ["Acid Absorption", "Cold Absorption", "Fire Absorption", "Electric Absorption"]
+  },
+  "snapshots": {
+    "{{absorption|elemental|n}}": {
+      "tooltip": "Elemental Absorption +5%: Passive: 5% Enhancement Bonus to Acid, Cold, Fire, and Electrical Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)",
+      "observed_on": "Item:Archaic Device",
+      "harvested": "2026-08-11"
+    },
+    "{{absorption|elemental|n|yes}}": {
+      "tooltip": "Elemental Absorption +20%: Passive: 20% Enhancement Bonus to Acid, Cold, Fire, Electrical, and Sonic Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)",
+      "observed_on": "Item:Golden Orb of Death (level 26)",
+      "harvested": "2026-08-11"
+    }
+  },
+  "harvested": {
+    "Archaic Device": {
+      "value": {"sonic": false},
+      "provenance": "stated",
+      "raw": "{{Absorption|Elemental|5}}",
+      "tooltip": "Elemental Absorption +5%: Passive: 5% Enhancement Bonus to Acid, Cold, Fire, and Electrical Absorption.",
+      "harvested": "2026-08-11"
+    },
+    "War Wizard's Robes": {
+      "value": {"sonic": false},
+      "provenance": "stated",
+      "raw": "{{Absorption|Elemental|5}}",
+      "harvested": "2026-08-11"
+    },
+    "Wizard's Ward (level 16)": {
+      "value": {"sonic": false},
+      "provenance": "stated",
+      "raw": "{{Absorption|Elemental|5}}",
+      "harvested": "2026-08-11"
+    },
+    "Wizard's Ward (level 17)": {
+      "value": {"sonic": false},
+      "provenance": "stated",
+      "raw": "{{Absorption|Elemental|5}}",
+      "tooltip": "Elemental Absorption +5%: Passive: 5% Enhancement Bonus to Acid, Cold, Fire, and Electrical Absorption.",
+      "harvested": "2026-08-11"
+    },
+    "Wizard's Ward (level 18)": {
+      "value": {"sonic": false},
+      "provenance": "stated",
+      "raw": "{{Absorption|Elemental|5}}",
+      "tooltip": "Elemental Absorption +5%: Passive: 5% Enhancement Bonus to Acid, Cold, Fire, and Electrical Absorption.",
+      "harvested": "2026-08-11"
+    },
+    "Wizard's Ward (level 23)": {
+      "value": {"sonic": false},
+      "provenance": "stated",
+      "raw": "{{Absorption|Elemental|10}}",
+      "harvested": "2026-08-11"
+    },
+    "Wizard's Ward (level 24)": {
+      "value": {"sonic": false},
+      "provenance": "stated",
+      "raw": "{{Absorption|Elemental|10}}",
+      "tooltip": "Elemental Absorption +10%: Passive: 10% Enhancement Bonus to Acid, Cold, Fire, and Electrical Absorption.",
+      "harvested": "2026-08-11"
+    },
+    "Wizard's Ward (level 25)": {
+      "value": {"sonic": false},
+      "provenance": "stated",
+      "raw": "{{Absorption|Elemental|10}}",
+      "harvested": "2026-08-11"
+    },
+    "Cyran Guard (level 26)": {
+      "value": {"sonic": true},
+      "provenance": "stated",
+      "raw": "{{Absorption|Elemental|18|yes}}",
+      "harvested": "2026-08-11"
+    },
+    "Cyran Guard (level 27)": {
+      "value": {"sonic": true},
+      "provenance": "stated",
+      "raw": "{{Absorption|Elemental|19|yes}}",
+      "tooltip": "Elemental Absorption +19%: Passive: 19% Enhancement Bonus to Acid, Cold, Fire, Electrical, and Sonic Absorption.",
+      "harvested": "2026-08-11"
+    },
+    "Cyran Guard (level 28)": {
+      "value": {"sonic": true},
+      "provenance": "stated",
+      "raw": "{{Absorption|Elemental|20|yes}}",
+      "harvested": "2026-08-11"
+    },
+    "Golden Orb of Death (level 7)": {
+      "value": {"sonic": true},
+      "provenance": "stated",
+      "raw": "{{Absorption|Elemental|10|yes}}",
+      "harvested": "2026-08-11"
+    },
+    "Golden Orb of Death (level 26)": {
+      "value": {"sonic": true},
+      "provenance": "stated",
+      "raw": "{{Absorption|Elemental|20|yes}}",
+      "tooltip": "Elemental Absorption +20%: Passive: 20% Enhancement Bonus to Acid, Cold, Fire, Electrical, and Sonic Absorption.",
+      "harvested": "2026-08-11"
+    }
+  }
+}
