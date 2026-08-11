@@ -750,7 +750,15 @@ def build() -> dict:
     # keyed by (slot_type, item-category). Items carrying `lamordia_slots` draw
     # one option per slot from the matching pool (tier from host ML at solve time).
     vik = vik_mod.build_viktranium(crafting)
-    vik["records"] = spell_focus_mod.expand_affixes(vik["records"])   # #205, third channel
+    # #205, third channel. A Viktranium option is a multi-affix record like a dino
+    # insert, so the expansion goes one level IN — inside the option's own affix
+    # list, never across the record list. Expanding across records turned one
+    # universal spell-DC option into seven competing options for the same slot,
+    # so a player ranking two schools had to spend two Viktranium slots to get
+    # what one option grants in game.
+    for _opt in vik["records"]:
+        if _opt.get("affixes"):
+            _opt["affixes"] = spell_focus_mod.expand_affixes(_opt["affixes"])
 
     # Seal-slot crafting ("Sealed in X"): expose the single-pick choice-slot pool
     # keyed by seal_type. Items carrying `seal_slots` unseal one option from the
