@@ -3,6 +3,7 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 const { normalizeItem, buildPickerVocabulary, expandedAwayFor, expandedAwayMessage, normalizeDataset } = require("../web/dataset.js");
+const P = require("../web/projection.js");
 // The built catalog, for the whole-vocabulary invariants at the bottom of this file.
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -349,24 +350,45 @@ test("U5: an explicitly stated component is never shadowed by a derived one", ()
 // R12 — a derived component names the composite it was derived from. The
 // composite name takes no bonus-type prefix: it is stored as `Bool` presence,
 // which is not a bonus type, and the wiki writes the enchantment bare.
-test("R12: a derived component names the composite it came from", () => {
+// A boolean composite is the ONE expansion family that must NOT carry the
+// provenance stamp. Every other family REPLACES the affix it expands, so the
+// engraved name would be lost and R8's collapse restores it. This one is
+// ADDITIVE — the composite stays on the item — so the engraved name is already
+// on screen. Stamping it made the collapse fold `Concealment +20 Enhancement`
+// into a second line reading `Blurry +20` beside the item's own `Blurry +1
+// Bool`: the same name twice, two unrelated numbers, the component's own stat
+// gone, and a magnitude attached to an enchantment whose in-game cell states
+// none. 140 items carried that shape.
+test("R12: a boolean composite's derived component is NOT stamped", () => {
   const it = { affixes: [{ name: "Crown of Summer", type: "Bool", value: 1 }] };
   normalizeItem(it);
   for (const n of ["Healing Amplification", "Melee Power", "Ranged Power"]) {
-    assert.strictEqual(find(it, n).via, "Crown of Summer", `${n} names its source`);
+    assert.ok(!("via" in find(it, n)),
+      `${n} keeps its own stat name — the composite is still on the item beside it`);
   }
   assert.ok(!("via" in find(it, "Crown of Summer")), "the boolean itself is native, not derived");
 });
 
-test("R12: when two composites contribute one stat, the surviving line names the winner", () => {
+test("R12: a composite and its component never render as the same name twice", () => {
+  const it = { affixes: [{ name: "Blurry", type: "Bool", value: 1 }] };
+  normalizeItem(it);
+  const labels = P.collapseExpansions(it.affixes).map(P.affixLabel);
+  assert.ok(labels.includes("Blurry +1 Bool"), "the composite states its own presence");
+  assert.ok(labels.some((l) => /^Concealment \+20/.test(l)),
+    "the component keeps its stat name and magnitude");
+  assert.strictEqual(labels.filter((l) => l.startsWith("Blurry")).length, 1,
+    "exactly one Blurry line — a stamped component would produce a second, `Blurry +20`");
+});
+
+test("when two composites contribute one stat, the higher magnitude survives", () => {
   const it = { affixes: [
     { name: "Blurry", type: "Bool", value: 1 },
     { name: "Lesser Displacement", type: "Bool", value: 1 },
   ] };
   normalizeItem(it);
   const conceal = it.affixes.filter((a) => a.name === "Concealment");
-  assert.strictEqual(conceal.length, 1);
-  assert.strictEqual(conceal[0].via, "Lesser Displacement", "the 25% source, not the 20% one");
+  assert.strictEqual(conceal.length, 1, "one line, not one per composite");
+  assert.strictEqual(Number(conceal[0].value), 25, "the 25% source wins, not the 20% one");
 });
 
 test("U5: expansion is idempotent", () => {

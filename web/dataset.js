@@ -240,14 +240,16 @@ function normalizeItem(it) {
         for (const c of comps) {
           if (stated.has(c.name)) continue;
           var prev = derived.get(c.name);
-          // R12: the item is engraved "Blurry", not "Concealment" — the derived
-          // component names the composite it came from. A composite is stored as
-          // `Bool` presence, which is not a bonus type, so the label is bare.
-          if (!prev || c.value > prev.value) {
-            var stampedComp = Object.assign({}, c);
-            stampedComp[PROVENANCE_KEY] = String(a.name);
-            derived.set(c.name, stampedComp);
-          }
+          // Deliberately NOT stamped with the provenance key, unlike every other
+          // expansion family. Those REPLACE the affix they expand, so the engraved
+          // name would be lost without the stamp and R8's collapse restores it.
+          // This expansion is ADDITIVE — the composite stays on the item — so the
+          // engraved name is already on screen, and stamping would make the collapse
+          // fold `Concealment +20 Enhancement` into a second line reading
+          // `Blurry +20` beside the item's own `Blurry +1 Bool`: the same name twice
+          // with two unrelated numbers, the component's stat gone, and a magnitude
+          // attached to an enchantment whose in-game cell states none.
+          if (!prev || c.value > prev.value) derived.set(c.name, c);
         }
       }
       // Idempotent: a second pass sees the derived names in `stated` and adds nothing.
