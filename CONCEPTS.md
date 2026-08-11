@@ -169,12 +169,3 @@ Because a user can [[Slot constraint|pin]] both a two-handed main **and** an off
 A character-level assertion that the build fights with a weapon in each hand, declared alongside race and armor rather than inferred from gear choices. It is character state, so changing combat style never clears it, and it travels with a saved or shared character.
 
 The declaration changes [[Candidacy]], not [[Equippability]]: under a style that permits a second weapon it fills the off hand with a one-handed weapon and removes shields, orbs, and rune arms from off-hand candidacy — a pin brings one back. Every other style keeps its own off-hand allow-list unchanged, so the declaration narrows exactly one style and is inert (and says so) elsewhere. The optimizer does not score the feat's combat penalty, so the narrowing is disclosed with the result rather than modeled.
-
-## Comparison
-
-### Benchmark loadout
-The build currently loaded in the wizard, whenever two builds are compared. It is positional, not a judgment — the benchmark is not the better build or the older one, it is simply the one in hand, and solving replaces it. Nothing designates it.
-
-The benchmark owns the **priorities** the comparison is judged on. A build arriving from outside contributes gear and character setup, never a ranking: an import at the entry step leaves the working priorities untouched, and a comparison candidate's own saved ranking is ignored. This is what makes a comparison answerable — [[Lexicographic solve|lexicographic priority]] has no meaning without one ranking, and reading two rankings at once would produce a verdict that is true under neither. Stats outside that ranking can still be reported, but only as informational and outside the verdict, since the strict-priority guarantee is exactly what a non-priority "win" would erode.
-
-One ranking is not sufficient on its own: the two builds must also share a character frame. Affix values scale to the [[Variant|ML]] cap and [[Equippability]] gates differ by race, proficiency, and declaration, so builds set up differently produce columns that look comparable and are not. A comparison across incompatible setups is therefore **declined** rather than scored — the honest answer where both alternatives (rescale the candidate, or print two differently-scaled columns) yield a number no reader can trust.
