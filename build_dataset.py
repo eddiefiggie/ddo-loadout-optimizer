@@ -52,6 +52,7 @@ from src import variants as variants_mod
 from src import vocabulary as vocabulary_mod
 from src import crafting_catalog as crafting_catalog_mod
 from src import dino_native as dino_native_mod
+from src import container_registry as container_registry_mod
 import re as _re
 
 import collections
@@ -777,6 +778,29 @@ def build() -> dict:
     tf = tf_mod.build_thunder_forged()
     gs = gs_mod.build_green_steel()
 
+    # U3 (#205) — the fan-out gate. Every single-pick choice-slot container is
+    # declared in src/container_registry.py with its record shape and the expansion
+    # passes that run over it, and a FLAT container (one record per affix) with an
+    # expansion pass wired to it fails the build. That pairing is the reported
+    # defect: expanding a flat pool turns one craftable option into several
+    # mutually exclusive ones, and a choice slot takes exactly one, so a Viktranium
+    # craft granting seven spell schools delivered one.
+    #
+    # Runs HERE, after every expansion above, so the gate judges the post-expansion
+    # records rather than the declaration alone — a record-level provenance key is
+    # direct evidence an expander crossed the option boundary. Every pool is passed
+    # in, so a container the registry does not declare fails rather than going
+    # unnoticed.
+    _container_gate = container_registry_mod.check({
+        "viktranium": vik["records"],
+        "dino_inserts": dino_inserts,
+        "nearly_complete": nc["records"],
+        "seal": sl["records"],
+        "green_steel": gs["records"],
+        "thunder_forged": tf["records"],
+        "roll_groups": container_registry_mod.collect_roll_groups(variants),
+    })
+
     # Compendium browse index (U6): derived from the NATIVE roster (the built
     # variants' own source_item + slot + wiki_url), not the legacy roster_*.json
     # wiki-harvest shards. Under single-source completeness every native item is
@@ -890,6 +914,11 @@ def build() -> dict:
                 "references_validated": _crafting_vocab_checked,
             },
             "planner_coverage": planner_stats,
+            # U3 (#205) — the single-pick choice-slot fan-out gate. `compared`
+            # counts records whose shape was actually inspected; `checked` counts
+            # containers reached a verdict on, which alone would overstate coverage
+            # because a container declared unreachable contributes zero records.
+            "container_registry_coverage": _container_gate,
             # #154 / #162 — wiki-harvest coverage, disclosed so a result can say what
             # was and wasn't considered. `unclassified` on the material side is the
             # honest measure of how complete the druidic-oath restriction actually is:
