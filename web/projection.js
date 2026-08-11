@@ -760,10 +760,12 @@
     const report = (result && result.saturationReport) || [];
     return report.map((e) => {
       const types = e.bonusTypes || [];
+      const art = (t) => `${/^[aeiou]/i.test(t) ? "an" : "a"} ${t} bonus`;
       const named = types.length === 1
-        ? `a ${types[0]} bonus`
-        : `${types.slice(0, -1).map((t) => `a ${t} bonus`).join(", ")} and a ${types[types.length - 1]} bonus`;
-      const verb = types.length === 1 ? "it is filled" : "all of them are filled";
+        ? art(types[0])
+        : `${types.slice(0, -1).map(art).join(", ")} and ${art(types[types.length - 1])}`;
+      const verb = types.length === 1 ? "it is filled"
+        : types.length === 2 ? "both are filled" : "all of them are filled";
       return `${e.stat} is at its ceiling of ${e.total} — it reaches you as ${named}, and ${verb}, `
         + `so no other item in your pool can raise it.`;
     });
