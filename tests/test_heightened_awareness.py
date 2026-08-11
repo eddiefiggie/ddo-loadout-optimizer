@@ -267,3 +267,33 @@ def test_the_guard_makes_no_network_call():
         ha.check_against_snapshots(shard)
     finally:
         socket.socket = real
+
+
+# --- R12: provenance stamp -----------------------------------------------------
+#
+# The item shows "Heightened Awareness VIII"; the split emits an Armor Class.
+# It names the enchantment it came from, under the key `src/spell_focus.py`
+# writes, so a consumer can render what is engraved rather than the stat the
+# value was credited to. No bonus-type prefix: the enchantment is Insight by
+# definition and the wiki writes it bare.
+
+def test_the_emitted_armor_class_names_the_heightened_awareness_enchantment():
+    from src import spell_focus
+    via = spell_focus.PROVENANCE_KEY
+
+    rec = _rec("Legendary Spare Hand", _folded(8))
+    ha.apply([rec], _shard(("Legendary Spare Hand", 8)))
+
+    emitted = _by_name(rec)
+    assert set(emitted) == {"Armor Class"}
+    assert emitted["Armor Class"][0][via] == "Heightened Awareness"
+
+
+def test_an_affix_the_record_already_carried_is_not_stamped():
+    from src import spell_focus
+    via = spell_focus.PROVENANCE_KEY
+
+    rec = _rec("Legendary Spare Hand", _folded(8), _affix("Dodge", "Enhancement", 5))
+    ha.apply([rec], _shard(("Legendary Spare Hand", 8)))
+
+    assert via not in _by_name(rec)["Dodge"][0]

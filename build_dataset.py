@@ -1006,10 +1006,13 @@ def _native_affix(a: dict) -> dict:
     out = {"name": a.get("stat"), "type": a.get("bonus_type"), "value": native_value}
     if "eligible" in a:
         out["eligible"] = a["eligible"]
-    # #205 — an expanded universal spell-DC affix carries the enchantment name the
-    # player actually sees on the item ("Sacred Spell Focus Mastery"). Carried at
-    # rest because the proof panel and every share export must display it; without
-    # this the field dies here and the receipts name a stat no item bears.
+    # R12 — an EXPANDED affix carries the enchantment name the player actually
+    # sees on the item ("Sacred Spell Focus Mastery", "Profane Well Rounded",
+    # "Parrying"). Carried at rest because the proof panel and every share export
+    # must display it; without this the field dies here and the receipts name a
+    # stat no item bears. This is the LATER of two carry points — the earlier one
+    # is `src/variants.py:_native_parsed`, which the shard splits reach first.
+    # The key check is generic on purpose: every expansion family stamps it.
     if spell_focus_mod.PROVENANCE_KEY in a:
         out[spell_focus_mod.PROVENANCE_KEY] = a[spell_focus_mod.PROVENANCE_KEY]
     return out

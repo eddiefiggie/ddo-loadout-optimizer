@@ -16,6 +16,7 @@ from __future__ import annotations
 import re
 
 from src.affix_parser import parse_enhancements
+from src.spell_focus import PROVENANCE_KEY
 from src.viktranium import parse_base_lamordia, is_base_lamordia_line
 
 _TIER_PREFIX = re.compile(r"^(ML\d+[^:]*):\s*(.*)$")
@@ -64,20 +65,32 @@ def _native_parsed(item):
     weapon/alignment descriptors — so the ~11k affixes the old remap quarantined
     become live. `src.verify` still runs and stamps per-affix `eligible`. There are
     no roll-groups on this path; `structured_scaling`/`structured_flagged` (if any)
-    carry through unchanged."""
+    carry through unchanged.
+
+    R12: the rebuild is a WHITELIST, so any key not named here is destroyed. The
+    shard splits (Parrying / Speed / Heightened Awareness) stamp their expansion
+    provenance onto the PLANNER RECORDS, which reach this rebuild before anything
+    is serialized — so `via` is carried through explicitly, the same way
+    `build_dataset._native_affix` carries `eligible` and `via` at the
+    serialization seam. Miss this one and every shard-split stamp dies here,
+    silently, long before the serializer ever sees it. Spell focus escaped only
+    because it expands AFTER this rebuild."""
     affixes = []
     for a in item.get("affixes") or []:
         raw_val = a.get("value")
         unit = "pct" if isinstance(raw_val, str) and raw_val.strip().endswith("%") else "flat"
         name = a.get("name")
         atype = a.get("type")
-        affixes.append({
+        out = {
             "stat": name,
             "bonus_type": atype,
             "value": _coerce_value(raw_val),
             "unit": unit,
             "raw": f'{atype or ""} {name or ""} {"" if raw_val is None else raw_val}'.strip(),
-        })
+        }
+        if PROVENANCE_KEY in a:
+            out[PROVENANCE_KEY] = a[PROVENANCE_KEY]
+        affixes.append(out)
     return {"affixes": affixes,
             "scaling": item.get("structured_scaling") or [],
             "rolls": [],

@@ -706,3 +706,40 @@ def test_the_built_dataset_has_no_set_bonus_speed_orphan():
         ("Legendary Marshwalker", "Movement Speed", "30"),
         ("Marshwalker", "Movement Speed", "30"),
     }, sorted(speed_rows)
+
+
+# --- R12: provenance stamp -----------------------------------------------------
+#
+# The item shows "Speed XI"; the split emits movement plus two alacrities. Each
+# names the enchantment it came from, under the key `src/spell_focus.py` writes.
+# `Speed` takes no bonus-type prefix — the enchantment has one typed variant and
+# the wiki writes it bare.
+
+def test_every_emitted_affix_names_the_speed_enchantment():
+    from src import spell_focus
+    via = spell_focus.PROVENANCE_KEY
+
+    rec = _rec("Goatskin Boots", "/page/Item:Goatskin_Boots_(level_19)", _speed(11))
+    speed_split.apply([rec], _shard(**{
+        "Item:Goatskin Boots (level 19)": {
+            "value": {"movement": 30, "melee": 11, "ranged": 11},
+            "provenance": "stated"}}))
+
+    emitted = _by_name(rec)
+    assert set(emitted) == {"Movement Speed", "Melee Alacrity", "Ranged Alacrity"}
+    for name, affix in emitted.items():
+        assert affix[via] == "Speed", (name, affix)
+
+
+def test_an_affix_the_record_already_carried_is_not_stamped():
+    from src import spell_focus
+    via = spell_focus.PROVENANCE_KEY
+
+    rec = _rec("Goatskin Boots", "/page/Item:Goatskin_Boots_(level_19)", _speed(11),
+               {"name": "Dodge", "type": "Enhancement", "value": "5"})
+    speed_split.apply([rec], _shard(**{
+        "Item:Goatskin Boots (level 19)": {
+            "value": {"movement": 30, "melee": 11, "ranged": 11},
+            "provenance": "stated"}}))
+
+    assert via not in _by_name(rec)["Dodge"]
