@@ -394,6 +394,92 @@ test("dominates: an affix item does NOT dominate a Viktranium host it can't matc
   assert.strictEqual(kept.length, 2, "the Viktranium host survives per-slot dominance");
 });
 
+// ---------------------------------------------------------------------------
+// U2 — a Viktranium option became ATOMIC (one record carrying a whole affix list
+// instead of one record per affix). That is a new value-carrying shape in a source
+// family, which is the exact trigger for the new-source-family checklist in
+// docs/solutions/design-patterns/milp-encoding-for-gear-optimization.md — a failure
+// class that has recurred THREE times here (set-piece thresholds, Dino slots,
+// Nearly-Complete) and is invisible to any test that starts from an already-built
+// model. The three tests below run the checklist rather than assuming the answer.
+// ---------------------------------------------------------------------------
+
+// Fixtures shared by the three: a strictly-better plain rival, and a host whose only
+// edge is a Lamordia slot that can craft a 7-affix option.
+function vikMultiOption(slot_type, category, stats, tier) {
+  return {
+    slot_type, category, tier: tier || "legendary", name: `${slot_type} universal option`,
+    affixes: stats.map((s) => ({ stat: s, bonus_type: "Profane", value: 2, unit: "flat" })),
+  };
+}
+const VIK_SCHOOLS = ["Abjuration Focus", "Conjuration Focus", "Enchantment Focus",
+  "Evocation Focus", "Illusion Focus", "Necromancy Focus", "Transmutation Focus"];
+
+test("dominates: an affix rival does NOT dominate a Viktranium host carrying a MULTI-AFFIX option", () => {
+  // Checklist step 3. The host's craftable value is a seven-school option worth far
+  // more to this query than the rival's whole affix block — and it lives entirely
+  // outside variantBuckets. If dominance ever stopped reading lamordia_slots, the
+  // rival would prune the host here and the atomic option would have no host to sit
+  // on: the solve would report the rival's numbers as "provably optimal".
+  const targets = new Set(["Necromancy Focus", "Enchantment Focus"]);
+  const real = v("Rival", "Necklace", [
+    ["Necromancy Focus", "Profane", 12], ["Enchantment Focus", "Profane", 12],
+  ], { ml: 34 });
+  const host = v("Host", "Necklace", [
+    ["Necromancy Focus", "Profane", 1], ["Enchantment Focus", "Profane", 1],
+  ], { ml: 34 });
+  host.lamordia_slots = [{ type: "Woeful", category: "Accessory" }];
+
+  assert.strictEqual(M.dominates(real, host, targets, 36), false,
+    "a rival with no Lamordia slot cannot dominate a host that can craft the option");
+  assert.strictEqual(M.dominanceFilter([real, host], targets, 36, 1).length, 2,
+    "the multi-affix host survives per-slot dominance");
+
+  // Step 4: confirm END TO END, through buildModel — the prune happens there, and a
+  // pruning defect is invisible upstream of it.
+  const pool = [vikMultiOption("Woeful", "Accessory", VIK_SCHOOLS)];
+  const model = M.buildModel([real, host], { mlCap: 36, targets: [...targets] },
+    [], [], pool);
+  const neck = model.worn.find((w) => w.slot === "Necklace");
+  assert.ok(neck, "the Necklace slot survives into the model");
+  assert.deepStrictEqual(neck.variants.map((x) => x.variant_id).sort(), ["Host", "Rival"],
+    "buildModel keeps the host that owns the multi-affix craft");
+});
+
+test("dominance is BLIND to Viktranium OPTION stats — the option pool cannot change a verdict", () => {
+  // Prior analysis says the Viktranium dominance key is a `type||category||tier`
+  // slot multiset that never reads what an option grants, so making an option atomic
+  // leaves the comparator alone. VERIFY it rather than trust it.
+  //
+  // Structural evidence: `dominates(A, B, targetSet, mlCap)` is never handed the
+  // option pool at all, and buildModel calls dominanceFilter with only
+  // (candidates, targetSet, mlCap, cardinality, pinnedIds, includeArtifact). So the
+  // verdict is a pure function of the two variants. Pinned behaviourally by solving
+  // the same pair against three different pools — none, single-affix (the legacy
+  // flat shape), and the atomic multi-affix option — and requiring one kept set.
+  const targets = new Set(["Necromancy Focus", "Enchantment Focus"]);
+  const real = v("Rival", "Necklace", [["Necromancy Focus", "Profane", 12]], { ml: 34 });
+  const host = v("Host", "Necklace", [["Necromancy Focus", "Profane", 1]], { ml: 34 });
+  host.lamordia_slots = [{ type: "Woeful", category: "Accessory" }];
+
+  const pools = {
+    none: [],
+    flat: [{ slot_type: "Woeful", category: "Accessory", tier: "legendary",
+             stat: "Necromancy Focus", bonus_type: "Profane", value: 2, unit: "flat" }],
+    atomic: [vikMultiOption("Woeful", "Accessory", VIK_SCHOOLS)],
+  };
+  const keptFor = (pool) => M.buildModel([real, host], { mlCap: 36, targets: [...targets] },
+    [], [], pool).worn.find((w) => w.slot === "Necklace").variants.map((x) => x.variant_id).sort();
+  const base = keptFor(pools.none);
+  assert.deepStrictEqual(base, ["Host", "Rival"], "both kept with no pool at all");
+  assert.deepStrictEqual(keptFor(pools.flat), base, "legacy flat option pool changes nothing");
+  assert.deepStrictEqual(keptFor(pools.atomic), base, "atomic multi-affix pool changes nothing");
+
+  // And the comparator's own verdict is identical either way: it takes no pool.
+  assert.strictEqual(M.dominates(real, host, targets, 36), false);
+  assert.strictEqual(M.dominates(host, real, targets, 36), false);
+});
+
 test("dominates: an affix item does NOT dominate a seal host it can't match", () => {
   // Regression: a seal host's unseal value lives in seal_slots, outside
   // variantBuckets, so an intrinsically-better rival lacking the seal must NOT

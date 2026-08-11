@@ -181,5 +181,73 @@
       "weaponSetup": null,
       "classRace": null
     }
+  },
+  {
+    "name": "viktranium-multi-affix-dc-ml34",
+    "note": "ATOMIC multi-affix Viktranium craft, end to end, and LOAD-BEARING. Three spell schools at ML34, where every real Lamordia host is legendary-tier. The solve equips the Legendary Cataclysmic Buckler \u2014 an Off Hand host with TWO Weapon-category Lamordia slots \u2014 and crafts `Dolorous Focus (legendary)` (Equipment 8) and `Woeful: Exceptional Spell Focus Mastery` (Exceptional 2), each a single option carrying all seven school affixes, so two slots serve all three ranked schools. Explode those two options back into the pre-atomicity one-record-per-affix shape and the same query solves to Evocation 32 / Illusion 29 / Necromancy 28: a choice slot could take only ONE school's record, so the same two slots bought two schools instead of seven. The atomic shape is worth +2 Illusion and +2 Necromancy with no give anywhere \u2014 a strict improvement, not a re-ranking. That delta is the whole claim, and no ratified fixture showed it: endgame-necro-dc-ml34 ranks four schools yet did not move when atomicity landed, which is precisely why the newly-reachable path needed its own. tests/solver.test.js proves the shape at buildProgram level over a hand-built model \u2014 downstream of both the pool filter and the dominance pre-filter, so not the same evidence.",
+    "query": {
+      "mlCap": 34,
+      "targets": [
+        "Evocation Focus",
+        "Illusion Focus",
+        "Necromancy Focus"
+      ],
+      "armorType": null,
+      "weaponSetup": null,
+      "classRace": null
+    }
+  },
+  {
+    "name": "absorption-compound-crown-ml35",
+    "note": "COMPOUND ABSORPTION expansion, end to end. The Legendary Crown of Ioun carries two compound enchantments \u2014 `Fire and Cold Absorption` and `Electricity and Acid Absorption` \u2014 which U5/U6 expand into four component affixes. Ranking `Fire Absorption` and `Electric Absorption` therefore has to read one component out of EACH compound off the same item. The Helmet is pinned because the Crown loses the slot on merit to Insight-typed rivals (Legendary Downcast Helm's Insight Fire 14 beats the Crown's Enhancement 40 once boots already supply Enhancement 37), so an unpinned query would leave the compound carrier out of the loadout and prove nothing about it. Pinned, both compounds are credited from the one worn item.",
+    "query": {
+      "mlCap": 35,
+      "targets": [
+        "Fire Absorption",
+        "Electric Absorption",
+        "Wizardry"
+      ],
+      "armorType": null,
+      "weaponSetup": null,
+      "classRace": null,
+      "slotConstraints": {
+        "Helmet": {
+          "type": "pin",
+          "variant_id": "Legendary Crown of Ioun"
+        }
+      }
+    }
+  },
+  {
+    "name": "provenance-alias-sacred-dc-ml34",
+    "note": "PROVENANCE LABEL substitution, end to end. `aliasTargets` is resolved by the harness through the SAME dataset.js `buildPickerVocabulary` + `migratePriorities` pair the picker and the saved-character load path use, so this fixture solves what a player actually gets after typing the name the results print. Its A/B twin `provenance-components-sacred-dc-ml34` ranks the seven component stats directly in the declared order; the guard asserts the two solves are byte-identical, which is the real claim \u2014 the alias is a SUBSTITUTION into separate lexicographic ranks, never a fused objective term (the weighted-sum mode the Non-goals list declines). Ranking the literal label instead would score zero: no item carries an affix named `Sacred Spell Focus Mastery`.",
+    "query": {
+      "mlCap": 34,
+      "aliasTargets": [
+        "Sacred Spell Focus Mastery"
+      ],
+      "armorType": null,
+      "weaponSetup": null,
+      "classRace": null
+    }
+  },
+  {
+    "name": "provenance-components-sacred-dc-ml34",
+    "note": "A/B twin of provenance-alias-sacred-dc-ml34 with the substitution written out by hand: the seven spell schools in src/provenance.py's declared order. Kept as a separate fixture rather than an inline assertion so the equivalence is pinned against the REAL catalog on both sides \u2014 if the alias table ever reordered or dropped a school, the two solves would diverge here rather than both drifting together.",
+    "query": {
+      "mlCap": 34,
+      "targets": [
+        "Abjuration Focus",
+        "Conjuration Focus",
+        "Enchantment Focus",
+        "Evocation Focus",
+        "Illusion Focus",
+        "Necromancy Focus",
+        "Transmutation Focus"
+      ],
+      "armorType": null,
+      "weaponSetup": null,
+      "classRace": null
+    }
   }
 ]

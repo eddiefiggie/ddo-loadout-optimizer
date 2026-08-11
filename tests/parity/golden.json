@@ -2,7 +2,7 @@
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
  "generated": "2026-08-09",
  "dataset": "web/data/items.json (9045 items)",
- "fixture_count": 11,
+ "fixture_count": 15,
  "solves": {
   "heroic-str-melee": {
    "status": "optimal",
@@ -682,6 +682,270 @@
     {
      "slot": "Ring",
      "variant": "Legendary Argonnessen Eye Band"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Bauble of Draconic Resistance"
+    }
+   ]
+  },
+  "viktranium-multi-affix-dc-ml34": {
+   "status": "optimal",
+   "perTarget": {
+    "Evocation Focus": 32,
+    "Illusion Focus": 31,
+    "Necromancy Focus": 30
+   },
+   "effective": {
+    "Evocation Focus": 32,
+    "Illusion Focus": 31,
+    "Necromancy Focus": 30
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Docent of the Artblade's Reflection"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Belt of the Burrower"
+    },
+    {
+     "slot": "Bracers",
+     "variant": "Legendary Auspicious Bracers"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Legendary Gravekeeper's Mystic Cloak"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Cowl of the Drow Devotee"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Legendary Fried Fish Stick"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Legendary Beads of Winter"
+    },
+    {
+     "slot": "Off Hand",
+     "variant": "Legendary Cataclysmic Buckler"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Argonnessen Eye Band"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Band of Mental Magic"
+    }
+   ]
+  },
+  "absorption-compound-crown-ml35": {
+   "status": "optimal",
+   "perTarget": {
+    "Fire Absorption": 57,
+    "Electric Absorption": 64,
+    "Wizardry": 631
+   },
+   "effective": {
+    "Fire Absorption": 57,
+    "Electric Absorption": 64,
+    "Wizardry": 631
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Bittersnow"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Legendary Flamewhip Belt"
+    },
+    {
+     "slot": "Boots",
+     "variant": "Legendary Doctor Gustav's Rubber Boots"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Legendary Downcast Heavy Cloak"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Legendary Crown of Ioun"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Epic Rod of Mythant"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Amber Pendant"
+    },
+    {
+     "slot": "Off Hand",
+     "variant": "Legendary Sporesphere"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Duskbone Ring"
+    }
+   ]
+  },
+  "provenance-alias-sacred-dc-ml34": {
+   "status": "optimal",
+   "perTarget": {
+    "Abjuration Focus": 27,
+    "Conjuration Focus": 31,
+    "Enchantment Focus": 31,
+    "Evocation Focus": 32,
+    "Illusion Focus": 31,
+    "Necromancy Focus": 24,
+    "Transmutation Focus": 25
+   },
+   "effective": {
+    "Abjuration Focus": 27,
+    "Conjuration Focus": 31,
+    "Enchantment Focus": 31,
+    "Evocation Focus": 32,
+    "Illusion Focus": 31,
+    "Necromancy Focus": 24,
+    "Transmutation Focus": 25
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Docent of the Artblade's Reflection"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Legendary Baron Aubrecker's Monogrammed Belt"
+    },
+    {
+     "slot": "Boots",
+     "variant": "Bulette-Armored Boots"
+    },
+    {
+     "slot": "Bracers",
+     "variant": "Legendary Auspicious Bracers"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Legendary Gravekeeper's Mystic Cloak"
+    },
+    {
+     "slot": "Gloves",
+     "variant": "Legendary Baron Aubrecker's Monogrammed Gloves"
+    },
+    {
+     "slot": "Goggles",
+     "variant": "Legendary Viktra's Experiment"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Legendary Circlet of Shar"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Legendary Fried Fish Stick"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Legendary Beads of Winter"
+    },
+    {
+     "slot": "Off Hand",
+     "variant": "Legendary Cataclysmic Buckler"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Argonnessen Eye Band"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Band of Mental Magic"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Bauble of Draconic Resistance"
+    }
+   ]
+  },
+  "provenance-components-sacred-dc-ml34": {
+   "status": "optimal",
+   "perTarget": {
+    "Abjuration Focus": 27,
+    "Conjuration Focus": 31,
+    "Enchantment Focus": 31,
+    "Evocation Focus": 32,
+    "Illusion Focus": 31,
+    "Necromancy Focus": 24,
+    "Transmutation Focus": 25
+   },
+   "effective": {
+    "Abjuration Focus": 27,
+    "Conjuration Focus": 31,
+    "Enchantment Focus": 31,
+    "Evocation Focus": 32,
+    "Illusion Focus": 31,
+    "Necromancy Focus": 24,
+    "Transmutation Focus": 25
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Docent of the Artblade's Reflection"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Legendary Baron Aubrecker's Monogrammed Belt"
+    },
+    {
+     "slot": "Boots",
+     "variant": "Bulette-Armored Boots"
+    },
+    {
+     "slot": "Bracers",
+     "variant": "Legendary Auspicious Bracers"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Legendary Gravekeeper's Mystic Cloak"
+    },
+    {
+     "slot": "Gloves",
+     "variant": "Legendary Baron Aubrecker's Monogrammed Gloves"
+    },
+    {
+     "slot": "Goggles",
+     "variant": "Legendary Viktra's Experiment"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Legendary Circlet of Shar"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Legendary Fried Fish Stick"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Legendary Beads of Winter"
+    },
+    {
+     "slot": "Off Hand",
+     "variant": "Legendary Cataclysmic Buckler"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Argonnessen Eye Band"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Band of Mental Magic"
     },
     {
      "slot": "Trinket",
