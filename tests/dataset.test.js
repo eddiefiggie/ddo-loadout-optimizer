@@ -73,11 +73,31 @@ test("U2: an item with bare + explicit Physical Sheltering does not get a duplic
 // "Insightful Sheltering" and "Quality Sheltering" categories, and states that a
 // bare Sheltering "is usually an enhancement bonus unless otherwise stated" — so
 // the Enhancement variant is engraved bare (docs/wiki-evidence/sheltering.md).
-test("R12: bare Sheltering's halves name the enchantment they came from", () => {
+// The BARE label is deliberately unstamped: 283 set-bonus tier affixes carry a
+// bare `Sheltering` this expansion never reaches, so the name reads as a live
+// native stat and the collision guard drops it from the picker. Stamping it
+// printed `as Sheltering` on 209 item affixes while typing it silently targeted
+// the far smaller set-bonus stat — the app naming something its own picker
+// refuses, which is exactly what R13 exists to prevent.
+test("R12: bare Sheltering's halves are NOT stamped, because the label is unrankable", () => {
   const it = { affixes: [{ name: "Sheltering", value: 30, type: "Enhancement" }] };
   normalizeItem(it);
-  assert.strictEqual(find(it, "Physical Sheltering").via, "Sheltering");
-  assert.strictEqual(find(it, "Magical Sheltering").via, "Sheltering");
+  assert.ok(!("via" in find(it, "Physical Sheltering")), "no label a player cannot rank");
+  assert.ok(!("via" in find(it, "Magical Sheltering")), "no label a player cannot rank");
+});
+
+// Build the vocabulary from the SAME normalized data the stamps come from --
+// browser-side expansions (the typed Shelterings) only exist after normalizeDataset,
+// so a vocabulary built from the raw artifact would not carry their labels and the
+// comparison would be meaningless in both directions.
+test("R13 invariant: every stamped label is admitted by the picker", () => {
+  const v = buildPickerVocabulary(realData);
+  const stamped = new Set();
+  for (const it of realData.items) for (const a of (it.affixes || [])) if (a.via) stamped.add(a.via);
+  assert.ok(stamped.size > 0, "the scan found labels at all -- a vacuous pass would hide everything");
+  const orphans = [...stamped].filter((l) => !v.suggestions.includes(l) && !expandedAwayMessage(v, l));
+  assert.deepStrictEqual(orphans, [],
+    "a name the item surfaces display must be one the picker offers or resolves");
 });
 
 test("R12: a typed Sheltering is stamped with the wiki's typed name", () => {

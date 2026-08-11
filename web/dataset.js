@@ -209,8 +209,23 @@ function normalizeItem(it) {
         if (a && a.name === "Sheltering") {
           // R12: the item is engraved "Sheltering" / "Insightful Sheltering", not
           // "Physical Sheltering" — each half names the enchantment it came from.
+          //
+          // The BARE label is deliberately not stamped, because it cannot be made
+          // rankable and R13's settled rule is that a displayed name must be a
+          // rankable one. 283 set-bonus tier affixes carry a bare `Sheltering` that
+          // this expansion never reaches (it runs over item affixes only), so the
+          // name reads as a live native stat and the collision guard drops it from
+          // the picker. Stamping it anyway printed `as Sheltering` on 209 item
+          // affixes while typing it silently targeted the far smaller set-bonus
+          // stat instead. The typed variants have no native carrier, so they
+          // collapse and rank correctly and keep the stamp.
+          //
+          // Expanding the set-bonus channel too would let the bare label back in,
+          // but that changes what set bonuses grant and moves solver results — a
+          // correctness change of its own, not part of this batch.
+          var label = sourceLabel("Sheltering", a.type, SHELTERING_UNPREFIXED);
           var stamp = {};
-          stamp[PROVENANCE_KEY] = sourceLabel("Sheltering", a.type, SHELTERING_UNPREFIXED);
+          if (label !== "Sheltering") stamp[PROVENANCE_KEY] = label;
           if (!present.has("Physical Sheltering")) expanded.push(Object.assign({}, a, { name: "Physical Sheltering" }, stamp));
           if (!present.has("Magical Sheltering")) expanded.push(Object.assign({}, a, { name: "Magical Sheltering" }, stamp));
         } else {
