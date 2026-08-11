@@ -2,7 +2,7 @@
 title: "Prove a new test fails against the pre-change tree — a green suite can cover none of the diff"
 module: tests
 date: 2026-08-09
-last_updated: 2026-08-09
+last_updated: 2026-08-10
 problem_type: convention
 component: testing_framework
 severity: high
@@ -33,9 +33,9 @@ applies_when:
 
 A credit of 7 declared as `insight` sat beside an Insight-5 ring and the tool reported 12, with the ring still equipped. Another credit, declared with the numeric **string** `"7"` instead of the number `7`, formatted into perfectly valid LP text, went through the solver, and came back out of `readSolution`'s accumulator as the headline total `"07"`.
 
-Both shipped through a suite that was entirely green — 140 JS solver tests at the time, per #179. Neither was found by a test going red. The first was found by a code reviewer reading the diff; the second by the same review tracing the sanitizer's inputs. Both are now written into the code as warnings at `web/model.js:754-760` and `web/solver.js:52-58`.
+Both shipped through a suite that was entirely green — 140 JS solver tests at the time, per #179. Neither was found by a test going red. The first was found by a code reviewer reading the diff; the second by the same review tracing the sanitizer's inputs. Both are now written into the code as warnings at `web/model.js` (the `wrong-HIGH` note above `_CREDIT_TYPES`) and `web/solver.js:52-58`.
 
-The reason they were invisible is that all of U1's credit tests hand-built `model.credits` — the shape the solver consumes — directly. No production caller emits that shape. The real chain is `query.declaredCredits` -> `buildModel` (`web/model.js:743`) -> `normalizeCredits` (`web/model.js:777`) -> `buildProgram` (`web/solver.js:135`), and `normalizeCredits` is exactly where both defects would have been rejected: `web/model.js:798` refuses a `bonus_type` outside the curated vocabulary at `web/model.js:761-766`, and `web/model.js:796-797` refuses a non-finite, non-integer, or out-of-range value. The string case is worth stating precisely, because it is *not* a rejection: `web/model.js:785` coerces through `Number(row.value)` before those bounds apply, so `"7"` becomes `7` and passes. The defect was neutralized by coercion, not refusal — which is still a gate the tests skipped, but a different one. Every test entered the pipeline downstream of the only stretch that mattered.
+The reason they were invisible is that all of U1's credit tests hand-built `model.credits` — the shape the solver consumes — directly. No production caller emits that shape. The real chain is `query.declaredCredits` -> `buildModel` (`buildModel`'s `credits:` line in `web/model.js`) -> `normalizeCredits` (`normalizeCredits` in `web/model.js`) -> `buildProgram` (`web/solver.js:135`), and `normalizeCredits` is exactly where both defects would have been rejected: `normalizeCredits` refuses a `bonus_type` outside the curated vocabulary at the curated `_CREDIT_TYPES` vocabulary in `web/model.js`, and its finite/integer/range checks refuses a non-finite, non-integer, or out-of-range value. The string case is worth stating precisely, because it is *not* a rejection: `normalizeCredits` coerces through `Number(row.value)` before those bounds apply, so `"7"` becomes `7` and passes. The defect was neutralized by coercion, not refusal — which is still a gate the tests skipped, but a different one. Every test entered the pipeline downstream of the only stretch that mattered.
 
 That is not a one-off. Across the five plan units of the declared-stat-credits feature (#179 U1, #180 U2+U3, #181 U5, #182 U4), **five** distinct instances of "green test, zero coverage" occurred in a single day, in four different shapes:
 
@@ -86,15 +86,15 @@ Two details that are easy to get wrong:
 When a test does pass against base and it is *not* a deliberate guard, the fix is usually one of:
 
 - **Enter through the production entry point**, not the internal shape. A test that hand-builds the normalized structure has, by construction, opted out of normalization.
-- **Import the constant from the module under test** rather than restating it in the fixture. `tests/exporters.test.js:573` now does `const { DECLARED_LABEL } = require("../web/solver.js")`, which converts two echo tests into a real cross-module contract against `web/solver.js:1025`.
-- **Make absence distinguishable from emptiness.** `assert.ok(Array.isArray(r.creditReport))` before `deepStrictEqual(r.creditReport, [])` (`tests/solver.test.js:2816-2817`) is what removed the `|| []` escape hatch; `buildCreditReport` returns `[]` rather than nothing at `web/solver.js:1267`, so the field's presence is now itself the assertion.
+- **Import the constant from the module under test** rather than restating it in the fixture. `tests/exporters.test.js:573` now does `const { DECLARED_LABEL } = require("../web/solver.js")`, which converts two echo tests into a real cross-module contract against `web/solver.js` (`DECLARED_LABEL`).
+- **Make absence distinguishable from emptiness.** `assert.ok(Array.isArray(r.creditReport))` before `deepStrictEqual(r.creditReport, [])` (`tests/solver.test.js:2816-2817`) is what removed the `|| []` escape hatch; `buildCreditReport` returns `[]` rather than nothing at `buildCreditReport` in `web/solver.js`, so the field's presence is now itself the assertion.
 - **Corrupt the production code** when the surface is a golden/parity fixture set rather than a unit test — see the scope limit below.
 
 ## The recipe is necessary, not sufficient — a source-regex test passes it and still proves nothing
 
 Everything above is correct and still leaves a hole, found the next day on the Priorities-UI branch ([#185](https://github.com/eddiefiggie/ddo-loadout-optimizer/pull/185)). Eighteen new tests were run against the pre-change tree and twenty went red, exactly as this doc prescribes. Eight regressions still shipped green.
 
-The reason is mechanical. `tests/wizard.test.js` has no jsdom (`tests/wizard.test.js:851` says so), so DOM behavior is asserted by slicing `web/wizard.js`'s **source text** — the established local idiom. A test like `assert.ok(/refreshBadge\(/.test(wire))` **necessarily** fails against the pre-change tree, because the identifier it greps for did not exist yet. It clears this doc's gate on the first try, for a reason that has nothing to do with behavior. Then it goes on passing against an implementation whose body has been gutted, because the identifier is still spelled the same.
+The reason is mechanical. `tests/wizard.test.js` has no jsdom (the suite says so at its DOM-behaviour section), so DOM behavior is asserted by slicing `web/wizard.js`'s **source text** — the established local idiom. A test like `assert.ok(/refreshBadge\(/.test(wire))` **necessarily** fails against the pre-change tree, because the identifier it greps for did not exist yet. It clears this doc's gate on the first try, for a reason that has nothing to do with behavior. Then it goes on passing against an implementation whose body has been gutted, because the identifier is still spelled the same.
 
 The pre-change run answers *"is this test new?"* A source regex is always new. It does not answer *"does this test constrain anything?"*
 
@@ -156,7 +156,17 @@ Reverting to base is not an arbitrary choice of technique; it is the only availa
 
 What is genuinely new here is the unfalsifiable shape, the base-tree procedure with its caveats, and the frame that unifies all four under a single mechanical check. Claiming more than that would invite the fair objection that this is `prove-a-guard` restated.
 
-One case in this feature sat on the boundary and needed corruption rather than a base run, which is worth knowing as the exception. Four golden parity fixtures were added specifically to pin credited solves against the real 9045-item catalog — two credited, each with an uncredited twin — bringing the set to ten. Deleting the constraint they existed to protect — the per-bucket lower bound at `web/solver.js:900-904`, `sum(value_i * z_i) >= creditValue` — left all ten green. The fixtures solve the OPTIMUM path, where each stage maximizes its stat and the objective pulls the credit's binary to 1 unaided; the constraint only binds on `tieBreak:false` paths, which every Alternatives generator uses and the golden set never exercises (`web/solver.js:875-899`). This is recorded in the test file itself at `tests/solver_golden.test.js:73-79`, flagged as a SCOPE LIMIT verified by corruption. A base run would not have found it — the fixtures genuinely are new and genuinely do fail against base; they simply fail for a weaker reason than advertised. For a fixture set, ask *which line would I delete to make this go red*, and delete it.
+One case in this feature sat on the boundary and needed corruption rather than a base run, which is worth knowing as the exception. Four golden parity fixtures were added specifically to pin credited solves against the real 9045-item catalog — two credited, each with an uncredited twin — bringing the set to ten. Deleting the constraint they existed to protect — the per-bucket lower bound at `buildProgram`'s credit lower bound in `web/solver.js`, `sum(value_i * z_i) >= creditValue` — left all ten green. The fixtures solve the OPTIMUM path, where each stage maximizes its stat and the objective pulls the credit's binary to 1 unaided; the constraint only binds on `tieBreak:false` paths, which every Alternatives generator uses and the golden set never exercises (the surrounding `encodeStage` discussion). This is recorded in the test file itself at `tests/solver_golden.test.js:73-79`, flagged as a SCOPE LIMIT verified by corruption. A base run would not have found it — the fixtures genuinely are new and genuinely do fail against base; they simply fail for a weaker reason than advertised. For a fixture set, ask *which line would I delete to make this go red*, and delete it.
+
+## A test can clear both gates above and still prove nothing
+
+Everything above asks two questions about a test: *is it new* (the base-tree run) and *does it constrain the code* (the mutation check). A third failure clears both.
+
+While building the saturation/empty-slot disclosure ([#239](https://github.com/eddiefiggie/ddo-loadout-optimizer/issues/239), PR [#241](https://github.com/eddiefiggie/ddo-loadout-optimizer/pull/241)), a counter was written against a **plan's** claim about what the solver emits — that a short priority list leaves leftover slots filled with tie-break picks. It does not; `chosen` carries only contributing slots, so those slots come back absent, not filled. Five tests drove hand-built `chosen` arrays containing filler items. All five went red against the pre-change tree, honestly. All five would survive mutation — breaking the counter's body reddens them, because they genuinely bind it. The counter still returned **0** on the one scenario the feature existed for.
+
+Neither gate asks *does the fixture resemble what the system actually produces*. Only real output answers that, and it took one printed solve. The full case, and the check that closes it, is in [browser-verify-against-real-data-not-just-unit-tests](../developer-experience/browser-verify-against-real-data-not-just-unit-tests.md) — which is the better home, because the remedy is a real-data run rather than another property of the test.
+
+The compounding hazard is specific: when a plan states what a component emits and the fixtures are written to that statement, the specification and the fixture confirm each other. That is one claim written twice, and no amount of test discipline detects it from inside the test layer.
 
 ## When to Apply
 
@@ -166,6 +176,7 @@ One case in this feature sat on the boundary and needed corruption rather than a
 - **Especially for negative assertions** ("field absent", "nothing added", "no label") — these are true on the pre-change tree by definition unless you first assert the field exists.
 - **Substitute deliberate corruption when the surface is a golden or parity fixture set**, where "does it fail against base?" answers a weaker question than "does it fail when I delete the constraint it protects?"
 - **Not required for a no-op regression guard** whose stated purpose is that a path is unchanged. Label it as such so it is not counted as coverage.
+- **Neither gate substitutes for one real run.** When a test hand-builds the structure under test, print that structure once from a real run and compare. See the section above.
 
 This composes with two rules already in the project's instructions: run the JS tests **file by file** (`node a.js b.js` executes only the first, which has silently skipped the golden solver check before), and re-ratify a golden or parity diff deliberately rather than blanket-accepting it.
 
@@ -194,7 +205,7 @@ Confirming the caveat above the hard way: the command that produced that listing
 
 Before, in spirit: every credit test constructed `model.credits` directly and called `buildProgram`. Production never does. Two defects lived entirely in the skipped segment, and both are now documented at the code:
 
-- `web/model.js:754-760` — "A near-miss string is wrong-HIGH and silent: `insight` forms its own bucket key, so the credit stops competing with Insight gear and ADDS to it." Case-folding is explicitly *not* the fix, because an unrecognized type stacking additively is correct for a real type no gear carries (`Morale`); only membership in the curated list at `web/model.js:761-766` separates the legitimate case from the typo.
+- `web/model.js` (the `wrong-HIGH` note above `_CREDIT_TYPES`) — "A near-miss string is wrong-HIGH and silent: `insight` forms its own bucket key, so the credit stops competing with Insight gear and ADDS to it." Case-folding is explicitly *not* the fix, because an unrecognized type stacking additively is correct for a real type no gear carries (`Morale`); only membership in the curated list at the curated `_CREDIT_TYPES` vocabulary in `web/model.js` separates the legitimate case from the typo.
 - `web/solver.js:52-58` — an inline `c.stat && c.value > 0` check "admitted a missing `bonus_type` ... and a numeric STRING (which formats into valid LP, then concatenates in `readSolution`'s accumulator and turns the headline total into `"07"`)."
 
 The structural fix was to make the solver resolve the *same* sanitizer `buildModel` uses (`web/solver.js:59-62`) so the two layers cannot disagree, and to point tests at the production entry point.
@@ -207,7 +218,7 @@ The fix is recorded in the test file at `tests/exporters.test.js:569-573`:
 
 > The label is imported from the SOLVER, not restated here. Restating it made these tests pass against the pre-U3 tree: the fixture supplied the string and the assertion looked for it, so they only proved the exporter echoes its input. Importing the constant turns them into a real cross-module contract.
 
-The fixture at `tests/exporters.test.js:588` now interpolates `DECLARED_LABEL` imported from `web/solver.js:1025`, so renaming the label in the solver breaks the export tests, which is the contract that was supposed to exist all along.
+The fixture at `tests/exporters.test.js:588` now interpolates `DECLARED_LABEL` imported from `web/solver.js` (`DECLARED_LABEL`), so renaming the label in the solver breaks the export tests, which is the contract that was supposed to exist all along.
 
 ### Shape 3 — wrong surface (U1 golden fixtures)
 
