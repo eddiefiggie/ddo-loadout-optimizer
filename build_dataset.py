@@ -44,6 +44,7 @@ from src import heightened_awareness as heightened_awareness_mod
 from src import enchantment_split as enchantment_split_mod
 from src import umbrella as umbrella_mod
 from src import spell_focus as spell_focus_mod
+from src import provenance as provenance_mod
 from src import value_corrections as value_corrections_mod
 from src import name_corrections as name_corrections_mod
 from src import untyped_rankable as untyped_rankable_mod
@@ -975,6 +976,18 @@ def build() -> dict:
                                     **speed_split_mod.EXPANDED_AWAY,
                                     **parrying_split_mod.EXPANDED_AWAY,
                                     **heightened_awareness_mod.EXPANDED_AWAY},
+            # U10 (R13) — the ORIGINATING enchantment name every expansion stamps on
+            # the affixes it emits ("Sacred Spell Focus Mastery"), mapped to the stats
+            # it becomes. The item surfaces DISPLAY these names, so the picker must be
+            # able to rank them; without this the app prints a name its own picker
+            # refuses. Distinct from `expanded_away_names` above, which carries only the
+            # BARE keys a family declares — the displayed names are bonus-type prefixed.
+            #
+            # SCANNED from the built variants, never assembled from a family list: a
+            # scan includes the next expansion family the moment it stamps its first
+            # affix, whereas a list has a registration step somebody will forget. See
+            # src/provenance.py.
+            "provenance_labels": provenance_mod.label_expansions(variants),
             # U5 — the shared affix-name registry + variant->canonical alias table.
             # The web picker unions every affix source (gear, augments, set bonuses,
             # ALL crafting pools) and canonicalizes each through the alias table, so a
