@@ -470,12 +470,54 @@ test("dominates: a Viktranium host at a DIFFERENT tier is not matched", () => {
     "heroic slot cannot match a legendary slot (tier is part of the key)");
 });
 
+// A Viktranium option is an ATOMIC native option carrying an `affixes` list
+// (mirroring the Dino insert UNIT), not one record per affix.
+function vikOpt(slot_type, category, affixes, tier) {
+  return {
+    slot_type, category, tier: tier || "legendary", name: `${slot_type} option`,
+    affixes: affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, value, unit: "flat" })),
+  };
+}
+
 test("buildModel exposes a target-filtered Viktranium pool", () => {
   const model = M.buildModel([], { mlCap: 36, targets: ["Constitution"] }, [], [], [
-    { slot_type: "Melancholic", category: "Accessory", stat: "Constitution", bonus_type: "Enhancement", value: 15, tier: "legendary" },
-    { slot_type: "Dolorous", category: "Weapon", stat: "Attack", bonus_type: "Competence", value: 23, tier: "legendary" }, // not a target
+    vikOpt("Melancholic", "Accessory", [["Constitution", "Enhancement", 15]]),
+    vikOpt("Dolorous", "Weapon", [["Attack", "Competence", 23]]), // not a target
   ]);
   assert.strictEqual(model.viktranium.length, 1, "only target-relevant options kept");
+  assert.strictEqual(model.viktranium[0].affixes[0].stat, "Constitution");
+});
+
+test("Viktranium prefilter keeps an option whose match is on a NON-FIRST affix", () => {
+  // The universal spell-DC options carry seven school affixes in ONE record; a
+  // player ranking only Necromancy Focus matches the sixth affix, not the first.
+  // A prefilter reading a singular `o.stat` drops the whole option (R1/R2).
+  const universal = vikOpt("Dolorous", "Armor", [
+    ["Abjuration Focus", "Profane", 1], ["Conjuration Focus", "Profane", 1],
+    ["Enchantment Focus", "Profane", 1], ["Evocation Focus", "Profane", 1],
+    ["Illusion Focus", "Profane", 1], ["Necromancy Focus", "Profane", 1],
+    ["Transmutation Focus", "Profane", 1],
+  ]);
+  const model = M.buildModel([], { mlCap: 36, targets: ["Necromancy Focus"] }, [], [], [universal]);
+  assert.strictEqual(model.viktranium.length, 1, "an option matching on its 6th affix is kept");
+  assert.strictEqual(model.viktranium[0].affixes.length, 7, "the whole option rides through, not one affix");
+});
+
+test("Viktranium prefilter drops an option none of whose affixes are ranked", () => {
+  const model = M.buildModel([], { mlCap: 36, targets: ["Constitution"] }, [], [], [
+    vikOpt("Dolorous", "Armor", [["Assassinate", "Profane", 1], ["Combat Mastery", "Profane", 1]]),
+  ]);
+  assert.strictEqual(model.viktranium.length, 0, "no affix advances a ranked target");
+});
+
+test("Viktranium prefilter still admits a FLAT legacy record (back-compat)", () => {
+  // A stale cached dataset can still deliver the pre-atomicity one-record-per-affix
+  // shape; the same fallback the Dino pool carries must keep it readable.
+  const model = M.buildModel([], { mlCap: 36, targets: ["Constitution"] }, [], [], [
+    { slot_type: "Melancholic", category: "Accessory", stat: "Constitution", bonus_type: "Enhancement", value: 15, tier: "legendary" },
+    { slot_type: "Dolorous", category: "Weapon", stat: "Attack", bonus_type: "Competence", value: 23, tier: "legendary" },
+  ]);
+  assert.strictEqual(model.viktranium.length, 1, "flat legacy records still filter on their singular stat");
   assert.strictEqual(model.viktranium[0].stat, "Constitution");
 });
 

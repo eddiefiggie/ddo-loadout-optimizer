@@ -264,7 +264,7 @@ function buildProgram(model) {
   const dinoMeta = new Map(); // dino placement var -> {dino_type, stat, bonus_type, value, wiki_url}
   const ncMeta = new Map(); // nc placement var -> {item, category, stat, bonus_type, value, tier, wiki_url}
   const rollMeta = new Map(); // roll-group option var -> {item, stat, bonus_type, value, unit}
-  const vikMeta = new Map(); // Viktranium placement var -> {item, slot_type, category, stat, bonus_type, value, unit, tier, wiki_url}
+  const vikMeta = new Map(); // Viktranium placement var -> {item, slot_type, category, name, affixes, stat, bonus_type, value, unit, tier, wiki_url}
   const sealMeta = new Map(); // seal placement var -> {item, seal_type, category, stat, bonus_type, value, unit, wiki_url}
   const tfMeta = new Map();   // Thunder-Forged pick var -> {item, tier, stat, bonus_type, value, unit, wiki_url}
   const gsMeta = new Map();   // Green Steel pick var -> {item, name, stat, bonus_type, value, unit, wiki_url}
@@ -608,9 +608,16 @@ function buildProgram(model) {
   // `lamordia_slots` is an independent slot of a (type, category); it may craft
   // one option from the matching pool at the host's tier. Same gated select-one
   // primitive as Nearly Completed: a per-option binary n gated by the host item
-  // (n - x_item <= 0), its stat fed into the (stat, bonus_type) bucket [n], and
-  // Σ n <= 1 PER SLOT — so an item with two Lamordia slots gets two independent
-  // choices. Tier from the host's ML (ML>=35 Legendary), matching lamordiaTier.
+  // (n - x_item <= 0), and Σ n <= 1 PER SLOT — so an item with two Lamordia slots
+  // gets two independent choices. Tier from the host's ML (ML>=35 Legendary),
+  // matching lamordiaTier.
+  //
+  // An option is ATOMIC (mirrors the Dino insert UNIT): ONE record per craftable
+  // option, carrying an `affixes` list. The universal spell-DC option grants all
+  // seven schools from a single craft, so a caster ranking two schools spends one
+  // slot, not two. Each on-target affix becomes its own (stat, bonus_type) bucket
+  // term gated by the SAME binary [n] — all of the option's affixes apply together
+  // or none. Off-target affixes ride along physically with no objective term.
   let vkc = 0;
   for (const xv of xVars) {
     const slots = xv.variant.lamordia_slots || [];
@@ -620,19 +627,36 @@ function buildProgram(model) {
       const slotVars = [];
       for (const opt of model.viktranium || []) {
         if (opt.slot_type !== slot.type || opt.category !== slot.category || opt.tier !== tier) continue;
-        if (!(targetSet.has(opt.stat) && opt.value > 0)) continue;
+        const affixes = (opt.affixes && opt.affixes.length)
+          ? opt.affixes
+          // back-compat: a flat single-affix record (pre-atomicity shape)
+          : (opt.stat ? [{ stat: opt.stat, bonus_type: opt.bonus_type, value: opt.value, unit: opt.unit }] : []);
+        const onTarget = affixes.filter((a) => targetSet.has(a.stat) && a.value > 0);
+        if (onTarget.length === 0) continue;
         const n = "vk" + vkc++;
         extraVars.push(n);
+        const lead = onTarget[0];
         vikMeta.set(n, {
           item: xv.variant.variant_id, slot_type: slot.type, category: slot.category,
-          stat: opt.stat, bonus_type: opt.bonus_type, value: opt.value,
-          unit: opt.unit || "flat", tier, wiki_url: opt.wiki_url,
+          name: opt.name,
+          // The whole option rides along, so a placement is self-describing (a
+          // multi-affix craft is findable by any affix it grants).
+          affixes: affixes.map((a) => ({
+            stat: a.stat, bonus_type: a.bonus_type, value: a.value, unit: a.unit || "flat",
+            ...(a.via ? { via: a.via } : {}),
+          })),
+          // Legacy flat fields, kept for renderers not yet reading `affixes`:
+          // the option's leading ON-TARGET affix.
+          stat: lead.stat, bonus_type: lead.bonus_type, value: lead.value,
+          unit: lead.unit || "flat", tier, wiki_url: opt.wiki_url,
         });
         slotVars.push(n);
         extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
-        const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
-        if (!zByBucket.has(k)) zByBucket.set(k, []);
-        zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: opt.value });
+        for (const a of onTarget) {
+          const k = `${a.stat}||${_equivType(a.bonus_type)}`;
+          if (!zByBucket.has(k)) zByBucket.set(k, []);
+          zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: a.value });
+        }
       }
       if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single choice per slot
     }

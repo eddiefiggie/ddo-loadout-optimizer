@@ -326,21 +326,28 @@ function _isMagnitude(v) {
   return typeof v === "number" && !Number.isNaN(v);
 }
 
-/** Every crafting-pool affix as [name, type, value] (all pools carry the legacy
+/** Every crafting-pool affix as [name, type, value]. Pool affixes carry the legacy
  *  {stat,bonus_type} shape — the normalizer does not touch pools, and the solver
- *  reads them the same legacy way). */
+ *  reads them the same legacy way. Viktranium and Dino records are atomic UNITS
+ *  whose affixes live under `affixes`; the rest are one affix per record. */
 function _craftingAffixTriples(ds) {
   const out = [];
   const push = (n, t, v) => { if (n != null && n !== "") out.push([n, t, v]); };
-  for (const pool of [ds.seal, ds.nearly_complete, ds.viktranium, ds.thunder_forged, ds.green_steel]) {
+  for (const pool of [ds.seal, ds.nearly_complete, ds.thunder_forged, ds.green_steel]) {
     for (const o of pool || []) push(o.stat, o.bonus_type, o.value);
   }
   for (const arr of Object.values(ds.nearly_complete_per_item || {})) {
     for (const o of arr || []) push(o.stat, o.bonus_type, o.value);
   }
-  for (const ins of ds.dino_inserts || []) {
-    const affs = (ins.affixes && ins.affixes.length) ? ins.affixes : [ins];
-    for (const a of affs) push(a.stat, a.bonus_type, a.value);
+  // Viktranium and Dino records are ATOMIC UNITS carrying an `affixes` list —
+  // reading a singular `o.stat` would leave every affix of a multi-affix option
+  // (the universal spell-DC craft's seven schools) out of the picker vocabulary.
+  // Flat single-affix records still read, for back-compat.
+  for (const pool of [ds.viktranium, ds.dino_inserts]) {
+    for (const o of pool || []) {
+      const affs = (o.affixes && o.affixes.length) ? o.affixes : [o];
+      for (const a of affs) push(a.stat, a.bonus_type, a.value);
+    }
   }
   for (const def of Object.values(ds.membership_set_defs || {})) {
     for (const tier of (def.tiers || [])) for (const a of tier.affixes || []) push(a.stat, a.bonus_type, a.value);

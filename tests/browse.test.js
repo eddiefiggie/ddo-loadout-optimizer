@@ -158,12 +158,43 @@ test("a Viktranium option is findable in the browser by stat", () => {
   assert.ok(rows.some((v) => v.vik_option), "Charisma Lamordia craft options surface under the stat filter");
 });
 
-test("vikRow tags the tier's ML, keys the pool, and renders its value", () => {
+test("vikRow tags the tier's ML, keys the pool, and renders its value (flat legacy record)", () => {
+  // Back-compat: a stale cached dataset can still deliver the pre-atomicity
+  // one-record-per-affix shape.
   const row = vikRow({ slot_type: "Melancholic", category: "Accessory", stat: "Charisma", bonus_type: "Enhancement", value: 15, tier: "legendary", wiki_url: "w" });
   // U5: pseudo-rows now carry native item-level `ml` (was legacy `minimum_level`).
   assert.strictEqual(row.ml, 34);
   assert.ok(/Melancholic/.test(row.slot) && /Accessory/.test(row.slot), "slot names the (type, category) pool");
   assert.ok(affixText(row).some((t) => /Charisma \+15/.test(t)));
+});
+
+test("vikRow renders an atomic option's FULL affix list, not just the first", () => {
+  // R1: crafting the universal spell-DC option grants all seven schools at once,
+  // so the browse row must show all seven — one row per OPTION, not per affix.
+  const schools = ["Abjuration", "Conjuration", "Enchantment", "Evocation",
+    "Illusion", "Necromancy", "Transmutation"].map((s) => `${s} Focus`);
+  const row = vikRow({
+    slot_type: "Dolorous", category: "Armor", tier: "legendary", wiki_url: "w",
+    name: "Dolorous Invigorator (legendary)",
+    affixes: schools.map((stat) => ({ stat, bonus_type: "Profane", value: 1, unit: "flat" })),
+  });
+  assert.strictEqual((row.affixes || []).length, 7, "every affix the option grants is on the row");
+  const text = affixText(row);
+  for (const s of schools) {
+    assert.ok(text.some((t) => t.includes(s)), `${s} is rendered on the option row`);
+  }
+  assert.ok(/Dolorous/.test(row.slot) && /Armor/.test(row.slot), "slot names the (type, category) pool");
+  assert.ok(/Dolorous Invigorator/.test(row.variant_id), "the row is titled by the option, not one affix");
+});
+
+test("a multi-affix Viktranium option is findable by a NON-FIRST affix (real dataset)", () => {
+  // Pick a real multi-affix option and search on its last affix — a row built
+  // from only the first affix would hide the rest of the option's grant.
+  const multi = (data.viktranium || []).find((o) => (o.affixes || []).length > 2);
+  assert.ok(multi, "the real pool carries multi-affix options");
+  const last = multi.affixes[multi.affixes.length - 1].stat;
+  const rows = filterVariants(browsableItems(data), { stat: last });
+  assert.ok(rows.some((v) => v.vik_option), `${last} surfaces from a multi-affix Viktranium option`);
 });
 
 test("browsableItems appends only indexed-only compendium rows (collapsed under single-source)", () => {
