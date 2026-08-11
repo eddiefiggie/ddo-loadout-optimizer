@@ -65,6 +65,40 @@ test("U2: an item with bare + explicit Physical Sheltering does not get a duplic
   assert.ok(it.affixes.some((a) => a.name === "Magical Sheltering" && a.value === 30), "Magical still expanded");
 });
 
+// R12 — the two browser-side expansions stamp the originating enchantment name
+// under the same `via` key the Python expansions write (src/spell_focus.py
+// PROVENANCE_KEY), so a consumer can collapse an expanded group back to the one
+// line the item actually bears. Sheltering is a TYPED family: the wiki lists
+// "Insightful Sheltering" and "Quality Sheltering" categories, and states that a
+// bare Sheltering "is usually an enhancement bonus unless otherwise stated" — so
+// the Enhancement variant is engraved bare (docs/wiki-evidence/sheltering.md).
+test("R12: bare Sheltering's halves name the enchantment they came from", () => {
+  const it = { affixes: [{ name: "Sheltering", value: 30, type: "Enhancement" }] };
+  normalizeItem(it);
+  assert.strictEqual(find(it, "Physical Sheltering").via, "Sheltering");
+  assert.strictEqual(find(it, "Magical Sheltering").via, "Sheltering");
+});
+
+test("R12: a typed Sheltering is stamped with the wiki's typed name", () => {
+  const insight = { affixes: [{ name: "Sheltering", value: 12, type: "Insight" }] };
+  normalizeItem(insight);
+  assert.strictEqual(find(insight, "Physical Sheltering").via, "Insightful Sheltering",
+    "the wiki writes the Insight variant 'Insightful', never 'Insight'");
+  const quality = { affixes: [{ name: "Sheltering", value: 8, type: "Quality" }] };
+  normalizeItem(quality);
+  assert.strictEqual(find(quality, "Magical Sheltering").via, "Quality Sheltering");
+});
+
+test("R12: an affix the item states itself carries no provenance", () => {
+  const it = { affixes: [
+    { name: "Sheltering", value: 30, type: "Enhancement" },
+    { name: "Physical Sheltering", value: 45, type: "Enhancement" },
+  ] };
+  normalizeItem(it);
+  const phys = it.affixes.find((a) => a.name === "Physical Sheltering");
+  assert.ok(!("via" in phys), "the item's own affix must not claim an originating enchantment");
+});
+
 test("U2: bare 'Sheltering' is not offered as a standalone picker suggestion", () => {
   const ds = { metadata: { rankable_affixes: ["Sheltering", "Physical Sheltering", "Constitution"] } };
   const vocab = buildPickerVocabulary(ds);
@@ -259,6 +293,29 @@ test("U5: an explicitly stated component is never shadowed by a derived one", ()
   assert.strictEqual(conceal.length, 1, "no duplicate line");
   assert.strictEqual(conceal[0].type, "Insight", "the item's own affix is preserved");
   assert.strictEqual(conceal[0].value, 7);
+});
+
+// R12 — a derived component names the composite it was derived from. The
+// composite name takes no bonus-type prefix: it is stored as `Bool` presence,
+// which is not a bonus type, and the wiki writes the enchantment bare.
+test("R12: a derived component names the composite it came from", () => {
+  const it = { affixes: [{ name: "Crown of Summer", type: "Bool", value: 1 }] };
+  normalizeItem(it);
+  for (const n of ["Healing Amplification", "Melee Power", "Ranged Power"]) {
+    assert.strictEqual(find(it, n).via, "Crown of Summer", `${n} names its source`);
+  }
+  assert.ok(!("via" in find(it, "Crown of Summer")), "the boolean itself is native, not derived");
+});
+
+test("R12: when two composites contribute one stat, the surviving line names the winner", () => {
+  const it = { affixes: [
+    { name: "Blurry", type: "Bool", value: 1 },
+    { name: "Lesser Displacement", type: "Bool", value: 1 },
+  ] };
+  normalizeItem(it);
+  const conceal = it.affixes.filter((a) => a.name === "Concealment");
+  assert.strictEqual(conceal.length, 1);
+  assert.strictEqual(conceal[0].via, "Lesser Displacement", "the 25% source, not the 20% one");
 });
 
 test("U5: expansion is idempotent", () => {

@@ -109,6 +109,29 @@ var COMPOSITE_COMPONENTS = {
   ],
 };
 
+// R12 — every expansion family stamps the ORIGINATING enchantment name onto each
+// affix it emits, under the key `src/spell_focus.py` writes (PROVENANCE_KEY).
+// Two of the families expand HERE rather than at build time (bare Sheltering and
+// the boolean composites), so they stamp here. Presence of the key is also the
+// expanded/native discriminator: an affix the item states itself never carries it.
+var PROVENANCE_KEY = "via";
+// How the wiki spells a typed variant's prefix. Mirrors src/spell_focus.py
+// `_TYPE_PREFIX`: the Insight variant is engraved "Insightful", never "Insight".
+var TYPE_PREFIX = { Insight: "Insightful" };
+/** The enchantment name as the wiki writes it. `unprefixed` names the bonus
+ *  types this family renders WITHOUT a prefix — its default type, the one the
+ *  wiki writes bare. */
+function sourceLabel(name, type, unprefixed) {
+  var base = String(name == null ? "" : name).trim();
+  if (!type || (unprefixed && unprefixed.has(type))) return base;
+  return (TYPE_PREFIX[type] || type) + " " + base;
+}
+// Sheltering IS a typed family — the wiki lists "Insightful Sheltering" and
+// "Quality Sheltering" categories. Its Enhancement variant is the default and is
+// engraved bare ("usually an enhancement bonus unless otherwise stated"), so
+// Enhancement takes no prefix. See docs/wiki-evidence/sheltering.md.
+var SHELTERING_UNPREFIXED = new Set(["Enhancement"]);
+
 function isNoiseAffix(a) {
   if (!a || typeof a !== "object") return false;
   var name = a.name != null ? a.name : a.stat;
@@ -142,8 +165,12 @@ function normalizeItem(it) {
       var expanded = [];
       for (const a of affixes) {
         if (a && a.name === "Sheltering") {
-          if (!present.has("Physical Sheltering")) expanded.push(Object.assign({}, a, { name: "Physical Sheltering" }));
-          if (!present.has("Magical Sheltering")) expanded.push(Object.assign({}, a, { name: "Magical Sheltering" }));
+          // R12: the item is engraved "Sheltering" / "Insightful Sheltering", not
+          // "Physical Sheltering" — each half names the enchantment it came from.
+          var stamp = {};
+          stamp[PROVENANCE_KEY] = sourceLabel("Sheltering", a.type, SHELTERING_UNPREFIXED);
+          if (!present.has("Physical Sheltering")) expanded.push(Object.assign({}, a, { name: "Physical Sheltering" }, stamp));
+          if (!present.has("Magical Sheltering")) expanded.push(Object.assign({}, a, { name: "Magical Sheltering" }, stamp));
         } else {
           expanded.push(a);
         }
@@ -171,7 +198,14 @@ function normalizeItem(it) {
         for (const c of comps) {
           if (stated.has(c.name)) continue;
           var prev = derived.get(c.name);
-          if (!prev || c.value > prev.value) derived.set(c.name, c);
+          // R12: the item is engraved "Blurry", not "Concealment" — the derived
+          // component names the composite it came from. A composite is stored as
+          // `Bool` presence, which is not a bonus type, so the label is bare.
+          if (!prev || c.value > prev.value) {
+            var stampedComp = Object.assign({}, c);
+            stampedComp[PROVENANCE_KEY] = String(a.name);
+            derived.set(c.name, stampedComp);
+          }
         }
       }
       // Idempotent: a second pass sees the derived names in `stated` and adds nothing.

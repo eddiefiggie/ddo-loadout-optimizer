@@ -147,6 +147,38 @@ def test_native_record_carries_marker_fields():
     assert v["set_bonus"] == [{"set": "Forbidden Knowledge"}]
 
 
+# --- R12: the provenance stamp survives variant expansion ----------------------
+#
+# `_native_parsed` rebuilds every affix from a fixed field list. The shard splits
+# (Parrying / Speed / Heightened Awareness) run over the PLANNER RECORDS, before
+# this rebuild — so a stamp they write is destroyed here unless the rebuild
+# carries it, long before serialization. A test that only checked the built
+# dataset's serializer would miss this entirely.
+
+def test_provenance_stamp_survives_variant_expansion_for_a_shard_split():
+    from src import parrying_split, spell_focus
+    via = spell_focus.PROVENANCE_KEY
+
+    rec = _native(name="Parrying Ring",
+                  affixes=[{"name": "Parrying", "type": "Insight", "value": "2"}])
+    parrying_split.apply([rec], {"harvested": {"Parrying Ring": {
+        "value": {"version": "2", "armor_class": 2, "saves": 2},
+        "provenance": "stated", "raw": "{{Parrying|2}}"}}})
+
+    variants = expand_dataset([rec])
+    stats = {a["stat"] for a in variants[0]["affixes"]}
+    assert stats == {"Armor Class", "Fortitude Save", "Reflex Save", "Will Save"}
+    for a in variants[0]["affixes"]:
+        assert a[via] == "Parrying", a
+
+
+def test_a_native_affix_gains_no_provenance_stamp_in_expansion():
+    v = expand_item(_native(affixes=[
+        {"name": "Necromancy Focus", "type": "Sacred", "value": "3"}]))[0]
+    from src import spell_focus
+    assert spell_focus.PROVENANCE_KEY not in v["affixes"][0]
+
+
 def test_native_variant_affix_objects_are_not_shared():
     v = expand_item(_native(affixes=[
         {"name": "Seeker", "type": "Enhancement", "value": "5"},

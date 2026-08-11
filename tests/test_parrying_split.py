@@ -486,3 +486,40 @@ def test_the_built_dataset_has_no_unexpected_set_bonus_orphan():
     brooch = next(i for i in data["items"] if i.get("source_item") == "Protector's Brooch")
     stats = {a["stat"] for t in brooch["parsed_set_bonuses"] for a in t["affixes"]}
     assert {"Armor Class", "Fortitude Save", "Reflex Save", "Will Save"} <= stats
+
+
+# --- R12: provenance stamp -----------------------------------------------------
+#
+# The item shows "Parrying +4"; the split emits an Armor Class and three saves.
+# Every emitted affix names the enchantment it came from, under the key
+# `src/spell_focus.py` writes, so a consumer can collapse the four back into the
+# one line the item bears. `Parrying` takes no bonus-type prefix: the enchantment
+# is Insight by definition and the wiki writes it bare.
+
+def test_every_emitted_affix_names_the_parrying_enchantment():
+    from src import spell_focus
+    via = spell_focus.PROVENANCE_KEY
+
+    rec = _rec("Admiral's Cummerbund", _parrying(2))
+    parrying_split.apply([rec], _shard(**{"Admiral's Cummerbund": _entry("2", 2)}))
+
+    emitted = _by_name(rec)
+    assert set(emitted) == {"Armor Class"} | set(SAVES)
+    for name, affixes in emitted.items():
+        assert affixes[0][via] == "Parrying", (name, affixes[0])
+
+
+def test_an_affix_the_item_already_carried_is_not_stamped():
+    """Presence of the key is the expanded/native discriminator. A Quality Reflex
+    Save the record already bore stacks with the Insight one rather than being
+    produced by the split, so it must claim no source."""
+    from src import spell_focus
+    via = spell_focus.PROVENANCE_KEY
+
+    rec = _rec("Oathblade", _parrying(8), _affix("Reflex Save", "Quality", 3))
+    parrying_split.apply([rec], _shard(**{"Oathblade": _entry("VIII", 4)}))
+
+    native = [a for a in rec["affixes"]
+              if a["name"] == "Reflex Save" and a["type"] == "Quality"]
+    assert len(native) == 1
+    assert via not in native[0]

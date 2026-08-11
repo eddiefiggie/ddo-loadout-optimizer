@@ -24,10 +24,13 @@ sys.path.insert(0, ROOT)
 from src import vocabulary  # noqa: E402
 
 _LEGACY_AFFIX_KEYS = {"stat", "bonus_type", "unit", "minimum_level"}
-# `via` (#205) names the enchantment an expanded universal spell-DC affix came
-# from ("Sacred Spell Focus Mastery"). It is display provenance, not a legacy
-# key: the solver never reads it, but the proof panel and share exports must show
-# what is engraved on the item rather than the school the value was credited to.
+# `via` names the enchantment an EXPANDED affix came from — "Sacred Spell Focus
+# Mastery" (#205), and since R12 every other expansion family too ("Profane Well
+# Rounded", "Parrying", "Speed", "Heightened Awareness"). It is display
+# provenance, not a legacy key: the solver never reads it, but the proof panel
+# and share exports must show what is engraved on the item rather than the stat
+# the value was credited to. Already allowed here, so R12 needed no widening —
+# the coverage test below is what proves every family actually writes it.
 _ALLOWED_AFFIX_KEYS = {"name", "type", "value", "eligible", "via"}
 
 
@@ -51,6 +54,60 @@ def test_no_legacy_affix_keys_at_rest():
             extra |= keys - _ALLOWED_AFFIX_KEYS
     assert not offenders, f"{len(offenders)} item(s) still carry legacy affix keys: {offenders[:5]}"
     assert not extra, f"unexpected non-native affix keys at rest: {sorted(extra)}"
+
+
+# --------------------------------------------------------------- R12: provenance at rest
+#
+# An expansion turns one enchantment the player sees engraved on the item into
+# several concrete affixes the solver can match. Every build-time expansion
+# family stamps the originating name under `via` so a consumer can collapse the
+# group back to the one line the item bears — and the stamp has to SURVIVE, past
+# `src/variants.py`'s affix rebuild and past `build_dataset._native_affix`.
+# Spell focus alone escaped the first of those only because it expands after it.
+#
+# The two browser-side families (bare Sheltering, boolean composites) expand at
+# load time in `web/dataset.js` and so are absent here by construction; they are
+# covered by `tests/dataset.test.js`.
+
+_EXPANSION_FAMILIES_AT_REST = {
+    # family -> a predicate over the `via` string it stamps
+    "spell focus": lambda s: s.endswith("Spell Focus Mastery") or s.endswith("Spell Focus"),
+    "umbrella": lambda s: s.endswith("Well Rounded") or s.endswith("All Ability Scores"),
+    "parrying": lambda s: s == "Parrying",
+    "speed": lambda s: s == "Speed",
+    "heightened awareness": lambda s: s == "Heightened Awareness",
+}
+
+
+def test_every_build_time_expansion_family_stamps_provenance_at_rest():
+    data = _load()
+    seen = {name: 0 for name in _EXPANSION_FAMILIES_AT_REST}
+    for it in data["items"]:
+        for a in it.get("affixes") or []:
+            label = a.get("via")
+            if not label:
+                continue
+            for name, matches in _EXPANSION_FAMILIES_AT_REST.items():
+                if matches(label):
+                    seen[name] += 1
+    missing = sorted(n for n, count in seen.items() if count == 0)
+    assert not missing, (
+        "these expansion families ship no provenance stamp at rest — the key was "
+        f"dropped between the expansion and the built dataset: {missing} (counts: {seen})")
+
+
+def test_a_native_school_specific_affix_carries_no_provenance():
+    """Presence of `via` is what tells an expanded affix from a native one. A
+    school focus the item really bears must claim no originating enchantment,
+    or the discriminator is worthless."""
+    data = _load()
+    natives = 0
+    for it in data["items"]:
+        for a in it.get("affixes") or []:
+            if a.get("name") == "Necromancy Focus" and not a.get("via"):
+                natives += 1
+    assert natives > 0, ("no unstamped native Necromancy Focus affix remains — either "
+                         "the dataset changed or the stamp is being applied to natives")
 
 
 def test_ophaels_cincture_abilities_are_seal_only():

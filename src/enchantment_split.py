@@ -31,6 +31,16 @@ import urllib.parse
 from dataclasses import dataclass, field
 from typing import Callable
 
+from src.spell_focus import PROVENANCE_KEY
+
+# R12 — the enchantment name every contribution the rewriter emits is stamped
+# with. `PROVENANCE_KEY` is imported rather than respelled: it is the key
+# `src/spell_focus.py` already writes, and one key with two spellings would leave
+# a consumer able to collapse one family's expansion and not another's. Each of
+# these affixes has exactly one typed variant in game (Parrying and Heightened
+# Awareness are Insight by definition, Speed is Enhancement), so the label is the
+# folded name bare — no bonus-type prefix, matching how the wiki writes them.
+
 # Provenance labels, named rather than spelled inline. Several functions branch
 # on these; a bare literal drifting by one character in one of them is the
 # failure shape that let the material coverage gate pass on corrupted input.
@@ -198,6 +208,10 @@ def rewrite_all(records, shard: dict, key_of, cfg: SplitConfig) -> dict:
                 stats["primary_suppressed"] += 1
             else:
                 affix["name"] = cfg.primary_name
+                # R12: renaming is an expansion too — the item is engraved
+                # "Parrying", not "Armor Class", so the emitted affix names the
+                # enchantment it came from.
+                affix[PROVENANCE_KEY] = cfg.folded_name
                 stats["renamed"] += 1
 
                 primary = value.get(cfg.primary_key)
@@ -218,7 +232,8 @@ def rewrite_all(records, shard: dict, key_of, cfg: SplitConfig) -> dict:
                 candidate = {"name": name, "type": btype}
                 if cfg.shadow_key(candidate) in present:
                     continue
-                affixes.append({"name": name, "type": btype, "value": str(magnitude)})
+                affixes.append({"name": name, "type": btype, "value": str(magnitude),
+                                PROVENANCE_KEY: cfg.folded_name})
                 present.add(cfg.shadow_key(candidate))
                 stats[stat] += 1
 
