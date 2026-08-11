@@ -378,6 +378,7 @@ def check_against_snapshots(shard: dict) -> dict:
 
     problems = []
     checked = 0
+    independent = 0
     compared = 0
     stated = 0
     for title, entry in sorted(harvested.items()):
@@ -437,6 +438,41 @@ def check_against_snapshots(shard: dict) -> dict:
                 f"{title}: recorded sonic={recorded!r} disagrees with its own "
                 f"invocation {raw!r} — the snapshot is paired with the wrong invocation")
 
+        # The only witness independent of `raw`.
+        #
+        # Everything above traces back to `raw`: `snapshot_for` KEYS the shared
+        # snapshot on the invocation, so `stated_by_tooltip` is a pure function of
+        # `stated_by_invocation` and the two can never disagree. An entry whose
+        # value and cited invocation were captured together from the same wrong
+        # place — the harvester read the neighbouring tier row, or dropped the
+        # `|yes` — agrees with itself all the way down and the guard goes green
+        # while a player silently loses (or gains) a whole element.
+        #
+        # A per-item tooltip is a second reading of THAT item's own rendered page,
+        # so it is the one field that can contradict `raw`. It is required for a
+        # `stated` entry: a flag that rests only on a snapshot the invocation
+        # itself chose has not actually been verified against anything.
+        # See docs/solutions/conventions/corrupt-the-value-and-its-reference-together.md.
+        per_item = entry.get("tooltip")
+        if not per_item:
+            problems.append(
+                f"{title}: `stated` but carries no per-item tooltip — the shared "
+                "snapshot is keyed by the invocation, so without this the flag is "
+                "verified only against itself")
+        else:
+            by_item = tooltip_includes_sonic(per_item)
+            if by_item is None:
+                problems.append(
+                    f"{title}: per-item tooltip matches no known dialect, so it "
+                    f"cannot verify anything: {per_item[:80]!r}")
+            else:
+                independent += 1
+                if recorded is not None and bool(recorded) != by_item:
+                    problems.append(
+                        f"{title}: recorded sonic={recorded!r} but this item's own "
+                        f"tooltip states {by_item!r} — the value and its cited "
+                        "invocation are wrong together")
+
     # Every `stated` entry must have reached a comparison. Each failure path above
     # already appends a problem, so this is belt-and-braces — it catches a future
     # branch that skips an entry without recording why.
@@ -445,6 +481,14 @@ def check_against_snapshots(shard: dict) -> dict:
             f"{stated - compared} `stated` entr(ies) were never compared against a "
             "tooltip — the guard cannot vouch for them")
 
+    # The same belt-and-braces for the independent witness: a future branch that
+    # skips the per-item check without recording why must not read as verified.
+    if independent < stated:
+        problems.append(
+            f"{stated - independent} `stated` entr(ies) were never checked against "
+            "their own item tooltip — only against a snapshot their own invocation "
+            "selected, which cannot contradict them")
+
     # Refuse to report a clean run that verified no flag — but only when the run is
     # otherwise clean, so a real diagnosis is never buried behind this.
     if not compared and not problems:
@@ -452,4 +496,4 @@ def check_against_snapshots(shard: dict) -> dict:
             "elemental absorption guard compared no recorded flag against a tooltip "
             "— refusing to pass")
 
-    return {"checked": checked, "compared": compared, "problems": problems}
+    return {"checked": checked, "compared": compared, "independent": independent, "problems": problems}

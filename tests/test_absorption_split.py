@@ -538,3 +538,40 @@ def test_no_set_bonus_tier_names_a_compound_absorption_stat():
                     orphans.append((tier.get("set"), stat))
 
     assert not orphans, orphans
+
+
+def test_the_guard_catches_a_value_and_its_invocation_wrong_together():
+    """The failure mode the snapshot check structurally cannot see.
+
+    `snapshot_for` keys the shared snapshot on `raw`, so the snapshot can never
+    contradict the invocation that selected it. An entry whose flag and cited
+    invocation were captured together from the same wrong place therefore agrees
+    with itself all the way down. Only the per-item tooltip -- a second reading of
+    that item's own page -- can disagree.
+    """
+    shard = _real_shard()
+    entry = shard["harvested"]["Cyran Guard (level 26)"]
+    entry["raw"] = "{{Absorption|Elemental|18}}"      # sonic token dropped
+    entry["value"] = {"sonic": False}                  # ...and the flag to match
+    problems = absorption_split.check_against_snapshots(shard)["problems"]
+    assert any("wrong together" in p for p in problems), problems
+
+
+def test_a_stated_entry_without_its_own_tooltip_fails():
+    shard = _real_shard()
+    del shard["harvested"]["Archaic Device"]["tooltip"]
+    problems = absorption_split.check_against_snapshots(shard)["problems"]
+    assert any("no per-item tooltip" in p for p in problems), problems
+
+
+def test_an_unreadable_per_item_tooltip_verifies_nothing():
+    shard = _real_shard()
+    shard["harvested"]["Archaic Device"]["tooltip"] = "Elemental Absorption +5%: something else"
+    problems = absorption_split.check_against_snapshots(shard)["problems"]
+    assert any("matches no known dialect" in p for p in problems), problems
+
+
+def test_every_stated_entry_reaches_an_independent_comparison():
+    result = absorption_split.check_against_snapshots(_real_shard())
+    assert not result["problems"], result["problems"]
+    assert result["independent"] == result["compared"] > 0, result
