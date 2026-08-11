@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -1511,6 +1511,140 @@ test("#235: the real vocabulary marks Enhanced Ki untyped-only and nothing else"
   assert.strictEqual(canDeclareCredit("Enhanced Ki", rv), false);
   assert.strictEqual(canDeclareCredit("Constitution", rv), true);
 });
+
+
+// --- U11 (R15): selecting an aliased enchantment name substitutes its stats ----
+// The picker now offers the enchantment names the item surfaces display ("Sacred
+// Spell Focus Mastery"). Selecting one must insert the stats it becomes, as
+// consecutive priorities in the expansion's declared order — never a single
+// combined objective term, which is the weighted-sum mode the Non-goals list
+// declines and which would silently trade the player's top stat away.
+{
+  const U11_VOCAB = buildPickerVocabulary(realData);
+  const U11_SCHOOLS = ["Abjuration Focus", "Conjuration Focus", "Enchantment Focus",
+    "Evocation Focus", "Illusion Focus", "Necromancy Focus", "Transmutation Focus"];
+
+  test("U11: selecting a provenance label inserts its stats in declared order", () => {
+    const out = resolvePriorityAdd("Sacred Spell Focus Mastery", U11_VOCAB, ["Constitution"]);
+    assert.ok(out.ok, "the label is accepted, not refused");
+    assert.deepStrictEqual(out.priorities, ["Constitution", ...U11_SCHOOLS]);
+    assert.deepStrictEqual(out.substitutions,
+      [{ from: "Sacred Spell Focus Mastery", to: U11_SCHOOLS }]);
+  });
+
+  test("U11: seven components occupy seven ranks — never one combined term", () => {
+    const out = resolvePriorityAdd("Sacred Spell Focus Mastery", U11_VOCAB, ["Constitution"]);
+    assert.strictEqual(out.priorities.length, 8,
+      "ranking the alias second puts nothing else above rank 8 — the disclosed cost");
+    assert.strictEqual(out.priorities[0], "Constitution", "the top priority is untouched");
+    for (const p of out.priorities) {
+      assert.ok(U11_VOCAB.known.has(p), `"${p}" is a real stat, not a fused objective term`);
+    }
+    assert.strictEqual(new Set(out.priorities).size, out.priorities.length, "no duplicates");
+  });
+
+  test("U11: a priority already ranked below is displaced, not dropped", () => {
+    const out = resolvePriorityAdd("Parrying", U11_VOCAB, ["Constitution", "Dodge"]);
+    assert.ok(out.ok);
+    assert.deepStrictEqual(out.priorities, ["Constitution", "Dodge",
+      "Armor Class", "Fortitude Save", "Reflex Save", "Will Save"]);
+    for (const kept of ["Constitution", "Dodge"]) {
+      assert.ok(out.priorities.includes(kept), `${kept} survived the substitution`);
+    }
+  });
+
+  test("U11: adding an alias whose components are already ranked does not duplicate", () => {
+    const out = resolvePriorityAdd("Parrying", U11_VOCAB, ["Armor Class"]);
+    assert.deepStrictEqual(out.priorities,
+      ["Armor Class", "Fortitude Save", "Reflex Save", "Will Save"]);
+    assert.strictEqual(out.substitutions.length, 1, "and still discloses the substitution");
+  });
+
+  test("U11: the alias itself never lands as a priority", () => {
+    for (const alias of ["Sacred Spell Focus Mastery", "Parrying", "Speed"]) {
+      const out = resolvePriorityAdd(alias, U11_VOCAB, []);
+      assert.ok(!out.priorities.includes(alias),
+        `${alias} is an enchantment name — it must not become a target no item carries`);
+    }
+  });
+
+  test("U11: an expanded-away name NO surface displays is still refused and redirected", () => {
+    const out = resolvePriorityAdd("Well Rounded", U11_VOCAB, ["Constitution"]);
+    assert.ok(!out.ok, "removal-and-redirect survives for a name nothing displays");
+    assert.ok(/rank those instead/.test(out.message || ""), out.message);
+    assert.deepStrictEqual(out.priorities, ["Constitution"], "priorities are untouched");
+  });
+
+  test("U11: an ordinary stat and an unknown name behave exactly as before", () => {
+    const good = resolvePriorityAdd("Dodge", U11_VOCAB, ["Constitution"]);
+    assert.ok(good.ok);
+    assert.deepStrictEqual(good.priorities, ["Constitution", "Dodge"]);
+    assert.deepStrictEqual(good.substitutions, [], "no disclosure when nothing was substituted");
+
+    const bad = resolvePriorityAdd("Notastat McNotastat", U11_VOCAB, ["Constitution"]);
+    assert.ok(!bad.ok);
+    assert.ok(/isn't a known affix/.test(bad.message || ""), bad.message);
+
+    const dupe = resolvePriorityAdd("Constitution", U11_VOCAB, ["Constitution"]);
+    assert.ok(!dupe.ok, "a duplicate is still a no-op");
+    assert.strictEqual(dupe.message, undefined, "and says nothing, as today");
+  });
+
+  test("U11: a blank or whitespace-only entry is a no-op", () => {
+    for (const junk of ["", "   ", null, undefined]) {
+      assert.ok(!resolvePriorityAdd(junk, U11_VOCAB, ["Constitution"]).ok, JSON.stringify(junk));
+    }
+  });
+
+  // The DOM half lives inside the window-gated IIFE Node cannot reach, so the
+  // wiring is asserted against the source text — the established precedent here
+  // (see the #169 load-path tests above).
+  test("U11: addPriority routes the add through the shared resolver", () => {
+    const at = WIZARD_SRC.indexOf("function addPriority(");
+    assert.ok(at > 0, "addPriority exists");
+    const fn = WIZARD_SRC.slice(at, at + 2600);
+    assert.ok(/resolvePriorityAdd\(/.test(fn), "it delegates to the shared resolver");
+    assert.ok(/state\.priorities = res\.priorities/.test(fn), "and adopts the substituted list");
+  });
+
+  test("U11: a bound attached to the alias is DROPPED and reported, not remapped", () => {
+    const at = WIZARD_SRC.indexOf("function addPriority(");
+    const fn = WIZARD_SRC.slice(at, at + 2600);
+    assert.ok(/targetCaps, state\.targetFloors/.test(fn), "both bound maps are swept");
+    assert.ok(/delete map\[sub\.from\]/.test(fn), "the bound keyed to the alias is removed");
+    assert.ok(/droppedBounds/.test(fn), "and disclosed rather than dropped silently");
+    assert.ok(!/targetFloors\[sub\.to/.test(fn) && !/targetCaps\[sub\.to/.test(fn),
+      "and never copied onto a component — 'min 4 Parrying' is not 'min 4 Armor Class'");
+  });
+
+  test("U11: a declared credit keyed to the alias is cleared and reported", () => {
+    const at = WIZARD_SRC.indexOf("function addPriority(");
+    const fn = WIZARD_SRC.slice(at, at + 2600);
+    assert.ok(/declaredCredits/.test(fn), "credits are swept too");
+    assert.ok(/c\.stat === sub\.from/.test(fn),
+      "credits key on stat PLUS bonus type, so they need their own matcher");
+    assert.ok(/droppedCredits/.test(fn), "and are disclosed separately");
+  });
+
+  test("U11: the substitution is disclosed inline at the picker", () => {
+    const at = WIZARD_SRC.indexOf("function addPriority(");
+    const fn = WIZARD_SRC.slice(at, at + 2600);
+    assert.ok(/migrationMessage\(/.test(fn), "it reuses the shared disclosure builder");
+    assert.ok(/lead: "picker"/.test(fn), "with the picker wording, not the saved-character one");
+    assert.ok(/status\.textContent/.test(fn), "written to the inline picker status line");
+  });
+
+  test("U11: the Adjust panel's picker has a status line to disclose into", () => {
+    // addPriority is wired to BOTH pickers. The Adjust panel had no status element,
+    // so a substitution made there would have been silent — the exact failure R15
+    // exists to prevent.
+    assert.ok(/id="wz-radd-status"/.test(WIZARD_SRC), "the Adjust panel has its own status line");
+    const at = WIZARD_SRC.indexOf("function pickerStatusEl(");
+    assert.ok(at > 0, "and a resolver that finds whichever picker is on screen");
+    const fn = WIZARD_SRC.slice(at, at + 300);
+    assert.ok(/wz-status/.test(fn) && /wz-radd-status/.test(fn), fn);
+  });
+}
 
 
 console.log(`\n${passed} passed`);

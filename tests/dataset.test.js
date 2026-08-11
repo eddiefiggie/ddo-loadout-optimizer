@@ -153,9 +153,19 @@ test("U6/KTD6: Riposte and Good Luck score as magnitude, not presence", () => {
 test("#169: Parrying's magnitude still scores, via its four expanded stats", () => {
   const v = builtVocab();
   if (!v) return console.log("  (skipped — web/data/items.json not built)");
-  assert.ok(!v.suggestions.includes("Parrying"),
-    "Parrying names an enchantment, not a stat — it must not be offered");
+  // Parrying still names an enchantment rather than a stat, and still must not score
+  // against its own name. U10 changed only how the picker SAYS so: it was removed from
+  // the dropdown, and is now offered as an alias that substitutes into the four stats.
+  // Removal was wrong once the item surfaces began printing "Parrying" as an affix's
+  // origin — the app named something its own picker refused.
+  assert.ok(v.suggestions.includes("Parrying"),
+    "Parrying is offered, because the results print it as an expansion's origin");
+  assert.deepStrictEqual(expandedAwayFor(v, "Parrying"),
+    ["Armor Class", "Fortitude Save", "Reflex Save", "Will Save"],
+    "and it resolves to the four stats rather than being rankable as itself");
   assert.ok(!v.presence.has("Parrying"), "and it must not have become presence-only");
+  assert.ok(!v.magnitude.has("Parrying"),
+    "it has no bucket of its own — the expansion, not the name, is what scores");
   for (const n of ["Armor Class", "Fortitude Save", "Reflex Save", "Will Save"]) {
     assert.ok(v.suggestions.includes(n), `${n} is rankable — the redirect target exists`);
     assert.ok(!v.presence.has(n), `${n} scores as a magnitude`);
@@ -234,7 +244,13 @@ test("U1/KTD2: a stale dataset without the metadata field still drops the names"
   assert.ok(stale.suggestions.includes("Constitution"), "an ordinary stat is untouched");
 });
 
-test("U5/#249: the three compound absorption names are expanded away", () => {
+// U5 expanded these away so no item carries the compound name; U10 then made the
+// names the item surfaces DISPLAY rankable, and U8 displays exactly these three on
+// the Crown of Ioun. So a compound is expanded away AND suggested — the earlier
+// blanket "expanded-away is never suggested" rule would hide the very name the
+// results print, which is the mismatch R13/R14 exist to close. What it must never
+// be is a bucket of its own: ranking it substitutes its components.
+test("U5/#249 + U10/R14: a compound absorption name is expanded away yet still rankable", () => {
   const v = builtVocab();
   if (!v) return console.log("  (skipped — web/data/items.json not built)");
   for (const [compound, components] of [
@@ -243,12 +259,13 @@ test("U5/#249: the three compound absorption names are expanded away", () => {
     ["Elemental Absorption", ["Acid Absorption", "Cold Absorption", "Fire Absorption",
                               "Electric Absorption", "Sonic Absorption"]],
   ]) {
-    assert.ok(!v.suggestions.includes(compound), `${compound} is no longer suggested`);
+    assert.ok(v.suggestions.includes(compound),
+      `${compound} is suggested — the item surfaces print it as the origin`);
     const msg = expandedAwayMessage(v, compound);
-    assert.ok(msg, `${compound} produces a redirect`);
-    for (const c of components) assert.ok(msg.includes(c), `${compound} redirects to ${c}`);
+    assert.ok(msg, `${compound} still resolves rather than becoming a bucket`);
+    for (const c of components) assert.ok(msg.includes(c), `${compound} resolves to ${c}`);
     assert.ok(v.suggestions.includes(components[0]),
-      `${components[0]} is rankable, which is the point of the redirect`);
+      `${components[0]} remains independently rankable`);
   }
 });
 
@@ -449,7 +466,20 @@ test("picker: no dropdown suggestion is unsourced (dead-entry guard)", () => {
                    "green_steel", "nearly_complete", "membership_set_defs", "augment_set_defs"]) {
     walk(realData[k]);
   }
-  const dead = v.suggestions.filter((s) => !supplied.has(s.trim().toLowerCase()));
+  // U10 — a provenance label is deliberately unsourced AS A STAT: it is the
+  // enchantment name the item shows, and no affix carries it after expansion. It is
+  // still not a dead entry, because selecting it never produces a priority of that
+  // name — it substitutes into its components. So the invariant tightens rather than
+  // relaxes: a suggestion must be supplied, OR resolve to components that all are.
+  // An alias pointing at a stat nothing supplies is the same dead priority wearing a
+  // different name, and still fails here.
+  const dead = [];
+  for (const s of v.suggestions) {
+    if (supplied.has(s.trim().toLowerCase())) continue;
+    const to = expandedAwayFor(v, s);
+    if (!to) { dead.push(s); continue; }
+    for (const c of to) if (!supplied.has(String(c).trim().toLowerCase())) dead.push(`${s} -> ${c}`);
+  }
   assert.deepStrictEqual(dead, [],
     `every picker suggestion must have a source; unsourced: ${JSON.stringify(dead)}`);
 });
@@ -713,6 +743,236 @@ test("#227: admitting one untyped name gives the proc population no rankable buc
     assert.ok(!v.magnitude.has(proc), `${proc} has no rankable magnitude bucket`);
   }
   assert.ok(v.magnitude.has("Enhanced Ki"), "the adjudicated name does");
+});
+
+// --- U10 (R13/R14): provenance labels enter the picker vocabulary -------------
+// Every expansion family stamps the ORIGINATING enchantment name on each affix it
+// emits, and the item surfaces DISPLAY that name. Until now the picker refused it:
+// `expanded_away_names` carries only the BARE keys a family declares ("spell focus
+// mastery"), while the results print the bonus-type PREFIXED name ("Sacred Spell
+// Focus Mastery"). The app printed names its own picker would not accept.
+
+const SCHOOLS = ["Abjuration Focus", "Conjuration Focus", "Enchantment Focus",
+  "Evocation Focus", "Illusion Focus", "Necromancy Focus", "Transmutation Focus"];
+
+test("U10: the vocabulary exposes the provenance labels the build emitted", () => {
+  const v = buildPickerVocabulary(realData);
+  assert.ok(v.provenanceLabels && typeof v.provenanceLabels === "object",
+    "buildPickerVocabulary returns the label map");
+  // Refuse to inspect zero records: an empty map would satisfy every "no
+  // collision" assertion below while proving nothing.
+  assert.ok(Object.keys(v.provenanceLabels).length >= 10,
+    `only ${Object.keys(v.provenanceLabels).length} labels`);
+});
+
+test("U10/R14: a typed provenance label is SUGGESTED, not merely accepted when typed", () => {
+  const v = buildPickerVocabulary(realData);
+  for (const label of ["Sacred Spell Focus Mastery", "Quality Well Rounded",
+                       "Insightful Spell Focus Mastery"]) {
+    assert.ok(v.suggestions.includes(label), `${label} is offered in the picker`);
+    assert.ok(v.known.has(label), `${label} is accepted when typed`);
+  }
+});
+
+test("U10/R13: a label resolves to the stats it becomes, in the declared order", () => {
+  const v = buildPickerVocabulary(realData);
+  assert.deepStrictEqual(expandedAwayFor(v, "Sacred Spell Focus Mastery"), SCHOOLS);
+  assert.deepStrictEqual(expandedAwayFor(v, "Parrying"),
+    ["Armor Class", "Fortitude Save", "Reflex Save", "Will Save"]);
+  assert.deepStrictEqual(expandedAwayFor(v, "Speed"),
+    ["Movement Speed", "Melee Alacrity", "Ranged Alacrity"]);
+  assert.deepStrictEqual(expandedAwayFor(v, "  sacred SPELL focus mastery "), SCHOOLS,
+    "matching is case- and padding-insensitive, like every other picker path");
+});
+
+test("U10: a BARE name that is also a shipped provenance label stays suggested", () => {
+  // The collision the blanket removal rule got wrong. For an untyped or
+  // Enhancement-carrier family the provenance label and the bare expanded-away
+  // name are the SAME string, so stripping bare expanded-away names suppressed
+  // exactly the names the results print.
+  const v = buildPickerVocabulary(realData);
+  for (const bare of ["Parrying", "Speed", "Spell Focus", "Spell Focus Mastery",
+                      "Heightened Awareness"]) {
+    assert.ok(v.provenanceLabels[bare.toLowerCase()], `${bare} is a shipped label`);
+    assert.ok(v.suggestions.includes(bare), `${bare} is suggested rather than stripped`);
+    assert.ok(expandedAwayFor(v, bare), `${bare} still resolves to its components`);
+  }
+});
+
+test("U10: an expanded-away name NO surface displays keeps removal-and-redirect", () => {
+  // `Well Rounded` and `All Ability Scores` are expanded away, but no affix is
+  // ever stamped with them as its origin — the umbrella family prefixes even its
+  // Enhancement variant ("Enhancement Well Rounded"). Nothing displays them, so
+  // there is nothing to make rankable and the redirect survives.
+  const v = buildPickerVocabulary(realData);
+  for (const bare of ["Well Rounded", "All Ability Scores"]) {
+    assert.ok(!v.provenanceLabels[bare.toLowerCase()], `${bare} is NOT a shipped label`);
+    assert.ok(!v.suggestions.includes(bare), `${bare} stays out of suggestions`);
+    const msg = expandedAwayMessage(v, bare);
+    assert.ok(msg && /rank those instead/.test(msg), `${bare} still redirects: ${msg}`);
+  }
+});
+
+test("U10: no label is aliased over a stat real affixes still supply", () => {
+  // docs/solutions/logic-errors/bonus-type-vocabulary-collides-with-bare-stat.md:
+  // adding a vocabulary entry that is also a live bare stat name DESTROYS the
+  // stat, and the suite did not catch it — code review did. `Blurry`, `Lesser
+  // Displacement` and `Crown of Summer` are boolean composites: their components
+  // are ADDITIVE and the boolean itself stays targetable as presence, precisely so
+  // the carrier item can still be forced in. Aliasing them away would substitute
+  // that presence target into its components and silently drop the item.
+  const v = buildPickerVocabulary(realData);
+  const native = new Set();
+  for (const it of realData.items || []) {
+    for (const a of it.affixes || []) if (a && a.via == null && a.name) native.add(a.name);
+    for (const t of it.parsed_set_bonuses || []) {
+      for (const a of t.affixes || []) if (a && a.via == null && a.stat) native.add(a.stat);
+    }
+  }
+  const destroyed = [...native].filter((n) => expandedAwayFor(v, n));
+  assert.deepStrictEqual(destroyed, [],
+    `these stats are still carried by real affixes but resolve as aliases: ${JSON.stringify(destroyed)}`);
+  for (const composite of ["Blurry", "Lesser Displacement", "Crown of Summer"]) {
+    assert.ok(v.suggestions.includes(composite), `${composite} stays selectable`);
+    assert.strictEqual(expandedAwayFor(v, composite), null,
+      `${composite} must resolve to ITSELF, not be substituted into its components`);
+  }
+});
+
+test("U10: no label collides with a bare bonus-type token", () => {
+  const v = buildPickerVocabulary(realData);
+  const BONUS_TYPES = ["Alchemical", "Artifact", "Competence", "Deific", "Enhancement",
+    "Equipment", "Exceptional", "Fatesinger", "Festive", "Insight", "Insightful",
+    "Legendary", "Primal", "Profane", "Quality", "Resistance", "Sacred"];
+  const hits = BONUS_TYPES.filter((t) => v.provenanceLabels[t.toLowerCase()]);
+  assert.deepStrictEqual(hits, [], `bare bonus-type tokens admitted as labels: ${hits}`);
+});
+
+test("U10: every label resolves to at least one stat that is itself rankable", () => {
+  // A label that substituted into a name nothing carries would trade a working
+  // priority for a dead one.
+  const v = buildPickerVocabulary(realData);
+  for (const [key, stats] of Object.entries(v.provenanceLabels)) {
+    assert.ok(stats.length, `${key} resolves to nothing`);
+    assert.ok(stats.some((s) => v.known.has(s)), `${key} -> ${stats} — none are known affixes`);
+  }
+});
+
+test("U10: the label set is derived from the dataset, not from a family list", () => {
+  // An eighth expansion family must be picked up with no registration step. Stamp
+  // a brand-new label onto a synthetic dataset and require the picker to learn it.
+  const ds = {
+    metadata: { rankable_affixes: ["Dodge", "Sneak Attack Dice"] },
+    items: [{ affixes: [
+      { name: "Dodge", type: "Enhancement", value: 5, via: "Eldritch Nimbleness" },
+      { name: "Sneak Attack Dice", type: "Enhancement", value: 3, via: "Eldritch Nimbleness" },
+    ] }],
+  };
+  const v = buildPickerVocabulary(ds);
+  assert.deepStrictEqual(v.provenanceLabels["eldritch nimbleness"],
+    ["Dodge", "Sneak Attack Dice"], "a never-registered family is learned by scanning");
+  assert.ok(v.suggestions.includes("Eldritch Nimbleness"));
+  assert.deepStrictEqual(expandedAwayFor(v, "Eldritch Nimbleness"), ["Dodge", "Sneak Attack Dice"]);
+});
+
+test("U10: the browser fallback carries the labels for a stale cached dataset", () => {
+  // A dataset cached before `provenance_labels` existed still has to rank the names
+  // the surfaces print, exactly as EXPANDED_AWAY_FALLBACK does for the bare names. It
+  // is a real catalog, so it carries the school gear — it just has no metadata and no
+  // `via` stamps. The constant is all that is left.
+  const stale = {
+    metadata: { rankable_affixes: [...SCHOOLS, "Dodge"] },
+    items: [{ affixes: [...SCHOOLS.map((s) => ({ name: s, type: "Sacred", value: 3 })),
+                        { name: "Dodge", type: "Enhancement", value: 5 }] }],
+  };
+  const v = buildPickerVocabulary(stale);
+  assert.deepStrictEqual(expandedAwayFor(v, "Sacred Spell Focus Mastery"), SCHOOLS);
+  assert.ok(v.suggestions.includes("Sacred Spell Focus Mastery"));
+  // and the mirror does not leak names this catalog cannot satisfy
+  assert.ok(!v.suggestions.includes("Parrying"),
+    "no Parrying gear here, so offering it would be a dead entry");
+});
+
+test("U10: the shipped fallback agrees with what the build actually stamps", () => {
+  // The fallback is a mirror, and a mirror drifts. Every entry it claims must
+  // match the live build — being INCOMPLETE is fine (a newer family implies a
+  // newer dataset, which carries the metadata), being WRONG is not.
+  const { PROVENANCE_LABEL_FALLBACK } = require("../web/dataset.js");
+  const live = realData.metadata.provenance_labels || {};
+  assert.ok(Object.keys(PROVENANCE_LABEL_FALLBACK).length >= 10, "the mirror is not empty");
+  for (const [label, stats] of Object.entries(PROVENANCE_LABEL_FALLBACK)) {
+    assert.deepStrictEqual(stats, live[label], `fallback drifted for "${label}"`);
+  }
+});
+
+// --- U11 (R15): the picker substitution reuses the saved-load machinery -------
+
+test("U11: a label substitutes into consecutive priorities in declared order", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const v = buildPickerVocabulary(realData);
+  const out = migratePriorities(["Constitution", "Sacred Spell Focus Mastery"], v);
+  assert.deepStrictEqual(out.priorities, ["Constitution", ...SCHOOLS]);
+  assert.deepStrictEqual(out.substitutions, [{ from: "Sacred Spell Focus Mastery", to: SCHOOLS }]);
+});
+
+test("U11: a priority ranked BELOW the alias is displaced, not dropped", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const v = buildPickerVocabulary(realData);
+  const out = migratePriorities(["Constitution", "Parrying", "Dodge"], v);
+  assert.deepStrictEqual(out.priorities,
+    ["Constitution", "Armor Class", "Fortitude Save", "Reflex Save", "Will Save", "Dodge"]);
+  assert.strictEqual(out.priorities.indexOf("Dodge"), 5, "Dodge moved down four ranks");
+  assert.ok(out.priorities.includes("Dodge"), "and survived — displaced, never dropped");
+});
+
+test("U11: components occupy SEPARATE lexicographic tiers, never one combined term", () => {
+  // Non-goal: weighted-sum trade-off modes. Folding seven schools into one
+  // objective term would silently trade the player's top stat away.
+  const { migratePriorities } = require("../web/dataset.js");
+  const v = buildPickerVocabulary(realData);
+  const out = migratePriorities(["Sacred Spell Focus Mastery"], v);
+  assert.strictEqual(out.priorities.length, 7, "seven ranks, not one");
+  for (const p of out.priorities) {
+    assert.ok(!/[+,&]|\band\b/.test(p), `"${p}" reads like a combined term`);
+    assert.ok(v.known.has(p), `"${p}" is a real rankable stat on its own`);
+  }
+});
+
+test("U11: adding a label whose components are already ranked does not duplicate them", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const v = buildPickerVocabulary(realData);
+  const out = migratePriorities(["Armor Class", "Parrying"], v);
+  assert.deepStrictEqual(out.priorities,
+    ["Armor Class", "Fortitude Save", "Reflex Save", "Will Save"]);
+  assert.strictEqual(out.priorities.filter((p) => p === "Armor Class").length, 1);
+  assert.strictEqual(out.substitutions.length, 1, "the substitution is still disclosed");
+});
+
+test("U11: the picker disclosure names the substitution and its rank cost", () => {
+  const { migratePriorities, migrationMessage } = require("../web/dataset.js");
+  const v = buildPickerVocabulary(realData);
+  const subs = migratePriorities(["Sacred Spell Focus Mastery"], v).substitutions;
+  const msg = migrationMessage(subs, [], [], { lead: "picker" });
+  assert.ok(msg, "a substitution is disclosed");
+  assert.ok(/Sacred Spell Focus Mastery/.test(msg), "it names what was selected");
+  assert.ok(/Necromancy Focus/.test(msg), "and what it became");
+  assert.ok(/rank/i.test(msg), "and that each component costs a rank");
+  assert.ok(!/This character ranked/.test(msg),
+    "the picker wording is not the saved-character wording");
+});
+
+test("U11: the saved-character wording is unchanged when no lead is passed", () => {
+  const { migrationMessage } = require("../web/dataset.js");
+  const msg = migrationMessage([{ from: "Parrying", to: ["Armor Class"] }]);
+  assert.ok(/This character ranked/.test(msg), msg);
+});
+
+test("U11: a bound and a credit dropped by a picker substitution are both disclosed", () => {
+  const { migrationMessage } = require("../web/dataset.js");
+  const subs = [{ from: "Parrying", to: ["Armor Class", "Fortitude Save"] }];
+  const msg = migrationMessage(subs, ["Parrying"], ["Parrying"], { lead: "picker" });
+  assert.ok(/min\/max/.test(msg), "the dropped bound is named");
+  assert.ok(/already have/.test(msg), "and the dropped credit separately");
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);

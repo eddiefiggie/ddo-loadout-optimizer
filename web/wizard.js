@@ -550,6 +550,63 @@ function curatedStats(dataset) {
   return pickerVocabulary(dataset).suggestions;
 }
 
+/** U11 (R15) — decide what adding `name` to `priorities` should produce. Pure: the
+ *  caller owns the DOM and the rest of `state`, so this half is unit-testable while
+ *  `addPriority` (inside the window-gated IIFE) stays a thin wrapper.
+ *
+ *  Returns `{ ok, priorities, substitutions, message }`.
+ *
+ *  Three outcomes, in the order they are decided:
+ *
+ *  1. An ALIASED enchantment name — one of the provenance labels the item surfaces
+ *     display ("Sacred Spell Focus Mastery", "Parrying") — substitutes into the stats
+ *     it becomes, as consecutive priorities in the expansion's declared order.
+ *     Delegated to `migratePriorities`, the SAME function the saved-character load
+ *     path uses: it preserves rank position, inserts in declared order, and dedupes
+ *     across families, so ranking two names that both grant Armor Class yields one.
+ *
+ *     The components occupy SEPARATE lexicographic ranks and are never fused into one
+ *     combined objective term. A weighted sum is the trade-off mode the Non-goals list
+ *     declines: priority 2 is maximized without surrendering a point of priority 1,
+ *     and folding seven schools into a single term would silently trade the player's
+ *     top stat away. The consequence is real and is why the caller must disclose it —
+ *     one alias resolving to seven stats takes seven ranks, so ranking `Sacred Spell
+ *     Focus Mastery` first puts the player's second priority at rank eight.
+ *
+ *  2. An expanded-away name NO surface displays as an origin (`Well Rounded`, whose
+ *     Enhancement variant is engraved "Enhancement Well Rounded", so the bare name
+ *     appears on nothing) keeps removal-and-redirect: there is no printed name to make
+ *     actionable, and ranking it would score zero.
+ *
+ *  3. Anything else behaves exactly as before — canonicalize, validate against the
+ *     unfiltered `known` set, ignore a duplicate. */
+function resolvePriorityAdd(name, vocab, priorities) {
+  const DN = _datasetNormalizer();
+  const ranked = Array.isArray(priorities) ? priorities.slice() : [];
+  const v = vocab.canonical(String(name == null ? "" : name).trim());
+  if (!v) return { ok: false, priorities: ranked, substitutions: [] };
+
+  const to = (DN && DN.expandedAwayFor) ? DN.expandedAwayFor(vocab, v) : null;
+  if (to) {
+    if (!(DN.isProvenanceLabel && DN.isProvenanceLabel(vocab, v))) {
+      return { ok: false, priorities: ranked, substitutions: [],
+               message: DN.expandedAwayMessage(vocab, v) };
+    }
+    // Append then migrate the WHOLE list: the alias lands at its rank and expands in
+    // place, so anything ranked below it is pushed down rather than dropped.
+    const proposed = ranked.concat([v]);
+    const migrated = DN.migratePriorities(proposed, vocab);
+    return { ok: true, priorities: migrated.priorities, substitutions: migrated.substitutions };
+  }
+
+  if (!vocab.known.has(v)) {
+    return { ok: false, priorities: ranked, substitutions: [],
+             message: `"${v}" isn't a known affix in the dataset.` };
+  }
+  if (ranked.includes(v)) return { ok: false, priorities: ranked, substitutions: [] };
+  return { ok: true, priorities: ranked.concat([v]), substitutions: [] };
+}
+
 // Composable affix BUNDLES — modelled on the DDO gear planner's "packages" (its
 // "pick a bundle of affixes to save time"). Picking a bundle APPENDS its affixes
 // to the priority list (deduped, in the bundle's order); the user then reorders /
@@ -676,7 +733,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -1155,6 +1212,7 @@ if (typeof window !== "undefined" && window.App) {
               <datalist id="wz-stats2">${allStats.map((s) => `<option value="${esc(s)}">`).join("")}</datalist>
               <button class="btn ghost" id="wz-radd-btn">Add</button>
             </div>
+            <p id="wz-radd-status" class="wz-status"></p>
             <ol class="wz-ranked" id="wz-rranked"></ol>
             <div class="wz-adjust-row">
               <span class="wz-help" style="margin:0">Gear pool:</span>
@@ -1528,23 +1586,57 @@ if (typeof window !== "undefined" && window.App) {
     }
     function renderRanked() { renderRankedList(document.getElementById("wz-ranked"), renderRanked); }
     function renderAdjustRanked() { renderRankedList(document.getElementById("wz-rranked"), renderAdjustRanked); }
+    /** The inline status line of whichever picker is on screen. The priorities STEP
+     *  and the results-page Adjust panel each host an add-a-stat row wired to
+     *  `addPriority`, and only the step had a status element — so every message the
+     *  add path produces (an unknown affix, and now a substitution disclosure) was
+     *  silently dropped when it came from the Adjust panel. */
+    function pickerStatusEl() {
+      return document.getElementById("wz-status") || document.getElementById("wz-radd-status");
+    }
+
     /** Add a target affix; returns true if it landed (caller re-renders the list). */
     function addPriority(v) {
-      // Canonicalize the typed value through the alias table so it matches the ONE
-      // name gear/augments/crafting carry, then validate against the unfiltered
-      // known set (U5; also fixes the prior undefined-`statSet` reference).
-      v = vocab.canonical((v || "").trim()); const status = document.getElementById("wz-status");
-      if (!v) return false;
-      // U1 (#136) — an expanded-away name (Well Rounded, All Ability Scores) is still
-      // in `known` via the affix registry, so the known-check below would accept it and
-      // the player would rank a priority no item can ever satisfy. Refuse it here and
-      // point at the concrete stats it becomes. Must precede the `known` check.
+      const status = pickerStatusEl();
       const _dn = _datasetNormalizer();
-      const awayMsg = (_dn && _dn.expandedAwayMessage) ? _dn.expandedAwayMessage(vocab, v) : null;
-      if (awayMsg) { if (status) status.textContent = awayMsg; return false; }
-      if (!vocab.known.has(v)) { if (status) status.textContent = `"${v}" isn't a known affix in the dataset.`; return false; }
-      if (state.priorities.includes(v)) return false;
-      state.priorities.push(v); if (status) status.textContent = ""; return true;
+      // U11 (R15) — the decision (canonicalize, alias-substitute, validate, dedupe)
+      // lives in the shared pure resolver; this wrapper owns state + disclosure.
+      const res = resolvePriorityAdd(v, vocab, state.priorities);
+      if (!res.ok) {
+        // `message` is absent for a duplicate or a blank entry — say nothing, as before.
+        if (status && res.message != null) status.textContent = res.message;
+        return false;
+      }
+      state.priorities = res.priorities;
+      if (!res.substitutions.length) { if (status) status.textContent = ""; return true; }
+
+      // A bound or a declared credit keyed to the alias is now stranded: the name has
+      // left the priority list, `model.js` still unions it into the target set, and the
+      // UI offers no row to delete it (bounds are only removable through their priority
+      // row). Mirrors the saved-character load path, deliberately — DROPPED, never
+      // remapped. "min 4 Parrying" is not "min 4 Armor Class", and copying it onto four
+      // stats would invent four constraints the player never set.
+      const droppedBounds = [];
+      const droppedCredits = [];
+      for (const sub of res.substitutions) {
+        for (const map of [state.targetCaps, state.targetFloors]) {
+          if (map && map[sub.from] != null) { droppedBounds.push(sub.from); delete map[sub.from]; }
+        }
+        // Credits key on stat PLUS bonus type (`stat||bonusType`), so the stat-keyed
+        // loop above cannot reach them. Match on the entry's own stat.
+        if (state.declaredCredits) {
+          for (const [k, c] of Object.entries(state.declaredCredits)) {
+            if (c && c.stat === sub.from) { droppedCredits.push(sub.from); delete state.declaredCredits[k]; }
+          }
+        }
+      }
+      // Disclosed INLINE at the picker, not silently: the player picked one name and
+      // got several priorities, and each one costs a lexicographic rank.
+      if (status && _dn && _dn.migrationMessage) {
+        status.textContent = _dn.migrationMessage(res.substitutions, droppedBounds, droppedCredits,
+                                                  { lead: "picker" }) || "";
+      }
+      return true;
     }
 
     // ---- solve (real engine) ----------------------------------------------

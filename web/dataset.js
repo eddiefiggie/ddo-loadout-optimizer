@@ -99,6 +99,39 @@ var EXPANDED_AWAY_FALLBACK = {
   "electricity and acid absorption": ["Electric Absorption", "Acid Absorption"],
   "elemental absorption": ["Acid Absorption", "Cold Absorption", "Fire Absorption", "Electric Absorption", "Sonic Absorption"],
 };
+// U10 (R13) — the ORIGINATING enchantment names the build stamps (`via`), mapped to
+// the stats each becomes. Fallback ONLY: `metadata.provenance_labels` is authoritative
+// and a live scan of the loaded dataset covers anything it misses, so this constant
+// matters just for a cached dataset built before either existed. Same role as
+// EXPANDED_AWAY_FALLBACK above, keyed by the EXACT label (the scan lowercases).
+//
+// It is a mirror, and mirrors drift — tests/dataset.test.js pins every entry against
+// the live build, so a wrong entry fails. Being INCOMPLETE is fine and expected: a
+// newer expansion family implies a newer dataset, which carries the metadata.
+var _SPELL_SCHOOLS = ["Abjuration Focus", "Conjuration Focus", "Enchantment Focus",
+  "Evocation Focus", "Illusion Focus", "Necromancy Focus", "Transmutation Focus"];
+var _ABILITIES = ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"];
+var PROVENANCE_LABEL_FALLBACK = {
+  "Spell Focus": _SPELL_SCHOOLS.slice(),
+  "Spell Focus Mastery": _SPELL_SCHOOLS.slice(),
+  "Artifact Spell Focus Mastery": _SPELL_SCHOOLS.slice(),
+  "Exceptional Spell Focus Mastery": _SPELL_SCHOOLS.slice(),
+  "Insightful Spell Focus Mastery": _SPELL_SCHOOLS.slice(),
+  "Profane Spell Focus": _SPELL_SCHOOLS.slice(),
+  "Profane Spell Focus Mastery": _SPELL_SCHOOLS.slice(),
+  "Quality Spell Focus": _SPELL_SCHOOLS.slice(),
+  "Quality Spell Focus Mastery": _SPELL_SCHOOLS.slice(),
+  "Sacred Spell Focus Mastery": _SPELL_SCHOOLS.slice(),
+  "Artifact Well Rounded": _ABILITIES.slice(),
+  "Enhancement Well Rounded": _ABILITIES.slice(),
+  "Exceptional Well Rounded": _ABILITIES.slice(),
+  "Profane Well Rounded": _ABILITIES.slice(),
+  "Quality Well Rounded": _ABILITIES.slice(),
+  "Parrying": ["Armor Class", "Fortitude Save", "Reflex Save", "Will Save"],
+  "Speed": ["Movement Speed", "Melee Alacrity", "Ranged Alacrity"],
+  "Heightened Awareness": ["Armor Class"],
+};
+
 // U5 (#140) — boolean composites that carry a wiki-verified numeric effect but are
 // stored as `Bool` presence, so the solver could not weigh them. Values and bonus
 // types are transcribed from docs/wiki-evidence/boolean-composites.md; nothing here
@@ -412,6 +445,57 @@ function _itemAffixTriples(ds) {
   return out;
 }
 
+/** U10 (R13) — scan the LOADED dataset for what each expansion stamped.
+ *
+ *  Returns `{ labels: {label: [stats, in declared order]}, native: Set<name> }`.
+ *
+ *  Two reasons this runs at load time rather than trusting `metadata.provenance_labels`
+ *  alone. First, two expansion families run HERE, not at build time (bare Sheltering
+ *  and the boolean composites), so the build cannot know their labels. Second, a scan
+ *  learns the next family with no registration step — the metadata is the same scan
+ *  run earlier, not a different source of truth.
+ *
+ *  `native` is every affix name carried WITHOUT a provenance stamp — the names real
+ *  affixes still supply. It is the collision guard: a label that is also a native name
+ *  must never become an alias, or substituting it away destroys a live stat.
+ *
+ *  Order follows src/provenance.py: each expansion emits its group contiguously in
+ *  declared order, but an expansion may SKIP a component the item already states, so
+ *  the LONGEST group observed for a label wins (ties keep the first seen). */
+function _provenanceScan(ds) {
+  const labels = new Map();
+  const native = new Set();
+  const consider = (name, via) => {
+    if (name == null || name === "") return;
+    if (via == null || String(via).trim() === "") { native.add(String(name)); return null; }
+    return String(via).trim();
+  };
+  for (const v of ds.items || []) {
+    // Per item, per label, the ordered de-duplicated group that item emitted.
+    const groups = new Map();
+    const channels = [v.affixes || []];
+    for (const t of v.parsed_set_bonuses || []) channels.push(t.affixes || []);
+    for (const affixes of channels) {
+      for (const a of affixes) {
+        if (!a || typeof a !== "object") continue;
+        const name = a.name != null ? a.name : a.stat;
+        const via = consider(name, a[PROVENANCE_KEY]);
+        if (!via) continue;
+        if (!groups.has(via)) groups.set(via, []);
+        const group = groups.get(via);
+        if (!group.includes(String(name))) group.push(String(name));
+      }
+    }
+    groups.forEach((group, via) => {
+      const prev = labels.get(via);
+      if (!prev || group.length > prev.length) labels.set(via, group);
+    });
+  }
+  const out = {};
+  labels.forEach((group, via) => { out[via] = group; });
+  return { labels: out, native };
+}
+
 /** Every affix NAME present on any source (item + scaling + set-bonus + crafting),
  *  for the free-typed-input known set. Unfiltered. */
 function _allAffixNames(ds) {
@@ -533,10 +617,91 @@ function buildPickerVocabulary(dataset) {
   const src = (emitted && typeof emitted === "object" && Object.keys(emitted).length)
     ? emitted : EXPANDED_AWAY_FALLBACK;
   for (const k of Object.keys(src)) expandedAway[String(k).trim().toLowerCase()] = src[k].slice();
-  for (const s of [...suggest]) {
-    if (expandedAway[String(s).trim().toLowerCase()]) suggest.delete(s);
+
+  // U10 (R13/R14) — the enchantment names the item surfaces DISPLAY as an expansion's
+  // origin must be rankable. `expanded_away_names` above is NOT that set: it carries
+  // only the BARE keys a family declares ("spell focus mastery"), while the surfaces
+  // print the bonus-type prefixed name ("Sacred Spell Focus Mastery"). Ranking what
+  // the results printed therefore failed.
+  //
+  // Three sources, weakest first, so the freshest wins: the stale-cache mirror, the
+  // build's emission, then a live scan (which alone sees the two families that expand
+  // in THIS file). Every source is a scan of stamped data, never a family list — an
+  // eighth family is included the moment it stamps its first affix.
+  const scanned = _provenanceScan(ds);
+  const metaLabels = (meta.provenance_labels && typeof meta.provenance_labels === "object")
+    ? meta.provenance_labels : {};
+  const provenanceLabels = {};
+  for (const src2 of [PROVENANCE_LABEL_FALLBACK, metaLabels, scanned.labels]) {
+    for (const label of Object.keys(src2)) {
+      const stats = src2[label];
+      if (!Array.isArray(stats) || !stats.length) continue;
+      // Canonicalize the components: they become the player's actual priorities, so
+      // they must be the ONE name gear/augments/crafting share. No-op today.
+      const to = [];
+      for (const s of stats) { const c = canonical(s); if (c && !to.includes(c)) to.push(c); }
+      if (to.length) provenanceLabels[String(label).trim().toLowerCase()] = { label: String(label).trim(), to };
+    }
   }
-  return { suggestions: [...suggest].sort(), known, canonical, presence, magnitude, untypedOnly, expandedAway };
+  // A label is admitted only when the stats it becomes are actually present HERE. A
+  // label whose components this dataset does not carry is a dead entry: selecting it
+  // would trade a name the player picked for priorities nothing can satisfy. It is
+  // also what keeps the hardcoded fallback honest — the constant describes the shipped
+  // catalog, and must not leak eighteen spell-focus names into a dataset with no such
+  // gear. The two live sources pass it by construction (their components ARE stamped
+  // affix names), so in practice this gates the mirror.
+  for (const key of Object.keys(provenanceLabels)) {
+    if (!provenanceLabels[key].to.every((s) => known.has(s))) delete provenanceLabels[key];
+  }
+  // THE COLLISION GUARD. A label that is ALSO the name of an affix carried without a
+  // provenance stamp is a live stat, not an alias — `Blurry`, `Lesser Displacement`
+  // and `Crown of Summer` are boolean composites whose components are ADDITIVE, and
+  // whose boolean deliberately stays targetable as presence so the carrier item can
+  // still be forced in. Aliasing one would substitute that presence target into its
+  // components and silently drop the item that grants it: the shape of the incident in
+  // docs/solutions/logic-errors/bonus-type-vocabulary-collides-with-bare-stat.md, where
+  // a new vocabulary entry destroyed a bare stat of the same name and only code review
+  // caught it. Such a label needs nothing done to it — being carried IS being rankable.
+  for (const key of Object.keys(provenanceLabels)) {
+    if (scanned.native.has(provenanceLabels[key].label)) delete provenanceLabels[key];
+  }
+  const labelKeys = Object.keys(provenanceLabels);
+  for (const key of labelKeys) {
+    const entry = provenanceLabels[key];
+    // R14 — suggested, not merely accepted when typed exactly. A player reads the name
+    // off the results; if it is not in the list there is nothing to find.
+    suggest.add(entry.label);
+    known.add(entry.label);
+    // R13 — and it resolves, through the SAME map every add path and the saved-load
+    // path already consult, so U11's substitution needs no second mechanism.
+    expandedAway[key] = entry.to.slice();
+  }
+
+  // An expanded-away name is stripped from suggestions ONLY when no surface displays
+  // it as an origin (`Well Rounded`, `All Ability Scores` — the umbrella family
+  // prefixes even its Enhancement variant, so its bare name is never engraved on
+  // anything). Those keep removal-and-redirect. A bare name that IS a shipped label
+  // (`Parrying`, `Speed`, `Spell Focus`) stays suggested and routes through the
+  // substitution instead — the blanket rule suppressed exactly the names the results
+  // print.
+  for (const s of [...suggest]) {
+    const key = String(s).trim().toLowerCase();
+    if (expandedAway[key] && !provenanceLabels[key]) suggest.delete(s);
+  }
+  const labelMap = {};
+  for (const key of labelKeys) labelMap[key] = provenanceLabels[key].to.slice();
+  return { suggestions: [...suggest].sort(), known, canonical, presence, magnitude, untypedOnly,
+           expandedAway, provenanceLabels: labelMap };
+}
+
+/** U10 — is this name an enchantment label an expansion stamps (as opposed to a bare
+ *  expanded-away name no surface displays)? The add gate branches on it: a label
+ *  substitutes, anything else still redirects. Own-property only, for the same reason
+ *  `expandedAwayFor` is — priority names arrive from localStorage and imported files. */
+function isProvenanceLabel(vocab, name) {
+  const map = (vocab && vocab.provenanceLabels) || {};
+  const key = String(name == null ? "" : name).trim().toLowerCase();
+  return Object.prototype.hasOwnProperty.call(map, key) && Array.isArray(map[key]) && map[key].length > 0;
 }
 
 /** U1 (#136) — the concrete stats an expanded-away name becomes, or null.
@@ -602,12 +767,28 @@ function migratePriorities(priorities, vocab) {
  *  `droppedBounds` names any min/max the substitution had to discard. Saying so
  *  is not optional: a floor the player set is a number they chose, and removing
  *  it silently changes what the solver optimizes for without telling them. */
-function migrationMessage(substitutions, droppedBounds, droppedCredits) {
+function migrationMessage(substitutions, droppedBounds, droppedCredits, opts) {
   if (!substitutions || !substitutions.length) return null;
   const parts = substitutions.map((s) => `"${s.from}" -> ${s.to.join(", ")}`);
-  let msg = `This character ranked ${parts.length > 1 ? "names" : "a name"} that ` +
-    `now expand${parts.length > 1 ? "" : "s"} into the stats they actually grant: ` +
-    `${parts.join("; ")}. Your priorities were updated to match.`;
+  // U11 (R15) — the picker add reuses this disclosure but not its wording: "This
+  // character ranked…" is about a save being repaired, and reads as nonsense next to
+  // a name the player just picked. Same clauses, different lead.
+  //
+  // The rank cost is stated because it is the surprising part. One alias resolving to
+  // seven stats occupies SEVEN strict-lexicographic ranks, so ranking `Sacred Spell
+  // Focus Mastery` first puts the player's second priority at rank eight. That is
+  // correct under strict lexicographic priority — and it is exactly why the
+  // substitution is disclosed inline rather than done silently. It is never collapsed
+  // into one combined objective term: that is the weighted-sum mode the Non-goals list
+  // declines, and it would silently trade the top stat away.
+  let msg = (opts && opts.lead === "picker")
+    ? `${parts.length > 1 ? "Those names are" : "That name is"} the enchantment as the ` +
+      `item shows it, so ${parts.length > 1 ? "they were" : "it was"} added as the ` +
+      `separate stats ${parts.length > 1 ? "they grant" : "it grants"}, in order: ` +
+      `${parts.join("; ")}. Each takes its own rank, so anything ranked below moves down.`
+    : `This character ranked ${parts.length > 1 ? "names" : "a name"} that ` +
+      `now expand${parts.length > 1 ? "" : "s"} into the stats they actually grant: ` +
+      `${parts.join("; ")}. Your priorities were updated to match.`;
   const dropped = [...new Set(droppedBounds || [])];
   if (dropped.length) {
     msg += ` The min/max you had set on ${dropped.map((d) => `"${d}"`).join(", ")} ` +
@@ -643,8 +824,8 @@ function migrateLoadout(snapshot) {
 // Browser: expose a global so app.js can normalize the fetched dataset without a
 // module system. Node: CommonJS export for the tests + parity harness.
 if (typeof window !== "undefined") {
-  window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage };
+  window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK };
 }
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage };
+  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK };
 }
