@@ -85,10 +85,17 @@ def build_thunder_forged(catalog=None):
     ``{records, quarantined, coverage}`` shape ``parse_thunder_forged`` does."""
     from src import crafting_catalog
     records = crafting_catalog.thunder_forged_records(catalog)
+    # SOURCE option count for the fan-out gate's option -> record cardinality rule.
+    # It does not match `len(records)`: one record per AFFIX splits the multi-affix
+    # options. See the `thunder_forged` entry in src/container_registry.py.
+    source_options = crafting_catalog.count_menu_options(
+        crafting_catalog.THUNDER_FORGED_KEYS.values(), catalog)
     by_tier = {}
     for r in records:
         by_tier[r["tier"]] = by_tier.get(r["tier"], 0) + 1
     coverage = {
+        "source_options": source_options,
+        "options_split": len(records) - source_options,
         "tiers_sourced": sorted(by_tier),
         "tiers_pending": sorted(t for t in (1, 2, 3) if by_tier.get(t, 0) == 0),
         "options_eligible": len(records),
@@ -99,6 +106,10 @@ def build_thunder_forged(catalog=None):
                   + ", ".join(crafting_catalog.THUNDER_FORGED_KEYS.values()),
         "note": "multi-tier choice-slot (1/2/3) over the native Thunder-Forged "
                 "Weapon pools. Sourced from the gear-planner crafting catalog; "
-                "host-marker surfacing lands with the native reader (U3).",
+                "host-marker surfacing lands with the native reader (U3). "
+                "KNOWN-UNSAFE: one record per AFFIX splits multi-affix options into "
+                "mutually exclusive siblings; inert only while no item carries "
+                "thunder_forged_tiers (#194).",
     }
-    return {"records": records, "quarantined": [], "coverage": coverage}
+    return {"records": records, "quarantined": [], "coverage": coverage,
+            "source_options": source_options}

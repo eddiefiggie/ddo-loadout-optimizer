@@ -314,12 +314,18 @@ def build_viktranium(catalog: dict = None) -> dict:
     multi-affix."""
     catalog = crafting_catalog.load_catalog() if catalog is None else catalog
     records = []
+    # SOURCE option count, reported so the fan-out gate can hold this container to
+    # one record per option. ATOMIC shape alone does not prove that — two halves of
+    # a split option, each wrapped in a one-element `affixes` list, wear the same
+    # shape. Only the count catches it (src/container_registry.py).
+    source_options = 0
     for slot_type in sorted(SLOT_TYPES):
         for category in sorted(CATEGORIES):
             key = f"{slot_type} ({category})"
             if key not in catalog:
                 continue  # not every (type, category) combination has a pool
             for opt in crafting_catalog.menu_options(key, catalog):
+                source_options += 1
                 affixes = [crafting_catalog.legacy_affix(a)
                            for a in crafting_catalog.iter_affixes(opt)]
                 if not affixes:
@@ -335,6 +341,7 @@ def build_viktranium(catalog: dict = None) -> dict:
         k = f"{r['slot_type']}/{r['category']}"
         by_pool[k] = by_pool.get(k, 0) + 1
     coverage = {
+        "source_options": source_options,
         "slot_types_sourced": sorted({r["slot_type"] for r in records}),
         "categories_sourced": sorted({r["category"] for r in records}),
         "options_eligible": len(records),
@@ -349,4 +356,5 @@ def build_viktranium(catalog: dict = None) -> dict:
                      "references them); Cataclysmic weapon/shield creation is "
                      "item-creation (deferred to named-gear R4), not a choice-slot",
     }
-    return {"records": records, "quarantined": [], "coverage": coverage}
+    return {"records": records, "quarantined": [], "coverage": coverage,
+            "source_options": source_options}

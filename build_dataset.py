@@ -811,27 +811,28 @@ def build() -> dict:
     gs = gs_mod.build_green_steel()
 
     # U3 (#205) — the fan-out gate. Every single-pick choice-slot container is
-    # declared in src/container_registry.py with its record shape and the expansion
-    # passes that run over it, and a FLAT container (one record per affix) with an
-    # expansion pass wired to it fails the build. That pairing is the reported
-    # defect: expanding a flat pool turns one craftable option into several
-    # mutually exclusive ones, and a choice slot takes exactly one, so a Viktranium
-    # craft granting seven spell schools delivered one.
+    # declared in src/container_registry.py, and a container that turns ONE source
+    # option into more than one record fails the build. That is the reported defect:
+    # a choice slot takes exactly one record, so a split option delivers a fraction
+    # of what the craft grants in game — a Viktranium craft granting seven spell
+    # schools delivered one.
     #
-    # Runs HERE, after every expansion above, so the gate judges the post-expansion
-    # records rather than the declaration alone — a record-level provenance key is
-    # direct evidence an expander crossed the option boundary. Every pool is passed
-    # in, so a container the registry does not declare fails rather than going
-    # unnoticed.
-    _container_gate = container_registry_mod.check({
-        "viktranium": vik["records"],
-        "dino_inserts": dino_inserts,
-        "nearly_complete": nc["records"],
-        "seal": sl["records"],
-        "green_steel": gs["records"],
-        "thunder_forged": tf["records"],
-        "roll_groups": container_registry_mod.collect_roll_groups(variants),
-    })
+    # The gate runs AFTER the dataset is assembled (see below, just before build_id),
+    # not here, so it discovers its own containers by walking the built structure
+    # instead of judging a hand-typed list of pools at this call site. That list was
+    # its own hole: `nearly_complete_per_item` shipped 43 hosts and 147 records
+    # without ever appearing in it, so nothing — including the pinned container
+    # count — could see it. What IS collected here is each builder's SOURCE option
+    # count, because only the builder knows how many options it read.
+    _container_source_options = {
+        "viktranium": vik["source_options"],
+        "dino_inserts": dino_cov["insert_source_options"],
+        "nearly_complete": nc["source_options"],
+        "nearly_complete_per_item": nc["per_item_source_options"],
+        "seal": sl["source_options"],
+        "green_steel": gs["source_options"],
+        "thunder_forged": tf["source_options"],
+    }
 
     # Compendium browse index (U6): derived from the NATIVE roster (the built
     # variants' own source_item + slot + wiki_url), not the legacy roster_*.json
@@ -946,11 +947,12 @@ def build() -> dict:
                 "references_validated": _crafting_vocab_checked,
             },
             "planner_coverage": planner_stats,
-            # U3 (#205) — the single-pick choice-slot fan-out gate. `compared`
+            # U3 (#205) — the single-pick choice-slot fan-out gate. Filled in below,
+            # once the dataset is assembled and the gate has walked it. `compared`
             # counts records whose shape was actually inspected; `checked` counts
             # containers reached a verdict on, which alone would overstate coverage
             # because a container declared unreachable contributes zero records.
-            "container_registry_coverage": _container_gate,
+            "container_registry_coverage": None,
             # #154 / #162 — wiki-harvest coverage, disclosed so a result can say what
             # was and wasn't considered. `unclassified` on the material side is the
             # honest measure of how complete the druidic-oath restriction actually is:
@@ -1066,6 +1068,16 @@ def build() -> dict:
         "augment_set_defs": augment_set_defs,
         "compendium": comp_records,
     }
+
+    # U3 (#205) — the fan-out gate, run over the ASSEMBLED dataset so it discovers
+    # its own containers. Every top-level key must be either a declared single-pick
+    # container or a declared non-container carrying the reason it is not one, so a
+    # pool added without an audit fails rather than shipping unjudged. Runs after
+    # every expansion pass, so a record-level provenance key is direct evidence an
+    # expander crossed an option boundary, and a container declaring a pass that
+    # left no stamp at all is evidence the pass was reverted to a no-op.
+    out["metadata"]["container_registry_coverage"] = container_registry_mod.check(
+        out, _container_source_options)
 
     # build_id hashes the full assembled dataset (everything except metadata) so
     # drift in sets, augments, or crafting inputs — not just base variants —

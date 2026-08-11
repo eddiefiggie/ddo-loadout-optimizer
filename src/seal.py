@@ -133,9 +133,15 @@ def build_seal(catalog: dict = None) -> dict:
     ``{records, quarantined, coverage}`` shape ``parse_seal`` does."""
     catalog = crafting_catalog.load_catalog() if catalog is None else catalog
     records = []
+    # SOURCE option count, reported so the fan-out gate can judge option -> record
+    # cardinality: this builder is FLAT (one record per affix), so it is only safe
+    # while every source option carries exactly one affix, and this count is what
+    # proves it (src/container_registry.py).
+    source_options = 0
     for seal_type in sorted(VERIFIED_SEAL_TYPES):
         key = _NATIVE_SEAL_KEY[seal_type]
         for opt in crafting_catalog.menu_options(key, catalog):
+            source_options += 1
             name = (opt.get("name") or "").strip()
             for aff in crafting_catalog.iter_affixes(opt):
                 rec = crafting_catalog.legacy_affix(aff)  # {stat, bonus_type, value, unit}
@@ -151,6 +157,7 @@ def build_seal(catalog: dict = None) -> dict:
         by_seal[r["seal_type"]] = by_seal.get(r["seal_type"], 0) + 1
     pending = sorted(t for t in SEAL_TYPES if t not in VERIFIED_SEAL_TYPES)
     coverage = {
+        "source_options": source_options,
         "seal_types_sourced": sorted(by_seal),
         "seal_types_pending": pending,
         "options_eligible": len(records),
@@ -167,4 +174,5 @@ def build_seal(catalog: dict = None) -> dict:
                 "Ability-Insight options are typed 'Insight' (native), correcting the "
                 "legacy seed's 'Insightful'.",
     }
-    return {"records": records, "quarantined": [], "coverage": coverage}
+    return {"records": records, "quarantined": [], "coverage": coverage,
+            "source_options": source_options}

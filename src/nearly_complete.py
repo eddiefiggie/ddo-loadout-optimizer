@@ -118,12 +118,18 @@ def build_nearly_complete(catalog: dict = None) -> dict:
     catalog = crafting_catalog.load_catalog() if catalog is None else catalog
 
     # -- category menu path --------------------------------------------------
+    # `source_options` counts what the pools OFFERED; both paths are FLAT (one
+    # record per affix), so they are safe only while every source option carries
+    # exactly one affix. The fan-out gate asserts that equality rather than trusting
+    # it (src/container_registry.py).
     records = []
+    source_options = 0
     for category in sorted(CATEGORIES):
         key = _NATIVE_NC_KEY[category]
         if key not in catalog:
             continue
         for opt in crafting_catalog.menu_options(key, catalog):
+            source_options += 1
             tier = _nc_tier_from_ml(opt.get("ml"))
             for aff in crafting_catalog.iter_affixes(opt):
                 rec = crafting_catalog.legacy_affix(aff)
@@ -132,12 +138,14 @@ def build_nearly_complete(catalog: dict = None) -> dict:
 
     # -- per-item path (kept SEPARATE from the category path) ----------------
     per_item = {}
+    per_item_source_options = 0
     for key in _NC_PER_ITEM_KEYS:
         if key not in catalog:
             continue
         for host, opts in crafting_catalog.peritem_options(key, catalog).items():
             bucket = per_item.setdefault(host, [])
             for opt in opts or []:
+                per_item_source_options += 1
                 name = (opt.get("name") or "").strip()
                 for aff in crafting_catalog.iter_affixes(opt):
                     rec = crafting_catalog.legacy_affix(aff)
@@ -150,6 +158,8 @@ def build_nearly_complete(catalog: dict = None) -> dict:
     for r in records:
         by_category[r["category"]] = by_category.get(r["category"], 0) + 1
     coverage = {
+        "source_options": source_options,
+        "per_item_source_options": per_item_source_options,
         "categories_sourced": sorted({r["category"] for r in records}),
         "options_eligible": len(records),
         "options_quarantined": 0,
@@ -164,4 +174,6 @@ def build_nearly_complete(catalog: dict = None) -> dict:
         "per_item_options": sum(len(v) for v in per_item.values()),
         "per_item_pools": list(_NC_PER_ITEM_KEYS),
     }
-    return {"records": records, "per_item": per_item, "quarantined": [], "coverage": coverage}
+    return {"records": records, "per_item": per_item, "quarantined": [],
+            "coverage": coverage, "source_options": source_options,
+            "per_item_source_options": per_item_source_options}
