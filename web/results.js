@@ -11,6 +11,11 @@
 const Proj = (typeof Projection !== "undefined") ? Projection
   : (typeof require !== "undefined" ? require("./projection.js") : null);
 const affixLabel = Proj.affixLabel;
+// U8 (R8) — bound like every other shared primitive. `renderResults` /
+// `equippedBody` / `loadoutDeepDive` run against the LIVE solve result and have no
+// saved record, so they cannot reach the collapse through `Proj.project(rec)`;
+// they call the same primitive that builds the content model instead.
+const collapseExpansions = Proj.collapseExpansions;
 const assignAugments = Proj.assignAugments;
 const assignDinoInserts = Proj.assignDinoInserts;
 const attributionByTarget = Proj.attributionByTarget;
@@ -280,8 +285,11 @@ function loadoutDeepDive(result, query, maps, attr) {
       ? ` <span class="dd-suppressed" title="a Set Augment slotted here overrides this item's own set bonus">(suppressed by Set Augment${contribs.length ? `: ${esc(gaveUp.join(", "))}` : ""})</span>` : "";
     const setLine = (contribs.length || gaveUp.length)
       ? `<div class="dd-set"><span class="setpip"></span>Part of set: ${esc(contribs.length ? contribSetLabel(contribs) : gaveUp.join(", "))}${suppressNote}</div>` : "";
-    const affixes = (v.affixes || []).length
-      ? `<ul class="dd-list">${v.affixes.map((a) => `<li>${esc(affixLabel(a))}</li>`).join("")}</ul>`
+    // U8/R8 — collapsed before render, so an expanded enchantment reads as the one
+    // name engraved on the item rather than as seven school lines.
+    const shownAffixes = collapseExpansions(v.affixes || []);
+    const affixes = shownAffixes.length
+      ? `<ul class="dd-list">${shownAffixes.map((a) => `<li>${esc(affixLabel(a))}</li>`).join("")}</ul>`
       : `<p class="dd-none muted">No parsed affixes on this item.</p>`;
     const crafts = craftChips(v, idx, maps);
     const craftBlock = crafts.length
@@ -366,7 +374,10 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
 // are always supplied on the render path (buildViews -> equippedRow); a maps-less
 // call (only the pure test callers) simply renders no augment/craft section.
 function equippedBody(v, idx, maps, augById, ownedMode) {
-  const affixes = (v.affixes || []);
+  // U8/R8 — the Loadout block collapses each expansion to its enchantment for the
+  // same reason the Deep Dive does: this is what the player compares against the
+  // in-game tooltip.
+  const affixes = collapseExpansions(v.affixes || []);
   const stats = affixes.length
     ? `<ul class="pd-stats">${affixes.map((a) => `<li>${esc(affixLabel(a))}</li>`).join("")}</ul>` : "";
 

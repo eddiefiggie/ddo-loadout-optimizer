@@ -1245,3 +1245,63 @@ test("U4/#239: a ranked stat is never offered back as a suggestion", () => {
   assert.ok(!R.incidentalStats(q, satBuild()).includes("Physical Sheltering"),
     "suggesting a stat the player already ranked is noise");
 });
+
+// ---- U8 (R8) — the two item-centric render paths in results.js -------------
+//
+// `equippedBody` (the Loadout block) and `loadoutDeepDive` read `v.affixes`
+// directly; only the text exporters read the shared content model. Collapsing in
+// projection.js alone would fix every export and leave these two — the surfaces
+// R8 names first — still printing one line per expanded school.
+function focusMasteryAffixes(label, type, value) {
+  return ["Abjuration", "Conjuration", "Enchantment", "Evocation", "Illusion", "Necromancy", "Transmutation"]
+    .map((s) => ({ name: `${s} Focus`, type, value, via: label }));
+}
+
+test("U8/R8/AE3: equippedBody shows ONE line naming the enchantment, not seven school lines", () => {
+  const v = { variant_id: "A Memento of Mori",
+    affixes: focusMasteryAffixes("Sacred Spell Focus Mastery", "Sacred", 3) };
+  const html = R.equippedBody(v, 0, blockMaps(), new Map());
+  assert.ok(/Sacred Spell Focus Mastery \+3/.test(html), "names the enchantment engraved on the item");
+  assert.ok(!/Necromancy Focus/.test(html), "the model's expanded shape does not leak into the UI");
+  assert.strictEqual((html.match(/<li>/g) || []).length, 1, "exactly one affix line, not seven");
+});
+
+test("U8/R8/AE3: loadoutDeepDive collapses the same expansion the same way", () => {
+  const result = {
+    chosen: [{ slot: "Trinket", variant: { variant_id: "A Memento of Mori", minimum_level: 32,
+      set_bonus: [], affixes: focusMasteryAffixes("Sacred Spell Focus Mastery", "Sacred", 3) } }],
+    breakdown: {}, augmentsPlaced: [], effective: {}, perTarget: {},
+  };
+  const maps = { augAssign: { byIndex: new Map(), freeByIndex: new Map() }, dinoAssign: { byIndex: new Map() },
+    ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(), jokerByHost: new Map() };
+  const html = R.loadoutDeepDive(result, { targets: [] }, maps, R.attributionByTarget(result));
+  assert.ok(/Sacred Spell Focus Mastery \+3/.test(html));
+  assert.ok(!/Abjuration Focus/.test(html) && !/Necromancy Focus/.test(html),
+    "no school line survives the collapse");
+  assert.strictEqual((html.match(/<li>/g) || []).length, 1, "one affix line in the Deep Dive too");
+});
+
+test("U8/R8: a heterogeneous family renders its members inline on the Loadout block", () => {
+  const v = { variant_id: "Blackfeather Boots", affixes: [
+    { name: "Movement Speed", type: "Enhancement", value: 30, via: "Speed" },
+    { name: "Melee Alacrity", type: "Enhancement", value: 15, via: "Speed" },
+    { name: "Ranged Alacrity", type: "Enhancement", value: 15, via: "Speed" },
+  ] };
+  const html = R.equippedBody(v, 0, blockMaps(), new Map());
+  assert.ok(/Speed: Movement Speed \+30, Melee Alacrity \+15, Ranged Alacrity \+15/.test(html),
+    `member values listed inline; got ${html}`);
+  // Anchored to the start of the line: "Movement Speed +30" legitimately contains
+  // the substring "Speed +", so a bare /Speed \+/ would reject a correct render.
+  assert.ok(!/<li>Speed \+/.test(html), "the line never asserts a single invented magnitude");
+  assert.strictEqual((html.match(/<li>/g) || []).length, 1, "still one line");
+});
+
+test("U8/R8: an item with no expanded affix renders exactly as before", () => {
+  const v = { variant_id: "Ring1", affixes: [
+    { stat: "Constitution", bonus_type: "Enhancement", value: 10, unit: "flat" },
+    { stat: "Dodge", bonus_type: "Quality", value: 5, unit: "pct" },
+  ] };
+  const html = R.equippedBody(v, 0, blockMaps(), new Map());
+  assert.ok(/Constitution \+10/.test(html) && /Dodge \+5% Quality/.test(html));
+  assert.strictEqual((html.match(/<li>/g) || []).length, 2, "both native affixes still listed");
+});
