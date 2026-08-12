@@ -1648,3 +1648,20 @@ test("#235: the real vocabulary marks Enhanced Ki untyped-only and nothing else"
 
 
 console.log(`\n${passed} passed`);
+
+// ---------------------------------------------------------------------------
+// #110 U1 — blocklist state reaches the query.
+
+test("U1/#110: buildQuery threads the blocklist as a fresh array", () => {
+  const q = buildQuery({ ...baseState(), blocklist: ["Lunar Gem of Abjuration (Heroic)"] });
+  assert.deepStrictEqual(q.blocklist, ["Lunar Gem of Abjuration (Heroic)"]);
+  const src = { ...baseState(), blocklist: ["A"] };
+  const q2 = buildQuery(src);
+  q2.blocklist.push("B");
+  assert.deepStrictEqual(src.blocklist, ["A"], "the query holds a copy, not the live state array");
+});
+
+test("U1/#110: buildQuery defaults an absent blocklist to empty (pre-feature state)", () => {
+  const q = buildQuery(baseState());
+  assert.deepStrictEqual(q.blocklist, [], "absent -> empty array, never undefined");
+});

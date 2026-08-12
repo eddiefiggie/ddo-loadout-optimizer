@@ -53,7 +53,7 @@
   const INPUT_KEYS = [
     "characterName", "ml", "mlFloor", "mlFloorManual", "race", "alignment", "armor", "oath",
     "style", "weaponTypes", "offHand", "offHandWeapons", "twoWeaponFighting",
-    "includeArtifact", "excludeCraftingSystems", "ownedSetAugments", "pool", "ownedNames", "priorities", "slotConstraints",
+    "includeArtifact", "excludeCraftingSystems", "blocklist", "ownedSetAugments", "pool", "ownedNames", "priorities", "slotConstraints",
     "targetCaps", "targetFloors",
     // U2/U5 — declared stat credits, keyed `stat||bonusType`. Plain JSON, so it
     // needs no special serialization the way the two Sets above do.

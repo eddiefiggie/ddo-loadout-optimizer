@@ -347,6 +347,9 @@ function buildQuery(state, vocab) {
     // pools (Viktranium/seal/NC/dino/membership/set-augment), so items compete
     // on their printed affixes. Augments and intrinsic choice slots stay.
     excludeCraftingSystems: !!state.excludeCraftingSystems,
+    // #110 (U1) — the blocklist, copied so the solve reads a snapshot rather
+    // than the live state array. Absent (pre-feature state) reads as empty.
+    blocklist: Array.isArray(state.blocklist) ? state.blocklist.slice() : [],
     // U6 — set-augment ownership gate. A Set of owned set-augment `set` names;
     // empty => none of the 21 set augments are considered (default off).
     ownedSetAugments: state.ownedSetAugments instanceof Set
@@ -795,6 +798,12 @@ if (typeof window !== "undefined" && window.App) {
       // full min-max solve is the product; this is the "items must win on what
       // is printed on them" mode for players who won't grind the crafts.
       excludeCraftingSystems: false,
+      // #110 (U1/KTD6) — the blocklist: variant ids the solver must never place.
+      // An ARRAY of id strings, never an object keyed by names — item names are
+      // untrusted data, and a name-keyed object lands in the prototype-pollution
+      // surface the backup reviver guards (a priority named `constructor` once
+      // made a character permanently unloadable).
+      blocklist: [],
       // U6 — set-augment availability. A Set of owned set-augment `set` names;
       // empty by default so the set-augment family stays inert until opted in.
       ownedSetAugments: new Set(),
@@ -1841,6 +1850,10 @@ if (typeof window !== "undefined" && window.App) {
       state.twoWeaponFighting = state.twfMigrated || !!i.twoWeaponFighting;
       state.includeArtifact = !!i.includeArtifact;
       state.excludeCraftingSystems = !!i.excludeCraftingSystems;   // #245 — absent on old saves -> false
+      // #110 (U1/KTD7) — restore the blocklist with an explicit absent-to-default
+      // branch, and ALWAYS assign: the state object outlives a character, so a
+      // field not reset on load stays live from the previous one.
+      state.blocklist = Array.isArray(i.blocklist) ? i.blocklist.slice() : [];
       // U6 — restore owned set augments (stored as an array; rebuilt as a Set).
       state.ownedSetAugments = Array.isArray(i.ownedSetAugments) ? new Set(i.ownedSetAugments) : new Set();
       state.pool = i.pool || "all";
