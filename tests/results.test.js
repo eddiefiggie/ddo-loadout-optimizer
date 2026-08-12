@@ -474,9 +474,83 @@ function whyResult() {
   };
 }
 
-test("whyThisLine names the ranked target an item wins (R8, R9)", () => {
+test("whyThisLine names the ranked contribution with its bonus type (R8, R9 + plan 2026-08-12-001 U3)", () => {
   const html = R.whyThisLine(whyResult(), { slot: "Ring", variant_id: "R" });
-  assert.ok(/wins/.test(html) && /Constitution \+15/.test(html), "states the winning target and value");
+  assert.ok(/Constitution \+15 Enhancement/.test(html), "states stat, value, and bonus type");
+  assert.ok(/pd-prio/.test(html), "renders the contribution-summary line");
+  assert.ok(!/at-ceiling/.test(html), "no saturation report, no green");
+});
+
+test("plan 2026-08-12-001 U3: an at-ceiling contribution goes green with the shared sentence as tooltip", () => {
+  const res = whyResult();
+  res.saturationReport = [{ stat: "Constitution", total: 15, bonusTypes: ["Enhancement"], unusedSources: 2 }];
+  const html = R.whyThisLine(res, { slot: "Ring", variant_id: "R" });
+  assert.ok(/at-ceiling/.test(html), "the saturated stat's span is marked");
+  assert.ok(/at its ceiling of 15/.test(html), "the shared sentence rides the span title");
+  assert.ok(!/56|unused/i.test(html), "the unused-source count stays unspoken");
+});
+
+test("plan 2026-08-12-001 U3: same-stat contributions list separately and the cap is three", () => {
+  const res = whyResult();
+  res.breakdown.Constitution.push(
+    { bonus_type: "Insight", value: 7, source: "Topaz", sourceKind: "augment", hostIds: ["R"] });
+  res.breakdown.Deadly = [
+    { bonus_type: "Quality", value: 4, source: "R", sourceKind: "worn", slot: "Ring", hostIds: ["R"] }];
+  res.breakdown.Dodge = [
+    { bonus_type: "Enhancement", value: 3, source: "R", sourceKind: "worn", slot: "Ring", hostIds: ["R"] }];
+  const html = R.whyThisLine(res, { slot: "Ring", variant_id: "R" });
+  assert.ok(/Constitution \+15 Enhancement/.test(html) && /Constitution \+7 Insight/.test(html),
+    "both bonus types of the same stat are separate spans — merging would erase the fact");
+  assert.strictEqual((html.match(/pd-contrib/g) || []).length, 3, "capped at three contributions");
+});
+
+test("plan 2026-08-12-001 U3: a boolean contribution reads as a feature tick", () => {
+  const res = whyResult();
+  res.breakdown["Ghost Touch"] = [
+    { bonus_type: "boolean", value: 1, source: "R", sourceKind: "worn", slot: "Ring", hostIds: ["R"] }];
+  const html = R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null, ["Ghost Touch"]);
+  assert.ok(/✓ Ghost Touch/.test(html), "presence, not a magnitude");
+  assert.ok(!/\+1/.test(html), "no fake +1");
+});
+
+test("plan 2026-08-12-001 U3/R4: the Deep Dive block carries the same summary with green", () => {
+  const res = whyResult();
+  res.saturationReport = [{ stat: "Constitution", total: 15, bonusTypes: ["Enhancement"], unusedSources: 2 }];
+  const maps = { augAssign: { byIndex: new Map(), freeByIndex: new Map() }, dinoAssign: { byIndex: new Map() },
+    ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(), jokerByHost: new Map() };
+  const html = R.loadoutDeepDive(res, { targets: ["Constitution"] }, maps, R.attributionByTarget(res));
+  assert.ok(/pd-prio/.test(html), "the Deep Dive block renders the priority summary");
+  assert.ok(/Constitution \+15 Enhancement/.test(html), "same contribution content as the Loadout row");
+  assert.ok(/at-ceiling/.test(html) && /at its ceiling of 15/.test(html), "green + shared-sentence tooltip survive this surface");
+});
+
+test("plan 2026-08-12-001 U3: an untyped contribution reads \"untyped\", never the literal null", () => {
+  const res = whyResult();
+  res.breakdown.Constitution = [
+    { bonus_type: null, value: 5, source: "R", sourceKind: "worn", slot: "Ring", hostIds: ["R"] }];
+  const html = R.whyThisLine(res, { slot: "Ring", variant_id: "R" });
+  assert.ok(/Constitution \+5 untyped/.test(html), "names the bucket");
+  assert.ok(!/null/.test(html), "the raw value never reaches the box");
+});
+
+test("plan 2026-08-12-001 U3: a set-carried contribution keeps its (set) marker", () => {
+  const res = whyResult();
+  res.breakdown.Constitution.push(
+    { bonus_type: "Insightful", value: 5, source: "Alpha", sourceKind: "set", setYieldingSlots: ["Ring"], hostIds: ["R"] });
+  const html = R.whyThisLine(res, { slot: "Ring", variant_id: "R" });
+  assert.ok(/Constitution \+5 Insightful \(set\)/.test(html), "the set provenance stays visible per contribution");
+});
+
+test("plan 2026-08-12-001 U3: equippedRow renders the summary only when the context is threaded", () => {
+  const res = whyResult();
+  res.saturationReport = [{ stat: "Constitution", total: 15, bonusTypes: ["Enhancement"], unusedSources: 2 }];
+  const pick = { variant: res.chosen[0].variant, idx: 0 };
+  const withCtx = R.equippedRow("Ring", pick, {}, new Set(), null, null, null, null,
+    { result: res, attr: R.attributionByTarget(res), targets: ["Constitution"] });
+  assert.ok(/pd-prio/.test(withCtx) && /Constitution \+15 Enhancement/.test(withCtx), "summary at the bottom of the box");
+  assert.ok(/at-ceiling/.test(withCtx), "green survives the row path");
+  const withoutCtx = R.equippedRow("Ring", pick, {}, new Set(), null, null, null, null);
+  assert.ok(!/pd-prio/.test(withoutCtx), "pure-test callers render no summary and no crash");
 });
 
 test("whyThisLine has an explicit empty state for a filler pick", () => {
@@ -1180,12 +1254,27 @@ function satBuild(opts) {
 }
 const satQuery = { targets: ["Kinetic Lore"] };
 
-test("U4/#239: the saturation notice names both bonus types and no cause", () => {
+test("U4/#239 + plan 2026-08-12-001 U2: the saturation notice is a compact count/list", () => {
   const html = R.saturationNotice(satBuild());
-  assert.ok(/at its ceiling of 30/.test(html), "states the ceiling");
-  assert.ok(/Equipment bonus/.test(html) && /Artifact bonus/.test(html), "names both carrying types");
+  assert.ok(/1 priority at ceiling: Kinetic Lore 30\./.test(html), "count + stat + total, singular form");
   assert.ok(!/ML|level|cap/i.test(html), "attributes no cause — the dominance filter makes that unknowable");
   assert.strictEqual(R.saturationNotice(satBuild({ saturation: false })), "", "silent when nothing saturated");
+});
+
+test("plan 2026-08-12-001 U2: the full sentences move to the tooltip, not out of the app", () => {
+  const html = R.saturationNotice(satBuild());
+  const title = (html.match(/title="([^"]*)"/) || [])[1] || "";
+  assert.ok(/at its ceiling of 30/.test(title), "the shared sentence rides the title");
+  assert.ok(/Equipment bonus/.test(title) && /Artifact bonus/.test(title), "both carrying types survive there");
+  const visible = html.replace(/title="[^"]*"/, "");
+  assert.ok(!/reaches you as/.test(visible), "the paragraph prose is out of the visible line");
+});
+
+test("plan 2026-08-12-001 U2: two saturated stats pluralize and both are listed", () => {
+  const b = satBuild();
+  b.saturationReport.push({ stat: "Physical Sheltering", total: 62, bonusTypes: ["Enhancement"], unusedSources: 2 });
+  const html = R.saturationNotice(b);
+  assert.ok(/2 priorities at ceiling: Kinetic Lore 30, Physical Sheltering 62\./.test(html), "plural + full list");
 });
 
 test("U4/#239: the empty-slot notice invites and names an incidentally-supplied stat", () => {
@@ -1347,9 +1436,9 @@ test("#245: whyThisLine flags an item picked only for its crafts", () => {
     && /Viktranium/.test(html), "names the crafted stat, value, and family");
 });
 
-test("#245: whyThisLine stays a plain win when the item earns its slot natively", () => {
+test("#245: whyThisLine stays a plain contribution line when the item earns its slot natively", () => {
   const html = R.whyThisLine(whyResult(), { slot: "Ring", variant_id: "R" });
-  assert.ok(/wins/.test(html) && !/pd-carried/.test(html));
+  assert.ok(/Constitution \+15/.test(html) && !/pd-carried/.test(html));
 });
 
 test("#245: the opt-out notice renders from the shared projection sentence", () => {

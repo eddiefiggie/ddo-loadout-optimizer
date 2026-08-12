@@ -259,6 +259,49 @@
     return wins;
   }
 
+  /** Per-item ranked contributions with the bonus type kept (plan 2026-08-12-001 U1).
+   *
+   *  `whyThis` sums per stat and drops `bonus_type`, so it cannot render
+   *  "Intelligence +22 Insight". This walks the same attribution rows with the
+   *  same host-variant_id match (the rings gotcha: never by slot), but keeps
+   *  each contribution separate — a host and its slotted augment feeding the
+   *  same stat are two entries, because merging them would erase the bonus-type
+   *  fact the gear-box summary exists to show.
+   *
+   *  Order: the caller's ranked `targets` first, value-descending within a
+   *  stat. Zero and negative values are dropped unless the row is a boolean
+   *  presence affix, mirroring `whyThis`'s positive guard. */
+  function itemContributions(result, item, attr, targets) {
+    attr = attr || attributionByTarget(result);
+    const order = (targets && targets.length) ? targets : Object.keys(attr);
+    const out = [];
+    for (const stat of order) {
+      const rows = [];
+      for (const p of attr[stat] || []) {
+        if (!(p.hostIds || []).includes(item.variant_id)) continue;
+        const boolean = p.bonus_type === "boolean";
+        if (!boolean && !(p.value > 0)) continue;
+        rows.push({ stat, value: p.value, bonus_type: p.bonus_type,
+          viaSet: !!p.isSet, boolean, via: p.via || null });
+      }
+      rows.sort((a, b) => b.value - a.value);
+      for (const r of rows) out.push(r);
+    }
+    return out;
+  }
+
+  /** The stats whose every live bonus-type bucket is filled — membership in
+   *  `saturationReport`. Reads plain JSON on the result (never the live
+   *  program), so a restored character colors identically without re-solving;
+   *  a pre-#239 snapshot with no report renders neutral, not broken. */
+  function saturatedStats(result) {
+    const s = new Set();
+    for (const e of (result && result.saturationReport) || []) {
+      if (e && e.stat) s.add(e.stat);
+    }
+    return s;
+  }
+
   // #245 — the crafted-contribution channels, and what a player calls each one.
   // `worn` is the item's own printed affixes; `roll` is an intrinsic choice slot
   // (#257 ruled its options the item's own engraved enchantment), so both count
@@ -908,10 +951,14 @@
    */
   /** #239 — the saturation disclosure as plain sentences.
    *
-   *  ONE source for the app notice and every export, the same contract
-   *  `creditNoticeLines` holds. Reads `saturationReport` (plain JSON on the
-   *  result), never the live program, so a restored character discloses
-   *  identically without re-solving.
+   *  The single WORDING source, the same contract `creditNoticeLines` holds:
+   *  every export prints these sentences, and the app's per-stat tooltips reuse
+   *  them verbatim via `saturationLineFor`. The app's notice line itself is the
+   *  compact count/list in `results.js saturationNotice` (plan 2026-08-12-001)
+   *  — a different SHAPE derived from the same `saturationReport` rows, never a
+   *  second sentence corpus that can drift. Reads `saturationReport` (plain
+   *  JSON on the result), never the live program, so a restored character
+   *  discloses identically without re-solving.
    *
    *  KTD6 — facts only. It names which bonus types carry the stat and that they
    *  are filled. It attributes no cause: the pool is the product of the ML band,
@@ -921,19 +968,29 @@
    *  sources" would read as alarming and mean something other than it says. It
    *  stays on the report for the portable export.
    */
+  function saturationSentence(e) {
+    const types = e.bonusTypes || [];
+    const art = (t) => `${/^[aeiou]/i.test(t) ? "an" : "a"} ${t} bonus`;
+    const named = types.length === 1
+      ? art(types[0])
+      : `${types.slice(0, -1).map(art).join(", ")} and ${art(types[types.length - 1])}`;
+    const verb = types.length === 1 ? "it is filled"
+      : types.length === 2 ? "both are filled" : "all of them are filled";
+    return `${e.stat} is at its ceiling of ${e.total} — it reaches you as ${named}, and ${verb}, `
+      + `so no other item in your pool can raise it.`;
+  }
+
   function saturationNoticeLines(result) {
     const report = (result && result.saturationReport) || [];
-    return report.map((e) => {
-      const types = e.bonusTypes || [];
-      const art = (t) => `${/^[aeiou]/i.test(t) ? "an" : "a"} ${t} bonus`;
-      const named = types.length === 1
-        ? art(types[0])
-        : `${types.slice(0, -1).map(art).join(", ")} and ${art(types[types.length - 1])}`;
-      const verb = types.length === 1 ? "it is filled"
-        : types.length === 2 ? "both are filled" : "all of them are filled";
-      return `${e.stat} is at its ceiling of ${e.total} — it reaches you as ${named}, and ${verb}, `
-        + `so no other item in your pool can raise it.`;
-    });
+    return report.map(saturationSentence);
+  }
+
+  /** The one saturation sentence for a single stat — the per-span tooltip
+   *  source. Keyed by stat, never by array index, so a future filtered report
+   *  cannot misalign sentences to stats. Null when the stat is not saturated. */
+  function saturationLineFor(result, stat) {
+    const e = ((result && result.saturationReport) || []).find((r) => r && r.stat === stat);
+    return e ? saturationSentence(e) : null;
   }
 
   /** #239 — the empty-slot disclosure as plain sentences.
@@ -1053,7 +1110,8 @@
     absorptionQuarantineNoticeLines, declaredCreditsLine,
     // pure primitives (results.js binds these; single definition, no drift)
     affixLabel, collapseExpansions, itemMl, contributingAffixes, assignAugments, dinoInsertKey, assignDinoInserts,
-    attributionByTarget, whyThis, satisfiedSets, suppressedHostIds, slotSetNames,
+    attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,
+    satisfiedSets, suppressedHostIds, slotSetNames,
     setContributors, contributorsFor, setMemberLabel, activeSetDetail, satisfiedSetDetail,
     // craft + cue helpers
     buildCraftMaps, craftLabel, craftValue, lunarSolar,
