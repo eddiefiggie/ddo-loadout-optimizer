@@ -604,7 +604,28 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     ...Object.keys(query.targetFloors || {}),
   ]);
   const mlCap = query.mlCap;
-  const elig = eligible(variants, query);
+  const eligAll = eligible(variants, query);
+  // #110 (U2/KTD1) — the blocklist filters CANDIDACY, here and not in
+  // variantConflict: variantConflict means "this character can never equip
+  // this", and reconcilePinLegality deletes any pin whose conflict is non-null,
+  // so a block expressed there would let a corrupted import silently destroy a
+  // pin. Filtering the eligible pool once removes the variant from every worn
+  // slot, both hands, and the augment colour pools at once — and it runs
+  // upstream of dominanceFilter, so a blocked winner simply leaves the
+  // runner-up as the pool's new best (KTD2: the comparator is untouched).
+  // An ABSENT blocklist means "filter nothing" — the legacy Solver tab's query
+  // never carries the key, and a truthiness slip here would empty its pools.
+  // The removed set is retained on the model so the disclosure (U7) can
+  // attribute without recomputing.
+  const blockedIds = new Set(Array.isArray(query.blocklist) ? query.blocklist : []);
+  const blocked = [];
+  let elig = eligAll;
+  if (blockedIds.size) {
+    elig = [];
+    for (const cand of eligAll) {
+      (blockedIds.has(variantKey(cand)) ? blocked : elig).push(cand);
+    }
+  }
 
   // Pinned variant ids (U6): kept through the dominance pre-filter so a pinned
   // item's pick var always exists for its `= 1` constraint. Empty when absent.
@@ -747,6 +768,9 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
 
   return {
     query, targets: query.targets, worn, augments,
+    // #110 (U2) — eligible-but-blocked variants, retained for the disclosure's
+    // attribution. Never re-enters any pool below.
+    blocked,
     dinoInserts: dinoPool, nearlyComplete: ncPool, viktranium: vikPool, seal: sealPool,
     thunderForged: tfPool, greenSteel: gsPool,
     membershipSetDefs: membershipSetDefs || {},

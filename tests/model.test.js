@@ -1521,3 +1521,59 @@ test("#245: excludeCraftingSystems empties the option-pool families", () => {
   assert.ok(ring && ring.variants.some((x) => x.source_item === "Host"),
     "the host item itself is not excluded — only its craft options are");
 });
+
+// ---------------------------------------------------------------------------
+// #110 U2 — the blocklist filters candidacy, upstream of dominance, and the
+// blocked set survives on the model for the disclosure to read.
+
+test("U2/#110: a blocked variant is absent from its slot pool; removal restores it", () => {
+  const A = v("Blocked Ring", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const B = v("Other Ring", "Ring", [["Intelligence", "Enhancement", 8]]);
+  const q = { mlCap: 34, targets: ["Intelligence"] };
+  const blockedModel = M.buildModel([A, B], { ...q, blocklist: ["Blocked Ring"] });
+  const pool = blockedModel.worn.find((s) => s.slot === "Ring").variants.map((x) => x.variant_id);
+  assert.deepStrictEqual(pool, ["Other Ring"]);
+  const freeModel = M.buildModel([A, B], { ...q, blocklist: [] });
+  const freePool = freeModel.worn.find((s) => s.slot === "Ring").variants.map((x) => x.variant_id);
+  assert.ok(freePool.includes("Blocked Ring"), "removing the block restores candidacy");
+});
+
+test("U2/#110: blocking the DOMINANT variant leaves the runner-up selectable", () => {
+  // A strictly dominates B, so B is normally pruned. The block must run upstream
+  // of dominance so B becomes the pool's new best rather than vanishing with A.
+  const A = v("Dominant", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const B = v("RunnerUp", "Ring", [["Intelligence", "Enhancement", 5]]);
+  const m = M.buildModel([A, B], { mlCap: 34, targets: ["Intelligence"], blocklist: ["Dominant"] });
+  const pool = m.worn.find((s) => s.slot === "Ring").variants.map((x) => x.variant_id);
+  assert.deepStrictEqual(pool, ["RunnerUp"]);
+});
+
+test("U2/#110: a blocked augment is absent from its colour pool (same gate)", () => {
+  const aug = (name) => ({ ...v(name, "Yellow", [["Intelligence", "Enhancement", 5]], { category: "augment" }),
+    aug_color: { color: "Yellow" } });
+  const m = M.buildModel([aug("Bad Gem"), aug("Good Gem")],
+    { mlCap: 34, targets: ["Intelligence"], blocklist: ["Bad Gem"] });
+  assert.deepStrictEqual(m.augments.map((a) => a.variant_id), ["Good Gem"]);
+});
+
+test("U2/#110: a blocked variant that is also pinned does not reach the pool", () => {
+  const A = v("Contested", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const m = M.buildModel([A], { mlCap: 34, targets: ["Intelligence"],
+    blocklist: ["Contested"], slotConstraints: { Ring: { pin: "Contested" } } });
+  const ring = m.worn.find((s) => s.slot === "Ring");
+  assert.ok(!ring || !ring.variants.some((x) => x.variant_id === "Contested"),
+    "the pin does not override the block");
+});
+
+test("U2/#110: the blocked set is retained on the model for the disclosure", () => {
+  const A = v("Blocked Ring", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const m = M.buildModel([A], { mlCap: 34, targets: ["Intelligence"], blocklist: ["Blocked Ring"] });
+  assert.deepStrictEqual((m.blocked || []).map((x) => x.variant_id), ["Blocked Ring"]);
+});
+
+test("U2/#110: an absent blocklist filters nothing (the legacy Solver tab's query)", () => {
+  const A = v("A Ring", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const m = M.buildModel([A], { mlCap: 34, targets: ["Intelligence"] });   // no blocklist key at all
+  assert.ok(m.worn.find((s) => s.slot === "Ring").variants.length === 1,
+    "a missing key means filter nothing, never filter everything");
+});
