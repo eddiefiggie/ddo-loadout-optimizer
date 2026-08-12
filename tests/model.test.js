@@ -1488,3 +1488,36 @@ test("#235: an untyped affix and an explicit Untyped one keep separate buckets, 
 
 
 console.log(`\n${passed} passed`);
+
+// ---------------------------------------------------------------------------
+// #245 — the niche-crafting opt-out. A craftable option slot makes its host a
+// wildcard for every rankable stat, so the flag must empty the option-pool
+// families at the model seam — and must change NOTHING when off.
+
+test("#245: excludeCraftingSystems empties the option-pool families", () => {
+  const host = v("Host", "Ring", [["Intelligence", "Enhancement", 5]]);
+  const vik = { slot_type: "Melancholic", category: "accessory", tier: "legendary",
+    affixes: [{ stat: "Intelligence", value: 7, bonus_type: "Insight" }] };
+  const seal = { seal_type: "Undeath", stat: "Intelligence", value: 5, bonus_type: "Profane" };
+  const nc = { category: "Ability Score", stat: "Intelligence", value: 15, bonus_type: "Enhancement" };
+  const dino = { dino_type: "bone", affixes: [{ stat: "Intelligence", value: 4 }] };
+  const defs = { "Some Set": { tiers: [{ pieces_required: 2, affixes: [{ stat: "Intelligence", bonus_type: "Artifact", value: 6 }] }] } };
+  const q = { mlCap: 34, targets: ["Intelligence"] };
+
+  const off = M.buildModel([host], q, [dino], [nc], [vik], [seal], defs, [], [], defs);
+  assert.ok(off.viktranium.length && off.seal.length && off.nearlyComplete.length
+    && off.dinoInserts.length && Object.keys(off.membershipSetDefs).length,
+    "flag off: every family pool survives (today's behavior)");
+
+  const on = M.buildModel([host], { ...q, excludeCraftingSystems: true },
+    [dino], [nc], [vik], [seal], defs, [], [], defs);
+  assert.deepStrictEqual(
+    [on.viktranium, on.seal, on.nearlyComplete, on.dinoInserts, on.thunderForged, on.greenSteel],
+    [[], [], [], [], [], []], "flag on: every option pool is empty");
+  assert.deepStrictEqual(on.membershipSetDefs, {}, "chosen set-membership crafting is off");
+  assert.deepStrictEqual(on.augment_set_defs, {}, "set-bonus augments (Dino crafting) are off");
+  // the host itself still competes on its printed affixes
+  const ring = on.worn.find((s) => s.slot === "Ring");
+  assert.ok(ring && ring.variants.some((x) => x.source_item === "Host"),
+    "the host item itself is not excluded — only its craft options are");
+});

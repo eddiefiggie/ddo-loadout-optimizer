@@ -308,3 +308,12 @@ test("U6/#249: the absorption-quarantine disclosure survives the save path", () 
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);
+
+// #245 — the niche-crafting opt-out survives save/load like any other input.
+test("#245: excludeCraftingSystems persists through pickInputs", () => {
+  const on = pickInputs(Object.assign({}, state, { excludeCraftingSystems: true }), "NoCrafts");
+  assert.strictEqual(on.excludeCraftingSystems, true);
+  const off = pickInputs(state, "Plain");
+  assert.strictEqual(off.excludeCraftingSystems, undefined,
+    "absent on an old state -> absent in the save -> falsy on restore");
+});

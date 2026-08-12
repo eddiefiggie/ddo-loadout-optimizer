@@ -173,6 +173,15 @@
     return (a.cap != null && raw > a.total) ? ` (capped at ${esc(a.total)} · raw ${esc(raw)})` : "";
   }
 
+  // #245 — the craft-carried disclosure, ONE wording for every export. `it` is a
+  // projected loadout entry; empty string when the item earns its slot natively.
+  function carriedStr(it, esc2) {
+    const parts = it.craftCarried || [];
+    if (!parts.length) return "";
+    const txt = parts.map((p) => `${esc2(p.stat)} +${esc2(p.value)} (${esc2(p.family)})`).join(", ");
+    return `Picked only for its crafts: ${txt}`;
+  }
+
   // ---- Markdown ----
 
   function toMarkdown(rec) {
@@ -191,6 +200,8 @@
     for (const line of view.character.emptySlotNotice || []) out += `> ${mdEsc(line)}\n\n`;
     // U6/#249 — the third disclosure on the same channel.
     for (const line of view.character.absorptionQuarantineNotice || []) out += `> ${mdEsc(line)}\n\n`;
+    // #245 — the opt-out scope disclosure rides with the claim it scopes.
+    if (view.character.craftingExcludedNotice) out += `> ${mdEsc(view.character.craftingExcludedNotice)}\n\n`;
     out += view.character.constraints.filter(([k]) => k !== "Character").map(([k, v]) => `**${mdEsc(k)}:** ${mdEsc(v)}`).join("  \n") + "\n\n";
     out += `_${mdEsc(legendText("md"))}_\n\n`;
     out += `## Loadout\n\n`;
@@ -200,6 +211,8 @@
       if (aff) out += `  - ${aff}\n`;
       for (const aug of it.augments) out += `  - ${augStr(aug, mdEsc, "md")}\n`;
       for (const cr of it.crafting) out += `  - ${craftStr(cr, mdEsc, "md")}\n`;
+      const carried = carriedStr(it, mdEsc);
+      if (carried) out += `  - ⚒ ${carried}\n`;
     }
     if (view.sets.length) {
       out += `\n## Set bonuses\n\n`;
@@ -233,6 +246,7 @@
     for (const line of view.character.saturationNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
     for (const line of view.character.emptySlotNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
     for (const line of view.character.absorptionQuarantineNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
+    if (view.character.craftingExcludedNotice) out += `[i]${bbEsc(view.character.craftingExcludedNotice)}[/i]\n\n`;
     out += view.character.constraints.filter(([k]) => k !== "Character").map(([k, v]) => `[b]${bbEsc(k)}:[/b] ${bbEsc(v)}`).join(" | ") + "\n\n";
     out += `[i]${legendText("bb")}[/i]\n\n`;
     out += `[b]Loadout[/b]\n[list]\n`;
@@ -242,6 +256,8 @@
       if (aff) out += `: ${aff}`;
       for (const aug of it.augments) out += `\n  [*]${augStr(aug, bbEsc, "bb")}`;
       for (const cr of it.crafting) out += `\n  [*]${craftStr(cr, bbEsc, "bb")}`;
+      const carried = carriedStr(it, bbEsc);
+      if (carried) out += `\n  [*]${carried}`;
       out += `\n`;
     }
     out += `[/list]\n`;
@@ -281,16 +297,22 @@
     for (const line of view.character.saturationNotice || []) rows.push(csvRow(["Saturated", line]));
     for (const line of view.character.emptySlotNotice || []) rows.push(csvRow(["Free slots", line]));
     for (const line of view.character.absorptionQuarantineNotice || []) rows.push(csvRow(["Excluded", line]));
+    if (view.character.craftingExcludedNotice) rows.push(csvRow(["Scope", view.character.craftingExcludedNotice]));
     rows.push("");
     rows.push(csvRow(["Legend", legendText("csv")]));
     rows.push("");
     rows.push(csvRow(["Slot", "Item", "ML", "Affixes", "Augments", "Crafting"]));
     for (const it of view.loadout) {
+      // #245 — the craft-carried note joins the Crafting cell: it is a fact
+      // about why the crafts matter, and a new column would break header pins.
+      const craftCell = it.crafting.map((cr) => craftStr(cr, (s) => s, "csv"))
+        .concat(carriedStr(it, (s) => s) || [])
+        .join(" | ");
       rows.push(csvRow([
         it.slot, it.item, it.ml,
         affixListCsv(it.affixes),
         it.augments.map((aug) => augStr(aug, (s) => s, "csv")).join(" | "),
-        it.crafting.map((cr) => craftStr(cr, (s) => s, "csv")).join(" | "),
+        craftCell,
       ]));
     }
     if (view.sets.length) {
@@ -330,13 +352,16 @@
     for (const line of view.character.saturationNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
     for (const line of view.character.emptySlotNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
     for (const line of view.character.absorptionQuarantineNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
+    if (view.character.craftingExcludedNotice) h += `<p class="declared-note"><em>${htmlEsc(view.character.craftingExcludedNotice)}</em></p>`;
     h += `<p class="legend">${htmlEsc(legendText("md"))}</p>`;
     h += `<table><thead><tr><th>Slot</th><th>Item</th><th>ML</th><th>Affixes</th><th>Augments</th><th>Crafting</th></tr></thead><tbody>`;
     for (const it of view.loadout) {
+      const carried = carriedStr(it, htmlEsc);
       h += `<tr><td>${htmlEsc(it.slot)}</td><td>${htmlEsc(it.item)}</td><td>${htmlEsc(it.ml)}</td>`
         + `<td>${affixList(it.affixes, htmlEsc)}</td>`
         + `<td>${it.augments.map((aug) => augStr(aug, htmlEsc, "md")).join("<br>")}</td>`
-        + `<td>${it.crafting.map((cr) => craftStr(cr, htmlEsc, "md")).join("<br>")}</td></tr>`;
+        + `<td>${it.crafting.map((cr) => craftStr(cr, htmlEsc, "md")).join("<br>")
+          }${carried ? `${it.crafting.length ? "<br>" : ""}⚒ ${carried}` : ""}</td></tr>`;
     }
     h += `</tbody></table>`;
     if (view.sets.length) {

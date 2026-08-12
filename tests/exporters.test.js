@@ -1105,3 +1105,46 @@ test("U8/R8: an export of a build with no expanded affix is unchanged", () => {
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);
+
+// ---------------------------------------------------------------------------
+// #245 — the craft-carried line and the opt-out scope disclosure must ride
+// every text export (the solve-visible-but-share-invisible invariant).
+
+test("#245: a craft-carried pick and the opt-out notice reach MD, CSV, print, BBCode", () => {
+  const carriedRec = {
+    name: "Carried Build",
+    inputs: { ml: 9, pool: "all", priorities: ["Charisma"], excludeCraftingSystems: false },
+    snapshot: {
+      status: "optimal",
+      query: { excludeCraftingSystems: true },   // notice keys off the SOLVED query
+      chosen: [
+        { slot: "Weapon", variant: { variant_id: "Calamitous Sword", ml: 8,
+          affixes: [], augment_slots_norm: { colors: [] }, set_bonus: [], parsed_set_bonuses: [] } },
+      ],
+      setsActive: [],
+      breakdown: {
+        Charisma: [
+          { bonus_type: "Insight", value: 1, source: "Slot Melancholic Viktranium augment",
+            sourceKind: "vik", slot: "Weapon", hostIds: ["Calamitous Sword"] },
+        ],
+      },
+      effective: { Charisma: 1 },
+    },
+  };
+  const md = toMarkdown(carriedRec);
+  assert.ok(/⚒ Picked only for its crafts: Charisma \+1 \(Viktranium\)/.test(md), "markdown line");
+  assert.ok(/Niche crafting was excluded/.test(md), "markdown notice");
+  const csv = toCsv(carriedRec);
+  assert.ok(/Picked only for its crafts: Charisma \+1 \(Viktranium\)/.test(csv), "csv crafting cell");
+  assert.ok(/^Scope,/m.test(csv) && /Niche crafting was excluded/.test(csv), "csv scope row");
+  const html = toPrintHtml(carriedRec);
+  assert.ok(/⚒ Picked only for its crafts/.test(html) && /Niche crafting was excluded/.test(html), "print");
+  const bb = toBBCode(carriedRec);
+  assert.ok(/Picked only for its crafts/.test(bb), "bbcode line");
+  assert.ok(/Niche crafting was excluded/.test(bb), "bbcode notice");
+});
+
+test("#245: a natively-earned loadout exports with no carried line and no notice", () => {
+  const md = toMarkdown(rec);
+  assert.ok(!/Picked only for its crafts/.test(md) && !/Niche crafting was excluded/.test(md));
+});

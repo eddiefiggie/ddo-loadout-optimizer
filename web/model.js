@@ -578,6 +578,22 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinned
 /** Build the abstract model. Returns worn slots (filtered + pruned), the
  *  augment source pool, the Dino insert pool, target list, and the dodge cap. */
 function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}, thunderForged = [], greenSteel = [], augmentSetDefs = {}) {
+  // #245 — the niche-crafting opt-out. A craftable option slot makes its host a
+  // wildcard for every rankable stat (the Viktranium pool alone reaches 126), so
+  // under strict lexicographic priority a Lamordia base is never worse and
+  // usually +1 better than the item it displaces — regardless of the priority
+  // list. When the player opts out, the option-pool families are emptied HERE,
+  // at the model seam, so items compete on their printed affixes: the solver
+  // below needs no second code path, and every consumer (alternatives re-solves,
+  // saved queries, exports) inherits the flag from the query it already carries.
+  // Augments and intrinsic choice slots (roll groups) are deliberately NOT
+  // gated — one is on nearly every item, the other is the item's own identity.
+  if (query.excludeCraftingSystems) {
+    dinoInserts = []; nearlyComplete = []; viktranium = []; seal = [];
+    thunderForged = []; greenSteel = [];
+    membershipSetDefs = {};   // chosen set-membership (Lost Purpose / Dino Set Bonus)
+    augmentSetDefs = {};      // set-bonus augments are Dino crafting too
+  }
   // U1/U2 (KTD3) — a user cap or floor can name a stat outside the priority list;
   // union those into targetSet so the dominance pre-filter and pools keep items
   // competitive on them and their buckets get built. model.targets (the strict

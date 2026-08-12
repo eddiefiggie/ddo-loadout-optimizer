@@ -1331,3 +1331,29 @@ test("a native affix gets no provenance tooltip at all", () => {
 
 
 console.log(`\n${passed} passed`);
+
+// ---------------------------------------------------------------------------
+// #245 — the craft-carried why-line and the opt-out notice.
+
+test("#245: whyThisLine flags an item picked only for its crafts", () => {
+  const res = whyResult();
+  res.breakdown.Constitution = [
+    { bonus_type: "Insight", value: 1, source: "Slot Melancholic Viktranium augment",
+      sourceKind: "vik", slot: "Ring", hostIds: ["R"] },
+  ];
+  const html = R.whyThisLine(res, { slot: "Ring", variant_id: "R" });
+  assert.ok(/pd-carried/.test(html), "renders the caution variant, not a win");
+  assert.ok(/here only for its crafts/.test(html) && /Constitution \+1/.test(html)
+    && /Viktranium/.test(html), "names the crafted stat, value, and family");
+});
+
+test("#245: whyThisLine stays a plain win when the item earns its slot natively", () => {
+  const html = R.whyThisLine(whyResult(), { slot: "Ring", variant_id: "R" });
+  assert.ok(/wins/.test(html) && !/pd-carried/.test(html));
+});
+
+test("#245: the opt-out notice renders from the shared projection sentence", () => {
+  const on = R.craftingExcludedNotice({}, { query: { excludeCraftingSystems: true } });
+  assert.ok(/crafting-excluded-note/.test(on) && /Niche crafting was excluded/.test(on));
+  assert.strictEqual(R.craftingExcludedNotice({}, { query: {} }), "", "silent when off");
+});

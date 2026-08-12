@@ -259,6 +259,62 @@
     return wins;
   }
 
+  // #245 — the crafted-contribution channels, and what a player calls each one.
+  // `worn` is the item's own printed affixes; `roll` is an intrinsic choice slot
+  // (#257 ruled its options the item's own engraved enchantment), so both count
+  // as native. `set` is neither: an item there to complete a set is not
+  // craft-carried. `declared` has no host and never reaches this test.
+  const CRAFT_FAMILY_LABEL = {
+    augment: "augments", vik: "Viktranium", seal: "Ritual Table seal",
+    nc: "Nearly Completed", dino: "Dino crafting",
+    tf: "Thunder-Forged", gs: "Green Steel",
+  };
+  const NATIVE_KINDS = new Set(["worn", "roll"]);
+
+  /** #245 — is this equipped item picked ONLY for its craftable options?
+   *
+   *  A craftable option slot makes its host a wildcard for every rankable stat,
+   *  so under strict lexicographic priority it can displace a genuinely richer
+   *  item by a single crafted point. The math is correct; what was missing is
+   *  the player being told. Returns the crafted contributions ([{stat, value,
+   *  family}], highest first) when the item's native (worn/choice-slot) and set
+   *  contributions to the RANKED targets are both zero and at least one crafted
+   *  channel contributes — and null otherwise, including for a filler pick that
+   *  contributes nothing at all (that is `whyThisLine`'s "included to complete
+   *  the loadout", not a craft story). */
+  function craftCarried(result, item, attr) {
+    attr = attr || attributionByTarget(result);
+    let native = 0, viaSet = 0;
+    const parts = [];
+    for (const stat of Object.keys(attr)) {
+      for (const p of attr[stat]) {
+        if (!(p.hostIds || []).includes(item.variant_id)) continue;
+        if (NATIVE_KINDS.has(p.sourceKind)) native += p.value;
+        else if (p.sourceKind === "set") viaSet += p.value;
+        else if (CRAFT_FAMILY_LABEL[p.sourceKind]) {
+          parts.push({ stat, value: p.value, family: CRAFT_FAMILY_LABEL[p.sourceKind] });
+        }
+      }
+    }
+    if (native > 0 || viaSet > 0 || !parts.length) return null;
+    parts.sort((a, b) => b.value - a.value || (a.stat < b.stat ? -1 : 1));
+    return parts;
+  }
+
+  /** #245 — the niche-crafting opt-out, as a plain sentence for the notice
+   *  surface and every export. Reads the solved query's flag off the snapshot
+   *  (and the saved inputs as the restore-path fallback), never the live
+   *  program, so a restored character discloses identically without re-solving. */
+  function craftingExcludedLine(rec) {
+    const snap = (rec && rec.snapshot) || rec || {};
+    const q = snap.query || {};
+    const inputs = (rec && rec.inputs) || {};
+    if (!q.excludeCraftingSystems && !inputs.excludeCraftingSystems) return null;
+    return "Niche crafting was excluded from this solve: Viktranium experiments, "
+      + "Ritual Table seals, Nearly Completed, Dinosaur Bone crafting, and "
+      + "set-bonus crafting were not considered. Regular augments still were.";
+  }
+
   /** Variant_ids of host items that carry a solver-placed Set Augment. A Set Augment
    *  overrides ("suppresses") the host item's OWN named set(s) — the solver already
    *  dropped that set from setsActive/totals, so the set-satisfaction primitives must
@@ -746,6 +802,11 @@
         // (empty otherwise). The placement + this suppression also ride in `crafting`
         // (family "augmentset") so every text export surfaces them without change.
         suppressedSets: suppressed.has(v.variant_id) ? slotSetNames(v) : [],
+        // #245 — non-null when this item is here ONLY for its craftable options:
+        // [{stat, value, family}], highest first. Rides the shared content model
+        // so no export can show the pick without the reason (the standing
+        // solve-visible-but-share-invisible invariant).
+        craftCarried: craftCarried(snap, { slot: c.slot, variant_id: v.variant_id }, attr),
       };
     });
 
@@ -787,7 +848,11 @@
         // U6/#249 — same channel, same reason: a recipient who cannot re-solve
         // would otherwise get a build asserting an optimal loadout with no way
         // to learn that an item's absorption enchantment was withheld from it.
-        absorptionQuarantineNotice: absorptionQuarantineNoticeLines(snap) },
+        absorptionQuarantineNotice: absorptionQuarantineNoticeLines(snap),
+        // #245 — the niche-crafting opt-out disclosure (null when off): a
+        // recipient must not compare this build against a full-crafting one
+        // without being told the pools differed.
+        craftingExcludedNotice: craftingExcludedLine(rec) },
       loadout, sets, attribution,
     };
   }
@@ -945,6 +1010,8 @@
     setContributors, contributorsFor, setMemberLabel, activeSetDetail, satisfiedSetDetail,
     // craft + cue helpers
     buildCraftMaps, craftLabel, craftValue, lunarSolar,
+    // #245 — craft-carried disclosure + the opt-out notice line
+    craftCarried, craftingExcludedLine,
     // constraint header helpers (exporters delegates to these)
     constraintPairs, constraintLines,
   };
