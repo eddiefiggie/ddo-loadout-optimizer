@@ -301,7 +301,7 @@ function loadoutDeepDive(result, query, maps, attr) {
     const artifactTag = v.artifact ? `<span class="dd-artifact" title="your one equipped Artifact">Artifact</span>` : "";
     return `<div class="dd-item${glow ? " is-set" : ""}${v.artifact ? " is-artifact" : ""}">
       <div class="dd-head"><span class="dd-slot">${esc(c.slot)}</span><span class="dd-name">${esc(v.variant_id)}</span>${artifactTag}<span class="dd-ml">ML ${esc(itemMl(v) ?? "?")}</span>${wiki}</div>
-      ${whyThisLine(result, { slot: c.slot, variant_id: v.variant_id }, attr)}
+      ${whyThisLine(result, { slot: c.slot, variant_id: v.variant_id }, attr, query && query.targets)}
       ${setLine}
       ${upgradeNote}
       <div class="dd-affixes"><h5>Affixes</h5>${affixes}</div>
@@ -314,7 +314,9 @@ function loadoutDeepDive(result, query, maps, attr) {
 // item name (no truncation), ML, set membership, and a per-slot constraint
 // control (U6: pin the current item / lock empty / free). The wizard reads the
 // menu clicks via delegation, updates query.slotConstraints, and re-solves.
-function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, ownedInfo, contributors) {
+// `prioCtx` ({ result, attr, targets }) is optional (plan 2026-08-12-001 U3):
+// pure-test callers omit it and render no summary, matching the maps tolerance.
+function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, ownedInfo, contributors, prioCtx) {
   const c = (slotConstraints || {})[label];
   const locked = c && c.type === "empty";
   const owned = ownedInfo || { mode: false, slotsCovered: new Set() };
@@ -362,11 +364,16 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
   // comes from `maps` (keyed by the pick's chosen index); `augById` resolves an
   // augment's affixes by variant_id (the placed meta carries none).
   const body = (v && !locked) ? equippedBody(v, pick ? pick.idx : -1, maps, augById, owned.mode) : "";
+  // U3 (plan 2026-08-12-001) — the priority summary sits at the bottom of the
+  // box, outside `.pd-rbody` so equippedBody's emptiness guard cannot swallow it.
+  const prio = (v && !locked && prioCtx && prioCtx.result)
+    ? whyThisLine(prioCtx.result, { slot: label, variant_id: v.variant_id }, prioCtx.attr, prioCtx.targets)
+    : "";
   const rowCls = `pd-row ${(!v || locked) ? "empty" : "occupied"}${glow ? " is-set" : ""}${isArtifact ? " is-artifact" : ""}${(rowPinned || locked) ? " constrained" : ""}`;
   return `<div class="${rowCls}">
     <div class="pd-rtop"><div class="pd-rlabel">${esc(label)}</div>${ctl}</div>
     <div class="${nameCls}"${v ? ` title="${esc(v.variant_id)}"` : ""}>${name}</div>
-    ${foot}${reasonNote}${body}${artifactBadge}${badge}${menu}
+    ${foot}${reasonNote}${body}${prio}${artifactBadge}${badge}${menu}
   </div>`;
 }
 
@@ -480,12 +487,17 @@ function attributionList(contribs) {
   }).join("")}</ul>`;
 }
 
-// The "why this?" line for an equipped item (R8, R9): the ranked target(s) it
-// wins and by how much. Empty-state (a filler/tie-break pick that wins nothing)
-// reads as such rather than blank. `item` is { slot, variant_id }.
-function whyThisLine(result, item, attr) {
-  const wins = whyThis(result, item, attr);
-  if (!wins.length) return `<div class="pd-why muted">included to complete the loadout</div>`;
+// The per-item priority summary (R8, R9 + plan 2026-08-12-001 U3): the item's
+// contributions to the ranked priorities — stat, value, bonus type — with a
+// contribution rendered green when its stat is at its ceiling (a stat-level
+// fact from saturationReport, restated at the contribution; never a claim this
+// item maxed the stat). The full shared sentence rides the green span's title.
+// Empty-state (a filler/tie-break pick) reads as such rather than blank.
+// `item` is { slot, variant_id }; `targets` is the player's ranked order.
+function whyThisLine(result, item, attr, targets) {
+  attr = attr || attributionByTarget(result);
+  const contribs = itemContributions(result, item, attr, targets);
+  if (!contribs.length) return `<div class="pd-why muted">included to complete the loadout</div>`;
   // #245 — an item whose every ranked contribution is a craftable option is not
   // "best in slot", it is best *once you go craft it*. The wildcard families
   // (a Viktranium slot reaches 126 stats) win whole slots on a single crafted
@@ -496,10 +508,19 @@ function whyThisLine(result, item, attr) {
       `${esc(p.stat)} +${esc(p.value)} (${esc(p.family)})`).join(", ");
     return `<div class="pd-why pd-carried" title="Nothing printed on this item advances your priorities — its value here depends entirely on crafting it. Un-craftable alternatives are on the Alternatives tab.">⚒ here only for its crafts: ${txt}</div>`;
   }
-  const txt = wins.slice(0, 3).map((w) => w.boolean
-    ? `✓ ${esc(w.stat)}`                                   // U4: presence, not "+1"
-    : `${esc(w.stat)} +${esc(w.value)}${w.viaSet ? " (set)" : ""}`).join(", ");
-  return `<div class="pd-why" title="why this item is best-in-slot here">wins ${txt}</div>`;
+  const sat = saturatedStats(result);
+  const spans = contribs.slice(0, 3).map((c) => {
+    // #227 — untyped is a real bucket; never print a raw null.
+    const typeLabel = (c.bonus_type == null || c.bonus_type === "") ? "untyped" : c.bonus_type;
+    const label = c.boolean
+      ? `✓ ${esc(c.stat)}`                                 // U4: presence, not "+1"
+      : `${esc(c.stat)} +${esc(c.value)} ${esc(typeLabel)}${c.viaSet ? " (set)" : ""}`;
+    const line = sat.has(c.stat) ? saturationLineFor(result, c.stat) : null;
+    return line
+      ? `<span class="pd-contrib at-ceiling" title="${esc(line)}">${label}</span>`
+      : `<span class="pd-contrib">${label}</span>`;
+  });
+  return `<div class="pd-prio" title="this item's contributions to your ranked priorities">${spans.join(", ")}</div>`;
 }
 
 // Count-up motion (KTD4), robust to motion NOT running (AE4). The final value is
@@ -1016,7 +1037,8 @@ function buildViews(build, model, query) {
     const picks = picksBySlot.get(slot.slot) || [];
     const cardinality = slot.cardinality || 1;
     for (let r = 0; r < cardinality; r++) {
-      rows.push(equippedRow(slot.slot, picks[r] || null, query.slotConstraints, satisfied, maps, augById, ownedInfo, contributors));
+      rows.push(equippedRow(slot.slot, picks[r] || null, query.slotConstraints, satisfied, maps, augById, ownedInfo, contributors,
+        { result: build, attr, targets: query.targets }));
     }
   }
   const weapons = ""; // weapons are included in the equipped list above
