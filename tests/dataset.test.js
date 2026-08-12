@@ -678,6 +678,17 @@ const KICK = "Kick 'Em While They're Down";
 // rather than hide it silently. When this list changes, rule on the new name --
 // add it to PRESENCE_ALLOW in web/dataset.js if the DDO wiki names it as an
 // effect, otherwise update this fixture with the sentence-shaped addition.
+// #231 (2026-08-12) — the named-looking candidates were adjudicated against the
+// wiki. Eight moved to PRESENCE_ALLOW (see web/dataset.js for the per-name
+// evidence). The ones below that LOOK named were checked and ruled OUT — do not
+// re-raise them:
+//   * `Greater Bane of the Unnatural`, all four `... Litany of the Crimson
+//     Covenant`, `Legendary Cooking By the Book`, `Epic Slice 'n Dice Set` —
+//     no wiki page exists under the name (404); each is described only on its
+//     carrier's item page. (Bare `Cooking By the Book` is already suggested.)
+//   * `Embrace of the Spider Queen` — the page under that name is the ARMOR
+//     ITEM from Reclaiming the Rift, not an effect page; the Bool line on Holy
+//     Symbol of Lolth has no effect page of its own.
 const WORD_CAP_CASUALTIES = [
   "1 Positive Healing every minute",
   "1 to 4 Light Damage",
@@ -685,7 +696,6 @@ const WORD_CAP_CASUALTIES = [
   "1 to 8 Cold Damage",
   "6 to 36 bonus Rust damage on hit vs Constructs",
   "Additional 2d8 Bane Damage to Fey creatures on hit",
-  "Brilliance of the Shattered Sun",
   "Choco-Bacon-Berry Dream Bar (Lasting Bear's Endurance and Lasting Bear's Stamina, 1 hour)",
   "Dark Chocolate 'Magma' Truffle (Lasting Haste, 3 minutes)",
   "Embrace of the Spider Queen",
@@ -697,19 +707,12 @@ const WORD_CAP_CASUALTIES = [
   "Inflicts a Negative Level on vorpal hits",
   "Item becomes a Spellcasting Implement",
   "Legendary Cooking By the Book",
-  "Legendary Tet-zik, The Enlightened Change",
-  "Legendary Vile Grip of the Hidden Hand",
-  "Lifeblood of the Undead Prince",
   "Magnetism +108 (only from chest)",
   "Magnetism +66 (only from chest)",
   "Nut-hull Toffee Surprise (Lasting Stoneskin, CL 10, 10 minutes)",
-  "Path of the Fire Dragon",
-  "Path of the Guarding Stone",
   "Second Litany of the Crimson Covenant",
   "Third Litany of the Crimson Covenant",
-  "Vile Grip of the Hidden Hand",
   "Vitality +20 (only from chain end reward)",
-  "Way of the Sun Soul",
   "You also gain immunity to Mind-Altering Enchantments as if you were under the effects of the Protection from Evil spell",
   "item becomes a Spellcasting Implement",
   "ward against the Knockdowns and Slows of an Air Elemental",
@@ -731,6 +734,29 @@ test("#228: it is flagged as presence, not as a magnitude", () => {
 test("#228: the word-cap casualty set is pinned, so a new named effect surfaces", () => {
   const { presenceWordCapCasualties } = require("../web/dataset.js");
   assert.deepStrictEqual(presenceWordCapCasualties(realData), WORD_CAP_CASUALTIES);
+});
+
+// #231 — the eight adjudicated names. Suggested + presence-flagged, same shape
+// as the KICK assertions above; pinned here so a rebuild that drops a carrier
+// (or a PRESENCE_ALLOW edit that loses one) fails loudly.
+const ADJUDICATED_231 = [
+  "Way of the Sun Soul",
+  "Lifeblood of the Undead Prince",
+  "Path of the Fire Dragon",
+  "Path of the Guarding Stone",
+  "Brilliance of the Shattered Sun",
+  "Vile Grip of the Hidden Hand",
+  "Legendary Vile Grip of the Hidden Hand",
+  "Legendary Tet-zik, The Enlightened Change",
+];
+
+test("#231: every adjudicated named effect is suggested as a presence feature", () => {
+  const v = buildPickerVocabulary(realData);
+  for (const name of ADJUDICATED_231) {
+    assert.ok(v.suggestions.includes(name), `${name} is offered as a suggestion`);
+    assert.ok(v.presence.has(name), `${name} is flagged presence, not magnitude`);
+    assert.ok(!v.magnitude.has(name), `${name} has no rankable bucket`);
+  }
 });
 
 test("#228: allowing a name removes it from the casualty set and the cap still holds", () => {
