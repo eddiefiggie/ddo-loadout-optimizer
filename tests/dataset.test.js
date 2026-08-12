@@ -73,17 +73,17 @@ test("U2: an item with bare + explicit Physical Sheltering does not get a duplic
 // "Insightful Sheltering" and "Quality Sheltering" categories, and states that a
 // bare Sheltering "is usually an enhancement bonus unless otherwise stated" — so
 // the Enhancement variant is engraved bare (docs/wiki-evidence/sheltering.md).
-// The BARE label is deliberately unstamped: 283 set-bonus tier affixes carry a
-// bare `Sheltering` this expansion never reaches, so the name reads as a live
-// native stat and the collision guard drops it from the picker. Stamping it
-// printed `as Sheltering` on 209 item affixes while typing it silently targeted
-// the far smaller set-bonus stat — the app naming something its own picker
-// refuses, which is exactly what R13 exists to prevent.
-test("R12: bare Sheltering's halves are NOT stamped, because the label is unrankable", () => {
+// #253 — the BARE label is stamped again. 6316c11 withheld it while 283
+// set-bonus tier affixes carried a bare `Sheltering` the expansion never
+// reached (the name read as a live native stat, so the collision guard dropped
+// the label from the picker and the stamp displayed a name the picker refused).
+// The set-bonus channel now expands too, so no channel carries the bare name
+// as a live stat and the label resolves like the typed ones.
+test("R12/#253: bare Sheltering's halves are stamped with the engraved name", () => {
   const it = { affixes: [{ name: "Sheltering", value: 30, type: "Enhancement" }] };
   normalizeItem(it);
-  assert.ok(!("via" in find(it, "Physical Sheltering")), "no label a player cannot rank");
-  assert.ok(!("via" in find(it, "Magical Sheltering")), "no label a player cannot rank");
+  assert.strictEqual(find(it, "Physical Sheltering").via, "Sheltering");
+  assert.strictEqual(find(it, "Magical Sheltering").via, "Sheltering");
 });
 
 // Build the vocabulary from the SAME normalized data the stamps come from --
@@ -98,6 +98,54 @@ test("R13 invariant: every stamped label is admitted by the picker", () => {
   const orphans = [...stamped].filter((l) => !v.suggestions.includes(l) && !expandedAwayMessage(v, l));
   assert.deepStrictEqual(orphans, [],
     "a name the item surfaces display must be one the picker offers or resolves");
+});
+
+// #253 — the set-bonus half of the same expansion. A tier's affixes are
+// legacy-shaped ({stat, bonus_type}); the solver reads them via setTiers, so a
+// bare `Sheltering` here named a stat no target matches and granted nothing.
+test("#253: a set tier's bare Sheltering expands into both halves, stamped", () => {
+  const it = { affixes: [], parsed_set_bonuses: [{ set: "S", pieces_required: 3,
+    affixes: [{ stat: "Sheltering", bonus_type: "Artifact", value: 55 }] }] };
+  normalizeItem(it);
+  const affs = it.parsed_set_bonuses[0].affixes;
+  const phys = affs.find((a) => a.stat === "Physical Sheltering");
+  const mag = affs.find((a) => a.stat === "Magical Sheltering");
+  assert.ok(phys && mag, "both halves emitted");
+  assert.strictEqual(phys.value, 55);
+  assert.strictEqual(phys.bonus_type, "Artifact", "bonus type carries through");
+  assert.strictEqual(phys.via, "Artifact Sheltering", "stamped with the typed name");
+  assert.ok(!affs.some((a) => a.stat === "Sheltering"), "the bare stat is gone");
+});
+
+test("#253: a tier half the set already states is not duplicated", () => {
+  const it = { affixes: [], parsed_set_bonuses: [{ set: "S", pieces_required: 2,
+    affixes: [
+      { stat: "Sheltering", bonus_type: "Profane", value: 25 },
+      { stat: "Physical Sheltering", bonus_type: "Profane", value: 30 },
+    ] }] };
+  normalizeItem(it);
+  const affs = it.parsed_set_bonuses[0].affixes;
+  assert.strictEqual(affs.filter((a) => a.stat === "Physical Sheltering").length, 1,
+    "the explicit half wins");
+  assert.strictEqual(affs.find((a) => a.stat === "Physical Sheltering").value, 30);
+  assert.ok(affs.some((a) => a.stat === "Magical Sheltering" && a.value === 25),
+    "the missing half is still expanded");
+});
+
+test("#253: after normalize, NO channel carries bare Sheltering as a live stat", () => {
+  // This is the fact that lets the bare label back onto the picker: the 283
+  // set-tier affixes (and the 2 membership-def ones) are all expanded.
+  const bare = [];
+  for (const it of realData.items) {
+    for (const a of it.affixes || []) if ((a.name != null ? a.name : a.stat) === "Sheltering") bare.push("item");
+    for (const t of it.parsed_set_bonuses || []) for (const a of t.affixes || []) if (a.stat === "Sheltering") bare.push(`set:${t.set}`);
+  }
+  for (const defs of [realData.membership_set_defs, realData.augment_set_defs]) {
+    for (const [name, def] of Object.entries(defs || {})) {
+      for (const t of def.tiers || []) for (const a of t.affixes || []) if (a.stat === "Sheltering") bare.push(`def:${name}`);
+    }
+  }
+  assert.deepStrictEqual(bare, []);
 });
 
 test("R12: a typed Sheltering is stamped with the wiki's typed name", () => {
