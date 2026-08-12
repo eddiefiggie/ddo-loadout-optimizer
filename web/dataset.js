@@ -174,6 +174,33 @@ function sourceLabel(name, type, unprefixed) {
 // Enhancement takes no prefix. See docs/wiki-evidence/sheltering.md.
 var SHELTERING_UNPREFIXED = new Set(["Enhancement"]);
 
+/** #253 — the set-bonus half of the bare-Sheltering expansion. A set tier's
+ *  affixes are legacy-shaped ({stat, bonus_type}); 283 of them carried a bare
+ *  `Sheltering` this family's item-side expansion never reached, so they named
+ *  a stat no item carries and were inert — and the bare label read as a live
+ *  native stat, which is what kept it off the picker (see 6316c11).
+ *  Same rules as the item side: both halves, same value + bonus type, skip a
+ *  half the tier already states, stamp the originating enchantment. Idempotent
+ *  (the produced stats are not "Sheltering"). Returns the array unchanged when
+ *  there is nothing to expand, so callers can assign unconditionally. */
+function expandShelteringTierAffixes(affixes) {
+  if (!Array.isArray(affixes)) return affixes;
+  if (!affixes.some(function (a) { return a && a.stat === "Sheltering"; })) return affixes;
+  var present = new Set(affixes.map(function (a) { return a && a.stat; }));
+  var out = [];
+  for (const a of affixes) {
+    if (a && a.stat === "Sheltering") {
+      var stamp = {};
+      stamp[PROVENANCE_KEY] = sourceLabel("Sheltering", a.bonus_type, SHELTERING_UNPREFIXED);
+      if (!present.has("Physical Sheltering")) out.push(Object.assign({}, a, { stat: "Physical Sheltering" }, stamp));
+      if (!present.has("Magical Sheltering")) out.push(Object.assign({}, a, { stat: "Magical Sheltering" }, stamp));
+    } else {
+      out.push(a);
+    }
+  }
+  return out;
+}
+
 function isNoiseAffix(a) {
   if (!a || typeof a !== "object") return false;
   var name = a.name != null ? a.name : a.stat;
@@ -210,22 +237,16 @@ function normalizeItem(it) {
           // R12: the item is engraved "Sheltering" / "Insightful Sheltering", not
           // "Physical Sheltering" — each half names the enchantment it came from.
           //
-          // The BARE label is deliberately not stamped, because it cannot be made
-          // rankable and R13's settled rule is that a displayed name must be a
-          // rankable one. 283 set-bonus tier affixes carry a bare `Sheltering` that
-          // this expansion never reaches (it runs over item affixes only), so the
-          // name reads as a live native stat and the collision guard drops it from
-          // the picker. Stamping it anyway printed `as Sheltering` on 209 item
-          // affixes while typing it silently targeted the far smaller set-bonus
-          // stat instead. The typed variants have no native carrier, so they
-          // collapse and rank correctly and keep the stamp.
-          //
-          // Expanding the set-bonus channel too would let the bare label back in,
-          // but that changes what set bonuses grant and moves solver results — a
-          // correctness change of its own, not part of this batch.
+          // #253 — the BARE label is stamped again. 6316c11 withheld it because
+          // 283 set-bonus tier affixes carried a bare `Sheltering` this expansion
+          // never reached, so the name read as a live native stat, the collision
+          // guard dropped it from the picker, and the stamp displayed a name the
+          // picker refused (R13's violation). The set-bonus channel now expands
+          // too (expandShelteringTierAffixes), no channel carries the bare name
+          // as a live stat, and the label resolves like the typed variants do.
           var label = sourceLabel("Sheltering", a.type, SHELTERING_UNPREFIXED);
           var stamp = {};
-          if (label !== "Sheltering") stamp[PROVENANCE_KEY] = label;
+          stamp[PROVENANCE_KEY] = label;
           if (!present.has("Physical Sheltering")) expanded.push(Object.assign({}, a, { name: "Physical Sheltering" }, stamp));
           if (!present.has("Magical Sheltering")) expanded.push(Object.assign({}, a, { name: "Magical Sheltering" }, stamp));
         } else {
@@ -273,6 +294,14 @@ function normalizeItem(it) {
         derived.forEach(function (c) { added.push(Object.assign({}, c)); });
         it.affixes = affixes.concat(added);
       }
+    }
+  }
+  // #253 — the same expansion on the item's OWN set-bonus tiers. The solver
+  // reads tier stats from parsed_set_bonuses (setTiers in solver.js), so a bare
+  // `Sheltering` here was inert: it named a stat no target matches.
+  if (Array.isArray(it.parsed_set_bonuses)) {
+    for (const tier of it.parsed_set_bonuses) {
+      if (tier) tier.affixes = expandShelteringTierAffixes(tier.affixes);
     }
   }
   // Every ML consumer reads native `ml` now (U7 removed the item minimum_level
@@ -329,6 +358,17 @@ function normalizeDataset(dataset) {
     const cls = it.material ? materialClass[it.material] : undefined;
     if (cls) it.material_class = cls;
     normalizeItem(it);
+  }
+  // #253 — the set-definition channels carry the same legacy-shaped tier affixes
+  // as parsed_set_bonuses (the membership self-seed and the set-augment family in
+  // solver.js read these defs directly), so a bare `Sheltering` there was inert
+  // by the same route. Two live today, both in membership_set_defs.
+  for (const defs of [dataset.membership_set_defs, dataset.augment_set_defs]) {
+    for (const def of Object.values(defs || {})) {
+      for (const tier of def.tiers || []) {
+        if (tier) tier.affixes = expandShelteringTierAffixes(tier.affixes);
+      }
+    }
   }
   return dataset;
 }
