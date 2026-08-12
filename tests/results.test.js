@@ -1180,12 +1180,27 @@ function satBuild(opts) {
 }
 const satQuery = { targets: ["Kinetic Lore"] };
 
-test("U4/#239: the saturation notice names both bonus types and no cause", () => {
+test("U4/#239 + plan 2026-08-12-001 U2: the saturation notice is a compact count/list", () => {
   const html = R.saturationNotice(satBuild());
-  assert.ok(/at its ceiling of 30/.test(html), "states the ceiling");
-  assert.ok(/Equipment bonus/.test(html) && /Artifact bonus/.test(html), "names both carrying types");
+  assert.ok(/1 priority at ceiling: Kinetic Lore 30\./.test(html), "count + stat + total, singular form");
   assert.ok(!/ML|level|cap/i.test(html), "attributes no cause — the dominance filter makes that unknowable");
   assert.strictEqual(R.saturationNotice(satBuild({ saturation: false })), "", "silent when nothing saturated");
+});
+
+test("plan 2026-08-12-001 U2: the full sentences move to the tooltip, not out of the app", () => {
+  const html = R.saturationNotice(satBuild());
+  const title = (html.match(/title="([^"]*)"/) || [])[1] || "";
+  assert.ok(/at its ceiling of 30/.test(title), "the shared sentence rides the title");
+  assert.ok(/Equipment bonus/.test(title) && /Artifact bonus/.test(title), "both carrying types survive there");
+  const visible = html.replace(/title="[^"]*"/, "");
+  assert.ok(!/reaches you as/.test(visible), "the paragraph prose is out of the visible line");
+});
+
+test("plan 2026-08-12-001 U2: two saturated stats pluralize and both are listed", () => {
+  const b = satBuild();
+  b.saturationReport.push({ stat: "Physical Sheltering", total: 62, bonusTypes: ["Enhancement"], unusedSources: 2 });
+  const html = R.saturationNotice(b);
+  assert.ok(/2 priorities at ceiling: Kinetic Lore 30, Physical Sheltering 62\./.test(html), "plural + full list");
 });
 
 test("U4/#239: the empty-slot notice invites and names an incidentally-supplied stat", () => {

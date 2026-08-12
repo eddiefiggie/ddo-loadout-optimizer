@@ -613,12 +613,20 @@ function boundNotice(query, result) {
 // notice phrased once here and once in the exporters is how the app and a shared
 // build come to disagree about the same solve.
 
-/** The ceiling fact. Pure (result), and identical on a restored snapshot. */
+/** The ceiling fact, compact (plan 2026-08-12-001 U2): a count and list —
+ *  "3 priorities at ceiling: Intelligence 37, Constitution 40." — in report
+ *  order, which is the solve's ranked-target order. The full shared sentences
+ *  ride the tooltip and every export still prints them unchanged
+ *  (`projection.saturationNoticeLines` stays the single wording source).
+ *  Pure (result), and identical on a restored snapshot. */
 function saturationNotice(result) {
+  const report = (result && result.saturationReport) || [];
+  if (!report.length) return "";
   const lines = (Proj && Proj.saturationNoticeLines) ? Proj.saturationNoticeLines(result) : [];
-  return lines.length
-    ? `<p class="scope-note saturation-note" role="status">${lines.map(esc).join(" ")}</p>`
-    : "";
+  const list = report.map((e) => `${esc(e.stat)} ${esc(e.total)}`).join(", ");
+  const word = report.length === 1 ? "priority" : "priorities";
+  return `<p class="scope-note saturation-note" role="status" title="${lines.map(esc).join(" ")}">`
+    + `${report.length} ${word} at ceiling: ${list}.</p>`;
 }
 
 /** #110 (U7) — the blocklist disclosure. Reads the SHARED sentences from
