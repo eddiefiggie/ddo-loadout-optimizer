@@ -750,6 +750,13 @@
       // declared, so an undeclared build's exports are unchanged (R3).
       ["Already have", declaredCreditsLine(((rec && rec.snapshot) || {}).creditReport)],
       ["Gear pool", POOL[i.pool] || i.pool || "all"],
+      // #110 (U9/R6) — the exclusions travel with the shared build, beside the
+      // priorities and pins, so a reader re-solving reaches the same answer.
+      // Count-prefixed so a long list reads as a list, not an anonymous blob;
+      // the omit-when-unset filter drops the line entirely when nothing is
+      // blocked, so a blockless build's exports are unchanged.
+      ["Blocked", (Array.isArray(i.blocklist) && i.blocklist.length)
+        ? `${i.blocklist.length} — ${i.blocklist.join("; ")}` : ""],
       ["Priorities", (i.priorities || []).join(" > ")],
     ].filter(([, v]) => v !== "" && v != null);
   }

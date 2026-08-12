@@ -1173,3 +1173,25 @@ test("U7/#110: the block notice reaches MD, CSV, print, and BBCode", () => {
   const md = toMarkdown(rec);
   assert.ok(!/exclusions/.test(md), "an unblocked build carries no notice");
 });
+
+// #110 U9 — a shared build states its exclusions in the constraint header.
+test("U9/#110: each prose export names the blocklist; an empty one adds no line", () => {
+  const withBlocks = { name: "B", inputs: { ml: 30, pool: "all", priorities: ["Constitution"],
+    blocklist: ["Gem One", "Gem Two", "Gem Three"] },
+    snapshot: { status: "optimal", chosen: [], setsActive: [] } };
+  for (const fn of [toMarkdown, toCsv, toPrintHtml, toBBCode]) {
+    const out = fn(withBlocks);
+    assert.ok(/Blocked/.test(out) && /3 — Gem One; Gem Two; Gem Three/.test(out));
+  }
+  assert.ok(!/Blocked/.test(toMarkdown(rec)), "no blocklist, no line");
+});
+
+test("U9/#110: a backup round trip reproduces the blocklist", () => {
+  // The backup path imports persist's INPUT_KEYS (asserted in persist tests);
+  // here the portable envelope's resolved view carries the constraint row.
+  const withBlocks = { name: "B", inputs: { ml: 30, pool: "all", priorities: ["Constitution"],
+    blocklist: ["Gem One"] },
+    snapshot: { status: "optimal", chosen: [], setsActive: [] } };
+  const envelope = toPortableJSON(withBlocks, "2026-08-12T00:00:00Z");   // returns the object; callers stringify
+  assert.deepStrictEqual(envelope.core.inputs.blocklist, ["Gem One"], "the verbatim record carries it");
+});
