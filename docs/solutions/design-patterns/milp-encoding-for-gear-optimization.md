@@ -2,7 +2,7 @@
 title: Encoding exact gear optimization as a client-side MILP
 module: solver
 date: 2026-07-25
-last_updated: 2026-07-29
+last_updated: 2026-08-12
 problem_type: design_pattern
 component: tooling
 severity: medium
@@ -92,9 +92,12 @@ This bug has now recurred **three times in one development arc** — set-piece t
 3. **Add a dominance regression test** — an affix-bearing rival must NOT dominate a variant whose worth is the new dimension. This is the test that would have caught all three (unit tests over an already-built model never do).
 4. **Confirm end-to-end**, not just against a hand-built model — a pruning defect is invisible upstream of the prune.
 5. **Does the objective builder actually READ the source's field?** Grep the contribution code (`web/solver.js` `buildProgram`) for the field name. A parser/schema addition with zero references there is dead data — parsed, carried on the variant, and silently ignored (the `roll_groups` trap, #6).
-6. **Is the source's stat a distinct SPELLING of an existing target stat** (an umbrella that covers several, or an alias of one)? If so, normalize/expand it at the data layer (`src/vocab.py` `STAT_ALIASES`, `src/umbrella.py`) so the exact-match objective and the dominance buckets both credit it (#6). Grep the built `web/data/items.json` for split spellings before shipping.
+6. **Is the source's stat a distinct SPELLING of an existing target stat** (an umbrella that covers several, or an alias of one)? If so, normalize/expand it at the data layer (the curated alias table `src/vocabulary.py` `load_affix_aliases` reads — `src/vocab.py`'s `STAT_ALIASES` was its pre-U7 home — and `src/umbrella.py`) so the exact-match objective and the dominance buckets both credit it (#6). Grep the built `web/data/items.json` for split spellings before shipping.
 7. **Does the change add a hard constraint that can force a candidate OFF** (an exactly-one-of-a-class, a mutual exclusion, a quota)? If yes, the pruning premise "the dominator is always available" no longer holds for the affected class (#1, conditional availability). Two guards: keep every affected candidate through the filter (exempt it, as `pinnedIds` does — but note that widening a user-intent set for pruning purposes means it can no longer be read as user intent; snapshot the narrow set first), AND stop it from pruning candidates it merely dominates (an affected item must not dominate an unaffected peer). Regression: an unaffected item that is the sole source of a secondary target must survive when the affected item that dominates it can be forced off.
 8. **Is the new constraint a hard equality (`= N`) the user or another constraint can over- or under-determine?** If yes, guard its *emission* on its own satisfiability (#7) — emit only when at least one term is free, skip when the pins already over-determine it, and resolve any pin references against real pick vars — rather than emitting it blind and letting the whole solve go `Infeasible`. Regression: box-on with empty/locked/over-pinned data returns a feasible fallback, not `status !== "optimal"`.
+9. **Is any user-facing CLAIM built on `dominates()`?** The comparator's tie behavior serves pruning — an equal pair's canonical "dominates" its twin so one survives — which makes `every(dominates)` a `>=` predicate, not a `>` one. A superlative sentence ("out-valued", "best available") built on the weak predicate prints a win for a mere tie. Use strict domination at the claim site — `dominates(a, b, …) && !dominates(b, a, …)` — and add a boundary regression for the exact-twin case *at the claim site*, where the decision-side tie coverage lulls you into skipping it. This is the comparator's **fourth consumer-shape failure**, distinct from the three above: the dimension list was complete and the pruning premise held; what broke was semantic reuse across the decision/claim boundary. Full incident: `../logic-errors/weak-dominance-comparator-cannot-back-a-superlative-claim.md`.
+
+Note the checklist's items 1-8 all audit *decision-side* consumers (pruning, the objective, constraint emission); item 9 exists because a plan followed items 1-8 faithfully and still shipped a claim-side defect — the checklist itself had the blind spot.
 
 Better still, make step 2 structurally hard to skip: a single test that asserts every dimension the objective reads (the union of stats/sets/colors/dino-types/nc-categories a variant can carry) is also compared by `dominates()` would fail loudly the next time a fourth source family is added without its guard.
 
