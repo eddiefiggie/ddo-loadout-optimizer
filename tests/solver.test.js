@@ -1230,10 +1230,22 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
     // legacy affix name (which would re-break on every catalog refresh). Intent is
     // unchanged: a real Lamordia host crafts a LEGENDARY option at the legendary
     // magnitude — the regression guard for the ML>=35 mis-tier bug.
+    //
+    // #260 — the guard solves at cap 35, not 36. The ML36 augment tier's Ruby
+    // spell powers (Equipment 166) out-value every hostable legendary option
+    // (159), so at cap 36 no craft can be the best source of anything and the
+    // candidate search would come up dry. Cap 35 is the mis-tier bug's own band
+    // (an ML>=35 host), the ML36 stones are ineligible there, and the search
+    // below mirrors the same eligibility so a candidate it picks is one the
+    // solve can genuinely reach.
+    const GUARD_CAP = 35;
     const itemMax = (stat) => {
       let m = 0;
-      for (const it of data.items) for (const a of (it.affixes || []))
-        if ((a.name != null ? a.name : a.stat) === stat && typeof a.value === "number" && a.value > m) m = a.value;
+      for (const it of data.items) {
+        if ((it.ml || 0) > GUARD_CAP) continue;
+        for (const a of (it.affixes || []))
+          if ((a.name != null ? a.name : a.stat) === stat && typeof a.value === "number" && a.value > m) m = a.value;
+      }
       return m;
     };
     // (slot_type, category) pairs that a real item actually offers as a Lamordia slot.
@@ -1259,7 +1271,7 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
     }
     const pick = cands.sort((a, b) => b.value - a.value || (a.stat < b.stat ? -1 : 1))[0];
     assert.ok(pick, "the native pool offers a hostable legendary option for the regression guard");
-    const query = { mlCap: 36, targets: [pick.stat], armorType: null, weaponSetup: null, classRace: null };
+    const query = { mlCap: GUARD_CAP, targets: [pick.stat], armorType: null, weaponSetup: null, classRace: null };
     const model = buildModel(data.items, query, data.dino_inserts, data.nearly_complete, data.viktranium);
     const res = await S.solveLexicographic(model, highs);
     assert.strictEqual(res.status, "optimal");
