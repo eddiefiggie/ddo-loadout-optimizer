@@ -643,3 +643,85 @@ test("U8/#110: a block-emptied slot reads differently from an ordinary empty one
   const legacy = P.emptySlotNoticeLines({ emptySlots: { count: 1, slots: ["Trinket"] } });
   assert.strictEqual(legacy.length, 1, "a pre-#110 snapshot (no blockedSlots key) still renders");
 });
+
+// ---- Gear-box priority summaries (plan 2026-08-12-001, U1) ------------------
+// Per-item ranked contributions with bonus types, the saturated-stat set, and
+// the per-stat sentence accessor the tooltips reuse.
+
+function contribResult() {
+  return {
+    status: "optimal",
+    chosen: [
+      { slot: "Ring", variant: { variant_id: "R1", set_bonus: [], parsed_set_bonuses: [] } },
+      { slot: "Ring", variant: { variant_id: "R2", set_bonus: [], parsed_set_bonuses: [] } },
+      { slot: "Necklace", variant: { variant_id: "N", set_bonus: [], parsed_set_bonuses: [] } },
+    ],
+    augmentsPlaced: [], setsActive: [], setAugmentsPlaced: [], membershipPlaced: [],
+    breakdown: {
+      Intelligence: [
+        { bonus_type: "Insight", value: 22, source: "R1", sourceKind: "worn", slot: "Ring", hostIds: ["R1"] },
+        { bonus_type: "Enhancement", value: 8, source: "Topaz of Power", sourceKind: "augment", hostIds: ["R1"] },
+        { bonus_type: "Quality", value: 0, source: "R1", sourceKind: "worn", slot: "Ring", hostIds: ["R1"] },
+      ],
+      Doublestrike: [
+        { bonus_type: "Enhancement", value: 5, source: "R1", sourceKind: "worn", slot: "Ring", hostIds: ["R1"] },
+        { bonus_type: "Profane", value: 4, source: "Alpha", sourceKind: "set", setYieldingSlots: ["Ring", "Necklace"], hostIds: ["R1", "N"] },
+      ],
+      "Ghost Touch": [
+        { bonus_type: "boolean", value: 1, source: "N", sourceKind: "worn", slot: "Necklace", hostIds: ["N"] },
+      ],
+    },
+    saturationReport: [
+      { stat: "Intelligence", total: 37, bonusTypes: ["Insight", "Enhancement"], unusedSources: 3 }],
+  };
+}
+const contribTargets = ["Doublestrike", "Intelligence", "Ghost Touch"];
+
+test("U1: itemContributions keeps bonus types and ranked-target order", () => {
+  const c = P.itemContributions(contribResult(), { slot: "Ring", variant_id: "R1" }, null, contribTargets);
+  assert.deepStrictEqual(c.map((e) => [e.stat, e.value, e.bonus_type]), [
+    ["Doublestrike", 5, "Enhancement"],
+    ["Doublestrike", 4, "Profane"],
+    ["Intelligence", 22, "Insight"],
+    ["Intelligence", 8, "Enhancement"],
+  ], "ranked order first (Doublestrike outranks the bigger Intelligence values), value-descending within a stat");
+  assert.strictEqual(c[1].viaSet, true, "the set contribution is marked");
+});
+
+test("U1: same-stat contributions stay separate entries — merging would erase the bonus-type fact", () => {
+  const c = P.itemContributions(contribResult(), { slot: "Ring", variant_id: "R1" }, null, ["Intelligence"]);
+  assert.strictEqual(c.length, 2, "worn Insight and augment Enhancement both listed");
+  assert.notStrictEqual(c[0].bonus_type, c[1].bonus_type);
+});
+
+test("U1: a zero-value contribution is dropped unless boolean", () => {
+  const c = P.itemContributions(contribResult(), { slot: "Ring", variant_id: "R1" }, null, ["Intelligence"]);
+  assert.ok(!c.some((e) => e.value === 0), "the Quality 0 row never renders");
+  const g = P.itemContributions(contribResult(), { slot: "Necklace", variant_id: "N" }, null, ["Ghost Touch"]);
+  assert.strictEqual(g.length, 1);
+  assert.strictEqual(g[0].boolean, true, "a presence affix survives as a feature tick");
+});
+
+test("U1: contributions match by host variant_id — the other ring gets nothing (rings gotcha)", () => {
+  const c = P.itemContributions(contribResult(), { slot: "Ring", variant_id: "R2" }, null, contribTargets);
+  assert.deepStrictEqual(c, [], "R2 is not cross-attributed the set or worn wins");
+});
+
+test("U1: saturatedStats is the report's stat set, empty on a bare result", () => {
+  const s = P.saturatedStats(contribResult());
+  assert.ok(s.has("Intelligence") && s.size === 1);
+  assert.strictEqual(P.saturatedStats({}).size, 0, "a pre-#239 snapshot renders neutral, not broken");
+});
+
+test("U1: saturationLineFor returns the exact shared sentence, keyed by stat not index", () => {
+  const r = contribResult();
+  assert.strictEqual(P.saturationLineFor(r, "Intelligence"), P.saturationNoticeLines(r)[0],
+    "one wording — the tooltip reuses the export sentence verbatim");
+  assert.strictEqual(P.saturationLineFor(r, "Doublestrike"), null, "no sentence for an unsaturated stat");
+});
+
+test("U1: the new helpers ride the results.js re-export surface (KTD2 parity)", () => {
+  for (const fn of ["itemContributions", "saturatedStats", "saturationLineFor"]) {
+    assert.strictEqual(typeof R[fn], "function", `results.js re-exports ${fn}`);
+  }
+});

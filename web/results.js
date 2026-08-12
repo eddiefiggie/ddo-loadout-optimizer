@@ -20,6 +20,9 @@ const assignAugments = Proj.assignAugments;
 const assignDinoInserts = Proj.assignDinoInserts;
 const attributionByTarget = Proj.attributionByTarget;
 const whyThis = Proj.whyThis;
+var itemContributions = Proj.itemContributions;
+var saturatedStats = Proj.saturatedStats;
+var saturationLineFor = Proj.saturationLineFor;
 const satisfiedSets = Proj.satisfiedSets;
 const suppressedHostIds = Proj.suppressedHostIds;
 const slotSetNames = Proj.slotSetNames;
@@ -1138,5 +1141,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, blockNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, blockNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }
