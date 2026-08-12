@@ -941,10 +941,20 @@
    */
   function emptySlotNoticeLines(result) {
     const e = (result && result.emptySlots) || { count: 0, slots: [] };
-    if (!e.count) return [];
-    const isOne = e.count === 1;
-    return [`${e.count} ${isOne ? "slot is" : "slots are"} empty (${(e.slots || []).join(", ")}) — `
-      + `nothing available for ${isOne ? "it" : "them"} improves these priorities.`];
+    const lines = [];
+    if (e.count) {
+      const isOne = e.count === 1;
+      lines.push(`${e.count} ${isOne ? "slot is" : "slots are"} empty (${(e.slots || []).join(", ")}) — `
+        + `nothing available for ${isOne ? "it" : "them"} improves these priorities.`);
+    }
+    // #110 (U8/R10) — a slot the player's own exclusions emptied is a different
+    // fact from a slot with nothing worth wearing, and reads as one.
+    const b = e.blockedSlots || [];
+    if (b.length) {
+      lines.push(`${b.join(", ")} ${b.length === 1 ? "is" : "are"} empty because your blocklist `
+        + `removed every eligible candidate — unblock something or the slot${b.length === 1 ? "" : "s"} will stay bare.`);
+    }
+    return lines;
   }
 
   /** U6/#249 — the compound-absorption quarantine as plain sentences.

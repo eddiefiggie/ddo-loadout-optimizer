@@ -650,9 +650,19 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
 
   const withArt = !!query.includeArtifact;
   const worn = [];
+  // #110 (U8/KTD3) — a worn slot whose candidate list empties is OMITTED from
+  // `worn`, and the empty-slot report iterates `worn` — so a fully-blocked slot
+  // would be reported as neither filled nor empty. Capture the omission where
+  // it happens: `elig` and `eligAll` differ only by the blocked ids, so a pool
+  // that is empty while a BLOCKED variant would have filled it was emptied by
+  // the player's own exclusions, and nothing else can claim the credit.
+  const blockEmptiedSlots = [];
   for (const slotName of WORN_SLOTS) {
     const card = SLOT_CARDINALITY[slotName] || 1;
     let cands = elig.filter((v) => v.slot === slotName);
+    if (!cands.length && blocked.some((b) => b.slot === slotName)) {
+      blockEmptiedSlots.push(slotName);
+    }
     cands = dominanceFilter(cands, targetSet, mlCap, card, pinnedIds, withArt);
     if (cands.length) {
       worn.push({ slot: slotName, cardinality: card, variants: cands });
@@ -671,6 +681,13 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   const shieldOffHand = offHandHasShield(query, variants);
   let mainHandPool = elig.filter((v) => v.category === "weapon" && mainHandWeaponOk(v, weaponAllow));
   if (shieldOffHand) mainHandPool = mainHandPool.filter((v) => !isBothHandsWeapon(v));
+  // #110 (U8) — the hands get the same emptied-by-blocks capture, against the
+  // same type/style filters this pool applies, so a weapon-type lock can never
+  // be mis-attributed to a block.
+  if (!mainHandPool.length && blocked.some((b) => b.category === "weapon"
+      && mainHandWeaponOk(b, weaponAllow) && !(shieldOffHand && isBothHandsWeapon(b)))) {
+    blockEmptiedSlots.push("Main Hand");
+  }
   const mainHand = dominanceFilter(
     mainHandPool,
     targetSet, mlCap, 1, pinnedIds, withArt, true);   // handMutex: a both-hands weapon must not prune a 1H peer (KTD2)
@@ -697,6 +714,10 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   if (offWeaponAllow != null) {
     offHandPool = offHandPool.concat(
       elig.filter((v) => v.category === "weapon" && offHandWeaponOk(v, offWeaponAllow)));
+  }
+  if (!offHandPool.length && !offHandItemsExcluded(query)
+      && blocked.some((b) => b.slot === "Off Hand")) {
+    blockEmptiedSlots.push("Off Hand");   // #110 (U8) — same capture, same reason
   }
   const offHand = dominanceFilter(offHandPool, targetSet, mlCap, 1, pinnedIds, withArt);
   if (offHand.length) worn.push({ slot: "Off Hand", cardinality: 1, variants: offHand });
@@ -771,6 +792,9 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     // #110 (U2) — eligible-but-blocked variants, retained for the disclosure's
     // attribution. Never re-enters any pool below.
     blocked,
+    // #110 (U8) — worn slots whose every candidate the player blocked, captured
+    // at pool assembly because the omitted slot never reaches `worn`.
+    blockEmptiedSlots,
     // #110 (U7/KTD9) — the attribution report, computed HERE because it compares
     // against the pre-dominance eligible pool (`elig` as the block filter left
     // it), which no longer exists after buildModel returns. That is deliberately

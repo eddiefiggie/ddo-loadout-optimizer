@@ -634,3 +634,12 @@ test("U7/U9/#110: project() carries the block notice on the shared content model
   delete rec.snapshot.blockReport;
   assert.deepStrictEqual(P.project(rec).character.blockNotice, []);
 });
+
+test("U8/#110: a block-emptied slot reads differently from an ordinary empty one", () => {
+  const both = P.emptySlotNoticeLines({ emptySlots: { count: 1, slots: ["Trinket"], blockedSlots: ["Necklace"] } });
+  assert.strictEqual(both.length, 2);
+  assert.ok(/Trinket/.test(both[0]) && /nothing available/.test(both[0]), "the ordinary wording is unchanged");
+  assert.ok(/Necklace/.test(both[1]) && /your blocklist removed every eligible candidate/.test(both[1]));
+  const legacy = P.emptySlotNoticeLines({ emptySlots: { count: 1, slots: ["Trinket"] } });
+  assert.strictEqual(legacy.length, 1, "a pre-#110 snapshot (no blockedSlots key) still renders");
+});

@@ -1461,6 +1461,23 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
       "P1 without crafting cannot exceed P1 with it");
   });
 
+
+  await test("U8/#110 R10-clause-2: blocking every Artifact under the opt-in cannot no-build", async () => {
+    const fs = require("fs");
+    const { buildModel } = require("../web/model.js");
+    const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
+    const artifacts = data.items.filter((v) => v.artifact).map((v) => v.variant_id);
+    assert.ok(artifacts.length > 0, "the roster carries Minor Artifacts");
+    const q = { mlCap: 36, targets: ["Constitution"], includeArtifact: true,
+      blocklist: artifacts, armorType: null, weaponSetup: null, classRace: null };
+    const model = buildModel(data.items, q);
+    const res = await S.solveLexicographic(model, highs);
+    assert.strictEqual(res.status, "optimal",
+      "the Artifact equality is not emitted when no Artifact pick survives — no infeasibility");
+    assert.ok(!(res.chosen || []).some((c) => c.variant && c.variant.artifact),
+      "and no artifact is worn, falling through to the best-non-Artifact disclosure");
+  });
+
   await test("SEAL/mismatch: a pool option for a different seal_type is not applied", () => {
     // A Fire-sealed host with an Undeath-only pool unseals nothing — the solver's
     // opt.seal_type !== slot.seal_type filter excludes the mismatched pool.

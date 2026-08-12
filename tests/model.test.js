@@ -1601,3 +1601,17 @@ test("U7/#110: a blocked augment's report compares against its colour pool", () 
   assert.strictEqual(e.pool, "Yellow-augment", "an augment has no worn slot; the colour pool is the comparison");
   assert.strictEqual(e.bestAvailable, true);
 });
+
+test("U8/#110: a slot whose every candidate is blocked is captured where the omission happens", () => {
+  const A = v("Only Neck", "Necklace", [["Constitution", "Enhancement", 5]]);
+  const B = v("A Ring", "Ring", [["Constitution", "Enhancement", 5]]);
+  const m = M.buildModel([A, B], { mlCap: 34, targets: ["Constitution"], blocklist: ["Only Neck"] });
+  assert.ok(!m.worn.some((s) => s.slot === "Necklace"), "the emptied slot is omitted from worn (the existing shape)");
+  assert.deepStrictEqual(m.blockEmptiedSlots, ["Necklace"], "…and recorded with its reason");
+});
+
+test("U8/#110: a slot empty for ordinary reasons is NOT attributed to blocks", () => {
+  const B = v("A Ring", "Ring", [["Constitution", "Enhancement", 5]]);
+  const m = M.buildModel([B], { mlCap: 34, targets: ["Constitution"], blocklist: ["Unrelated Thing"] });
+  assert.deepStrictEqual(m.blockEmptiedSlots, [], "no candidate was removed by a block");
+});

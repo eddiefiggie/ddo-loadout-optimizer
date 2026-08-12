@@ -1412,7 +1412,13 @@ function buildAbsorptionQuarantineReport(model, program) {
  */
 function buildEmptySlotReport(model, sol) {
   const worn = (model && model.worn) || [];
-  if (!worn.length) return { count: 0, slots: [] };
+  // #110 (U8/KTD3) — slots the player's blocks emptied never reach `worn` at
+  // all, so they ride the model's capture rather than this loop. Reported under
+  // their own key: "you emptied this" and "nothing here helps" are different
+  // sentences, and the player-locked-empty precedent already establishes that a
+  // slot the player chose to empty is not an ordinary gap.
+  const blockedSlots = (model && model.blockEmptiedSlots) || [];
+  if (!worn.length) return { count: 0, slots: [], blockedSlots };
   const filled = new Set((sol.chosen || []).map((c) => c.slot));
   const constraints = (model.query && model.query.slotConstraints) || {};
   const slots = [];
@@ -1421,7 +1427,7 @@ function buildEmptySlotReport(model, sol) {
     if (constraints[s.slot] && constraints[s.slot].type === "empty") continue;
     slots.push(s.slot);
   }
-  return { count: slots.length, slots };
+  return { count: slots.length, slots, blockedSlots };
 }
 
 /** #239 U1 — which ranked stats are at their ceiling with sources left over.
