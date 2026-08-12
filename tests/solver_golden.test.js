@@ -32,10 +32,11 @@ function test(name, fn) {
     path.join(__dirname, "parity", "fixtures.json"), "utf8"));
   const fixtureByName = Object.fromEntries(fixtures.map((f) => [f.name, f]));
 
-  test("golden guard pins exactly 15 fixtures", () => {
-    assert.strictEqual(count, 15, "15 fixtures run against the live solver");
-    assert.strictEqual(golden.fixture_count, 15, "golden.json records 15 fixtures");
-    assert.strictEqual(goldenNames.length, 15, "golden.json carries 15 fixture solves");
+  test("golden guard pins exactly 17 fixtures", () => {
+    // 17 = 15 + the #110 blocklist A/B pair (re-ratified 2026-08-12).
+    assert.strictEqual(count, 17, "17 fixtures run against the live solver");
+    assert.strictEqual(golden.fixture_count, 17, "golden.json records 17 fixtures");
+    assert.strictEqual(goldenNames.length, 17, "golden.json carries 17 fixture solves");
     assert.deepStrictEqual(Object.keys(solves).sort(), goldenNames.slice().sort(),
       "the same fixture names are solved and pinned");
   });
@@ -253,3 +254,23 @@ function test(name, fn) {
 
   console.log(`\n${passed} passed`);
 })().catch((e) => { console.error(e); process.exit(1); });
+
+// #110 (U10) — the blocklist A/B pair's integrity guard, mirroring the
+// declared-credit guard above: deleting the `blocklist` field would demote the
+// blocked fixture to a twin of its baseline, and the golden would go on
+// matching while covering none of the block path.
+test("the blocklist fixture actually carries its block", () => {
+  const fixtures = JSON.parse(fs.readFileSync(path.join(__dirname, "parity", "fixtures.json"), "utf-8"));
+  const blocked = fixtures.find((f) => f.name === "blocklist-topaz-ml36");
+  const baseline = fixtures.find((f) => f.name === "blocklist-topaz-ml36-baseline");
+  assert.ok(blocked && baseline, "the A/B pair exists");
+  assert.deepStrictEqual(blocked.query.blocklist, ["Topaz of Melee Power +14"],
+    "the blocked twin still names its exclusion");
+  assert.ok(!baseline.query.blocklist, "the baseline carries none");
+  // The ratified outcomes must differ on the blocked stat and ONLY there.
+  const golden = JSON.parse(fs.readFileSync(path.join(__dirname, "parity", "golden.json"), "utf-8"));
+  const a = golden.solves["blocklist-topaz-ml36-baseline"].perTarget;
+  const b = golden.solves["blocklist-topaz-ml36"].perTarget;
+  assert.ok(b["Melee Power"] < a["Melee Power"], "the block costs Melee Power");
+  assert.strictEqual(b.Balance, a.Balance, "and touches nothing else");
+});

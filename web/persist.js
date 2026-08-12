@@ -36,6 +36,9 @@
     // disclose the exclusion without re-solving, or a saved build quietly stops
     // saying that an affix was withheld from it.
     "absorptionQuarantine",
+    // #110 (U7) — the blocklist attribution, computed off the pre-dominance pool
+    // at model-build time. Same restore-without-re-solve contract as the rest.
+    "blockReport",
   ];
 
   function stripResult(result) {
@@ -53,7 +56,7 @@
   const INPUT_KEYS = [
     "characterName", "ml", "mlFloor", "mlFloorManual", "race", "alignment", "armor", "oath",
     "style", "weaponTypes", "offHand", "offHandWeapons", "twoWeaponFighting",
-    "includeArtifact", "excludeCraftingSystems", "ownedSetAugments", "pool", "ownedNames", "priorities", "slotConstraints",
+    "includeArtifact", "excludeCraftingSystems", "blocklist", "ownedSetAugments", "pool", "ownedNames", "priorities", "slotConstraints",
     "targetCaps", "targetFloors",
     // U2/U5 — declared stat credits, keyed `stat||bonusType`. Plain JSON, so it
     // needs no special serialization the way the two Sets above do.

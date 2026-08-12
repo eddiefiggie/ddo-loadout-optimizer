@@ -1521,3 +1521,126 @@ test("#245: excludeCraftingSystems empties the option-pool families", () => {
   assert.ok(ring && ring.variants.some((x) => x.source_item === "Host"),
     "the host item itself is not excluded — only its craft options are");
 });
+
+// ---------------------------------------------------------------------------
+// #110 U2 — the blocklist filters candidacy, upstream of dominance, and the
+// blocked set survives on the model for the disclosure to read.
+
+test("U2/#110: a blocked variant is absent from its slot pool; removal restores it", () => {
+  const A = v("Blocked Ring", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const B = v("Other Ring", "Ring", [["Intelligence", "Enhancement", 8]]);
+  const q = { mlCap: 34, targets: ["Intelligence"] };
+  const blockedModel = M.buildModel([A, B], { ...q, blocklist: ["Blocked Ring"] });
+  const pool = blockedModel.worn.find((s) => s.slot === "Ring").variants.map((x) => x.variant_id);
+  assert.deepStrictEqual(pool, ["Other Ring"]);
+  const freeModel = M.buildModel([A, B], { ...q, blocklist: [] });
+  const freePool = freeModel.worn.find((s) => s.slot === "Ring").variants.map((x) => x.variant_id);
+  assert.ok(freePool.includes("Blocked Ring"), "removing the block restores candidacy");
+});
+
+test("U2/#110: blocking the DOMINANT variant leaves the runner-up selectable", () => {
+  // A strictly dominates B, so B is normally pruned. The block must run upstream
+  // of dominance so B becomes the pool's new best rather than vanishing with A.
+  const A = v("Dominant", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const B = v("RunnerUp", "Ring", [["Intelligence", "Enhancement", 5]]);
+  const m = M.buildModel([A, B], { mlCap: 34, targets: ["Intelligence"], blocklist: ["Dominant"] });
+  const pool = m.worn.find((s) => s.slot === "Ring").variants.map((x) => x.variant_id);
+  assert.deepStrictEqual(pool, ["RunnerUp"]);
+});
+
+test("U2/#110: a blocked augment is absent from its colour pool (same gate)", () => {
+  const aug = (name) => ({ ...v(name, "Yellow", [["Intelligence", "Enhancement", 5]], { category: "augment" }),
+    aug_color: { color: "Yellow" } });
+  const m = M.buildModel([aug("Bad Gem"), aug("Good Gem")],
+    { mlCap: 34, targets: ["Intelligence"], blocklist: ["Bad Gem"] });
+  assert.deepStrictEqual(m.augments.map((a) => a.variant_id), ["Good Gem"]);
+});
+
+test("U2/#110: a blocked variant that is also pinned does not reach the pool", () => {
+  const A = v("Contested", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const m = M.buildModel([A], { mlCap: 34, targets: ["Intelligence"],
+    blocklist: ["Contested"], slotConstraints: { Ring: { pin: "Contested" } } });
+  const ring = m.worn.find((s) => s.slot === "Ring");
+  assert.ok(!ring || !ring.variants.some((x) => x.variant_id === "Contested"),
+    "the pin does not override the block");
+});
+
+test("U2/#110: the blocked set is retained on the model for the disclosure", () => {
+  const A = v("Blocked Ring", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const m = M.buildModel([A], { mlCap: 34, targets: ["Intelligence"], blocklist: ["Blocked Ring"] });
+  assert.deepStrictEqual((m.blocked || []).map((x) => x.variant_id), ["Blocked Ring"]);
+});
+
+test("U2/#110: an absent blocklist filters nothing (the legacy Solver tab's query)", () => {
+  const A = v("A Ring", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const m = M.buildModel([A], { mlCap: 34, targets: ["Intelligence"] });   // no blocklist key at all
+  assert.ok(m.worn.find((s) => s.slot === "Ring").variants.length === 1,
+    "a missing key means filter nothing, never filter everything");
+});
+
+test("U7/#110: blockReport asserts bestAvailable only when the block dominates ALL survivors", () => {
+  // Blocked A (Int 10) dominates survivor B (Int 5): superlative earned.
+  // Blocked C (Con 8) does NOT dominate survivor D (Con 9): no superlative.
+  const A = v("Blocked Best", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const B = v("Weak Ring", "Ring", [["Intelligence", "Enhancement", 5]]);
+  const C = v("Blocked Middling", "Necklace", [["Constitution", "Enhancement", 8]]);
+  const D = v("Strong Neck", "Necklace", [["Constitution", "Enhancement", 9]]);
+  const m = M.buildModel([A, B, C, D], { mlCap: 34, targets: ["Intelligence", "Constitution"],
+    blocklist: ["Blocked Best", "Blocked Middling"] });
+  const rep = Object.fromEntries(m.blockReport.map((e) => [e.id, e.bestAvailable]));
+  assert.strictEqual(rep["Blocked Best"], true);
+  assert.strictEqual(rep["Blocked Middling"], false);
+});
+
+test("U7/#110: a blocked augment's report compares against its colour pool", () => {
+  const aug = (name, val) => ({ ...v(name, "Yellow", [["Intelligence", "Enhancement", val]], { category: "augment" }),
+    aug_color: { color: "Yellow" } });
+  const m = M.buildModel([aug("Blocked Gem", 10), aug("Lesser Gem", 4)],
+    { mlCap: 34, targets: ["Intelligence"], blocklist: ["Blocked Gem"] });
+  const e = m.blockReport[0];
+  assert.strictEqual(e.pool, "Yellow-augment", "an augment has no worn slot; the colour pool is the comparison");
+  assert.strictEqual(e.bestAvailable, true);
+});
+
+test("U8/#110: a slot whose every candidate is blocked is captured where the omission happens", () => {
+  const A = v("Only Neck", "Necklace", [["Constitution", "Enhancement", 5]]);
+  const B = v("A Ring", "Ring", [["Constitution", "Enhancement", 5]]);
+  const m = M.buildModel([A, B], { mlCap: 34, targets: ["Constitution"], blocklist: ["Only Neck"] });
+  assert.ok(!m.worn.some((s) => s.slot === "Necklace"), "the emptied slot is omitted from worn (the existing shape)");
+  assert.deepStrictEqual(m.blockEmptiedSlots, ["Necklace"], "…and recorded with its reason");
+});
+
+test("U8/#110: a slot empty for ordinary reasons is NOT attributed to blocks", () => {
+  const B = v("A Ring", "Ring", [["Constitution", "Enhancement", 5]]);
+  const m = M.buildModel([B], { mlCap: 34, targets: ["Constitution"], blocklist: ["Unrelated Thing"] });
+  assert.deepStrictEqual(m.blockEmptiedSlots, [], "no candidate was removed by a block");
+});
+
+// ---------------------------------------------------------------------------
+// #110 review fixes — the block-emptied capture and the attribution tie.
+
+test("review/#110: a slot the player locked empty is never attributed to blocks", () => {
+  const A = v("Only Neck", "Necklace", [["Constitution", "Enhancement", 5]]);
+  const m = M.buildModel([A], { mlCap: 34, targets: ["Constitution"],
+    blocklist: ["Only Neck"], slotConstraints: { Necklace: { type: "empty" } } });
+  assert.deepStrictEqual(m.blockEmptiedSlots, [],
+    "the player chose the emptiness; 'unblock something' would be false advice");
+});
+
+test("review/#110: bestAvailable is NOT asserted on an exact tie", () => {
+  const A = v("Blocked Twin", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const B = v("Surviving Twin", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const m = M.buildModel([A, B], { mlCap: 34, targets: ["Intelligence"], blocklist: ["Blocked Twin"] });
+  assert.strictEqual(m.blockReport[0].bestAvailable, false,
+    "a tie is a match, not an out-valuing — the superlative must not print");
+});
+
+test("review/#110: blocking every TWF off-hand weapon is captured as block-emptied", () => {
+  const wep = (name) => ({ ...v(name, "Weapon", [["Deadly", "Enhancement", 5]], { category: "weapon" }),
+    type: "Short Swords", handedness: "1h" });
+  const m = M.buildModel([wep("Only Offhand Sword")], { mlCap: 34, targets: ["Deadly"],
+    twoWeaponFighting: true, style: "one-hand", weaponSetup: { style: "one-hand" },
+    offHandWeapons: ["Short Swords"], blocklist: ["Only Offhand Sword"] });
+  assert.ok((m.blockEmptiedSlots || []).includes("Off Hand"),
+    "a TWF off hand emptied purely by weapon blocks must be attributed");
+});

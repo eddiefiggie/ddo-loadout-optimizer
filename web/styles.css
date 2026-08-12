@@ -1096,3 +1096,8 @@ input.wz-ml { width: 120px; }
   box-shadow: var(--shadow); padding: var(--sp-5); width: 100%; max-width: var(--maxw); }
 .wz-browse-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
 .wz-browse-head h2 { margin: 0; font-size: var(--fs-xl); }
+
+/* #110 — the blocklist picker (block box mirrors the pin box's bones) */
+.wz-block-hit { display: flex; align-items: center; gap: 8px; padding: 6px 8px; cursor: pointer; }
+.wz-block-hit-off { opacity: 0.55; cursor: default; }
+.wz-block-stage { display: flex; gap: 8px; align-items: center; margin: 6px 0; }

@@ -301,6 +301,32 @@
     return parts;
   }
 
+  /** #110 (U7) — the blocklist disclosure, as plain sentences. ONE source for
+   *  the app notice and every export. Reads `blockReport` (plain JSON on the
+   *  result, computed at model-build time against the PRE-dominance pool), never
+   *  the live program, so a restored character discloses without re-solving.
+   *
+   *  KTD9 — attribution, never counterfactual: the sentences state what was
+   *  excluded and, only where the comparator proved it against every survivor
+   *  in the pool, that the blocked variant out-valued the rest. Nothing here
+   *  claims what a block-free solve would have produced. */
+  function blockNoticeLines(result) {
+    const report = (result && result.blockReport) || [];
+    if (!report.length) return [];
+    const names = report.map((e) => e.name);
+    const lines = [
+      `Your blocklist excluded ${report.length === 1 ? "one candidate" : `${report.length} candidates`} `
+      + `from this solve: ${names.join(", ")}. The result is optimal given those exclusions.`,
+    ];
+    for (const e of report) {
+      if (e.bestAvailable) {
+        lines.push(`${e.name} out-valued every remaining ${e.pool} candidate under your `
+          + "priorities before it was excluded.");
+      }
+    }
+    return lines;
+  }
+
   /** #245 — the niche-crafting opt-out, as a plain sentence for the notice
    *  surface and every export. Reads the solved query's flag off the snapshot
    *  (and the saved inputs as the restore-path fallback), never the live
@@ -724,6 +750,13 @@
       // declared, so an undeclared build's exports are unchanged (R3).
       ["Already have", declaredCreditsLine(((rec && rec.snapshot) || {}).creditReport)],
       ["Gear pool", POOL[i.pool] || i.pool || "all"],
+      // #110 (U9/R6) — the exclusions travel with the shared build, beside the
+      // priorities and pins, so a reader re-solving reaches the same answer.
+      // Count-prefixed so a long list reads as a list, not an anonymous blob;
+      // the omit-when-unset filter drops the line entirely when nothing is
+      // blocked, so a blockless build's exports are unchanged.
+      ["Blocked", (Array.isArray(i.blocklist) && i.blocklist.length)
+        ? `${i.blocklist.length} — ${i.blocklist.join("; ")}` : ""],
       ["Priorities", (i.priorities || []).join(" > ")],
     ].filter(([, v]) => v !== "" && v != null);
   }
@@ -852,7 +885,11 @@
         // #245 — the niche-crafting opt-out disclosure (null when off): a
         // recipient must not compare this build against a full-crafting one
         // without being told the pools differed.
-        craftingExcludedNotice: craftingExcludedLine(rec) },
+        craftingExcludedNotice: craftingExcludedLine(rec),
+        // #110 (U7/U9) — the blocklist disclosure: empty array when no block
+        // touched the solve. A shared build asserting optimality with silent
+        // exclusions is the solve-visible-but-share-invisible failure.
+        blockNotice: blockNoticeLines(snap) },
       loadout, sets, attribution,
     };
   }
@@ -911,10 +948,20 @@
    */
   function emptySlotNoticeLines(result) {
     const e = (result && result.emptySlots) || { count: 0, slots: [] };
-    if (!e.count) return [];
-    const isOne = e.count === 1;
-    return [`${e.count} ${isOne ? "slot is" : "slots are"} empty (${(e.slots || []).join(", ")}) — `
-      + `nothing available for ${isOne ? "it" : "them"} improves these priorities.`];
+    const lines = [];
+    if (e.count) {
+      const isOne = e.count === 1;
+      lines.push(`${e.count} ${isOne ? "slot is" : "slots are"} empty (${(e.slots || []).join(", ")}) — `
+        + `nothing available for ${isOne ? "it" : "them"} improves these priorities.`);
+    }
+    // #110 (U8/R10) — a slot the player's own exclusions emptied is a different
+    // fact from a slot with nothing worth wearing, and reads as one.
+    const b = e.blockedSlots || [];
+    if (b.length) {
+      lines.push(`${b.join(", ")} ${b.length === 1 ? "is" : "are"} empty because your blocklist `
+        + `removed every eligible candidate — unblock something or the slot${b.length === 1 ? "" : "s"} will stay bare.`);
+    }
+    return lines;
   }
 
   /** U6/#249 — the compound-absorption quarantine as plain sentences.
@@ -1012,6 +1059,8 @@
     buildCraftMaps, craftLabel, craftValue, lunarSolar,
     // #245 — craft-carried disclosure + the opt-out notice line
     craftCarried, craftingExcludedLine,
+    // #110 — the blocklist disclosure sentences
+    blockNoticeLines,
     // constraint header helpers (exporters delegates to these)
     constraintPairs, constraintLines,
   };

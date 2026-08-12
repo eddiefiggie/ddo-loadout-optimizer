@@ -1357,3 +1357,9 @@ test("#245: the opt-out notice renders from the shared projection sentence", () 
   assert.ok(/crafting-excluded-note/.test(on) && /Niche crafting was excluded/.test(on));
   assert.strictEqual(R.craftingExcludedNotice({}, { query: {} }), "", "silent when off");
 });
+
+test("U7/#110: the banner qualifies optimality only when a block removed a candidate", () => {
+  const on = R.blockNotice({ blockReport: [{ id: "X", name: "X", pool: "Ring", bestAvailable: false }] });
+  assert.ok(/block-note/.test(on) && /optimal given those exclusions/.test(on));
+  assert.strictEqual(R.blockNotice({ blockReport: [] }), "", "silent when no block applied");
+});

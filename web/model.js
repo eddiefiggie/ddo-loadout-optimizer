@@ -604,7 +604,28 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     ...Object.keys(query.targetFloors || {}),
   ]);
   const mlCap = query.mlCap;
-  const elig = eligible(variants, query);
+  const eligAll = eligible(variants, query);
+  // #110 (U2/KTD1) — the blocklist filters CANDIDACY, here and not in
+  // variantConflict: variantConflict means "this character can never equip
+  // this", and reconcilePinLegality deletes any pin whose conflict is non-null,
+  // so a block expressed there would let a corrupted import silently destroy a
+  // pin. Filtering the eligible pool once removes the variant from every worn
+  // slot, both hands, and the augment colour pools at once — and it runs
+  // upstream of dominanceFilter, so a blocked winner simply leaves the
+  // runner-up as the pool's new best (KTD2: the comparator is untouched).
+  // An ABSENT blocklist means "filter nothing" — the legacy Solver tab's query
+  // never carries the key, and a truthiness slip here would empty its pools.
+  // The removed set is retained on the model so the disclosure (U7) can
+  // attribute without recomputing.
+  const blockedIds = new Set(Array.isArray(query.blocklist) ? query.blocklist : []);
+  const blocked = [];
+  let elig = eligAll;
+  if (blockedIds.size) {
+    elig = [];
+    for (const cand of eligAll) {
+      (blockedIds.has(variantKey(cand)) ? blocked : elig).push(cand);
+    }
+  }
 
   // Pinned variant ids (U6): kept through the dominance pre-filter so a pinned
   // item's pick var always exists for its `= 1` constraint. Empty when absent.
@@ -629,9 +650,27 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
 
   const withArt = !!query.includeArtifact;
   const worn = [];
+  // #110 (U8/KTD3) — a worn slot whose candidate list empties is OMITTED from
+  // `worn`, and the empty-slot report iterates `worn` — so a fully-blocked slot
+  // would be reported as neither filled nor empty. Capture the omission where
+  // it happens: `elig` and `eligAll` differ only by the blocked ids, so a pool
+  // that is empty while a BLOCKED variant would have filled it was emptied by
+  // the player's own exclusions, and nothing else can claim the credit.
+  const blockEmptiedSlots = [];
+  // review fix — a slot the player LOCKED empty is excluded from the capture:
+  // its emptiness is the player's own instruction, and "unblock something or the
+  // slot will stay bare" would be false advice (the empty-slot report's existing
+  // locked-slot exclusion is the precedent).
+  const lockedEmpty = (slotName) => {
+    const c = (query.slotConstraints || {})[slotName];
+    return !!(c && c.type === "empty");
+  };
   for (const slotName of WORN_SLOTS) {
     const card = SLOT_CARDINALITY[slotName] || 1;
     let cands = elig.filter((v) => v.slot === slotName);
+    if (!cands.length && !lockedEmpty(slotName) && blocked.some((b) => b.slot === slotName)) {
+      blockEmptiedSlots.push(slotName);
+    }
     cands = dominanceFilter(cands, targetSet, mlCap, card, pinnedIds, withArt);
     if (cands.length) {
       worn.push({ slot: slotName, cardinality: card, variants: cands });
@@ -650,6 +689,13 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   const shieldOffHand = offHandHasShield(query, variants);
   let mainHandPool = elig.filter((v) => v.category === "weapon" && mainHandWeaponOk(v, weaponAllow));
   if (shieldOffHand) mainHandPool = mainHandPool.filter((v) => !isBothHandsWeapon(v));
+  // #110 (U8) — the hands get the same emptied-by-blocks capture, against the
+  // same type/style filters this pool applies, so a weapon-type lock can never
+  // be mis-attributed to a block.
+  if (!mainHandPool.length && !lockedEmpty("Main Hand") && blocked.some((b) => b.category === "weapon"
+      && mainHandWeaponOk(b, weaponAllow) && !(shieldOffHand && isBothHandsWeapon(b)))) {
+    blockEmptiedSlots.push("Main Hand");
+  }
   const mainHand = dominanceFilter(
     mainHandPool,
     targetSet, mlCap, 1, pinnedIds, withArt, true);   // handMutex: a both-hands weapon must not prune a 1H peer (KTD2)
@@ -676,6 +722,16 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   if (offWeaponAllow != null) {
     offHandPool = offHandPool.concat(
       elig.filter((v) => v.category === "weapon" && offHandWeaponOk(v, offWeaponAllow)));
+  }
+  // #110 (U8, review fix) — the capture mirrors the pool's own feeds: off-hand
+  // ITEMS count only when the declaration has not excluded them, and off-hand
+  // WEAPONS (slot "Weapon", fed under TWF) count when the weapon feed is open —
+  // otherwise a fully-blocked TWF off hand vanishes reported as neither filled
+  // nor empty, the exact KTD3 state this capture exists to close.
+  if (!offHandPool.length && !lockedEmpty("Off Hand") && blocked.some((b) =>
+      (b.slot === "Off Hand" && !offHandItemsExcluded(query))
+      || (offWeaponAllow != null && b.category === "weapon" && offHandWeaponOk(b, offWeaponAllow)))) {
+    blockEmptiedSlots.push("Off Hand");
   }
   const offHand = dominanceFilter(offHandPool, targetSet, mlCap, 1, pinnedIds, withArt);
   if (offHand.length) worn.push({ slot: "Off Hand", cardinality: 1, variants: offHand });
@@ -747,6 +803,41 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
 
   return {
     query, targets: query.targets, worn, augments,
+    // #110 (U2) — eligible-but-blocked variants, retained for the disclosure's
+    // attribution. Never re-enters any pool below.
+    blocked,
+    // #110 (U8) — worn slots whose every candidate the player blocked, captured
+    // at pool assembly because the omitted slot never reaches `worn`.
+    blockEmptiedSlots,
+    // #110 (U7/KTD9) — the attribution report, computed HERE because it compares
+    // against the pre-dominance eligible pool (`elig` as the block filter left
+    // it), which no longer exists after buildModel returns. That is deliberately
+    // NOT the list the solve finally saw: dominanceFilter shrinks it, and
+    // "best available" may only be asserted on the STRONGER claim — the blocked
+    // variant dominates EVERY surviving candidate in its pool, per the project's
+    // one value comparator. When domination does not hold against all survivors,
+    // `bestAvailable` is false and the sentence carries no superlative. Never a
+    // counterfactual: nothing here says what a block-free solve would have done.
+    blockReport: blocked.map((b) => {
+      const isAug = b.category === "augment";
+      const pool = isAug
+        ? elig.filter((s) => s.category === "augment"
+            && ((s.aug_color || {}).color || null) === ((b.aug_color || {}).color || null))
+        : b.category === "weapon"
+          ? elig.filter((s) => s.category === "weapon")
+          : elig.filter((s) => s.slot === b.slot && s.category !== "augment");
+      return {
+        id: variantKey(b),
+        name: b.source_item || b.variant_id,
+        pool: isAug ? `${(b.aug_color || {}).color || "unknown"}-augment` : (b.category === "weapon" ? "weapon" : b.slot),
+        // review fix — STRICT domination: dominates() keeps A as the canonical
+        // of an equal pair, so a tie satisfies the weak predicate and would
+        // print "out-valued" for a mere match (the never-infer overclaim). The
+        // second clause demotes exact equals to the no-superlative sentence.
+        bestAvailable: pool.length > 0 && pool.every((s) =>
+          dominates(b, s, targetSet, mlCap) && !dominates(s, b, targetSet, mlCap)),
+      };
+    }),
     dinoInserts: dinoPool, nearlyComplete: ncPool, viktranium: vikPool, seal: sealPool,
     thunderForged: tfPool, greenSteel: gsPool,
     membershipSetDefs: membershipSetDefs || {},

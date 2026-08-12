@@ -602,3 +602,44 @@ test("#245: project() carries craftCarried on the loadout and the opt-out notice
   assert.strictEqual(P.project(rec).character.craftingExcludedNotice, null,
     "silent when the flag is off");
 });
+
+// ---------------------------------------------------------------------------
+// #110 U7 — the blocklist disclosure sentences: attribution, never counterfactual.
+
+test("U7/#110: blockNoticeLines names the exclusions and qualifies optimality", () => {
+  const res = { blockReport: [
+    { id: "Gem A", name: "Gem A", pool: "Moon-augment", bestAvailable: false },
+    { id: "Ring B", name: "Ring B", pool: "Ring", bestAvailable: true },
+  ] };
+  const lines = P.blockNoticeLines(res);
+  assert.ok(/excluded 2 candidates/.test(lines[0]) && /Gem A, Ring B/.test(lines[0]));
+  assert.ok(/optimal given those exclusions/.test(lines[0]), "the claim is qualified");
+  assert.strictEqual(lines.length, 2, "only the dominating block earns a second sentence");
+  assert.ok(/Ring B out-valued every remaining Ring candidate/.test(lines[1]),
+    "the superlative is asserted only where the comparator proved it");
+  const all = lines.join(" ");
+  assert.ok(!/would have/.test(all) && !/would be/.test(all), "never a counterfactual");
+});
+
+test("U7/#110: a block that changed nothing produces no notice at all", () => {
+  assert.deepStrictEqual(P.blockNoticeLines({ blockReport: [] }), []);
+  assert.deepStrictEqual(P.blockNoticeLines({}), []);
+});
+
+test("U7/U9/#110: project() carries the block notice on the shared content model", () => {
+  const rec = makeRec();
+  rec.snapshot.blockReport = [{ id: "X", name: "X", pool: "Ring", bestAvailable: false }];
+  const view = P.project(rec);
+  assert.ok(view.character.blockNotice.length === 1 && /X/.test(view.character.blockNotice[0]));
+  delete rec.snapshot.blockReport;
+  assert.deepStrictEqual(P.project(rec).character.blockNotice, []);
+});
+
+test("U8/#110: a block-emptied slot reads differently from an ordinary empty one", () => {
+  const both = P.emptySlotNoticeLines({ emptySlots: { count: 1, slots: ["Trinket"], blockedSlots: ["Necklace"] } });
+  assert.strictEqual(both.length, 2);
+  assert.ok(/Trinket/.test(both[0]) && /nothing available/.test(both[0]), "the ordinary wording is unchanged");
+  assert.ok(/Necklace/.test(both[1]) && /your blocklist removed every eligible candidate/.test(both[1]));
+  const legacy = P.emptySlotNoticeLines({ emptySlots: { count: 1, slots: ["Trinket"] } });
+  assert.strictEqual(legacy.length, 1, "a pre-#110 snapshot (no blockedSlots key) still renders");
+});
