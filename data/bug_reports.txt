@@ -99,3 +99,15 @@ New batch of reports (2026-08-10):
 Filed 2026-08-10:
 - #227 (report 1) Enhanced Ki — data present (19 variants, values 1-5) but unreachable by any path: gear-planner stores it as bare `Ki`, null-typed (so rankable_affixes drops it) with no alias (so the wiki/in-game name is rejected on free-typed input). Wiki-confirmed name via Item:Legendary_Icewalkers.
 - #228 (report 2) Kick 'Em While They're Down — data correct (12 variants, matching the wiki's item list exactly); the picker's presence 4-word cap hides it from suggestions. 34 other Bool names fail the same cap, ~10 of them real named effects.
+
+New batch of reports (2026-08-12):
+1) Legendary Moment to Legendary Moment augment is typed as untyped, not enhancement.
+2) Not sure it's considering level 36 augments properly. Even on the only my gear setting it will suggest augments I don't own, but I have noticed it has never suggested a level 36 augment so far.
+3) Could use an option to exclude items.. doesn't drop or whatever other reasons to exclude items....For instance Bracers of the Spider Queen doesn't drop, or is there a better way to handle things no longer available in quest loot?
+
+Filed 2026-08-12:
+- #259 (report 1) Moment to Moment typing — confirmed: wiki tooltip says Enhancement (+1/+3), gear-planner stores Untyped; over-stacks with all 19 Enhancement-typed worn Action Boost sources. Note the Legendary tier is ML32, not 36.
+- #260 (report 2) ML36 augments — confirmed and larger than reported: the pool tops out at ML32 everywhere; the wiki has 63 ML36 augments (the top Diamond tiers, ability +15 / skill +22), so every ML36 solve slots one-tier-low Diamonds. Upstream gear-planner crafting.json is the stale link.
+- #261 (spun out of report 2) The 168 ML34 wiki augments are the Dolorous/Melancholic (legendary) line — the whole cursed-augment system (196 pool entries + host slots, present in the raw source) is unmodelled.
+- #262 (report 3) Bracers of the Spider Queen — confirmed: wiki Location section is empty (U81 named item, no live drop source), same class as #244; umbrella filed for the 210 empty-location variants (triage + disclosure). The exclude-items control itself is #110 (plan exists); the proper fix is blocked on #197 (rarity/source-tier field).
+- (report 2, owned-mode aside) "suggests augments I don't own" is by design and already disclosed — shipped in PR #112; closed stale #106 with the evidence.
