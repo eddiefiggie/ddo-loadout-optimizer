@@ -49,6 +49,7 @@ from src import provenance as provenance_mod
 from src import value_corrections as value_corrections_mod
 from src import name_corrections as name_corrections_mod
 from src import untyped_rankable as untyped_rankable_mod
+from src import dr_qualifiers as dr_qualifiers_mod
 from src import planner_items as planner_mod
 from src import variants as variants_mod
 from src import vocabulary as vocabulary_mod
@@ -462,6 +463,17 @@ def build() -> dict:
     _untyped_allow, _untyped_quarantined = untyped_rankable_mod.load(UNTYPED_RANKABLE_PATH)
     _untyped_checked = untyped_rankable_mod.assert_adjudicated(
         planner_records, _untyped_allow, _untyped_quarantined)
+
+    # #223 — a DR bypass qualifier is not a bonus type. Retype the unconditional
+    # qualifiers (`-` + materials; wiki: no monster bypasses material DR) into one
+    # bucket so the solver takes the max the wiki describes, and demote the
+    # conditional ones (alignments, damage types, Epic) to presence affixes named
+    # for the engraved enchantment — their magnitude is not comparable without
+    # naming the attacker. An unclassified qualifier fails the build. Same seam
+    # and same reasons as the splits below: before variant expansion and before
+    # rankable_affixes, so one corrected affix block flows everywhere downstream.
+    # Ruling: docs/wiki-evidence/damage-reduction-stacking.md.
+    _dr_coverage = dr_qualifiers_mod.apply(planner_records)
 
     # U3 (#154) — split the folded `Speed` affix back into the two mechanics
     # upstream merged. BEFORE variant expansion and before rankable_affixes, so the
@@ -1012,6 +1024,12 @@ def build() -> dict:
                 "allowed": len(_untyped_allow),
                 "quarantined": len(_untyped_quarantined),
             },
+            # #223 — DR qualifier split. `kept_numeric` counts magnitudes now
+            # sharing the single unconditional bucket (max, never sum);
+            # `demoted_names` lists the conditional enchantments now tracked as
+            # presence, disclosed because a player who ranked DR for one of them
+            # should be able to see where the number went.
+            "dr_qualifier_coverage": _dr_coverage,
             "rankable_affixes": rankable_affixes(planner_records, _untyped_allow),
             # U1 (#136) — names this build EXPANDS AWAY, mapped to what they become.
             # The picker drops them from suggestions and redirects the player to the
