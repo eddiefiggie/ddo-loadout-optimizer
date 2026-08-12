@@ -543,3 +543,62 @@ test("U8/R9: a multi-affix craft with no provenance still lists each affix", () 
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);
+
+// ---------------------------------------------------------------------------
+// #245 — the craft-carried disclosure. An item whose every ranked contribution
+// is a craftable option must say so; an item with any native or set win must not.
+
+function carriedResult() {
+  return {
+    effective: { Charisma: 12 }, perTarget: { Charisma: 12 },
+    chosen: [
+      { slot: "Weapon", variant: { variant_id: "Calamitous Sword", set_bonus: [], parsed_set_bonuses: [] } },
+      { slot: "Ring", variant: { variant_id: "Cha Ring", set_bonus: [], parsed_set_bonuses: [] } },
+      { slot: "Boots", variant: { variant_id: "Filler Boots", set_bonus: [], parsed_set_bonuses: [] } },
+    ],
+    augmentsPlaced: [], setsActive: [],
+    breakdown: {
+      Charisma: [
+        { bonus_type: "Enhancement", value: 11, source: "Cha Ring", sourceKind: "worn", slot: "Ring", hostIds: ["Cha Ring"] },
+        { bonus_type: "Insight", value: 1, source: "Slot Melancholic Viktranium augment", sourceKind: "vik", slot: "Weapon", hostIds: ["Calamitous Sword"] },
+      ],
+    },
+  };
+}
+
+test("#245: an item whose only ranked contribution is a craft is craft-carried", () => {
+  const parts = P.craftCarried(carriedResult(), { slot: "Weapon", variant_id: "Calamitous Sword" });
+  assert.ok(parts && parts.length === 1);
+  assert.deepStrictEqual(parts[0], { stat: "Charisma", value: 1, family: "Viktranium" });
+});
+
+test("#245: a native win means NOT craft-carried, even beside a craft", () => {
+  const res = carriedResult();
+  // give the sword a native contribution too
+  res.breakdown.Charisma.push({ bonus_type: "Quality", value: 2, source: "Calamitous Sword",
+    sourceKind: "worn", slot: "Weapon", hostIds: ["Calamitous Sword"] });
+  assert.strictEqual(P.craftCarried(res, { slot: "Weapon", variant_id: "Calamitous Sword" }), null);
+});
+
+test("#245: a set-completing item is not craft-carried, and a filler is null", () => {
+  const res = carriedResult();
+  res.breakdown.Charisma.push({ bonus_type: "Set", value: 3, source: "Alpha", sourceKind: "set",
+    setYieldingSlots: ["Weapon"], hostIds: ["Calamitous Sword"] });
+  assert.strictEqual(P.craftCarried(res, { slot: "Weapon", variant_id: "Calamitous Sword" }), null,
+    "set contribution suppresses the badge");
+  assert.strictEqual(P.craftCarried(carriedResult(), { slot: "Boots", variant_id: "Filler Boots" }), null,
+    "a filler pick has no craft story");
+});
+
+test("#245: project() carries craftCarried on the loadout and the opt-out notice", () => {
+  const rec = makeRec();
+  rec.snapshot.query = { excludeCraftingSystems: true };
+  const view = P.project(rec);
+  assert.ok(view.loadout.every((it) => "craftCarried" in it),
+    "every loadout entry carries the field (null when not carried)");
+  assert.ok(/Niche crafting was excluded/.test(view.character.craftingExcludedNotice),
+    "the opt-out scope disclosure rides the shared content model");
+  delete rec.snapshot.query;
+  assert.strictEqual(P.project(rec).character.craftingExcludedNotice, null,
+    "silent when the flag is off");
+});

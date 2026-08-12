@@ -343,6 +343,10 @@ function buildQuery(state, vocab) {
     race: state.race || null,
     alignment: state.alignment || null,
     includeArtifact: !!state.includeArtifact,           // U4 — Artifact opt-in
+    // #245 — niche-crafting opt-out: buildModel empties the craftable option
+    // pools (Viktranium/seal/NC/dino/membership/set-augment), so items compete
+    // on their printed affixes. Augments and intrinsic choice slots stay.
+    excludeCraftingSystems: !!state.excludeCraftingSystems,
     // U6 — set-augment ownership gate. A Set of owned set-augment `set` names;
     // empty => none of the 21 set augments are considered (default off).
     ownedSetAugments: state.ownedSetAugments instanceof Set
@@ -786,6 +790,11 @@ if (typeof window !== "undefined" && window.App) {
       // must never clear this (R2).
       twoWeaponFighting: false,
       includeArtifact: false,
+      // #245 — opt out of the niche crafting systems (Viktranium, seals, Nearly
+      // Completed, Dino crafting, set-membership crafting). Off by default: the
+      // full min-max solve is the product; this is the "items must win on what
+      // is printed on them" mode for players who won't grind the crafts.
+      excludeCraftingSystems: false,
       // U6 — set-augment availability. A Set of owned set-augment `set` names;
       // empty by default so the set-augment family stays inert until opted in.
       ownedSetAugments: new Set(),
@@ -940,6 +949,9 @@ if (typeof window !== "undefined" && window.App) {
           <label class="wz-check"><input type="checkbox" id="wz-artifact"${state.includeArtifact ? " checked" : ""}>
             <span class="wz-check-body"><span class="wz-label">Include an Artifact</span>
             <span class="wz-help">Build around your one equippable Artifact — the optimizer picks the best-scoring one and tags its slot. Off by default.</span></span></label>
+          <label class="wz-check"><input type="checkbox" id="wz-no-crafting"${state.excludeCraftingSystems ? " checked" : ""}>
+            <span class="wz-check-body"><span class="wz-label">Don't build around niche crafting</span>
+            <span class="wz-help">Exclude the craftable option systems — Viktranium experiments, Ritual Table seals, Nearly Completed, Dinosaur Bone crafting, and set-bonus crafting — so every item must win on what is actually printed on it. Regular augments still count. Off by default.</span></span></label>
           ${(() => {
             // U6 — Set Augment availability. The 21 set-augment names come from the
             // dataset's augment_set_defs (single source of truth). A checked name is
@@ -1828,6 +1840,7 @@ if (typeof window !== "undefined" && window.App) {
       state.twfMigrated = twfMigrationNeeded(i);
       state.twoWeaponFighting = state.twfMigrated || !!i.twoWeaponFighting;
       state.includeArtifact = !!i.includeArtifact;
+      state.excludeCraftingSystems = !!i.excludeCraftingSystems;   // #245 — absent on old saves -> false
       // U6 — restore owned set augments (stored as an array; rebuilt as a Set).
       state.ownedSetAugments = Array.isArray(i.ownedSetAugments) ? new Set(i.ownedSetAugments) : new Set();
       state.pool = i.pool || "all";
@@ -2091,6 +2104,7 @@ if (typeof window !== "undefined" && window.App) {
         document.getElementById("wz-race").onchange = (e) => { state.race = e.target.value; if (wizIsForged(state.race)) { state.armor = ""; state.oath = ""; } render(); };
         document.getElementById("wz-align").onchange = (e) => state.alignment = e.target.value;
         document.getElementById("wz-artifact").onchange = (e) => state.includeArtifact = e.target.checked;
+        document.getElementById("wz-no-crafting").onchange = (e) => state.excludeCraftingSystems = e.target.checked;
         // U6 — set-augment availability checkboxes write into state.ownedSetAugments (a Set).
         root.querySelectorAll("#wz-setaug-list input[data-setaug]").forEach((cb) => cb.onchange = (e) => {
           if (!(state.ownedSetAugments instanceof Set)) state.ownedSetAugments = new Set();

@@ -483,6 +483,16 @@ function attributionList(contribs) {
 function whyThisLine(result, item, attr) {
   const wins = whyThis(result, item, attr);
   if (!wins.length) return `<div class="pd-why muted">included to complete the loadout</div>`;
+  // #245 — an item whose every ranked contribution is a craftable option is not
+  // "best in slot", it is best *once you go craft it*. The wildcard families
+  // (a Viktranium slot reaches 126 stats) win whole slots on a single crafted
+  // point, so the reason must be on the pick, not buried in the deep dive.
+  const carried = Proj.craftCarried(result, item, attr);
+  if (carried) {
+    const txt = carried.slice(0, 3).map((p) =>
+      `${esc(p.stat)} +${esc(p.value)} (${esc(p.family)})`).join(", ");
+    return `<div class="pd-why pd-carried" title="Nothing printed on this item advances your priorities — its value here depends entirely on crafting it. Un-craftable alternatives are on the Alternatives tab.">⚒ here only for its crafts: ${txt}</div>`;
+  }
   const txt = wins.slice(0, 3).map((w) => w.boolean
     ? `✓ ${esc(w.stat)}`                                   // U4: presence, not "+1"
     : `${esc(w.stat)} +${esc(w.value)}${w.viaSet ? " (set)" : ""}`).join(", ");
@@ -605,6 +615,17 @@ function saturationNotice(result) {
   const lines = (Proj && Proj.saturationNoticeLines) ? Proj.saturationNoticeLines(result) : [];
   return lines.length
     ? `<p class="scope-note saturation-note" role="status">${lines.map(esc).join(" ")}</p>`
+    : "";
+}
+
+/** #245 — the niche-crafting opt-out disclosure. Reads the SHARED sentence from
+ *  projection (one wording for the app and every export), keyed off the solved
+ *  query so a restored snapshot discloses identically. */
+function craftingExcludedNotice(query, result) {
+  const line = (Proj && Proj.craftingExcludedLine)
+    ? Proj.craftingExcludedLine({ snapshot: result, inputs: query }) : null;
+  return line
+    ? `<p class="scope-note crafting-excluded-note" role="status">${esc(line)}</p>`
     : "";
 }
 
@@ -793,6 +814,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     ${saturationNotice(result)}
     ${emptySlotNotice(query, result)}
     ${absorptionQuarantineNotice(result)}
+    ${craftingExcludedNotice(query, result)}
     <div class="active-build-bar" hidden>
       <span class="active-build-msg"></span>
       <button class="return-optimum" type="button">Return to optimum</button>
@@ -1100,5 +1122,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, emptySlotNotice, absorptionQuarantineNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }

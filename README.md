@@ -4,7 +4,7 @@
 
 🎮 **Play it now:** https://eddiefiggie.github.io/ddo-loadout-optimizer/ · **Code:** https://github.com/eddiefiggie/ddo-loadout-optimizer
 
-**Current build:** 08122026.2 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
+**Current build:** 08122026.3 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
 
 **Category:** Personal
 
@@ -78,7 +78,7 @@ Gear tools are easy to build and hard to trust, so this one is deliberately para
 A short guided wizard walks you through it:
 
 1. Open the [live site](https://eddiefiggie.github.io/ddo-loadout-optimizer/).
-2. **Character** — set your ML cap, and optionally race, armor type, and weapon setup. Tick **Include an Artifact** to build around a Minor Artifact.
+2. **Character** — set your ML cap, and optionally race, armor type, and weapon setup. Tick **Include an Artifact** to build around a Minor Artifact, or **Don’t build around niche crafting** if you won’t grind the craftable option systems — items then compete on what is actually printed on them.
 3. **Gear pool** — everything in the game, or only what you own via a Trove import.
 4. **Priorities** — add the stats you want, in order, and drag to reorder. First is most important.
 5. **Solve.** In well under a second you get six tabs:

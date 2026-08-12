@@ -1437,6 +1437,30 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
     assert.ok(program.sealMeta.size > 0, "a real Undeath host generated seal unseal options in the program");
   });
 
+
+  await test("#245: excludeCraftingSystems removes every crafted placement from a real solve", async () => {
+    const fs = require("fs");
+    const { buildModel } = require("../web/model.js");
+    const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
+    // The #245 reproduction: ML9, Charisma then Constitution. With crafting on,
+    // the wildcard families make Lamordia bases win slots on a +1 crafted margin.
+    const q = { mlCap: 9, targets: ["Charisma", "Constitution"], armorType: null, weaponSetup: null, classRace: null };
+    const build = (query) => buildModel(data.items, query,
+      data.dino_inserts, data.nearly_complete, data.viktranium, data.seal,
+      data.membership_set_defs, data.thunder_forged, data.green_steel);
+    const off = await S.solveLexicographic(build(q), highs);
+    assert.strictEqual(off.status, "optimal");
+    const on = await S.solveLexicographic(build({ ...q, excludeCraftingSystems: true }), highs);
+    assert.strictEqual(on.status, "optimal");
+    const placements = (r) => [].concat(r.vikPlaced || [], r.sealPlaced || [], r.ncPlaced || [],
+      r.dinoPlaced || [], r.tfPlaced || [], r.gsPlaced || [], r.membershipPlaced || []);
+    assert.strictEqual(placements(on).length, 0, "flag on: no crafted placement of any family");
+    // The flag can only remove crafted points, never add: the opt-out optimum is
+    // bounded by the full one on the first priority.
+    assert.ok((on.perTarget.Charisma || 0) <= (off.perTarget.Charisma || 0),
+      "P1 without crafting cannot exceed P1 with it");
+  });
+
   await test("SEAL/mismatch: a pool option for a different seal_type is not applied", () => {
     // A Fire-sealed host with an Undeath-only pool unseals nothing — the solver's
     // opt.seal_type !== slot.seal_type filter excludes the mismatched pool.
