@@ -50,6 +50,7 @@ from src import value_corrections as value_corrections_mod
 from src import name_corrections as name_corrections_mod
 from src import untyped_rankable as untyped_rankable_mod
 from src import dr_qualifiers as dr_qualifiers_mod
+from src import type_corrections as type_corrections_mod
 from src import planner_items as planner_mod
 from src import variants as variants_mod
 from src import vocabulary as vocabulary_mod
@@ -224,6 +225,8 @@ VALUE_CORRECTIONS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "item_value_corrections.json")
 NAME_CORRECTIONS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "affix_name_corrections.json")
+TYPE_CORRECTIONS_PATH = os.path.join(
+    HERE, "data", "seed", "compendium", "affix_type_corrections.json")
 UNTYPED_RANKABLE_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "untyped_rankable.json")
 SPEED_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_enchantment.json")
@@ -454,6 +457,16 @@ def build() -> dict:
     # name no item carries is a priority that scores zero.
     _name_corrections = name_corrections_mod.load(NAME_CORRECTIONS_PATH)
     _name_coverage = name_corrections_mod.apply(planner_records, _name_corrections)
+    # #259 — wiki-sourced BONUS TYPE corrections, the fourth corrections
+    # mechanism (gap=additive, value, name, type — each changes one field and
+    # nothing else does). A wrong type is a stacking defect, not a magnitude
+    # one: `Moment to Moment` stores its Action Boost Charges Untyped while the
+    # wiki tooltip states an Enhancement bonus, so it stacked with every worn
+    # Enhancement source of the stat. Applied here to the item channel and again
+    # to the augment pool below; `assert_all_reached` after both closes the
+    # renamed-record silent-no-op gap.
+    _type_corrections = type_corrections_mod.load(TYPE_CORRECTIONS_PATH)
+    _type_coverage_items = type_corrections_mod.apply(planner_records, _type_corrections)
     # #227 — adjudicate the untyped affixes that look like real worn-gear magnitude
     # stats. Runs AFTER the rename so the adjudication is keyed on the canonical
     # name, and before rankable_affixes so the allow-list is available to it. A
@@ -616,6 +629,14 @@ def build() -> dict:
     # menu pools in gearplanner_crafting.json (one stone per option, native affix
     # block, color from the slot key). Replaces the retired augments.json seed.
     aug_pool = crafting_catalog_mod.augment_pool_records(crafting)
+    # #259 — the augment channel of the type corrections loaded above. The two
+    # shipping entries live here (the Moment to Moment pair); the item apply was
+    # their silent no-op. Runs before the speed classifier and expand_dataset so
+    # the corrected type flows into variants, the solver, and browse from one
+    # place.
+    _type_coverage_augments = type_corrections_mod.apply(aug_pool, _type_corrections)
+    type_corrections_mod.assert_all_reached(
+        _type_corrections, _type_coverage_items, _type_coverage_augments)
     # U3 (#134) — the same classifier on the augment pool, against its own shard.
     # Augments join by NAME: they have no item page and share one `Augment Slot`
     # url, so the item shard's title join cannot reach them. `Topaz of Swiftness
@@ -1019,6 +1040,13 @@ def build() -> dict:
             "gap_corrections_coverage": _gap_coverage,
             "value_corrections_coverage": _value_coverage,
             "name_corrections_coverage": _name_coverage,
+            # #259 — bonus-type corrections, disclosed per channel: the same
+            # entry set is offered to items and augments, and an entry is only
+            # an error when NO channel carries it.
+            "type_corrections_coverage": {
+                "items": _type_coverage_items,
+                "augments": _type_coverage_augments,
+            },
             "untyped_rankable_coverage": {
                 "candidates": _untyped_checked,
                 "allowed": len(_untyped_allow),
