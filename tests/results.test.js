@@ -513,6 +513,34 @@ test("plan 2026-08-12-001 U3: a boolean contribution reads as a feature tick", (
   assert.ok(!/\+1/.test(html), "no fake +1");
 });
 
+test("plan 2026-08-12-001 U3/R4: the Deep Dive block carries the same summary with green", () => {
+  const res = whyResult();
+  res.saturationReport = [{ stat: "Constitution", total: 15, bonusTypes: ["Enhancement"], unusedSources: 2 }];
+  const maps = { augAssign: { byIndex: new Map(), freeByIndex: new Map() }, dinoAssign: { byIndex: new Map() },
+    ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(), jokerByHost: new Map() };
+  const html = R.loadoutDeepDive(res, { targets: ["Constitution"] }, maps, R.attributionByTarget(res));
+  assert.ok(/pd-prio/.test(html), "the Deep Dive block renders the priority summary");
+  assert.ok(/Constitution \+15 Enhancement/.test(html), "same contribution content as the Loadout row");
+  assert.ok(/at-ceiling/.test(html) && /at its ceiling of 15/.test(html), "green + shared-sentence tooltip survive this surface");
+});
+
+test("plan 2026-08-12-001 U3: an untyped contribution reads \"untyped\", never the literal null", () => {
+  const res = whyResult();
+  res.breakdown.Constitution = [
+    { bonus_type: null, value: 5, source: "R", sourceKind: "worn", slot: "Ring", hostIds: ["R"] }];
+  const html = R.whyThisLine(res, { slot: "Ring", variant_id: "R" });
+  assert.ok(/Constitution \+5 untyped/.test(html), "names the bucket");
+  assert.ok(!/null/.test(html), "the raw value never reaches the box");
+});
+
+test("plan 2026-08-12-001 U3: a set-carried contribution keeps its (set) marker", () => {
+  const res = whyResult();
+  res.breakdown.Constitution.push(
+    { bonus_type: "Insightful", value: 5, source: "Alpha", sourceKind: "set", setYieldingSlots: ["Ring"], hostIds: ["R"] });
+  const html = R.whyThisLine(res, { slot: "Ring", variant_id: "R" });
+  assert.ok(/Constitution \+5 Insightful \(set\)/.test(html), "the set provenance stays visible per contribution");
+});
+
 test("plan 2026-08-12-001 U3: equippedRow renders the summary only when the context is threaded", () => {
   const res = whyResult();
   res.saturationReport = [{ stat: "Constitution", total: 15, bonusTypes: ["Enhancement"], unusedSources: 2 }];
