@@ -380,6 +380,23 @@ const PRESENCE_DENY = new Set([]);
 // tests/dataset.test.js pins that set so a new one surfaces instead of vanishing.
 const PRESENCE_ALLOW = new Set([
   "Kick 'Em While They're Down",
+  // #231 — the 2026-08-12 adjudication of the word-cap casualty list. Each entry
+  // verified against the wiki that day; the ones it did NOT admit are recorded in
+  // tests/dataset.test.js beside the pinned fixture, so the ruling is not re-made.
+  "Way of the Sun Soul",                      // own page, Unique item enchantments;
+                                              // NB the effect needs all 3 set pieces
+                                              // + centered — presence marks a carrier,
+                                              // not the threshold (#214's class)
+  "Lifeblood of the Undead Prince",           // own page, Unique item enchantments
+  "Path of the Fire Dragon",                  // own page, Unique item enchantments
+  "Path of the Guarding Stone",               // own page, Unique item enchantments
+  "Brilliance of the Shattered Sun",          // own page, Unique item enchantments
+  "Vile Grip of the Hidden Hand",             // own page, Unique item enchantments
+  "Legendary Vile Grip of the Hidden Hand",   // no separate page, but the Vile Grip
+                                              // page names it exactly, with its own
+                                              // Effect line (10d440) and item list (49)
+  "Legendary Tet-zik, The Enlightened Change", // own page describing the monk-stance
+                                               // effect on the Jidz-Tet'ka bracers
 ]);
 
 /** #228 — every `Bool` presence name that reads like a named effect (it clears the
