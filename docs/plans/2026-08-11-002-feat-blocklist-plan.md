@@ -128,7 +128,7 @@ Outside this feature's identity:
 
 Resolved during planning:
 
-- **Crafted options do not ship in round one.** Items and augments share one identity handle and one gate, and they cover both motivating cases. Crafted options need a composite key — and `nearly_complete` and `seal` records carry no usable name today — so they become a follow-up with the identity question stated.
+- **Crafted options do not ship in round one.** Items and augments share one identity handle and one gate, and they cover both motivating cases. Crafted options need a composite key — and `nearly_complete` and `seal` records carry no usable name today — so they become a follow-up with the identity question stated. Filed as [#270](https://github.com/eddiefiggie/ddo-loadout-optimizer/issues/270).
 - **A family is derived from what the player selected, not from structure or from the search query.** `variant_id` equals `source_item` on all 9,045 records and `tier_label` is unused, so no structural family axis exists — and no single query returns the motivating 28 either (KTD5). The block action operates on the ticked selection, which accumulates across searches.
 - **The blocklist lives in the gear-pool step**, beside the existing pin box, because it is a pre-solve pool question rather than a per-slot adjustment.
 

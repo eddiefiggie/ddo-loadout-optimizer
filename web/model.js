@@ -657,10 +657,18 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // that is empty while a BLOCKED variant would have filled it was emptied by
   // the player's own exclusions, and nothing else can claim the credit.
   const blockEmptiedSlots = [];
+  // review fix — a slot the player LOCKED empty is excluded from the capture:
+  // its emptiness is the player's own instruction, and "unblock something or the
+  // slot will stay bare" would be false advice (the empty-slot report's existing
+  // locked-slot exclusion is the precedent).
+  const lockedEmpty = (slotName) => {
+    const c = (query.slotConstraints || {})[slotName];
+    return !!(c && c.type === "empty");
+  };
   for (const slotName of WORN_SLOTS) {
     const card = SLOT_CARDINALITY[slotName] || 1;
     let cands = elig.filter((v) => v.slot === slotName);
-    if (!cands.length && blocked.some((b) => b.slot === slotName)) {
+    if (!cands.length && !lockedEmpty(slotName) && blocked.some((b) => b.slot === slotName)) {
       blockEmptiedSlots.push(slotName);
     }
     cands = dominanceFilter(cands, targetSet, mlCap, card, pinnedIds, withArt);
@@ -684,7 +692,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // #110 (U8) — the hands get the same emptied-by-blocks capture, against the
   // same type/style filters this pool applies, so a weapon-type lock can never
   // be mis-attributed to a block.
-  if (!mainHandPool.length && blocked.some((b) => b.category === "weapon"
+  if (!mainHandPool.length && !lockedEmpty("Main Hand") && blocked.some((b) => b.category === "weapon"
       && mainHandWeaponOk(b, weaponAllow) && !(shieldOffHand && isBothHandsWeapon(b)))) {
     blockEmptiedSlots.push("Main Hand");
   }
@@ -715,9 +723,15 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     offHandPool = offHandPool.concat(
       elig.filter((v) => v.category === "weapon" && offHandWeaponOk(v, offWeaponAllow)));
   }
-  if (!offHandPool.length && !offHandItemsExcluded(query)
-      && blocked.some((b) => b.slot === "Off Hand")) {
-    blockEmptiedSlots.push("Off Hand");   // #110 (U8) — same capture, same reason
+  // #110 (U8, review fix) — the capture mirrors the pool's own feeds: off-hand
+  // ITEMS count only when the declaration has not excluded them, and off-hand
+  // WEAPONS (slot "Weapon", fed under TWF) count when the weapon feed is open —
+  // otherwise a fully-blocked TWF off hand vanishes reported as neither filled
+  // nor empty, the exact KTD3 state this capture exists to close.
+  if (!offHandPool.length && !lockedEmpty("Off Hand") && blocked.some((b) =>
+      (b.slot === "Off Hand" && !offHandItemsExcluded(query))
+      || (offWeaponAllow != null && b.category === "weapon" && offHandWeaponOk(b, offWeaponAllow)))) {
+    blockEmptiedSlots.push("Off Hand");
   }
   const offHand = dominanceFilter(offHandPool, targetSet, mlCap, 1, pinnedIds, withArt);
   if (offHand.length) worn.push({ slot: "Off Hand", cardinality: 1, variants: offHand });
@@ -816,7 +830,12 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
         id: variantKey(b),
         name: b.source_item || b.variant_id,
         pool: isAug ? `${(b.aug_color || {}).color || "unknown"}-augment` : (b.category === "weapon" ? "weapon" : b.slot),
-        bestAvailable: pool.length > 0 && pool.every((s) => dominates(b, s, targetSet, mlCap)),
+        // review fix — STRICT domination: dominates() keeps A as the canonical
+        // of an equal pair, so a tie satisfies the weak predicate and would
+        // print "out-valued" for a mere match (the never-infer overclaim). The
+        // second clause demotes exact equals to the no-superlative sentence.
+        bestAvailable: pool.length > 0 && pool.every((s) =>
+          dominates(b, s, targetSet, mlCap) && !dominates(s, b, targetSet, mlCap)),
       };
     }),
     dinoInserts: dinoPool, nearlyComplete: ncPool, viktranium: vikPool, seal: sealPool,

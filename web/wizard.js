@@ -2053,7 +2053,16 @@ if (typeof window !== "undefined" && window.App) {
       // #110 (U1/KTD7) — restore the blocklist with an explicit absent-to-default
       // branch, and ALWAYS assign: the state object outlives a character, so a
       // field not reset on load stays live from the previous one.
-      state.blocklist = Array.isArray(i.blocklist) ? i.blocklist.slice() : [];
+      // review fix — sanitize elements at the load boundary: a hand-edited backup
+      // can carry non-strings, which render as ghost rows removeBlock's strict
+      // string comparison could never remove and every save would re-persist.
+      state.blocklist = Array.isArray(i.blocklist)
+        ? i.blocklist.filter((x) => typeof x === "string" && x)
+        : [];
+      // review fix — the STAGED selection is per-character UI state too: ticks
+      // staged on the previous character must not commit into this one.
+      blockStage.clear();
+      state.blockRefusedMsg = null;
       // U6 — restore owned set augments (stored as an array; rebuilt as a Set).
       state.ownedSetAugments = Array.isArray(i.ownedSetAugments) ? new Set(i.ownedSetAugments) : new Set();
       state.pool = i.pool || "all";

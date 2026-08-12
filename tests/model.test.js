@@ -1615,3 +1615,32 @@ test("U8/#110: a slot empty for ordinary reasons is NOT attributed to blocks", (
   const m = M.buildModel([B], { mlCap: 34, targets: ["Constitution"], blocklist: ["Unrelated Thing"] });
   assert.deepStrictEqual(m.blockEmptiedSlots, [], "no candidate was removed by a block");
 });
+
+// ---------------------------------------------------------------------------
+// #110 review fixes — the block-emptied capture and the attribution tie.
+
+test("review/#110: a slot the player locked empty is never attributed to blocks", () => {
+  const A = v("Only Neck", "Necklace", [["Constitution", "Enhancement", 5]]);
+  const m = M.buildModel([A], { mlCap: 34, targets: ["Constitution"],
+    blocklist: ["Only Neck"], slotConstraints: { Necklace: { type: "empty" } } });
+  assert.deepStrictEqual(m.blockEmptiedSlots, [],
+    "the player chose the emptiness; 'unblock something' would be false advice");
+});
+
+test("review/#110: bestAvailable is NOT asserted on an exact tie", () => {
+  const A = v("Blocked Twin", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const B = v("Surviving Twin", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const m = M.buildModel([A, B], { mlCap: 34, targets: ["Intelligence"], blocklist: ["Blocked Twin"] });
+  assert.strictEqual(m.blockReport[0].bestAvailable, false,
+    "a tie is a match, not an out-valuing — the superlative must not print");
+});
+
+test("review/#110: blocking every TWF off-hand weapon is captured as block-emptied", () => {
+  const wep = (name) => ({ ...v(name, "Weapon", [["Deadly", "Enhancement", 5]], { category: "weapon" }),
+    type: "Short Swords", handedness: "1h" });
+  const m = M.buildModel([wep("Only Offhand Sword")], { mlCap: 34, targets: ["Deadly"],
+    twoWeaponFighting: true, style: "one-hand", weaponSetup: { style: "one-hand" },
+    offHandWeapons: ["Short Swords"], blocklist: ["Only Offhand Sword"] });
+  assert.ok((m.blockEmptiedSlots || []).includes("Off Hand"),
+    "a TWF off hand emptied purely by weapon blocks must be attributed");
+});

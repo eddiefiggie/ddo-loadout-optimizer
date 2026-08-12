@@ -1754,3 +1754,22 @@ test("U5+U6/#110: blockLoadMessage names both facts, and is null when clean", ()
   assert.strictEqual(blockLoadMessage(["Both Ring"], {}, items), null,
     "no stale entries and no overlap -> no message at all, not an empty one");
 });
+
+// ---------------------------------------------------------------------------
+// #110 review fixes — the load path's blocklist hygiene, pinned at the source
+// level (the load path is DOM-bound; the WIZARD_SRC-slice precedent applies).
+
+test("review/#110: the load path clears the staged block selection", () => {
+  const start = WIZARD_SRC.indexOf("function loadCharacter(");
+  const slice = WIZARD_SRC.slice(start, start + 4000);
+  assert.ok(/blockStage\.clear\(\);/.test(slice),
+    "ticks staged on the previous character must not commit into this one");
+  assert.ok(/state\.blockRefusedMsg = null;/.test(slice), "the refusal message resets too");
+});
+
+test("review/#110: the load path sanitizes blocklist elements to non-empty strings", () => {
+  const start = WIZARD_SRC.indexOf("function loadCharacter(");
+  const slice = WIZARD_SRC.slice(start, start + 4000);
+  assert.ok(/i\.blocklist\.filter\(\(x\) => typeof x === "string" && x\)/.test(slice),
+    "a hand-edited backup's non-string entries would become unremovable ghost rows");
+});
