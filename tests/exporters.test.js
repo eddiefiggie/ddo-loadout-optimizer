@@ -1148,3 +1148,28 @@ test("#245: a natively-earned loadout exports with no carried line and no notice
   const md = toMarkdown(rec);
   assert.ok(!/Picked only for its crafts/.test(md) && !/Niche crafting was excluded/.test(md));
 });
+
+// #110 U7/U9 — the blocklist disclosure reaches every prose export.
+test("U7/#110: the block notice reaches MD, CSV, print, and BBCode", () => {
+  const blockedRec = {
+    name: "Blocked Build",
+    inputs: { ml: 30, pool: "all", priorities: ["Intelligence"], blocklist: ["Lunar Gem of Abjuration (Heroic)"] },
+    snapshot: {
+      status: "optimal",
+      chosen: [{ slot: "Ring", variant: { variant_id: "Some Ring", ml: 28, affixes: [],
+        augment_slots_norm: { colors: [] }, set_bonus: [], parsed_set_bonuses: [] } }],
+      setsActive: [],
+      blockReport: [{ id: "Lunar Gem of Abjuration (Heroic)", name: "Lunar Gem of Abjuration (Heroic)",
+        pool: "Moon-augment", bestAvailable: true }],
+      effective: { Intelligence: 0 },
+    },
+  };
+  for (const [label, fn, esc] of [["md", toMarkdown], ["csv", toCsv], ["print", toPrintHtml], ["bb", toBBCode]]) {
+    const out = fn(blockedRec);
+    assert.ok(/optimal given those exclusions/.test(out), `${label}: the qualified claim rides along`);
+    assert.ok(/out-valued every remaining Moon-augment candidate/.test(out), `${label}: the attribution rides along`);
+    assert.ok(!/would have/.test(out), `${label}: never counterfactual`);
+  }
+  const md = toMarkdown(rec);
+  assert.ok(!/exclusions/.test(md), "an unblocked build carries no notice");
+});

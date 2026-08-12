@@ -36,6 +36,9 @@
     // disclose the exclusion without re-solving, or a saved build quietly stops
     // saying that an affix was withheld from it.
     "absorptionQuarantine",
+    // #110 (U7) — the blocklist attribution, computed off the pre-dominance pool
+    // at model-build time. Same restore-without-re-solve contract as the rest.
+    "blockReport",
   ];
 
   function stripResult(result) {

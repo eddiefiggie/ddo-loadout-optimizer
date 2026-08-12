@@ -618,6 +618,15 @@ function saturationNotice(result) {
     : "";
 }
 
+/** #110 (U7) — the blocklist disclosure. Reads the SHARED sentences from
+ *  projection; silent when no block removed an eligible candidate. */
+function blockNotice(result) {
+  const lines = (Proj && Proj.blockNoticeLines) ? Proj.blockNoticeLines(result) : [];
+  return lines.length
+    ? `<p class="scope-note block-note" role="status">${lines.map(esc).join(" ")}</p>`
+    : "";
+}
+
 /** #245 — the niche-crafting opt-out disclosure. Reads the SHARED sentence from
  *  projection (one wording for the app and every export), keyed off the solved
  *  query so a restored snapshot discloses identically. */
@@ -788,10 +797,16 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   // The verdict is a tap/keyboard-openable explanation (R7): native <details>, so
   // it works on touch (no hover) and via keyboard. Explains MILP plainly + links
   // an academic source for readers who want the real math. Always the OPTIMUM.
+  // #110 (U7/R8) — a solve a block changed is optimal GIVEN the exclusions,
+  // which is a different and weaker claim than plain optimality; the banner
+  // must not assert the strong one. Keyed off blockReport (blocks that actually
+  // removed an eligible candidate) — a blocklist that touched nothing changes
+  // no claim and no wording.
+  const blockQualified = (optimum.blockReport || []).length > 0;
   const banner = `
     <div class="solve-banner">
       <details class="solve-explain">
-        <summary class="solve-verdict"><span class="dot"></span><span class="label">OPTIMAL</span><span class="sub">provably the best build, not a guess</span><span class="explain-hint" aria-hidden="true">ⓘ</span></summary>
+        <summary class="solve-verdict"><span class="dot"></span><span class="label">OPTIMAL${blockQualified ? " · GIVEN YOUR EXCLUSIONS" : ""}</span><span class="sub">${blockQualified ? "provably the best build with your blocked gear removed" : "provably the best build, not a guess"}</span><span class="explain-hint" aria-hidden="true">ⓘ</span></summary>
         <div class="solve-explain-body">
           <p><strong>What "MILP" means.</strong> It stands for Mixed-Integer Linear Program. In plain terms: the optimizer turns your whole loadout into a math problem where equipping each item is a yes-or-no switch, then finds the one combination of switches that scores highest on your ranked priorities. It does not sample or guess. It effectively checks every legal combination and proves that none does better, so the result is <strong>provably optimal</strong>.</p>
           <p>A low-level item can still win a slot when its bonus genuinely beats every higher-level option for something you ranked.</p>
@@ -815,6 +830,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     ${emptySlotNotice(query, result)}
     ${absorptionQuarantineNotice(result)}
     ${craftingExcludedNotice(query, result)}
+    ${blockNotice(result)}
     <div class="active-build-bar" hidden>
       <span class="active-build-msg"></span>
       <button class="return-optimum" type="button">Return to optimum</button>
@@ -1122,5 +1138,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, blockNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }

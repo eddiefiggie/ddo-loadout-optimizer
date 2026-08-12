@@ -1332,6 +1332,10 @@ async function solveLexicographic(model, highs) {
     saturationReport: buildSaturationReport(program, prim),
     emptySlots: buildEmptySlotReport(model, sol),
     absorptionQuarantine: buildAbsorptionQuarantineReport(model, program),
+    // #110 (U7) — the blocklist attribution, computed at model-build time (the
+    // pre-dominance pool it compares against no longer exists here) and carried
+    // as plain JSON so a restored character discloses without re-solving.
+    blockReport: model.blockReport || [],
   };
 }
 

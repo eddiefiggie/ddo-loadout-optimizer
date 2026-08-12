@@ -324,3 +324,11 @@ test("U1/#110: blocklist round-trips through pickInputs and stays an array", () 
   assert.deepStrictEqual(s.blocklist, ["Gem A", "Gem B"]);
   assert.ok(INPUT_KEYS.includes("blocklist"), "the allowlist carries the field (backup imports this list)");
 });
+
+// #110 U7 — a restored character discloses without re-solving.
+test("U7/#110: blockReport survives stripResult", () => {
+  const s = stripResult(Object.assign({}, lastRun.result, {
+    blockReport: [{ id: "X", name: "X", pool: "Ring", bestAvailable: false }],
+  }));
+  assert.deepStrictEqual(s.blockReport, [{ id: "X", name: "X", pool: "Ring", bestAvailable: false }]);
+});

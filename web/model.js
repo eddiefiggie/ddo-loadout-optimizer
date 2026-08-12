@@ -771,6 +771,30 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     // #110 (U2) — eligible-but-blocked variants, retained for the disclosure's
     // attribution. Never re-enters any pool below.
     blocked,
+    // #110 (U7/KTD9) — the attribution report, computed HERE because it compares
+    // against the pre-dominance eligible pool (`elig` as the block filter left
+    // it), which no longer exists after buildModel returns. That is deliberately
+    // NOT the list the solve finally saw: dominanceFilter shrinks it, and
+    // "best available" may only be asserted on the STRONGER claim — the blocked
+    // variant dominates EVERY surviving candidate in its pool, per the project's
+    // one value comparator. When domination does not hold against all survivors,
+    // `bestAvailable` is false and the sentence carries no superlative. Never a
+    // counterfactual: nothing here says what a block-free solve would have done.
+    blockReport: blocked.map((b) => {
+      const isAug = b.category === "augment";
+      const pool = isAug
+        ? elig.filter((s) => s.category === "augment"
+            && ((s.aug_color || {}).color || null) === ((b.aug_color || {}).color || null))
+        : b.category === "weapon"
+          ? elig.filter((s) => s.category === "weapon")
+          : elig.filter((s) => s.slot === b.slot && s.category !== "augment");
+      return {
+        id: variantKey(b),
+        name: b.source_item || b.variant_id,
+        pool: isAug ? `${(b.aug_color || {}).color || "unknown"}-augment` : (b.category === "weapon" ? "weapon" : b.slot),
+        bestAvailable: pool.length > 0 && pool.every((s) => dominates(b, s, targetSet, mlCap)),
+      };
+    }),
     dinoInserts: dinoPool, nearlyComplete: ncPool, viktranium: vikPool, seal: sealPool,
     thunderForged: tfPool, greenSteel: gsPool,
     membershipSetDefs: membershipSetDefs || {},

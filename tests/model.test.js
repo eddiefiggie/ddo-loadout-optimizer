@@ -1577,3 +1577,27 @@ test("U2/#110: an absent blocklist filters nothing (the legacy Solver tab's quer
   assert.ok(m.worn.find((s) => s.slot === "Ring").variants.length === 1,
     "a missing key means filter nothing, never filter everything");
 });
+
+test("U7/#110: blockReport asserts bestAvailable only when the block dominates ALL survivors", () => {
+  // Blocked A (Int 10) dominates survivor B (Int 5): superlative earned.
+  // Blocked C (Con 8) does NOT dominate survivor D (Con 9): no superlative.
+  const A = v("Blocked Best", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const B = v("Weak Ring", "Ring", [["Intelligence", "Enhancement", 5]]);
+  const C = v("Blocked Middling", "Necklace", [["Constitution", "Enhancement", 8]]);
+  const D = v("Strong Neck", "Necklace", [["Constitution", "Enhancement", 9]]);
+  const m = M.buildModel([A, B, C, D], { mlCap: 34, targets: ["Intelligence", "Constitution"],
+    blocklist: ["Blocked Best", "Blocked Middling"] });
+  const rep = Object.fromEntries(m.blockReport.map((e) => [e.id, e.bestAvailable]));
+  assert.strictEqual(rep["Blocked Best"], true);
+  assert.strictEqual(rep["Blocked Middling"], false);
+});
+
+test("U7/#110: a blocked augment's report compares against its colour pool", () => {
+  const aug = (name, val) => ({ ...v(name, "Yellow", [["Intelligence", "Enhancement", val]], { category: "augment" }),
+    aug_color: { color: "Yellow" } });
+  const m = M.buildModel([aug("Blocked Gem", 10), aug("Lesser Gem", 4)],
+    { mlCap: 34, targets: ["Intelligence"], blocklist: ["Blocked Gem"] });
+  const e = m.blockReport[0];
+  assert.strictEqual(e.pool, "Yellow-augment", "an augment has no worn slot; the colour pool is the comparison");
+  assert.strictEqual(e.bestAvailable, true);
+});
