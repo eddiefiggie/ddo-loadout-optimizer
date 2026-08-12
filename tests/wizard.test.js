@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -1664,4 +1664,93 @@ test("U1/#110: buildQuery threads the blocklist as a fresh array", () => {
 test("U1/#110: buildQuery defaults an absent blocklist to empty (pre-feature state)", () => {
   const q = buildQuery(baseState());
   assert.deepStrictEqual(q.blocklist, [], "absent -> empty array, never undefined");
+});
+
+
+// ---------------------------------------------------------------------------
+// #110 U3/U4/U5 — the blocklist mutation core (pure; the renderers are DOM-bound).
+
+test("U3/#110: addBlocks adds one entry, dedupes, and removal leaves the rest", () => {
+  const r1 = addBlocks([], ["Lunar Gem of Abjuration (Heroic)"], {});
+  assert.deepStrictEqual(r1.list, ["Lunar Gem of Abjuration (Heroic)"]);
+  const r2 = addBlocks(r1.list, ["Lunar Gem of Abjuration (Heroic)"], {});
+  assert.deepStrictEqual(r2.list, r1.list, "blocking twice does not duplicate");
+  assert.deepStrictEqual(r2.added, [], "the duplicate adds nothing");
+  const afterRemove = removeBlock(["A", "B", "C"], "B");
+  assert.deepStrictEqual(afterRemove, ["A", "C"]);
+});
+
+test("U4/#110: one action over a staged set adds one entry per selection", () => {
+  const staged = ["Gem A", "Gem B", "Gem C", "Gem A"];   // a double-tick stays one entry
+  const r = addBlocks([], staged, {});
+  assert.deepStrictEqual(r.list, ["Gem A", "Gem B", "Gem C"]);
+  assert.strictEqual(r.added.length, 3);
+  // no pattern is stored — the list holds concrete ids only
+  assert.ok(r.list.every((e) => typeof e === "string" && !e.includes("*")));
+});
+
+test("U4/#110: an already-blocked variant is not duplicated by block-selected", () => {
+  const r = addBlocks(["Gem A"], ["Gem A", "Gem B"], {});
+  assert.deepStrictEqual(r.list, ["Gem A", "Gem B"]);
+  assert.deepStrictEqual(r.added, ["Gem B"]);
+});
+
+test("U5/#110: blocking a pinned variant is refused with the pin named", () => {
+  const sc = {}; applyPinId(sc, "Ring", "Contested Ring", () => 2);
+  const r = addBlocks([], ["Contested Ring", "Free Gem"], sc);
+  assert.deepStrictEqual(r.list, ["Free Gem"], "only the unpinned id lands");
+  assert.deepStrictEqual(r.refused, [{ id: "Contested Ring", slot: "Ring" }],
+    "the refusal names the conflicting pin's slot");
+});
+
+test("U5/#110: pinning a blocked variant is refused symmetrically", () => {
+  assert.strictEqual(pinBlockedConflict(["Contested Ring"], "Contested Ring"), true);
+  assert.strictEqual(pinBlockedConflict(["Other"], "Contested Ring"), false);
+  assert.strictEqual(pinBlockedConflict(undefined, "X"), false, "absent blocklist never conflicts");
+});
+
+test("U5/#110: a loaded character holding both states is detected for the report", () => {
+  const sc = {}; applyPinId(sc, "Ring", "Both Ring", () => 2);
+  applyPinId(sc, "Necklace", "Clean Neck", () => 1);
+  assert.deepStrictEqual(blockPinOverlap(["Both Ring", "Solo Gem"], sc), ["Both Ring"]);
+  assert.deepStrictEqual(blockPinOverlap([], sc), []);
+});
+
+test("U5/#110: a Ring pin holding two variants conflicts only on the one being blocked", () => {
+  const sc = {}; applyPinId(sc, "Ring", "Ring One", () => 2); applyPinId(sc, "Ring", "Ring Two", () => 2);
+  const r = addBlocks([], ["Ring Two"], sc);
+  assert.deepStrictEqual(r.refused.map((x) => x.id), ["Ring Two"]);
+  const ok = addBlocks([], ["Ring Three"], sc);
+  assert.deepStrictEqual(ok.list, ["Ring Three"], "an unpinned third ring blocks fine");
+});
+
+
+test("U6/#110: a block on a vanished variant is stale; an existing one is not", () => {
+  const items = [{ variant_id: "Real Gem", source_item: "Real Gem" },
+                 { variant_id: "High ML Ring", source_item: "High ML Ring", ml: 36 }];
+  assert.deepStrictEqual(blockStale(["Ghost Gem", "Real Gem"], items), ["Ghost Gem"]);
+  // ML-gating is NOT staleness: the id still resolves, so it stays silent.
+  assert.deepStrictEqual(blockStale(["High ML Ring"], items), []);
+  assert.deepStrictEqual(blockStale([], items), [], "no entries, no report");
+});
+
+test("U6/#110: reconciliation never mutates the saved list", () => {
+  const saved = ["Ghost Gem", "Real Gem"];
+  blockStale(saved, [{ variant_id: "Real Gem" }]);
+  assert.deepStrictEqual(saved, ["Ghost Gem", "Real Gem"]);
+});
+
+test("U6/#110: an entry named like a JS built-in resolves safely", () => {
+  assert.deepStrictEqual(blockStale(["constructor"], [{ variant_id: "A" }]), ["constructor"],
+    "a Set lookup, not an object key walk — no prototype hit");
+});
+
+test("U5+U6/#110: blockLoadMessage names both facts, and is null when clean", () => {
+  const sc = {}; applyPinId(sc, "Ring", "Both Ring", () => 2);
+  const items = [{ variant_id: "Both Ring" }];
+  const msg = blockLoadMessage(["Both Ring", "Ghost Gem"], sc, items);
+  assert.ok(/Both Ring/.test(msg) && /pinned and blocked/.test(msg), "the overlap is named");
+  assert.ok(/Ghost Gem/.test(msg) && /no longer/.test(msg), "the stale entry is named");
+  assert.strictEqual(blockLoadMessage(["Both Ring"], {}, items), null,
+    "no stale entries and no overlap -> no message at all, not an empty one");
 });

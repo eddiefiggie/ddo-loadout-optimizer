@@ -482,6 +482,94 @@ function removePinFrom(slotConstraints, slot, id, cardOf) {
   return slotConstraints;
 }
 
+// #110 (U3/U4/U5) — the blocklist mutation core. Pure and exported: the add and
+// remove DECISIONS live here so they are unit-testable; the renderers are
+// DOM-bound. One identity handle covers items and augments (pinIdOf — the same
+// variant_id||source_item the solver's variantKey reads).
+
+/** The worn slot holding a pin on this id, or null. A Ring pin holding two
+ *  variants conflicts only on the id actually being blocked. */
+function blockPinSlotOf(slotConstraints, id) {
+  for (const [slot, c] of Object.entries(slotConstraints || {})) {
+    if (c && c.type === "pin" && _pinnedVariantIds(c).includes(id)) return slot;
+  }
+  return null;
+}
+
+/** #110 (U4/KTD5) — one block action over the ids the player selected. Dedupes
+ *  against the existing list AND within the staged set, and refuses any id that
+ *  is currently pinned (U5/R4) — the refusal names the pin's slot so the message
+ *  can state the conflict. Returns { list, added, refused }; never mutates. */
+function addBlocks(blocklist, ids, slotConstraints) {
+  const have = new Set(blocklist || []);
+  const added = [];
+  const refused = [];
+  for (const id of ids || []) {
+    if (!id || have.has(id)) continue;
+    const slot = blockPinSlotOf(slotConstraints, id);
+    if (slot) { refused.push({ id, slot }); continue; }
+    have.add(id);
+    added.push(id);
+  }
+  return { list: (blocklist || []).concat(added), added, refused };
+}
+
+/** #110 (U3/R3) — remove one entry, leaving the rest intact. */
+function removeBlock(blocklist, id) {
+  return (blocklist || []).filter((x) => x !== id);
+}
+
+/** #110 (U5/R4) — the symmetric refusal: is this id blocked, so pinning it must
+ *  be refused? An absent blocklist never conflicts. */
+function pinBlockedConflict(blocklist, id) {
+  return Array.isArray(blocklist) && blocklist.includes(id);
+}
+
+/** #110 (U5) — ids holding BOTH states, for the load-path migration report. A
+ *  hand-edited or corrupted import can carry both; the solve itself is
+ *  well-defined (the block wins candidacy, U2), so the overlap is reported to
+ *  the player rather than silently resolved. */
+function blockPinOverlap(blocklist, slotConstraints) {
+  return (blocklist || []).filter((id) => blockPinSlotOf(slotConstraints, id) != null);
+}
+
+/** #110 (U6/KTD8) — blocked ids that resolve to NOTHING in the current roster.
+ *  Works on a copy by construction (filter), never mutating the saved list —
+ *  mutating while deciding is the shape that once left a character
+ *  half-rewritten. Resolution is against the FULL roster, deliberately not the
+ *  ML- or character-gated pool: a variant above the ML cap is merely
+ *  inapplicable right now and stays blocked silently; only an id no variant
+ *  carries (renamed or removed upstream) is stale. A stale entry is KEPT — it
+ *  blocks something that no longer exists, which is harmless — and reported;
+ *  dropping it would silently un-block if the name comes back. */
+function blockStale(blocklist, items) {
+  if (!Array.isArray(blocklist) || !blocklist.length) return [];
+  const ids = new Set();
+  for (const v of items || []) {
+    if (v) ids.add(v.variant_id || v.source_item);
+  }
+  return blocklist.filter((id) => !ids.has(id));
+}
+
+/** #110 (U5/U6) — the load-path disclosure sentence, or null when clean. One
+ *  sentence for both facts, mirroring the priorities-migration message shape:
+ *  computed pure here, rendered by the banner. */
+function blockLoadMessage(blocklist, slotConstraints, items) {
+  const parts = [];
+  const overlap = blockPinOverlap(blocklist, slotConstraints);
+  if (overlap.length) {
+    parts.push(`${overlap.join(", ")} ${overlap.length > 1 ? "are" : "is"} both pinned and `
+      + "blocked — a block wins, so the pin will not be honored. Remove one of the two.");
+  }
+  const stale = blockStale(blocklist, items);
+  if (stale.length) {
+    parts.push(`Blocked ${stale.length > 1 ? "entries" : "entry"} ${stale.join(", ")} no longer `
+      + "match anything in the current data (renamed or removed upstream). "
+      + "They stay blocked and can be removed in the gear-pool step.");
+  }
+  return parts.length ? parts.join(" ") : null;
+}
+
 // R12 — a pinned two-handed (both-hands) main-hand weapon and a pinned off-hand item
 // are mutually exclusive under the hand mutex: each passes its own per-item legality,
 // so the conflict is the COMBINATION and needs an aggregate check. `pins` is the
@@ -740,7 +828,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -1033,6 +1121,15 @@ if (typeof window !== "undefined" && window.App) {
           <div id="wz-pin-results" class="wz-pin-results"></div>
           <div id="wz-pin-list" class="wz-pin-list"></div>
         </div>
+        <div class="wz-pinbox wz-blockbox">
+          <span class="wz-label">Block items or augments <span class="wz-sub">· optional · gear the solver must never recommend</span></span>
+          <div class="wz-addrow">
+            <input id="wz-block-search" type="text" placeholder="Search anything placeable — e.g. Lunar Gem of Abjuration…" autocomplete="off">
+          </div>
+          <div id="wz-block-results" class="wz-pin-results"></div>
+          <div id="wz-block-stage" class="wz-block-stage"></div>
+          <div id="wz-block-list" class="wz-pin-list"></div>
+        </div>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
           <button class="btn primary" data-next>Continue →</button></div>
       </section>`;
@@ -1065,7 +1162,12 @@ if (typeof window !== "undefined" && window.App) {
 
     // Thin wrappers over the exported pure core; they add the live cardinality
     // lookup and the constraintsDirty flag (so a re-solve is offered).
-    function addPin(v, hand) { applyPin(state.slotConstraints, v, slotCardOf, hand); state.constraintsDirty = true; }
+    function addPin(v, hand) {
+      // #110 (U5/R4) — the symmetric refusal, enforced at the mutation path and
+      // not only in the (disabled) row: a blocked variant cannot be pinned.
+      if (pinBlockedConflict(state.blocklist, pinIdOf(v))) return;
+      applyPin(state.slotConstraints, v, slotCardOf, hand); state.constraintsDirty = true;
+    }
     function removePin(slot, id) { removePinFrom(state.slotConstraints, slot, id, slotCardOf); state.constraintsDirty = true; }
 
     // KTD3 — name-only match (filterVariants also matches stats/ids, so post-filter
@@ -1086,9 +1188,12 @@ if (typeof window !== "undefined" && window.App) {
       matches.sort((a, b) => rank(a) - rank(b) || (a.source_item || "").localeCompare(b.source_item || ""));
       if (!matches.length) { box.innerHTML = `<p class="wz-pin-hint">No items match “${esc(q)}”.</p>`; return; }
       const pinned = new Set(currentPins().map((p) => p.id));
+      // #110 (U5/R4) — a blocked variant cannot be pinned; its row says why.
+      const blockedIds = new Set(state.blocklist || []);
       const shown = matches.slice(0, PIN_CAP);
       box.innerHTML = shown.map((v) => {
-        const id = pinIdOf(v), already = pinned.has(id), name = v.source_item || v.variant_id;
+        const id = pinIdOf(v), already = pinned.has(id) || blockedIds.has(id), name = v.source_item || v.variant_id;
+        const stateNote = pinned.has(pinIdOf(v)) ? " · pinned" : blockedIds.has(pinIdOf(v)) ? " · blocked" : "";
         // plan 003 U5 (R6) — one action per hand the item can go to. For every item
         // but a one-handed weapon that is still exactly one action labelled with its
         // worn slot, so nothing changes; a one-handed weapon gets Main hand FIRST
@@ -1098,7 +1203,7 @@ if (typeof window !== "undefined" && window.App) {
             data-pin-id="${esc(id)}" data-pin-hand="${esc(h)}"${already ? " disabled" : ""}
             aria-label="Pin ${esc(name)} to ${esc(h)}">
             ${i ? "" : `<span class="wz-pin-hit-name">${esc(name)}</span>`}
-            <span class="wz-pin-hit-slot">${esc(h)}${already && !i ? " · pinned" : ""}</span></button>`).join("");
+            <span class="wz-pin-hit-slot">${esc(h)}${!i ? stateNote : ""}</span></button>`).join("");
         return hands.length > 1 ? `<div class="wz-pin-hit-pair">${acts}</div>` : acts;
       }).join("")
         + (matches.length > PIN_CAP ? `<p class="wz-pin-more">Showing top ${PIN_CAP} of ${matches.length.toLocaleString()} — refine your search.</p>` : "");
@@ -1147,6 +1252,101 @@ if (typeof window !== "undefined" && window.App) {
       }).join("");
       box.querySelectorAll(".wz-pin-x").forEach((b) => b.onclick = () => {
         removePin(b.dataset.unpinSlot, b.dataset.unpinId); renderPinList(); renderPinResults();
+      });
+    }
+
+    // #110 (U3/U4) — the blocklist picker. Candidates come from the browse-side
+    // filterVariants over dataset.items — NOT browsableItems(dataset), whose 464
+    // display-only pseudo-variants (Dino/NC/Viktranium options, compendium rows)
+    // carry synthetic ids that never reach a solver pool, so blocking one would
+    // store an id U6 reports stale on every load. The verified restriction is
+    // inherited from the pin picker deliberately: 1 record of 9,108 is
+    // quarantined, and the two pickers should disagree about nothing.
+    // Selection STAGES across searches (U4/KTD5): no single query returns the
+    // motivating 28 gems, so the player narrows, ticks, re-searches, and one
+    // `Block selected (N)` action adds exactly the accumulated set.
+    const blockStage = new Set();   // UI-transient; never persisted
+    const BLOCK_CAP = 30;
+
+    function renderBlockStage() {
+      const box = document.getElementById("wz-block-stage");
+      if (!box) return;
+      const n = blockStage.size;
+      // The count lives OUTSIDE the result list so it survives a search that
+      // displays none of the ticked rows.
+      box.innerHTML = n
+        ? `<button type="button" class="btn primary wz-block-commit" id="wz-block-commit">Block selected (${n})</button>
+           <button type="button" class="btn ghost wz-block-clear" id="wz-block-clear">Clear selection</button>`
+        : "";
+      const commit = document.getElementById("wz-block-commit");
+      if (commit) commit.onclick = () => {
+        const r = addBlocks(state.blocklist, [...blockStage], state.slotConstraints);
+        state.blocklist = r.list;
+        state.constraintsDirty = true;
+        blockStage.clear();
+        if (r.refused.length) {
+          state.blockRefusedMsg = r.refused.map((x) =>
+            `${x.id} is pinned to ${x.slot} — unpin it before blocking it.`).join(" ");
+        }
+        renderBlockStage(); renderBlockList(); renderBlockResults(); renderPinResults();
+      };
+      const clear = document.getElementById("wz-block-clear");
+      if (clear) clear.onclick = () => { blockStage.clear(); renderBlockStage(); renderBlockResults(); };
+    }
+
+    function renderBlockResults() {
+      const box = document.getElementById("wz-block-results");
+      const input = document.getElementById("wz-block-search");
+      if (!box || !input) return;
+      const q = (input.value || "").trim();
+      if (!q) { box.innerHTML = `<p class="wz-pin-hint">Type a name to search everything the solver can place — items and augments.</p>`; renderBlockStage(); return; }
+      // eslint-disable-next-line no-undef
+      const matches = filterVariants(dataset.items, { verification: "verified", query: q });
+      const rank = (v) => { const n = (v.source_item || v.variant_id || "").toLowerCase(); const ql = q.toLowerCase(); return n === ql ? 0 : n.startsWith(ql) ? 1 : 2; };
+      matches.sort((a, b) => rank(a) - rank(b) || (a.source_item || "").localeCompare(b.source_item || ""));
+      if (!matches.length) { box.innerHTML = `<p class="wz-pin-hint">Nothing matches “${esc(q)}”.</p>`; renderBlockStage(); return; }
+      const blockedSet = new Set(state.blocklist || []);
+      const shown = matches.slice(0, BLOCK_CAP);
+      box.innerHTML = shown.map((v) => {
+        const id = pinIdOf(v), name = v.source_item || v.variant_id;
+        const already = blockedSet.has(id);
+        const pinSlot = blockPinSlotOf(state.slotConstraints, id);
+        const note = already ? " · blocked" : pinSlot ? ` · pinned to ${esc(pinSlot)}` : "";
+        return `<label class="wz-block-hit${already || pinSlot ? " wz-block-hit-off" : ""}">
+          <input type="checkbox" data-block-id="${esc(id)}"${blockStage.has(id) ? " checked" : ""}${already || pinSlot ? " disabled" : ""}>
+          <span class="wz-pin-hit-name">${esc(name)}</span>
+          <span class="wz-pin-hit-slot">${esc(v.category === "augment" ? ((v.aug_color || {}).color || "augment") + " augment" : v.slot || "")}${note}</span></label>`;
+      }).join("")
+        + (matches.length > BLOCK_CAP ? `<p class="wz-pin-more">Showing top ${BLOCK_CAP} of ${matches.length.toLocaleString()} — refine and tick; your selection keeps across searches.</p>` : "");
+      box.querySelectorAll("input[data-block-id]").forEach((cb) => cb.onchange = () => {
+        if (cb.checked) blockStage.add(cb.dataset.blockId);
+        else blockStage.delete(cb.dataset.blockId);
+        renderBlockStage();
+      });
+      renderBlockStage();
+    }
+
+    function renderBlockList() {
+      const box = document.getElementById("wz-block-list");
+      if (!box) return;
+      const refusal = state.blockRefusedMsg
+        ? `<p class="wz-pin-mutexwarn">⚠ ${esc(state.blockRefusedMsg)}</p>` : "";
+      state.blockRefusedMsg = null;
+      const entries = state.blocklist || [];
+      if (!entries.length) { box.innerHTML = refusal + `<p class="wz-pin-empty">Nothing blocked — search above to forbid gear the solver keeps recommending.</p>`; return; }
+      // U6 — stale entries (no longer resolving to any roster variant) are
+      // labelled by name rather than silently kept or dropped.
+      const staleSet = new Set(blockStale(entries, dataset.items));
+      box.innerHTML = refusal + entries.map((id) => {
+        const stale = staleSet.has(id)
+          ? `<span class="wz-pin-flag" title="No current item or augment carries this id — it may have been renamed upstream. The entry still saves; it just matches nothing right now.">no longer matches anything</span>`
+          : "";
+        return `<div class="wz-pin-row"><span class="wz-pin-name">${esc(id)}</span>${stale}<button type="button" class="wz-pin-x" data-unblock-id="${esc(id)}" aria-label="Unblock ${esc(id)}">×</button></div>`;
+      }).join("");
+      box.querySelectorAll(".wz-pin-x[data-unblock-id]").forEach((b) => b.onclick = () => {
+        state.blocklist = removeBlock(state.blocklist, b.dataset.unblockId);
+        state.constraintsDirty = true;
+        renderBlockList(); renderBlockResults(); renderPinResults();
       });
     }
 
@@ -1917,6 +2117,11 @@ if (typeof window !== "undefined" && window.App) {
       }
       state.slotConstraints = i.slotConstraints || {};
       state.constraintsDirty = false;   // loaded constraints are the saved state, not a pending change
+      // #110 (U5/U6) — the load-path blocklist reconciliation: a save holding a
+      // pin+block overlap (hand-edited/corrupted import) or a stale blocked id
+      // (renamed upstream) is REPORTED, never silently resolved or dropped. The
+      // helper works on copies; nothing here rewrites the saved arrays.
+      state.blockLoadNotice = blockLoadMessage(state.blocklist, state.slotConstraints, dataset.items);
       // U5, Part C — one-time load migration: a PRE-OVERHAUL saved snapshot embedded
       // its chosen items with only the legacy `stat`/`bonus_type`/`minimum_level`
       // fields; upgrade them so the native-first readers (affixLabel/itemMl) render.
@@ -2058,9 +2263,19 @@ if (typeof window !== "undefined" && window.App) {
     // to either results or priorities depending on its snapshot, and the player
     // needs to be told their ranking changed on both paths.
     function migrationBanner() {
-      if (!state.expandedAwayMigrated) return "";
-      return `<div id="wz-awaymig" class="wz-cbar">${esc(state.expandedAwayMigrated)}
+      let out = "";
+      if (state.expandedAwayMigrated) {
+        out += `<div id="wz-awaymig" class="wz-cbar">${esc(state.expandedAwayMigrated)}
         <button class="btn ghost" id="wz-awaymig-ok" type="button">Got it</button></div>`;
+      }
+      // #110 (U5/U6) — the blocklist load report rides the same channel: above
+      // the step body, because a loaded character routes to either results or
+      // priorities and the player must be told on both paths.
+      if (state.blockLoadNotice) {
+        out += `<div id="wz-blockmig" class="wz-cbar">${esc(state.blockLoadNotice)}
+        <button class="btn ghost" id="wz-blockmig-ok" type="button">Got it</button></div>`;
+      }
+      return out;
     }
 
     function render() {
@@ -2077,6 +2292,12 @@ if (typeof window !== "undefined" && window.App) {
       if (awayOk) awayOk.onclick = () => {
         state.expandedAwayMigrated = null;
         const bar = document.getElementById("wz-awaymig");
+        if (bar) bar.remove();
+      };
+      const blockOk = document.getElementById("wz-blockmig-ok");
+      if (blockOk) blockOk.onclick = () => {
+        state.blockLoadNotice = null;
+        const bar = document.getElementById("wz-blockmig");
         if (bar) bar.remove();
       };
       root.querySelectorAll("[data-browse]").forEach((b) => b.onclick = openBrowser);
@@ -2224,6 +2445,13 @@ if (typeof window !== "undefined" && window.App) {
           renderPinResults();
           renderPinList();
         }
+        // #110 (U3) — the blocklist picker, wired the same way.
+        const bsearch = document.getElementById("wz-block-search");
+        if (bsearch) {
+          bsearch.oninput = () => renderBlockResults();
+          renderBlockResults();
+          renderBlockList();
+        }
       }
       if (state.step === "priorities") {
         const add = document.getElementById("wz-add");
@@ -2305,6 +2533,13 @@ if (typeof window !== "undefined" && window.App) {
           } else if (act.dataset.act === "empty") {
             state.slotConstraints[slot] = { type: "empty" };   // slot-level lock clears any pins
           } else if (act.dataset.act === "pin" && variant) {
+            // #110 (U5/R4) — the deep-dive pin surface refuses a blocked variant
+            // too, with the reason inline (no browser dialog: those block the tab).
+            if (pinBlockedConflict(state.blocklist, variant)) {
+              act.textContent = "Blocked — unblock it first";
+              act.disabled = true;
+              return;
+            }
             applyPinId(state.slotConstraints, slot, variant, slotCardOf); // append (Ring) / replace (single)
           }
           state.constraintsDirty = true;
