@@ -51,6 +51,7 @@ from src import name_corrections as name_corrections_mod
 from src import untyped_rankable as untyped_rankable_mod
 from src import dr_qualifiers as dr_qualifiers_mod
 from src import type_corrections as type_corrections_mod
+from src import ml36_augments as ml36_augments_mod
 from src import planner_items as planner_mod
 from src import variants as variants_mod
 from src import vocabulary as vocabulary_mod
@@ -227,6 +228,8 @@ NAME_CORRECTIONS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "affix_name_corrections.json")
 TYPE_CORRECTIONS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "affix_type_corrections.json")
+ML36_AUGMENTS_PATH = os.path.join(
+    HERE, "data", "seed", "compendium", "ml36_augments.json")
 UNTYPED_RANKABLE_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "untyped_rankable.json")
 SPEED_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_enchantment.json")
@@ -418,6 +421,16 @@ def build() -> dict:
     # gearplanner_crafting.json (the gear-planner crafting catalog). Load once and
     # thread it into each family builder.
     crafting = crafting_catalog_mod.load_catalog()
+    # #260 — inject the wiki-sourced ML36 augment tier into the color pools.
+    # gear-planner stops at ML32; the wiki holds the 63 top-tier sale augments,
+    # each anchored to its gear-planner sibling's affix vocabulary and guarded
+    # against staleness (upstream adding the tier), a broken sibling anchor, and
+    # a tooltip that no longer states the value. check() runs on the PRISTINE
+    # catalog — that is what the staleness guard means — then inject() appends
+    # in the pools' native shape so every consumer below treats them as natives.
+    _ml36_entries = ml36_augments_mod.load(ML36_AUGMENTS_PATH)
+    _ml36_checked = ml36_augments_mod.check(_ml36_entries, crafting)
+    _ml36_coverage = ml36_augments_mod.inject(_ml36_entries, crafting)
     # Seal types with a non-empty verified pool gate which "Sealed in X" hosts the
     # reader recovers from the raw dump (Undeath sourced; Mist/Gloom pending).
     _verified_seal_types = {r["seal_type"]
@@ -1047,6 +1060,9 @@ def build() -> dict:
                 "items": _type_coverage_items,
                 "augments": _type_coverage_augments,
             },
+            # #260 — the wiki-sourced ML36 augment tier: what the guard vouched
+            # for per color, and what was injected into the pools.
+            "ml36_augment_coverage": {**_ml36_coverage, "checked": _ml36_checked},
             "untyped_rankable_coverage": {
                 "candidates": _untyped_checked,
                 "allowed": len(_untyped_allow),

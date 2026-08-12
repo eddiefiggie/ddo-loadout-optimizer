@@ -1,0 +1,956 @@
+{
+ "_meta": {
+  "title": "wiki-sourced ML36 augment tier (#260)",
+  "note": "gear-planner's crafting.json (verified against upstream master 2026-08-12) tops out at ML32 in every color pool, but the wiki's Category:Minimum level 36 augments holds the 63 top-tier sale augments (Diamond/Ruby/Sapphire/Topaz). Without them every ML36 solve slots one tier low. This shard is the wiki-sourced gap fill, injected into the same color pools so downstream processing (color normalization, fits_slots, verification) treats them exactly like natives.",
+  "vocabulary_rule": "Each entry's affix (name, type) is anchored to its highest gear-planner SIBLING in the same color pool (recorded per entry) and MUST match it at build time — the vocabulary is gear-planner's, per the structural-sourcing rule, so 'Sapphire of Protection +12' emits Armor Class/Deflection like its +11 sibling (the wiki's 'Protection bonus' wording IS the Deflection bonus — 169 worn affixes already use this vocabulary). Only the VALUE is new, and it must appear verbatim in the recorded tooltip.",
+  "stale_guard": "The build FAILS when (a) an entry's name appears in the upstream pool — gear-planner added the tier, retire this shard; (b) an entry's sibling vanishes or its affix vocabulary moves; (c) an entry's value is absent from its own recorded tooltip. A shard that cannot go stale unnoticed is the only kind worth having (#207).",
+  "evidence_rule": "Every entry carries the verbatim item-page description (the rendered slotted-effect tooltip) and its wiki URL. Harvested 2026-08-12, same-origin from a ddowiki tab, two batched revisions calls."
+ },
+ "harvested": {
+  "Diamond of Balance +22": {
+   "affixes": [
+    {
+     "name": "Balance",
+     "type": "Competence",
+     "value": "22"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Balance +20",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +22 Competence Bonus to the Balance skill. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Balance_%2B22"
+  },
+  "Diamond of Bluff +22": {
+   "affixes": [
+    {
+     "name": "Bluff",
+     "type": "Competence",
+     "value": "22"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Bluff +20",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +22 Competence Bonus to the Bluff skill. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Bluff_%2B22"
+  },
+  "Diamond of Charisma +15": {
+   "affixes": [
+    {
+     "name": "Charisma",
+     "type": "Enhancement",
+     "value": "15"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Charisma +14",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +15 Enhancement Bonus to Charisma. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Charisma_%2B15"
+  },
+  "Diamond of Concentration +22": {
+   "affixes": [
+    {
+     "name": "Concentration",
+     "type": "Competence",
+     "value": "22"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Concentration +20",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +22 Competence Bonus to the Concentration skill. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Concentration_%2B22"
+  },
+  "Diamond of Constitution +15": {
+   "affixes": [
+    {
+     "name": "Constitution",
+     "type": "Enhancement",
+     "value": "15"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Constitution +14",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +15 Enhancement Bonus to Constitution. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Constitution_%2B15"
+  },
+  "Diamond of Dexterity +15": {
+   "affixes": [
+    {
+     "name": "Dexterity",
+     "type": "Enhancement",
+     "value": "15"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Dexterity +14",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +15 Enhancement Bonus to Dexterity. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Dexterity_%2B15"
+  },
+  "Diamond of Diplomacy +22": {
+   "affixes": [
+    {
+     "name": "Diplomacy",
+     "type": "Competence",
+     "value": "22"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Diplomacy +20",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +22 Competence Bonus to the Diplomacy skill. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Diplomacy_%2B22"
+  },
+  "Diamond of Disable Device +22": {
+   "affixes": [
+    {
+     "name": "Disable Device",
+     "type": "Competence",
+     "value": "22"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Disable Device +20",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +22 Competence Bonus to the Disable Device skill. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Disable_Device_%2B22"
+  },
+  "Diamond of Haggle +22": {
+   "affixes": [
+    {
+     "name": "Haggle",
+     "type": "Competence",
+     "value": "22"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Haggle +20",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +22 Competence Bonus to the Haggle skill. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Haggle_%2B22"
+  },
+  "Diamond of Heal +22": {
+   "affixes": [
+    {
+     "name": "Heal",
+     "type": "Competence",
+     "value": "22"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Heal +20",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +22 Competence Bonus to the Heal skill. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Heal_%2B22"
+  },
+  "Diamond of Hide +22": {
+   "affixes": [
+    {
+     "name": "Hide",
+     "type": "Competence",
+     "value": "22"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Hide +20",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +22 Competence Bonus to the Hide skill. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Hide_%2B22"
+  },
+  "Diamond of Intelligence +15": {
+   "affixes": [
+    {
+     "name": "Intelligence",
+     "type": "Enhancement",
+     "value": "15"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Intelligence +14",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +15 Enhancement Bonus to Intelligence. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Intelligence_%2B15"
+  },
+  "Diamond of Intimidate +22": {
+   "affixes": [
+    {
+     "name": "Intimidate",
+     "type": "Competence",
+     "value": "22"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Intimidate +20",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +22 Competence Bonus to the Intimidate skill. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Intimidate_%2B22"
+  },
+  "Diamond of Jump +22": {
+   "affixes": [
+    {
+     "name": "Jump",
+     "type": "Competence",
+     "value": "22"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Jump +20",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +22 Competence Bonus to the Jump skill. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Jump_%2B22"
+  },
+  "Diamond of Listen +22": {
+   "affixes": [
+    {
+     "name": "Listen",
+     "type": "Competence",
+     "value": "22"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Listen +20",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +22 Competence Bonus to the Listen skill. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Listen_%2B22"
+  },
+  "Diamond of Move Silently +22": {
+   "affixes": [
+    {
+     "name": "Move Silently",
+     "type": "Competence",
+     "value": "22"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Move Silently +20",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +22 Competence Bonus to the Move Silently skill. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Move_Silently_%2B22"
+  },
+  "Diamond of Open Lock +22": {
+   "affixes": [
+    {
+     "name": "Open Lock",
+     "type": "Competence",
+     "value": "22"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Open Lock +20",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +22 Competence Bonus to the Open Lock skill. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Open_Lock_%2B22"
+  },
+  "Diamond of Perform +22": {
+   "affixes": [
+    {
+     "name": "Perform",
+     "type": "Competence",
+     "value": "22"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Perform +20",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +22 Competence Bonus to the Perform skill. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Perform_%2B22"
+  },
+  "Diamond of Repair +22": {
+   "affixes": [
+    {
+     "name": "Repair",
+     "type": "Competence",
+     "value": "22"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Repair +20",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +22 Competence Bonus to the Repair skill. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Repair_%2B22"
+  },
+  "Diamond of Search +22": {
+   "affixes": [
+    {
+     "name": "Search",
+     "type": "Competence",
+     "value": "22"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Search +20",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +22 Competence Bonus to the Search skill. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Search_%2B22"
+  },
+  "Diamond of Spellcraft +22": {
+   "affixes": [
+    {
+     "name": "Spellcraft",
+     "type": "Competence",
+     "value": "22"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Spellcraft +20",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +22 Competence Bonus to the Spellcraft skill. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Spellcraft_%2B22"
+  },
+  "Diamond of Spot +22": {
+   "affixes": [
+    {
+     "name": "Spot",
+     "type": "Competence",
+     "value": "22"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Spot +20",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +22 Competence Bonus to the Spot skill. This augmentcan go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Spot_%2B22"
+  },
+  "Diamond of Strength +15": {
+   "affixes": [
+    {
+     "name": "Strength",
+     "type": "Enhancement",
+     "value": "15"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Strength +14",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +15 Enhancement Bonus to Strength. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Strength_%2B15"
+  },
+  "Diamond of Swim +22": {
+   "affixes": [
+    {
+     "name": "Swim",
+     "type": "Competence",
+     "value": "22"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Swim +20",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +22 Competence Bonus to the Swim skill. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Swim_%2B22"
+  },
+  "Diamond of Tumble +22": {
+   "affixes": [
+    {
+     "name": "Tumble",
+     "type": "Competence",
+     "value": "22"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Tumble +20",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +22 Competence Bonus to the Tumble skill. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Tumble_%2B22"
+  },
+  "Diamond of Wisdom +15": {
+   "affixes": [
+    {
+     "name": "Wisdom",
+     "type": "Enhancement",
+     "value": "15"
+    }
+   ],
+   "color": "Colorless",
+   "ml": 36,
+   "sibling": "Diamond of Wisdom +14",
+   "tooltip": "Drag this augment into a slot to upgrade an item with a +15 Enhancement Bonus to Wisdom. This augment can go in any color Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Diamond_of_Wisdom_%2B15"
+  },
+  "Ruby of Acid (10d6)": {
+   "affixes": [
+    {
+     "name": "Acidic",
+     "type": "Untyped",
+     "value": "10"
+    }
+   ],
+   "color": "Red",
+   "ml": 36,
+   "sibling": "Ruby of Acid (9d6)",
+   "tooltip": "Drag this augment into a slot to upgrade a weapon with an additional 10d6 Acid damage on hit. This augment can go in a Red, Orange, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Acid_%2810d6%29"
+  },
+  "Ruby of Combustion 166": {
+   "affixes": [
+    {
+     "name": "Combustion",
+     "type": "Equipment",
+     "value": "166"
+    }
+   ],
+   "color": "Red",
+   "ml": 36,
+   "sibling": "Ruby of Combustion 153",
+   "tooltip": "Drag this augment into a slot to upgrade a weapon with a +166 Equipment bonus to Fire Spell Power. This augment can go in a Red, Orange, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Combustion_166"
+  },
+  "Ruby of Corrosion 166": {
+   "affixes": [
+    {
+     "name": "Corrosion",
+     "type": "Equipment",
+     "value": "166"
+    }
+   ],
+   "color": "Red",
+   "ml": 36,
+   "sibling": "Ruby of Corrosion 153",
+   "tooltip": "Drag this augment into a slot to upgrade a weapon with a +166 Equipment bonus to Acid Spell Power. This augment can go in a Red, Orange, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Corrosion_166"
+  },
+  "Ruby of Devotion 166": {
+   "affixes": [
+    {
+     "name": "Devotion",
+     "type": "Equipment",
+     "value": "166"
+    }
+   ],
+   "color": "Red",
+   "ml": 36,
+   "sibling": "Ruby of Devotion 153",
+   "tooltip": "Drag this augment into a slot to upgrade a weapon with a +166 Equipment bonus to Positive Spell Power. This augment can go in a Red, Orange, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Devotion_166"
+  },
+  "Ruby of Flame (10d6)": {
+   "affixes": [
+    {
+     "name": "Flaming",
+     "type": "Untyped",
+     "value": "10"
+    }
+   ],
+   "color": "Red",
+   "ml": 36,
+   "sibling": "Ruby of Flame (9d6)",
+   "tooltip": "Drag this augment into a slot to upgrade a weapon with an additional 10d6 Fire damage on hit. This augment can go in a Red, Orange, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Flame_%2810d6%29"
+  },
+  "Ruby of Frost (10d6)": {
+   "affixes": [
+    {
+     "name": "Frost",
+     "type": "Untyped",
+     "value": "10"
+    }
+   ],
+   "color": "Red",
+   "ml": 36,
+   "sibling": "Ruby of Frost (9d6)",
+   "tooltip": "Drag this augment into a slot to upgrade a weapon with an additional 10d6 Cold damage on hit. This augment can go in a Red, Orange, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Frost_%2810d6%29"
+  },
+  "Ruby of Glaciation 166": {
+   "affixes": [
+    {
+     "name": "Glaciation",
+     "type": "Equipment",
+     "value": "166"
+    }
+   ],
+   "color": "Red",
+   "ml": 36,
+   "sibling": "Ruby of Glaciation 153",
+   "tooltip": "Drag this augment into a slot to upgrade a weapon with a +166 Equipment bonus to Cold Spell Power. This augment can go in a Red, Orange, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Glaciation_166"
+  },
+  "Ruby of Impulse 166": {
+   "affixes": [
+    {
+     "name": "Impulse",
+     "type": "Equipment",
+     "value": "166"
+    }
+   ],
+   "color": "Red",
+   "ml": 36,
+   "sibling": "Ruby of Impulse 153",
+   "tooltip": "Drag this augment into a slot to upgrade a weapon with a +166 Equipment bonus to Force Spell Power. This augment can go in a Red, Orange, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Impulse_166"
+  },
+  "Ruby of Magnetism 166": {
+   "affixes": [
+    {
+     "name": "Magnetism",
+     "type": "Equipment",
+     "value": "166"
+    }
+   ],
+   "color": "Red",
+   "ml": 36,
+   "sibling": "Ruby of Magnetism 153",
+   "tooltip": "Drag this augment into a slot to upgrade a weapon with a +166 Equipment bonus to Electric Spell Power. This augment can go in a Red, Orange, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Magnetism_166"
+  },
+  "Ruby of Nullification 166": {
+   "affixes": [
+    {
+     "name": "Nullification",
+     "type": "Equipment",
+     "value": "166"
+    }
+   ],
+   "color": "Red",
+   "ml": 36,
+   "sibling": "Ruby of Nullification 153",
+   "tooltip": "Drag this augment into a slot to upgrade a weapon with a +166 Equipment bonus to Negative Energy and Poison Spell Power. This augment can go in a Red, Orange, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Nullification_166"
+  },
+  "Ruby of Radiance 166": {
+   "affixes": [
+    {
+     "name": "Radiance",
+     "type": "Equipment",
+     "value": "166"
+    }
+   ],
+   "color": "Red",
+   "ml": 36,
+   "sibling": "Ruby of Radiance 153",
+   "tooltip": "Drag this augment into a slot to upgrade a weapon with a +166 Equipment bonus to Light and Alignment Spell Power. This augment can go in a Red, Orange, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Radiance_166"
+  },
+  "Ruby of Reconstruction 166": {
+   "affixes": [
+    {
+     "name": "Reconstruction",
+     "type": "Equipment",
+     "value": "166"
+    }
+   ],
+   "color": "Red",
+   "ml": 36,
+   "sibling": "Ruby of Reconstruction 153",
+   "tooltip": "Drag this augment into a slot to upgrade a weapon with a +166 Equipment bonus to Repair and Rust Spell Power. This augment can go in a Red, Orange, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Reconstruction_166"
+  },
+  "Ruby of Resonance 166": {
+   "affixes": [
+    {
+     "name": "Resonance",
+     "type": "Equipment",
+     "value": "166"
+    }
+   ],
+   "color": "Red",
+   "ml": 36,
+   "sibling": "Ruby of Resonance 153",
+   "tooltip": "Drag this augment into a slot to upgrade a weapon with a +166 Equipment bonus to Sonic Spell Power. This augment can go in a Red, Orange, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Resonance_166"
+  },
+  "Ruby of Shock (10d6)": {
+   "affixes": [
+    {
+     "name": "Shock",
+     "type": "Untyped",
+     "value": "10"
+    }
+   ],
+   "color": "Red",
+   "ml": 36,
+   "sibling": "Ruby of Shock (9d6)",
+   "tooltip": "Drag this augment into a slot to upgrade a weapon with an additional 10d6 Electric damage on hit. This augment can go in a Red, Orange, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Shock_%2810d6%29"
+  },
+  "Sapphire of Accuracy +24": {
+   "affixes": [
+    {
+     "name": "Accuracy",
+     "type": "Competence",
+     "value": "24"
+    }
+   ],
+   "color": "Blue",
+   "ml": 36,
+   "sibling": "Sapphire of Accuracy +22",
+   "tooltip": "Drag this augment into a slot to upgrade an item to provide a +24 Competence bonus to your attack bonus. This augment can go in a Blue, Green, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Sapphire_of_Accuracy_%2B24"
+  },
+  "Sapphire of Defense +40": {
+   "affixes": [
+    {
+     "name": "Sheltering",
+     "type": "Enhancement",
+     "value": "40"
+    }
+   ],
+   "color": "Blue",
+   "ml": 36,
+   "sibling": "Sapphire of Defense +36",
+   "tooltip": "Drag this augment into a slot to upgrade an item to provide a +40 Enhancement bonus to your Physical Resistance Rating and Magical Resistance Rating. This augment can go in a Blue, Green, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Sapphire_of_Defense_%2B40"
+  },
+  "Sapphire of Dodge +16%": {
+   "affixes": [
+    {
+     "name": "Dodge",
+     "type": "Enhancement",
+     "value": "16"
+    }
+   ],
+   "color": "Blue",
+   "ml": 36,
+   "sibling": "Sapphire of Dodge +14%",
+   "tooltip": "Drag this augment into a slot to upgrade an item to provide a +16% Enhancement bonus to your dodge bonus. This augment can go in a Blue, Green, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Sapphire_of_Dodge_%2B16%25"
+  },
+  "Sapphire of False Life +60": {
+   "affixes": [
+    {
+     "name": "False Life",
+     "type": "Enhancement",
+     "value": "60"
+    }
+   ],
+   "color": "Blue",
+   "ml": 36,
+   "sibling": "Sapphire of False Life +54",
+   "tooltip": "Drag this augment into a slot to upgrade an item to provide a +60 Enhancement bonus to your maximum Hit Points. This augment can go in a Blue, Green, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Sapphire_of_False_Life_%2B60"
+  },
+  "Sapphire of Healing Amplification +63": {
+   "affixes": [
+    {
+     "name": "Healing Amplification",
+     "type": "Competence",
+     "value": "63"
+    }
+   ],
+   "color": "Blue",
+   "ml": 36,
+   "sibling": "Sapphire of Healing Amplification +57",
+   "tooltip": "Drag this augment into a slot to upgrade an item to provide a +63 Competence bonus to your Healing Amplification. This augment can go in a Blue, Green, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Sapphire_of_Healing_Amplification_%2B63"
+  },
+  "Sapphire of Natural Armor +15": {
+   "affixes": [
+    {
+     "name": "Armor Class",
+     "type": "Natural",
+     "value": "15"
+    }
+   ],
+   "color": "Blue",
+   "ml": 36,
+   "sibling": "Sapphire of Natural Armor +14",
+   "tooltip": "Drag this augment into a slot to upgrade an item to provide a +15 Natural Armor bonus to your Armor Class. This augment can go in a Blue, Green, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Sapphire_of_Natural_Armor_%2B15"
+  },
+  "Sapphire of Negative Amplification +63": {
+   "affixes": [
+    {
+     "name": "Negative Amplification",
+     "type": "Profane",
+     "value": "63"
+    }
+   ],
+   "color": "Blue",
+   "ml": 36,
+   "sibling": "Sapphire of Negative Amplification +57",
+   "tooltip": "Drag this augment into a slot to upgrade an item to provide a +63 Profane bonus to your Negative Amplification. This augment can go in a Blue, Green, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Sapphire_of_Negative_Amplification_%2B63"
+  },
+  "Sapphire of Protection +12": {
+   "affixes": [
+    {
+     "name": "Armor Class",
+     "type": "Deflection",
+     "value": "12"
+    }
+   ],
+   "color": "Blue",
+   "ml": 36,
+   "sibling": "Sapphire of Protection +11",
+   "tooltip": "Drag this augment into a slot to upgrade an item to provide a +12 Protection bonus to your Armor Class. This augment can go in a Blue, Green, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Sapphire_of_Protection_%2B12"
+  },
+  "Sapphire of Repair Amplification +63": {
+   "affixes": [
+    {
+     "name": "Repair Amplification",
+     "type": "Enhancement",
+     "value": "63"
+    }
+   ],
+   "color": "Blue",
+   "ml": 36,
+   "sibling": "Sapphire of Repair Amplification +57",
+   "tooltip": "Drag this augment into a slot to upgrade an item to provide a +63 Enhancement bonus to your Repair Amplification. This augment can go in a Blue, Green, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Sapphire_of_Repair_Amplification_%2B63"
+  },
+  "Sapphire of Resistance +12": {
+   "affixes": [
+    {
+     "name": "Resistance",
+     "type": "Resistance",
+     "value": "12"
+    }
+   ],
+   "color": "Blue",
+   "ml": 36,
+   "sibling": "Sapphire of Resistance +11",
+   "tooltip": "Drag this augment into a slot to upgrade an item to provide a +12 Resistance bonus to your Saving Throws. This augment can go in a Blue, Green, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Sapphire_of_Resistance_%2B12"
+  },
+  "Sapphire of Shatter +18": {
+   "affixes": [
+    {
+     "name": "Shatter",
+     "type": "Enhancement",
+     "value": "18"
+    }
+   ],
+   "color": "Blue",
+   "ml": 36,
+   "sibling": "Sapphire of Shatter +16",
+   "tooltip": "Drag this augment into a slot to upgrade an item to provide a +18 Enhancement bonus to your Sunder DCs. This augment can go in a Blue, Green, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Sapphire_of_Shatter_%2B18"
+  },
+  "Sapphire of Stunning +18": {
+   "affixes": [
+    {
+     "name": "Stunning",
+     "type": "Enhancement",
+     "value": "18"
+    }
+   ],
+   "color": "Blue",
+   "ml": 36,
+   "sibling": "Sapphire of Stunning +16",
+   "tooltip": "Drag this augment into a slot to upgrade an item to provide a +18 Enhancement bonus to your Stunning DCs. This augment can go in a Blue, Green, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Sapphire_of_Stunning_%2B18"
+  },
+  "Sapphire of Vertigo +18": {
+   "affixes": [
+    {
+     "name": "Vertigo",
+     "type": "Enhancement",
+     "value": "18"
+    }
+   ],
+   "color": "Blue",
+   "ml": 36,
+   "sibling": "Sapphire of Vertigo +16",
+   "tooltip": "Drag this augment into a slot to upgrade an item to provide a +18 Enhancement bonus to your Trip DCs. This augment can go in a Blue, Green, or Purple Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Sapphire_of_Vertigo_%2B18"
+  },
+  "Topaz of Acid Resistance 50": {
+   "affixes": [
+    {
+     "name": "Acid Resistance",
+     "type": "Enhancement",
+     "value": "50"
+    }
+   ],
+   "color": "Yellow",
+   "ml": 36,
+   "sibling": "Topaz of Acid Resistance 45",
+   "tooltip": "Drag this augment into a slot to upgrade an item to absorb the first 50 points of Acid damage per attack that the wearer would normally take. This augment can go in a Yellow, Green, or Orange Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Topaz_of_Acid_Resistance_50"
+  },
+  "Topaz of Cold Resistance 50": {
+   "affixes": [
+    {
+     "name": "Cold Resistance",
+     "type": "Enhancement",
+     "value": "50"
+    }
+   ],
+   "color": "Yellow",
+   "ml": 36,
+   "sibling": "Topaz of Cold Resistance 45",
+   "tooltip": "Drag this augment into a slot to upgrade an item to absorb the first 50 points of Cold damage per attack that the wearer would normally take. This augment can go in a Yellow, Green, or Orange Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Topaz_of_Cold_Resistance_50"
+  },
+  "Topaz of Damage +12": {
+   "affixes": [
+    {
+     "name": "Deadly",
+     "type": "Competence",
+     "value": "12"
+    }
+   ],
+   "color": "Yellow",
+   "ml": 36,
+   "sibling": "Topaz of Damage +11",
+   "tooltip": "Drag this augment into a slot to upgrade an item to provide a +12 Competence bonus to your damage. This augment can go in a Yellow, Green, or Orange Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Topaz_of_Damage_%2B12"
+  },
+  "Topaz of Electric Resistance 50": {
+   "affixes": [
+    {
+     "name": "Electric Resistance",
+     "type": "Enhancement",
+     "value": "50"
+    }
+   ],
+   "color": "Yellow",
+   "ml": 36,
+   "sibling": "Topaz of Electric Resistance 45",
+   "tooltip": "Drag this augment into a slot to upgrade an item to absorb the first 50 points of Electric damage per attack that the wearer would normally take. This augment can go in a Yellow, Green, or Orange Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Topaz_of_Electric_Resistance_50"
+  },
+  "Topaz of Fire Resistance 50": {
+   "affixes": [
+    {
+     "name": "Fire Resistance",
+     "type": "Enhancement",
+     "value": "50"
+    }
+   ],
+   "color": "Yellow",
+   "ml": 36,
+   "sibling": "Topaz of Fire Resistance 45",
+   "tooltip": "Drag this augment into a slot to upgrade an item to absorb the first 50 points of Fire damage per attack that the wearer would normally take. This augment can go in a Yellow, Green, or Orange Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Topaz_of_Fire_Resistance_50"
+  },
+  "Topaz of Melee Power +14": {
+   "affixes": [
+    {
+     "name": "Melee Power",
+     "type": "Enhancement",
+     "value": "14"
+    }
+   ],
+   "color": "Yellow",
+   "ml": 36,
+   "sibling": "Topaz of Melee Power +12",
+   "tooltip": "Drag this augment into a slot to upgrade an item to provide a +14 Enhancement bonus to your Melee Power. This augment can go in a Yellow, Green, or Orange Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Topaz_of_Melee_Power_%2B14"
+  },
+  "Topaz of Ranged Power +14": {
+   "affixes": [
+    {
+     "name": "Ranged Power",
+     "type": "Enhancement",
+     "value": "14"
+    }
+   ],
+   "color": "Yellow",
+   "ml": 36,
+   "sibling": "Topaz of Ranged Power +12",
+   "tooltip": "Drag this augment into a slot to upgrade an item to provide a +14 Enhancement bonus to your Ranged Power. This augment can go in a Yellow, Green, or Orange Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Topaz_of_Ranged_Power_%2B14"
+  },
+  "Topaz of Sonic Resistance 50": {
+   "affixes": [
+    {
+     "name": "Sonic Resistance",
+     "type": "Enhancement",
+     "value": "50"
+    }
+   ],
+   "color": "Yellow",
+   "ml": 36,
+   "sibling": "Topaz of Sonic Resistance 45",
+   "tooltip": "Drag this augment into a slot to upgrade an item to absorb the first 50 points of Sonic damage per attack that the wearer would normally take. This augment can go in a Yellow, Green, or Orange Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Topaz_of_Sonic_Resistance_50"
+  },
+  "Topaz of Spell Penetration +10": {
+   "affixes": [
+    {
+     "name": "Spell Penetration",
+     "type": "Equipment",
+     "value": "10"
+    }
+   ],
+   "color": "Yellow",
+   "ml": 36,
+   "sibling": "Topaz of Spell Penetration +9",
+   "tooltip": "Drag this augment into a slot to upgrade an item to provide a +10 Equipment bonus to your spell penetration. This augment can go in a Yellow, Green, or Orange Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Topaz_of_Spell_Penetration_%2B10"
+  },
+  "Topaz of Wizardry +327": {
+   "affixes": [
+    {
+     "name": "Wizardry",
+     "type": "Enhancement",
+     "value": "327"
+    }
+   ],
+   "color": "Yellow",
+   "ml": 36,
+   "sibling": "Topaz of Wizardry +294",
+   "tooltip": "Drag this augment into a slot to upgrade an item to provide a +327 Enhancement bonus to your maximum Spell Points. This augment can go in a Yellow, Green, or Orange Augment Slot.",
+   "verified": "2026-08-12",
+   "wiki_url": "https://ddowiki.com/page/Item:Topaz_of_Wizardry_%2B327"
+  }
+ }
+}

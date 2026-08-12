@@ -43,7 +43,8 @@ def test_no_legacy_affix_keys_at_rest():
     """Every item affix carries only native keys; no stat/bonus_type/unit."""
     data = _load()
     items = data["items"]
-    assert len(items) == 9045, f"expected 9045 items, saw {len(items)}"
+    # 9108 = 9045 + the 63 wiki-sourced ML36 augments (#260), re-ratified 2026-08-12.
+    assert len(items) == 9108, f"expected 9108 items, saw {len(items)}"
     offenders = []
     extra = set()
     for it in items:

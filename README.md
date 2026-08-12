@@ -20,7 +20,7 @@ Most gear advice is somebody's opinion, frozen at the update it was written for.
 
 Give it your **ML cap**, optionally your race, armor type, and weapon setup, and a **ranked list of the stats you want**. It returns one loadout and shows its work.
 
-Not a tier list. Not "what a good player usually wears." It considers **9,045 gear variants** built from 8,034 wiki-sourced records, spanning **ML 1 through 36**, and solves for the mathematically best answer under DDO's real stacking rules. When it tells you a set beats three individual items, it's because it checked.
+Not a tier list. Not "what a good player usually wears." It considers **9,108 gear variants** built from 8,034 wiki-sourced records plus a wiki-harvested ML36 augment tier, spanning **ML 1 through 36**, and solves for the mathematically best answer under DDO's real stacking rules. When it tells you a set beats three individual items, it's because it checked.
 
 Two things make it more useful than a static list:
 
@@ -41,10 +41,10 @@ You can also point it at **only the gear you actually own** by importing a Trove
 
 | System | Status |
 |---|---|
-| Named gear, all slots and tiers, ML 1–36 | ✅ 9,045 variants |
+| Named gear, all slots and tiers, ML 1–36 | ✅ 9,108 variants |
 | Bonus-type stacking (Enhancement vs Insightful vs Quality, etc.) | ✅ highest of each type counts, different types add |
 | Set bonuses, intrinsic and piece-threshold | ✅ |
-| Augments, including multi-fit colors and Lunar/Solar gems | ✅ 1,000 augments |
+| Augments, including multi-fit colors and Lunar/Solar gems | ✅ 1,063 augments (incl. the ML36 tier) |
 | Weapon handedness, dual-wield/TWF, shields, off-hand, druid oath | ✅ |
 | **Vecna Unleashed set crafting** (Lost Purpose → awaken a set) | ✅ 28 craftable-membership sets |
 | **Dino Set-Bonus** augments (Isle of Dread) | ✅ 21 augment sets |
@@ -134,7 +134,7 @@ Run the JS tests **file by file**. `node a.js b.js` executes only the first, whi
 
 > Resuming the **ddo-loadout-optimizer** garage project (`~/ClaudeGarage/personal/ddo-loadout-optimizer/`). Public DDO best-in-slot optimizer, live at eddiefiggie.github.io/ddo-loadout-optimizer. Input = ML cap + race + armor + weapon setup + a ranked affix list (optionally restricted to an imported Trove owned-inventory); output = the provably-optimal fully-upgraded loadout (item + tier + augment-in-slot + crafted options + chosen set-membership bonuses), every value wiki-sourced. **Client-side static app on GitHub Pages**; exact MILP in-browser via **HiGHS-WASM**, staged lexicographic solve, deterministic tie-break; Python generator builds `web/data/items.json` (gitignored). Core rules: strict lexicographic priority; theoretical BiS by default with an optional owned-inventory pool; strict exclude-until-verified data with per-result coverage disclosure; **never infer a value**.
 >
-> **State (2026-08-09):** 9,045 variants from 8,034 gear-planner records, ML 1–36. Live: named gear all slots, set bonuses, 1,000 augments w/ multi-fit colors, weapon handedness + TWF + off-hand + druid oath, Vecna Lost Purpose + Dino Set-Bonus crafting via a general chosen-set-membership primitive (28 membership sets, 21 augment sets), Sealed-in-Undeath, Nearly Completed, Viktranium, 107 Dino inserts, ML30–36 endgame band, wildcard set pieces, boolean presence affixes, Minor Artifact opt-in, declared stat credits (a non-gear bonus you already have, carried through solver/results/persistence/exports), guided 5-step wizard, 6 result tabs, per-slot Adjust & re-solve, client-side save/load/backup, share exports (MD/CSV/print/DDOBuilder `.gearset`), and a header Buy Me a Coffee button. Spell-school priorities now count universal DC sources (Spell Focus Mastery and bare Spell Focus expand into the seven schools across the item, set-bonus, and crafting-pool channels), the receipts name the real enchantment, and a settle stage keeps zero-value augments out of the recommendation.
+> **State (2026-08-12):** 9,108 variants from 8,034 gear-planner records + the wiki-harvested ML36 augment tier, ML 1–36. Live: named gear all slots, set bonuses, 1,000 augments w/ multi-fit colors, weapon handedness + TWF + off-hand + druid oath, Vecna Lost Purpose + Dino Set-Bonus crafting via a general chosen-set-membership primitive (28 membership sets, 21 augment sets), Sealed-in-Undeath, Nearly Completed, Viktranium, 107 Dino inserts, ML30–36 endgame band, wildcard set pieces, boolean presence affixes, Minor Artifact opt-in, declared stat credits (a non-gear bonus you already have, carried through solver/results/persistence/exports), guided 5-step wizard, 6 result tabs, per-slot Adjust & re-solve, client-side save/load/backup, share exports (MD/CSV/print/DDOBuilder `.gearset`), and a header Buy Me a Coffee button. Spell-school priorities now count universal DC sources (Spell Focus Mastery and bare Spell Focus expand into the seven schools across the item, set-bonus, and crafting-pool channels), the receipts name the real enchantment, and a settle stage keeps zero-value augments out of the recommendation.
 >
 > **Agent context lives in `AGENTS.md`** (`CLAUDE.md` is a symlink to it): the knowledge stores, the standing rules, the Open-work/Issues rule, and the Non-goals list.
 >
