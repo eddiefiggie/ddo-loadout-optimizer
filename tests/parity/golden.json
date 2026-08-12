@@ -2,7 +2,7 @@
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
  "generated": "2026-08-09",
  "dataset": "web/data/items.json (9045 items)",
- "fixture_count": 15,
+ "fixture_count": 17,
  "solves": {
   "heroic-str-melee": {
    "status": "optimal",
@@ -950,6 +950,80 @@
     {
      "slot": "Trinket",
      "variant": "Bauble of Draconic Resistance"
+    }
+   ]
+  },
+  "blocklist-topaz-ml36-baseline": {
+   "status": "optimal",
+   "perTarget": {
+    "Melee Power": 44,
+    "Balance": 44
+   },
+   "effective": {
+    "Melee Power": 44,
+    "Balance": 44
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Baphomet's Brutality"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Belt of the Burrower"
+    },
+    {
+     "slot": "Bracers",
+     "variant": "Fabricator's Bracers"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Legendary Earthen Mantle"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Cowl of the Drow Devotee"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Astral Spore Pendant"
+    }
+   ]
+  },
+  "blocklist-topaz-ml36": {
+   "status": "optimal",
+   "perTarget": {
+    "Melee Power": 42,
+    "Balance": 44
+   },
+   "effective": {
+    "Melee Power": 42,
+    "Balance": 44
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Baphomet's Brutality"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Belt of the Burrower"
+    },
+    {
+     "slot": "Bracers",
+     "variant": "Fabricator's Bracers"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Legendary Earthen Mantle"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Cowl of the Drow Devotee"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Astral Spore Pendant"
     }
    ]
   }

@@ -4,7 +4,7 @@
 
 🎮 **Play it now:** https://eddiefiggie.github.io/ddo-loadout-optimizer/ · **Code:** https://github.com/eddiefiggie/ddo-loadout-optimizer
 
-**Current build:** 08122026.3 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
+**Current build:** 08122026.4 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
 
 **Category:** Personal
 
@@ -92,7 +92,7 @@ A short guided wizard walks you through it:
 | **Alternatives** | Near-optimal trade-offs — complete a different set, free a slot, fewer crafting steps |
 | **Share** | Forum-ready Markdown, CSV, a print-friendly page, or a DDOBuilder-importable `.gearset` |
 
-Don't like a slot? **Pin** an item you insist on wearing, **lock** a slot empty, or **free** it, then re-solve in place. **Name and save** the character to reload later — everything stays in your browser, and **Export & Data Management** moves saved builds between devices.
+Don't like a slot? **Pin** an item you insist on wearing, **lock** a slot empty, or **free** it, then re-solve in place. Keep getting gear you've already rejected? **Block** it in the gear-pool step — search anything placeable (items *and* augments), tick a whole family across searches, and block the selection in one action; the result then reports itself as optimal *given your exclusions*. **Name and save** the character to reload later — everything stays in your browser, and **Export & Data Management** moves saved builds between devices.
 
 There's also a **Browse items** view for searching the whole roster when you just want to look something up.
 
