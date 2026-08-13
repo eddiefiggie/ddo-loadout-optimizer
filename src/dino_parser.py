@@ -36,6 +36,7 @@ from __future__ import annotations
 import re
 
 from src.affix_parser import parse_line
+from src import vocabulary
 
 # The four Isle of Dread Dino bone types. A slot accepts only an insert of its
 # own type (a Scale slot takes a Scale insert), exactly like a colored augment
@@ -329,10 +330,17 @@ def parse_set_augments(set_augments):
     machinery can consume Dino sets unchanged once wired (deferred; see
     coverage disclosure).
     """
+    folds = vocabulary.registry_synonym_folds()
     out = []
     for s in set_augments or []:
         name = s.get("set_name") or s.get("name")
         affixes, flagged = _parse_effect(s.get("tier_text"))
+        # U4 — fold reviewed spelling synonyms to their canonical stat name
+        # (e.g. the wiki's "Universal Spellpower" -> "Universal Spell Power").
+        # Scoped to THIS channel's normalized `stat` field only; `raw` below
+        # stays verbatim wiki text, mirroring the pipeline's raw/normalized split.
+        for a in affixes:
+            a["stat"] = folds.get(a["stat"], a["stat"])
         out.append({
             "set": name,
             "pieces_required": s.get("threshold"),
@@ -342,6 +350,41 @@ def parse_set_augments(set_augments):
             "raw": s.get("tier_text"),
         })
     return out
+
+
+def check_set_records_spelling(set_records, folds=None):
+    """Per-channel spelling guard for the ``dino_sets`` channel (U4).
+
+    Every normalized ``stat`` in the channel must be canonical — none may appear
+    as a fold-away SYNONYM key in the frozen affix-synonym registry (that is how
+    "Universal Spellpower" survived here while every live channel spelled it
+    "Universal Spell Power"). Refuses to vouch for an empty channel: zero set
+    records or zero affixes is a guard FAILURE, never a pass (per-channel, never
+    vouched for by a sibling — see
+    docs/solutions/conventions/prove-a-guard-fails-before-trusting-it.md).
+    ``raw`` text is deliberately NOT inspected: it is verbatim wiki provenance
+    and keeps the original spelling. Returns the number of affixes inspected."""
+    if not set_records:
+        raise ValueError(
+            "dino_sets spelling guard: zero set records — an empty channel is a "
+            "guard failure, not a pass")
+    folds = vocabulary.registry_synonym_folds() if folds is None else folds
+    checked = 0
+    for rec in set_records:
+        for a in rec.get("affixes") or []:
+            stat = a.get("stat")
+            if stat in folds:
+                raise ValueError(
+                    f"dino_sets spelling guard: set {rec.get('set')!r} carries "
+                    f"fold-away synonym {stat!r} (canonical: {folds[stat]!r}) — "
+                    f"the parse-time synonym fold did not run or the registry "
+                    f"grew a new fold this channel never applied")
+            checked += 1
+    if checked == 0:
+        raise ValueError(
+            "dino_sets spelling guard: set records carry zero affixes — an "
+            "affix-less channel is a guard failure, not a pass")
+    return checked
 
 
 def parse_dino_crafting(seed):

@@ -1121,13 +1121,38 @@ test("#289: Esoterica def is school-creditable and no def channel carries Spell 
   assert.deepStrictEqual(leaks, []);
   // Positive assertion for the dino channel: name-absence alone would also pass
   // if the affix were silently DROPPED — assert the seven schools actually landed.
+  // Re-ratified under U4: the parse-time synonym fold now canonicalizes the
+  // wiki's "Spell DCs" to "Spell Focus Mastery" BEFORE expansion, so the via
+  // receipt names the folded source (the raw wiki text is preserved in s.raw).
   const curse = (realData.dino_sets || []).find((s) => s.set === "The Legendary Dread Isle's Curse");
   assert.ok(curse, "the Dread Isle's Curse dino set is present");
-  const dcs = curse.affixes.filter((a) => a.via === "Profane Spell DCs");
+  const dcs = curse.affixes.filter((a) => a.via === "Profane Spell Focus Mastery");
   assert.deepStrictEqual(dcs.map((a) => a.stat).sort(), ["Abjuration Focus",
     "Conjuration Focus", "Enchantment Focus", "Evocation Focus",
     "Illusion Focus", "Necromancy Focus", "Transmutation Focus"]);
   for (const a of dcs) { assert.strictEqual(a.bonus_type, "Profane"); assert.strictEqual(a.value, 2); }
+});
+
+// U4 — the dino_sets channel spells Universal Spell Power canonically. The wiki
+// tier text says "Universal Spellpower"; the parse-time synonym fold normalizes
+// the `stat` field while `raw` keeps the verbatim wiki text. Positive assertion
+// included so a silently-dropped affix cannot pass as name-absence.
+test("U4: dino_sets carries canonical Universal Spell Power, raw stays verbatim", () => {
+  const sets = realData.dino_sets || [];
+  assert.ok(sets.length > 0, "dino_sets channel present and non-empty");
+  const misspelled = [];
+  for (const s of sets) {
+    for (const a of s.affixes || []) {
+      if (a.stat === "Universal Spellpower") misspelled.push(s.set);
+    }
+  }
+  assert.deepStrictEqual(misspelled, []);
+  const carriers = sets.filter((s) =>
+    (s.affixes || []).some((a) => a.stat === "Universal Spell Power")).map((s) => s.set).sort();
+  assert.deepStrictEqual(carriers, ["Deacon of the Auricular Sacrarium",
+    "Defender of Tanaroa", "The Legendary Dread Isle's Curse"]);
+  const rawCarriers = sets.filter((s) => (s.raw || "").includes("Universal Spellpower"));
+  assert.strictEqual(rawCarriers.length, 3, "verbatim wiki raw text untouched");
 });
 
 // #287 — the five folded engraved names arrive as provenance labels: suggested,
