@@ -513,6 +513,47 @@ test("plan 2026-08-12-001 U3: a boolean contribution reads as a feature tick", (
   assert.ok(!/\+1/.test(html), "no fake +1");
 });
 
+test("#278: a snapshot without effective renders zeroed cards, not a TypeError", () => {
+  const build = { status: "optimal", chosen: [], setsActive: [], augmentsPlaced: [], breakdown: {} };
+  const v = R.buildViews(build, { worn: [], augments: [] }, { targets: ["Constitution"] });
+  assert.ok(/data-final="0"/.test(v.cards), "a missing effective reads as 0 across the receipt cards");
+});
+
+test("#278: the stale-save notice fires exactly when an optimal result lacks effective", () => {
+  assert.ok(/predates|re-solve/i.test(R.staleSnapshotNotice({ status: "optimal", chosen: [] })),
+    "names the fact and the remedy");
+  assert.strictEqual(R.staleSnapshotNotice({ status: "optimal", chosen: [], effective: {} }), "",
+    "silent on a current-format save");
+  assert.strictEqual(R.staleSnapshotNotice({ status: "infeasible" }), "", "silent on a non-optimal result");
+});
+
+test("#276: the receipt card marks an at-ceiling stat with the shared sentence", () => {
+  const b = satBuild();
+  const chip = R.ceilingChip(b, "Kinetic Lore");
+  assert.ok(/at ceiling/.test(chip) && /at-ceiling/.test(chip), "green marker in the stat-cap idiom");
+  assert.ok(/at its ceiling of 30/.test((chip.match(/title="([^"]*)"/) || [])[1] || ""),
+    "the shared sentence rides the chip tooltip");
+  assert.strictEqual(R.ceilingChip(b, "Physical Sheltering"), "", "no chip for an unsaturated stat");
+  assert.strictEqual(R.ceilingChip(satBuild({ saturation: false }), "Kinetic Lore"), "", "no report, no chip");
+});
+
+test("#276: buildViews puts the chip on the saturated stat's card only", () => {
+  const b = satBuild();
+  b.effective = { "Kinetic Lore": 30, "Physical Sheltering": 12 };
+  const v = R.buildViews(b, { worn: [], augments: [] }, { targets: ["Kinetic Lore", "Physical Sheltering"] });
+  const cards = v.cards.split("stat-card").filter((c) => /stat-name/.test(c));
+  assert.strictEqual(cards.length, 2, "both ranked cards render");
+  assert.ok(/stat-ceiling/.test(cards[0]) && /Kinetic Lore/.test(cards[0]), "the saturated stat carries the marker");
+  assert.ok(!/stat-ceiling/.test(cards[1]) && /Physical Sheltering/.test(cards[1]), "the unsaturated stat does not");
+});
+
+test("#276: no per-stat ceiling claim on a degenerate save whose totals are unavailable", () => {
+  const b = satBuild();
+  delete b.effective;
+  const v = R.buildViews(b, { worn: [], augments: [] }, { targets: ["Kinetic Lore"] });
+  assert.ok(!/stat-ceiling/.test(v.cards), "a zeroed card never wears an at-ceiling chip");
+});
+
 test("plan 2026-08-12-001 U3/R4: the Deep Dive block carries the same summary with green", () => {
   const res = whyResult();
   res.saturationReport = [{ stat: "Constitution", total: 15, bonusTypes: ["Enhancement"], unusedSources: 2 }];
@@ -1261,13 +1302,17 @@ test("U4/#239 + plan 2026-08-12-001 U2: the saturation notice is a compact count
   assert.strictEqual(R.saturationNotice(satBuild({ saturation: false })), "", "silent when nothing saturated");
 });
 
-test("plan 2026-08-12-001 U2: the full sentences move to the tooltip, not out of the app", () => {
+test("#277: the notice is a tap/keyboard-openable disclosure carrying the full sentences", () => {
   const html = R.saturationNotice(satBuild());
+  assert.ok(/<details/.test(html) && /<summary/.test(html), "solve-banner details pattern, not hover-only");
+  const summary = (html.match(/<summary[^>]*>([\s\S]*?)<\/summary>/) || [])[1] || "";
+  assert.ok(/1 priority at ceiling: Kinetic Lore 30\./.test(summary), "collapsed line keeps the compact wording");
+  assert.ok(!/reaches you as/.test(summary), "the prose stays out of the collapsed line");
+  const body = html.replace(/<summary[\s\S]*?<\/summary>/, "").replace(/title="[^"]*"/g, "");
+  assert.ok(/at its ceiling of 30/.test(body) && /reaches you as/.test(body),
+    "the full sentences are VISIBLE text in the open state — reachable without a pointer");
   const title = (html.match(/title="([^"]*)"/) || [])[1] || "";
-  assert.ok(/at its ceiling of 30/.test(title), "the shared sentence rides the title");
-  assert.ok(/Equipment bonus/.test(title) && /Artifact bonus/.test(title), "both carrying types survive there");
-  const visible = html.replace(/title="[^"]*"/, "");
-  assert.ok(!/reaches you as/.test(visible), "the paragraph prose is out of the visible line");
+  assert.ok(/at its ceiling of 30/.test(title), "the hover fast-path survives");
 });
 
 test("plan 2026-08-12-001 U2: two saturated stats pluralize and both are listed", () => {

@@ -421,6 +421,11 @@ input.bumped { background: rgba(91,140,255,0.16); border-color: var(--accent); }
 }
 .stat-value .plus { font-size: 0.5em; color: var(--muted); -webkit-text-fill-color: var(--muted); }
 .stat-cap { display: inline-block; margin-top: var(--sp-1); font-size: var(--fs-xs); color: var(--quarantined); }
+/* #276 -- the same at-ceiling fact the gear boxes carry, on the receipt card */
+.stat-ceiling { display: inline-block; margin-top: var(--sp-1); margin-left: var(--sp-2); font-size: var(--fs-xs); color: var(--optimal); font-weight: 600; }
+/* #277 -- the ceiling notice opens by tap/keyboard; sentences become visible text */
+details.saturation-note summary { cursor: pointer; }
+details.saturation-note .sat-sentences p { margin: var(--sp-1) 0 0; }
 /* attribution list (replaces the old progress bars): which slot(s)/set drive
    each ranked target, value stated as text. */
 .attrib { list-style: none; margin: var(--sp-3) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-1); }
