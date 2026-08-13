@@ -2,7 +2,7 @@
 title: "Prove a guard fails before trusting it, and make it refuse to inspect nothing"
 module: build-pipeline
 date: 2026-08-07
-last_updated: 2026-08-08
+last_updated: 2026-08-13
 problem_type: convention
 component: tooling
 severity: high
@@ -157,6 +157,21 @@ missing assertion in `src/parrying_split.py`, it was fixed there, and
 `src/heightened_awareness.py` — same shape, same author, same session — kept the hole. When
 a guard gets a new assertion, grep for its siblings before closing the work.
 
+This rule's trap surfaced in production a third time on 2026-08-13 (#293): the universal-DC
+def-channel guard was wired over the membership and augment def channels (#289) while the
+`dino_sets` channel — same affix shape, built two hundred lines earlier in the same file —
+was never pointed at any umbrella-expansion guard at all, and `all Ability Scores | Profane`
+shipped priority-invisible. The channel list itself is the thing to enumerate when wiring a
+guard, not the channels that happen to be in view.
+
+**When a guard covers multiple sources, make the vacuity check per source.** An aggregate
+"inspected zero" assertion over N channels stays green when one channel quietly empties, as
+long as a sibling still walks — the populated channel vouches for the dark one. The current
+shape for this is `set_def_orphans` (`src/enchantment_split.py`): it takes a dict of *named*
+channels, counts inspections per channel, and raises naming any channel that walked zero
+tier affixes (proven by `test_set_def_orphans_vacuity_is_per_channel_not_aggregate` in
+`tests/test_augment_sets.py`).
+
 ## Why This Matters
 
 The consequence was not a broken build — it was the opposite. The gate would have shipped
@@ -275,3 +290,6 @@ and neither was trustworthy until it had been run.
 - `docs/solutions/conventions/bundled-template-values-live-in-the-tooltip-not-the-cell.md` —
   the adjacent lesson from #168: where the value lives, as opposed to whether the check
   that reads it actually runs.
+- `docs/solutions/design-patterns/universal-stat-expansion-family.md` — the expansion-family
+  pattern whose per-channel coverage discipline instantiates rules 2 and 4; #289 and #293
+  are its guard-shaped incidents.
