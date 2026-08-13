@@ -2,7 +2,7 @@
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
  "generated": "2026-08-09",
  "dataset": "web/data/items.json (9045 items)",
- "fixture_count": 17,
+ "fixture_count": 18,
  "solves": {
   "heroic-str-melee": {
    "status": "optimal",
@@ -1024,6 +1024,35 @@
     {
      "slot": "Necklace",
      "variant": "Astral Spore Pendant"
+    }
+   ]
+  },
+  "absorption-sonic-flag-ml26": {
+   "status": "optimal",
+   "perTarget": {
+    "Sonic Absorption": 20,
+    "Fire Absorption": 37
+   },
+   "effective": {
+    "Sonic Absorption": 20,
+    "Fire Absorption": 37
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "War Wizard's Robes"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Epic Purging the Pantheon"
+    },
+    {
+     "slot": "Goggles",
+     "variant": "Drider's Vision"
+    },
+    {
+     "slot": "Off Hand",
+     "variant": "Golden Orb of Death (level 26)"
     }
    ]
   }
