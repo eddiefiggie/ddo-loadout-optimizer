@@ -67,9 +67,15 @@ rules out, and it would wrongly suppress a bonus that genuinely stacks.
   `Penalty` (33), `Sneak Attack` (36, all `Sneak Attack Bonus`)** — all legitimate native
   types, no collapse warranted. None of their stats appear under a second type, so none can
   be splitting a bucket.
-- **`Legendary` (93) is a real bonus type, not a tier word.** Its stats are the endgame
-  enchantments `Legendary Accuracy`, `Legendary Conditioning`, `Legendary Armor-Piercing`,
-  `Legendary Spell Penetration`, `Legendary Deadly`. Distinguish from `Epic`, which has one
+- **`Legendary` (93) is a real bonus type, not a tier word.** Its stats arrived from
+  gear-planner under prefixed display names (`Legendary Accuracy`, `Legendary Conditioning`,
+  `Legendary Armor-Piercing`, `Legendary Spell Penetration`, `Legendary Deadly`), but the
+  wiki models each as the BASE enchantment with `Legendary` as the type parameter —
+  `{{Accuracy|2|Legendary}}`, tooltip "+2 Legendary bonus to attack rolls" (verified
+  2026-08-13, #287). `src/legendary_fold.py` folds the five into base stat + `Legendary`
+  type with the engraved name kept as the `via` receipt; the TYPE ruling here is unchanged
+  (a Legendary bonus stacks with Competence/Insight/etc. and self-collapses to the
+  highest). Distinguish from `Epic`, which has one
   affix and is a DR bypass (§3).
 - **`Implement` (540) sharing `Universal Spell Power` with `Exceptional` is correct.**
   Implement and Exceptional are genuinely different DDO bonus types; spell power from both

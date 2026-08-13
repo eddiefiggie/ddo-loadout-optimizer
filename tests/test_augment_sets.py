@@ -294,3 +294,91 @@ def test_known_unscored_stats_are_the_disclosed_set():
     all_stats = {a["stat"] for d in defs.values() for a in d["tiers"][0]["affixes"]}
     missing = KNOWN_UNSCORED - all_stats
     assert not missing, f"each disclosed unscored stat is still present in a def: {sorted(missing)}"
+
+
+# --- #289: universal-DC expansion + the def-channel orphan guard -----------------
+#
+# Esoterica's 3-piece bonus is stored as stat `Spell DCs` — a name no item
+# carries and no player can rank. The augment-set-def channel was the one place
+# the universal-DC expansion never ran and no orphan guard watched, so the set
+# was invisible to every school priority (the Set Bonuses tab could show Tough
+# Shields but never Esoterica). The expansion is wired in build_dataset.py where
+# the defs are built; these tests pin the mechanism and the guard.
+
+def test_esoterica_tier_expands_to_seven_schools():
+    from src import spell_focus
+    defs = membership.build_augment_set_defs()
+    tier = defs["Esoterica"]["tiers"][0]
+    out = spell_focus.expand_affixes(tier["affixes"])
+    assert [a["stat"] for a in out] == spell_focus.SCHOOLS
+    assert all(a["bonus_type"] == "Artifact" for a in out)
+    assert all(a["value"] == 3 for a in out)
+    assert all(a[spell_focus.PROVENANCE_KEY] == "Artifact Spell DCs" for a in out)
+    assert not any(a["stat"] == "Spell DCs" for a in out)
+
+
+def test_expansion_is_idempotent_on_an_already_expanded_tier():
+    # The membership defs are expanded at a different build_dataset call site;
+    # a second pass over expanded affixes must be a no-op, or wiring order
+    # changes would silently double affixes.
+    from src import spell_focus
+    defs = membership.build_augment_set_defs()
+    once = spell_focus.expand_affixes(defs["Esoterica"]["tiers"][0]["affixes"])
+    twice = spell_focus.expand_affixes(once)
+    assert twice == once
+
+
+def test_set_def_orphans_catches_an_unexpanded_universal_stat():
+    from src import enchantment_split
+    defs = {"Esoterica": {"tiers": [{"pieces_required": 3, "affixes": [
+        {"stat": "Spell DCs", "bonus_type": "Artifact", "value": 3}]}]}}
+    away = {"spell dcs": ["Necromancy Focus"]}
+    orphans = enchantment_split.set_def_orphans({"augment": defs}, away)
+    assert orphans == [("augment:Esoterica", "Spell DCs", "3")]
+
+
+def test_set_def_orphans_respects_the_allowlist():
+    from src import enchantment_split
+    defs = {"S": {"tiers": [{"affixes": [
+        {"stat": "Speed", "bonus_type": "Enhancement", "value": 30}]}]}}
+    away = {"speed": ["Movement Speed"]}
+    assert enchantment_split.set_def_orphans({"m": defs}, away, allow=("speed",)) == []
+
+
+def test_set_def_orphans_refuses_a_vacuous_pass():
+    # A guard that inspects zero tiers proves nothing — an empty walk must be an
+    # error, not a green light (prove-a-guard-fails convention).
+    from src import enchantment_split
+    try:
+        enchantment_split.set_def_orphans({"augment": {}}, {"spell dcs": []})
+    except SystemExit:
+        pass
+    else:
+        raise AssertionError("an empty def walk must raise, not pass")
+
+
+def test_set_def_orphans_vacuity_is_per_channel_not_aggregate():
+    # A populated augment channel must not vouch for a membership channel that
+    # quietly emptied: the guard keys on EACH channel walking at least one tier
+    # affix, or the real two-channel wiring could go half-dark silently.
+    from src import enchantment_split
+    populated = {"S": {"tiers": [{"affixes": [
+        {"stat": "Strength", "bonus_type": "Artifact", "value": 3}]}]}}
+    try:
+        enchantment_split.set_def_orphans(
+            {"augment": populated, "membership": {}}, {"spell dcs": []})
+    except SystemExit as e:
+        assert "membership" in str(e)
+    else:
+        raise AssertionError("one dark channel must raise even when the other walks")
+
+
+def test_shipped_defs_have_no_orphans_after_expansion():
+    from src import enchantment_split, spell_focus, umbrella
+    defs = membership.build_augment_set_defs()
+    for d in defs.values():
+        for tier in d.get("tiers") or []:
+            if tier.get("affixes"):
+                tier["affixes"] = spell_focus.expand_affixes(tier["affixes"])
+    away = {**umbrella.umbrella_expansion(), **spell_focus.expanded_away()}
+    assert enchantment_split.set_def_orphans({"augment": defs}, away) == []

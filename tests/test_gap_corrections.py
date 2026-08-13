@@ -55,11 +55,18 @@ def test_ophael_ability_scores_come_from_the_undeath_seal():
     assert any(s.get("seal_type") == "Undeath" for s in seals), seals
 
 
-def test_overlay_is_empty():
-    # Ophael reverted; no sanctioned gap corrections remain (the only entry was a
-    # misread of the seal pool, not a genuine affix gap).
+def test_overlay_carries_exactly_the_sanctioned_entries():
+    # Ophael reverted (a misread of the seal pool, not a genuine gap). #288 added
+    # the one genuine gap since: the U81 pull-back gave Orcus' Reign a Quality
+    # False Life +15 that gear-planner's snapshot predates entirely. Pin the
+    # exact contents so a drive-by addition to the sanctioned exception is loud.
     corrections = B.load_gap_corrections()
-    assert corrections == {}, list(corrections.keys())
+    assert list(corrections.keys()) == ["Orcus' Reign"], list(corrections.keys())
+    entry = corrections["Orcus' Reign"][0]
+    assert (entry["name"], entry["type"], entry["value"]) == (
+        "False Life", "Quality", "15")
+    assert entry.get("tooltip") and entry.get("wiki_url") and entry.get("verified"), \
+        "a gap entry carries its rendered-tooltip evidence like every correction"
 
 
 def test_apply_never_double_counts_existing_name_type():

@@ -177,10 +177,13 @@ def test_native_school_affix_carries_no_provenance():
 
 # ---- expanded-away registration ----------------------------------------------
 
-def test_both_names_map_to_the_seven_schools():
+def test_all_universal_names_map_to_their_family_targets():
     away = spell_focus.expanded_away()
-    assert set(away) == {"spell focus mastery", "spell focus"}
-    assert all(v == spell_focus.SCHOOLS for v in away.values())
+    assert set(away) == {"spell focus mastery", "spell focus", "spell dcs",
+                         "potency"}
+    for name in ("spell focus mastery", "spell focus", "spell dcs"):
+        assert away[name] == spell_focus.SCHOOLS, name
+    assert away["potency"] == spell_focus.SPELLPOWERS
 
 
 def test_expanded_away_keys_are_lowercased():
@@ -271,15 +274,108 @@ def test_viktranium_universal_option_expands_inside_one_record():
             universal.append((rec, expanded))
 
     assert universal, "expected Viktranium options granting a universal spell DC"
+    # #290 widened the machinery to two families, so group each option's stamped
+    # affixes by their source label: every label's group must be COMPLETE — all
+    # seven schools for a DC source, all ten element spellpowers for Potency —
+    # from the one option, at one type and value per label.
     for rec, expanded in universal:
-        assert [a["stat"] for a in expanded] == spell_focus.SCHOOLS, (
-            f"{rec.get('name')} must grant all seven schools from one option")
-        assert len({a["bonus_type"] for a in expanded}) == 1
-        assert len({a["value"] for a in expanded}) == 1
+        by_label = {}
+        for a in expanded:
+            by_label.setdefault(a[VIA], []).append(a)
+        for label, group in by_label.items():
+            stats = [a["stat"] for a in group]
+            assert stats in (spell_focus.SCHOOLS, spell_focus.SPELLPOWERS), (
+                f"{rec.get('name')} / {label} must grant its full family from "
+                f"one option, got {stats}")
+            assert len({a["bonus_type"] for a in group}) == 1
+            assert len({a["value"] for a in group}) == 1
     # The collapse, measured: 10 universal options, not the 70 flat records the
     # across-records expansion produced. #282 raised it to 18: the eight
     # quarterstaff-variant records (Dolorous Focus x2 tiers, and Melancholic
     # Arcana/Dimlight/Shadows x2 tiers) each carry a universal spell-DC source
-    # too, so they expand into the seven schools inside their own record.
-    assert len(universal) == 18, (
-        f"expected 18 universal Viktranium options, got {len(universal)}")
+    # too, so they expand into the seven schools inside their own record. #290's
+    # Potency family raises it further — pin the exact count so a channel that
+    # stops expanding shows up as a drop.
+    assert len(universal) == 20, (
+        f"expected 20 universal Viktranium options, got {len(universal)}")
+
+
+# ---- #289: "Spell DCs" is a third universal name -------------------------------
+#
+# The Esoterica Set Augment's 3-piece bonus is stored as stat `Spell DCs` in the
+# wiki-harvested augment-set seed. The wiki-evidence table records the bonus as
+# "+3 Artifact ALL Spell DCs" (docs/wiki-evidence/augment-sets.md), and
+# gear-planner's own catalog stores the identical bonus as
+# `Spell Focus Mastery | Artifact | 3` (raw/gearplanner_sets.json) — a name this
+# module already expands. The name is universal by both sources; joining the
+# allowlist makes any channel that carries it school-creditable.
+
+def test_spell_dcs_is_universal():
+    assert spell_focus.is_universal("Spell DCs")
+    assert spell_focus.is_universal("  spell dcs ")
+
+
+def test_spell_dcs_expands_to_seven_schools_with_provenance():
+    out = spell_focus.expand_affixes([_aff("Spell DCs", "Artifact", 3)])
+    assert [a["stat"] for a in out] == spell_focus.SCHOOLS
+    assert all(a["bonus_type"] == "Artifact" for a in out)
+    assert all(a["value"] == 3 for a in out)
+    # The receipt names the source the wiki-facing surfaces can display.
+    assert all(a[VIA] == "Artifact Spell DCs" for a in out)
+
+
+def test_spell_dcs_is_registered_as_expanded_away():
+    away = spell_focus.expanded_away()
+    assert "spell dcs" in away
+    assert away["spell dcs"] == spell_focus.SCHOOLS
+
+
+# ---- #290 (U3): universal SPELLPOWER expansion — Potency --------------------------
+#
+# The Spell Power page's Affected-damage-types table states "Potency -> All
+# Spells", and the Equipment-bonus page names Potency and Combustion as the same
+# bonus kind with the don't-stack rule outright. Expanding Potency into the ten
+# element spellpowers at the same bonus type reproduces both rules through the
+# existing bucketing. `Universal Spell Power` is the deliberate exclusion: the
+# wiki says it FULLY STACKS ("flat adds to all of your other Spell Powers"), so
+# same-type expansion would wrongly put it in max-competition.
+# Evidence: docs/wiki-evidence/spellpower-universal.md.
+
+def test_potency_is_universal():
+    assert spell_focus.is_universal("Potency")
+    assert spell_focus.is_universal("  potency ")
+
+
+def test_potency_expands_to_the_ten_element_spellpowers():
+    out = spell_focus.expand_affixes([_aff("Potency", "Equipment", 25)])
+    assert [a["stat"] for a in out] == spell_focus.SPELLPOWERS
+    assert len(out) == 10
+    assert all(a["bonus_type"] == "Equipment" for a in out)
+    assert all(a["value"] == 25 for a in out)
+    assert all(a[VIA] == "Potency" for a in out)
+
+
+def test_insight_potency_labels_as_insightful():
+    out = spell_focus.expand_affixes([_aff("Potency", "Insight", 36)])
+    assert all(a[VIA] == "Insightful Potency" for a in out)
+    assert all(a["bonus_type"] == "Insight" for a in out)
+
+
+def test_universal_spell_power_is_not_expanded():
+    source = [_aff("Universal Spell Power", "Implement", 31),
+              _aff("Universal Spell Power", "Exceptional", 5)]
+    out = spell_focus.expand_affixes([dict(a) for a in source])
+    assert out == source, "USP fully stacks — it must stay its own bucket"
+    assert not spell_focus.is_universal("Universal Spell Power")
+
+
+def test_element_spellpowers_are_not_universal():
+    for name in spell_focus.SPELLPOWERS:
+        assert not spell_focus.is_universal(name), name
+
+
+def test_potency_expanded_away_maps_to_spellpowers_not_schools():
+    away = spell_focus.expanded_away()
+    assert away["potency"] == spell_focus.SPELLPOWERS
+    assert away["spell focus mastery"] == spell_focus.SCHOOLS, \
+        "the DC family still maps to the seven schools"

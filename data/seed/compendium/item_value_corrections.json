@@ -17,5 +17,168 @@
       "verified": "2026-08-09",
       "note": "The item's other three enchantments agree with gear-planner exactly (Insightful Wizardry 155, Insightful Spell Penetration 5, Sacred Spell Focus Mastery 3), and the heroic Argonnessen Eye Band agrees on all four. Only this row is stale."
     }
+  ],
+  "_note_288": "U81 balance pull-back (#288): most ML35 'Reign' minor artifacts had over-scaled effects reduced after release; gear-planner's snapshot predates the change. Rendered tooltips captured 2026-08-13. Baphomet's and Yeenoghu's Reigns were checked and match; the six ML32 Unholy Defiler artifacts were swept the same day and all match (no entries).",
+  "Orcus' Reign": [
+    {
+      "name": "Necromancy Focus",
+      "type": "Insight",
+      "from": "9",
+      "to": "8",
+      "tooltip": "Insightful Necromancy Focus +8: +8 Insight bonus to the DC of Necromancy spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Orcus%27_Reign",
+      "verified": "2026-08-13",
+      "note": "The missing Quality False Life +15 is the sibling gap_corrections.json entry."
+    }
+  ],
+  "Juiblex's Reign": [
+    {
+      "name": "Sheltering",
+      "type": "Insight",
+      "from": "22",
+      "to": "21",
+      "tooltip": "Insightful Sheltering +21: +21 Insight bonus to Physical and Magical Resistance Ratings",
+      "wiki_url": "https://ddowiki.com/page/Item:Juiblex%27s_Reign",
+      "verified": "2026-08-13"
+    },
+    {
+      "name": "False Life",
+      "type": "Profane",
+      "from": "59",
+      "to": "56",
+      "tooltip": "Profane Lifeforce +56: +56 Profane bonus to Hit Points.",
+      "wiki_url": "https://ddowiki.com/page/Item:Juiblex%27s_Reign",
+      "verified": "2026-08-13",
+      "note": "The wiki names the enchantment 'Profane Lifeforce'; gear-planner stores the stat as False Life. Value only."
+    },
+    {
+      "name": "Acid Absorption",
+      "type": "Enhancement",
+      "from": "16",
+      "to": "15",
+      "tooltip": "Insightful Acid Absorption +15%: Passive: 15% Insight Bonus to Acid Absorption.",
+      "wiki_url": "https://ddowiki.com/page/Item:Juiblex%27s_Reign",
+      "verified": "2026-08-13",
+      "note": "Targeted at the CURRENT (pre-correction) type: the sibling affix_type_corrections.json entry retypes Enhancement -> Insight after this value lands."
+    }
+  ],
+  "Demogorgon's Reign": [
+    {
+      "name": "Fortification",
+      "type": "Insight",
+      "from": "90",
+      "to": "87",
+      "tooltip": "Insightful Fortification +87%: +87% Insight bonus to reduced chance of taking critical damage on a critical hit.",
+      "wiki_url": "https://ddowiki.com/page/Item:Demogorgon%27s_Reign",
+      "verified": "2026-08-13"
+    },
+    {
+      "name": "Potency",
+      "type": "Quality",
+      "from": "31",
+      "to": "30",
+      "tooltip": "Quality Potency +30: Passive: +30 Quality bonus to each Spell Power.",
+      "wiki_url": "https://ddowiki.com/page/Item:Demogorgon%27s_Reign",
+      "verified": "2026-08-13"
+    }
+  ],
+  "Fraz-Urb'luu's Reign": [
+    {
+      "name": "Kinetic Lore",
+      "type": "Equipment",
+      "from": "26",
+      "to": "25",
+      "tooltip": "Kinetic Lore +25: Passive: Your Force, Physical and Untyped spells gain a 25% Equipment bonus to their chance to critical hit.",
+      "wiki_url": "https://ddowiki.com/page/Item:Fraz-Urb%27luu%27s_Reign",
+      "verified": "2026-08-13"
+    },
+    {
+      "name": "Command",
+      "type": "Competence",
+      "from": "2",
+      "to": "8",
+      "tooltip": "Command: Passive: +8 competence bonus on Charisma based skill checks. Command armor and command shields make their owners very noticeable, imposing a -6 penalty on Hide checks.",
+      "wiki_url": "https://ddowiki.com/page/Item:Fraz-Urb%27luu%27s_Reign",
+      "verified": "2026-08-13",
+      "note": "The one correction that goes UP. Value only; whether the -6 Hide penalty should be modelled is open question #192."
+    },
+    {
+      "name": "Impulse",
+      "type": "Quality",
+      "from": "44",
+      "to": "43",
+      "tooltip": "Quality Impulse +43: Passive: +43 Quality bonus to Force, Untyped, Slashing, Piercing, and Bludgeoning Spell Power.",
+      "wiki_url": "https://ddowiki.com/page/Item:Fraz-Urb%27luu%27s_Reign",
+      "verified": "2026-08-13"
+    },
+    {
+      "name": "Evocation Focus",
+      "type": "Equipment",
+      "from": "18",
+      "to": "16",
+      "tooltip": "Evocation Focus +16: +16 Equipment bonus to the DC of Evocation spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Fraz-Urb%27luu%27s_Reign",
+      "verified": "2026-08-13"
+    }
+  ],
+  "Zuggtmoy's Reign": [
+    {
+      "name": "Acid Lore",
+      "type": "Equipment",
+      "from": "26",
+      "to": "25",
+      "tooltip": "Acid Lore +25: Passive: Your Acid spells gain a 25% Equipment bonus to their chance to critical hit.",
+      "wiki_url": "https://ddowiki.com/page/Item:Zuggtmoy%27s_Reign",
+      "verified": "2026-08-13"
+    },
+    {
+      "name": "Transmutation Focus",
+      "type": "Insight",
+      "from": "9",
+      "to": "8",
+      "tooltip": "Insightful Transmutation Focus +8: +8 Insight bonus to the DC of Transmutation spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Zuggtmoy%27s_Reign",
+      "verified": "2026-08-13"
+    },
+    {
+      "name": "Corrosion",
+      "type": "Quality",
+      "from": "44",
+      "to": "43",
+      "tooltip": "Quality Corrosion +43: Passive: +43 Quality bonus to Acid Spell Power.",
+      "wiki_url": "https://ddowiki.com/page/Item:Zuggtmoy%27s_Reign",
+      "verified": "2026-08-13"
+    },
+    {
+      "name": "Conjuration Focus",
+      "type": "Insight",
+      "from": "9",
+      "to": "8",
+      "tooltip": "Insightful Conjuration Focus +8: +8 Insight bonus to the DC of Conjuration spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Zuggtmoy%27s_Reign",
+      "verified": "2026-08-13"
+    }
+  ],
+  "Lolth's Reign": [
+    {
+      "name": "Sheltering",
+      "type": "Insight",
+      "from": "22",
+      "to": "21",
+      "tooltip": "Insightful Sheltering +21: +21 Insight bonus to Physical and Magical Resistance Ratings",
+      "wiki_url": "https://ddowiki.com/page/Item:Lolth%27s_Reign",
+      "verified": "2026-08-13"
+    }
+  ],
+  "Graz'zt's Reign": [
+    {
+      "name": "Armor Class",
+      "type": "Natural",
+      "from": "17",
+      "to": "16",
+      "tooltip": "Natural Armor +16: Passive: +16 Natural Armor Bonus to Armor Class.",
+      "wiki_url": "https://ddowiki.com/page/Item:Graz%27zt%27s_Reign",
+      "verified": "2026-08-13"
+    }
   ]
 }

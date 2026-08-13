@@ -109,3 +109,59 @@ def test_the_argonnessen_correction_is_the_one_we_verified():
     entry = loaded["Legendary Argonnessen Eye Band"][0]
     assert (entry["name"], entry["type"], entry["from"], entry["to"]) == (
         "Spell Focus Mastery", "Equipment", "5", "8")
+
+
+# --- #288: the U81 Reign pull-back batch -----------------------------------------
+
+def test_the_288_batch_covers_the_seven_drifted_reigns():
+    loaded = value_corrections.load(SHARD)
+    reigns = {"Orcus' Reign": 1, "Juiblex's Reign": 3, "Demogorgon's Reign": 2,
+              "Fraz-Urb'luu's Reign": 4, "Zuggtmoy's Reign": 4,
+              "Lolth's Reign": 1, "Graz'zt's Reign": 1}
+    for item, n in reigns.items():
+        assert len(loaded.get(item) or []) == n, (item, len(loaded.get(item) or []))
+    # Verified-and-unchanged artifacts must NOT carry entries: Baphomet's and
+    # Yeenoghu's Reigns match the wiki, as do all six ML32 Unholy Defiler
+    # artifacts (swept 2026-08-13).
+    for item in ("Baphomet's Reign", "Yeenoghu's Reign", "Beltstrap of Forbidden Tomes",
+                 "Blade-Barbed Bandolier", "Buckle of Assimilation",
+                 "Desolation Spectacles", "Eyes of Defilement", "Misery Monocle"):
+        assert item not in loaded, f"{item} was verified unchanged — no entry belongs"
+
+
+def test_the_built_reigns_score_the_wiki_values():
+    path = os.path.join(os.path.dirname(__file__), "..", "web", "data", "items.json")
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8") as fh:
+        items = {i["variant_id"]: i for i in json.load(fh)["items"]}
+
+    def aff(item, name, type_):
+        return next(a for a in items[item]["affixes"]
+                    if a["name"] == name and a["type"] == type_)
+
+    assert aff("Orcus' Reign", "Necromancy Focus", "Insight")["value"] == "8"
+    # The gap entry: the pull-back ADDED Quality False Life +15 to Orcus.
+    assert aff("Orcus' Reign", "False Life", "Quality")["value"] == "15"
+    # ... and rebuilding is idempotent about it: exactly one such affix.
+    assert sum(1 for a in items["Orcus' Reign"]["affixes"]
+               if a["name"] == "False Life") == 1
+    assert aff("Juiblex's Reign", "Sheltering", "Insight")["value"] == "21"
+    assert aff("Juiblex's Reign", "False Life", "Profane")["value"] == "56"
+    # Value AND type corrected, in that order (16->15 at Enhancement, then
+    # Enhancement->Insight): the tooltip states an Insight bonus.
+    assert aff("Juiblex's Reign", "Acid Absorption", "Insight")["value"] == "15"
+    assert not any(a["name"] == "Acid Absorption" and a["type"] == "Enhancement"
+                   for a in items["Juiblex's Reign"]["affixes"])
+    assert aff("Demogorgon's Reign", "Fortification", "Insight")["value"] == "87"
+    assert aff("Fraz-Urb'luu's Reign", "Command", "Competence")["value"] == "8"
+    assert aff("Fraz-Urb'luu's Reign", "Evocation Focus", "Equipment")["value"] == "16"
+    assert aff("Zuggtmoy's Reign", "Corrosion", "Quality")["value"] == "43"
+    assert aff("Lolth's Reign", "Sheltering", "Insight")["value"] == "21"
+    assert aff("Graz'zt's Reign", "Armor Class", "Natural")["value"] == "16"
+    # Demogorgon's Potency 31->30 lands pre-expansion, so it surfaces as the ten
+    # element spellpowers at the corrected value (#290 interaction).
+    assert aff("Demogorgon's Reign", "Nullification", "Quality")["value"] == "30"
+    # The verified-unchanged control pair really is unchanged.
+    assert aff("Baphomet's Reign", "Sheltering", "Quality")["value"] == "11"
+    assert aff("Yeenoghu's Reign", "Deadly", "Quality")["value"] == "4"

@@ -1091,4 +1091,93 @@ test("U11: a bound and a credit dropped by a picker substitution are both disclo
   assert.ok(/already have/.test(msg), "and the dropped credit separately");
 });
 
+// #289 — the Esoterica Set Augment's 3-piece bonus arrives expanded: seven
+// rankable school stats at Artifact with a provenance receipt, and no def or
+// dino-set channel still carries the unrankable universal name "Spell DCs".
+test("#289: Esoterica def is school-creditable and no def channel carries Spell DCs", () => {
+  const eso = (realData.augment_set_defs || {}).Esoterica;
+  assert.ok(eso, "Esoterica def present");
+  const affixes = eso.tiers[0].affixes;
+  const schools = affixes.map((a) => a.stat).sort();
+  assert.deepStrictEqual(schools, ["Abjuration Focus", "Conjuration Focus",
+    "Enchantment Focus", "Evocation Focus", "Illusion Focus",
+    "Necromancy Focus", "Transmutation Focus"]);
+  for (const a of affixes) {
+    assert.strictEqual(a.bonus_type, "Artifact");
+    assert.strictEqual(a.value, 3);
+    assert.strictEqual(a.via, "Artifact Spell DCs", "receipt names the source");
+  }
+  const leaks = [];
+  for (const defs of [realData.membership_set_defs, realData.augment_set_defs]) {
+    for (const [name, def] of Object.entries(defs || {})) {
+      for (const t of def.tiers || []) for (const a of t.affixes || []) {
+        if (a.stat === "Spell DCs") leaks.push(`def:${name}`);
+      }
+    }
+  }
+  for (const s of realData.dino_sets || []) {
+    for (const a of s.affixes || []) if (a.stat === "Spell DCs") leaks.push(`dino:${s.set}`);
+  }
+  assert.deepStrictEqual(leaks, []);
+  // Positive assertion for the dino channel: name-absence alone would also pass
+  // if the affix were silently DROPPED — assert the seven schools actually landed.
+  const curse = (realData.dino_sets || []).find((s) => s.set === "The Legendary Dread Isle's Curse");
+  assert.ok(curse, "the Dread Isle's Curse dino set is present");
+  const dcs = curse.affixes.filter((a) => a.via === "Profane Spell DCs");
+  assert.deepStrictEqual(dcs.map((a) => a.stat).sort(), ["Abjuration Focus",
+    "Conjuration Focus", "Enchantment Focus", "Evocation Focus",
+    "Illusion Focus", "Necromancy Focus", "Transmutation Focus"]);
+  for (const a of dcs) { assert.strictEqual(a.bonus_type, "Profane"); assert.strictEqual(a.value, 2); }
+});
+
+// #287 — the five folded engraved names arrive as provenance labels: suggested,
+// rankable, and resolving to their base stat, with the prefixed name gone from
+// every built affix. No bespoke web code — the label scan picks up any family
+// the moment it stamps its first affix.
+test("#287: folded Legendary names are redirecting labels, not dead stats", () => {
+  const v = buildPickerVocabulary(realData);
+  const pairs = {
+    "Legendary Accuracy": "Accuracy",
+    "Legendary Armor-Piercing": "Armor-Piercing",
+    "Legendary Deadly": "Deadly",
+    "Legendary Conditioning": "Conditioning",
+    "Legendary Spell Penetration": "Spell Penetration",
+  };
+  for (const [engraved, base] of Object.entries(pairs)) {
+    assert.ok(v.provenanceLabels[engraved.toLowerCase()], `${engraved} is a shipped label`);
+    assert.deepStrictEqual(expandedAwayFor(v, engraved), [base],
+      `${engraved} resolves to ${base}`);
+    assert.ok(v.suggestions.includes(base), `${base} stays suggested`);
+  }
+  for (const it of realData.items) {
+    for (const a of it.affixes || []) {
+      assert.ok(!(String(a.name || "").toLowerCase() in
+        Object.fromEntries(Object.keys(pairs).map((k) => [k.toLowerCase(), 1]))),
+        `no built affix keeps a prefixed stat name (${it.variant_id})`);
+    }
+  }
+});
+
+// #290 — Potency joins the bare-label family: no item carries the stat anymore,
+// but every expanded affix is stamped via "Potency", so the name stays
+// suggested, rankable, and resolves to the ten element spellpowers — the same
+// path a saved build's priorities migrate through on load. Universal Spell
+// Power is the deliberate non-expansion (fully stacking) and must stay a
+// plain rankable stat.
+test("#290: Potency is a redirecting label; Universal Spell Power stays native", () => {
+  const v = buildPickerVocabulary(realData);
+  assert.ok(v.provenanceLabels["potency"], "Potency is a shipped label");
+  assert.deepStrictEqual(expandedAwayFor(v, "Potency"),
+    ["Combustion", "Corrosion", "Devotion", "Glaciation", "Impulse",
+     "Magnetism", "Nullification", "Radiance", "Reconstruction", "Resonance"]);
+  assert.ok(v.suggestions.includes("Potency"), "Potency stays suggested");
+  assert.ok(!expandedAwayFor(v, "Universal Spell Power"), "USP is not expanded away");
+  assert.ok(v.known.has("Universal Spell Power"), "USP stays a rankable stat");
+  for (const it of realData.items) {
+    for (const a of it.affixes || []) {
+      assert.notStrictEqual(a.name, "Potency", `no built affix keeps Potency (${it.variant_id})`);
+    }
+  }
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

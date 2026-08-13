@@ -6,5 +6,16 @@
   "scope": "A genuine gap is a base-seed affix whose STAT is absent from gear-planner's native parse of that item ENTIRELY (not merely typed differently). Type-mismatches (base 'Accuracy +5' vs gear-planner Accuracy/Competence) and cross-name synonyms gear-planner already represents (Protection=Armor Class/Deflection, Shield=Armor Class/Shield, Natural Armor=Armor Class/Natural, Competence Healing Amplification=Healing Amplification/Competence, Spellcasting Implement=Universal Spell Power/Implement, Vitality=False Life/Vitality, Lifesealed=Negative Energy Absorption) are NOT gaps — restoring them would re-introduce the Insightful/Insight-class double-counts U4b/U7 correctly removed. Across all 89 base∪gear-planner collision items, exactly one item has a genuine gap: Ophael's Cincture.",
   "ophaels_cincture": "Wiki (Item:Ophael's_Cincture) category tags: Strength/Constitution/Dexterity/Intelligence/Wisdom/Charisma +15, Insightful +7 each, Quality +3 each — i.e. +15/+7/+3 to ALL ability scores. gear-planner captured only Deception (Enhancement +12, Insight +6) and Seeker (+15); it lacks every ability score. This overlay restores the 18 missing ability affixes (6 abilities x Enhancement 15 / Insight 7 / Quality 3). Deception/Seeker are NOT restored (gear-planner already has them).",
   "status_2026_08_02": "Ophael's Cincture entry REMOVED. Its 18 ability-score affixes were NOT a genuine affix gap: the DDO wiki Enchantments list only Deception/Insightful Deception/Seeker + the 'Sealed in Undeath' slot. The ability scores are the Undeath seal POOL (all 18 outcomes), already modeled as a SINGLE-PICK via the item's seal_slots. The gap-fill duplicated the seal pool as flat all-apply affixes, over-counting (a chosen seal grants ONE, not all six/eighteen). Reverting; the seal slot provides the single ability-score bonus."
- }
+ },
+ "Orcus' Reign": [
+  {
+   "name": "False Life",
+   "type": "Quality",
+   "value": "15",
+   "tooltip": "Quality False Life +15: +15 Quality bonus to hit points.",
+   "wiki_url": "https://ddowiki.com/page/Item:Orcus%27_Reign",
+   "verified": "2026-08-13",
+   "note": "#288 — the U81 pull-back ADDED this affix; gear-planner's snapshot predates it entirely, so this is a genuine gap (the stat is absent from the native parse), not a retype."
+  }
+ ]
 }

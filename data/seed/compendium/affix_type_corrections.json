@@ -29,5 +29,17 @@
       "verified": "2026-08-12",
       "note": "Enchantments line reads 'Action Boost Enhancement'. Player-reported (2026-08-12 batch, data/bug_reports.txt); the report named this tier."
     }
+  ],
+  "Juiblex's Reign": [
+    {
+      "name": "Acid Absorption",
+      "from": "Enhancement",
+      "to": "Insight",
+      "value": "15",
+      "tooltip": "Insightful Acid Absorption +15%: Passive: 15% Insight Bonus to Acid Absorption.",
+      "wiki_url": "https://ddowiki.com/page/Item:Juiblex%27s_Reign",
+      "verified": "2026-08-13",
+      "note": "#288 — the tooltip states an Insight bonus; gear-planner types it Enhancement, so it wrongly max-competed with worn Enhancement absorption. `value` is the post-value-correction magnitude: the sibling item_value_corrections.json entry lands 16 -> 15 first (value corrections apply before type corrections in build_dataset.py)."
+    }
   ]
 }
