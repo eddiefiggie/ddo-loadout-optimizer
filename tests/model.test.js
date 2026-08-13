@@ -1676,3 +1676,20 @@ test("review/#110: blocking every TWF off-hand weapon is captured as block-empti
   assert.ok((m.blockEmptiedSlots || []).includes("Off Hand"),
     "a TWF off hand emptied purely by weapon blocks must be attributed");
 });
+
+// #287 — the Legendary fold changes stat NAMES only; the stacking math is the
+// existing per-(stat, equivalent-type) bucket. A folded Accuracy|Legendary must
+// sum with a Competence Accuracy (different types) and collapse to the max
+// against another Legendary Accuracy (same bucket) — with no new model code.
+test("#287: folded Legendary bucket sums across types, maxes within its own", () => {
+  const both = v("Both", "Ring", [["Accuracy", "Competence", 5], ["Accuracy", "Legendary", 2]]);
+  const buckets = M.variantBuckets(both, new Set(["Accuracy"]), 30);
+  assert.strictEqual(buckets.size, 2, "Competence and Legendary are distinct buckets");
+  let total = 0; for (const val of buckets.values()) total += val;
+  assert.strictEqual(total, 7, "different types add");
+
+  const twice = v("Twice", "Ring", [["Accuracy", "Legendary", 2], ["Accuracy", "Legendary", 5]]);
+  const b2 = M.variantBuckets(twice, new Set(["Accuracy"]), 30);
+  assert.strictEqual(b2.size, 1, "two Legendary sources share one bucket");
+  assert.strictEqual(b2.get("Accuracy||Legendary"), 5, "and only the highest applies");
+});

@@ -1121,4 +1121,32 @@ test("#289: Esoterica def is school-creditable and no def channel carries Spell 
   assert.deepStrictEqual(leaks, []);
 });
 
+// #287 — the five folded engraved names arrive as provenance labels: suggested,
+// rankable, and resolving to their base stat, with the prefixed name gone from
+// every built affix. No bespoke web code — the label scan picks up any family
+// the moment it stamps its first affix.
+test("#287: folded Legendary names are redirecting labels, not dead stats", () => {
+  const v = buildPickerVocabulary(realData);
+  const pairs = {
+    "Legendary Accuracy": "Accuracy",
+    "Legendary Armor-Piercing": "Armor-Piercing",
+    "Legendary Deadly": "Deadly",
+    "Legendary Conditioning": "Conditioning",
+    "Legendary Spell Penetration": "Spell Penetration",
+  };
+  for (const [engraved, base] of Object.entries(pairs)) {
+    assert.ok(v.provenanceLabels[engraved.toLowerCase()], `${engraved} is a shipped label`);
+    assert.deepStrictEqual(expandedAwayFor(v, engraved), [base],
+      `${engraved} resolves to ${base}`);
+    assert.ok(v.suggestions.includes(base), `${base} stays suggested`);
+  }
+  for (const it of realData.items) {
+    for (const a of it.affixes || []) {
+      assert.ok(!(String(a.name || "").toLowerCase() in
+        Object.fromEntries(Object.keys(pairs).map((k) => [k.toLowerCase(), 1]))),
+        `no built affix keeps a prefixed stat name (${it.variant_id})`);
+    }
+  }
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

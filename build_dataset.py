@@ -51,6 +51,7 @@ from src import name_corrections as name_corrections_mod
 from src import untyped_rankable as untyped_rankable_mod
 from src import dr_qualifiers as dr_qualifiers_mod
 from src import type_corrections as type_corrections_mod
+from src import legendary_fold as legendary_fold_mod
 from src import ml36_augments as ml36_augments_mod
 from src import no_drop_source as no_drop_source_mod
 from src import planner_items as planner_mod
@@ -493,6 +494,15 @@ def build() -> dict:
     # renamed-record silent-no-op gap.
     _type_corrections = type_corrections_mod.load(TYPE_CORRECTIONS_PATH)
     _type_coverage_items = type_corrections_mod.apply(planner_records, _type_corrections)
+    # #287 — fold the five 'Legendary <stat>' display names into base stat +
+    # Legendary bonus type (wiki: {{Accuracy|2|Legendary}} et al.), stamping the
+    # engraved name as the provenance receipt. Runs at the correction stage so
+    # one folded affix block flows into vocabulary, verification, the picker,
+    # the solver, and exports from one place. The augment pool carries none of
+    # the five names today, so the item apply does all of today's folding; the
+    # augment-pool apply below exists so the unknown-instance guard watches that
+    # channel too.
+    _legendary_fold_cov = legendary_fold_mod.apply(planner_records)
     # #227 — adjudicate the untyped affixes that look like real worn-gear magnitude
     # stats. Runs AFTER the rename so the adjudication is keyed on the canonical
     # name, and before rankable_affixes so the allow-list is available to it. A
@@ -663,6 +673,11 @@ def build() -> dict:
     _type_coverage_augments = type_corrections_mod.apply(aug_pool, _type_corrections)
     type_corrections_mod.assert_all_reached(
         _type_corrections, _type_coverage_items, _type_coverage_augments)
+    # #287 — the augment channel of the legendary fold above. No augment carries
+    # one of the five names today (folded: 0), but the unknown-instance guard
+    # must watch this pool too, or a future 'Legendary <stat>' augment would
+    # ship split from its worn siblings without a sound.
+    legendary_fold_mod.apply(aug_pool)
     # U3 (#134) — the same classifier on the augment pool, against its own shard.
     # Augments join by NAME: they have no item page and share one `Augment Slot`
     # url, so the item shard's title join cannot reach them. `Topaz of Swiftness

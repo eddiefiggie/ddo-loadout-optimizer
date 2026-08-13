@@ -242,15 +242,15 @@
    "status": "optimal",
    "perTarget": {
     "Strength": 37,
-    "Deadly": 30,
+    "Deadly": 31,
     "Seeker": 28,
-    "Accuracy": 50
+    "Accuracy": 55
    },
    "effective": {
     "Strength": 37,
-    "Deadly": 30,
+    "Deadly": 31,
     "Seeker": 28,
-    "Accuracy": 50
+    "Accuracy": 55
    },
    "chosen": [
     {
@@ -266,12 +266,16 @@
      "variant": "Death's Deferral"
     },
     {
+     "slot": "Bracers",
+     "variant": "Bracers of the Battlerager"
+    },
+    {
      "slot": "Cloak",
      "variant": "Legendary Cloak of the Ambassador"
     },
     {
      "slot": "Gloves",
-     "variant": "Baron Aubrecker's Monogrammed Gloves"
+     "variant": "Legendary Tinkerer's Gloves"
     },
     {
      "slot": "Goggles",
@@ -279,7 +283,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Cowl of the Drow Devotee"
+     "variant": "Legendary Helm of the Sun's Wrath"
     },
     {
      "slot": "Main Hand",
@@ -295,7 +299,7 @@
     },
     {
      "slot": "Trinket",
-     "variant": "Legendary Periapt of Strength"
+     "variant": "The Bloody Boulder"
     }
    ]
   },
