@@ -37,6 +37,7 @@ import re
 
 from src.affix_parser import parse_line
 from src import vocabulary
+from src.spell_focus import PROVENANCE_KEY, source_label
 
 # The four Isle of Dread Dino bone types. A slot accepts only an insert of its
 # own type (a Scale slot takes a Scale insert), exactly like a colored augment
@@ -66,12 +67,13 @@ _LINE_REJECT = re.compile(
 # -> two, while "+30 … Positive, Negative and Repair Amplification" stays one
 # (its comma is mid-stat) and a trailing value-last magnitude ("Constitution +7")
 # is NOT split off its stat (the +7 is followed by end-of-clause, not a word).
-# KNOWN LIMITATION (accepted): a single-value affix over comma-joined DISTINCT
-# stats ("+2 … Spell DCs, Tactical DCs, and Assassinate") is kept as one compound
-# stat and won't match a "Spell DCs" target — deliberately, because comma-splitting
-# would wrongly fragment the far more common amplification-style compound stats
-# ("Positive, Negative and Repair Amplification"). Under-count on a niche insert is
-# preferred over fabricating/mis-splitting a stat (strict provenance).
+# A single-value affix over comma/and-joined DISTINCT stats is kept as ONE
+# compound stat here — deliberately, because comma-splitting would wrongly
+# fragment stats whose names contain commas. Reviewed compounds are then split
+# into their canonical components by the exact-name _COMPOUND_SPLITS table
+# (#293, gear-planner-justified); an UNreviewed compound stays whole and simply
+# won't match a target — under-count over fabricating/mis-splitting a stat
+# (strict provenance).
 _CLAUSE_SPLIT = re.compile(r"(?<=[^+\-\s])\s*(?=[+-]\s?\d+%?\s+\S)")
 
 
@@ -134,6 +136,48 @@ def _strip_flavor_bleed(stat):
     return stat[: m.start() + 1].strip() if m else stat
 
 
+# #293 — compound stat names the wiki's Dino tier text packs into ONE clause
+# with ONE value that DDO actually grants as SEPARATE per-stat bonuses. The
+# clause splitter deliberately keeps them whole (splitting on "and"/commas
+# would fragment real single stats — see _CLAUSE_SPLIT), so this exact-name
+# table splits the survivors into their canonical components at the same parse
+# seam as the synonym fold, one entry per reviewed compound.
+#
+# EVIDENCE RULE: gear-planner is the repo's single source of truth for item
+# affixes, and every entry below is justified by the LIVE gear-planner
+# membership set def that states the SAME set bonus pre-split
+# (membership_set_defs in the built dataset, sourced structurally from the
+# gear-planner catalog). Notable canonicalizations proven there:
+#   * the wiki's "Positive … Amplification" is the canonical stat
+#     "Healing Amplification" (both amplification carriers — Devotion of the
+#     Firemouth and Defender of Tanaroa — store Healing/Negative/Repair);
+#   * the wiki's "all Tactical DCs" is the canonical stat "Combat Mastery"
+#     (Echoes of the Walking Ancestors stores Combat Mastery + Assassinate);
+#   * the wiki's "Attack and Damage" is Accuracy + Deadly (The Legendary
+#     Dread Isle's Curse stores Accuracy + Deadly).
+# The amplification compound appears in two wiki spellings (with and without
+# the Oxford comma); both keys map to the same components. Each component
+# copies the source clause's bonus_type/value/unit and is stamped with the
+# shared PROVENANCE_KEY (`via`, bonus-type-prefixed like umbrella/spell_focus)
+# so a consumer can tell a split-derived affix from a native one; the
+# record-level ``raw`` stays verbatim wiki text, exactly like the fold.
+_AMPLIFICATION = ["Healing Amplification", "Negative Amplification",
+                  "Repair Amplification"]
+_COMPOUND_SPLITS = {
+    "Melee and Ranged Power": ["Melee Power", "Ranged Power"],
+    "Doublestrike and Doubleshot": ["Doublestrike", "Doubleshot"],
+    "Positive, Negative and Repair Amplification": list(_AMPLIFICATION),
+    "Positive, Negative, and Repair Amplification": list(_AMPLIFICATION),
+    "all Tactical DCs and Assassinate": ["Combat Mastery", "Assassinate"],
+    "Attack and Damage": ["Accuracy", "Deadly"],
+}
+
+
+def compound_splits() -> dict:
+    """Public, read-only copy of the compound-split table (guards/tests)."""
+    return {k: list(v) for k, v in _COMPOUND_SPLITS.items()}
+
+
 def _parse_effect(effect):
     """Parse one verbatim effect into ``(affixes, rejected)``.
 
@@ -162,6 +206,23 @@ def _parse_effect(effect):
             stat = folds.get(stat, stat)
             if not stat:
                 rejected.append({"raw": clause, "reason": "empty stat after normalization"})
+                continue
+            # #293 — split reviewed compound stats ("Melee and Ranged Power")
+            # into their canonical components at the same shared seam as the
+            # fold, so EVERY dino channel this parser feeds emits per-stat
+            # affixes. Each component copies bonus_type/value/unit and carries
+            # the originating compound name under the shared provenance key.
+            components = _COMPOUND_SPLITS.get(stat)
+            if components:
+                label = source_label(stat, a["bonus_type"])
+                for comp in components:
+                    affixes.append({
+                        "stat": comp,
+                        "bonus_type": a["bonus_type"],
+                        "value": a["value"],
+                        "unit": a.get("unit", "flat"),
+                        PROVENANCE_KEY: label,
+                    })
                 continue
             affixes.append({
                 "stat": stat,
@@ -386,6 +447,56 @@ def check_set_records_spelling(set_records):
     if checked == 0:
         raise ValueError(
             "dino_sets spelling guard: set records carry zero affixes — an "
+            "affix-less channel is a guard failure, not a pass")
+    return checked
+
+
+def check_set_records_expanded(set_records):
+    """Per-channel expansion guard for the ``dino_sets`` channel (#293).
+
+    Runs AFTER the build applies the umbrella + spell-focus expansions to the
+    channel (unlike :func:`check_set_records_spelling`, which is also valid on
+    freshly parsed records). Every normalized ``stat`` must be a concrete,
+    rankable name:
+
+      * no umbrella / universal EXPANDED-AWAY name may survive ("Well
+        Rounded", "Spell Focus Mastery", …) — a survivor means an expansion
+        pass never ran over this channel, which is exactly how "Well Rounded"
+        shipped unexpanded here while every live channel expanded it;
+      * no key of the compound-split table may survive ("Melee and Ranged
+        Power", …) — a survivor means the parse-time split did not run or the
+        table grew a spelling this channel never applied.
+
+    Refuses to vouch for an empty channel: zero set records or zero affixes is
+    a guard FAILURE, never a pass (per-channel, never vouched for by a sibling
+    — see docs/solutions/conventions/prove-a-guard-fails-before-trusting-it.md).
+    ``raw`` is verbatim wiki provenance and deliberately not inspected.
+    Returns the number of affixes inspected."""
+    from src import umbrella as umbrella_mod
+    from src import spell_focus as spell_focus_mod
+    if not set_records:
+        raise ValueError(
+            "dino_sets expansion guard: zero set records — an empty channel is "
+            "a guard failure, not a pass")
+    checked = 0
+    for rec in set_records:
+        for a in rec.get("affixes") or []:
+            stat = a.get("stat")
+            if umbrella_mod.is_umbrella(stat) or spell_focus_mod.is_universal(stat):
+                raise ValueError(
+                    f"dino_sets expansion guard: set {rec.get('set')!r} carries "
+                    f"expanded-away name {stat!r} unexpanded — the umbrella/"
+                    f"spell-focus expansion did not run over this channel")
+            if stat in _COMPOUND_SPLITS:
+                raise ValueError(
+                    f"dino_sets expansion guard: set {rec.get('set')!r} carries "
+                    f"unsplit compound {stat!r} (components: "
+                    f"{_COMPOUND_SPLITS[stat]}) — the parse-time compound split "
+                    f"did not run over this channel")
+            checked += 1
+    if checked == 0:
+        raise ValueError(
+            "dino_sets expansion guard: set records carry zero affixes — an "
             "affix-less channel is a guard failure, not a pass")
     return checked
 
