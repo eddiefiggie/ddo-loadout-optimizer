@@ -73,21 +73,22 @@ var _isBothHandsWeapon = (typeof isBothHandsWeapon !== "undefined")
   : require("./model.js").isBothHandsWeapon;
 
 // U2 (#290/#291) — cross-add source reader ({target: [source stats]}, installed
-// from metadata.cross_add by dataset.js). Resolved from model.js like the helpers
-// above so the solver's crediting and buildModel's targetSet widening can never
+// from metadata.cross_add by dataset.js). Resolved from cross-add.js — the
+// module that OWNS the one _CROSS_ADD instance (#300) — like the helpers above,
+// so the solver's crediting and buildModel's targetSet widening can never
 // read two different maps.
 var _crossAddSourcesFor = (typeof crossAddSourcesFor !== "undefined")
   ? crossAddSourcesFor
   // eslint-disable-next-line global-require
-  : require("./model.js").crossAddSourcesFor;
+  : require("./cross-add.js").crossAddSourcesFor;
 
-// U2 (#290/#291) — the SAME targetSet widening buildModel uses (model.js), so
-// the dominance pre-filter's stat set and the bucket-building stat set can
+// U2 (#290/#291) — the SAME targetSet widening buildModel uses (cross-add.js),
+// so the dominance pre-filter's stat set and the bucket-building stat set can
 // never diverge. Resolved across runtimes like the helpers above.
 var _widenWithCrossAddSources = (typeof widenWithCrossAddSources !== "undefined")
   ? widenWithCrossAddSources
   // eslint-disable-next-line global-require
-  : require("./model.js").widenWithCrossAddSources;
+  : require("./cross-add.js").widenWithCrossAddSources;
 
 /** U2 (#290/#291) — does bucket `key` ("stat||type") count toward `stat`'s
  *  total? THE single consultation point for every bucket-prefix read — the
@@ -186,7 +187,7 @@ function buildProgram(model) {
   // Spell Lore for the element lores), or the `targetSet.has(a.name)` gates
   // below would skip universal affixes and their buckets would never exist for
   // bucketCountsFor to collect. Shared with buildModel's widening
-  // (widenWithCrossAddSources in model.js), which keeps the same items alive
+  // (widenWithCrossAddSources in cross-add.js), which keeps the same items alive
   // through the dominance pre-filter.
   _widenWithCrossAddSources(targetSet);
 
