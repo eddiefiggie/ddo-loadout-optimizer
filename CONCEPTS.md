@@ -121,6 +121,9 @@ Corrupting one field in isolation does not establish that. A gate comparing a va
 
 The underlying principle — a check is not trustworthy until it has been watched to fail — applies to ordinary tests too, but the perturbation does not carry across. A gate reads data supplied from outside it, so corrupting that data is the available lever; a test authors the input it consumes, so corrupting the input merely edits the test. What perturbs a test is reverting the *subject*: running it against the code as it stood before the change, where anything that still passes is covering none of it.
 
+### Golden solve
+A ratified solver output — the chosen loadout and per-target totals for a fixed query — that the parity guard asserts byte-equality against on every run, making it the de facto definition of correct solver behavior. A golden diff after a data or logic change is sometimes the intended improvement rather than a regression, so re-ratification is always a deliberate act: each diff is attributed to its cause before the new output is accepted, never blanket-accepted. A fixture whose ranked stat has been expanded away must resolve its priorities through the same migration path a saved character uses, or the golden pins a solve no player can produce. See [[Umbrella stat]], [[Expansion receipt (via)]], [[Integrity gate]].
+
 ### Harvest provenance
 The trust label carried by every value sourced directly from the wiki, recording *why* it is or is not usable: **stated** (the wiki asserts it outright), **defaulted** (the wiki displays a number, but its own template filled that number in because nobody recorded a real one), or **unsourced** (the page is silent). Only **stated** is solver-eligible.
 
