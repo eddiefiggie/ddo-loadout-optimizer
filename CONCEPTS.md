@@ -113,6 +113,8 @@ A variant the solver is allowed to equip. The usual path to this status is contr
 ### Quarantined
 A record excluded from the solver because it yields no explicitly-parseable value — its wiki text was ambiguous or value-less. Quarantined records stay in the dataset for browsing and coverage disclosure but never contribute to a solve; nothing is ever inferred to rescue one.
 
+A *claim* can be quarantined the same way as a record: a stacking or mechanic rule the wiki did not state outright is recorded as unverified and never implemented on inference. A claim quarantine captures why verification failed at a point in time, not a permanent fact — before designing around one, re-check the original source and its one-hop neighborhood (hub pages, inbound links, redirects), and either resolve it on a found quote or re-date it.
+
 ### Integrity gate
 A build-time check that validates the incoming upstream snapshot against a frozen, checked-in copy of what was last reviewed, and **fails the build** on any difference rather than absorbing it. Distinct from a test: a test asserts our own behavior, while an integrity gate asserts that the *external* world has not changed underneath us.
 

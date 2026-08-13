@@ -20,7 +20,7 @@ tags:
 applies_when:
   - "Adding a stat the DDO wiki documents as applying to every member of a family (e.g. all seven spell school DCs off Spell Focus Mastery, all ten element spellpowers off Potency) rather than one concrete stat"
   - "A gear channel (item, item set bonus, dino insert, dino set, viktranium option, membership def, augment def) can carry an affix naming a family umbrella instead of a concrete target stat, so it would score zero against ranked priorities unmodified"
-  - "Deciding whether a universal-sounding stat should expand into per-member affixes at the same bonus type, or must stay unexpanded because it already fully stacks (Universal Spell Power) or is a genuinely-distinct-but-overlapping bonus (Spell Lore)"
+  - "Classifying a universal-sounding stat into one of three mechanisms by its wiki stacking rule: same-type-max umbrella (expand), fully-stacking (cross-add map), or no stated rule (record-only disposition)"
   - "Wiring an expanded/stamped family stat into picker or saved-build priority matching so a redirecting label keeps old saved priorities valid"
 ---
 
@@ -89,14 +89,24 @@ The pattern is valuable specifically because it requires **no changes downstream
 
 ## When to Apply
 
-Apply this pattern when a DDO enchantment name is confirmed by the wiki to apply uniformly across a fixed, enumerable set of concrete stats, AND those concrete stats already exist as independently-rankable priorities in the dataset.
+**The wiki's stated stacking rule — never the name shape — decides which of three mechanisms a universal stat gets** (classification completed by PR #301, which shipped the cross-add arm and closed #290/#291/#292):
 
-Do **not** apply it, or apply something else, when:
+| Wiki statement | Mechanism | Shipped example |
+|---|---|---|
+| Same-type-max umbrella ("Potency → All Spells" + "multiple sources of equipment bonus do not stack") | **Expand** into element siblings at the same bonus type via `_UNIVERSAL` — this doc's pattern | `Potency`, `Spell Focus Mastery` |
+| Fully stacking ("Fully stacking. It flat adds to all of your other Spell Powers"; "separate and stacking source ... will stack with another item with a Spell Lore or Acid Lore Equipment bonus") | **Cross-add**: `metadata.cross_add` map (`src/cross_add.py`) installed through the `stacking_equivalence` seam; the solver's `bucketCountsFor` (`web/solver.js`) makes an element priority *sum* the source stat's buckets alongside its own — max within each bucket, sum across, names never merged | `Universal Spell Power`, `Spell Lore`, `Universal Spell Lore` (PR #301) |
+| No outright statement | **Record-only disposition** in the evidence doc — no table entry, stat stays independently rankable | `Spell Intensity` (the Intensity page's table has no universal row — contrast Potency's), `Elemental/Greater Elemental Spell Power` (misnomers: spell-points bonuses) |
 
-- **The universal stat is itself fully additive/stacking**, rather than competing in the same bonus-type bucket as its "children." `Universal Spell Power` is the recorded example: the wiki says it is a flat add to *all your other* spellpowers, not a same-type equipment source — same-type expansion would wrongly place it in max-competition with element spellpowers instead of adding to them. This is deferred to a cross-add mechanism as issue #291, not force-fit into this expansion.
-- **The "universal" name and the specific name are actually different stats that both legitimately apply**, per wiki evidence of co-occurrence. Spell Lore is the recorded example (`docs/wiki-evidence/spell-lore.md`): universal and element-specific lore appear together on ten items and add (different bonus types), so expanding/merging them would collapse two real, stacking sources into false competition. This keeps issue #290's lore half open rather than closing it via this mechanism.
-- **The evidence is a name pattern or a plausible guess, not a stated rule.** `Deific Focus` was the tempting near-miss for the spell-DC family: same "Focus" naming, Sacred typing, but its actual mechanic (per item tooltips, since it has no wiki page of its own) is a conditional five-second ramping buff cleared by casting a different school — expanding it would have credited +3 Sacred to all seven schools permanently. It stays excluded, recorded in `src/spell_focus.py`'s docstring and `docs/wiki-evidence/spell-focus-universal.md`.
-- **A new universal name is found that isn't yet evidenced.** Issue #292 is the standing follow-up to sweep remaining universal names (e.g. `Spell Intensity` is called out as an explicit candidate, not silently included); issue #211 wants a generic name-shape detector for this class of gap across all expansion families (ability umbrella, Legendary fold, spell-DC/spellpower, compound absorption) — #294 adds instances to a recognized shape, it does not build that detector.
+Putting a stat through the wrong mechanism *inverts* the game rule it exists to encode: expanding a fully-stacking stat puts it in max-competition with the very stats it adds to; cross-adding a same-type umbrella would double-count. The two mechanisms are guarded against overlap — `src/cross_add.py`'s `validate_map` fails the build if a name appears in both the cross-add map and `_UNIVERSAL`.
+
+Apply the **expansion** pattern when a DDO enchantment name is confirmed by the wiki to apply uniformly across a fixed, enumerable set of concrete stats at same-type-max, AND those concrete stats already exist as independently-rankable priorities in the dataset.
+
+Do **not** expand when:
+
+- **The universal stat is itself fully additive/stacking** — that is the cross-add row above. `Universal Spell Power` is the recorded example; shipped as cross-add in PR #301 (see `CONCEPTS.md` "Cross-add crediting" and `docs/wiki-evidence/universal-name-sweep.md` for the full disposition table).
+- **The "universal" name and the specific name are actually different stats that both legitimately apply**, per wiki evidence of co-occurrence. Spell Lore is the recorded example (`docs/wiki-evidence/spell-lore.md` §#290): universal and element lore stack even at the same bonus type, so they are cross-add sources, and merging the names remains a bug.
+- **The evidence is a name pattern or a plausible guess, not a stated rule.** `Deific Focus` was the tempting near-miss for the spell-DC family: same "Focus" naming, Sacred typing, but its actual mechanic (per item tooltips, since it has no wiki page of its own) is a conditional five-second ramping buff cleared by casting a different school — expanding it would have credited +3 Sacred to all seven schools permanently. It stays excluded, recorded in `src/spell_focus.py`'s docstring and `docs/wiki-evidence/spell-focus-universal.md`. `Spell Intensity` is the cross-add-side twin of this rule: universal-*looking*, but record-only until a page states the rule.
+- **A new universal name is found that isn't yet evidenced.** The #292 sweep (closed by PR #301) set the precedent: a committed enumeration procedure (vocabulary name-pattern match unioned with the wiki family-page rosters) with a per-candidate disposition table in `docs/wiki-evidence/universal-name-sweep.md`, so closure evidence shows what was *swept*, not just what was found. Issue #211 still wants the automated detector for this class.
 
 ## Examples
 
@@ -110,5 +120,6 @@ Do **not** apply it, or apply something else, when:
 
 - `docs/solutions/conventions/exclude-until-verified-data-gates.md` — the admission discipline this pattern applies to an expansion allowlist.
 - `docs/solutions/conventions/prove-a-guard-fails-before-trusting-it.md` — rule 4 (coverage of one channel is not coverage of another) is the trap the per-channel orphan guards exist for; #293 is its latest recurrence.
-- Evidence docs: `docs/wiki-evidence/spell-focus-universal.md`, `docs/wiki-evidence/spellpower-universal.md`, `docs/wiki-evidence/spell-lore.md`, `docs/wiki-evidence/bonus-type-equivalence.md`.
-- Issues: #205, #289, #290 (the three shipped instances); #291 (cross-add, don't-expand case), #292 (universal-name sweep), #293 (dino-set umbrella gap), #211 (detector).
+- `CONCEPTS.md` "Cross-add crediting" — the vocabulary entry for the complement mechanism; the two contracts are stated side by side there.
+- Evidence docs: `docs/wiki-evidence/spell-focus-universal.md`, `docs/wiki-evidence/spellpower-universal.md`, `docs/wiki-evidence/spell-lore.md` (§#290: additivity quote + solar quarantine resolution), `docs/wiki-evidence/universal-name-sweep.md` (the #292 disposition table), `docs/wiki-evidence/bonus-type-equivalence.md`.
+- Issues: #205, #289, #290 (the three expansion instances); #290/#291/#292 closed by PR #301 (cross-add + sweep); #293 (dino-set umbrella gap), #300 (extract the cross-add primitive from web/model.js), #211 (detector).
