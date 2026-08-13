@@ -1,0 +1,1401 @@
+{
+ "_meta": {
+  "field": "no_drop_source",
+  "title": "wiki-confirmed no-drop-source verdicts (#262)",
+  "note": "Curated evidence shard for the 'no known live drop source' disclosure. Each entry records a per-item verdict harvested from that item's own DDO wiki page: `confirmed_no_source` means the RENDERED page's Location/acquisition reading shows no quest and no chest (verified on the rendered page, never from wikitext alone), and flags the item in the built dataset; `wiki_has_source` means the wiki records a source our data lacks (the item stays unflagged; the entry exists so re-triage skips it and the location backfill can find it). The vocabulary is CLOSED at those two verdicts: an unverified or page-missing item is NEVER written here — it lives in the docs tracker only, because this shard may only carry claims the wiki settled. The wording bar (three claim strengths, kept distinct): 'Location section empty' is the observation, 'no known live drop source' is the disclosable claim, 'unobtainable' is never claimed — the wiki proves its page records no source, not that the item cannot exist.",
+  "verdict_vocabulary": [
+   "confirmed_no_source",
+   "wiki_has_source"
+  ],
+  "guard_rules": "The build FAILS when (a) an entry carries a verdict outside the closed vocabulary; (b) an entry names an item absent from the planner roster (anti-orphan — renamed or dropped upstream); (c) a confirmed_no_source entry is missing its evidence snapshot, wiki_url, or harvested date; (d) STALENESS: an entry's item carries a non-empty upstream `quests` array (the raw planner list, NOT the derived location_quest string) — the wiki/gear-planner now records a source, and un-flagging is a manual review event, never automatic. An ABSENT shard or an EMPTY harvested map is fully inert (no flags, no coverage block) — the deliberate exclude-until-verified empty-seed exception; once entries exist, every guard fires and a zero-inspected pass is refused.",
+  "provenance_vocabulary": "`stated` — the verdict was read off the item's own rendered wiki page (the absorption/enchantment discipline; nothing weaker is admitted here)."
+ },
+ "harvested": {
+  "+1 Starter Heavy Steel Shield": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
+   "wiki_url": "https://ddowiki.com/page/Item:+1_Starter_Heavy_Steel_Shield",
+   "harvested": "2026-08-13"
+  },
+  "+1 Starter Heavy Wooden Shield": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
+   "wiki_url": "https://ddowiki.com/page/Item:+1_Starter_Heavy_Wooden_Shield",
+   "harvested": "2026-08-13"
+  },
+  "Bracers of the Spider Queen": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
+   "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_the_Spider_Queen",
+   "harvested": "2026-08-13"
+  },
+  "Cataclysmic Buckler": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
+   "wiki_url": "https://ddowiki.com/page/Item:Cataclysmic_Buckler",
+   "harvested": "2026-08-13"
+  },
+  "Cataclysmic Large Shield": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
+   "wiki_url": "https://ddowiki.com/page/Item:Cataclysmic_Large_Shield",
+   "harvested": "2026-08-13"
+  },
+  "Cataclysmic Small Shield": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
+   "wiki_url": "https://ddowiki.com/page/Item:Cataclysmic_Small_Shield",
+   "harvested": "2026-08-13"
+  },
+  "Cataclysmic Tower Shield": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
+   "wiki_url": "https://ddowiki.com/page/Item:Cataclysmic_Tower_Shield",
+   "harvested": "2026-08-13"
+  },
+  "Coronach (historic)": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
+   "wiki_url": "https://ddowiki.com/page/Item:Coronach_(historic)",
+   "harvested": "2026-08-13"
+  },
+  "Dark Star of the Deep": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
+   "wiki_url": "https://ddowiki.com/page/Item:Dark_Star_of_the_Deep",
+   "harvested": "2026-08-13"
+  },
+  "Drow Wizard's Greaves": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "quest Stealing from Sorcere (optional chest), recorded in the page's quest/chest params",
+   "wiki_url": "https://ddowiki.com/page/Item:Drow_Wizard's_Greaves",
+   "harvested": "2026-08-13"
+  },
+  "Duergarcraft Robe": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
+   "wiki_url": "https://ddowiki.com/page/Item:Duergarcraft_Robe",
+   "harvested": "2026-08-13"
+  },
+  "Epic Adherent's Pendant": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Adherent's Pendant (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Adherent's_Pendant",
+   "harvested": "2026-08-13"
+  },
+  "Epic Azure Necklace of Prophecy": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Azure Necklace of Prophecy (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Azure_Necklace_of_Prophecy",
+   "harvested": "2026-08-13"
+  },
+  "Epic Belt of the Mroranon": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Belt of the Mroranon (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Belt_of_the_Mroranon",
+   "harvested": "2026-08-13"
+  },
+  "Epic Blademark's Docent": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Blademark's Docent (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Blademark's_Docent",
+   "harvested": "2026-08-13"
+  },
+  "Epic Boots of Corrosion": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Boots of Corrosion (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Boots_of_Corrosion",
+   "harvested": "2026-08-13"
+  },
+  "Epic Bracers of Deftness": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Bracers of Deftness (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Bracers_of_Deftness",
+   "harvested": "2026-08-13"
+  },
+  "Epic Bracers of the Demon's Consort": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Bracers of the Demon's Consort (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Bracers_of_the_Demon's_Consort",
+   "harvested": "2026-08-13"
+  },
+  "Epic Bramble-Casters": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Bramble-Casters (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Bramble-Casters",
+   "harvested": "2026-08-13"
+  },
+  "Epic Brawn's Spirits": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Brawn's Spirits (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Brawn's_Spirits",
+   "harvested": "2026-08-13"
+  },
+  "Epic Chainmail Coif": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Chainmail Coif (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Chainmail_Coif",
+   "harvested": "2026-08-13"
+  },
+  "Epic Charged Gauntlets": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Charged Gauntlets (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Charged_Gauntlets",
+   "harvested": "2026-08-13"
+  },
+  "Epic Chimera's Crown": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Chimera's Crown (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Chimera's_Crown",
+   "harvested": "2026-08-13"
+  },
+  "Epic Cloak of the Zephyr": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Cloak of the Zephyr (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Cloak_of_the_Zephyr",
+   "harvested": "2026-08-13"
+  },
+  "Epic Coronation Shield": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Coronation Shield (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Coronation_Shield",
+   "harvested": "2026-08-13"
+  },
+  "Epic Crimson Necklace of Prophecy": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Crimson Necklace of Prophecy (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Crimson_Necklace_of_Prophecy",
+   "harvested": "2026-08-13"
+  },
+  "Epic Darkstorm Helm": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Darkstorm Helm (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Darkstorm_Helm",
+   "harvested": "2026-08-13"
+  },
+  "Epic Demon Scale Armor": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Demon Scale Armor (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Demon_Scale_Armor",
+   "harvested": "2026-08-13"
+  },
+  "Epic Diabolist's Docent": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Diabolist's Docent (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Diabolist's_Docent",
+   "harvested": "2026-08-13"
+  },
+  "Epic Diabolist's Robe": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Diabolist's Robe (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Diabolist's_Robe",
+   "harvested": "2026-08-13"
+  },
+  "Epic Docent of Grace": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Docent of Grace (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Docent_of_Grace",
+   "harvested": "2026-08-13"
+  },
+  "Epic Dragon's Eye": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Dragon's Eye (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Dragon's_Eye",
+   "harvested": "2026-08-13"
+  },
+  "Epic Dusk Heart": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Dusk Heart (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Dusk_Heart",
+   "harvested": "2026-08-13"
+  },
+  "Epic Dustless Boots": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Dustless Boots (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Dustless_Boots",
+   "harvested": "2026-08-13"
+  },
+  "Epic Envenomed Cloak": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Envenomed Cloak (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Envenomed_Cloak",
+   "harvested": "2026-08-13"
+  },
+  "Epic Firestorm Greaves": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Firestorm Greaves (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Firestorm_Greaves",
+   "harvested": "2026-08-13"
+  },
+  "Epic Frozen Plate": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Frozen Plate (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Frozen_Plate",
+   "harvested": "2026-08-13"
+  },
+  "Epic Full Plate of the Ringleader": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Full Plate of the Ringleader (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Full_Plate_of_the_Ringleader",
+   "harvested": "2026-08-13"
+  },
+  "Epic Gloves of the Falcon": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Gloves of the Falcon (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Gloves_of_the_Falcon",
+   "harvested": "2026-08-13"
+  },
+  "Epic Golden Greaves": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Golden Greaves (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Golden_Greaves",
+   "harvested": "2026-08-13"
+  },
+  "Epic Golden Guile": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Golden Guile (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Golden_Guile",
+   "harvested": "2026-08-13"
+  },
+  "Epic Grim's Bracelet": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Grim's Bracelet (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Grim's_Bracelet",
+   "harvested": "2026-08-13"
+  },
+  "Epic Helm of the Mroranon": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Helm of the Mroranon (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Helm_of_the_Mroranon",
+   "harvested": "2026-08-13"
+  },
+  "Epic Hruvayah's Medallion": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Hruvayah's Medallion (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Hruvayah's_Medallion",
+   "harvested": "2026-08-13"
+  },
+  "Epic Hyena Claw Necklace": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Hyena Claw Necklace (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Hyena_Claw_Necklace",
+   "harvested": "2026-08-13"
+  },
+  "Epic Infested Scalemail": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Infested Scalemail (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Infested_Scalemail",
+   "harvested": "2026-08-13"
+  },
+  "Epic Ironweave Robe": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Ironweave Robe (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Ironweave_Robe",
+   "harvested": "2026-08-13"
+  },
+  "Epic Kundarak Delving Boots": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Kundarak Delving Boots (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Kundarak_Delving_Boots",
+   "harvested": "2026-08-13"
+  },
+  "Epic Kundarak Delving Goggles": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Kundarak Delving Goggles (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Kundarak_Delving_Goggles",
+   "harvested": "2026-08-13"
+  },
+  "Epic Kundarak Warding Bracers": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Kundarak Warding Bracers (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Kundarak_Warding_Bracers",
+   "harvested": "2026-08-13"
+  },
+  "Epic Lion-headed Belt Buckle": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Lion-headed Belt Buckle (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Lion-headed_Belt_Buckle",
+   "harvested": "2026-08-13"
+  },
+  "Epic Marilith Chain": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Marilith Chain (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Marilith_Chain",
+   "harvested": "2026-08-13"
+  },
+  "Epic Mask of Comedy": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Mask of Comedy (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Mask_of_Comedy",
+   "harvested": "2026-08-13"
+  },
+  "Epic Mask of Tragedy": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Mask of Tragedy (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Mask_of_Tragedy",
+   "harvested": "2026-08-13"
+  },
+  "Epic Mummy Wrappings": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Mummy Wrappings (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Mummy_Wrappings",
+   "harvested": "2026-08-13"
+  },
+  "Epic Phiarlan Mirror Cloak": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Phiarlan Mirror Cloak (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Phiarlan_Mirror_Cloak",
+   "harvested": "2026-08-13"
+  },
+  "Epic Pouch of Jerky": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Pouch of Jerky (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Pouch_of_Jerky",
+   "harvested": "2026-08-13"
+  },
+  "Epic Rakshasa Hide": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Rakshasa Hide (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Rakshasa_Hide",
+   "harvested": "2026-08-13"
+  },
+  "Epic Ring of Baphomet": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Ring of Baphomet (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_Baphomet",
+   "harvested": "2026-08-13"
+  },
+  "Epic Ring of Elemental Essence": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Ring of Elemental Essence (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_Elemental_Essence",
+   "harvested": "2026-08-13"
+  },
+  "Epic Ring of Spell Storing": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Ring of Spell Storing (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_Spell_Storing",
+   "harvested": "2026-08-13"
+  },
+  "Epic Robe of Dissonance": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Robe of Dissonance (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Robe_of_Dissonance",
+   "harvested": "2026-08-13"
+  },
+  "Epic Robe of Fire": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Robe of Fire (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Robe_of_Fire",
+   "harvested": "2026-08-13"
+  },
+  "Epic Ruby Encrusted Gauntlets": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Ruby Encrusted Gauntlets (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Ruby_Encrusted_Gauntlets",
+   "harvested": "2026-08-13"
+  },
+  "Epic Saltiron Targe": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Saltiron Targe (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Saltiron_Targe",
+   "harvested": "2026-08-13"
+  },
+  "Epic Sandstorm Glasses": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Sandstorm Glasses (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Sandstorm_Glasses",
+   "harvested": "2026-08-13"
+  },
+  "Epic Scorched Bracers": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Scorched Bracers (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Scorched_Bracers",
+   "harvested": "2026-08-13"
+  },
+  "Epic Seal of the Earth": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Seal of the Earth (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Seal_of_the_Earth",
+   "harvested": "2026-08-13"
+  },
+  "Epic Shard of Vollun": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Shard of Vollun (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Shard_of_Vollun",
+   "harvested": "2026-08-13"
+  },
+  "Epic Shield of the Scorpion": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Shield of the Scorpion (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Shield_of_the_Scorpion",
+   "harvested": "2026-08-13"
+  },
+  "Epic Shimmering Pendant": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Shimmering Pendant (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Shimmering_Pendant",
+   "harvested": "2026-08-13"
+  },
+  "Epic Shining Crest of St. Markus": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Shining Crest of St. Markus (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Shining_Crest_of_St._Markus",
+   "harvested": "2026-08-13"
+  },
+  "Epic Silken Mail": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Silken Mail (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Silken_Mail",
+   "harvested": "2026-08-13"
+  },
+  "Epic Silver Necklace of Prophecy": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Silver Necklace of Prophecy (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Silver_Necklace_of_Prophecy",
+   "harvested": "2026-08-13"
+  },
+  "Epic Skull of the Sea": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Skull of the Sea (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Skull_of_the_Sea",
+   "harvested": "2026-08-13"
+  },
+  "Epic Smash 'n Grabber": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Smash 'n Grabber (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Smash_'n_Grabber",
+   "harvested": "2026-08-13"
+  },
+  "Epic Snakeskin Belt": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Snakeskin Belt (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Snakeskin_Belt",
+   "harvested": "2026-08-13"
+  },
+  "Epic Spectacles of Spirit Sight": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Spectacles of Spirit Sight (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Spectacles_of_Spirit_Sight",
+   "harvested": "2026-08-13"
+  },
+  "Epic Spectral Gloves": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Spectral Gloves (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Spectral_Gloves",
+   "harvested": "2026-08-13"
+  },
+  "Epic Spiked Turban": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Spiked Turban (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Spiked_Turban",
+   "harvested": "2026-08-13"
+  },
+  "Epic Stinkpelt's Hide": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Stinkpelt's Hide (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Stinkpelt's_Hide",
+   "harvested": "2026-08-13"
+  },
+  "Epic Stonemeld Plate Armor": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Stonemeld Plate Armor (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Stonemeld_Plate_Armor",
+   "harvested": "2026-08-13"
+  },
+  "Epic Templar's Bastion": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Templar's Bastion (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Templar's_Bastion",
+   "harvested": "2026-08-13"
+  },
+  "Epic Templar's Bulwark": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Templar's Bulwark (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Templar's_Bulwark",
+   "harvested": "2026-08-13"
+  },
+  "Epic Templar's Docent": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Templar's Docent (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Templar's_Docent",
+   "harvested": "2026-08-13"
+  },
+  "Epic Torc of Prince Raiyum-de II": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Torc of Prince Raiyum-de II (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Torc_of_Prince_Raiyum-de_II",
+   "harvested": "2026-08-13"
+  },
+  "Epic Tourney Armor": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Tourney Armor (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Tourney_Armor",
+   "harvested": "2026-08-13"
+  },
+  "Epic Utility Vest": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Utility Vest (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Utility_Vest",
+   "harvested": "2026-08-13"
+  },
+  "Epic Vambraces of Inner Light": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Vambraces of Inner Light (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Vambraces_of_Inner_Light",
+   "harvested": "2026-08-13"
+  },
+  "Epic Vulkoorim Fighting Leathers": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Vulkoorim Fighting Leathers (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Vulkoorim_Fighting_Leathers",
+   "harvested": "2026-08-13"
+  },
+  "Epic Vulkoorim Pendant": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Vulkoorim Pendant (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Vulkoorim_Pendant",
+   "harvested": "2026-08-13"
+  },
+  "Epic Ward of Undeath": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Ward of Undeath (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Ward_of_Undeath",
+   "harvested": "2026-08-13"
+  },
+  "Epic Weathered Targe": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Weathered Targe (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Weathered_Targe",
+   "harvested": "2026-08-13"
+  },
+  "Epic Wind-Swept Buckler": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Wind-Swept Buckler (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Wind-Swept_Buckler",
+   "harvested": "2026-08-13"
+  },
+  "Epic Wolf Whistle": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "epic-crafted from Wolf Whistle (the page's epic param records the base item)",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Wolf_Whistle",
+   "harvested": "2026-08-13"
+  },
+  "Great Forge Helm": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
+   "wiki_url": "https://ddowiki.com/page/Item:Great_Forge_Helm",
+   "harvested": "2026-08-13"
+  },
+  "High Priestess' Focus": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
+   "wiki_url": "https://ddowiki.com/page/Item:High_Priestess'_Focus",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Azure Necklace of Prophecy": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Azure Necklace of Prophecy (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Azure_Necklace_of_Prophecy",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Belt of the Mroranon": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Belt of the Mroranon (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Belt_of_the_Mroranon",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Big Top": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Big Top (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Big_Top",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Blademark's Docent": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Blademark's Docent (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Blademark's_Docent",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Bloodstone": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Bloodstone (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bloodstone",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Boots of the Mire": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Boots of the Mire (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Boots_of_the_Mire",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Bracers of Deftness": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Bracers of Deftness (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_Deftness",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Bracers of the Claw": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Bracers of the Claw (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_the_Claw",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Bracers of the Demon's Consort": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Bracers of the Demon's Consort (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_the_Demon's_Consort",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Bracers of the Hunter": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Bracers of the Hunter (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_the_Hunter",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Bracers of the Spider Queen": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_the_Spider_Queen",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Bramble-Casters": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Bramble-Casters (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bramble-Casters",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Brawn's Spirits": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Brawn's Spirits (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brawn's_Spirits",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Cape of the Roc": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Cape of the Roc (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cape_of_the_Roc",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Chainmail Coif": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Chainmail Coif (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Chainmail_Coif",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Chimera's Crown": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Chimera's Crown (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Chimera's_Crown",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Cloak of the Silver Concord": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Cloak of the Silver Concord (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_the_Silver_Concord",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Cloak of the Zephyr": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Cloak of the Zephyr (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Cloak_of_the_Zephyr",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Coronation Shield": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Coronation Shield (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Coronation_Shield",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Crimson Necklace of Prophecy": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Crimson Necklace of Prophecy (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Crimson_Necklace_of_Prophecy",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Dark Star of the Deep": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dark_Star_of_the_Deep",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Darkstorm Helm": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Darkstorm Helm (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Darkstorm_Helm",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Demon Scale Armor": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Demon Scale Armor (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Demon_Scale_Armor",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Deneith Heavy Chain": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Deneith Heavy Chain (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Deneith_Heavy_Chain",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Docent of Grace": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Docent of Grace (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Docent_of_Grace",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Dragon's Eye": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Dragon's Eye (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dragon's_Eye",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Drow Wizard's Greaves": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "quest Stealing from Sorcere (optional chest), recorded in the page's quest/chest params",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Drow_Wizard's_Greaves",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Duergarcraft Robe": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Duergarcraft_Robe",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Dusk Heart": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Dusk Heart (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dusk_Heart",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Dustless Boots": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Dustless Boots (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dustless_Boots",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Elder's Cap": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Elder's Cap (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Elder's_Cap",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Elder's Focus": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Elder's Focus (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Elder's_Focus",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Firestorm Greaves": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Firestorm Greaves (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Firestorm_Greaves",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Frozen Plate": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Frozen Plate (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Frozen_Plate",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Full Plate of the Ringleader": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Full Plate of the Ringleader (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Full_Plate_of_the_Ringleader",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Gloves of the Claw": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Gloves of the Claw (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Gloves_of_the_Claw",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Gloves of the Falcon": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Gloves of the Falcon (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Gloves_of_the_Falcon",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Goggles of Time-Sensing": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Goggles of Time-Sensing (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Goggles_of_Time-Sensing",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Golden Greaves": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Golden Greaves (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Golden_Greaves",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Golden Guile": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Golden Guile (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Golden_Guile",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Great Forge Helm": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "quest/chest params present and empty; the epic param carries the flag value 'no' (not a crafting lineage); rendered page shows no acquisition heading",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Great_Forge_Helm",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Grim's Bracelet": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Grim's Bracelet (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Grim's_Bracelet",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Helm of the Mroranon": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Helm of the Mroranon (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Helm_of_the_Mroranon",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Helm of the Red Dragon": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Helm of the Red Dragon (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Helm_of_the_Red_Dragon",
+   "harvested": "2026-08-13"
+  },
+  "Legendary High Priestess' Focus": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "quest/chest params present and empty; the epic param carries the flag value 'no' (not a crafting lineage); rendered page shows no acquisition heading",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_High_Priestess'_Focus",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Hruvayah's Medallion": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Hruvayah's Medallion (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Hruvayah's_Medallion",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Hyena Claw Necklace": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Hyena Claw Necklace (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Hyena_Claw_Necklace",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Ironweave Robe": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Ironweave Robe (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ironweave_Robe",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Jidz-Tet'ka": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Jidz-Tet'ka (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Jidz-Tet'ka",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Kundarak Delving Boots": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Kundarak Delving Boots (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Kundarak_Delving_Boots",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Kundarak Delving Goggles": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Kundarak Delving Goggles (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Kundarak_Delving_Goggles",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Kundarak Warding Bracers": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Kundarak Warding Bracers (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Kundarak_Warding_Bracers",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Kundarak Warding Shield": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Kundarak Warding Shield (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Kundarak_Warding_Shield",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Lion-headed Belt Buckle": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Lion-headed Belt Buckle (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Lion-headed_Belt_Buckle",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Marilith Chain": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Marilith Chain (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Marilith_Chain",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Mask of Comedy": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Mask of Comedy (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Mask_of_Comedy",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Mask of Tragedy": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Mask of Tragedy (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Mask_of_Tragedy",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Mummy Wrappings": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Mummy Wrappings (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Mummy_Wrappings",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Necklace of Venom": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Necklace of Venom (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Necklace_of_Venom",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Phiarlan Mirror Cloak": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Phiarlan Mirror Cloak (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Phiarlan_Mirror_Cloak",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Pouch of Jerky": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Pouch of Jerky (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Pouch_of_Jerky",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Raven's Sight": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Raven's Sight (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Raven's_Sight",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Raven's Talons": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Raven's Talons (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Raven's_Talons",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Ring of Baphomet": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Ring of Baphomet (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Baphomet",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Ring of Spell Storing": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Ring of Spell Storing (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Spell_Storing",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Ring of Venom": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Ring of Venom (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Venom",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Ring of the Mire": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Ring of the Mire (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_the_Mire",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Ring of the Silver Concord": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Ring of the Silver Concord (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_the_Silver_Concord",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Robe of Fire": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Robe of Fire (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Robe_of_Fire",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Ruby Encrusted Gauntlets": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Ruby Encrusted Gauntlets (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ruby_Encrusted_Gauntlets",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Sacred Band": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Sacred Band (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Sacred_Band",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Sacred Helm": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Sacred Helm (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Sacred_Helm",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Sandstorm Glasses": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Sandstorm Glasses (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Sandstorm_Glasses",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Seal of the Earth": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Seal of the Earth (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Seal_of_the_Earth",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Shaman's Band": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Shaman's Band (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Shaman's_Band",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Shaman's Beads": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Shaman's Beads (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Shaman's_Beads",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Shard of Vollun": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Shard of Vollun (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Shard_of_Vollun",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Shards of the Deep": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Shards_of_the_Deep",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Shield of the Scorpion": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Shield of the Scorpion (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Shield_of_the_Scorpion",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Shimmering Pendant": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Shimmering Pendant (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Shimmering_Pendant",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Shining Crest of St. Markus": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Shining Crest of St. Markus (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Shining_Crest_of_St._Markus",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Silken Mail": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Silken Mail (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Silken_Mail",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Silver Necklace of Prophecy": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Silver Necklace of Prophecy (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Silver_Necklace_of_Prophecy",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Siren's Belt": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Siren's Belt (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Siren's_Belt",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Siren's Charm": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Siren's Charm (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Siren's_Charm",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Spectacles of Spirit Sight": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Spectacles of Spirit Sight (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Spectacles_of_Spirit_Sight",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Spectral Gloves": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Spectral Gloves (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Spectral_Gloves",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Spiked Turban": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Spiked Turban (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Spiked_Turban",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Stinkpelt's Hide": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Stinkpelt's Hide (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Stinkpelt's_Hide",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Templar's Bulwark": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Templar's Bulwark (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Templar's_Bulwark",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Torc of Prince Raiyum-de II": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Torc of Prince Raiyum-de II (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Torc_of_Prince_Raiyum-de_II",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Tourney Armor": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Tourney Armor (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Tourney_Armor",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Twisted Talisman": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Twisted Talisman (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Twisted_Talisman",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Vambraces of Inner Light": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Vambraces of Inner Light (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Vambraces_of_Inner_Light",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Vulkoorim Dervish Robe": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Vulkoorim Dervish Robe (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Vulkoorim_Dervish_Robe",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Vulkoorim Fighting Leathers": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Vulkoorim Fighting Leathers (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Vulkoorim_Fighting_Leathers",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Vulkoorim Pendant": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Vulkoorim Pendant (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Vulkoorim_Pendant",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Ward of Undeath": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Ward of Undeath (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ward_of_Undeath",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Weathered Targe": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Weathered Targe (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Weathered_Targe",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Wolf Whistle": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "legendary-crafted from Epic Wolf Whistle (the page's legendary param records the epic predecessor)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Wolf_Whistle",
+   "harvested": "2026-08-13"
+  },
+  "Shards of the Deep": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
+   "wiki_url": "https://ddowiki.com/page/Item:Shards_of_the_Deep",
+   "harvested": "2026-08-13"
+  }
+ }
+}

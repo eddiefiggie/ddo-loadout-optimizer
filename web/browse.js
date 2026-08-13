@@ -13,6 +13,26 @@ const affixType = (a) => (a && a.type != null) ? a.type : (a && a.bonus_type);
 // resolves it in module scope; `var` tolerates the browser-global redeclaration.
 var itemMl = (v) => (v && v.ml != null) ? v.ml : (v && v.minimum_level);
 
+// plan 2026-08-12-003 (U4, #262) — the no-drop-source disclosure. The wording is
+// owned by projection.js (NO_DROP_SOURCE_WORDING: one constant, every surface);
+// bridged here browser-global-first, require() under node. `var` for the shared
+// browser global scope (same rationale as itemMl above). The literal fallback
+// only covers a stale cached projection.js that predates the constant.
+var _browseNoDropWording = (function () {
+  const P = (typeof Projection !== "undefined") ? Projection
+    : (typeof require !== "undefined" ? require("./projection.js") : null);
+  return (P && P.NO_DROP_SOURCE_WORDING) || "no known live drop source";
+})();
+
+/** Badge HTML for a wiki-confirmed sourceless item's status cell; "" otherwise.
+ *  Only-when-set: absence of the flag is the default and renders nothing. Pure
+ *  (unit-tested); the wording is code-owned, so no esc() dependency here. */
+function noDropBadge(v) {
+  return (v && v.no_drop_source === true)
+    ? ` <span class="badge no-drop" title="${_browseNoDropWording}">${_browseNoDropWording}</span>`
+    : "";
+}
+
 /**
  * Pure filter. Returns the variants matching every active criterion.
  * @param {Array} items - variant records
@@ -347,7 +367,9 @@ function initBrowse(dataset) {
     // only in the browser. Every dataset-derived field is escaped — the item data
     // is wiki-harvested and not fully trusted, matching the results-panel hardening.
     const body = rows.map((v) => {
-      const badge = `<span class="badge ${esc(v.verification)}">${esc(v.verification)}</span>`;
+      // #262 (U4) — the no-drop-source badge rides the same status cell; the row
+      // struct carries the flag because browsableItems passes real variants through.
+      const badge = `<span class="badge ${esc(v.verification)}">${esc(v.verification)}</span>` + noDropBadge(v);
       // U3 — item-carried chips first, then set-granted ones. Beyond three set
       // chips the remainder collapses: 1,381 items carry threshold tiers and five
       // carry twelve, so an uncapped list would swamp the cell.
@@ -400,5 +422,5 @@ if (typeof window !== "undefined") {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { filterVariants, variantStats, variantSetStats, affixText, setChipText, collectSetDefs, resolveSetGranted, dinoInsertRow, ncRow, vikRow, compendiumRow, browsableItems };
+  module.exports = { filterVariants, variantStats, variantSetStats, affixText, setChipText, collectSetDefs, resolveSetGranted, dinoInsertRow, ncRow, vikRow, compendiumRow, browsableItems, noDropBadge };
 }

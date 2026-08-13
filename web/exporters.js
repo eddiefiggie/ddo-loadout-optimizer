@@ -182,6 +182,14 @@
     return `Picked only for its crafts: ${txt}`;
   }
 
+  // #262 — the no-drop-source disclosure, ONE wording for every export. The
+  // projected entry carries the shared phrase itself (projection.js
+  // NO_DROP_SOURCE_WORDING, only-when-set), so every format — and the portable
+  // JSON, which inherits the resolved view verbatim — prints the identical
+  // sentence or nothing. Trusted constant text, no user-derived parts, so no
+  // per-format escaping is needed.
+  function noDropStr(it) { return it.noDropSource || ""; }
+
   // ---- Markdown ----
 
   function toMarkdown(rec) {
@@ -215,6 +223,9 @@
       for (const cr of it.crafting) out += `  - ${craftStr(cr, mdEsc, "md")}\n`;
       const carried = carriedStr(it, mdEsc);
       if (carried) out += `  - ⚒ ${carried}\n`;
+      // #262 — the disclosure rides with the item it qualifies, in every format.
+      const nd = noDropStr(it);
+      if (nd) out += `  - ⚠ ${nd}\n`;
     }
     if (view.sets.length) {
       out += `\n## Set bonuses\n\n`;
@@ -261,6 +272,9 @@
       for (const cr of it.crafting) out += `\n  [*]${craftStr(cr, bbEsc, "bb")}`;
       const carried = carriedStr(it, bbEsc);
       if (carried) out += `\n  [*]${carried}`;
+      // #262 — the disclosure rides with the item it qualifies, in every format.
+      const nd = noDropStr(it);
+      if (nd) out += `\n  [*]⚠ ${nd}`;
       out += `\n`;
     }
     out += `[/list]\n`;
@@ -309,8 +323,10 @@
     for (const it of view.loadout) {
       // #245 — the craft-carried note joins the Crafting cell: it is a fact
       // about why the crafts matter, and a new column would break header pins.
+      // #262 — the no-drop note joins the same notes cell for the same reason.
       const craftCell = it.crafting.map((cr) => craftStr(cr, (s) => s, "csv"))
         .concat(carriedStr(it, (s) => s) || [])
+        .concat(noDropStr(it) || [])
         .join(" | ");
       rows.push(csvRow([
         it.slot, it.item, it.ml,
@@ -362,11 +378,17 @@
     h += `<table><thead><tr><th>Slot</th><th>Item</th><th>ML</th><th>Affixes</th><th>Augments</th><th>Crafting</th></tr></thead><tbody>`;
     for (const it of view.loadout) {
       const carried = carriedStr(it, htmlEsc);
+      const nd = noDropStr(it);
+      // #245 + #262 — both per-item notes join the Crafting cell (same reason as
+      // the CSV: it is the per-item notes column, and a new column breaks pins).
+      const craftCell = it.crafting.map((cr) => craftStr(cr, htmlEsc, "md"))
+        .concat(carried ? [`⚒ ${carried}`] : [])
+        .concat(nd ? [`⚠ ${nd}`] : [])
+        .join("<br>");
       h += `<tr><td>${htmlEsc(it.slot)}</td><td>${htmlEsc(it.item)}</td><td>${htmlEsc(it.ml)}</td>`
         + `<td>${affixList(it.affixes, htmlEsc)}</td>`
         + `<td>${it.augments.map((aug) => augStr(aug, htmlEsc, "md")).join("<br>")}</td>`
-        + `<td>${it.crafting.map((cr) => craftStr(cr, htmlEsc, "md")).join("<br>")
-          }${carried ? `${it.crafting.length ? "<br>" : ""}⚒ ${carried}` : ""}</td></tr>`;
+        + `<td>${craftCell}</td></tr>`;
     }
     h += `</tbody></table>`;
     if (view.sets.length) {
@@ -518,12 +540,17 @@
 
     const augLines = [];
     const craftLines = [];
+    const noDropLines = [];
     for (const it of view.loadout) {
       for (const aug of it.augments || []) {
         const eff = affixList(aug.affixes, (s) => s);
         augLines.push(`  ${it.slot} (${it.item}) — ${aug.name}${eff ? `: ${eff}` : ""}`);
       }
       for (const cr of it.crafting || []) craftLines.push(`  ${it.slot} (${it.item}) — ${cr.label}`);
+      // #262 — the projected entry carries the shared wording itself; the line
+      // below the split is where a gearset can say it (the importable half must
+      // stay a pure gear list).
+      if (it.noDropSource) noDropLines.push(`  ${it.slot} (${it.item}) — ${it.noDropSource}`);
     }
     // Augments are listed here as well as on the gear lines: DDOBuilder matches an
     // augment by scanning its own description text, and our affix vocabulary does
@@ -541,6 +568,14 @@
       rl.push("#");
       say("Crafting (not importable — apply these by hand)");
       craftLines.forEach(say);
+    }
+    // #262 — commentary only, one physical line per item via say/gsInline. The
+    // heading deliberately does not repeat the phrase: the per-item line IS the
+    // one shared wording, printed exactly once per flagged item.
+    if (noDropLines.length) {
+      rl.push("#");
+      say("Drop-source disclosure (per the DDO wiki)");
+      noDropLines.forEach(say);
     }
     if (unmapped.length) {
       rl.push("#");

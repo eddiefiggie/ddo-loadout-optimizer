@@ -1497,3 +1497,49 @@ test("U7/#110: the banner qualifies optimality only when a block removed a candi
   assert.ok(/block-note/.test(on) && /optimal given those exclusions/.test(on));
   assert.strictEqual(R.blockNotice({ blockReport: [] }), "", "silent when no block applied");
 });
+
+// ---------------------------------------------------------------------------
+// #262 U3 — the no-drop-source disclosure on the app surfaces: gear box row,
+// Deep Dive item block, and the coverage note clause. All read the ONE shared
+// wording from projection.js — never a per-surface respelling.
+
+test("#262: equippedRow shows the note for a flagged item", () => {
+  const pick = { slot: "Bracers", variant: { variant_id: "Bracers of the Spider Queen",
+    minimum_level: 20, no_drop_source: true } };
+  const html = R.equippedRow("Bracers", pick, {});
+  assert.ok(html.includes(Pj.NO_DROP_SOURCE_WORDING), "the gear box row carries the note");
+  assert.ok(/pd-nodrop/.test(html), "rendered as the dedicated note element");
+});
+
+test("#262: an unflagged equipped row carries no note", () => {
+  const pick = { slot: "Ring", variant: { variant_id: "Plain Ring", minimum_level: 20 } };
+  const html = R.equippedRow("Ring", pick, {});
+  assert.ok(!html.includes(Pj.NO_DROP_SOURCE_WORDING), "absence is asserted, not implied");
+});
+
+test("#262: loadoutDeepDive tags a flagged item beside the Artifact tag position", () => {
+  const result = {
+    chosen: [{ slot: "Bracers", variant: { variant_id: "Legendary Bracers of the Spider Queen",
+      minimum_level: 33, no_drop_source: true, affixes: [] } }],
+    breakdown: {}, augmentsPlaced: [], effective: {}, perTarget: {},
+  };
+  const ddMaps = { augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
+    ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(), jokerByHost: new Map() };
+  const html = R.loadoutDeepDive(result, { targets: [] }, ddMaps, R.attributionByTarget(result));
+  assert.ok(/dd-nodrop/.test(html) && html.includes(Pj.NO_DROP_SOURCE_WORDING),
+    "the Deep Dive item block discloses it");
+  const clean = { chosen: [{ slot: "Ring", variant: { variant_id: "Plain Ring", minimum_level: 20, affixes: [] } }],
+    breakdown: {}, augmentsPlaced: [], effective: {}, perTarget: {} };
+  assert.ok(!R.loadoutDeepDive(clean, { targets: [] }, ddMaps, R.attributionByTarget(clean))
+    .includes(Pj.NO_DROP_SOURCE_WORDING), "an unflagged item shows nothing");
+});
+
+test("#262: coverageNote gains the clause only when the coverage block reports confirmed items", () => {
+  const note = R.coverageNote({ metadata: { no_drop_source_coverage: {
+    confirmed_no_source: 2, wiki_has_source: 0, triage_universe: 199, unverified: 197, flagged_variants: 2 } } });
+  assert.ok(note.includes(Pj.NO_DROP_SOURCE_WORDING), "the clause embeds the shared phrase");
+  assert.ok(/2 items/.test(note), "names the confirmed count");
+  assert.ok(/197/.test(note), "names the unverified remainder");
+  const bare = R.coverageNote({ metadata: {} });
+  assert.ok(!bare.includes(Pj.NO_DROP_SOURCE_WORDING), "no coverage block, no clause");
+});

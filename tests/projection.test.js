@@ -725,3 +725,27 @@ test("U1: the new helpers ride the results.js re-export surface (KTD2 parity)", 
     assert.strictEqual(typeof R[fn], "function", `results.js re-exports ${fn}`);
   }
 });
+
+// ---------------------------------------------------------------------------
+// #262 U3 — the no-drop-source disclosure. ONE wording constant, carried on the
+// shared content model only-when-set (the dataset's only-when-set precedent):
+// an unverified item carries no key at all, so no surface can render a note the
+// wiki evidence lacks.
+
+test("#262: the shared wording constant is exactly the disclosable claim", () => {
+  assert.strictEqual(P.NO_DROP_SOURCE_WORDING, "no known live drop source");
+});
+
+test("#262: project() carries noDropSource on a flagged entry, and ONLY there", () => {
+  const rec = makeRec();
+  rec.snapshot.chosen[0].variant.no_drop_source = true;   // flag the Goggles
+  const view = P.project(rec);
+  const goggles = view.loadout.find((i) => i.slot === "Goggles");
+  // The literal, not the constant: comparing against P.NO_DROP_SOURCE_WORDING
+  // passed vacuously against the pre-change tree (undefined === undefined).
+  assert.strictEqual(goggles.noDropSource, "no known live drop source",
+    "a flagged variant's entry carries the one shared wording");
+  const ringEntry = view.loadout.find((i) => i.slot === "Ring");
+  assert.ok(!("noDropSource" in ringEntry),
+    "an unflagged variant's entry carries NO field at all (absence is the signal)");
+});

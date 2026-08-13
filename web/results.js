@@ -102,6 +102,19 @@ function coverageNote(dataset) {
     parts.push("<strong>Endgame band (ML30-36):</strong> " + bandParts.join(", ") +
       " — the exhaustive named + raid gear of these expansions, each item enriched or quarantined (none silently missing)");
   }
+  // #262 — items wiki-confirmed to have no live drop source are disclosed, never
+  // dropped: they stay solver candidates (exclusion remains the player's move via
+  // the blocklist), so the coverage claim must say what the per-item notes mean.
+  // The clause embeds the ONE shared wording from projection.js.
+  const nds = m.no_drop_source_coverage;
+  if (nds && nds.confirmed_no_source > 0) {
+    let s = `<strong>Drop sources:</strong> ${nds.confirmed_no_source} item${nds.confirmed_no_source === 1 ? "" : "s"}` +
+      ` wiki-confirmed with ${Proj.NO_DROP_SOURCE_WORDING} — noted wherever each renders; excluding them stays your call via the blocklist`;
+    if (nds.unverified) {
+      s += ` (${nds.unverified} empty-location item${nds.unverified === 1 ? "" : "s"} await wiki triage and carry no note)`;
+    }
+    parts.push(s);
+  }
   const sec = m.set_enrichment_coverage;
   if (sec && sec.enriched_members_with_set_bonus) {
     let s = `<strong>Set bonuses on enriched gear:</strong> ${sec.enriched_members_with_set_bonus} enriched set members now count toward set thresholds across ${sec.distinct_enriched_sets} sets`;
@@ -299,8 +312,13 @@ function loadoutDeepDive(result, query, maps, attr) {
       ? `<div class="dd-crafts"><h5>Applied crafting &amp; augments</h5><div class="dd-chips">${crafts.join(" ")}</div></div>` : "";
     const wiki = v.wiki_url ? `<a class="dd-wiki" href="${safeUrl(v.wiki_url)}" target="_blank" rel="noopener">wiki</a>` : "";
     const artifactTag = v.artifact ? `<span class="dd-artifact" title="your one equipped Artifact">Artifact</span>` : "";
+    // #262 — the wiki-confirmed no-drop-source disclosure, beside the Artifact
+    // tag: a head-level fact about the item, spelled by the ONE shared wording
+    // (projection.js) so the Deep Dive can never drift from the exports.
+    const noDropTag = v.no_drop_source
+      ? `<span class="dd-nodrop" title="the DDO wiki records no current in-game source for this item — it stays a solver candidate; block it to exclude it">${Proj.NO_DROP_SOURCE_WORDING}</span>` : "";
     return `<div class="dd-item${glow ? " is-set" : ""}${v.artifact ? " is-artifact" : ""}">
-      <div class="dd-head"><span class="dd-slot">${esc(c.slot)}</span><span class="dd-name">${esc(v.variant_id)}</span>${artifactTag}<span class="dd-ml">ML ${esc(itemMl(v) ?? "?")}</span>${wiki}</div>
+      <div class="dd-head"><span class="dd-slot">${esc(c.slot)}</span><span class="dd-name">${esc(v.variant_id)}</span>${artifactTag}${noDropTag}<span class="dd-ml">ML ${esc(itemMl(v) ?? "?")}</span>${wiki}</div>
       ${whyThisLine(result, { slot: c.slot, variant_id: v.variant_id }, attr, query && query.targets)}
       ${setLine}
       ${upgradeNote}
@@ -364,6 +382,11 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
   // comes from `maps` (keyed by the pick's chosen index); `augById` resolves an
   // augment's affixes by variant_id (the placed meta carries none).
   const body = (v && !locked) ? equippedBody(v, pick ? pick.idx : -1, maps, augById, owned.mode) : "";
+  // #262 — the no-drop-source note on the gear box itself: the moment of seeing
+  // the pick is where the player must learn it, not at the wiki after farming.
+  // Same shared wording as the Deep Dive and every export (projection.js).
+  const noDropNote = (v && !locked && v.no_drop_source)
+    ? `<div class="pd-rnote pd-nodrop" title="the DDO wiki records no current in-game source for this item — it stays a solver candidate; block it to exclude it">${Proj.NO_DROP_SOURCE_WORDING}</div>` : "";
   // U3 (plan 2026-08-12-001) — the priority summary sits at the bottom of the
   // box, outside `.pd-rbody` so equippedBody's emptiness guard cannot swallow it.
   const prio = (v && !locked && prioCtx && prioCtx.result)
@@ -373,7 +396,7 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
   return `<div class="${rowCls}">
     <div class="pd-rtop"><div class="pd-rlabel">${esc(label)}</div>${ctl}</div>
     <div class="${nameCls}"${v ? ` title="${esc(v.variant_id)}"` : ""}>${name}</div>
-    ${foot}${reasonNote}${body}${prio}${artifactBadge}${badge}${menu}
+    ${foot}${reasonNote}${noDropNote}${body}${prio}${artifactBadge}${badge}${menu}
   </div>`;
 }
 

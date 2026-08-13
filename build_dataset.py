@@ -52,6 +52,7 @@ from src import untyped_rankable as untyped_rankable_mod
 from src import dr_qualifiers as dr_qualifiers_mod
 from src import type_corrections as type_corrections_mod
 from src import ml36_augments as ml36_augments_mod
+from src import no_drop_source as no_drop_source_mod
 from src import planner_items as planner_mod
 from src import variants as variants_mod
 from src import vocabulary as vocabulary_mod
@@ -230,6 +231,9 @@ TYPE_CORRECTIONS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "affix_type_corrections.json")
 ML36_AUGMENTS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "ml36_augments.json")
+# #262 — per-item wiki verdicts for the "no known live drop source" disclosure.
+NO_DROP_SOURCE_PATH = os.path.join(
+    HERE, "data", "seed", "compendium", "no_drop_source.json")
 UNTYPED_RANKABLE_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "untyped_rankable.json")
 SPEED_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_enchantment.json")
@@ -450,6 +454,15 @@ def build() -> dict:
     planner_records, planner_stats = planner_mod.load_planner_items(
         verified_seal_types=_verified_seal_types,
         exclude_names=_host_pipeline_names)
+    # #262 — the "no known live drop source" evidence shard. check() runs HERE,
+    # against the planner records pre-variant-expansion, because the staleness
+    # guard keys off the raw `quests` array (KTD8: the list, not the derived
+    # location_quest string) — which lives only on these records. An entry whose
+    # item's quests filled in upstream fails the build for review; an empty or
+    # absent shard is the labeled inert no-op (fail-safe-absent disclosure).
+    # Stamping happens once the variants are final, just before assembly below.
+    _no_drop_entries = no_drop_source_mod.load(NO_DROP_SOURCE_PATH)
+    _no_drop_checked = no_drop_source_mod.check(_no_drop_entries, planner_records)
     # U7.5 — apply the wiki-validated gap-corrections overlay ADDITIVELY, in place,
     # BEFORE variant expansion so the restored affixes flow through verify/coverage
     # like any native affix. Sole sanctioned exception to gear-planner sole-authority
@@ -950,6 +963,18 @@ def build() -> dict:
         "wiki_crosscheck_note": "wiki completeness cross-check (R5) is a deferred harvest",
     }
 
+    # #262 — stamp `no_drop_source: True` onto the confirmed variants,
+    # ONLY-WHEN-SET (the QUARANTINE_FIELD precedent in src/variants.py — never
+    # False/null; its 353KB null-stamping lesson). Gated on shard entries so an
+    # empty seed is FULLY inert: no per-variant flags AND no coverage metadata
+    # block, keeping the built dataset byte-identical to baseline (AE2). The
+    # solver never reads the field — flagged items remain candidates (R6).
+    _no_drop_meta = {}
+    if _no_drop_entries:
+        no_drop_source_mod.stamp(variants, _no_drop_entries)
+        _no_drop_meta = {"no_drop_source_coverage":
+                         no_drop_source_mod.coverage(variants, _no_drop_entries)}
+
     # Catalog schema version (U1 / KTD5). build_id is computed below over the
     # full assembled dataset so a persisted loadout snapshot can detect a stale
     # catalog. Deterministic for unchanged input — same data rebuilds to the same
@@ -1063,6 +1088,9 @@ def build() -> dict:
             # #260 — the wiki-sourced ML36 augment tier: what the guard vouched
             # for per color, and what was injected into the pools.
             "ml36_augment_coverage": {**_ml36_coverage, "checked": _ml36_checked},
+            # #262 — wiki-confirmed no-drop-source coverage. Present ONLY when
+            # the shard has entries; the empty seed emits no block at all (AE2).
+            **_no_drop_meta,
             "untyped_rankable_coverage": {
                 "candidates": _untyped_checked,
                 "allowed": len(_untyped_allow),

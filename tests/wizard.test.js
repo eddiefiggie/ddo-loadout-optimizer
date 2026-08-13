@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -1772,4 +1772,41 @@ test("review/#110: the load path sanitizes blocklist elements to non-empty strin
   const slice = WIZARD_SRC.slice(start, start + 4000);
   assert.ok(/i\.blocklist\.filter\(\(x\) => typeof x === "string" && x\)/.test(slice),
     "a hand-edited backup's non-string entries would become unremovable ghost rows");
+});
+
+// ---------------------------------------------------------------------------
+// U4 (plan 2026-08-12-003, #262) — no-drop-source disclosure at pick time.
+// The pin and block search rows are where a player chooses an item; a
+// wiki-confirmed sourceless item says so right there, as one more per-row note
+// beside the existing "· pinned" / "· blocked" state notes.
+// ---------------------------------------------------------------------------
+
+test("U4/262: noDropNote renders the note for a flagged item, nothing otherwise", () => {
+  assert.strictEqual(noDropNote({ no_drop_source: true }), " · no known live drop source");
+  assert.strictEqual(noDropNote({}), "", "unflagged: no note (absence, not empty wording)");
+  assert.strictEqual(noDropNote({ no_drop_source: false }), "");
+  assert.strictEqual(noDropNote(null), "");
+  assert.ok(!/unobtainable/i.test(noDropNote({ no_drop_source: true })), "R5: 'unobtainable' never appears");
+});
+
+test("U4/262: a real flagged item carries the note; an unflagged one doesn't", () => {
+  const flagged = realData.items.filter((v) => v.no_drop_source === true);
+  assert.ok(flagged.length >= 2, "the wiki-confirmed items survive dataset normalization");
+  assert.ok(flagged.some((v) => /Bracers of the Spider Queen/.test(v.variant_id)));
+  for (const v of flagged) assert.ok(noDropNote(v).includes("no known live drop source"));
+  const plain = realData.items.find((v) => !v.no_drop_source);
+  assert.strictEqual(noDropNote(plain), "");
+});
+
+test("U4/262: the PIN search row template appends the note (source wiring)", () => {
+  // The render is DOM-bound; the WIZARD_SRC-slice precedent applies.
+  const src = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderPinResults("));
+  const body = src.slice(0, src.indexOf("function renderPinList("));
+  assert.ok(/noDropNote\(v\)/.test(body), "the pin row's state-note string appends noDropNote(v)");
+});
+
+test("U4/262: the BLOCK search row template appends the note (source wiring)", () => {
+  const src = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderBlockResults("));
+  const body = src.slice(0, src.indexOf("function renderBlockList("));
+  assert.ok(/noDropNote\(v\)/.test(body), "the block row's note string appends noDropNote(v)");
 });

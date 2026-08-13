@@ -326,4 +326,48 @@ test("U4: variantSetStats is empty for an item with no set involvement", () => {
   assert.deepStrictEqual(B.variantSetStats(rows.find((r) => r.variant_id === "PLAIN")), []);
 });
 
+// ---------------------------------------------------------------------------
+// U4 (plan 2026-08-12-003, #262) — no-drop-source disclosure in browse.
+// A wiki-confirmed sourceless item must be list-visible at pick time: its row
+// carries a badge beside the verification badge; unflagged rows carry nothing.
+// ---------------------------------------------------------------------------
+
+test("U4/262: a flagged item's row carries the no-drop-source badge", () => {
+  const html = B.noDropBadge({ variant_id: "X", no_drop_source: true });
+  assert.ok(html.includes("no known live drop source"), "badge carries the shared wording");
+  assert.ok(/class="badge/.test(html), "renders as a badge, matching the status-cell DOM pattern");
+  assert.ok(!/unobtainable/i.test(html), "the word 'unobtainable' appears nowhere (R5)");
+});
+
+test("U4/262: an unflagged row carries NO badge (assert absence)", () => {
+  assert.strictEqual(B.noDropBadge({ variant_id: "X" }), "");
+  assert.strictEqual(B.noDropBadge({ variant_id: "X", no_drop_source: false }), "");
+  assert.strictEqual(B.noDropBadge(null), "");
+});
+
+test("U4/262: the flag survives into the browse row projection (real dataset)", () => {
+  // The browse-visibility lesson: a non-affix fact is invisible unless it is on
+  // the row struct the renderer reads. browsableItems must carry it through.
+  const list = browsableItems(data);
+  const flagged = list.filter((v) => v.no_drop_source === true);
+  assert.ok(flagged.length >= 2, "the wiki-confirmed items reach the browse rows");
+  assert.ok(flagged.some((v) => /Bracers of the Spider Queen/.test(v.variant_id)));
+  for (const v of flagged) {
+    assert.ok(B.noDropBadge(v).includes("no known live drop source"));
+  }
+  // and an unflagged real row renders no badge
+  const plain = list.find((v) => !v.no_drop_source);
+  assert.strictEqual(B.noDropBadge(plain), "");
+});
+
+test("U4/262: the render template composes the badge into the status cell", () => {
+  // Source-text wiring guard (the wizard-test pattern): the DOM render is
+  // browser-only, so assert the row template actually calls the helper — a pure
+  // helper nobody renders would pass every other test while staying invisible.
+  const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "browse.js"), "utf-8");
+  const i = src.indexOf("const badge =");
+  const row = src.slice(i, src.indexOf("</tr>", i));
+  assert.ok(/noDropBadge\(v\)/.test(row), "the status-cell badge string appends noDropBadge(v)");
+});
+
 console.log(`\n${passed} passed`);
