@@ -649,8 +649,8 @@ function saturationNotice(result) {
   // #277 — the solve-banner's tap/keyboard-openable pattern: the full sentences
   // are VISIBLE text in the open state, so a touch or keyboard user is not
   // locked out of the explanation; the title stays as the pointer fast-path.
-  return `<details class="scope-note saturation-note" title="${lines.map(esc).join(" ")}">`
-    + `<summary role="status">${report.length} ${word} at ceiling: ${list}.</summary>`
+  return `<details class="scope-note saturation-note">`
+    + `<summary title="${lines.map(esc).join(" ")}">${report.length} ${word} at ceiling: ${list}.</summary>`
     + `<div class="sat-sentences">${lines.map((l) => `<p>${esc(l)}</p>`).join("")}</div></details>`;
 }
 
@@ -660,7 +660,7 @@ function saturationNotice(result) {
 function staleSnapshotNotice(result) {
   const stale = result && result.status === "optimal" && result.effective == null;
   return stale
-    ? `<p class="scope-note stale-save-note" role="status">This saved build predates the current save format — `
+    ? `<p class="scope-note stale-save-note" role="status">This saved build is missing some of its data — `
       + `totals and receipts are unavailable. Re-solve to restore the full analysis.</p>`
     : "";
 }
@@ -1040,7 +1040,7 @@ function buildViews(build, model, query) {
     return `<div class="stat-card">
       <div class="stat-head"><span class="stat-rank">${i + 1}</span><span class="stat-name">${esc(stat)}</span></div>
       <div class="stat-value" data-final="${esc(total)}">${esc(total)}</div>
-      ${capNote}${ceilingChip(build, stat)}
+      ${capNote}${build.effective ? ceilingChip(build, stat) : ""}
       ${attributionList(contribs)}
     </div>`;
   }).join("");

@@ -539,9 +539,19 @@ test("#276: the receipt card marks an at-ceiling stat with the shared sentence",
 
 test("#276: buildViews puts the chip on the saturated stat's card only", () => {
   const b = satBuild();
-  b.effective = { "Kinetic Lore": 30 };
+  b.effective = { "Kinetic Lore": 30, "Physical Sheltering": 12 };
+  const v = R.buildViews(b, { worn: [], augments: [] }, { targets: ["Kinetic Lore", "Physical Sheltering"] });
+  const cards = v.cards.split("stat-card").filter((c) => /stat-name/.test(c));
+  assert.strictEqual(cards.length, 2, "both ranked cards render");
+  assert.ok(/stat-ceiling/.test(cards[0]) && /Kinetic Lore/.test(cards[0]), "the saturated stat carries the marker");
+  assert.ok(!/stat-ceiling/.test(cards[1]) && /Physical Sheltering/.test(cards[1]), "the unsaturated stat does not");
+});
+
+test("#276: no per-stat ceiling claim on a degenerate save whose totals are unavailable", () => {
+  const b = satBuild();
+  delete b.effective;
   const v = R.buildViews(b, { worn: [], augments: [] }, { targets: ["Kinetic Lore"] });
-  assert.ok(/stat-ceiling/.test(v.cards), "the saturated ranked stat carries the marker");
+  assert.ok(!/stat-ceiling/.test(v.cards), "a zeroed card never wears an at-ceiling chip");
 });
 
 test("plan 2026-08-12-001 U3/R4: the Deep Dive block carries the same summary with green", () => {
