@@ -1048,6 +1048,48 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
     assert.strictEqual(r.vikPlaced.length, 2, "two slots -> two crafts");
   });
 
+  await test("VIK/quarterstaff (#282): a variant-marked option reaches only its matching host", async () => {
+    // The Weapon pools ship a `(quarterstaff)` sibling whose differing entries the
+    // pipeline emits variant-marked: `quarterstaff: true` (quarterstaff hosts only),
+    // `false` (everything else), unmarked (identical in both pools — any host).
+    const qsPool = [
+      // Base "Dolorous Focus": no implement bonuses; never offered to a quarterstaff.
+      { ...vikMulti("Dolorous", "Weapon", [["Spell Focus Mastery", "Equipment", 8]],
+        "legendary", "Dolorous Focus (legendary)"), quarterstaff: false },
+      // Quarterstaff "Dolorous Focus": adds the implement bonus; quarterstaffs only.
+      { ...vikMulti("Dolorous", "Weapon",
+        [["Universal Spell Power", "Implement", 15], ["Spell Focus Mastery", "Equipment", 8]],
+        "legendary", "Dolorous Focus (legendary)"), quarterstaff: true },
+      // Unmarked: identical in both pools, serves any Weapon host.
+      vikOpt("Dolorous", "Weapon", "Constitution", "Enhancement", 10, "legendary"),
+    ];
+    const host = (weaponType) => {
+      const v = vikHost("H", "Main Hand", [{ type: "Dolorous", category: "Weapon" }], 34);
+      v.type = weaponType;
+      return v;
+    };
+    const solveFor = async (weaponType, targets) => S.solveLexicographic({
+      targets, mlCap: 34, dodgeCap: null,
+      worn: [slot("Main Hand", [host(weaponType)])], viktranium: qsPool,
+    }, highs);
+
+    const qs = await solveFor("Quarterstaffs", ["Universal Spell Power"]);
+    assert.strictEqual(qs.effective["Universal Spell Power"], 15,
+      "a quarterstaff host crafts the quarterstaff variant's implement bonus");
+    const sword = await solveFor("Bastard Swords", ["Universal Spell Power"]);
+    assert.strictEqual(sword.effective["Universal Spell Power"], 0,
+      "a non-quarterstaff host must never receive the quarterstaff-only bonus");
+    // The base variant still serves the non-quarterstaff host under the same name.
+    const swordSFM = await solveFor("Bastard Swords", ["Spell Focus Mastery"]);
+    assert.strictEqual(swordSFM.effective["Spell Focus Mastery"], 8,
+      "the base variant reaches the non-quarterstaff host");
+    // An unmarked option (identical in both pools) reaches both hosts.
+    for (const t of ["Quarterstaffs", "Bastard Swords"]) {
+      assert.strictEqual((await solveFor(t, ["Constitution"])).effective.Constitution, 10,
+        `an unmarked option serves a ${t} host`);
+    }
+  });
+
   await test("VIK/AE3: crafted option obeys bonus-type stacking with worn", async () => {
     const sameType = {
       targets: ["Constitution"], mlCap: 36, dodgeCap: null,

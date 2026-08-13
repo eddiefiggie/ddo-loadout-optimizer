@@ -30,6 +30,10 @@ const _lamordiaTier = (typeof lamordiaTier !== "undefined")
   ? lamordiaTier
   // eslint-disable-next-line global-require
   : require("./model.js").lamordiaTier;
+const _lamordiaWeaponVariant = (typeof lamordiaWeaponVariant !== "undefined")
+  ? lamordiaWeaponVariant
+  // eslint-disable-next-line global-require
+  : require("./model.js").lamordiaWeaponVariant;
 
 // U4b-i — stacking-equivalence: canonicalize an affix `type` to its stacking
 // bucket token before it forms a bucket KEY, so equivalent-but-distinct native
@@ -623,10 +627,17 @@ function buildProgram(model) {
     const slots = xv.variant.lamordia_slots || [];
     if (!slots.length) continue;
     const tier = _lamordiaTier(xv.variant);  // single source of truth (model.js)
+    // #282 — which Weapon-pool variant this host draws (quarterstaff vs base).
+    const hostQs = _lamordiaWeaponVariant(xv.variant) === "quarterstaff";
     for (const slot of slots) {
       const slotVars = [];
       for (const opt of model.viktranium || []) {
         if (opt.slot_type !== slot.type || opt.category !== slot.category || opt.tier !== tier) continue;
+        // #282 — a variant-marked record is offered only to its matching host:
+        // `quarterstaff: true` needs a quarterstaff, `false` forbids one, and an
+        // unmarked record (identical in both pools) serves any host.
+        if (opt.quarterstaff === true && !hostQs) continue;
+        if (opt.quarterstaff === false && hostQs) continue;
         const affixes = (opt.affixes && opt.affixes.length)
           ? opt.affixes
           // back-compat: a flat single-affix record (pre-atomicity shape)
