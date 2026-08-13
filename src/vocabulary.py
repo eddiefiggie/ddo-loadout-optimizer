@@ -210,14 +210,46 @@ def _synonym_folds(table):
     return folds
 
 
+def _local_synonym_folds(table):
+    """``{synonym: canonical}`` from the registry's ``local_affix_synonyms``
+    section — REPO-reviewed folds upstream does not carry (#305 added the
+    helpless-damage family; evidence cited per entry in the registry file).
+
+    Kept out of ``_synonym_folds`` deliberately: that normalizer feeds the U6
+    live-vs-frozen gate, which diffs the UPSTREAM section only. Merging local
+    entries there would make every repo addition read as a dropped-fold event.
+
+    A local synonym that collides with an upstream fold key raises — two
+    sections silently disagreeing on where a spelling folds is exactly the
+    re-pointed-fold hazard the U6 gate exists to catch."""
+    entries = table.get("local_affix_synonyms", []) if isinstance(table, dict) else []
+    upstream = _synonym_folds(table)
+    folds = {}
+    for e in entries:
+        canonical = e.get("name")
+        for syn in e.get("synonyms") or []:
+            if syn in upstream and upstream[syn] != canonical:
+                raise IntegrityError(
+                    f"local affix synonym {syn!r} -> {canonical!r} collides with the "
+                    f"upstream fold {syn!r} -> {upstream[syn]!r} — one spelling may "
+                    f"not fold two ways")
+            folds[syn] = canonical
+    return folds
+
+
 def registry_synonym_folds(path=AFFIX_SYNONYMS_REGISTRY_PATH):
     """Public ``{synonym: canonical}`` fold map from the FROZEN checked-in
-    affix-synonym registry (U4). The private ``_synonym_folds`` normalizer feeds
-    only the referential-integrity gate above; pipeline channels that need to
+    affix-synonym registry (U4): the upstream ``affix_synonyms`` section merged
+    with the repo-reviewed ``local_affix_synonyms`` section (#305). The private
+    ``_synonym_folds`` normalizer feeds only the referential-integrity gate
+    above (upstream section only, by design); pipeline channels that need to
     APPLY a fold to a parsed stat name (rather than diff two tables) read this.
     Reviewed mappings only — the registry is frozen, so a fold appearing here has
     already been confirmed as the same game mechanic (see ``check_affix_synonyms``)."""
-    return dict(_synonym_folds(_load(path)))
+    table = _load(path)
+    folds = dict(_synonym_folds(table))
+    folds.update(_local_synonym_folds(table))
+    return folds
 
 
 def check_affix_synonyms(live, frozen):

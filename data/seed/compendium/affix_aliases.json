@@ -11,13 +11,58 @@
   "aliases": [
     {
       "variant": "damage vs the Helpless",
-      "canonical": "Damage vs the Helpless",
-      "reason": "case-only"
+      "canonical": "Damage to helpless enemies",
+      "reason": "#305 (was a case-only alias to 'Damage vs the Helpless'): one wiki-verified helpless-damage mechanic; the pipeline folds every set-channel spelling to the native canonical (docs/wiki-evidence/helpless-damage.md), so the picker must resolve here too"
     },
     {
       "variant": "Damage vs. Helpless opponents",
-      "canonical": "Damage vs. Helpless Opponents",
-      "reason": "case-only"
+      "canonical": "Damage to helpless enemies",
+      "reason": "#305 (was a case-only alias to 'Damage vs. Helpless Opponents'): one wiki-verified helpless-damage mechanic; folded to the native canonical (docs/wiki-evidence/helpless-damage.md)"
+    },
+    {
+      "variant": "Damage vs the Helpless",
+      "canonical": "Damage to helpless enemies",
+      "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
+    },
+    {
+      "variant": "Damage vs. Helpless Opponents",
+      "canonical": "Damage to helpless enemies",
+      "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
+    },
+    {
+      "variant": "Damage vs. Helpless",
+      "canonical": "Damage to helpless enemies",
+      "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
+    },
+    {
+      "variant": "Damage vs. the Helpless",
+      "canonical": "Damage to helpless enemies",
+      "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
+    },
+    {
+      "variant": "Additional Damage to Helpless Targets",
+      "canonical": "Damage to helpless enemies",
+      "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
+    },
+    {
+      "variant": "Helplessness Damage",
+      "canonical": "Damage to helpless enemies",
+      "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
+    },
+    {
+      "variant": "damage versus the Helpless",
+      "canonical": "Damage to helpless enemies",
+      "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
+    },
+    {
+      "variant": "damage vs. helpless",
+      "canonical": "Damage to helpless enemies",
+      "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
+    },
+    {
+      "variant": "damage vs. the helpless",
+      "canonical": "Damage to helpless enemies",
+      "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
     },
     {
       "variant": "Greater Dragonmark charges",

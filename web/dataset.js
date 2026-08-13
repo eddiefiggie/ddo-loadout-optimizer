@@ -833,13 +833,38 @@ function expandedAwayMessage(vocab, name) {
  *  is the same defect wearing different clothes.
  *
  *  Idempotent: replacements are concrete stats, which are never themselves
- *  expanded away. */
+ *  expanded away.
+ *
+ *  Helpless-fold review — a saved name can also be a picker ALIAS whose canonical
+ *  moved out from under it (the helpless-damage fold re-pointed 11 aliases at one
+ *  canonical stat). Ranked pre-fold, `Additional Damage to Helpless Targets`
+ *  restored to a priority matching nothing and scored zero silently — the same
+ *  defect class in a different coat. So a name that is neither expanded away nor
+ *  in the current `known` vocabulary resolves through `vocab.canonical` (the SAME
+ *  alias table every add path consults) and substitutes its canonical, disclosed
+ *  in the same {from, to} shape. Known names pass through untouched; a genuinely
+ *  unknown non-aliased name keeps its current pass-through behavior. Still
+ *  idempotent: a substituted canonical is known, so a second run skips it. */
 function migratePriorities(priorities, vocab) {
   const out = [];
   const seen = new Set();
   const substitutions = [];
+  const known = (vocab && vocab.known instanceof Set) ? vocab.known : null;
+  const canonicalFn = (vocab && typeof vocab.canonical === "function") ? vocab.canonical : null;
   for (const p of (Array.isArray(priorities) ? priorities : [])) {
-    const to = expandedAwayFor(vocab, p);
+    let to = expandedAwayFor(vocab, p);
+    if (!to && known && canonicalFn) {
+      const trimmed = String(p == null ? "" : p).trim();
+      if (trimmed && !known.has(trimmed)) {
+        const c = canonicalFn(trimmed);
+        // `typeof c === "string"` — the alias table is a plain object literal, so
+        // a name like `constructor` walks the prototype chain and yields the
+        // Object FUNCTION (the exact hazard expandedAwayFor documents above).
+        // An aliased name may itself map to an expanded-away canonical; chain
+        // through the expansion so one load repairs both.
+        if (typeof c === "string" && c && c !== trimmed) to = expandedAwayFor(vocab, c) || [c];
+      }
+    }
     if (to) substitutions.push({ from: p, to: to.slice() });
     for (const name of (to || [p])) {
       const key = String(name == null ? "" : name).trim().toLowerCase();

@@ -50,6 +50,7 @@ from src import cross_add as cross_add_mod
 from src import provenance as provenance_mod
 from src import value_corrections as value_corrections_mod
 from src import name_corrections as name_corrections_mod
+from src import helpless_fold as helpless_fold_mod
 from src import untyped_rankable as untyped_rankable_mod
 from src import dr_qualifiers as dr_qualifiers_mod
 from src import type_corrections as type_corrections_mod
@@ -842,6 +843,18 @@ def build() -> dict:
         raise SystemExit(
             "set-bonus affixes name an expanded-away stat no player can rank:\n  " +
             "\n  ".join(f"{s} — {stat} {val}" for s, stat, val in _set_orphans))
+    # #305 — per-channel helpless-spelling guard, item-attached channel: no
+    # parsed_set_bonuses tier may still carry a fold-away helpless-damage
+    # spelling (the set_parser parse seam folds them to `Damage to helpless
+    # enemies`). Same refuses-zero semantics as the dino_sets spelling guard;
+    # the def channels get their own calls below (per-channel, never vouched
+    # for by a sibling). Runs AFTER the expansions above so it inspects the
+    # channel exactly as emitted. docs/wiki-evidence/helpless-damage.md.
+    helpless_fold_mod.check_channel(
+        "parsed_set_bonuses",
+        (a.get("stat")
+         for v in variants for t in v.get("parsed_set_bonuses") or []
+         for a in t.get("affixes") or []))
     # Vecna Lost Purpose: the membership set defs come from the SAME set catalog that feeds
     # intrinsic set members (single source of truth), so an awakened Lost Purpose set gives the
     # identical bonus + stat vocabulary as an intrinsically-completed one. Attach the
@@ -852,6 +865,14 @@ def build() -> dict:
         for _tier in _mdef.get("tiers") or []:
             if _tier.get("affixes"):
                 _tier["affixes"] = spell_focus_mod.expand_affixes(_tier["affixes"])
+    # #305 — the same guard on the membership-def channel (built from the same
+    # set catalog through the same parse seam, but a separate emitted structure
+    # a sibling guard cannot vouch for).
+    helpless_fold_mod.check_channel(
+        "membership_set_defs",
+        (a.get("stat")
+         for _d in membership_defs.values() for _t in _d.get("tiers") or []
+         for a in _t.get("affixes") or []))
     membership_mod.attach_lost_purpose_slots(variants, membership_defs)
     variants, cov = verify_mod.apply(variants)          # per-affix verification gate
 
@@ -895,6 +916,15 @@ def build() -> dict:
             "set-def tier affixes name an expanded-away stat no player can rank:"
             "\n  " +
             "\n  ".join(f"{s} — {stat} {val}" for s, stat, val in _def_orphans))
+    # #305 — the same guard on the augment-set-def channel. Its fold lives in
+    # the reviewed seed itself (augment_sets.json canonicalized `Damage vs.
+    # Helpless`, the channel's established precedent — see the seed's
+    # `stat_note`), so this guard is what keeps the spelling from returning.
+    helpless_fold_mod.check_channel(
+        "augment_set_defs",
+        (a.get("stat")
+         for _d in augment_set_defs.values() for _t in _d.get("tiers") or []
+         for a in _t.get("affixes") or []))
     augment_sets_mod.attach_augment_set_slots(variants, augment_set_defs)
 
     # U81 Nearly Complete: expose the parametric choice-slot effect pool. Items

@@ -244,26 +244,31 @@ def test_augment_set_defs_emitted_with_21_entries():
 
 # --- U9: canonicalize set-def stat names so the bonuses actually score --------
 
-# The 3 formerly-unreconciled stats that DO have a canonical target in the
+# The formerly-unreconciled stats that DO have a canonical target in the
 # scoring vocabulary. Their raw seed names were rewritten to these canonical
 # forms so the bonuses now score (canonical verified against
 # data/seed/compendium/affix_aliases.json and vocab_registries.json).
+# Cruel Cut joined in #305: the helpless-damage family is one wiki-verified
+# mechanic (docs/wiki-evidence/helpless-damage.md), canonical native on the
+# Solar Gem of Cruelty affixes.
 CANONICALIZED = {
     "Arcane Guardian": "Magical Sheltering",   # was "Magical Resistance Rating"
     "Tough Shields": "Physical Sheltering",    # was "Physical Resistance Rating"
     "Truthful Blow": "Armor-Piercing",         # was "Fortification Bypass"
+    "Cruel Cut": "Damage to helpless enemies",  # was "Damage vs. Helpless" (#305)
 }
 
 # The former raw names must NOT appear anywhere in the built defs anymore.
 FORMER_RAW_NAMES = {
     "Magical Resistance Rating", "Physical Resistance Rating", "Fortification Bypass",
+    "Damage vs. Helpless",
 }
 
-# The 6 bonus stats with NO canonical scoring target today. They safely do not
+# The 5 bonus stats with NO canonical scoring target today. They safely do not
 # score and are DISCLOSED in the seed _meta.unscored_stats. Locking this set here
 # makes any future vocab addition a DELIBERATE change (update both places).
 KNOWN_UNSCORED = {
-    "Assassinate DCs", "Damage vs. Helpless", "Magical Resistance Rating Cap",
+    "Assassinate DCs", "Magical Resistance Rating Cap",
     "Maximum Hit Points", "Spell DCs", "Tactical DCs",
 }
 

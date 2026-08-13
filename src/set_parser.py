@@ -21,6 +21,7 @@ from __future__ import annotations
 import re
 
 from src.affix_parser import parse_line, BONUS_TYPES, MULTI_STAT_TOKENS
+from src import helpless_fold
 
 _PIECES = re.compile(r"(\d+)")
 _TRAILING_TYPE = re.compile(r"\(([^)]+)\)\s*$")
@@ -77,7 +78,14 @@ def parse_piece_text(text: str) -> tuple[list, list]:
         for a in r["affixes"]:
             for part in _expand_compound(a["stat"]):
                 b = dict(a)
-                b["stat"] = part
+                # #305 — fold the helpless-damage spellings to their canonical
+                # stat at the shared parse seam, so BOTH channels this parser
+                # feeds (item-attached parsed_set_bonuses and the membership
+                # set defs) emit `Damage to helpless enemies`; tier `raw` stays
+                # verbatim. Scoped to the one wiki-verified family — never the
+                # full synonym registry (see src/helpless_fold.py and
+                # docs/wiki-evidence/helpless-damage.md).
+                b["stat"] = helpless_fold.fold_stat(part)
                 if line_type and b["bonus_type"] == "Enhancement":
                     b["bonus_type"] = line_type  # apply trailing type only to untyped clauses
                 affixes.append(b)

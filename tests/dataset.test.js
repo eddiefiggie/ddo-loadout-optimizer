@@ -712,6 +712,87 @@ test("#169: the disclosure names a dropped bound", () => {
   assert.ok(!/removed rather than copied/.test(quiet), "no bound, no bound sentence");
 });
 
+// --- helpless-fold review: saved priorities carrying a picker ALIAS ------------
+// The helpless-damage fold re-pointed 11 picker aliases at one canonical stat.
+// migratePriorities substituted only expanded-away names, so a character saved
+// pre-fold with `Additional Damage to Helpless Targets` ranked restored to a
+// priority matching nothing — scoring zero silently, the exact defect class the
+// expanded-away migration exists to prevent. Aliased names now resolve through
+// the same alias table the picker uses (`vocab.canonical`).
+
+const ALIAS_VOCAB = {
+  expandedAway: {
+    "parrying": ["Armor Class", "Fortitude Save", "Reflex Save", "Will Save"],
+  },
+  known: new Set(["Strength", "Dodge", "Armor Class", "Fortitude Save",
+                  "Reflex Save", "Will Save", "Damage to helpless enemies"]),
+  canonical: (n) => {
+    const aliases = { "Additional Damage to Helpless Targets": "Damage to helpless enemies" };
+    const t = String(n == null ? "" : n).trim();
+    return (aliases[t] != null) ? aliases[t] : t;
+  },
+};
+
+test("alias-fold: a saved aliased priority migrates to its canonical, disclosed", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const out = migratePriorities(["Strength", "Additional Damage to Helpless Targets"], ALIAS_VOCAB);
+  assert.deepStrictEqual(out.priorities, ["Strength", "Damage to helpless enemies"]);
+  assert.deepStrictEqual(out.substitutions,
+    [{ from: "Additional Damage to Helpless Targets", to: ["Damage to helpless enemies"] }]);
+});
+
+test("alias-fold: an aliased name alongside its canonical dedupes, still disclosed", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const out = migratePriorities(
+    ["Damage to helpless enemies", "Additional Damage to Helpless Targets"], ALIAS_VOCAB);
+  assert.deepStrictEqual(out.priorities, ["Damage to helpless enemies"]);
+  assert.strictEqual(out.substitutions.length, 1, "the substitution is still disclosed");
+});
+
+test("alias-fold: a genuinely unknown non-aliased name keeps current behavior", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const out = migratePriorities(["Totally Made Up Stat"], ALIAS_VOCAB);
+  assert.deepStrictEqual(out.priorities, ["Totally Made Up Stat"], "passes through untouched");
+  assert.strictEqual(out.substitutions.length, 0);
+});
+
+test("alias-fold: a known rankable name is untouched", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const out = migratePriorities(["Strength", "Damage to helpless enemies"], ALIAS_VOCAB);
+  assert.deepStrictEqual(out.priorities, ["Strength", "Damage to helpless enemies"]);
+  assert.strictEqual(out.substitutions.length, 0, "no disclosure when nothing changed");
+});
+
+test("alias-fold: migration stays idempotent with a canonical-bearing vocab", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const once = migratePriorities(["Additional Damage to Helpless Targets"], ALIAS_VOCAB).priorities;
+  const twice = migratePriorities(once, ALIAS_VOCAB);
+  assert.deepStrictEqual(twice.priorities, once);
+  assert.strictEqual(twice.substitutions.length, 0);
+});
+
+test("alias-fold: a prototype-chain name does not resolve through the alias table", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  // `aliases[t] != null` walks the prototype chain, so `constructor` yields the
+  // Object FUNCTION — the same hazard expandedAwayFor already defends against.
+  for (const hostile of ["constructor", "toString", "valueOf", "hasOwnProperty"]) {
+    const out = migratePriorities([hostile], ALIAS_VOCAB);
+    assert.deepStrictEqual(out.priorities, [hostile], `${hostile} passes through untouched`);
+    assert.strictEqual(out.substitutions.length, 0);
+  }
+});
+
+test("alias-fold: the built dataset's real alias table drives the migration", () => {
+  const v = builtVocab();
+  if (!v) return console.log("  (skipped — web/data/items.json not built)");
+  const { migratePriorities } = require("../web/dataset.js");
+  const out = migratePriorities(["Additional Damage to Helpless Targets"], v);
+  assert.deepStrictEqual(out.priorities, ["Damage to helpless enemies"]);
+  assert.strictEqual(out.substitutions.length, 1, "the substitution is disclosed");
+  assert.ok(v.suggestions.includes("Damage to helpless enemies"),
+    "the replacement is a real rankable target");
+});
+
 // ---------------------------------------------------------------------------
 // #228 — the presence word cap. `_isPresenceTargetable` hides any Bool name
 // longer than four words, standing in for "is this a named effect or a
@@ -1153,6 +1234,81 @@ test("U4: dino_sets carries canonical Universal Spell Power, raw stays verbatim"
     "Defender of Tanaroa", "The Legendary Dread Isle's Curse"]);
   const rawCarriers = sets.filter((s) => (s.raw || "").includes("Universal Spellpower"));
   assert.strictEqual(rawCarriers.length, 3, "verbatim wiki raw text untouched");
+});
+
+// #305 — ONE wiki-verified helpless-damage mechanic (docs/wiki-evidence/
+// helpless-damage.md) was fragmented across ~12 spellings, so a `Damage to
+// helpless enemies` priority credited only the two Solar Gem of Cruelty
+// affixes and ~19 sets scored zero. The pipeline now folds every set-channel
+// spelling to the canonical (scoped family fold, never the full synonym
+// registry); `raw` stays verbatim. Positive assertions included so a
+// silently-dropped affix cannot pass as name-absence.
+test("#305: every solver channel carries only 'Damage to helpless enemies'; raw verbatim", () => {
+  const CANON = "Damage to helpless enemies";
+  const away = new Set([
+    "Additional Damage to Helpless Targets", "Damage vs the Helpless",
+    "Damage vs. Helpless", "Damage vs. Helpless Opponents",
+    "Damage vs. Helpless opponents", "Damage vs. the Helpless",
+    "Helplessness Damage", "damage versus the Helpless",
+    "damage vs the Helpless", "damage vs. helpless", "damage vs. the helpless",
+  ]);
+  const leaks = [];
+  for (const v of realData.items) {
+    for (const a of v.affixes || []) {
+      if (away.has(a.name) || away.has(a.stat)) leaks.push(`item:${v.variant_id}`);
+    }
+    for (const t of v.parsed_set_bonuses || []) {
+      for (const a of t.affixes || []) if (away.has(a.stat)) leaks.push(`tier:${t.set}`);
+    }
+  }
+  for (const [chan, defs] of [["membership", realData.membership_set_defs],
+                              ["augment", realData.augment_set_defs]]) {
+    for (const [name, def] of Object.entries(defs || {})) {
+      for (const t of def.tiers || []) {
+        for (const a of t.affixes || []) if (away.has(a.stat)) leaks.push(`${chan}:${name}`);
+      }
+    }
+  }
+  for (const s of realData.dino_sets || []) {
+    for (const a of s.affixes || []) if (away.has(a.stat)) leaks.push(`dino:${s.set}`);
+  }
+  assert.deepStrictEqual(leaks, [], "no fold-away helpless spelling in any solver channel");
+  // item-attached tiers: Silent Avenger (Legendary) grants the canonical (Artifact)
+  const saTiers = [];
+  for (const v of realData.items) {
+    for (const t of v.parsed_set_bonuses || []) {
+      if (t.set !== "Silent Avenger (Legendary)") continue;
+      for (const a of t.affixes || []) if (a.stat === CANON) saTiers.push(a);
+    }
+  }
+  assert.ok(saTiers.length > 0, "Silent Avenger (Legendary) tiers carry the canonical");
+  for (const a of saTiers) assert.strictEqual(a.bonus_type, "Artifact");
+  // membership defs: Dread Stalker grants Artifact 15 under the canonical
+  const ds = realData.membership_set_defs["Dread Stalker"];
+  const dsHits = [];
+  for (const t of ds.tiers || []) {
+    for (const a of t.affixes || []) if (a.stat === CANON) dsHits.push(a);
+  }
+  assert.ok(dsHits.some((a) => a.bonus_type === "Artifact" && a.value === 15),
+    "Dread Stalker membership def credits the canonical");
+  // augment defs: Cruel Cut, value/type/unit untouched by the name fold
+  const cc = realData.augment_set_defs["Cruel Cut"].tiers[0].affixes;
+  assert.deepStrictEqual(cc.map((a) => [a.stat, a.bonus_type, a.value, a.unit]),
+    [[CANON, "Artifact", 15, "pct"]]);
+  // dino channel: Dread Stalker set augment folded via the shared registry
+  const dino = (realData.dino_sets || []).find((s) => s.set === "Dread Stalker");
+  assert.ok(dino.affixes.some((a) => a.stat === CANON), "dino Dread Stalker carries the canonical");
+  assert.ok((dino.raw || "").includes("damage vs. the helpless"), "dino raw stays verbatim");
+  // verbatim provenance keeps the wiki spellings in tier raw
+  const raws = [];
+  for (const v of realData.items) for (const t of v.parsed_set_bonuses || []) raws.push(t.raw || "");
+  assert.ok(raws.some((r) => r.includes("Damage vs. Helpless Opponents")), "tier raw verbatim");
+  assert.ok(raws.some((r) => r.includes("Helplessness Damage")), "tier raw verbatim");
+  // the picker resolves every old spelling to the canonical rankable target
+  for (const syn of away) {
+    assert.strictEqual((realData.metadata.affix_aliases || {})[syn], CANON,
+      `picker alias for ${syn}`);
+  }
 });
 
 // #287 — the five folded engraved names arrive as provenance labels: suggested,
