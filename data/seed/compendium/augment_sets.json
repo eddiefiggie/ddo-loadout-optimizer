@@ -17,7 +17,6 @@
       "_note": "U9: these bonus stats have NO canonical target in the optimizer's scoring vocabulary today, so their set bonuses safely do NOT score. Left as-is deliberately (adding them to the target vocabulary is out of scope — it would expand what the optimizer optimizes). Disclosed here so the gap is transparent, not a silent miss; a future vocab addition must be a deliberate change (guarded by tests/test_augment_sets.py). The other 3 formerly-unreconciled stats (Magical/Physical Resistance Rating, Fortification Bypass) WERE canonicalized to Magical Sheltering / Physical Sheltering / Armor-Piercing (see affix_aliases.json) and now score.",
       "stats": [
         "Assassinate DCs",
-        "Damage vs. Helpless",
         "Magical Resistance Rating Cap",
         "Maximum Hit Points",
         "Spell DCs",
@@ -58,7 +57,8 @@
     },
     "Cruel Cut": {
       "pieces_required": 3,
-      "affixes": [{"stat": "Damage vs. Helpless", "bonus_type": "Artifact", "value": 15, "unit": "pct"}],
+      "affixes": [{"stat": "Damage to helpless enemies", "bonus_type": "Artifact", "value": 15, "unit": "pct"}],
+      "stat_note": "#305: canonicalized from the wiki tier text's 'Damage vs. Helpless' to the native scoring name (same mechanic per docs/wiki-evidence/helpless-damage.md), mirroring the Magical/Physical Sheltering + Armor-Piercing canonicalizations above; value/bonus_type/unit verbatim.",
       "original_item": "The Family's Blessing (Necklace)",
       "drop_site": "Project Nemesis"
     },

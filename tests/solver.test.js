@@ -1731,14 +1731,18 @@ async function withCrossAdd(map, fn) {
   await test("MEMBERSHIP/real items: an awaken-only set is awakened on real Lost Purpose gear", async () => {
     // The full feature: real dataset + real buildModel. When an awaken-only Vecna set
     // (no intrinsic members) is genuinely the best path for the ranked targets, real
-    // Legendary University Lost Purpose armor/helm/cloak hosts awaken it. Delight of
-    // the Devourer gives both these stats, so completing its 3-piece tier wins.
+    // Legendary University Lost Purpose armor/helm/cloak hosts awaken it.
+    // #305 retarget: the original lead target ("Additional Damage to Helpless
+    // Targets") was awaken-only-exclusive only because the helpless stat was
+    // fragmented; the fold made it obtainable everywhere, so it no longer forces
+    // awakening. Strikethrough Chance is the stat that still does: it exists in
+    // NO channel except the (awaken-only) Heart of Blades membership defs.
     const fs = require("fs");
     const { buildModel } = require("../web/model.js");
     const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
     const lp = data.items.filter((v) => (v.set_membership_slot || {}).station === "Cannith Repurposing Station");
     assert.ok(lp.length === 44, "all 44 Lost Purpose items carry a Cannith membership slot");
-    const query = { mlCap: 32, targets: ["Additional Damage to Helpless Targets", "Melee and Ranged Power"], armorType: null, weaponSetup: null, classRace: null };
+    const query = { mlCap: 32, targets: ["Strikethrough Chance", "Damage to helpless enemies"], armorType: null, weaponSetup: null, classRace: null };
     const model = buildModel(data.items, query, data.dino_inserts, data.nearly_complete, data.viktranium, data.seal, data.membership_set_defs);
     const r = await S.solveLexicographic(model, highs);
     assert.strictEqual(r.status, "optimal");
@@ -1749,6 +1753,31 @@ async function withCrossAdd(map, fn) {
     // whatever set was chosen is genuinely active (load-bearing guard holds on real data)
     const active = new Set((r.setsActive || []).map((s) => s.set));
     for (const s of memberSets) assert.ok(active.has(s), `${s} is active where chosen`);
+    // #305 crediting on real data: the CANONICAL helpless priority is served at
+    // the full Artifact magnitude (15) on the real dataset. (Set-tier crediting
+    // under the canonical name specifically is pinned by the synthetic
+    // "#305: set-tier credit under the canonical helpless name" test below.)
+    assert.ok((r.effective["Damage to helpless enemies"] || 0) >= 15,
+      `the canonical helpless priority is credited on real data (got ${r.effective["Damage to helpless enemies"]})`);
+  });
+
+  await test("#305: set-tier credit under the canonical helpless name", async () => {
+    // A parsed_set_bonuses tier granting `Damage to helpless enemies` credits a
+    // priority ranked under that exact name — the crediting the fragmentation
+    // broke: pre-fold, ~19 sets granted this mechanic under 11 other spellings
+    // and a canonical priority scored zero from all of them
+    // (docs/wiki-evidence/helpless-damage.md).
+    const CANON = "Damage to helpless enemies";
+    const tier = [{ n: 2, affixes: [[CANON, "Artifact", 15]] }];
+    const model = {
+      targets: [CANON], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [setPiece("R", "Ring", [], "Cruelty Set", tier)]),
+             slot("Necklace", [setPiece("N", "Necklace", [], "Cruelty Set", tier)])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective[CANON], 15, "the completed 2-piece tier credits the ranked canonical stat");
+    assert.ok(r.setsActive.some((s) => s.set === "Cruelty Set"), "the set is reported active");
   });
 
   await test("MEMBERSHIP/dino: a Dinosaur Bone Set-Bonus host joins a Dino set at its own station", async () => {
