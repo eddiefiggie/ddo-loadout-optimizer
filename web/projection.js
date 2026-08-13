@@ -314,6 +314,14 @@
   };
   const NATIVE_KINDS = new Set(["worn", "roll"]);
 
+  // #262 — the no-drop-source disclosure wording, EXACTLY this phrase everywhere
+  // it renders (gear box, Deep Dive, browse/wizard rows, coverage note, all six
+  // exports). The wiki proves its page records no source — that is the claim the
+  // evidence supports, and nothing stronger is ever printed (R5). ONE spelling,
+  // exported for every surface; a per-surface respelling is the drift this
+  // constant exists to forbid.
+  const NO_DROP_SOURCE_WORDING = "no known live drop source";
+
   /** #245 — is this equipped item picked ONLY for its craftable options?
    *
    *  A craftable option slot makes its host a wildcard for every rankable stat,
@@ -883,6 +891,12 @@
         // so no export can show the pick without the reason (the standing
         // solve-visible-but-share-invisible invariant).
         craftCarried: craftCarried(snap, { slot: c.slot, variant_id: v.variant_id }, attr),
+        // #262 — the wiki-confirmed no-drop-source flag, carried as the ONE
+        // shared wording so every export prints the identical phrase (and the
+        // portable JSON inherits it verbatim). Only-when-set, mirroring the
+        // dataset field: an unverified item carries no key at all, so no
+        // surface can render a note the wiki evidence lacks (R2/R5).
+        ...(v.no_drop_source ? { noDropSource: NO_DROP_SOURCE_WORDING } : {}),
       };
     });
 
@@ -1117,6 +1131,9 @@
     buildCraftMaps, craftLabel, craftValue, lunarSolar,
     // #245 — craft-carried disclosure + the opt-out notice line
     craftCarried, craftingExcludedLine,
+    // #262 — the one no-drop-source disclosure wording (results/browse/wizard
+    // and every exporter read it from here; never respell it)
+    NO_DROP_SOURCE_WORDING,
     // #110 — the blocklist disclosure sentences
     blockNoticeLines,
     // constraint header helpers (exporters delegates to these)

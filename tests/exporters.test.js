@@ -1195,3 +1195,62 @@ test("U9/#110: a backup round trip reproduces the blocklist", () => {
   const envelope = toPortableJSON(withBlocks, "2026-08-12T00:00:00Z");   // returns the object; callers stringify
   assert.deepStrictEqual(envelope.core.inputs.blocklist, ["Gem One"], "the verbatim record carries it");
 });
+
+// ---------------------------------------------------------------------------
+// #262 U3 — the no-drop-source disclosure must ride ALL SIX exports (the
+// solve-visible-but-share-invisible invariant), exactly once per flagged item,
+// and claim nothing stronger than the wiki evidence supports.
+
+const ProjShared = require("../web/projection.js");
+const NDS_WORDING = ProjShared.NO_DROP_SOURCE_WORDING;
+// R5 — the stronger word is never claimed; spelled split so this guard's own
+// source can't satisfy a naive grep for it.
+const NDS_FORBIDDEN = "un" + "obtainable";
+const countOf = (s, sub) => s.split(sub).length - 1;
+
+function noDropRec() {
+  return {
+    name: "Flagged Build",
+    inputs: { ml: 20, pool: "all", priorities: ["Constitution"] },
+    snapshot: {
+      status: "optimal",
+      chosen: [
+        { slot: "Bracers", variant: { variant_id: "Bracers of the Spider Queen", ml: 20,
+          no_drop_source: true,
+          affixes: [{ name: "Constitution", type: "Enhancement", value: 8 }],
+          augment_slots_norm: { colors: [] }, set_bonus: [], parsed_set_bonuses: [] } },
+        { slot: "Ring", variant: { variant_id: "Plain Ring", ml: 18, affixes: [],
+          augment_slots_norm: { colors: [] }, set_bonus: [], parsed_set_bonuses: [] } },
+      ],
+      setsActive: [],
+      effective: { Constitution: 8 },
+    },
+  };
+}
+
+test("#262: the wording is exact and reaches all six exports exactly once", () => {
+  assert.strictEqual(NDS_WORDING, "no known live drop source");
+  const flagged = noDropRec();
+  for (const [label, fn] of [["md", toMarkdown], ["csv", toCsv], ["print", toPrintHtml],
+    ["bb", toBBCode], ["gearset", toGearset]]) {
+    const out = fn(flagged);
+    assert.strictEqual(countOf(out, NDS_WORDING), 1, `${label}: the wording exactly once`);
+    assert.ok(!out.toLowerCase().includes(NDS_FORBIDDEN), `${label}: never the stronger claim`);
+  }
+  const envelope = toPortableJSON(noDropRec(), "2026-08-12T00:00:00Z");
+  const json = JSON.stringify(envelope);
+  assert.strictEqual(countOf(json, NDS_WORDING), 1, "portable JSON: the wording exactly once");
+  assert.ok(!json.toLowerCase().includes(NDS_FORBIDDEN), "portable JSON: never the stronger claim");
+  const flaggedEntry = envelope.resolved.loadout.find((i) => i.slot === "Bracers");
+  assert.strictEqual(flaggedEntry.noDropSource, NDS_WORDING,
+    "the resolved view carries the field through Proj.project");
+  assert.ok(!("noDropSource" in envelope.resolved.loadout.find((i) => i.slot === "Ring")),
+    "an unflagged entry carries no field at all");
+});
+
+test("#262: an unflagged loadout carries the wording in NO export", () => {
+  for (const fn of [toMarkdown, toCsv, toPrintHtml, toBBCode, toGearset]) {
+    assert.ok(!fn(rec).includes(NDS_WORDING));
+  }
+  assert.ok(!JSON.stringify(toPortableJSON(rec, "2026-08-12T00:00:00Z")).includes(NDS_WORDING));
+});
