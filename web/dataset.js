@@ -334,12 +334,14 @@ function installStackEquiv(map) {
 
 // U1 (#290/#291) — same two-runtime bridge for the cross-add map
 // {target_stat: [source_stats]} (metadata.cross_add): stats whose bucket totals
-// flat-ADD into the target across buckets. Plumbing only — solver crediting
-// reads model.js crossAddSourcesFor in a later unit.
+// flat-ADD into the target across buckets. Solver crediting reads
+// crossAddSourcesFor (solver.js bucketCountsFor). #300 — the setter lives in
+// cross-add.js, the module that OWNS the one _CROSS_ADD instance (model.js only
+// re-exports it), so the require branch reaches the owner directly.
 function installCrossAdd(map) {
   if (typeof setCrossAdd !== "undefined") { setCrossAdd(map); return; }
   if (typeof require !== "undefined") {
-    try { require("./model.js").setCrossAdd(map); } catch (e) { /* model.js absent: no-op */ }
+    try { require("./cross-add.js").setCrossAdd(map); } catch (e) { /* cross-add.js absent: no-op */ }
   }
 }
 

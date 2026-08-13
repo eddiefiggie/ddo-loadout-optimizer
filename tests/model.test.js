@@ -1703,15 +1703,22 @@ test("#287: folded Legendary bucket sums across types, maxes within its own", ()
 // DON'T-stack rule inside the same-type max bucket. This unit is plumbing
 // only — nothing here credits the solver; that is a later unit.
 test("U1: crossAddSourcesFor on a fresh (uninstalled) model returns [] without crashing", () => {
+  // #300 — the state lives in cross-add.js (model.js re-exports it), so a truly
+  // fresh uninstalled instance requires evicting BOTH modules: evicting model.js
+  // alone would re-require the cached cross-add.js, whose installed map persists.
   const key = require.resolve("../web/model.js");
+  const xaKey = require.resolve("../web/cross-add.js");
   const cached = require.cache[key];
+  const cachedXa = require.cache[xaKey];
   delete require.cache[key];
+  delete require.cache[xaKey];
   try {
     const fresh = require("../web/model.js");
     assert.deepStrictEqual(fresh.crossAddSourcesFor("Combustion"), []);
     assert.deepStrictEqual(fresh.crossAddSourcesFor(undefined), []);
   } finally {
-    require.cache[key] = cached; // restore the shared installed instance
+    require.cache[key] = cached;     // restore the shared installed instances
+    require.cache[xaKey] = cachedXa;
   }
 });
 
