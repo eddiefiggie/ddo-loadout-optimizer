@@ -181,6 +181,43 @@ def test_stamp_refuses_a_broken_join():
             [_variant("Ordinary Boots", location_quest="Some Quest")], _entry())
 
 
+def test_stamp_refuses_a_partial_join_miss_naming_the_missing_entry():
+    """Review finding #3 — the guard is PER-ENTRY, not aggregate: with two
+    confirmed entries and variants matching only one, the pass must fail
+    naming the unmatched name (an 18-of-19 join miss silently un-discloses
+    one item while coverage still counts it)."""
+    entries = {
+        "Matched Item": {"verdict": no_drop_source.CONFIRMED},
+        "Vanished Item": {"verdict": no_drop_source.CONFIRMED},
+    }
+    variants = [_variant("Matched Item")]
+    try:
+        no_drop_source.stamp(variants, entries)
+    except SystemExit as e:
+        assert "Vanished Item" in str(e)
+        assert "Matched Item" not in str(e), "only the MISSING names are reported"
+    else:
+        raise AssertionError("a partial join miss must raise")
+    # The matched variant was still stamped before the guard fired.
+    assert variants[0].get(no_drop_source.FIELD) is True
+
+
+def test_a_duplicated_shard_key_fails_the_load():
+    """Review finding #1 — plain json.load keeps only the LAST duplicate key,
+    silently discarding a verdict before any guard sees it. The loader must
+    reject the document instead."""
+    raw = ('{"_meta": {"note": "dup fixture"}, "harvested": {'
+           '"Twice Item": {"verdict": "wiki_has_source"}, '
+           '"Twice Item": {"verdict": "confirmed_no_source"}}}')
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as fh:
+        fh.write(raw)
+        path = fh.name
+    try:
+        _raises(SystemExit, no_drop_source.load, path)
+    finally:
+        os.unlink(path)
+
+
 # --- coverage (counts derive from the dataset, never hardcoded) --------------
 
 def test_coverage_universe_is_exactly_the_empty_string_worn_variants():

@@ -67,16 +67,34 @@ VERDICTS = frozenset({CONFIRMED, WIKI_HAS_SOURCE})
 _CONFIRMED_EVIDENCE_FIELDS = ("evidence", "wiki_url", "harvested")
 
 
+def _reject_duplicate_keys(pairs):
+    """``object_pairs_hook`` — a duplicated key in the curated shard silently
+    keeps only the last occurrence under plain ``json.load``, discarding a
+    verdict before any guard can see it (review finding #1). Fail loudly
+    instead: an append-without-delete re-triage is a review event, not a
+    silent overwrite."""
+    seen = set()
+    for k, _ in pairs:
+        if k in seen:
+            raise SystemExit(
+                f"no_drop_source shard: duplicated key {k!r} — json would keep "
+                "only the last occurrence, silently discarding a verdict. "
+                "Remove the stale entry instead of appending beside it.")
+        seen.add(k)
+    return dict(pairs)
+
+
 def load(path: str) -> dict:
     """The shard's harvested entries, ``{}`` when the file is absent.
 
     An empty result is the DELIBERATE inert path (the empty-seed exception in
-    the module docstring), not an error.
+    the module docstring), not an error. A duplicated key anywhere in the
+    document fails the build (``_reject_duplicate_keys``).
     """
     if not os.path.exists(path):
         return {}
     with open(path, encoding="utf-8") as fh:
-        return json.load(fh).get("harvested") or {}
+        return json.load(fh, object_pairs_hook=_reject_duplicate_keys).get("harvested") or {}
 
 
 def confirmed_names(entries: dict) -> set:
@@ -181,14 +199,20 @@ def stamp(variants: list, entries: dict) -> int:
     if not names:
         return 0  # wiki_has_source-only shard stamps nothing, by design
     stamped = 0
+    reached = set()
     for v in variants or []:
         if v.get("source_item") in names:
             v[FIELD] = True
             stamped += 1
-    if not stamped:
+            reached.add(v["source_item"])
+    # Per-entry, not aggregate (review finding #3): an 18-of-19 join miss must
+    # fail naming the missing name, or one item's disclosure vanishes silently
+    # while coverage still counts it as confirmed.
+    missing = names - reached
+    if missing:
         raise SystemExit(
             "no-drop-source stamp reached no variant for "
-            + ", ".join(sorted(repr(n) for n in names))
+            + ", ".join(sorted(repr(n) for n in missing))
             + " — the source_item join is broken; re-verify the entry names")
     return stamped
 
