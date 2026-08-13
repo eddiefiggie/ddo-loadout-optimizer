@@ -30,7 +30,8 @@ highest ("don't stack") while different types add. **If this expansion ever
 seems to require a change to that bucketing, the expansion is wrong** — the
 model is not missing a case.
 
-Three names expand. `Spell Focus Mastery` is stated outright above. Bare
+Three DC names expand (plus `Potency`, the spellpower family — see the header
+above). `Spell Focus Mastery` is stated outright above. Bare
 `Spell Focus` is confirmed by the same page's worked example, which credits
 `Stormreaver's Napkin` — stored `Spell Focus | Equipment | 1` — as "+1 to her
 DCs", plural. `Spell DCs` (#289) is the augment-set seed's wording for the

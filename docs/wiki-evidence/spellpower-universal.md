@@ -69,8 +69,7 @@ ADDS to them unconditionally. The stat stays its own bucket (Implement 540,
 Exceptional 50 affixes in the dataset), which credits a player who ranks it
 directly; crediting element priorities from USP sources needs a cross-add
 mechanism the solver does not have. Deliberately out of scope for #290-U3 —
-tracked as a follow-up (see the batch PR), not silently folded into this
-expansion.
+filed as #291, not silently folded into this expansion.
 
 The temporary Alchemical column of the table (Inferno/Erosion/…/Efficacy) names
 weapon-imbue effects, not worn-gear enchantments; no dataset stat carries those

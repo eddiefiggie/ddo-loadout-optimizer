@@ -357,6 +357,22 @@ def test_set_def_orphans_refuses_a_vacuous_pass():
         raise AssertionError("an empty def walk must raise, not pass")
 
 
+def test_set_def_orphans_vacuity_is_per_channel_not_aggregate():
+    # A populated augment channel must not vouch for a membership channel that
+    # quietly emptied: the guard keys on EACH channel walking at least one tier
+    # affix, or the real two-channel wiring could go half-dark silently.
+    from src import enchantment_split
+    populated = {"S": {"tiers": [{"affixes": [
+        {"stat": "Strength", "bonus_type": "Artifact", "value": 3}]}]}}
+    try:
+        enchantment_split.set_def_orphans(
+            {"augment": populated, "membership": {}}, {"spell dcs": []})
+    except SystemExit as e:
+        assert "membership" in str(e)
+    else:
+        raise AssertionError("one dark channel must raise even when the other walks")
+
+
 def test_shipped_defs_have_no_orphans_after_expansion():
     from src import enchantment_split, spell_focus, umbrella
     defs = membership.build_augment_set_defs()

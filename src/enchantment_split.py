@@ -316,20 +316,26 @@ def set_def_orphans(def_groups, expanded_away_names, allow=()) -> list:
     allowed = {str(a).strip().lower() for a in allow}
     away = {str(n).strip().lower() for n in expanded_away_names} - allowed
     found = set()
-    inspected = 0
+    inspected = {}
     for channel, defs in (def_groups or {}).items():
+        inspected[channel] = 0
         for set_name, d in (defs or {}).items():
             for tier in d.get("tiers") or []:
                 for affix in tier.get("affixes") or []:
-                    inspected += 1
+                    inspected[channel] += 1
                     stat = (affix.get("stat") or "").strip()
                     if stat.lower() in away:
                         found.add((f"{channel}:{set_name}", stat,
                                    str(affix.get("value"))))
-    if not inspected:
+    # Per CHANNEL, not in aggregate: a populated augment walk must not vouch for
+    # a membership channel that quietly emptied (or vice versa) — the aggregate
+    # form of this check would stay green while one channel went dark.
+    empty = sorted(ch for ch, n in inspected.items() if not n)
+    if empty or not inspected:
         raise SystemExit(
-            "set_def_orphans inspected zero def tier affixes — an empty walk "
-            "is not a pass; check the def channels it was handed")
+            "set_def_orphans inspected zero def tier affixes in "
+            f"channel(s) {empty or ['<none handed>']} — an empty walk is not a "
+            "pass; check the def channels it was handed")
     return sorted(found, key=lambda t: (str(t[0]), t[1], t[2]))
 
 

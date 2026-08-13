@@ -1,45 +1,45 @@
 {
- "_meta": {
-  "title": "wiki-sourced affix bonus-type corrections (#259)",
-  "note": "gear-planner is the single source of truth for WHICH affixes a record has, read structurally. The DDO Wiki is the source of truth for the BONUS TYPE when the two disagree and the wiki's rendered tooltip states it outright. A wrong type is a different defect from a wrong value: the magnitude is right, but the affix lands in the wrong stacking bucket and over- or under-stacks against everything else granting the stat.",
-  "why_not_value_corrections": "src/value_corrections.py overwrites the VALUE and nothing else, and its stale guard is keyed on the value field. Each corrections mechanism changes exactly one field so its guard cannot be weakened for the sake of another field's fix.",
-  "stale_guard": "Every entry records `from` — the type gear-planner currently carries — and `value` — the magnitude the tooltip was verified against. The build FAILS if either no longer matches upstream, and FAILS if an entry reaches no record in any channel (renamed/dropped upstream), rather than silently pinning or silently no-opping.",
-  "evidence_rule": "Every entry carries the verbatim rendered tooltip stating the bonus type, and the wiki page it was read from."
- },
- "Moment to Moment": [
-  {
-   "name": "Action Boost Charges",
-   "from": "Untyped",
-   "to": "Enhancement",
-   "value": "1",
-   "tooltip": "Slotted Effect: +1 Enhancement bonus to Action Boost Charges.",
-   "wiki_url": "https://ddowiki.com/page/Item:Moment_to_Moment",
-   "verified": "2026-08-12",
-   "note": "Enchantments line reads 'Minor Action Boost Enhancement'. All 19 worn-item sources of Action Boost Charges in the dataset are Enhancement-typed; stored Untyped, this augment stacked with every one of them."
-  }
- ],
- "Legendary Moment to Legendary Moment": [
-  {
-   "name": "Action Boost Charges",
-   "from": "Untyped",
-   "to": "Enhancement",
-   "value": "3",
-   "tooltip": "Slotted Effect: +3 Enhancement bonus to Action Boost Charges.",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Moment_to_Legendary_Moment",
-   "verified": "2026-08-12",
-   "note": "Enchantments line reads 'Action Boost Enhancement'. Player-reported (2026-08-12 batch, data/bug_reports.txt); the report named this tier."
-  }
- ],
- "Juiblex's Reign": [
-  {
-   "name": "Acid Absorption",
-   "from": "Enhancement",
-   "to": "Insight",
-   "value": "15",
-   "tooltip": "Insightful Acid Absorption +15%: Passive: 15% Insight Bonus to Acid Absorption.",
-   "wiki_url": "https://ddowiki.com/page/Item:Juiblex%27s_Reign",
-   "verified": "2026-08-13",
-   "note": "#288 — the tooltip states an Insight bonus; gear-planner types it Enhancement, so it wrongly max-competed with worn Enhancement absorption. `value` is the post-value-correction magnitude: the sibling item_value_corrections.json entry lands 16 -> 15 first (value corrections apply before type corrections in build_dataset.py)."
-  }
- ]
+  "_meta": {
+    "title": "wiki-sourced affix bonus-type corrections (#259)",
+    "note": "gear-planner is the single source of truth for WHICH affixes a record has, read structurally. The DDO Wiki is the source of truth for the BONUS TYPE when the two disagree and the wiki's rendered tooltip states it outright. A wrong type is a different defect from a wrong value: the magnitude is right, but the affix lands in the wrong stacking bucket and over- or under-stacks against everything else granting the stat.",
+    "why_not_value_corrections": "src/value_corrections.py overwrites the VALUE and nothing else, and its stale guard is keyed on the value field. Each corrections mechanism changes exactly one field so its guard cannot be weakened for the sake of another field's fix.",
+    "stale_guard": "Every entry records `from` — the type gear-planner currently carries — and `value` — the magnitude the tooltip was verified against. The build FAILS if either no longer matches upstream, and FAILS if an entry reaches no record in any channel (renamed/dropped upstream), rather than silently pinning or silently no-opping.",
+    "evidence_rule": "Every entry carries the verbatim rendered tooltip stating the bonus type, and the wiki page it was read from."
+  },
+  "Moment to Moment": [
+    {
+      "name": "Action Boost Charges",
+      "from": "Untyped",
+      "to": "Enhancement",
+      "value": "1",
+      "tooltip": "Slotted Effect: +1 Enhancement bonus to Action Boost Charges.",
+      "wiki_url": "https://ddowiki.com/page/Item:Moment_to_Moment",
+      "verified": "2026-08-12",
+      "note": "Enchantments line reads 'Minor Action Boost Enhancement'. All 19 worn-item sources of Action Boost Charges in the dataset are Enhancement-typed; stored Untyped, this augment stacked with every one of them."
+    }
+  ],
+  "Legendary Moment to Legendary Moment": [
+    {
+      "name": "Action Boost Charges",
+      "from": "Untyped",
+      "to": "Enhancement",
+      "value": "3",
+      "tooltip": "Slotted Effect: +3 Enhancement bonus to Action Boost Charges.",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Moment_to_Legendary_Moment",
+      "verified": "2026-08-12",
+      "note": "Enchantments line reads 'Action Boost Enhancement'. Player-reported (2026-08-12 batch, data/bug_reports.txt); the report named this tier."
+    }
+  ],
+  "Juiblex's Reign": [
+    {
+      "name": "Acid Absorption",
+      "from": "Enhancement",
+      "to": "Insight",
+      "value": "15",
+      "tooltip": "Insightful Acid Absorption +15%: Passive: 15% Insight Bonus to Acid Absorption.",
+      "wiki_url": "https://ddowiki.com/page/Item:Juiblex%27s_Reign",
+      "verified": "2026-08-13",
+      "note": "#288 — the tooltip states an Insight bonus; gear-planner types it Enhancement, so it wrongly max-competed with worn Enhancement absorption. `value` is the post-value-correction magnitude: the sibling item_value_corrections.json entry lands 16 -> 15 first (value corrections apply before type corrections in build_dataset.py)."
+    }
+  ]
 }

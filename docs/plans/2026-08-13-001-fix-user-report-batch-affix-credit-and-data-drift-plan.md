@@ -56,7 +56,7 @@ A player reported four defects, all verified against the dataset and the DDO wik
 - A generic umbrella-affix detector (#211) — this batch adds instances, not the detector.
 - Set-bonus surfaces rendering the engraved enchantment for expanded affixes (#252).
 - A full gear-planner snapshot refresh (rejected in scoping — see KTD1).
-- `Spell Intensity` (universal spell-crit damage) and any other universal name not listed here — candidates for a follow-up, not silently included.
+- `Spell Intensity` (universal spell-crit damage) and any other universal name not listed here — filed as #292, not silently included. The Universal Spell Power cross-add is #291; the dino-set umbrella/compound gap found during U1 is #293.
 
 #### Deferred to Follow-Up Work
 

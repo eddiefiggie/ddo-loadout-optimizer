@@ -1119,6 +1119,15 @@ test("#289: Esoterica def is school-creditable and no def channel carries Spell 
     for (const a of s.affixes || []) if (a.stat === "Spell DCs") leaks.push(`dino:${s.set}`);
   }
   assert.deepStrictEqual(leaks, []);
+  // Positive assertion for the dino channel: name-absence alone would also pass
+  // if the affix were silently DROPPED — assert the seven schools actually landed.
+  const curse = (realData.dino_sets || []).find((s) => s.set === "The Legendary Dread Isle's Curse");
+  assert.ok(curse, "the Dread Isle's Curse dino set is present");
+  const dcs = curse.affixes.filter((a) => a.via === "Profane Spell DCs");
+  assert.deepStrictEqual(dcs.map((a) => a.stat).sort(), ["Abjuration Focus",
+    "Conjuration Focus", "Enchantment Focus", "Evocation Focus",
+    "Illusion Focus", "Necromancy Focus", "Transmutation Focus"]);
+  for (const a of dcs) { assert.strictEqual(a.bonus_type, "Profane"); assert.strictEqual(a.value, 2); }
 });
 
 // #287 — the five folded engraved names arrive as provenance labels: suggested,
