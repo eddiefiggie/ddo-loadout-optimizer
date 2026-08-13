@@ -83,6 +83,8 @@ element-specific lore are **different stats that both apply** ("The universal
 Spell Lore … is 10% lower than the corresponding … single damage type"), so a
 same-type expansion of `Spell Lore` would collapse two legitimately stacking
 sources. Crediting an element-lore priority from universal-lore buckets without
-merging them is a solver-model design question, and the precise
-solar-vs-artifact stacking claim remains **QUARANTINED** in `spell-lore.md`
-§U5. #290 stays open for that half.
+merging them is a solver-model design question. **Update 2026-08-13:** the
+lore additivity is now wiki-quoted and the solar-vs-artifact quarantine is
+RESOLVED — see `spell-lore.md` §#290; the cross-add mechanism (#291/#290)
+covers both spellpower and lore, and the sweep dispositions live in
+`universal-name-sweep.md`.
