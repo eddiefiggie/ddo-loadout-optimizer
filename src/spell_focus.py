@@ -1,4 +1,12 @@
-"""U1/U2 (#205) — expand universal spell-DC affixes into the seven schools.
+"""U1/U2 (#205) — expand universal-stat affixes into their concrete stats.
+
+Two families share this machinery: universal spell-DC names expand into the
+seven schools (#205, #289), and the universal spellpower `Potency` expands into
+the ten element spellpowers (#290; evidence in
+docs/wiki-evidence/spellpower-universal.md). Both reproduce the same wiki rule
+— same bonus type collapses to the highest, different types add — through the
+existing per-(stat, stacking-type) bucketing, and everything below about the
+DC family's rationale applies to both.
 
 `Spell Focus Mastery` raises the DC of EVERY spell, but the optimizer credits an
 affix only when its stat exactly matches a ranked target (`web/model.js`), so a
@@ -70,8 +78,23 @@ SCHOOLS = [
     "Transmutation Focus",
 ]
 
-# Lowercased stat names meaning "+X to the DC of every spell". Allowlist; see
-# the module docstring for what is deliberately excluded and why.
+# The ten element spellpower stats a universal spellpower affix applies to, in
+# the wiki's Affected-damage-types table order (#290, U3).
+SPELLPOWERS = [
+    "Combustion",
+    "Corrosion",
+    "Devotion",
+    "Glaciation",
+    "Impulse",
+    "Magnetism",
+    "Nullification",
+    "Radiance",
+    "Reconstruction",
+    "Resonance",
+]
+
+# Lowercased universal stat name -> the concrete stats it becomes. Allowlist;
+# see the module docstring for what is deliberately excluded and why.
 #
 # `spell dcs` (#289) is the augment-set seed's wording for the Esoterica Set
 # Augment bonus. Universal by two sources: the wiki-evidence table records the
@@ -80,7 +103,22 @@ SCHOOLS = [
 # `Spell Focus Mastery | Artifact | 3` (raw/gearplanner_sets.json) — a name
 # already on this list. No item or insert carries the name, so admitting it
 # changes only the def channels that spell it this way.
-_UNIVERSAL = {"spell focus mastery", "spell focus", "spell dcs"}
+#
+# `potency` (#290) is the universal SPELLPOWER: the Spell Power page's
+# Affected-damage-types table states "Potency -> All Spells", and the
+# Equipment-bonus page names Potency and Combustion as the same bonus kind with
+# the don't-stack rule outright, so the same-type expansion reproduces the
+# highest-of-type rule exactly as it does for spell DCs. `Universal Spell
+# Power` is the deliberate exclusion: the wiki says it FULLY STACKS ("flat adds
+# to all of your other Spell Powers"), so a same-type expansion would wrongly
+# put it in max-competition with element sources. Full quotes:
+# docs/wiki-evidence/spellpower-universal.md.
+_UNIVERSAL = {
+    "spell focus mastery": SCHOOLS,
+    "spell focus": SCHOOLS,
+    "spell dcs": SCHOOLS,
+    "potency": SPELLPOWERS,
+}
 
 # Field carrying the originating enchantment name on an expanded affix. Absent on
 # a native school affix, so a consumer can tell expanded from native by presence.
@@ -101,7 +139,7 @@ def is_universal(stat) -> bool:
 
 
 def expanded_away() -> dict:
-    """``{lowercased universal name: [the seven schools]}``.
+    """``{lowercased universal name: the concrete stats it becomes}``.
 
     Emitted to the dataset so the picker can stop offering a name this module
     expands away — after expansion no item carries one, so ranking it would score
@@ -111,7 +149,7 @@ def expanded_away() -> dict:
     build: `build_dataset.py` raises on any set-bonus affix naming an
     expanded-away stat, and its known-orphan allowlist is empty by design.
     """
-    return {name: list(SCHOOLS) for name in sorted(_UNIVERSAL)}
+    return {name: list(targets) for name, targets in sorted(_UNIVERSAL.items())}
 
 
 def source_label(stat, bonus_type) -> str:
@@ -124,15 +162,18 @@ def source_label(stat, bonus_type) -> str:
 
 
 def _expand_affix(affix: dict) -> list:
-    """One universal affix becomes seven school affixes; anything else passes through.
+    """One universal affix becomes its family's concrete affixes (seven schools
+    for a DC name, ten element spellpowers for Potency); anything else passes
+    through.
 
     Every other key — bonus_type, value, unit, raw, eligible — is copied verbatim,
     so the expanded affixes keep the eligibility and unit semantics of the source.
     """
-    if not is_universal(affix.get("stat")):
+    targets = _UNIVERSAL.get((affix.get("stat") or "").strip().lower())
+    if not targets:
         return [affix]
     label = source_label(affix.get("stat"), affix.get("bonus_type"))
-    return [{**affix, "stat": school, PROVENANCE_KEY: label} for school in SCHOOLS]
+    return [{**affix, "stat": stat, PROVENANCE_KEY: label} for stat in targets]
 
 
 def _expand_list(affixes):

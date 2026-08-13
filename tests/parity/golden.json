@@ -307,15 +307,33 @@
    "status": "optimal",
    "perTarget": {
     "Universal Spell Power": 104,
-    "Potency": 250,
-    "Wisdom": 33,
-    "Charisma": 26
+    "Combustion": 335,
+    "Corrosion": 333,
+    "Devotion": 290,
+    "Glaciation": 255,
+    "Impulse": 225,
+    "Magnetism": 255,
+    "Nullification": 225,
+    "Radiance": 225,
+    "Reconstruction": 225,
+    "Resonance": 225,
+    "Wisdom": 27,
+    "Charisma": 25
    },
    "effective": {
     "Universal Spell Power": 104,
-    "Potency": 250,
-    "Wisdom": 33,
-    "Charisma": 26
+    "Combustion": 335,
+    "Corrosion": 333,
+    "Devotion": 290,
+    "Glaciation": 255,
+    "Impulse": 225,
+    "Magnetism": 255,
+    "Nullification": 225,
+    "Radiance": 225,
+    "Reconstruction": 225,
+    "Resonance": 225,
+    "Wisdom": 27,
+    "Charisma": 25
    },
    "chosen": [
     {
@@ -340,7 +358,7 @@
     },
     {
      "slot": "Gloves",
-     "variant": "Legendary Absorption Gauntlet"
+     "variant": "Gloryborne Gloves"
     },
     {
      "slot": "Goggles",
@@ -348,15 +366,15 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Circlet of Shar"
+     "variant": "Legendary University Mage's Hat"
     },
     {
      "slot": "Main Hand",
-     "variant": "Legendary Ornamented Dagger (level 32)"
+     "variant": "Mori's Focus"
     },
     {
      "slot": "Necklace",
-     "variant": "Celestial Insignia"
+     "variant": "Legendary Shaman's Beads"
     },
     {
      "slot": "Off Hand",
@@ -368,11 +386,11 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Chieftain"
+     "variant": "Legendary Ring of the Red Abishai"
     },
     {
      "slot": "Trinket",
-     "variant": "Epic Piece of Shattered Horn"
+     "variant": "Legendary Gem of Many Facets"
     }
    ]
   },
@@ -493,23 +511,23 @@
   "trance-credit-additive-ml32": {
    "status": "optimal",
    "perTarget": {
-    "Devotion": 321,
+    "Devotion": 346,
     "Wisdom": 34,
-    "Universal Spell Power": 97
+    "Universal Spell Power": 80
    },
    "effective": {
-    "Devotion": 321,
+    "Devotion": 346,
     "Wisdom": 34,
-    "Universal Spell Power": 97
+    "Universal Spell Power": 80
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Legendary Darkmoss"
+     "variant": "Docent of the Artblade"
     },
     {
      "slot": "Belt",
-     "variant": "Legendary Bladesworn Bandolier"
+     "variant": "Belt of the Burrower"
     },
     {
      "slot": "Boots",
@@ -521,19 +539,19 @@
     },
     {
      "slot": "Cloak",
-     "variant": "Chilling Sash of Tailara"
+     "variant": "Legendary University Researcher's Cloak"
     },
     {
      "slot": "Gloves",
-     "variant": "Legendary Absorption Gauntlet"
+     "variant": "Balorskin Gauntlets"
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Goggles of Dusk"
+     "variant": "Legendary Eyes of Enlightenment"
     },
     {
      "slot": "Helmet",
-     "variant": "Epic Sacred Helm"
+     "variant": "Legendary Chainmail Coif"
     },
     {
      "slot": "Main Hand",
@@ -541,7 +559,7 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Astral Spore Pendant"
+     "variant": "Legendary Azure Necklace of Prophecy"
     },
     {
      "slot": "Off Hand",
@@ -549,38 +567,38 @@
     },
     {
      "slot": "Ring",
-     "variant": "Epic Sacred Band"
+     "variant": "Clouded Dreams"
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Deathwarden"
+     "variant": "Legendary Chieftain"
     },
     {
      "slot": "Trinket",
-     "variant": "Bottled Rainstorm"
+     "variant": "Legendary Gem of Many Facets"
     }
    ]
   },
   "trance-credit-additive-ml32-baseline": {
    "status": "optimal",
    "perTarget": {
-    "Devotion": 309,
+    "Devotion": 334,
     "Wisdom": 34,
-    "Universal Spell Power": 97
+    "Universal Spell Power": 80
    },
    "effective": {
-    "Devotion": 309,
+    "Devotion": 334,
     "Wisdom": 34,
-    "Universal Spell Power": 97
+    "Universal Spell Power": 80
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Legendary Darkmoss"
+     "variant": "Docent of the Artblade"
     },
     {
      "slot": "Belt",
-     "variant": "Legendary Bladesworn Bandolier"
+     "variant": "Belt of the Burrower"
     },
     {
      "slot": "Boots",
@@ -592,19 +610,19 @@
     },
     {
      "slot": "Cloak",
-     "variant": "Chilling Sash of Tailara"
+     "variant": "Legendary University Researcher's Cloak"
     },
     {
      "slot": "Gloves",
-     "variant": "Legendary Absorption Gauntlet"
+     "variant": "Balorskin Gauntlets"
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Goggles of Dusk"
+     "variant": "Legendary Eyes of Enlightenment"
     },
     {
      "slot": "Helmet",
-     "variant": "Epic Sacred Helm"
+     "variant": "Legendary Chainmail Coif"
     },
     {
      "slot": "Main Hand",
@@ -612,7 +630,7 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Astral Spore Pendant"
+     "variant": "Legendary Azure Necklace of Prophecy"
     },
     {
      "slot": "Off Hand",
@@ -620,15 +638,15 @@
     },
     {
      "slot": "Ring",
-     "variant": "Epic Sacred Band"
+     "variant": "Clouded Dreams"
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Deathwarden"
+     "variant": "Legendary Chieftain"
     },
     {
      "slot": "Trinket",
-     "variant": "Bottled Rainstorm"
+     "variant": "Legendary Gem of Many Facets"
     }
    ]
   },

@@ -78,18 +78,18 @@
  },
  {
   "name": "endgame-caster-ml32",
-  "note": "ML32 spellcaster chasing spell power + potency",
+  "note": "ML32 spellcaster chasing spell power + potency. #290 expanded Potency into the ten element spellpowers, so the raw target scored zero; aliasTargets routes the list through the SAME migratePriorities the picker and saved-character load use, so the fixture solves what a player who ranked Potency actually gets after migration.",
   "query": {
    "mlCap": 32,
-   "targets": [
+   "armorType": null,
+   "weaponSetup": null,
+   "classRace": null,
+   "aliasTargets": [
     "Universal Spell Power",
     "Potency",
     "Wisdom",
     "Charisma"
-   ],
-   "armorType": null,
-   "weaponSetup": null,
-   "classRace": null
+   ]
   }
  },
  {

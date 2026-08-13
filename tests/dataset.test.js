@@ -1149,4 +1149,26 @@ test("#287: folded Legendary names are redirecting labels, not dead stats", () =
   }
 });
 
+// #290 — Potency joins the bare-label family: no item carries the stat anymore,
+// but every expanded affix is stamped via "Potency", so the name stays
+// suggested, rankable, and resolves to the ten element spellpowers — the same
+// path a saved build's priorities migrate through on load. Universal Spell
+// Power is the deliberate non-expansion (fully stacking) and must stay a
+// plain rankable stat.
+test("#290: Potency is a redirecting label; Universal Spell Power stays native", () => {
+  const v = buildPickerVocabulary(realData);
+  assert.ok(v.provenanceLabels["potency"], "Potency is a shipped label");
+  assert.deepStrictEqual(expandedAwayFor(v, "Potency"),
+    ["Combustion", "Corrosion", "Devotion", "Glaciation", "Impulse",
+     "Magnetism", "Nullification", "Radiance", "Reconstruction", "Resonance"]);
+  assert.ok(v.suggestions.includes("Potency"), "Potency stays suggested");
+  assert.ok(!expandedAwayFor(v, "Universal Spell Power"), "USP is not expanded away");
+  assert.ok(v.known.has("Universal Spell Power"), "USP stays a rankable stat");
+  for (const it of realData.items) {
+    for (const a of it.affixes || []) {
+      assert.notStrictEqual(a.name, "Potency", `no built affix keeps Potency (${it.variant_id})`);
+    }
+  }
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);
