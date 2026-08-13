@@ -36,6 +36,7 @@ from __future__ import annotations
 import re
 
 from src.affix_parser import parse_line
+from src import vocabulary
 
 # The four Isle of Dread Dino bone types. A slot accepts only an insert of its
 # own type (a Scale slot takes a Scale insert), exactly like a colored augment
@@ -140,6 +141,7 @@ def _parse_effect(effect):
     trailing period stripped). ``rejected`` records clauses that carried a
     number but did not resolve to a clean affix, so the quarantine is honest.
     """
+    folds = vocabulary.registry_synonym_folds()
     affixes, rejected = [], []
     for clause in _effect_clauses(effect):
         r = parse_line(clause)
@@ -151,7 +153,13 @@ def _parse_effect(effect):
             continue
         for a in r["affixes"]:
             stat = _strip_flavor_bleed((a["stat"] or "").rstrip(". ").strip())
-            stat = stat
+            # U4 — fold reviewed spelling synonyms to their canonical stat name
+            # (e.g. the wiki's "Universal Spellpower" -> "Universal Spell
+            # Power"). Applied at the shared parse seam so EVERY dino channel
+            # this parser feeds (inserts, typed inserts, set augments) emits
+            # canonical stats; `raw` stays verbatim wiki text, mirroring the
+            # pipeline's raw/normalized split.
+            stat = folds.get(stat, stat)
             if not stat:
                 rejected.append({"raw": clause, "reason": "empty stat after normalization"})
                 continue
@@ -332,6 +340,9 @@ def parse_set_augments(set_augments):
     out = []
     for s in set_augments or []:
         name = s.get("set_name") or s.get("name")
+        # U4 — the synonym fold to canonical stat names happens inside
+        # _parse_effect (the shared parse seam), so this channel's `stat`
+        # fields arrive already canonical.
         affixes, flagged = _parse_effect(s.get("tier_text"))
         out.append({
             "set": name,
@@ -342,6 +353,41 @@ def parse_set_augments(set_augments):
             "raw": s.get("tier_text"),
         })
     return out
+
+
+def check_set_records_spelling(set_records):
+    """Per-channel spelling guard for the ``dino_sets`` channel (U4).
+
+    Every normalized ``stat`` in the channel must be canonical — none may appear
+    as a fold-away SYNONYM key in the frozen affix-synonym registry (that is how
+    "Universal Spellpower" survived here while every live channel spelled it
+    "Universal Spell Power"). Refuses to vouch for an empty channel: zero set
+    records or zero affixes is a guard FAILURE, never a pass (per-channel, never
+    vouched for by a sibling — see
+    docs/solutions/conventions/prove-a-guard-fails-before-trusting-it.md).
+    ``raw`` text is deliberately NOT inspected: it is verbatim wiki provenance
+    and keeps the original spelling. Returns the number of affixes inspected."""
+    if not set_records:
+        raise ValueError(
+            "dino_sets spelling guard: zero set records — an empty channel is a "
+            "guard failure, not a pass")
+    folds = vocabulary.registry_synonym_folds()
+    checked = 0
+    for rec in set_records:
+        for a in rec.get("affixes") or []:
+            stat = a.get("stat")
+            if stat in folds:
+                raise ValueError(
+                    f"dino_sets spelling guard: set {rec.get('set')!r} carries "
+                    f"fold-away synonym {stat!r} (canonical: {folds[stat]!r}) — "
+                    f"the parse-time synonym fold did not run or the registry "
+                    f"grew a new fold this channel never applied")
+            checked += 1
+    if checked == 0:
+        raise ValueError(
+            "dino_sets spelling guard: set records carry zero affixes — an "
+            "affix-less channel is a guard failure, not a pass")
+    return checked
 
 
 def parse_dino_crafting(seed):

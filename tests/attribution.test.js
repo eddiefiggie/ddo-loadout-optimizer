@@ -249,5 +249,48 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
     }
   });
 
+  await test("U3 (#290/#291): a cross-added SOLVE reaches every export labelled — no hand-built breakdown", async () => {
+    // Same end-to-end contract as the declared-credit guard above: the per-format
+    // tests in exporters.test.js hand-build a breakdown, so they prove only that
+    // the exporter echoes its input. This runs a REAL solve with the cross-add map
+    // installed, through breakdownByTarget -> projection -> each exporter, and
+    // demands the "from Universal Spell Power" label — plus the app's own
+    // attributionList receipt row.
+    const X = require("../web/exporters.js");
+    const Proj = require("../web/projection.js");
+    const CAM = require("../web/model.js");
+    CAM.setCrossAdd({ Combustion: ["Universal Spell Power"] });
+    try {
+      const model = {
+        targets: ["Combustion"], mlCap: 34, dodgeCap: null,
+        worn: [
+          slot("Ring", [item("Ember Band", "Ring", [["Combustion", "Equipment", 100]])]),
+          slot("Necklace", [item("Universal Torc", "Necklace", [["Universal Spell Power", "Implement", 50]])]),
+        ],
+      };
+      const r = await S.solveLexicographic(model, highs);
+      assert.strictEqual(r.breakdown.Combustion.find((p) => p.value === 50).crossAdd,
+        "Universal Spell Power", "premise: the solver stamped it (U2)");
+
+      const attr = Proj.attributionByTarget(r);
+      const xa = attr.Combustion.find((c) => c.value === 50);
+      assert.strictEqual(xa.crossAdd, "Universal Spell Power", "projection forwards the marker");
+      assert.ok(/from Universal Spell Power/.test(R.attributionList(attr.Combustion)),
+        "the Ranked Priorities receipt row labels it");
+
+      const rec = { name: "E2E", inputs: { ml: 34, pool: "all", priorities: ["Combustion"] }, snapshot: r };
+      for (const [fmt, fn] of [["markdown", X.toMarkdown], ["bbcode", X.toBBCode],
+                               ["csv", X.toCsv], ["print", X.toPrintHtml]]) {
+        const out = fn(rec);
+        assert.ok(out.includes("from Universal Spell Power"),
+          `${fmt} must carry the cross-add label end to end`);
+        assert.ok(!/undefined/.test(out), `${fmt} must not leak an undefined field`);
+      }
+      const env = X.toPortableJSON(rec, "2026-08-13T00:00:00Z");
+      assert.strictEqual(env.resolved.attribution.Combustion.sources.find((s) => s.value === 50).crossAdd,
+        "Universal Spell Power", "the portable JSON carries the raw field");
+    } finally { CAM.setCrossAdd({}); }
+  });
+
   console.log(`\n${passed} passed`);
 })();

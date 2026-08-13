@@ -72,6 +72,48 @@ var _isBothHandsWeapon = (typeof isBothHandsWeapon !== "undefined")
   // eslint-disable-next-line global-require
   : require("./model.js").isBothHandsWeapon;
 
+// U2 (#290/#291) — cross-add source reader ({target: [source stats]}, installed
+// from metadata.cross_add by dataset.js). Resolved from model.js like the helpers
+// above so the solver's crediting and buildModel's targetSet widening can never
+// read two different maps.
+var _crossAddSourcesFor = (typeof crossAddSourcesFor !== "undefined")
+  ? crossAddSourcesFor
+  // eslint-disable-next-line global-require
+  : require("./model.js").crossAddSourcesFor;
+
+// U2 (#290/#291) — the SAME targetSet widening buildModel uses (model.js), so
+// the dominance pre-filter's stat set and the bucket-building stat set can
+// never diverge. Resolved across runtimes like the helpers above.
+var _widenWithCrossAddSources = (typeof widenWithCrossAddSources !== "undefined")
+  ? widenWithCrossAddSources
+  // eslint-disable-next-line global-require
+  : require("./model.js").widenWithCrossAddSources;
+
+/** U2 (#290/#291) — does bucket `key` ("stat||type") count toward `stat`'s
+ *  total? THE single consultation point for every bucket-prefix read — the
+ *  objective/locks (rawExpr), the breakdown, the saturation report, and the
+ *  credit report all route through here, because per-site hand-rolled prefix
+ *  logic is the recorded drift failure mode. Returns:
+ *    null               — the bucket does not count toward `stat`;
+ *    { source: null }   — it is `stat`'s OWN bucket (counts; no provenance
+ *                         marker);
+ *    { source: "<stat>" } — it counts via cross-add, naming the SOURCE stat
+ *                         (e.g. "Universal Spell Power") for breakdown
+ *                         provenance.
+ *  Object-or-null, so plain truthiness IS the membership test — a bare
+ *  `if (!bucketCountsFor(...))` can never mistake an own bucket for a miss.
+ *  Buckets stay per-(stat, bonus-type) max INTERNALLY; cross-add sums ACROSS
+ *  buckets (the target's own plus each source stat's) and never merges them —
+ *  so two USP Implement sources still collapse to the higher, while USP
+ *  Implement + element Equipment add. Uninstalled/unmapped => own-bucket-only
+ *  (byte-identical to the pre-cross-add solver). */
+function bucketCountsFor(key, stat) {
+  const bucketStat = key.split("||")[0];
+  if (bucketStat === stat) return { source: null };
+  for (const src of _crossAddSourcesFor(stat)) if (bucketStat === src) return { source: src };
+  return null;
+}
+
 /** U6 — per-slot constraint bodies (pin / lock-empty) as raw LP strings, using
  *  the `extra` seam. Pin → the chosen variant's pick var = 1; lock-empty → the
  *  slot's pick vars sum to 0; free → nothing. Pure + exported for tests. A pin
@@ -139,6 +181,14 @@ function buildProgram(model) {
   const credits = _normalizeCredits(model.credits);
   const targetSet = new Set([...model.targets, ...Object.keys(cappedStats), ...Object.keys(model.floors || {}),
     ...credits.map((c) => c.stat)]);
+  // U2 (#290/#291) — widen with every tracked stat's cross-add SOURCE stats
+  // (Universal Spell Power for the element spellpowers; Spell Lore/Universal
+  // Spell Lore for the element lores), or the `targetSet.has(a.name)` gates
+  // below would skip universal affixes and their buckets would never exist for
+  // bucketCountsFor to collect. Shared with buildModel's widening
+  // (widenWithCrossAddSources in model.js), which keeps the same items alive
+  // through the dominance pre-filter.
+  _widenWithCrossAddSources(targetSet);
 
   const xVars = [];
   model.worn.forEach((group) => {
@@ -955,19 +1005,32 @@ function buildProgram(model) {
   };
 }
 
-/** Raw stacked expression (terms) for a stat: sum over its buckets of value*z. */
+/** Raw stacked expression (terms) for a stat: sum over its buckets of value*z.
+ *  U2 (#290/#291): "its buckets" = the stat's own PLUS its cross-add source
+ *  stats' (bucketCountsFor), so the objective, stage locks, floors/probeMax,
+ *  and readSolution's achieved values all count universal sources uniformly. */
 function rawExpr(program, stat) {
   const terms = [];
   for (const [key, zs] of program.zByBucket) {
-    if (key.split("||")[0] !== stat) continue;
+    if (!bucketCountsFor(key, stat)) continue;
     for (const z of zs) terms.push({ coef: z.value, name: z.name });
   }
   return terms;
 }
 
+/** The LP variable name for a capped stat's clamp var. LP-format tokens split on
+ *  whitespace, so a multi-word stat ("Universal Spell Power", "Physical
+ *  Sheltering") minted as a bare `d_<stat>` produced an unparseable model and
+ *  HiGHS ABORTED the whole solve — a pre-existing crash for ANY multi-word
+ *  user-capped stat, exposed by the U2 source-stat cap test. Non-alphanumerics
+ *  map to "_"; single-word stats keep their exact historical names. */
+function dVar(stat) {
+  return "d_" + String(stat).replace(/[^A-Za-z0-9]/g, "_");
+}
+
 /** Objective/lock expression for a stat: the capped var if capped, else raw. */
 function effectiveExpr(program, stat) {
-  if (program.cappedStats[stat] != null) return [{ coef: 1, name: "d_" + stat }];
+  if (program.cappedStats[stat] != null) return [{ coef: 1, name: dVar(stat) }];
   return rawExpr(program, stat);
 }
 
@@ -1031,8 +1094,8 @@ function encodeStage(program, { objectiveStat, objTerms, sense, locks, tieBreak,
   // d <= 0 so the cap var cannot float up to its bound under the maximizing objective.
   for (const stat of Object.keys(program.cappedStats)) {
     const raw = rawExpr(program, stat);
-    if (raw.length) L.push(` c${c++}: d_${stat} ${fmtExpr(raw.map((t) => ({ coef: -t.coef, name: t.name })), fb)} <= 0`);
-    else L.push(` c${c++}: d_${stat} <= 0`);
+    if (raw.length) L.push(` c${c++}: ${dVar(stat)} ${fmtExpr(raw.map((t) => ({ coef: -t.coef, name: t.name })), fb)} <= 0`);
+    else L.push(` c${c++}: ${dVar(stat)} <= 0`);
   }
 
   for (const lock of locks || []) {
@@ -1048,7 +1111,7 @@ function encodeStage(program, { objectiveStat, objTerms, sense, locks, tieBreak,
   }
 
   L.push("Bounds");
-  for (const [stat, cap] of Object.entries(program.cappedStats)) L.push(` 0 <= d_${stat} <= ${cap}`);
+  for (const [stat, cap] of Object.entries(program.cappedStats)) L.push(` 0 <= ${dVar(stat)} <= ${cap}`);
 
   L.push("Binary");
   program.xVars.forEach((xv) => L.push(" " + xv.name));
@@ -1159,7 +1222,13 @@ function breakdownByTarget(program, prim) {
   for (const stat of program.targetList) {
     const parts = [];
     for (const [key, zs] of program.zByBucket) {
-      if (key.split("||")[0] !== stat) continue;
+      // U2 (#290/#291) — a cross-added bucket's parts appear under the target
+      // with `crossAdd` naming the source stat (null on the target's own
+      // parts). Mirrors `via`: provenance that rides through projection
+      // untouched; a later unit renders it.
+      const counts = bucketCountsFor(key, stat);
+      if (!counts) continue;
+      const crossAdd = counts.source;
       const bonusType = key.split("||")[1];
       for (const z of zs) {
         if (prim(z.name) > 0.5) {
@@ -1180,6 +1249,9 @@ function breakdownByTarget(program, prim) {
             hostIds: src.hostIds || (src.kind === "worn" ? [src.label] : null),
             // #205 — the enchantment this contribution is actually printed as.
             via: z.via || null,
+            // U2 (#290/#291) — the cross-add SOURCE stat this part came from,
+            // or null for the target's own parts.
+            crossAdd,
           });
         }
       }
@@ -1472,12 +1544,14 @@ function buildSaturationReport(program, prim) {
   const out = [];
 
   for (const stat of (program && program.targetList) || []) {
-    const prefix = `${stat}||`;
     const bonusTypes = [];
     let unusedSources = 0, total = 0, sawBucket = false, allFilled = true;
 
+    // U2 (#290/#291) — a target's census spans its own buckets plus its
+    // cross-add source stats' (bucketCountsFor), the same reach every other
+    // prefix site has: an unused USP source is an unused source FOR the element.
     for (const [key, zs] of zByBucket) {
-      if (!key.startsWith(prefix)) continue;
+      if (!bucketCountsFor(key, stat)) continue;
       const live = zs.filter(reachable);
       if (!live.length) continue;
       sawBucket = true;
@@ -1495,7 +1569,7 @@ function buildSaturationReport(program, prim) {
       // The absent-bonus-type bucket keys as the string "null" (equivType returns
       // the type unchanged, and it is null). Render it as a word — a player must
       // never be shown the literal "null" as a bonus type.
-      const type = key.slice(prefix.length);
+      const type = key.split("||")[1];
       bonusTypes.push(type === "null" || type === "undefined" ? "untyped" : type);
     }
 
@@ -1556,7 +1630,9 @@ function buildCreditReport(program, prim, model, floorReport) {
     // describes the shown loadout is one the data supports; the counterfactual is not.
     let gearInLoadout = 0;
     for (const [k, list] of program.zByBucket) {
-      if (k.split("||")[0] !== c.stat) continue;
+      // U2 (#290/#291) — the loadout's gear for a stat includes its cross-add
+      // source buckets (bucketCountsFor), matching what the headline total counts.
+      if (!bucketCountsFor(k, c.stat)) continue;
       let best = 0;
       for (const z of list) {
         if (program.creditMeta.has(z.name)) continue;
@@ -1743,5 +1819,5 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars };
+  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, bucketCountsFor, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars };
 }

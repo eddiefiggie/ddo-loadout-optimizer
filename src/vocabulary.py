@@ -210,6 +210,16 @@ def _synonym_folds(table):
     return folds
 
 
+def registry_synonym_folds(path=AFFIX_SYNONYMS_REGISTRY_PATH):
+    """Public ``{synonym: canonical}`` fold map from the FROZEN checked-in
+    affix-synonym registry (U4). The private ``_synonym_folds`` normalizer feeds
+    only the referential-integrity gate above; pipeline channels that need to
+    APPLY a fold to a parsed stat name (rather than diff two tables) read this.
+    Reviewed mappings only — the registry is frozen, so a fold appearing here has
+    already been confirmed as the same game mechanic (see ``check_affix_synonyms``)."""
+    return dict(_synonym_folds(_load(path)))
+
+
 def check_affix_synonyms(live, frozen):
     """Referential-integrity gate for upstream's affix-synonym table (U6), against
     the FROZEN checked-in registry. Upstream folds several distinct game mechanics

@@ -2,7 +2,7 @@
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
  "generated": "2026-08-09",
  "dataset": "web/data/items.json (9045 items)",
- "fixture_count": 18,
+ "fixture_count": 19,
  "solves": {
   "heroic-str-melee": {
    "status": "optimal",
@@ -307,31 +307,31 @@
    "status": "optimal",
    "perTarget": {
     "Universal Spell Power": 104,
-    "Combustion": 335,
-    "Corrosion": 333,
-    "Devotion": 290,
-    "Glaciation": 255,
-    "Impulse": 225,
-    "Magnetism": 255,
-    "Nullification": 225,
-    "Radiance": 225,
-    "Reconstruction": 225,
-    "Resonance": 225,
+    "Combustion": 439,
+    "Corrosion": 437,
+    "Devotion": 394,
+    "Glaciation": 359,
+    "Impulse": 329,
+    "Magnetism": 359,
+    "Nullification": 329,
+    "Radiance": 329,
+    "Reconstruction": 329,
+    "Resonance": 329,
     "Wisdom": 27,
     "Charisma": 25
    },
    "effective": {
     "Universal Spell Power": 104,
-    "Combustion": 335,
-    "Corrosion": 333,
-    "Devotion": 290,
-    "Glaciation": 255,
-    "Impulse": 225,
-    "Magnetism": 255,
-    "Nullification": 225,
-    "Radiance": 225,
-    "Reconstruction": 225,
-    "Resonance": 225,
+    "Combustion": 439,
+    "Corrosion": 437,
+    "Devotion": 394,
+    "Glaciation": 359,
+    "Impulse": 329,
+    "Magnetism": 359,
+    "Nullification": 329,
+    "Radiance": 329,
+    "Reconstruction": 329,
+    "Resonance": 329,
     "Wisdom": 27,
     "Charisma": 25
    },
@@ -511,19 +511,19 @@
   "trance-credit-additive-ml32": {
    "status": "optimal",
    "perTarget": {
-    "Devotion": 346,
-    "Wisdom": 34,
-    "Universal Spell Power": 80
+    "Devotion": 448,
+    "Wisdom": 29,
+    "Universal Spell Power": 104
    },
    "effective": {
-    "Devotion": 346,
-    "Wisdom": 34,
-    "Universal Spell Power": 80
+    "Devotion": 448,
+    "Wisdom": 29,
+    "Universal Spell Power": 104
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Docent of the Artblade"
+     "variant": "Legendary Darkmoss"
     },
     {
      "slot": "Belt",
@@ -535,35 +535,35 @@
     },
     {
      "slot": "Bracers",
-     "variant": "Legendary World-Weary Wrappings"
+     "variant": "Legendary Admiral's Wristwatch"
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary University Researcher's Cloak"
+     "variant": "Legendary Cloak of Autumn"
     },
     {
      "slot": "Gloves",
-     "variant": "Balorskin Gauntlets"
+     "variant": "Alaric's Grim Gauntlets"
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Eyes of Enlightenment"
+     "variant": "Drider's Vision"
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Chainmail Coif"
+     "variant": "Epic Sacred Helm"
     },
     {
      "slot": "Main Hand",
-     "variant": "Marro, the Bone of Demons"
+     "variant": "Attuned Bone Bastard Sword"
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Azure Necklace of Prophecy"
+     "variant": "Legendary Pendant of the Sky"
     },
     {
      "slot": "Off Hand",
-     "variant": "Legendary Liturgy of the Dark Six"
+     "variant": "Dethek Runestone"
     },
     {
      "slot": "Ring",
@@ -571,30 +571,30 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Chieftain"
+     "variant": "Epic Sacred Band"
     },
     {
      "slot": "Trinket",
-     "variant": "Legendary Gem of Many Facets"
+     "variant": "Doctor Lifestone's Hunting Horn"
     }
    ]
   },
   "trance-credit-additive-ml32-baseline": {
    "status": "optimal",
    "perTarget": {
-    "Devotion": 334,
-    "Wisdom": 34,
-    "Universal Spell Power": 80
+    "Devotion": 436,
+    "Wisdom": 29,
+    "Universal Spell Power": 104
    },
    "effective": {
-    "Devotion": 334,
-    "Wisdom": 34,
-    "Universal Spell Power": 80
+    "Devotion": 436,
+    "Wisdom": 29,
+    "Universal Spell Power": 104
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Docent of the Artblade"
+     "variant": "Legendary Darkmoss"
     },
     {
      "slot": "Belt",
@@ -606,35 +606,35 @@
     },
     {
      "slot": "Bracers",
-     "variant": "Legendary World-Weary Wrappings"
+     "variant": "Legendary Admiral's Wristwatch"
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary University Researcher's Cloak"
+     "variant": "Legendary Cloak of Autumn"
     },
     {
      "slot": "Gloves",
-     "variant": "Balorskin Gauntlets"
+     "variant": "Alaric's Grim Gauntlets"
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Eyes of Enlightenment"
+     "variant": "Drider's Vision"
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Chainmail Coif"
+     "variant": "Epic Sacred Helm"
     },
     {
      "slot": "Main Hand",
-     "variant": "Marro, the Bone of Demons"
+     "variant": "Attuned Bone Bastard Sword"
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Azure Necklace of Prophecy"
+     "variant": "Legendary Pendant of the Sky"
     },
     {
      "slot": "Off Hand",
-     "variant": "Legendary Liturgy of the Dark Six"
+     "variant": "Dethek Runestone"
     },
     {
      "slot": "Ring",
@@ -642,11 +642,11 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Chieftain"
+     "variant": "Epic Sacred Band"
     },
     {
      "slot": "Trinket",
-     "variant": "Legendary Gem of Many Facets"
+     "variant": "Doctor Lifestone's Hunting Horn"
     }
    ]
   },
@@ -1075,6 +1075,71 @@
     {
      "slot": "Off Hand",
      "variant": "Golden Orb of Death (level 26)"
+    }
+   ]
+  },
+  "cross-add-combustion-usp-ml32": {
+   "status": "optimal",
+   "perTarget": {
+    "Combustion": 440,
+    "Universal Spell Power": 101
+   },
+   "effective": {
+    "Combustion": 440,
+    "Universal Spell Power": 101
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Legendary Darkmoss"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Legendary Bladesworn Bandolier"
+    },
+    {
+     "slot": "Boots",
+     "variant": "Bulette-Armored Boots"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Legendary Cloak of Autumn"
+    },
+    {
+     "slot": "Gloves",
+     "variant": "Legendary Absorption Gauntlet"
+    },
+    {
+     "slot": "Goggles",
+     "variant": "Legendary Eyes of Enlightenment"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Legendary Alchemist's Crown"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Epic Locked and Loaded"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Legendary Alchemist's Pendant"
+    },
+    {
+     "slot": "Off Hand",
+     "variant": "The Demon Engine"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Clouded Dreams"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Ring of the Red Abishai"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Legendary Library Card"
     }
    ]
   }

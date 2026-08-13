@@ -1693,3 +1693,70 @@ test("#287: folded Legendary bucket sums across types, maxes within its own", ()
   assert.strictEqual(b2.size, 1, "two Legendary sources share one bucket");
   assert.strictEqual(b2.get("Accuracy||Legendary"), 5, "and only the highest applies");
 });
+
+// ---------------------------------------------------------------------------
+// U1 (#290/#291) — cross-add data plumbing. `crossAddSourcesFor(stat)` exposes
+// the installed metadata.cross_add map {target_stat: [source_stats]}: stats
+// whose bucket totals ADD into the target's total ACROSS buckets (the wiki's
+// fully-stacking universal sources — Universal Spell Power, the two universal
+// lores). Distinct from the spell_focus expansion, which reproduces a
+// DON'T-stack rule inside the same-type max bucket. This unit is plumbing
+// only — nothing here credits the solver; that is a later unit.
+test("U1: crossAddSourcesFor on a fresh (uninstalled) model returns [] without crashing", () => {
+  const key = require.resolve("../web/model.js");
+  const cached = require.cache[key];
+  delete require.cache[key];
+  try {
+    const fresh = require("../web/model.js");
+    assert.deepStrictEqual(fresh.crossAddSourcesFor("Combustion"), []);
+    assert.deepStrictEqual(fresh.crossAddSourcesFor(undefined), []);
+  } finally {
+    require.cache[key] = cached; // restore the shared installed instance
+  }
+});
+
+test("U1: setCrossAdd installs the map; unmapped stats and uninstall stay []", () => {
+  try {
+    M.setCrossAdd({ Combustion: ["Universal Spell Power"] });
+    assert.deepStrictEqual(M.crossAddSourcesFor("Combustion"), ["Universal Spell Power"]);
+    assert.deepStrictEqual(M.crossAddSourcesFor("Strength"), []);
+    M.setCrossAdd(null); // uninstall resets to empty rather than crashing
+    assert.deepStrictEqual(M.crossAddSourcesFor("Combustion"), []);
+  } finally {
+    M.setCrossAdd(data._crossAdd); // restore the real catalog's map
+  }
+});
+
+test("U1: the built catalog's cross_add reaches model.js through normalizeDataset", () => {
+  assert.deepStrictEqual(M.crossAddSourcesFor("Combustion"), ["Universal Spell Power"]);
+  assert.deepStrictEqual(M.crossAddSourcesFor("Fire Lore"), ["Spell Lore", "Universal Spell Lore"]);
+});
+
+// U2 (#290/#291) — dominance widening. buildModel unions each tracked stat's
+// cross-add SOURCE stats into targetSet, so a universal-only item stays
+// competitive through the Pareto pre-filter when only an element stat is
+// ranked. The widened SET is the whole lever: the shared dominance comparator
+// (dominates/variantBuckets) is untouched — with the sources in targetSet, the
+// USP item's own buckets are compared like any other stat's.
+test("U2: a USP-only item survives model pruning when only an element stat is ranked", () => {
+  try {
+    M.setCrossAdd({ Combustion: ["Universal Spell Power"] });
+    const elem = v("Elem", "Necklace", [["Combustion", "Equipment", 100]]);
+    const usp = v("USPOnly", "Necklace", [["Universal Spell Power", "Implement", 50]]);
+    const model = M.buildModel([elem, usp], { mlCap: 34, targets: ["Combustion"] });
+    const neck = model.worn.find((s) => s.slot === "Necklace");
+    assert.ok(neck, "the Necklace pool exists");
+    assert.deepStrictEqual(neck.variants.map((x) => x.variant_id).sort(), ["Elem", "USPOnly"],
+      "the USP-only item is NOT pruned: its source-stat buckets are now in targetSet");
+
+    // Control — with the map uninstalled, the element item dominates the
+    // bucket-less USP item exactly as before the change (the widening is the lever).
+    M.setCrossAdd({});
+    const model2 = M.buildModel([elem, usp], { mlCap: 34, targets: ["Combustion"] });
+    const neck2 = model2.worn.find((s) => s.slot === "Necklace");
+    assert.deepStrictEqual(neck2.variants.map((x) => x.variant_id), ["Elem"],
+      "uninstalled: the USP-only item is dominated away, byte-identical to the old pre-filter");
+  } finally {
+    M.setCrossAdd(data._crossAdd); // restore the real catalog's map
+  }
+});

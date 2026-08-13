@@ -92,7 +92,10 @@ def test_multi_affix_insert_parses_to_one_unit_with_two_affixes():
     assert len(units) == 1
     affixes = units[0]["affixes"]
     assert len(affixes) == 2
-    assert (affixes[0]["stat"], affixes[0]["value"]) == ("Sneak Attacks", 11)
+    # The shared parse seam (_parse_effect) folds reviewed spelling synonyms to
+    # their canonical stat name: "Sneak Attacks" is a registry synonym of
+    # "Deception"; "Sneak Attack Damage" is already canonical.
+    assert (affixes[0]["stat"], affixes[0]["value"]) == ("Deception", 11)
     assert (affixes[1]["stat"], affixes[1]["value"]) == ("Sneak Attack Damage", 17)
 
 
@@ -133,7 +136,9 @@ def test_conditional_line_is_rejected_but_clean_line_kept():
     assert len(units) == 1
     affixes = units[0]["affixes"]
     assert len(affixes) == 1
-    assert affixes[0]["stat"] == "all Spell DCs"
+    # The shared parse seam (_parse_effect) folds reviewed spelling synonyms:
+    # "all Spell DCs" is a registry synonym of "Spell Focus Mastery".
+    assert affixes[0]["stat"] == "Spell Focus Mastery"
     assert affixes[0]["value"] == 7
     assert affixes[0]["bonus_type"] == "Equipment"
 
@@ -264,6 +269,79 @@ def test_set_augment_splits_concatenated_tier_text():
     stats = {(a["stat"], a["value"]) for a in sets[0]["affixes"]}
     assert ("Sneak Attack Dice", 3) in stats
     assert ("Melee and Ranged Power", 15) in stats
+
+
+# --- Set-augment spelling fold + per-channel guard (U4) -----------------------
+
+def test_set_augment_stat_folds_synonym_but_raw_stays_verbatim():
+    # The wiki tier text spells "Universal Spellpower"; the frozen synonym
+    # registry folds it to "Universal Spell Power". The normalized stat folds,
+    # the verbatim `raw` does not.
+    sets = dino_parser.parse_set_augments([
+        {"set_name": "Defender of Tanaroa", "threshold": 3,
+         "tier_text": "+25 Artifact bonus to Universal Spellpower",
+         "wiki_url": _WIKI},
+    ])
+    assert len(sets) == 1
+    stats = [a["stat"] for a in sets[0]["affixes"]]
+    assert stats == ["Universal Spell Power"], stats
+    assert sets[0]["raw"] == "+25 Artifact bonus to Universal Spellpower"
+
+
+def test_shipped_seed_set_records_carry_canonical_spelling_only():
+    # End-to-end on the native seed: the three sets that grant spell power carry
+    # the canonical name, the misspelling family appears in NO normalized stat,
+    # and each raw text is still the verbatim wiki string.
+    from src import dino_native
+    parsed = dino_parser.parse_dino_crafting(dino_native.native_dino_seed())
+    records = parsed["set_records"]
+    canonical_sets = {r["set"] for r in records
+                     for a in r["affixes"] if a["stat"] == "Universal Spell Power"}
+    assert canonical_sets == {"Defender of Tanaroa",
+                              "Deacon of the Auricular Sacrarium",
+                              "The Legendary Dread Isle's Curse"}, canonical_sets
+    assert all(a["stat"] != "Universal Spellpower"
+               for r in records for a in r["affixes"])
+    raw_carriers = [r["set"] for r in records if "Universal Spellpower" in (r["raw"] or "")]
+    assert len(raw_carriers) == 3, raw_carriers  # provenance text untouched
+
+
+def test_spelling_guard_red_on_fold_away_synonym():
+    records = [{"set": "Bad Set", "affixes": [
+        {"stat": "Universal Spellpower", "bonus_type": "Artifact", "value": 25, "unit": "flat"},
+    ]}]
+    try:
+        dino_parser.check_set_records_spelling(records)
+    except ValueError as e:
+        assert "Universal Spellpower" in str(e) and "Universal Spell Power" in str(e), e
+    else:
+        raise AssertionError("guard passed a fold-away synonym")
+
+
+def test_spelling_guard_red_on_empty_channel():
+    # Zero records is a guard FAILURE, never a pass (per-channel; a sibling
+    # channel's coverage vouches for nothing here).
+    for empty in ([], None):
+        try:
+            dino_parser.check_set_records_spelling(empty)
+        except ValueError as e:
+            assert "zero set records" in str(e), e
+        else:
+            raise AssertionError("guard passed an empty channel")
+    # Records present but affix-less is the same failure.
+    try:
+        dino_parser.check_set_records_spelling([{"set": "Hollow", "affixes": []}])
+    except ValueError as e:
+        assert "zero affixes" in str(e), e
+    else:
+        raise AssertionError("guard passed an affix-less channel")
+
+
+def test_spelling_guard_green_on_shipped_seed_and_counts():
+    from src import dino_native
+    parsed = dino_parser.parse_dino_crafting(dino_native.native_dino_seed())
+    checked = dino_parser.check_set_records_spelling(parsed["set_records"])
+    assert checked > 0
 
 
 # --- End-to-end on the shipped seed ------------------------------------------

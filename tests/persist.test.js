@@ -332,3 +332,26 @@ test("U7/#110: blockReport survives stripResult", () => {
   }));
   assert.deepStrictEqual(s.blockReport, [{ id: "X", name: "X", pool: "Ring", bestAvailable: false }]);
 });
+
+// ---------------------------------------------------------------------------
+// U3 (#290/#291) — the cross-add marker survives a save/load round-trip.
+// `breakdown` is on RESULT_KEEP and parts are stored whole, so the field rides
+// along; this pins that no future field-level filtering strips it.
+test("U3: stripResult keeps crossAdd on breakdown parts (save/load round-trip)", () => {
+  const breakdown = {
+    Combustion: [
+      { bonus_type: "Equipment", value: 100, source: "Ember Band", sourceKind: "worn",
+        slot: "Ring", hostIds: ["Ember Band"], via: null, crossAdd: null },
+      { bonus_type: "Implement", value: 50, source: "Universal Torc", sourceKind: "worn",
+        slot: "Necklace", hostIds: ["Universal Torc"], via: null,
+        crossAdd: "Universal Spell Power" },
+    ],
+  };
+  const s = stripResult({ status: "optimal", chosen: [], effective: {}, breakdown,
+    program: { cyclic: true } });
+  // Through JSON, exactly as localStorage stores it.
+  const restored = JSON.parse(JSON.stringify(s));
+  assert.deepStrictEqual(restored.breakdown, breakdown,
+    "breakdown parts round-trip whole, crossAdd included");
+  assert.strictEqual(restored.breakdown.Combustion[1].crossAdd, "Universal Spell Power");
+});

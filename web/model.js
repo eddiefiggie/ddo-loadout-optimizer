@@ -44,6 +44,46 @@ function equivType(type) {
   return (type != null && _STACK_EQUIV[type] != null) ? _STACK_EQUIV[type] : type;
 }
 
+// U1 (#290/#291) — cross-add map {target_stat: [source_stats]}: stats whose
+// bucket totals flat-ADD into the target's total ACROSS buckets (the wiki's
+// fully-stacking universal sources — Universal Spell Power into the ten element
+// spellpowers, Spell Lore/Universal Spell Lore into the element lores). The
+// OPPOSITE contract from _STACK_EQUIV above, which collapses same-bucket
+// sources to the max. Emitted into items.json `metadata.cross_add` and
+// installed here (dataset.js calls setCrossAdd on load, mirroring
+// setStackEquiv). Data plumbing only for now — solver crediting reads
+// crossAddSourcesFor in a later unit.
+let _CROSS_ADD = Object.create(null);
+function setCrossAdd(map) {
+  _CROSS_ADD = Object.create(null);
+  if (map && typeof map === "object") {
+    for (const k of Object.keys(map)) {
+      if (Array.isArray(map[k])) _CROSS_ADD[k] = map[k].slice();
+    }
+  }
+}
+/** Source stats whose totals cross-add into `stat` — [] for an unmapped stat
+ *  and for the uninstalled state (never a crash). */
+const _NO_CROSS_ADD_SOURCES = Object.freeze([]);
+function crossAddSourcesFor(stat) {
+  const srcs = stat != null ? _CROSS_ADD[stat] : undefined;
+  return Array.isArray(srcs) ? srcs : _NO_CROSS_ADD_SOURCES;
+}
+
+/** U2 (#290/#291) — widen a stat set in place with every member's cross-add
+ *  SOURCE stats (an element spellpower pulls in Universal Spell Power; an
+ *  element lore pulls in Spell Lore + Universal Spell Lore). THE single
+ *  widening used by both buildModel (model.js — keeps universal-only items
+ *  alive through the dominance pre-filter) and buildProgram (solver.js —
+ *  builds the source buckets bucketCountsFor collects), so the two layers can
+ *  never widen differently. */
+function widenWithCrossAddSources(targetSet) {
+  for (const stat of [...targetSet]) {
+    for (const src of crossAddSourcesFor(stat)) targetSet.add(src);
+  }
+  return targetSet;
+}
+
 /** Resolve an ML-scaling affix to its value at the query ML cap. */
 function scaledValue(s, mlCap) {
   if (mlCap <= s.ml_lo) return s.val_lo;
@@ -619,6 +659,16 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     ...Object.keys(query.targetCaps || {}),
     ...Object.keys(query.targetFloors || {}),
   ]);
+  // U2 (#290/#291) — widen with every tracked stat's cross-add SOURCE stats
+  // (an element spellpower pulls in Universal Spell Power; an element lore
+  // pulls in Spell Lore + Universal Spell Lore), so the dominance pre-filter
+  // keeps universal-only items competitive and the option pools keep universal
+  // crafting options. Widening the stat set is the whole lever: the shared
+  // dominance comparator (dominates/variantBuckets) is deliberately untouched —
+  // with the sources in targetSet, a universal item's buckets are compared like
+  // any other stat's, so a USP-only item survives unless genuinely dominated.
+  // Shared with buildProgram (solver.js), which builds the buckets.
+  widenWithCrossAddSources(targetSet);
   const mlCap = query.mlCap;
   const eligAll = eligible(variants, query);
   // #110 (U2/KTD1) — the blocklist filters CANDIDACY, here and not in
@@ -955,6 +1005,7 @@ if (typeof module !== "undefined" && module.exports) {
     offHandItemsExcluded, allowedOffHandWeaponTypes, pinSlotConflict,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,
     isForgedRace, isDocent, isBothHandsWeapon, variantKey, setStackEquiv, equivType,
+    setCrossAdd, crossAddSourcesFor, widenWithCrossAddSources,
     WORN_SLOTS, SLOT_CARDINALITY, ARMOR_DODGE_CAP,
   };
 }

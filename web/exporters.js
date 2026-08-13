@@ -163,7 +163,11 @@
     // printed on the item under its own name. Naming it here means a shared build
     // tells the reader what to look for on the item, in every export format.
     const via = p.viaAffix ? ` as ${esc(p.viaAffix)}` : "";
-    return `${type} ${val} — ${esc(p.source)}${tag}${slots}${via}`;
+    // U3 (#290/#291) — a cross-added credit names its fully-stacking SOURCE stat
+    // ("from Universal Spell Power"), the same wording the app's receipts use.
+    // One clause in the one shared sourceStr, so every format carries it.
+    const from = p.crossAdd ? ` from ${esc(p.crossAdd)}` : "";
+    return `${type} ${val} — ${esc(p.source)}${tag}${slots}${via}${from}`;
   }
 
   // The cap note for a priority stat, matching results.js: shown only when a cap is

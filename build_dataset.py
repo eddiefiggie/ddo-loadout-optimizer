@@ -26,6 +26,7 @@ from src import verify as verify_mod
 from src import colors as colors_mod
 from src import set_parser as set_mod
 from src import dino as dino_mod
+from src import dino_parser as dino_parser_mod
 from src import nearly_complete as nc_mod
 from src import viktranium as vik_mod
 from src import seal as seal_mod
@@ -45,6 +46,7 @@ from src import absorption_split as absorption_split_mod
 from src import enchantment_split as enchantment_split_mod
 from src import umbrella as umbrella_mod
 from src import spell_focus as spell_focus_mod
+from src import cross_add as cross_add_mod
 from src import provenance as provenance_mod
 from src import value_corrections as value_corrections_mod
 from src import name_corrections as name_corrections_mod
@@ -767,6 +769,12 @@ def build() -> dict:
     for _dset in dino_sets:
         if _dset.get("affixes"):
             _dset["affixes"] = spell_focus_mod.expand_affixes(_dset["affixes"])
+    # U4 — per-channel spelling guard: no dino_sets stat may be a fold-away
+    # synonym from the frozen registry ("Universal Spellpower" hid here because
+    # this hand-carried wiki channel never passed through a synonym fold). Runs
+    # AFTER the expansion above so it inspects the channel exactly as emitted;
+    # raises on zero records — an empty channel is a failure, never a pass.
+    dino_parser_mod.check_set_records_spelling(dino_sets)
     # #169 — the same treatment for the version-bearing affixes inside SET BONUS
     # tiers. The item split above cannot reach this channel: a tier affix is
     # `{"stat": ..., "bonus_type": ...}` while an item affix is
@@ -1180,6 +1188,15 @@ def build() -> dict:
             # (dataset.js -> model.js/solver.js) canonicalizes the bucket KEY through
             # this map; the affix keeps its native type for display.
             "stacking_equivalence": vocabulary_mod.load_stacking_equivalence(),
+            # U1 (#290/#291) — cross-add map {target_stat: [source_stats]}: stats
+            # whose bucket totals flat-ADD into the target's total ACROSS buckets
+            # (wiki fully-stacking universal sources — USP and the two universal
+            # lores). The OPPOSITE contract from spell_focus's expansion table
+            # (same-type max-bucketing reproduces don't-stack); src/cross_add.py
+            # guards that no name is ever in both. Lore targets are bounded to
+            # the built vocabulary. Emission plumbing only — solver crediting
+            # reads this in a later unit (dataset.js installs it via setCrossAdd).
+            "cross_add": cross_add_mod.cross_add_map(_affix_registry),
             "pipeline_stage": "M4-compendium-roster",
         },
         "items": variants,

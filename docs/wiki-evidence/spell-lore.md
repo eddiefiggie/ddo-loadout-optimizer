@@ -44,8 +44,74 @@ Attempted the item's own page (`https://ddowiki.com/page/Solar_Gem_of_Spell_Crit
 
 **Ruling under the hard gate (KTD2/R4): QUARANTINE the precise solar-vs-individual-artifact no-stack rule.** Do NOT implement it on inference. The confirmed, shippable part of U5 is the **channel-typing model**: type spell-lore affixes correctly (Insight / Exceptional / Artifact) and name universal vs specific distinctly, then the existing `name || equivType(type)` bucketing yields the correct stack/no-stack for the confirmed cases. The solar-aug exact interaction ships only if a future lookup (the item's real page, or the Sun/Moon "sun-moon" augment page) states the rule outright; until then it is disclosed as unverified in the coverage note.
 
-**Status:** U4 CONFIRMED (Insight-type affix, add to vocab). U5 channel model CONFIRMED. U5 precise solar-aug stacking **QUARANTINED** (dedicated source missing; categorization-only).
+**Status:** U4 CONFIRMED (Insight-type affix, add to vocab). U5 channel model CONFIRMED. U5 precise solar-aug stacking ~~QUARANTINED~~ **RESOLVED 2026-08-13 — see the #290 section below.**
 
 ### U5 — build-time verification: confirmable part already correct — NO FIX NEEDED
 
 The generated dataset already types lore affixes correctly: `Spell Lore | Insight`, `Spell Lore | Equipment`, `Fire Lore | Equipment`, `Universal Spell Lore`, etc. (verified during U4 investigation). The solver's `name || equivType(type)` bucketing — covered by the existing solver suite — therefore already stacks differently-named or differently-typed lores and collapses same-name-same-type ones. So the **confirmed** channel behavior (e.g. "individual element lore stacks with universal spell lore") already holds with no code change. The **only** broken piece was the solar aug's precise interaction, which is QUARANTINED above. **U5 ships no code**; the surfaced Spell-Lore/Universal-Spell-Lore synonym question routes to #89.
+
+## #290 (2026-08-13) — lore cross-add evidence: additivity CONFIRMED, solar quarantine RESOLVED, roster recorded
+
+**Harvest:** Claude-in-Chrome, same-origin reads of ddowiki (rendered text), 2026-08-13.
+Pages: `Spell_Lore`, `Spell_critical`, `Universal_Spell_Lore`, `Lunar_and_Solar_Gems`
+(redirect target of `Sun_and_Moon_Augments`), `Solar_Gem_of_Spell_Critical_Chance`
+(still no article — see resolution path below).
+
+### Additivity — universal lore stacks with element lore, stated outright
+
+`https://ddowiki.com/page/Universal_Spell_Lore`, lead paragraph (verbatim):
+
+> Universal Spell Lore is a separate and stacking source of Spell Critical
+> chance modifiers. As such an item with a Universal Spell Lore Equipment bonus
+> will stack with another item with a Spell Lore or Acid Lore Equipment bonus,
+> for example.
+
+This states same-bonus-type stacking across lore names, explicitly naming an
+element lore. Consequence for the solver: an element-lore priority may **sum**
+the `Universal Spell Lore` and `Spell Lore` buckets alongside its own
+(cross-add), and merging any of these names into one bucket remains a bug.
+The `Spell Lore` <-> element-lore leg additionally rests on the U5 channel-model
+ruling above ("different stats ... both apply") and the `Spell_Lore` page's
+typing ("For each type of damage, there is a specific lore type. In addition,
+there's the universal Spell Lore." / "Spell Lore - all spell types"), now
+reinforced by the USL sentence grouping `Spell Lore` and `Acid Lore` as peer
+stackable Equipment sources.
+
+### Solar-vs-artifact stacking — RESOLVED, no code change needed
+
+The Solar Gem's own article still does not exist (re-checked 2026-08-13), but
+`https://ddowiki.com/page/Lunar_and_Solar_Gems` now states both halves:
+
+> Lunar Gems primarily provide Profane bonuses, while Solar Gems primarily
+> provide Artifact bonuses. As usual, multiple effects with the same bonus type
+> don't stack.
+
+and its Solar table row: `Spell Critical Chance — Artifact Bonus to Spell
+Critical Chance +2% +4% +6%` (universal, no element qualifier).
+
+Ruling: the solar crit-chance gem is an Artifact-typed **universal** lore
+source. Whether it collapses with a named set's artifact lore is decided by
+stat-name identity under the existing per-(stat, bonus-type) max bucket — same
+stored name + Artifact = max (the stated "same bonus type don't stack"),
+different stored names = stack (the USL "separate and stacking" statement).
+The bucketing already implements this; the cross-add must not merge names
+(it sums across buckets, never within). **No dedicated exception mechanism is
+required.** The old quarantine is closed on these quotes.
+
+### Element-lore roster — cross-add targets and exclusions
+
+`Spell_Lore` page, "Types of spell lore" (verbatim list): Acid Lore, Fire Lore,
+Ice Lore, Lightning Lore, Healing Lore, Kinetic [Lore], Radiance Lore, Repair
+Lore, Sonic Lore, Void Lore — "In addition, there's the universal Spell Lore."
+
+Cross-add targets are exactly this ten-name wiki roster (as matched against the
+dataset vocabulary at build time). **Exclusions, recorded deliberately:**
+
+- `Laceration Lore` — removed from the game (pre-U19); page says so outright.
+- Combined/flavored lores (`Blighted Lore`, `Purifying Flame Lore`,
+  `Moonlit Haunt Lore`, `Firestorm Lore`, ...) — the page's "Combined Spell
+  Lore" section defines these as separate multi-element enchantments; they are
+  not in the roster, so they receive no universal credit in the map. In-game
+  the universal lores plausibly apply to their underlying spells, but no wiki
+  statement ties a universal name to a combined-lore name, so extension is
+  deferred until a report warrants it (never infer).
