@@ -3561,6 +3561,87 @@ async function withCrossAdd(map, fn) {
     });
   });
 
+  await test("U2 cross-add: saturationReport spans source-stat buckets — labeled by their own type, no double-count, a beaten USP source reads as unused", async () => {
+    // The element's census includes its cross-add source buckets, exactly as the
+    // headline total does. The beaten USP 30 shares the winning USP 50's bucket,
+    // so it is an unused source FOR the element — reported the same way a beaten
+    // own-bucket source is, and never added into the total.
+    return withCrossAdd({ Combustion: ["Universal Spell Power"] }, async () => {
+      const model = {
+        targets: ["Combustion"], mlCap: 34, dodgeCap: null,
+        worn: [
+          slot("Ring", [item("elem", "Ring", [["Combustion", "Equipment", 100]])]),
+          slot("Necklace", [item("uspHi", "Necklace", [["Universal Spell Power", "Implement", 50]]),
+                            item("uspLo", "Necklace", [["Universal Spell Power", "Implement", 30]])]),
+        ],
+      };
+      const r = await S.solveLexicographic(model, highs);
+      assert.strictEqual(r.status, "optimal");
+      const e = (r.saturationReport || []).find((x) => x.stat === "Combustion");
+      assert.ok(e, "the element is reported saturated — its census reaches into the source stat's buckets");
+      assert.strictEqual(e.total, 150, "100 + 50; the beaten uspLo is never added (no double-count)");
+      assert.deepStrictEqual(e.bonusTypes.slice().sort(), ["Equipment", "Implement"],
+        "the source bucket is labeled with the SOURCE stat's own bonus type, exactly as an own bucket would be");
+      assert.strictEqual(e.unusedSources, 1,
+        "the beaten USP 30 counts as an unused source for the element, the way a beaten own-bucket source does");
+    });
+  });
+
+  await test("U2 cross-add: a credit on the ELEMENT stat contests only its own exact bucket; a same-typed USP source neither beats nor inflates it", async () => {
+    // The credit's bucket is the exact `Combustion||Implement` key — the USP item's
+    // Implement 50 lives in `Universal Spell Power||Implement`, a different bucket,
+    // so it can never read as gear the credit beat, and the two stack (USP fully
+    // stacks). gearInLoadout deliberately spans the cross-add source buckets,
+    // matching what the headline total counts (solver.js U2 comment).
+    return withCrossAdd({ Combustion: ["Universal Spell Power"] }, async () => {
+      const model = {
+        targets: ["Combustion"], mlCap: 34, dodgeCap: null,
+        credits: [credit("Combustion", "Implement", 20)],
+        worn: [
+          slot("Ring", [item("elem", "Ring", [["Combustion", "Equipment", 100]])]),
+          slot("Necklace", [item("usp", "Necklace", [["Universal Spell Power", "Implement", 50]])]),
+        ],
+      };
+      const r = await S.solveLexicographic(model, highs);
+      assert.strictEqual(r.status, "optimal");
+      assert.strictEqual(r.effective.Combustion, 170, "100 own + 50 cross-added + 20 credit — three buckets, all stack");
+      const e = (r.creditReport || []).find((c) => c.stat === "Combustion");
+      assert.ok(e, "the credit is reported");
+      assert.strictEqual(e.won, true, "the credit wins its own (otherwise empty) Combustion||Implement bucket");
+      assert.strictEqual(e.beatGear, null,
+        "the USP Implement 50 is NOT gear the credit beat — the exact stat||type key keeps source-stat buckets out of the contest");
+      const gearSum = r.breakdown.Combustion.filter((p) => p.sourceKind !== "declared")
+        .reduce((n, p) => n + p.value, 0);
+      assert.strictEqual(e.gearInLoadout, gearSum,
+        "gearInLoadout matches the shown loadout's non-declared breakdown, cross-added sources included");
+      assert.strictEqual(e.gearInLoadout, 150, "…which is 100 + 50, never the credit");
+    });
+  });
+
+  await test("U2 cross-add: a credit declared ON the source stat flows into the element with its declared labeling intact", async () => {
+    return withCrossAdd({ Combustion: ["Universal Spell Power"] }, async () => {
+      const model = {
+        targets: ["Combustion"], mlCap: 34, dodgeCap: null,
+        credits: [credit("Universal Spell Power", "Sacred", 25)],
+        worn: [slot("Ring", [item("elem", "Ring", [["Combustion", "Equipment", 100]])])],
+      };
+      const r = await S.solveLexicographic(model, highs);
+      assert.strictEqual(r.status, "optimal");
+      assert.strictEqual(r.perTarget.Combustion, 125,
+        "USP fully stacks: the credited 25 counts in the element's target even though only USP was declared");
+      const part = (r.breakdown.Combustion || []).find((p) => p.sourceKind === "declared");
+      assert.ok(part, "the credited part appears under the element's breakdown");
+      assert.strictEqual(part.value, 25);
+      assert.strictEqual(part.crossAdd, "Universal Spell Power", "the part is marked cross-added from the SOURCE stat");
+      assert.strictEqual(part.bonus_type, "Sacred", "and keeps the credit's own bucket type");
+      assert.strictEqual(part.source, "declared, not from gear", "the credit's source labeling is intact");
+      const e = (r.creditReport || []).find((c) => c.stat === "Universal Spell Power");
+      assert.ok(e, "the source-stat credit is reported under its own stat");
+      assert.strictEqual(e.won, true, "it won its (empty) USP||Sacred bucket");
+      assert.strictEqual(e.gearInLoadout, 0, "no USP gear is worn; the element's Equipment 100 is not USP gear");
+    });
+  });
+
   await test("regression: a user cap on a MULTI-WORD stat solves (LP-safe d-var name, was a HiGHS parse crash)", async () => {
     // Pre-existing, independent of cross-add: `d_${stat}` minted an LP variable
     // containing spaces for any multi-word capped stat ("Physical Sheltering",
