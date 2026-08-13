@@ -280,5 +280,38 @@
     "Topaz of Melee Power +14"
    ]
   }
+ },
+ {
+  "name": "absorption-sonic-flag-ml26",
+  "note": "#254 -- the PER-ITEM Sonic flag, end to end. `Elemental Absorption` expands four-way or five-way depending on a per-item shard flag ({{Absorption|Elemental|N|yes}} vs without); the crown fixture exercises only the STATIC compounds, which expand unconditionally and never read the shard. This pins one shard-gated carrier of each kind: Golden Orb of Death (level 26) (sonic: true, five elements at 20) in Off Hand and War Wizard's Robes (sonic: false, four elements at 5) in Armor. The issue's suggested four-way twin, Archaic Device, shares the orb's Off Hand slot and cannot be co-pinned; the Robes are the four-way carrier that fits a second slot. Both are pinned because neither holds its slot on merit, and an absent carrier proves nothing about its expansion. Helmet, Cloak, and Necklace are locked EMPTY because they hold every other Sonic Absorption source at ML 26 (Malicia's Crown 30, Prismatic Cloak 26, Song-Chime Locket 26, Downcast Cowl/Mystic Cloak) -- unlocked, Malicia's Crown DOMINATES the orb's Enhancement 20 and the orb's Sonic goes zero-marginal, proving nothing (the U2 load-bearing rule). Locked, Sonic == 20 comes ENTIRELY from the orb's shard-gated expansion.",
+  "query": {
+   "mlCap": 26,
+   "targets": [
+    "Sonic Absorption",
+    "Fire Absorption"
+   ],
+   "armorType": null,
+   "weaponSetup": null,
+   "classRace": null,
+   "slotConstraints": {
+    "Off Hand": {
+     "type": "pin",
+     "variant_id": "Golden Orb of Death (level 26)"
+    },
+    "Armor": {
+     "type": "pin",
+     "variant_id": "War Wizard's Robes"
+    },
+    "Helmet": {
+     "type": "empty"
+    },
+    "Cloak": {
+     "type": "empty"
+    },
+    "Necklace": {
+     "type": "empty"
+    }
+   }
+  }
  }
 ]

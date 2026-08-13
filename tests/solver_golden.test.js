@@ -32,11 +32,12 @@ function test(name, fn) {
     path.join(__dirname, "parity", "fixtures.json"), "utf8"));
   const fixtureByName = Object.fromEntries(fixtures.map((f) => [f.name, f]));
 
-  test("golden guard pins exactly 17 fixtures", () => {
-    // 17 = 15 + the #110 blocklist A/B pair (re-ratified 2026-08-12).
-    assert.strictEqual(count, 17, "17 fixtures run against the live solver");
-    assert.strictEqual(golden.fixture_count, 17, "golden.json records 17 fixtures");
-    assert.strictEqual(goldenNames.length, 17, "golden.json carries 17 fixture solves");
+  test("golden guard pins exactly 18 fixtures", () => {
+    // 18 = 15 + the #110 blocklist A/B pair (re-ratified 2026-08-12)
+    //        + the #254 per-item Sonic-flag fixture.
+    assert.strictEqual(count, 18, "18 fixtures run against the live solver");
+    assert.strictEqual(golden.fixture_count, 18, "golden.json records 18 fixtures");
+    assert.strictEqual(goldenNames.length, 18, "golden.json carries 18 fixture solves");
     assert.deepStrictEqual(Object.keys(solves).sort(), goldenNames.slice().sort(),
       "the same fixture names are solved and pinned");
   });
@@ -202,6 +203,70 @@ function test(name, fn) {
       `Fire Absorption ${g.perTarget["Fire Absorption"]} must include the Crown's Enhancement 40`);
     assert.ok(g.perTarget["Electric Absorption"] >= 40,
       `Electric Absorption ${g.perTarget["Electric Absorption"]} must include the Crown's Enhancement 40`);
+  });
+
+  // #254 — the PER-ITEM Sonic flag. The crown fixture above covers only the STATIC
+  // compounds ("Fire and Cold Absorption"), which expand unconditionally and never
+  // read the elemental_absorption shard. The risky mechanism — {{Absorption|Elemental
+  // |N|yes}} vs without deciding five elements vs four, per item — had zero parity
+  // coverage: a regression expanding every carrier four-way (or five-way) would have
+  // left all prior fixtures green while mis-crediting Sonic on thirteen items.
+  //
+  // The fixture pins one shard-gated carrier of each kind and locks EMPTY the three
+  // slots holding every rival Sonic source at ML 26 (Malicia's Crown Enhancement 30
+  // dominates the orb's 20 — unlocked, the orb's Sonic is zero-marginal and the
+  // fixture proves nothing; the U2 load-bearing rule). Locked, the ranked Sonic
+  // total is the orb's shard-gated expansion and nothing else.
+  const SONIC_FIXTURE = "absorption-sonic-flag-ml26";
+  test("#254 — the per-item Sonic flag decides five elements vs four", () => {
+    const g = golden.solves[SONIC_FIXTURE];
+    const orb = "Golden Orb of Death (level 26)";
+    const robes = "War Wizard's Robes";
+    assert.ok(g.chosen.some((c) => c.slot === "Off Hand" && c.variant === orb),
+      "the sonic:true carrier is worn");
+    assert.ok(g.chosen.some((c) => c.slot === "Armor" && c.variant === robes),
+      "the sonic:false carrier is worn");
+
+    // Dataset level — this is the only place the FIVE-way blanket direction is
+    // detectable: a Sonic affix wrongly stamped onto the Robes shares the orb's
+    // Enhancement bucket, so no solve total can see it.
+    const ds = JSON.parse(fs.readFileSync(
+      path.join(__dirname, "..", "web", "data", "items.json"), "utf8"));
+    const FOUR = ["Acid Absorption", "Cold Absorption", "Fire Absorption", "Electric Absorption"];
+    const expanded = (variantId) => ds.items
+      .find((i) => i.variant_id === variantId).affixes
+      .filter((a) => a.via === "Elemental Absorption")
+      .map((a) => a.name)
+      .sort();
+    assert.deepStrictEqual(expanded(orb), FOUR.concat("Sonic Absorption").sort(),
+      "sonic:true expands five-way");
+    assert.deepStrictEqual(expanded(robes), FOUR.slice().sort(),
+      "sonic:false expands four-way — a Sonic component here is the five-way blanket regression");
+
+    // Solve level — the FOUR-way blanket direction. Sonic 20 is the orb's
+    // Enhancement 20 and NOTHING else: Armor is pinned to a sonic:false carrier and
+    // every other ML-26 Sonic source sits in a slot the fixture locks empty, so a
+    // regression dropping the orb's fifth element reads 0 here, not a masked delta.
+    assert.strictEqual(g.perTarget["Sonic Absorption"], 20,
+      "the ranked Sonic total IS the shard-gated fifth element");
+  });
+
+  // The fixture's distinguishing power rests on its constraints, so — like the
+  // declared-credit and blocklist guards — assert the INPUT too: dropping a pin or
+  // an empty-lock would demote the fixture to an ordinary solve the golden would
+  // happily re-ratify, while covering nothing.
+  test("#254 — the sonic-flag fixture still carries its pins and locks", () => {
+    const q = fixtureByName[SONIC_FIXTURE].query;
+    const sc = q.slotConstraints || {};
+    assert.strictEqual((sc["Off Hand"] || {}).variant_id, "Golden Orb of Death (level 26)");
+    assert.strictEqual((sc["Armor"] || {}).variant_id, "War Wizard's Robes");
+    for (const slot of ["Helmet", "Cloak", "Necklace"]) {
+      assert.strictEqual((sc[slot] || {}).type, "empty",
+        `${slot} must stay locked empty — it holds a rival Sonic source that would ` +
+        "dominate the orb's Enhancement 20 and zero out the assertion above");
+    }
+    assert.deepStrictEqual(q.targets.slice(0, 1), ["Sonic Absorption"],
+      "Sonic Absorption must stay the ranked stat under test");
   });
 
   // U10/U11 — a provenance label (the enchantment name the item surfaces print) is
