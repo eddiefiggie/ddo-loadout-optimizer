@@ -1,0 +1,26 @@
+{
+ "_meta": {
+  "field": "no_drop_source",
+  "title": "wiki-confirmed no-drop-source verdicts (#262)",
+  "note": "Curated evidence shard for the 'no known live drop source' disclosure. Each entry records a per-item verdict harvested from that item's own DDO wiki page: `confirmed_no_source` means the RENDERED page's Location/acquisition reading shows no quest and no chest (verified on the rendered page, never from wikitext alone), and flags the item in the built dataset; `wiki_has_source` means the wiki records a source our data lacks (the item stays unflagged; the entry exists so re-triage skips it and the location backfill can find it). The vocabulary is CLOSED at those two verdicts: an unverified or page-missing item is NEVER written here — it lives in the docs tracker only, because this shard may only carry claims the wiki settled. The wording bar (three claim strengths, kept distinct): 'Location section empty' is the observation, 'no known live drop source' is the disclosable claim, 'unobtainable' is never claimed — the wiki proves its page records no source, not that the item cannot exist.",
+  "verdict_vocabulary": ["confirmed_no_source", "wiki_has_source"],
+  "guard_rules": "The build FAILS when (a) an entry carries a verdict outside the closed vocabulary; (b) an entry names an item absent from the planner roster (anti-orphan — renamed or dropped upstream); (c) a confirmed_no_source entry is missing its evidence snapshot, wiki_url, or harvested date; (d) STALENESS: an entry's item carries a non-empty upstream `quests` array (the raw planner list, NOT the derived location_quest string) — the wiki/gear-planner now records a source, and un-flagging is a manual review event, never automatic. An ABSENT shard or an EMPTY harvested map is fully inert (no flags, no coverage block) — the deliberate exclude-until-verified empty-seed exception; once entries exist, every guard fires and a zero-inspected pass is refused.",
+  "provenance_vocabulary": "`stated` — the verdict was read off the item's own rendered wiki page (the absorption/enchantment discipline; nothing weaker is admitted here)."
+ },
+ "harvested": {
+  "Bracers of the Spider Queen": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "Location section empty — no quest, no chest listed (ML11)",
+   "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_the_Spider_Queen",
+   "harvested": "2026-08-12"
+  },
+  "Legendary Bracers of the Spider Queen": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "Location section empty — no quest, no chest listed (ML35, U81)",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_the_Spider_Queen",
+   "harvested": "2026-08-12"
+  }
+ }
+}
