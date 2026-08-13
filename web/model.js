@@ -64,9 +64,24 @@ function setCrossAdd(map) {
 }
 /** Source stats whose totals cross-add into `stat` — [] for an unmapped stat
  *  and for the uninstalled state (never a crash). */
+const _NO_CROSS_ADD_SOURCES = Object.freeze([]);
 function crossAddSourcesFor(stat) {
   const srcs = stat != null ? _CROSS_ADD[stat] : undefined;
-  return Array.isArray(srcs) ? srcs : [];
+  return Array.isArray(srcs) ? srcs : _NO_CROSS_ADD_SOURCES;
+}
+
+/** U2 (#290/#291) — widen a stat set in place with every member's cross-add
+ *  SOURCE stats (an element spellpower pulls in Universal Spell Power; an
+ *  element lore pulls in Spell Lore + Universal Spell Lore). THE single
+ *  widening used by both buildModel (model.js — keeps universal-only items
+ *  alive through the dominance pre-filter) and buildProgram (solver.js —
+ *  builds the source buckets bucketCountsFor collects), so the two layers can
+ *  never widen differently. */
+function widenWithCrossAddSources(targetSet) {
+  for (const stat of [...targetSet]) {
+    for (const src of crossAddSourcesFor(stat)) targetSet.add(src);
+  }
+  return targetSet;
 }
 
 /** Resolve an ML-scaling affix to its value at the query ML cap. */
@@ -652,10 +667,8 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // dominance comparator (dominates/variantBuckets) is deliberately untouched —
   // with the sources in targetSet, a universal item's buckets are compared like
   // any other stat's, so a USP-only item survives unless genuinely dominated.
-  // Mirrors buildProgram's widening (solver.js), which builds the buckets.
-  for (const stat of [...targetSet]) {
-    for (const src of crossAddSourcesFor(stat)) targetSet.add(src);
-  }
+  // Shared with buildProgram (solver.js), which builds the buckets.
+  widenWithCrossAddSources(targetSet);
   const mlCap = query.mlCap;
   const eligAll = eligible(variants, query);
   // #110 (U2/KTD1) — the blocklist filters CANDIDACY, here and not in
@@ -992,7 +1005,7 @@ if (typeof module !== "undefined" && module.exports) {
     offHandItemsExcluded, allowedOffHandWeaponTypes, pinSlotConflict,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,
     isForgedRace, isDocent, isBothHandsWeapon, variantKey, setStackEquiv, equivType,
-    setCrossAdd, crossAddSourcesFor,
+    setCrossAdd, crossAddSourcesFor, widenWithCrossAddSources,
     WORN_SLOTS, SLOT_CARDINALITY, ARMOR_DODGE_CAP,
   };
 }

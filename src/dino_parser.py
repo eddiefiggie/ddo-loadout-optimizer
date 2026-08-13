@@ -141,6 +141,7 @@ def _parse_effect(effect):
     trailing period stripped). ``rejected`` records clauses that carried a
     number but did not resolve to a clean affix, so the quarantine is honest.
     """
+    folds = vocabulary.registry_synonym_folds()
     affixes, rejected = [], []
     for clause in _effect_clauses(effect):
         r = parse_line(clause)
@@ -152,7 +153,13 @@ def _parse_effect(effect):
             continue
         for a in r["affixes"]:
             stat = _strip_flavor_bleed((a["stat"] or "").rstrip(". ").strip())
-            stat = stat
+            # U4 — fold reviewed spelling synonyms to their canonical stat name
+            # (e.g. the wiki's "Universal Spellpower" -> "Universal Spell
+            # Power"). Applied at the shared parse seam so EVERY dino channel
+            # this parser feeds (inserts, typed inserts, set augments) emits
+            # canonical stats; `raw` stays verbatim wiki text, mirroring the
+            # pipeline's raw/normalized split.
+            stat = folds.get(stat, stat)
             if not stat:
                 rejected.append({"raw": clause, "reason": "empty stat after normalization"})
                 continue
@@ -330,17 +337,13 @@ def parse_set_augments(set_augments):
     machinery can consume Dino sets unchanged once wired (deferred; see
     coverage disclosure).
     """
-    folds = vocabulary.registry_synonym_folds()
     out = []
     for s in set_augments or []:
         name = s.get("set_name") or s.get("name")
+        # U4 — the synonym fold to canonical stat names happens inside
+        # _parse_effect (the shared parse seam), so this channel's `stat`
+        # fields arrive already canonical.
         affixes, flagged = _parse_effect(s.get("tier_text"))
-        # U4 — fold reviewed spelling synonyms to their canonical stat name
-        # (e.g. the wiki's "Universal Spellpower" -> "Universal Spell Power").
-        # Scoped to THIS channel's normalized `stat` field only; `raw` below
-        # stays verbatim wiki text, mirroring the pipeline's raw/normalized split.
-        for a in affixes:
-            a["stat"] = folds.get(a["stat"], a["stat"])
         out.append({
             "set": name,
             "pieces_required": s.get("threshold"),
@@ -352,7 +355,7 @@ def parse_set_augments(set_augments):
     return out
 
 
-def check_set_records_spelling(set_records, folds=None):
+def check_set_records_spelling(set_records):
     """Per-channel spelling guard for the ``dino_sets`` channel (U4).
 
     Every normalized ``stat`` in the channel must be canonical — none may appear
@@ -368,7 +371,7 @@ def check_set_records_spelling(set_records, folds=None):
         raise ValueError(
             "dino_sets spelling guard: zero set records — an empty channel is a "
             "guard failure, not a pass")
-    folds = vocabulary.registry_synonym_folds() if folds is None else folds
+    folds = vocabulary.registry_synonym_folds()
     checked = 0
     for rec in set_records:
         for a in rec.get("affixes") or []:

@@ -774,7 +774,7 @@ def build() -> dict:
     # this hand-carried wiki channel never passed through a synonym fold). Runs
     # AFTER the expansion above so it inspects the channel exactly as emitted;
     # raises on zero records — an empty channel is a failure, never a pass.
-    _dino_spelling_checked = dino_parser_mod.check_set_records_spelling(dino_sets)
+    dino_parser_mod.check_set_records_spelling(dino_sets)
     # #169 — the same treatment for the version-bearing affixes inside SET BONUS
     # tiers. The item split above cannot reach this channel: a tier affix is
     # `{"stat": ..., "bonus_type": ...}` while an item affix is

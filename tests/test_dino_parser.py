@@ -92,7 +92,10 @@ def test_multi_affix_insert_parses_to_one_unit_with_two_affixes():
     assert len(units) == 1
     affixes = units[0]["affixes"]
     assert len(affixes) == 2
-    assert (affixes[0]["stat"], affixes[0]["value"]) == ("Sneak Attacks", 11)
+    # The shared parse seam (_parse_effect) folds reviewed spelling synonyms to
+    # their canonical stat name: "Sneak Attacks" is a registry synonym of
+    # "Deception"; "Sneak Attack Damage" is already canonical.
+    assert (affixes[0]["stat"], affixes[0]["value"]) == ("Deception", 11)
     assert (affixes[1]["stat"], affixes[1]["value"]) == ("Sneak Attack Damage", 17)
 
 
@@ -133,7 +136,9 @@ def test_conditional_line_is_rejected_but_clean_line_kept():
     assert len(units) == 1
     affixes = units[0]["affixes"]
     assert len(affixes) == 1
-    assert affixes[0]["stat"] == "all Spell DCs"
+    # The shared parse seam (_parse_effect) folds reviewed spelling synonyms:
+    # "all Spell DCs" is a registry synonym of "Spell Focus Mastery".
+    assert affixes[0]["stat"] == "Spell Focus Mastery"
     assert affixes[0]["value"] == 7
     assert affixes[0]["bonus_type"] == "Equipment"
 

@@ -81,15 +81,27 @@ var _crossAddSourcesFor = (typeof crossAddSourcesFor !== "undefined")
   // eslint-disable-next-line global-require
   : require("./model.js").crossAddSourcesFor;
 
+// U2 (#290/#291) — the SAME targetSet widening buildModel uses (model.js), so
+// the dominance pre-filter's stat set and the bucket-building stat set can
+// never diverge. Resolved across runtimes like the helpers above.
+var _widenWithCrossAddSources = (typeof widenWithCrossAddSources !== "undefined")
+  ? widenWithCrossAddSources
+  // eslint-disable-next-line global-require
+  : require("./model.js").widenWithCrossAddSources;
+
 /** U2 (#290/#291) — does bucket `key` ("stat||type") count toward `stat`'s
  *  total? THE single consultation point for every bucket-prefix read — the
  *  objective/locks (rawExpr), the breakdown, the saturation report, and the
  *  credit report all route through here, because per-site hand-rolled prefix
  *  logic is the recorded drift failure mode. Returns:
- *    false  — the bucket does not count toward `stat`;
- *    null   — it is `stat`'s OWN bucket (counts; no provenance marker);
- *    string — it counts via cross-add, naming the SOURCE stat (e.g. "Universal
- *             Spell Power") for breakdown provenance.
+ *    null               — the bucket does not count toward `stat`;
+ *    { source: null }   — it is `stat`'s OWN bucket (counts; no provenance
+ *                         marker);
+ *    { source: "<stat>" } — it counts via cross-add, naming the SOURCE stat
+ *                         (e.g. "Universal Spell Power") for breakdown
+ *                         provenance.
+ *  Object-or-null, so plain truthiness IS the membership test — a bare
+ *  `if (!bucketCountsFor(...))` can never mistake an own bucket for a miss.
  *  Buckets stay per-(stat, bonus-type) max INTERNALLY; cross-add sums ACROSS
  *  buckets (the target's own plus each source stat's) and never merges them —
  *  so two USP Implement sources still collapse to the higher, while USP
@@ -97,9 +109,9 @@ var _crossAddSourcesFor = (typeof crossAddSourcesFor !== "undefined")
  *  (byte-identical to the pre-cross-add solver). */
 function bucketCountsFor(key, stat) {
   const bucketStat = key.split("||")[0];
-  if (bucketStat === stat) return null;
-  for (const src of _crossAddSourcesFor(stat)) if (bucketStat === src) return src;
-  return false;
+  if (bucketStat === stat) return { source: null };
+  for (const src of _crossAddSourcesFor(stat)) if (bucketStat === src) return { source: src };
+  return null;
 }
 
 /** U6 — per-slot constraint bodies (pin / lock-empty) as raw LP strings, using
@@ -173,11 +185,10 @@ function buildProgram(model) {
   // (Universal Spell Power for the element spellpowers; Spell Lore/Universal
   // Spell Lore for the element lores), or the `targetSet.has(a.name)` gates
   // below would skip universal affixes and their buckets would never exist for
-  // bucketCountsFor to collect. Mirrors buildModel's widening (model.js), which
-  // keeps the same items alive through the dominance pre-filter.
-  for (const stat of [...targetSet]) {
-    for (const src of _crossAddSourcesFor(stat)) targetSet.add(src);
-  }
+  // bucketCountsFor to collect. Shared with buildModel's widening
+  // (widenWithCrossAddSources in model.js), which keeps the same items alive
+  // through the dominance pre-filter.
+  _widenWithCrossAddSources(targetSet);
 
   const xVars = [];
   model.worn.forEach((group) => {
@@ -1001,7 +1012,7 @@ function buildProgram(model) {
 function rawExpr(program, stat) {
   const terms = [];
   for (const [key, zs] of program.zByBucket) {
-    if (bucketCountsFor(key, stat) === false) continue;
+    if (!bucketCountsFor(key, stat)) continue;
     for (const z of zs) terms.push({ coef: z.value, name: z.name });
   }
   return terms;
@@ -1215,8 +1226,9 @@ function breakdownByTarget(program, prim) {
       // with `crossAdd` naming the source stat (null on the target's own
       // parts). Mirrors `via`: provenance that rides through projection
       // untouched; a later unit renders it.
-      const crossAdd = bucketCountsFor(key, stat);
-      if (crossAdd === false) continue;
+      const counts = bucketCountsFor(key, stat);
+      if (!counts) continue;
+      const crossAdd = counts.source;
       const bonusType = key.split("||")[1];
       for (const z of zs) {
         if (prim(z.name) > 0.5) {
@@ -1539,7 +1551,7 @@ function buildSaturationReport(program, prim) {
     // cross-add source stats' (bucketCountsFor), the same reach every other
     // prefix site has: an unused USP source is an unused source FOR the element.
     for (const [key, zs] of zByBucket) {
-      if (bucketCountsFor(key, stat) === false) continue;
+      if (!bucketCountsFor(key, stat)) continue;
       const live = zs.filter(reachable);
       if (!live.length) continue;
       sawBucket = true;
@@ -1620,7 +1632,7 @@ function buildCreditReport(program, prim, model, floorReport) {
     for (const [k, list] of program.zByBucket) {
       // U2 (#290/#291) — the loadout's gear for a stat includes its cross-add
       // source buckets (bucketCountsFor), matching what the headline total counts.
-      if (bucketCountsFor(k, c.stat) === false) continue;
+      if (!bucketCountsFor(k, c.stat)) continue;
       let best = 0;
       for (const z of list) {
         if (program.creditMeta.has(z.name)) continue;
