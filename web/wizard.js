@@ -455,6 +455,26 @@ function twfMigrationNeeded(inputs) {
   return Array.isArray(i.offHandWeapons) && i.offHandWeapons.length > 0;
 }
 function pinIdOf(v) { return v.variant_id || v.source_item; }
+
+// plan 2026-08-12-003 (U4, #262) — the no-drop-source disclosure at pick time.
+// The wording is owned by projection.js (NO_DROP_SOURCE_WORDING: one constant,
+// every surface); bridged browser-global-first, require() under node. `var` for
+// the shared browser global scope (browse.js bridges the same constant under its
+// own name — a `const` collision there would be a SyntaxError). The literal
+// fallback only covers a stale cached projection.js that predates the constant.
+var _wzNoDropWording = (function () {
+  const P = (typeof Projection !== "undefined") ? Projection
+    : (typeof require !== "undefined" ? require("./projection.js") : null);
+  return (P && P.NO_DROP_SOURCE_WORDING) || "no known live drop source";
+})();
+
+/** Per-row disclosure note for the pin/block search results — the moment of
+ *  choosing an item is where this matters most. Shaped like the existing state
+ *  notes (" · pinned", " · blocked") so it appends beside them; "" when unset
+ *  (only-when-set: absence of the flag is the default). Pure; unit-tested. */
+function noDropNote(v) {
+  return (v && v.no_drop_source === true) ? ` · ${_wzNoDropWording}` : "";
+}
 // Pin one variant id into a known worn slot (used both by the Gear-pool search,
 // via applyPin, and by the results Deep-Dive per-row pin action). A full single
 // slot replaces; a full Ring keeps the newest two; a duplicate is ignored.
@@ -828,7 +848,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -1193,7 +1213,9 @@ if (typeof window !== "undefined" && window.App) {
       const shown = matches.slice(0, PIN_CAP);
       box.innerHTML = shown.map((v) => {
         const id = pinIdOf(v), already = pinned.has(id) || blockedIds.has(id), name = v.source_item || v.variant_id;
-        const stateNote = pinned.has(pinIdOf(v)) ? " · pinned" : blockedIds.has(pinIdOf(v)) ? " · blocked" : "";
+        // #262 (U4) — the no-drop-source note rides the same state-note string, so
+        // it renders beside " · pinned"/" · blocked" (or alone) in the slot span.
+        const stateNote = (pinned.has(pinIdOf(v)) ? " · pinned" : blockedIds.has(pinIdOf(v)) ? " · blocked" : "") + noDropNote(v);
         // plan 003 U5 (R6) — one action per hand the item can go to. For every item
         // but a one-handed weapon that is still exactly one action labelled with its
         // worn slot, so nothing changes; a one-handed weapon gets Main hand FIRST
@@ -1311,7 +1333,8 @@ if (typeof window !== "undefined" && window.App) {
         const id = pinIdOf(v), name = v.source_item || v.variant_id;
         const already = blockedSet.has(id);
         const pinSlot = blockPinSlotOf(state.slotConstraints, id);
-        const note = already ? " · blocked" : pinSlot ? ` · pinned to ${esc(pinSlot)}` : "";
+        // #262 (U4) — same disclosure in the block picker's rows.
+        const note = (already ? " · blocked" : pinSlot ? ` · pinned to ${esc(pinSlot)}` : "") + noDropNote(v);
         return `<label class="wz-block-hit${already || pinSlot ? " wz-block-hit-off" : ""}">
           <input type="checkbox" data-block-id="${esc(id)}"${blockStage.has(id) ? " checked" : ""}${already || pinSlot ? " disabled" : ""}>
           <span class="wz-pin-hit-name">${esc(name)}</span>
