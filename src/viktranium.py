@@ -299,10 +299,23 @@ def build_viktranium(catalog: dict = None) -> dict:
     ``viktranium.json`` seed. The strict parser gate is REMOVED, not swapped
     (F1) — native affixes flow through verbatim via ``legacy_affix``. The pool
     key is the native ``<SlotType> (<Category>)`` menu, Category in
-    (Accessory, Armor, Weapon); the specialized ``(quarterstaff)`` /
-    ``(artifact)`` variant pools are out of scope (no host slot references them).
-    Tier is derived from the option's native ``ml``. Returns the same
-    ``{records, quarantined, coverage}`` shape ``parse_viktranium`` does.
+    (Accessory, Armor, Weapon). Tier is derived from the option's native ``ml``.
+    Returns the same ``{records, quarantined, coverage}`` shape
+    ``parse_viktranium`` does.
+
+    **Quarterstaff variant pools (#282).** A ``<SlotType> (Weapon) (quarterstaff)``
+    sibling pool holds the versions a QUARTERSTAFF host receives — gear-planner
+    models the in-game implement bonuses (``requireQuarterstaff``) as separate
+    pool entries. The two pools are merged by option name into one record set:
+    an entry identical in both stays ONE unmarked record (any Weapon host); an
+    entry that differs (or exists in only one pool) is emitted per variant with a
+    ``quarterstaff`` marker — ``False`` on the base version (never offered to a
+    quarterstaff host) and ``True`` on the quarterstaff version (offered only to
+    one). The solver resolves the variant from the host's weapon type
+    (``model.js lamordiaWeaponVariant``). An earlier deferral note here claimed
+    no host slot references these pools — false: Calamitous / Cataclysmic
+    quarterstaffs carry Dolorous/Melancholic Weapon slots and receive the
+    quarterstaff versions in game.
 
     **A choice-slot option is atomic**, so ONE native option becomes ONE record
     carrying its whole affix list — the ``{..., affixes: [...]}`` shape
@@ -319,23 +332,73 @@ def build_viktranium(catalog: dict = None) -> dict:
     # a split option, each wrapped in a one-element `affixes` list, wear the same
     # shape. Only the count catches it (src/container_registry.py).
     source_options = 0
+    qs_pools_sourced = []
+    qs_options = 0
+    qs_options_identical = 0
+
+    def _record(slot_type, category, opt, affixes):
+        return {
+            "slot_type": slot_type, "category": category,
+            "name": (opt.get("name") or "").strip(),
+            "tier": _vik_tier_from_ml(opt.get("ml")),
+            "affixes": affixes, "wiki_url": "",
+        }
+
     for slot_type in sorted(SLOT_TYPES):
         for category in sorted(CATEGORIES):
             key = f"{slot_type} ({category})"
             if key not in catalog:
                 continue  # not every (type, category) combination has a pool
+            # The quarterstaff sibling pool, when one exists (Weapon only). Its
+            # options are indexed by name for the merge below.
+            qs_key = f"{key} (quarterstaff)"
+            has_qs = category == "Weapon" and qs_key in catalog
+            qs_by_name = {}
+            if has_qs:
+                qs_pools_sourced.append(qs_key)
+                for opt in crafting_catalog.menu_options(qs_key, catalog):
+                    source_options += 1
+                    qs_options += 1
+                    qs_by_name[(opt.get("name") or "").strip()] = opt
             for opt in crafting_catalog.menu_options(key, catalog):
                 source_options += 1
                 affixes = [crafting_catalog.legacy_affix(a)
                            for a in crafting_catalog.iter_affixes(opt)]
                 if not affixes:
                     continue
-                records.append({
-                    "slot_type": slot_type, "category": category,
-                    "name": (opt.get("name") or "").strip(),
-                    "tier": _vik_tier_from_ml(opt.get("ml")),
-                    "affixes": affixes, "wiki_url": "",
-                })
+                rec = _record(slot_type, category, opt, affixes)
+                if not has_qs:
+                    records.append(rec)
+                    continue
+                twin = qs_by_name.pop(rec["name"], None)
+                twin_affixes = ([crafting_catalog.legacy_affix(a)
+                                 for a in crafting_catalog.iter_affixes(twin)]
+                                if twin is not None else None)
+                if twin_affixes == affixes:
+                    # Identical in both pools: one unmarked record serves any
+                    # Weapon host — the identical twin is deduplicated, not lost.
+                    qs_options_identical += 1
+                    records.append(rec)
+                elif twin is None:
+                    # Base-only entry: a quarterstaff host never receives it.
+                    rec["quarterstaff"] = False
+                    records.append(rec)
+                else:
+                    rec["quarterstaff"] = False
+                    records.append(rec)
+                    if twin_affixes:
+                        twin_rec = _record(slot_type, category, twin, twin_affixes)
+                        twin_rec["quarterstaff"] = True
+                        records.append(twin_rec)
+            # Quarterstaff-only entries (no base twin).
+            for _name, opt in sorted(qs_by_name.items()):
+                affixes = [crafting_catalog.legacy_affix(a)
+                           for a in crafting_catalog.iter_affixes(opt)]
+                if not affixes:
+                    continue
+                rec = _record(slot_type, category, opt, affixes)
+                rec["quarterstaff"] = True
+                records.append(rec)
     by_pool = {}
     for r in records:
         k = f"{r['slot_type']}/{r['category']}"
@@ -348,13 +411,19 @@ def build_viktranium(catalog: dict = None) -> dict:
         "options_quarantined": 0,
         "quarantined": [],
         "by_pool": by_pool,
-        "source": "gearplanner_crafting.json: <SlotType> (<Category>) menus",
+        "source": "gearplanner_crafting.json: <SlotType> (<Category>) menus "
+                  "+ (quarterstaff) sibling pools (#282)",
         "item_hosts": "resolved from {{Lamordia Slot|...}} on enriched items "
                       "and human-readable Lamordia strings on base-seed items",
+        "quarterstaff_pools_sourced": qs_pools_sourced,
+        "quarterstaff_options": qs_options,
+        "quarterstaff_options_identical": qs_options_identical,
         "arms_note": "typed augment pools sourced natively (Accessory/Armor/Weapon); "
-                     "(quarterstaff)/(artifact) variant pools deferred (no host slot "
-                     "references them); Cataclysmic weapon/shield creation is "
-                     "item-creation (deferred to named-gear R4), not a choice-slot",
+                     "(quarterstaff) sibling pools merged by option name with a "
+                     "per-record `quarterstaff` variant marker (#282 — identical "
+                     "twins dedupe to one unmarked record); Cataclysmic weapon/"
+                     "shield creation is item-creation (deferred to named-gear R4), "
+                     "not a choice-slot",
     }
     return {"records": records, "quarantined": [], "coverage": coverage,
             "source_options": source_options}

@@ -78,24 +78,109 @@ def test_record_retains_slot_type_category_tier_and_name():
 def test_record_count_matches_native_option_count():
     # The measurable collapse: 289 native options previously produced 320 flat
     # records (23 options are genuinely multi-affix). One option, one record.
+    #
+    # #282 — the quarterstaff sibling pools are merged by option name: a
+    # quarterstaff option identical to its base twin dedupes into the twin's one
+    # unmarked record; only a DIFFERING quarterstaff option adds a record (variant-
+    # marked, alongside its base twin's `False` mark). So the expected count is
+    # base options + differing quarterstaff options — never a split, never a
+    # silent extra.
     catalog = crafting_catalog.load_catalog()
-    options = multi = 0
+    options = multi = qs_differing = 0
     for slot_type in sorted(viktranium.SLOT_TYPES):
         for category in sorted(viktranium.CATEGORIES):
             key = f"{slot_type} ({category})"
             if key not in catalog:
                 continue
+            base_by_name = {}
             for opt in crafting_catalog.menu_options(key, catalog):
                 n = len(list(crafting_catalog.iter_affixes(opt)))
                 if n:
                     options += 1
                 if n > 1:
                     multi += 1
+                base_by_name[(opt.get("name") or "").strip()] = \
+                    [crafting_catalog.legacy_affix(a) for a in crafting_catalog.iter_affixes(opt)]
+            qs_key = f"{key} (quarterstaff)"
+            if category == "Weapon" and qs_key in catalog:
+                for opt in crafting_catalog.menu_options(qs_key, catalog):
+                    affixes = [crafting_catalog.legacy_affix(a)
+                               for a in crafting_catalog.iter_affixes(opt)]
+                    if not affixes:
+                        continue
+                    if affixes != base_by_name.get((opt.get("name") or "").strip()):
+                        qs_differing += 1
     assert multi >= 20, ("the atomicity guarantee is only meaningful while the "
                          f"pool holds multi-affix options; found {multi}")
+    assert qs_differing >= 8, ("the quarterstaff merge is only meaningful while "
+                               f"differing quarterstaff options exist; found {qs_differing}")
     recs = viktranium.build_viktranium(catalog)["records"]
-    assert len(recs) == options
+    assert len(recs) == options + qs_differing
     assert sum(len(r["affixes"]) for r in recs) > options, "multi-affix options survive"
+    # The variant markers pair up: each differing quarterstaff option yields one
+    # `True` record and marks its base twin `False`; unmarked records serve any host.
+    marked_true = [r for r in recs if r.get("quarterstaff") is True]
+    marked_false = [r for r in recs if r.get("quarterstaff") is False]
+    assert len(marked_true) == qs_differing
+    assert len(marked_false) == qs_differing
+    assert {(r["slot_type"], r["name"]) for r in marked_true} \
+        == {(r["slot_type"], r["name"]) for r in marked_false}, \
+        "every quarterstaff variant record has a base twin under the same name"
+
+
+def test_quarterstaff_sibling_pool_merges_by_name_with_variant_markers():
+    """#282 — all four merge branches over a synthetic catalog:
+    identical twin -> ONE unmarked record; differing twin -> base `False` +
+    quarterstaff `True`; base-only -> `False`; quarterstaff-only -> `True`."""
+    opt = lambda name, affixes: {"name": name, "ml": 34, "affixes": [
+        {"name": s, "type": t, "value": v} for s, t, v in affixes]}
+    catalog = {
+        "Dolorous (Weapon)": {"*": [
+            opt("Same", [("Accuracy", "Competence", "23")]),
+            opt("Differs", [("Spell Focus Mastery", "Equipment", "8")]),
+            opt("Base Only", [("Seeker", "Insight", "6")]),
+        ]},
+        "Dolorous (Weapon) (quarterstaff)": {"*": [
+            opt("Same", [("Accuracy", "Competence", "23")]),
+            opt("Differs", [("Universal Spell Power", "Implement", "15"),
+                            ("Spell Focus Mastery", "Equipment", "8")]),
+            opt("Qstaff Only", [("Universal Spell Lore", "Exceptional", "5")]),
+        ]},
+    }
+    recs = viktranium.build_viktranium(catalog)["records"]
+    by = {}
+    for r in recs:
+        by.setdefault(r["name"], []).append(r)
+
+    assert len(by["Same"]) == 1 and "quarterstaff" not in by["Same"][0], \
+        "an identical twin dedupes to one unmarked record"
+    differs = sorted(by["Differs"], key=lambda r: r["quarterstaff"])
+    assert [r["quarterstaff"] for r in differs] == [False, True]
+    assert any(a["stat"] == "Universal Spell Power" for a in differs[1]["affixes"])
+    assert not any(a["stat"] == "Universal Spell Power" for a in differs[0]["affixes"])
+    assert by["Base Only"][0]["quarterstaff"] is False, \
+        "a base-only entry is never offered to a quarterstaff host"
+    assert by["Qstaff Only"][0]["quarterstaff"] is True, \
+        "a quarterstaff-only entry is offered only to one"
+
+    cov = viktranium.build_viktranium(catalog)["coverage"]
+    assert cov["quarterstaff_pools_sourced"] == ["Dolorous (Weapon) (quarterstaff)"]
+    assert cov["quarterstaff_options"] == 3
+    assert cov["quarterstaff_options_identical"] == 1
+
+
+def test_quarterstaff_merge_only_applies_to_weapon_pools():
+    """A `(quarterstaff)` key next to a non-Weapon pool is ignored (no such pool
+    exists in the wild; the merge is a Weapon-category rule, not a name rule)."""
+    catalog = {
+        "Dolorous (Accessory)": {"*": [
+            {"name": "X", "ml": 34, "affixes": [{"name": "Accuracy", "type": "Competence", "value": "23"}]}]},
+        "Dolorous (Accessory) (quarterstaff)": {"*": [
+            {"name": "Y", "ml": 34, "affixes": [{"name": "Seeker", "type": "Insight", "value": "6"}]}]},
+    }
+    recs = viktranium.build_viktranium(catalog)["records"]
+    assert [r["name"] for r in recs] == ["X"], \
+        "a non-Weapon (quarterstaff) key contributes nothing"
 
 
 def test_unknown_bonus_type_is_quarantined_not_inferred():

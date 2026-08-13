@@ -473,11 +473,27 @@ function lamordiaTier(v) {
   return (v.ml || 0) >= 30 ? "legendary" : "heroic";
 }
 
+/** #282 — which Weapon-pool VARIANT a host's Lamordia Weapon slots draw. A
+ *  quarterstaff receives the `(quarterstaff)` versions of Weapon-pool crafts
+ *  (implement bonuses the base versions lack), so records variant-marked by the
+ *  pipeline (`quarterstaff: true/false`) are matched against this. THE single
+ *  authority — the solver's option gate and the dominance slot keys both read
+ *  this, so which pool a host draws and how hosts compare cannot drift apart. */
+function lamordiaWeaponVariant(v) {
+  return v && v.type === "Quarterstaffs" ? "quarterstaff" : "base";
+}
+
 /** A host's typed Lamordia slots as a `type||category||tier` multiset key list,
- *  so the dominance guard and the solver agree on which pool a slot draws from. */
+ *  so the dominance guard and the solver agree on which pool a slot draws from.
+ *  A Weapon-category key also carries the host's weapon-pool variant (#282):
+ *  a quarterstaff's Weapon slot draws a different pool than a sword's, so the
+ *  two keys must not compare as equal or dominance could prune the quarterstaff
+ *  host while its richer craft options are invisible to the bucket check. */
 function lamordiaSlotKeys(v) {
   const tier = lamordiaTier(v);
-  return (v.lamordia_slots || []).map((s) => `${s.type}||${s.category}||${tier}`);
+  return (v.lamordia_slots || []).map((s) => s.category === "Weapon"
+    ? `${s.type}||${s.category}||${tier}||${lamordiaWeaponVariant(v)}`
+    : `${s.type}||${s.category}||${tier}`);
 }
 
 /** Per-slot Pareto filter: keep only non-dominated variants for these targets.
@@ -937,7 +953,7 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     buildModel, normalizeCredits, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
     offHandItemsExcluded, allowedOffHandWeaponTypes, pinSlotConflict,
-    variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys,
+    variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,
     isForgedRace, isDocent, isBothHandsWeapon, variantKey, setStackEquiv, equivType,
     WORN_SLOTS, SLOT_CARDINALITY, ARMOR_DODGE_CAP,
   };

@@ -277,6 +277,9 @@ def test_viktranium_universal_option_expands_inside_one_record():
         assert len({a["bonus_type"] for a in expanded}) == 1
         assert len({a["value"] for a in expanded}) == 1
     # The collapse, measured: 10 universal options, not the 70 flat records the
-    # across-records expansion produced.
-    assert len(universal) == 10, (
-        f"expected 10 universal Viktranium options, got {len(universal)}")
+    # across-records expansion produced. #282 raised it to 18: the eight
+    # quarterstaff-variant records (Dolorous Focus x2 tiers, and Melancholic
+    # Arcana/Dimlight/Shadows x2 tiers) each carry a universal spell-DC source
+    # too, so they expand into the seven schools inside their own record.
+    assert len(universal) == 18, (
+        f"expected 18 universal Viktranium options, got {len(universal)}")

@@ -27,8 +27,14 @@ from src import crafting_catalog
 
 # The four Dino bone types and the three gear categories whose native
 # ``<Type> (<Category>)`` menu pools feed the insert option pool (U4b-ii). The
-# specialized ``(quarterstaff)`` / ``(artifact)`` variant pools are out of scope
-# (no blank host slot references them).
+# ``(quarterstaff)`` / ``(artifact)`` variant pools stay out of scope here, but
+# NOT because nothing references them — the real gear-planner quarterstaff hosts
+# (Attuned/Dinosaur Bone Quarterstaff) reference the Fang/Scale quarterstaff
+# pools directly. Those hosts collapse into the ONE untyped synthetic Weapon
+# blank below, which has no declared weapon type for a variant to key on, so
+# modelling the quarterstaff insert versions needs a type choice on the blank
+# first (tracked as #283; the Lamordia channel's typed hosts got the variant
+# treatment in #282).
 _DINO_TYPES = ("Claw", "Fang", "Horn", "Scale")
 _DINO_CATEGORIES = ("Accessory", "Armor", "Weapon")
 

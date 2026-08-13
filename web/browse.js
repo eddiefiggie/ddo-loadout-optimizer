@@ -131,9 +131,13 @@ function vikRow(opt) {
   const affixes = (opt.affixes && opt.affixes.length)
     ? opt.affixes.map((a) => ({ name: a.stat, type: a.bonus_type, value: a.value, unit: a.unit || "flat" }))
     : [{ name: opt.stat, type: opt.bonus_type, value: opt.value, unit: opt.unit || "flat" }];
-  const title = opt.name
+  // #282 — a variant-marked Weapon-pool record (quarterstaff vs base) shares its
+  // name with its sibling; the tag keeps the two rows distinguishable.
+  const variantTag = opt.quarterstaff === true ? " (quarterstaff hosts)"
+    : opt.quarterstaff === false ? " (non-quarterstaff hosts)" : "";
+  const title = (opt.name
     ? `Slot ${opt.slot_type} Viktranium augment: ${opt.name}`
-    : `Slot ${opt.slot_type} Viktranium augment: ${affixes[0].name} (${opt.tier})`;
+    : `Slot ${opt.slot_type} Viktranium augment: ${affixes[0].name} (${opt.tier})`) + variantTag;
   return {
     variant_id: title,
     source_item: `Viktranium — ${opt.slot_type} (${opt.category})`,

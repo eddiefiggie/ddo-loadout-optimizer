@@ -394,6 +394,38 @@ test("dominates: an affix item does NOT dominate a Viktranium host it can't matc
   assert.strictEqual(kept.length, 2, "the Viktranium host survives per-slot dominance");
 });
 
+test("dominates (#282): a sword must not dominate an equal-slotted quarterstaff host", () => {
+  // A quarterstaff's Weapon slot draws the `(quarterstaff)` pool variant — richer
+  // options its slot key must expose, or an intrinsically-better non-quarterstaff
+  // rival with the SAME typed slot would prune it and the implement bonuses would
+  // be silently unreachable.
+  const mk = (id, weaponType, str) => {
+    const w = v(id, "Main Hand", [["Strength", "Enhancement", str]]);
+    w.type = weaponType;
+    w.lamordia_slots = [{ type: "Dolorous", category: "Weapon" }];
+    w.minimum_level = w.ml = 34;
+    return w;
+  };
+  const sword = mk("Sword", "Bastard Swords", 12);
+  const qstaff = mk("Qstaff", "Quarterstaffs", 8);
+  const targets = new Set(["Strength"]);
+  assert.strictEqual(M.dominates(sword, qstaff, targets, 36), false,
+    "equal typed slots but different Weapon-pool variants — no dominance");
+  assert.strictEqual(M.lamordiaWeaponVariant(qstaff), "quarterstaff");
+  assert.strictEqual(M.lamordiaWeaponVariant(sword), "base");
+  // Non-Weapon slots are untouched by the variant: two equal Accessory hosts of
+  // different weapon-ness still compare (the marker rides Weapon keys only).
+  const a = v("A", "Neck", [["Strength", "Enhancement", 12]]);
+  const b = v("B", "Neck", [["Strength", "Enhancement", 8]]);
+  for (const x of [a, b]) {
+    x.lamordia_slots = [{ type: "Melancholic", category: "Accessory" }];
+    x.minimum_level = x.ml = 34;
+  }
+  a.type = "Bastard Swords"; b.type = "Quarterstaffs";
+  assert.strictEqual(M.dominates(a, b, targets, 36), true,
+    "an Accessory-slotted pair still compares on its buckets");
+});
+
 // ---------------------------------------------------------------------------
 // U2 — a Viktranium option became ATOMIC (one record carrying a whole affix list
 // instead of one record per affix). That is a new value-carrying shape in a source
