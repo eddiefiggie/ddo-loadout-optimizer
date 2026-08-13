@@ -332,16 +332,31 @@ function installStackEquiv(map) {
   }
 }
 
+// U1 (#290/#291) — same two-runtime bridge for the cross-add map
+// {target_stat: [source_stats]} (metadata.cross_add): stats whose bucket totals
+// flat-ADD into the target across buckets. Plumbing only — solver crediting
+// reads model.js crossAddSourcesFor in a later unit.
+function installCrossAdd(map) {
+  if (typeof setCrossAdd !== "undefined") { setCrossAdd(map); return; }
+  if (typeof require !== "undefined") {
+    try { require("./model.js").setCrossAdd(map); } catch (e) { /* model.js absent: no-op */ }
+  }
+}
+
 /** Walk a loaded dataset once, normalizing every item[] variant in place, and
  *  return the same dataset object (for convenient chaining). Also installs the
  *  stacking-equivalence map from `metadata.stacking_equivalence` so the solver's
- *  bucket keys collapse equivalent affix types (Insight Natural -> Insight). */
+ *  bucket keys collapse equivalent affix types (Insight Natural -> Insight), and
+ *  the cross-add map from `metadata.cross_add` (U1 #290/#291). */
 function normalizeDataset(dataset) {
   if (!dataset || !Array.isArray(dataset.items)) return dataset;
   const meta = dataset.metadata || {};
   const equiv = meta.stacking_equivalence || {};
   dataset._stackEquiv = equiv;
   installStackEquiv(equiv);
+  const crossAdd = meta.cross_add || {};
+  dataset._crossAdd = crossAdd;
+  installCrossAdd(crossAdd);
   // U5 — surface the affix-name registry + alias table so the picker vocabulary
   // (buildPickerVocabulary) can canonicalize a variant name to the ONE canonical
   // that gear/augments/crafting share.

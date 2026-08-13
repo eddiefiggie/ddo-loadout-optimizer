@@ -1693,3 +1693,41 @@ test("#287: folded Legendary bucket sums across types, maxes within its own", ()
   assert.strictEqual(b2.size, 1, "two Legendary sources share one bucket");
   assert.strictEqual(b2.get("Accuracy||Legendary"), 5, "and only the highest applies");
 });
+
+// ---------------------------------------------------------------------------
+// U1 (#290/#291) — cross-add data plumbing. `crossAddSourcesFor(stat)` exposes
+// the installed metadata.cross_add map {target_stat: [source_stats]}: stats
+// whose bucket totals ADD into the target's total ACROSS buckets (the wiki's
+// fully-stacking universal sources — Universal Spell Power, the two universal
+// lores). Distinct from the spell_focus expansion, which reproduces a
+// DON'T-stack rule inside the same-type max bucket. This unit is plumbing
+// only — nothing here credits the solver; that is a later unit.
+test("U1: crossAddSourcesFor on a fresh (uninstalled) model returns [] without crashing", () => {
+  const key = require.resolve("../web/model.js");
+  const cached = require.cache[key];
+  delete require.cache[key];
+  try {
+    const fresh = require("../web/model.js");
+    assert.deepStrictEqual(fresh.crossAddSourcesFor("Combustion"), []);
+    assert.deepStrictEqual(fresh.crossAddSourcesFor(undefined), []);
+  } finally {
+    require.cache[key] = cached; // restore the shared installed instance
+  }
+});
+
+test("U1: setCrossAdd installs the map; unmapped stats and uninstall stay []", () => {
+  try {
+    M.setCrossAdd({ Combustion: ["Universal Spell Power"] });
+    assert.deepStrictEqual(M.crossAddSourcesFor("Combustion"), ["Universal Spell Power"]);
+    assert.deepStrictEqual(M.crossAddSourcesFor("Strength"), []);
+    M.setCrossAdd(null); // uninstall resets to empty rather than crashing
+    assert.deepStrictEqual(M.crossAddSourcesFor("Combustion"), []);
+  } finally {
+    M.setCrossAdd(data._crossAdd); // restore the real catalog's map
+  }
+});
+
+test("U1: the built catalog's cross_add reaches model.js through normalizeDataset", () => {
+  assert.deepStrictEqual(M.crossAddSourcesFor("Combustion"), ["Universal Spell Power"]);
+  assert.deepStrictEqual(M.crossAddSourcesFor("Fire Lore"), ["Spell Lore", "Universal Spell Lore"]);
+});

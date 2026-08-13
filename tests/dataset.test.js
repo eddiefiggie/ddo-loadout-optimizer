@@ -1180,4 +1180,33 @@ test("#290: Potency is a redirecting label; Universal Spell Power stays native",
   }
 });
 
+// ---------------------------------------------------------------------------
+// U1 (#290/#291) — cross-add data plumbing. normalizeDataset wires
+// metadata.cross_add {target_stat: [source_stats]} into model.js
+// (installCrossAdd mirrors the installStackEquiv bridge: browser global or
+// node require). Plumbing only — solver crediting is a later unit.
+test("U1: normalizeDataset installs metadata.cross_add into model.js", () => {
+  const model = require("../web/model.js");
+  try {
+    const ds = normalizeDataset({
+      metadata: { cross_add: { Combustion: ["Universal Spell Power"] } },
+      items: [],
+    });
+    assert.deepStrictEqual(ds._crossAdd, { Combustion: ["Universal Spell Power"] });
+    assert.deepStrictEqual(model.crossAddSourcesFor("Combustion"), ["Universal Spell Power"]);
+    assert.deepStrictEqual(model.crossAddSourcesFor("Corrosion"), [], "unmapped stat stays []");
+  } finally {
+    model.setCrossAdd(realData._crossAdd); // restore the real catalog's map
+  }
+});
+
+test("U1: the built catalog carries both cross-add families", () => {
+  const ca = realData._crossAdd || {};
+  for (const sp of ["Combustion", "Corrosion", "Devotion", "Glaciation", "Impulse",
+                    "Magnetism", "Nullification", "Radiance", "Reconstruction", "Resonance"]) {
+    assert.deepStrictEqual(ca[sp], ["Universal Spell Power"], sp);
+  }
+  assert.deepStrictEqual(ca["Fire Lore"], ["Spell Lore", "Universal Spell Lore"]);
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

@@ -45,6 +45,7 @@ from src import absorption_split as absorption_split_mod
 from src import enchantment_split as enchantment_split_mod
 from src import umbrella as umbrella_mod
 from src import spell_focus as spell_focus_mod
+from src import cross_add as cross_add_mod
 from src import provenance as provenance_mod
 from src import value_corrections as value_corrections_mod
 from src import name_corrections as name_corrections_mod
@@ -1180,6 +1181,15 @@ def build() -> dict:
             # (dataset.js -> model.js/solver.js) canonicalizes the bucket KEY through
             # this map; the affix keeps its native type for display.
             "stacking_equivalence": vocabulary_mod.load_stacking_equivalence(),
+            # U1 (#290/#291) — cross-add map {target_stat: [source_stats]}: stats
+            # whose bucket totals flat-ADD into the target's total ACROSS buckets
+            # (wiki fully-stacking universal sources — USP and the two universal
+            # lores). The OPPOSITE contract from spell_focus's expansion table
+            # (same-type max-bucketing reproduces don't-stack); src/cross_add.py
+            # guards that no name is ever in both. Lore targets are bounded to
+            # the built vocabulary. Emission plumbing only — solver crediting
+            # reads this in a later unit (dataset.js installs it via setCrossAdd).
+            "cross_add": cross_add_mod.cross_add_map(_affix_registry),
             "pipeline_stage": "M4-compendium-roster",
         },
         "items": variants,
