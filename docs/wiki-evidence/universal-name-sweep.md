@@ -31,3 +31,25 @@ Classification key:
 **Residual disclosure:** `Spell Intensity` remains the known case where a universal-looking
 name gives an element-ranked priority no credit. That is the wiki's shape today, not a
 solver gap; the map gains an entry the day a page states the rule outright.
+
+## Vocabulary-side enumeration result (2026-08-13, run against the built registry)
+
+The committed procedure was executed: 1,430 registry names filtered by the
+lore / intensity / spellpower / universal / potency / elemental patterns, then
+diffed against the wiki-page rosters above. Three names surfaced that the
+page-side pass had not, each now dispositioned:
+
+| Candidate | Disposition | Evidence |
+|---|---|---|
+| `Arcane Lore` | **record-only** (legacy presence-only) | The `Spell_Lore` page: "The universal Spell Lore (formerly Arcane Lore)". In the dataset it is NOT rankable and its 5 carriers store it as `Bool 1` (magnitude-less legacy parse), so adding it as a cross-add source would inject a bogus +1. If those items are ever re-parsed with magnitudes, it becomes a wiki-backed `cross_add` source candidate under the same USL quote. |
+| `Universal Spell Critical Damage` | **record-only** | Not rankable, zero worn-affix carriers; 20 occurrences all live in `parsed_set_bonuses` tiers. Same evidence gap as `Spell Intensity`: no wiki page states a universal-to-element crit-damage crediting rule (the `Intensity` table has no universal row), so no map entry. |
+| `Spell Power` (bare) | **record-only** (noise) | Registry-only: zero carriers anywhere in the built data. |
+
+Combined/flavored lores surfaced by the same filter (`Frozen Depths/Storm/
+Thunderstorm Lore`, `Ground Lore`, `Silver Flame Lore`, `Creeping Dust Lore`,
+`Dark Restoration Lore`, `Thunderstorm Lore`, plus the four named in the table
+above) are covered by the standing combined-lore exclusion in
+`spell-lore.md` §#290. Everything else the filter matched is either an
+already-dispositioned name or non-lore vocabulary noise (sentence-shaped
+registry entries). **The sweep is closed: 20 cross-add entries, zero new
+expansion entries, every candidate carries a recorded disposition.**
