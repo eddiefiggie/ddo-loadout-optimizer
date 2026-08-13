@@ -235,12 +235,26 @@ def test_an_empty_seed_build_is_fully_inert():
 
 
 def test_the_shipped_shard_passes_the_guards_against_the_real_roster():
+    # Re-ratified after the 2026-08-13 triage populated the shard: 198 entries
+    # (19 confirmed_no_source + 179 wiki_has_source) out of the 199-item
+    # universe; the one remaining item (an invalid wiki title) is tracker-only
+    # in docs/wiki-evidence/no-drop-source.md and deliberately NOT in the shard.
     entries = no_drop_source.load(SHARD)
-    assert set(entries) == {BRACERS_HEROIC, BRACERS_LEGENDARY}
+    assert len(entries) == 198
+    assert {BRACERS_HEROIC, BRACERS_LEGENDARY} <= set(entries)
+    assert "Coronach (historic) [Crafted]" not in entries
     records, _stats = planner_items.load_planner_items()
     result = no_drop_source.check(entries, records)
-    assert result["confirmed"] == [BRACERS_HEROIC, BRACERS_LEGENDARY]
-    assert result["checked"] == 2
+    assert len(result["confirmed"]) == 19
+    assert BRACERS_HEROIC in result["confirmed"]
+    assert BRACERS_LEGENDARY in result["confirmed"]
+    assert "Cataclysmic Buckler" in result["confirmed"]  # the #244 verdict
+    assert result["checked"] == 198
+    # Every confirmed entry carries its evidence chain (the guard enforces it;
+    # this asserts the shipped data actually exercises that path 19 times).
+    for name in result["confirmed"]:
+        e = entries[name]
+        assert e["evidence"] and e["wiki_url"] and e["harvested"]
 
 
 def test_the_built_dataset_flags_the_seeded_items_and_counts_coverage():
@@ -251,7 +265,11 @@ def test_the_built_dataset_flags_the_seeded_items_and_counts_coverage():
     ds = build_dataset.build()
     flagged = sorted(v["source_item"] for v in ds["items"]
                      if v.get(no_drop_source.FIELD))
-    assert flagged == [BRACERS_HEROIC, BRACERS_LEGENDARY]
+    # Re-ratified after the 2026-08-13 triage: 19 confirmed items, one variant
+    # each. The two original player-reported instances stay pinned by name.
+    assert len(flagged) == 19
+    assert BRACERS_HEROIC in flagged and BRACERS_LEGENDARY in flagged
+    assert "Cataclysmic Buckler" in flagged
     # Only-when-set at the build level: the flag, where present, is True.
     assert all(v[no_drop_source.FIELD] is True for v in ds["items"]
                if no_drop_source.FIELD in v)
@@ -266,11 +284,15 @@ def test_the_built_dataset_flags_the_seeded_items_and_counts_coverage():
     # Current-roster expectation (like the ml36 63-entry count): 199 worn items
     # carry an empty location_quest today. A roster refresh may move this.
     assert cov["triage_universe"] == 199
-    assert cov["confirmed_no_source"] == 2
-    assert cov["wiki_has_source"] == 0
-    assert cov["unverified"] == cov["triage_universe"] - 2
-    assert cov["flagged_variants"] == 2
-    assert cov["confirmed_items"] == [BRACERS_HEROIC, BRACERS_LEGENDARY]
+    assert cov["confirmed_no_source"] == 19
+    assert cov["wiki_has_source"] == 179
+    # 199-item universe, 198 dispositioned in the shard: the remainder is the
+    # single invalid-title item recorded tracker-only.
+    assert cov["unverified"] == cov["triage_universe"] - 198 == 1
+    assert cov["flagged_variants"] == 19
+    assert BRACERS_HEROIC in cov["confirmed_items"]
+    assert BRACERS_LEGENDARY in cov["confirmed_items"]
+    assert len(cov["confirmed_items"]) == 19
 
 
 def test_the_shipped_shard_carries_its_wiki_evidence():
