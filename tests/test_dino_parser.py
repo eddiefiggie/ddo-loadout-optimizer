@@ -111,17 +111,24 @@ def test_compound_and_stat_stays_single_affix():
     assert units[0]["affixes"][0]["value"] == 14
 
 
-def test_stat_with_internal_comma_not_split():
+def test_stat_with_internal_comma_not_fragmented_then_table_split():
     # "Positive, Negative and Repair Amplification" has a mid-stat comma; the
-    # signed-number split must NOT break it into fragments.
+    # signed-number clause splitter must NOT break it into fragments. The
+    # reviewed compound table (#293) then splits the WHOLE name into its three
+    # canonical components — each carrying the full bonus_type/value, never a
+    # clause fragment like "Negative and Repair Amplification".
     units, _ = dino_parser.parse_typed_inserts([
         {"category": "Armor", "dino_type": "Scale", "name": "X",
          "effect": "+30 Artifact bonus to Positive, Negative and Repair Amplification",
          "wiki_url": _WIKI},
     ])
     assert len(units) == 1
-    assert len(units[0]["affixes"]) == 1
-    assert units[0]["affixes"][0]["value"] == 30
+    affixes = units[0]["affixes"]
+    assert [(a["stat"], a["bonus_type"], a["value"]) for a in affixes] == [
+        ("Healing Amplification", "Artifact", 30),
+        ("Negative Amplification", "Artifact", 30),
+        ("Repair Amplification", "Artifact", 30),
+    ], affixes
 
 
 def test_conditional_line_is_rejected_but_clean_line_kept():
@@ -246,14 +253,18 @@ def test_crafted_host_without_items_yields_generic_layout():
 def test_flavor_bleed_truncated_at_lost_separator():
     # A stat with flavor concatenated (no separator) — "Attack and DamageThe Isle
     # of Dread beckons you" — is truncated at the lowercase->uppercase boundary so
-    # only the real stat survives; never mint the flavor into a stat name.
+    # only the real stat survives; never mint the flavor into a stat name. The
+    # truncated compound then splits via the #293 table (proven by the live
+    # Curse membership def: Accuracy + Deadly).
     sets = dino_parser.parse_set_augments([
         {"set_name": "Curse", "threshold": 5,
          "tier_text": "+4 Profane bonus to Attack and DamageThe Isle of Dread beckons you...",
          "wiki_url": _WIKI},
     ])
-    stats = [a["stat"] for a in sets[0]["affixes"]]
-    assert stats == ["Attack and Damage"], stats
+    affixes = sets[0]["affixes"]
+    assert [(a["stat"], a["bonus_type"], a["value"]) for a in affixes] == [
+        ("Accuracy", "Profane", 4), ("Deadly", "Profane", 4)], affixes
+    assert all(a.get("via") == "Profane Attack and Damage" for a in affixes)
 
 
 def test_set_augment_splits_concatenated_tier_text():
@@ -268,7 +279,11 @@ def test_set_augment_splits_concatenated_tier_text():
     assert sets[0]["pieces_required"] == 3
     stats = {(a["stat"], a["value"]) for a in sets[0]["affixes"]}
     assert ("Sneak Attack Dice", 3) in stats
-    assert ("Melee and Ranged Power", 15) in stats
+    # #293 — the one-value compound is split into its two components (proven by
+    # the live Dread Stalker membership def), never kept as a compound key.
+    assert ("Melee Power", 15) in stats
+    assert ("Ranged Power", 15) in stats
+    assert not any(s == "Melee and Ranged Power" for s, _ in stats)
 
 
 # --- Set-augment spelling fold + per-channel guard (U4) -----------------------
@@ -346,3 +361,206 @@ def test_spelling_guard_green_on_shipped_seed_and_counts():
 
 # --- End-to-end on the shipped seed ------------------------------------------
 
+
+# --- Compound-stat split table (#293) -----------------------------------------
+
+def test_amplification_compound_splits_to_healing_not_positive_both_spellings():
+    # The wiki writes the amplification compound in two spellings (with and
+    # without the Oxford comma). Both split to the CANONICAL components — the
+    # canonical stat is "Healing Amplification", never "Positive Amplification"
+    # — proven by both live gear-planner membership defs (Devotion of the
+    # Firemouth, Defender of Tanaroa).
+    for text in ("+30 Artifact bonus to Positive, Negative and Repair Amplification",
+                 "+30 Artifact bonus to Positive, Negative, and Repair Amplification"):
+        sets = dino_parser.parse_set_augments([
+            {"set_name": "Amp Set", "threshold": 3, "tier_text": text,
+             "wiki_url": _WIKI},
+        ])
+        affixes = sets[0]["affixes"]
+        assert [(a["stat"], a["bonus_type"], a["value"]) for a in affixes] == [
+            ("Healing Amplification", "Artifact", 30),
+            ("Negative Amplification", "Artifact", 30),
+            ("Repair Amplification", "Artifact", 30),
+        ], (text, affixes)
+        assert all("Positive" not in a["stat"] for a in affixes)
+        # provenance: the split components carry the originating compound name
+        # (bonus-type-prefixed, like umbrella/spell_focus), raw stays verbatim.
+        assert all(a.get("via", "").endswith(text.split(" bonus to ")[1]) for a in affixes)
+        assert sets[0]["raw"] == text
+
+
+def test_tactical_dcs_compound_splits_to_combat_mastery():
+    # "all Tactical DCs" is the canonical stat "Combat Mastery" — proven by the
+    # live Echoes of the Walking Ancestors membership def.
+    sets = dino_parser.parse_set_augments([
+        {"set_name": "Echoes", "threshold": 3,
+         "tier_text": "+3 Artifact bonus to all Tactical DCs and Assassinate",
+         "wiki_url": _WIKI},
+    ])
+    affixes = sets[0]["affixes"]
+    assert [(a["stat"], a["value"]) for a in affixes] == [
+        ("Combat Mastery", 3), ("Assassinate", 3)], affixes
+    assert all(a.get("via") == "Artifact all Tactical DCs and Assassinate"
+               for a in affixes)
+
+
+def test_doublestrike_doubleshot_compound_splits():
+    sets = dino_parser.parse_set_augments([
+        {"set_name": "Dread Stalker", "threshold": 3,
+         "tier_text": "+15 Artifact bonus to Doublestrike and Doubleshot",
+         "wiki_url": _WIKI},
+    ])
+    affixes = sets[0]["affixes"]
+    assert [(a["stat"], a["bonus_type"], a["value"]) for a in affixes] == [
+        ("Doublestrike", "Artifact", 15), ("Doubleshot", "Artifact", 15)], affixes
+
+
+def test_unreviewed_compound_stays_whole():
+    # A compound NOT in the reviewed table stays one affix (strict provenance:
+    # under-count over mis-splitting) — the split is exact-name-keyed.
+    sets = dino_parser.parse_set_augments([
+        {"set_name": "X", "threshold": 3,
+         "tier_text": "+14 Artifact bonus to Critical Confirmation and Critical Damage",
+         "wiki_url": _WIKI},
+    ])
+    affixes = sets[0]["affixes"]
+    assert len(affixes) == 1 and affixes[0]["value"] == 14, affixes
+
+
+# --- Expansion guard: no expanded-away / unsplit-compound survivor (#293) -----
+
+def _rec(stat, bonus_type="Artifact", value=3):
+    return [{"set": "Guarded Set", "affixes": [
+        {"stat": stat, "bonus_type": bonus_type, "value": value, "unit": "flat"},
+    ]}]
+
+
+def test_expansion_guard_red_on_umbrella_survivor():
+    try:
+        dino_parser.check_set_records_expanded(_rec("Well Rounded"))
+    except ValueError as e:
+        assert "Well Rounded" in str(e) and "expanded-away" in str(e), e
+    else:
+        raise AssertionError("guard passed an unexpanded umbrella name")
+
+
+def test_expansion_guard_red_on_universal_survivor():
+    for stat in ("Spell Focus Mastery", "Potency"):
+        try:
+            dino_parser.check_set_records_expanded(_rec(stat))
+        except ValueError as e:
+            assert stat in str(e) and "expanded-away" in str(e), e
+        else:
+            raise AssertionError(f"guard passed unexpanded universal {stat!r}")
+
+
+def test_expansion_guard_red_on_unsplit_compound():
+    for stat in dino_parser.compound_splits():
+        try:
+            dino_parser.check_set_records_expanded(_rec(stat))
+        except ValueError as e:
+            assert stat in str(e) and "unsplit compound" in str(e), e
+        else:
+            raise AssertionError(f"guard passed unsplit compound {stat!r}")
+
+
+def test_expansion_guard_red_on_empty_channel():
+    # Zero records / zero affixes is a guard FAILURE, never a pass
+    # (per-channel; a sibling channel's coverage vouches for nothing here).
+    for empty in ([], None):
+        try:
+            dino_parser.check_set_records_expanded(empty)
+        except ValueError as e:
+            assert "zero set records" in str(e), e
+        else:
+            raise AssertionError("guard passed an empty channel")
+    try:
+        dino_parser.check_set_records_expanded([{"set": "Hollow", "affixes": []}])
+    except ValueError as e:
+        assert "zero affixes" in str(e), e
+    else:
+        raise AssertionError("guard passed an affix-less channel")
+
+
+def test_expansion_guard_green_on_concrete_stats():
+    checked = dino_parser.check_set_records_expanded(
+        _rec("Melee Power") + _rec("Healing Amplification"))
+    assert checked == 2
+
+
+# --- Built dino_sets channel (#293): reads the generated dataset --------------
+
+def _built_dino_sets():
+    path = os.path.join(ROOT, "web", "data", "items.json")
+    with open(path) as fh:
+        return {s["set"]: s for s in json.load(fh)["dino_sets"]}
+
+
+_SIX_ABILITIES = ["Strength", "Dexterity", "Constitution",
+                  "Intelligence", "Wisdom", "Charisma"]
+
+
+def test_built_dino_sets_carry_no_umbrella_or_compound_survivor():
+    # The whole channel, exactly as emitted: no expanded-away umbrella /
+    # universal name and no compound key may survive in any set's stats.
+    from src import umbrella, spell_focus
+    compounds = set(dino_parser.compound_splits())
+    sets = _built_dino_sets()
+    assert len(sets) == 6, sorted(sets)
+    for name, rec in sets.items():
+        for a in rec["affixes"]:
+            stat = a["stat"]
+            assert not umbrella.is_umbrella(stat), (name, stat)
+            assert not spell_focus.is_universal(stat), (name, stat)
+            assert stat not in compounds, (name, stat)
+
+
+def test_built_echoes_and_curse_carry_six_abilities_with_provenance():
+    # #293 — the umbrella expansion runs over dino_sets: the six concrete
+    # abilities appear at the tier's bonus_type/value, each stamped with the
+    # bonus-type-prefixed originating name, matching the live membership defs.
+    sets = _built_dino_sets()
+    for set_name, btype, value in (
+            ("Echoes of the Walking Ancestors", "Artifact", 3),
+            ("The Legendary Dread Isle's Curse", "Profane", 2)):
+        got = [(a["stat"], a["bonus_type"], a["value"], a.get("via"))
+               for a in sets[set_name]["affixes"]
+               if a["stat"] in _SIX_ABILITIES]
+        want = [(ab, btype, value, f"{btype} Well Rounded")
+                for ab in _SIX_ABILITIES]
+        assert got == want, (set_name, got)
+
+
+def test_built_compound_splits_match_live_membership_defs():
+    sets = _built_dino_sets()
+
+    def triples(name):
+        return {(a["stat"], a["bonus_type"], a["value"])
+                for a in sets[name]["affixes"]}
+
+    # Amplification lands Healing (not Positive) Amplification — both carriers.
+    for name in ("Devotion of the Firemouth", "Defender of Tanaroa"):
+        assert {("Healing Amplification", "Artifact", 30),
+                ("Negative Amplification", "Artifact", 30),
+                ("Repair Amplification", "Artifact", 30)} <= triples(name), name
+    assert {("Melee Power", "Artifact", 15), ("Ranged Power", "Artifact", 15),
+            ("Doublestrike", "Artifact", 15), ("Doubleshot", "Artifact", 15),
+            } <= triples("Dread Stalker")
+    assert {("Combat Mastery", "Artifact", 3), ("Assassinate", "Artifact", 3),
+            } <= triples("Echoes of the Walking Ancestors")
+    assert {("Melee Power", "Profane", 15), ("Ranged Power", "Profane", 15),
+            ("Accuracy", "Profane", 4), ("Deadly", "Profane", 4),
+            } <= triples("The Legendary Dread Isle's Curse")
+
+
+def test_built_dino_sets_raw_stays_verbatim():
+    # `raw` is wiki provenance and keeps the original umbrella/compound
+    # wording even though every normalized stat is expanded/split. The wiki
+    # spells the ability umbrella "all Ability Scores" (the registry folds it
+    # to "Well Rounded" before umbrella expansion).
+    echoes = _built_dino_sets()["Echoes of the Walking Ancestors"]["raw"]
+    assert "all Ability Scores" in echoes
+    assert "all Tactical DCs and Assassinate" in echoes
+    curse = _built_dino_sets()["The Legendary Dread Isle's Curse"]["raw"]
+    assert "all Ability Scores" in curse and "Attack and Damage" in curse
+    assert "Melee and Ranged Power" in curse

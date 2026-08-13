@@ -766,8 +766,16 @@ def build() -> dict:
     # Curse grants `Spell DCs | Profane | 2`, which scored zero against every
     # school priority until `spell dcs` joined the universal allowlist. Same
     # one-level-in expansion as the inserts above.
+    # #293 — the same channel also carries its own umbrella wording: Echoes of
+    # the Walking Ancestors and The Legendary Dread Isle's Curse grant `Well
+    # Rounded`, which the variant pass (umbrella_mod.expand_variants above)
+    # cannot reach because these defs are a top-level array, not a variant.
+    # Same one-level-in expansion as spell_focus below, umbrella first to
+    # mirror the variant-pass order (the families are disjoint, so order only
+    # affects readability).
     for _dset in dino_sets:
         if _dset.get("affixes"):
+            _dset["affixes"] = umbrella_mod.expand_affixes(_dset["affixes"])
             _dset["affixes"] = spell_focus_mod.expand_affixes(_dset["affixes"])
     # U4 — per-channel spelling guard: no dino_sets stat may be a fold-away
     # synonym from the frozen registry ("Universal Spellpower" hid here because
@@ -775,6 +783,11 @@ def build() -> dict:
     # AFTER the expansion above so it inspects the channel exactly as emitted;
     # raises on zero records — an empty channel is a failure, never a pass.
     dino_parser_mod.check_set_records_spelling(dino_sets)
+    # #293 — per-channel expansion guard: after the expansions above, no
+    # dino_sets stat may be an expanded-away umbrella/universal name or an
+    # unsplit compound from the parse-time split table. Same refuses-zero
+    # semantics as the spelling guard.
+    dino_parser_mod.check_set_records_expanded(dino_sets)
     # #169 — the same treatment for the version-bearing affixes inside SET BONUS
     # tiers. The item split above cannot reach this channel: a tier affix is
     # `{"stat": ..., "bonus_type": ...}` while an item affix is
