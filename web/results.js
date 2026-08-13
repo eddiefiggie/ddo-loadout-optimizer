@@ -502,10 +502,18 @@ function attributionList(contribs) {
     const via = c.via
       ? `<span class="attrib-via" title="This item carries ${esc(c.via)}, which grants several effects at once. It is credited here to the one you ranked.">as ${esc(c.via)}</span>`
       : "";
+    // U3 (#290/#291) — a cross-added credit names its SOURCE stat, flat beside
+    // the target's own parts (never grouped). Wording is "from <source stat>"
+    // everywhere this credit renders — here, the per-item why-this, and every
+    // export. The title states only the wiki-confirmed fact: the source stat
+    // fully stacks, so its value adds to this stat on top of its own bonuses.
+    const from = c.crossAdd
+      ? `<span class="attrib-from" title="${esc(c.crossAdd)} fully stacks with this stat — its value adds on top of the stat's own bonuses, so it is counted here.">from ${esc(c.crossAdd)}</span>`
+      : "";
     return `<li class="attrib-row ${kind}">
       <span class="attrib-type">${esc(typeLabel)}</span>
       <span class="attrib-val">${isBool ? "✓" : "+" + esc(c.value)}</span>
-      <span class="attrib-where">${where}${via}</span>
+      <span class="attrib-where">${where}${via}${from}</span>
     </li>`;
   }).join("")}</ul>`;
 }
@@ -535,9 +543,12 @@ function whyThisLine(result, item, attr, targets) {
   const spans = contribs.slice(0, 3).map((c) => {
     // #227 — untyped is a real bucket; never print a raw null.
     const typeLabel = (c.bonus_type == null || c.bonus_type === "") ? "untyped" : c.bonus_type;
+    // U3 (#290/#291) — a cross-added credit is labeled "(from <source stat>)",
+    // the same wording as the Ranked Priorities rows and every export.
+    const from = c.crossAdd ? ` (from ${esc(c.crossAdd)})` : "";
     const label = c.boolean
       ? `✓ ${esc(c.stat)}`                                 // U4: presence, not "+1"
-      : `${esc(c.stat)} +${esc(c.value)} ${esc(typeLabel)}${c.viaSet ? " (set)" : ""}`;
+      : `${esc(c.stat)} +${esc(c.value)} ${esc(typeLabel)}${c.viaSet ? " (set)" : ""}${from}`;
     const line = sat.has(c.stat) ? saturationLineFor(result, c.stat) : null;
     return line
       ? `<span class="pd-contrib at-ceiling" title="${esc(line)}">${label}</span>`

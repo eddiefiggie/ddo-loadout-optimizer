@@ -232,6 +232,14 @@
           // enchantment, the name the player will find on the item. Null for a
           // native affix, whose own stat name is already what is engraved.
           via: p.via || null,
+          // U3 (#290/#291) — when this part was cross-added from a fully-
+          // stacking universal stat (Universal Spell Power under an element
+          // spellpower; Spell Lore / Universal Spell Lore under an element
+          // lore), the SOURCE stat's name. Null on the target's own parts.
+          // Stays FLAT beside them — never grouped the way via-expansions
+          // collapse on the item surfaces: the source stat IS the name
+          // engraved on the item. Renders as "from <source stat>".
+          crossAdd: p.crossAdd || null,
         };
       });
     }
@@ -282,7 +290,10 @@
         const boolean = p.bonus_type === "boolean";
         if (!boolean && !(p.value > 0)) continue;
         rows.push({ stat, value: p.value, bonus_type: p.bonus_type,
-          viaSet: !!p.isSet, boolean, via: p.via || null });
+          viaSet: !!p.isSet, boolean, via: p.via || null,
+          // U3 (#290/#291) — the cross-add source stat rides with the row so the
+          // per-item why-this can label the credit "from <source stat>".
+          crossAdd: p.crossAdd || null });
       }
       rows.sort((a, b) => b.value - a.value);
       for (const r of rows) out.push(r);
@@ -918,6 +929,11 @@
         // #205 — carried into every export, not just the live panel: a shared
         // build must name the enchantment the reader will look for on the item.
         viaAffix: p.via || null,
+        // U3 (#290/#291) — the cross-add source stat, RAW, so the portable JSON
+        // inherits it unchanged and every text export can say "from <source>".
+        // A cross-added credit that solves visibly but shares invisibly is the
+        // standing failure this repo forbids.
+        crossAdd: p.crossAdd || null,
       }));
       attribution[stat] = { total, cap, sources };
     }

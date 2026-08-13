@@ -749,3 +749,97 @@ test("#262: project() carries noDropSource on a flagged entry, and ONLY there", 
   assert.ok(!("noDropSource" in ringEntry),
     "an unflagged variant's entry carries NO field at all (absence is the signal)");
 });
+
+// ---------------------------------------------------------------------------
+// U3 (#290/#291) — cross-added credit flows through projection.
+//
+// U2 stamps every cross-added breakdown part with `crossAdd: "<source stat>"`
+// (a Universal Spell Power contribution appearing under a Combustion target;
+// lore targets credit "Spell Lore" / "Universal Spell Lore"). Own parts carry
+// null/absent. Mirrors `via` (#205): provenance projection must forward, or the
+// credit is solve-visible but share-invisible.
+function crossAddRec() {
+  return {
+    name: "Pyro",
+    inputs: { ml: 34, pool: "all", priorities: ["Combustion"] },
+    snapshot: {
+      status: "optimal",
+      chosen: [
+        { slot: "Ring", variant: { variant_id: "Ember Band", ml: 34,
+          affixes: [{ name: "Combustion", type: "Equipment", value: 100 }] } },
+        { slot: "Necklace", variant: { variant_id: "Universal Torc", ml: 34,
+          affixes: [{ name: "Universal Spell Power", type: "Implement", value: 50 }] } },
+      ],
+      effective: { Combustion: 150 },
+      breakdown: {
+        Combustion: [
+          { bonus_type: "Equipment", value: 100, source: "Ember Band", sourceKind: "worn",
+            slot: "Ring", hostIds: ["Ember Band"], via: null, crossAdd: null },
+          { bonus_type: "Implement", value: 50, source: "Universal Torc", sourceKind: "worn",
+            slot: "Necklace", hostIds: ["Universal Torc"], via: null,
+            crossAdd: "Universal Spell Power" },
+        ],
+      },
+      augmentsPlaced: [], setAugmentsPlaced: [], setsActive: [],
+    },
+  };
+}
+
+test("U3: attributionByTarget forwards crossAdd beside via (own parts stay null)", () => {
+  const attr = P.attributionByTarget(crossAddRec().snapshot);
+  const rows = attr.Combustion;
+  assert.strictEqual(rows.length, 2);
+  const own = rows.find((r) => r.bonus_type === "Equipment");
+  assert.strictEqual(own.crossAdd, null, "the target's own part carries no marker");
+  const xa = rows.find((r) => r.bonus_type === "Implement");
+  assert.strictEqual(xa.crossAdd, "Universal Spell Power",
+    "the cross-added part names its SOURCE stat, exactly as via names an enchantment");
+  assert.strictEqual(xa.via, null, "crossAdd is its own field, not folded into via");
+});
+
+test("U3: itemContributions carries crossAdd so the per-item why-this can label it", () => {
+  const snap = crossAddRec().snapshot;
+  const c = P.itemContributions(snap, { slot: "Necklace", variant_id: "Universal Torc" }, null, ["Combustion"]);
+  assert.strictEqual(c.length, 1);
+  assert.strictEqual(c[0].crossAdd, "Universal Spell Power");
+  const own = P.itemContributions(snap, { slot: "Ring", variant_id: "Ember Band" }, null, ["Combustion"]);
+  assert.strictEqual(own[0].crossAdd, null, "an own contribution carries null, not undefined-drift");
+});
+
+test("U3: whyThis counts the cross-added part toward the carrying item", () => {
+  const snap = crossAddRec().snapshot;
+  const wins = P.whyThis(snap, { slot: "Necklace", variant_id: "Universal Torc" });
+  assert.deepStrictEqual(wins, [{ stat: "Combustion", value: 50, viaSet: false, boolean: false }]);
+});
+
+test("U3: project() attribution sources carry the raw crossAdd field (portable JSON inherits it)", () => {
+  const v = P.project(crossAddRec());
+  const sources = v.attribution.Combustion.sources;
+  const xa = sources.find((s) => s.source === "Universal Torc");
+  assert.strictEqual(xa.crossAdd, "Universal Spell Power");
+  const own = sources.find((s) => s.source === "Ember Band");
+  assert.strictEqual(own.crossAdd, null);
+});
+
+test("U3: a pre-cross-add snapshot (no crossAdd on any part) projects without error, marker null", () => {
+  const rec = crossAddRec();
+  for (const p of rec.snapshot.breakdown.Combustion) delete p.crossAdd;   // old saved record
+  let v;
+  assert.doesNotThrow(() => { v = P.project(rec); });
+  for (const s of v.attribution.Combustion.sources) assert.strictEqual(s.crossAdd, null);
+  const c = P.itemContributions(rec.snapshot, { slot: "Necklace", variant_id: "Universal Torc" }, null, ["Combustion"]);
+  assert.strictEqual(c[0].crossAdd, null);
+});
+
+test("U3: cross-added parts stay FLAT in attribution — collapseExpansions never groups by crossAdd", () => {
+  // collapseExpansions groups by PROVENANCE_KEY ("via") only. A breakdown part's
+  // crossAdd must not cause item-surface grouping: the Universal affix IS the name
+  // engraved on the item, so the item surfaces keep printing it under its own name.
+  const affixes = [
+    { name: "Universal Spell Power", type: "Implement", value: 50 },
+    { name: "Combustion", type: "Equipment", value: 100 },
+  ];
+  const out = P.collapseExpansions(affixes);
+  assert.strictEqual(out.length, 2, "no grouping without via");
+  assert.strictEqual(out[0], affixes[0], "passed through by identity");
+});

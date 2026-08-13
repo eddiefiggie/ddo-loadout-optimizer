@@ -1254,3 +1254,73 @@ test("#262: an unflagged loadout carries the wording in NO export", () => {
   }
   assert.ok(!JSON.stringify(toPortableJSON(rec, "2026-08-12T00:00:00Z")).includes(NDS_WORDING));
 });
+
+// ---------------------------------------------------------------------------
+// U3 (#290/#291) — cross-added credit is labeled in every share export.
+//
+// End-to-end in the shape of tests/spell-focus-receipts.test.js: a snapshot whose
+// Combustion breakdown carries a U2-stamped cross-added part, exported through the
+// real pipeline. The label wording is "from <source stat>", one clause in the one
+// shared sourceStr, so no format can drift.
+function crossAddExportRec() {
+  return {
+    name: "Pyro",
+    inputs: { ml: 34, pool: "all", priorities: ["Combustion"] },
+    snapshot: {
+      status: "optimal",
+      chosen: [
+        { slot: "Ring", variant: { variant_id: "Ember Band", ml: 34,
+          affixes: [{ name: "Combustion", type: "Equipment", value: 100 }] } },
+        { slot: "Necklace", variant: { variant_id: "Universal Torc", ml: 34,
+          affixes: [{ name: "Universal Spell Power", type: "Implement", value: 50 }] } },
+      ],
+      effective: { Combustion: 150 },
+      breakdown: {
+        Combustion: [
+          { bonus_type: "Equipment", value: 100, source: "Ember Band", sourceKind: "worn",
+            slot: "Ring", hostIds: ["Ember Band"], via: null, crossAdd: null },
+          { bonus_type: "Implement", value: 50, source: "Universal Torc", sourceKind: "worn",
+            slot: "Necklace", hostIds: ["Universal Torc"], via: null,
+            crossAdd: "Universal Spell Power" },
+        ],
+      },
+      augmentsPlaced: [], setAugmentsPlaced: [], setsActive: [],
+    },
+  };
+}
+
+test("U3: the Markdown export labels the cross-added contribution 'from Universal Spell Power'", () => {
+  const md = toMarkdown(crossAddExportRec());
+  assert.ok(/Implement \+50 — Universal Torc via Necklace from Universal Spell Power/.test(md),
+    `the source line carries the from-clause, got:\n${md}`);
+  assert.ok(!/Ember Band via Ring from/.test(md), "the target's own part carries no from-clause");
+});
+
+test("U3: CSV and print carry the same from-clause through the shared sourceStr", () => {
+  const csv = toCsv(crossAddExportRec());
+  assert.ok(/Universal Torc via Necklace from Universal Spell Power/.test(csv), "CSV sources cell");
+  const html = toPrintHtml(crossAddExportRec());
+  assert.ok(/Universal Torc via Necklace from Universal Spell Power/.test(html), "print stat breakdown");
+  const bb = toBBCode(crossAddExportRec());
+  assert.ok(/Universal Torc via Necklace from Universal Spell Power/.test(bb), "BBCode stat breakdown");
+});
+
+test("U3: the portable ddo-loadout/v1 JSON carries crossAdd raw in resolved AND verbatim in core", () => {
+  const env = toPortableJSON(crossAddExportRec(), "2026-08-13T00:00:00Z");
+  const src = env.resolved.attribution.Combustion.sources.find((s) => s.source === "Universal Torc");
+  assert.strictEqual(src.crossAdd, "Universal Spell Power", "resolved attribution carries the raw field");
+  assert.strictEqual(env.resolved.attribution.Combustion.sources.find((s) => s.source === "Ember Band").crossAdd,
+    null, "own part stays null");
+  const corePart = env.core.snapshot.breakdown.Combustion.find((p) => p.source === "Universal Torc");
+  assert.strictEqual(corePart.crossAdd, "Universal Spell Power", "core carries the breakdown verbatim");
+});
+
+test("U3: the .gearset record block still renders the achieved total (attribution totals-only, unchanged)", () => {
+  // The gearset attribution section prints per-priority totals, never per-source
+  // lines — same as via. Pin that a cross-added build's total renders and the
+  // from-clause does not leak into the importable half.
+  const gs = toGearset(crossAddExportRec());
+  assert.ok(/1\. Combustion\s+150/.test(gs), "achieved total in the record block");
+  const importable = gs.split("\n\n")[0];
+  assert.ok(!/from Universal Spell Power/.test(importable), "importable half stays a pure gear list");
+});

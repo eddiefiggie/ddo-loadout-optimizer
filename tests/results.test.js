@@ -1543,3 +1543,61 @@ test("#262: coverageNote gains the clause only when the coverage block reports c
   const bare = R.coverageNote({ metadata: {} });
   assert.ok(!bare.includes(Pj.NO_DROP_SOURCE_WORDING), "no coverage block, no clause");
 });
+
+// ---------------------------------------------------------------------------
+// U3 (#290/#291) — cross-added credit is labeled in the Ranked Priorities rows
+// and the per-item why-this. Wording is "from <source stat>" everywhere,
+// mirroring the via span ("as <enchantment>"). Parts stay FLAT — never grouped.
+
+test("U3: attributionList labels a cross-added contribution 'from <source stat>'", () => {
+  const html = R.attributionList([
+    { source: "Universal Torc", value: 50, bonus_type: "Implement", slots: ["Necklace"],
+      via: null, crossAdd: "Universal Spell Power" },
+  ]);
+  assert.ok(/attrib-from/.test(html), "the marker gets its own span");
+  assert.ok(/from Universal Spell Power/.test(html), "the label names the SOURCE stat");
+  assert.ok(!/attrib-via/.test(html), "crossAdd never renders as the enchantment clause");
+});
+
+test("U3: an own (non-cross-added) contribution renders no from-clause", () => {
+  const html = R.attributionList([
+    { source: "Ember Band", value: 100, bonus_type: "Equipment", slots: ["Ring"],
+      via: null, crossAdd: null },
+  ]);
+  assert.ok(!/attrib-from/.test(html), "nothing to label when nothing cross-added");
+});
+
+test("U3: whyThisLine appends (from <source stat>) on a cross-added per-item contribution", () => {
+  const result = {
+    chosen: [
+      { slot: "Ring", variant: { variant_id: "Ember Band",
+        affixes: [{ name: "Combustion", type: "Equipment", value: 100 }] } },
+      { slot: "Necklace", variant: { variant_id: "Universal Torc",
+        affixes: [{ name: "Universal Spell Power", type: "Implement", value: 50 }] } },
+    ],
+    breakdown: {
+      Combustion: [
+        { bonus_type: "Equipment", value: 100, source: "Ember Band", sourceKind: "worn",
+          slot: "Ring", hostIds: ["Ember Band"], crossAdd: null },
+        { bonus_type: "Implement", value: 50, source: "Universal Torc", sourceKind: "worn",
+          slot: "Necklace", hostIds: ["Universal Torc"], crossAdd: "Universal Spell Power" },
+      ],
+    },
+    augmentsPlaced: [], setAugmentsPlaced: [], setsActive: [],
+  };
+  const torc = R.whyThisLine(result, { slot: "Necklace", variant_id: "Universal Torc" }, null, ["Combustion"]);
+  assert.ok(/Combustion \+50 Implement \(from Universal Spell Power\)/.test(torc),
+    `the compact summary labels the cross-added credit, got: ${torc}`);
+  const band = R.whyThisLine(result, { slot: "Ring", variant_id: "Ember Band" }, null, ["Combustion"]);
+  assert.ok(!/from Universal Spell Power/.test(band), "the own contribution stays unlabeled");
+});
+
+test("U3: a pre-cross-add row (field absent entirely) renders without error and without a clause", () => {
+  let html;
+  assert.doesNotThrow(() => {
+    html = R.attributionList([
+      { source: "Old Item", value: 3, bonus_type: "Insight", slots: ["Bracers"] },
+    ]);
+  });
+  assert.ok(!/attrib-from/.test(html), "an old snapshot renders exactly as before");
+});
