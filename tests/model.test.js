@@ -1731,3 +1731,32 @@ test("U1: the built catalog's cross_add reaches model.js through normalizeDatase
   assert.deepStrictEqual(M.crossAddSourcesFor("Combustion"), ["Universal Spell Power"]);
   assert.deepStrictEqual(M.crossAddSourcesFor("Fire Lore"), ["Spell Lore", "Universal Spell Lore"]);
 });
+
+// U2 (#290/#291) — dominance widening. buildModel unions each tracked stat's
+// cross-add SOURCE stats into targetSet, so a universal-only item stays
+// competitive through the Pareto pre-filter when only an element stat is
+// ranked. The widened SET is the whole lever: the shared dominance comparator
+// (dominates/variantBuckets) is untouched — with the sources in targetSet, the
+// USP item's own buckets are compared like any other stat's.
+test("U2: a USP-only item survives model pruning when only an element stat is ranked", () => {
+  try {
+    M.setCrossAdd({ Combustion: ["Universal Spell Power"] });
+    const elem = v("Elem", "Necklace", [["Combustion", "Equipment", 100]]);
+    const usp = v("USPOnly", "Necklace", [["Universal Spell Power", "Implement", 50]]);
+    const model = M.buildModel([elem, usp], { mlCap: 34, targets: ["Combustion"] });
+    const neck = model.worn.find((s) => s.slot === "Necklace");
+    assert.ok(neck, "the Necklace pool exists");
+    assert.deepStrictEqual(neck.variants.map((x) => x.variant_id).sort(), ["Elem", "USPOnly"],
+      "the USP-only item is NOT pruned: its source-stat buckets are now in targetSet");
+
+    // Control — with the map uninstalled, the element item dominates the
+    // bucket-less USP item exactly as before the change (the widening is the lever).
+    M.setCrossAdd({});
+    const model2 = M.buildModel([elem, usp], { mlCap: 34, targets: ["Combustion"] });
+    const neck2 = model2.worn.find((s) => s.slot === "Necklace");
+    assert.deepStrictEqual(neck2.variants.map((x) => x.variant_id), ["Elem"],
+      "uninstalled: the USP-only item is dominated away, byte-identical to the old pre-filter");
+  } finally {
+    M.setCrossAdd(data._crossAdd); // restore the real catalog's map
+  }
+});

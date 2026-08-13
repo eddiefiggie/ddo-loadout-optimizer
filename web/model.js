@@ -644,6 +644,18 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     ...Object.keys(query.targetCaps || {}),
     ...Object.keys(query.targetFloors || {}),
   ]);
+  // U2 (#290/#291) — widen with every tracked stat's cross-add SOURCE stats
+  // (an element spellpower pulls in Universal Spell Power; an element lore
+  // pulls in Spell Lore + Universal Spell Lore), so the dominance pre-filter
+  // keeps universal-only items competitive and the option pools keep universal
+  // crafting options. Widening the stat set is the whole lever: the shared
+  // dominance comparator (dominates/variantBuckets) is deliberately untouched —
+  // with the sources in targetSet, a universal item's buckets are compared like
+  // any other stat's, so a USP-only item survives unless genuinely dominated.
+  // Mirrors buildProgram's widening (solver.js), which builds the buckets.
+  for (const stat of [...targetSet]) {
+    for (const src of crossAddSourcesFor(stat)) targetSet.add(src);
+  }
   const mlCap = query.mlCap;
   const eligAll = eligible(variants, query);
   // #110 (U2/KTD1) — the blocklist filters CANDIDACY, here and not in

@@ -313,5 +313,19 @@
     }
    }
   }
+ },
+ {
+  "name": "cross-add-combustion-usp-ml32",
+  "note": "U2 cross-add (#290/#291): Combustion ranked with Universal Spell Power gear reachable \u2014 the element total must include USP flat-adds (wiki: universal spellpower fully stacks), and ranking USP second pins the double-display semantic (each target reports the shared source). Golden values require regeneration when cross-add crediting lands.",
+  "query": {
+   "mlCap": 32,
+   "targets": [
+    "Combustion",
+    "Universal Spell Power"
+   ],
+   "armorType": null,
+   "weaponSetup": null,
+   "classRace": null
+  }
  }
 ]

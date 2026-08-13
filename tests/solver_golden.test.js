@@ -32,12 +32,13 @@ function test(name, fn) {
     path.join(__dirname, "parity", "fixtures.json"), "utf8"));
   const fixtureByName = Object.fromEntries(fixtures.map((f) => [f.name, f]));
 
-  test("golden guard pins exactly 18 fixtures", () => {
-    // 18 = 15 + the #110 blocklist A/B pair (re-ratified 2026-08-12)
-    //        + the #254 per-item Sonic-flag fixture.
-    assert.strictEqual(count, 18, "18 fixtures run against the live solver");
-    assert.strictEqual(golden.fixture_count, 18, "golden.json records 18 fixtures");
-    assert.strictEqual(goldenNames.length, 18, "golden.json carries 18 fixture solves");
+  test("golden guard pins exactly 19 fixtures", () => {
+    // 19 = 15 + the #110 blocklist A/B pair (re-ratified 2026-08-12)
+    //        + the #254 per-item Sonic-flag fixture
+    //        + the #291 cross-add A/B fixture (re-ratified 2026-08-13).
+    assert.strictEqual(count, 19, "19 fixtures run against the live solver");
+    assert.strictEqual(golden.fixture_count, 19, "golden.json records 19 fixtures");
+    assert.strictEqual(goldenNames.length, 19, "golden.json carries 19 fixture solves");
     assert.deepStrictEqual(Object.keys(solves).sort(), goldenNames.slice().sort(),
       "the same fixture names are solved and pinned");
   });

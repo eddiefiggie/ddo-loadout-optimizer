@@ -3381,5 +3381,217 @@ function setHost(id, slotName, affixes, setName, tiers, colors) {
     assert.deepStrictEqual(JSON.parse(JSON.stringify(r.absorptionQuarantine)), r.absorptionQuarantine);
   });
 
+  // ── U2 (#290/#291) — cross-add crediting ─────────────────────────────────
+  // The wiki rule: the universal stats FULLY STACK — Universal Spell Power
+  // flat-adds to every element spellpower's value, and Spell Lore + Universal
+  // Spell Lore flat-add to every element lore. Buckets stay per-(stat, bonus-
+  // type) max INTERNALLY; cross-add sums ACROSS buckets (the element's own plus
+  // each source stat's), never merging them. Each test installs its own map via
+  // model.js setCrossAdd (the load seam dataset.js drives) and resets after.
+  const CAM = require("../web/model.js");
+
+  await test("U2 cross-add: an element priority counts Universal Spell Power buckets (100 + 50 = 150)", async () => {
+    CAM.setCrossAdd({ Combustion: ["Universal Spell Power"] });
+    try {
+      const model = {
+        targets: ["Combustion"], mlCap: 34, dodgeCap: null,
+        worn: [
+          slot("Ring", [item("elem", "Ring", [["Combustion", "Equipment", 100]])]),
+          slot("Necklace", [item("usp", "Necklace", [["Universal Spell Power", "Implement", 50]])]),
+        ],
+      };
+      const r = await S.solveLexicographic(model, highs);
+      assert.strictEqual(r.status, "optimal");
+      assert.strictEqual(r.effective.Combustion, 150, "element Equipment 100 + USP Implement 50 cross-add");
+      assert.strictEqual(r.chosen.length, 2, "both the element item and the USP item are equipped");
+    } finally { CAM.setCrossAdd({}); }
+  });
+
+  await test("U2 cross-add lore: Void Lore credits Spell Lore + Universal Spell Lore on one item (13 + 5 = 18, names never merged)", async () => {
+    // The Undying-Age co-occurrence shape: ONE item carrying Spell Lore
+    // Equipment 13 AND Universal Spell Lore Exceptional 5. The two universal
+    // NAMES are distinct source stats whose buckets both cross-add into the
+    // element lore — merging them into one name would collapse to max(13,5).
+    CAM.setCrossAdd({ "Void Lore": ["Spell Lore", "Universal Spell Lore"] });
+    try {
+      const model = {
+        targets: ["Void Lore"], mlCap: 34, dodgeCap: null,
+        worn: [slot("Trinket", [item("undying", "Trinket", [
+          ["Spell Lore", "Equipment", 13],
+          ["Universal Spell Lore", "Exceptional", 5],
+        ])])],
+      };
+      const r = await S.solveLexicographic(model, highs);
+      assert.strictEqual(r.status, "optimal");
+      assert.strictEqual(r.effective["Void Lore"], 18, "13 (Spell Lore|Equipment) + 5 (Universal Spell Lore|Exceptional)");
+    } finally { CAM.setCrossAdd({}); }
+  });
+
+  await test("U2 cross-add breakdown: cross-added parts carry crossAdd naming the source stat; own parts carry none", async () => {
+    CAM.setCrossAdd({ Combustion: ["Universal Spell Power"] });
+    try {
+      const model = {
+        targets: ["Combustion"], mlCap: 34, dodgeCap: null,
+        worn: [
+          slot("Ring", [item("elem", "Ring", [["Combustion", "Equipment", 100]])]),
+          slot("Necklace", [item("usp", "Necklace", [["Universal Spell Power", "Implement", 50]])]),
+        ],
+      };
+      const r = await S.solveLexicographic(model, highs);
+      const parts = r.breakdown.Combustion || [];
+      const own = parts.find((p) => p.value === 100);
+      assert.ok(own, "the element's own Equipment part is present");
+      assert.ok(!own.crossAdd, "the element's own part carries no crossAdd marker");
+      const xa = parts.find((p) => p.value === 50);
+      assert.ok(xa, "the cross-added USP part appears under the element target");
+      assert.strictEqual(xa.crossAdd, "Universal Spell Power", "the marker names the SOURCE stat");
+      assert.strictEqual(xa.bonus_type, "Implement", "the part keeps its own bucket's bonus type");
+      assert.strictEqual(xa.source, "usp", "attributed to the item that carries it");
+    } finally { CAM.setCrossAdd({}); }
+  });
+
+  await test("U2 cross-add: two USP sources of the SAME bonus type still collapse to the higher (max within the source's bucket)", async () => {
+    CAM.setCrossAdd({ Combustion: ["Universal Spell Power"] });
+    try {
+      const model = {
+        targets: ["Combustion"], mlCap: 34, dodgeCap: null,
+        worn: [
+          slot("Ring", [item("uspHi", "Ring", [["Universal Spell Power", "Implement", 50]])]),
+          slot("Necklace", [item("uspLo", "Necklace", [["Universal Spell Power", "Implement", 30]])]),
+        ],
+      };
+      const r = await S.solveLexicographic(model, highs);
+      assert.strictEqual(r.status, "optimal");
+      assert.strictEqual(r.effective.Combustion, 50,
+        "cross-add sums ACROSS buckets but never merges them: within USP||Implement only the higher counts");
+    } finally { CAM.setCrossAdd({}); }
+  });
+
+  await test("U2 cross-add: USP Implement + USP Exceptional both count, and element Equipment adds on top", async () => {
+    CAM.setCrossAdd({ Combustion: ["Universal Spell Power"] });
+    try {
+      const model = {
+        targets: ["Combustion"], mlCap: 34, dodgeCap: null,
+        worn: [
+          slot("Ring", [item("uspImp", "Ring", [["Universal Spell Power", "Implement", 50]])]),
+          slot("Necklace", [item("uspExc", "Necklace", [["Universal Spell Power", "Exceptional", 20]])]),
+          slot("Trinket", [item("elem", "Trinket", [["Combustion", "Equipment", 100]])]),
+        ],
+      };
+      const r = await S.solveLexicographic(model, highs);
+      assert.strictEqual(r.effective.Combustion, 170, "100 (own Equipment) + 50 (USP Implement) + 20 (USP Exceptional)");
+    } finally { CAM.setCrossAdd({}); }
+  });
+
+  await test("U2 cross-add: ranking BOTH the element and Universal Spell Power stays feasible; each target reports the shared source (double display)", async () => {
+    // The shared z-vars appear in both stats' expressions — the same var carries
+    // the same value into both stage locks, so the lexicographic locks are
+    // mutually consistent. Each reported target total includes the shared
+    // source, matching the in-game summary screen (element values are shown
+    // AFTER universal is added).
+    CAM.setCrossAdd({ Nullification: ["Universal Spell Power"] });
+    try {
+      const model = {
+        targets: ["Nullification", "Universal Spell Power"], mlCap: 34, dodgeCap: null,
+        worn: [
+          slot("Ring", [item("elem", "Ring", [["Nullification", "Equipment", 100]])]),
+          slot("Necklace", [item("usp", "Necklace", [["Universal Spell Power", "Implement", 50]])]),
+        ],
+      };
+      const r = await S.solveLexicographic(model, highs);
+      assert.strictEqual(r.status, "optimal", "shared vars in two locks never conflict");
+      assert.strictEqual(r.perTarget.Nullification, 150, "the element target includes the shared USP source");
+      assert.strictEqual(r.perTarget["Universal Spell Power"], 50, "the USP target reports its own value");
+    } finally { CAM.setCrossAdd({}); }
+  });
+
+  await test("U2 cross-add: a cap on the ELEMENT stat clamps the combined element+USP value", async () => {
+    CAM.setCrossAdd({ Combustion: ["Universal Spell Power"] });
+    try {
+      const model = {
+        targets: ["Combustion"], mlCap: 34, dodgeCap: null, userCaps: { Combustion: 120 },
+        worn: [
+          slot("Ring", [item("elem", "Ring", [["Combustion", "Equipment", 100]])]),
+          slot("Necklace", [item("usp", "Necklace", [["Universal Spell Power", "Implement", 50]])]),
+        ],
+      };
+      const r = await S.solveLexicographic(model, highs);
+      assert.strictEqual(r.effective.Combustion, 120, "min(cap 120, combined 150) — the cap sees the cross-added total");
+    } finally { CAM.setCrossAdd({}); }
+  });
+
+  await test("U2 cross-add: a floor on the ELEMENT stat is satisfiable via USP sources alone", async () => {
+    CAM.setCrossAdd({ Combustion: ["Universal Spell Power"] });
+    try {
+      const model = {
+        targets: ["Accuracy"], mlCap: 34, dodgeCap: null, floors: { Combustion: 40 },
+        worn: [
+          slot("Ring", [item("acc", "Ring", [["Accuracy", "Enhancement", 10]])]),
+          slot("Necklace", [item("usp", "Necklace", [["Universal Spell Power", "Implement", 50]])]),
+        ],
+      };
+      const r = await S.solveLexicographic(model, highs);
+      assert.strictEqual(r.status, "optimal");
+      assert.deepStrictEqual(r.floorReport, [], "the floor is met — by cross-added USP, with no Combustion gear at all");
+      assert.ok(r.chosen.some((c) => c.variant.variant_id === "usp"), "the USP item is equipped to carry the floor");
+      assert.strictEqual(r.effective.Accuracy, 10, "the priority is still maximized");
+    } finally { CAM.setCrossAdd({}); }
+  });
+
+  await test("U2 cross-add SEMANTIC PIN: a cap on the SOURCE stat governs only the source's own target; the element still counts raw source buckets", async () => {
+    // Chosen semantic (mirrors per-stat cap behavior): a cap clamps the capped
+    // stat's OWN reported/locked expression (d_<stat>), not the raw buckets other
+    // stats cross-add. A player capping Universal Spell Power at 10 while ranking
+    // an element sees USP report 10, while the element total still includes the
+    // full raw USP contribution (the cap is a display/lock clamp on USP's target,
+    // not a rewrite of the shared z-vars).
+    CAM.setCrossAdd({ Combustion: ["Universal Spell Power"] });
+    try {
+      const model = {
+        targets: ["Combustion", "Universal Spell Power"], mlCap: 34, dodgeCap: null,
+        userCaps: { "Universal Spell Power": 10 },
+        worn: [
+          slot("Ring", [item("elem", "Ring", [["Combustion", "Equipment", 100]])]),
+          slot("Necklace", [item("usp", "Necklace", [["Universal Spell Power", "Implement", 50]])]),
+        ],
+      };
+      const r = await S.solveLexicographic(model, highs);
+      assert.strictEqual(r.status, "optimal");
+      assert.strictEqual(r.perTarget.Combustion, 150, "the element counts the RAW source buckets (uncapped)");
+      assert.strictEqual(r.perTarget["Universal Spell Power"], 10, "the source's own target is clamped by its cap");
+    } finally { CAM.setCrossAdd({}); }
+  });
+
+  await test("regression: a user cap on a MULTI-WORD stat solves (LP-safe d-var name, was a HiGHS parse crash)", async () => {
+    // Pre-existing, independent of cross-add: `d_${stat}` minted an LP variable
+    // containing spaces for any multi-word capped stat ("Physical Sheltering",
+    // "Universal Spell Power"), and HiGHS aborted the whole solve with
+    // "Unable to read LP model". Exposed by the U2 source-stat cap pin; fixed by
+    // dVar()'s non-alphanumeric mapping. No cross-add map involved here.
+    const model = {
+      targets: ["Physical Sheltering"], mlCap: 34, dodgeCap: null,
+      userCaps: { "Physical Sheltering": 25 },
+      worn: [slot("Ring", [item("prr", "Ring", [["Physical Sheltering", "Enhancement", 60]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal", "must not crash on the space-bearing cap var");
+    assert.strictEqual(r.effective["Physical Sheltering"], 25, "clamped to the user cap");
+  });
+
+  await test("U2 cross-add: with NO map installed the solve is identical to the pre-change solver", async () => {
+    CAM.setCrossAdd({}); // explicit uninstalled state
+    const model = {
+      targets: ["Combustion"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Ring", [item("elem", "Ring", [["Combustion", "Equipment", 100]])]),
+        slot("Necklace", [item("usp", "Necklace", [["Universal Spell Power", "Implement", 50]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.deepStrictEqual(r.perTarget, { Combustion: 100 }, "no cross-add: the element counts only its own buckets");
+    assert.deepStrictEqual(r.chosen.map((c) => c.variant.variant_id), ["elem"],
+      "the USP item is not even a candidate (no bucket), exactly as before the change");
+  });
+
   console.log(`\n${passed} passed`);
 })();
