@@ -646,8 +646,31 @@ function saturationNotice(result) {
   const lines = (Proj && Proj.saturationNoticeLines) ? Proj.saturationNoticeLines(result) : [];
   const list = report.map((e) => `${esc(e.stat)} ${esc(e.total)}`).join(", ");
   const word = report.length === 1 ? "priority" : "priorities";
-  return `<p class="scope-note saturation-note" role="status" title="${lines.map(esc).join(" ")}">`
-    + `${report.length} ${word} at ceiling: ${list}.</p>`;
+  // #277 — the solve-banner's tap/keyboard-openable pattern: the full sentences
+  // are VISIBLE text in the open state, so a touch or keyboard user is not
+  // locked out of the explanation; the title stays as the pointer fast-path.
+  return `<details class="scope-note saturation-note" title="${lines.map(esc).join(" ")}">`
+    + `<summary role="status">${report.length} ${word} at ceiling: ${list}.</summary>`
+    + `<div class="sat-sentences">${lines.map((l) => `<p>${esc(l)}</p>`).join("")}</div></details>`;
+}
+
+/** #278 — the stale-save disclosure: an optimal snapshot with no `effective`
+ *  predates the current save format. Facts + remedy only; no claim about how
+ *  the save got that way. Pure (result), silent on current-format saves. */
+function staleSnapshotNotice(result) {
+  const stale = result && result.status === "optimal" && result.effective == null;
+  return stale
+    ? `<p class="scope-note stale-save-note" role="status">This saved build predates the current save format — `
+      + `totals and receipts are unavailable. Re-solve to restore the full analysis.</p>`
+    : "";
+}
+
+/** #276 — the receipt-card ceiling marker, in the .stat-cap chip idiom: the
+ *  same stat-level fact the gear boxes color green, with the same shared
+ *  sentence as its tooltip. Empty when the stat is not saturated. */
+function ceilingChip(result, stat) {
+  const line = (Proj && Proj.saturationLineFor) ? Proj.saturationLineFor(result, stat) : null;
+  return line ? `<span class="stat-ceiling at-ceiling" title="${esc(line)}">at ceiling</span>` : "";
 }
 
 /** #110 (U7) — the blocklist disclosure. Reads the SHARED sentences from
@@ -856,6 +879,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   container.innerHTML = `
     ${banner}
     ${artifactNotice(result, query)}
+    ${staleSnapshotNotice(result)}
     ${boundNotice(query, result)}
     ${zeroSourceNotice(query, result, model, dataset)}
     ${saturationNotice(result)}
@@ -1003,8 +1027,11 @@ function buildViews(build, model, query) {
   });
 
   const attr = attributionByTarget(build, augAssign);
+  // #278 — a degenerate save (no `effective`) renders zeroed cards behind the
+  // stale-save notice instead of throwing and blanking the whole results area.
+  const effective = build.effective || {};
   const cards = query.targets.map((stat, i) => {
-    const total = build.effective[stat] ?? 0;
+    const total = effective[stat] ?? 0;
     const contribs = attr[stat] || [];
     const cap = build.capped ? build.capped[stat] : null;
     const rawSum = contribs.reduce((s, p) => s + p.value, 0);
@@ -1013,7 +1040,7 @@ function buildViews(build, model, query) {
     return `<div class="stat-card">
       <div class="stat-head"><span class="stat-rank">${i + 1}</span><span class="stat-name">${esc(stat)}</span></div>
       <div class="stat-value" data-final="${esc(total)}">${esc(total)}</div>
-      ${capNote}
+      ${capNote}${ceilingChip(build, stat)}
       ${attributionList(contribs)}
     </div>`;
   }).join("");
@@ -1171,5 +1198,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, blockNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, blockNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }
