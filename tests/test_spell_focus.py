@@ -177,9 +177,9 @@ def test_native_school_affix_carries_no_provenance():
 
 # ---- expanded-away registration ----------------------------------------------
 
-def test_both_names_map_to_the_seven_schools():
+def test_all_universal_names_map_to_the_seven_schools():
     away = spell_focus.expanded_away()
-    assert set(away) == {"spell focus mastery", "spell focus"}
+    assert set(away) == {"spell focus mastery", "spell focus", "spell dcs"}
     assert all(v == spell_focus.SCHOOLS for v in away.values())
 
 
@@ -283,3 +283,33 @@ def test_viktranium_universal_option_expands_inside_one_record():
     # too, so they expand into the seven schools inside their own record.
     assert len(universal) == 18, (
         f"expected 18 universal Viktranium options, got {len(universal)}")
+
+
+# ---- #289: "Spell DCs" is a third universal name -------------------------------
+#
+# The Esoterica Set Augment's 3-piece bonus is stored as stat `Spell DCs` in the
+# wiki-harvested augment-set seed. The wiki-evidence table records the bonus as
+# "+3 Artifact ALL Spell DCs" (docs/wiki-evidence/augment-sets.md), and
+# gear-planner's own catalog stores the identical bonus as
+# `Spell Focus Mastery | Artifact | 3` (raw/gearplanner_sets.json) — a name this
+# module already expands. The name is universal by both sources; joining the
+# allowlist makes any channel that carries it school-creditable.
+
+def test_spell_dcs_is_universal():
+    assert spell_focus.is_universal("Spell DCs")
+    assert spell_focus.is_universal("  spell dcs ")
+
+
+def test_spell_dcs_expands_to_seven_schools_with_provenance():
+    out = spell_focus.expand_affixes([_aff("Spell DCs", "Artifact", 3)])
+    assert [a["stat"] for a in out] == spell_focus.SCHOOLS
+    assert all(a["bonus_type"] == "Artifact" for a in out)
+    assert all(a["value"] == 3 for a in out)
+    # The receipt names the source the wiki-facing surfaces can display.
+    assert all(a[VIA] == "Artifact Spell DCs" for a in out)
+
+
+def test_spell_dcs_is_registered_as_expanded_away():
+    away = spell_focus.expanded_away()
+    assert "spell dcs" in away
+    assert away["spell dcs"] == spell_focus.SCHOOLS

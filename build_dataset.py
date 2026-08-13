@@ -744,6 +744,14 @@ def build() -> dict:
     for _insert in dino_inserts:
         if _insert.get("affixes"):
             _insert["affixes"] = spell_focus_mod.expand_affixes(_insert["affixes"])
+    # #289 — the Dino SET defs are a separate flat-affix structure (no tiers) and
+    # carry their own universal spell-DC wording: The Legendary Dread Isle's
+    # Curse grants `Spell DCs | Profane | 2`, which scored zero against every
+    # school priority until `spell dcs` joined the universal allowlist. Same
+    # one-level-in expansion as the inserts above.
+    for _dset in dino_sets:
+        if _dset.get("affixes"):
+            _dset["affixes"] = spell_focus_mod.expand_affixes(_dset["affixes"])
     # #169 — the same treatment for the version-bearing affixes inside SET BONUS
     # tiers. The item split above cannot reach this channel: a tier affix is
     # `{"stat": ..., "bonus_type": ...}` while an item affix is
@@ -781,19 +789,19 @@ def build() -> dict:
     # expanded above as of #171, so any NEW orphan fails the build rather than
     # going quiet.
     _KNOWN_SET_BONUS_ORPHANS = ()
+    _expanded_away_map = {
+        **umbrella_mod.umbrella_expansion(),
+        **spell_focus_mod.expanded_away(),
+        **speed_split_mod.EXPANDED_AWAY,
+        **parrying_split_mod.EXPANDED_AWAY,
+        **heightened_awareness_mod.EXPANDED_AWAY,
+        # #249 — no set-bonus tier names a compound absorption stat today, so
+        # this registration is a standing gate rather than a live expansion: a
+        # set bonus carries no per-item shard key to read a Sonic flag from, so
+        # a future one must fail the build loudly rather than be guessed.
+        **absorption_split_mod.EXPANDED_AWAY}
     _set_orphans = enchantment_split_mod.set_bonus_orphans(
-        variants,
-        {**umbrella_mod.umbrella_expansion(),
-         **spell_focus_mod.expanded_away(),
-         **speed_split_mod.EXPANDED_AWAY,
-         **parrying_split_mod.EXPANDED_AWAY,
-         **heightened_awareness_mod.EXPANDED_AWAY,
-         # #249 — no set-bonus tier names a compound absorption stat today, so
-         # this registration is a standing gate rather than a live expansion: a
-         # set bonus carries no per-item shard key to read a Sonic flag from, so
-         # a future one must fail the build loudly rather than be guessed.
-         **absorption_split_mod.EXPANDED_AWAY},
-        allow=_KNOWN_SET_BONUS_ORPHANS)
+        variants, _expanded_away_map, allow=_KNOWN_SET_BONUS_ORPHANS)
     if _set_orphans:
         raise SystemExit(
             "set-bonus affixes name an expanded-away stat no player can rank:\n  " +
@@ -831,6 +839,26 @@ def build() -> dict:
     # here makes the flip stick. The defs come from the SAME augment_sets seed that
     # the top-level `augment_set_defs` key (emitted below) exposes to the solver.
     augment_set_defs = membership_mod.build_augment_set_defs()
+    # #289 — the FOURTH universal spell-DC channel, and the one Esoterica shipped
+    # broken in: these defs are built from their own seed and never pass through
+    # the variant expansion, so a universal stat here (`Spell DCs`) granted a
+    # bonus no player could rank and the solver never pursued the set. Same
+    # one-level-in shape as the membership defs above.
+    for _adef in augment_set_defs.values():
+        for _tier in _adef.get("tiers") or []:
+            if _tier.get("affixes"):
+                _tier["affixes"] = spell_focus_mod.expand_affixes(_tier["affixes"])
+    # #289 — and the guard that makes the gap impossible to reopen quietly: the
+    # def channels get the same expanded-away orphan check the variant set-bonus
+    # channel has had since #171. Empty allowlist by design.
+    _def_orphans = enchantment_split_mod.set_def_orphans(
+        {"membership": membership_defs, "augment": augment_set_defs},
+        _expanded_away_map, allow=())
+    if _def_orphans:
+        raise SystemExit(
+            "set-def tier affixes name an expanded-away stat no player can rank:"
+            "\n  " +
+            "\n  ".join(f"{s} — {stat} {val}" for s, stat, val in _def_orphans))
     augment_sets_mod.attach_augment_set_slots(variants, augment_set_defs)
 
     # U81 Nearly Complete: expose the parametric choice-slot effect pool. Items

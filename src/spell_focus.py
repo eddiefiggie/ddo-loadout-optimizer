@@ -22,10 +22,13 @@ highest ("don't stack") while different types add. **If this expansion ever
 seems to require a change to that bucketing, the expansion is wrong** — the
 model is not missing a case.
 
-Two names expand. `Spell Focus Mastery` is stated outright above. Bare
+Three names expand. `Spell Focus Mastery` is stated outright above. Bare
 `Spell Focus` is confirmed by the same page's worked example, which credits
 `Stormreaver's Napkin` — stored `Spell Focus | Equipment | 1` — as "+1 to her
-DCs", plural.
+DCs", plural. `Spell DCs` (#289) is the augment-set seed's wording for the
+Esoterica bonus, recorded as "+3 Artifact ALL Spell DCs" in
+docs/wiki-evidence/augment-sets.md and stored by gear-planner's catalog as
+`Spell Focus Mastery | Artifact | 3` for the same set.
 
 `_UNIVERSAL` is an explicit allowlist and the single source of truth. A name
 joins it only with a wiki quote saying it applies to all spells. Deliberately
@@ -69,7 +72,15 @@ SCHOOLS = [
 
 # Lowercased stat names meaning "+X to the DC of every spell". Allowlist; see
 # the module docstring for what is deliberately excluded and why.
-_UNIVERSAL = {"spell focus mastery", "spell focus"}
+#
+# `spell dcs` (#289) is the augment-set seed's wording for the Esoterica Set
+# Augment bonus. Universal by two sources: the wiki-evidence table records the
+# bonus as "+3 Artifact ALL Spell DCs" (docs/wiki-evidence/augment-sets.md), and
+# gear-planner's own catalog stores the identical bonus as
+# `Spell Focus Mastery | Artifact | 3` (raw/gearplanner_sets.json) — a name
+# already on this list. No item or insert carries the name, so admitting it
+# changes only the def channels that spell it this way.
+_UNIVERSAL = {"spell focus mastery", "spell focus", "spell dcs"}
 
 # Field carrying the originating enchantment name on an expanded affix. Absent on
 # a native school affix, so a consumer can tell expanded from native by presence.

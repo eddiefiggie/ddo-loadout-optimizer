@@ -299,6 +299,40 @@ def set_bonus_orphans(variants, expanded_away_names, allow=()) -> list:
     return sorted(found, key=lambda t: (str(t[0]), t[1], t[2]))
 
 
+def set_def_orphans(def_groups, expanded_away_names, allow=()) -> list:
+    """#289 — the def-channel sibling of `set_bonus_orphans`.
+
+    The augment-set and membership-set defs are their own top-level structures,
+    so the variant walk above never sees them — which is exactly how Esoterica
+    shipped a `Spell DCs` bonus no player could rank. Walks
+    ``{channel_label: {set_name: {"tiers": [{"affixes": [...]}]}}}`` and reports
+    `(channel:set, stat, value)` triples for any tier affix still naming an
+    expanded-away stat.
+
+    Refuses a vacuous pass: a walk that inspects zero tier affixes proves
+    nothing, and an empty walk reading as green is the failure shape
+    `prove-a-guard-fails-before-trusting-it.md` exists to prevent.
+    """
+    allowed = {str(a).strip().lower() for a in allow}
+    away = {str(n).strip().lower() for n in expanded_away_names} - allowed
+    found = set()
+    inspected = 0
+    for channel, defs in (def_groups or {}).items():
+        for set_name, d in (defs or {}).items():
+            for tier in d.get("tiers") or []:
+                for affix in tier.get("affixes") or []:
+                    inspected += 1
+                    stat = (affix.get("stat") or "").strip()
+                    if stat.lower() in away:
+                        found.add((f"{channel}:{set_name}", stat,
+                                   str(affix.get("value"))))
+    if not inspected:
+        raise SystemExit(
+            "set_def_orphans inspected zero def tier affixes — an empty walk "
+            "is not a pass; check the def channels it was handed")
+    return sorted(found, key=lambda t: (str(t[0]), t[1], t[2]))
+
+
 def snapshot_key(raw: str) -> str:
     """Normalize an invocation to its snapshot key.
 

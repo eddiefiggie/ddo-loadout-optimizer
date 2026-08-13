@@ -1091,4 +1091,34 @@ test("U11: a bound and a credit dropped by a picker substitution are both disclo
   assert.ok(/already have/.test(msg), "and the dropped credit separately");
 });
 
+// #289 — the Esoterica Set Augment's 3-piece bonus arrives expanded: seven
+// rankable school stats at Artifact with a provenance receipt, and no def or
+// dino-set channel still carries the unrankable universal name "Spell DCs".
+test("#289: Esoterica def is school-creditable and no def channel carries Spell DCs", () => {
+  const eso = (realData.augment_set_defs || {}).Esoterica;
+  assert.ok(eso, "Esoterica def present");
+  const affixes = eso.tiers[0].affixes;
+  const schools = affixes.map((a) => a.stat).sort();
+  assert.deepStrictEqual(schools, ["Abjuration Focus", "Conjuration Focus",
+    "Enchantment Focus", "Evocation Focus", "Illusion Focus",
+    "Necromancy Focus", "Transmutation Focus"]);
+  for (const a of affixes) {
+    assert.strictEqual(a.bonus_type, "Artifact");
+    assert.strictEqual(a.value, 3);
+    assert.strictEqual(a.via, "Artifact Spell DCs", "receipt names the source");
+  }
+  const leaks = [];
+  for (const defs of [realData.membership_set_defs, realData.augment_set_defs]) {
+    for (const [name, def] of Object.entries(defs || {})) {
+      for (const t of def.tiers || []) for (const a of t.affixes || []) {
+        if (a.stat === "Spell DCs") leaks.push(`def:${name}`);
+      }
+    }
+  }
+  for (const s of realData.dino_sets || []) {
+    for (const a of s.affixes || []) if (a.stat === "Spell DCs") leaks.push(`dino:${s.set}`);
+  }
+  assert.deepStrictEqual(leaks, []);
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);
