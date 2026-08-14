@@ -94,6 +94,60 @@ SPELLPOWERS = [
     "Resonance",
 ]
 
+# The three saving-throw stats the classic `Resistance` bonus applies to (#211).
+# Rendered tooltip, read 2026-08-13 from `{{Resistance|6}}`: "Resistance +6:
+# Passive: +6 Resistance bonus to Fortitude, Reflex, and Will Saving Throws."
+# 245 affix instances credited nothing to any save priority until this entry —
+# the largest umbrella found by the #211 detector's first run.
+SAVES = [
+    "Fortitude Save",
+    "Reflex Save",
+    "Will Save",
+]
+
+# The four elemental spellpowers `Elemental Resonance` applies to (#211), in the
+# tooltip's own order. Read 2026-08-13 from `{{SpellPower|Elemental Resonance|70}}`:
+# "+70 Equipment bonus to Acid, Fire, Electric and Cold Spell Power." — the
+# dataset's names for those four are Corrosion/Combustion/Magnetism/Glaciation.
+# A four-element subset of the Potency family, NOT all ten.
+ELEMENTAL_SPELLPOWERS = [
+    "Corrosion",
+    "Combustion",
+    "Magnetism",
+    "Glaciation",
+]
+
+# The three tactical-DC stats `Combat Mastery` applies to (#211). Rendered
+# tooltip, read 2026-08-13 from `{{Tactics|Combat Mastery|7}}`: "+7 Enhancement
+# bonus to the DC to resist the character's Trip, Improved Trip, Sunder,
+# Improved Sunder, Stunning Blow, and Stunning Fist attempts." The dataset's
+# per-tactic stats: `Vertigo` (Trip), `Shatter` (Sunder), `Stunning`
+# (Stunning Blow/Fist). 136 affix instances.
+TACTICS = [
+    "Stunning",
+    "Vertigo",
+    "Shatter",
+]
+
+# The ability-keyed skill umbrellas (#211). Rendered tooltips, read 2026-08-13:
+# `{{Skills|Charisma|2}}`: "Passive +2 Exceptional bonus to the Charisma based
+# skills of: Bluff, Diplomacy, Haggle, Intimidate, Perform and Use Magic Device
+# (UMD)"; `{{Skills|Dex|4}}`: "... Balance, Hide, Move Silently, Open Lock, and
+# Tumble"; `{{Skills|INT|2}}`: "... Disable Device, Repair, Search, and
+# Spellcraft". Each component is a rankable skill stat.
+SKILLS_CHA = ["Bluff", "Diplomacy", "Haggle", "Intimidate", "Perform",
+              "Use Magic Device"]
+SKILLS_DEX = ["Balance", "Hide", "Move Silently", "Open Lock", "Tumble"]
+SKILLS_INT = ["Disable Device", "Repair", "Search", "Spellcraft"]
+# The remaining three ability umbrellas appear only in the Nearly-Complete
+# Skill menus, never on worn gear. Rendered tooltips, read 2026-08-13:
+# `{{Skills|Constitution|6}}`: "... Constitution based skills of: Concentration";
+# `{{Skills|Strength|6}}`: "... Strength based skills of: Jump";
+# `{{Skills|Wisdom|6}}`: "... Wisdom based skills of: Heal, Listen and Spot".
+SKILLS_CON = ["Concentration"]
+SKILLS_STR = ["Jump"]
+SKILLS_WIS = ["Heal", "Listen", "Spot"]
+
 # Lowercased universal stat name -> the concrete stats it becomes. Allowlist;
 # see the module docstring for what is deliberately excluded and why.
 #
@@ -119,6 +173,29 @@ _UNIVERSAL = {
     "spell focus": SCHOOLS,
     "spell dcs": SCHOOLS,
     "potency": SPELLPOWERS,
+    # #211 — found by the umbrella detector's first sweep, each with the
+    # rendered-tooltip quote beside its component list above. All three are
+    # same-bonus-kind grants (a Resistance bonus to saves, an Equipment bonus to
+    # spellpowers, an Enhancement bonus to tactical DCs), so the same-type
+    # expansion reproduces the highest-of-type rule exactly as it does for
+    # Potency. Evidence: docs/wiki-evidence/umbrella-adjudication-sweep.md.
+    "resistance": SAVES,
+    "elemental resonance": ELEMENTAL_SPELLPOWERS,
+    "combat mastery": TACTICS,
+    # Set-channel wordings of the same two families, admitted on the catalog's
+    # own self-stating text (the #289 `spell dcs` precedent): the set tiers
+    # store "+N Artifact bonus to all Saving Throws" / "Saving Throws" /
+    # "Tactical DCs" as the stat name outright. Found by the review pass on the
+    # detector's own PR — the set-def channels were outside its first universe.
+    "all saving throws": SAVES,
+    "saving throws": SAVES,
+    "tactical dcs": TACTICS,
+    "charisma skills": SKILLS_CHA,
+    "dexterity skills": SKILLS_DEX,
+    "intelligence skills": SKILLS_INT,
+    "constitution skills": SKILLS_CON,
+    "strength skills": SKILLS_STR,
+    "wisdom skills": SKILLS_WIS,
 }
 
 # Field carrying the originating enchantment name on an expanded affix. Absent on
@@ -159,6 +236,11 @@ def source_label(stat, bonus_type) -> str:
     if bonus_type in _UNPREFIXED_TYPES:
         return base
     prefix = _TYPE_PREFIX.get(bonus_type, bonus_type)
+    # #211 — the classic `Resistance` enchantment CARRIES the Resistance bonus
+    # type; prefixing would print "Resistance Resistance", a name no item bears.
+    # The wiki engraves the bare name whenever the type IS the name.
+    if prefix.strip().lower() == base.lower():
+        return base
     return f"{prefix} {base}"
 
 

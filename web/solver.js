@@ -615,19 +615,38 @@ function buildProgram(model) {
     const slotVars = [];
     for (const opt of model.nearlyComplete || []) {
       if (opt.category !== category || opt.tier !== tier) continue;
-      if (!(targetSet.has(opt.stat) && opt.value > 0)) continue;
+      // ATOMIC since #211 (the Viktranium correction, one channel over): an
+      // option carries its own affix list, and one craft grants ALL of them —
+      // a Skill-menu option is six skills on one binary. Flat single-affix
+      // records still read, for back-compat with a cached dataset.
+      const affixes = (opt.affixes && opt.affixes.length)
+        ? opt.affixes
+        : (opt.stat ? [{ stat: opt.stat, bonus_type: opt.bonus_type, value: opt.value, unit: opt.unit }] : []);
+      const onTarget = affixes.filter((a) => targetSet.has(a.stat) && a.value > 0);
+      if (onTarget.length === 0) continue;
       const n = "n" + ncc++;
       extraVars.push(n);
+      const lead = onTarget[0];
       ncMeta.set(n, {
-        item: xv.variant.variant_id, category, stat: opt.stat,
-        bonus_type: opt.bonus_type, value: opt.value, unit: opt.unit || "flat",
-        tier, wiki_url: opt.wiki_url,
+        item: xv.variant.variant_id, category,
+        ...(opt.name ? { name: opt.name } : {}),
+        // The whole option rides along, so a placement is self-describing.
+        affixes: affixes.map((a) => ({
+          stat: a.stat, bonus_type: a.bonus_type, value: a.value, unit: a.unit || "flat",
+          ...(a.via ? { via: a.via } : {}),
+        })),
+        // Legacy flat fields for renderers not yet reading `affixes`: the
+        // option's leading ON-TARGET affix.
+        stat: lead.stat, bonus_type: lead.bonus_type, value: lead.value,
+        unit: lead.unit || "flat", tier, wiki_url: opt.wiki_url,
       });
       slotVars.push(n);
       extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
-      const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
-      if (!zByBucket.has(k)) zByBucket.set(k, []);
-      zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: opt.value });
+      for (const a of onTarget) {
+        const k = `${a.stat}||${_equivType(a.bonus_type)}`;
+        if (!zByBucket.has(k)) zByBucket.set(k, []);
+        zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: a.value });
+      }
     }
     if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single choice per slot
   }

@@ -125,13 +125,22 @@ function dinoInsertRow(ins) {
  *  effect pool is browsable. NOT an equippable item — an item's slot selects one
  *  option; this is inventory visibility only. */
 function ncRow(opt) {
+  // ATOMIC since #211, same as vikRow below: an option may carry several
+  // affixes (a Skill-menu craft grants six skills at once), so the row renders
+  // the option's WHOLE affix list. Falls back to a flat single-affix record
+  // for back-compat with a cached dataset.
+  const affixes = (opt.affixes && opt.affixes.length)
+    ? opt.affixes.map((a) => ({ name: a.stat, type: a.bonus_type, value: a.value,
+                                unit: a.unit || "flat" }))
+    : [{ name: opt.stat, type: opt.bonus_type, value: opt.value, unit: opt.unit || "flat" }];
+  const label = opt.name || (affixes[0] && affixes[0].name) || opt.category;
   return {
-    variant_id: `Nearly Completed: ${opt.stat} (${opt.tier})`,
+    variant_id: `Nearly Completed: ${label} (${opt.tier})`,
     source_item: `Nearly Completed — ${opt.category}`,
     slot: `Nearly Completed (${opt.category})`,
     ml: opt.tier === "legendary" ? 35 : 11,
     verification: "verified",
-    affixes: [{ name: opt.stat, type: opt.bonus_type, value: opt.value, unit: opt.unit || "flat" }],
+    affixes,
     scaling: [],
     wiki_url: opt.wiki_url,
     nc_option: true,

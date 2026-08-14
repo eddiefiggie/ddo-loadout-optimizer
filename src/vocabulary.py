@@ -692,3 +692,146 @@ def sibling_affix_gaps(pool_options):
                     "siblings_with_it": holders,
                 })
     return findings
+
+
+# --- #211: the umbrella-affix detector -----------------------------------------
+#
+# `web/model.js` credits an affix only when its NAME matches a ranked target, so
+# an affix granting exactly what the player asked for under a different name
+# contributes zero, silently. Eight families were discovered that way, each
+# after a player report (#205's post-mortem is the ruling). This is the
+# sibling-family idea on the name axis: when a registered expansion family's
+# components share a head-word (`... Focus`, `... Absorption`, `... Save`), any
+# OTHER rankable name ending in that head-word is a candidate umbrella — plus a
+# name-shape complement for the `All `/`Universal `/`Elemental `/` Mastery`
+# spellings that have no sibling family yet.
+#
+# A candidate is a REVIEW QUEUE entry, never an auto-expansion: `Universal
+# Spell Lore` genuinely stacks with element lores (docs/wiki-evidence/
+# spell-lore.md), so collapsing on name shape would be a regression. Every
+# candidate must resolve to either a registered mechanism (expansion family,
+# cross-add source — recognized automatically) or a curated `atomic` ruling
+# with the rendered-tooltip evidence (data/seed/compendium/
+# umbrella_adjudications.json). An unresolved candidate FAILS THE BUILD, the
+# way `_KNOWN_SET_BONUS_ORPHANS` stays empty by design.
+
+UMBRELLA_ADJUDICATIONS_PATH = os.path.join(
+    CURATED_DIR, "umbrella_adjudications.json")
+
+# The name-shape complement. Strictly weaker than the sibling axis (catches
+# `Spell Focus Mastery`, misses bare `Spell Focus`) but the only signal for a
+# family-less umbrella. Case-sensitive against canonical names.
+_UMBRELLA_SHAPE_RE = re.compile(r"^(All |Universal |Elemental )|( Mastery$)", re.I)
+
+
+def pool_affix_names(pools, set_defs=()):
+    """Every affix name a crafting pool or set-definition channel carries.
+
+    The detector's universe must be the PICKER's, and the picker unions worn
+    names with every pool AND the set-def channels — `all Saving Throws` lives
+    only on set tiers and escaped the first sweep because this walk stopped at
+    the pools. Atomic records carry `affixes`; flat records carry `stat`.
+    """
+    out = set()
+    for pool in pools or ():
+        for rec in pool or []:
+            affs = rec.get("affixes") or ([rec] if rec.get("stat") else [])
+            for a in affs:
+                n = a.get("stat") or a.get("name")
+                if n:
+                    out.add(n)
+    for defs in set_defs or ():
+        for entry in (defs or {}).values():
+            for tier in entry.get("tiers") or []:
+                for a in tier.get("affixes") or []:
+                    n = a.get("stat") or a.get("name")
+                    if n:
+                        out.add(n)
+    return out
+
+
+def _head_word(name: str):
+    parts = (name or "").split()
+    return parts[-1] if parts else ""
+
+
+def umbrella_candidates(rankable, family_components, modeled):
+    """The names the detector flags for adjudication, sorted.
+
+    `rankable` — the picker's rankable affix names (post-expansion, so a name a
+    family already expands away never appears). `family_components` — every
+    component stat a registered expansion family emits; their head-words define
+    the sibling axes. `modeled` — lowercased names already resolved by a
+    registered mechanism (expanded-away keys, cross-add sources): recognized as
+    handled without an adjudication entry.
+    """
+    components = set(family_components or ())
+    heads = {_head_word(c) for c in components if _head_word(c)}
+    modeled_lower = {(m or "").strip().lower() for m in (modeled or ())}
+    out = []
+    for name in sorted(set(rankable or ())):
+        if name in components:
+            continue
+        if (name or "").strip().lower() in modeled_lower:
+            continue
+        # ANY word, not just the last: `Spell Focus Mastery` must be caught by
+        # the Focus family's axis even though its final word is `Mastery` —
+        # last-word matching would have missed exactly the #205 name this
+        # detector exists to catch.
+        by_head = any(w in heads for w in (name or "").split())
+        by_shape = bool(_UMBRELLA_SHAPE_RE.search(name or ""))
+        if by_head or by_shape:
+            out.append({"name": name,
+                        "signal": "head-word" if by_head else "name-shape"})
+    return out
+
+
+def check_umbrella_adjudications(candidates, adjudications, rankable):
+    """Resolve the queue against the curated rulings; report, raising on drift.
+
+    Raises SystemExit when a candidate has no ruling (the latent-bug state this
+    detector exists to close), when a ruling's disposition is outside the closed
+    vocabulary, when an `atomic` ruling is missing its evidence, or when a
+    ruling names a name that is no longer flagged (stale — the roster moved or
+    a mechanism now covers it; retire the entry deliberately, never silently).
+    """
+    entries = (adjudications or {}).get("harvested") or {}
+    flagged = {c["name"] for c in (candidates or [])}
+    rankable_set = set(rankable or ())
+    problems = []
+    for name, entry in sorted(entries.items()):
+        entry = entry or {}
+        if entry.get("disposition") != "atomic":
+            problems.append(
+                f"{name}: unknown disposition {entry.get('disposition')!r} — the "
+                "vocabulary is closed at ['atomic']; a name a mechanism models "
+                "must NOT carry a seed entry (the registration resolves it)")
+            continue
+        if not entry.get("evidence") or not entry.get("harvested"):
+            problems.append(
+                f"{name}: atomic ruling is missing its evidence or harvested "
+                "date — a ruling without the reading that proves it cannot be "
+                "vouched for")
+            continue
+        if name not in flagged:
+            where = ("no longer rankable" if name not in rankable_set
+                     else "no longer flagged by any signal")
+            problems.append(
+                f"{name}: adjudication is stale ({where}) — retire or "
+                "re-record the entry deliberately, never leave it asserting a "
+                "ruling about a name the detector no longer asks about")
+            continue
+    unresolved = sorted(flagged - set(entries))
+    if unresolved:
+        problems.append(
+            "unadjudicated umbrella candidates (each is a latent #205 until "
+            "ruled): " + ", ".join(unresolved))
+    if problems:
+        raise SystemExit("umbrella detector failed:\n  " + "\n  ".join(problems))
+    if not flagged:
+        raise ValueError(
+            "umbrella detector flagged zero candidates over a non-empty "
+            "vocabulary — the signal set is broken, not clean")
+    return {"candidates": len(flagged), "atomic": len(entries),
+            "by_signal": {s: sum(1 for c in candidates if c["signal"] == s)
+                          for s in ("head-word", "name-shape")}}

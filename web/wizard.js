@@ -142,6 +142,16 @@ function creditKey(stat, bonusType) {
  *  solver would drop, or vice versa. Pure; unit-tested. */
 function cleanCreditMap(m, vocab) {
   const canonical = vocab && typeof vocab.canonical === "function" ? vocab.canonical : (s) => s;
+  // #211 — a credit on a name a family has since expanded away (a Battle
+  // Trance's Insight Combat Mastery) splits into per-component credits at full
+  // magnitude, through the SAME map the priority picker and saved-character
+  // load use. Without this the credit's bucket is one no target or affix
+  // feeds, and the declared buff silently stops counting.
+  const _dn = _datasetNormalizer();
+  const _migrateCredits = _dn && _dn.migrateCredits;
+  if (m && typeof m === "object" && typeof _migrateCredits === "function") {
+    m = _migrateCredits(m, vocab).credits;
+  }
   const rows = [];
   if (m && typeof m === "object") {
     for (const row of Object.values(m)) {

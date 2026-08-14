@@ -66,6 +66,17 @@ function resolveQuery(fx, vocab) {
   return { query: resolved, substitutions };
 }
 
+/** #211 — declared credits migrate through the same expanded-away map the app
+ *  uses (`migrateCredits`), so a fixture declaring a credit on an
+ *  expanded-away name (the Battle Trance's Insight Combat Mastery) solves what
+ *  a restored saved character actually gets. No-op when nothing expands. */
+function migrateFixtureCredits(query, vocab) {
+  if (!query.declaredCredits) return query;
+  const { migrateCredits } = require("../../web/dataset.js");
+  return Object.assign({}, query,
+    { declaredCredits: migrateCredits(query.declaredCredits, vocab).credits });
+}
+
 async function solveAll() {
   const Highs = require(path.join(ROOT, "web", "vendor", "highs.js"));
   const highs = await Highs({ locateFile: (f) => path.join(ROOT, "web", "vendor", f) });
@@ -85,7 +96,8 @@ async function solveAll() {
   // entries of the fixtures already ratified.
   const details = {};
   for (const fx of fixtures) {
-    const { query, substitutions } = resolveQuery(fx, vocab);
+    const { query: resolvedQuery, substitutions } = resolveQuery(fx, vocab);
+    const query = migrateFixtureCredits(resolvedQuery, vocab);
     const model = buildModel(
       dataset.items, query,
       dataset.dino_inserts, dataset.nearly_complete, dataset.viktranium,

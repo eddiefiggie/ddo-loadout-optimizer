@@ -591,10 +591,77 @@ test("picker: a bonus TYPE is never offered as a rankable stat", () => {
     const k = s.trim().toLowerCase();
     return types.has(k) && !names.has(k);
   });
-  assert.deepStrictEqual(typeOnly, [],
+  // #211 re-ratification: bare `Resistance` is BOTH a bonus-type word AND the
+  // classic all-saves enchantment, now a registered expansion label — offering
+  // it is deliberate, and picking it substitutes the three saves (the U11
+  // machinery), never ranks the literal token. Any OTHER type-only name still
+  // fails. The exemption is exactly the expanded-away registration.
+  // Pinned to the one proven name (close-a-defect-at-the-narrow-control): a
+  // future registered family whose key equals a bonus-type word argues its own
+  // exemption here with evidence, never inherits this one.
+  const exempt = new Set(["resistance"]);
+  assert.deepStrictEqual(typeOnly.filter((s) => !exempt.has(s.trim().toLowerCase())), [],
     `a name that only ever appears as a bonus type is not rankable; offered: ${JSON.stringify(typeOnly)}`);
 });
 
+
+// --- #211: declared-credit migration through the expanded-away map ------------
+
+test("#211: a credit on an expanded-away name splits into per-component credits", () => {
+  const { migrateCredits } = require("../web/dataset.js");
+  const v = buildPickerVocabulary(realData);
+  const { credits, substitutions } = migrateCredits({
+    "Combat Mastery||Insight": { stat: "Combat Mastery", bonus_type: "Insight", value: 7 },
+    "Devotion||Sacred": { stat: "Devotion", bonus_type: "Sacred", value: 12 },
+  }, v);
+  // The Battle Trance credit becomes one credit per tactic, full magnitude —
+  // the enchantment grants full value to every component.
+  assert.deepStrictEqual(credits["Stunning||Insight"],
+    { stat: "Stunning", bonus_type: "Insight", value: 7 });
+  assert.deepStrictEqual(credits["Vertigo||Insight"],
+    { stat: "Vertigo", bonus_type: "Insight", value: 7 });
+  assert.deepStrictEqual(credits["Shatter||Insight"],
+    { stat: "Shatter", bonus_type: "Insight", value: 7 });
+  assert.ok(!credits["Combat Mastery||Insight"], "the expanded-away key is gone");
+  // A credit on a live stat passes through untouched.
+  assert.deepStrictEqual(credits["Devotion||Sacred"],
+    { stat: "Devotion", bonus_type: "Sacred", value: 12 });
+  assert.deepStrictEqual(substitutions,
+    [{ from: "Combat Mastery", to: ["Stunning", "Vertigo", "Shatter"] }]);
+});
+
+
+test("#211: a credit on a NON-splittable expanded-away name stays untouched", () => {
+  // `elemental resistance` redirects to the UNION of five (Sonic is per-item):
+  // splitting a credit would fabricate a Sonic Resistance value for the
+  // 52-of-58 carriers that grant none. Inert beats invented.
+  const { migrateCredits } = require("../web/dataset.js");
+  const v = buildPickerVocabulary(realData);
+  const { credits, substitutions } = migrateCredits({
+    "Elemental Resistance||Enhancement": { stat: "Elemental Resistance", bonus_type: "Enhancement", value: 40 },
+  }, v);
+  assert.deepStrictEqual(credits["Elemental Resistance||Enhancement"],
+    { stat: "Elemental Resistance", bonus_type: "Enhancement", value: 40 });
+  assert.ok(!credits["Sonic Resistance||Enhancement"], "no fabricated component credit");
+  assert.deepStrictEqual(substitutions, []);
+});
+
+test("#211: colliding migrated credits keep the larger value, either order", () => {
+  const { migrateCredits } = require("../web/dataset.js");
+  const v = buildPickerVocabulary(realData);
+  const umbrella = { stat: "Combat Mastery", bonus_type: "Insight", value: 7 };
+  const component = { stat: "Stunning", bonus_type: "Insight", value: 9 };
+  for (const m of [
+    { a: umbrella, b: component },
+    { a: component, b: umbrella },
+  ]) {
+    const { credits } = migrateCredits({ k1: m.a, k2: m.b }, v);
+    assert.strictEqual(credits["Stunning||Insight"].value, 9,
+      "highest-of-type wins regardless of insertion order");
+    assert.strictEqual(credits["Vertigo||Insight"].value, 7,
+      "non-colliding components keep the umbrella value");
+  }
+});
 
 // --- #169: saved-character priority migration ---------------------------------
 // loadCharacter() restored `priorities` verbatim and never consulted the
@@ -1041,7 +1108,15 @@ test("U10: no label collides with a bare bonus-type token", () => {
   const BONUS_TYPES = ["Alchemical", "Artifact", "Competence", "Deific", "Enhancement",
     "Equipment", "Exceptional", "Fatesinger", "Festive", "Insight", "Insightful",
     "Legendary", "Primal", "Profane", "Quality", "Resistance", "Sacred"];
-  const hits = BONUS_TYPES.filter((t) => v.provenanceLabels[t.toLowerCase()]);
+  // #211 re-ratification: bare `Resistance` is a registered expansion family
+  // (the classic all-saves enchantment), so its label is a deliberate
+  // registration — the accident this guard catches is a family emitting a
+  // bare type PREFIX with no base name. Mirrors the Python guard in
+  // tests/test_provenance.py.
+  // Pinned to the one proven name (see the sibling picker gate above).
+  const exempt = new Set(["resistance"]);
+  const hits = BONUS_TYPES.filter((t) => v.provenanceLabels[t.toLowerCase()]
+    && !exempt.has(t.toLowerCase()));
   assert.deepStrictEqual(hits, [], `bare bonus-type tokens admitted as labels: ${hits}`);
 });
 

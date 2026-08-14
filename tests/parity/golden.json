@@ -397,14 +397,18 @@
   "trance-credit-displaces-ml34-baseline": {
    "status": "optimal",
    "perTarget": {
-    "Combat Mastery": 29,
-    "Constitution": 37,
-    "Physical Sheltering": 126
+    "Stunning": 37,
+    "Vertigo": 34,
+    "Shatter": 35,
+    "Constitution": 36,
+    "Physical Sheltering": 124
    },
    "effective": {
-    "Combat Mastery": 29,
-    "Constitution": 37,
-    "Physical Sheltering": 126
+    "Stunning": 37,
+    "Vertigo": 34,
+    "Shatter": 35,
+    "Constitution": 36,
+    "Physical Sheltering": 124
    },
    "chosen": [
     {
@@ -416,63 +420,12 @@
      "variant": "Lindal's Mighty Belt"
     },
     {
-     "slot": "Cloak",
-     "variant": "Adamantine Cloak of the Bear"
+     "slot": "Boots",
+     "variant": "Legendary Red Dragonscale Boots"
     },
     {
-     "slot": "Gloves",
-     "variant": "The Cruel Hands of Fate"
-    },
-    {
-     "slot": "Goggles",
-     "variant": "Legendary Mining Lenses"
-    },
-    {
-     "slot": "Helmet",
-     "variant": "Aspect of the Wild Hunt"
-    },
-    {
-     "slot": "Main Hand",
-     "variant": "Legendary Calamitous Bastard Sword"
-    },
-    {
-     "slot": "Necklace",
-     "variant": "Legendary Pendant of Crippling Strikes"
-    },
-    {
-     "slot": "Ring",
-     "variant": "Legendary Lionheart Ring"
-    },
-    {
-     "slot": "Ring",
-     "variant": "Legendary Ring of Summer's Heat"
-    },
-    {
-     "slot": "Trinket",
-     "variant": "Bauble of Draconic Resistance"
-    }
-   ]
-  },
-  "trance-credit-displaces-ml34": {
-   "status": "optimal",
-   "perTarget": {
-    "Combat Mastery": 30,
-    "Constitution": 37,
-    "Physical Sheltering": 126
-   },
-   "effective": {
-    "Combat Mastery": 30,
-    "Constitution": 37,
-    "Physical Sheltering": 126
-   },
-   "chosen": [
-    {
-     "slot": "Armor",
-     "variant": "Firefly Garb"
-    },
-    {
-     "slot": "Belt",
-     "variant": "Lindal's Mighty Belt"
+     "slot": "Bracers",
+     "variant": "Bracers of the Battlerager"
     },
     {
      "slot": "Cloak",
@@ -484,7 +437,7 @@
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Mining Lenses"
+     "variant": "Legendary Goggles of the Frozen Night"
     },
     {
      "slot": "Helmet",
@@ -492,7 +445,7 @@
     },
     {
      "slot": "Main Hand",
-     "variant": "Legendary Calamitous Bastard Sword"
+     "variant": "Mythic Bone Crusher"
     },
     {
      "slot": "Necklace",
@@ -500,11 +453,86 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Lionheart Ring"
+     "variant": "Legendary Band of Faith and Fortress"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Ring of Unbridled Might"
     },
     {
      "slot": "Trinket",
-     "variant": "Bauble of Draconic Resistance"
+     "variant": "Legendary Golden Souvenir Coin"
+    }
+   ]
+  },
+  "trance-credit-displaces-ml34": {
+   "status": "optimal",
+   "perTarget": {
+    "Stunning": 37,
+    "Vertigo": 35,
+    "Shatter": 35,
+    "Constitution": 36,
+    "Physical Sheltering": 126
+   },
+   "effective": {
+    "Stunning": 37,
+    "Vertigo": 35,
+    "Shatter": 35,
+    "Constitution": 36,
+    "Physical Sheltering": 126
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Firefly Garb"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Lindal's Mighty Belt"
+    },
+    {
+     "slot": "Boots",
+     "variant": "Legendary Red Dragonscale Boots"
+    },
+    {
+     "slot": "Bracers",
+     "variant": "Bracers of the Battlerager"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Legendary Cloak of Summer"
+    },
+    {
+     "slot": "Gloves",
+     "variant": "The Cruel Hands of Fate"
+    },
+    {
+     "slot": "Goggles",
+     "variant": "Legendary Goggles of the Frozen Night"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Aspect of the Wild Hunt"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Mythic Bone Crusher"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Legendary Pendant of Crippling Strikes"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Band of Faith and Fortress"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Contraption Keyring"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Legendary Golden Souvenir Coin"
     }
    ]
   },
@@ -979,11 +1007,11 @@
    "status": "optimal",
    "perTarget": {
     "Melee Power": 44,
-    "Balance": 44
+    "Balance": 55
    },
    "effective": {
     "Melee Power": 44,
-    "Balance": 44
+    "Balance": 55
    },
    "chosen": [
     {
@@ -1003,8 +1031,8 @@
      "variant": "Legendary Earthen Mantle"
     },
     {
-     "slot": "Helmet",
-     "variant": "Cowl of the Drow Devotee"
+     "slot": "Goggles",
+     "variant": "Legendary Drider's Vision"
     },
     {
      "slot": "Necklace",
@@ -1016,11 +1044,11 @@
    "status": "optimal",
    "perTarget": {
     "Melee Power": 42,
-    "Balance": 44
+    "Balance": 55
    },
    "effective": {
     "Melee Power": 42,
-    "Balance": 44
+    "Balance": 55
    },
    "chosen": [
     {
@@ -1040,8 +1068,8 @@
      "variant": "Legendary Earthen Mantle"
     },
     {
-     "slot": "Helmet",
-     "variant": "Cowl of the Drow Devotee"
+     "slot": "Goggles",
+     "variant": "Legendary Drider's Vision"
     },
     {
      "slot": "Necklace",
