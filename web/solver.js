@@ -1212,6 +1212,19 @@ const DECLARED_LABEL = "declared, not from gear";
  *  construction; the only thing that can move is an augment that was contributing
  *  nothing. Falls back to the tie-break solution if this stage does not solve.
  */
+/** Pin each named binary at the value it holds in the prior stage's result —
+ *  the pin-everything step every post-stage shares. */
+function pinVarsAt(pin, at, names) {
+  for (const v of names) pin.push(`${v} = ${at(v) > 0.5 ? 1 : 0}`);
+}
+
+/** The structural picks both post-stages pin: items, jokers, memberships, and
+ *  set-augment copy vars. */
+function structuralPinNames(program) {
+  return [...program.xVars.map((xv) => xv.name), ...(program.jokerVars || []),
+          ...(program.memberVars || []), ...(program.setAugVars || [])];
+}
+
 function dropNoOpAugments(program, highs, tbRes, locks) {
   const placeVars = program.placeMeta ? [...program.placeMeta.keys()] : [];
   if (!placeVars.length || tbRes.Status !== "Optimal") return tbRes;
@@ -1219,11 +1232,7 @@ function dropNoOpAugments(program, highs, tbRes, locks) {
   // Pin every structural pick. Augment placements are deliberately NOT pinned —
   // they are the only degree of freedom this stage has.
   const pin = [];
-  for (const xv of program.xVars) pin.push(`${xv.name} = ${at(xv.name) > 0.5 ? 1 : 0}`);
-  for (const v of [...(program.jokerVars || []), ...(program.memberVars || []),
-                   ...(program.setAugVars || [])]) {
-    pin.push(`${v} = ${at(v) > 0.5 ? 1 : 0}`);
-  }
+  pinVarsAt(pin, at, structuralPinNames(program));
   const res = highs.solve(encodeStage(program, {
     sense: "min", objTerms: placeVars.map((v) => ({ coef: 1, name: v })),
     locks, extra: pin,
@@ -1257,15 +1266,9 @@ function preferColorlessSetAugments(program, highs, prevRes, locks) {
     .filter(([, m]) => m.slot_color !== "Colorless").map(([cv]) => cv);
   if (!nonColorless.length) return prevRes;
   const pin = [];
-  for (const xv of program.xVars) pin.push(`${xv.name} = ${at(xv.name) > 0.5 ? 1 : 0}`);
-  for (const v of [...(program.jokerVars || []), ...(program.memberVars || []),
-                   ...(program.setAugVars || [])]) {
-    pin.push(`${v} = ${at(v) > 0.5 ? 1 : 0}`);
-  }
+  pinVarsAt(pin, at, structuralPinNames(program));
   // The settle stage's outcome: pin every ordinary per-color placement var.
-  for (const p of program.augMeta ? program.augMeta.keys() : []) {
-    pin.push(`${p} = ${at(p) > 0.5 ? 1 : 0}`);
-  }
+  pinVarsAt(pin, at, program.augMeta ? [...program.augMeta.keys()] : []);
   const res = highs.solve(encodeStage(program, {
     sense: "min", objTerms: nonColorless.map((v) => ({ coef: 1, name: v })),
     locks, extra: pin,

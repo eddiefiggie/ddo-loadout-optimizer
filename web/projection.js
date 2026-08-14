@@ -110,12 +110,18 @@
    *  per-color-capacity placements. Walk equipped items in order and drop each placed
    *  augment into the first item with remaining open capacity of the slot color it
    *  consumed. Returns { byIndex, unplaced, freeByIndex }. */
-  function assignAugments(chosen, augmentsPlaced, setAugmentsPlaced) {
-    const remaining = chosen.map((c) => {
+  /** Per-item open-slot counts by color — shared by assignAugments and the
+   *  canonicalization feasibility check, so the two can never drift. */
+  function slotCountsByItem(chosen) {
+    return chosen.map((c) => {
       const m = new Map();
       for (const col of ((c.variant.augment_slots_norm || {}).colors) || []) m.set(col, (m.get(col) || 0) + 1);
       return m;
     });
+  }
+
+  function assignAugments(chosen, augmentsPlaced, setAugmentsPlaced) {
+    const remaining = slotCountsByItem(chosen);
     // Reserve the slots the solver already filled with set-augment copies
     // (setAugmentsPlaced[].host is a variant_id) BEFORE greedily assigning ordinary
     // augments, or an item whose only compatible slot holds a set copy would be
@@ -179,15 +185,16 @@
     const chosen = build.chosen || [];
     const list = (build.setAugmentsPlaced || [])
       .map((sa) => ({ ...sa, slot_color: (sa && sa.slot_color) || "Colorless" }));
-    const hostIdx = (id) => chosen.findIndex((c) => c.variant && c.variant.variant_id === id);
+    const idxByHost = new Map();
+    chosen.forEach((c, i) => {
+      const id = c.variant && c.variant.variant_id;
+      if (id != null && !idxByHost.has(id)) idxByHost.set(id, i);
+    });
+    const hostIdx = (id) => (idxByHost.has(id) ? idxByHost.get(id) : -1);
     // Per-host physical feasibility of a candidate list: every copy must reserve
     // a real slot of its color on its own host.
     const reservationsFit = (l) => {
-      const rem = chosen.map((c) => {
-        const m = new Map();
-        for (const col of ((c.variant.augment_slots_norm || {}).colors) || []) m.set(col, (m.get(col) || 0) + 1);
-        return m;
-      });
+      const rem = slotCountsByItem(chosen);
       for (const s of l) {
         const i = hostIdx(s.host);
         if (i < 0) continue; // host not in chosen (partial snapshot) — nothing to reserve
