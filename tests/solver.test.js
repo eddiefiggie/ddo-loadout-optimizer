@@ -2280,13 +2280,14 @@ async function withCrossAdd(map, fn) {
 
   // ---------------------------------------------------------------------------
   // U3 — Set Augment source family. A Set Augment carries NO stats and may be
-  // slotted (into a Colorless slot) up to 3 times; the 3-piece Artifact bonus
-  // fires at exactly 3 owned copies. Copies feed the EXISTING set-threshold
-  // engine. Defs come from model.augment_set_defs (mirrors membershipSetDefs);
-  // hosts are equipped items exposing a Colorless slot.
+  // slotted up to 3 times; the 3-piece Artifact bonus fires at exactly 3 owned
+  // copies. Copies feed the EXISTING set-threshold engine. Defs come from
+  // model.augment_set_defs (mirrors membershipSetDefs); hosts are equipped
+  // items exposing any slot compatible with the def's fits_slots matrix
+  // (#316 — any standard color, not only Colorless).
   // ---------------------------------------------------------------------------
   // A set-augment def, shaped exactly like items.json augment_set_defs entries.
-  function augSetDef(affixes, pieces = 3) {
+  function augSetDef(affixes, pieces = 3, fits) {
     return {
       tiers: [{
         pieces_required: pieces, pieces_label: `${pieces} Pieces Equipped`,
@@ -2294,6 +2295,9 @@ async function withCrossAdd(map, fn) {
         wiki_url: "https://ddowiki.com/page/Augment_Slot/Set_Augment",
       }],
       tier: "augment", wiki_url: "https://ddowiki.com/page/Augment_Slot/Set_Augment",
+      // #316 — the baked color matrix the build forwards onto every def; the
+      // solver is fail-closed without it, so fixtures mirror the build.
+      fits_slots: fits || ["Blue", "Colorless", "Green", "Orange", "Purple", "Red", "Yellow"],
     };
   }
 
@@ -2372,6 +2376,177 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(r.status, "optimal");
     assert.strictEqual(r.effective.StatA, 10, "priority StatA: 3 copies fill all 3 Colorless slots");
     assert.strictEqual(r.effective.StatB, 0, "no Colorless slot left for the ordinary augment (shared supply)");
+  });
+
+  await test("#316/AE1: a colored-slots-only host carries a set-augment copy, slot_color named", async () => {
+    // The issue #316 repro shape: every host exposes ONLY colored slots. Under the
+    // literal-Colorless rule these hosts were ineligible and the set could never
+    // fire; under the def's baked matrix (a Set Augment is a Colorless augment,
+    // and Colorless fits every standard color slot) all three carry a copy.
+    // Deletion test target: revert eligibility to literal Colorless and this red-lines.
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
+    const model = {
+      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      worn: [slot("Ring", [host("H1", "Ring", [], ["Green", "Yellow"])]),
+             slot("Necklace", [host("H2", "Necklace", [], ["Green"])]),
+             slot("Trinket", [host("H3", "Trinket", [], ["Yellow"])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.StatA, 10, "3 copies on colored-only hosts -> 3-piece bonus fires");
+    const placed = r.setAugmentsPlaced || [];
+    assert.strictEqual(placed.length, 3, "one copy per host");
+    for (const sa of placed) {
+      assert.ok(["Green", "Yellow"].includes(sa.slot_color),
+        `slot_color names the consumed colored slot, got ${sa.slot_color}`);
+    }
+  });
+
+  await test("#316/AE3: a colored slot consumed by a copy blocks an ordinary augment of that color", async () => {
+    // Colored twin of the shared-Colorless-capacity test: three single-Yellow-slot
+    // hosts; the priority set's 3 copies eat all Yellow supply, so the ordinary
+    // Yellow augment cannot also land. Names the newly-reachable colored bucket
+    // directly rather than relying on the Colorless bucket's existing coverage.
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
+    const model = {
+      targets: ["StatA", "StatB"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      augments: [augment("ordY", "Yellow", [["StatB", "Enhancement", 7]])],
+      worn: [slot("Ring", [host("H1", "Ring", [], ["Yellow"])]),
+             slot("Necklace", [host("H2", "Necklace", [], ["Yellow"])]),
+             slot("Trinket", [host("H3", "Trinket", [], ["Yellow"])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.StatA, 10, "priority StatA: 3 copies fill all 3 Yellow slots");
+    assert.strictEqual(r.effective.StatB, 0, "no Yellow slot left for the ordinary augment (shared supply)");
+  });
+
+  await test("#316/R2: a copy is never attributed a color its host lacks", async () => {
+    // Aggregate per-color capacity is global, but the c vars exist only over each
+    // host's own colors — so the reported color is always one the host exposes,
+    // even when other equipped items supply different colors.
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
+    const hostColors = { H1: ["Colorless"], H2: ["Yellow"], H3: ["Green"] };
+    const model = {
+      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      worn: [slot("Ring", [host("H1", "Ring", [], hostColors.H1)]),
+             slot("Necklace", [host("H2", "Necklace", [], hostColors.H2)]),
+             slot("Trinket", [host("H3", "Trinket", [], hostColors.H3)])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual((r.setAugmentsPlaced || []).length, 3);
+    for (const sa of r.setAugmentsPlaced) {
+      assert.ok((hostColors[sa.host] || []).includes(sa.slot_color),
+        `${sa.host} reported ${sa.slot_color}, exposes ${hostColors[sa.host]}`);
+    }
+  });
+
+  await test("#316/#312: one copy per host holds across colored slots", async () => {
+    // A host with two compatible colored slots still holds ONE copy — the set
+    // identity is single, however many slots the item exposes. Two hosts -> at
+    // most 2 copies -> the 3-piece bonus cannot fire.
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
+    const two = {
+      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      worn: [slot("Ring", [host("H1", "Ring", [], ["Green", "Yellow"])]),
+             slot("Necklace", [host("H2", "Necklace", [], ["Yellow"])])],
+    };
+    const r2 = await S.solveLexicographic(two, highs);
+    assert.strictEqual(r2.status, "optimal");
+    assert.strictEqual(r2.effective.StatA, 0, "2 hosts -> max 2 copies -> no 3-piece bonus");
+    assert.ok((r2.setAugmentsPlaced || []).length <= 2, "one copy per host, colored slots included");
+    // Positive arm (discriminates against the pre-change tree, where colored
+    // hosts carry nothing): a third host lets the set fire with exactly one
+    // copy per DISTINCT host — the double-slot host never contributes two.
+    const three = {
+      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      worn: [slot("Ring", [host("H1", "Ring", [], ["Green", "Yellow"])]),
+             slot("Necklace", [host("H2", "Necklace", [], ["Yellow"])]),
+             slot("Trinket", [host("H3", "Trinket", [], ["Green"])])],
+    };
+    const r3 = await S.solveLexicographic(three, highs);
+    assert.strictEqual(r3.status, "optimal");
+    assert.strictEqual(r3.effective.StatA, 10, "3 distinct hosts -> bonus fires");
+    const hosts3 = (r3.setAugmentsPlaced || []).map((s) => s.host).sort();
+    assert.deepStrictEqual(hosts3, ["H1", "H2", "H3"], "one copy per distinct host");
+  });
+
+  await test("#316 fail-closed: a def without the baked matrix hosts no copies", async () => {
+    // exclude-until-verified at the solver seam: a def the build failed to stamp
+    // (join drift) must not fabricate placements from a JS-side assumption.
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]], 3, []) };
+    delete def.AugSet.fits_slots;
+    const model = {
+      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless"])]),
+             slot("Necklace", [host("H2", "Necklace", [], ["Colorless"])]),
+             slot("Trinket", [host("H3", "Trinket", [], ["Colorless"])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.StatA, 0, "no matrix -> no copies -> no bonus");
+    assert.strictEqual((r.setAugmentsPlaced || []).length, 0);
+  });
+
+  await test("#316/AE2: on ties, every copy prefers the Colorless slot", async () => {
+    // Each host exposes a free Colorless AND a free Yellow slot; totals are
+    // identical either way, so the final stage must land every copy Colorless.
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
+    const model = {
+      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless", "Yellow"])]),
+             slot("Necklace", [host("H2", "Necklace", [], ["Colorless", "Yellow"])]),
+             slot("Trinket", [host("H3", "Trinket", [], ["Colorless", "Yellow"])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.StatA, 10);
+    const placed = r.setAugmentsPlaced || [];
+    assert.strictEqual(placed.length, 3);
+    for (const sa of placed) assert.strictEqual(sa.slot_color, "Colorless",
+      `${sa.host} landed ${sa.slot_color}, expected Colorless on a tie`);
+    assert.strictEqual((r.augmentsPlaced || []).length, 0, "the stage adds no placements");
+  });
+
+  await test("#316: Colorless-first is a preference, not a rule — forced colored slots stay colored", async () => {
+    // Discriminator twin (stops the AE2 test passing vacuously against a stage
+    // that hardcodes Colorless): two hosts expose no Colorless at all, so their
+    // copies MUST keep their colored slots while H1's takes the Colorless.
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
+    const model = {
+      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless"])]),
+             slot("Necklace", [host("H2", "Necklace", [], ["Yellow"])]),
+             slot("Trinket", [host("H3", "Trinket", [], ["Green"])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.StatA, 10);
+    const byHost = Object.fromEntries((r.setAugmentsPlaced || []).map((s) => [s.host, s.slot_color]));
+    assert.deepStrictEqual(byHost, { H1: "Colorless", H2: "Yellow", H3: "Green" });
+  });
+
+  await test("#316: the Colorless preference never displaces a pinned ordinary augment", async () => {
+    // An ordinary Yellow augment (fits Yellow/Orange/Green, never Colorless)
+    // shares the hosts. Copies prefer Colorless, which leaves a Yellow slot for
+    // the ordinary augment — both priorities are fully served, and the stage's
+    // ordinary-placement pins guarantee StatB cannot be traded away.
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
+    const model = {
+      targets: ["StatA", "StatB"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      augments: [augment("ordY", "Yellow", [["StatB", "Enhancement", 7]])],
+      worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless", "Yellow"])]),
+             slot("Necklace", [host("H2", "Necklace", [], ["Colorless", "Yellow"])]),
+             slot("Trinket", [host("H3", "Trinket", [], ["Colorless", "Yellow"])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.StatA, 10, "3 copies placed");
+    assert.strictEqual(r.effective.StatB, 7, "the ordinary Yellow augment still lands");
+    for (const sa of r.setAugmentsPlaced || []) {
+      assert.strictEqual(sa.slot_color, "Colorless", "copies take Colorless, freeing Yellow");
+    }
   });
 
   await test("U3 set-augment: 3-piece Artifact bonus lands in its bucket — collapses vs a competing Artifact, stacks vs a distinct type", async () => {

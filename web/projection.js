@@ -110,19 +110,30 @@
    *  per-color-capacity placements. Walk equipped items in order and drop each placed
    *  augment into the first item with remaining open capacity of the slot color it
    *  consumed. Returns { byIndex, unplaced, freeByIndex }. */
-  function assignAugments(chosen, augmentsPlaced, setAugmentsPlaced) {
-    const remaining = chosen.map((c) => {
+  /** Per-item open-slot counts by color — shared by assignAugments and the
+   *  canonicalization feasibility check, so the two can never drift. */
+  function slotCountsByItem(chosen) {
+    return chosen.map((c) => {
       const m = new Map();
       for (const col of ((c.variant.augment_slots_norm || {}).colors) || []) m.set(col, (m.get(col) || 0) + 1);
       return m;
     });
-    // Reserve the Colorless slots the solver already filled with set-augment copies
+  }
+
+  function assignAugments(chosen, augmentsPlaced, setAugmentsPlaced) {
+    const remaining = slotCountsByItem(chosen);
+    // Reserve the slots the solver already filled with set-augment copies
     // (setAugmentsPlaced[].host is a variant_id) BEFORE greedily assigning ordinary
-    // augments, or an item whose only Colorless slot holds a set copy would be
-    // double-booked (ordinary augment attributed to a full slot) and reported as free.
+    // augments, or an item whose only compatible slot holds a set copy would be
+    // double-booked (ordinary augment attributed to a full slot) and reported as
+    // free. #316 — the reservation decrements the color the copy actually consumed
+    // (slot_color); a placement saved before slot_color existed can only have been
+    // Colorless, so that is the legacy default (an undefined lookup would silently
+    // no-op the reservation and re-offer the slot).
     for (const sa of setAugmentsPlaced || []) {
       const i = chosen.findIndex((c) => c.variant && c.variant.variant_id === sa.host);
-      if (i >= 0 && (remaining[i].get("Colorless") || 0) > 0) remaining[i].set("Colorless", remaining[i].get("Colorless") - 1);
+      const col = (sa && sa.slot_color) || "Colorless";
+      if (i >= 0 && (remaining[i].get(col) || 0) > 0) remaining[i].set(col, remaining[i].get(col) - 1);
     }
     const byIndex = new Map();
     const unplaced = [];
@@ -147,6 +158,75 @@
       if (cols.length) freeByIndex.set(i, cols);
     });
     return { byIndex, unplaced, freeByIndex };
+  }
+
+  /** #316 — the canonical set-augment placement list every consumer reads.
+   *
+   *  Returns a NEW list (the persisted snapshot is never mutated; persist.js
+   *  stores `setAugmentsPlaced` verbatim) in which each copy carries a
+   *  `slot_color` and, where a Colorless recolor is genuinely free, the copy is
+   *  re-reported as Colorless. Runs unconditionally — projection has no
+   *  solve-path flag, and on a tie-broken primary solve the pass is idempotent
+   *  (the Colorless-first stage already landed every free copy Colorless).
+   *
+   *  The guard is a trial-assignment check, not a copy-only ledger: a candidate
+   *  recolor is accepted only when (a) the host itself exposes a Colorless slot
+   *  (never a color absent from the host, R2), (b) every copy's reservation
+   *  still fits its host's physical slots, and (c) re-running the full ordinary-
+   *  augment reconstruction does not grow `unplaced` — a pre-assignment ledger
+   *  sees only other copies and would steal a Colorless slot ordinary demand
+   *  needs. Legacy placements without `slot_color` default to Colorless (the
+   *  only color a pre-#316 solve could consume). Memoized per build object.
+   */
+  const _canonSetAug = (typeof WeakMap !== "undefined") ? new WeakMap() : null;
+  function canonicalSetAugments(build) {
+    if (!build) return [];
+    if (_canonSetAug && _canonSetAug.has(build)) return _canonSetAug.get(build);
+    const chosen = build.chosen || [];
+    const list = (build.setAugmentsPlaced || [])
+      .map((sa) => ({ ...sa, slot_color: (sa && sa.slot_color) || "Colorless" }));
+    const idxByHost = new Map();
+    chosen.forEach((c, i) => {
+      const id = c.variant && c.variant.variant_id;
+      if (id != null && !idxByHost.has(id)) idxByHost.set(id, i);
+    });
+    const hostIdx = (id) => (idxByHost.has(id) ? idxByHost.get(id) : -1);
+    // Per-host physical feasibility of a candidate list: every copy must reserve
+    // a real slot of its color on its own host.
+    const reservationsFit = (l) => {
+      const rem = slotCountsByItem(chosen);
+      for (const s of l) {
+        const i = hostIdx(s.host);
+        if (i < 0) continue; // host not in chosen (partial snapshot) — nothing to reserve
+        const have = rem[i].get(s.slot_color) || 0;
+        if (!have) return false;
+        rem[i].set(s.slot_color, have - 1);
+      }
+      return true;
+    };
+    if (list.length && reservationsFit(list)) {
+      // The guard compares WHICH augments sit unplaced, not just how many: with
+      // a drifted restored snapshot (base unplaced > 0) an equal COUNT can still
+      // swap which augment lost its seat, and re-reporting a different eviction
+      // than the saved build showed is a display lie.
+      const unplacedIdsOf = (l) => assignAugments(chosen, build.augmentsPlaced, l).unplaced
+        .map((a) => a.variant_id).sort();
+      let base = unplacedIdsOf(list);
+      for (let k = 0; k < list.length; k++) {
+        if (list[k].slot_color === "Colorless") continue;
+        const i = hostIdx(list[k].host);
+        if (i < 0) continue;
+        const cols = ((chosen[i].variant.augment_slots_norm || {}).colors) || [];
+        if (!cols.includes("Colorless")) continue;               // host-bounded (R2)
+        const trial = list.map((s, j) => (j === k ? { ...s, slot_color: "Colorless" } : s));
+        if (!reservationsFit(trial)) continue;                   // no free Colorless on the host
+        const u = unplacedIdsOf(trial);
+        const sameSet = u.length === base.length && u.every((id, x) => id === base[x]);
+        if (u.length < base.length || sameSet) { list[k] = trial[k]; base = u; }
+      }
+    }
+    if (_canonSetAug) _canonSetAug.set(build, list);
+    return list;
   }
 
   /** Dino-insert -> item assignment (mirrors assignAugments). Slots keyed by
@@ -185,7 +265,7 @@
    *  sourceKind, slots, hostIds, isSet }], ... } — presentation only. */
   function attributionByTarget(result, augAssign) {
     const breakdown = result.breakdown || {};
-    augAssign = augAssign || assignAugments(result.chosen, result.augmentsPlaced, result.setAugmentsPlaced);
+    augAssign = augAssign || assignAugments(result.chosen, result.augmentsPlaced, canonicalSetAugments(result));
     const augSlot = new Map(), augHost = new Map();
     for (const [idx, augs] of augAssign.byIndex) {
       const host = result.chosen[idx];
@@ -635,7 +715,7 @@
   // tf/gs) or host (joker/membership); dino/aug come pre-assigned by index. Extracted
   // verbatim from results.js buildViews so results.js and the exports share one builder.
   function buildCraftMaps(build, augAssign, dinoAssign) {
-    augAssign = augAssign || assignAugments(build.chosen, build.augmentsPlaced, build.setAugmentsPlaced);
+    augAssign = augAssign || assignAugments(build.chosen, build.augmentsPlaced, canonicalSetAugments(build));
     dinoAssign = dinoAssign || assignDinoInserts(build.chosen, build.dinoPlaced);
     const byItemMap = (list) => {
       const m = new Map();
@@ -657,7 +737,7 @@
     // augment reconstruction, whose host could disagree with the item the solver
     // actually suppressed).
     const setAugByHost = new Map();
-    for (const s of build.setAugmentsPlaced || []) {
+    for (const s of canonicalSetAugments(build)) {           // #316 — canonical colors
       if (!setAugByHost.has(s.host)) setAugByHost.set(s.host, []);
       setAugByHost.get(s.host).push(s);
     }
@@ -724,8 +804,11 @@
         // item is itself a member of a named set, that own set is suppressed while
         // the augment occupies it (the solver already dropped it from setsActive),
         // so name the suppression inline — carrying it into every text export.
+        // #316 — the consumed slot color rides on the label the same way: copies
+        // may land in colored slots now, and an unnamed color reads as Colorless.
+        const where = o.slot_color ? ` — in ${o.slot_color} slot` : "";
         const supp = (o.suppresses && o.suppresses.length) ? ` (suppresses ${o.suppresses.join(", ")})` : "";
-        return `Set Augment: ${o.set}${supp}`;
+        return `Set Augment: ${o.set}${where}${supp}`;
       }
       case "membership": {
         const sysId = (Craft && Craft.systemForStation(o.station)) || "isle-of-dread-set-bonus";
@@ -733,6 +816,26 @@
       }
       default: return craftValue(o);
     }
+  }
+
+  /** #316/R8 — the set-augment placement rule, derived from the ACTUAL defs
+   *  (never a hardcoded claim about the tool's own output): reports whether the
+   *  baked matrix covers the seven standard colors on every def, and whether any
+   *  def includes Lunar/Solar (Moon/Sun). The one predicate every disclosure
+   *  surface reads, so the app notice and the exports cannot disagree. Returns
+   *  null when the dataset carries no defs (nothing to disclose). */
+  function setAugmentSlotRule(dataset) {
+    const defs = (dataset && dataset.augment_set_defs) || {};
+    const names = Object.keys(defs);
+    if (!names.length) return null;
+    const STANDARD = ["Blue", "Colorless", "Green", "Orange", "Purple", "Red", "Yellow"];
+    let anyStandardColor = true, moonSunIncluded = false;
+    for (const n of names) {
+      const f = new Set(defs[n].fits_slots || []);
+      if (!STANDARD.every((c) => f.has(c))) anyStandardColor = false;
+      if (f.has("Moon") || f.has("Sun")) moonSunIncluded = true;
+    }
+    return { anyStandardColor, moonSunIncluded };
   }
 
   // Is a placed augment a Lunar or Solar (Sun/Moon) augment? Presence-only, detected
@@ -863,8 +966,11 @@
     const suppresses = setAugs.length ? slotSetNames(v) : [];
     setAugs.forEach((s, i) => out.push({
       family: "augmentset",
-      label: craftLabel({ set: s.set, suppresses: i === 0 ? suppresses : [] }, "augmentset"),
-      set: s.set, host: s.host, wiki_url: s.wiki_url || null,
+      // #316 — slot_color rides into the label AND the entry, so every export
+      // (which renders cr.label verbatim) carries the consumed-slot attribution
+      // the app chip shows. R6: never solve-visible but share-invisible.
+      label: craftLabel({ set: s.set, slot_color: s.slot_color, suppresses: i === 0 ? suppresses : [] }, "augmentset"),
+      set: s.set, host: s.host, slot_color: s.slot_color || null, wiki_url: s.wiki_url || null,
       suppresses: i === 0 ? suppresses : [],
     }));
     return out;
@@ -876,7 +982,7 @@
   function project(rec) {
     const snap = (rec && rec.snapshot) || {};
     const chosen = snap.chosen || [];
-    const augAssign = assignAugments(chosen, snap.augmentsPlaced, snap.setAugmentsPlaced);
+    const augAssign = assignAugments(chosen, snap.augmentsPlaced, canonicalSetAugments(snap));
     const dinoAssign = assignDinoInserts(chosen, snap.dinoPlaced);
     const maps = buildCraftMaps(snap, augAssign, dinoAssign);
     const attr = attributionByTarget(snap, augAssign);
@@ -1142,12 +1248,12 @@
     project, creditNoticeLines, saturationNoticeLines, emptySlotNoticeLines,
     absorptionQuarantineNoticeLines, declaredCreditsLine,
     // pure primitives (results.js binds these; single definition, no drift)
-    affixLabel, collapseExpansions, itemMl, contributingAffixes, assignAugments, dinoInsertKey, assignDinoInserts,
+    affixLabel, collapseExpansions, itemMl, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,
     satisfiedSets, suppressedHostIds, slotSetNames,
     setContributors, contributorsFor, setMemberLabel, activeSetDetail, satisfiedSetDetail,
     // craft + cue helpers
-    buildCraftMaps, craftLabel, craftValue, lunarSolar,
+    buildCraftMaps, craftLabel, craftValue, lunarSolar, setAugmentSlotRule,
     // #245 — craft-carried disclosure + the opt-out notice line
     craftCarried, craftingExcludedLine,
     // #262 — the one no-drop-source disclosure wording (results/browse/wizard

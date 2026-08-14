@@ -26,6 +26,14 @@ from src import membership
 # and the raw crafting ``set`` field, so it is the join key onto the defs.
 SET_AUGMENT_PREFIX = "Set Augment: "
 
+# #316 — key forwarded from the variant onto its def: the baked wiki color
+# matrix (stamped by build_dataset via src.colors.fits_slots). web/solver.js
+# reads this key off the EMITTED DEF, because the copy family iterates the defs
+# — the stat-less variant that natively carries the matrix is dominance-pruned
+# out of the augment pool the solver receives. The two sites must agree on this
+# exact string.
+FITS_SLOTS_KEY = "fits_slots"
+
 # Every Set Augment fires at exactly 3 Pieces Equipped; the value is read from the
 # resolved def tier (single source of truth) rather than hardcoded here.
 
@@ -76,5 +84,49 @@ def attach_augment_set_slots(variants, defs: dict = None) -> int:
         v["pieces_required"] = d["tiers"][0]["pieces_required"]
         v["set_augment"] = True
         v["verification"] = "verified"
+        # #316 — forward the variant's baked color matrix onto the def. This is
+        # the only route the matrix reaches the placement encoder; a def left
+        # without it hosts no copies (fail-closed), and the build guard below
+        # turns that state into a build failure rather than a silent solve gap.
+        fits = v.get(FITS_SLOTS_KEY) or []
+        if fits:
+            d[FITS_SLOTS_KEY] = sorted(fits)
         n += 1
     return n
+
+
+def assert_def_matrix_join(defs: dict, variants=None) -> int:
+    """#316 fail-closed build guard: every emitted augment-set def must carry the
+    color matrix forwarded from its ``Set Augment: <name>`` variant by
+    attach_augment_set_slots. A def with no matrix silently hosts no copies —
+    a regression from Colorless-only placement — so join drift is a build
+    failure, not a runtime branch. Refuses to inspect nothing (a zero-def walk
+    is byte-identical to a clean run) and returns the count actually compared.
+
+    Pass ``variants`` when available so the failure names the right seam: a
+    matrix-less def can mean the variant never joined (join drift) OR that the
+    variant joined but carried an empty matrix (color annotation failed
+    upstream, e.g. aug_color unset by a pool-key rename) — two different
+    subsystems to debug during a blocked build.
+    """
+    if not defs:
+        raise SystemExit(
+            "augment-set def/matrix join guard walked ZERO defs — the channel "
+            "is empty or was not built (vacuous pass refused)")
+    missing = sorted(n for n, d in defs.items() if not d.get(FITS_SLOTS_KEY))
+    if missing:
+        joined = None
+        if variants is not None:
+            joined = {set_name_of(v) for v in variants if is_set_augment(v)}
+
+        def _why(n):
+            if joined is None:
+                return n
+            if n not in joined:
+                return f"{n} — no matching 'Set Augment: {n}' variant (join drift)"
+            return (f"{n} — variant joined but forwarded no {FITS_SLOTS_KEY} "
+                    "(color annotation failed upstream, e.g. aug_color unset)")
+        raise SystemExit(
+            "augment-set defs missing the baked color matrix:\n  "
+            + "\n  ".join(_why(n) for n in missing))
+    return len(defs)

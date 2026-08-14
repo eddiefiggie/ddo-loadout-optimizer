@@ -955,6 +955,10 @@ def build() -> dict:
          for _d in augment_set_defs.values() for _t in _d.get("tiers") or []
          for a in _t.get("affixes") or []))
     augment_sets_mod.attach_augment_set_slots(variants, augment_set_defs)
+    # #316 — the attach above also forwards each variant's baked `fits_slots`
+    # (stamped at the variant loop from src.colors) onto its def; this guard
+    # fails the build if any def was left matrix-less by join drift.
+    augment_sets_mod.assert_def_matrix_join(augment_set_defs, variants)
 
     # U81 Nearly Complete: expose the parametric choice-slot effect pool. Items
     # carrying a `nearly_complete: <category>` field draw one option from it (host

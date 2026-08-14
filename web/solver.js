@@ -416,57 +416,72 @@ function buildProgram(model) {
   // slotted. The aggregate path can't model it — it values an augment solely by its
   // stat buckets (a stat-less augment is dropped) and caps every augment at one
   // placement. So model each set augment as its own family: a binary y[aug,i] per set
-  // augment and per equipped host item i exposing a Colorless slot, with y <= x_i
-  // (host equipped), Σ_i y <= 3 (own at most three copies), and a per-host cap so an
-  // item never hosts more copies than it has Colorless slots (keeps host attribution
-  // physically valid for U4 suppression / U7 exports). Copies SHARE the physical
-  // Colorless slots with ordinary colorless-augment demand, so each y is appended to
-  // placeByColor['Colorless'] and the per-color capacity constraint below bounds
-  // ordinary + set-augment consumption together (no double-booking). The 3-piece tier
-  // is self-seeded into the set-threshold engine further down (Part B, mirroring the
-  // chosen-membership self-seed), so the EXISTING threshold constraint fires the bonus
-  // at exactly 3 pieces. Only for the ~21 set augments (bounded), so the placement-var
-  // blowup that forced the aggregate model for ordinary augments does not apply here.
+  // augment and per equipped host item i exposing a COMPATIBLE slot, with y <= x_i
+  // (host equipped) and Σ_i y <= 3 (own at most three copies). #316 — eligibility
+  // is the def's baked `fits_slots` matrix (forwarded from the variant by the build;
+  // fail-closed: a def without it hosts no copies), the same single source ordinary
+  // augments use — a Set Augment is a Colorless augment, so it fits any standard
+  // color slot, not only literal Colorless. WHICH slot a copy consumes rides on a
+  // per-copy color variable c[y,sc] over (host's slots ∩ def matrix) with Σ_sc c = y:
+  // the c vars — never y itself — join placeByColor, so the per-color capacity
+  // constraint below bounds ordinary + set-augment consumption together per color
+  // (pushing y too would double-book a slot). Host-binding falls out of defining
+  // c vars only over the host's own colors, and #312's one-copy-per-host cap keeps
+  // per-host pinned demand at ≤1 so a copy's host attribution is always physically
+  // realizable (the old per-host Colorless-count cap is subsumed and removed —
+  // reverting eligibility to literal Colorless zeroes colored-only hosts, see the
+  // AE1 deletion test). The c vars are deliberately kept OUT of setAugMeta /
+  // setAugVars: those feed the tie-break objective and the settle-stage pin set,
+  // and the Colorless-first post-stage needs the color choice left free (U3-stage).
+  // The 3-piece tier is self-seeded into the set-threshold engine further down
+  // (Part B), so the EXISTING threshold constraint fires the bonus at exactly 3
+  // pieces. Only for the ~21 set augments (bounded), so the placement-var blowup
+  // that forced the aggregate model for ordinary augments does not apply here.
   const augSetDefs = model.augment_set_defs || {};
-  const setAugToSeed = new Map(); // set name -> { tier, ys:[y names] } for the Part-B threshold self-seed
-  const setAugMeta = new Map();   // y var -> { set, host, wiki_url } — U7 reads placed hosts from the solve
-  const yByHost = new Map();      // host x-var name -> [y names] — per-host Colorless cap; U4 suppression hook
-  const hostsVar = new Map();     // host x-var name -> hosts_i binary (U4 suppression flag)
-  let yc = 0;
-  if (presentColors.has("Colorless")) {
+  const setAugToSeed = new Map();   // set name -> { tier, ys:[y names] } for the Part-B threshold self-seed
+  const setAugMeta = new Map();     // y var -> { set, host, wiki_url } — U7 reads placed hosts from the solve
+  const setAugColorMeta = new Map();// c var -> { y, slot_color } — #316 consumed-color extraction; NOT in setAugVars
+  const yByHost = new Map();        // host x-var name -> [y names] — #312 cap; U4 suppression hook
+  const hostsVar = new Map();       // host x-var name -> hosts_i binary (U4 suppression flag)
+  let yc = 0, ycc = 0;
+  {
     for (const [setName, def] of Object.entries(augSetDefs)) {
       // The 3-piece tier, kept only if it advances a ranked target — else its
       // placement vars would be free vars buying nothing (strict: never fabricate).
       const tier = (def.tiers || []).find((t) => t.pieces_required != null && (t.affixes || []).length);
       if (!tier) continue;
       if (!(tier.affixes || []).some((a) => targetSet.has(a.stat) && a.value > 0)) continue;
+      // #316 fail-closed: no baked matrix on the def -> the set hosts no copies.
+      const defFits = (def.fits_slots || []).filter((c) => presentColors.has(c));
+      if (!defFits.length) continue;
+      const defFitsSet = new Set(defFits);
       const ys = [];
       for (const xv of xVars) {
-        const nColorless = (((xv.variant.augment_slots_norm || {}).colors) || [])
-          .filter((c) => c === "Colorless").length;
-        if (!nColorless) continue; // host exposes no Colorless slot -> cannot hold a copy
+        const usable = (((xv.variant.augment_slots_norm || {}).colors) || [])
+          .filter((c) => defFitsSet.has(c));
+        if (!usable.length) continue; // host exposes no compatible slot -> cannot hold a copy
         const y = "ya" + yc++;
         extraVars.push(y);
         ys.push(y);
         extraConstraints.push(`${y} - ${xv.name} <= 0`);        // a copy only if its host is equipped
-        if (!placeByColor.has("Colorless")) placeByColor.set("Colorless", []);
-        placeByColor.get("Colorless").push(y);                  // consumes a physical Colorless slot
+        const cvars = [];
+        for (const sc of new Set(usable)) {                     // one c per DISTINCT compatible color
+          const cv = "yb" + ycc++;
+          extraVars.push(cv);
+          cvars.push(cv);
+          if (!placeByColor.has(sc)) placeByColor.set(sc, []);
+          placeByColor.get(sc).push(cv);                        // the c var consumes the physical slot
+          setAugColorMeta.set(cv, { y, slot_color: sc });
+        }
+        extraConstraints.push(`${cvars.join(" + ")} - ${y} = 0`); // placed iff exactly one color consumed
         if (!yByHost.has(xv.name)) yByHost.set(xv.name, []);
         yByHost.get(xv.name).push(y);
-        setAugMeta.set(y, { set: setName, host: xv.variant.variant_id, wiki_url: tier.wiki_url });
+        setAugMeta.set(y, { set: setName, host: xv.variant.variant_id, wiki_url: tier.wiki_url,
+                            pieces_required: tier.pieces_required });
       }
-      if (!ys.length) continue;                                 // no Colorless host anywhere -> unplaceable
+      if (!ys.length) continue;                                 // no compatible host anywhere -> unplaceable
       extraConstraints.push(`${ys.join(" + ")} <= 3`);          // own at most three copies of this set augment
       setAugToSeed.set(setName, { tier, ys });
-    }
-    // Per-host Colorless cap: Σ_aug y[aug,i] ≤ (Colorless slots on i)·x_i. Bounds an
-    // item's hosted copies by its Colorless slots so a copy's host attribution is
-    // always physically realizable (U4 suppression / U7 exports read placed hosts).
-    for (const [xname, ys] of yByHost) {
-      const xv = xVars.find((v) => v.name === xname);
-      const n = ((((xv || {}).variant || {}).augment_slots_norm || {}).colors || [])
-        .filter((c) => c === "Colorless").length;
-      extraConstraints.push(`${ys.join(" + ")} - ${n} ${xname} <= 0`);
     }
     // U4 — suppression flag hosts_i = "item i hosts at least one set-augment copy".
     // hosts_i >= y for each copy y on i (written y - hosts_i <= 0); hosts_i is Binary
@@ -486,7 +501,9 @@ function buildProgram(model) {
       // description states the rule: "Slotting this Augment in any Augment
       // Slot will override its Set Bonus to the <X> set" — so a second copy on
       // the same item overrides the first, and only the last one counts
-      // in-game. One copy per host, however many Colorless slots it exposes.
+      // in-game. One copy per host, however many slots it exposes. (Also the
+      // constraint that keeps per-host pinned color demand ≤ 1, standing in
+      // for the removed per-host slot-count cap.)
       if (ys.length > 1) extraConstraints.push(`${ys.join(" + ")} <= 1`);
     }
   }
@@ -1038,7 +1055,7 @@ function buildProgram(model) {
   return {
     xVars, zByBucket, cappedStats, targetList: model.targets, model, creditMeta,
     forcedOffVars: forcedOffSlotVars(xVars, model.query && model.query.slotConstraints),
-    extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], _zc: zc,
+    extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, hostsVar, _zc: zc,
   };
 }
 
@@ -1196,6 +1213,19 @@ const DECLARED_LABEL = "declared, not from gear";
  *  construction; the only thing that can move is an augment that was contributing
  *  nothing. Falls back to the tie-break solution if this stage does not solve.
  */
+/** Pin each named binary at the value it holds in the prior stage's result —
+ *  the pin-everything step every post-stage shares. */
+function pinVarsAt(pin, at, names) {
+  for (const v of names) pin.push(`${v} = ${at(v) > 0.5 ? 1 : 0}`);
+}
+
+/** The structural picks both post-stages pin: items, jokers, memberships, and
+ *  set-augment copy vars. */
+function structuralPinNames(program) {
+  return [...program.xVars.map((xv) => xv.name), ...(program.jokerVars || []),
+          ...(program.memberVars || []), ...(program.setAugVars || [])];
+}
+
 function dropNoOpAugments(program, highs, tbRes, locks) {
   const placeVars = program.placeMeta ? [...program.placeMeta.keys()] : [];
   if (!placeVars.length || tbRes.Status !== "Optimal") return tbRes;
@@ -1203,16 +1233,63 @@ function dropNoOpAugments(program, highs, tbRes, locks) {
   // Pin every structural pick. Augment placements are deliberately NOT pinned —
   // they are the only degree of freedom this stage has.
   const pin = [];
-  for (const xv of program.xVars) pin.push(`${xv.name} = ${at(xv.name) > 0.5 ? 1 : 0}`);
-  for (const v of [...(program.jokerVars || []), ...(program.memberVars || []),
-                   ...(program.setAugVars || [])]) {
-    pin.push(`${v} = ${at(v) > 0.5 ? 1 : 0}`);
-  }
+  pinVarsAt(pin, at, structuralPinNames(program));
   const res = highs.solve(encodeStage(program, {
     sense: "min", objTerms: placeVars.map((v) => ({ coef: 1, name: v })),
     locks, extra: pin,
   }));
   return res.Status === "Optimal" ? res : tbRes;
+}
+
+/** #316 — final stage: a set-augment copy prefers a Colorless slot on ties.
+ *
+ *  A Colorless slot is the least reusable slot on an item — only Colorless
+ *  augments ever fit it — so when stat totals are identical either way, a copy
+ *  should consume Colorless before a colored slot and leave the more broadly
+ *  usable colored slots open. Like dropNoOpAugments (and per the #206 ruling),
+ *  this is a pinned post-stage, never a tie-break coefficient: every item,
+ *  joker, membership, copy (y), and ordinary-placement pick is pinned at the
+ *  value the prior stages settled — pinning the ordinary placements is what
+ *  stops this stage re-adding a no-op placement or displacing an ordinary
+ *  augment to buy a preference — and only the set-augment color vars (which
+ *  the tie-break objective and settle pins deliberately exclude) remain free.
+ *  Minimizing the non-Colorless color vars then lands every copy Colorless
+ *  exactly when capacity genuinely allows, with identical items, totals, and
+ *  placement counts by construction. Falls back to the prior result if the
+ *  stage does not solve.
+ */
+function preferColorlessSetAugments(program, highs, prevRes, locks) {
+  const colorMeta = program.setAugColorMeta;
+  if (!colorMeta || !colorMeta.size || prevRes.Status !== "Optimal") return prevRes;
+  const at = (name) => (prevRes.Columns[name] ? prevRes.Columns[name].Primal : 0);
+  const nonColorless = [...colorMeta.entries()]
+    .filter(([, m]) => m.slot_color !== "Colorless").map(([cv]) => cv);
+  // Objective already 0 (no copy fired a colored slot) -> the solve is a
+  // guaranteed no-op; skip it. Subsumes the no-copies-placed case.
+  if (!nonColorless.some((v) => at(v) > 0.5)) return prevRes;
+  const pin = [];
+  pinVarsAt(pin, at, structuralPinNames(program));
+  // The settle stage's outcome, pinned at placement IDENTITY (the pu vars the
+  // value gates ride on) — NOT at the per-color p vars: settle parks a
+  // multi-fit augment's color arbitrarily, and freeing the colors is what lets
+  // this stage move an ordinary augment out of a Colorless slot to seat a copy
+  // there. Totals cannot move (value gates on pu), no augment can be displaced
+  // (every pu stays 1), and capacity still binds the color shuffle.
+  pinVarsAt(pin, at, program.placeMeta ? [...program.placeMeta.keys()] : []);
+  // Hold every other reported family at its settled value: this stage's
+  // objective is indifferent to them, so an alternate equally-optimal vertex
+  // could otherwise flip reported sets, crafts, or suppression flags with
+  // identical totals — display churn the settle stage exists to prevent.
+  for (const meta of [program.setMeta, program.dinoMeta, program.ncMeta, program.rollMeta,
+                      program.vikMeta, program.sealMeta, program.tfMeta, program.gsMeta]) {
+    pinVarsAt(pin, at, meta ? [...meta.keys()] : []);
+  }
+  pinVarsAt(pin, at, program.hostsVar ? [...program.hostsVar.values()] : []);
+  const res = highs.solve(encodeStage(program, {
+    sense: "min", objTerms: nonColorless.map((v) => ({ coef: 1, name: v })),
+    locks, extra: pin,
+  }));
+  return res.Status === "Optimal" ? res : prevRes;
 }
 
 function breakdownByTarget(program, prim) {
@@ -1364,13 +1441,32 @@ function readSolution(res, program) {
   for (const [m, meta] of program.memberMeta || []) {
     if (prim(m) > 0.5 && activeSetNames.has(meta.set)) membershipPlaced.push(meta);
   }
-  // U3 — placed Set Augment copies (each {set, host, wiki_url}). A copy is reported
-  // whenever its y var is set, INDEPENDENT of whether the 3-piece set activated: the
-  // solve places copies only where load-bearing (its set advances a target and needs
-  // the copies to reach threshold), and U7/exports read the actual placed hosts from
-  // the solve rather than reconstructing them greedily.
+  // U3 — placed Set Augment copies (each {set, host, slot_color, wiki_url}).
+  // Load-bearing guard (mirrors jokers/memberships): the tie-break minimizes y
+  // vars on the optimum path, but ALTERNATIVES re-solve with tieBreak:false, so
+  // HiGHS may float 1-2 copies to 1 for free whenever spare compatible capacity
+  // exists — and a copy below its set's threshold grants NOTHING in-game.
+  // Reporting a floated copy would prescribe useless Cauldron farming and show
+  // its host's own set suppressed for no benefit, so a set's copies are reported
+  // only when enough are placed to fire the tier.
   const setAugmentsPlaced = [];
-  for (const [y, meta] of program.setAugMeta || []) if (prim(y) > 0.5) setAugmentsPlaced.push(meta);
+  const setAugCount = new Map();
+  for (const [y, meta] of program.setAugMeta || []) {
+    if (prim(y) > 0.5) setAugCount.set(meta.set, (setAugCount.get(meta.set) || 0) + 1);
+  }
+  // #316 — the consumed color lives on the fired c var, not on y. Push a CLONE
+  // carrying slot_color: the meta object is shared across solves (alternatives
+  // re-solves reuse the program), so mutating it would leak one solve's color
+  // into another's already-returned result.
+  const setAugColorByY = new Map();
+  for (const [cv, cm] of program.setAugColorMeta || []) {
+    if (prim(cv) > 0.5) setAugColorByY.set(cm.y, cm.slot_color);
+  }
+  for (const [y, meta] of program.setAugMeta || []) {
+    if (prim(y) > 0.5 && setAugCount.get(meta.set) >= (meta.pieces_required || 3)) {
+      setAugmentsPlaced.push({ ...meta, slot_color: setAugColorByY.get(y) || "Colorless" });
+    }
+  }
   return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, tfPlaced, gsPlaced, jokerPlaced, membershipPlaced, setAugmentsPlaced };
 }
 
@@ -1435,7 +1531,8 @@ async function solveLexicographic(model, highs) {
 
   const tb = highs.solve(encodeStage(program, { sense: "min", tieBreak: true, locks }));
   const tbRes = tb.Status === "Optimal" ? tb : highs.solve(encodeStage(program, { objectiveStat: program.targetList.at(-1), sense: "max", locks }));
-  const finalRes = dropNoOpAugments(program, highs, tbRes, locks);
+  const finalRes = preferColorlessSetAugments(
+    program, highs, dropNoOpAugments(program, highs, tbRes, locks), locks);
   const sol = readSolution(finalRes, program);
   const prim = (name) => (finalRes.Columns[name] ? finalRes.Columns[name].Primal : 0);
 
