@@ -234,6 +234,64 @@ def test_def_failing_validation_leaves_variant_quarantined():
     assert "set" not in ae and "set_augment" not in ae
 
 
+## --- #316: forward the color matrix onto the defs + fail-closed join guard ----
+
+SEVEN_COLORS = ["Blue", "Colorless", "Green", "Orange", "Purple", "Red", "Yellow"]
+
+
+def _matrix_stamped_variants():
+    """The pre-attach fixture with the variant-side matrix stamp applied, as
+    build_dataset does in its variant loop before attach runs."""
+    variants = _quarantined_set_augment_variants()
+    for v in variants:
+        if augment_sets.is_set_augment(v):
+            v[augment_sets.FITS_SLOTS_KEY] = list(SEVEN_COLORS)
+    return variants
+
+
+def test_attach_forwards_fits_slots_onto_defs():
+    variants = _matrix_stamped_variants()
+    defs = membership.build_augment_set_defs()
+    augment_sets.attach_augment_set_slots(variants, defs)
+    for name, d in defs.items():
+        assert d.get(augment_sets.FITS_SLOTS_KEY) == SEVEN_COLORS, \
+            f"{name} def did not receive the forwarded matrix"
+
+
+def test_def_matrix_join_guard_passes_and_counts_compared():
+    variants = _matrix_stamped_variants()
+    defs = membership.build_augment_set_defs()
+    augment_sets.attach_augment_set_slots(variants, defs)
+    assert augment_sets.assert_def_matrix_join(defs) == 21, \
+        "guard reports the count it actually compared"
+
+
+def test_def_matrix_join_guard_red_when_a_variant_is_missing():
+    # Corrupt the value and its reference together: remove one variant entirely
+    # (the stamp AND its source). The guard must go red naming the set.
+    variants = [v for v in _matrix_stamped_variants()
+                if augment_sets.set_name_of(v) != "Quickblade"]
+    defs = membership.build_augment_set_defs()
+    augment_sets.attach_augment_set_slots(variants, defs)
+    try:
+        augment_sets.assert_def_matrix_join(defs)
+    except SystemExit as e:
+        assert "Quickblade" in str(e), "failure names the unjoined def"
+    else:
+        raise AssertionError("guard passed with an unjoined def")
+
+
+def test_def_matrix_join_guard_refuses_zero_defs():
+    # Per-channel vacuity: a zero-record walk is byte-identical to a clean run,
+    # so the guard must refuse to inspect nothing.
+    try:
+        augment_sets.assert_def_matrix_join({})
+    except SystemExit as e:
+        assert "ZERO" in str(e), "vacuous walk is named as such"
+    else:
+        raise AssertionError("guard passed a vacuous walk")
+
+
 def test_augment_set_defs_emitted_with_21_entries():
     # build_augment_set_defs (the source for the top-level augment_set_defs key)
     # resolves exactly the 21 sets.

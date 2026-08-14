@@ -1503,4 +1503,30 @@ test("U1: the built catalog carries both cross-add families", () => {
   assert.deepStrictEqual(ca["Fire Lore"], ["Spell Lore", "Universal Spell Lore"]);
 });
 
+// #316 — the load normalizer must not strip the color matrix the build stamps
+// onto each augment-set def (the issue #90 divergence shape: a Python stamp
+// plus a JS normalizer touching the same record).
+test("#316: normalizeDataset preserves fits_slots on augment_set_defs", () => {
+  const seven = ["Blue", "Colorless", "Green", "Orange", "Purple", "Red", "Yellow"];
+  const ds = normalizeDataset({
+    items: [],
+    augment_set_defs: {
+      SetX: { tiers: [{ pieces_required: 3, affixes: [] }], tier: "augment",
+              fits_slots: seven.slice() },
+    },
+  });
+  assert.deepStrictEqual(ds.augment_set_defs.SetX.fits_slots, seven,
+    "the stamped matrix survives load normalization");
+});
+
+test("#316: every built augment_set_def carries the seven-color matrix", () => {
+  const defs = realData.augment_set_defs || {};
+  const names = Object.keys(defs);
+  assert.ok(names.length >= 21, `expected the 21 defs, got ${names.length}`);
+  for (const n of names) {
+    assert.deepStrictEqual(defs[n].fits_slots,
+      ["Blue", "Colorless", "Green", "Orange", "Purple", "Red", "Yellow"], n);
+  }
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);
