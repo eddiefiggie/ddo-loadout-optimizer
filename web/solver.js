@@ -1386,6 +1386,21 @@ function computeScale(program) {
   return { variants: program.xVars.length, crafts, stages: (program.targetList || []).length + 1 };
 }
 
+// #319 — the shared load-bearing test for every craft/placement family: a
+// placement var is load-bearing iff some contribution it gates actually fired.
+// Collect the gate names of every fired z once; each family's report guard then
+// checks membership. Value and this set both derive from the same z primal, so
+// a guarded report always agrees with the displayed totals, on every solve path.
+function firedGateSet(program, prim) {
+  const fired = new Set();
+  for (const [, zs] of program.zByBucket) {
+    for (const z of zs) {
+      if (prim(z.name) > 0.5) for (const g of z.gates) fired.add(g);
+    }
+  }
+  return fired;
+}
+
 function readSolution(res, program) {
   const prim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
   const chosen = program.xVars.filter((xv) => prim(xv.name) > 0.5).map((xv) => ({ slot: xv.slot, variant: xv.variant }));
@@ -1398,24 +1413,41 @@ function readSolution(res, program) {
     // the true (capped) value and invent a phantom cost. min(cap, raw) is right for both.
     effective[stat] = program.cappedStats[stat] != null ? Math.min(program.cappedStats[stat], raw) : raw;
   }
+  // #319 load-bearing guards — on any solve path that does not minimize a
+  // family's placement vars (every tieBreak:false alternatives re-solve; the
+  // seven craft families even on the optimum path, where only ordinary augments
+  // are settled), HiGHS may float a var to 1 for free. A floated placement
+  // grants nothing (its gated z stayed 0), so reporting it would prescribe
+  // useless farming and skew the fewer-crafts counting. Report a placement only
+  // when a contribution it gates fired.
+  const fired = firedGateSet(program, prim);
+  // Ordinary augments: value gates ride on the pu identity var (placeMeta), not
+  // the reported per-color p var (augMeta); Σp = pu ties them, and the join key
+  // is variant_id (at most one pu per unique-equipped id can be 1).
+  const firedAugIds = new Set();
+  for (const [pu, meta] of program.placeMeta || []) {
+    if (fired.has(pu)) firedAugIds.add(meta.variant_id);
+  }
   const augmentsPlaced = [];
-  for (const [p, meta] of program.augMeta || []) if (prim(p) > 0.5) augmentsPlaced.push(meta);
+  for (const [p, meta] of program.augMeta || []) {
+    if (prim(p) > 0.5 && firedAugIds.has(meta.variant_id)) augmentsPlaced.push(meta);
+  }
   const setsActive = [];
   for (const [s, meta] of program.setMeta || []) if (prim(s) > 0.5) setsActive.push(meta);
   const dinoPlaced = [];
-  for (const [q, meta] of program.dinoMeta || []) if (prim(q) > 0.5) dinoPlaced.push(meta);
+  for (const [q, meta] of program.dinoMeta || []) if (prim(q) > 0.5 && fired.has(q)) dinoPlaced.push(meta);
   const ncPlaced = [];
-  for (const [n, meta] of program.ncMeta || []) if (prim(n) > 0.5) ncPlaced.push(meta);
+  for (const [n, meta] of program.ncMeta || []) if (prim(n) > 0.5 && fired.has(n)) ncPlaced.push(meta);
   const rollPlaced = [];
-  for (const [n, meta] of program.rollMeta || []) if (prim(n) > 0.5) rollPlaced.push(meta);
+  for (const [n, meta] of program.rollMeta || []) if (prim(n) > 0.5 && fired.has(n)) rollPlaced.push(meta);
   const vikPlaced = [];
-  for (const [n, meta] of program.vikMeta || []) if (prim(n) > 0.5) vikPlaced.push(meta);
+  for (const [n, meta] of program.vikMeta || []) if (prim(n) > 0.5 && fired.has(n)) vikPlaced.push(meta);
   const sealPlaced = [];
-  for (const [n, meta] of program.sealMeta || []) if (prim(n) > 0.5) sealPlaced.push(meta);
+  for (const [n, meta] of program.sealMeta || []) if (prim(n) > 0.5 && fired.has(n)) sealPlaced.push(meta);
   const tfPlaced = [];
-  for (const [n, meta] of program.tfMeta || []) if (prim(n) > 0.5) tfPlaced.push(meta);
+  for (const [n, meta] of program.tfMeta || []) if (prim(n) > 0.5 && fired.has(n)) tfPlaced.push(meta);
   const gsPlaced = [];
-  for (const [n, meta] of program.gsMeta || []) if (prim(n) > 0.5) gsPlaced.push(meta);
+  for (const [n, meta] of program.gsMeta || []) if (prim(n) > 0.5 && fired.has(n)) gsPlaced.push(meta);
   // Wildcard joker picks — report a group's chosen set only when the joker is truly
   // load-bearing: the set is active AND its real (non-joker) equipped pieces fall short
   // of the threshold, so the Gem is the completing piece. This holds regardless of solve
@@ -1953,5 +1985,7 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, bucketCountsFor, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars };
+  // readSolution is exported for TESTS ONLY — the deterministic guard tests
+  // inject a synthetic primal (#319); app code goes through the solve entry points.
+  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, bucketCountsFor, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, readSolution, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars };
 }
