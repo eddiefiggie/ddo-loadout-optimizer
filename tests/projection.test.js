@@ -263,6 +263,19 @@ test("#316: canonicalization never yields a color the host lacks", () => {
   assert.strictEqual(canon[0].slot_color, "Yellow", "no Colorless slot on the host -> solved color kept");
 });
 
+test("#316: the projected crafting entry (the export path) carries slot_color and the label clause", () => {
+  // Exports render cr.label verbatim from craftingForItem — the chip path
+  // alone showing the color is exactly the solve-visible-but-share-invisible
+  // gap the exports invariant forbids.
+  const rec = makeRec();
+  rec.snapshot.setAugmentsPlaced = [{ set: "Legendary Might", host: "Vol Amulet", slot_color: "Yellow" }];
+  const v = P.project(rec);
+  const trinket = v.loadout.find((i) => i.item === "Vol Amulet");
+  const sa = trinket.crafting.find((c) => c.family === "augmentset");
+  assert.strictEqual(sa.slot_color, "Yellow", "the entry carries the consumed color");
+  assert.ok(/— in Yellow slot/.test(sa.label), `label names the slot: ${sa.label}`);
+});
+
 test("#316: the augmentset label names the consumed slot color for every surface", () => {
   assert.strictEqual(
     P.craftLabel({ set: "Quickblade", slot_color: "Yellow", suppresses: [] }, "augmentset"),

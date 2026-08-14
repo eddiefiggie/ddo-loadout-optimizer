@@ -476,7 +476,8 @@ function buildProgram(model) {
         extraConstraints.push(`${cvars.join(" + ")} - ${y} = 0`); // placed iff exactly one color consumed
         if (!yByHost.has(xv.name)) yByHost.set(xv.name, []);
         yByHost.get(xv.name).push(y);
-        setAugMeta.set(y, { set: setName, host: xv.variant.variant_id, wiki_url: tier.wiki_url });
+        setAugMeta.set(y, { set: setName, host: xv.variant.variant_id, wiki_url: tier.wiki_url,
+                            pieces_required: tier.pieces_required });
       }
       if (!ys.length) continue;                                 // no compatible host anywhere -> unplaceable
       extraConstraints.push(`${ys.join(" + ")} <= 3`);          // own at most three copies of this set augment
@@ -1054,7 +1055,7 @@ function buildProgram(model) {
   return {
     xVars, zByBucket, cappedStats, targetList: model.targets, model, creditMeta,
     forcedOffVars: forcedOffSlotVars(xVars, model.query && model.query.slotConstraints),
-    extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, _zc: zc,
+    extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, hostsVar, _zc: zc,
   };
 }
 
@@ -1261,14 +1262,29 @@ function preferColorlessSetAugments(program, highs, prevRes, locks) {
   const colorMeta = program.setAugColorMeta;
   if (!colorMeta || !colorMeta.size || prevRes.Status !== "Optimal") return prevRes;
   const at = (name) => (prevRes.Columns[name] ? prevRes.Columns[name].Primal : 0);
-  if (![...(program.setAugVars || [])].some((v) => at(v) > 0.5)) return prevRes; // no copies placed
   const nonColorless = [...colorMeta.entries()]
     .filter(([, m]) => m.slot_color !== "Colorless").map(([cv]) => cv);
-  if (!nonColorless.length) return prevRes;
+  // Objective already 0 (no copy fired a colored slot) -> the solve is a
+  // guaranteed no-op; skip it. Subsumes the no-copies-placed case.
+  if (!nonColorless.some((v) => at(v) > 0.5)) return prevRes;
   const pin = [];
   pinVarsAt(pin, at, structuralPinNames(program));
-  // The settle stage's outcome: pin every ordinary per-color placement var.
-  pinVarsAt(pin, at, program.augMeta ? [...program.augMeta.keys()] : []);
+  // The settle stage's outcome, pinned at placement IDENTITY (the pu vars the
+  // value gates ride on) — NOT at the per-color p vars: settle parks a
+  // multi-fit augment's color arbitrarily, and freeing the colors is what lets
+  // this stage move an ordinary augment out of a Colorless slot to seat a copy
+  // there. Totals cannot move (value gates on pu), no augment can be displaced
+  // (every pu stays 1), and capacity still binds the color shuffle.
+  pinVarsAt(pin, at, program.placeMeta ? [...program.placeMeta.keys()] : []);
+  // Hold every other reported family at its settled value: this stage's
+  // objective is indifferent to them, so an alternate equally-optimal vertex
+  // could otherwise flip reported sets, crafts, or suppression flags with
+  // identical totals — display churn the settle stage exists to prevent.
+  for (const meta of [program.setMeta, program.dinoMeta, program.ncMeta, program.rollMeta,
+                      program.vikMeta, program.sealMeta, program.tfMeta, program.gsMeta]) {
+    pinVarsAt(pin, at, meta ? [...meta.keys()] : []);
+  }
+  pinVarsAt(pin, at, program.hostsVar ? [...program.hostsVar.values()] : []);
   const res = highs.solve(encodeStage(program, {
     sense: "min", objTerms: nonColorless.map((v) => ({ coef: 1, name: v })),
     locks, extra: pin,
@@ -1425,12 +1441,19 @@ function readSolution(res, program) {
   for (const [m, meta] of program.memberMeta || []) {
     if (prim(m) > 0.5 && activeSetNames.has(meta.set)) membershipPlaced.push(meta);
   }
-  // U3 — placed Set Augment copies (each {set, host, wiki_url}). A copy is reported
-  // whenever its y var is set, INDEPENDENT of whether the 3-piece set activated: the
-  // solve places copies only where load-bearing (its set advances a target and needs
-  // the copies to reach threshold), and U7/exports read the actual placed hosts from
-  // the solve rather than reconstructing them greedily.
+  // U3 — placed Set Augment copies (each {set, host, slot_color, wiki_url}).
+  // Load-bearing guard (mirrors jokers/memberships): the tie-break minimizes y
+  // vars on the optimum path, but ALTERNATIVES re-solve with tieBreak:false, so
+  // HiGHS may float 1-2 copies to 1 for free whenever spare compatible capacity
+  // exists — and a copy below its set's threshold grants NOTHING in-game.
+  // Reporting a floated copy would prescribe useless Cauldron farming and show
+  // its host's own set suppressed for no benefit, so a set's copies are reported
+  // only when enough are placed to fire the tier.
   const setAugmentsPlaced = [];
+  const setAugCount = new Map();
+  for (const [y, meta] of program.setAugMeta || []) {
+    if (prim(y) > 0.5) setAugCount.set(meta.set, (setAugCount.get(meta.set) || 0) + 1);
+  }
   // #316 — the consumed color lives on the fired c var, not on y. Push a CLONE
   // carrying slot_color: the meta object is shared across solves (alternatives
   // re-solves reuse the program), so mutating it would leak one solve's color
@@ -1440,7 +1463,9 @@ function readSolution(res, program) {
     if (prim(cv) > 0.5) setAugColorByY.set(cm.y, cm.slot_color);
   }
   for (const [y, meta] of program.setAugMeta || []) {
-    if (prim(y) > 0.5) setAugmentsPlaced.push({ ...meta, slot_color: setAugColorByY.get(y) || "Colorless" });
+    if (prim(y) > 0.5 && setAugCount.get(meta.set) >= (meta.pieces_required || 3)) {
+      setAugmentsPlaced.push({ ...meta, slot_color: setAugColorByY.get(y) || "Colorless" });
+    }
   }
   return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, tfPlaced, gsPlaced, jokerPlaced, membershipPlaced, setAugmentsPlaced };
 }

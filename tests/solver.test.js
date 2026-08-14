@@ -2280,10 +2280,11 @@ async function withCrossAdd(map, fn) {
 
   // ---------------------------------------------------------------------------
   // U3 — Set Augment source family. A Set Augment carries NO stats and may be
-  // slotted (into a Colorless slot) up to 3 times; the 3-piece Artifact bonus
-  // fires at exactly 3 owned copies. Copies feed the EXISTING set-threshold
-  // engine. Defs come from model.augment_set_defs (mirrors membershipSetDefs);
-  // hosts are equipped items exposing a Colorless slot.
+  // slotted up to 3 times; the 3-piece Artifact bonus fires at exactly 3 owned
+  // copies. Copies feed the EXISTING set-threshold engine. Defs come from
+  // model.augment_set_defs (mirrors membershipSetDefs); hosts are equipped
+  // items exposing any slot compatible with the def's fits_slots matrix
+  // (#316 — any standard color, not only Colorless).
   // ---------------------------------------------------------------------------
   // A set-augment def, shaped exactly like items.json augment_set_defs entries.
   function augSetDef(affixes, pieces = 3, fits) {

@@ -69,7 +69,7 @@ The placement warrant is a verified chain: every Set Augment is a Colorless augm
 - Ordinary augment color rules and the baked matrix itself are unchanged.
 - No new set-augment data harvesting; the 21 existing set augments and their definitions stand.
 - The set-identity semantics shipped in PR #317 (#312) are untouched.
-- **Deferred to follow-up work:** the Moon/Sun wiki ruling (rendered-tooltip verification of whether Colorless set augments fit Lunar/Solar slots) — file as a GitHub issue before the resolving PR merges, per the Open-work rule.
+- **Resolved during implementation (U6, 2026-08-14 — no issue needed):** the Moon/Sun question closed without a follow-up. The Augment Slot page's rendered text rules Lunar/Solar slots out of the standard color system entirely ("will not interact with standard colored augments"), so R3's exclusion is confirmed correct rather than pending; the dated ruling lives in `docs/wiki-evidence/augment-sets.md`.
 
 ### Success Criteria
 

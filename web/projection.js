@@ -205,8 +205,13 @@
       return true;
     };
     if (list.length && reservationsFit(list)) {
-      const unplacedOf = (l) => assignAugments(chosen, build.augmentsPlaced, l).unplaced.length;
-      let base = unplacedOf(list);
+      // The guard compares WHICH augments sit unplaced, not just how many: with
+      // a drifted restored snapshot (base unplaced > 0) an equal COUNT can still
+      // swap which augment lost its seat, and re-reporting a different eviction
+      // than the saved build showed is a display lie.
+      const unplacedIdsOf = (l) => assignAugments(chosen, build.augmentsPlaced, l).unplaced
+        .map((a) => a.variant_id).sort();
+      let base = unplacedIdsOf(list);
       for (let k = 0; k < list.length; k++) {
         if (list[k].slot_color === "Colorless") continue;
         const i = hostIdx(list[k].host);
@@ -215,8 +220,9 @@
         if (!cols.includes("Colorless")) continue;               // host-bounded (R2)
         const trial = list.map((s, j) => (j === k ? { ...s, slot_color: "Colorless" } : s));
         if (!reservationsFit(trial)) continue;                   // no free Colorless on the host
-        const u = unplacedOf(trial);
-        if (u <= base) { list[k] = trial[k]; base = u; }         // never displace an ordinary augment
+        const u = unplacedIdsOf(trial);
+        const sameSet = u.length === base.length && u.every((id, x) => id === base[x]);
+        if (u.length < base.length || sameSet) { list[k] = trial[k]; base = u; }
       }
     }
     if (_canonSetAug) _canonSetAug.set(build, list);
@@ -960,8 +966,11 @@
     const suppresses = setAugs.length ? slotSetNames(v) : [];
     setAugs.forEach((s, i) => out.push({
       family: "augmentset",
-      label: craftLabel({ set: s.set, suppresses: i === 0 ? suppresses : [] }, "augmentset"),
-      set: s.set, host: s.host, wiki_url: s.wiki_url || null,
+      // #316 — slot_color rides into the label AND the entry, so every export
+      // (which renders cr.label verbatim) carries the consumed-slot attribution
+      // the app chip shows. R6: never solve-visible but share-invisible.
+      label: craftLabel({ set: s.set, slot_color: s.slot_color, suppresses: i === 0 ? suppresses : [] }, "augmentset"),
+      set: s.set, host: s.host, slot_color: s.slot_color || null, wiki_url: s.wiki_url || null,
       suppresses: i === 0 ? suppresses : [],
     }));
     return out;
