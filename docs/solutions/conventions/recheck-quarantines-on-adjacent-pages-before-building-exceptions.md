@@ -106,16 +106,6 @@ same harvest pass also produced the lore-additivity quote on
 2026-08-03 session at all — which un-blocked the lore half of the cross-add map
 (`docs/wiki-evidence/universal-name-sweep.md`).
 
-## Related
-
-- `docs/solutions/conventions/exclude-until-verified-data-gates.md` — the gate
-  that makes quarantines exist in the first place.
-- `docs/solutions/design-patterns/universal-stat-expansion-family.md` — the
-  classification pattern whose cross-add arm this resolution un-blocked.
-- `docs/wiki-evidence/harvest-method.md` — pacing and transport constraints the
-  re-check sweep must respect.
-
-
 ## Also run the sweep before writing a deferral (2026-08-14)
 
 The body of this doc covers the sweep's original trigger: a quarantined claim is
@@ -206,3 +196,12 @@ deferral survived contact with the evidence rather than merely predating it.
 The sweep changes the deferral's justification from "we did not look" to "we
 looked and the wiki does not say", which is the only kind of deferral the
 never-infer gate should ever produce.
+
+## Related
+
+- `docs/solutions/conventions/exclude-until-verified-data-gates.md` — the gate
+  that makes quarantines exist in the first place.
+- `docs/solutions/design-patterns/universal-stat-expansion-family.md` — the
+  classification pattern whose cross-add arm this resolution un-blocked.
+- `docs/wiki-evidence/harvest-method.md` — pacing and transport constraints the
+  re-check sweep must respect.

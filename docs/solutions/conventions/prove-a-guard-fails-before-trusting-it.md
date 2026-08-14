@@ -172,6 +172,13 @@ channels, counts inspections per channel, and raises naming any channel that wal
 tier affixes (proven by `test_set_def_orphans_vacuity_is_per_channel_not_aggregate` in
 `tests/test_augment_sets.py`).
 
+**5. A red build proves a gate fired — not that YOUR gate fired.** In a build with
+layered gates, a corruption can be intercepted by an upstream sibling before it ever
+reaches the guard under test. The falsification counts only when the failure output
+carries your guard's own message; otherwise thread the corruption past the siblings
+(corrupt the value and every upstream registry of it together) until your gate speaks.
+The third case study below is the worked example.
+
 ## Why This Matters
 
 The consequence was not a broken build — it was the opposite. The gate would have shipped
@@ -276,11 +283,11 @@ every upstream registry of it — here both the pool entry and its
 `augment_registry.json` row — so the corruption *passes* the sibling gates and
 reaches the guard under test. Proof arrives only when the failure output carries
 **your guard's own message** (here: "augment-set defs missing the baked color
-matrix: Quickblade"). So the rule is: read *which* gate produced the red, not just
-that red happened; defense-in-depth means the falsification path must be threaded
-past every sibling. A pleasant corollary: the intercepted first attempt is itself
-evidence the sibling gate works — record it, then keep going until your own gate
-speaks.
+matrix: Quickblade"). So the rule — now rule 5 above — is: read *which* gate
+produced the red, not just that red happened; defense-in-depth means the
+falsification path must be threaded past every sibling. A pleasant corollary: the
+intercepted first attempt is itself evidence the sibling gate works — record it,
+then keep going until your own gate speaks.
 
 ## Examples
 

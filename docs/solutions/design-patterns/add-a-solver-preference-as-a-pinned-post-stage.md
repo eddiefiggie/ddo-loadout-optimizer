@@ -232,8 +232,10 @@ derived lists must and must not contain it — the keying IS the pin/minimize
 membership decision.** Relatedly, extraction must push *clones* of shared meta
 objects (`{ ...meta, slot_color }`): the program and its meta maps are reused
 across alternatives re-solves, so writing a solve-specific field onto the shared
-object leaks one solve's answer into another's already-returned result. Also worth copying from PR #318: the guaranteed-no-op skip (if no
-preference variable fired, the objective is already 0 — skip the solve), and the
+object leaks one solve's answer into another's already-returned result.
+
+Also worth copying from PR #318: the guaranteed-no-op skip (if no preference
+variable fired, the objective is already 0 — skip the solve), and the
 discriminator fixture — a case where delivering the preference *requires* moving
 a free sub-choice (a multi-fit augment parked Colorless with a colored slot open
 elsewhere), without which the too-fine pin set passes vacuously.
