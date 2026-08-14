@@ -2,6 +2,7 @@
 title: Add a new solver preference as a pinned post-stage, not a tie-break term
 module: solver
 date: 2026-08-09
+last_updated: 2026-08-14
 problem_type: design_pattern
 component: tooling
 severity: medium
@@ -13,10 +14,13 @@ tags:
   - augments
   - determinism
   - user-feedback
+  - chained-stages
+  - pin-granularity
 applies_when:
   - Adding a "prefer fewer X" or "don't recommend useless X" rule to the solver
   - A reported pick looks wasteful but the totals are correct
   - Deciding whether a new preference belongs in the tie-break objective
+  - Chaining a new pinned post-stage after an existing one (e.g. after dropNoOpAugments)
 ---
 
 ## Context
@@ -153,3 +157,79 @@ placement binary at 0, so nothing observable changed; a sweep of all golden
 fixtures plus the reporter's own priority list found zero no-op placements. What
 changed is that the model now *decides* it instead of inheriting it from branch
 order. A doc that claimed a user-visible fix here would be wrong.
+
+## Pinning granularity (2026-08-14 — the second application, PR #318)
+
+PR #318 (closing #316) chained a second pinned post-stage,
+`preferColorlessSetAugments`, after `dropNoOpAugments`: on stat-identical ties a
+set-augment copy should consume a Colorless slot and leave the more reusable
+colored slots open. It followed this pattern exactly, and review still caught two
+defects before merge — both **pin-granularity** errors, a failure axis the
+original case never had to name because `dropNoOpAugments` has one prior stage and
+one variable family to think about. Both stages now share the `pinVarsAt` /
+`structuralPinNames` helpers in `web/solver.js`.
+
+Background: the ordinary-augment encoding has two layers — per-color placement
+vars (`augMeta`, *which color slot*) and a placement-identity var per augment
+(`placeMeta`, *whether placed at all*), tied by `Σ colors = identity`. The stat
+value gates ride on the **identity** var, not the colors.
+
+**Pinned too fine.** The draft pinned the per-color vars. That froze the arbitrary
+color the settle stage had parked each multi-fit augment in — so when settle
+happened to park one in a Colorless slot, the new stage could not move it aside to
+seat a copy, and a stat-identical all-Colorless arrangement was unreachable. The
+preference silently failed with every fixture green. The fix pins the identity
+vars and frees the colors: totals cannot move (value gates on identity), nothing
+is displaced (every identity stays 1), capacity rows still bind the shuffle.
+
+**Pinned too little.** The draft left set-active vars, the seven craft-family var
+sets, and the suppression flags unpinned under an objective indifferent to them —
+so the re-solve could return an alternate equal-value vertex flipping which sets,
+crafts, or suppressions get *reported*. Display churn at identical totals: the
+precise disease the settle stage exists to cure, reintroduced by the stage after
+it.
+
+**The rule: "pin everything else" is a granularity decision. A new post-stage pins
+three classes, and only the preference's own variables stay free:**
+
+1. **Structural picks** — items, jokers, memberships, copies
+   (`structuralPinNames`).
+2. **Prior stages' outcomes, at the granularity value rides on** — pin the layer
+   the value gates reference (placement identity), free the sub-choice beneath it
+   that the new stage legitimately owns (the colors). Pinning below the value
+   layer over-constrains and can make the preference unreachable; pinning nothing
+   lets the stage undo a predecessor's decision (re-add a no-op placement).
+3. **Every reported-but-objective-indifferent family** — anything the reporters
+   read (set-active, craft picks, suppression flags) that the new objective does
+   not mention.
+
+```js
+const pin = [];
+pinVarsAt(pin, at, structuralPinNames(program));      // items/jokers/members/copies
+pinVarsAt(pin, at, [...program.placeMeta.keys()]);    // identity — NOT the per-color vars
+for (const meta of [program.setMeta, program.dinoMeta, program.ncMeta, program.rollMeta,
+                    program.vikMeta, program.sealMeta, program.tfMeta, program.gsMeta])
+  pinVarsAt(pin, at, [...meta.keys()]);               // reported, objective-indifferent
+pinVarsAt(pin, at, [...program.hostsVar.values()]);   // suppression flags
+// free: the preference's own color vars + the ordinary per-color vars (the legal shuffle)
+```
+
+The safety argument worth writing out for any candidate pin set: value gates on
+the pinned layer ⇒ totals invariant; identity preserved ⇒ no displacement;
+capacity rows active ⇒ no overbooking. If those three lines hold, the granularity
+is right. Also worth copying from PR #318: the guaranteed-no-op skip (if no
+preference variable fired, the objective is already 0 — skip the solve), and the
+discriminator fixture — a case where delivering the preference *requires* moving
+a free sub-choice (a multi-fit augment parked Colorless with a colored slot open
+elsewhere), without which the too-fine pin set passes vacuously.
+
+Neither defect is caught by this doc's headline check ("identical items and totals
+by construction"): too-fine produces no wrong number and no churn, just a
+preference that never delivers; too-loose produces churn only on degenerate
+optimal faces the goldens may not include. Both were caught by reasoning about
+which variables the value gates and the reporters actually touch — the checklist
+above is that reasoning, written down.
+
+Sibling concern from the same PR, different mechanism and surface:
+`every-solver-family-report-needs-a-load-bearing-guard.md` — reported families
+floating on the `tieBreak:false` alternatives path need a report-layer guard.
