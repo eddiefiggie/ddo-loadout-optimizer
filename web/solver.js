@@ -416,57 +416,71 @@ function buildProgram(model) {
   // slotted. The aggregate path can't model it — it values an augment solely by its
   // stat buckets (a stat-less augment is dropped) and caps every augment at one
   // placement. So model each set augment as its own family: a binary y[aug,i] per set
-  // augment and per equipped host item i exposing a Colorless slot, with y <= x_i
-  // (host equipped), Σ_i y <= 3 (own at most three copies), and a per-host cap so an
-  // item never hosts more copies than it has Colorless slots (keeps host attribution
-  // physically valid for U4 suppression / U7 exports). Copies SHARE the physical
-  // Colorless slots with ordinary colorless-augment demand, so each y is appended to
-  // placeByColor['Colorless'] and the per-color capacity constraint below bounds
-  // ordinary + set-augment consumption together (no double-booking). The 3-piece tier
-  // is self-seeded into the set-threshold engine further down (Part B, mirroring the
-  // chosen-membership self-seed), so the EXISTING threshold constraint fires the bonus
-  // at exactly 3 pieces. Only for the ~21 set augments (bounded), so the placement-var
-  // blowup that forced the aggregate model for ordinary augments does not apply here.
+  // augment and per equipped host item i exposing a COMPATIBLE slot, with y <= x_i
+  // (host equipped) and Σ_i y <= 3 (own at most three copies). #316 — eligibility
+  // is the def's baked `fits_slots` matrix (forwarded from the variant by the build;
+  // fail-closed: a def without it hosts no copies), the same single source ordinary
+  // augments use — a Set Augment is a Colorless augment, so it fits any standard
+  // color slot, not only literal Colorless. WHICH slot a copy consumes rides on a
+  // per-copy color variable c[y,sc] over (host's slots ∩ def matrix) with Σ_sc c = y:
+  // the c vars — never y itself — join placeByColor, so the per-color capacity
+  // constraint below bounds ordinary + set-augment consumption together per color
+  // (pushing y too would double-book a slot). Host-binding falls out of defining
+  // c vars only over the host's own colors, and #312's one-copy-per-host cap keeps
+  // per-host pinned demand at ≤1 so a copy's host attribution is always physically
+  // realizable (the old per-host Colorless-count cap is subsumed and removed —
+  // reverting eligibility to literal Colorless zeroes colored-only hosts, see the
+  // AE1 deletion test). The c vars are deliberately kept OUT of setAugMeta /
+  // setAugVars: those feed the tie-break objective and the settle-stage pin set,
+  // and the Colorless-first post-stage needs the color choice left free (U3-stage).
+  // The 3-piece tier is self-seeded into the set-threshold engine further down
+  // (Part B), so the EXISTING threshold constraint fires the bonus at exactly 3
+  // pieces. Only for the ~21 set augments (bounded), so the placement-var blowup
+  // that forced the aggregate model for ordinary augments does not apply here.
   const augSetDefs = model.augment_set_defs || {};
-  const setAugToSeed = new Map(); // set name -> { tier, ys:[y names] } for the Part-B threshold self-seed
-  const setAugMeta = new Map();   // y var -> { set, host, wiki_url } — U7 reads placed hosts from the solve
-  const yByHost = new Map();      // host x-var name -> [y names] — per-host Colorless cap; U4 suppression hook
-  const hostsVar = new Map();     // host x-var name -> hosts_i binary (U4 suppression flag)
-  let yc = 0;
-  if (presentColors.has("Colorless")) {
+  const setAugToSeed = new Map();   // set name -> { tier, ys:[y names] } for the Part-B threshold self-seed
+  const setAugMeta = new Map();     // y var -> { set, host, wiki_url } — U7 reads placed hosts from the solve
+  const setAugColorMeta = new Map();// c var -> { y, slot_color } — #316 consumed-color extraction; NOT in setAugVars
+  const yByHost = new Map();        // host x-var name -> [y names] — #312 cap; U4 suppression hook
+  const hostsVar = new Map();       // host x-var name -> hosts_i binary (U4 suppression flag)
+  let yc = 0, ycc = 0;
+  {
     for (const [setName, def] of Object.entries(augSetDefs)) {
       // The 3-piece tier, kept only if it advances a ranked target — else its
       // placement vars would be free vars buying nothing (strict: never fabricate).
       const tier = (def.tiers || []).find((t) => t.pieces_required != null && (t.affixes || []).length);
       if (!tier) continue;
       if (!(tier.affixes || []).some((a) => targetSet.has(a.stat) && a.value > 0)) continue;
+      // #316 fail-closed: no baked matrix on the def -> the set hosts no copies.
+      const defFits = (def.fits_slots || []).filter((c) => presentColors.has(c));
+      if (!defFits.length) continue;
+      const defFitsSet = new Set(defFits);
       const ys = [];
       for (const xv of xVars) {
-        const nColorless = (((xv.variant.augment_slots_norm || {}).colors) || [])
-          .filter((c) => c === "Colorless").length;
-        if (!nColorless) continue; // host exposes no Colorless slot -> cannot hold a copy
+        const usable = (((xv.variant.augment_slots_norm || {}).colors) || [])
+          .filter((c) => defFitsSet.has(c));
+        if (!usable.length) continue; // host exposes no compatible slot -> cannot hold a copy
         const y = "ya" + yc++;
         extraVars.push(y);
         ys.push(y);
         extraConstraints.push(`${y} - ${xv.name} <= 0`);        // a copy only if its host is equipped
-        if (!placeByColor.has("Colorless")) placeByColor.set("Colorless", []);
-        placeByColor.get("Colorless").push(y);                  // consumes a physical Colorless slot
+        const cvars = [];
+        for (const sc of new Set(usable)) {                     // one c per DISTINCT compatible color
+          const cv = "yb" + ycc++;
+          extraVars.push(cv);
+          cvars.push(cv);
+          if (!placeByColor.has(sc)) placeByColor.set(sc, []);
+          placeByColor.get(sc).push(cv);                        // the c var consumes the physical slot
+          setAugColorMeta.set(cv, { y, slot_color: sc });
+        }
+        extraConstraints.push(`${cvars.join(" + ")} - ${y} = 0`); // placed iff exactly one color consumed
         if (!yByHost.has(xv.name)) yByHost.set(xv.name, []);
         yByHost.get(xv.name).push(y);
         setAugMeta.set(y, { set: setName, host: xv.variant.variant_id, wiki_url: tier.wiki_url });
       }
-      if (!ys.length) continue;                                 // no Colorless host anywhere -> unplaceable
+      if (!ys.length) continue;                                 // no compatible host anywhere -> unplaceable
       extraConstraints.push(`${ys.join(" + ")} <= 3`);          // own at most three copies of this set augment
       setAugToSeed.set(setName, { tier, ys });
-    }
-    // Per-host Colorless cap: Σ_aug y[aug,i] ≤ (Colorless slots on i)·x_i. Bounds an
-    // item's hosted copies by its Colorless slots so a copy's host attribution is
-    // always physically realizable (U4 suppression / U7 exports read placed hosts).
-    for (const [xname, ys] of yByHost) {
-      const xv = xVars.find((v) => v.name === xname);
-      const n = ((((xv || {}).variant || {}).augment_slots_norm || {}).colors || [])
-        .filter((c) => c === "Colorless").length;
-      extraConstraints.push(`${ys.join(" + ")} - ${n} ${xname} <= 0`);
     }
     // U4 — suppression flag hosts_i = "item i hosts at least one set-augment copy".
     // hosts_i >= y for each copy y on i (written y - hosts_i <= 0); hosts_i is Binary
@@ -486,7 +500,9 @@ function buildProgram(model) {
       // description states the rule: "Slotting this Augment in any Augment
       // Slot will override its Set Bonus to the <X> set" — so a second copy on
       // the same item overrides the first, and only the last one counts
-      // in-game. One copy per host, however many Colorless slots it exposes.
+      // in-game. One copy per host, however many slots it exposes. (Also the
+      // constraint that keeps per-host pinned color demand ≤ 1, standing in
+      // for the removed per-host slot-count cap.)
       if (ys.length > 1) extraConstraints.push(`${ys.join(" + ")} <= 1`);
     }
   }
@@ -1038,7 +1054,7 @@ function buildProgram(model) {
   return {
     xVars, zByBucket, cappedStats, targetList: model.targets, model, creditMeta,
     forcedOffVars: forcedOffSlotVars(xVars, model.query && model.query.slotConstraints),
-    extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], _zc: zc,
+    extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, _zc: zc,
   };
 }
 
@@ -1370,7 +1386,17 @@ function readSolution(res, program) {
   // the copies to reach threshold), and U7/exports read the actual placed hosts from
   // the solve rather than reconstructing them greedily.
   const setAugmentsPlaced = [];
-  for (const [y, meta] of program.setAugMeta || []) if (prim(y) > 0.5) setAugmentsPlaced.push(meta);
+  // #316 — the consumed color lives on the fired c var, not on y. Push a CLONE
+  // carrying slot_color: the meta object is shared across solves (alternatives
+  // re-solves reuse the program), so mutating it would leak one solve's color
+  // into another's already-returned result.
+  const setAugColorByY = new Map();
+  for (const [cv, cm] of program.setAugColorMeta || []) {
+    if (prim(cv) > 0.5) setAugColorByY.set(cm.y, cm.slot_color);
+  }
+  for (const [y, meta] of program.setAugMeta || []) {
+    if (prim(y) > 0.5) setAugmentsPlaced.push({ ...meta, slot_color: setAugColorByY.get(y) || "Colorless" });
+  }
   return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, tfPlaced, gsPlaced, jokerPlaced, membershipPlaced, setAugmentsPlaced };
 }
 
