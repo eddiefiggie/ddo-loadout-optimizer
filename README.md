@@ -48,7 +48,7 @@ You can also point it at **only the gear you actually own** by importing a Trove
 | Weapon handedness, dual-wield/TWF, shields, off-hand, druid oath | ✅ |
 | **Vecna Unleashed set crafting** (Lost Purpose → awaken a set) | ✅ 28 craftable-membership sets |
 | **Dino Set-Bonus** augments (Isle of Dread) | ✅ 21 augment sets |
-| Sealed in X (Ritual Table) | ✅ Undeath sourced; Fire/Gloom/Mist pending |
+| Sealed in X (Ritual Table) | ✅ Undeath + Fire sourced; Gloom/Mist pending |
 | Nearly Completed (Terror of Demogorgon, U81) | ✅ |
 | Viktranium / Lamordia (Chill of Ravenloft, U75) | ✅ |
 | Dinosaur Bone inserts (Isle of Dread) | ✅ 107 inserts |
