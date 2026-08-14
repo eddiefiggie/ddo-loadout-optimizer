@@ -482,6 +482,12 @@ function buildProgram(model) {
       extraVars.push(h);
       for (const y of ys) extraConstraints.push(`${y} - ${h} <= 0`); // hosts_i >= y
       hostsVar.set(xname, h);
+      // #312 — an item's Set Bonus identity is SINGLE. Each set augment's own
+      // description states the rule: "Slotting this Augment in any Augment
+      // Slot will override its Set Bonus to the <X> set" — so a second copy on
+      // the same item overrides the first, and only the last one counts
+      // in-game. One copy per host, however many Colorless slots it exposes.
+      if (ys.length > 1) extraConstraints.push(`${ys.join(" + ")} <= 1`);
     }
   }
 
@@ -928,7 +934,18 @@ function buildProgram(model) {
       setPieces.get(setName).push(m);                     // counts toward the set's threshold
       memberMeta.set(m, { host: xv.variant.variant_id, set: setName, station: mslot.station || null });
     }
-    if (opts.length) extraConstraints.push(`${opts.join(" + ")} <= 1`); // single membership pick per host
+    if (opts.length) {
+      // #312 — a hosted set-augment copy overrides the host's Set Bonus, and an
+      // AWAKENED membership is the host's Set Bonus too (the reported repro: a
+      // Lost Purpose hat awakened into Forbidden Knowledge while hosting a
+      // Perfect Silence copy counted toward both). Awakening is a choice, so
+      // mutual exclusion loses no optimal solution — the solver simply keeps
+      // the better of the two identities. `hostsVar` exists only for hosts
+      // that can hold a copy; intrinsic members use the (x_i - hosts_i)
+      // suppression rewrite instead because their membership is not optional.
+      const h = hostsVar.get(xv.name);
+      extraConstraints.push(`${opts.join(" + ")}${h ? ` + ${h}` : ""} <= 1`); // single set-bonus identity per host
+    }
   }
 
   // U3 Part B — self-seed each Set Augment's 3-piece tier into the set-threshold
