@@ -263,6 +263,30 @@ test("#316: canonicalization never yields a color the host lacks", () => {
   assert.strictEqual(canon[0].slot_color, "Yellow", "no Colorless slot on the host -> solved color kept");
 });
 
+test("#316: the augmentset label names the consumed slot color for every surface", () => {
+  assert.strictEqual(
+    P.craftLabel({ set: "Quickblade", slot_color: "Yellow", suppresses: [] }, "augmentset"),
+    "Set Augment: Quickblade — in Yellow slot");
+  assert.strictEqual(
+    P.craftLabel({ set: "Quickblade", slot_color: "Colorless", suppresses: ["Vol Set"] }, "augmentset"),
+    "Set Augment: Quickblade — in Colorless slot (suppresses Vol Set)");
+  // Without a slot_color (callers outside the canonical list) the label is unchanged.
+  assert.strictEqual(
+    P.craftLabel({ set: "Quickblade", suppresses: [] }, "augmentset"),
+    "Set Augment: Quickblade");
+});
+
+test("#316/R8: setAugmentSlotRule reads the rule off the actual defs", () => {
+  const seven = ["Blue", "Colorless", "Green", "Orange", "Purple", "Red", "Yellow"];
+  const full = P.setAugmentSlotRule({ augment_set_defs: { A: { fits_slots: seven.slice() } } });
+  assert.deepStrictEqual(full, { anyStandardColor: true, moonSunIncluded: false });
+  const narrow = P.setAugmentSlotRule({ augment_set_defs: { A: { fits_slots: ["Colorless"] } } });
+  assert.strictEqual(narrow.anyStandardColor, false, "a narrower matrix is reported, not papered over");
+  const moon = P.setAugmentSlotRule({ augment_set_defs: { A: { fits_slots: seven.concat(["Moon"]) } } });
+  assert.strictEqual(moon.moonSunIncluded, true, "a future Moon/Sun ruling flips the disclosure off");
+  assert.strictEqual(P.setAugmentSlotRule({}), null, "no defs -> no claim");
+});
+
 // ---- U3 — the set-contributor resolver ---------------------------------------
 // CONCEPTS.md "Set contributor": three kinds, only the first in item data. A
 // display reading `set_bonus` alone omits a piece the solve counted.

@@ -102,6 +102,19 @@ function coverageNote(dataset) {
     parts.push("<strong>Endgame band (ML30-36):</strong> " + bandParts.join(", ") +
       " — the exhaustive named + raid gear of these expansions, each item enriched or quarantined (none silently missing)");
   }
+  // #316/R8 — the set-augment placement rule, read from the actual defs via the
+  // ONE shared predicate (never a hardcoded claim about our own output).
+  const sar = Proj.setAugmentSlotRule && Proj.setAugmentSlotRule(dataset);
+  if (sar) {
+    let s = "<strong>Set Augments:</strong> " +
+      (sar.anyStandardColor
+        ? "copies place in any standard augment color slot (Colorless preferred on ties)"
+        : "placement follows each set's verified slot matrix");
+    if (!sar.moonSunIncluded) {
+      s += "; Lunar/Solar (Moon/Sun) slots are excluded until a wiki ruling confirms them";
+    }
+    parts.push(s);
+  }
   // #262 — items wiki-confirmed to have no live drop source are disclosed, never
   // dropped: they stay solver candidates (exclusion remains the player's move via
   // the blocklist), so the coverage claim must say what the per-item notes mean.
@@ -225,7 +238,7 @@ function craftChips(v, idx, maps) {
     const title = suppresses.length
       ? `Set Augment — overrides this item's own set bonus (${esc(suppresses.join(", "))})`
       : "solver-placed Set Augment";
-    return `<span class="chip setaug" title="${title}">${esc(Proj.craftLabel({ set: s.set, suppresses }, "augmentset"))}</span>`;
+    return `<span class="chip setaug" title="${title}">${esc(Proj.craftLabel({ set: s.set, slot_color: s.slot_color, suppresses }, "augmentset"))}</span>`;
   });
   return [...augs, ...craftSlotChips(v, idx, maps), ...jokers, ...memberships, ...setAugs];
 }

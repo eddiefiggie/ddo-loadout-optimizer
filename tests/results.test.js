@@ -103,6 +103,20 @@ test("coverageNote discloses Dino crafting with all pools optimized and Set-Bonu
   assert.ok(/Dinosaur Bone Set Bonus/.test(note), "discloses the deferred Set Bonus augment pool honestly");
 });
 
+test("#316: coverageNote discloses the set-augment placement rule from the defs, incl. the Moon/Sun exclusion", () => {
+  const seven = ["Blue", "Colorless", "Green", "Orange", "Purple", "Red", "Yellow"];
+  const note = R.coverageNote({
+    metadata: {},
+    augment_set_defs: { SetX: { tiers: [], fits_slots: seven.slice() } },
+  });
+  assert.ok(/Set Augments:/.test(note), "the placement-rule line renders");
+  assert.ok(/any standard augment color slot/.test(note), "states the any-color rule the defs carry");
+  assert.ok(/Lunar\/Solar \(Moon\/Sun\) slots are excluded/.test(note), "disclosed exclusion, read from the defs");
+  // No defs -> no claim (never fabricate a rule about absent data).
+  const bare = R.coverageNote({ metadata: {} });
+  assert.ok(!/Set Augments:/.test(bare), "no defs -> no placement-rule line");
+});
+
 test("craftChips renders the Gem's wildcard set assignment, load-bearing only", () => {
   const gem = { variant_id: "Legendary Gem of Many Facets", wiki_url: "https://ddowiki.com/x" };
   const maps = {

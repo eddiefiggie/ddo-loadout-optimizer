@@ -791,8 +791,11 @@
         // item is itself a member of a named set, that own set is suppressed while
         // the augment occupies it (the solver already dropped it from setsActive),
         // so name the suppression inline — carrying it into every text export.
+        // #316 — the consumed slot color rides on the label the same way: copies
+        // may land in colored slots now, and an unnamed color reads as Colorless.
+        const where = o.slot_color ? ` — in ${o.slot_color} slot` : "";
         const supp = (o.suppresses && o.suppresses.length) ? ` (suppresses ${o.suppresses.join(", ")})` : "";
-        return `Set Augment: ${o.set}${supp}`;
+        return `Set Augment: ${o.set}${where}${supp}`;
       }
       case "membership": {
         const sysId = (Craft && Craft.systemForStation(o.station)) || "isle-of-dread-set-bonus";
@@ -800,6 +803,26 @@
       }
       default: return craftValue(o);
     }
+  }
+
+  /** #316/R8 — the set-augment placement rule, derived from the ACTUAL defs
+   *  (never a hardcoded claim about the tool's own output): reports whether the
+   *  baked matrix covers the seven standard colors on every def, and whether any
+   *  def includes Lunar/Solar (Moon/Sun). The one predicate every disclosure
+   *  surface reads, so the app notice and the exports cannot disagree. Returns
+   *  null when the dataset carries no defs (nothing to disclose). */
+  function setAugmentSlotRule(dataset) {
+    const defs = (dataset && dataset.augment_set_defs) || {};
+    const names = Object.keys(defs);
+    if (!names.length) return null;
+    const STANDARD = ["Blue", "Colorless", "Green", "Orange", "Purple", "Red", "Yellow"];
+    let anyStandardColor = true, moonSunIncluded = false;
+    for (const n of names) {
+      const f = new Set(defs[n].fits_slots || []);
+      if (!STANDARD.every((c) => f.has(c))) anyStandardColor = false;
+      if (f.has("Moon") || f.has("Sun")) moonSunIncluded = true;
+    }
+    return { anyStandardColor, moonSunIncluded };
   }
 
   // Is a placed augment a Lunar or Solar (Sun/Moon) augment? Presence-only, detected
@@ -1214,7 +1237,7 @@
     satisfiedSets, suppressedHostIds, slotSetNames,
     setContributors, contributorsFor, setMemberLabel, activeSetDetail, satisfiedSetDetail,
     // craft + cue helpers
-    buildCraftMaps, craftLabel, craftValue, lunarSolar,
+    buildCraftMaps, craftLabel, craftValue, lunarSolar, setAugmentSlotRule,
     // #245 — craft-carried disclosure + the opt-out notice line
     craftCarried, craftingExcludedLine,
     // #262 — the one no-drop-source disclosure wording (results/browse/wizard
