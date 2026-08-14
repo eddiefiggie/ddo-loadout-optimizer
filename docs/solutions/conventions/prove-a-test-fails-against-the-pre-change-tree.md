@@ -168,6 +168,8 @@ Neither gate asks *does the fixture resemble what the system actually produces*.
 
 The compounding hazard is specific: when a plan states what a component emits and the fixtures are written to that statement, the specification and the fixture confirm each other. That is one claim written twice, and no amount of test discipline detects it from inside the test layer.
 
+A fourth instance of clearing-both-gates surfaced in PR #323 (2026-08-14), with a per-structure mechanism: a test that loops over N parallel surfaces asserting absence per surface clears the base-tree gate on the strength of its FIRST assertion alone (the first failure aborts the loop, so the red run never reaches the rest), and clears the mutation check for every surface the fixture never materializes (a mutation on an unminted structure is unkillable, not covered). Both gates are per-test; that defect lives per-(assertion, structure). The remedy — an in-test non-vacuity assertion over each structure the loop checks — is in `assert-non-vacuity-for-every-surface-in-a-loop-test.md`.
+
 ## When to Apply
 
 - **Any new or modified test claiming to cover a diff.** This is the default, not an escalation. Every one of the five instances came from ordinary, well-intentioned test writing.

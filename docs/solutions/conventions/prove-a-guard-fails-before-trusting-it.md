@@ -323,3 +323,7 @@ and neither was trustworthy until it had been run.
 - `docs/solutions/design-patterns/universal-stat-expansion-family.md` — the expansion-family
   pattern whose per-channel coverage discipline instantiates rules 2 and 4; #289 and #293
   are its guard-shaped incidents.
+- `docs/solutions/conventions/assert-non-vacuity-for-every-surface-in-a-loop-test.md` —
+  rule 4's per-source vacuity discipline relocated to the test layer: a loop test asserting
+  absence over N structures is vacuous for every structure its fixture never materializes,
+  and the fix is an in-test existence assertion per structure (PR #323).
