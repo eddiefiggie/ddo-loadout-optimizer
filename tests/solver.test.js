@@ -2488,6 +2488,66 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual((r.setAugmentsPlaced || []).length, 0);
   });
 
+  await test("#316/AE2: on ties, every copy prefers the Colorless slot", async () => {
+    // Each host exposes a free Colorless AND a free Yellow slot; totals are
+    // identical either way, so the final stage must land every copy Colorless.
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
+    const model = {
+      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless", "Yellow"])]),
+             slot("Necklace", [host("H2", "Necklace", [], ["Colorless", "Yellow"])]),
+             slot("Trinket", [host("H3", "Trinket", [], ["Colorless", "Yellow"])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.StatA, 10);
+    const placed = r.setAugmentsPlaced || [];
+    assert.strictEqual(placed.length, 3);
+    for (const sa of placed) assert.strictEqual(sa.slot_color, "Colorless",
+      `${sa.host} landed ${sa.slot_color}, expected Colorless on a tie`);
+    assert.strictEqual((r.augmentsPlaced || []).length, 0, "the stage adds no placements");
+  });
+
+  await test("#316: Colorless-first is a preference, not a rule — forced colored slots stay colored", async () => {
+    // Discriminator twin (stops the AE2 test passing vacuously against a stage
+    // that hardcodes Colorless): two hosts expose no Colorless at all, so their
+    // copies MUST keep their colored slots while H1's takes the Colorless.
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
+    const model = {
+      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless"])]),
+             slot("Necklace", [host("H2", "Necklace", [], ["Yellow"])]),
+             slot("Trinket", [host("H3", "Trinket", [], ["Green"])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.StatA, 10);
+    const byHost = Object.fromEntries((r.setAugmentsPlaced || []).map((s) => [s.host, s.slot_color]));
+    assert.deepStrictEqual(byHost, { H1: "Colorless", H2: "Yellow", H3: "Green" });
+  });
+
+  await test("#316: the Colorless preference never displaces a pinned ordinary augment", async () => {
+    // An ordinary Yellow augment (fits Yellow/Orange/Green, never Colorless)
+    // shares the hosts. Copies prefer Colorless, which leaves a Yellow slot for
+    // the ordinary augment — both priorities are fully served, and the stage's
+    // ordinary-placement pins guarantee StatB cannot be traded away.
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
+    const model = {
+      targets: ["StatA", "StatB"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      augments: [augment("ordY", "Yellow", [["StatB", "Enhancement", 7]])],
+      worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless", "Yellow"])]),
+             slot("Necklace", [host("H2", "Necklace", [], ["Colorless", "Yellow"])]),
+             slot("Trinket", [host("H3", "Trinket", [], ["Colorless", "Yellow"])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.StatA, 10, "3 copies placed");
+    assert.strictEqual(r.effective.StatB, 7, "the ordinary Yellow augment still lands");
+    for (const sa of r.setAugmentsPlaced || []) {
+      assert.strictEqual(sa.slot_color, "Colorless", "copies take Colorless, freeing Yellow");
+    }
+  });
+
   await test("U3 set-augment: 3-piece Artifact bonus lands in its bucket — collapses vs a competing Artifact, stacks vs a distinct type", async () => {
     const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
     const hosts = () => [

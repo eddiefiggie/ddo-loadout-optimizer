@@ -1231,6 +1231,48 @@ function dropNoOpAugments(program, highs, tbRes, locks) {
   return res.Status === "Optimal" ? res : tbRes;
 }
 
+/** #316 — final stage: a set-augment copy prefers a Colorless slot on ties.
+ *
+ *  A Colorless slot is the least reusable slot on an item — only Colorless
+ *  augments ever fit it — so when stat totals are identical either way, a copy
+ *  should consume Colorless before a colored slot and leave the more broadly
+ *  usable colored slots open. Like dropNoOpAugments (and per the #206 ruling),
+ *  this is a pinned post-stage, never a tie-break coefficient: every item,
+ *  joker, membership, copy (y), and ordinary-placement pick is pinned at the
+ *  value the prior stages settled — pinning the ordinary placements is what
+ *  stops this stage re-adding a no-op placement or displacing an ordinary
+ *  augment to buy a preference — and only the set-augment color vars (which
+ *  the tie-break objective and settle pins deliberately exclude) remain free.
+ *  Minimizing the non-Colorless color vars then lands every copy Colorless
+ *  exactly when capacity genuinely allows, with identical items, totals, and
+ *  placement counts by construction. Falls back to the prior result if the
+ *  stage does not solve.
+ */
+function preferColorlessSetAugments(program, highs, prevRes, locks) {
+  const colorMeta = program.setAugColorMeta;
+  if (!colorMeta || !colorMeta.size || prevRes.Status !== "Optimal") return prevRes;
+  const at = (name) => (prevRes.Columns[name] ? prevRes.Columns[name].Primal : 0);
+  if (![...(program.setAugVars || [])].some((v) => at(v) > 0.5)) return prevRes; // no copies placed
+  const nonColorless = [...colorMeta.entries()]
+    .filter(([, m]) => m.slot_color !== "Colorless").map(([cv]) => cv);
+  if (!nonColorless.length) return prevRes;
+  const pin = [];
+  for (const xv of program.xVars) pin.push(`${xv.name} = ${at(xv.name) > 0.5 ? 1 : 0}`);
+  for (const v of [...(program.jokerVars || []), ...(program.memberVars || []),
+                   ...(program.setAugVars || [])]) {
+    pin.push(`${v} = ${at(v) > 0.5 ? 1 : 0}`);
+  }
+  // The settle stage's outcome: pin every ordinary per-color placement var.
+  for (const p of program.augMeta ? program.augMeta.keys() : []) {
+    pin.push(`${p} = ${at(p) > 0.5 ? 1 : 0}`);
+  }
+  const res = highs.solve(encodeStage(program, {
+    sense: "min", objTerms: nonColorless.map((v) => ({ coef: 1, name: v })),
+    locks, extra: pin,
+  }));
+  return res.Status === "Optimal" ? res : prevRes;
+}
+
 function breakdownByTarget(program, prim) {
   const xByName = new Map(program.xVars.map((xv) => [xv.name, xv]));
   // Equipped item identity -> its worn slot, so an item-craft (nc/roll/vik/seal)
@@ -1461,7 +1503,8 @@ async function solveLexicographic(model, highs) {
 
   const tb = highs.solve(encodeStage(program, { sense: "min", tieBreak: true, locks }));
   const tbRes = tb.Status === "Optimal" ? tb : highs.solve(encodeStage(program, { objectiveStat: program.targetList.at(-1), sense: "max", locks }));
-  const finalRes = dropNoOpAugments(program, highs, tbRes, locks);
+  const finalRes = preferColorlessSetAugments(
+    program, highs, dropNoOpAugments(program, highs, tbRes, locks), locks);
   const sol = readSolution(finalRes, program);
   const prim = (name) => (finalRes.Columns[name] ? finalRes.Columns[name].Primal : 0);
 
