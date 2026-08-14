@@ -43,6 +43,7 @@ from src import speed_split as speed_split_mod
 from src import parrying_split as parrying_split_mod
 from src import heightened_awareness as heightened_awareness_mod
 from src import absorption_split as absorption_split_mod
+from src import elemental_resistance_split as er_split_mod
 from src import enchantment_split as enchantment_split_mod
 from src import umbrella as umbrella_mod
 from src import spell_focus as spell_focus_mod
@@ -249,6 +250,11 @@ SPEED_AUGMENT_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "spe
 # on some carriers and five on others behind an identical visible cell.
 ABSORPTION_SHARD_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "elemental_absorption.json")
+# #191 — per-affix element sets for `Elemental Resistance`, the resistance twin
+# of the absorption compound: four elements on most carriers, five behind the
+# template's `4=` switch, and per-TYPE readings because two carriers bear both.
+ER_SHARD_PATH = os.path.join(
+    HERE, "data", "seed", "compendium", "elemental_resistance.json")
 MATERIAL_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "item_material.json")
 MATERIAL_CLASS_PATH = os.path.join(HERE, "data", "seed", "compendium", "material_classification.json")
 # The slots the material gate covers (#162). Docents are the Forged body slot and
@@ -600,6 +606,19 @@ def build() -> dict:
                          "\n  ".join(_absorption_guard["problems"]))
     _absorption_coverage = absorption_split_mod.apply(planner_records, _absorption_shard)
 
+    # #191 — expand `Elemental Resistance` into per-element resistances, at the
+    # same planner-record seam and under the same rules as the absorption
+    # compound above: full magnitude per element, per-item (and per-TYPE) Sonic
+    # evidence from the shard, quarantine-as-removal for anything unconfirmed.
+    _er_shard = harvest_mod.load_shard(ER_SHARD_PATH, "elemental_resistance")
+    _er_audit = er_split_mod.audit_shard(_er_shard)
+    _er_snapshots = er_split_mod.audit_snapshots(_er_shard)
+    _er_guard = er_split_mod.check_against_snapshots(_er_shard)
+    if _er_guard["problems"]:
+        raise SystemExit("elemental resistance snapshot guard failed:\n  " +
+                         "\n  ".join(_er_guard["problems"]))
+    _er_coverage = er_split_mod.apply(planner_records, _er_shard)
+
     # U5 (#162) — stamp wiki-sourced material onto shields + body armor. The
     # gear-planner snapshot has no such field (its full item-field union is
     # affixes/ml/name/quests/slot/type/url/crafting/sets/artifact), so this is the
@@ -696,6 +715,12 @@ def build() -> dict:
         raise SystemExit("speed augment snapshot guard failed:\n  " +
                          "\n  ".join(_speed_aug_guard["problems"]))
     _speed_aug_coverage = speed_split_mod.apply_to_augments(aug_pool, _speed_aug_shard)
+    # #191 — the augment channel of the Elemental Resistance expansion. One
+    # augment carries the compound today (Draconic Soul Gem), and coverage of
+    # the item channel is not coverage of this one (#293's lesson): an augment
+    # carrier left unexpanded would ship an affix no player can rank, because
+    # the compound's picker removal above is global by name.
+    _er_aug_coverage = er_split_mod.apply(aug_pool, _er_shard)
     variants = expand_dataset(enriched_items + aug_pool)  # native path (verbatim affixes)
 
     # Wildcard set pieces (Gem of Many Facets, U6): the item rolls ONE set from each of
@@ -836,7 +861,9 @@ def build() -> dict:
         # this registration is a standing gate rather than a live expansion: a
         # set bonus carries no per-item shard key to read a Sonic flag from, so
         # a future one must fail the build loudly rather than be guessed.
-        **absorption_split_mod.EXPANDED_AWAY}
+        **absorption_split_mod.EXPANDED_AWAY,
+        # #191 — same standing gate for the resistance compound.
+        **er_split_mod.EXPANDED_AWAY}
     _set_orphans = enchantment_split_mod.set_bonus_orphans(
         variants, _expanded_away_map, allow=_KNOWN_SET_BONUS_ORPHANS)
     if _set_orphans:
@@ -1163,6 +1190,16 @@ def build() -> dict:
                 "tooltip_snapshots": _absorption_snapshots,
                 "tooltip_guard_checked": _absorption_guard["checked"],
                 "tooltip_guard_compared": _absorption_guard["compared"]},
+            # #191 — the resistance twin, same counter vocabulary and the same
+            # no-`uncovered`-counter rule: an uncovered carrier is a quarantined
+            # one, named in `excluded`.
+            "elemental_resistance_coverage": {
+                **_er_coverage,
+                "augments": _er_aug_coverage,
+                "shard_audit": _er_audit,
+                "tooltip_snapshots": _er_snapshots,
+                "tooltip_guard_checked": _er_guard["checked"],
+                "tooltip_guard_compared": _er_guard["compared"]},
             "material_coverage": {**_material_stamp, **_material_coverage},
             # The curated metal/non-metal map the druidic-oath gate reads. A
             # material absent from this map is UNKNOWN, and the gate fails open.
@@ -1205,7 +1242,8 @@ def build() -> dict:
                                     **speed_split_mod.EXPANDED_AWAY,
                                     **parrying_split_mod.EXPANDED_AWAY,
                                     **heightened_awareness_mod.EXPANDED_AWAY,
-                                    **absorption_split_mod.EXPANDED_AWAY},
+                                    **absorption_split_mod.EXPANDED_AWAY,
+                                    **er_split_mod.EXPANDED_AWAY},
             # U10 (R13) — the ORIGINATING enchantment name every expansion stamps on
             # the affixes it emits ("Sacred Spell Focus Mastery"), mapped to the stats
             # it becomes. The item surfaces DISPLAY these names, so the picker must be

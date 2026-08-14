@@ -1,0 +1,811 @@
+{
+ "_meta": {
+  "field": "elemental_resistance",
+  "note": "Wiki-harvested seed shard (#191). `Elemental Resistance` is a compound: {{Elemental Resistance|Elemental|N|...}} grants +N to Acid, Cold, Electricity, and Fire Resistances, and ALSO Sonic when the named parameter `4=` is truthy. The distinction lives in the RENDERED TOOLTIP, not the visible cell -- the cell reads `Elemental Resistance +N` either way -- and gear-planner stores nothing that distinguishes a four-element carrier from a five-element one, so the flag is per-item wiki evidence, exactly as elemental_absorption.json records it for the absorption compound. Single-element invocations ({{Elemental Resistance|Cold|51}}) are stored by gear-planner under the per-element stat name already and never produce an `Elemental Resistance` affix, so they are out of scope here. Entries key affixes by bonus TYPE because two carriers (Epic Chain of Conviction, Epic Death's Rampart) bear two Elemental Resistance affixes with different element sets. Only `stated` is solver-eligible; an absent or non-stated entry is quarantined rather than defaulted in either direction. Every affix record carries a per-item verbatim `tooltip` read from that item's own rendered page: it is the only witness independent of `raw`, because the shared `snapshots` block is keyed BY the invocation. See docs/wiki-evidence/elemental-resistance.md.",
+  "sonic_true_elements": [
+   "Acid Resistance",
+   "Cold Resistance",
+   "Fire Resistance",
+   "Electric Resistance",
+   "Sonic Resistance"
+  ],
+  "sonic_false_elements": [
+   "Acid Resistance",
+   "Cold Resistance",
+   "Fire Resistance",
+   "Electric Resistance"
+  ]
+ },
+ "snapshots": {
+  "{{elemental resistance|elemental|n}}": {
+   "tooltip": "Elemental Resistance +45: Passive: +45 Enhancement bonus to your Acid, Cold, Electricity, and Fire Resistances.",
+   "observed_on": "Item:Perfected Ring of Elemental Essence",
+   "harvested": "2026-08-13"
+  },
+  "{{elemental resistance|elemental|n|4=yes}}": {
+   "tooltip": "Elemental Resistance +45: Passive: +45 Enhancement bonus to your Acid, Cold, Electricity, Fire, and Sonic Resistances.",
+   "observed_on": "Item:Dumathoin's Bracers",
+   "harvested": "2026-08-13"
+  },
+  "{{elemental resistance|elemental|n|competence}}": {
+   "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances.",
+   "observed_on": "Item:Legendary Downcast Armor",
+   "harvested": "2026-08-13"
+  },
+  "{{elemental resistance|elemental|n|insight}}": {
+   "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
+   "observed_on": "Item:Barnacled Buckler",
+   "harvested": "2026-08-13"
+  }
+ },
+ "harvested": {
+  "Dumathoin's Bracers": {
+   "affixes": [
+    {
+     "type": "Enhancement",
+     "value": 45,
+     "sonic": true,
+     "raw": "{{Elemental Resistance|elemental|45|4=yes}}",
+     "tooltip": "Elemental Resistance +45: Passive: +45 Enhancement bonus to your Acid, Cold, Electricity, Fire, and Sonic Resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Storm in a Bottle": {
+   "affixes": [
+    {
+     "type": "Enhancement",
+     "value": 45,
+     "sonic": true,
+     "raw": "{{Elemental Resistance|elemental|45|4=yes}}",
+     "tooltip": "Elemental Resistance +45: Passive: +45 Enhancement bonus to your Acid, Cold, Electricity, Fire, and Sonic Resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Aspect of the Wild Hunt": {
+   "affixes": [
+    {
+     "type": "Enhancement",
+     "value": 45,
+     "sonic": true,
+     "raw": "{{Elemental Resistance|Elemental|45|4=yes}}",
+     "tooltip": "Elemental Resistance +45: Passive: +45 Enhancement bonus to your Acid, Cold, Electricity, Fire, and Sonic Resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Flower Boots": {
+   "affixes": [
+    {
+     "type": "Enhancement",
+     "value": 45,
+     "sonic": true,
+     "raw": "{{Elemental Resistance|elemental|45|4=1}}",
+     "tooltip": "Elemental Resistance +45: Passive: +45 Enhancement bonus to your Acid, Cold, Electricity, Fire, and Sonic Resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Epic Chain of Conviction": {
+   "affixes": [
+    {
+     "type": "Enhancement",
+     "value": 30,
+     "sonic": true,
+     "raw": "{{Elemental Resistance|Elemental|30|4=y}}",
+     "tooltip": "Elemental Resistance +30: Passive: +30 Enhancement bonus to your Acid, Cold, Electricity, Fire, and Sonic Resistances."
+    },
+    {
+     "type": "Insight",
+     "value": 10,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|10|Insight}}",
+     "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Epic Death's Rampart": {
+   "affixes": [
+    {
+     "type": "Enhancement",
+     "value": 30,
+     "sonic": true,
+     "raw": "{{Elemental Resistance|Elemental|30|4=1}}",
+     "tooltip": "Elemental Resistance +30: Passive: +30 Enhancement bonus to your Acid, Cold, Electricity, Fire, and Sonic Resistances."
+    },
+    {
+     "type": "Insight",
+     "value": 10,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|10|Insight}}",
+     "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Perfected Ring of Elemental Essence": {
+   "affixes": [
+    {
+     "type": "Enhancement",
+     "value": 45,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|45}}",
+     "tooltip": "Elemental Resistance +45: Passive: +45 Enhancement bonus to your Acid, Cold, Electricity, and Fire Resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Lightning Railworker's Boots": {
+   "affixes": [
+    {
+     "type": "Enhancement",
+     "value": 45,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|45}}",
+     "tooltip": "Elemental Resistance +45: Passive: +45 Enhancement bonus to your Acid, Cold, Electricity, and Fire Resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Lightning Railworker's Boots": {
+   "affixes": [
+    {
+     "type": "Enhancement",
+     "value": 30,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|30}}",
+     "tooltip": "Elemental Resistance +30: Passive: +30 Enhancement bonus to your Acid, Cold, Electricity, and Fire Resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Draconic Soul Gem": {
+   "affixes": [
+    {
+     "type": "Enhancement",
+     "value": 30,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|30}}",
+     "tooltip": "Elemental Resistance +30: Passive: +30 Enhancement bonus to your Acid, Cold, Electricity, and Fire Resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Epic Immaculate Globe": {
+   "affixes": [
+    {
+     "type": "Enhancement",
+     "value": 30,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|elemental|30}}",
+     "tooltip": "Elemental Resistance +30: Passive: +30 Enhancement bonus to your Acid, Cold, Electricity, and Fire Resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Immaculate Globe": {
+   "affixes": [
+    {
+     "type": "Enhancement",
+     "value": 45,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|elemental|45}}",
+     "tooltip": "Elemental Resistance +45: Passive: +45 Enhancement bonus to your Acid, Cold, Electricity, and Fire Resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Barnacled Buckler": {
+   "affixes": [
+    {
+     "type": "Insight",
+     "value": 10,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|elemental|10|insight}}",
+     "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Jeweled Cloak (level 23)": {
+   "affixes": [
+    {
+     "type": "Insight",
+     "value": 10,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|elemental|10|insight}}",
+     "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Jeweled Cloak (level 24)": {
+   "affixes": [
+    {
+     "type": "Insight",
+     "value": 10,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|elemental|10|insight}}",
+     "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Jeweled Cloak (level 25)": {
+   "affixes": [
+    {
+     "type": "Insight",
+     "value": 10,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|elemental|10|insight}}",
+     "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Downcast Armor": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 5,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|5|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 5: This item provides a +5 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Downcast Brawler's Garb": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 5,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|5|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 5: This item provides a +5 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Downcast Docent": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 5,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|5|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 5: This item provides a +5 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Downcast Gambeson": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 5,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|5|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 5: This item provides a +5 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Downcast Vest": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 5,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|5|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 5: This item provides a +5 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Robe of the Crownblade": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 5,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|5|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 5: This item provides a +5 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Docent of the Crownblade": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 5,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|5|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 5: This item provides a +5 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Heavy Armor of the Crownblade": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 5,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|5|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 5: This item provides a +5 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Light Armor of the Crownblade": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 5,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|5|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 5: This item provides a +5 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Medium Armor of the Crownblade": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 5,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|5|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 5: This item provides a +5 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Outfit of the Crownblade": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 5,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|5|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 5: This item provides a +5 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Cloak of Moonlight": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 5,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|5|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 5: This item provides a +5 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Emblem of Elemental Evil": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 5,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|5|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 5: This item provides a +5 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Control Gauntlet": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 5,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|5|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 5: This item provides a +5 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Absorption Gauntlet": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 5,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|5|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 5: This item provides a +5 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Terrorweb Chitin Breastplate": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 5,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|5|competence}}",
+     "tooltip": "Competence Elemental Resistance - 5: This item provides a +5 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Implement of the Deep Woods": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 5,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|5|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 5: This item provides a +5 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Jeweled Cloak (level 12)": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 5,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|elemental|5|competence}}",
+     "tooltip": "Competence Elemental Resistance - 5: This item provides a +5 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Jeweled Cloak (level 13)": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 5,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|elemental|5|competence}}",
+     "tooltip": "Competence Elemental Resistance - 5: This item provides a +5 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Jeweled Cloak (level 14)": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 5,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|elemental|5|competence}}",
+     "tooltip": "Competence Elemental Resistance - 5: This item provides a +5 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Downcast Armor": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Downcast Brawler's Garb": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Downcast Docent": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Downcast Gambeson": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Downcast Vest": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Robe of the Crownblade": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Docent of the Crownblade": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Heavy Armor of the Crownblade": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Light Armor of the Crownblade": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Medium Armor of the Crownblade": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Outfit of the Crownblade": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Robe of the Crownblade's Reflection": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Docent of the Crownblade's Reflection": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Heavy Armor of the Crownblade's Reflection": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Light Armor of the Crownblade's Reflection": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Medium Armor of the Crownblade's Reflection": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Outfit of the Crownblade's Reflection": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Cloak of Moonlight": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Emblem of Elemental Evil": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Control Gauntlet": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Legendary Absorption Gauntlet": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|Elemental|15|Competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  },
+  "Resonation": {
+   "affixes": [
+    {
+     "type": "Competence",
+     "value": 15,
+     "sonic": false,
+     "raw": "{{Elemental Resistance|elemental|15|competence}}",
+     "tooltip": "Competence Elemental Resistance - 15: This item provides a +15 Competence bonus to your Acid, Cold, Fire, and Electrical resistances."
+    }
+   ],
+   "provenance": "stated",
+   "harvested": "2026-08-13"
+  }
+ }
+}

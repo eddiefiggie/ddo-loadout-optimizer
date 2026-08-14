@@ -221,12 +221,16 @@ def test_a_duplicated_shard_key_fails_the_load():
 # --- coverage (counts derive from the dataset, never hardcoded) --------------
 
 def test_coverage_universe_is_exactly_the_empty_string_worn_variants():
-    """R3 universe selection: augment records carry location_quest null and the
-    Dino blanks carry no location_quest key at all — only the empty STRING
-    (a worn item whose harvest recorded no quest) enters the universe."""
+    """R3 universe selection, extended by #93: the empty STRING (a worn item
+    whose harvest recorded no quest) enters the universe, and so does a
+    RETIRED PSEUDO-SOURCE location (`Special event items`) — a recorded value
+    that names no live source. Augment records carry location_quest null and
+    the Dino blanks carry no key at all; a real quest stays out."""
     variants = [
         _variant(BRACERS_LEGENDARY),                                # in universe, confirmed
         _variant("Mystery Cloak"),                                  # in universe, unverified
+        _variant("Event Relic",
+                 location_quest="Special event items"),             # pseudo-source — IN (#93)
         _variant("Sourced Helm", location_quest="A Quest"),         # sourced — out
         _variant("Sapphire of Whatever", location_quest=None,
                  category="augment"),                               # null — out
@@ -235,13 +239,29 @@ def test_coverage_universe_is_exactly_the_empty_string_worn_variants():
     ]
     no_drop_source.stamp(variants, _entry())
     cov = no_drop_source.coverage(variants, _entry())
-    assert cov["triage_universe"] == 2
+    assert cov["triage_universe"] == 3
     assert cov["confirmed_no_source"] == 1
     assert cov["wiki_has_source"] == 0
-    assert cov["unverified"] == 1
+    assert cov["unverified"] == 2
     assert cov["flagged_variants"] == 1
     assert cov["confirmed_items"] == [BRACERS_LEGENDARY]
     assert cov.get("note")
+
+
+def test_a_retired_pseudo_source_is_not_staleness_but_a_real_quest_is():
+    """#93 — for an entry whose planner record's raw `quests` is exactly the
+    retired pseudo-source, guard (d) must NOT fire: that recorded value is the
+    admission signal, not evidence of a live source. A real quest beside it
+    still trips the guard."""
+    entries = {"Event Relic": {"verdict": no_drop_source.CONFIRMED,
+                               "provenance": "stated", "evidence": "e",
+                               "wiki_url": "https://ddowiki.com/page/Item:Event_Relic",
+                               "harvested": "2026-08-13"}}
+    result = no_drop_source.check(
+        entries, [_rec("Event Relic", quests=["Special event items"])])
+    assert result["confirmed"] == ["Event Relic"]
+    _raises(SystemExit, no_drop_source.check, entries,
+            [_rec("Event Relic", quests=["Special event items", "A Real Quest"])])
 
 
 # --- the build pipeline ------------------------------------------------------
@@ -277,16 +297,20 @@ def test_the_shipped_shard_passes_the_guards_against_the_real_roster():
     # universe; the one remaining item (an invalid wiki title) is tracker-only
     # in docs/wiki-evidence/no-drop-source.md and deliberately NOT in the shard.
     entries = no_drop_source.load(SHARD)
-    assert len(entries) == 198
+    assert len(entries) == 222
     assert {BRACERS_HEROIC, BRACERS_LEGENDARY} <= set(entries)
     assert "Coronach (historic) [Crafted]" not in entries
     records, _stats = planner_items.load_planner_items()
     result = no_drop_source.check(entries, records)
-    assert len(result["confirmed"]) == 19
+    assert len(result["confirmed"]) == 40
     assert BRACERS_HEROIC in result["confirmed"]
     assert BRACERS_LEGENDARY in result["confirmed"]
     assert "Cataclysmic Buckler" in result["confirmed"]  # the #244 verdict
-    assert result["checked"] == 198
+    # #93 — the exemplar and the still-obtainable event items.
+    assert "Seeker Tap of Spellsight" in result["confirmed"]
+    assert "Green Steel Greatclub" in result["wiki_has_source"]
+    assert "The Admiral of Bling" in result["wiki_has_source"]
+    assert result["checked"] == 222
     # Every confirmed entry carries its evidence chain (the guard enforces it;
     # this asserts the shipped data actually exercises that path 19 times).
     for name in result["confirmed"]:
@@ -302,34 +326,40 @@ def test_the_built_dataset_flags_the_seeded_items_and_counts_coverage():
     ds = build_dataset.build()
     flagged = sorted(v["source_item"] for v in ds["items"]
                      if v.get(no_drop_source.FIELD))
-    # Re-ratified after the 2026-08-13 triage: 19 confirmed items, one variant
-    # each. The two original player-reported instances stay pinned by name.
-    assert len(flagged) == 19
+    # Re-ratified after the #93 event-item triage: 40 confirmed items, one
+    # variant each. The original player-reported instances stay pinned by name.
+    assert len(flagged) == 40
     assert BRACERS_HEROIC in flagged and BRACERS_LEGENDARY in flagged
     assert "Cataclysmic Buckler" in flagged
+    assert "Seeker Tap of Spellsight" in flagged   # the #93 exemplar
+    assert "Green Steel Greatclub" not in flagged  # Festivult still grants it
+    assert "The Admiral of Bling" not in flagged   # Crystal Cove recurs
     # Only-when-set at the build level: the flag, where present, is True.
     assert all(v[no_drop_source.FIELD] is True for v in ds["items"]
                if no_drop_source.FIELD in v)
 
     cov = ds["metadata"]["no_drop_source_coverage"]
-    universe = [v for v in ds["items"] if v.get("location_quest") == ""]
+    universe = [v for v in ds["items"]
+                if v.get("location_quest") == ""
+                or v.get("location_quest") in no_drop_source.RETIRED_PSEUDO_SOURCES]
     # Augments (location_quest: null) and the Dino blanks (no key) must fall
     # outside the universe by construction.
     assert not [v for v in universe if v.get("category") == "augment"]
     assert not [v for v in universe if v["source_item"].startswith("Dinosaur Bone")]
     assert cov["triage_universe"] == len({v["source_item"] for v in universe})
     # Current-roster expectation (like the ml36 63-entry count): 199 worn items
-    # carry an empty location_quest today. A roster refresh may move this.
-    assert cov["triage_universe"] == 199
-    assert cov["confirmed_no_source"] == 19
-    assert cov["wiki_has_source"] == 179
-    # 199-item universe, 198 dispositioned in the shard: the remainder is the
+    # carry an empty location_quest today, plus the 24 `Special event items`
+    # pseudo-source carriers (#93). A roster refresh may move this.
+    assert cov["triage_universe"] == 223
+    assert cov["confirmed_no_source"] == 40
+    assert cov["wiki_has_source"] == 182
+    # 223-item universe, 222 dispositioned in the shard: the remainder is the
     # single invalid-title item recorded tracker-only.
-    assert cov["unverified"] == cov["triage_universe"] - 198 == 1
-    assert cov["flagged_variants"] == 19
+    assert cov["unverified"] == cov["triage_universe"] - 222 == 1
+    assert cov["flagged_variants"] == 40
     assert BRACERS_HEROIC in cov["confirmed_items"]
     assert BRACERS_LEGENDARY in cov["confirmed_items"]
-    assert len(cov["confirmed_items"]) == 19
+    assert len(cov["confirmed_items"]) == 40
 
 
 def test_the_shipped_shard_carries_its_wiki_evidence():
