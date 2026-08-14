@@ -2463,12 +2463,13 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual((r.setAugmentsPlaced || []).length, 0, "no copy placed (partial copies buy nothing; tie-break minimizes y)");
   });
 
-  await test("U4: an item hosting MULTIPLE copies suppresses its own set exactly once (hosts_i clamped)", async () => {
-    // The model creates one copy (y) per host per augment set, so "multiple copies on
-    // one host" means copies of DIFFERENT set augments. Item i (2 Colorless slots) is a
-    // SetS member AND hosts one AugA copy AND one AugB copy. hosts_i is a single clamped
-    // binary >= each copy, so i's SetS membership is removed ONCE (not per copy), and the
-    // multi-copy-single-host path stays feasible.
+  await test("U4/#312: ONE copy per host — a second Colorless slot buys no second set identity", async () => {
+    // Re-ratified for #312. Each set augment's own description states the rule:
+    // "Slotting this Augment in any Augment Slot will override its Set Bonus to
+    // the <X> set" — an item's Set Bonus identity is SINGLE, so a second copy on
+    // the same item overrides the first and only the last counts in-game. The
+    // pre-#312 model let item i (2 Colorless slots) host an AugA copy AND an
+    // AugB copy and progress BOTH sets — the reported double-dip, one shape over.
     const def = { "AugA": augSetDef([["StatA", "Artifact", 10]]),
                   "AugB": augSetDef([["StatB", "Artifact", 10]]) };
     const S2 = [{ n: 2, affixes: [["StatS", "Set", 50]] }];
@@ -2486,10 +2487,51 @@ async function withCrossAdd(map, fn) {
     };
     const r = await S.solveLexicographic(model, highs);
     assert.strictEqual(r.status, "optimal");
-    assert.strictEqual(r.effective.StatA, 10, "AugA 3-piece fires (i, A1, A2)");
-    assert.strictEqual(r.effective.StatB, 10, "AugB 3-piece fires (i, B1, B2)");
-    assert.strictEqual((r.setAugmentsPlaced || []).length, 6, "6 copies placed; i hosts 2 of them");
-    assert.strictEqual(r.effective.StatS, 0, "i hosts copies -> SetS suppressed once; P2 alone < 2 pieces");
+    assert.strictEqual(r.effective.StatA, 10, "AugA 3-piece fires");
+    assert.strictEqual(r.effective.StatB, 0,
+      "only four non-i Colorless slots exist and i grants ONE identity, so a second aug set cannot reach 3");
+    assert.strictEqual((r.setAugmentsPlaced || []).length, 3,
+      "3 copies placed (partial AugB copies buy nothing; tie-break minimizes y)");
+    // The solver routes AugA through the set-less hosts and PRESERVES SetS —
+    // one-copy-per-host makes double-dipping impossible, and the lexicographic
+    // solve then finds the strictly better arrangement the old model never
+    // needed to look for.
+    assert.strictEqual(r.effective.StatS, 50, "SetS fires (i + P2); no copy lands on i");
+    assert.ok(!(r.setAugmentsPlaced || []).some((p) => p.host === "i"),
+      "the SetS member hosts no copy — its set identity stays native");
+  });
+
+  await test("U4/#312: an AWAKENED membership and a hosted copy are mutually exclusive on one item", async () => {
+    // The reported repro: a Lost Purpose hat awakened into Forbidden Knowledge
+    // (chosen membership) while hosting a Perfect Silence copy counted toward
+    // BOTH sets. The wiki rule overrides the host's Set Bonus — awakened or
+    // native — so one item carries one set identity. The fixture makes host M
+    // load-bearing for both sets; only the higher-ranked one may win.
+    const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
+    const memDefs = { "MemSet": memberDef([{ n: 2, affixes: [["StatM", "Artifact", 50]] }]) };
+    const model = {
+      targets: ["StatM", "StatA"], mlCap: 34, dodgeCap: null,
+      augment_set_defs: def, membershipSetDefs: memDefs,
+      worn: [
+        // M: the only awaken host for MemSet AND one of only three Colorless hosts.
+        slot("Helmet", [(() => { const v = memberHost("M", "Helmet", ["MemSet"]);
+                                 // the solver reads the NORMALIZED colors, not the raw list
+                                 v.augment_slots_norm = { colors: ["Colorless"], quarantined: [] };
+                                 return v; })()]),
+        // MemSet's second piece: another awaken host (no Colorless slot).
+        slot("Gloves", [memberHost("P2", "Gloves", ["MemSet"])]),
+        // AugSet's other two hosts.
+        slot("Necklace", [host("H2", "Necklace", [], ["Colorless"])]),
+        slot("Trinket", [host("H3", "Trinket", [], ["Colorless"])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.StatM, 50, "higher-ranked awakened set is kept (M + P2 awaken)");
+    assert.strictEqual(r.effective.StatA, 0,
+      "the augment set would need M's Colorless slot, but M's set identity is spent on the awakening");
+    assert.ok((r.membershipPlaced || []).some((m) => m.host === "M"), "M's awakening is reported");
+    assert.ok(!(r.setAugmentsPlaced || []).some((p) => p.host === "M"), "no copy on the awakened host");
   });
 
   // U5 — Dominance guard audit for the Set-Augment source family. The risk (three
