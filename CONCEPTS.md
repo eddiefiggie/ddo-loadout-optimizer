@@ -54,7 +54,7 @@ A per-slot Pareto reduction run before the model is built: a variant beaten by a
 ### Lexicographic solve
 The staged solve that realizes ranked-priority optimization: solve for target *k* with all earlier targets locked at the values they already won, then a deterministic tie-break stage so repeated runs return the same canonical loadout, then a settle stage that pins that loadout and drops picks contributing nothing to it.
 
-The settle stage is separate on purpose. A preference about *which* of several equally-scoring solutions to return must not compete with the tie-break's own ordering — folded into that objective it changes which loadout wins, whereas pinning the loadout first bounds the change to the picks the preference is actually about.
+The settle stage is separate on purpose. A preference about *which* of several equally-scoring solutions to return must not compete with the tie-break's own ordering — folded into that objective it changes which loadout wins, whereas pinning the loadout first bounds the change to the picks the preference is actually about. Such **pinned post-stages** form a chain after the tie-break: the settle stage pins the structural picks and leaves placement identity free (that is its whole degree of freedom), and the Colorless-first placement stage pins that settled identity plus every other reported family, freeing only the color sub-choice it owns. The chaining rule: a new stage pins the structural picks, its predecessors' outcomes at the granularity stat value rides on, and every reported family its own objective ignores — leaving free only the variables its preference is about.
 
 ## Stat sources
 

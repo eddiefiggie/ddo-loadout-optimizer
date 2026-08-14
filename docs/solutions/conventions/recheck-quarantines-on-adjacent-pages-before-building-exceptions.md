@@ -1,7 +1,8 @@
 ---
-title: Re-check a quarantined claim on adjacent and hub pages before designing an exception mechanism
+title: Re-check a quarantined or deferred claim on adjacent and hub pages before building an exception or writing a deferral
 module: wiki-evidence
 date: 2026-08-13
+last_updated: 2026-08-14
 problem_type: convention
 component: development_workflow
 severity: medium
@@ -11,15 +12,18 @@ tags:
   - wiki-harvest
   - exclude-until-verified
   - evidence-resolution
+  - deferral
+  - augment-slot-authority
   - spell-lore
   - solar-gems
 applies_when:
   - "A quarantined claim is about to gate or complicate new work (a plan step says 'resolve or disclose the quarantine before shipping')"
   - "The original quarantine ruling cites a missing or silent source (an article-not-found page, an empty template, a page that omits the rule)"
   - "You are about to design a dedicated exception mechanism to model an unverified interaction"
+  - "A wiki question is about to be closed out with a deferral to a follow-up issue instead of an answer now — run the one-hop sweep before writing the issue, not after"
 ---
 
-# Re-check a quarantined claim on adjacent and hub pages before designing an exception mechanism
+# Re-check a quarantined or deferred claim on adjacent and hub pages before building an exception or writing a deferral
 
 ## Context
 
@@ -101,6 +105,97 @@ same harvest pass also produced the lore-additivity quote on
 `Universal_Spell_Lore` — a page that had not been consulted in the original
 2026-08-03 session at all — which un-blocked the lore half of the cross-add map
 (`docs/wiki-evidence/universal-name-sweep.md`).
+
+## Also run the sweep before writing a deferral (2026-08-14)
+
+The body of this doc covers the sweep's original trigger: a quarantined claim is
+about to force a dedicated **exception mechanism**, so re-check adjacent pages
+before designing one. The #316 work (set augments in any color slot, PR #318,
+merged 2026-08-14) showed the same sweep pays off at a second, earlier trigger:
+**before writing a deferral at all**.
+
+### Context
+
+While planning #316, the Moon/Sun (Lunar/Solar) slot-eligibility question was
+deferred rather than resolved. The plan
+(`docs/plans/2026-08-14-001-fix-set-augment-any-slot-plan.md`) baked the
+deferral into a requirement — R3: "Moon/Sun slots are ineligible for set-augment
+copies until a rendered-tooltip wiki ruling confirms them" — plus a disclosure
+requirement (R8), a hedged player-facing coverage note in the interim
+implementation ("excluded until a wiki ruling confirms them", superseded within
+the same PR once the ruling landed), and a Definition-of-Done clause ordering a
+follow-up GitHub issue filed before the PR merged. That is the full apparatus of a
+deferral: a scheduled issue, hedged UI copy, and a revisit nobody has done yet.
+
+The plan's closing unit (U6) also ordered — per this convention — the one-hop
+sweep of the `Lunar_and_Solar_Gems` hub neighborhood as the *first* step,
+"resolving the deferral without a new harvest" if the hub stated the rule.
+
+### What the sweep found
+
+Executing the sweep during implementation resolved the deferral the same day.
+The Augment Slot system page states the whole rule, rendered:
+
+1. **Set augments fit any standard slot** — verbatim: "These level 30 Set
+   augments can be slotted in any augment color slot."
+2. **The color system is exactly seven colors** — the Color types table has no
+   Moon/Sun rows and admits Colorless everywhere ("It's good to mentally add
+   the words '…and Colorless' to the description").
+3. **Moon/Sun are ruled OUT, not pending** — the Special augment slots section
+   lists "Moon and Sun Augment Slots" among special-system slots that "will not
+   interact with standard colored augments (nor vice versa)", corroborated by
+   the `Lunar_and_Solar_Gems` hub (those slots hold Lunar/Solar Gems only).
+
+So the exclusion the plan had framed as *conservative-pending-evidence* is in
+fact **wiki-ruled exact**. The outcome inverted every piece of the deferral
+apparatus: the dated ruling landed in `docs/wiki-evidence/augment-sets.md`
+("Placement ruling (2026-08-14)" — "Moon/Sun (Lunar/Solar) slots are ruled OUT,
+not pending … the 'pending Moon/Sun ruling' deferral raised while planning #316
+is resolved by this reading and no follow-up remains open"), superseding the
+earlier conservative "Colorless slots" reading; **no follow-up issue was ever
+filed**, because there was nothing left to follow up (the plan's Scope
+Boundaries records "Resolved during implementation (U6, 2026-08-14 — no issue
+needed)"); and the player-facing note shipped un-hedged
+(`web/results.js:114`): "Lunar/Solar (Moon/Sun) slots belong to the separate
+gem system and accept no standard augments (wiki-ruled)."
+
+### The generalized rule: sweep before deferring
+
+A deferral is not free — it is a **scheduled cost**: a follow-up issue that
+occupies future triage, a hedged player-facing disclosure that undersells a
+correct behavior as provisional, plan prose that must be revisited and
+re-anchored, and a quarantine someone must eventually re-litigate. A
+15-minute rendered-page read of the system's authority page can often delete
+that entire tail.
+
+So the sweep has two triggers, not one:
+
+- **Before designing an exception mechanism** (the original body of this doc) —
+  the sweep may show the machinery already encodes the rule.
+- **Before writing a deferral** (this addendum) — the sweep may show there is
+  nothing to defer. Run it at requirements/plan time if possible, and at the
+  latest as the *first* step of the unit that would file the follow-up issue,
+  so a resolved question dies before the issue exists rather than after.
+
+As in the original guidance, **prefer system/authority pages over item pages**
+for placement and stacking rules: the Moon/Sun answer never lived on any Set
+Augment item page — it lived on the Augment Slot system page, in the sections
+that define the color system itself (the color table's closed enumeration plus
+the special-slots non-interaction clause). Placement rules are class-level
+facts, and the wiki states them at class level.
+
+### Boundary: when the sweep does NOT resolve it
+
+Sweep-before-deferring does not abolish deferrals. If the one-hop neighborhood
+(original source, hub page, inbound links, redirects — same bounded scope and
+pacing as the original guidance) is silent or ambiguous, the deferral proceeds
+exactly as planned: file the follow-up issue, keep the hedged disclosure, and
+**record the sweep's negative result in the quarantine note, re-dating it** —
+so the next reader knows the neighborhood was checked on that date and the
+deferral survived contact with the evidence rather than merely predating it.
+The sweep changes the deferral's justification from "we did not look" to "we
+looked and the wiki does not say", which is the only kind of deferral the
+never-infer gate should ever produce.
 
 ## Related
 
