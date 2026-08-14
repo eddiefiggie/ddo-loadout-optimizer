@@ -111,3 +111,9 @@ Filed 2026-08-12:
 - #261 (spun out of report 2) The 168 ML34 wiki augments are the Dolorous/Melancholic (legendary) line — the whole cursed-augment system (196 pool entries + host slots, present in the raw source) is unmodelled.
 - #262 (report 3) Bracers of the Spider Queen — confirmed: wiki Location section is empty (U81 named item, no live drop source), same class as #244; umbrella filed for the 210 empty-location variants (triage + disclosure). The exclude-items control itself is #110 (plan exists); the proper fix is blocked on #197 (rarity/source-tier field).
 - (report 2, owned-mode aside) "suggests augments I don't own" is by design and already disclosed — shipped in PR #112; closed stale #106 with the evidence.
+
+New batch of reports (2026-08-14):
+1) the solver doesn't craft anything on gem of many facets, even if it chooses it for set bonuses. not sure it uses magic essence crafting at all.
+2) cannith challenge items don't have any stats (you can pin one and then tell the prioritizer which stats it covers and how much. eg pin epic cloak of flames while prioritizing fire lore/spellpower, and tell it you have 122 equipment combustion and 18 equipment fire lore)
+3) It's not seeing Clank's Sealed in Mist attribute.
+4) It's trying to double dip Perfect Silence 3 aug set with Forbidden Knowledge 5 piece set on the hat.
