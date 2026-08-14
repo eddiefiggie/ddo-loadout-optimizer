@@ -1072,6 +1072,30 @@ test("U10: the label set is derived from the dataset, not from a family list", (
   assert.deepStrictEqual(expandedAwayFor(v, "Eldritch Nimbleness"), ["Dodge", "Sneak Attack Dice"]);
 });
 
+test("#255: the scan UNIONS into a declared expansion, never replaces it", () => {
+  // The scan is a subset of the declaration by construction — an expansion skips a
+  // component the item already carries explicitly. If every carrier of a family
+  // shadows the same component, a scan that REPLACED the declared list would
+  // substitute the label into fewer stats than the family declares, and the player
+  // silently loses a rank they asked for. Declare two components, stamp only one.
+  const ds = {
+    metadata: {
+      rankable_affixes: ["Dodge", "Sneak Attack Dice"],
+      expanded_away_names: { "eldritch nimbleness": ["Dodge", "Sneak Attack Dice"] },
+    },
+    items: [{ affixes: [
+      { name: "Dodge", type: "Enhancement", value: 5, via: "Eldritch Nimbleness" },
+      { name: "Sneak Attack Dice", type: "Enhancement", value: 3 },
+    ] }],
+  };
+  const v = buildPickerVocabulary(ds);
+  assert.deepStrictEqual(v.provenanceLabels["eldritch nimbleness"], ["Dodge"],
+    "the scan itself still reports only what the stamps show");
+  assert.deepStrictEqual(expandedAwayFor(v, "Eldritch Nimbleness"),
+    ["Dodge", "Sneak Attack Dice"],
+    "the substitution map keeps the full declared component list");
+});
+
 test("U10: the browser fallback carries the labels for a stale cached dataset", () => {
   // A dataset cached before `provenance_labels` existed still has to rank the names
   // the surfaces print, exactly as EXPANDED_AWAY_FALLBACK does for the bare names. It
@@ -1099,6 +1123,20 @@ test("U10: the shipped fallback agrees with what the build actually stamps", () 
   assert.ok(Object.keys(PROVENANCE_LABEL_FALLBACK).length >= 10, "the mirror is not empty");
   for (const [label, stats] of Object.entries(PROVENANCE_LABEL_FALLBACK)) {
     assert.deepStrictEqual(stats, live[label], `fallback drifted for "${label}"`);
+  }
+});
+
+test("#255: the expanded-away fallback agrees with what the build actually emits", () => {
+  // Same mirror, same drift hazard as the provenance-label fallback above: renaming
+  // a component in src/absorption_split.py (or any expanding family) must not leave
+  // a stale-cache player redirected to a name the current build no longer carries.
+  // Being INCOMPLETE is fine — a newer family implies a newer dataset, which carries
+  // the metadata — being WRONG is not.
+  const { EXPANDED_AWAY_FALLBACK } = require("../web/dataset.js");
+  const live = realData.metadata.expanded_away_names || {};
+  assert.ok(Object.keys(EXPANDED_AWAY_FALLBACK).length >= 8, "the mirror is not empty");
+  for (const [key, stats] of Object.entries(EXPANDED_AWAY_FALLBACK)) {
+    assert.deepStrictEqual(stats, live[key], `fallback drifted for "${key}"`);
   }
 });
 

@@ -765,7 +765,13 @@ function buildPickerVocabulary(dataset) {
     known.add(entry.label);
     // R13 — and it resolves, through the SAME map every add path and the saved-load
     // path already consult, so U11's substitution needs no second mechanism.
-    expandedAway[key] = entry.to.slice();
+    // #255 — union INTO any declared entry, never replace it: the scan is a subset
+    // of the declaration by construction (an expansion skips a component the item
+    // already carries explicitly), so replacing would shrink the substitution when
+    // every carrier of a family shadows the same component.
+    const declared = expandedAway[key] || [];
+    for (const s of entry.to) if (!declared.includes(s)) declared.push(s);
+    expandedAway[key] = declared;
   }
 
   // An expanded-away name is stripped from suggestions ONLY when no surface displays
@@ -940,8 +946,8 @@ function migrateLoadout(snapshot) {
 // Browser: expose a global so app.js can normalize the fetched dataset without a
 // module system. Node: CommonJS export for the tests + parity harness.
 if (typeof window !== "undefined") {
-  window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK };
+  window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
 }
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK };
+  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
 }

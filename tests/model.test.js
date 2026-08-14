@@ -563,6 +563,23 @@ test("dominates: an affix item does NOT dominate a chosen set-membership host it
   assert.strictEqual(kept.length, 2, "the membership host survives per-slot dominance");
 });
 
+test("dominates: an affix item does NOT dominate an absorption-quarantined carrier it can't match", () => {
+  // #255 — a quarantined affix lives in absorption_quarantined, outside
+  // variantBuckets, and the quarantine is exactly what can make its carrier look
+  // weaker than a slot rival. Pruning the carrier would silence
+  // buildAbsorptionQuarantineReport (which reads the pruned pool) for the one item
+  // the disclosure exists to explain.
+  const real = v("Real", "Cloak", [["Constitution", "Enhancement", 12]]);
+  const carrier = v("Carrier", "Cloak", [["Constitution", "Enhancement", 8]]);
+  carrier.absorption_quarantined = [{ stat: "Elemental Absorption",
+    reason: "wiki states no per-element values", components: ["Fire Absorption", "Cold Absorption"] }];
+  const targets = new Set(["Constitution"]);
+  assert.strictEqual(M.dominates(real, carrier, targets, 34), false,
+    "a rival lacking the quarantine disclosure cannot dominate the carrier");
+  assert.strictEqual(M.dominanceFilter([real, carrier], targets, 34, 1).length, 2,
+    "the quarantined carrier survives per-slot dominance");
+});
+
 test("dominanceFilter keeps a dominated membership host in a multi-pick slot", () => {
   // Two Rings that can both join the same set: A dominates B on the target, but in a
   // cardinality-2 slot both are needed to reach a piece threshold, so neither is pruned.

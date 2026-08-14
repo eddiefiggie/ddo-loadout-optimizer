@@ -449,6 +449,14 @@ function dominates(A, B, targetSet, mlCap) {
   const memA = countColors(((A.set_membership_slot || {}).pool) || []);
   const memB = countColors(((B.set_membership_slot || {}).pool) || []);
   for (const [k, n] of memB) if ((memA.get(k) || 0) < n) return false;
+  // Absorption-quarantine disclosure (#255): a quarantined affix lives in
+  // absorption_quarantined, outside variantBuckets — and the quarantine is exactly
+  // what can make its carrier look weaker than a slot rival. Pruning the carrier
+  // would silence buildAbsorptionQuarantineReport (which reads the pruned pool)
+  // for the one item the disclosure exists to explain.
+  const aqA = countColors((A.absorption_quarantined || []).map((q) => q.stat));
+  const aqB = countColors((B.absorption_quarantined || []).map((q) => q.stat));
+  for (const [k, n] of aqB) if ((aqA.get(k) || 0) < n) return false;
   // strictly better somewhere, OR keep A as the canonical of an equal pair
   return true;
 }
