@@ -708,7 +708,10 @@
   function craftLabel(o, family) {
     switch (family) {
       case "dino": return `${o.dino_type}: ${o.name ? o.name + ", " : ""}${craftAffixes(o)}`;
-      case "nc": return `Nearly Completed: ${craftValue(o)}`;
+      // #211 — ATOMIC like vik/dino: a Skill-menu option grants six skills, so
+      // the label renders the option's whole affix list (craftAffixes falls
+      // back to the flat single-affix shape byte-identically).
+      case "nc": return `Nearly Completed: ${o.name ? o.name + ", " : ""}${craftAffixes(o)}`;
       case "roll": return `Choice: ${craftValue(o)}`;
       case "vik": return `Slot ${o.slot_type} Viktranium augment: ${craftAffixes(o)}`;
       case "seal": return `Sealed in ${o.seal_type}: ${craftValue(o)}`;

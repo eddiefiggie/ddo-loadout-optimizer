@@ -179,11 +179,32 @@ def test_native_school_affix_carries_no_provenance():
 
 def test_all_universal_names_map_to_their_family_targets():
     away = spell_focus.expanded_away()
+    # Re-ratified for #211: the detector's first sweep added three families,
+    # then the six ability-skills umbrellas (three worn, three NC-menu-only).
     assert set(away) == {"spell focus mastery", "spell focus", "spell dcs",
-                         "potency"}
+                         "potency", "resistance", "elemental resonance",
+                         "combat mastery", "charisma skills",
+                         "dexterity skills", "intelligence skills",
+                         "constitution skills", "strength skills",
+                         "wisdom skills",
+                         # set-channel wordings of the same families (#289
+                         # catalog-wording precedent)
+                         "all saving throws", "saving throws", "tactical dcs"}
     for name in ("spell focus mastery", "spell focus", "spell dcs"):
         assert away[name] == spell_focus.SCHOOLS, name
     assert away["potency"] == spell_focus.SPELLPOWERS
+    assert away["resistance"] == spell_focus.SAVES
+    assert away["elemental resonance"] == spell_focus.ELEMENTAL_SPELLPOWERS
+    assert away["combat mastery"] == spell_focus.TACTICS
+    assert away["charisma skills"] == spell_focus.SKILLS_CHA
+    assert away["dexterity skills"] == spell_focus.SKILLS_DEX
+    assert away["intelligence skills"] == spell_focus.SKILLS_INT
+    assert away["constitution skills"] == spell_focus.SKILLS_CON
+    assert away["strength skills"] == spell_focus.SKILLS_STR
+    assert away["wisdom skills"] == spell_focus.SKILLS_WIS
+    assert away["all saving throws"] == spell_focus.SAVES
+    assert away["saving throws"] == spell_focus.SAVES
+    assert away["tactical dcs"] == spell_focus.TACTICS
 
 
 def test_expanded_away_keys_are_lowercased():
@@ -236,7 +257,23 @@ def test_no_universal_stat_survives_anywhere_in_the_built_dataset():
     for key, value in data.items():
         if key == "metadata":
             continue        # expanded_away_names legitimately NAMES them
+        if key == "green_steel":
+            # #211/#194 — the Green Steel pool carries ability-skills umbrella
+            # options, but the channel is UNREACHABLE: no item carries
+            # `green_steel_slot`, so no option can ever be offered or granted.
+            # Expanding it would also violate the fan-out gate (FLAT + an
+            # expansion pass is a build failure) — the real fix is #194's
+            # ATOMIC conversion when hosts arrive. The tripwire below breaks
+            # this exemption the moment the channel becomes reachable.
+            continue
         walk(value, key)
+
+    # The exemption above is valid ONLY while green_steel is unreachable.
+    from src import container_registry as _cr
+    assert _cr.REGISTRY["green_steel"]["reachable"] is False, (
+        "green_steel became reachable — its universal-name options are now "
+        "live and the channel needs the ATOMIC conversion (#194) before the "
+        "exemption above may stand")
 
     assert not offenders, (
         f"{len(offenders)} affix(es) still name an expanded-away universal spell "
@@ -284,7 +321,11 @@ def test_viktranium_universal_option_expands_inside_one_record():
             by_label.setdefault(a[VIA], []).append(a)
         for label, group in by_label.items():
             stats = [a["stat"] for a in group]
-            assert stats in (spell_focus.SCHOOLS, spell_focus.SPELLPOWERS), (
+            # Re-ratified for #211: three more family shapes are legal.
+            assert stats in (spell_focus.SCHOOLS, spell_focus.SPELLPOWERS,
+                             spell_focus.SAVES,
+                             spell_focus.ELEMENTAL_SPELLPOWERS,
+                             spell_focus.TACTICS), (
                 f"{rec.get('name')} / {label} must grant its full family from "
                 f"one option, got {stats}")
             assert len({a["bonus_type"] for a in group}) == 1
@@ -295,9 +336,11 @@ def test_viktranium_universal_option_expands_inside_one_record():
     # Arcana/Dimlight/Shadows x2 tiers) each carry a universal spell-DC source
     # too, so they expand into the seven schools inside their own record. #290's
     # Potency family raises it further — pin the exact count so a channel that
-    # stops expanding shows up as a drop.
-    assert len(universal) == 20, (
-        f"expected 20 universal Viktranium options, got {len(universal)}")
+    # stops expanding shows up as a drop. Re-ratified 20 -> 24 for #211: the
+    # Resistance and Combat Mastery families make four more Viktranium options
+    # universal (each credited nothing to save/tactic priorities before).
+    assert len(universal) == 24, (
+        f"expected 24 universal Viktranium options, got {len(universal)}")
 
 
 # ---- #289: "Spell DCs" is a third universal name -------------------------------
@@ -379,3 +422,41 @@ def test_potency_expanded_away_maps_to_spellpowers_not_schools():
     assert away["potency"] == spell_focus.SPELLPOWERS
     assert away["spell focus mastery"] == spell_focus.SCHOOLS, \
         "the DC family still maps to the seven schools"
+
+
+# --- #211: the detector's first-sweep families --------------------------------
+#
+# Three umbrellas found by the umbrella detector, each with its rendered-tooltip
+# quote in the module beside its component list.
+# Evidence: docs/wiki-evidence/umbrella-adjudication-sweep.md.
+
+def test_resistance_expands_to_the_three_saves():
+    out = spell_focus.expand_affixes([_aff("Resistance", "Resistance", 8)])
+    assert [a["stat"] for a in out] == spell_focus.SAVES
+    assert all(a["bonus_type"] == "Resistance" for a in out)
+    assert all(a["value"] == 8 for a in out)
+
+
+def test_resistance_label_is_never_doubled():
+    # The classic enchantment CARRIES the Resistance bonus type; the engraved
+    # name is bare "Resistance", never "Resistance Resistance".
+    out = spell_focus.expand_affixes([_aff("Resistance", "Resistance", 8)])
+    assert all(a[VIA] == "Resistance" for a in out)
+
+
+def test_elemental_resonance_expands_to_the_four_elements():
+    out = spell_focus.expand_affixes([_aff("Elemental Resonance", "Equipment", 70)])
+    assert [a["stat"] for a in out] == spell_focus.ELEMENTAL_SPELLPOWERS
+    assert len(out) == 4, "four elements, NOT the ten-power Potency family"
+    assert all(a[VIA] == "Elemental Resonance" for a in out)
+
+
+def test_combat_mastery_expands_to_the_three_tactics():
+    out = spell_focus.expand_affixes([_aff("Combat Mastery", "Insight", 6)])
+    assert [a["stat"] for a in out] == spell_focus.TACTICS
+    assert all(a[VIA] == "Insightful Combat Mastery" for a in out)
+
+
+def test_the_tactic_components_are_not_universal():
+    for name in spell_focus.TACTICS + spell_focus.SAVES:
+        assert not spell_focus.is_universal(name), name

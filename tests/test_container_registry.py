@@ -364,7 +364,10 @@ def test_registry_declares_every_single_pick_container_with_a_verdict():
     expected = {
         "viktranium":               (cr.ATOMIC, ("spell_focus",), cr.CORRECTED,     True),
         "dino_inserts":             (cr.ATOMIC, ("spell_focus",), cr.VERIFIED_SAFE, True),
-        "nearly_complete":          (cr.FLAT,   (),               cr.VERIFIED_SAFE, True),
+        # Re-ratified for #211: the Skill menus offer the ability-skills
+        # umbrellas, so the pool took the Viktranium correction (atomic,
+        # expansion one level in).
+        "nearly_complete":          (cr.ATOMIC, ("spell_focus",), cr.CORRECTED,     True),
         "nearly_complete_per_item": (cr.FLAT,   (),               cr.VERIFIED_SAFE, True),
         "seal":                     (cr.FLAT,   (),               cr.VERIFIED_SAFE, True),
         "green_steel":              (cr.FLAT,   (),               cr.KNOWN_UNSAFE,  False),
@@ -512,7 +515,11 @@ def test_viktranium_spell_focus_craft_is_one_option_carrying_seven_schools():
                 if sum(1 for a in r.get("affixes") or [] if PROVENANCE_KEY in a) >= 7]
     assert expanded, "no Viktranium option carries an expanded universal spell-DC affix"
 
-    schools = {a["stat"] for a in expanded[0]["affixes"] if PROVENANCE_KEY in a}
+    # Re-ratified for #211: the option may ALSO carry an expanded Combat
+    # Mastery (three tactic stats); the spell-DC claim is about the schools.
+    from src.spell_focus import SCHOOLS as _SCHOOLS
+    schools = {a["stat"] for a in expanded[0]["affixes"]
+               if PROVENANCE_KEY in a and a["stat"] in _SCHOOLS}
     assert len(schools) == 7, schools
     # And the fan-out signature is absent: no record-level provenance anywhere.
     assert not [r for r in vik if PROVENANCE_KEY in r]

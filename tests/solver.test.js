@@ -816,6 +816,35 @@ async function withCrossAdd(map, fn) {
     ncOpt("Ability Score", "Constitution", "Enhancement", 15),
     ncOpt("Ability Score", "Strength", "Enhancement", 15),
   ];
+  // #211 — an ATOMIC multi-affix NC option (the Skill-menu shape): one record,
+  // one binary, every affix granted together.
+  function ncMulti(category, affixes, tier, name) {
+    return {
+      category, tier: tier || "legendary", name: name || `${category} option`,
+      affixes: affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, value, unit: "flat" })),
+    };
+  }
+
+  await test("NC/atomic: a multi-affix Skill option grants ALL its skills on ONE binary", async () => {
+    const skills = ["Bluff", "Diplomacy", "Haggle"];
+    const pool = [ncMulti("Skill", skills.map((s) => [s, "Exceptional", 11]))];
+    const q = {
+      targets: ["Bluff", "Haggle"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Boots", [ncHost("B", "Boots", "Skill", "legendary")])],
+      nearlyComplete: pool,
+    };
+    const program = S.buildProgram(q);
+    assert.strictEqual([...program.ncMeta.keys()].length, 1,
+      "one binary for the whole option, never one per affix");
+    const r = await S.solveLexicographic(q, highs);
+    assert.strictEqual(r.effective.Bluff, 11, "first ranked skill crafted");
+    assert.strictEqual(r.effective.Haggle, 11,
+      "the SAME craft credits the other ranked skill — one slot, not two");
+    assert.strictEqual(r.ncPlaced.length, 1, "exactly one placement");
+    assert.strictEqual((r.ncPlaced[0].affixes || []).length, 3,
+      "the placement is self-describing with the option's whole affix list");
+  });
+
 
   await test("NC/AE1: solver crafts the option that best advances the ranked targets", async () => {
     const conFirst = {

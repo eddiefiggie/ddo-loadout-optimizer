@@ -870,6 +870,8 @@ def build() -> dict:
         raise SystemExit(
             "set-bonus affixes name an expanded-away stat no player can rank:\n  " +
             "\n  ".join(f"{s} — {stat} {val}" for s, stat, val in _set_orphans))
+
+    _rankable_list = rankable_affixes(planner_records, _untyped_allow)
     # #305 — per-channel helpless-spelling guard, item-attached channel: no
     # parsed_set_bonuses tier may still carry a fold-away helpless-damage
     # spelling (the set_parser parse seam folds them to `Damage to helpless
@@ -958,6 +960,14 @@ def build() -> dict:
     # carrying a `nearly_complete: <category>` field draw one option from it (host
     # items pending wiki; the pool + machinery ship now).
     nc = nc_mod.build_nearly_complete(crafting)
+    # #211 — the category NC pool is ATOMIC (one record per option): the
+    # expansion goes one level IN, inside the option's own affix list, exactly
+    # as the Viktranium channel below. The Skill-category menus offer the
+    # ability-skills umbrellas ("Charisma Skills +6"), and one craft grants
+    # every component skill together.
+    for _opt in nc["records"]:
+        if _opt.get("affixes"):
+            _opt["affixes"] = spell_focus_mod.expand_affixes(_opt["affixes"])
 
     # U75 (Chill of Ravenloft) Viktranium ("Lamordia") crafting: expose the typed choice-slot pool
     # keyed by (slot_type, item-category). Items carrying `lamordia_slots` draw
@@ -989,6 +999,37 @@ def build() -> dict:
     # inert (no host references them), so the solver behavior is unchanged.
     tf = tf_mod.build_thunder_forged()
     gs = gs_mod.build_green_steel()
+
+    # #211 — the umbrella-affix detector. Every rankable-or-craftable name
+    # sharing a registered family's component head-word (`... Focus`,
+    # `... Absorption`, `... Save`, ...) or matching the umbrella name shapes
+    # must resolve: either a mechanism models it (an expansion family, a
+    # cross-add source) or a curated `atomic` ruling carries the
+    # rendered-tooltip evidence. An unresolved candidate fails the build — it
+    # is a latent #205 (232 affix instances credited nothing to any school
+    # priority for the life of the feature; this detector's first sweep found
+    # `Resistance` at 245 instances and the six ability-skills umbrellas).
+    #
+    # The universe is the PICKER's: worn rankable names PLUS every crafting
+    # pool's affix names — `Constitution Skills` lives only in the
+    # Nearly-Complete Skill menu and was invisible to a worn-only sweep. Runs
+    # AFTER every pool is built for exactly that reason.
+    _pool_names = vocabulary_mod.pool_affix_names(
+        [nc["records"], vik["records"], sl["records"], tf["records"],
+         gs["records"], dino_inserts,
+         *[v for v in (nc.get("per_item") or {}).values()]],
+        set_defs=[membership_defs, augment_set_defs])
+    _family_components = {c for comps in _expanded_away_map.values()
+                          for c in comps}
+    _modeled_names = set(_expanded_away_map) | set(
+        cross_add_mod.SPELLPOWER_SOURCES) | set(cross_add_mod.LORE_SOURCES)
+    _umbrella_universe = sorted(set(_rankable_list) | _pool_names)
+    _umbrella_queue = vocabulary_mod.umbrella_candidates(
+        _umbrella_universe, _family_components, _modeled_names)
+    _umbrella_report = vocabulary_mod.check_umbrella_adjudications(
+        _umbrella_queue,
+        vocabulary_mod._load(vocabulary_mod.UMBRELLA_ADJUDICATIONS_PATH),
+        _umbrella_universe)
 
     # U3 (#205) — the fan-out gate. Every single-pick choice-slot container is
     # declared in src/container_registry.py, and a container that turns ONE source
@@ -1233,7 +1274,12 @@ def build() -> dict:
             # presence, disclosed because a player who ranked DR for one of them
             # should be able to see where the number went.
             "dr_qualifier_coverage": _dr_coverage,
-            "rankable_affixes": rankable_affixes(planner_records, _untyped_allow),
+            "rankable_affixes": _rankable_list,
+            # #211 — the umbrella detector's disclosure: how many names it
+            # flagged and how each resolved. The queue itself lives in the
+            # adjudication seed; an unresolved candidate never reaches here
+            # because the check raises during build.
+            "umbrella_detector": _umbrella_report,
             # U1 (#136) — names this build EXPANDS AWAY, mapped to what they become.
             # The picker drops them from suggestions and redirects the player to the
             # replacements, instead of offering a priority no item can satisfy.

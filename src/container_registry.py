@@ -137,10 +137,12 @@ REGISTRY = {
         "spell-focus pass already expanded one level in. Never carried the defect. "
         "Affix-less native options are dropped, so records <= source options."),
     "nearly_complete": _c(
-        FLAT, (), VERIFIED_SAFE, True,
-        "The six `Nearly Complete: <category>` menus. Flat one-record-per-affix, no "
-        "expansion pass, and every source option carries exactly one affix — 68 "
-        "options -> 68 records, so no option is split."),
+        ATOMIC, ("spell_focus",), CORRECTED, True,
+        "The six `Nearly Complete: <category>` menus. Was flat one-record-per-affix, "
+        "safe only while every option carried exactly one affix; #211's "
+        "ability-skills umbrellas broke that (one Skill-menu craft grants four-to-six "
+        "skills together), so the pool is now atomic with the expansion one level IN "
+        "— the Viktranium correction, one channel over. 68 options -> 68 records."),
     "nearly_complete_per_item": _c(
         FLAT, (), VERIFIED_SAFE, True,
         "The per-host `Nearly Finished` / `Almost There` pools, keyed by host name: "

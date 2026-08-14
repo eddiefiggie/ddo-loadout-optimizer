@@ -818,10 +818,16 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   };
   const dinoPool = (dinoInserts || []).filter((i) => i && dinoAdvances(i));
 
-  // U81 Nearly Completed: the parametric option pool. Keep only options that
-  // advance a ranked target; the solver attaches them per item via the item's
-  // `nearly_complete` category + tier.
-  const ncPool = (nearlyComplete || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
+  // U81 Nearly Completed: the parametric option pool. ATOMIC since #211 (one
+  // record per option, affixes inside — a Skill-menu craft grants six skills
+  // together): keep an option when ANY of its affixes advances a ranked
+  // target. Flat single-affix records still read, for back-compat.
+  const ncPool = (nearlyComplete || []).filter((o) => {
+    if (!o) return false;
+    const affs = (o.affixes && o.affixes.length) ? o.affixes
+      : (o.stat ? [o] : []);
+    return affs.some((a) => targetSet.has(a.stat) && a.value > 0);
+  });
 
   // U81 Viktranium ("Lamordia"): the typed option pool keyed by (slot_type,
   // category, tier). Each record is an ATOMIC craftable OPTION carrying one or

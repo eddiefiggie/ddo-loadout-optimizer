@@ -546,8 +546,14 @@ def test_built_compound_splits_match_live_membership_defs():
     assert {("Melee Power", "Artifact", 15), ("Ranged Power", "Artifact", 15),
             ("Doublestrike", "Artifact", 15), ("Doubleshot", "Artifact", 15),
             } <= triples("Dread Stalker")
-    assert {("Combat Mastery", "Artifact", 3), ("Assassinate", "Artifact", 3),
+    # Re-ratified for #211: `Combat Mastery` is now expanded into its three
+    # tactic stats (Stunning/Vertigo/Shatter) at full magnitude — an Artifact
+    # Combat Mastery set bonus credited nothing to any tactic priority before.
+    assert {("Stunning", "Artifact", 3), ("Vertigo", "Artifact", 3),
+            ("Shatter", "Artifact", 3), ("Assassinate", "Artifact", 3),
             } <= triples("Echoes of the Walking Ancestors")
+    assert ("Combat Mastery", "Artifact", 3) not in triples(
+        "Echoes of the Walking Ancestors")
     assert {("Melee Power", "Profane", 15), ("Ranged Power", "Profane", 15),
             ("Accuracy", "Profane", 4), ("Deadly", "Profane", 4),
             } <= triples("The Legendary Dread Isle's Curse")

@@ -90,9 +90,24 @@ def test_no_emitted_label_is_a_bare_bonus_type_token():
     """The `Resistance` incident (docs/solutions/logic-errors/
     bonus-type-vocabulary-collides-with-bare-stat.md): a vocabulary entry that is
     also a bonus-type word collides. A label is a full enchantment name, so a
-    bare-type label would mean a family emitted a prefix with no base name."""
+    bare-type label would mean a family emitted a prefix with no base name.
+
+    Re-ratified for #211: bare `Resistance` IS a full enchantment name — the
+    classic all-saves item bonus (the incident doc itself rules "the bare-stat
+    reading is the real one") — and it is now a registered universal family, so
+    its label is a deliberate registration, not the accidental prefix-only
+    emission this guard exists to catch. The exemption is exactly the
+    registered-family key set; any OTHER bare-type label still fails.
+    Browser-side type-peeling does not exist, and the Python parser's
+    `len(words) > 1` guard (the incident's fix) keeps the parse safe."""
     labels = _build()["metadata"]["provenance_labels"]
-    collisions = sorted(n for n in labels if n in BONUS_TYPES)
+    # Pinned to the ONE proven name, not the growing family table (the
+    # close-a-defect-at-the-narrow-control rule): a future family whose key
+    # happened to equal a bonus-type word must argue its own exemption here,
+    # with evidence, rather than inherit this one silently.
+    exempt = {"Resistance"}
+    collisions = sorted(n for n in labels
+                        if n in BONUS_TYPES and n not in exempt)
     assert not collisions, f"labels that are bare bonus-type tokens: {collisions}"
 
 

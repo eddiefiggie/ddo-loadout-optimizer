@@ -404,3 +404,135 @@ def test_sibling_differencing_never_mutates_its_input():
     before = copy.deepcopy(_TOPAZ_GAP)
     V.sibling_affix_gaps(_TOPAZ_GAP)
     assert _TOPAZ_GAP == before
+
+
+# --- #211: the umbrella-affix detector -----------------------------------------
+
+def _adj(name, disposition="atomic", evidence="tooltip quote", harvested="2026-08-13"):
+    e = {"disposition": disposition, "harvested": harvested}
+    if evidence is not None:
+        e["evidence"] = evidence
+    return {"harvested": {name: e}}
+
+
+def test_detector_flags_a_family_head_word_outsider():
+    cands = V.umbrella_candidates(
+        ["Spell Focus Mastery", "Necromancy Focus"],
+        ["Necromancy Focus", "Evocation Focus"], [])
+    assert [c["name"] for c in cands] == ["Spell Focus Mastery"]
+    assert cands[0]["signal"] == "head-word"
+
+
+def test_detector_flags_the_name_shapes():
+    cands = V.umbrella_candidates(
+        ["All Ability Scores", "Universal Widget", "Armor Mastery", "Dodge"],
+        ["Necromancy Focus"], [])
+    assert sorted(c["name"] for c in cands) == \
+        ["All Ability Scores", "Armor Mastery", "Universal Widget"]
+    assert all(c["signal"] == "name-shape" for c in cands)
+
+
+def test_detector_skips_family_members_and_modeled_names():
+    cands = V.umbrella_candidates(
+        ["Necromancy Focus", "Universal Spell Power", "Rune Arm Focus"],
+        ["Necromancy Focus"], ["universal spell power"])
+    assert [c["name"] for c in cands] == ["Rune Arm Focus"]
+
+
+def test_an_unadjudicated_candidate_fails_the_build():
+    cands = V.umbrella_candidates(
+        ["Rune Arm Focus"], ["Necromancy Focus"], [])
+    try:
+        V.check_umbrella_adjudications(cands, {"harvested": {}},
+                                                ["Rune Arm Focus"])
+    except SystemExit as exc:
+        assert "unadjudicated" in str(exc) and "Rune Arm Focus" in str(exc)
+        return
+    raise AssertionError("an unadjudicated candidate must fail the build")
+
+
+def test_an_unknown_disposition_fails_the_build():
+    cands = V.umbrella_candidates(
+        ["Rune Arm Focus"], ["Necromancy Focus"], [])
+    try:
+        V.check_umbrella_adjudications(
+            cands, _adj("Rune Arm Focus", disposition="modeled"),
+            ["Rune Arm Focus"])
+    except SystemExit as exc:
+        assert "closed" in str(exc)
+        return
+    raise AssertionError("the disposition vocabulary is closed at ['atomic']")
+
+
+def test_a_ruling_without_evidence_fails_the_build():
+    cands = V.umbrella_candidates(
+        ["Rune Arm Focus"], ["Necromancy Focus"], [])
+    try:
+        V.check_umbrella_adjudications(
+            cands, _adj("Rune Arm Focus", evidence=None), ["Rune Arm Focus"])
+    except SystemExit as exc:
+        assert "evidence" in str(exc)
+        return
+    raise AssertionError("an atomic ruling must carry its evidence")
+
+
+def test_a_stale_ruling_fails_the_build():
+    # The ruled name left the vocabulary (a mechanism now models it, or the
+    # roster moved): the entry must be retired deliberately, never linger.
+    try:
+        V.check_umbrella_adjudications(
+            [], _adj("Rune Arm Focus"), [])
+    except SystemExit as exc:
+        assert "stale" in str(exc)
+        return
+    raise AssertionError("a stale ruling must fail the build")
+
+
+def test_the_detector_refuses_to_flag_nothing():
+    try:
+        V.check_umbrella_adjudications([], {"harvested": {}}, ["Dodge"])
+    except ValueError:
+        return
+    raise AssertionError("zero flagged candidates must refuse to pass")
+
+
+def test_the_real_seed_resolves_the_real_vocabulary():
+    """Integration: the shipped adjudication seed + registered mechanisms cover
+    every candidate the detector flags over the built dataset, and every seed
+    entry is still live. Mirrors the check build_dataset.py runs."""
+    import json as _json
+    here = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(here, "..", "web", "data", "items.json"),
+              encoding="utf-8") as fh:
+        data = _json.load(fh)
+    rankable = data["metadata"]["rankable_affixes"]
+    ea = data["metadata"]["expanded_away_names"]
+    components = {c for comps in ea.values() for c in comps}
+    from src import cross_add as _ca
+    modeled = set(ea) | set(_ca.SPELLPOWER_SOURCES) | set(_ca.LORE_SOURCES)
+    # The build's universe: worn rankable names PLUS every crafting pool's
+    # affix names PLUS the set-def channels — through the SAME shared helper
+    # the build calls (`vocabulary.pool_affix_names`), so this test cannot
+    # drift from the build by hand-mirroring the walk. `Constitution Skills`
+    # lives only in the NC Skill menu; `all Saving Throws` only on set tiers.
+    pool_names = V.pool_affix_names(
+        [data.get(k) or [] for k in ("nearly_complete", "viktranium",
+         "seal", "thunder_forged", "green_steel", "dino_inserts")]
+        + list((data.get("nearly_complete_per_item") or {}).values()),
+        set_defs=[data.get("membership_set_defs") or {},
+                  data.get("augment_set_defs") or {}])
+    universe = sorted(set(rankable) | pool_names)
+    cands = V.umbrella_candidates(universe, components, modeled)
+    seed = V._load(V.UMBRELLA_ADJUDICATIONS_PATH)
+    report = V.check_umbrella_adjudications(cands, seed, universe)
+    # Re-pinned across the sweep's iterations (20 -> 25 -> 29 -> 30): each
+    # widening of the universe (skills components, pool names, set-def
+    # channels) flagged more names, and each got its ruling. The count pins
+    # the converged state.
+    assert report["candidates"] == 30
+    assert report["atomic"] == 30
+    # The detector's first sweep found three live umbrellas; they must stay
+    # MODELED (expanded away), never re-enter the rankable vocabulary silently.
+    for name in ("Resistance", "Elemental Resonance", "Combat Mastery",
+                 "Charisma Skills", "Dexterity Skills", "Intelligence Skills"):
+        assert name not in rankable, f"{name} must stay expanded away"

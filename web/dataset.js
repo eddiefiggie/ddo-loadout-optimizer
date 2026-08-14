@@ -102,6 +102,17 @@ var EXPANDED_AWAY_FALLBACK = {
   // src/elemental_resistance_split.py. Redirects to the UNION of five: six of
   // the 58 carriers include Sonic behind the template's `4=` switch.
   "elemental resistance": ["Acid Resistance", "Cold Resistance", "Fire Resistance", "Electric Resistance", "Sonic Resistance"],
+  // #211 — the umbrella detector's first sweep, expanded by
+  // src/spell_focus.py's universal family (same-type expansion).
+  "resistance": ["Fortitude Save", "Reflex Save", "Will Save"],
+  "elemental resonance": ["Corrosion", "Combustion", "Magnetism", "Glaciation"],
+  "combat mastery": ["Stunning", "Vertigo", "Shatter"],
+  "charisma skills": ["Bluff", "Diplomacy", "Haggle", "Intimidate", "Perform", "Use Magic Device"],
+  "dexterity skills": ["Balance", "Hide", "Move Silently", "Open Lock", "Tumble"],
+  "intelligence skills": ["Disable Device", "Repair", "Search", "Spellcraft"],
+  "constitution skills": ["Concentration"],
+  "strength skills": ["Jump"],
+  "wisdom skills": ["Heal", "Listen", "Spot"],
 };
 // U10 (R13) — the ORIGINATING enchantment names the build stamps (`via`), mapped to
 // the stats each becomes. Fallback ONLY: `metadata.provenance_labels` is authoritative
@@ -504,17 +515,18 @@ function _isMagnitude(v) {
 function _craftingAffixTriples(ds) {
   const out = [];
   const push = (n, t, v) => { if (n != null && n !== "") out.push([n, t, v]); };
-  for (const pool of [ds.seal, ds.nearly_complete, ds.thunder_forged, ds.green_steel]) {
+  for (const pool of [ds.seal, ds.thunder_forged, ds.green_steel]) {
     for (const o of pool || []) push(o.stat, o.bonus_type, o.value);
   }
   for (const arr of Object.values(ds.nearly_complete_per_item || {})) {
     for (const o of arr || []) push(o.stat, o.bonus_type, o.value);
   }
-  // Viktranium and Dino records are ATOMIC UNITS carrying an `affixes` list —
-  // reading a singular `o.stat` would leave every affix of a multi-affix option
-  // (the universal spell-DC craft's seven schools) out of the picker vocabulary.
+  // Viktranium, Dino, and (#211) Nearly-Complete records are ATOMIC UNITS
+  // carrying an `affixes` list — reading a singular `o.stat` would leave every
+  // affix of a multi-affix option (the universal spell-DC craft's seven
+  // schools, a Skill-menu craft's six skills) out of the picker vocabulary.
   // Flat single-affix records still read, for back-compat.
-  for (const pool of [ds.viktranium, ds.dino_inserts]) {
+  for (const pool of [ds.viktranium, ds.dino_inserts, ds.nearly_complete]) {
     for (const o of pool || []) {
       const affs = (o.affixes && o.affixes.length) ? o.affixes : [o];
       for (const a of affs) push(a.stat, a.bonus_type, a.value);
@@ -947,11 +959,64 @@ function migrateLoadout(snapshot) {
   return snapshot;
 }
 
+/** #211 — migrate declared stat credits through the expanded-away map, exactly
+ *  as migratePriorities does for ranked names. A saved character's "already
+ *  have" credit on a name a family has since expanded away (a Battle Trance's
+ *  Insight Combat Mastery) would otherwise go silently inert: the credit's
+ *  bucket would no longer be a bucket any ranked target or affix feeds. The
+ *  enchantment grants FULL magnitude to every component, so the credit splits
+ *  at full value per component, same bonus type — one declared buff, several
+ *  bucket entries, mirroring how the item affixes themselves expanded. */
+// The expanded-away keys whose enchantment grants FULL magnitude to every
+// component — the only families a declared credit may split across. The union
+// and non-uniform keys must NOT split: `elemental resistance` redirects to the
+// UNION of five (Sonic is per-item — splitting a credit would fabricate a
+// Sonic Resistance value for the 52-of-58 carriers that grant none), and
+// `speed`'s movement and attack-speed magnitudes differ. Extend deliberately,
+// per key, with the wiki evidence — never derive from the expandedAway map,
+// which encodes redirect targets, not grant semantics.
+var CREDIT_SPLITTABLE = new Set([
+  "spell focus mastery", "spell focus", "spell dcs", "resistance",
+  "all saving throws", "saving throws", "combat mastery", "tactical dcs",
+  "elemental resonance", "charisma skills", "dexterity skills",
+  "intelligence skills", "constitution skills", "strength skills",
+  "wisdom skills", "well rounded", "all ability scores", "all ability score",
+]);
+
+function migrateCredits(credits, vocab) {
+  const out = {};
+  const substitutions = [];
+  const put = (stat, bonus_type, value) => {
+    const key = `${stat}||${bonus_type}`;
+    // Highest-of-type, matching the game rule the credit models: a player
+    // declaring both an umbrella buff and a component buff of the same type
+    // keeps the larger, never silently the later-written one.
+    if (!out[key] || out[key].value < value) {
+      out[key] = { stat, bonus_type, value };
+    }
+  };
+  for (const row of Object.values(credits || {})) {
+    if (!row || !row.stat) continue;
+    const key = String(row.stat).trim().toLowerCase();
+    const to = expandedAwayFor(vocab, row.stat);
+    if (to && to.length && CREDIT_SPLITTABLE.has(key)) {
+      substitutions.push({ from: row.stat, to: to.slice() });
+      for (const s of to) put(s, row.bonus_type, row.value);
+    } else {
+      // A credit on a non-splittable expanded-away name stays untouched: it
+      // was inert before this migration existed, and fabricating component
+      // values would be worse than inertness.
+      put(row.stat, row.bonus_type, row.value);
+    }
+  }
+  return { credits: out, substitutions };
+}
+
 // Browser: expose a global so app.js can normalize the fetched dataset without a
 // module system. Node: CommonJS export for the tests + parity harness.
 if (typeof window !== "undefined") {
-  window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
+  window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
 }
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
+  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
 }

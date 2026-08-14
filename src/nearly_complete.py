@@ -118,10 +118,14 @@ def build_nearly_complete(catalog: dict = None) -> dict:
     catalog = crafting_catalog.load_catalog() if catalog is None else catalog
 
     # -- category menu path --------------------------------------------------
-    # `source_options` counts what the pools OFFERED; both paths are FLAT (one
-    # record per affix), so they are safe only while every source option carries
-    # exactly one affix. The fan-out gate asserts that equality rather than trusting
-    # it (src/container_registry.py).
+    # ATOMIC since #211: one record per craftable OPTION, carrying its own
+    # `affixes` list — the same UNIT shape as a Viktranium option or a Dino
+    # insert. The pool was FLAT (one record per affix) while every option
+    # carried exactly one affix; the ability-skills umbrellas broke that
+    # invariant, because their single stored affix expands into four-to-six
+    # skills that one craft grants TOGETHER. A flat pool under the solver's
+    # Sigma <= 1 would tell the player they get one skill of the six — the
+    # exact Viktranium defect (src/container_registry.py) one channel over.
     records = []
     source_options = 0
     for category in sorted(CATEGORIES):
@@ -131,10 +135,14 @@ def build_nearly_complete(catalog: dict = None) -> dict:
         for opt in crafting_catalog.menu_options(key, catalog):
             source_options += 1
             tier = _nc_tier_from_ml(opt.get("ml"))
-            for aff in crafting_catalog.iter_affixes(opt):
-                rec = crafting_catalog.legacy_affix(aff)
-                rec.update({"category": category, "tier": tier, "wiki_url": ""})
-                records.append(rec)
+            affixes = [crafting_catalog.legacy_affix(aff)
+                       for aff in crafting_catalog.iter_affixes(opt)]
+            if not affixes:
+                continue
+            name = (opt.get("name") or "").strip()
+            records.append({"category": category, "tier": tier, "wiki_url": "",
+                            **({"name": name} if name else {}),
+                            "affixes": affixes})
 
     # -- per-item path (kept SEPARATE from the category path) ----------------
     per_item = {}

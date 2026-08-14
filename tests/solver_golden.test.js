@@ -83,26 +83,33 @@ function test(name, fn) {
   // `tieBreak:false` paths — every Alternatives generator — so it is pinned in
   // tests/solver.test.js, not here. Do not read a green golden run as evidence
   // that the floor is intact.
-  test("R5/R6 — a displacing credit raises its stat and frees a slot", () => {
+  test("R5/R6 — a displacing credit raises its stat and frees capacity", () => {
+    // Re-ratified for #211: `Combat Mastery` is expanded away, so the fixture
+    // ranks it via aliasTargets (-> Stunning/Vertigo/Shatter) and the Battle
+    // Trance credit migrates per-component through migrateCredits. The
+    // displacement claim survives per component: the declared Insight 7 beats
+    // the catalog's capped Insight Vertigo source (+1), while Stunning and
+    // Shatter already carry Insight sources >= 7 and stay put. The freed
+    // capacity serves the LAST priority (Physical Sheltering +2) — a gain a
+    // lexicographic solve may only take below every credited rank, which is
+    // exactly what pins the credit as a displacement rather than an add-on.
     const on = golden.solves["trance-credit-displaces-ml34"];
     const off = golden.solves["trance-credit-displaces-ml34-baseline"];
-    assert.strictEqual(off.perTarget["Combat Mastery"], 29,
-      "uncredited, the best Insight-typed Combat Mastery the catalog offers");
-    assert.strictEqual(on.perTarget["Combat Mastery"], 30,
-      "the declared 7 beats every Insight item (they cap at 6), netting +1");
-    assert.strictEqual(on.chosen.length, off.chosen.length - 1,
-      `the beaten item's slot is freed: ${off.chosen.length} -> ${on.chosen.length}`);
-    // U7 — a credit moves ONLY the stat it occupies. `>=` would also accept a
-    // silent gain elsewhere, which is drift the guard exists to catch; the freed
-    // slot serving another priority would show up here and demand attribution.
-    for (const stat of ["Constitution", "Physical Sheltering"]) {
+    assert.strictEqual(off.perTarget["Vertigo"], 34,
+      "uncredited, the best Insight-typed Vertigo the catalog offers is capped");
+    assert.strictEqual(on.perTarget["Vertigo"], 35,
+      "the declared 7 beats the capped Insight item, netting +1");
+    for (const stat of ["Stunning", "Shatter", "Constitution"]) {
       assert.strictEqual(on.perTarget[stat], off.perTarget[stat],
-        `${stat} must be untouched by a Combat Mastery credit (${off.perTarget[stat]} -> ${on.perTarget[stat]})`);
+        `${stat} must be untouched (${off.perTarget[stat]} -> ${on.perTarget[stat]})`);
     }
+    assert.strictEqual(on.perTarget["Physical Sheltering"] -
+      off.perTarget["Physical Sheltering"], 2,
+      "the freed capacity serves the last priority, with attribution");
     assert.deepStrictEqual(
-      Object.keys(on.perTarget).filter((k) => on.perTarget[k] !== off.perTarget[k]),
-      ["Combat Mastery"],
-      "exactly one stat moves, and it is the one the credit occupies");
+      Object.keys(on.perTarget).filter((k) => on.perTarget[k] !== off.perTarget[k]).sort(),
+      ["Physical Sheltering", "Vertigo"],
+      "exactly the credited component and the freed-capacity beneficiary move");
   });
 
   test("AE4 — an empty-bucket credit adds its full value and disturbs nothing", () => {

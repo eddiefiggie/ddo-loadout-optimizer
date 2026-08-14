@@ -168,6 +168,20 @@ test("vikRow tags the tier's ML, keys the pool, and renders its value (flat lega
   assert.ok(affixText(row).some((t) => /Charisma \+15/.test(t)));
 });
 
+test("ncRow renders an atomic option's FULL affix list, not just the first", () => {
+  // #211: a Skill-menu craft grants six skills at once; one row per OPTION.
+  const skills = ["Bluff", "Diplomacy", "Haggle", "Intimidate", "Perform", "Use Magic Device"];
+  const row = ncRow({
+    category: "Skill", tier: "legendary", wiki_url: "",
+    affixes: skills.map((stat) => ({ stat, bonus_type: "Exceptional", value: 11, unit: "flat" })),
+  });
+  assert.strictEqual((row.affixes || []).length, 6, "every affix the option grants is on the row");
+  const text = affixText(row);
+  for (const s of skills) {
+    assert.ok(text.some((t) => t.includes(s)), `${s} is rendered on the option row`);
+  }
+});
+
 test("vikRow renders an atomic option's FULL affix list, not just the first", () => {
   // R1: crafting the universal spell-DC option grants all seven schools at once,
   // so the browse row must show all seven — one row per OPTION, not per affix.
