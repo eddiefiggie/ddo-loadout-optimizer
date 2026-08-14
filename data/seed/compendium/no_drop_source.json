@@ -2,7 +2,7 @@
  "_meta": {
   "field": "no_drop_source",
   "title": "wiki-confirmed no-drop-source verdicts (#262)",
-  "note": "Curated evidence shard for the 'no known live drop source' disclosure. Each entry records a per-item verdict harvested from that item's own DDO wiki page: `confirmed_no_source` means the RENDERED page's Location/acquisition reading shows no quest and no chest (verified on the rendered page, never from wikitext alone), and flags the item in the built dataset; `wiki_has_source` means the wiki records a source our data lacks (the item stays unflagged; the entry exists so re-triage skips it and the location backfill can find it). The vocabulary is CLOSED at those two verdicts: an unverified or page-missing item is NEVER written here — it lives in the docs tracker only, because this shard may only carry claims the wiki settled. The wording bar (three claim strengths, kept distinct): 'Location section empty' is the observation, 'no known live drop source' is the disclosable claim, 'unobtainable' is never claimed — the wiki proves its page records no source, not that the item cannot exist.",
+  "note": "Curated evidence shard for the 'no known live drop source' disclosure. Each entry records a per-item verdict harvested from that item's own DDO wiki page: `confirmed_no_source` means the RENDERED page's Location/acquisition reading shows no quest and no chest (verified on the rendered page, never from wikitext alone), and flags the item in the built dataset; `wiki_has_source` means the wiki records a source our data lacks (the item stays unflagged; the entry exists so re-triage skips it and the location backfill can find it). The vocabulary is CLOSED at those two verdicts: an unverified or page-missing item is NEVER written here — it lives in the docs tracker only, because this shard may only carry claims the wiki settled. The wording bar (three claim strengths, kept distinct): 'Location section empty' is the observation, 'no known live drop source' is the disclosable claim, 'unobtainable' is never claimed — the wiki proves its page records no source, not that the item cannot exist. #93 extension: the triage universe also includes items whose location is a RETIRED PSEUDO-SOURCE (`Special event items` — the wiki's bucket for retired one-off live events, discontinued promos, and the closed European servers); for those entries the non-empty upstream `quests` array is the admission signal, not staleness. Items from events that still run (Festivult, Crystal Cove) carry `wiki_has_source` and stay unflagged.",
   "verdict_vocabulary": [
    "confirmed_no_source",
    "wiki_has_source"
@@ -11,6 +11,13 @@
   "provenance_vocabulary": "`stated` — the verdict was read off the item's own rendered wiki page (the absorption/enchantment discipline; nothing weaker is admitted here)."
  },
  "harvested": {
+  "+1 Intimidating Dagger of Acid": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "chest = The Festival of Olladra Contest — a retired one-off live event (Special event history)",
+   "wiki_url": "https://ddowiki.com/page/Item:+1_Intimidating_Dagger_of_Acid",
+   "harvested": "2026-08-13"
+  },
   "+1 Starter Heavy Steel Shield": {
    "verdict": "confirmed_no_source",
    "provenance": "stated",
@@ -25,11 +32,53 @@
    "wiki_url": "https://ddowiki.com/page/Item:+1_Starter_Heavy_Wooden_Shield",
    "harvested": "2026-08-13"
   },
+  "+1 Vorpal Sickle of Haggling": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "chest = Emerald Claw Conspiracy, September 2008; Trade or no Trade, March 30, 2007 - April 8, 2007 — retired one-off live events",
+   "wiki_url": "https://ddowiki.com/page/Item:+1_Vorpal_Sickle_of_Haggling",
+   "harvested": "2026-08-13"
+  },
+  "+2 Intimidating Dagger of Paralyzing Acid": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "chest = The Festival of Olladra Contest — a retired one-off live event (Special event history)",
+   "wiki_url": "https://ddowiki.com/page/Item:+2_Intimidating_Dagger_of_Paralyzing_Acid",
+   "harvested": "2026-08-13"
+  },
+  "Amulet of Natural Armor": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "infobox quest = Special event items with no live chest/quest source recorded on the page",
+   "wiki_url": "https://ddowiki.com/page/Item:Amulet_of_Natural_Armor",
+   "harvested": "2026-08-13"
+  },
+  "Battleworn Shield of Cyre": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "chest = [[Special event history#Other Special Event Items|DM unique prize]] — a DM-granted one-off, no live source",
+   "wiki_url": "https://ddowiki.com/page/Item:Battleworn_Shield_of_Cyre",
+   "harvested": "2026-08-13"
+  },
+  "Boots of Minor Striding": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "chest = DDO Stormreach: Collector's Edition Bonus Item; tips: automatically granted to characters on an account with the 2006 retail Collector's Edition — discontinued promo grant",
+   "wiki_url": "https://ddowiki.com/page/Item:Boots_of_Minor_Striding",
+   "harvested": "2026-08-13"
+  },
   "Bracers of the Spider Queen": {
    "verdict": "confirmed_no_source",
    "provenance": "stated",
    "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
    "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_the_Spider_Queen",
+   "harvested": "2026-08-13"
+  },
+  "Brooch of Waterbreathing": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "chest = [[Special event history#Special Purchase Bonus Items|Special Purchase Bonus Items]] — a retired purchase promo",
+   "wiki_url": "https://ddowiki.com/page/Item:Brooch_of_Waterbreathing",
    "harvested": "2026-08-13"
   },
   "Cataclysmic Buckler": {
@@ -676,6 +725,13 @@
    "wiki_url": "https://ddowiki.com/page/Item:Epic_Wolf_Whistle",
    "harvested": "2026-08-13"
   },
+  "Founder's Helm": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "page: available only to accounts with a character in a guild of 10+ by the end of the 2006 Head Start program — closed founder promo",
+   "wiki_url": "https://ddowiki.com/page/Item:Founder%27s_Helm",
+   "harvested": "2026-08-13"
+  },
   "Great Forge Helm": {
    "verdict": "confirmed_no_source",
    "provenance": "stated",
@@ -683,11 +739,32 @@
    "wiki_url": "https://ddowiki.com/page/Item:Great_Forge_Helm",
    "harvested": "2026-08-13"
   },
+  "Green Steel Greatclub": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "the current Festivult page lists Unbound Blank Greensteel Weapons among gold-coin rewards, naming the Green Steel Greatclub explicitly ('even types that cannot be crafted such as the Green Steel Greatclub'); Festivult runs annually",
+   "wiki_url": "https://ddowiki.com/page/Item:Green_Steel_Greatclub",
+   "harvested": "2026-08-13"
+  },
+  "Green Steel Light Hammer": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "the current Festivult page lists Unbound Blank Greensteel Weapons among gold-coin rewards (the Greatclub is its named example of the family); Festivult runs annually",
+   "wiki_url": "https://ddowiki.com/page/Item:Green_Steel_Light_Hammer",
+   "harvested": "2026-08-13"
+  },
   "High Priestess' Focus": {
    "verdict": "confirmed_no_source",
    "provenance": "stated",
    "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
    "wiki_url": "https://ddowiki.com/page/Item:High_Priestess'_Focus",
+   "harvested": "2026-08-13"
+  },
+  "Lawrence's Robe of Trivial Knowledge": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "chest = [[Special event history#Trivia Contest|Trivia Contest]]; page: Sir Lawrence d'Deneith was an event host in the early years of the game",
+   "wiki_url": "https://ddowiki.com/page/Item:Lawrence%27s_Robe_of_Trivial_Knowledge",
    "harvested": "2026-08-13"
   },
   "Legendary Azure Necklace of Prophecy": {
@@ -1390,11 +1467,102 @@
    "wiki_url": "https://ddowiki.com/page/Item:Legendary_Wolf_Whistle",
    "harvested": "2026-08-13"
   },
+  "Lousy Chain Docent?": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "chest = [[Special event history#New Theater Event (September 2007)|New Theater Event]] for wrong answer — retired 2007 live event",
+   "wiki_url": "https://ddowiki.com/page/Item:Lousy_Chain_Docent%3F",
+   "harvested": "2026-08-13"
+  },
+  "Lousy Chainshirt": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "chest = [[Special event history#New Theater Event (September 2007)|New Theater Event for wrong answer.]] — retired 2007 live event",
+   "wiki_url": "https://ddowiki.com/page/Item:Lousy_Chainshirt",
+   "harvested": "2026-08-13"
+  },
+  "Lucky Hat": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "chest = [[Special event history#New Theater Event (September 2007)|New Theater Event for correct answer.]] — retired 2007 live event",
+   "wiki_url": "https://ddowiki.com/page/Item:Lucky_Hat",
+   "harvested": "2026-08-13"
+  },
+  "Pirate's Bandana": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "chest = [[Special event history#Talk Like a Pirate Day (September 1, 2007)|Talk Like a Pirate Day]]; tips: This is a rare item that is no longer obtainable except through trading, as it is unbound.",
+   "wiki_url": "https://ddowiki.com/page/Item:Pirate%27s_Bandana",
+   "harvested": "2026-08-13"
+  },
+  "Power Evidence": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "chest = Steam DDO: Half-Orc Pack — discontinued purchase grant (each character received one upon purchase and after reincarnation)",
+   "wiki_url": "https://ddowiki.com/page/Item:Power_Evidence",
+   "harvested": "2026-08-13"
+  },
+  "Scary Festival Mask": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "chest = [[Special event history#Trivia Contest|Trivia Contest reward for Correct Answer]] — community-team one-off events",
+   "wiki_url": "https://ddowiki.com/page/Item:Scary_Festival_Mask",
+   "harvested": "2026-08-13"
+  },
+  "Scepter of Siberys": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "chest = [[Special event history#Hide and Seek (April 27, 2007 - May 13, 2007)|Hide and Seek]] — retired 2007 live event",
+   "wiki_url": "https://ddowiki.com/page/Item:Scepter_of_Siberys",
+   "harvested": "2026-08-13"
+  },
+  "Seeker Tap of Spellsight": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "chest = European servers; notes: Given away on the European servers by Codemasters. It is not native to any of the American servers. — the European service closed in 2010",
+   "wiki_url": "https://ddowiki.com/page/Item:Seeker_Tap_of_Spellsight",
+   "harvested": "2026-08-13"
+  },
   "Shards of the Deep": {
    "verdict": "confirmed_no_source",
    "provenance": "stated",
    "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
    "wiki_url": "https://ddowiki.com/page/Item:Shards_of_the_Deep",
+   "harvested": "2026-08-13"
+  },
+  "Shen's Robe": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "chest = [[Special event history#Trivia Contest|Trivia Contest reward for Correct Answer]]; notes: a rare item that can only be obtained through an event supported by the DDO community team",
+   "wiki_url": "https://ddowiki.com/page/Item:Shen%27s_Robe",
+   "harvested": "2026-08-13"
+  },
+  "Tainted Helm of Mystery": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "chest = [[Special event history#Emerald Claw Conspiracy (September 14, 2007 - December 7, 2007 )|Emerald Claw Conspiracy]] — retired 2007 live event",
+   "wiki_url": "https://ddowiki.com/page/Item:Tainted_Helm_of_Mystery",
+   "harvested": "2026-08-13"
+  },
+  "Tchurvul's Kukri": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "chest = [[Special event history#Emerald Claw Conspiracy (September 14, 2007 - December 7, 2007 )|Emerald Claw Conspiracy, Randomly dropped by Tchurvul.]] — retired 2007 live event",
+   "wiki_url": "https://ddowiki.com/page/Item:Tchurvul%27s_Kukri",
+   "harvested": "2026-08-13"
+  },
+  "The Admiral of Bling": {
+   "verdict": "wiki_has_source",
+   "provenance": "stated",
+   "evidence": "infobox crafting = Treasure of Crystal Cove and the page carries {{Crystal Cove Hat|VI}}; Crystal Cove is a recurring live event",
+   "wiki_url": "https://ddowiki.com/page/Item:The_Admiral_of_Bling",
+   "harvested": "2026-08-13"
+  },
+  "Wayfinder's Scepter": {
+   "verdict": "confirmed_no_source",
+   "provenance": "stated",
+   "evidence": "chest = [[Special event history#Other Special Event Items|Item Finding Reward]]; tips: a rare item that is no longer obtainable — retired one-off",
+   "wiki_url": "https://ddowiki.com/page/Item:Wayfinder%27s_Scepter",
    "harvested": "2026-08-13"
   }
  }

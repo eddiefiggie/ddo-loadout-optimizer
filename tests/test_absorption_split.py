@@ -278,6 +278,17 @@ def test_the_quarantine_marker_is_stamped_on_the_record():
                        "components": list(absorption_split.ELEMENTAL_WITH_SONIC)}]
 
 
+def test_quarantine_preserves_another_familys_marker_not_overwrites():
+    """The field is SHARED with the elemental resistance family, and either
+    family may run first: a record both quarantine must keep both disclosures."""
+    rec = _rec("Brand New Ward", _affix(absorption_split.ELEMENTAL, "Enhancement", 7))
+    rec[absorption_split.QUARANTINE_FIELD] = [{"stat": "Elemental Resistance",
+                                               "reason": "absent", "components": []}]
+    absorption_split.apply([rec], _shard())
+    stats = [d["stat"] for d in rec[absorption_split.QUARANTINE_FIELD]]
+    assert stats == ["Elemental Resistance", absorption_split.ELEMENTAL]
+
+
 def test_an_expanded_record_gets_no_quarantine_marker():
     rec = _rec("Archaic Device", _affix(absorption_split.ELEMENTAL, "Enhancement", 5))
     absorption_split.apply([rec], _shard(**{"Archaic Device": _entry(False)}))

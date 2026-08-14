@@ -246,3 +246,41 @@ Closed verdict vocabulary; roster-reachability (anti-orphan); evidence/URL/date 
 | Legendary Ward of Undeath | legendary-crafted from Epic Ward of Undeath (the page's legendary param records the epic predecessor) |
 | Legendary Weathered Targe | legendary-crafted from Epic Weathered Targe (the page's legendary param records the epic predecessor) |
 | Legendary Wolf Whistle | legendary-crafted from Epic Wolf Whistle (the page's legendary param records the epic predecessor) |
+
+## #93 extension — the `Special event items` pseudo-source (2026-08-13)
+
+The original triage universe was the 199 worn items with an EMPTY
+`location_quest`, which is why `Seeker Tap of Spellsight` — #93's named
+exemplar — stayed invisible: its location is the literal string
+`Special event items`, the wiki's bucket for retired one-off live events,
+discontinued promos, and the closed European servers. A recorded value that
+names no live source is the same disclosable fact as an empty one, so
+`src/no_drop_source.py` now treats `Special event items` as a RETIRED
+PSEUDO-SOURCE: its carriers join the triage universe, and for their entries the
+non-empty upstream `quests` array is the admission signal, not staleness.
+
+All 24 carriers were triaged from their own pages (infobox
+`quest`/`chest`/`tips`/`notes` params) on 2026-08-13:
+
+**confirmed_no_source (21):** the Festival of Olladra daggers (+1 Intimidating
+Dagger of Acid, +2 Intimidating Dagger of Paralyzing Acid), +1 Vorpal Sickle of
+Haggling (Emerald Claw Conspiracy 2008 / Trade or no Trade 2007), Amulet of
+Natural Armor, Battleworn Shield of Cyre (DM unique prize), Boots of Minor
+Striding (2006 retail Collector's Edition grant), Brooch of Waterbreathing
+(Special Purchase Bonus), Founder's Helm (2006 Head Start guild promo),
+Lawrence's Robe of Trivial Knowledge / Shen's Robe / Scary Festival Mask
+(Trivia Contest), Lousy Chain Docent? / Lousy Chainshirt / Lucky Hat (New
+Theater Event, September 2007), Pirate's Bandana (Talk Like a Pirate Day 2007;
+tips: "no longer obtainable except through trading"), Power Evidence (Steam
+Half-Orc Pack grant), Scepter of Siberys (Hide and Seek 2007), **Seeker Tap of
+Spellsight** (Codemasters European-server giveaway; "not native to any of the
+American servers" — the EU service closed in 2010), Tainted Helm of Mystery /
+Tchurvul's Kukri (Emerald Claw Conspiracy 2007), Wayfinder's Scepter (Item
+Finding Reward; tips: "no longer obtainable").
+
+**wiki_has_source (3):** Green Steel Greatclub and Green Steel Light Hammer —
+the CURRENT Festivult page lists Unbound Blank Greensteel Weapons among
+gold-coin rewards, naming the Greatclub explicitly, and Festivult runs
+annually; The Admiral of Bling — `crafting = Treasure of Crystal Cove`
+(recurring event). These stay unflagged: "from a seasonal event" is a live
+source, not a retired one.

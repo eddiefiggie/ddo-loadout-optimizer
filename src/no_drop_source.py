@@ -56,6 +56,18 @@ import os
 # The per-variant field the web layer discloses from. Emitted only when True.
 FIELD = "no_drop_source"
 
+# #93 — locations that are event-HISTORY pseudo-sources, not live drop sources.
+# `Special event items` is the wiki's bucket for retired one-off live events
+# (2006-2008 contests, discontinued retail/promo grants, the closed European
+# servers). The location IS recorded, so the empty-location universe never saw
+# these 24 items — yet the recorded value names no live source, which is how
+# `Seeker Tap of Spellsight` stayed recommendable (#93's exemplar). An item
+# whose location is one of these joins the triage universe, and its non-empty
+# raw `quests` array is NOT staleness: it is the very signal that put it there.
+# Items from events that still RUN (Festivult, Crystal Cove) get a
+# `wiki_has_source` verdict like any other sourced item.
+RETIRED_PSEUDO_SOURCES = frozenset({"Special event items"})
+
 # The closed verdict vocabulary (KTD5). Nothing weaker is ever written to the
 # shard: unverified / page_missing items live in the docs tracker only.
 CONFIRMED = "confirmed_no_source"
@@ -158,7 +170,11 @@ def check(entries: dict, planner_records: list) -> dict:
         # confirmed entry the data now records a source and un-flagging is a
         # manual review event; for a wiki_has_source entry the backfill landed
         # and the entry has left the triage universe — retire it deliberately.
-        quests = [q for q in rec.get("quests") or [] if q]
+        # A retired pseudo-source (#93) is not a source: `Special event items`
+        # is the signal that admits an item to the universe, so it must not
+        # read as "upstream now records a source" for its own entry.
+        quests = [q for q in rec.get("quests") or []
+                  if q and q not in RETIRED_PSEUDO_SOURCES]
         if quests:
             problems.append(
                 f"{name}: upstream `quests` now records a source "
@@ -221,17 +237,19 @@ def coverage(variants: list, entries: dict) -> dict:
     """The ``metadata.no_drop_source_coverage`` block, derived AT BUILD TIME.
 
     Counts come from the dataset, never hardcoded, so harvest refreshes cannot
-    drift them. The triage universe is selected strictly by
-    ``location_quest == ""`` (the empty STRING — a worn item whose harvest
-    recorded no quest): the ~1,063 augment records carry ``location_quest:
-    null`` and the 11 synthetic Dino crafting blanks carry no key at all, so
-    both fall outside by construction (R3).
+    drift them. The triage universe is ``location_quest == ""`` (the empty
+    STRING — a worn item whose harvest recorded no quest) plus any location in
+    ``RETIRED_PSEUDO_SOURCES`` (#93 — a recorded value that names no live
+    source): the ~1,063 augment records carry ``location_quest: null`` and the
+    11 synthetic Dino crafting blanks carry no key at all, so both fall outside
+    by construction (R3).
 
     Only called when the shard has entries — an empty seed emits NO coverage
     block at all (AE2 byte-identity), which the caller gates.
     """
     universe = {v.get("source_item") for v in variants or []
-                if v.get("location_quest") == ""}
+                if v.get("location_quest") == ""
+                or v.get("location_quest") in RETIRED_PSEUDO_SOURCES}
     confirmed = sorted(confirmed_names(entries))
     has_source = sorted(n for n, e in (entries or {}).items()
                         if (e or {}).get("verdict") == WIKI_HAS_SOURCE)

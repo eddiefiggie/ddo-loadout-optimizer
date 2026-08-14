@@ -98,6 +98,10 @@ var EXPANDED_AWAY_FALLBACK = {
   "fire and cold absorption": ["Fire Absorption", "Cold Absorption"],
   "electricity and acid absorption": ["Electric Absorption", "Acid Absorption"],
   "elemental absorption": ["Acid Absorption", "Cold Absorption", "Fire Absorption", "Electric Absorption", "Sonic Absorption"],
+  // #191 — the resistance compound, expanded per item by
+  // src/elemental_resistance_split.py. Redirects to the UNION of five: six of
+  // the 58 carriers include Sonic behind the template's `4=` switch.
+  "elemental resistance": ["Acid Resistance", "Cold Resistance", "Fire Resistance", "Electric Resistance", "Sonic Resistance"],
 };
 // U10 (R13) — the ORIGINATING enchantment names the build stamps (`via`), mapped to
 // the stats each becomes. Fallback ONLY: `metadata.provenance_labels` is authoritative

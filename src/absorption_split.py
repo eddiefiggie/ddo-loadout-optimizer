@@ -298,7 +298,11 @@ def apply(records, shard: dict) -> dict:
 
         rec["affixes"] = out
         if excluded:
-            rec[QUARANTINE_FIELD] = excluded
+            # Append, never overwrite: the field is SHARED with the elemental
+            # resistance family, and a record both families quarantine must keep
+            # both disclosures regardless of which apply() ran first.
+            existing = rec.get(QUARANTINE_FIELD) or []
+            rec[QUARANTINE_FIELD] = existing + excluded
 
     return stats
 
