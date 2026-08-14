@@ -4052,5 +4052,37 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(r.augmentsPlaced[0].variant_id, "GemA", "the fired one");
   });
 
+  await test("#319 guards hold on a real tieBreak:false solve; fewer-crafts counting sees no floats", async () => {
+    // Ranked-but-redundant crafts: every craft option's stat IS ranked but is
+    // outvalued by a larger same-bucket worn source, so the placement vars exist
+    // (buildProgram's target gate admits them) while their gated z loses the
+    // bucket and stays 0 — the float shape reachable on every alternatives
+    // re-solve. If HiGHS happens not to float here, this test still pins the
+    // guarded behavior (the deterministic #319 tests above carry the red proof).
+    const armor = item("BIG", "Armor", [["Melee Power", "Artifact", 20], ["Melee Power", "Enhancement", 15]]);
+    const craftHost = host("CH", "Ring", [], ["Colorless"]);
+    craftHost.dino_slots_norm = ["Fang||Accessory"];
+    craftHost.seal_slots = [{ seal_type: "Undeath", category: "Jewelry" }];
+    craftHost.green_steel_slot = true;
+    const model = {
+      targets: ["Melee Power"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Armor", [armor]), slot("Ring", [craftHost])],
+      dinoInserts: [{ dino_type: "Fang", category: "Accessory", name: "Dull Fang",
+        affixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 5, unit: "flat" }] }],
+      seal: [{ seal_type: "Undeath", stat: "Melee Power", bonus_type: "Artifact", value: 3, unit: "flat" }],
+      greenSteel: [{ name: "Dim", stat: "Melee Power", bonus_type: "Artifact", value: 4, unit: "flat" }],
+      augments: [augment("DimGem", "Colorless", [["Melee Power", "Enhancement", 6]])],
+    };
+    const program = S.buildProgram(model);
+    const r = S.solveConstrained(program, highs, { objectiveStat: "Melee Power", sense: "max", tieBreak: false });
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective["Melee Power"], 35, "worn sources win both buckets");
+    for (const k of ["augmentsPlaced", "dinoPlaced", "ncPlaced", "rollPlaced", "vikPlaced", "sealPlaced", "tfPlaced", "gsPlaced"]) {
+      assert.strictEqual((r[k] || []).length, 0, `${k}: no phantom placement on the tieBreak:false path`);
+    }
+    const A = require("../web/alternatives.js");
+    assert.strictEqual(A.craftCount(r), 0, "fewer-crafts counting sees zero crafts");
+  });
+
   console.log(`\n${passed} passed`);
 })();
