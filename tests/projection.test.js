@@ -193,6 +193,76 @@ test("U7/P2: a Colorless slot filled by a set-augment copy is reserved (no doubl
   assert.strictEqual(P.assignAugments(chosen2, augmentsPlaced, setAugmentsPlaced).byIndex.has(0), true, "with a spare Colorless slot the ordinary augment lands");
 });
 
+// ---- #316 — slot-color reservation + read-time canonicalization --------------
+
+test("#316: reservation decrements the color the copy consumed, not hardcoded Colorless", () => {
+  const chosen = [{ slot: "Belt", variant: { variant_id: "Belt1", augment_slots_norm: { colors: ["Colorless", "Yellow"] } } }];
+  const augmentsPlaced = [{ variant_id: "aug1", color: "Colorless" }];
+  const setAugmentsPlaced = [{ set: "Quickblade", host: "Belt1", slot_color: "Yellow" }];
+  const r = P.assignAugments(chosen, augmentsPlaced, setAugmentsPlaced);
+  assert.strictEqual(r.byIndex.has(0), true, "the Colorless slot is still free for the ordinary augment");
+  assert.deepStrictEqual(r.freeByIndex.get(0), undefined, "Yellow consumed by the copy, Colorless by the augment");
+});
+
+test("#316/legacy: a restored placement without slot_color still reserves one Colorless slot", () => {
+  const chosen = [{ slot: "Belt", variant: { variant_id: "Belt1", augment_slots_norm: { colors: ["Colorless"] } } }];
+  const augmentsPlaced = [{ variant_id: "aug1", color: "Colorless" }];
+  const setAugmentsPlaced = [{ set: "Quickblade", host: "Belt1" }]; // pre-#316 snapshot shape
+  const r = P.assignAugments(chosen, augmentsPlaced, setAugmentsPlaced);
+  assert.strictEqual(r.byIndex.has(0), false, "legacy copy defaults to Colorless and reserves it");
+  assert.deepStrictEqual(r.unplaced, augmentsPlaced, "no new unplaced beyond the genuinely displaced augment");
+});
+
+test("#316/AE5: canonicalization keeps the solved color when Colorless is already consumed", () => {
+  // Alternatives-path shape: the host's Colorless slot is needed by an ordinary
+  // Colorless augment and the copy legitimately sits in Yellow. Recoloring the
+  // copy to Colorless would displace the ordinary augment — the trial-assignment
+  // guard must refuse, keep Yellow, and grow no unplaced set.
+  const build = {
+    chosen: [{ slot: "Belt", variant: { variant_id: "Belt1", augment_slots_norm: { colors: ["Colorless", "Yellow"] } } }],
+    augmentsPlaced: [{ variant_id: "aug1", color: "Colorless", slot_color: "Colorless" }],
+    setAugmentsPlaced: [{ set: "Quickblade", host: "Belt1", slot_color: "Yellow" }],
+  };
+  const canon = P.canonicalSetAugments(build);
+  assert.strictEqual(canon[0].slot_color, "Yellow", "solved color kept — no feasible recolor");
+  const r = P.assignAugments(build.chosen, build.augmentsPlaced, canon);
+  assert.strictEqual(r.unplaced.length, 0, "no ordinary augment displaced by canonicalization");
+  assert.ok(["Colorless", "Yellow"].includes(canon[0].slot_color), "reported color is host-exposed");
+});
+
+test("#316: a feasible recolor re-reports the copy as Colorless and moves the reservation", () => {
+  const build = {
+    chosen: [{ slot: "Belt", variant: { variant_id: "Belt1", augment_slots_norm: { colors: ["Colorless", "Yellow"] } } }],
+    augmentsPlaced: [],
+    setAugmentsPlaced: [{ set: "Quickblade", host: "Belt1", slot_color: "Yellow" }],
+  };
+  const canon = P.canonicalSetAugments(build);
+  assert.strictEqual(canon[0].slot_color, "Colorless", "free Colorless slot -> Colorless-first recolor");
+  const r = P.assignAugments(build.chosen, [], canon);
+  assert.deepStrictEqual(r.freeByIndex.get(0), ["Yellow"], "the Yellow slot is released");
+  assert.strictEqual(build.setAugmentsPlaced[0].slot_color, "Yellow", "the persisted snapshot is never mutated");
+});
+
+test("#316: canonicalization is idempotent on a tie-broken primary solve", () => {
+  const build = {
+    chosen: [{ slot: "Belt", variant: { variant_id: "Belt1", augment_slots_norm: { colors: ["Colorless", "Yellow"] } } }],
+    augmentsPlaced: [],
+    setAugmentsPlaced: [{ set: "Quickblade", host: "Belt1", slot_color: "Colorless" }],
+  };
+  const canon = P.canonicalSetAugments(build);
+  assert.strictEqual(canon[0].slot_color, "Colorless", "already-canonical placement is unchanged");
+});
+
+test("#316: canonicalization never yields a color the host lacks", () => {
+  const build = {
+    chosen: [{ slot: "Belt", variant: { variant_id: "Belt1", augment_slots_norm: { colors: ["Green", "Yellow"] } } }],
+    augmentsPlaced: [],
+    setAugmentsPlaced: [{ set: "Quickblade", host: "Belt1", slot_color: "Yellow" }],
+  };
+  const canon = P.canonicalSetAugments(build);
+  assert.strictEqual(canon[0].slot_color, "Yellow", "no Colorless slot on the host -> solved color kept");
+});
+
 // ---- U3 — the set-contributor resolver ---------------------------------------
 // CONCEPTS.md "Set contributor": three kinds, only the first in item data. A
 // display reading `set_bonus` alone omits a piece the solve counted.

@@ -116,13 +116,18 @@
       for (const col of ((c.variant.augment_slots_norm || {}).colors) || []) m.set(col, (m.get(col) || 0) + 1);
       return m;
     });
-    // Reserve the Colorless slots the solver already filled with set-augment copies
+    // Reserve the slots the solver already filled with set-augment copies
     // (setAugmentsPlaced[].host is a variant_id) BEFORE greedily assigning ordinary
-    // augments, or an item whose only Colorless slot holds a set copy would be
-    // double-booked (ordinary augment attributed to a full slot) and reported as free.
+    // augments, or an item whose only compatible slot holds a set copy would be
+    // double-booked (ordinary augment attributed to a full slot) and reported as
+    // free. #316 — the reservation decrements the color the copy actually consumed
+    // (slot_color); a placement saved before slot_color existed can only have been
+    // Colorless, so that is the legacy default (an undefined lookup would silently
+    // no-op the reservation and re-offer the slot).
     for (const sa of setAugmentsPlaced || []) {
       const i = chosen.findIndex((c) => c.variant && c.variant.variant_id === sa.host);
-      if (i >= 0 && (remaining[i].get("Colorless") || 0) > 0) remaining[i].set("Colorless", remaining[i].get("Colorless") - 1);
+      const col = (sa && sa.slot_color) || "Colorless";
+      if (i >= 0 && (remaining[i].get(col) || 0) > 0) remaining[i].set(col, remaining[i].get(col) - 1);
     }
     const byIndex = new Map();
     const unplaced = [];
@@ -147,6 +152,68 @@
       if (cols.length) freeByIndex.set(i, cols);
     });
     return { byIndex, unplaced, freeByIndex };
+  }
+
+  /** #316 — the canonical set-augment placement list every consumer reads.
+   *
+   *  Returns a NEW list (the persisted snapshot is never mutated; persist.js
+   *  stores `setAugmentsPlaced` verbatim) in which each copy carries a
+   *  `slot_color` and, where a Colorless recolor is genuinely free, the copy is
+   *  re-reported as Colorless. Runs unconditionally — projection has no
+   *  solve-path flag, and on a tie-broken primary solve the pass is idempotent
+   *  (the Colorless-first stage already landed every free copy Colorless).
+   *
+   *  The guard is a trial-assignment check, not a copy-only ledger: a candidate
+   *  recolor is accepted only when (a) the host itself exposes a Colorless slot
+   *  (never a color absent from the host, R2), (b) every copy's reservation
+   *  still fits its host's physical slots, and (c) re-running the full ordinary-
+   *  augment reconstruction does not grow `unplaced` — a pre-assignment ledger
+   *  sees only other copies and would steal a Colorless slot ordinary demand
+   *  needs. Legacy placements without `slot_color` default to Colorless (the
+   *  only color a pre-#316 solve could consume). Memoized per build object.
+   */
+  const _canonSetAug = (typeof WeakMap !== "undefined") ? new WeakMap() : null;
+  function canonicalSetAugments(build) {
+    if (!build) return [];
+    if (_canonSetAug && _canonSetAug.has(build)) return _canonSetAug.get(build);
+    const chosen = build.chosen || [];
+    const list = (build.setAugmentsPlaced || [])
+      .map((sa) => ({ ...sa, slot_color: (sa && sa.slot_color) || "Colorless" }));
+    const hostIdx = (id) => chosen.findIndex((c) => c.variant && c.variant.variant_id === id);
+    // Per-host physical feasibility of a candidate list: every copy must reserve
+    // a real slot of its color on its own host.
+    const reservationsFit = (l) => {
+      const rem = chosen.map((c) => {
+        const m = new Map();
+        for (const col of ((c.variant.augment_slots_norm || {}).colors) || []) m.set(col, (m.get(col) || 0) + 1);
+        return m;
+      });
+      for (const s of l) {
+        const i = hostIdx(s.host);
+        if (i < 0) continue; // host not in chosen (partial snapshot) — nothing to reserve
+        const have = rem[i].get(s.slot_color) || 0;
+        if (!have) return false;
+        rem[i].set(s.slot_color, have - 1);
+      }
+      return true;
+    };
+    if (list.length && reservationsFit(list)) {
+      const unplacedOf = (l) => assignAugments(chosen, build.augmentsPlaced, l).unplaced.length;
+      let base = unplacedOf(list);
+      for (let k = 0; k < list.length; k++) {
+        if (list[k].slot_color === "Colorless") continue;
+        const i = hostIdx(list[k].host);
+        if (i < 0) continue;
+        const cols = ((chosen[i].variant.augment_slots_norm || {}).colors) || [];
+        if (!cols.includes("Colorless")) continue;               // host-bounded (R2)
+        const trial = list.map((s, j) => (j === k ? { ...s, slot_color: "Colorless" } : s));
+        if (!reservationsFit(trial)) continue;                   // no free Colorless on the host
+        const u = unplacedOf(trial);
+        if (u <= base) { list[k] = trial[k]; base = u; }         // never displace an ordinary augment
+      }
+    }
+    if (_canonSetAug) _canonSetAug.set(build, list);
+    return list;
   }
 
   /** Dino-insert -> item assignment (mirrors assignAugments). Slots keyed by
@@ -185,7 +252,7 @@
    *  sourceKind, slots, hostIds, isSet }], ... } — presentation only. */
   function attributionByTarget(result, augAssign) {
     const breakdown = result.breakdown || {};
-    augAssign = augAssign || assignAugments(result.chosen, result.augmentsPlaced, result.setAugmentsPlaced);
+    augAssign = augAssign || assignAugments(result.chosen, result.augmentsPlaced, canonicalSetAugments(result));
     const augSlot = new Map(), augHost = new Map();
     for (const [idx, augs] of augAssign.byIndex) {
       const host = result.chosen[idx];
@@ -635,7 +702,7 @@
   // tf/gs) or host (joker/membership); dino/aug come pre-assigned by index. Extracted
   // verbatim from results.js buildViews so results.js and the exports share one builder.
   function buildCraftMaps(build, augAssign, dinoAssign) {
-    augAssign = augAssign || assignAugments(build.chosen, build.augmentsPlaced, build.setAugmentsPlaced);
+    augAssign = augAssign || assignAugments(build.chosen, build.augmentsPlaced, canonicalSetAugments(build));
     dinoAssign = dinoAssign || assignDinoInserts(build.chosen, build.dinoPlaced);
     const byItemMap = (list) => {
       const m = new Map();
@@ -657,7 +724,7 @@
     // augment reconstruction, whose host could disagree with the item the solver
     // actually suppressed).
     const setAugByHost = new Map();
-    for (const s of build.setAugmentsPlaced || []) {
+    for (const s of canonicalSetAugments(build)) {           // #316 — canonical colors
       if (!setAugByHost.has(s.host)) setAugByHost.set(s.host, []);
       setAugByHost.get(s.host).push(s);
     }
@@ -876,7 +943,7 @@
   function project(rec) {
     const snap = (rec && rec.snapshot) || {};
     const chosen = snap.chosen || [];
-    const augAssign = assignAugments(chosen, snap.augmentsPlaced, snap.setAugmentsPlaced);
+    const augAssign = assignAugments(chosen, snap.augmentsPlaced, canonicalSetAugments(snap));
     const dinoAssign = assignDinoInserts(chosen, snap.dinoPlaced);
     const maps = buildCraftMaps(snap, augAssign, dinoAssign);
     const attr = attributionByTarget(snap, augAssign);
@@ -1142,7 +1209,7 @@
     project, creditNoticeLines, saturationNoticeLines, emptySlotNoticeLines,
     absorptionQuarantineNoticeLines, declaredCreditsLine,
     // pure primitives (results.js binds these; single definition, no drift)
-    affixLabel, collapseExpansions, itemMl, contributingAffixes, assignAugments, dinoInsertKey, assignDinoInserts,
+    affixLabel, collapseExpansions, itemMl, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,
     satisfiedSets, suppressedHostIds, slotSetNames,
     setContributors, contributorsFor, setMemberLabel, activeSetDetail, satisfiedSetDetail,
