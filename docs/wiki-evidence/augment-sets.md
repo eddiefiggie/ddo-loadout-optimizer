@@ -17,7 +17,7 @@ The prior design note (`docs/plans/2026-08-03-003-feat-augment-sets-design.md`) 
 
 1. **Crafting device:** the **Cauldron of Cadence**, located in **The Hut from Beyond**. Consumes, per augment, **Threads of Fate ×50 + an Empty Soul Vessel + one specific named ("Original") item**. (This is the "special crafting device" the user described.)
 2. **Each Set Augment is a Colorless augment**, ML 30, BtA, category "Named augments".
-3. **The set's ONLY piece source is the augment itself.** The "Original item" is *consumed* to make the augment, not worn as a set piece. So **"3 Pieces Equipped" = 3 copies of the same Set Augment** slotted into Colorless slots across 3 items on one character. (Matches user testimony: "requires using an augment more than once to get its set bonus.") No worn-gear mixing.
+3. **The set's ONLY piece source is the augment itself.** The "Original item" is *consumed* to make the augment, not worn as a set piece. So **"3 Pieces Equipped" = 3 copies of the same Set Augment** slotted into any standard augment color slots across 3 items on one character (the original "Colorless slots" wording here was the conservative pre-#316 reading — see the 2026-08-14 placement ruling below). (Matches user testimony: "requires using an augment more than once to get its set bonus.") No worn-gear mixing.
 4. **Single tier only:** every Set Augment has exactly one threshold — **3 Pieces Equipped** (no 4/5-piece tiers).
 5. **Bonus types:** almost all are **Artifact** bonuses (e.g., +3 Artifact bonus to an ability score, +30 Artifact bonus to MRR/PRR, +15 Artifact Melee/Ranged Power). One exception: **Legendary Bulwark = +10% Legendary bonus to Max HP**. Bonus type matters for stacking buckets.
 6. **SUPPRESSION RULE (correctness-critical, would never be inferred):** slotting a Set Augment into an item that carries any named set(s) **suppresses those sets** while the augment is slotted. Placing a Set Augment is not free — it can nullify the host item's own set membership/bonuses.
@@ -63,9 +63,19 @@ Both summary tables (Augment_Slot/Set_Augment; Named_item_sets → Augment sets)
 - **No per-copy stacking concern:** slotting 2 or 3 copies does NOT stack any base stat (there is none to stack). You get **nothing** at 1–2 copies and the **single 3-piece set bonus** (applied once) at 3 copies. (Confirms user's rule: "other stats won't stack on the 2nd/3rd augment — you just get the set bonus on 3." Even stronger: there are no other stats.)
 - **"Override" language re-confirms suppression:** slotting the augment *overrides* the host item's Set Bonus with this augment's set — i.e., the host item's own set is suppressed while the Set Augment is slotted.
 
+## Placement ruling (2026-08-14) — any standard color slot; Moon/Sun ruled out
+
+**Verified:** 2026-08-14 (Chrome-MCP, interactive session — DOM reads of the rendered pages)
+**Sources:** https://ddowiki.com/page/Augment_Slot (Color types + Set augments + Special augment slots), https://ddowiki.com/page/Lunar_and_Solar_Gems
+
+Supersedes the "Colorless slots" placement reading in confirmed fact 3 and the "Consumes 3 Colorless augment slots" modeling line below — on the placement point only; the three-copies, no-worn-gear-mixing, and suppression facts stand.
+
+1. **Set augments fit any standard color slot.** Augment_Slot → Set augments, verbatim: *"These level 30 Set augments can be slotted in any augment color slot."* The warrant is a verified chain independent of that sentence too: each Set Augment is a **Colorless augment** (fact 2), and the page's Color types table admits Colorless augments into **all seven** slot colors (Colorless, Red, Blue, Yellow, Purple, Orange, Green) — "It's good to mentally add the words '…and Colorless' to the description."
+2. **Moon/Sun (Lunar/Solar) slots are ruled OUT, not pending.** The Color types table defines the color system as exactly the seven colors — no Moon/Sun rows. Augment_Slot → Special augment slots lists *"Moon and Sun Augment Slots"* among the special-system slots that *"will not interact with standard colored augments (nor vice versa)"*, and the Lunar_and_Solar_Gems hub shows those slots holding Lunar/Solar Gems only. A Set Augment is a standard-window Colorless augment, so it does not fit Moon/Sun. The solver's seven-color matrix (`SLOT_ACCEPTS` / `fits_slots("Colorless")` in `src/colors.py`) models the rule exactly; the "pending Moon/Sun ruling" deferral raised while planning #316 is resolved by this reading and no follow-up remains open.
+
 ## Modeling implications (for the brainstorm/plan — not yet decisions)
 
 - **Solver change:** the model forbids duplicate augment placement (each `variant_id` ≤ 1, `web/solver.js`). Set Augments REQUIRE up to 3 copies of the same augment. Needs a bounded 0..3 placement for this augment class only.
-- **Activation is exactly at 3** copies (one tier); fewer than 3 grants nothing. Consumes 3 Colorless augment slots (opportunity cost vs other Colorless augments).
+- **Activation is exactly at 3** copies (one tier); fewer than 3 grants nothing. Consumes 3 augment slots of any standard color (per the 2026-08-14 placement ruling above; the solver prefers Colorless on ties) — an opportunity cost against other augments.
 - **Suppression:** placing a Set Augment on a set-bearing item suppresses that item's sets — a real trade-off the solver must weigh to stay correct. This is the hard modeling piece.
 - The set-bonus values are wiki-sourced above; data would be seeded (exclude-until-verified), mirroring joker/Vecna/Dino.

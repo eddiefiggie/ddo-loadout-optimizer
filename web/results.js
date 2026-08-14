@@ -111,7 +111,7 @@ function coverageNote(dataset) {
         ? "copies place in any standard augment color slot (Colorless preferred on ties)"
         : "placement follows each set's verified slot matrix");
     if (!sar.moonSunIncluded) {
-      s += "; Lunar/Solar (Moon/Sun) slots are excluded until a wiki ruling confirms them";
+      s += "; Lunar/Solar (Moon/Sun) slots belong to the separate gem system and accept no standard augments (wiki-ruled)";
     }
     parts.push(s);
   }

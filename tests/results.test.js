@@ -111,7 +111,7 @@ test("#316: coverageNote discloses the set-augment placement rule from the defs,
   });
   assert.ok(/Set Augments:/.test(note), "the placement-rule line renders");
   assert.ok(/any standard augment color slot/.test(note), "states the any-color rule the defs carry");
-  assert.ok(/Lunar\/Solar \(Moon\/Sun\) slots are excluded/.test(note), "disclosed exclusion, read from the defs");
+  assert.ok(/Lunar\/Solar \(Moon\/Sun\) slots belong to the separate gem system/.test(note), "disclosed exclusion, read from the defs");
   // No defs -> no claim (never fabricate a rule about absent data).
   const bare = R.coverageNote({ metadata: {} });
   assert.ok(!/Set Augments:/.test(bare), "no defs -> no placement-rule line");
