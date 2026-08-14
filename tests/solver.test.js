@@ -4064,16 +4064,27 @@ async function withCrossAdd(map, fn) {
     craftHost.dino_slots_norm = ["Fang||Accessory"];
     craftHost.seal_slots = [{ seal_type: "Undeath", category: "Jewelry" }];
     craftHost.green_steel_slot = true;
+    craftHost.nearly_complete = "Scales";
+    craftHost.roll_groups = [{ options: [{ stat: "Melee Power", bonus_type: "Artifact", value: 2, unit: "flat" }] }];
+    craftHost.lamordia_slots = [{ type: "Melancholic", category: "Accessory" }];
+    craftHost.thunder_forged_tiers = [{ tier: 1 }];
+    craftHost.minimum_level = craftHost.ml = 20; // heroic nc + lamordia tiers
     const model = {
       targets: ["Melee Power"], mlCap: 36, dodgeCap: null,
       worn: [slot("Armor", [armor]), slot("Ring", [craftHost])],
       dinoInserts: [{ dino_type: "Fang", category: "Accessory", name: "Dull Fang",
         affixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 5, unit: "flat" }] }],
+      nearlyComplete: [{ category: "Scales", tier: "heroic", stat: "Melee Power", bonus_type: "Artifact", value: 2, unit: "flat" }],
+      viktranium: [vikOpt("Melancholic", "Accessory", "Melee Power", "Artifact", 2, "heroic")],
       seal: [{ seal_type: "Undeath", stat: "Melee Power", bonus_type: "Artifact", value: 3, unit: "flat" }],
+      thunderForged: [tfOpt(1, "Melee Power", "Artifact", 2)],
       greenSteel: [{ name: "Dim", stat: "Melee Power", bonus_type: "Artifact", value: 4, unit: "flat" }],
       augments: [augment("DimGem", "Colorless", [["Melee Power", "Enhancement", 6]])],
     };
     const program = S.buildProgram(model);
+    for (const mk of ["augMeta", "dinoMeta", "ncMeta", "rollMeta", "vikMeta", "sealMeta", "tfMeta", "gsMeta"]) {
+      assert.ok(program[mk] && program[mk].size >= 1, `${mk} minted at least one var (fixture is non-vacuous)`);
+    }
     const r = S.solveConstrained(program, highs, { objectiveStat: "Melee Power", sense: "max", tieBreak: false });
     assert.strictEqual(r.status, "optimal");
     assert.strictEqual(r.effective["Melee Power"], 35, "worn sources win both buckets");
