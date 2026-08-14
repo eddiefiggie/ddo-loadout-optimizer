@@ -217,7 +217,22 @@ pinVarsAt(pin, at, [...program.hostsVar.values()]);   // suppression flags
 The safety argument worth writing out for any candidate pin set: value gates on
 the pinned layer ⇒ totals invariant; identity preserved ⇒ no displacement;
 capacity rows active ⇒ no overbooking. If those three lines hold, the granularity
-is right. Also worth copying from PR #318: the guaranteed-no-op skip (if no
+is right.
+
+**Meta keying is the mechanism that enforces (or silently defeats) all of this.**
+The var-class lists the tie-break and the pins consume are *derived from meta
+keys* — `setAugVars` is literally `[...setAugMeta.keys()]`. So which map a new
+variable's meta lands in decides, invisibly, whether that variable is
+tie-break-minimized and settle-pinned: keying the #316 color vars into
+`setAugMeta` (the "obvious" mirror of the ordinary encoding) would have swept
+them into both, disabling the Colorless-first stage with no error anywhere. The
+color vars therefore live in their own map (`setAugColorMeta`), and the rule
+generalizes: **when adding a sub-choice variable, choose its meta map by which
+derived lists must and must not contain it — the keying IS the pin/minimize
+membership decision.** Relatedly, extraction must push *clones* of shared meta
+objects (`{ ...meta, slot_color }`): the program and its meta maps are reused
+across alternatives re-solves, so writing a solve-specific field onto the shared
+object leaks one solve's answer into another's already-returned result. Also worth copying from PR #318: the guaranteed-no-op skip (if no
 preference variable fired, the objective is already 0 — skip the solve), and the
 discriminator fixture — a case where delivering the preference *requires* moving
 a free sub-choice (a multi-fit augment parked Colorless with a colored slot open
@@ -230,6 +245,11 @@ optimal faces the goldens may not include. Both were caught by reasoning about
 which variables the value gates and the reporters actually touch — the checklist
 above is that reasoning, written down.
 
-Sibling concern from the same PR, different mechanism and surface:
-`every-solver-family-report-needs-a-load-bearing-guard.md` — reported families
-floating on the `tieBreak:false` alternatives path need a report-layer guard.
+Sibling concerns from the same PR, different mechanisms and surfaces:
+`every-solver-family-report-needs-a-load-bearing-guard.md` (reported families
+floating on the `tieBreak:false` alternatives path need a report-layer guard),
+`canonicalization-guards-need-a-trial-reassignment-and-identity-check.md`
+(projection-layer trial-assignment guard), and
+`widening-eligibility-must-re-derive-derived-constraints.md` (a widened
+eligibility predicate leaves stale derived coefficients unless each is
+re-derived or proven subsumed). Five standing rules from one PR: these four runtime layers plus the test-fixture layer (`docs/solutions/conventions/stamp-shared-fixtures-for-new-required-fields.md`).

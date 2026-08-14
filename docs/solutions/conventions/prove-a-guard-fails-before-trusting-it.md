@@ -2,7 +2,7 @@
 title: "Prove a guard fails before trusting it, and make it refuse to inspect nothing"
 module: build-pipeline
 date: 2026-08-07
-last_updated: 2026-08-13
+last_updated: 2026-08-14
 problem_type: convention
 component: tooling
 severity: high
@@ -258,6 +258,29 @@ The related migration also produced a modelling error worth noting: the inline f
 the visible **cell** text, not the invocation's rendered tooltip — three augments share
 `{{Striding|30}}` while their cells differ. Unifying on the `snapshots` shape surfaced the
 conflict immediately, because one invocation cannot hold two different renders.
+
+## Third case study, 2026-08-14 — an upstream sibling gate intercepts the falsification (#316)
+
+"Watch it fail" has a subtler failure mode in a build with layered gates: **a red
+build is not proof that YOUR guard fired.** Falsifying the new #316 defs/matrix
+join guard (`assert_def_matrix_join` in `src/augment_sets.py`), the first
+corruption — renaming `Set Augment: Quickblade` in the raw gear-planner pool —
+turned the build red, but the failure came from a *different* gate entirely: the
+frozen augment registry (`src/vocabulary.IntegrityError: unknown augment
+'Set Augment: Quickblade-CORRUPT' … not in the frozen augment registry`). The new
+guard never ran. Accepting that red as proof would have "proven" a guard that had
+never inspected a corrupted record.
+
+The fix is the corrupt-together rule applied one level up: corrupt the value AND
+every upstream registry of it — here both the pool entry and its
+`augment_registry.json` row — so the corruption *passes* the sibling gates and
+reaches the guard under test. Proof arrives only when the failure output carries
+**your guard's own message** (here: "augment-set defs missing the baked color
+matrix: Quickblade"). So the rule is: read *which* gate produced the red, not just
+that red happened; defense-in-depth means the falsification path must be threaded
+past every sibling. A pleasant corollary: the intercepted first attempt is itself
+evidence the sibling gate works — record it, then keep going until your own gate
+speaks.
 
 ## Examples
 
