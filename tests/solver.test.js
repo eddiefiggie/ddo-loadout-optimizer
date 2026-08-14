@@ -3948,5 +3948,109 @@ async function withCrossAdd(map, fn) {
       "the USP item is not even a candidate (no bucket), exactly as before the change");
   });
 
+  // ---- #319 load-bearing report guards for the eight *Placed families ----
+  // A placement var can float to 1 on any solve path that does not minimize it
+  // (every tieBreak:false alternatives re-solve; the seven craft families even
+  // on the optimum path). The reader must report a placement only when some
+  // contribution it gates actually fired. These tests inject a synthetic primal
+  // straight into readSolution (exported for tests) so the float is
+  // DETERMINISTIC — a real tieBreak:false solve floats only at HiGHS's whim.
+  function guardModel() {
+    const dinoHostV = item("DINO-H", "Ring", []);
+    dinoHostV.dino_slots_norm = ["Fang||Accessory"];
+    const ncHostV = item("NC-H", "Neck", []);
+    ncHostV.nearly_complete = "Scales"; ncHostV.ml = 20;
+    const rollHostV = item("ROLL-H", "Boots", []);
+    rollHostV.roll_groups = [{ options: [{ stat: "Melee Power", bonus_type: "Insightful", value: 3, unit: "flat" }] }];
+    const vikHostV = vikHost("VIK-H", "Trinket", [{ type: "Melancholic", category: "Accessory" }], 35);
+    const sealHostV = item("SEAL-H", "Belt", []);
+    sealHostV.seal_slots = [{ seal_type: "Undeath", category: "Jewelry" }];
+    const tfHostV = tfHost("TF-H", "Main Hand", [1]);
+    const gsHostV = item("GS-H", "Gloves", []);
+    gsHostV.green_steel_slot = true;
+    const augHostV = host("AUG-H", "Helmet", [], ["Colorless"]);
+    return {
+      targets: ["Melee Power", "Strength"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Ring", [dinoHostV]), slot("Neck", [ncHostV]), slot("Boots", [rollHostV]),
+             slot("Trinket", [vikHostV]), slot("Belt", [sealHostV]), slot("Main Hand", [tfHostV]),
+             slot("Gloves", [gsHostV]), slot("Helmet", [augHostV])],
+      dinoInserts: [{ dino_type: "Fang", category: "Accessory", name: "Sharp Fang",
+        affixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 5, unit: "flat" },
+                  { stat: "Strength", bonus_type: "Artifact", value: 2, unit: "flat" }] }],
+      nearlyComplete: [{ category: "Scales", tier: "heroic", stat: "Melee Power", bonus_type: "Enhancement", value: 5, unit: "flat" }],
+      viktranium: [vikOpt("Melancholic", "Accessory", "Melee Power", "Quality", 4, "legendary")],
+      seal: [{ seal_type: "Undeath", stat: "Melee Power", bonus_type: "Profane", value: 3, unit: "flat" }],
+      thunderForged: [tfOpt(1, "Melee Power", "Exceptional", 2)],
+      greenSteel: [{ name: "Ethereal", stat: "Melee Power", bonus_type: "Sacred", value: 4, unit: "flat" }],
+      augments: [augment("MPGem", "Colorless", [["Melee Power", "Enhancement", 6]])],
+    };
+  }
+  // every z contribution gated by `g`, and a synthetic primal setting the named vars to 1
+  function zsForGate(program, g) {
+    const out = [];
+    for (const [, zs] of program.zByBucket) for (const z of zs) if (z.gates.includes(g)) out.push(z.name);
+    return out;
+  }
+  function primalOf(names) {
+    return { Columns: Object.fromEntries(names.map((n) => [n, { Primal: 1 }])) };
+  }
+
+  await test("#319 guards: a floated craft var (no fired contribution) is omitted from all seven families", async () => {
+    const program = S.buildProgram(guardModel());
+    const fams = [["dinoMeta", "dinoPlaced"], ["ncMeta", "ncPlaced"], ["rollMeta", "rollPlaced"],
+                  ["vikMeta", "vikPlaced"], ["sealMeta", "sealPlaced"], ["tfMeta", "tfPlaced"], ["gsMeta", "gsPlaced"]];
+    for (const [metaKey, arrKey] of fams) {
+      const metaMap = program[metaKey];
+      assert.ok(metaMap && metaMap.size >= 1, `${metaKey} minted at least one var`);
+      const v = [...metaMap.keys()][0];
+      const floated = S.readSolution(primalOf([v]), program);
+      assert.strictEqual((floated[arrKey] || []).length, 0, `${arrKey}: var=1 with no fired contribution is omitted`);
+      assert.strictEqual(floated.effective["Melee Power"], 0, `${arrKey}: totals agree (nothing fired)`);
+      const zs = zsForGate(program, v);
+      assert.ok(zs.length >= 1, `${metaKey} var has a gated contribution`);
+      const fired = S.readSolution(primalOf([v, zs[0]]), program);
+      assert.strictEqual((fired[arrKey] || []).length, 1, `${arrKey}: var=1 with its contribution fired IS reported`);
+    }
+  });
+
+  await test("#319 guards: a multi-affix placement is load-bearing when ANY of its contributions fires", async () => {
+    const program = S.buildProgram(guardModel());
+    const q = [...program.dinoMeta.keys()][0];
+    const zs = zsForGate(program, q);
+    assert.strictEqual(zs.length, 2, "the two-affix Dino insert gates two contributions");
+    const r = S.readSolution(primalOf([q, zs[1]]), program);
+    assert.strictEqual((r.dinoPlaced || []).length, 1, "one fired contribution of two keeps the placement reported");
+  });
+
+  await test("#319 guards: an augment color entry is omitted unless its placement identity fired", async () => {
+    const program = S.buildProgram(guardModel());
+    const p = [...program.augMeta.keys()][0];
+    const pu = [...program.placeMeta.keys()][0];
+    // value gates ride on pu, not p — a float sets both (Σp = pu) yet fires no z
+    const floated = S.readSolution(primalOf([p, pu]), program);
+    assert.strictEqual((floated.augmentsPlaced || []).length, 0, "floated augment placement is omitted");
+    const zs = zsForGate(program, pu);
+    assert.ok(zs.length >= 1, "the augment's identity var gates a contribution");
+    const fired = S.readSolution(primalOf([p, pu, zs[0]]), program);
+    assert.strictEqual((fired.augmentsPlaced || []).length, 1, "fired augment placement is reported");
+    assert.strictEqual(fired.augmentsPlaced[0].slot_color, "Colorless", "color meta intact");
+  });
+
+  await test("#319 guards: only the fired augment of two placed is reported (identity join is per-variant)", async () => {
+    const m = {
+      targets: ["Melee Power", "Strength"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Helmet", [host("AUG-H2", "Helmet", [], ["Colorless", "Colorless"])])],
+      augments: [augment("GemA", "Colorless", [["Melee Power", "Enhancement", 6]]),
+                 augment("GemB", "Colorless", [["Strength", "Insightful", 3]])],
+    };
+    const program = S.buildProgram(m);
+    const pOf = (vid) => [...program.augMeta].find(([, mm]) => mm.variant_id === vid)[0];
+    const puOf = (vid) => [...program.placeMeta].find(([, mm]) => mm.variant_id === vid)[0];
+    const zA = zsForGate(program, puOf("GemA"))[0];
+    const r = S.readSolution(primalOf([pOf("GemA"), puOf("GemA"), zA, pOf("GemB"), puOf("GemB")]), program);
+    assert.strictEqual((r.augmentsPlaced || []).length, 1, "only one of the two placed augments is reported");
+    assert.strictEqual(r.augmentsPlaced[0].variant_id, "GemA", "the fired one");
+  });
+
   console.log(`\n${passed} passed`);
 })();
