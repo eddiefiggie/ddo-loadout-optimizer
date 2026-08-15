@@ -1053,7 +1053,9 @@ function buildProgram(model) {
   }
 
   return {
-    xVars, zByBucket, cappedStats, targetList: model.targets, model, creditMeta,
+    // creditBuckets (bucket key -> declared-credit floor) rides out for the
+    // #322 visibility guard (visibleGateSet) rather than being re-derived.
+    xVars, zByBucket, cappedStats, targetList: model.targets, model, creditMeta, creditBuckets,
     forcedOffVars: forcedOffSlotVars(xVars, model.query && model.query.slotConstraints),
     extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, hostsVar, _zc: zc,
   };
@@ -1294,6 +1296,15 @@ function preferColorlessSetAugments(program, highs, prevRes, locks) {
 
 function breakdownByTarget(program, prim) {
   const xByName = new Map(program.xVars.map((xv) => [xv.name, xv]));
+  // #322 — a placement the report guards omit (fired but invisible: cap-clamped
+  // or credit-substituted) must not be named by attribution either. Same
+  // predicate readSolution's guards consume; scoped to the guarded placement
+  // families (ordinary augments' pu + the seven crafts) so worn/set display is
+  // untouched.
+  const visible = visibleGateSet(program, prim);
+  const placementMetas = [program.placeMeta, program.dinoMeta, program.ncMeta, program.rollMeta,
+                          program.vikMeta, program.sealMeta, program.tfMeta, program.gsMeta];
+  const hiddenPlacementGate = (g) => !visible.has(g) && placementMetas.some((m) => m && m.has(g));
   // Equipped item identity -> its worn slot, so an item-craft (nc/roll/vik/seal)
   // whose meta carries `item` can be attributed back to the slot it sits in (KTD6).
   const slotOfItem = new Map();
@@ -1346,6 +1357,8 @@ function breakdownByTarget(program, prim) {
       const bonusType = key.split("||")[1];
       for (const z of zs) {
         if (prim(z.name) > 0.5) {
+          // #322 — skip contributions gated by a hidden placement (see above).
+          if (z.gates.some(hiddenPlacementGate)) continue;
           // U3 — a declared credit is resolved from the CONTRIBUTION, not from a
           // gate. It has none, so `sourceOf(z.gates[0])` reads `undefined` and
           // falls through every branch to `{kind:"other", label: undefined}` —
@@ -1386,19 +1399,72 @@ function computeScale(program) {
   return { variants: program.xVars.length, crafts, stages: (program.targetList || []).length + 1 };
 }
 
-// #319 — the shared load-bearing test for every craft/placement family: a
-// placement var is load-bearing iff some contribution it gates actually fired.
-// Collect the gate names of every fired z once; each family's report guard then
-// checks membership. Value and this set both derive from the same z primal, so
-// a guarded report always agrees with the displayed totals, on every solve path.
-function firedGateSet(program, prim) {
-  const fired = new Set();
-  for (const [, zs] of program.zByBucket) {
+// #319/#322 — the shared load-bearing test for every craft/placement family: a
+// placement var is load-bearing iff some contribution it gates fired AND is
+// VISIBLE in the displayed outcome. Two fired-but-invisible shapes exist:
+//   (a) credit substitution — the z's bucket carries a declared-credit floor
+//       and the z's value does not exceed it, so seating it grants nothing the
+//       player does not already hold; such z's are dropped first.
+//   (b) cap clamping — every tracked stat the z feeds is capped, and the
+//       placement's surviving fired contributions are jointly slack under the
+//       cap: for each such stat s, raw(s) minus their SUM still meets cap(s).
+//       The test is placement-level and summed, never per-contribution, so two
+//       contributions that jointly hold a stat at its cap keep their placement
+//       reported. A z feeding ANY uncapped tracked stat (its own, or a
+//       cross-add sibling per bucketCountsFor) is visible outright, and a
+//       bucket feeding no capped tracked stat short-circuits to visible — so
+//       behavior outside these two shapes is unchanged.
+// Outcome-level invariant: a gate enters this set iff removing everything it
+// gates would lower some displayed effective total or force a substitution the
+// credit floor does not already cover — so a guarded report never claims a
+// placement whose absence the displayed totals could not distinguish.
+function visibleGateSet(program, prim) {
+  const capped = program.cappedStats || {};
+  const statUniverse = [...new Set([...(program.targetList || []), ...Object.keys(capped)])];
+  const creditFloors = program.creditBuckets || new Map();
+  const visible = new Set();
+  const pending = new Map(); // gate -> Map(capped stat -> sum of deferred contributions)
+  for (const [key, zs] of program.zByBucket) {
+    const floor = creditFloors.get(key);
+    let fedCapped = null, feedsUncapped = false;
     for (const z of zs) {
-      if (prim(z.name) > 0.5) for (const g of z.gates) fired.add(g);
+      if (!z.gates.length || prim(z.name) <= 0.5) continue;
+      // (a) credit substitution: drop before any cap reasoning.
+      if (floor != null && z.value <= floor) continue;
+      if (fedCapped === null) { // stats fed are a property of the bucket — compute once
+        fedCapped = [];
+        for (const s of statUniverse) {
+          if (!bucketCountsFor(key, s)) continue;
+          if (capped[s] != null) fedCapped.push(s); else feedsUncapped = true;
+        }
+        if (!fedCapped.length) feedsUncapped = true; // uncapped bucket: short-circuit
+      }
+      if (feedsUncapped) { for (const g of z.gates) visible.add(g); continue; }
+      // (b) defer to the placement-level cap sum test below.
+      for (const g of z.gates) {
+        let sums = pending.get(g);
+        if (!sums) pending.set(g, (sums = new Map()));
+        for (const s of fedCapped) sums.set(s, (sums.get(s) || 0) + z.value);
+      }
     }
   }
-  return fired;
+  if (pending.size) {
+    const rawCache = new Map();
+    const rawOf = (s) => {
+      if (!rawCache.has(s)) {
+        rawCache.set(s, rawExpr(program, s).reduce((sum, t) => sum + (prim(t.name) > 0.5 ? t.coef : 0), 0));
+      }
+      return rawCache.get(s);
+    };
+    for (const [g, sums] of pending) {
+      if (visible.has(g)) continue;
+      for (const [s, sum] of sums) {
+        // Clamped out only if the displayed total survives losing the whole sum.
+        if (rawOf(s) - sum < capped[s]) { visible.add(g); break; }
+      }
+    }
+  }
+  return visible;
 }
 
 function readSolution(res, program) {
@@ -1413,14 +1479,16 @@ function readSolution(res, program) {
     // the true (capped) value and invent a phantom cost. min(cap, raw) is right for both.
     effective[stat] = program.cappedStats[stat] != null ? Math.min(program.cappedStats[stat], raw) : raw;
   }
-  // #319 load-bearing guards — on any solve path that does not minimize a
+  // #319/#322 load-bearing guards — on any solve path that does not minimize a
   // family's placement vars (every tieBreak:false alternatives re-solve; the
   // seven craft families even on the optimum path, where only ordinary augments
   // are settled), HiGHS may float a var to 1 for free. A floated placement
-  // grants nothing (its gated z stayed 0), so reporting it would prescribe
+  // grants nothing (its gated z stayed 0) — and a FIRED placement can still
+  // grant nothing, when its contributions are clamped out by a stat cap or
+  // merely substitute for a declared credit. Reporting either would prescribe
   // useless farming and skew the fewer-crafts counting. Report a placement only
-  // when a contribution it gates fired.
-  const fired = firedGateSet(program, prim);
+  // when a contribution it gates fired AND is visible (visibleGateSet).
+  const fired = visibleGateSet(program, prim);
   // Ordinary augments: value gates ride on the pu identity var (placeMeta), not
   // the reported per-color p var (augMeta); Σp = pu ties them, and the join key
   // is variant_id (at most one pu per unique-equipped id can be 1).
