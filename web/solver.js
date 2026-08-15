@@ -1294,14 +1294,15 @@ function preferColorlessSetAugments(program, highs, prevRes, locks) {
   return res.Status === "Optimal" ? res : prevRes;
 }
 
-function breakdownByTarget(program, prim) {
+function breakdownByTarget(program, prim, precomputedVisible) {
   const xByName = new Map(program.xVars.map((xv) => [xv.name, xv]));
   // #322 — a placement the report guards omit (fired but invisible: cap-clamped
   // or credit-substituted) must not be named by attribution either. Same
   // predicate readSolution's guards consume; scoped to the guarded placement
   // families (ordinary augments' pu + the seven crafts) so worn/set display is
-  // untouched.
-  const visible = visibleGateSet(program, prim);
+  // untouched. Production call sites pass readSolution's set to avoid computing
+  // it twice per solve; the 2-arg test seam computes it here.
+  const visible = precomputedVisible || visibleGateSet(program, prim);
   const placementMetas = [program.placeMeta, program.dinoMeta, program.ncMeta, program.rollMeta,
                           program.vikMeta, program.sealMeta, program.tfMeta, program.gsMeta];
   const hiddenPlacementGate = (g) => !visible.has(g) && placementMetas.some((m) => m && m.has(g));
@@ -1467,7 +1468,7 @@ function visibleGateSet(program, prim) {
   return visible;
 }
 
-function readSolution(res, program) {
+function readSolution(res, program, precomputedVisible) {
   const prim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
   const chosen = program.xVars.filter((xv) => prim(xv.name) > 0.5).map((xv) => ({ slot: xv.slot, variant: xv.variant }));
   const effective = {};
@@ -1488,7 +1489,7 @@ function readSolution(res, program) {
   // merely substitute for a declared credit. Reporting either would prescribe
   // useless farming and skew the fewer-crafts counting. Report a placement only
   // when a contribution it gates fired AND is visible (visibleGateSet).
-  const fired = visibleGateSet(program, prim);
+  const fired = precomputedVisible || visibleGateSet(program, prim);
   // Ordinary augments: value gates ride on the pu identity var (placeMeta), not
   // the reported per-color p var (augMeta); Σp = pu ties them, and the join key
   // is variant_id (at most one pu per unique-equipped id can be 1).
@@ -1633,8 +1634,9 @@ async function solveLexicographic(model, highs) {
   const tbRes = tb.Status === "Optimal" ? tb : highs.solve(encodeStage(program, { objectiveStat: program.targetList.at(-1), sense: "max", locks }));
   const finalRes = preferColorlessSetAugments(
     program, highs, dropNoOpAugments(program, highs, tbRes, locks), locks);
-  const sol = readSolution(finalRes, program);
   const prim = (name) => (finalRes.Columns[name] ? finalRes.Columns[name].Primal : 0);
+  const visible = visibleGateSet(program, prim);
+  const sol = readSolution(finalRes, program, visible);
 
   return {
     status: "optimal", perTarget, effective: sol.effective, chosen: sol.chosen,
@@ -1643,7 +1645,7 @@ async function solveLexicographic(model, highs) {
     vikPlaced: sol.vikPlaced, sealPlaced: sol.sealPlaced, jokerPlaced: sol.jokerPlaced,
     tfPlaced: sol.tfPlaced, gsPlaced: sol.gsPlaced,
     membershipPlaced: sol.membershipPlaced, setAugmentsPlaced: sol.setAugmentsPlaced,
-    breakdown: breakdownByTarget(program, prim), computeScale: computeScale(program),
+    breakdown: breakdownByTarget(program, prim, visible), computeScale: computeScale(program),
     capped: { ...program.cappedStats }, floorReport, program,
     creditReport: buildCreditReport(program, prim, model, floorReport),
     saturationReport: buildSaturationReport(program, prim),
@@ -1909,7 +1911,8 @@ function solveConstrained(program, highs, { objectiveStat, objTerms, sense = "ma
   // keeps it (stable display) while on-demand alternatives skip it to halve solve count.
   if (!tieBreak) {
     const prim1 = (name) => (r1.Columns[name] ? r1.Columns[name].Primal : 0);
-    return { status: "optimal", ...readSolution(r1, program), breakdown: breakdownByTarget(program, prim1), capped: { ...program.cappedStats } };
+    const visible1 = visibleGateSet(program, prim1);
+    return { status: "optimal", ...readSolution(r1, program, visible1), breakdown: breakdownByTarget(program, prim1, visible1), capped: { ...program.cappedStats } };
   }
   const prim1 = (name) => (r1.Columns[name] ? r1.Columns[name].Primal : 0);
   // Pin the achieved gain, then tie-break so the item set (not just the objective
@@ -1925,8 +1928,9 @@ function solveConstrained(program, highs, { objectiveStat, objTerms, sense = "ma
   const r2 = highs.solve(encodeStage(program, { tieBreak: true, sense: "min", locks: locks2, extra: [...extra, ...pin] }));
   const res = r2.Status === "Optimal" ? r2 : r1;
   const prim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
-  const sol = readSolution(res, program);
-  return { status: "optimal", ...sol, breakdown: breakdownByTarget(program, prim), capped: { ...program.cappedStats } };
+  const visible = visibleGateSet(program, prim);
+  const sol = readSolution(res, program, visible);
+  return { status: "optimal", ...sol, breakdown: breakdownByTarget(program, prim, visible), capped: { ...program.cappedStats } };
 }
 
 // The bounded give allowed on a priority for an alternative: 10% or at least 2, so
