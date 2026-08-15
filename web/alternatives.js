@@ -2,9 +2,13 @@
 // (no DOM); the card rendering lives in results.js (U4). Consumes the raw candidates
 // from solver.js generateAlternatives.
 
+// #321 — counts the seven grindable craft families, in lockstep with the
+// craftVars/optCrafts/solCrafts sites in solver.js generateAlternatives. Roll
+// groups and set-membership picks are excluded as intended (see the comment there).
 function craftCount(sol) {
   return (sol.augmentsPlaced || []).length + (sol.dinoPlaced || []).length
-    + (sol.ncPlaced || []).length + (sol.vikPlaced || []).length + (sol.sealPlaced || []).length;
+    + (sol.ncPlaced || []).length + (sol.vikPlaced || []).length + (sol.sealPlaced || []).length
+    + (sol.tfPlaced || []).length + (sol.gsPlaced || []).length;
 }
 
 function buildKey(sol) {

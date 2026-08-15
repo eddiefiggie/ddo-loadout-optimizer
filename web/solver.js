@@ -2029,13 +2029,20 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
 
   // (d) fewer-crafts — minimize the sum of craft-placement binaries, allowing a bounded
   // give on the priorities (only when the optimum actually uses crafts).
+  // #321 — the seven grindable craft families count as crafting steps here and in
+  // alternatives.js craftCount (the four sites move in lockstep). Deliberately
+  // excluded as intended, not pending: roll groups (they select which random roll
+  // a drop carries) and set-membership picks (a build-identity choice, not a
+  // per-item grind step).
   const craftVars = [
     ...(program.augMeta ? program.augMeta.keys() : []), ...(program.dinoMeta ? program.dinoMeta.keys() : []),
     ...(program.ncMeta ? program.ncMeta.keys() : []), ...(program.vikMeta ? program.vikMeta.keys() : []),
-    ...(program.sealMeta ? program.sealMeta.keys() : []),
+    ...(program.sealMeta ? program.sealMeta.keys() : []), ...(program.tfMeta ? program.tfMeta.keys() : []),
+    ...(program.gsMeta ? program.gsMeta.keys() : []),
   ];
   const optCrafts = (optimum.augmentsPlaced || []).length + (optimum.dinoPlaced || []).length
-    + (optimum.ncPlaced || []).length + (optimum.vikPlaced || []).length + (optimum.sealPlaced || []).length;
+    + (optimum.ncPlaced || []).length + (optimum.vikPlaced || []).length + (optimum.sealPlaced || []).length
+    + (optimum.tfPlaced || []).length + (optimum.gsPlaced || []).length;
   if (craftVars.length && optCrafts > 0) {
     const relaxedAll = targets.map((s) => ({ stat: s, value: per[s], give: alternativeGive(per[s]) }));
     const objTerms = craftVars.map((name) => ({ coef: 1, name }));
@@ -2043,6 +2050,7 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
     const solCrafts = sol.status === "optimal"
       ? (sol.augmentsPlaced || []).length + (sol.dinoPlaced || []).length
         + (sol.ncPlaced || []).length + (sol.vikPlaced || []).length + (sol.sealPlaced || []).length
+        + (sol.tfPlaced || []).length + (sol.gsPlaced || []).length
       : optCrafts;
     // Only surface when it genuinely uses fewer crafts (a same-count different build
     // would headline "0 fewer crafting steps").

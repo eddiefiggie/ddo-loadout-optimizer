@@ -217,5 +217,13 @@ const tradeModel = () => ({
     assert.ok(/set bonus/.test(html) && /cheaper crafting/.test(html), "shows the gain tags");
   });
 
+  // ---- #321: TF/GS count as crafting steps ----
+
+  await test("craftCount counts Thunder-Forged and Green Steel placements", () => {
+    assert.strictEqual(A.craftCount({}), 0, "empty solution counts zero");
+    const sol = { tfPlaced: [{ item: "CH", tier: 1 }], gsPlaced: [{ item: "CH", name: "Dim" }] };
+    assert.strictEqual(A.craftCount(sol), 2, "one TF + one GS placement count as two crafting steps");
+  });
+
   console.log(`\n${passed} passed`);
 })();

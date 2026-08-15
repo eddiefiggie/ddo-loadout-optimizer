@@ -4243,5 +4243,29 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(r.effective["Melee Power"], 8, "and its value shows in the total");
   });
 
+  // ---- #321 Thunder-Forged / Green Steel join the fewer-crafts axis ----
+  // Clone of the #319 backstop fixture (which must stay green unmodified): here
+  // the TF tier OUTVALUES the worn Artifact source, so the placement is
+  // load-bearing and the fewer-crafts counting must see it.
+  await test("#321 a load-bearing Thunder-Forged placement counts as a crafting step", async () => {
+    const armor = item("BIG", "Armor", [["Melee Power", "Artifact", 20], ["Melee Power", "Enhancement", 15]]);
+    const craftHost = host("CH", "Ring", [], []);
+    craftHost.thunder_forged_tiers = [{ tier: 1 }];
+    craftHost.minimum_level = craftHost.ml = 20;
+    const model = {
+      targets: ["Melee Power"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Armor", [armor]), slot("Ring", [craftHost])],
+      thunderForged: [tfOpt(1, "Melee Power", "Artifact", 25)],
+    };
+    const program = S.buildProgram(model);
+    assert.ok(program.tfMeta && program.tfMeta.size >= 1, "tfMeta minted (fixture is non-vacuous)");
+    const r = S.solveConstrained(program, highs, { objectiveStat: "Melee Power", sense: "max", tieBreak: false });
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective["Melee Power"], 40, "TF tier (25) beats the worn Artifact source (20)");
+    assert.strictEqual((r.tfPlaced || []).length, 1, "the TF placement is load-bearing and reports");
+    const A = require("../web/alternatives.js");
+    assert.strictEqual(A.craftCount(r), 1, "fewer-crafts counting includes the TF placement");
+  });
+
   console.log(`\n${passed} passed`);
 })();
