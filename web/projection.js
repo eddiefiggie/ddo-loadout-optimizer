@@ -124,6 +124,10 @@
    *  `augLookup` (optional Map variant_id -> augment record) resolves affixes
    *  for a placement record saved before placements carried them — the same
    *  fallback the set-like block uses.
+   *
+   *  `carrierKind` ("item" | "augment") is external-facing metadata: no app
+   *  surface reads it, but it rides the portable ddo-loadout/v1 JSON so a
+   *  consumer can tell a worn carrier from a slotted one — not dead code.
    */
   function bundleGroups(result, augLookup) {
     const out = [];

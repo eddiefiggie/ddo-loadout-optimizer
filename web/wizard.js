@@ -356,19 +356,24 @@ function panelOpenAttr(stat) {
  *  a declared credit's stat is canonicalized to the ONE name gear carries (KTD4)
  *  and a presence stat is refused. Omitted in unit tests that supply already-
  *  canonical stats. */
+/** #339 — the ONE ceiling-clamp rule both layers share: a ceiling counts only
+ *  when positive and STRICTLY below the cap; blank/absent/at-or-above-cap all
+ *  mean null (unrestricted). buildQuery's call is the authoritative clamp
+ *  (evaluated against the effective cap at query time, so a ceiling saved above
+ *  a later-lowered cap re-normalizes to unrestricted instead of going stale);
+ *  the input handler's call is display-layer convenience on top of it. */
+function clampAugCeiling(raw, cap) {
+  const n = Number(raw);
+  return (raw !== "" && raw != null && n > 0 && n < cap) ? n : null;
+}
+
 function buildQuery(state, vocab) {
   const forged = wizIsForged(state.race);
   const mlCap = Number(state.ml) || 36;
-  // #339 — the augment-only ML ceiling's AUTHORITATIVE clamp lives here, evaluated
-  // against the effective cap at query time: emitted only when positive and
-  // STRICTLY below the cap, else null (unrestricted). So a ceiling saved above a
-  // later-lowered cap re-normalizes to unrestricted instead of going stale — the
-  // UI input is cosmetic on top of this.
-  const augCeiling = Number(state.augCeiling) || null;
   return {
     mlCap,
     mlFloor: Number(state.mlFloor) || null,   // optional item-level floor (hide low-ML gear)
-    augCeiling: (augCeiling != null && augCeiling > 0 && augCeiling < mlCap) ? augCeiling : null,
+    augCeiling: clampAugCeiling(state.augCeiling, mlCap),   // #339 — authoritative clamp
     targets: state.priorities.slice(),
     armorType: forged ? null : (state.armor || null),   // dodge-cap input
     // U4 — armor eligibility gate (R7). A druidic oath now drives TWO independent
@@ -2548,8 +2553,7 @@ if (typeof window !== "undefined" && window.App) {
         // back to the cap; buildQuery re-clamps authoritatively at query time.
         var ceilInput = document.getElementById("wz-augceiling");
         ceilInput.oninput = (e) => {
-          var n = Number(e.target.value);
-          state.augCeiling = (e.target.value !== "" && n > 0 && n < (Number(state.ml) || 36)) ? n : null;
+          state.augCeiling = clampAugCeiling(e.target.value, Number(state.ml) || 36);
         };
         ceilInput.onblur = (e) => {
           if (state.augCeiling == null) e.target.value = state.ml;

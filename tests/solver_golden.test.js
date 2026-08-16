@@ -18,6 +18,14 @@ const { solveAll } = require("./parity/capture_golden.js");
 
 const GOLDEN = path.join(__dirname, "parity", "golden.json");
 
+// The built dataset is ~25 MB; three tests need it, so parse it once.
+let _ds;
+function dataset() {
+  if (!_ds) _ds = JSON.parse(fs.readFileSync(
+    path.join(__dirname, "..", "web", "data", "items.json"), "utf8"));
+  return _ds;
+}
+
 let passed = 0;
 function test(name, fn) {
   try { fn(); passed++; console.log("  PASS", name); }
@@ -206,8 +214,7 @@ function test(name, fn) {
     // Asserted against the built dataset, so a build-time regression that stopped
     // expanding (or stopped stamping provenance) fails here and not just silently
     // in a number that happens to still be reachable from other gear.
-    const ds = JSON.parse(fs.readFileSync(
-      path.join(__dirname, "..", "web", "data", "items.json"), "utf8"));
+    const ds = dataset();
     const item = ds.items.find((i) => i.variant_id === crown);
     assert.ok(item, `${crown} is in the built dataset`);
     const viaOf = (stat) => {
@@ -253,8 +260,7 @@ function test(name, fn) {
     // Dataset level — this is the only place the FIVE-way blanket direction is
     // detectable: a Sonic affix wrongly stamped onto the Robes shares the orb's
     // Enhancement bucket, so no solve total can see it.
-    const ds = JSON.parse(fs.readFileSync(
-      path.join(__dirname, "..", "web", "data", "items.json"), "utf8"));
+    const ds = dataset();
     const FOUR = ["Acid Absorption", "Cold Absorption", "Fire Absorption", "Electric Absorption"];
     const expanded = (variantId) => ds.items
       .find((i) => i.variant_id === variantId).affixes
@@ -347,8 +353,7 @@ function test(name, fn) {
     const placed = details[CEILING_FIXTURE].augmentsPlaced;
     assert.ok(placed.length >= 1,
       "at least one augment must be placed — a solve placing none would cover the gate vacuously");
-    const ds = JSON.parse(fs.readFileSync(
-      path.join(__dirname, "..", "web", "data", "items.json"), "utf8"));
+    const ds = dataset();
     const mlOf = Object.fromEntries(ds.items
       .filter((i) => i.category === "augment")
       .map((i) => [i.variant_id, i.ml != null ? i.ml : i.minimum_level]));
