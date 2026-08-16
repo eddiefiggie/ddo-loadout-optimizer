@@ -97,6 +97,23 @@ var _utilitySentinel = (typeof UTILITY_SENTINEL !== "undefined")
   // eslint-disable-next-line global-require
   : require("./model.js").UTILITY_SENTINEL;
 
+// #346 (U1) — the ladder's vocabulary, over the same cross-runtime bridge the
+// sentinel above uses: model.js loads first in the browser, so the `var`s are
+// globals here; under node the require resolves them. The rank table stays in
+// model.js so the ladder's ordering is stated exactly once.
+var _normalizeRung = (typeof normalizeRung !== "undefined")
+  ? normalizeRung
+  // eslint-disable-next-line global-require
+  : require("./model.js").normalizeRung;
+var _rungExcludesAllAugments = (typeof rungExcludesAllAugments !== "undefined")
+  ? rungExcludesAllAugments
+  // eslint-disable-next-line global-require
+  : require("./model.js").rungExcludesAllAugments;
+var _craftingRungs = (typeof CRAFTING_RUNGS !== "undefined")
+  ? CRAFTING_RUNGS
+  // eslint-disable-next-line global-require
+  : require("./model.js").CRAFTING_RUNGS;
+
 /** Clean a stat->value bound map (caps/floors): keep only entries whose value is a
  *  finite number >= 0. Blank, null, negative, or non-numeric entries are dropped so
  *  a stray input never reaches the solver as a cap/floor.
@@ -370,10 +387,17 @@ function clampAugCeiling(raw, cap) {
 function buildQuery(state, vocab) {
   const forged = wizIsForged(state.race);
   const mlCap = Number(state.ml) || 36;
+  const rung = _normalizeRung(state.craftingRung);
   return {
     mlCap,
     mlFloor: Number(state.mlFloor) || null,   // optional item-level floor (hide low-ML gear)
-    augCeiling: clampAugCeiling(state.augCeiling, mlCap),   // #339 — authoritative clamp
+    // #346 (U1, KTD4) — a rung that excludes augments forces the ceiling to null
+    // in the SOLVED query. The control keeps the player's typed value so it comes
+    // back when they climb the ladder again (U2), but a solve that placed no
+    // augments must not carry a restriction the results would then report: the
+    // ceiling notice reads the solved query, and "augments were restricted to
+    // ML N" on an augment-free loadout is a claim about nothing.
+    augCeiling: _rungExcludesAllAugments(rung) ? null : clampAugCeiling(state.augCeiling, mlCap),
     targets: state.priorities.slice(),
     armorType: forged ? null : (state.armor || null),   // dodge-cap input
     // U4 — armor eligibility gate (R7). A druidic oath now drives TWO independent
@@ -401,10 +425,11 @@ function buildQuery(state, vocab) {
     race: state.race || null,
     alignment: state.alignment || null,
     includeArtifact: !!state.includeArtifact,           // U4 — Artifact opt-in
-    // #245 — niche-crafting opt-out: buildModel empties the craftable option
-    // pools (Viktranium/seal/NC/dino/membership/set-augment), so items compete
-    // on their printed affixes. Augments and intrinsic choice slots stay.
-    excludeCraftingSystems: !!state.excludeCraftingSystems,
+    // #346 (U1) — the crafting/augment ladder that replaced #245's boolean. Each
+    // rung removes strictly more than the one above; buildModel empties the
+    // craftable option pools at the niche-crafting rung and gates augments in
+    // eligible() at the two below it.
+    craftingRung: rung,
     // #110 (U1) — the blocklist, copied so the solve reads a snapshot rather
     // than the live state array. Absent (pre-feature state) reads as empty.
     blocklist: Array.isArray(state.blocklist) ? state.blocklist.slice() : [],
