@@ -102,6 +102,64 @@
     });
   }
 
+  /** #340 (KTD5) — the equipped loadout's bundled enchantments: each engraved
+   *  multi-stat bundle, named once per carrier occurrence.
+   *
+   *  Scans each chosen item's affixes AND each placed augment's affixes (augment
+   *  affixes are never collapsed anywhere else), groups by the same
+   *  `PROVENANCE_KEY` `collapseExpansions` groups by, and keeps ONLY groups with
+   *  2+ members — the `via` key is also stamped by single-stat renames (the
+   *  Legendary fold, DR qualifier retypes), and a one-line "bundle" would be a
+   *  lie. Cross-added universals need no exclusion branch: cross-add lives in
+   *  `metadata.cross_add` and on attribution parts, never on item/augment affix
+   *  arrays, so the input excludes it by construction (a test guards that).
+   *
+   *  Emits its OWN entry shape carrying the full member list — per-member stat
+   *  name, value, and bonus type — because `collapseExpansions`' collapsed
+   *  entries deliberately drop those and cannot back a display row. Members are
+   *  affix-shaped, so `affixLabel` renders them; per that function's rule, no
+   *  group-level magnitude is ever fabricated. NOT derived from
+   *  `attributionByTarget` — that map is rank-keyed and drops unranked members.
+   *
+   *  `augLookup` (optional Map variant_id -> augment record) resolves affixes
+   *  for a placement record saved before placements carried them — the same
+   *  fallback the set-like block uses.
+   */
+  function bundleGroups(result, augLookup) {
+    const out = [];
+    const collect = (carrier, kind, affixes) => {
+      const groups = new Map();
+      for (const a of affixes || []) {
+        const via = a && a[PROVENANCE_KEY];
+        if (!via) continue;
+        if (!groups.has(via)) groups.set(via, []);
+        groups.get(via).push(a);
+      }
+      for (const [via, ms] of groups) {
+        if (ms.length < 2) continue;
+        out.push({
+          name: via, carrier, carrierKind: kind,
+          members: ms.map((m) => ({
+            name: m.name != null ? m.name : m.stat,
+            value: m.value,
+            type: m.type != null ? m.type : m.bonus_type,
+            ...(m.unit ? { unit: m.unit } : {}),
+          })),
+        });
+      }
+    };
+    for (const c of (result && result.chosen) || []) {
+      const v = c.variant || {};
+      collect(v.variant_id, "item", v.affixes);
+    }
+    for (const a of (result && result.augmentsPlaced) || []) {
+      const affixes = (a.affixes && a.affixes.length) ? a.affixes
+        : ((augLookup && augLookup.get(a.variant_id)) || {}).affixes;
+      collect(a.variant_id, "augment", affixes);
+    }
+    return out;
+  }
+
   // Item-level ML read native-first (`ml`), legacy `minimum_level` fallback.
   function itemMl(v) { return (v && v.ml != null) ? v.ml : (v && v.minimum_level); }
 
@@ -1033,6 +1091,11 @@
     // carrying it through the model is necessary, not sufficient.
     const sets = satisfiedSetDetail(snap).map((s) => ({ set: s.set, pieces: s.pieces, affixes: s.affixes, members: s.members || [] }));
 
+    // #340 (R8) — the bundled enchantments ride the shared content model, so
+    // every sets-rendering export inherits them (never solve-visible but
+    // share-invisible).
+    const bundles = bundleGroups(snap);
+
     const attribution = {};
     for (const stat of priorities) {
       // #91 (U6) — the Utility sentinel is EXCLUDED from the generic per-priority
@@ -1099,7 +1162,7 @@
         // touched the solve. A shared build asserting optimality with silent
         // exclusions is the solve-visible-but-share-invisible failure.
         blockNotice: blockNoticeLines(snap) },
-      loadout, sets, attribution,
+      loadout, sets, bundles, attribution,
     };
   }
 
@@ -1291,7 +1354,7 @@
     // model.js; re-exported so exporters can recognize the sentinel row)
     utilityLine, UTILITY_SENTINEL: UTILITY_NAME,
     // pure primitives (results.js binds these; single definition, no drift)
-    affixLabel, collapseExpansions, itemMl, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
+    affixLabel, collapseExpansions, bundleGroups, itemMl, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,
     satisfiedSets, suppressedHostIds, slotSetNames,
     setContributors, contributorsFor, setMemberLabel, activeSetDetail, satisfiedSetDetail,

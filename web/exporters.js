@@ -111,6 +111,11 @@
     return (affixes || []).map((a) => esc(fmtAffix(a))).filter(Boolean).join(", ");
   }
 
+  // #340 (R6) — the one bundled-enchantments qualifier every format prints:
+  // these are single-source enchantments, not sets — never a piece count or
+  // tier. Spelled once so no format can drift.
+  const BUNDLE_NOTE = "Single-source enchantments granting several stats — not sets.";
+
   // U5 (R11) — the pieces that composed one set, rendered through projection's
   // SINGLE member label (`Proj.setMemberLabel`) so the Set Bonuses card and all
   // five text formats name a piece identically. A wildcard or chosen-membership
@@ -248,6 +253,13 @@
         if (mem) out += `  - Pieces: ${mem}\n`;
       }
     }
+    // #340 — bundled enchantments beside the sets section in every format (R8).
+    if ((view.bundles || []).length) {
+      out += `\n## Bundled enchantments\n\n_${mdEsc(BUNDLE_NOTE)}_\n\n`;
+      for (const b of view.bundles) {
+        out += `- **${mdEsc(b.name)}** — ${affixList(b.members, mdEsc)} — from ${mdEsc(b.carrier)}\n`;
+      }
+    }
     const stats = Object.keys(view.attribution);
     if (stats.length) {
       out += `\n## Stat breakdown\n\n`;
@@ -306,6 +318,14 @@
         const mem = memberList(s.members, bbEsc);
         if (mem) out += `\n  [*]Pieces: ${mem}`;
         out += `\n`;
+      }
+      out += `[/list]\n`;
+    }
+    // #340 — bundled enchantments beside the sets section in every format (R8).
+    if ((view.bundles || []).length) {
+      out += `\n[b]Bundled enchantments[/b]\n[i]${bbEsc(BUNDLE_NOTE)}[/i]\n[list]\n`;
+      for (const b of view.bundles) {
+        out += `[*][b]${bbEsc(b.name)}[/b]: ${affixList(b.members, bbEsc)} — from ${bbEsc(b.carrier)}\n`;
       }
       out += `[/list]\n`;
     }
@@ -375,6 +395,16 @@
           memberList(s.members, (x) => x)]));
       }
     }
+    // #340 — bundled enchantments beside the sets section in every format (R8).
+    // The qualifier rides the header row; no Pieces column on purpose (R6).
+    if ((view.bundles || []).length) {
+      rows.push("");
+      rows.push(csvRow(["Bundled enchantment", BUNDLE_NOTE, ""]));
+      rows.push(csvRow(["Bundle", "Grants", "From"]));
+      for (const b of view.bundles) {
+        rows.push(csvRow([b.name, affixListCsv(b.members), b.carrier]));
+      }
+    }
     const stats = Object.keys(view.attribution);
     if (stats.length) {
       rows.push("");
@@ -437,6 +467,14 @@
         const mem = memberList(s.members, htmlEsc);
         h += `<li><strong>${htmlEsc(s.set)}</strong>${s.pieces ? ` (${htmlEsc(s.pieces)} pieces)` : ""}${aff ? ` — ${aff}` : ""}`
           + `${mem ? `<div class="set-via">Pieces: ${mem}</div>` : ""}</li>`;
+      }
+      h += `</ul>`;
+    }
+    // #340 — bundled enchantments beside the sets section in every format (R8).
+    if ((view.bundles || []).length) {
+      h += `<h2>Bundled enchantments</h2><p class="legend">${htmlEsc(BUNDLE_NOTE)}</p><ul>`;
+      for (const b of view.bundles) {
+        h += `<li><strong>${htmlEsc(b.name)}</strong> — ${affixList(b.members, htmlEsc)} — from ${htmlEsc(b.carrier)}</li>`;
       }
       h += `</ul>`;
     }
@@ -666,6 +704,15 @@
         // the only way the recipient learns to reproduce the set by hand.
         const mem = memberList(s.members, (s2) => s2);
         if (mem) say(`    Pieces: ${mem}`);
+      }
+    }
+    // #340 — bundled enchantments beside the sets section in every format (R8).
+    // Commentary only: DDOBuilder has no grammar for an engraved bundle.
+    if ((view.bundles || []).length) {
+      rl.push("#");
+      say(`Bundled enchantments (${BUNDLE_NOTE})`);
+      for (const b of view.bundles) {
+        say(`  ${b.name}: ${affixList(b.members, (s2) => s2)} — from ${b.carrier}`);
       }
     }
     return `${gear.join("\n")}\n\n${rl.join("\n")}\n`;

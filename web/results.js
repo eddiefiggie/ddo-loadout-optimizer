@@ -1105,6 +1105,22 @@ function utilityCard(build, rankIdx) {
   </div>`;
 }
 
+// #340 — the Sets tab's bundled-enchantments block (empty string when the
+// loadout carries none). Deliberately NOT set-shaped: these are single-source
+// enchantments, so the copy says so and no piece count or tier language appears.
+// Groups come from the shared projection primitive (`Proj.bundleGroups`), the
+// same source the exports render, so the two surfaces cannot drift; `augById`
+// is the catalog fallback for placement records saved before they carried
+// affixes (the set-like block's own precedent).
+function bundlesBlock(build, augById) {
+  const groups = Proj.bundleGroups(build, augById);
+  if (!groups.length) return "";
+  const cards = groups.map((b) =>
+    `<li class="set-card bundle"><strong>${esc(b.name)}</strong><div class="set-grants">${esc(b.members.map(affixLabel).join(", "))}</div><div class="set-via">from ${esc(b.carrier)}</div></li>`
+  ).join("");
+  return `<h3 class="setlike-h" title="one enchantment granting several stats">Bundled enchantments (single-source, not sets)</h3><ul class="sets bundle-list">${cards}</ul>`;
+}
+
 // Compute the per-build view HTML (paperdoll, weapon row, ranked cards, set panel,
 // deep dive) for ANY result-shaped build — the optimum or a selected alternative,
 // which carry the same fields (chosen, effective, breakdown, capped, setsActive,
@@ -1210,6 +1226,9 @@ function buildViews(build, model, query) {
   if (setLike) {
     setsPanel += `<h3 class="setlike-h" title="non-set bonuses that occupy their own channels">Other set-like bonuses (compete with sets)</h3><ul class="sets setlike-list">${setLike}</ul>`;
   }
+  // #340 — bundled enchantments (third block): each engraved multi-stat bundle
+  // on the equipped loadout, named once with its members and carrier.
+  setsPanel += bundlesBlock(build, augById);
 
   return { paperdoll: `<div class="pd-list">${rows.join("")}</div>`, weapons, cards, setsPanel, deepDive: loadoutDeepDive(build, query, maps, attr) };
 }
@@ -1298,5 +1317,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, blockNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, blockNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }

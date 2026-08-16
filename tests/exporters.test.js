@@ -1053,31 +1053,38 @@ function expansionRec() {
 const COLLAPSED = "Sacred Spell Focus Mastery +3";
 const VIK_COLLAPSED = "Slot Woeful Viktranium augment: Profane Spell Focus Mastery +2";
 
+// #340 — the bundled-enchantments section deliberately lists an expansion's
+// members UNDER the engraved name (a spell-focus umbrella is a multi-stat
+// bundle). The no-leak assertion pins the loadout/attribution text, where the
+// solver's expanded shape must never masquerade as separate item affixes — so
+// it tests the document up to the bundles section, in every format.
+const beforeBundles = (s) => s.split("Bundled enchantment")[0];
+
 test("U8/R8/AE6: the Markdown export renders the collapsed worn line, not seven school lines", () => {
   const md = toMarkdown(expansionRec());
   assert.ok(md.includes(COLLAPSED), "names the enchantment engraved on the item");
-  assert.ok(!/Abjuration Focus/.test(md), "no expanded school leaks into the share text");
+  assert.ok(!/Abjuration Focus/.test(beforeBundles(md)), "no expanded school leaks into the share text");
   assert.ok(md.includes(VIK_COLLAPSED), "the crafted choice-slot option reads as the enchantment too");
 });
 
 test("U8/R8: the BBCode export renders the collapsed line", () => {
   const bb = toBBCode(expansionRec());
   assert.ok(bb.includes(COLLAPSED));
-  assert.ok(!/Abjuration Focus/.test(bb));
+  assert.ok(!/Abjuration Focus/.test(beforeBundles(bb)));
   assert.ok(bb.includes(VIK_COLLAPSED));
 });
 
 test("U8/R8: the CSV export renders the collapsed line", () => {
   const csv = toCsv(expansionRec());
   assert.ok(csv.includes(COLLAPSED));
-  assert.ok(!/Abjuration Focus/.test(csv));
+  assert.ok(!/Abjuration Focus/.test(beforeBundles(csv)));
   assert.ok(csv.includes(VIK_COLLAPSED));
 });
 
 test("U8/R8: the print HTML export renders the collapsed line", () => {
   const html = toPrintHtml(expansionRec());
   assert.ok(html.includes(COLLAPSED));
-  assert.ok(!/Abjuration Focus/.test(html));
+  assert.ok(!/Abjuration Focus/.test(beforeBundles(html)));
   assert.ok(html.includes(VIK_COLLAPSED));
 });
 
