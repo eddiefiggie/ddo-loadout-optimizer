@@ -749,6 +749,17 @@ function craftingExcludedNotice(query, result) {
     : "";
 }
 
+/** #339 — the augment-ceiling scope disclosure. Reads the solved query off the
+ *  result (the shared projection sentence), so a restored character renders it
+ *  without a re-solve and a pre-ceiling snapshot stays silent. */
+function augCeilingNotice(query, result) {
+  const line = (Proj && Proj.augCeilingLine)
+    ? Proj.augCeilingLine({ snapshot: result }) : null;
+  return line
+    ? `<p class="scope-note aug-ceiling-note" role="status">${esc(line)}</p>`
+    : "";
+}
+
 /** U6/#249 — the compound-absorption exclusion. Pure (result), and identical on
  *  a restored snapshot, for the same reason the ceiling fact above is.
  *
@@ -947,6 +958,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     ${emptySlotNotice(query, result)}
     ${absorptionQuarantineNotice(result)}
     ${craftingExcludedNotice(query, result)}
+    ${augCeilingNotice(query, result)}
     ${blockNotice(result)}
     <div class="active-build-bar" hidden>
       <span class="active-build-msg"></span>
@@ -1317,5 +1329,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, blockNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }

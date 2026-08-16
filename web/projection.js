@@ -546,6 +546,21 @@
       + "set-bonus crafting were not considered. Regular augments still were.";
   }
 
+  /** #339 — the augment-ceiling scope disclosure (null when unrestricted). Reads
+   *  the SOLVED query only, never the saved inputs: the ceiling that shaped this
+   *  result is the only honest claim, and a restored pre-ceiling snapshot must
+   *  stay silent even if the player has since typed a ceiling — that solve was
+   *  not restricted. buildQuery already re-normalized a stale ceiling to null,
+   *  so a value here is always a live restriction. */
+  function augCeilingLine(rec) {
+    const snap = (rec && rec.snapshot) || rec || {};
+    const q = snap.query || {};
+    const n = Number(q.augCeiling) || null;
+    if (n == null) return null;
+    return `Augments were restricted to ML ${n} and below for this solve; `
+      + "higher-ML augments were not considered.";
+  }
+
   /** Variant_ids of host items that carry a solver-placed Set Augment. A Set Augment
    *  overrides ("suppresses") the host item's OWN named set(s) — the solver already
    *  dropped that set from setsActive/totals, so the set-satisfaction primitives must
@@ -1158,6 +1173,10 @@
         // recipient must not compare this build against a full-crafting one
         // without being told the pools differed.
         craftingExcludedNotice: craftingExcludedLine(rec),
+        // #339 — the augment-ceiling scope disclosure (null when unrestricted):
+        // a recipient must not compare this build against an unrestricted one
+        // without being told the augment pool was narrower.
+        augCeilingNotice: augCeilingLine(rec),
         // #110 (U7/U9) — the blocklist disclosure: empty array when no block
         // touched the solve. A shared build asserting optimality with silent
         // exclusions is the solve-visible-but-share-invisible failure.
@@ -1362,6 +1381,8 @@
     buildCraftMaps, craftLabel, craftValue, lunarSolar, setAugmentSlotRule,
     // #245 — craft-carried disclosure + the opt-out notice line
     craftCarried, craftingExcludedLine,
+    // #339 — the augment-ceiling scope disclosure line
+    augCeilingLine,
     // #262 — the one no-drop-source disclosure wording (results/browse/wizard
     // and every exporter read it from here; never respell it)
     NO_DROP_SOURCE_WORDING,

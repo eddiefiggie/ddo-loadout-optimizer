@@ -1117,6 +1117,25 @@ if (!process.exitCode) console.log(`\n${passed} passed`);
 // #245 — the craft-carried line and the opt-out scope disclosure must ride
 // every text export (the solve-visible-but-share-invisible invariant).
 
+test("#339: the augment-ceiling disclosure reaches MD, CSV, print, BBCode", () => {
+  const rec = {
+    name: "Ceiling Build",
+    inputs: { ml: 36, pool: "all", priorities: ["Intelligence"], augCeiling: 32 },
+    snapshot: {
+      status: "optimal",
+      query: { augCeiling: 32 },   // notice keys off the SOLVED query
+      chosen: [], setsActive: [], breakdown: {}, effective: {},
+    },
+  };
+  assert.ok(/ML 32 and below/.test(toMarkdown(rec)), "markdown notice");
+  const csv = toCsv(rec);
+  assert.ok(/^Scope,/m.test(csv) && /ML 32 and below/.test(csv), "csv scope row");
+  assert.ok(/ML 32 and below/.test(toPrintHtml(rec)), "print notice");
+  assert.ok(/ML 32 and below/.test(toBBCode(rec)), "bbcode notice");
+  delete rec.snapshot.query.augCeiling;
+  assert.ok(!/and below/.test(toMarkdown(rec)), "silent when unrestricted");
+});
+
 test("#245: a craft-carried pick and the opt-out notice reach MD, CSV, print, BBCode", () => {
   const carriedRec = {
     name: "Carried Build",
