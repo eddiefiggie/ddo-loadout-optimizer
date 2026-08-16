@@ -1168,13 +1168,40 @@ test("#339: a record built by the REAL serializeCharacter carries the notice int
   assert.ok(/ML 32 and below/.test(md), "the disclosure survives the real persistence shape");
 });
 
-test("#245: a craft-carried pick and the opt-out notice reach MD, CSV, print, BBCode", () => {
+// #346 (U4, AE5) — the sentence a player reads in the results must be the
+// sentence a shared build carries, byte for byte. The notice family's standing
+// rule exists because phrasing one in results and again in the exporters is how
+// the app and an export come to disagree about the same solve.
+test("#346: the ladder notice is byte-identical across results and all four exports", () => {
+  const P = require("../web/projection.js");
+  const R = require("../web/results.js");
+  for (const rung of ["no-niche-crafting", "no-solar-lunar", "printed-only"]) {
+    const rec = {
+      name: "Parity", inputs: { ml: 9, pool: "all", priorities: ["Charisma"] },
+      snapshot: { status: "optimal", query: { craftingRung: rung }, chosen: [], setsActive: [],
+        breakdown: {}, effective: {} },
+    };
+    const canonical = P.craftingExcludedLine(rec);
+    assert.ok(canonical, `${rung} produces a sentence`);
+    // results.js wraps the SAME string in its scope-note element.
+    const html = R.craftingExcludedNotice({}, { query: { craftingRung: rung } });
+    assert.ok(html.includes(canonical.replace(/"/g, "&quot;")) || html.includes(canonical),
+      `results renders the canonical ${rung} sentence verbatim`);
+    for (const [label, out] of [["markdown", toMarkdown(rec)], ["csv", toCsv(rec)],
+      ["print", toPrintHtml(rec)], ["bbcode", toBBCode(rec)]]) {
+      assert.ok(out.includes(canonical) || out.includes(canonical.replace(/"/g, "&quot;")),
+        `${label} carries the canonical ${rung} sentence, not a re-phrasing`);
+    }
+  }
+});
+
+test("#346: a craft-carried pick and the ladder notice reach MD, CSV, print, BBCode", () => {
   const carriedRec = {
     name: "Carried Build",
-    inputs: { ml: 9, pool: "all", priorities: ["Charisma"], excludeCraftingSystems: false },
+    inputs: { ml: 9, pool: "all", priorities: ["Charisma"] },
     snapshot: {
       status: "optimal",
-      query: { excludeCraftingSystems: true },   // notice keys off the SOLVED query
+      query: { craftingRung: "no-niche-crafting" },   // notice keys off the SOLVED query
       chosen: [
         { slot: "Weapon", variant: { variant_id: "Calamitous Sword", ml: 8,
           affixes: [], augment_slots_norm: { colors: [] }, set_bonus: [], parsed_set_bonuses: [] } },

@@ -1532,10 +1532,13 @@ test("#245: whyThisLine stays a plain contribution line when the item earns its 
   assert.ok(/Constitution \+15/.test(html) && !/pd-carried/.test(html));
 });
 
-test("#245: the opt-out notice renders from the shared projection sentence", () => {
-  const on = R.craftingExcludedNotice({}, { query: { excludeCraftingSystems: true } });
+test("#346: the ladder notice renders from the shared projection sentence", () => {
+  const on = R.craftingExcludedNotice({}, { query: { craftingRung: "no-niche-crafting" } });
   assert.ok(/crafting-excluded-note/.test(on) && /Niche crafting was excluded/.test(on));
-  assert.strictEqual(R.craftingExcludedNotice({}, { query: {} }), "", "silent when off");
+  assert.match(R.craftingExcludedNotice({}, { query: { craftingRung: "printed-only" } }),
+    /nothing beyond what is printed/, "the bottom rung has its own sentence");
+  assert.strictEqual(R.craftingExcludedNotice({}, { query: {}, augmentsPlaced: [] }), "",
+    "silent on the top rung when the loadout leans on nothing");
 });
 
 test("#339: the augment-ceiling notice renders from the shared projection sentence", () => {

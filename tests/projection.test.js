@@ -697,17 +697,71 @@ test("#245: a set-completing item is not craft-carried, and a filler is null", (
     "a filler pick has no craft story");
 });
 
-test("#245: project() carries craftCarried on the loadout and the opt-out notice", () => {
+test("#346: project() carries craftCarried on the loadout and the ladder notice", () => {
   const rec = makeRec();
-  rec.snapshot.query = { excludeCraftingSystems: true };
+  rec.snapshot.query = { craftingRung: "no-niche-crafting" };
   const view = P.project(rec);
   assert.ok(view.loadout.every((it) => "craftCarried" in it),
     "every loadout entry carries the field (null when not carried)");
   assert.ok(/Niche crafting was excluded/.test(view.character.craftingExcludedNotice),
-    "the opt-out scope disclosure rides the shared content model");
-  delete rec.snapshot.query;
+    "the scope disclosure rides the shared content model");
+  assert.ok(!/Regular augments/.test(view.character.craftingExcludedNotice),
+    "the old carve-out sentence is gone — the ladder now owns augments");
+});
+
+// #346 (U4) — ONE notice covers the whole ladder, with a distinct sentence per
+// rung. A second notice appearing beside this one is the failure mode the merge
+// exists to prevent.
+test("#346: each rung produces its own single notice sentence", () => {
+  const rec = makeRec();
+  const noticeAt = (rung) => {
+    rec.snapshot.query = { craftingRung: rung };
+    return P.project(rec).character.craftingExcludedNotice;
+  };
+  assert.match(noticeAt("no-niche-crafting"), /Niche crafting was excluded/);
+  assert.match(noticeAt("no-solar-lunar"), /Solar\/Lunar Gems were excluded/);
+  assert.match(noticeAt("no-solar-lunar"), /colour augments were still considered/);
+  assert.match(noticeAt("printed-only"), /nothing beyond what is printed/);
+  assert.ok(!/Solar/.test(noticeAt("printed-only")),
+    "the bottom rung does not enumerate what a higher rung would have excluded");
+});
+
+// #346 (U4, R9) — the top rung speaks too: the notice is the discovery path for
+// the control, so a player who never opens the section still learns the ladder
+// exists. It reports what the SOLVE placed, not what the query asked for.
+test("#346: the top rung names what the loadout leans on, or stays silent", () => {
+  const rec = makeRec();
+  rec.snapshot.query = { craftingRung: "everything" };
+
+  rec.snapshot.augmentsPlaced = [];
   assert.strictEqual(P.project(rec).character.craftingExcludedNotice, null,
-    "silent when the flag is off");
+    "no augments placed: nothing to give up, so no advice");
+
+  rec.snapshot.augmentsPlaced = [{ variant_id: "Solar Gem of X", color: "Sun" },
+    { variant_id: "Lunar Gem of Y", color: "Moon" },
+    { variant_id: "Sapphire of Z", color: "Blue" }];
+  const leaning = P.project(rec).character.craftingExcludedNotice;
+  assert.match(leaning, /leans on 2 Solar\/Lunar Gems/, "the farm-gated family is named and counted");
+  assert.match(leaning, /1 other augment/, "the rest are counted without being named");
+  assert.match(leaning, /lower "What may the solver assume/, "and it points at the control");
+
+  rec.snapshot.augmentsPlaced = [{ variant_id: "Sapphire of Z", color: "Blue" }];
+  const plain = P.project(rec).character.craftingExcludedNotice;
+  assert.match(plain, /uses 1 augment/, "no gems: a plain count, no Solar/Lunar claim");
+  assert.ok(!/Solar/.test(plain));
+});
+
+// #346 (U4) — a snapshot saved before the ladder still discloses correctly
+// without re-solving, which is the restore contract the whole notice family
+// keeps. The legacy boolean speaks only when no rung is stored.
+test("#346: a pre-ladder snapshot falls back to the legacy boolean", () => {
+  const rec = makeRec();
+  rec.snapshot.query = { excludeCraftingSystems: true };
+  assert.match(P.project(rec).character.craftingExcludedNotice, /Niche crafting was excluded/,
+    "an old save discloses without re-solving");
+  rec.snapshot.query = { craftingRung: "printed-only", excludeCraftingSystems: true };
+  assert.match(P.project(rec).character.craftingExcludedNotice, /nothing beyond what is printed/,
+    "a stored rung beside a stale boolean wins");
 });
 
 test("#339: project() carries the augment-ceiling disclosure from the solved query", () => {

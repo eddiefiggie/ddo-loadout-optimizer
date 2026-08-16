@@ -19,6 +19,12 @@
   const UTILITY_NAME = (typeof UTILITY_SENTINEL !== "undefined") ? UTILITY_SENTINEL
     : (typeof require !== "undefined" ? require("./model.js").UTILITY_SENTINEL : "Utility effects");
 
+  // #346 (U4) — the ladder's normalizer, over the same bridge. Fails open to the
+  // top rung so a hand-edited backup produces a wrong-but-harmless notice rather
+  // than throwing inside the projection every surface reads from.
+  const _rungOf = (typeof normalizeRung !== "undefined") ? normalizeRung
+    : (typeof require !== "undefined" ? require("./model.js").normalizeRung : (v) => v || "everything");
+
   // ---- pure primitives (moved verbatim from results.js so there is one definition) ----
 
   // The key each expansion family stamps on every affix it emits, naming the
@@ -542,12 +548,42 @@
    *  program, so a restored character discloses identically without re-solving. */
   function craftingExcludedLine(rec) {
     const snap = (rec && rec.snapshot) || rec || {};
-    const q = snap.query || {};
+    const q = (rec && rec.query) || snap.query || {};
     const inputs = (rec && rec.inputs) || {};
-    if (!q.excludeCraftingSystems && !inputs.excludeCraftingSystems) return null;
-    return "Niche crafting was excluded from this solve: Viktranium experiments, "
-      + "Sealed-in-X seals, Nearly Completed, Dinosaur Bone crafting, and "
-      + "set-bonus crafting were not considered. Regular augments still were.";
+    // #346 (U4) — the rung, with the legacy boolean as the restore-path fallback
+    // for snapshots saved before the ladder. Same precedence as the loader's:
+    // a stored rung wins, the boolean only speaks when there is none.
+    const rung = (q.craftingRung != null || inputs.craftingRung != null)
+      ? _rungOf(q.craftingRung != null ? q.craftingRung : inputs.craftingRung)
+      : ((q.excludeCraftingSystems || inputs.excludeCraftingSystems) ? "no-niche-crafting" : "everything");
+
+    if (rung === "no-niche-crafting") {
+      return "Niche crafting was excluded from this solve: Viktranium experiments, "
+        + "Sealed-in-X seals, Nearly Completed, Dinosaur Bone crafting, and "
+        + "set-bonus crafting were not considered. Augments still were.";
+    }
+    if (rung === "no-solar-lunar") {
+      return "Niche crafting and Solar/Lunar Gems were excluded from this solve. "
+        + "Ordinary colour augments were still considered.";
+    }
+    if (rung === "printed-only") {
+      return "This solve used nothing beyond what is printed on each item: no "
+        + "niche crafting and no augments of any colour were considered.";
+    }
+    // Top rung. R9 — the notice is the discovery path for the control, so it
+    // speaks here too rather than staying silent. It reports what the loadout
+    // LEANS ON that a lower rung would take away, which is a fact about the
+    // solve and not about the query — hence the snapshot read.
+    const augs = (snap.augmentsPlaced || []).length;
+    if (!augs) return null;   // nothing to give up; no advice worth crowding the results with
+    const gems = (snap.augmentsPlaced || [])
+      .filter((a) => a && (a.color === "Sun" || a.color === "Moon")).length;
+    const lead = gems
+      ? `This loadout leans on ${gems} Solar/Lunar Gem${gems === 1 ? "" : "s"}`
+        + (augs > gems ? ` and ${augs - gems} other augment${augs - gems === 1 ? "" : "s"}` : "")
+      : `This loadout uses ${augs} augment${augs === 1 ? "" : "s"}`;
+    return `${lead}. If you would rather not craft or buy them, lower "What may the `
+      + `solver assume beyond the printed item?" and re-solve.`;
   }
 
   /** #339 — the augment-ceiling scope disclosure (null when unrestricted). Reads
