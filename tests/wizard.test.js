@@ -85,6 +85,17 @@ test("buildQuery threads the optional mlFloor (blank/0 -> null)", () => {
   assert.strictEqual(buildQuery(baseState()).mlFloor, null);
 });
 
+test("#339: buildQuery owns the augCeiling clamp — emitted only when positive and STRICTLY below the cap", () => {
+  assert.strictEqual(buildQuery({ ...baseState(), ml: 36, augCeiling: 32 }).augCeiling, 32, "a real ceiling threads through");
+  assert.strictEqual(buildQuery({ ...baseState(), ml: 30, augCeiling: 32 }).augCeiling, null,
+    "a STALE ceiling above a later-lowered cap re-normalizes to unrestricted at query time");
+  assert.strictEqual(buildQuery({ ...baseState(), ml: 36, augCeiling: 36 }).augCeiling, null, "ceiling equal to the cap is unrestricted");
+  assert.strictEqual(buildQuery({ ...baseState(), ml: 36, augCeiling: 40 }).augCeiling, null, "ceiling above the cap is unrestricted");
+  assert.strictEqual(buildQuery({ ...baseState(), augCeiling: 0 }).augCeiling, null, "0/blank means unrestricted");
+  assert.strictEqual(buildQuery({ ...baseState(), augCeiling: "" }).augCeiling, null);
+  assert.strictEqual(buildQuery(baseState()).augCeiling, null, "a pre-feature state (no field) is unrestricted");
+});
+
 test("U4: buildQuery reflects the Include-an-Artifact flag", () => {
   const on = buildQuery({ ...baseState(), includeArtifact: true });
   assert.strictEqual(on.includeArtifact, true);

@@ -89,6 +89,30 @@ test("U3/U4: serializeCharacter persists the ML floor + caps/floors (INPUT_KEYS)
   assert.deepStrictEqual(rec.inputs.targetFloors, { PRR: 300 });
 });
 
+test("#339: augCeiling round-trips through serialize -> save -> load (INPUT_KEYS scalar)", () => {
+  const st = fakeStorage();
+  const withCeiling = { ...state, augCeiling: 32 };
+  saveCharacter(serializeCharacter("Ceiled", withCeiling, lastRun, "idc"), st);
+  const back = loadCharacter("Ceiled", st);
+  assert.strictEqual(back.inputs.augCeiling, 32, "the augment ML ceiling persists");
+  // ...and survives JSON exactly as localStorage stores it.
+  assert.strictEqual(JSON.parse(JSON.stringify(back)).inputs.augCeiling, 32);
+});
+
+test("#339: a pre-feature save (no augCeiling field) loads unrestricted — no key, no healing", () => {
+  const rec = serializeCharacter("PreCeiling", state, lastRun, "idc");   // `state` predates the feature
+  // pickInputs stores undefined; JSON drops the key, so the stored record has
+  // NO augCeiling — exactly the mlFloor precedent, and the wizard load path
+  // reads an absent key as null (unrestricted).
+  const stored = JSON.parse(JSON.stringify(rec));
+  assert.ok(!("augCeiling" in stored.inputs), "a pre-feature record carries no key at all");
+});
+
+test("#339: INPUT_KEYS carries augCeiling (the save-path allowlist)", () => {
+  assert.ok(INPUT_KEYS.includes("augCeiling"),
+    "a key outside the allowlist is silently stripped on save and the ceiling would never persist");
+});
+
 test("ownedNames Set serializes to a JSON-safe array", () => {
   const withOwned = { ...state, ownedNames: new Set(["Item A", "Item B"]) };
   const rec = serializeCharacter("Owned", withOwned, lastRun, "id1");

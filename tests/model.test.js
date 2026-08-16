@@ -130,6 +130,54 @@ test("an AUGMENT is exempt from the mlFloor (a low-ML augment stays a candidate)
   assert.strictEqual(capped.length, 0, "an above-cap augment is still excluded");
 });
 
+test("#339: the augCeiling excludes an above-ceiling AUGMENT, keeps one at/below, and leaves a same-ML worn item untouched", () => {
+  const hiAug = v("Diamond of Intelligence +15", "Colorless", [["Intelligence", "Enhancement", 15]], { ml: 36, category: "augment" });
+  const okAug = v("Diamond of Intelligence +14", "Colorless", [["Intelligence", "Enhancement", 14]], { ml: 32, category: "augment" });
+  const worn = v("Endgame Ring", "Ring", [["Intelligence", "Enhancement", 10]], { ml: 36, category: "item" });
+  const kept = M.eligible([hiAug, okAug, worn], { mlCap: 36, augCeiling: 32, targets: ["Intelligence"] }).map((x) => x.source_item);
+  assert.ok(!kept.includes("Diamond of Intelligence +15"), "an above-ceiling augment is excluded");
+  assert.ok(kept.includes("Diamond of Intelligence +14"), "an at-ceiling augment is kept");
+  assert.ok(kept.includes("Endgame Ring"), "a WORN item at the same ML is untouched — the ceiling is augment-only");
+});
+
+test("#339: no ceiling (absent or null) -> eligibility identical to pre-feature", () => {
+  const hiAug = v("Diamond of Intelligence +15", "Colorless", [["Intelligence", "Enhancement", 15]], { ml: 36, category: "augment" });
+  const worn = v("Endgame Ring", "Ring", [["Intelligence", "Enhancement", 10]], { ml: 36, category: "item" });
+  const absent = M.eligible([hiAug, worn], { mlCap: 36, targets: ["Intelligence"] }).map((x) => x.source_item).sort();
+  assert.deepStrictEqual(absent, ["Diamond of Intelligence +15", "Endgame Ring"], "absent ceiling restricts nothing");
+  const nul = M.eligible([hiAug, worn], { mlCap: 36, augCeiling: null, targets: ["Intelligence"] }).map((x) => x.source_item).sort();
+  assert.deepStrictEqual(nul, absent, "null ceiling is byte-identical to absent");
+});
+
+test("#339 contract (KD5): a PINNED above-ceiling augment passes the gate — the future pin exemption", () => {
+  // Inert today (augments cannot be pinned); this pins the rule so the exemption
+  // is live the day augment pinning ships, mirroring the floor's pinnedIds clause.
+  const aug = v("Diamond of Intelligence +15", "Colorless", [["Intelligence", "Enhancement", 15]], { ml: 36, category: "augment" });
+  const query = { mlCap: 40, augCeiling: 32, targets: ["Intelligence"] };
+  const gates = { cap: 40, floor: null, ceiling: 32, pinnedIds: new Set([M.variantKey(aug)]) };
+  assert.strictEqual(M.variantConflict(aug, query, gates), null, "the pin overrides the ceiling");
+  // sanity: without the pin the same gate fires, with the floor-mirrored wording.
+  const unpinned = { cap: 40, floor: null, ceiling: 32, pinnedIds: new Set() };
+  assert.strictEqual(M.variantConflict(aug, query, unpinned), "above your augment ML 32 ceiling");
+});
+
+test("#339: a ceiling below every augment's ML empties the augment pool but leaves worn slots solvable", () => {
+  // buildModel-level: with the ceiling under every augment, the model's augment
+  // pool is empty while the worn pool still carries the ring — augment slots go
+  // unfilled, the solve stays feasible.
+  const aug = v("Diamond of Intelligence +14", "Colorless", [["Intelligence", "Enhancement", 14]], { ml: 32, category: "augment" });
+  aug.aug_color = { color: "Colorless" };   // a real pool color, or the pool drops it regardless of the ceiling
+  const ring = v("Endgame Ring", "Ring", [["Intelligence", "Enhancement", 10]], { ml: 36, aug: ["Colorless"] });
+  // sanity (anti-vacuity): WITHOUT the ceiling the augment is in the pool.
+  const open = M.buildModel([aug, ring], { mlCap: 36, targets: ["Intelligence"] });
+  assert.strictEqual(open.augments.length, 1, "the augment must be poolable at all, or this test proves nothing");
+  const model = M.buildModel([aug, ring], { mlCap: 36, augCeiling: 20, targets: ["Intelligence"] });
+  assert.strictEqual(model.augments.length, 0, "no augment survives a ceiling below all of them");
+  const ringSlot = model.worn.find((s) => s.slot === "Ring");
+  assert.ok(ringSlot && ringSlot.variants.some((x) => x.source_item === "Endgame Ring"),
+    "the worn host is still in its slot pool — the solve stays feasible without augments");
+});
+
 // artifact variant factory: a normal variant flagged as Artifact-quality.
 function art(name, slot, affixes, opts = {}) {
   const x = v(name, slot, affixes, opts);
