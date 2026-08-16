@@ -1810,3 +1810,148 @@ test("U4/262: the BLOCK search row template appends the note (source wiring)", (
   const body = src.slice(0, src.indexOf("function renderBlockList("));
   assert.ok(/noDropNote\(v\)/.test(body), "the block row's note string appends noDropNote(v)");
 });
+
+// ---- #91 U4 — Utility tier: seeding, healing, re-add, panel suppression -------
+// The tier's presence/position lives in the persisted priority list, never
+// closure state; these cover the pure lifecycle helpers plus the query-side
+// defensive gates (R1, R2, R15, KTD8).
+{
+  const { newPriorityList, insertAboveTrailingSentinel, healUtilityTier, datalistStats } = require("../web/wizard.js");
+  const { UTILITY_SENTINEL } = require("../web/model.js");
+  const S = UTILITY_SENTINEL;
+  const U4_VOCAB = buildPickerVocabulary(realData);
+
+  test("#91 U4/R1: a new priority list is born with the sentinel at the bottom", () => {
+    assert.deepStrictEqual(newPriorityList(), [S]);
+    assert.strictEqual(S, "Utility effects", "display name is the solver's sentinel, verbatim");
+  });
+
+  test("#91 U4/R1: the wizard state init seeds priorities from newPriorityList (source wiring)", () => {
+    assert.ok(/priorities:\s*newPriorityList\(\)/.test(WIZARD_SRC),
+      "the fresh-state literal births the list through the seeding helper");
+  });
+
+  test("#91 U4/R1: adding a stat lands ABOVE a bottom-seated sentinel", () => {
+    const out = resolvePriorityAdd("Dodge", U4_VOCAB, ["Constitution", S]);
+    assert.ok(out.ok);
+    assert.deepStrictEqual(out.priorities, ["Constitution", "Dodge", S],
+      "the seeded default keeps every ranked stat above utility");
+  });
+
+  test("#91 U4/R2: a dragged-up sentinel is respected — adds append at the true bottom", () => {
+    const out = resolvePriorityAdd("Dodge", U4_VOCAB, [S, "Constitution"]);
+    assert.ok(out.ok);
+    assert.deepStrictEqual(out.priorities, [S, "Constitution", "Dodge"]);
+  });
+
+  test("#91 U4/R1: an alias expansion also lands above a bottom-seated sentinel", () => {
+    const out = resolvePriorityAdd("Parrying", U4_VOCAB, ["Constitution", S]);
+    assert.ok(out.ok);
+    assert.deepStrictEqual(out.priorities, ["Constitution",
+      "Armor Class", "Fortitude Save", "Reflex Save", "Will Save", S]);
+  });
+
+  test("#91 U4/R1: addBundle keeps a bottom-seated sentinel at the bottom", () => {
+    const out = addBundle("Basic", [S], U4_VOCAB);
+    assert.ok(out.length > 1, "the bundle landed");
+    assert.strictEqual(out[out.length - 1], S, "sentinel still last");
+    assert.strictEqual(out.filter((p) => p === S).length, 1, "and not duplicated");
+  });
+
+  test("#91 U4: insertAboveTrailingSentinel is pure and position-aware", () => {
+    const ranked = ["Constitution", S];
+    const out = insertAboveTrailingSentinel(ranked, "Dodge");
+    assert.deepStrictEqual(out, ["Constitution", "Dodge", S]);
+    assert.deepStrictEqual(ranked, ["Constitution", S], "input untouched");
+    assert.deepStrictEqual(insertAboveTrailingSentinel(["Constitution"], "Dodge"),
+      ["Constitution", "Dodge"], "no sentinel: plain append");
+  });
+
+  test("#91 U4/R15: resolvePriorityAdd re-adds the sentinel, case-insensitively, at the bottom", () => {
+    const out = resolvePriorityAdd("utility effects", U4_VOCAB, ["Constitution"]);
+    assert.ok(out.ok, "accepted even though it is not a vocab stat");
+    assert.deepStrictEqual(out.priorities, ["Constitution", S]);
+    assert.deepStrictEqual(out.substitutions, []);
+    assert.ok(!U4_VOCAB.known.has(S), "the sentinel deliberately never joins `known`");
+  });
+
+  test("#91 U4/R15: re-adding an already-present sentinel is a silent no-op, never a duplicate", () => {
+    const out = resolvePriorityAdd(S, U4_VOCAB, ["Constitution", S]);
+    assert.ok(!out.ok);
+    assert.deepStrictEqual(out.priorities, ["Constitution", S], "unchanged");
+    assert.strictEqual(out.message, undefined, "and says nothing, like a duplicate stat");
+  });
+
+  test("#91 U4/KTD8: an unmarked (pre-feature) restore heals — sentinel appended at bottom", () => {
+    assert.deepStrictEqual(healUtilityTier(["Constitution", "Dodge"], false),
+      ["Constitution", "Dodge", S]);
+  });
+
+  test("#91 U4/KTD8: an unmarked restore with EMPTY priorities heals to a valid list", () => {
+    assert.deepStrictEqual(healUtilityTier([], false), [S]);
+    assert.deepStrictEqual(healUtilityTier(null, false), [S], "a malformed save still heals");
+  });
+
+  test("#91 U4/KTD8: an unmarked restore that already carries the sentinel is not duplicated", () => {
+    assert.deepStrictEqual(healUtilityTier(["Constitution", S], false), ["Constitution", S]);
+  });
+
+  test("#91 U4/KTD8: a MARKED restore is verbatim — removal persists, position persists", () => {
+    assert.deepStrictEqual(healUtilityTier(["Constitution", "Dodge"], true),
+      ["Constitution", "Dodge"], "the player removed the tier; it stays removed");
+    assert.deepStrictEqual(healUtilityTier(["Constitution", S, "Dodge"], true),
+      ["Constitution", S, "Dodge"], "a dragged position restores exactly");
+  });
+
+  test("#91 U4/KTD8: the load path heals through healUtilityTier + the marker (source wiring)", () => {
+    assert.ok(/healUtilityTier\(state\.priorities,\s*!!i\.utility_tier_aware\)/.test(WIZARD_SRC),
+      "the restore path routes the restored list through the healing rule");
+  });
+
+  test("#91 U4/R15: the sentinel row's Advanced panel is suppressed, whatever state holds", () => {
+    const st = { priorities: [S], targetFloors: { [S]: 3 }, targetCaps: { [S]: 9 },
+      declaredCredits: { [`${S}||Enhancement`]: { stat: S, bonus_type: "Enhancement", value: 2 } } };
+    const adv = advancedRowModel(S, st, U4_VOCAB);
+    assert.strictEqual(adv.suppressed, true);
+    assert.strictEqual(adv.floor, null, "a stale bound never surfaces as a live control");
+    assert.strictEqual(adv.cap, null);
+    assert.strictEqual(adv.canCredit, false);
+    assert.deepStrictEqual(adv.credits, []);
+    assert.strictEqual(adv.badgeCount, 0);
+  });
+
+  test("#91 U4/R15: rankedHTML renders no Advanced panel for a suppressed row (source wiring)", () => {
+    assert.ok(/adv\.suppressed \? "" : advancedHTML\(/.test(WIZARD_SRC),
+      "the row template gates advancedHTML on the model's suppressed flag");
+  });
+
+  test("#91 U4/R15: a bound keyed to the sentinel is dropped from the query", () => {
+    assert.deepStrictEqual(cleanBoundMap({ [S]: 4, Dodge: 2 }), { Dodge: 2 });
+    const q = buildQuery({ ...baseState(), priorities: ["Constitution", S],
+      targetFloors: { Constitution: 5, [S]: 2 }, targetCaps: { [S]: 9 } });
+    assert.deepStrictEqual(q.targetFloors, { Constitution: 5 });
+    assert.deepStrictEqual(q.targetCaps, {});
+  });
+
+  test("#91 U4/R15: a declared credit keyed to the sentinel is dropped from the query", () => {
+    const out = cleanCreditMap({
+      [`${S}||Enhancement`]: { stat: S, bonus_type: "Enhancement", value: 2 },
+      "Constitution||Insight": { stat: "Constitution", bonus_type: "Insight", value: 2 },
+    }, U4_VOCAB);
+    assert.deepStrictEqual(Object.keys(out), ["Constitution||Insight"]);
+  });
+
+  test("#91 U4/R15: the datalist option list offers the sentinel's display name", () => {
+    const opts = datalistStats(U4_VOCAB);
+    assert.ok(opts.includes("Utility effects"), "autocomplete offers the re-add");
+    assert.ok(!U4_VOCAB.suggestions.includes(S), "seeded at the datalist, not into the vocabulary");
+    assert.strictEqual(datalistStats(U4_VOCAB).filter((o) => o === S).length, 1, "once");
+  });
+
+  test("#91 U4/R15: both datalists render from the seeded list (source wiring)", () => {
+    assert.ok(/const allStats = datalistStats\(vocab\)/.test(WIZARD_SRC),
+      "allStats — the source of wz-stats AND wz-stats2 — is the seeded list");
+    assert.ok(/id="wz-stats">\$\{allStats\.map/.test(WIZARD_SRC), "wz-stats renders from allStats");
+    assert.ok(/id="wz-stats2">\$\{allStats\.map/.test(WIZARD_SRC), "wz-stats2 renders from allStats");
+  });
+}

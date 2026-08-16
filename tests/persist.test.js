@@ -383,4 +383,39 @@ test("#91 U5/R14: a serialized character keeps utilityReport through save -> loa
   assert.strictEqual(restored.utilityCount, 1);
 });
 
+// ---- #91 U4/KTD8 — the Utility-tier save marker + priority round-trip --------
+
+test("#91 U4/KTD8: INPUT_KEYS carries utility_tier_aware (the save-path allowlist)", () => {
+  assert.ok(INPUT_KEYS.includes("utility_tier_aware"),
+    "a marker outside the allowlist is silently stripped and every save reads pre-feature");
+});
+
+test("#91 U4/KTD8: every save stamps utility_tier_aware: true, even when state lacks it", () => {
+  const inputs = pickInputs(state, "Marked");   // `state` predates the feature: no marker field
+  assert.strictEqual(inputs.utility_tier_aware, true);
+  // ...and it survives JSON, so the stored record is verifiably marked.
+  assert.strictEqual(JSON.parse(JSON.stringify(inputs)).utility_tier_aware, true);
+});
+
+test("#91 U4/R2: a dragged sentinel position round-trips save -> load with the marker", () => {
+  const st = fakeStorage();
+  const dragged = { ...state, priorities: ["Constitution", "Utility effects", "Dodge"] };
+  saveCharacter(serializeCharacter("Dragged", dragged, lastRun, "b1"), st);
+  const rec = loadCharacter("Dragged", st);
+  assert.deepStrictEqual(rec.inputs.priorities, ["Constitution", "Utility effects", "Dodge"],
+    "position 2 restores exactly where it was dragged");
+  assert.strictEqual(rec.inputs.utility_tier_aware, true, "and the record is marked");
+});
+
+test("#91 U4/R2: a removed sentinel stays removed in the saved record — still marked", () => {
+  const st = fakeStorage();
+  const removed = { ...state, priorities: ["Constitution", "Dodge"] };
+  saveCharacter(serializeCharacter("Removed", removed, lastRun, "b1"), st);
+  const rec = loadCharacter("Removed", st);
+  assert.deepStrictEqual(rec.inputs.priorities, ["Constitution", "Dodge"],
+    "no sentinel is re-injected at save time");
+  assert.strictEqual(rec.inputs.utility_tier_aware, true,
+    "the marker is what tells the load path this removal was deliberate");
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

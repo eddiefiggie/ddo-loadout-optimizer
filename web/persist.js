@@ -67,6 +67,14 @@
     // U2/U5 — declared stat credits, keyed `stat||bonusType`. Plain JSON, so it
     // needs no special serialization the way the two Sets above do.
     "declaredCredits",
+    // #91 (U4/KTD8) — the Utility-tier save marker. Every save this code writes
+    // is by definition post-feature, so pickInputs stamps it `true` uncondition-
+    // ally; a save that LACKS it is pre-feature and the wizard's load path heals
+    // it by appending the tier. It must live on THIS allowlist: a marker outside
+    // it would be silently stripped on save, every record would read pre-feature,
+    // and a player's removal of the tier would resurrect on every load. backup.js
+    // imports this list, so the export/import round-trip carries it for free.
+    "utility_tier_aware",
   ];
 
   function pickInputs(state, name) {
@@ -84,6 +92,14 @@
         // loader rebuilds the Set. Absent/other -> [] (default: none owned).
         inputs.ownedSetAugments = s.ownedSetAugments instanceof Set ? Array.from(s.ownedSetAugments)
           : (Array.isArray(s.ownedSetAugments) ? s.ownedSetAugments : []);
+      } else if (k === "utility_tier_aware") {
+        // #91 (U4/KTD8) — always `true`, never read from state: the marker means
+        // "this record was written by tier-aware code", which is a property of
+        // the CODE doing the saving, not of the character. Reading it from state
+        // (where nothing sets it) would store `undefined`, JSON would drop the
+        // key, and every save would masquerade as pre-feature — re-appending a
+        // tier the player deliberately removed, on every single load.
+        inputs.utility_tier_aware = true;
       } else if (k === "twoWeaponFighting") {
         // plan 003 U1 — always a boolean. A pre-U1 state has no field, and storing
         // `undefined` would drop the key from the JSON entirely, leaving the loader
