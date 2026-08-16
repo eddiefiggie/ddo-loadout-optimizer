@@ -4,7 +4,7 @@
 
 🎮 **Play it now:** https://eddiefiggie.github.io/ddo-loadout-optimizer/ · **Code:** https://github.com/eddiefiggie/ddo-loadout-optimizer
 
-**Current build:** 08152026.1 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
+**Current build:** 08152026.2 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
 
 **Category:** Personal
 
@@ -29,7 +29,7 @@ Two things make it more useful than a static list:
 **It tells you what to craft, not just what to farm.** A drop is only half a slot:
 
 - **Which augment goes in which slot**, respecting the real color rules — Colorless fits anywhere, Red fits Red/Purple/Orange, and so on.
-- **Which "Sealed in X" effect to unseal** at the Ritual Table.
+- **Which "Sealed in X" effect to unseal** at the Ritual Table or Augmentation Altar.
 - **Which Nearly Completed** option to pick on Terror of Demogorgon gear.
 - **Which Viktranium experiment** to run on Chill of Ravenloft (Lamordia) gear.
 - **Which Dinosaur Bone insert** to slot from Isle of Dread.
@@ -48,7 +48,7 @@ You can also point it at **only the gear you actually own** by importing a Trove
 | Weapon handedness, dual-wield/TWF, shields, off-hand, druid oath | ✅ |
 | **Vecna Unleashed set crafting** (Lost Purpose → awaken a set) | ✅ 28 craftable-membership sets |
 | **Dino Set-Bonus** augments (Isle of Dread) | ✅ 21 augment sets |
-| Sealed in X (Ritual Table) | ✅ Undeath + Fire sourced; Gloom/Mist pending |
+| Sealed in X (Ritual Table / Augmentation Altar) | ✅ all four pools sourced (Undeath, Fire, Gloom, Mist) |
 | Nearly Completed (Terror of Demogorgon, U81) | ✅ |
 | Viktranium / Lamordia (Chill of Ravenloft, U75) | ✅ |
 | Dinosaur Bone inserts (Isle of Dread) | ✅ 107 inserts |

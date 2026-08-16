@@ -252,13 +252,24 @@ test("coverageNote discloses Viktranium/Lamordia as optimized once hosts exist",
   assert.ok(/194 options/.test(optimized), "discloses the eligible option count");
 });
 
-test("coverageNote discloses Sealed-in-Undeath optimized and Fire/Gloom/Mist pending", () => {
+test("coverageNote lists the sourced seal types and drops the pending clause when none remain", () => {
   const note = R.coverageNote({ metadata: { seal_coverage: {
-    options_eligible: 18, hosts_active: 9, seal_types_pending: ["Fire", "Gloom", "Mist"] } } });
+    options_eligible: 48, hosts_active: 95,
+    seal_types_sourced: ["Fire", "Gloom", "Mist", "Undeath"], seal_types_pending: [] } } });
   const [optimized, rest] = note.split("Coverage:");
-  assert.ok(/Sealed-in-Undeath seal-slot crafting/.test(optimized), "Undeath seal listed under Optimized once hosts exist");
-  assert.ok(/9 item hosts/.test(optimized), "discloses the active seal-host count");
-  assert.ok(/18 options/.test(optimized), "discloses the eligible option count");
+  assert.ok(/Sealed-in-Fire\/Gloom\/Mist\/Undeath seal-slot crafting/.test(optimized),
+    "the sourced seal types render dynamically under Optimized");
+  assert.ok(/95 item hosts/.test(optimized), "discloses the active seal-host count");
+  assert.ok(/48 options/.test(optimized), "discloses the eligible option count");
+  assert.ok(!/seal pools \(hosts identified/.test(rest), "no pending-seal clause once every pool is sourced");
+});
+
+test("coverageNote still discloses pending seal pools when some remain unsourced", () => {
+  const note = R.coverageNote({ metadata: { seal_coverage: {
+    options_eligible: 18, hosts_active: 9,
+    seal_types_sourced: ["Undeath"], seal_types_pending: ["Fire", "Gloom", "Mist"] } } });
+  const [optimized, rest] = note.split("Coverage:");
+  assert.ok(/Sealed-in-Undeath seal-slot crafting/.test(optimized), "sourced type listed under Optimized");
   assert.ok(/Sealed-in-Fire\/Gloom\/Mist seal pools/.test(rest), "pending seal pools disclosed under Pending");
 });
 

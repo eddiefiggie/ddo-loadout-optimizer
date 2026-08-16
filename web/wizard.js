@@ -1078,7 +1078,7 @@ if (typeof window !== "undefined" && window.App) {
             <span class="wz-help">Build around your one equippable Artifact — the optimizer picks the best-scoring one and tags its slot. Off by default.</span></span></label>
           <label class="wz-check"><input type="checkbox" id="wz-no-crafting"${state.excludeCraftingSystems ? " checked" : ""}>
             <span class="wz-check-body"><span class="wz-label">Don't build around niche crafting</span>
-            <span class="wz-help">Exclude the craftable option systems — Viktranium experiments, Ritual Table seals, Nearly Completed, Dinosaur Bone crafting, and set-bonus crafting — so every item must win on what is actually printed on it. Regular augments still count. Off by default.</span></span></label>
+            <span class="wz-help">Exclude the craftable option systems — Viktranium experiments, Sealed-in-X seals, Nearly Completed, Dinosaur Bone crafting, and set-bonus crafting — so every item must win on what is actually printed on it. Regular augments still count. Off by default.</span></span></label>
           ${(() => {
             // U6 — Set Augment availability. The 21 set-augment names come from the
             // dataset's augment_set_defs (single source of truth). A checked name is

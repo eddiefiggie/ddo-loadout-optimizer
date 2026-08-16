@@ -57,6 +57,7 @@ function coverageNote(dataset) {
   const sealElig = sl.options_eligible;
   const sealHosts = sl.hosts_active;
   const sealPending = (sl.seal_types_pending || []).join("/");
+  const sealSourced = (sl.seal_types_sourced || []).join("/");
   const comp = m.compendium_coverage || {};
   const band = m.band_coverage || {};
   const bandParts = [];
@@ -87,7 +88,7 @@ function coverageNote(dataset) {
       (ncHosts ? ` (${ncHosts} item hosts, ${ncElig != null ? ncElig + " options" : "sourced pool"})` : "") +
       ", Viktranium Experiment crafting" +
       (vikHosts ? ` (${vikHosts} item hosts, ${vikElig != null ? vikElig + " options" : "sourced pool"})` : "") +
-      ", and Sealed-in-Undeath seal-slot crafting" +
+      `, and Sealed-in-${sealSourced || "X"} seal-slot crafting` +
       (sealHosts ? ` (${sealHosts} item hosts, ${sealElig != null ? sealElig + " options" : "sourced pool"})` : ""),
     "<strong>Coverage:</strong> results reflect only verified, wiki-sourced data; ambiguous effects are quarantined and excluded",
     "<strong>Pending:</strong> the Dinosaur Bone Set Bonus augments (crafted and slotted on Isle of Dread hosts; sourced + browsable, activation awaits intrinsic named/raid set pieces)" +
