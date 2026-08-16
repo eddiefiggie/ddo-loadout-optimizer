@@ -10,11 +10,18 @@ const WIZARD_STEPS = ["intro", "character", "pool", "priorities", "results"];
 const FORGED = new Set(["warforged", "bladeforged"]);
 
 /** Can the flow advance FROM `stepId` given the collected state? Gates the
- *  Continue/Solve buttons. Unknown steps are permissive. */
+ *  Continue/Solve buttons. Unknown steps are permissive.
+ *
+ *  #91 (review fix) — the priorities gate must not count the Utility sentinel:
+ *  a fresh list is BORN carrying it (`newPriorityList`), so `length > 0` alone
+ *  passes for a player who ranked nothing at all, letting them advance and
+ *  solve with an empty ask. The sentinel-only query is still valid for the
+ *  solver (programmatic callers may pass it), so the fix lives here in the
+ *  wizard's gate, not in the solver. */
 function canAdvance(stepId, state) {
   if (stepId === "character") return !!state.race && Number(state.ml) > 0;
   if (stepId === "pool") return state.pool !== "owned" || !!state.ownedNames;
-  if (stepId === "priorities") return (state.priorities || []).length > 0;
+  if (stepId === "priorities") return (state.priorities || []).some((p) => p !== _utilitySentinel);
   return true;
 }
 /** Next step id after advancing from `stepId` (clamped at results). */
@@ -80,6 +87,16 @@ function canDeclareCredit(stat, vocab) {
   return !isPresenceOnly(stat, vocab) && !isUntypedOnly(stat, vocab);
 }
 
+// #91 (U4) — the Utility tier's sentinel priority name, resolved once across
+// runtimes (browser global from model.js; Node require) exactly as the shared
+// constants below are. One authority: the wizard must seed, accept, render, and
+// suppress EXACTLY the name the solver stage keys on, or the tier drifts into a
+// zero-scoring phantom priority.
+var _utilitySentinel = (typeof UTILITY_SENTINEL !== "undefined")
+  ? UTILITY_SENTINEL
+  // eslint-disable-next-line global-require
+  : require("./model.js").UTILITY_SENTINEL;
+
 /** Clean a stat->value bound map (caps/floors): keep only entries whose value is a
  *  finite number >= 0. Blank, null, negative, or non-numeric entries are dropped so
  *  a stray input never reaches the solver as a cap/floor.
@@ -93,6 +110,12 @@ function cleanBoundMap(m) {
   if (m && typeof m === "object") {
     for (const [stat, v] of Object.entries(m)) {
       if (v === "" || v == null) continue;
+      // #91 (U4/R15) — the Utility tier carries no bounds in v1. The UI never
+      // renders min/max inputs for the sentinel row, so this is the defensive
+      // second gate for a hand-edited backup or a stale map: a bound keyed to
+      // the sentinel must never reach the solver, where it would constrain a
+      // count the player was told has no Advanced controls.
+      if (stat === _utilitySentinel) continue;
       const n = Number(v);
       if (!Number.isFinite(n) || n < 0) continue;
       // Deliberately NOT canonicalized, unlike cleanCreditMap. Bound keys come
@@ -157,6 +180,10 @@ function cleanCreditMap(m, vocab) {
     for (const row of Object.values(m)) {
       if (!row) continue;
       const stat = canonical(String(row.stat == null ? "" : row.stat).trim()) || row.stat;
+      // #91 (U4/R15) — no declared credits on the Utility tier either, for the
+      // same defensive reason as cleanBoundMap's sentinel gate: the UI offers no
+      // credit control on that row, so any such entry is corrupt or hand-made.
+      if (stat === _utilitySentinel) continue;
       // A presence (on/off) stat has no magnitude to declare. Its gear lands in a
       // `stat||boolean` bucket, and the curated vocabulary has no boolean member,
       // so a magnitude credit would occupy a SEPARATE bucket and stack additively:
@@ -208,6 +235,14 @@ function creditIsUsable(v) {
  *  — so a half-typed credit row does not inflate the badge. Pure; unit-tested. */
 function advancedRowModel(stat, state, vocab) {
   const s = state || {};
+  // #91 (U4/R15) — the Utility tier row renders NO Advanced panel at all: no
+  // caps, no floors, no declared credits in v1. `suppressed` is the render gate
+  // (rankedHTML skips advancedHTML entirely), and the empty model beneath it
+  // keeps every consumer of this shape (badge, credits list) inert, so a stale
+  // bound in state can never surface a live-looking control on this row.
+  if (stat === _utilitySentinel) {
+    return { suppressed: true, canCredit: false, floor: null, cap: null, credits: [], badgeCount: 0 };
+  }
   // R6 as planned said an on/off row gets no control at all, on the premise that
   // a bound on a binary stat is meaningless. That premise is FALSE: the Bool
   // bucket is part of the stat's solver expression, so `min 1 Ghostly` is a
@@ -675,6 +710,87 @@ function curatedStats(dataset) {
   return pickerVocabulary(dataset).suggestions;
 }
 
+// ---- #91 (U4) — the Utility tier's wizard-side lifecycle ---------------------
+//
+// The tier's position/presence lives in the persisted priority-list state, never
+// closure state (docs/solutions/logic-errors/closure-scoped-ui-state-must-reset-
+// on-character-load.md): everything below is a pure list transform the state
+// init, add paths, and load path call, so the drag/remove/persist machinery
+// needs no sentinel-specific branches at all.
+
+/** #91 (U4/R1) — a freshly born priority list: empty of ranked stats, with the
+ *  Utility tier seeded at the bottom, on by default. Every place a NEW list is
+ *  created uses this (today: the wizard state init); a RESTORED list never does
+ *  — load-path presence is `healUtilityTier`'s decision (KTD8). Pure. */
+function newPriorityList() {
+  return [_utilitySentinel];
+}
+
+/** #91 (U4/R1) — where a newly added stat lands. While the Utility tier sits at
+ *  the very bottom (its seeded default), new stats slide in ABOVE it, so the
+ *  default experience stays "everything I ranked beats utility" no matter how
+ *  many stats are added after the seed. Once the player has dragged the tier
+ *  anywhere else — or removed it — adds append at the true bottom, exactly as
+ *  before the feature. Pure — returns a new array. */
+function insertAboveTrailingSentinel(ranked, stat) {
+  const out = (Array.isArray(ranked) ? ranked : []).slice();
+  const at = (out.length && out[out.length - 1] === _utilitySentinel) ? out.length - 1 : out.length;
+  out.splice(at, 0, stat);
+  return out;
+}
+
+/** #91 (U4/KTD8) — the load-path healing rule, beside `migratePriorities` in
+ *  spirit and in call site. `marked` is the save's `utility_tier_aware` flag:
+ *
+ *  - Marked (post-feature) save: restore VERBATIM — a player's removal or
+ *    dragged position is their decision and persists.
+ *  - Unmarked (pre-feature) save: the character "never had" the tier, so heal
+ *    by appending the sentinel at the bottom — the same zero-cost default a new
+ *    list gets — unless it is somehow already present (never duplicate).
+ *
+ *  Pure — returns a new array; an empty pre-feature list heals to just the
+ *  sentinel, which is a valid list. */
+function healUtilityTier(priorities, marked) {
+  const list = (Array.isArray(priorities) ? priorities : []).slice();
+  if (marked) return list;
+  if (!list.includes(_utilitySentinel)) list.push(_utilitySentinel);
+  return list;
+}
+
+/** #91 (review fix, beside healUtilityTier for the same reason) — the
+ *  RENDER-ONLY query for a restored record. `healUtilityTier` heals
+ *  `state.priorities` so the ranked list displays the tier, but `query` (the
+ *  record that was ACTUALLY solved, `rec.query`) is a separate object and a
+ *  healed-unmarked restore's query still lacks the sentinel — rendering it
+ *  verbatim skips right past `utilityCard`'s report-absent branch, so the "this
+ *  saved build predates utility tracking" disclosure never shows even though
+ *  the priority list now displays the tier.
+ *
+ *  Returns a NEW object with the sentinel appended to a copy of `targets` when
+ *  healing applies (unmarked AND the sentinel isn't already present); returns
+ *  `query` itself, same reference, otherwise. Pure — never mutates `query`,
+ *  so the caller's `query` (what actually reaches `buildModel`, `state.lastRun`,
+ *  and a later Save) stays exactly the solved record. A genuine re-solve goes
+ *  through `solve()`, which rebuilds the query from live (healed) state and
+ *  produces the real report. */
+function restoredRenderQuery(query, marked) {
+  const targets = (query && query.targets) || [];
+  if (marked || targets.includes(_utilitySentinel)) return query;
+  return Object.assign({}, query, { targets: targets.concat([_utilitySentinel]) });
+}
+
+/** #91 (U4/R15) — the datalist option list for both add-a-stat inputs
+ *  (`wz-stats`, `wz-stats2`): the picker vocabulary's suggestions plus the
+ *  Utility sentinel's display name. Seeded HERE and not into the vocabulary
+ *  itself: the sentinel is not an affix — it must never join `known` (free-typed
+ *  validation) or the canonical map, only the autocomplete, so a removed tier is
+ *  re-addable as a first-class entry rather than type-it-blind. Pure. */
+function datalistStats(vocab) {
+  const out = (vocab && Array.isArray(vocab.suggestions)) ? vocab.suggestions.slice() : [];
+  if (!out.includes(_utilitySentinel)) out.push(_utilitySentinel);
+  return out;
+}
+
 /** U11 (R15) — decide what adding `name` to `priorities` should produce. Pure: the
  *  caller owns the DOM and the rest of `state`, so this half is unit-testable while
  *  `addPriority` (inside the window-gated IIFE) stays a thin wrapper.
@@ -708,7 +824,17 @@ function curatedStats(dataset) {
 function resolvePriorityAdd(name, vocab, priorities) {
   const DN = _datasetNormalizer();
   const ranked = Array.isArray(priorities) ? priorities.slice() : [];
-  const v = vocab.canonical(String(name == null ? "" : name).trim());
+  const raw = String(name == null ? "" : name).trim();
+  // #91 (U4/R15) — the Utility tier is a first-class add even though it is not a
+  // vocab stat (it deliberately never joins `known`). Case-insensitive match on
+  // the display name, BEFORE canonicalization: the alias table knows nothing
+  // about it. A duplicate is a silent no-op, exactly like a duplicate stat; a
+  // re-add lands at the bottom — the tier's seeded default position.
+  if (raw.toLowerCase() === _utilitySentinel.toLowerCase()) {
+    if (ranked.includes(_utilitySentinel)) return { ok: false, priorities: ranked, substitutions: [] };
+    return { ok: true, priorities: ranked.concat([_utilitySentinel]), substitutions: [] };
+  }
+  const v = vocab.canonical(raw);
   if (!v) return { ok: false, priorities: ranked, substitutions: [] };
 
   const to = (DN && DN.expandedAwayFor) ? DN.expandedAwayFor(vocab, v) : null;
@@ -719,7 +845,8 @@ function resolvePriorityAdd(name, vocab, priorities) {
     }
     // Append then migrate the WHOLE list: the alias lands at its rank and expands in
     // place, so anything ranked below it is pushed down rather than dropped.
-    const proposed = ranked.concat([v]);
+    // (#91 U4/R1: "its rank" is above a bottom-seated Utility tier, which stays last.)
+    const proposed = insertAboveTrailingSentinel(ranked, v);
     const migrated = DN.migratePriorities(proposed, vocab);
     return { ok: true, priorities: migrated.priorities, substitutions: migrated.substitutions };
   }
@@ -729,7 +856,8 @@ function resolvePriorityAdd(name, vocab, priorities) {
              message: `"${v}" isn't a known affix in the dataset.` };
   }
   if (ranked.includes(v)) return { ok: false, priorities: ranked, substitutions: [] };
-  return { ok: true, priorities: ranked.concat([v]), substitutions: [] };
+  // #91 (U4/R1) — a new stat lands above a bottom-seated Utility tier.
+  return { ok: true, priorities: insertAboveTrailingSentinel(ranked, v), substitutions: [] };
 }
 
 // Composable affix BUNDLES — modelled on the DDO gear planner's "packages" (its
@@ -819,8 +947,12 @@ function resolveBundle(key, vocab) {
  *  Pure — returns a new array. This is the "place the picked selection into the
  *  priority order, then let the user adjust" step. */
 function addBundle(key, current, vocab) {
-  const next = (current || []).slice();
-  for (const affix of resolveBundle(key, vocab)) if (!next.includes(affix)) next.push(affix);
+  // #91 (U4/R1) — bundle affixes land above a bottom-seated Utility tier, same
+  // rule as a single add: the seeded default keeps every ranked stat above it.
+  let next = (current || []).slice();
+  for (const affix of resolveBundle(key, vocab)) {
+    if (!next.includes(affix)) next = insertAboveTrailingSentinel(next, affix);
+  }
   return next;
 }
 
@@ -858,7 +990,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -897,7 +1029,9 @@ if (typeof window !== "undefined" && window.App) {
     // free-typed input; `canonical` maps a typed value to the name gear carries. The
     // solver still accepts any typed affix — this gates suggestions, not input.
     const vocab = pickerVocabulary(dataset);
-    const allStats = vocab.suggestions;
+    // #91 (U4/R15) — suggestions plus the Utility tier's display name, so both
+    // add-a-stat datalists offer the removed tier back as a first-class entry.
+    const allStats = datalistStats(vocab);
 
     // U3 — distinct weapon `type` values the dataset actually carries, so the
     // handedness-gated chip list never offers a type with no items (KTD6).
@@ -931,7 +1065,10 @@ if (typeof window !== "undefined" && window.App) {
       // U2 — declared stat credits, keyed `stat||bonusType` so a stat can carry
       // more than one and reordering priorities cannot mis-associate them.
       declaredCredits: {},
-      pool: "all", ownedNames: null, priorities: [], slotConstraints: {}, constraintsDirty: false, lastRun: null,
+      // #91 (U4/R1) — a NEW list is born with the Utility tier seeded at the
+      // bottom, on by default. Seeding happens only here (list birth), never on
+      // load — load-path presence is healUtilityTier's decision (KTD8).
+      pool: "all", ownedNames: null, priorities: newPriorityList(), slotConstraints: {}, constraintsDirty: false, lastRun: null,
       characterName: "", loadedStale: false,
       // plan 003 U4 — set on load when a pre-U1 save is migrated to declared.
       twfMigrated: false,
@@ -1500,7 +1637,7 @@ if (typeof window !== "undefined" && window.App) {
         slot.querySelectorAll(".wz-toggle button[data-rpool]").forEach((x) => x.classList.toggle("on", x.dataset.rpool === state.pool));
       });
       const rsolve = document.getElementById("wz-radjust-solve");
-      if (rsolve) rsolve.onclick = () => { if (state.priorities.length) solve(false); };
+      if (rsolve) rsolve.onclick = () => { if (canAdvance("priorities", state)) solve(false); };
     }
 
     // U5/R9-R11 — the Share tab's content: pick a saved loadout, export it as a
@@ -1620,7 +1757,7 @@ if (typeof window !== "undefined" && window.App) {
         return `<li data-i="${i}" draggable="true">
         <span class="wz-grip" title="drag to reorder">⋮⋮</span>
         <span class="wz-rk">${i + 1}</span><span class="wz-nm">${esc(p)}${isPresenceOnly(p, vocab) ? ` <span class="rank-tag" title="On/off effect — the solver secures an item that has it. A min of 1 makes it a hard requirement; there is no magnitude to maximize.">on/off</span>` : ""}</span>
-        ${advancedHTML(p, i, adv)}
+        ${adv.suppressed ? "" : advancedHTML(p, i, adv)}
         <span class="wz-ctl"><button data-up="${i}" ${i === 0 ? "disabled" : ""} aria-label="move up">↑</button>
           <button data-down="${i}" ${i === state.priorities.length - 1 ? "disabled" : ""} aria-label="move down">↓</button>
           <button data-del="${i}" aria-label="remove">✕</button></span></li>`;
@@ -1918,7 +2055,7 @@ if (typeof window !== "undefined" && window.App) {
     let solving = false;
     async function solve(firstRun) {
       if (solving) return;
-      if (!state.priorities.length) return;
+      if (!canAdvance("priorities", state)) return;
       solving = true;
       const n = candidateItems().length;
       overlay(true, "Solving your loadout…", firstRun ? `searching ${n.toLocaleString()} eligible items · exact MILP` : "re-solving…");
@@ -1952,9 +2089,11 @@ if (typeof window !== "undefined" && window.App) {
               .filter((v) => v.category !== "augment" && state.ownedNames.has(v.source_item || v.variant_id))
               .flatMap((v) => v.category === "weapon" ? ["Main Hand", "Off Hand"] : [v.slot]))]
           : [];
+        // #91 (U3, KTD3) — the utility counting set rides as a buildModel
+        // ARGUMENT from the in-scope vocabulary, never on the persisted query.
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
-          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs);
+          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs, vocab.utilityCounting || null);
         const t0 = performance.now();
         // eslint-disable-next-line no-undef
         const result = await solveLexicographic(model, h);
@@ -2157,6 +2296,14 @@ if (typeof window !== "undefined" && window.App) {
           state.expandedAwayMigrated = _dnMig.migrationMessage(migrated.substitutions, droppedBounds, droppedCredits);
         }
       }
+      // #91 (U4/KTD8) — pre-feature save healing, beside the priority migration
+      // above for the same reason: both repair a restored list at the load
+      // boundary. An UNMARKED save (no `utility_tier_aware` in inputs — saved
+      // before the tier existed, or imported from a pre-feature backup) gets the
+      // Utility sentinel appended at the bottom, the same zero-cost default a new
+      // list is born with. A MARKED save restores verbatim: the player's removal
+      // or dragged position is their decision and persists. Never duplicates.
+      state.priorities = healUtilityTier(state.priorities, !!i.utility_tier_aware);
       state.slotConstraints = i.slotConstraints || {};
       state.constraintsDirty = false;   // loaded constraints are the saved state, not a pending change
       // #110 (U5/U6) — the load-path blocklist reconciliation: a save holding a
@@ -2173,17 +2320,22 @@ if (typeof window !== "undefined" && window.App) {
       // routes to priorities to re-solve (never a blank results view).
       if (stepAfterLoad(snap) === "results") {
         const query = rec.query || buildQuery(state, vocab);
+        // #91 (U3, KTD3) — same counting-set threading as the solve path above.
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
-          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs);
+          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs, vocab.utilityCounting || null);
         // fresh:false + the original stamp so a later Save preserves staleness (see saveCurrentCharacter).
         state.lastRun = { model, result: snap, query, fresh: false, stampedBuildId: rec.stampedBuildId || null };
         state.loadedStale = !!(rec.stampedBuildId && currentBuildId() && rec.stampedBuildId !== currentBuildId());
         state.step = "results";
         render();
         const box = document.getElementById("wz-results");
+        // #91 (review fix) — see restoredRenderQuery: a healed-unmarked restore
+        // renders from a sentinel-appended COPY, never `query` itself, so the
+        // report-absent utility card is reachable without touching the solved record.
+        const renderQuery = restoredRenderQuery(query, !!i.utility_tier_aware);
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result: snap, query, dataset, highs: null, onAfterRender: afterResultsRender });
+        if (box) renderResults(box, { model, result: snap, query: renderQuery, dataset, highs: null, onAfterRender: afterResultsRender });
         const stale = document.getElementById("wz-stale");
         if (stale) stale.classList.toggle("wz-hidden", !state.loadedStale);
       } else {
@@ -2594,7 +2746,7 @@ if (typeof window !== "undefined" && window.App) {
           if (cbar) cbar.classList.remove("wz-hidden");
         });
         const cres = document.getElementById("wz-cresolve");
-        if (cres) cres.onclick = () => { if (state.priorities.length) solve(false); };
+        if (cres) cres.onclick = () => { if (canAdvance("priorities", state)) solve(false); };
         // The Adjust & re-solve panel (U3/R6) now lives inside #wz-results, under
         // the tab bar, so it is populated + wired by fillAdjustSlot on every
         // renderResults call — not once here (it would not exist yet).

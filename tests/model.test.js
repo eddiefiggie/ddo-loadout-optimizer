@@ -1784,3 +1784,43 @@ test("U2: a USP-only item survives model pruning when only an element stat is ra
     M.setCrossAdd(data._crossAdd); // restore the real catalog's map
   }
 });
+
+// #91 (code review fix) — utilityCountingSet is a defaulted 11th positional
+// param. A forgotten call site would previously widen nothing and solve with
+// zero indicators, silently — no error anywhere in the pipeline. buildModel
+// must fail fast instead when the sentinel is ranked and the counting set was
+// never threaded, naming the missing argument (web/query.js is the reference
+// site: it threads it from `vocab.utilityCounting`, the dataset metadata).
+test("#91: sentinel ranked + no counting set throws, naming the missing argument", () => {
+  const A = v("A", "Ring", [["Intelligence", "Enhancement", 10]]);
+  assert.throws(
+    () => M.buildModel([A], { mlCap: 34, targets: ["Intelligence", M.UTILITY_SENTINEL] }),
+    /utilityCountingSet/,
+    "the error must name the missing argument"
+  );
+  assert.throws(
+    () => M.buildModel([A], { mlCap: 34, targets: ["Intelligence", M.UTILITY_SENTINEL] }),
+    /web\/query\.js/,
+    "the error must cite the reference call site"
+  );
+});
+
+test("#91: sentinel ranked + counting set null explicitly ALSO throws", () => {
+  const A = v("A", "Ring", [["Intelligence", "Enhancement", 10]]);
+  assert.throws(
+    () => M.buildModel([A], { mlCap: 34, targets: [M.UTILITY_SENTINEL] },
+      [], [], [], [], {}, [], [], {}, null),
+    /utilityCountingSet/
+  );
+});
+
+test("#91: sentinel absent + no counting set stays fine (pre-feature calls unaffected)", () => {
+  const A = v("A", "Ring", [["Intelligence", "Enhancement", 10]]);
+  assert.doesNotThrow(() => M.buildModel([A], { mlCap: 34, targets: ["Intelligence"] }));
+});
+
+test("#91: sentinel ranked + a real (even empty) counting set does not throw", () => {
+  const A = v("A", "Ring", [["Intelligence", "Enhancement", 10]]);
+  assert.doesNotThrow(() => M.buildModel([A], { mlCap: 34, targets: ["Intelligence", M.UTILITY_SENTINEL] },
+    [], [], [], [], {}, [], [], {}, new Set()));
+});

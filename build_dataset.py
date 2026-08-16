@@ -53,6 +53,7 @@ from src import value_corrections as value_corrections_mod
 from src import name_corrections as name_corrections_mod
 from src import helpless_fold as helpless_fold_mod
 from src import untyped_rankable as untyped_rankable_mod
+from src import utility_procs as utility_procs_mod
 from src import dr_qualifiers as dr_qualifiers_mod
 from src import type_corrections as type_corrections_mod
 from src import legendary_fold as legendary_fold_mod
@@ -241,6 +242,10 @@ NO_DROP_SOURCE_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "no_drop_source.json")
 UNTYPED_RANKABLE_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "untyped_rankable.json")
+# #91 (Utility tier) — adjudication of untyped weapon/off-hand proc names, the
+# population untyped_rankable's worn-slot rule deliberately excludes.
+UTILITY_PROCS_PATH = os.path.join(
+    HERE, "data", "seed", "compendium", "utility_procs.json")
 SPEED_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_enchantment.json")
 PARRYING_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "parrying_version.json")
 HEIGHTENED_AWARENESS_SHARD_PATH = os.path.join(
@@ -521,6 +526,18 @@ def build() -> dict:
     _untyped_allow, _untyped_quarantined = untyped_rankable_mod.load(UNTYPED_RANKABLE_PATH)
     _untyped_checked = untyped_rankable_mod.assert_adjudicated(
         planner_records, _untyped_allow, _untyped_quarantined)
+
+    # #91 (U1) — adjudicate the OTHER untyped population: weapon/off-hand-only
+    # proc names (Holy, Vampirism, the Banes...), which the worn-slot rule above
+    # deliberately excludes. Same seam and same reasons: after the rename so the
+    # adjudication is keyed on the canonical name. An un-dispositioned candidate
+    # fails the build, so a new untyped weapon proc is a reviewed event instead
+    # of a silent zero in the utility count. Allowed names feed
+    # metadata.utility_counting_set + utility_untyped_admitted below — never
+    # rankable_affixes (the declared-credit defect web/dataset.js documents).
+    _uproc_allow, _uproc_quarantined = utility_procs_mod.load(UTILITY_PROCS_PATH)
+    _uproc_checked = utility_procs_mod.assert_adjudicated(
+        planner_records, _uproc_allow, _uproc_quarantined)
 
     # #223 — a DR bypass qualifier is not a bonus type. Retype the unconditional
     # qualifiers (`-` + materials; wiki: no monster bypasses material DR) into one
@@ -872,6 +889,21 @@ def build() -> dict:
             "\n  ".join(f"{s} — {stat} {val}" for s, stat, val in _set_orphans))
 
     _rankable_list = rankable_affixes(planner_records, _untyped_allow)
+    # #91 (U1) — the Utility tier's counting vocabulary: (Bool presence names
+    # passing presence-minus-magnitude — the subtraction drops the four
+    # dual-nature names) ∪ (allow-dispositioned untyped proc names). Computed
+    # AFTER every correction/split above so demoted-to-presence affixes are
+    # seen, and against the SAME records rankable_affixes read, so the
+    # subtraction is exact. Stamped as metadata below; the app consumes the
+    # stamp rather than re-deriving it.
+    _utility_counting = utility_procs_mod.counting_set(
+        planner_records, _rankable_list, _uproc_allow)
+    # #91 (U3, KTD10) — the FULL presence-minus-magnitude population size, kept
+    # beside the tier-1 restriction for the coverage disclosure: it states how
+    # much of the derivable population v1 deliberately does not count yet.
+    _utility_presence_full = len(
+        utility_procs_mod.presence_counting_names(planner_records)
+        - set(_rankable_list))
     # #305 — per-channel helpless-spelling guard, item-attached channel: no
     # parsed_set_bonuses tier may still carry a fold-away helpless-damage
     # spelling (the set_parser parse seam folds them to `Damage to helpless
@@ -1271,6 +1303,30 @@ def build() -> dict:
                 "candidates": _untyped_checked,
                 "allowed": len(_untyped_allow),
                 "quarantined": len(_untyped_quarantined),
+            },
+            # #91 (U1) — the Utility tier's counting vocabulary and its
+            # untyped-proc adjudication disclosure. `utility_counting_set` is
+            # the authoritative name set a distinct-effect count may count;
+            # `utility_untyped_admitted` is its allow-dispositioned untyped
+            # half, which the picker adds as PRESENCE targets (suggest +
+            # on/off badge) — deliberately NOT rankable_affixes: a
+            # declared-credit control on Holy/Vampirism is the documented
+            # defect web/dataset.js warns against.
+            "utility_counting_set": _utility_counting,
+            "utility_untyped_admitted": sorted(_uproc_allow),
+            "utility_procs_coverage": {
+                "candidates": _uproc_checked,
+                "allowed": len(_uproc_allow),
+                "quarantined": len(_uproc_quarantined),
+                # #91 (U3, KTD10) — the counting set's Bool half is restricted
+                # to the curated tier-1 list; the names outside it are
+                # derivable, not quarantined, so the restriction is disclosed
+                # here rather than filed per name.
+                "tier1_size": len(utility_procs_mod.UTILITY_TIER1_PRESENCE),
+                "full_presence_population": _utility_presence_full,
+                "note": ("v1 counts the curated tier-1 presence subset; "
+                         "widening happens in measured batches per KTD10 "
+                         "(plan 2026-08-15-002)"),
             },
             # #223 — DR qualifier split. `kept_numeric` counts magnitudes now
             # sharing the single unconditional bucket (max, never sum);

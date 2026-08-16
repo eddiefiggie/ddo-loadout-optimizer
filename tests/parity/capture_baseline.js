@@ -19,7 +19,7 @@ const path = require("path");
 const fs = require("fs");
 const { buildModel } = require("../../web/model.js");
 const { solveLexicographic } = require("../../web/solver.js");
-const { normalizeDataset } = require("../../web/dataset.js");
+const { normalizeDataset, buildPickerVocabulary } = require("../../web/dataset.js");
 
 const ROOT = path.join(__dirname, "..", "..");
 const DATASET = path.join(ROOT, "web", "data", "items.json");
@@ -77,12 +77,25 @@ async function main() {
   }
 
   // 3. behavioral solves
+  // 2026-08-15 (#91 U8): the fixtures now rank the Utility sentinel, and
+  // buildModel fails fast when it is ranked without a counting set — thread it
+  // exactly as capture_golden.js and web/query.js do (vocab.utilityCounting).
+  // augmentSetDefs stays {} (positional), matching capture_golden.js: the
+  // parity universe was ratified without set-bonus augments. Queries resolve
+  // through capture_golden's resolveQuery for the same reason: the #211
+  // aliasTargets fixtures carry no raw `targets` list, and passing fx.query
+  // unresolved throws in buildModel (this harness had been unrunnable against
+  // the post-#211 fixture file; the golden harness is the reference reader).
+  const { resolveQuery } = require("./capture_golden.js");
+  const vocab = buildPickerVocabulary(dataset);
   const solves = {};
   for (const fx of fixtures) {
+    const { query } = resolveQuery(fx, vocab);
     const model = buildModel(
-      dataset.items, fx.query,
+      dataset.items, query,
       dataset.dino_inserts, dataset.nearly_complete, dataset.viktranium,
       dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel,
+      {}, vocab.utilityCounting || null,
     );
     const r = await solveLexicographic(model, highs);
     const chosen = (r.chosen || [])

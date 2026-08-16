@@ -1,0 +1,720 @@
+{
+ "_README": "Adjudication of UNTYPED weapon/off-hand proc names for the Utility tier (#91). The candidate rule in src/utility_procs.py is 'untyped + numeric + well-formed + every carrying slot is Weapon/Off Hand' - the deliberate complement of src/untyped_rankable.py's worn-slot rule, so the two gates' populations are disjoint. A candidate in NEITHER list fails the build, so a new untyped weapon proc is a reviewed event rather than a silent zero-count. Only 'allow' names enter metadata.utility_counting_set and metadata.utility_untyped_admitted (presence-path picker entry); they NEVER enter metadata.rankable_affixes - a declared-credit control on Holy/Vampirism is the documented defect web/dataset.js warns against.",
+ "_discipline": "exclude-until-verified. Add to 'allow' ONLY with wiki evidence (wiki_url + evidence + verified date) that the name is a player-felt utility effect worth counting. 'unreviewed' is an honest reason and marks the filed backlog; it is not a judgement that the name is noise. An empty 'allow' list counts zero untyped procs - the Bool presence half of the counting set is unaffected.",
+ "allow": [
+  {
+   "name": "Aberration Bane",
+   "items": 1,
+   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+   "verified": "2026-08-15",
+   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Anarchic",
+   "items": 106,
+   "wiki_url": "https://ddowiki.com/page/Alignment_damage_(weapon)",
+   "verified": "2026-08-15",
+   "evidence": "Holy weapons will deal 2d6 Good damage to Evil enemies; scaling variants (e.g. Holy 3) deal Xd6 on hit and also affect Neutral enemies.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Animal Bane",
+   "items": 18,
+   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+   "verified": "2026-08-15",
+   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Axiomatic",
+   "items": 18,
+   "wiki_url": "https://ddowiki.com/page/Alignment_damage_(weapon)",
+   "verified": "2026-08-15",
+   "evidence": "Holy weapons will deal 2d6 Good damage to Evil enemies; scaling variants (e.g. Holy 3) deal Xd6 on hit and also affect Neutral enemies.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Chaotic Outsider Bane",
+   "items": 2,
+   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+   "verified": "2026-08-15",
+   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Chilling",
+   "items": 191,
+   "wiki_url": "https://ddowiki.com/page/Chilling",
+   "verified": "2026-08-15",
+   "evidence": "This effect causes the edges of this weapon to become frozen to the touch, dealing (x)d6 ice damage on each hit.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Construct Bane",
+   "items": 105,
+   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+   "verified": "2026-08-15",
+   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Dragon Bane",
+   "items": 6,
+   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+   "verified": "2026-08-15",
+   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Elf Bane",
+   "items": 2,
+   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+   "verified": "2026-08-15",
+   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Evil Outsider Bane",
+   "items": 133,
+   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+   "verified": "2026-08-15",
+   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Giant Bane",
+   "items": 7,
+   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+   "verified": "2026-08-15",
+   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Holy",
+   "items": 197,
+   "wiki_url": "https://ddowiki.com/page/Alignment_damage_(weapon)",
+   "verified": "2026-08-15",
+   "evidence": "Holy weapons will deal 2d6 Good damage to Evil enemies; scaling variants (e.g. Holy 3) deal Xd6 on hit and also affect Neutral enemies.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Human Bane",
+   "items": 92,
+   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+   "verified": "2026-08-15",
+   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Humanoid Bane",
+   "items": 28,
+   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+   "verified": "2026-08-15",
+   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Lawful Outsider Bane",
+   "items": 2,
+   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+   "verified": "2026-08-15",
+   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Maiming",
+   "items": 157,
+   "wiki_url": "https://ddowiki.com/page/Maiming",
+   "verified": "2026-08-15",
+   "evidence": "Whenever you score a critical hit with this weapon it deals extra untyped damage depending on its critical multiplier: x2 1-6, x3 2-12, x4 3-18.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Monstrous Humanoid Bane",
+   "items": 90,
+   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+   "verified": "2026-08-15",
+   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Ooze Bane",
+   "items": 4,
+   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+   "verified": "2026-08-15",
+   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Plant Bane",
+   "items": 2,
+   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+   "verified": "2026-08-15",
+   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Reptilian Bane",
+   "items": 5,
+   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+   "verified": "2026-08-15",
+   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Undead Bane",
+   "items": 107,
+   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+   "verified": "2026-08-15",
+   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Unholy",
+   "items": 113,
+   "wiki_url": "https://ddowiki.com/page/Alignment_damage_(weapon)",
+   "verified": "2026-08-15",
+   "evidence": "Holy weapons will deal 2d6 Good damage to Evil enemies; scaling variants (e.g. Holy 3) deal Xd6 on hit and also affect Neutral enemies.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Vampirism",
+   "items": 161,
+   "wiki_url": "https://ddowiki.com/page/Vampirism",
+   "verified": "2026-08-15",
+   "evidence": "This weapon drains a tiny portion of the target's life force whenever it does damage.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  },
+  {
+   "name": "Vermin Bane",
+   "items": 8,
+   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+   "verified": "2026-08-15",
+   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+  }
+ ],
+ "quarantined": [
+  {
+   "name": "Acid",
+   "items": 7,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Acid Blast",
+   "items": 48,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Acidic",
+   "items": 100,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Anarchic Blast",
+   "items": 83,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Anarchic Burst",
+   "items": 4,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Antimagic Spike",
+   "items": 2,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Axiomatic Blast",
+   "items": 5,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Axiomatic Burst",
+   "items": 5,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Banishing",
+   "items": 80,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Bashing",
+   "items": 14,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Bewildering",
+   "items": 3,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Blazing",
+   "items": 93,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Bleeding",
+   "items": 75,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Bloodletter",
+   "items": 20,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Bludgeoning",
+   "items": 70,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Corroding",
+   "items": 4,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Coruscating",
+   "items": 124,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Craftable",
+   "items": 1,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Craftable Rune Arm",
+   "items": 39,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Critical Befouling",
+   "items": 7,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Critical Bewildering",
+   "items": 1,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Critical Weakening",
+   "items": 3,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Critical Wounding",
+   "items": 3,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Crushing",
+   "items": 56,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Destructive Acid",
+   "items": 91,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Disintegrate",
+   "items": 10,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Echoes of Angdrelve",
+   "items": 8,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Eldritch",
+   "items": 2,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Electrifying",
+   "items": 110,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Entropic",
+   "items": 103,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Evil Blast",
+   "items": 85,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Feeding",
+   "items": 14,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Feybane",
+   "items": 80,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Fiery",
+   "items": 113,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Finesse",
+   "items": 2,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Flaming",
+   "items": 21,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Flaming Blast",
+   "items": 27,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Force Blast",
+   "items": 114,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Fracturing",
+   "items": 9,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Freezing",
+   "items": 21,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Freezing Ice",
+   "items": 2,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Frost",
+   "items": 12,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Gashing",
+   "items": 54,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Ghostbane",
+   "items": 129,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Good Blast",
+   "items": 10,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Heartseeker",
+   "items": 19,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Hidden Effect: Increases all threat generated by",
+   "items": 1,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Holy Blast",
+   "items": 3,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Holy Burst",
+   "items": 15,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Icy Blast",
+   "items": 13,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Impactful",
+   "items": 154,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Improved Bashing",
+   "items": 2,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Improved Cold Augmentation",
+   "items": 1,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Jolting",
+   "items": 19,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Magma Surge",
+   "items": 2,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Maximum Charge Tier",
+   "items": 165,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Negative Blast",
+   "items": 2,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Negativity",
+   "items": 6,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Nightshade Venom",
+   "items": 6,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Paralyzing",
+   "items": 4,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Percussive Maintenance",
+   "items": 2,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Piercing",
+   "items": 52,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Poison",
+   "items": 6,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Poison Blast",
+   "items": 10,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Poisonous",
+   "items": 27,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Reverberating",
+   "items": 30,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Ribcracker",
+   "items": 9,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Rune Arm Imbue: Acid",
+   "items": 25,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Rune Arm Imbue: Bludgeon",
+   "items": 2,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Rune Arm Imbue: Bludgeon IV, Fire",
+   "items": 1,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Rune Arm Imbue: Bludgeon V, Fire",
+   "items": 2,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Rune Arm Imbue: Cold",
+   "items": 19,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Rune Arm Imbue: Electrical",
+   "items": 27,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Rune Arm Imbue: Evil Shot",
+   "items": 5,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Rune Arm Imbue: Fire",
+   "items": 32,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Rune Arm Imbue: Fire V, Bludgeon",
+   "items": 3,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Rune Arm Imbue: Force",
+   "items": 23,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Rune Arm Imbue: Knife Shot",
+   "items": 2,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Rune Arm Imbue: Light",
+   "items": 18,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Rune Arm Imbue: Sonic",
+   "items": 4,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Rune Arm Imbue: Tidal Shot",
+   "items": 4,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Screeching",
+   "items": 13,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Shock",
+   "items": 12,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Shocking Blast",
+   "items": 23,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Shrieking",
+   "items": 9,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Sirocco",
+   "items": 2,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Slashing",
+   "items": 44,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Smashing",
+   "items": 38,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Solar",
+   "items": 13,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Sonic Blast",
+   "items": 13,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Stabbing",
+   "items": 30,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Staggering",
+   "items": 2,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Sunburst",
+   "items": 2,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Sundering",
+   "items": 12,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Telekinetic",
+   "items": 4,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "The Dragging of the Depths",
+   "items": 6,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Thorny Crown of Madness",
+   "items": 4,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Tidal",
+   "items": 7,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Toxic",
+   "items": 11,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Unholy Burst",
+   "items": 1,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Unnatural Bane",
+   "items": 44,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Weakening",
+   "items": 82,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Wind Frenzy",
+   "items": 2,
+   "reason": "unreviewed"
+  },
+  {
+   "name": "Wounding",
+   "items": 36,
+   "reason": "unreviewed"
+  }
+ ]
+}

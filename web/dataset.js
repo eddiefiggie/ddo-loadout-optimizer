@@ -471,6 +471,41 @@ const PRESENCE_ALLOW = new Set([
                                                // effect on the Jidz-Tet'ka bracers
 ]);
 
+// #91 (U3, KTD10) — the Utility tier's v1 CURATED Bool counting list ("tier 1").
+// The full presence-minus-magnitude population (~800 names) blew the measured
+// perf gate at 7.7x the 2x budget, so per KTD10's designed fallback the v1
+// counting set admits a curated high-value subset and widens in MEASURED
+// BATCHES from here. Contents: the PRESENCE_ALLOW wiki-adjudicated named
+// effects, plus the plan's acceptance-example effects — Ghost Touch (AE4) and
+// Echo of Whelm's three procs (AE1/AE2, the feature's marquee case). A name
+// outside this list simply does not count in v1 — it is DERIVABLE from the
+// presence population, not a quarantine ruling, so nothing is filed per name.
+// Deliberately a SEPARATE constant from PRESENCE_ALLOW: that list's meaning is
+// "named effects the four-word cap wrongly hides" (picker visibility), and
+// entangling it with counting admission would make a future picker adjudication
+// silently widen the counting set unreviewed.
+// MIRRORED in src/utility_procs.py (the stamp derivation) — the stamped-set
+// parity test in tests/dataset.test.js guards the two copies against drift.
+const UTILITY_TIER1_PRESENCE = new Set([
+  // The plan's Product Contract examples (must count for AE1/AE2/AE4):
+  "Ghost Touch",
+  "Whelming Shockwave",
+  "Blunt Trauma",
+  "Lesser Boneshatter",
+  // The classic always-on utility archetype, pinned expected-in since U1:
+  "Feather Falling",
+  // The PRESENCE_ALLOW wiki-adjudicated named effects:
+  "Kick 'Em While They're Down",
+  "Way of the Sun Soul",
+  "Lifeblood of the Undead Prince",
+  "Path of the Fire Dragon",
+  "Path of the Guarding Stone",
+  "Brilliance of the Shattered Sun",
+  "Vile Grip of the Hidden Hand",
+  "Legendary Vile Grip of the Hidden Hand",
+  "Legendary Tet-zik, The Enlightened Change",
+]);
+
 /** #228 — every `Bool` presence name that reads like a named effect (it clears the
  *  noise filter) but is hidden anyway because it runs past the four-word cap, and
  *  has not been adjudicated onto PRESENCE_ALLOW. Sorted.
@@ -651,6 +686,15 @@ function buildPickerVocabulary(dataset) {
   for (const [name, type] of _craftingAffixTriples(ds)) {
     if (PRESENCE_TYPES.has(type) && _isPresenceTargetable(name)) { const c = canonical(name); suggest.add(c); presence.add(c); }
   }
+  // #91 (U1) — untyped weapon procs the utility-procs review ADMITTED (Holy,
+  // Vampirism... once evidenced). They join the picker on the PRESENCE path —
+  // suggested + on/off badge — and deliberately NOT via rankable_affixes: a
+  // declared-credit control on these names reopens the exact defect described
+  // at `magnitude` below (declaring "Holy 5" satisfies a floor arithmetically,
+  // so the solver drops the item that actually grants it).
+  for (const n of (meta.utility_untyped_admitted || [])) {
+    const c = canonical(n); if (c) { suggest.add(c); presence.add(c); }
+  }
   // `presence` means "appears as Bool on at least one item" — NOT "has no
   // magnitude". Four stats are both: Deception, Smoke Screen, Protection from
   // Evil, and Underwater Action ship a Bool line on some items and a real typed
@@ -701,6 +745,19 @@ function buildPickerVocabulary(dataset) {
     else typedSeen.add(c);
   }
   for (const c of untypedSeen) if (!typedSeen.has(c) && magnitude.has(c)) untypedOnly.add(c);
+
+  // #91 (U1) — the Utility tier's counting vocabulary, consumed from the build
+  // stamp (metadata.utility_counting_set = presence-minus-magnitude Bool names
+  // ∪ admitted untyped procs). The stamp is authoritative — the Python pipeline
+  // derives it with a mirror of the presence predicate above, so app and build
+  // agree; nothing here re-derives it. Canonicalized through the alias table so
+  // a counting predicate matches gear/augments/crafting by the ONE shared name.
+  // Empty for a cached pre-stamp dataset: the tier then counts nothing rather
+  // than counting an unreviewed name (exclude-until-verified).
+  const utilityCounting = new Set();
+  for (const n of (meta.utility_counting_set || [])) {
+    const c = canonical(n); if (c) utilityCounting.add(c);
+  }
 
   // known = the unfiltered union (canonicalized), plus every suggestion.
   const known = new Set();
@@ -804,7 +861,7 @@ function buildPickerVocabulary(dataset) {
   const labelMap = {};
   for (const key of labelKeys) labelMap[key] = provenanceLabels[key].to.slice();
   return { suggestions: [...suggest].sort(), known, canonical, presence, magnitude, untypedOnly,
-           expandedAway, provenanceLabels: labelMap };
+           utilityCounting, expandedAway, provenanceLabels: labelMap };
 }
 
 /** U10 — is this name an enchantment label an expansion stamps (as opposed to a bare
@@ -1018,5 +1075,5 @@ if (typeof window !== "undefined") {
   window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
 }
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
+  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK, UTILITY_TIER1_PRESENCE };
 }

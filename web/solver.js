@@ -72,6 +72,15 @@ var _isBothHandsWeapon = (typeof isBothHandsWeapon !== "undefined")
   // eslint-disable-next-line global-require
   : require("./model.js").isBothHandsWeapon;
 
+// #91 (U3, KTD1) — the Utility tier's sentinel priority token, owned by
+// model.js (single definition). Browser global; Node require — same bridge as
+// the helpers above, so the stage loop's special-case and buildModel's widening
+// condition can never compare against two different strings.
+var _UTILITY_SENTINEL = (typeof UTILITY_SENTINEL !== "undefined")
+  ? UTILITY_SENTINEL
+  // eslint-disable-next-line global-require
+  : require("./model.js").UTILITY_SENTINEL;
+
 // U2 (#290/#291) — cross-add source reader ({target: [source stats]}, installed
 // from metadata.cross_add by dataset.js). Resolved from cross-add.js — the
 // module that OWNS the one _CROSS_ADD instance (#300) — like the helpers above,
@@ -190,6 +199,17 @@ function buildProgram(model) {
   // (widenWithCrossAddSources in cross-add.js), which keeps the same items alive
   // through the dominance pre-filter.
   _widenWithCrossAddSources(targetSet);
+  // #91 (U3, KTD3) — CONDITIONAL utility widening, in LOCKSTEP with
+  // buildModel's (model.js): when the Utility sentinel is ranked, every
+  // counting-set name joins targetSet so the `targetSet.has(...)` gates below
+  // build buckets for every channel a utility effect can arrive through —
+  // worn affixes, augments, crafting picks, and set tiers. Conditional on the
+  // sentinel being in the targets, so a tier-removed query builds a
+  // byte-identical pre-feature program (the A/B fixture pins this).
+  const utilityEnabled = (model.targets || []).includes(_UTILITY_SENTINEL);
+  const utilityCountingSet = (utilityEnabled && model.utilityCountingSet
+    && model.utilityCountingSet.size) ? model.utilityCountingSet : null;
+  if (utilityCountingSet) for (const n of utilityCountingSet) targetSet.add(n);
 
   const xVars = [];
   model.worn.forEach((group) => {
@@ -1052,6 +1072,43 @@ function buildProgram(model) {
     extraConstraints.push(`${zs.map((z) => `+ ${z.value} ${z.name}`).join(" ")} >= ${floorValue}`);
   }
 
+  // #91 (U3, KTD2) — per-effect utility indicators. One binary u_e per
+  // counting-set name with ANY contribution in the built buckets, ceilinged by
+  // the CONTRIBUTION z vars in that effect's buckets: `u_e − Σz ≤ 0`. The z
+  // vars — not raw gate binaries — because each z already ANDs its own gates
+  // (item equipped, augment placed, craft chosen, set threshold fired), so
+  // every channel counts under one uniform rule. The binary ceiling makes
+  // duplicates free (R3): a second Ghost Touch raises Σz, not u_e. A name
+  // absent from every eligible variant mints nothing. Emitted HERE — after the
+  // last zByBucket push (set tiers above, mirroring the credit-floor placement
+  // note) — or a later-added channel's contributions would be invisible to the
+  // ceiling. Names are minted in sorted order so var numbering (and therefore
+  // the encoded program) is deterministic.
+  const utilityVars = [];
+  const utilityMeta = new Map(); // u var -> { name, zNames } (the stage + receipts read this)
+  if (utilityCountingSet) {
+    // One grouping pass over zByBucket (stat -> z names, bucket order preserved)
+    // instead of rescanning the whole map per counting-set name.
+    const zNamesByStat = new Map();
+    for (const [key, zs] of zByBucket) {
+      const stat = key.split("||")[0];
+      if (!utilityCountingSet.has(stat)) continue;
+      let list = zNamesByStat.get(stat);
+      if (!list) zNamesByStat.set(stat, (list = []));
+      for (const z of zs) list.push(z.name);
+    }
+    let uc = 0;
+    for (const name of [...utilityCountingSet].sort()) {
+      const zNames = zNamesByStat.get(name) || [];
+      if (!zNames.length) continue; // no carrier anywhere -> no indicator
+      const u = "u" + uc++;
+      extraVars.push(u);
+      utilityVars.push(u);
+      utilityMeta.set(u, { name, zNames });
+      extraConstraints.push(`${u} - ${zNames.join(" - ")} <= 0`);
+    }
+  }
+
   return {
     // creditBuckets (bucket key -> declared-credit floor) rides out for the
     // #322 visibility guard (visibleGateSet) rather than being re-derived.
@@ -1062,6 +1119,9 @@ function buildProgram(model) {
     flooredStats: Object.keys(model.floors || {}),
     forcedOffVars: forcedOffSlotVars(xVars, model.query && model.query.slotConstraints),
     extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, hostsVar, _zc: zc,
+    // #91 (U3) — the Utility tier's stage state: whether the sentinel is
+    // ranked, the per-effect indicator binaries, and their name/ceiling meta.
+    utilityEnabled, utilityVars, utilityMeta,
   };
 }
 
@@ -1120,8 +1180,10 @@ function encodeStage(program, { objectiveStat, objTerms, sense, locks, tieBreak,
       .concat(minVars.map((v, i) => `+ ${n + 1 + i} ${v}`));
     L.push(" obj: " + terms.join(" "));
   } else if (objTerms) {
-    // Arbitrary linear objective (e.g. the fewer-crafts generator minimizes the sum
-    // of the placement binaries). Alternatives-only; the optimum path never sets this.
+    // Arbitrary linear objective. Two users: the alternatives generators (e.g.
+    // the fewer-crafts generator minimizes the sum of the placement binaries)
+    // and the optimum path's Utility stage (#91 U3), which maximizes the sum
+    // of the per-effect indicator binaries when the sentinel priority solves.
     L.push(" obj: " + fmtExpr(objTerms, fb));
   } else {
     L.push(" obj: " + fmtExpr(effectiveExpr(program, objectiveStat), fb));
@@ -1232,13 +1294,17 @@ function structuralPinNames(program) {
           ...(program.memberVars || []), ...(program.setAugVars || [])];
 }
 
-function dropNoOpAugments(program, highs, tbRes, locks) {
+function dropNoOpAugments(program, highs, tbRes, locks, extraBase) {
   const placeVars = program.placeMeta ? [...program.placeMeta.keys()] : [];
   if (!placeVars.length || tbRes.Status !== "Optimal") return tbRes;
   const at = (name) => (tbRes.Columns[name] ? tbRes.Columns[name].Primal : 0);
   // Pin every structural pick. Augment placements are deliberately NOT pinned —
   // they are the only degree of freedom this stage has.
-  const pin = [];
+  // #91 (U3, KTD5) — `extraBase` carries the Utility count lock (when the tier
+  // is ranked): stat locks say nothing about presence effects, so without it
+  // this stage would happily strip a counted effect's only carrier augment as
+  // a "no-op". Threaded per-call, never mutated onto the shared program.
+  const pin = [...(extraBase || [])];
   pinVarsAt(pin, at, structuralPinNames(program));
   const res = highs.solve(encodeStage(program, {
     sense: "min", objTerms: placeVars.map((v) => ({ coef: 1, name: v })),
@@ -1264,7 +1330,7 @@ function dropNoOpAugments(program, highs, tbRes, locks) {
  *  placement counts by construction. Falls back to the prior result if the
  *  stage does not solve.
  */
-function preferColorlessSetAugments(program, highs, prevRes, locks) {
+function preferColorlessSetAugments(program, highs, prevRes, locks, extraBase) {
   const colorMeta = program.setAugColorMeta;
   if (!colorMeta || !colorMeta.size || prevRes.Status !== "Optimal") return prevRes;
   const at = (name) => (prevRes.Columns[name] ? prevRes.Columns[name].Primal : 0);
@@ -1273,7 +1339,8 @@ function preferColorlessSetAugments(program, highs, prevRes, locks) {
   // Objective already 0 (no copy fired a colored slot) -> the solve is a
   // guaranteed no-op; skip it. Subsumes the no-copies-placed case.
   if (!nonColorless.some((v) => at(v) > 0.5)) return prevRes;
-  const pin = [];
+  // #91 (U3, KTD5) — the Utility count lock rides along (see dropNoOpAugments).
+  const pin = [...(extraBase || [])];
   pinVarsAt(pin, at, structuralPinNames(program));
   // The settle stage's outcome, pinned at placement IDENTITY (the pu vars the
   // value gates ride on) — NOT at the per-color p vars: settle parks a
@@ -1359,6 +1426,7 @@ function breakdownByTarget(program, prim, precomputedVisible) {
   };
   const out = {};
   for (const stat of program.targetList) {
+    if (stat === _UTILITY_SENTINEL) continue; // #91 (KTD1) — not a stat; no per-stat parts
     const parts = [];
     for (const [key, zs] of program.zByBucket) {
       // U2 (#290/#291) — a cross-added bucket's parts appear under the target
@@ -1495,8 +1563,10 @@ function visibleGateSet(program, prim) {
   // count as feeding an uncapped tracked stat rather than being judged on its
   // capped siblings alone. (A floored stat that is also capped contributes via
   // the capped path unchanged.)
+  // #91 (KTD1) — the Utility sentinel is excluded from the stat universe: it is
+  // not a stat, owns no buckets, and must never enter the cap arithmetic.
   const statUniverse = [...new Set([...(program.targetList || []), ...Object.keys(capped),
-    ...(program.flooredStats || [])])];
+    ...(program.flooredStats || [])])].filter((s) => s !== _UTILITY_SENTINEL);
   const creditFloors = program.creditBuckets || new Map();
   const visible = new Set();
   const pending = new Map(); // gate -> Map(capped stat -> sum of deferred contributions)
@@ -1564,6 +1634,7 @@ function readSolution(res, program, precomputedVisible) {
   const chosen = program.xVars.filter((xv) => prim(xv.name) > 0.5).map((xv) => ({ slot: xv.slot, variant: xv.variant }));
   const effective = {};
   for (const stat of program.targetList) {
+    if (stat === _UTILITY_SENTINEL) continue; // #91 (KTD1) — not a stat; the count rides result.utilityCount
     // For a capped stat, the achieved value is min(cap, raw) — NOT the d_ variable.
     // In the optimum solve d_ is maximized so d_ == min(cap, raw), but an alternative
     // relaxes the lock and leaves d_ floating at its lower bound, which would misreport
@@ -1658,7 +1729,88 @@ function readSolution(res, program, precomputedVisible) {
       setAugmentsPlaced.push({ ...meta, slot_color: setAugColorByY.get(y) || "Colorless" });
     }
   }
-  return { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, tfPlaced, gsPlaced, jokerPlaced, membershipPlaced, setAugmentsPlaced };
+  const out = { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, tfPlaced, gsPlaced, jokerPlaced, membershipPlaced, setAugmentsPlaced };
+  // #91 (U3) — utility effects present in THIS primal, only when the tier is
+  // ranked (a tier-removed solve returns the exact pre-feature shape). Load-
+  // bearing check (review fix): an effect is present iff ANY backing z in its
+  // buckets actually fired — the u primals are NOT consulted. After the utility
+  // stage no objective pressures the u vars, so a later primal may satisfy the
+  // `>= count` lock with an arbitrary count-sized subset of u's up; reading u
+  // would under-report genuinely present effects nondeterministically. The
+  // #319 rule (never claim an effect no fired contribution carries) is
+  // preserved automatically: a floated u with no fired z still has no fired z,
+  // so it stays omitted. The report count is the deterministic truth and MAY
+  // exceed the stage-locked count (result.utilityCount is internal-only).
+  if (program.utilityEnabled) {
+    // #91 (U5, KTD6) — receipt attribution. Each reported effect credits ONE
+    // carrier by a deterministic, stated rule (R9): the FIRST carrier in the
+    // tie-break's item order — the lowest x-index among equipped items whose
+    // fired contribution feeds the effect's bucket. An augment placement has no
+    // solver-side host (color capacity is aggregate), so it credits its own
+    // variant_id; a craft pick credits the host item its meta names (resolved
+    // back to that host's x-index for ordering); a set tier credits the set.
+    // Built HERE, in readSolution, so the tieBreak:false alternatives path
+    // (solveConstrained) carries the identical guarded report for free.
+    // zGates/xIndex depend only on the fixed program, not the primal — memoized
+    // on the program so the 30-60 readSolution calls of an alternatives request
+    // don't rebuild them (the per-primal equippedIdx stays per-call).
+    if (!program._utilityStatic) {
+      const zg = new Map();
+      for (const [, zs] of program.zByBucket) for (const z of zs) zg.set(z.name, z.gates);
+      const xi = new Map();   // x var name -> its position in the tie-break's item order
+      program.xVars.forEach((xv, i) => xi.set(xv.name, i));
+      program._utilityStatic = { zGates: zg, xIndex: xi };
+    }
+    const { zGates, xIndex } = program._utilityStatic;
+    const equippedIdx = new Map(); // variant_id -> lowest equipped x-index (craft-host resolution)
+    program.xVars.forEach((xv, i) => {
+      if (prim(xv.name) > 0.5) {
+        const id = xv.variant.variant_id || xv.variant.source_item;
+        if (!equippedIdx.has(id)) equippedIdx.set(id, i);
+      }
+    });
+    const craftMetas = [program.ncMeta, program.rollMeta, program.vikMeta,
+      program.sealMeta, program.tfMeta, program.gsMeta];
+    const carrierOf = (gate) => {
+      const xi = xIndex.get(gate);
+      if (xi !== undefined) {
+        const v = program.xVars[xi].variant;
+        return { idx: xi, item: v.variant_id || v.source_item };
+      }
+      for (const mm of craftMetas) {
+        const m = mm && mm.get(gate);
+        if (m) return { idx: equippedIdx.has(m.item) ? equippedIdx.get(m.item) : Infinity, item: m.item };
+      }
+      const aug = program.placeMeta && program.placeMeta.get(gate);
+      if (aug) return { idx: Infinity, item: aug.variant_id };
+      const dino = program.dinoMeta && program.dinoMeta.get(gate);
+      if (dino) return { idx: Infinity, item: dino.name || dino.dino_type };
+      const set = program.setMeta && program.setMeta.get(gate);
+      if (set) return { idx: Infinity, item: set.set };
+      return null;
+    };
+    const utilityEffects = [];
+    const reportEffects = [];
+    for (const [, meta] of program.utilityMeta || []) {
+      // The z-backed presence predicate (see the block comment above): a
+      // backing contribution in the effect's buckets genuinely fired.
+      if (!meta.zNames.some((z) => prim(z) > 0.5)) continue;
+      utilityEffects.push({ name: meta.name, present: true });
+      const candidates = [];
+      for (const zn of meta.zNames) {
+        if (prim(zn) <= 0.5) continue;
+        for (const g of zGates.get(zn) || []) {
+          const c = carrierOf(g);
+          if (c) candidates.push(c);
+        }
+      }
+      candidates.sort((a, b) => (a.idx - b.idx) || String(a.item).localeCompare(String(b.item)));
+      reportEffects.push({ name: meta.name, item: candidates.length ? candidates[0].item : null });
+    }
+    out.utilityEffects = utilityEffects;
+    out.utilityReport = { count: reportEffects.length, effects: reportEffects };
+  }
+  return out;
 }
 
 /** Achieved value of `stat` under a set of floor locks (0 if the solve is not
@@ -1698,7 +1850,9 @@ async function solveLexicographic(model, highs) {
       fl.value = achieved >= fl.floor ? fl.floor : achieved;
     }
     const floorLocks = (list) => list.map((fl) => ({ stat: fl.stat, value: fl.value, floor: true }));
-    const probeStat = program.targetList[0] || floors[0].stat;
+    // #91 (KTD1) — the sentinel is never fed to the floors machinery's probe
+    // objective (effectiveExpr): use the first REAL ranked stat.
+    const probeStat = program.targetList.find((s) => s !== _UTILITY_SENTINEL) || floors[0].stat;
     const jointOk = () => highs.solve(encodeStage(program, { objectiveStat: probeStat, sense: "max", locks: floorLocks(floors) })).Status === "Optimal";
     for (let i = floors.length - 1; i >= 0 && !jointOk(); i--) {
       // Relax the lowest-priority floor to what is reachable under the others.
@@ -1710,8 +1864,39 @@ async function solveLexicographic(model, highs) {
     locks.push(...floorLocks(useFloors));
   }
 
+  // #91 (U3, KTD1) — the Utility stage's state. `utilityExtra` carries the
+  // achieved-count lock as a raw LP body threaded (per-call `extra`, never
+  // mutated onto the shared program) into EVERY solve after the sentinel's
+  // stage: later ranked stages, the tie-break, the fallback re-max, and both
+  // settle stages (KTD5). `>=`, not `=`: the indicators have no downward
+  // pressure (u_e ≤ Σz only), so a later solve is free to keep MORE effects
+  // but never fewer.
+  const utilityObjTerms = (program.utilityVars || []).map((u) => ({ coef: 1, name: u }));
+  const utilityExtra = [];
+  let utilityCount = null;
+
   for (const stat of program.targetList) {
-    const res = highs.solve(encodeStage(program, { objectiveStat: stat, sense: "max", locks }));
+    if (stat === _UTILITY_SENTINEL) {
+      // The Utility stage: maximize the distinct-effect count (Σ u_e) under
+      // the locks accumulated so far. Stats ranked BELOW the sentinel still
+      // get their stages after this one, solved with the count lock active —
+      // that ordering is exactly what dragging the tier means (R2).
+      const res = highs.solve(encodeStage(program, { objTerms: utilityObjTerms, sense: "max", locks, extra: utilityExtra }));
+      if (res.Status !== "Optimal") return { status: "infeasible", reason: `stage utility: ${res.Status}` };
+      const uprim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
+      // The achieved count, read from the primal by the BACKING z vars (an
+      // effect is present iff a contribution in its buckets fired) — at this
+      // stage's optimum Σu equals this count, since the objective pulls every
+      // ceilinged u_e up.
+      let count = 0;
+      for (const [, meta] of program.utilityMeta || []) {
+        if (meta.zNames.some((z) => uprim(z) > 0.5)) count++;
+      }
+      utilityCount = count;
+      if (count > 0) utilityExtra.push(`${program.utilityVars.join(" + ")} >= ${count}`);
+      continue;
+    }
+    const res = highs.solve(encodeStage(program, { objectiveStat: stat, sense: "max", locks, extra: utilityExtra }));
     if (res.Status !== "Optimal") return { status: "infeasible", reason: `stage ${stat}: ${res.Status}` };
     // #326 — only this stage's achieved value is needed; effectiveOf reads it
     // without paying readSolution's placement-array + visibility construction.
@@ -1721,16 +1906,33 @@ async function solveLexicographic(model, highs) {
     locks.push({ stat, value: val });
   }
 
-  const tb = highs.solve(encodeStage(program, { sense: "min", tieBreak: true, locks }));
-  const tbRes = tb.Status === "Optimal" ? tb : highs.solve(encodeStage(program, { objectiveStat: program.targetList.at(-1), sense: "max", locks }));
+  const tb = highs.solve(encodeStage(program, { sense: "min", tieBreak: true, locks, extra: utilityExtra }));
+  // #91 (KTD1) — the tie-break fallback's objectiveStat must never be the
+  // sentinel: re-max the LAST non-sentinel target, or — when the sentinel is
+  // the only entry — re-max the utility objective itself.
+  const tbFallback = () => {
+    const lastStat = [...program.targetList].reverse().find((s) => s !== _UTILITY_SENTINEL);
+    return lastStat != null
+      ? highs.solve(encodeStage(program, { objectiveStat: lastStat, sense: "max", locks, extra: utilityExtra }))
+      : highs.solve(encodeStage(program, { objTerms: utilityObjTerms, sense: "max", locks, extra: utilityExtra }));
+  };
+  const tbRes = tb.Status === "Optimal" ? tb : tbFallback();
   const finalRes = preferColorlessSetAugments(
-    program, highs, dropNoOpAugments(program, highs, tbRes, locks), locks);
+    program, highs, dropNoOpAugments(program, highs, tbRes, locks, utilityExtra), locks, utilityExtra);
   const prim = (name) => (finalRes.Columns[name] ? finalRes.Columns[name].Primal : 0);
   const visible = visibleGateSet(program, prim);
   const sol = readSolution(finalRes, program, visible);
 
   return {
     status: "optimal", perTarget, effective: sol.effective, chosen: sol.chosen,
+    // #91 (U3) — present only when the tier is ranked: the achieved distinct-
+    // effect count (a plain number, locked into every post-stage solve) and
+    // the load-bearing-checked effect list (U5 builds the full report).
+    ...(program.utilityEnabled
+      ? { utilityCount, utilityEffects: sol.utilityEffects || [],
+          // #91 (U5, KTD6) — the render/persist report: count + per-effect
+          // credited carriers, guarded and deterministic (built in readSolution).
+          utilityReport: sol.utilityReport || { count: 0, effects: [] } } : {}),
     augmentsPlaced: sol.augmentsPlaced, setsActive: sol.setsActive,
     dinoPlaced: sol.dinoPlaced, ncPlaced: sol.ncPlaced, rollPlaced: sol.rollPlaced,
     vikPlaced: sol.vikPlaced, sealPlaced: sol.sealPlaced, jokerPlaced: sol.jokerPlaced,
@@ -2075,8 +2277,44 @@ function modelStats(model) {
 // `opts.cap` bounds the per-axis re-solve budget so on-demand generation stays fast.
 function generateAlternatives(optimum, model, highs, opts = {}) {
   const program = optimum.program;
-  const targets = program.targetList;              // ranked priorities, in order
+  const targets = program.targetList;              // ranked priorities, in order (may include the Utility sentinel)
   const per = optimum.perTarget || optimum.effective;
+  // #91 (U7, KTD7) — the Utility sentinel is not a stat. It is excluded from
+  // every generic family's target iteration AND from all four lock-construction
+  // sites explicitly (a sentinel lock renders to empty terms and encodeStage
+  // silently skips it — relying on that would hide the bug, not fix it).
+  // Instead, each generic family threads the KTD1 count lock (give-relaxed,
+  // see utilityLock below; via the per-call `extra` channel — never mutated
+  // onto the shared program) into its re-solves whenever the sentinel ranks at
+  // or above the positions that family's lock idiom protects, so a set/craft/
+  // unranked trade can never silently shed a ranked-above utility effect.
+  const sentinelIdx = targets.indexOf(_UTILITY_SENTINEL);
+  const ranked = targets.filter((s) => s !== _UTILITY_SENTINEL);
+  // Review fix — the baseline is the optimum's GUARDED report count (the number
+  // the card/exports display), never the internal stage utilityCount: the two
+  // can differ (the report is z-backed and deterministic; the stage count is a
+  // lock-time value), and both the count lock and the more-utility family's
+  // strict-gain claim must be measured against what the player actually sees.
+  const optUtilityCount = program.utilityEnabled
+    ? (optimum.utilityReport ? optimum.utilityReport.count
+      : (optimum.utilityCount != null ? optimum.utilityCount : null))
+    : null;
+  // The count lock body against a given program's indicator vars (the unranked
+  // family re-builds its program, so the u-var names must come from THAT build;
+  // minting is name-sorted, so the names line up build-to-build). `>=`, not `=`:
+  // indicators have no downward pressure, so more effects stay legal.
+  // Review fix — the lock behaves like a RANKED STAT, not an ultra-priority:
+  // exact (`>= baseline`) only when the sentinel is ranked FIRST (position 0);
+  // otherwise the floor relaxes by alternativeGive, mirroring how ranked stats
+  // are relaxed, so a legal trade that sheds a couple of effects can surface
+  // (its loss is stated by alternatives.js cost accounting, never silent).
+  const utilityLock = (prog) => {
+    if (!(optUtilityCount > 0 && prog.utilityEnabled && (prog.utilityVars || []).length)) return [];
+    const floor = sentinelIdx === 0
+      ? optUtilityCount
+      : Math.max(0, optUtilityCount - alternativeGive(optUtilityCount));
+    return floor > 0 ? [`${prog.utilityVars.join(" + ")} >= ${floor}`] : [];
+  };
   // Caps bound the on-demand generation latency: each candidate is a full MILP solve
   // (~1s cold on a real dataset), so the generators are capped and skip the tie-break
   // second solve (tieBreak:false) — HiGHS is deterministic without it.
@@ -2088,7 +2326,14 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
   // (setGive) so completing a set stays a real trade instead of cratering the build.
   // A set that cannot fit inside that give is proven infeasible fast and dropped.
   const active = new Set((optimum.setsActive || []).map((s) => s.set));
-  const setLocks = targets.map((s) => ({ stat: s, value: per[s], give: setGive(per[s]) }));
+  const setLocks = ranked.map((s) => ({ stat: s, value: per[s], give: setGive(per[s]) }));
+  // Locks all targets → the count lock always rides when the tier is ranked.
+  const setExtra = sentinelIdx !== -1 ? utilityLock(program) : [];
+  // With the sentinel ranked FIRST the top priority to maximize is the first
+  // real stat; with the sentinel as the ONLY entry, maximize the count itself.
+  const setObjective = ranked.length
+    ? { objectiveStat: ranked[0] }
+    : { objTerms: (program.utilityVars || []).map((u) => ({ coef: 1, name: u })) };
   const seenSets = new Set();
   let sCount = 0, sTries = 0;
   for (const [setVar, meta] of program.setMeta || []) {
@@ -2096,7 +2341,7 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
     if (active.has(meta.set) || seenSets.has(meta.set)) continue;
     seenSets.add(meta.set);
     sTries++;
-    const sol = solveConstrained(program, highs, { objectiveStat: targets[0], locks: setLocks, extra: [`${setVar} = 1`], tieBreak: false });
+    const sol = solveConstrained(program, highs, { ...setObjective, locks: setLocks, extra: [`${setVar} = 1`, ...setExtra], tieBreak: false });
     if (sol.status === "optimal" && !sameChosen(sol, optimum)) { out.push({ sol, gainAxis: "set", meta: { set: meta.set } }); sCount++; }
   }
 
@@ -2107,13 +2352,22 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
   let rCount = 0;
   outer:
   for (let i = 0; i < targets.length; i++) {
+    if (targets[i] === _UTILITY_SENTINEL) continue;            // #91 (KTD7) — not a stat, never a pair member
     for (let j = i + 1; j < targets.length; j++) {
+      if (targets[j] === _UTILITY_SENTINEL) continue;          // #91 (KTD7)
       if (rCount >= cap.rebalance) break outer;
       rCount++;
-      const locks = targets.slice(0, j).map((s, k) => (k === i
-        ? { stat: s, value: per[s], give: alternativeGive(per[s]) }
-        : { stat: s, value: per[s] }));
-      const sol = solveConstrained(program, highs, { objectiveStat: targets[j], locks, tieBreak: false });
+      const locks = targets.slice(0, j)
+        .filter((s) => s !== _UTILITY_SENTINEL)                // #91 (KTD7) — no sentinel lock entry
+        .map((s) => (s === targets[i]
+          ? { stat: s, value: per[s], give: alternativeGive(per[s]) }
+          : { stat: s, value: per[s] }));
+      // This idiom locks the positions before the maximized stat, so the count
+      // lock rides exactly when the sentinel ranks before targets[j]; a tier
+      // ranked BELOW the maximized stat is fair game to re-rank, matching what
+      // the lexicographic order means.
+      const rebExtra = (sentinelIdx !== -1 && sentinelIdx < j) ? utilityLock(program) : [];
+      const sol = solveConstrained(program, highs, { objectiveStat: targets[j], locks, extra: rebExtra, tieBreak: false });
       // Only a real trade: the traded-to priority must actually rise above the optimum.
       if (sol.status === "optimal" && !sameChosen(sol, optimum) && (sol.effective[targets[j]] ?? 0) > (per[targets[j]] ?? 0))
         out.push({ sol, gainAxis: "rebalance", meta: { from: targets[i], to: targets[j] } });
@@ -2126,16 +2380,20 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
   // optimum, relax the lowest priority and try once more.
   const targetSet = new Set(targets);
   const unrankedCandidates = [...modelStats(model)].filter((s) => !targetSet.has(s)).slice(0, cap.unranked);
-  const originalExact = targets.map((s) => ({ stat: s, value: per[s] }));
+  const originalExact = ranked.map((s) => ({ stat: s, value: per[s] }));   // #91 (KTD7) — no sentinel lock entry
   for (const u of unrankedCandidates) {
     const p2 = buildProgram({ ...model, targets: [...model.targets, u] });
     if (!p2.xVars.length) continue;
-    let sol = solveConstrained(p2, highs, { objectiveStat: u, locks: originalExact, tieBreak: false });
+    // Locks all ranked targets → the count lock always rides when the tier is
+    // ranked. Built against p2's OWN indicator vars (this family re-builds the
+    // program; sorted minting keeps the names aligned with the count).
+    const unrExtra = sentinelIdx !== -1 ? utilityLock(p2) : [];
+    let sol = solveConstrained(p2, highs, { objectiveStat: u, locks: originalExact, extra: unrExtra, tieBreak: false });
     let zeroCost = true;
-    if (sol.status === "optimal" && sameChosen(sol, optimum) && targets.length) {
+    if (sol.status === "optimal" && sameChosen(sol, optimum) && ranked.length) {
       zeroCost = false;
       const relaxLowest = originalExact.map((l, k) => (k === originalExact.length - 1 ? { ...l, give: alternativeGive(l.value) } : l));
-      sol = solveConstrained(p2, highs, { objectiveStat: u, locks: relaxLowest, tieBreak: false });
+      sol = solveConstrained(p2, highs, { objectiveStat: u, locks: relaxLowest, extra: unrExtra, tieBreak: false });
     }
     if (sol.status === "optimal" && !sameChosen(sol, optimum)) out.push({ sol, gainAxis: "unranked", meta: { stat: u, zeroCost } });
   }
@@ -2157,9 +2415,13 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
     + (optimum.ncPlaced || []).length + (optimum.vikPlaced || []).length + (optimum.sealPlaced || []).length
     + (optimum.tfPlaced || []).length + (optimum.gsPlaced || []).length;
   if (craftVars.length && optCrafts > 0) {
-    const relaxedAll = targets.map((s) => ({ stat: s, value: per[s], give: alternativeGive(per[s]) }));
+    const relaxedAll = ranked.map((s) => ({ stat: s, value: per[s], give: alternativeGive(per[s]) }));   // #91 (KTD7) — no sentinel lock entry
+    // Locks all targets → the count lock always rides when the tier is ranked
+    // (a "fewer crafts" build that drops the counted effect's only carrier
+    // would silently shed what the player ranked for).
+    const craftExtra = sentinelIdx !== -1 ? utilityLock(program) : [];
     const objTerms = craftVars.map((name) => ({ coef: 1, name }));
-    const sol = solveConstrained(program, highs, { objTerms, sense: "min", locks: relaxedAll, tieBreak: false });
+    const sol = solveConstrained(program, highs, { objTerms, sense: "min", locks: relaxedAll, extra: craftExtra, tieBreak: false });
     const solCrafts = sol.status === "optimal"
       ? (sol.augmentsPlaced || []).length + (sol.dinoPlaced || []).length
         + (sol.ncPlaced || []).length + (sol.vikPlaced || []).length + (sol.sealPlaced || []).length
@@ -2168,6 +2430,30 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
     // Only surface when it genuinely uses fewer crafts (a same-count different build
     // would headline "0 fewer crafting steps").
     if (sol.status === "optimal" && !sameChosen(sol, optimum) && solCrafts < optCrafts) out.push({ sol, gainAxis: "crafts", meta: { optCrafts } });
+  }
+
+  // (e) more-utility — #91 (U7, KTD7/R11): the Utility tier's OWN family, the
+  // only axis the tier participates in. Follows the unranked shape: maximize
+  // the indicator sum with the ranked targets locked exact (a zero-cost strict
+  // gain), and if that cannot strictly beat the optimum's count, relax every
+  // ranked target by alternativeGive and try once more. No count lock here —
+  // this family maximizes the count itself. Surfaced ONLY on a strictly
+  // greater achieved count (strict `>` at the claim site — the superlative-
+  // claim rule), and BOTH sides of that comparison are guarded-report counts
+  // (optUtilityCount is the optimum's utilityReport.count — review fix): a
+  // claim of "more utility" must never rest on an effect no fired contribution
+  // carries, and never advertise a gain the optimum's card already displays.
+  if (program.utilityEnabled && optUtilityCount != null && (program.utilityVars || []).length) {
+    const uObjTerms = program.utilityVars.map((u) => ({ coef: 1, name: u }));
+    const countOf = (sol) => (sol.utilityReport ? sol.utilityReport.count : 0);
+    const exact = ranked.map((s) => ({ stat: s, value: per[s] }));
+    let sol = solveConstrained(program, highs, { objTerms: uObjTerms, sense: "max", locks: exact, tieBreak: false });
+    if (!(sol.status === "optimal" && countOf(sol) > optUtilityCount)) {
+      const relaxed = ranked.map((s) => ({ stat: s, value: per[s], give: alternativeGive(per[s]) }));
+      sol = solveConstrained(program, highs, { objTerms: uObjTerms, sense: "max", locks: relaxed, tieBreak: false });
+    }
+    if (sol.status === "optimal" && !sameChosen(sol, optimum) && countOf(sol) > optUtilityCount)
+      out.push({ sol, gainAxis: "utility", meta: { from: optUtilityCount, to: countOf(sol) } });
   }
 
   return out;

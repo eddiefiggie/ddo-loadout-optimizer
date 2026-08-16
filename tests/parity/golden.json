@@ -1,8 +1,8 @@
 {
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
- "generated": "2026-08-09",
+ "generated": "2026-08-15",
  "dataset": "web/data/items.json (9045 items)",
- "fixture_count": 19,
+ "fixture_count": 22,
  "solves": {
   "heroic-str-melee": {
    "status": "optimal",
@@ -94,7 +94,7 @@
     },
     {
      "slot": "Belt",
-     "variant": "Belt of the Burrower"
+     "variant": "Legendary Vistani Fighter's Sash"
     },
     {
      "slot": "Boots",
@@ -102,7 +102,7 @@
     },
     {
      "slot": "Bracers",
-     "variant": "Legendary Bracers of the Fallen Hero"
+     "variant": "Legendary Green Dragonscale Bracers"
     },
     {
      "slot": "Cloak",
@@ -118,11 +118,15 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Circlet of Shar"
+     "variant": "Duergarcraft Cowl"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Echo of Whelm"
     },
     {
      "slot": "Necklace",
-     "variant": "Celestial Insignia"
+     "variant": "Pendant of Crippling Strikes"
     },
     {
      "slot": "Off Hand",
@@ -183,15 +187,19 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Cowl of the Drow Devotee"
+     "variant": "The Anguished Mind"
     },
     {
      "slot": "Main Hand",
-     "variant": "Legendary Calamitous Bastard Sword"
+     "variant": "Echo of Whelm"
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Climber's Remembrance"
+     "variant": "Legendary Pendant of Crippling Strikes"
+    },
+    {
+     "slot": "Off Hand",
+     "variant": "Legendary Cataclysmic Buckler"
     }
    ]
   },
@@ -213,8 +221,20 @@
      "variant": "Legendary Duergarcraft Docent"
     },
     {
+     "slot": "Belt",
+     "variant": "Belt of the Sun Soul"
+    },
+    {
      "slot": "Boots",
      "variant": "Legendary Demonic Rush"
+    },
+    {
+     "slot": "Bracers",
+     "variant": "Legendary Jidz-Tet'ka"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Legendary Duergarcraft Cloak"
     },
     {
      "slot": "Goggles",
@@ -226,11 +246,15 @@
     },
     {
      "slot": "Main Hand",
-     "variant": "Legendary Calamitous Bastard Sword"
+     "variant": "Echo of Whelm"
     },
     {
      "slot": "Necklace",
-     "variant": "Dracolich's Eye"
+     "variant": "Legendary Pendant of Crippling Strikes"
+    },
+    {
+     "slot": "Off Hand",
+     "variant": "Legendary Cataclysmic Buckler"
     },
     {
      "slot": "Trinket",
@@ -695,7 +719,7 @@
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Docent of the Artblade's Reflection"
+     "variant": "Vestments of the Sun Soul"
     },
     {
      "slot": "Belt",
@@ -706,8 +730,12 @@
      "variant": "Legendary Auspicious Bracers"
     },
     {
+     "slot": "Cloak",
+     "variant": "Legendary Gravekeeper's Mystic Cloak"
+    },
+    {
      "slot": "Gloves",
-     "variant": "Baron Aubrecker's Monogrammed Gloves"
+     "variant": "Legendary Darstil's Gloves"
     },
     {
      "slot": "Goggles",
@@ -719,11 +747,11 @@
     },
     {
      "slot": "Main Hand",
-     "variant": "Caustica, the Volley of Pain"
+     "variant": "Legendary Calamitous Bastard Sword"
     },
     {
      "slot": "Necklace",
-     "variant": "Astral Spore Pendant"
+     "variant": "Legendary Pendant of Crippling Strikes"
     },
     {
      "slot": "Off Hand",
@@ -754,11 +782,11 @@
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Docent of the Artblade's Reflection"
+     "variant": "Chain Shirt of Toppling (level 12)"
     },
     {
      "slot": "Belt",
-     "variant": "Belt of the Burrower"
+     "variant": "Belt of the Sun Soul"
     },
     {
      "slot": "Bracers",
@@ -767,6 +795,10 @@
     {
      "slot": "Cloak",
      "variant": "Legendary Gravekeeper's Mystic Cloak"
+    },
+    {
+     "slot": "Gloves",
+     "variant": "Legendary Darstil's Gloves"
     },
     {
      "slot": "Helmet",
@@ -809,7 +841,7 @@
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Bittersnow"
+     "variant": "Vestments of the Sun Soul"
     },
     {
      "slot": "Belt",
@@ -820,8 +852,16 @@
      "variant": "Legendary Doctor Gustav's Rubber Boots"
     },
     {
+     "slot": "Bracers",
+     "variant": "Legendary Jidz-Tet'ka"
+    },
+    {
      "slot": "Cloak",
      "variant": "Legendary Downcast Heavy Cloak"
+    },
+    {
+     "slot": "Gloves",
+     "variant": "Deadringers"
     },
     {
      "slot": "Helmet",
@@ -833,7 +873,7 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Amber Pendant"
+     "variant": "Legendary Pendant of Crippling Strikes"
     },
     {
      "slot": "Off Hand",
@@ -842,6 +882,10 @@
     {
      "slot": "Ring",
      "variant": "Duskbone Ring"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Lionheart Ring"
     }
    ]
   },
@@ -1016,7 +1060,7 @@
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Baphomet's Brutality"
+     "variant": "Vestments of the Sun Soul"
     },
     {
      "slot": "Belt",
@@ -1035,8 +1079,20 @@
      "variant": "Legendary Drider's Vision"
     },
     {
+     "slot": "Helmet",
+     "variant": "Cowl of the Drow Devotee"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Echo of Whelm"
+    },
+    {
      "slot": "Necklace",
-     "variant": "Astral Spore Pendant"
+     "variant": "Legendary Pendant of Crippling Strikes"
+    },
+    {
+     "slot": "Off Hand",
+     "variant": "Legendary Cataclysmic Buckler"
     }
    ]
   },
@@ -1053,7 +1109,7 @@
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Baphomet's Brutality"
+     "variant": "Vestments of the Sun Soul"
     },
     {
      "slot": "Belt",
@@ -1072,8 +1128,20 @@
      "variant": "Legendary Drider's Vision"
     },
     {
+     "slot": "Helmet",
+     "variant": "Cowl of the Drow Devotee"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Echo of Whelm"
+    },
+    {
      "slot": "Necklace",
-     "variant": "Astral Spore Pendant"
+     "variant": "Legendary Pendant of Crippling Strikes"
+    },
+    {
+     "slot": "Off Hand",
+     "variant": "Legendary Cataclysmic Buckler"
     }
    ]
   },
@@ -1097,8 +1165,16 @@
      "variant": "Epic Purging the Pantheon"
     },
     {
+     "slot": "Bracers",
+     "variant": "Bracers of the Sun Soul"
+    },
+    {
      "slot": "Goggles",
      "variant": "Drider's Vision"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Echo of Whelm"
     },
     {
      "slot": "Off Hand",
@@ -1127,7 +1203,11 @@
     },
     {
      "slot": "Boots",
-     "variant": "Bulette-Armored Boots"
+     "variant": "Legendary Lightning Railworker's Boots"
+    },
+    {
+     "slot": "Bracers",
+     "variant": "Bracers of the Sun Soul"
     },
     {
      "slot": "Cloak",
@@ -1139,11 +1219,11 @@
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Eyes of Enlightenment"
+     "variant": "Legendary Blazing Sniper's Sights"
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Alchemist's Crown"
+     "variant": "Legendary Flame Priest's Focus"
     },
     {
      "slot": "Main Hand",
@@ -1151,7 +1231,7 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Alchemist's Pendant"
+     "variant": "Pendant of Crippling Strikes"
     },
     {
      "slot": "Off Hand",
@@ -1168,6 +1248,153 @@
     {
      "slot": "Trinket",
      "variant": "Legendary Library Card"
+    }
+   ]
+  },
+  "utility-ab-kinetic-ml34-baseline": {
+   "status": "optimal",
+   "perTarget": {
+    "Kinetic Lore": 68
+   },
+   "effective": {
+    "Kinetic Lore": 68
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Downcast Robe"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Legendary Cloak of Autumn"
+    },
+    {
+     "slot": "Goggles",
+     "variant": "Red Wizard's Sight"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Faedark Faerielights"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Blessed Longsword of the Undying Age"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Legendary Torc of Prince Raiyum-de II"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Ring of Spell Storing"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Bottled Rainstorm"
+    }
+   ]
+  },
+  "utility-ab-kinetic-ml34": {
+   "status": "optimal",
+   "perTarget": {
+    "Kinetic Lore": 68
+   },
+   "effective": {
+    "Kinetic Lore": 68
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Downcast Robe"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Belt of the Sun Soul"
+    },
+    {
+     "slot": "Boots",
+     "variant": "Piston Boots"
+    },
+    {
+     "slot": "Bracers",
+     "variant": "Legendary Jidz-Tet'ka"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Legendary Cloak of Autumn"
+    },
+    {
+     "slot": "Gloves",
+     "variant": "Legendary Darstil's Gloves"
+    },
+    {
+     "slot": "Goggles",
+     "variant": "Red Wizard's Sight"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Faedark Faerielights"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Echo of Whelm"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Legendary Torc of Prince Raiyum-de II"
+    },
+    {
+     "slot": "Off Hand",
+     "variant": "Legendary Cataclysmic Buckler"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Clouded Dreams"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Ring of Spell Storing"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Bottled Rainstorm"
+    }
+   ]
+  },
+  "utility-removed-complex-blocklist-topaz-ml36": {
+   "status": "optimal",
+   "perTarget": {
+    "Melee Power": 42,
+    "Balance": 55
+   },
+   "effective": {
+    "Melee Power": 42,
+    "Balance": 55
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Baphomet's Brutality"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Belt of the Burrower"
+    },
+    {
+     "slot": "Bracers",
+     "variant": "Fabricator's Bracers"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Legendary Earthen Mantle"
+    },
+    {
+     "slot": "Goggles",
+     "variant": "Legendary Drider's Vision"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Astral Spore Pendant"
     }
    ]
   }

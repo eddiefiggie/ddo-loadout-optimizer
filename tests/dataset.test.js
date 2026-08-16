@@ -257,6 +257,37 @@ test("U6/R4: a sentence-shaped proc line stays out of suggestions but remains fr
   assert.ok(v.known.has("On a Critical Hit, this weapon applies the Shaken debuff."), "but it stays free-typeable");
 });
 
+// #91 (U3, KTD1) — the Utility tier's sentinel rides the priority list as a
+// token, so it must never collide with anything a priority can legitimately
+// name: a dataset affix, a picker vocabulary entry, or an alias key (a
+// collision would let real gear score against — or be rewritten into — the
+// tier row). Checked against the BUILT catalog so a future harvest that ships
+// an affix literally named "Utility effects" fails here, not in a solve.
+test("#91 U3: the Utility sentinel collides with no affix name, vocab entry, or alias key", () => {
+  const SENT = require("../web/model.js").UTILITY_SENTINEL;
+  assert.strictEqual(typeof SENT, "string");
+  assert.ok(SENT.length > 0);
+  // (1) no affix NAME on any source: item affixes, scaling stats, set-tier stats.
+  const affixNames = new Set();
+  for (const it of realData.items || []) {
+    for (const a of it.affixes || []) { affixNames.add(a.name); if (a.stat) affixNames.add(a.stat); }
+    for (const s of it.scaling || []) affixNames.add(s.stat);
+    for (const t of it.parsed_set_bonuses || []) for (const a of t.affixes || []) affixNames.add(a.stat);
+  }
+  assert.ok(!affixNames.has(SENT), "no dataset affix carries the sentinel as its name");
+  // (2) no picker vocabulary entry — known is the unfiltered union of every
+  // affix source plus the registry, so this covers the crafting pools too.
+  const v = buildPickerVocabulary(realData);
+  assert.ok(!v.known.has(SENT), "the sentinel is not a known/free-typeable affix name");
+  assert.ok(!v.suggestions.includes(SENT), "the sentinel is not a picker suggestion");
+  assert.ok(!v.utilityCounting.has(SENT), "the sentinel is not itself a counted effect");
+  // (3) no alias key or alias target — canonicalization must be identity on it.
+  const aliases = (realData.metadata || {}).affix_aliases || {};
+  assert.ok(!Object.prototype.hasOwnProperty.call(aliases, SENT), "the sentinel is not an alias key");
+  assert.ok(!Object.values(aliases).includes(SENT), "no alias resolves TO the sentinel");
+  assert.strictEqual(v.canonical(SENT), SENT, "canonical() leaves the sentinel untouched");
+});
+
 // ---------------------------------------------------------------------------
 // U1 (plan 2026-08-05-001, #136) — retire names the build expands away.
 // `src/umbrella.py` rewrites "Well Rounded" / "All Ability Scores" into the six
@@ -1526,6 +1557,125 @@ test("#316: every built augment_set_def carries the seven-color matrix", () => {
   for (const n of names) {
     assert.deepStrictEqual(defs[n].fits_slots,
       ["Blue", "Colorless", "Green", "Orange", "Purple", "Red", "Yellow"], n);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// #91 (U1) — the Utility tier's counting vocabulary, consumed from the build
+// stamp. Admitted untyped procs join the picker on the PRESENCE path (suggest +
+// on/off badge, no Advanced credit/bound controls — NOT rankable_affixes);
+// vocab.utilityCounting exposes metadata.utility_counting_set as a Set for the
+// counting predicate later units need.
+// ---------------------------------------------------------------------------
+
+test("#91: an admitted untyped proc enters presence + suggestions, never magnitude", () => {
+  const vocab = buildPickerVocabulary({
+    items: [
+      { name: "Sword", slot: "Weapon",
+        affixes: [{ name: "Holy", type: null, value: "6" }] },
+      { name: "Boots", slot: "Boots",
+        affixes: [{ name: "Dexterity", type: "Enhancement", value: 8 }] },
+    ],
+    metadata: {
+      rankable_affixes: ["Dexterity"],
+      utility_untyped_admitted: ["Holy"],
+      utility_counting_set: ["Ghost Touch", "Holy"],
+    },
+  });
+  assert.ok(vocab.presence.has("Holy"), "admitted proc is presence-flagged");
+  assert.ok(vocab.suggestions.includes("Holy"), "admitted proc is suggested");
+  assert.ok(!vocab.magnitude.has("Holy"),
+    "admitted proc must NOT gain a magnitude bucket (the declared-credit defect)");
+});
+
+test("#91: vocab.utilityCounting is the stamped counting set, as a Set", () => {
+  const vocab = buildPickerVocabulary({
+    items: [
+      { name: "A", slot: "Boots",
+        affixes: [{ name: "Ghost Touch", type: "Bool", value: "1" },
+                  { name: "Deception", type: "Enhancement", value: 3 }] },
+    ],
+    metadata: {
+      rankable_affixes: ["Deception"],
+      // The build's presence-minus-magnitude derivation: Ghost Touch in,
+      // dual-nature Deception out.
+      utility_counting_set: ["Ghost Touch"],
+    },
+  });
+  assert.ok(vocab.utilityCounting instanceof Set, "a Set, ready for the counting predicate");
+  assert.ok(vocab.utilityCounting.has("Ghost Touch"), "a Bool presence name counts");
+  assert.ok(!vocab.utilityCounting.has("Deception"),
+    "a dual-nature name is already rankable and must not double as utility");
+});
+
+test("#91: a pre-stamp cached dataset yields an empty counting set, not a crash", () => {
+  const vocab = buildPickerVocabulary({ items: [], metadata: {} });
+  assert.ok(vocab.utilityCounting instanceof Set);
+  assert.strictEqual(vocab.utilityCounting.size, 0);
+});
+
+test("#91: the built catalog stamps a real counting set", () => {
+  const v = builtVocab();
+  if (!v) return console.log("  (skipped — web/data/items.json not built)");
+  assert.ok(v.utilityCounting.size > 0, "stamped and non-empty");
+  assert.ok(v.utilityCounting.has("Ghost Touch"), "the canonical presence example counts");
+  for (const n of ["Deception", "Smoke Screen", "Protection from Evil", "Underwater Action"]) {
+    assert.ok(!v.utilityCounting.has(n), `dual-nature ${n} is excluded`);
+    assert.ok(v.magnitude.has(n), `${n} stays a rankable magnitude`);
+  }
+});
+
+// #91 (U3, KTD10) — the perf-gate fallback: the Bool half of the counting set
+// is restricted to the curated tier-1 list; high-population tier-2 names are
+// derivable-but-uncounted in v1 (widening happens in measured batches).
+test("#91/KTD10: tier-2 presence names are OUT of the stamped counting set; tier-1 and admitted procs are IN", () => {
+  const v = builtVocab();
+  if (!v) return console.log("  (skipped — web/data/items.json not built)");
+  for (const n of ["Keen", "Adamantine", "Returning", "Ghostly"]) {
+    assert.ok(!v.utilityCounting.has(n), `tier-2 ${n} does not count in v1`);
+  }
+  for (const n of ["Ghost Touch", "Whelming Shockwave", "Blunt Trauma", "Lesser Boneshatter", "Feather Falling"]) {
+    assert.ok(v.utilityCounting.has(n), `tier-1 ${n} counts`);
+  }
+  // The admitted-untyped union is unchanged by the tiering.
+  for (const n of ["Holy", "Vampirism", "Giant Bane"]) {
+    assert.ok(v.utilityCounting.has(n), `admitted untyped proc ${n} counts`);
+  }
+});
+
+// #91 (U3, KTD10) — parity guard for the mirrored tier-1 curation: the stamp
+// (derived by src/utility_procs.py's mirror) must agree with web/dataset.js's
+// UTILITY_TIER1_PRESENCE. If either copy gains or loses a name, the stamped
+// set diverges from this constant and one direction below fails.
+test("#91/KTD10: the stamped counting set and UTILITY_TIER1_PRESENCE cannot drift", () => {
+  const v = builtVocab();
+  if (!v) return console.log("  (skipped — web/data/items.json not built)");
+  const { UTILITY_TIER1_PRESENCE } = require("../web/dataset.js");
+  const fs = require("fs");
+  const path = require("path");
+  const meta = JSON.parse(fs.readFileSync(
+    path.join(__dirname, "..", "web", "data", "items.json"), "utf8")).metadata || {};
+  const admitted = new Set((meta.utility_untyped_admitted || []).map((n) => v.canonical(n)));
+  // Direction 1: every counted non-admitted name is a tier-1 name (the Python
+  // mirror admitted nothing the JS curation does not list).
+  for (const n of v.utilityCounting) {
+    if (admitted.has(n)) continue;
+    assert.ok(UTILITY_TIER1_PRESENCE.has(n),
+      `stamped counting name ${n} is not in UTILITY_TIER1_PRESENCE — the mirrors drifted`);
+  }
+  // Direction 2: every tier-1 name carried as Bool presence (minus magnitude)
+  // in the built catalog is counted (the Python mirror lost nothing).
+  const boolCarried = new Set();
+  for (const it of realData.items || []) {
+    for (const a of it.affixes || []) {
+      if (a.type === "Bool" || a.type === "boolean") boolCarried.add(v.canonical(a.name));
+    }
+  }
+  for (const n of UTILITY_TIER1_PRESENCE) {
+    const c = v.canonical(n);
+    if (!boolCarried.has(c) || v.magnitude.has(c)) continue;
+    assert.ok(v.utilityCounting.has(c),
+      `tier-1 name ${n} is Bool-carried but missing from the stamp — the mirrors drifted`);
   }
 });
 

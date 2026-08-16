@@ -193,6 +193,384 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(r.chosen[0].variant.variant_id, "hiAcc");
   });
 
+  // -------------------------------------------------------------------------
+  // #91 (U3) — the Utility tier: a sentinel priority whose stage maximizes the
+  // count of DISTINCT presence effects (the counting set) after every ranked
+  // stat above it is locked, then locks that count into every later solve.
+  // -------------------------------------------------------------------------
+  const SENT = CAM.UTILITY_SENTINEL;
+  const chosenIds = (r) => r.chosen.map((c) => `${c.slot}:${c.variant.variant_id}`).sort();
+
+  await test("#91 U3/AE3: single-priority saturation — slots fill with utility gear, identical on re-run", async () => {
+    // 'A' saturates on the Ring alone; the Necklace and Trinket carry only
+    // presence effects. Tier-absent they'd stay empty; tier-present they fill.
+    const mk = (targets) => ({
+      targets, mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch", "Feather Falling"]),
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+        slot("Necklace", [item("nGT", "Necklace", [["Ghost Touch", "Bool", 1]])]),
+        slot("Trinket", [item("tFF", "Trinket", [["Feather Falling", "Bool", 1]])]),
+      ],
+    });
+    const bare = await S.solveLexicographic(mk(["A"]), highs);
+    assert.strictEqual(bare.chosen.length, 1, "tier-absent: only the A ring is equipped");
+    const r = await S.solveLexicographic(mk(["A", SENT]), highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.A, 10, "the ranked stat is untouched");
+    assert.strictEqual(r.utilityCount, 2, "both presence effects are collected");
+    assert.deepStrictEqual(r.utilityEffects.map((e) => e.name).sort(), ["Feather Falling", "Ghost Touch"]);
+    assert.strictEqual(r.chosen.length, 3, "the empty slots fill with utility gear");
+    const again = await S.solveLexicographic(mk(["A", SENT]), highs);
+    assert.deepStrictEqual(chosenIds(again), chosenIds(r), "re-run returns the identical loadout (R4)");
+    assert.strictEqual(again.utilityCount, r.utilityCount);
+  });
+
+  await test("#91 U3: tier at bottom — every ranked stat matches the tier-absent solve exactly", async () => {
+    // The lexicographic guarantee: a stat ranked ABOVE the tier never loses a
+    // point to utility. hiA (A 10) must beat utilA (A 6 + Ghost Touch).
+    const mk = (targets) => ({
+      targets, mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [slot("Trinket", [
+        item("hiA", "Trinket", [["A", "Enhancement", 10]]),
+        item("utilA", "Trinket", [["A", "Enhancement", 6], ["Ghost Touch", "Bool", 1]]),
+      ])],
+    });
+    const bare = await S.solveLexicographic(mk(["A"]), highs);
+    const r = await S.solveLexicographic(mk(["A", SENT]), highs);
+    assert.strictEqual(r.effective.A, bare.effective.A, "A's value matches the tier-absent solve");
+    assert.deepStrictEqual(chosenIds(r), chosenIds(bare), "the tier-absent winner keeps the slot");
+    assert.strictEqual(r.utilityCount, 0, "no utility is reachable without surrendering a ranked point");
+    assert.ok(!("perTargetUtility" in r) && !(SENT in (r.perTarget || {})), "the sentinel gets no perTarget entry");
+    assert.ok(!(SENT in r.effective), "the sentinel gets no effective entry — it is not a stat");
+  });
+
+  await test("#91 U3/AE2: tier dragged above a low stat — utility wins the slot, stats above unchanged", async () => {
+    const mk = (targets) => ({
+      targets, mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+        slot("Trinket", [
+          item("tB", "Trinket", [["B", "Enhancement", 10]]),
+          item("tU", "Trinket", [["B", "Enhancement", 6], ["Ghost Touch", "Bool", 1]]),
+        ]),
+      ],
+    });
+    const below = await S.solveLexicographic(mk(["A", "B", SENT]), highs);
+    assert.strictEqual(below.effective.B, 10, "tier below B: B keeps its full value");
+    assert.strictEqual(below.utilityCount, 0);
+    const above = await S.solveLexicographic(mk(["A", SENT, "B"]), highs);
+    assert.strictEqual(above.effective.A, 10, "the stat ABOVE the tier is unchanged");
+    assert.strictEqual(above.utilityCount, 1, "the tier can now win the slot");
+    assert.strictEqual(above.effective.B, 6, "B reports the cost its position now permits");
+    assert.ok(above.chosen.some((c) => c.variant.variant_id === "tU"), "the utility carrier is equipped");
+  });
+
+  await test("#91 U3/AE4: two items sharing an effect — the distinct count increments once", async () => {
+    // A locks both items in (Enhancement + Insight stack), so Ghost Touch is
+    // present twice; the binary ceiling counts it once (R3).
+    const model = {
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [
+        slot("Ring", [item("rGT", "Ring", [["A", "Enhancement", 10], ["Ghost Touch", "Bool", 1]])]),
+        slot("Necklace", [item("nGT", "Necklace", [["A", "Insight", 5], ["Ghost Touch", "Bool", 1]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.A, 15, "both carriers equipped (stacking types)");
+    assert.strictEqual(r.utilityCount, 1, "a duplicate effect adds zero");
+    assert.deepStrictEqual(r.utilityEffects.map((e) => e.name), ["Ghost Touch"], "the receipt lists it once");
+  });
+
+  await test("#91 U3: an effect reachable only via an AUGMENT still counts (every-channel gate)", async () => {
+    const model = {
+      targets: [SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [slot("Trinket", [host("H", "Trinket", [], ["Colorless"])])],
+      augments: [augment("GTgem", "Colorless", [["Ghost Touch", "Bool", 1]])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.utilityCount, 1, "the augment-carried effect counts");
+    assert.ok((r.augmentsPlaced || []).some((m) => m.variant_id === "GTgem"), "the carrier augment is placed and reported");
+  });
+
+  await test("#91 U3: an effect granted only by a SET TIER still counts (every-channel gate)", async () => {
+    const model = {
+      targets: [SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [
+        slot("Ring", [setPiece("p1", "Ring", [], "Spectral Pair", [{ n: 2, affixes: [["Ghost Touch", "Bool", 1]] }])]),
+        slot("Necklace", [setPiece("p2", "Necklace", [], "Spectral Pair", [{ n: 2, affixes: [["Ghost Touch", "Bool", 1]] }])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.utilityCount, 1, "the tier-granted effect counts once the threshold fires");
+    assert.ok((r.setsActive || []).some((m) => m.set === "Spectral Pair"), "the set is completed FOR the effect");
+  });
+
+  await test("#91 U3: a counting-set name absent from every variant mints no indicator, breaks nothing", async () => {
+    const model = {
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Utterly Absent Effect"]),
+      worn: [slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])])],
+    };
+    const program = S.buildProgram(model);
+    assert.strictEqual(program.utilityVars.length, 0, "no indicator is minted for an absent name");
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.A, 10);
+    assert.strictEqual(r.utilityCount, 0);
+    assert.deepStrictEqual(r.utilityEffects, []);
+  });
+
+  await test("#91 U3/KTD10: a tier-2 name (carried, but outside the counting set) mints no indicator", async () => {
+    // Keen is a real Bool presence effect excluded from the v1 tier-1 curation:
+    // its carrier is equipped, but no u_e exists for it and it never counts.
+    const model = {
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [slot("Ring", [item("rK", "Ring", [["A", "Enhancement", 10], ["Keen", "Bool", 1], ["Ghost Touch", "Bool", 1]])])],
+    };
+    const program = S.buildProgram(model);
+    const names = [...program.utilityMeta.values()].map((m) => m.name);
+    assert.deepStrictEqual(names, ["Ghost Touch"], "only the tier-1 name mints an indicator");
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.utilityCount, 1, "the tier-2 effect contributes nothing to the count");
+    assert.deepStrictEqual(r.utilityEffects.map((e) => e.name), ["Ghost Touch"]);
+  });
+
+  await test("#91 U3: tier removed — the program is byte-identical to pre-feature (KTD3 A/B)", async () => {
+    // Same model except for the sentinel: with the tier removed, the counting
+    // set must be inert — identical encoded LP, identical solve.
+    const worn = () => [slot("Trinket", [
+      item("hiA", "Trinket", [["A", "Enhancement", 10]]),
+      item("gt", "Trinket", [["Ghost Touch", "Bool", 1]]),
+    ])];
+    const withSet = {
+      targets: ["A"], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]), worn: worn(),
+    };
+    const preFeature = { targets: ["A"], mlCap: 34, dodgeCap: null, worn: worn() };
+    const enc = (m) => S.encodeStage(S.buildProgram(m), { objectiveStat: "A", sense: "max", locks: [] });
+    assert.strictEqual(enc(withSet), enc(preFeature), "byte-identical program with the tier removed");
+    const a = await S.solveLexicographic(withSet, highs);
+    const b = await S.solveLexicographic(preFeature, highs);
+    assert.deepStrictEqual(chosenIds(a), chosenIds(b), "identical solution");
+    assert.deepStrictEqual(a.effective, b.effective);
+    assert.strictEqual(a.utilityCount, undefined, "no utility fields on a tier-removed result");
+    assert.strictEqual(a.utilityEffects, undefined);
+    // ...and nothing about the machinery perturbs the optimum (non-target soundness).
+    assert.strictEqual(a.effective.A, 10);
+    assert.strictEqual(a.chosen[0].variant.variant_id, "hiA");
+  });
+
+  await test("#91 U3/KTD3: buildModel widening keeps a utility-only item through dominance — only when the tier is ranked", async () => {
+    const M = require("../web/model.js");
+    const full = (id, affixes) => ({
+      source_item: id, variant_id: id, slot: "Trinket", category: "item",
+      minimum_level: 10, ml: 10, verification: "verified",
+      affixes: affixes.map(([stat, t, v]) => ({ stat, bonus_type: t, name: stat, type: t, value: v, unit: "flat" })),
+      scaling: [], set_bonus: [], augment_slots: [], restrictions: "unknown", armor_type: null,
+    });
+    const variants = [full("hiA", [["A", "Enhancement", 10]]), full("gtOnly", [["Ghost Touch", "Bool", 1]])];
+    const counting = new Set(["Ghost Touch"]);
+    const withTier = M.buildModel(variants, { mlCap: 34, targets: ["A", SENT] },
+      [], [], [], [], {}, [], [], {}, counting);
+    const ids = withTier.worn.find((g) => g.slot === "Trinket").variants.map((v) => v.variant_id);
+    assert.ok(ids.includes("gtOnly"), "the utility-only item survives the dominance pre-filter");
+    assert.strictEqual(withTier.utilityEnabled, true);
+    const without = M.buildModel(variants, { mlCap: 34, targets: ["A"] },
+      [], [], [], [], {}, [], [], {}, counting);
+    const ids2 = without.worn.find((g) => g.slot === "Trinket").variants.map((v) => v.variant_id);
+    assert.ok(!ids2.includes("gtOnly"), "tier removed: the pre-feature pool prunes it exactly as before");
+    assert.strictEqual(without.utilityEnabled, false);
+  });
+
+  await test("#91 U3/KTD5: the settle stages preserve the locked count (no-op-augment drop can't strip the carrier)", async () => {
+    // The Ghost Touch gem advances no RANKED stat, so once A is locked the
+    // drop-no-op settle stage would minimize it away — the utility count lock
+    // is the only thing keeping the placement. The host carries nothing at all,
+    // so the tie-break would likewise shed it without the lock.
+    const model = {
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+        slot("Trinket", [host("H", "Trinket", [], ["Colorless"])]),
+      ],
+      augments: [augment("GTgem", "Colorless", [["Ghost Touch", "Bool", 1]])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.A, 10);
+    assert.strictEqual(r.utilityCount, 1);
+    assert.ok((r.augmentsPlaced || []).some((m) => m.variant_id === "GTgem"),
+      "the counted effect's only carrier survives dropNoOpAugments");
+    assert.deepStrictEqual(r.utilityEffects.map((e) => e.name), ["Ghost Touch"]);
+  });
+
+  // -------------------------------------------------------------------------
+  // #91 (U5, KTD6) — utilityReport: guarded, deterministic receipts on the
+  // result. Attribution rule (R9, stated): the FIRST carrier in the tie-break's
+  // item order (lowest x-index among equipped carriers); augments credit their
+  // own variant_id (no solver-side host), craft picks credit their host item,
+  // set tiers credit the set.
+  // -------------------------------------------------------------------------
+  await test("#91 U5/KTD6: utilityReport carries count + credited items on the solve result", async () => {
+    const model = {
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch", "Feather Falling"]),
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+        slot("Necklace", [item("nGT", "Necklace", [["Ghost Touch", "Bool", 1]])]),
+        slot("Trinket", [item("tFF", "Trinket", [["Feather Falling", "Bool", 1]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.utilityReport.count, 2, "report count matches the achieved distinct count");
+    assert.deepStrictEqual(
+      [...r.utilityReport.effects].sort((a, b) => a.name.localeCompare(b.name)),
+      [{ name: "Feather Falling", item: "tFF" }, { name: "Ghost Touch", item: "nGT" }],
+      "each effect is credited to the item that carries it");
+  });
+
+  await test("#91 U5/AE4: a shared effect credits exactly one item — the lowest x-index carrier", async () => {
+    // Both carriers are equipped (A stacks via Enhancement + Insight). The Ring
+    // slot is built before the Necklace slot, so rGT holds the lower x-index
+    // and takes the credit — deterministically, on every run.
+    const model = {
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [
+        slot("Ring", [item("rGT", "Ring", [["A", "Enhancement", 10], ["Ghost Touch", "Bool", 1]])]),
+        slot("Necklace", [item("nGT", "Necklace", [["A", "Insight", 5], ["Ghost Touch", "Bool", 1]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.A, 15, "both carriers equipped");
+    assert.deepStrictEqual(r.utilityReport.effects, [{ name: "Ghost Touch", item: "rGT" }],
+      "credited once, to the first carrier in the tie-break's item order");
+    const again = await S.solveLexicographic(model, highs);
+    assert.deepStrictEqual(again.utilityReport, r.utilityReport, "attribution is deterministic");
+  });
+
+  await test("#91 U5: augment-carried credits the placement's own label; set-carried credits the set", async () => {
+    const augModel = {
+      targets: [SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [slot("Trinket", [host("H", "Trinket", [], ["Colorless"])])],
+      augments: [augment("GTgem", "Colorless", [["Ghost Touch", "Bool", 1]])],
+    };
+    const ra = await S.solveLexicographic(augModel, highs);
+    assert.deepStrictEqual(ra.utilityReport.effects, [{ name: "Ghost Touch", item: "GTgem" }],
+      "no solver-side host for an augment placement -> its own variant_id");
+    const setModel = {
+      targets: [SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [
+        slot("Ring", [setPiece("p1", "Ring", [], "Spectral Pair", [{ n: 2, affixes: [["Ghost Touch", "Bool", 1]] }])]),
+        slot("Necklace", [setPiece("p2", "Necklace", [], "Spectral Pair", [{ n: 2, affixes: [["Ghost Touch", "Bool", 1]] }])]),
+      ],
+    };
+    const rs = await S.solveLexicographic(setModel, highs);
+    assert.deepStrictEqual(rs.utilityReport.effects, [{ name: "Ghost Touch", item: "Spectral Pair" }],
+      "a tier-granted effect credits the set that grants it");
+  });
+
+  await test("#91 U5: a craft-carried effect credits the HOST item the pick sits on", async () => {
+    // A roll-group option grants Ghost Touch; the credit resolves back to the
+    // equipped host, not the pick's internal var.
+    const hostV = item("ROLL-H", "Boots", [["A", "Enhancement", 5]]);
+    hostV.roll_groups = [{ options: [{ stat: "Ghost Touch", bonus_type: "Bool", value: 1, unit: "flat" }] }];
+    const model = {
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [slot("Boots", [hostV])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.deepStrictEqual(r.utilityReport.effects, [{ name: "Ghost Touch", item: "ROLL-H" }],
+      "the roll pick's effect is credited to its host item");
+  });
+
+  await test("#91 U5/KTD6 guard: presence is z-backed — floated u omitted, fired z reported even with u=0", async () => {
+    // Synthetic primal straight into readSolution (the #319 idiom). Review fix:
+    // the report predicate is z-backed ONLY — u_e=1 with no backing z fired must
+    // not enter the report (receipts never claim an effect no fired contribution
+    // carries), while a fired z with u_e floated to 0 MUST enter it (after the
+    // utility stage nothing pressures the u vars, so the final primal may hold
+    // an arbitrary count-sized subset of u's up; reading u would under-report
+    // genuinely present effects nondeterministically).
+    const model = {
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [slot("Necklace", [item("nGT", "Necklace", [["A", "Enhancement", 2], ["Ghost Touch", "Bool", 1]])])],
+    };
+    const program = S.buildProgram(model);
+    assert.strictEqual(program.utilityVars.length, 1, "one indicator minted");
+    const u = program.utilityVars[0];
+    const zs = program.utilityMeta.get(u).zNames;
+    assert.ok(zs.length >= 1, "the indicator has backing contributions");
+    const primalOf = (names) => ({ Columns: Object.fromEntries(names.map((n) => [n, { Primal: 1 }])) });
+    const x = program.xVars[0].name;
+    const floated = S.readSolution(primalOf([x, u]), program);
+    assert.deepStrictEqual(floated.utilityReport, { count: 0, effects: [] },
+      "floated indicator: omitted from the report");
+    assert.deepStrictEqual(floated.utilityEffects, [], "and from the effect list");
+    const fired = S.readSolution(primalOf([x, u, zs[0]]), program);
+    assert.deepStrictEqual(fired.utilityReport, { count: 1, effects: [{ name: "Ghost Touch", item: "nGT" }] },
+      "fired indicator: reported with its credited carrier");
+    // Review fix (the new direction): the z fired but the u floated to 0 —
+    // the effect is genuinely present, so it IS in the report and the list.
+    const zOnly = S.readSolution(primalOf([x, zs[0]]), program);
+    assert.deepStrictEqual(zOnly.utilityReport, { count: 1, effects: [{ name: "Ghost Touch", item: "nGT" }] },
+      "fired z with a floated-to-0 u: reported — presence is z-backed, u primals are not consulted");
+    assert.deepStrictEqual(zOnly.utilityEffects, [{ name: "Ghost Touch", present: true }],
+      "the U3 effect list uses the same z-backed predicate");
+  });
+
+  await test("#91 U5: the tieBreak:false path (alternatives shape) carries the same guarded report", async () => {
+    const model = {
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+        slot("Necklace", [item("nGT", "Necklace", [["Ghost Touch", "Bool", 1]])]),
+      ],
+    };
+    const opt = await S.solveLexicographic(model, highs);
+    const alt = S.solveConstrained(opt.program, highs, { objectiveStat: "A", tieBreak: false });
+    assert.strictEqual(alt.status, "optimal");
+    assert.ok(alt.utilityReport, "a solveConstrained result over a tier-ranked program carries the report");
+    assert.deepStrictEqual(alt.utilityReport.effects.filter((e) => e.name === "Ghost Touch").length <= 1, true,
+      "no duplicate receipts");
+    for (const e of alt.utilityReport.effects) {
+      assert.ok(e.item != null, `every reported effect names a credited carrier (${e.name})`);
+    }
+    assert.strictEqual(alt.utilityReport.count, alt.utilityReport.effects.length,
+      "count and receipts agree on the same primal");
+  });
+
+  await test("#91 U5/R12: slots the Utility stage fills are NOT reported as empty", async () => {
+    const mk = (targets) => ({
+      targets, mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch", "Feather Falling"]),
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+        slot("Necklace", [item("nGT", "Necklace", [["Ghost Touch", "Bool", 1]])]),
+        slot("Trinket", [item("tFF", "Trinket", [["Feather Falling", "Bool", 1]])]),
+      ],
+    });
+    const bare = await S.solveLexicographic(mk(["A"]), highs);
+    assert.strictEqual(bare.emptySlots.count, 2, "tier-absent: the two utility-only slots are empty");
+    const r = await S.solveLexicographic(mk(["A", SENT]), highs);
+    assert.strictEqual(r.emptySlots.count, 0, "the invitation fires only for slots still empty post-Utility");
+    assert.deepStrictEqual(r.emptySlots.slots, []);
+  });
+
   await test("AE3: dodge cap clamps (item still equipped)", async () => {
     const model = {
       targets: ["Dodge"], mlCap: 34, dodgeCap: 4,
@@ -4495,6 +4873,98 @@ async function withCrossAdd(map, fn) {
       "swaps to the craft-free ring within the bounded give");
     const A = require("../web/alternatives.js");
     assert.strictEqual(A.craftCount(crafts.sol), 0, "the candidate genuinely uses fewer crafting steps");
+  });
+
+  // -------------------------------------------------------------------------
+  // #91 (U7, KTD7) — generateAlternatives and the Utility sentinel: the generic
+  // families exclude it from target iteration and lock construction, and thread
+  // the count lock into their re-solves instead. Review fix — the lock behaves
+  // like a RANKED STAT, not an ultra-priority: exact only when the sentinel is
+  // ranked FIRST; otherwise relaxed by alternativeGive, and any shed is stated
+  // by alternatives.js cost accounting (never silent). These two tests
+  // previously pinned the exact-lock-everywhere behavior and were rewritten to
+  // the new rule per the code review.
+  // -------------------------------------------------------------------------
+
+  await test("#91 U7/KTD7 (review): sentinel mid-list — axes skip it; a within-give shed surfaces WITH its loss stated", async () => {
+    // Optimum: A=10 (Ring), count stage picks the Ghost Touch trinket, B=6
+    // under the count lock. A generic rebalance toward B must NOT iterate the
+    // sentinel as a pair member (no {from|to: sentinel} candidate) and must
+    // build no sentinel lock entry. With the tier NOT ranked first, the count
+    // lock relaxes by alternativeGive(1)=2 -> floor 0, so the B-10 trinket
+    // swap (shedding Ghost Touch) is a LEGAL trade — it surfaces, and the
+    // analysis states the shed as a cost instead of suppressing the candidate.
+    const model = {
+      targets: ["A", SENT, "B"], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+        slot("Trinket", [
+          item("tU", "Trinket", [["B", "Enhancement", 6], ["Ghost Touch", "Bool", 1]]),
+          item("tB", "Trinket", [["B", "Enhancement", 10]]),
+        ]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.utilityCount, 1);
+    assert.strictEqual(r.utilityReport.count, 1, "the displayed baseline");
+    assert.strictEqual(r.effective.B, 6, "B pays the cost its position permits");
+    const alts = S.generateAlternatives(r, model, highs);
+    for (const a of alts) {
+      assert.ok(a.meta.from !== SENT && a.meta.to !== SENT && a.meta.stat !== SENT,
+        `generic axes never iterate the sentinel (got ${a.gainAxis}: ${JSON.stringify(a.meta)})`);
+    }
+    const reb = alts.find((a) => a.gainAxis === "rebalance" && a.meta.to === "B");
+    assert.ok(reb, "the within-give shedding rebalance now surfaces (review fix)");
+    assert.strictEqual(reb.sol.effective.B, 10, "the trade genuinely gains B");
+    assert.strictEqual(reb.sol.utilityReport.count, 0, "it sheds the counted effect");
+    const A2 = require("../web/alternatives.js");
+    const an = A2.analyzeAlternative(r, reb, { targets: ["A", SENT, "B"] });
+    assert.ok(/-1 utility effects/.test(an.costText), "the shed is stated in costText, never silent");
+    assert.strictEqual(an.utilDelta, -1);
+    assert.ok(an.totalCost >= 1, "totalCost includes the shed magnitude");
+  });
+
+  await test("#91 U7/KTD7 (review): fewer-crafts — shed surfaces with cost mid-list, exact lock blocks it when the tier is FIRST", async () => {
+    // The #321 GS fixture shape, with the counted effect riding the GS HOST:
+    // the crafts family's craft-free alternative is swapping to PLAIN (55 >=
+    // 60 - give 6), which sheds Ghost Touch. Review fix: with the tier ranked
+    // BELOW a stat the count lock relaxes by the give (floor 0 here), so the
+    // swap surfaces as "1 fewer crafting steps" WITH the shed stated as a
+    // cost; with the tier ranked FIRST the lock stays exact and the swap is
+    // infeasible.
+    const mk = (targets) => {
+      const armor = item("BIG-GS", "Armor", [["Melee Power", "Artifact", 20], ["Melee Power", "Enhancement", 15]]);
+      const gsHostV = item("GSCH", "Ring", [["Ghost Touch", "Bool", 1]]);
+      gsHostV.green_steel_slot = true;
+      const plainRing = item("PLAIN", "Ring", [["Melee Power", "Insightful", 20]]);
+      return {
+        targets, mlCap: 36, dodgeCap: null,
+        utilityCountingSet: new Set(["Ghost Touch"]),
+        worn: [slot("Armor", [armor]), slot("Ring", [gsHostV, plainRing])],
+        greenSteel: [{ name: "Ethereal", stat: "Melee Power", bonus_type: "Insightful", value: 25, unit: "flat" }],
+      };
+    };
+    const r = await S.solveLexicographic(mk(["Melee Power", SENT]), highs);
+    assert.strictEqual(r.effective["Melee Power"], 60, "GS craft (25) beats the craft-free ring (20)");
+    assert.strictEqual(r.utilityReport.count, 1, "the GS host carries the counted effect");
+    assert.strictEqual((r.gsPlaced || []).length, 1, "the optimum crafts");
+    const alts = S.generateAlternatives(r, mk(["Melee Power", SENT]), highs);
+    const crafts = alts.find((a) => a.gainAxis === "crafts");
+    assert.ok(crafts, "tier below the stat: the craft-free swap is a legal give-bounded trade (review fix)");
+    assert.strictEqual((crafts.sol.gsPlaced || []).length, 0, "it genuinely drops the craft");
+    const A2 = require("../web/alternatives.js");
+    const an = A2.analyzeAlternative(r, crafts, { targets: ["Melee Power", SENT] });
+    assert.ok(/-1 utility effects/.test(an.costText), "the shed effect is stated in costText");
+    assert.strictEqual(an.totalCost, 5 + 1, "-5 Melee Power plus the shed effect");
+    // Tier ranked FIRST: the count is the top priority -> exact lock -> the
+    // shedding swap is infeasible and no crafts candidate exists.
+    const rf = await S.solveLexicographic(mk([SENT, "Melee Power"]), highs);
+    assert.strictEqual(rf.utilityReport.count, 1);
+    assert.strictEqual((rf.gsPlaced || []).length, 1);
+    const altsF = S.generateAlternatives(rf, mk([SENT, "Melee Power"]), highs);
+    assert.ok(!altsF.some((a) => a.gainAxis === "crafts"),
+      "no give applies to the top-ranked tier — the exact lock rules the shed out");
   });
 
   console.log(`\n${passed} passed`);

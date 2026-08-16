@@ -1324,3 +1324,112 @@ test("U3: the .gearset record block still renders the achieved total (attributio
   const importable = gs.split("\n\n")[0];
   assert.ok(!/from Universal Spell Power/.test(importable), "importable half stays a pure gear list");
 });
+
+// ---- #91 (U6/R10) — the Utility tier renders on all six export surfaces ----
+
+function utilityExportRec(report) {
+  return {
+    name: "Proc Carrier",
+    inputs: { ml: 9, race: "Dwarf", pool: "all",
+      priorities: ["Constitution", "Utility effects"] },
+    snapshot: {
+      status: "optimal",
+      chosen: [
+        { slot: "Main Hand", variant: { variant_id: "Echo of Whelm", ml: 9,
+          affixes: [{ name: "Constitution", type: "Enhancement", value: 2 }] } },
+      ],
+      effective: { Constitution: 2 },
+      breakdown: { Constitution: [
+        { bonus_type: "Enhancement", value: 2, source: "Echo of Whelm", sourceKind: "worn", slot: "Main Hand", hostIds: ["Echo of Whelm"] },
+      ] },
+      setsActive: [],
+      utilityReport: report !== undefined ? report : { count: 2, effects: [
+        { name: "Ghost Touch", item: "Echo of Whelm" },
+        { name: "Feather Falling", item: null },
+      ] },
+    },
+  };
+}
+
+test("U6 (#91): Markdown carries the Utility section with per-effect receipts", () => {
+  const md = toMarkdown(utilityExportRec());
+  assert.ok(/## Utility effects \(2\)/.test(md), "section heading with the count");
+  assert.ok(/2 utility effects on this loadout/.test(md), "the canonical line");
+  assert.ok(/- Ghost Touch — from Echo of Whelm/.test(md), "effect — from item");
+  assert.ok(/- Feather Falling\n/.test(md) && !/Feather Falling — from/.test(md),
+    "an uncredited effect omits the from-clause rather than printing null");
+});
+
+test("U6 (#91): BBCode carries the Utility section", () => {
+  const bb = toBBCode(utilityExportRec());
+  assert.ok(/\[b\]Utility effects \(2\)\[\/b\]/.test(bb), "bold section heading");
+  assert.ok(/2 utility effects on this loadout/.test(bb), "the canonical line");
+  assert.ok(/\[\*\]Ghost Touch — from Echo of Whelm/.test(bb), "list receipts");
+});
+
+test("U6 (#91): CSV carries the Utility section rows", () => {
+  const csv = toCsv(utilityExportRec());
+  assert.ok(/Utility effects,2 utility effects on this loadout/.test(csv), "the canonical line row");
+  assert.ok(/^Utility effect,From$/m.test(csv), "receipt table header");
+  assert.ok(/^Ghost Touch,Echo of Whelm$/m.test(csv), "receipt row: name,item");
+  assert.ok(/^Feather Falling,$/m.test(csv), "uncredited effect leaves the From cell empty");
+});
+
+test("U6 (#91): print HTML carries the Utility section", () => {
+  const html = toPrintHtml(utilityExportRec());
+  assert.ok(/<h2>Utility effects \(2\)<\/h2>/.test(html), "section heading");
+  assert.ok(/2 utility effects on this loadout/.test(html), "the canonical line");
+  assert.ok(/<li>Ghost Touch — from Echo of Whelm<\/li>/.test(html), "receipt list item");
+});
+
+test("U6 (#91): portable JSON round-trips the utility field shape", () => {
+  const env = toPortableJSON(utilityExportRec(), "2026-08-15T00:00:00Z");
+  assert.deepStrictEqual(env.resolved.utility.effects, [
+    { name: "Ghost Touch", item: "Echo of Whelm" },
+    { name: "Feather Falling", item: null },
+  ], "resolved.utility carries {count, effects} with schema-stable naming");
+  assert.strictEqual(env.resolved.utility.count, 2);
+  assert.strictEqual(env.resolved.utility.line, "2 utility effects on this loadout");
+  // Verbatim in core, and stable through a stringify/parse round trip.
+  assert.strictEqual(env.core.snapshot.utilityReport.count, 2, "core carries the report verbatim");
+  const rt = JSON.parse(JSON.stringify(env));
+  assert.deepStrictEqual(rt.resolved.utility, env.resolved.utility, "round-trip preserves the shape");
+});
+
+test("U6 (#91): .gearset lists utility under the not-importable split + the priorities count", () => {
+  const gs = toGearset(utilityExportRec());
+  const [importable, record] = [gs.split("\n\n")[0], gs.split("\n\n").slice(1).join("\n\n")];
+  assert.ok(!/Utility/.test(importable), "the importable half stays a pure gear list");
+  assert.ok(/# Utility effects \(not importable — informational\)/.test(record), "record-block section");
+  assert.ok(/#   Ghost Touch — from Echo of Whelm/.test(record), "receipt line");
+  assert.ok(/#   2\. Utility effects  2/.test(record),
+    "the ranked-priorities echo shows the achieved count, not '-'");
+});
+
+test("U6 (#91): zero-count renders the zero-state line on every surface", () => {
+  const rec = utilityExportRec({ count: 0, effects: [] });
+  const zero = "0 utility effects on this loadout — no counted on/off effects are present.";
+  assert.ok(toMarkdown(rec).includes(zero), "markdown");
+  assert.ok(toBBCode(rec).includes(zero), "bbcode");
+  assert.ok(toCsv(rec).includes(zero), "csv");
+  assert.ok(toPrintHtml(rec).includes(zero), "print html");
+  assert.ok(toGearset(rec).includes(`#   ${zero}`), "gearset record block");
+  assert.strictEqual(toPortableJSON(rec).resolved.utility.count, 0, "portable JSON");
+  // No empty receipt scaffolding around the zero state.
+  assert.ok(!/\[list\]\n\[\/list\]/.test(toBBCode(rec)), "no empty BBCode list");
+  assert.ok(!/^Utility effect,From$/m.test(toCsv(rec)), "no empty CSV receipt table");
+});
+
+test("U6 (#91): ABSENT report → no Utility section on any surface", () => {
+  const recAbsent = utilityExportRec(null);
+  delete recAbsent.snapshot.utilityReport;
+  recAbsent.inputs.priorities = ["Constitution"];   // no sentinel echo in headers either
+  for (const [label, out] of [
+    ["markdown", toMarkdown(recAbsent)], ["bbcode", toBBCode(recAbsent)],
+    ["csv", toCsv(recAbsent)], ["print html", toPrintHtml(recAbsent)],
+    ["gearset", toGearset(recAbsent)],
+  ]) {
+    assert.ok(!/Utility effect/i.test(out), `${label}: no utility section for a report-less snapshot`);
+  }
+  assert.ok(!("utility" in toPortableJSON(recAbsent).resolved), "portable JSON omits the field");
+});

@@ -15,6 +15,18 @@ const SLOT_CARDINALITY = { Ring: 2 }; // one of every other worn slot
 // matters, not the exact cap). null = uncapped for this query.
 const ARMOR_DODGE_CAP = { cloth: 25, light: 25, medium: 11, heavy: 4 };
 
+// #91 (U3, KTD1) — the Utility tier's sentinel priority token. It rides
+// `query.targets` / `state.priorities` like a stat name but is NOT a stat: the
+// stage loop special-cases it (maximize the distinct-effect count), and it is
+// never fed to effectiveExpr, visibleGateSet's stat universe, probeMax, the
+// floors/caps machinery, or the tie-break fallback's objectiveStat. The display
+// name IS the token — a dataset collision guard (tests/dataset.test.js) pins
+// that no affix name, picker vocab entry, or alias key ever equals it.
+// `var`, not `const`: solver.js resolves it cross-runtime via the documented
+// `typeof X !== "undefined"` browser-global bridge (the const→var shared-scope
+// fix), same as pinnedVariantIds/normalizeCredits above it in that file.
+var UTILITY_SENTINEL = "Utility effects";
+
 // U4b-i — stacking-equivalence. gear-planner's native affix `type` IS the
 // stacking bucket, verbatim, EXCEPT curated pairs that do not stack independently
 // in-game and must share ONE bucket (e.g. "Insight Natural" -> "Insight", "Primal
@@ -614,7 +626,7 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinned
 
 /** Build the abstract model. Returns worn slots (filtered + pruned), the
  *  augment source pool, the Dino insert pool, target list, and the dodge cap. */
-function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}, thunderForged = [], greenSteel = [], augmentSetDefs = {}) {
+function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}, thunderForged = [], greenSteel = [], augmentSetDefs = {}, utilityCountingSet = null) {
   // #245 — the niche-crafting opt-out. A craftable option slot makes its host a
   // wildcard for every rankable stat (the Viktranium pool alone reaches 126), so
   // under strict lexicographic priority a Lamordia base is never worse and
@@ -650,6 +662,30 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // any other stat's, so a USP-only item survives unless genuinely dominated.
   // Shared with buildProgram (solver.js), which builds the buckets.
   _crossAddApi.widenWithCrossAddSources(targetSet);
+  // #91 (U3, KTD3) — CONDITIONAL utility widening, in LOCKSTEP with
+  // buildProgram's (solver.js). When the Utility sentinel is ranked, every
+  // counting-set name joins targetSet so the dominance pre-filter keeps
+  // utility-only items alive and the option pools keep utility-granting
+  // options — without the model-side half, the solver would never SEE the
+  // utility gear its stage exists to place. Conditional on the sentinel being
+  // in the query's targets: a tier-removed (or pre-feature) query rebuilds the
+  // exact pre-feature pool, byte-identical program included.
+  const utilityEnabled = (query.targets || []).includes(UTILITY_SENTINEL);
+  // Fail fast rather than silently solving with zero indicators: utilityCountingSet
+  // is a defaulted 11th positional param, so a forgotten call site would otherwise
+  // widen nothing and the utility stage would place no gear with no error anywhere.
+  // See web/query.js's buildModel call for the reference site that threads it from
+  // dataset metadata (vocab.utilityCounting).
+  if (utilityEnabled && utilityCountingSet == null) {
+    throw new Error(
+      "buildModel: the Utility sentinel is ranked but utilityCountingSet (the 11th "
+      + "argument) was not passed. It must be threaded from dataset metadata "
+      + "(vocab.utilityCounting) — see web/query.js's buildModel call for the reference site."
+    );
+  }
+  if (utilityEnabled && utilityCountingSet && utilityCountingSet.size) {
+    for (const n of utilityCountingSet) targetSet.add(n);
+  }
   const mlCap = query.mlCap;
   const eligAll = eligible(variants, query);
   // #110 (U2/KTD1) — the blocklist filters CANDIDACY, here and not in
@@ -911,6 +947,13 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
       return out;
     })(),
     dodgeCap, mlCap,
+    // #91 (U3, KTD3) — the counting set rides the MODEL, never the persisted
+    // query: buildProgram reads it from here to widen its own targetSet and
+    // mint the per-effect indicator binaries. `utilityEnabled` mirrors the
+    // widening condition above (sentinel ranked), so the two layers cannot
+    // disagree about whether the tier is live for this solve.
+    utilityCountingSet: utilityCountingSet || null,
+    utilityEnabled,
     // U1 — user-set per-stat caps (clamp a stat's counted value); merged with the
     // armor dodge cap in buildProgram. U2 — user-set per-stat floors (best-effort).
     userCaps: query.targetCaps || {},
@@ -992,6 +1035,7 @@ if (typeof module !== "undefined" && module.exports) {
     offHandItemsExcluded, allowedOffHandWeaponTypes, pinSlotConflict,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,
     isForgedRace, isDocent, isBothHandsWeapon, variantKey, setStackEquiv, equivType,
+    UTILITY_SENTINEL,
     setCrossAdd: _crossAddApi.setCrossAdd, crossAddSourcesFor: _crossAddApi.crossAddSourcesFor,
     widenWithCrossAddSources: _crossAddApi.widenWithCrossAddSources,
     WORN_SLOTS, SLOT_CARDINALITY, ARMOR_DODGE_CAP,

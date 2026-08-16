@@ -1000,6 +1000,28 @@ test("U3: set-granted and crafting-pool stats count as sourced", () => {
   assert.strictEqual(html, "", "a set tier and a crafting pool both count as sources");
 });
 
+// #91 (code review fix) — the Utility sentinel is never a pool stat (poolStatNames
+// only ever collects real affix/scaling names), so without an exclusion every solve
+// with the tier ranked falsely names it here — above an already-populated utility
+// card. Mirrors the `stat === _UTILITY_SENTINEL` exclusion the generic stat-card
+// loop already applies at its own call site.
+const _UTIL_SENTINEL = require("../web/model.js").UTILITY_SENTINEL;
+
+test("#91: the Utility sentinel ranked with a normal pool does not trigger the notice", () => {
+  const html = R.zeroSourceNotice(
+    { targets: ["Constitution", _UTIL_SENTINEL] }, _okResult,
+    _modelWith(["Constitution"]), _datasetWith(["Constitution"]));
+  assert.strictEqual(html, "", "the sentinel is never a pool stat but must not read as unsourced");
+});
+
+test("#91: a genuinely absent real stat still fires alongside a ranked sentinel", () => {
+  const html = R.zeroSourceNotice(
+    { targets: ["Sonic Lore", _UTIL_SENTINEL] }, _okResult,
+    _modelWith(["Constitution"]), _datasetWith([]));
+  assert.ok(/Sonic Lore/.test(html), "the real absent stat is still named");
+  assert.ok(!html.includes(_UTIL_SENTINEL), "the sentinel itself is never named");
+});
+
 // ---- plan 003 U6 — a declared build discloses BOTH of its limits (R10) ----
 
 const _declared = { mlFloor: 0, targetCaps: {}, style: "one-hand", twoWeaponFighting: true };
@@ -1489,7 +1511,6 @@ test("a native affix gets no provenance tooltip at all", () => {
 });
 
 
-console.log(`\n${passed} passed`);
 
 // ---------------------------------------------------------------------------
 // #245 — the craft-carried why-line and the opt-out notice.
@@ -1626,3 +1647,89 @@ test("U3: a pre-cross-add row (field absent entirely) renders without error and 
   });
   assert.ok(!/attrib-from/.test(html), "an old snapshot renders exactly as before");
 });
+
+// ---------------------------------------------------------------------------
+// #91 (U5, KTD6/R9) — the Utility priority card. Three render states: receipts,
+// the plain zero-state sentence, and the report-absent re-solve note (a healed
+// pre-feature restore MUST NOT read as "0 effects" — that would be a false
+// claim about an unknown count).
+// ---------------------------------------------------------------------------
+const U_SENT = require("../web/model.js").UTILITY_SENTINEL;
+function utilityBuild(report) {
+  const b = { status: "optimal", chosen: [], setsActive: [], augmentsPlaced: [],
+    breakdown: {}, effective: { A: 10 } };
+  if (report !== undefined) b.utilityReport = report;
+  return b;
+}
+
+test("#91 U5: the utility card renders count + per-effect receipts at the sentinel's rank position", () => {
+  const build = utilityBuild({ count: 2, effects: [
+    { name: "Ghost Touch", item: "rGT" }, { name: "Feather Falling", item: "tFF" }] });
+  const v = R.buildViews(build, { worn: [], augments: [] }, { targets: ["A", U_SENT] });
+  assert.ok(/utility-card/.test(v.cards), "the dedicated card renders");
+  assert.ok(new RegExp(`<span class="stat-rank">2</span><span class="stat-name">${U_SENT}</span>`).test(v.cards),
+    "the rank badge shows the tier's position in the priority list");
+  assert.ok(/data-final="2"/.test(v.cards), "the count renders as the card value");
+  assert.ok(/Ghost Touch/.test(v.cards) && /— from rGT/.test(v.cards), "each effect names its credited item");
+  assert.ok(/Feather Falling/.test(v.cards) && /— from tFF/.test(v.cards));
+});
+
+test("#91 U5: the sentinel is EXCLUDED from the generic stat-card loop (no phantom 0-value card)", () => {
+  const build = utilityBuild({ count: 1, effects: [{ name: "Ghost Touch", item: "rGT" }] });
+  const v = R.buildViews(build, { worn: [], augments: [] }, { targets: ["A", U_SENT] });
+  assert.strictEqual((v.cards.match(/class="stat-card"/g) || []).length, 1,
+    "exactly one GENERIC stat card (A) — the sentinel never enters the generic loop");
+  assert.strictEqual((v.cards.match(/class="stat-card utility-card/g) || []).length, 1,
+    "exactly one utility card");
+  assert.ok(!new RegExp(`${U_SENT}[^]*?data-final="0"`).test(v.cards),
+    "no phantom 0-value rendering for the sentinel");
+  // Dragged first, the card renders first with rank 1.
+  const v2 = R.buildViews(build, { worn: [], augments: [] }, { targets: [U_SENT, "A"] });
+  assert.ok(new RegExp(`<span class="stat-rank">1</span><span class="stat-name">${U_SENT}</span>`).test(v2.cards),
+    "the card follows the sentinel's dragged rank");
+});
+
+test("#91 U5/R9: count-zero renders the plain sentence, never an empty receipts list", () => {
+  const v = R.buildViews(utilityBuild({ count: 0, effects: [] }),
+    { worn: [], augments: [] }, { targets: ["A", U_SENT] });
+  assert.ok(/0 utility effects on this loadout — no counted on\/off effects are present/.test(v.cards),
+    "the zero-state sentence renders");
+  assert.ok(!/utility-receipts/.test(v.cards), "no empty receipts list");
+  assert.ok(!/re-solve to compute/i.test(v.cards), "the zero-state is not the stale note");
+});
+
+test("#91 U5/KTD6: report-absent (healed pre-feature restore) renders the re-solve note, NEVER the zero-state", () => {
+  const v = R.buildViews(utilityBuild(undefined),
+    { worn: [], augments: [] }, { targets: ["A", U_SENT] });
+  assert.ok(/utility-stale/.test(v.cards) && /re-solve to compute utility/i.test(v.cards),
+    "the re-solve note renders");
+  assert.ok(!/0 utility effects/.test(v.cards),
+    "a false '0 effects' claim about an unknown count must not render");
+  assert.ok(!/data-final="0"[^]*?utility/.test(v.cards.split("utility-card")[1] || ""),
+    "no zero value on the stale card");
+});
+
+test("#91 U5/R14: a JSON round-tripped snapshot (restored character) renders receipts without re-solving", () => {
+  const build = JSON.parse(JSON.stringify(
+    utilityBuild({ count: 1, effects: [{ name: "Ghost Touch", item: "nGT" }] })));
+  const v = R.buildViews(build, { worn: [], augments: [] }, { targets: [U_SENT] });
+  assert.ok(/Ghost Touch/.test(v.cards) && /— from nGT/.test(v.cards),
+    "the persisted report alone is enough to render the receipts");
+});
+
+test("#91 U5: utilityCard takes the build being rendered — an alternative's receipts, not the optimum's", () => {
+  const optimum = utilityBuild({ count: 1, effects: [{ name: "Ghost Touch", item: "OPT-ITEM" }] });
+  const alt = utilityBuild({ count: 2, effects: [
+    { name: "Ghost Touch", item: "ALT-ITEM" }, { name: "Feather Falling", item: "ALT-BOOTS" }] });
+  // Direct: the function renders from its argument (never a closed-over optimum).
+  const cardAlt = R.utilityCard(alt, 0);
+  assert.ok(/ALT-ITEM/.test(cardAlt) && /ALT-BOOTS/.test(cardAlt) && !/OPT-ITEM/.test(cardAlt));
+  // Through the generic view path renderBuild uses for select-to-inspect.
+  const vOpt = R.buildViews(optimum, { worn: [], augments: [] }, { targets: [U_SENT] });
+  const vAlt = R.buildViews(alt, { worn: [], augments: [] }, { targets: [U_SENT] });
+  assert.ok(/OPT-ITEM/.test(vOpt.cards) && !/ALT-ITEM/.test(vOpt.cards));
+  assert.ok(/ALT-ITEM/.test(vAlt.cards) && /data-final="2"/.test(vAlt.cards) && !/OPT-ITEM/.test(vAlt.cards),
+    "selecting an alternative re-renders receipts from THAT build");
+});
+
+console.log(`\n${passed} passed`);

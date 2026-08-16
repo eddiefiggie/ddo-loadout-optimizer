@@ -25,6 +25,15 @@ function analyzeAlternative(optimum, candidate, query) {
   const deltas = targets.map((s) => ({ stat: s, delta: (sol.effective[s] ?? 0) - (optimum.effective[s] ?? 0) }));
   const cost = deltas.filter((d) => d.delta < 0);
   const gains = deltas.filter((d) => d.delta > 0);
+  // #91 review fix — utility loss joins the cost accounting whenever the tier
+  // is ranked (results carry a utilityReport exactly then, both counts read
+  // from the guarded z-backed report): a trade that sheds counted effects must
+  // state that loss and can never claim "no priority cost". A positive delta
+  // keeps its existing path (the utility family's gain tag/text below).
+  const utilDelta = (sol.utilityReport || optimum.utilityReport)
+    ? (sol.utilityReport ? sol.utilityReport.count : 0)
+      - (optimum.utilityReport ? optimum.utilityReport.count : 0)
+    : 0;
 
   const tags = [];
   const addTag = (t) => { if (!tags.includes(t)) tags.push(t); };
@@ -33,6 +42,9 @@ function analyzeAlternative(optimum, candidate, query) {
   if (gainAxis === "rebalance") addTag("rebalance");
   if (gainAxis === "unranked") addTag(meta.zeroCost ? "free upgrade" : "unranked stat");
   if (gainAxis === "crafts") addTag("cheaper crafting");
+  // #91 (U7, R11) — the Utility tier's dedicated family: strictly more counted
+  // utility effects for a bounded ranked-stat cost.
+  if (gainAxis === "utility") addTag("utility effects");
   // derivable extra tags — only meaningful secondary gains, so a build does not pick up
   // a spurious "cheaper crafting" from a one-step difference or a "rebalance" from an
   // incidental point on another priority (every different build shuffles these a little).
@@ -46,6 +58,9 @@ function analyzeAlternative(optimum, candidate, query) {
   if (gainAxis === "set") gainText = `activates ${meta.set}`;
   else if (gainAxis === "rebalance") { const g = gains.find((x) => x.stat === meta.to) || gains[0]; gainText = g ? `+${g.delta} ${g.stat}` : `shifts toward ${meta.to}`; }
   else if (gainAxis === "unranked") gainText = `${meta.zeroCost ? "free " : ""}+${meta.stat}`;
+  // #91 (U7) — always-plural "effects", matching the crafts idiom ("1 fewer
+  // crafting steps"); meta carries the optimum's count and the candidate's.
+  else if (gainAxis === "utility") gainText = `+${meta.to - meta.from} utility effects (${meta.from} → ${meta.to})`;
   else gainText = `${meta.optCrafts - craftCount(sol)} fewer crafting steps`;
 
   // Sets this candidate newly activates vs the optimum (U7): the render layer
@@ -56,12 +71,19 @@ function analyzeAlternative(optimum, candidate, query) {
     ...newSets,
   ])];
 
-  const costText = cost.length ? cost.map((c) => `${c.delta} ${c.stat}`).join(", ") : "no priority cost";
+  // #91 review fix — a negative utility delta is a cost like any stat cost:
+  // it joins costText and its magnitude joins totalCost (rankAlternatives
+  // sorts on totalCost, so a shedding trade ranks behind a lossless one).
+  const costParts = cost.map((c) => `${c.delta} ${c.stat}`);
+  if (utilDelta < 0) costParts.push(`${utilDelta} utility effects`);
+  const costText = costParts.length ? costParts.join(", ") : "no priority cost";
   const gainMag = gainAxis === "set" ? (newSets.length ? 1 : 0.5)
     : gainAxis === "rebalance" ? gains.reduce((s, g) => s + g.delta, 0)
     : gainAxis === "unranked" ? 1
+    : gainAxis === "utility" ? (meta.to - meta.from)   // #91 (U7) — how many effects gained
     : (meta.optCrafts - craftCount(sol));
-  return { ...candidate, cost, gains, tags, gainText, costText, gainMag, activatedSets, totalCost: cost.reduce((s, c) => s - c.delta, 0), key: buildKey(sol) };
+  const totalCost = cost.reduce((s, c) => s - c.delta, 0) + (utilDelta < 0 ? -utilDelta : 0);
+  return { ...candidate, cost, gains, tags, gainText, costText, gainMag, activatedSets, utilDelta, totalCost, key: buildKey(sol) };
 }
 
 /** Dedupe (by chosen-item set), drop candidates within K different slots of the optimum
@@ -82,7 +104,9 @@ function rankAlternatives(analyzed, optimum, opts = {}) {
     seen.add(a.key); kept.push(a);
   }
 
-  const typeOrder = { set: 0, rebalance: 1, unranked: 2, crafts: 3 };
+  // #91 (U7) — "utility" slots right after "set": both are categorical gains
+  // (a whole capability, not points on a stat), so they lead the stat trades.
+  const typeOrder = { set: 0, utility: 1, rebalance: 2, unranked: 3, crafts: 4 };
   kept.sort((a, b) =>
     (typeOrder[a.gainAxis] - typeOrder[b.gainAxis])
     || (b.gainMag - a.gainMag)
