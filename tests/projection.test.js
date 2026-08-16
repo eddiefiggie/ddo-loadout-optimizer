@@ -950,3 +950,54 @@ test("U3: cross-added parts stay FLAT in attribution — collapseExpansions neve
   assert.strictEqual(out.length, 2, "no grouping without via");
   assert.strictEqual(out[0], affixes[0], "passed through by identity");
 });
+
+// ---- #91 (U6) — the Utility tier through the shared content projection ----
+
+function utilityRec() {
+  const rec = makeRec();
+  rec.inputs.priorities = ["Deadly", "Dodge", "Utility effects"];
+  rec.snapshot.utilityReport = { count: 2, effects: [
+    { name: "Ghost Touch", item: "Moon Ring" },
+    { name: "Feather Falling", item: null },
+  ] };
+  return rec;
+}
+
+test("U6 (#91): project() emits the utility block from the snapshot's utilityReport", () => {
+  const v = P.project(utilityRec());
+  assert.ok(v.utility, "the utility block is present when the snapshot carries a report");
+  assert.strictEqual(v.utility.count, 2);
+  assert.deepStrictEqual(v.utility.effects, [
+    { name: "Ghost Touch", item: "Moon Ring" },
+    { name: "Feather Falling", item: null },
+  ], "effects carry {name, item} — item null when no carrier was credited");
+  assert.strictEqual(v.utility.line, "2 utility effects on this loadout",
+    "the one canonical sentence rides on the block");
+});
+
+test("U6 (#91): the sentinel is EXCLUDED from the generic per-priority attribution", () => {
+  const v = P.project(utilityRec());
+  assert.deepStrictEqual(Object.keys(v.attribution), ["Deadly", "Dodge"],
+    "no phantom zero-total attribution row for the sentinel");
+  assert.ok(!("Utility effects" in v.attribution));
+  // The sentinel name comes from model.js (single definition), re-exported here.
+  assert.strictEqual(P.UTILITY_SENTINEL, require("../web/model.js").UTILITY_SENTINEL);
+});
+
+test("U6 (#91): absent utilityReport → utility block ABSENT (never a fabricated zero)", () => {
+  const v = P.project(makeRec());
+  assert.ok(!("utility" in v), "a pre-feature snapshot projects no utility block at all");
+});
+
+test("U6 (#91): the zero-count line matches results.js's zero-state wording verbatim", () => {
+  const rec = makeRec();
+  rec.snapshot.utilityReport = { count: 0, effects: [] };
+  const v = P.project(rec);
+  assert.strictEqual(v.utility.count, 0);
+  assert.deepStrictEqual(v.utility.effects, []);
+  assert.strictEqual(v.utility.line,
+    "0 utility effects on this loadout — no counted on/off effects are present.");
+  // The wording source itself: singular for one effect, plural otherwise.
+  assert.strictEqual(P.utilityLine(1), "1 utility effect on this loadout");
+  assert.strictEqual(P.utilityLine(7), "7 utility effects on this loadout");
+});

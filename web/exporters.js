@@ -186,6 +186,13 @@
     return `Picked only for its crafts: ${txt}`;
   }
 
+  // #91 (U6/R10) — one utility-effect receipt, ONE shape for every text format:
+  // "effect — from item" (the item clause omitted when the credited carrier is
+  // unknown, mirroring results.js's receipts). Only user-derived text is escaped.
+  function utilityEffectStr(e, esc) {
+    return `${esc(e.name)}${e.item ? ` — from ${esc(e.item)}` : ""}`;
+  }
+
   // #262 — the no-drop-source disclosure, ONE wording for every export. The
   // projected entry carries the shared phrase itself (projection.js
   // NO_DROP_SOURCE_WORDING, only-when-set), so every format — and the portable
@@ -250,6 +257,14 @@
         for (const p of a.sources) out += `  - ${sourceStr(p, mdEsc)}\n`;
       }
     }
+    // #91 (U6/R10) — the Utility tier's section. ABSENT report (view.utility
+    // missing — a healed pre-feature restore) renders nothing; zero-count prints
+    // the canonical zero-state line rather than an empty list (R9).
+    if (view.utility) {
+      out += `\n## Utility effects (${mdEsc(view.utility.count)})\n\n`;
+      out += `_${mdEsc(view.utility.line)}_\n\n`;
+      for (const e of view.utility.effects) out += `- ${utilityEffectStr(e, mdEsc)}\n`;
+    }
     return out;
   }
 
@@ -304,6 +319,16 @@
         out += `\n`;
       }
       out += `[/list]\n`;
+    }
+    // #91 (U6/R10) — same three-state rule as the Markdown section.
+    if (view.utility) {
+      out += `\n[b]Utility effects (${bbEsc(view.utility.count)})[/b]\n`;
+      out += `[i]${bbEsc(view.utility.line)}[/i]\n`;
+      if (view.utility.effects.length) {
+        out += `[list]\n`;
+        for (const e of view.utility.effects) out += `[*]${utilityEffectStr(e, bbEsc)}\n`;
+        out += `[/list]\n`;
+      }
     }
     return out;
   }
@@ -361,6 +386,16 @@
         rows.push(csvRow([stat, a.total, capped, a.sources.map((p) => sourceStr(p, (s) => s)).join(" | ")]));
       }
     }
+    // #91 (U6/R10) — the Utility section: the canonical line, then one row per
+    // receipt. ABSENT report emits nothing; zero-count emits the line alone.
+    if (view.utility) {
+      rows.push("");
+      rows.push(csvRow(["Utility effects", view.utility.line]));
+      if (view.utility.effects.length) {
+        rows.push(csvRow(["Utility effect", "From"]));
+        for (const e of view.utility.effects) rows.push(csvRow([e.name, e.item == null ? "" : e.item]));
+      }
+    }
     return rows.join("\n");
   }
   // csvSafe quotes the whole cell, so affix separators inside a cell are literal.
@@ -416,6 +451,16 @@
       }
       h += `</ul>`;
     }
+    // #91 (U6/R10) — the Utility section, styled like the other sections.
+    if (view.utility) {
+      h += `<h2>Utility effects (${htmlEsc(view.utility.count)})</h2>`;
+      h += `<p class="declared-note"><em>${htmlEsc(view.utility.line)}</em></p>`;
+      if (view.utility.effects.length) {
+        h += `<ul>`;
+        for (const e of view.utility.effects) h += `<li>${utilityEffectStr(e, htmlEsc)}</li>`;
+        h += `</ul>`;
+      }
+    }
     return h;
   }
 
@@ -425,6 +470,9 @@
   // record (the shape backup.js already round-trips), and `resolved` is the shared
   // content projection for later compare/diff. `format` carries the identifier so a
   // future import reader can tell a portable loadout from a plain backup file.
+  // #91 (U6/R10) — the Utility tier rides as `resolved.utility` ({count, effects,
+  // line}, schema-stable naming from projection) and verbatim in `core`'s snapshot
+  // (`utilityReport`); a report-less snapshot carries neither, never a zero.
   // WRITE-ONCE: `core` aliases the live record and `resolved` shares its affix arrays
   // by reference. The only caller stringifies immediately (safe). The future
   // import/compare effort MUST deep-clone (or treat the envelope as read-only) before
@@ -533,6 +581,14 @@
       rl.push("#");
       say("Ranked priorities and achieved values");
       priorities.forEach((stat, i) => {
+        // #91 (U6) — the Utility sentinel has no attribution entry; its achieved
+        // value is the effect count, read from the projected block. A report-less
+        // snapshot (healed pre-feature restore) falls through to "-": unknown,
+        // never a fabricated zero.
+        if (stat === Proj.UTILITY_SENTINEL && view.utility) {
+          say(`  ${i + 1}. ${stat}  ${view.utility.count}`);
+          return;
+        }
         const a = view.attribution[stat] || {};
         const bounds = [];
         if ((inputs.targetFloors || {})[stat] != null) bounds.push(`min ${inputs.targetFloors[stat]}`);
@@ -585,6 +641,19 @@
       rl.push("#");
       say("Not importable — no DDOBuilderV2 file-grammar slot label");
       for (const it of unmapped) say(`  ${it.slot} (${it.item})`);
+    }
+    // #91 (U6/R10) — the Utility tier, commentary only, under the same
+    // not-importable split as crafting: DDOBuilder has no grammar for an on/off
+    // proc, so the recipient learns the effects here and applies nothing. The
+    // canonical line leads; zero-count is that line alone; a report-less
+    // snapshot (view.utility absent) emits no section at all.
+    if (view.utility) {
+      rl.push("#");
+      say("Utility effects (not importable — informational)");
+      say(`  ${view.utility.line}`);
+      for (const e of view.utility.effects) {
+        say(`  ${e.name}${e.item ? ` — from ${e.item}` : ""}`);
+      }
     }
     if (view.sets.length) {
       rl.push("#");

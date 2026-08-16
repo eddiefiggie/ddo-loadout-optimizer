@@ -14,6 +14,11 @@
   const Craft = (typeof CraftingSystems !== "undefined") ? CraftingSystems
     : (typeof require !== "undefined" ? require("./crafting-systems.js") : null);
 
+  // #91 (U6) — the Utility tier's display name, read from model.js (single
+  // definition). Browser global; Node require — the same bridge results.js uses.
+  const UTILITY_NAME = (typeof UTILITY_SENTINEL !== "undefined") ? UTILITY_SENTINEL
+    : (typeof require !== "undefined" ? require("./model.js").UTILITY_SENTINEL : "Utility effects");
+
   // ---- pure primitives (moved verbatim from results.js so there is one definition) ----
 
   // The key each expansion family stamps on every affix it emits, naming the
@@ -1030,6 +1035,12 @@
 
     const attribution = {};
     for (const stat of priorities) {
+      // #91 (U6) — the Utility sentinel is EXCLUDED from the generic per-priority
+      // attribution: it is not a stat, has no effective[]/breakdown entry, and the
+      // generic path would emit a phantom zero-total row for it. Its content is the
+      // dedicated `utility` block below (mirroring results.js, which excludes it
+      // from the generic stat cards and renders utilityCard instead).
+      if (stat === UTILITY_NAME) continue;
       const total = (snap.effective && snap.effective[stat] != null) ? snap.effective[stat] : 0;
       const cap = (snap.capped && snap.capped[stat] != null) ? snap.capped[stat] : null;
       const sources = (attr[stat] || []).map((p) => ({
@@ -1047,7 +1058,23 @@
       attribution[stat] = { total, cap, sources };
     }
 
+    // #91 (U6/R10) — the Utility tier's content block, read from the snapshot's
+    // `utilityReport` (plain JSON, written by the solve and kept by RESULT_KEEP),
+    // never the live program, so a restored character exports identically without
+    // re-solving. ABSENT when the snapshot carries no report (a healed pre-feature
+    // restore): the count is then UNKNOWN, and every export omits the section
+    // rather than asserting a zero nobody computed — the same three-state rule
+    // results.js utilityCard holds. `line` is the one canonical sentence every
+    // surface prints (surfaces may shape around it, never re-write it).
+    const rep = snap.utilityReport;
+    const utility = rep ? {
+      count: rep.count != null ? rep.count : (rep.effects || []).length,
+      effects: (rep.effects || []).map((e) => ({ name: e.name, item: e.item != null ? e.item : null })),
+      line: utilityLine(rep.count != null ? rep.count : (rep.effects || []).length),
+    } : null;
+
     return {
+      ...(utility ? { utility } : {}),
       character: { name: rec && rec.name, constraints: constraintPairs(rec),
         // U4 (R9) — the declared-credit qualifier travels with the shared
         // content model, so every export renders it from the same source the
@@ -1197,6 +1224,19 @@
     });
   }
 
+  /** #91 (U6/R9/R10) — the ONE canonical utility sentence.
+   *
+   *  Single wording source, the contract `saturationNoticeLines` holds: every
+   *  export prints this sentence; a surface may add its own section framing
+   *  ("Utility effects (N)") but never a second sentence corpus that can drift.
+   *  The zero-state wording matches results.js's utilityCard verbatim — R9 says
+   *  a zero count is stated plainly, never rendered as an empty receipts list.
+   */
+  function utilityLine(count) {
+    if (!count) return "0 utility effects on this loadout — no counted on/off effects are present.";
+    return `${count} utility ${count === 1 ? "effect" : "effects"} on this loadout`;
+  }
+
   function creditNoticeLines(result) {
     const report = (result && result.creditReport) || [];
     if (!report.length) return [];
@@ -1247,6 +1287,9 @@
     // resolved-view assembler
     project, creditNoticeLines, saturationNoticeLines, emptySlotNoticeLines,
     absorptionQuarantineNoticeLines, declaredCreditsLine,
+    // #91 (U6) — the one utility sentence + the tier's display name (from
+    // model.js; re-exported so exporters can recognize the sentinel row)
+    utilityLine, UTILITY_SENTINEL: UTILITY_NAME,
     // pure primitives (results.js binds these; single definition, no drift)
     affixLabel, collapseExpansions, itemMl, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,
