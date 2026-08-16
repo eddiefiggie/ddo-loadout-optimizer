@@ -1538,6 +1538,14 @@ test("#245: the opt-out notice renders from the shared projection sentence", () 
   assert.strictEqual(R.craftingExcludedNotice({}, { query: {} }), "", "silent when off");
 });
 
+test("#339: the augment-ceiling notice renders from the shared projection sentence", () => {
+  // Called the way the app does: the worker result carries NO query field, so the
+  // render forwards the in-scope solved query separately.
+  const on = R.augCeilingNotice({ augCeiling: 32 }, { status: "optimal" });
+  assert.ok(/aug-ceiling-note/.test(on) && /ML 32 and below/.test(on));
+  assert.strictEqual(R.augCeilingNotice({}, { status: "optimal" }), "", "silent when unrestricted");
+});
+
 test("U7/#110: the banner qualifies optimality only when a block removed a candidate", () => {
   const on = R.blockNotice({ blockReport: [{ id: "X", name: "X", pool: "Ring", bestAvailable: false }] });
   assert.ok(/block-note/.test(on) && /optimal given those exclusions/.test(on));

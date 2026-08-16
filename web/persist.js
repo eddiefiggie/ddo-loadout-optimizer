@@ -60,7 +60,9 @@
   // input fields persist. backup.js imports this so an import round-trip can
   // never silently strip a field the save path keeps (the two lists cannot drift).
   const INPUT_KEYS = [
-    "characterName", "ml", "mlFloor", "mlFloorManual", "race", "alignment", "armor", "oath",
+    // #339 — augCeiling is the mlFloor precedent: a plain nullable scalar, no
+    // save marker, no healing. Absent on a pre-feature save -> loads unrestricted.
+    "characterName", "ml", "mlFloor", "mlFloorManual", "augCeiling", "race", "alignment", "armor", "oath",
     "style", "weaponTypes", "offHand", "offHandWeapons", "twoWeaponFighting",
     "includeArtifact", "excludeCraftingSystems", "blocklist", "ownedSetAugments", "pool", "ownedNames", "priorities", "slotConstraints",
     "targetCaps", "targetFloors",

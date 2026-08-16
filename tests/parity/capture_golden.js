@@ -124,6 +124,11 @@ async function solveAll() {
     details[fx.name] = {
       targets: (query.targets || []).slice(),
       substitutions,
+      // #339 — the placed regular-slot augments' variant ids, so the ceiling
+      // fixture's guard can assert every one sits at/below the ceiling against
+      // the dataset's per-augment ML. Side channel like the rest of `details`:
+      // never part of the ratified golden.json snapshot.
+      augmentsPlaced: (r.augmentsPlaced || []).map((m) => m.variant_id),
       vikPlaced: (r.vikPlaced || []).map((m) => ({
         item: m.item, name: m.name, slot_type: m.slot_type, category: m.category, tier: m.tier,
         affixes: (m.affixes || []).map((a) => ({

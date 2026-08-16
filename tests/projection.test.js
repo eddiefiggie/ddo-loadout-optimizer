@@ -710,6 +710,31 @@ test("#245: project() carries craftCarried on the loadout and the opt-out notice
     "silent when the flag is off");
 });
 
+test("#339: project() carries the augment-ceiling disclosure from the solved query", () => {
+  const rec = makeRec();
+  // serializeCharacter stores the solved query as a SIBLING of snapshot, never inside it.
+  rec.query = { augCeiling: 32 };
+  const view = P.project(rec);
+  assert.ok(/ML 32 and below/.test(view.character.augCeilingNotice),
+    "the ceiling scope disclosure rides the shared content model");
+  delete rec.query;
+  assert.strictEqual(P.project(rec).character.augCeilingNotice, null,
+    "silent when the solve was unrestricted");
+});
+
+test("#339: augCeilingLine reads the SOLVED query only, never a live input", () => {
+  assert.strictEqual(
+    P.augCeilingLine({ snapshot: { query: {} }, inputs: { augCeiling: 32, ml: 36 } }), null,
+    "a restored pre-ceiling snapshot stays silent even when a ceiling input exists");
+  assert.strictEqual(
+    P.augCeilingLine({ snapshot: {}, inputs: { augCeiling: 32, ml: 36 } }), null,
+    "no rec.query and no snap.query means unrestricted — inputs never speak");
+  assert.ok(/ML 32/.test(P.augCeilingLine({ query: { augCeiling: 32 }, snapshot: {} })),
+    "the saved-record shape (query as a sibling of snapshot) renders");
+  assert.ok(/ML 30/.test(P.augCeilingLine({ snapshot: { query: { augCeiling: 30 } } })),
+    "the legacy/synthetic snap.query shape still renders as a fallback");
+});
+
 // ---------------------------------------------------------------------------
 // #110 U7 — the blocklist disclosure sentences: attribution, never counterfactual.
 
