@@ -1529,4 +1529,69 @@ test("#316: every built augment_set_def carries the seven-color matrix", () => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// #91 (U1) — the Utility tier's counting vocabulary, consumed from the build
+// stamp. Admitted untyped procs join the picker on the PRESENCE path (suggest +
+// on/off badge, no Advanced credit/bound controls — NOT rankable_affixes);
+// vocab.utilityCounting exposes metadata.utility_counting_set as a Set for the
+// counting predicate later units need.
+// ---------------------------------------------------------------------------
+
+test("#91: an admitted untyped proc enters presence + suggestions, never magnitude", () => {
+  const vocab = buildPickerVocabulary({
+    items: [
+      { name: "Sword", slot: "Weapon",
+        affixes: [{ name: "Holy", type: null, value: "6" }] },
+      { name: "Boots", slot: "Boots",
+        affixes: [{ name: "Dexterity", type: "Enhancement", value: 8 }] },
+    ],
+    metadata: {
+      rankable_affixes: ["Dexterity"],
+      utility_untyped_admitted: ["Holy"],
+      utility_counting_set: ["Ghost Touch", "Holy"],
+    },
+  });
+  assert.ok(vocab.presence.has("Holy"), "admitted proc is presence-flagged");
+  assert.ok(vocab.suggestions.includes("Holy"), "admitted proc is suggested");
+  assert.ok(!vocab.magnitude.has("Holy"),
+    "admitted proc must NOT gain a magnitude bucket (the declared-credit defect)");
+});
+
+test("#91: vocab.utilityCounting is the stamped counting set, as a Set", () => {
+  const vocab = buildPickerVocabulary({
+    items: [
+      { name: "A", slot: "Boots",
+        affixes: [{ name: "Ghost Touch", type: "Bool", value: "1" },
+                  { name: "Deception", type: "Enhancement", value: 3 }] },
+    ],
+    metadata: {
+      rankable_affixes: ["Deception"],
+      // The build's presence-minus-magnitude derivation: Ghost Touch in,
+      // dual-nature Deception out.
+      utility_counting_set: ["Ghost Touch"],
+    },
+  });
+  assert.ok(vocab.utilityCounting instanceof Set, "a Set, ready for the counting predicate");
+  assert.ok(vocab.utilityCounting.has("Ghost Touch"), "a Bool presence name counts");
+  assert.ok(!vocab.utilityCounting.has("Deception"),
+    "a dual-nature name is already rankable and must not double as utility");
+});
+
+test("#91: a pre-stamp cached dataset yields an empty counting set, not a crash", () => {
+  const vocab = buildPickerVocabulary({ items: [], metadata: {} });
+  assert.ok(vocab.utilityCounting instanceof Set);
+  assert.strictEqual(vocab.utilityCounting.size, 0);
+});
+
+test("#91: the built catalog stamps a real counting set", () => {
+  const v = builtVocab();
+  if (!v) return console.log("  (skipped — web/data/items.json not built)");
+  assert.ok(v.utilityCounting.size > 0, "stamped and non-empty");
+  assert.ok(v.utilityCounting.has("Ghost Touch"), "the canonical presence example counts");
+  for (const n of ["Deception", "Smoke Screen", "Protection from Evil", "Underwater Action"]) {
+    assert.ok(!v.utilityCounting.has(n), `dual-nature ${n} is excluded`);
+    assert.ok(v.magnitude.has(n), `${n} stays a rankable magnitude`);
+  }
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);
