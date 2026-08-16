@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -115,6 +115,28 @@ test("#346: the ceiling value survives a trip down to the bottom rung and back",
   assert.strictEqual(state.augCeiling, 28, "the state does not");
   state.craftingRung = "no-solar-lunar";
   assert.strictEqual(buildQuery(state).augCeiling, 28, "climbing back restores it to the solve");
+});
+
+// #346 (U3, KTD3, AE6) — the migration. This is the highest-consequence line in
+// the feature: a wrong derivation silently changes the loadout of every saved
+// character, with no signal to the player that anything moved.
+test("#346: a pre-ladder save migrates to the rung its boolean meant", () => {
+  assert.strictEqual(rungFromInputs({}), "everything",
+    "a save from before #245 (no boolean at all) loads unrestricted");
+  assert.strictEqual(rungFromInputs({ excludeCraftingSystems: false }), "everything",
+    "the checkbox unticked meant nothing was excluded");
+  assert.strictEqual(rungFromInputs({ excludeCraftingSystems: true }), "no-niche-crafting",
+    "the checkbox ticked meant exactly the niche-crafting rung — never lower");
+});
+
+test("#346: a stored rung always wins over the legacy boolean", () => {
+  assert.strictEqual(rungFromInputs({ craftingRung: "printed-only", excludeCraftingSystems: true }),
+    "printed-only", "a stale boolean beside a rung cannot override it");
+  assert.strictEqual(rungFromInputs({ craftingRung: "everything", excludeCraftingSystems: true }),
+    "everything", "including when the boolean would imply a LOWER rung");
+  assert.strictEqual(rungFromInputs({ craftingRung: "nonsense", excludeCraftingSystems: true }),
+    "everything", "a hand-edited rung fails open rather than falling back to the boolean");
+  assert.strictEqual(rungFromInputs(null), "everything", "a missing record does not throw");
 });
 
 test("buildQuery threads the optional mlFloor (blank/0 -> null)", () => {

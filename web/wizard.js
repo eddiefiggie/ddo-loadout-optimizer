@@ -114,6 +114,26 @@ var _craftingRungs = (typeof CRAFTING_RUNGS !== "undefined")
   // eslint-disable-next-line global-require
   : require("./model.js").CRAFTING_RUNGS;
 
+/** #346 (U3, KTD3) — which rung a saved character loads at.
+ *
+ *  Extracted and exported because this is the highest-consequence line in the
+ *  feature: a wrong derivation silently changes the loadout of every saved
+ *  character, and the player gets no signal that anything moved. It is a pure
+ *  function of the saved inputs so it can be tested directly rather than through
+ *  the render path.
+ *
+ *  The legacy `excludeCraftingSystems` boolean is a TOTAL function onto the
+ *  ladder — absent or false meant "nothing excluded" (top rung), true meant
+ *  exactly the niche-crafting rung — so no save marker is needed here. The
+ *  Utility tier needed one because "never had it" and "player removed it" were
+ *  indistinguishable; these two states are not. A stored rung always wins, so
+ *  the derivation fires only when the rung is genuinely absent. */
+function rungFromInputs(inputs) {
+  const i = inputs || {};
+  if (i.craftingRung != null) return _normalizeRung(i.craftingRung);
+  return i.excludeCraftingSystems ? "no-niche-crafting" : "everything";
+}
+
 /** Clean a stat->value bound map (caps/floors): keep only entries whose value is a
  *  finite number >= 0. Blank, null, negative, or non-numeric entries are dropped so
  *  a stray input never reaches the solver as a cap/floor.
@@ -1028,7 +1048,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -2294,7 +2314,7 @@ if (typeof window !== "undefined" && window.App) {
       state.twfMigrated = twfMigrationNeeded(i);
       state.twoWeaponFighting = state.twfMigrated || !!i.twoWeaponFighting;
       state.includeArtifact = !!i.includeArtifact;
-      state.excludeCraftingSystems = !!i.excludeCraftingSystems;   // #245 — absent on old saves -> false
+      state.craftingRung = rungFromInputs(i);   // #346 (U3, KTD3) — see the helper
       // #110 (U1/KTD7) — restore the blocklist with an explicit absent-to-default
       // branch, and ALWAYS assign: the state object outlives a character, so a
       // field not reset on load stays live from the previous one.
