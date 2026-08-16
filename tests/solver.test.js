@@ -4095,5 +4095,279 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(A.craftCount(r), 0, "fewer-crafts counting sees zero crafts");
   });
 
+  // ---- #322 fired-but-invisible report guards (cap clamping + credit substitution) ----
+  // A placement whose gated z FIRED can still be invisible in the displayed
+  // outcome: clamped out by a stat cap, or merely substituting for a declared
+  // credit. Same synthetic-primal seam as the #319 block above; the Dino family
+  // stands in for all guarded families (they share visibleGateSet).
+  function invisModel({ wornAffixes, dinoAffixes, userCaps, credits }) {
+    const dinoHostV = item("DINO-H", "Ring", []);
+    dinoHostV.dino_slots_norm = ["Fang||Accessory"];
+    return {
+      targets: ["Melee Power", "Strength"], mlCap: 36, dodgeCap: null,
+      userCaps, credits,
+      worn: [slot("Armor", [item("BIGMP", "Armor", wornAffixes || [])]), slot("Ring", [dinoHostV])],
+      dinoInserts: [{ dino_type: "Fang", category: "Accessory", name: "Test Fang", affixes: dinoAffixes }],
+    };
+  }
+  const xOf = (program, vid) => program.xVars.find((xv) => xv.variant.variant_id === vid).name;
+
+  await test("#322 guards: a placement clamped out by a stat cap is omitted and moves no total", async () => {
+    const program = S.buildProgram(invisModel({
+      wornAffixes: [["Melee Power", "Enhancement", 20]],
+      dinoAffixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 5, unit: "flat" }],
+      userCaps: { "Melee Power": 15 },
+    }));
+    assert.strictEqual(program.cappedStats["Melee Power"], 15, "cap minted");
+    assert.strictEqual(program.dinoMeta.size, 1, "dino placement minted");
+    const q = [...program.dinoMeta.keys()][0];
+    const zq = zsForGate(program, q);
+    assert.strictEqual(zq.length, 1, "the insert gates one contribution");
+    const xa = xOf(program, "BIGMP");
+    const za = zsForGate(program, xa);
+    assert.strictEqual(za.length, 1, "the worn item gates one contribution");
+    // raw = 20 + 5 = 25, cap 15: raw - 5 = 20 >= 15, so the placement is clamped out.
+    const r = S.readSolution(primalOf([xa, za[0], q, zq[0]]), program);
+    assert.strictEqual((r.dinoPlaced || []).length, 0, "fired-but-clamped-out placement is omitted");
+    assert.strictEqual(r.effective["Melee Power"], 15, "total sits at the cap");
+    const rWithout = S.readSolution(primalOf([xa, za[0], q]), program);
+    assert.strictEqual(rWithout.effective["Melee Power"], r.effective["Melee Power"],
+      "the craft z changes no displayed total (that is WHY it is omitted)");
+  });
+
+  await test("#322 guards: the same placement with raw under the cap reports", async () => {
+    const program = S.buildProgram(invisModel({
+      wornAffixes: [["Melee Power", "Enhancement", 8]],
+      dinoAffixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 5, unit: "flat" }],
+      userCaps: { "Melee Power": 15 },
+    }));
+    assert.strictEqual(program.cappedStats["Melee Power"], 15, "cap minted");
+    const q = [...program.dinoMeta.keys()][0];
+    const zq = zsForGate(program, q);
+    const xa = xOf(program, "BIGMP");
+    // raw = 8 + 5 = 13 < 15: removing the insert would lower the displayed total.
+    const r = S.readSolution(primalOf([xa, zsForGate(program, xa)[0], q, zq[0]]), program);
+    assert.strictEqual((r.dinoPlaced || []).length, 1, "under-cap placement reports");
+    assert.strictEqual(r.effective["Melee Power"], 13, "raw under the cap");
+  });
+
+  await test("#322 guards: multi-affix placement with one clamped and one visible contribution reports (R3)", async () => {
+    const program = S.buildProgram(invisModel({
+      wornAffixes: [["Melee Power", "Enhancement", 20]],
+      dinoAffixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 5, unit: "flat" },
+                    { stat: "Strength", bonus_type: "Artifact", value: 2, unit: "flat" }],
+      userCaps: { "Melee Power": 15 },
+    }));
+    assert.strictEqual(program.cappedStats["Melee Power"], 15, "cap minted");
+    const q = [...program.dinoMeta.keys()][0];
+    const zq = zsForGate(program, q);
+    assert.strictEqual(zq.length, 2, "the two-affix insert gates two contributions");
+    const xa = xOf(program, "BIGMP");
+    const r = S.readSolution(primalOf([xa, zsForGate(program, xa)[0], q, ...zq]), program);
+    assert.strictEqual((r.dinoPlaced || []).length, 1,
+      "SOME visible contribution (uncapped Strength) keeps the placement reported");
+  });
+
+  await test("#322 guards: two contributions jointly holding a capped stat at cap keep their placement (sum test, R1)", async () => {
+    const program = S.buildProgram(invisModel({
+      wornAffixes: [["Melee Power", "Enhancement", 12]],
+      dinoAffixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 5, unit: "flat" },
+                    { stat: "Melee Power", bonus_type: "Profane", value: 4, unit: "flat" }],
+      userCaps: { "Melee Power": 15 },
+    }));
+    assert.strictEqual(program.cappedStats["Melee Power"], 15, "cap minted");
+    const q = [...program.dinoMeta.keys()][0];
+    const zq = zsForGate(program, q);
+    assert.strictEqual(zq.length, 2, "the insert gates two same-stat contributions");
+    const xa = xOf(program, "BIGMP");
+    // raw = 12 + 5 + 4 = 21. Per-contribution each is within the clamp margin
+    // (21 - 5 >= 15 and 21 - 4 >= 15) — a per-contribution test would hide the
+    // placement — but jointly 21 - 9 = 12 < 15: the pair holds the stat at cap.
+    const r = S.readSolution(primalOf([xa, zsForGate(program, xa)[0], q, ...zq]), program);
+    assert.strictEqual((r.dinoPlaced || []).length, 1, "jointly load-bearing placement reports");
+    assert.strictEqual(r.effective["Melee Power"], 15, "the stat sits at cap because of the pair");
+  });
+
+  await test("#322 guards: two SEPARATE placements jointly holding a capped stat cannot mask each other (set-consistent greedy)", async () => {
+    // Two gates (a Dino insert and a Green Steel craft) on the same capped
+    // stat, each individually within the clamp margin. Judged independently
+    // against the FULL raw both would hide (21 - 5 >= 15 and 21 - 4 >= 15),
+    // leaving the displayed 15 unreachable from the reported build (worn alone
+    // is 12). The greedy set-consistent test deducts the first hidden gate's
+    // sum before judging the next, so a surviving placement must keep the
+    // stat at cap.
+    const dinoHostV = item("DINO-H2", "Ring", []);
+    dinoHostV.dino_slots_norm = ["Fang||Accessory"];
+    const gsHostV = item("GS-H2", "Gloves", []);
+    gsHostV.green_steel_slot = true;
+    const program = S.buildProgram({
+      targets: ["Melee Power"], mlCap: 36, dodgeCap: null,
+      userCaps: { "Melee Power": 15 },
+      worn: [slot("Armor", [item("BIGMP2", "Armor", [["Melee Power", "Enhancement", 12]])]),
+             slot("Ring", [dinoHostV]), slot("Gloves", [gsHostV])],
+      dinoInserts: [{ dino_type: "Fang", category: "Accessory", name: "Test Fang",
+        affixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 5, unit: "flat" }] }],
+      greenSteel: [{ name: "Dim", stat: "Melee Power", bonus_type: "Profane", value: 4, unit: "flat" }],
+    });
+    assert.strictEqual(program.cappedStats["Melee Power"], 15, "cap minted");
+    assert.strictEqual(program.dinoMeta.size, 1, "dino placement minted");
+    assert.strictEqual(program.gsMeta.size, 1, "GS placement minted");
+    const qd = [...program.dinoMeta.keys()][0];
+    const qg = [...program.gsMeta.keys()][0];
+    const xa = xOf(program, "BIGMP2");
+    const r = S.readSolution(primalOf([xa, zsForGate(program, xa)[0],
+      qd, zsForGate(program, qd)[0], qg, zsForGate(program, qg)[0]]), program);
+    const nDino = (r.dinoPlaced || []).length, nGs = (r.gsPlaced || []).length;
+    assert.ok(nDino + nGs >= 1, "at least one jointly-saturating placement reports");
+    assert.strictEqual(r.effective["Melee Power"], 15, "total sits at the cap");
+    // The REPORTED set's contributions alone must still reach the cap.
+    assert.ok(12 + nDino * 5 + nGs * 4 >= 15,
+      "the reported placements' contributions keep the displayed capped total reachable");
+  });
+
+  await test("#322 guards: an omitted placement's source appears in no stat's breakdown parts", async () => {
+    const program = S.buildProgram(invisModel({
+      wornAffixes: [["Melee Power", "Enhancement", 20]],
+      dinoAffixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 5, unit: "flat" }],
+      userCaps: { "Melee Power": 15 },
+    }));
+    assert.strictEqual(program.dinoMeta.size, 1, "dino placement minted");
+    const q = [...program.dinoMeta.keys()][0];
+    const xa = xOf(program, "BIGMP");
+    const res = primalOf([xa, zsForGate(program, xa)[0], q, zsForGate(program, q)[0]]);
+    const prim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
+    const bd = S.breakdownByTarget(program, prim);
+    assert.ok(bd["Melee Power"].some((p) => p.sourceKind === "worn"),
+      "the worn contribution still attributes (filter is placement-scoped)");
+    for (const stat of Object.keys(bd)) {
+      assert.ok(!bd[stat].some((p) => p.sourceKind === "dino"),
+        `${stat}: the omitted placement is named by no attribution part`);
+    }
+  });
+
+  await test("#322 guards: a placement seating at/below a declared-credit floor is omitted", async () => {
+    // Pins DEFENSIVE behavior: in a real solve a below-floor craft z is
+    // LP-infeasible as the bucket's sole contributor (the credit floor row plus
+    // sum(z) <= 1 forbid it), so this state is reachable only through the
+    // synthetic-primal seam — the guard still must not report it.
+    const program = S.buildProgram(invisModel({
+      dinoAffixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 5, unit: "flat" }],
+      credits: [credit("Melee Power", "Artifact", 5)],
+    }));
+    assert.strictEqual(program.creditMeta.size, 1, "credit z minted");
+    assert.strictEqual(program.dinoMeta.size, 1, "dino placement minted");
+    const q = [...program.dinoMeta.keys()][0];
+    const zq = zsForGate(program, q);
+    assert.strictEqual(zq.length, 1, "the insert gates one contribution");
+    const r = S.readSolution(primalOf([q, zq[0]]), program);
+    assert.strictEqual((r.dinoPlaced || []).length, 0,
+      "a craft z at the credit floor substitutes, grants nothing, and is omitted");
+    // Non-vacuity: the floor structure the guard consumes was actually minted (KTD5).
+    assert.strictEqual(program.creditBuckets.size, 1, "credit floor minted");
+    assert.strictEqual([...program.creditBuckets.values()][0], 5, "floor is the credit value");
+  });
+
+  await test("#322 guards: a placement strictly above the credit floor reports", async () => {
+    const program = S.buildProgram(invisModel({
+      dinoAffixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 8, unit: "flat" }],
+      credits: [credit("Melee Power", "Artifact", 5)],
+    }));
+    assert.strictEqual([...program.creditBuckets.values()][0], 5, "credit floor minted");
+    const q = [...program.dinoMeta.keys()][0];
+    const zq = zsForGate(program, q);
+    const r = S.readSolution(primalOf([q, zq[0]]), program);
+    assert.strictEqual((r.dinoPlaced || []).length, 1, "above-floor placement reports");
+    assert.strictEqual(r.effective["Melee Power"], 8, "and its value shows in the total");
+  });
+
+  await test("#322 guards: a craft z feeding a capped own-stat AND an uncapped cross-add sibling stays visible", async () => {
+    // Mixed bucket: the craft-gated z's bucket (Universal Spell Power||Artifact)
+    // feeds the capped source stat AND cross-adds into an uncapped element
+    // (bucketCountsFor). The own-stat sum test alone would hide the placement
+    // (raw 25 - 5 >= cap 15); the uncapped-sibling short-circuit keeps it
+    // visible because it still raises the element's displayed total.
+    return withCrossAdd({ Combustion: ["Universal Spell Power"] }, async () => {
+      const dinoHostV = item("DINO-H3", "Ring", []);
+      dinoHostV.dino_slots_norm = ["Fang||Accessory"];
+      const program = S.buildProgram({
+        targets: ["Combustion", "Universal Spell Power"], mlCap: 36, dodgeCap: null,
+        userCaps: { "Universal Spell Power": 15 },
+        worn: [slot("Armor", [item("BIGUSP", "Armor", [["Universal Spell Power", "Enhancement", 20]])]),
+               slot("Ring", [dinoHostV])],
+        dinoInserts: [{ dino_type: "Fang", category: "Accessory", name: "USP Fang",
+          affixes: [{ stat: "Universal Spell Power", bonus_type: "Artifact", value: 5, unit: "flat" }] }],
+      });
+      // Non-vacuity: the cap AND the cross-add mapping were both minted.
+      assert.strictEqual(program.cappedStats["Universal Spell Power"], 15, "cap minted");
+      assert.strictEqual(program.dinoMeta.size, 1, "dino placement minted");
+      const q = [...program.dinoMeta.keys()][0];
+      const zq = zsForGate(program, q);
+      assert.strictEqual(zq.length, 1, "the insert gates one contribution");
+      const zBucketKey = [...program.zByBucket].find(([, zs]) => zs.some((z) => z.gates.includes(q)))[0];
+      assert.ok(S.bucketCountsFor(zBucketKey, "Combustion"), "the craft z's bucket cross-adds into the uncapped element");
+      const xa = xOf(program, "BIGUSP");
+      const r = S.readSolution(primalOf([xa, zsForGate(program, xa)[0], q, zq[0]]), program);
+      assert.strictEqual((r.dinoPlaced || []).length, 1,
+        "the uncapped cross-add sibling keeps the placement visible even though the own-stat is clamped past its cap");
+      assert.strictEqual(r.effective["Universal Spell Power"], 15, "the own stat sits at its cap");
+      assert.strictEqual(r.effective.Combustion, 25, "the element counts the raw cross-added buckets (20 + 5)");
+    });
+  });
+
+  // ---- #321 Thunder-Forged / Green Steel join the fewer-crafts axis ----
+  // Clone of the #319 backstop fixture (which must stay green unmodified): here
+  // the TF tier OUTVALUES the worn Artifact source, so the placement is
+  // load-bearing and the fewer-crafts counting must see it.
+  await test("#321 a load-bearing Thunder-Forged placement counts as a crafting step", async () => {
+    const armor = item("BIG", "Armor", [["Melee Power", "Artifact", 20], ["Melee Power", "Enhancement", 15]]);
+    const craftHost = host("CH", "Ring", [], []);
+    craftHost.thunder_forged_tiers = [{ tier: 1 }];
+    craftHost.minimum_level = craftHost.ml = 20;
+    const model = {
+      targets: ["Melee Power"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Armor", [armor]), slot("Ring", [craftHost])],
+      thunderForged: [tfOpt(1, "Melee Power", "Artifact", 25)],
+    };
+    const program = S.buildProgram(model);
+    assert.ok(program.tfMeta && program.tfMeta.size >= 1, "tfMeta minted (fixture is non-vacuous)");
+    const r = S.solveConstrained(program, highs, { objectiveStat: "Melee Power", sense: "max", tieBreak: false });
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective["Melee Power"], 40, "TF tier (25) beats the worn Artifact source (20)");
+    assert.strictEqual((r.tfPlaced || []).length, 1, "the TF placement is load-bearing and reports");
+    const A = require("../web/alternatives.js");
+    assert.strictEqual(A.craftCount(r), 1, "fewer-crafts counting includes the TF placement");
+  });
+
+  await test("#321 generateAlternatives fewer-crafts axis sees a load-bearing Green Steel placement", async () => {
+    // Real generateAlternatives run over a craft-bearing optimum: the GS craft
+    // (25) outvalues the craft-free ring (20), so the optimum crafts it; the
+    // fewer-crafts give (10% of 60 = 6) admits the craft-free ring (55 >= 54)
+    // but NOT the bare host (35), so a genuine 0-craft alternative exists and
+    // the gs terms in craftVars/optCrafts/solCrafts must all execute.
+    const armor = item("BIG-GS", "Armor", [["Melee Power", "Artifact", 20], ["Melee Power", "Enhancement", 15]]);
+    const gsHostV = item("GSCH", "Ring", []);
+    gsHostV.green_steel_slot = true;
+    const plainRing = item("PLAIN", "Ring", [["Melee Power", "Insightful", 20]]);
+    const model = {
+      targets: ["Melee Power"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Armor", [armor]), slot("Ring", [gsHostV, plainRing])],
+      greenSteel: [{ name: "Ethereal", stat: "Melee Power", bonus_type: "Insightful", value: 25, unit: "flat" }],
+    };
+    const opt = await S.solveLexicographic(model, highs);
+    assert.strictEqual(opt.status, "optimal");
+    assert.ok(opt.program.gsMeta && opt.program.gsMeta.size >= 1, "gsMeta minted (fixture is non-vacuous)");
+    assert.strictEqual(opt.effective["Melee Power"], 60, "GS craft (25) beats the craft-free ring (20)");
+    assert.strictEqual((opt.gsPlaced || []).length, 1, "the GS placement is load-bearing in the optimum");
+    const alts = S.generateAlternatives(opt, model, highs);
+    const crafts = alts.find((a) => a.gainAxis === "crafts");
+    assert.ok(crafts, "the fewer-crafts axis produced a candidate");
+    assert.ok(crafts.meta.optCrafts >= 1, "optCrafts counting saw the GS placement");
+    assert.strictEqual((crafts.sol.gsPlaced || []).length, 0, "the candidate drops the GS craft");
+    assert.ok(crafts.sol.chosen.some((c) => c.variant.variant_id === "PLAIN"),
+      "swaps to the craft-free ring within the bounded give");
+    const A = require("../web/alternatives.js");
+    assert.strictEqual(A.craftCount(crafts.sol), 0, "the candidate genuinely uses fewer crafting steps");
+  });
+
   console.log(`\n${passed} passed`);
 })();

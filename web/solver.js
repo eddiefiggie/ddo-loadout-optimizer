@@ -1053,7 +1053,9 @@ function buildProgram(model) {
   }
 
   return {
-    xVars, zByBucket, cappedStats, targetList: model.targets, model, creditMeta,
+    // creditBuckets (bucket key -> declared-credit floor) rides out for the
+    // #322 visibility guard (visibleGateSet) rather than being re-derived.
+    xVars, zByBucket, cappedStats, targetList: model.targets, model, creditMeta, creditBuckets,
     forcedOffVars: forcedOffSlotVars(xVars, model.query && model.query.slotConstraints),
     extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, hostsVar, _zc: zc,
   };
@@ -1292,8 +1294,18 @@ function preferColorlessSetAugments(program, highs, prevRes, locks) {
   return res.Status === "Optimal" ? res : prevRes;
 }
 
-function breakdownByTarget(program, prim) {
+function breakdownByTarget(program, prim, precomputedVisible) {
   const xByName = new Map(program.xVars.map((xv) => [xv.name, xv]));
+  // #322 — a placement the report guards omit (fired but invisible: cap-clamped
+  // or credit-substituted) must not be named by attribution either. Same
+  // predicate readSolution's guards consume; scoped to the guarded placement
+  // families (ordinary augments' pu + the seven crafts) so worn/set display is
+  // untouched. Production call sites pass readSolution's set to avoid computing
+  // it twice per solve; the 2-arg test seam computes it here.
+  const visible = precomputedVisible || visibleGateSet(program, prim);
+  const placementMetas = [program.placeMeta, program.dinoMeta, program.ncMeta, program.rollMeta,
+                          program.vikMeta, program.sealMeta, program.tfMeta, program.gsMeta];
+  const hiddenPlacementGate = (g) => !visible.has(g) && placementMetas.some((m) => m && m.has(g));
   // Equipped item identity -> its worn slot, so an item-craft (nc/roll/vik/seal)
   // whose meta carries `item` can be attributed back to the slot it sits in (KTD6).
   const slotOfItem = new Map();
@@ -1346,6 +1358,8 @@ function breakdownByTarget(program, prim) {
       const bonusType = key.split("||")[1];
       for (const z of zs) {
         if (prim(z.name) > 0.5) {
+          // #322 — skip contributions gated by a hidden placement (see above).
+          if (z.gates.some(hiddenPlacementGate)) continue;
           // U3 — a declared credit is resolved from the CONTRIBUTION, not from a
           // gate. It has none, so `sourceOf(z.gates[0])` reads `undefined` and
           // falls through every branch to `{kind:"other", label: undefined}` —
@@ -1386,22 +1400,95 @@ function computeScale(program) {
   return { variants: program.xVars.length, crafts, stages: (program.targetList || []).length + 1 };
 }
 
-// #319 — the shared load-bearing test for every craft/placement family: a
-// placement var is load-bearing iff some contribution it gates actually fired.
-// Collect the gate names of every fired z once; each family's report guard then
-// checks membership. Value and this set both derive from the same z primal, so
-// a guarded report always agrees with the displayed totals, on every solve path.
-function firedGateSet(program, prim) {
-  const fired = new Set();
-  for (const [, zs] of program.zByBucket) {
+// #319/#322 — the shared load-bearing test for every craft/placement family: a
+// placement var is load-bearing iff some contribution it gates fired AND is
+// VISIBLE in the displayed outcome. Two fired-but-invisible shapes exist:
+//   (a) credit substitution — the z's bucket carries a declared-credit floor
+//       and the z's value does not exceed it, so seating it grants nothing the
+//       player does not already hold; such z's are dropped first.
+//   (b) cap clamping — every tracked stat the z feeds is capped, and the
+//       placement's surviving fired contributions are jointly slack under the
+//       cap. The test is placement-level and summed, never per-contribution
+//       (two contributions that jointly hold a stat at its cap keep their
+//       placement reported), and SET-CONSISTENT across placements: pending
+//       gates are judged greedily in a deterministic (sorted) order, and each
+//       gate ruled hidden has its per-stat sums deducted from the raw before
+//       the next gate is judged. Raw minus ALL hidden contributions therefore
+//       still meets every cap — the displayed capped totals stay reachable
+//       from the reported placements, so two placements each individually
+//       slack but jointly holding a stat at cap can never hide each other
+//       (the sorted order makes which jointly-saturating placement survives
+//       stable). A z feeding ANY uncapped tracked stat (its own, or a
+//       cross-add sibling per bucketCountsFor) is visible outright, and a
+//       bucket feeding no capped tracked stat short-circuits to visible — so
+//       behavior outside these two shapes is unchanged.
+// Outcome-level invariant: a gate enters this set iff removing everything it
+// gates would lower some displayed effective total or force a substitution the
+// credit floor does not already cover — so a guarded report never claims a
+// placement whose absence the displayed totals could not distinguish.
+function visibleGateSet(program, prim) {
+  const capped = program.cappedStats || {};
+  const statUniverse = [...new Set([...(program.targetList || []), ...Object.keys(capped)])];
+  const creditFloors = program.creditBuckets || new Map();
+  const visible = new Set();
+  const pending = new Map(); // gate -> Map(capped stat -> sum of deferred contributions)
+  for (const [key, zs] of program.zByBucket) {
+    const floor = creditFloors.get(key);
+    let fedCapped = null, feedsUncapped = false;
     for (const z of zs) {
-      if (prim(z.name) > 0.5) for (const g of z.gates) fired.add(g);
+      if (!z.gates.length || prim(z.name) <= 0.5) continue;
+      // (a) credit substitution: drop before any cap reasoning.
+      if (floor != null && z.value <= floor) continue;
+      if (fedCapped === null) { // stats fed are a property of the bucket — compute once
+        fedCapped = [];
+        for (const s of statUniverse) {
+          if (!bucketCountsFor(key, s)) continue;
+          if (capped[s] != null) fedCapped.push(s); else feedsUncapped = true;
+        }
+        if (!fedCapped.length) feedsUncapped = true; // uncapped bucket: short-circuit
+      }
+      if (feedsUncapped) { for (const g of z.gates) visible.add(g); continue; }
+      // (b) defer to the placement-level cap sum test below.
+      for (const g of z.gates) {
+        let sums = pending.get(g);
+        if (!sums) pending.set(g, (sums = new Map()));
+        for (const s of fedCapped) sums.set(s, (sums.get(s) || 0) + z.value);
+      }
     }
   }
-  return fired;
+  if (pending.size) {
+    const rawCache = new Map();
+    const rawOf = (s) => {
+      if (!rawCache.has(s)) {
+        rawCache.set(s, rawExpr(program, s).reduce((sum, t) => sum + (prim(t.name) > 0.5 ? t.coef : 0), 0));
+      }
+      return rawCache.get(s);
+    };
+    // #322 set-consistency — judging every gate against the FULL raw lets two
+    // placements each individually slack but jointly holding a stat at cap
+    // hide each other, leaving the displayed capped total unreachable from the
+    // reported build. Greedy fixpoint instead: judge gates in sorted order and
+    // deduct each HIDDEN gate's sums from an adjusted raw before judging the
+    // next, so the adjusted raw (raw minus all hidden contributions) always
+    // still meets every cap.
+    const adjustedRaw = new Map(); // stat -> raw minus contributions of gates already ruled hidden
+    const adjRawOf = (s) => (adjustedRaw.has(s) ? adjustedRaw.get(s) : rawOf(s));
+    for (const g of [...pending.keys()].sort()) {
+      if (visible.has(g)) continue;
+      const sums = pending.get(g);
+      let isVisible = false;
+      for (const [s, sum] of sums) {
+        // Clamped out only if the displayed total survives losing the whole sum.
+        if (adjRawOf(s) - sum < capped[s]) { isVisible = true; break; }
+      }
+      if (isVisible) { visible.add(g); continue; }
+      for (const [s, sum] of sums) adjustedRaw.set(s, adjRawOf(s) - sum);
+    }
+  }
+  return visible;
 }
 
-function readSolution(res, program) {
+function readSolution(res, program, precomputedVisible) {
   const prim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
   const chosen = program.xVars.filter((xv) => prim(xv.name) > 0.5).map((xv) => ({ slot: xv.slot, variant: xv.variant }));
   const effective = {};
@@ -1413,14 +1500,16 @@ function readSolution(res, program) {
     // the true (capped) value and invent a phantom cost. min(cap, raw) is right for both.
     effective[stat] = program.cappedStats[stat] != null ? Math.min(program.cappedStats[stat], raw) : raw;
   }
-  // #319 load-bearing guards — on any solve path that does not minimize a
+  // #319/#322 load-bearing guards — on any solve path that does not minimize a
   // family's placement vars (every tieBreak:false alternatives re-solve; the
   // seven craft families even on the optimum path, where only ordinary augments
   // are settled), HiGHS may float a var to 1 for free. A floated placement
-  // grants nothing (its gated z stayed 0), so reporting it would prescribe
+  // grants nothing (its gated z stayed 0) — and a FIRED placement can still
+  // grant nothing, when its contributions are clamped out by a stat cap or
+  // merely substitute for a declared credit. Reporting either would prescribe
   // useless farming and skew the fewer-crafts counting. Report a placement only
-  // when a contribution it gates fired.
-  const fired = firedGateSet(program, prim);
+  // when a contribution it gates fired AND is visible (visibleGateSet).
+  const fired = precomputedVisible || visibleGateSet(program, prim);
   // Ordinary augments: value gates ride on the pu identity var (placeMeta), not
   // the reported per-color p var (augMeta); Σp = pu ties them, and the join key
   // is variant_id (at most one pu per unique-equipped id can be 1).
@@ -1565,8 +1654,9 @@ async function solveLexicographic(model, highs) {
   const tbRes = tb.Status === "Optimal" ? tb : highs.solve(encodeStage(program, { objectiveStat: program.targetList.at(-1), sense: "max", locks }));
   const finalRes = preferColorlessSetAugments(
     program, highs, dropNoOpAugments(program, highs, tbRes, locks), locks);
-  const sol = readSolution(finalRes, program);
   const prim = (name) => (finalRes.Columns[name] ? finalRes.Columns[name].Primal : 0);
+  const visible = visibleGateSet(program, prim);
+  const sol = readSolution(finalRes, program, visible);
 
   return {
     status: "optimal", perTarget, effective: sol.effective, chosen: sol.chosen,
@@ -1575,7 +1665,7 @@ async function solveLexicographic(model, highs) {
     vikPlaced: sol.vikPlaced, sealPlaced: sol.sealPlaced, jokerPlaced: sol.jokerPlaced,
     tfPlaced: sol.tfPlaced, gsPlaced: sol.gsPlaced,
     membershipPlaced: sol.membershipPlaced, setAugmentsPlaced: sol.setAugmentsPlaced,
-    breakdown: breakdownByTarget(program, prim), computeScale: computeScale(program),
+    breakdown: breakdownByTarget(program, prim, visible), computeScale: computeScale(program),
     capped: { ...program.cappedStats }, floorReport, program,
     creditReport: buildCreditReport(program, prim, model, floorReport),
     saturationReport: buildSaturationReport(program, prim),
@@ -1841,7 +1931,8 @@ function solveConstrained(program, highs, { objectiveStat, objTerms, sense = "ma
   // keeps it (stable display) while on-demand alternatives skip it to halve solve count.
   if (!tieBreak) {
     const prim1 = (name) => (r1.Columns[name] ? r1.Columns[name].Primal : 0);
-    return { status: "optimal", ...readSolution(r1, program), breakdown: breakdownByTarget(program, prim1), capped: { ...program.cappedStats } };
+    const visible1 = visibleGateSet(program, prim1);
+    return { status: "optimal", ...readSolution(r1, program, visible1), breakdown: breakdownByTarget(program, prim1, visible1), capped: { ...program.cappedStats } };
   }
   const prim1 = (name) => (r1.Columns[name] ? r1.Columns[name].Primal : 0);
   // Pin the achieved gain, then tie-break so the item set (not just the objective
@@ -1857,8 +1948,9 @@ function solveConstrained(program, highs, { objectiveStat, objTerms, sense = "ma
   const r2 = highs.solve(encodeStage(program, { tieBreak: true, sense: "min", locks: locks2, extra: [...extra, ...pin] }));
   const res = r2.Status === "Optimal" ? r2 : r1;
   const prim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
-  const sol = readSolution(res, program);
-  return { status: "optimal", ...sol, breakdown: breakdownByTarget(program, prim), capped: { ...program.cappedStats } };
+  const visible = visibleGateSet(program, prim);
+  const sol = readSolution(res, program, visible);
+  return { status: "optimal", ...sol, breakdown: breakdownByTarget(program, prim, visible), capped: { ...program.cappedStats } };
 }
 
 // The bounded give allowed on a priority for an alternative: 10% or at least 2, so
@@ -1961,13 +2053,20 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
 
   // (d) fewer-crafts — minimize the sum of craft-placement binaries, allowing a bounded
   // give on the priorities (only when the optimum actually uses crafts).
+  // #321 — the seven grindable craft families count as crafting steps here and in
+  // alternatives.js craftCount (the four sites move in lockstep). Deliberately
+  // excluded as intended, not pending: roll groups (they select which random roll
+  // a drop carries) and set-membership picks (a build-identity choice, not a
+  // per-item grind step).
   const craftVars = [
     ...(program.augMeta ? program.augMeta.keys() : []), ...(program.dinoMeta ? program.dinoMeta.keys() : []),
     ...(program.ncMeta ? program.ncMeta.keys() : []), ...(program.vikMeta ? program.vikMeta.keys() : []),
-    ...(program.sealMeta ? program.sealMeta.keys() : []),
+    ...(program.sealMeta ? program.sealMeta.keys() : []), ...(program.tfMeta ? program.tfMeta.keys() : []),
+    ...(program.gsMeta ? program.gsMeta.keys() : []),
   ];
   const optCrafts = (optimum.augmentsPlaced || []).length + (optimum.dinoPlaced || []).length
-    + (optimum.ncPlaced || []).length + (optimum.vikPlaced || []).length + (optimum.sealPlaced || []).length;
+    + (optimum.ncPlaced || []).length + (optimum.vikPlaced || []).length + (optimum.sealPlaced || []).length
+    + (optimum.tfPlaced || []).length + (optimum.gsPlaced || []).length;
   if (craftVars.length && optCrafts > 0) {
     const relaxedAll = targets.map((s) => ({ stat: s, value: per[s], give: alternativeGive(per[s]) }));
     const objTerms = craftVars.map((name) => ({ coef: 1, name }));
@@ -1975,6 +2074,7 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
     const solCrafts = sol.status === "optimal"
       ? (sol.augmentsPlaced || []).length + (sol.dinoPlaced || []).length
         + (sol.ncPlaced || []).length + (sol.vikPlaced || []).length + (sol.sealPlaced || []).length
+        + (sol.tfPlaced || []).length + (sol.gsPlaced || []).length
       : optCrafts;
     // Only surface when it genuinely uses fewer crafts (a same-count different build
     // would headline "0 fewer crafting steps").
