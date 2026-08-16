@@ -390,5 +390,22 @@
     "Topaz of Melee Power +14"
    ]
   }
+ },
+ {
+  "name": "aug-ceiling-32-int-caster-ml36",
+  "note": "#339 — the augment-only ML ceiling: item cap 36 with augCeiling 32. Unrestricted, the ML36 sale-tier augments (Diamond of Intelligence +15, Topaz of Spell Penetration +10) would win their colors; the ceiling forces the ML32 tier (+14/+9) while WORN gear still spans to ML36. Every placed augment must sit at or below the ceiling — asserted in solver_golden.test.js against the dataset's per-augment ML. Ratified 2026-08-16.",
+  "query": {
+   "mlCap": 36,
+   "augCeiling": 32,
+   "targets": [
+    "Intelligence",
+    "Spell Penetration",
+    "Universal Spell Power",
+    "Utility effects"
+   ],
+   "armorType": null,
+   "weaponSetup": null,
+   "classRace": null
+  }
  }
 ]

@@ -18,6 +18,14 @@ const { solveAll } = require("./parity/capture_golden.js");
 
 const GOLDEN = path.join(__dirname, "parity", "golden.json");
 
+// The built dataset is ~25 MB; three tests need it, so parse it once.
+let _ds;
+function dataset() {
+  if (!_ds) _ds = JSON.parse(fs.readFileSync(
+    path.join(__dirname, "..", "web", "data", "items.json"), "utf8"));
+  return _ds;
+}
+
 let passed = 0;
 function test(name, fn) {
   try { fn(); passed++; console.log("  PASS", name); }
@@ -32,8 +40,8 @@ function test(name, fn) {
     path.join(__dirname, "parity", "fixtures.json"), "utf8"));
   const fixtureByName = Object.fromEntries(fixtures.map((f) => [f.name, f]));
 
-  test("golden guard pins exactly 22 fixtures", () => {
-    // 22 = 15 + the #110 blocklist A/B pair (re-ratified 2026-08-12)
+  test("golden guard pins exactly 23 fixtures", () => {
+    // 23 = 15 + the #110 blocklist A/B pair (re-ratified 2026-08-12)
     //        + the #254 per-item Sonic-flag fixture
     //        + the #291 cross-add A/B fixture (re-ratified 2026-08-13)
     //        + the #91 utility-tier A/B pair (2026-08-15, the Utility tier ships:
@@ -45,9 +53,11 @@ function test(name, fn) {
     //          blocklist twin cloned minus the sentinel, so the pre-feature
     //          program is pinned on a complex query, not only the trivial
     //          single-priority baseline).
-    assert.strictEqual(count, 22, "22 fixtures run against the live solver");
-    assert.strictEqual(golden.fixture_count, 22, "golden.json records 22 fixtures");
-    assert.strictEqual(goldenNames.length, 22, "golden.json carries 22 fixture solves");
+    //        + the #339 augment-ML-ceiling fixture (2026-08-16: cap 36 with
+    //          augCeiling 32 — pins the augment-only gate end to end).
+    assert.strictEqual(count, 23, "23 fixtures run against the live solver");
+    assert.strictEqual(golden.fixture_count, 23, "golden.json records 23 fixtures");
+    assert.strictEqual(goldenNames.length, 23, "golden.json carries 23 fixture solves");
     assert.deepStrictEqual(Object.keys(solves).sort(), goldenNames.slice().sort(),
       "the same fixture names are solved and pinned");
   });
@@ -204,8 +214,7 @@ function test(name, fn) {
     // Asserted against the built dataset, so a build-time regression that stopped
     // expanding (or stopped stamping provenance) fails here and not just silently
     // in a number that happens to still be reachable from other gear.
-    const ds = JSON.parse(fs.readFileSync(
-      path.join(__dirname, "..", "web", "data", "items.json"), "utf8"));
+    const ds = dataset();
     const item = ds.items.find((i) => i.variant_id === crown);
     assert.ok(item, `${crown} is in the built dataset`);
     const viaOf = (stat) => {
@@ -251,8 +260,7 @@ function test(name, fn) {
     // Dataset level — this is the only place the FIVE-way blanket direction is
     // detectable: a Sonic affix wrongly stamped onto the Robes shares the orb's
     // Enhancement bucket, so no solve total can see it.
-    const ds = JSON.parse(fs.readFileSync(
-      path.join(__dirname, "..", "web", "data", "items.json"), "utf8"));
+    const ds = dataset();
     const FOUR = ["Acid Absorption", "Cold Absorption", "Fire Absorption", "Electric Absorption"];
     const expanded = (variantId) => ds.items
       .find((i) => i.variant_id === variantId).affixes
@@ -328,6 +336,31 @@ function test(name, fn) {
       "substitution is a rename of the priority list, not a different optimization");
     assert.deepStrictEqual(a.chosen, b.chosen,
       "and it yields the byte-identical loadout, tie-break included");
+  });
+
+  // #339 — the augment-only ML ceiling fixture. Like the blocklist and sonic
+  // guards above, assert the INPUT (the fixture still carries its ceiling —
+  // dropping the field would demote it to an ordinary solve the golden would
+  // happily re-ratify) and the load-bearing OUTPUT: augments are actually
+  // placed, and every one sits at/below the ceiling. The per-augment ML is
+  // resolved against the built dataset because placed-augment records don't
+  // carry `ml`.
+  const CEILING_FIXTURE = "aug-ceiling-32-int-caster-ml36";
+  test("#339 — the ceiling fixture carries its ceiling and no placed augment exceeds it", () => {
+    const q = fixtureByName[CEILING_FIXTURE].query;
+    assert.strictEqual(q.augCeiling, 32, "the fixture must still state its ceiling");
+    assert.strictEqual(q.mlCap, 36, "with the cap ABOVE it, or the ceiling is moot");
+    const placed = details[CEILING_FIXTURE].augmentsPlaced;
+    assert.ok(placed.length >= 1,
+      "at least one augment must be placed — a solve placing none would cover the gate vacuously");
+    const ds = dataset();
+    const mlOf = Object.fromEntries(ds.items
+      .filter((i) => i.category === "augment")
+      .map((i) => [i.variant_id, i.ml != null ? i.ml : i.minimum_level]));
+    for (const id of placed) {
+      assert.ok(mlOf[id] != null, `${id} resolves to a catalog augment with a ML`);
+      assert.ok(mlOf[id] <= 32, `${id} (ML ${mlOf[id]}) must sit at/below the augment ML 32 ceiling`);
+    }
   });
 
   for (const name of goldenNames) {

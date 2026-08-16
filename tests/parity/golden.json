@@ -2,7 +2,7 @@
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
  "generated": "2026-08-15",
  "dataset": "web/data/items.json (9045 items)",
- "fixture_count": 22,
+ "fixture_count": 23,
  "solves": {
   "heroic-str-melee": {
    "status": "optimal",
@@ -1395,6 +1395,77 @@
     {
      "slot": "Necklace",
      "variant": "Astral Spore Pendant"
+    }
+   ]
+  },
+  "aug-ceiling-32-int-caster-ml36": {
+   "status": "optimal",
+   "perTarget": {
+    "Intelligence": 37,
+    "Spell Penetration": 31,
+    "Universal Spell Power": 104
+   },
+   "effective": {
+    "Intelligence": 37,
+    "Spell Penetration": 31,
+    "Universal Spell Power": 104
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Legendary Docent of the Artblade"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Legendary Admiral's Cummerbund"
+    },
+    {
+     "slot": "Boots",
+     "variant": "Legendary Admiral's Gumshoes"
+    },
+    {
+     "slot": "Bracers",
+     "variant": "Legendary Admiral's Wristwatch"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Legendary Great Forge Shroud"
+    },
+    {
+     "slot": "Gloves",
+     "variant": "Alaric's Grim Gauntlets"
+    },
+    {
+     "slot": "Goggles",
+     "variant": "Legendary Doctor Gustav's Warped Lenses"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Legendary Crown of Leaves"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "The Slayer of the Living"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Legendary Pendant of Crippling Strikes"
+    },
+    {
+     "slot": "Off Hand",
+     "variant": "Dethek Runestone"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Contraption Keyring"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Duskbone Ring"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Doctor Lifestone's Hunting Horn"
     }
    ]
   }

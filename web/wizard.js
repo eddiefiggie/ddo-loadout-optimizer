@@ -356,11 +356,24 @@ function panelOpenAttr(stat) {
  *  a declared credit's stat is canonicalized to the ONE name gear carries (KTD4)
  *  and a presence stat is refused. Omitted in unit tests that supply already-
  *  canonical stats. */
+/** #339 — the ONE ceiling-clamp rule both layers share: a ceiling counts only
+ *  when positive and STRICTLY below the cap; blank/absent/at-or-above-cap all
+ *  mean null (unrestricted). buildQuery's call is the authoritative clamp
+ *  (evaluated against the effective cap at query time, so a ceiling saved above
+ *  a later-lowered cap re-normalizes to unrestricted instead of going stale);
+ *  the input handler's call is display-layer convenience on top of it. */
+function clampAugCeiling(raw, cap) {
+  const n = Number(raw);
+  return (raw !== "" && raw != null && n > 0 && n < cap) ? n : null;
+}
+
 function buildQuery(state, vocab) {
   const forged = wizIsForged(state.race);
+  const mlCap = Number(state.ml) || 36;
   return {
-    mlCap: Number(state.ml) || 36,
+    mlCap,
     mlFloor: Number(state.mlFloor) || null,   // optional item-level floor (hide low-ML gear)
+    augCeiling: clampAugCeiling(state.augCeiling, mlCap),   // #339 — authoritative clamp
     targets: state.priorities.slice(),
     armorType: forged ? null : (state.armor || null),   // dodge-cap input
     // U4 — armor eligibility gate (R7). A druidic oath now drives TWO independent
@@ -1038,7 +1051,10 @@ if (typeof window !== "undefined" && window.App) {
     const weaponTypesInData = [...new Set((dataset.items || [])
       .filter((v) => v.slot === "Weapon" && v.type).map((v) => v.type))];
 
-    const state = { step: "intro", ml: 36, mlFloor: 31, mlFloorManual: false, race: "", alignment: "", armor: "", oath: "",
+    // #339 — augCeiling: the augment-only ML ceiling. null = unrestricted (the
+    // default: augments follow the item cap); a number strictly below the cap
+    // restricts augment tiers only. buildQuery owns the clamp.
+    const state = { step: "intro", ml: 36, mlFloor: 31, mlFloorManual: false, augCeiling: null, race: "", alignment: "", armor: "", oath: "",
       style: "", weaponTypes: [], offHand: [], offHandWeapons: [],
       // plan 003 U1 — the Two Weapon Fighting declaration. Character state, not gear
       // state: the combat-style handler clears weaponTypes/offHand/offHandWeapons but
@@ -1124,6 +1140,9 @@ if (typeof window !== "undefined" && window.App) {
               <span class="wz-help">Hide low-level gear — the solver ignores items below this. Defaults to your ML cap − 5 and follows the cap until you set it yourself; lower it to consider more gear.</span>
               <input id="wz-mlfloor" class="wz-ml" type="number" min="1" max="40" value="${state.mlFloor ? esc(state.mlFloor) : ""}"></label>
           </div>
+          <label class="wz-field"><span class="wz-label">Augments up to ML <span class="wz-sub">· optional</span></span>
+            <span class="wz-help">Restrict augments to tiers you can realistically obtain — items still follow the ML cap. Defaults to your cap (no restriction); lower it to exclude higher augment tiers from the solve.</span>
+            <input id="wz-augceiling" class="wz-ml" type="number" min="1" max="40" value="${state.augCeiling != null ? esc(state.augCeiling) : esc(state.ml)}"></label>
           <div class="wz-pair">
             <label class="wz-field"><span class="wz-label">Race</span>
               <span class="wz-help">Determines body-slot and race-locked gear.</span>
@@ -2202,6 +2221,11 @@ if (typeof window !== "undefined" && window.App) {
       var savedFloor = (i.mlFloor != null && i.mlFloor !== "") ? i.mlFloor : Math.max(1, (Number(i.ml) || 36) - 5);
       state.mlFloor = savedFloor;
       state.mlFloorManual = i.mlFloorManual != null ? !!i.mlFloorManual : (i.mlFloor != null && i.mlFloor !== "");
+      // #339 — restore the augment-only ML ceiling. Absent on a pre-feature save
+      // -> null (unrestricted). ALWAYS assign: the state object outlives a
+      // character, so a ceiling left over from the previous one would silently
+      // restrict this build's augments. The visible input re-renders from state.
+      state.augCeiling = (i.augCeiling != null && i.augCeiling !== "") ? Number(i.augCeiling) : null;
       state.race = i.race; state.alignment = i.alignment;
       state.armor = i.armor; state.oath = i.oath || "";
       // U5 — combat constraints. A pre-migration save carries the inert `weapon`
@@ -2517,6 +2541,22 @@ if (typeof window !== "undefined" && window.App) {
             state.mlFloor = Math.max(1, (Number(e.target.value) || 0) - 5);
             var fi = document.getElementById("wz-mlfloor"); if (fi) fi.value = state.mlFloor;
           }
+          // #339 — an unset ceiling displays the cap, so it follows the cap live
+          // (mirrors the floor's auto-follow wiring above). state.augCeiling stays
+          // null: "unrestricted" tracks the cap by meaning, not by value.
+          if (state.augCeiling == null) {
+            var ci = document.getElementById("wz-augceiling"); if (ci) ci.value = e.target.value;
+          }
+        };
+        // #339 — the ceiling input. Display-layer only: blank or at/above the cap
+        // stores null (unrestricted) and the blur handler snaps the DISPLAYED value
+        // back to the cap; buildQuery re-clamps authoritatively at query time.
+        var ceilInput = document.getElementById("wz-augceiling");
+        ceilInput.oninput = (e) => {
+          state.augCeiling = clampAugCeiling(e.target.value, Number(state.ml) || 36);
+        };
+        ceilInput.onblur = (e) => {
+          if (state.augCeiling == null) e.target.value = state.ml;
         };
         document.getElementById("wz-mlfloor").oninput = (e) => {
           if (e.target.value === "") {

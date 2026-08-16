@@ -217,6 +217,7 @@ function queryGates(query) {
   return {
     cap: query.mlCap,
     floor: query.mlFloor,                                  // optional item-level floor
+    ceiling: query.augCeiling ?? null,                     // #339 — optional augment-only ML ceiling
     pinnedIds,                                             // R8 — pins bypass the floor
     forged: isForgedRace(query.race),
     weaponAllow: allowedWeaponTypes(query),                // main-hand set | null
@@ -252,6 +253,20 @@ function variantConflict(v, query, gates) {
   if (g.floor != null && v.ml != null && v.ml < g.floor
       && v.category !== "augment"
       && !(g.pinnedIds && g.pinnedIds.has(variantKey(v)))) return `below your ML ${g.floor} floor`;
+
+  // #339 — the augment-only ML ceiling, the floor's inverse: it hides augment
+  // tiers the player can't realistically obtain yet (e.g. the ML36 sale tier)
+  // without capping worn gear, so it fires ONLY on `category === "augment"`.
+  // Living here means eligible() (the augment pool), placement, alternatives,
+  // and the browse ineligibility reason all inherit it from one choke point.
+  // The pinnedIds exemption mirrors the floor's: a pin is an explicit
+  // instruction that overrides the filter (KD5). Inert today — augments cannot
+  // be pinned — it records the rule for the day augment pinning exists, and
+  // cannot misfire on Artifact-injected pinnedIds entries (those are worn
+  // items, never augments).
+  if (g.ceiling != null && v.ml != null && v.ml > g.ceiling
+      && v.category === "augment"
+      && !(g.pinnedIds && g.pinnedIds.has(variantKey(v)))) return `above your augment ML ${g.ceiling} ceiling`;
 
   // R8 — Weapon-type / style lock. A weapon stays eligible if it can serve EITHER
   // hand: the main-hand lock, or (TWF) the off-hand-weapon lock. Untyped weapon
