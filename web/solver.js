@@ -1408,10 +1408,17 @@ function computeScale(program) {
 //       player does not already hold; such z's are dropped first.
 //   (b) cap clamping — every tracked stat the z feeds is capped, and the
 //       placement's surviving fired contributions are jointly slack under the
-//       cap: for each such stat s, raw(s) minus their SUM still meets cap(s).
-//       The test is placement-level and summed, never per-contribution, so two
-//       contributions that jointly hold a stat at its cap keep their placement
-//       reported. A z feeding ANY uncapped tracked stat (its own, or a
+//       cap. The test is placement-level and summed, never per-contribution
+//       (two contributions that jointly hold a stat at its cap keep their
+//       placement reported), and SET-CONSISTENT across placements: pending
+//       gates are judged greedily in a deterministic (sorted) order, and each
+//       gate ruled hidden has its per-stat sums deducted from the raw before
+//       the next gate is judged. Raw minus ALL hidden contributions therefore
+//       still meets every cap — the displayed capped totals stay reachable
+//       from the reported placements, so two placements each individually
+//       slack but jointly holding a stat at cap can never hide each other
+//       (the sorted order makes which jointly-saturating placement survives
+//       stable). A z feeding ANY uncapped tracked stat (its own, or a
 //       cross-add sibling per bucketCountsFor) is visible outright, and a
 //       bucket feeding no capped tracked stat short-circuits to visible — so
 //       behavior outside these two shapes is unchanged.
@@ -1457,12 +1464,25 @@ function visibleGateSet(program, prim) {
       }
       return rawCache.get(s);
     };
-    for (const [g, sums] of pending) {
+    // #322 set-consistency — judging every gate against the FULL raw lets two
+    // placements each individually slack but jointly holding a stat at cap
+    // hide each other, leaving the displayed capped total unreachable from the
+    // reported build. Greedy fixpoint instead: judge gates in sorted order and
+    // deduct each HIDDEN gate's sums from an adjusted raw before judging the
+    // next, so the adjusted raw (raw minus all hidden contributions) always
+    // still meets every cap.
+    const adjustedRaw = new Map(); // stat -> raw minus contributions of gates already ruled hidden
+    const adjRawOf = (s) => (adjustedRaw.has(s) ? adjustedRaw.get(s) : rawOf(s));
+    for (const g of [...pending.keys()].sort()) {
       if (visible.has(g)) continue;
+      const sums = pending.get(g);
+      let isVisible = false;
       for (const [s, sum] of sums) {
         // Clamped out only if the displayed total survives losing the whole sum.
-        if (rawOf(s) - sum < capped[s]) { visible.add(g); break; }
+        if (adjRawOf(s) - sum < capped[s]) { isVisible = true; break; }
       }
+      if (isVisible) { visible.add(g); continue; }
+      for (const [s, sum] of sums) adjustedRaw.set(s, adjRawOf(s) - sum);
     }
   }
   return visible;

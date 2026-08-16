@@ -4188,6 +4188,43 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(r.effective["Melee Power"], 15, "the stat sits at cap because of the pair");
   });
 
+  await test("#322 guards: two SEPARATE placements jointly holding a capped stat cannot mask each other (set-consistent greedy)", async () => {
+    // Two gates (a Dino insert and a Green Steel craft) on the same capped
+    // stat, each individually within the clamp margin. Judged independently
+    // against the FULL raw both would hide (21 - 5 >= 15 and 21 - 4 >= 15),
+    // leaving the displayed 15 unreachable from the reported build (worn alone
+    // is 12). The greedy set-consistent test deducts the first hidden gate's
+    // sum before judging the next, so a surviving placement must keep the
+    // stat at cap.
+    const dinoHostV = item("DINO-H2", "Ring", []);
+    dinoHostV.dino_slots_norm = ["Fang||Accessory"];
+    const gsHostV = item("GS-H2", "Gloves", []);
+    gsHostV.green_steel_slot = true;
+    const program = S.buildProgram({
+      targets: ["Melee Power"], mlCap: 36, dodgeCap: null,
+      userCaps: { "Melee Power": 15 },
+      worn: [slot("Armor", [item("BIGMP2", "Armor", [["Melee Power", "Enhancement", 12]])]),
+             slot("Ring", [dinoHostV]), slot("Gloves", [gsHostV])],
+      dinoInserts: [{ dino_type: "Fang", category: "Accessory", name: "Test Fang",
+        affixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 5, unit: "flat" }] }],
+      greenSteel: [{ name: "Dim", stat: "Melee Power", bonus_type: "Profane", value: 4, unit: "flat" }],
+    });
+    assert.strictEqual(program.cappedStats["Melee Power"], 15, "cap minted");
+    assert.strictEqual(program.dinoMeta.size, 1, "dino placement minted");
+    assert.strictEqual(program.gsMeta.size, 1, "GS placement minted");
+    const qd = [...program.dinoMeta.keys()][0];
+    const qg = [...program.gsMeta.keys()][0];
+    const xa = xOf(program, "BIGMP2");
+    const r = S.readSolution(primalOf([xa, zsForGate(program, xa)[0],
+      qd, zsForGate(program, qd)[0], qg, zsForGate(program, qg)[0]]), program);
+    const nDino = (r.dinoPlaced || []).length, nGs = (r.gsPlaced || []).length;
+    assert.ok(nDino + nGs >= 1, "at least one jointly-saturating placement reports");
+    assert.strictEqual(r.effective["Melee Power"], 15, "total sits at the cap");
+    // The REPORTED set's contributions alone must still reach the cap.
+    assert.ok(12 + nDino * 5 + nGs * 4 >= 15,
+      "the reported placements' contributions keep the displayed capped total reachable");
+  });
+
   await test("#322 guards: an omitted placement's source appears in no stat's breakdown parts", async () => {
     const program = S.buildProgram(invisModel({
       wornAffixes: [["Melee Power", "Enhancement", 20]],
@@ -4243,6 +4280,40 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(r.effective["Melee Power"], 8, "and its value shows in the total");
   });
 
+  await test("#322 guards: a craft z feeding a capped own-stat AND an uncapped cross-add sibling stays visible", async () => {
+    // Mixed bucket: the craft-gated z's bucket (Universal Spell Power||Artifact)
+    // feeds the capped source stat AND cross-adds into an uncapped element
+    // (bucketCountsFor). The own-stat sum test alone would hide the placement
+    // (raw 25 - 5 >= cap 15); the uncapped-sibling short-circuit keeps it
+    // visible because it still raises the element's displayed total.
+    return withCrossAdd({ Combustion: ["Universal Spell Power"] }, async () => {
+      const dinoHostV = item("DINO-H3", "Ring", []);
+      dinoHostV.dino_slots_norm = ["Fang||Accessory"];
+      const program = S.buildProgram({
+        targets: ["Combustion", "Universal Spell Power"], mlCap: 36, dodgeCap: null,
+        userCaps: { "Universal Spell Power": 15 },
+        worn: [slot("Armor", [item("BIGUSP", "Armor", [["Universal Spell Power", "Enhancement", 20]])]),
+               slot("Ring", [dinoHostV])],
+        dinoInserts: [{ dino_type: "Fang", category: "Accessory", name: "USP Fang",
+          affixes: [{ stat: "Universal Spell Power", bonus_type: "Artifact", value: 5, unit: "flat" }] }],
+      });
+      // Non-vacuity: the cap AND the cross-add mapping were both minted.
+      assert.strictEqual(program.cappedStats["Universal Spell Power"], 15, "cap minted");
+      assert.strictEqual(program.dinoMeta.size, 1, "dino placement minted");
+      const q = [...program.dinoMeta.keys()][0];
+      const zq = zsForGate(program, q);
+      assert.strictEqual(zq.length, 1, "the insert gates one contribution");
+      const zBucketKey = [...program.zByBucket].find(([, zs]) => zs.some((z) => z.gates.includes(q)))[0];
+      assert.ok(S.bucketCountsFor(zBucketKey, "Combustion"), "the craft z's bucket cross-adds into the uncapped element");
+      const xa = xOf(program, "BIGUSP");
+      const r = S.readSolution(primalOf([xa, zsForGate(program, xa)[0], q, zq[0]]), program);
+      assert.strictEqual((r.dinoPlaced || []).length, 1,
+        "the uncapped cross-add sibling keeps the placement visible even though the own-stat is clamped past its cap");
+      assert.strictEqual(r.effective["Universal Spell Power"], 15, "the own stat sits at its cap");
+      assert.strictEqual(r.effective.Combustion, 25, "the element counts the raw cross-added buckets (20 + 5)");
+    });
+  });
+
   // ---- #321 Thunder-Forged / Green Steel join the fewer-crafts axis ----
   // Clone of the #319 backstop fixture (which must stay green unmodified): here
   // the TF tier OUTVALUES the worn Artifact source, so the placement is
@@ -4265,6 +4336,37 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual((r.tfPlaced || []).length, 1, "the TF placement is load-bearing and reports");
     const A = require("../web/alternatives.js");
     assert.strictEqual(A.craftCount(r), 1, "fewer-crafts counting includes the TF placement");
+  });
+
+  await test("#321 generateAlternatives fewer-crafts axis sees a load-bearing Green Steel placement", async () => {
+    // Real generateAlternatives run over a craft-bearing optimum: the GS craft
+    // (25) outvalues the craft-free ring (20), so the optimum crafts it; the
+    // fewer-crafts give (10% of 60 = 6) admits the craft-free ring (55 >= 54)
+    // but NOT the bare host (35), so a genuine 0-craft alternative exists and
+    // the gs terms in craftVars/optCrafts/solCrafts must all execute.
+    const armor = item("BIG-GS", "Armor", [["Melee Power", "Artifact", 20], ["Melee Power", "Enhancement", 15]]);
+    const gsHostV = item("GSCH", "Ring", []);
+    gsHostV.green_steel_slot = true;
+    const plainRing = item("PLAIN", "Ring", [["Melee Power", "Insightful", 20]]);
+    const model = {
+      targets: ["Melee Power"], mlCap: 36, dodgeCap: null,
+      worn: [slot("Armor", [armor]), slot("Ring", [gsHostV, plainRing])],
+      greenSteel: [{ name: "Ethereal", stat: "Melee Power", bonus_type: "Insightful", value: 25, unit: "flat" }],
+    };
+    const opt = await S.solveLexicographic(model, highs);
+    assert.strictEqual(opt.status, "optimal");
+    assert.ok(opt.program.gsMeta && opt.program.gsMeta.size >= 1, "gsMeta minted (fixture is non-vacuous)");
+    assert.strictEqual(opt.effective["Melee Power"], 60, "GS craft (25) beats the craft-free ring (20)");
+    assert.strictEqual((opt.gsPlaced || []).length, 1, "the GS placement is load-bearing in the optimum");
+    const alts = S.generateAlternatives(opt, model, highs);
+    const crafts = alts.find((a) => a.gainAxis === "crafts");
+    assert.ok(crafts, "the fewer-crafts axis produced a candidate");
+    assert.ok(crafts.meta.optCrafts >= 1, "optCrafts counting saw the GS placement");
+    assert.strictEqual((crafts.sol.gsPlaced || []).length, 0, "the candidate drops the GS craft");
+    assert.ok(crafts.sol.chosen.some((c) => c.variant.variant_id === "PLAIN"),
+      "swaps to the craft-free ring within the bounded give");
+    const A = require("../web/alternatives.js");
+    assert.strictEqual(A.craftCount(crafts.sol), 0, "the candidate genuinely uses fewer crafting steps");
   });
 
   console.log(`\n${passed} passed`);
