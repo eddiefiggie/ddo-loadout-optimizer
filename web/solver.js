@@ -1731,13 +1731,66 @@ function readSolution(res, program, precomputedVisible) {
   // relaxed/tieBreak:false paths a binary can float numerically, and a report
   // must never claim an effect no fired contribution carries (the #319 rule).
   if (program.utilityEnabled) {
-    const utilityEffects = [];
-    for (const [u, meta] of program.utilityMeta || []) {
-      if (prim(u) > 0.5 && meta.zNames.some((z) => prim(z) > 0.5)) {
-        utilityEffects.push({ name: meta.name, present: true });
+    // #91 (U5, KTD6) — receipt attribution. Each reported effect credits ONE
+    // carrier by a deterministic, stated rule (R9): the FIRST carrier in the
+    // tie-break's item order — the lowest x-index among equipped items whose
+    // fired contribution feeds the effect's bucket. An augment placement has no
+    // solver-side host (color capacity is aggregate), so it credits its own
+    // variant_id; a craft pick credits the host item its meta names (resolved
+    // back to that host's x-index for ordering); a set tier credits the set.
+    // Built HERE, in readSolution, so the tieBreak:false alternatives path
+    // (solveConstrained) carries the identical guarded report for free.
+    const zGates = new Map();
+    for (const [, zs] of program.zByBucket) for (const z of zs) zGates.set(z.name, z.gates);
+    const xIndex = new Map();   // x var name -> its position in the tie-break's item order
+    const equippedIdx = new Map(); // variant_id -> lowest equipped x-index (craft-host resolution)
+    program.xVars.forEach((xv, i) => {
+      xIndex.set(xv.name, i);
+      if (prim(xv.name) > 0.5) {
+        const id = xv.variant.variant_id || xv.variant.source_item;
+        if (!equippedIdx.has(id)) equippedIdx.set(id, i);
       }
+    });
+    const craftMetas = [program.ncMeta, program.rollMeta, program.vikMeta,
+      program.sealMeta, program.tfMeta, program.gsMeta];
+    const carrierOf = (gate) => {
+      const xi = xIndex.get(gate);
+      if (xi !== undefined) {
+        const v = program.xVars[xi].variant;
+        return { idx: xi, item: v.variant_id || v.source_item };
+      }
+      for (const mm of craftMetas) {
+        const m = mm && mm.get(gate);
+        if (m) return { idx: equippedIdx.has(m.item) ? equippedIdx.get(m.item) : Infinity, item: m.item };
+      }
+      const aug = program.placeMeta && program.placeMeta.get(gate);
+      if (aug) return { idx: Infinity, item: aug.variant_id };
+      const dino = program.dinoMeta && program.dinoMeta.get(gate);
+      if (dino) return { idx: Infinity, item: dino.name || dino.dino_type };
+      const set = program.setMeta && program.setMeta.get(gate);
+      if (set) return { idx: Infinity, item: set.set };
+      return null;
+    };
+    const utilityEffects = [];
+    const reportEffects = [];
+    for (const [u, meta] of program.utilityMeta || []) {
+      // The U3 load-bearing predicate, reused verbatim: indicator up AND a
+      // backing contribution in the effect's buckets genuinely fired.
+      if (!(prim(u) > 0.5 && meta.zNames.some((z) => prim(z) > 0.5))) continue;
+      utilityEffects.push({ name: meta.name, present: true });
+      const candidates = [];
+      for (const zn of meta.zNames) {
+        if (prim(zn) <= 0.5) continue;
+        for (const g of zGates.get(zn) || []) {
+          const c = carrierOf(g);
+          if (c) candidates.push(c);
+        }
+      }
+      candidates.sort((a, b) => (a.idx - b.idx) || String(a.item).localeCompare(String(b.item)));
+      reportEffects.push({ name: meta.name, item: candidates.length ? candidates[0].item : null });
     }
     out.utilityEffects = utilityEffects;
+    out.utilityReport = { count: reportEffects.length, effects: reportEffects };
   }
   return out;
 }
@@ -1858,7 +1911,10 @@ async function solveLexicographic(model, highs) {
     // effect count (a plain number, locked into every post-stage solve) and
     // the load-bearing-checked effect list (U5 builds the full report).
     ...(program.utilityEnabled
-      ? { utilityCount, utilityEffects: sol.utilityEffects || [] } : {}),
+      ? { utilityCount, utilityEffects: sol.utilityEffects || [],
+          // #91 (U5, KTD6) — the render/persist report: count + per-effect
+          // credited carriers, guarded and deterministic (built in readSolution).
+          utilityReport: sol.utilityReport || { count: 0, effects: [] } } : {}),
     augmentsPlaced: sol.augmentsPlaced, setsActive: sol.setsActive,
     dinoPlaced: sol.dinoPlaced, ncPlaced: sol.ncPlaced, rollPlaced: sol.rollPlaced,
     vikPlaced: sol.vikPlaced, sealPlaced: sol.sealPlaced, jokerPlaced: sol.jokerPlaced,

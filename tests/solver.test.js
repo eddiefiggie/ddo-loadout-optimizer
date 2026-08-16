@@ -412,6 +412,155 @@ async function withCrossAdd(map, fn) {
     assert.deepStrictEqual(r.utilityEffects.map((e) => e.name), ["Ghost Touch"]);
   });
 
+  // -------------------------------------------------------------------------
+  // #91 (U5, KTD6) — utilityReport: guarded, deterministic receipts on the
+  // result. Attribution rule (R9, stated): the FIRST carrier in the tie-break's
+  // item order (lowest x-index among equipped carriers); augments credit their
+  // own variant_id (no solver-side host), craft picks credit their host item,
+  // set tiers credit the set.
+  // -------------------------------------------------------------------------
+  await test("#91 U5/KTD6: utilityReport carries count + credited items on the solve result", async () => {
+    const model = {
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch", "Feather Falling"]),
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+        slot("Necklace", [item("nGT", "Necklace", [["Ghost Touch", "Bool", 1]])]),
+        slot("Trinket", [item("tFF", "Trinket", [["Feather Falling", "Bool", 1]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.utilityReport.count, 2, "report count matches the achieved distinct count");
+    assert.deepStrictEqual(
+      [...r.utilityReport.effects].sort((a, b) => a.name.localeCompare(b.name)),
+      [{ name: "Feather Falling", item: "tFF" }, { name: "Ghost Touch", item: "nGT" }],
+      "each effect is credited to the item that carries it");
+  });
+
+  await test("#91 U5/AE4: a shared effect credits exactly one item — the lowest x-index carrier", async () => {
+    // Both carriers are equipped (A stacks via Enhancement + Insight). The Ring
+    // slot is built before the Necklace slot, so rGT holds the lower x-index
+    // and takes the credit — deterministically, on every run.
+    const model = {
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [
+        slot("Ring", [item("rGT", "Ring", [["A", "Enhancement", 10], ["Ghost Touch", "Bool", 1]])]),
+        slot("Necklace", [item("nGT", "Necklace", [["A", "Insight", 5], ["Ghost Touch", "Bool", 1]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.A, 15, "both carriers equipped");
+    assert.deepStrictEqual(r.utilityReport.effects, [{ name: "Ghost Touch", item: "rGT" }],
+      "credited once, to the first carrier in the tie-break's item order");
+    const again = await S.solveLexicographic(model, highs);
+    assert.deepStrictEqual(again.utilityReport, r.utilityReport, "attribution is deterministic");
+  });
+
+  await test("#91 U5: augment-carried credits the placement's own label; set-carried credits the set", async () => {
+    const augModel = {
+      targets: [SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [slot("Trinket", [host("H", "Trinket", [], ["Colorless"])])],
+      augments: [augment("GTgem", "Colorless", [["Ghost Touch", "Bool", 1]])],
+    };
+    const ra = await S.solveLexicographic(augModel, highs);
+    assert.deepStrictEqual(ra.utilityReport.effects, [{ name: "Ghost Touch", item: "GTgem" }],
+      "no solver-side host for an augment placement -> its own variant_id");
+    const setModel = {
+      targets: [SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [
+        slot("Ring", [setPiece("p1", "Ring", [], "Spectral Pair", [{ n: 2, affixes: [["Ghost Touch", "Bool", 1]] }])]),
+        slot("Necklace", [setPiece("p2", "Necklace", [], "Spectral Pair", [{ n: 2, affixes: [["Ghost Touch", "Bool", 1]] }])]),
+      ],
+    };
+    const rs = await S.solveLexicographic(setModel, highs);
+    assert.deepStrictEqual(rs.utilityReport.effects, [{ name: "Ghost Touch", item: "Spectral Pair" }],
+      "a tier-granted effect credits the set that grants it");
+  });
+
+  await test("#91 U5: a craft-carried effect credits the HOST item the pick sits on", async () => {
+    // A roll-group option grants Ghost Touch; the credit resolves back to the
+    // equipped host, not the pick's internal var.
+    const hostV = item("ROLL-H", "Boots", [["A", "Enhancement", 5]]);
+    hostV.roll_groups = [{ options: [{ stat: "Ghost Touch", bonus_type: "Bool", value: 1, unit: "flat" }] }];
+    const model = {
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [slot("Boots", [hostV])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.deepStrictEqual(r.utilityReport.effects, [{ name: "Ghost Touch", item: "ROLL-H" }],
+      "the roll pick's effect is credited to its host item");
+  });
+
+  await test("#91 U5/KTD6 guard: a floated indicator (no fired contribution) is omitted from the report", async () => {
+    // Synthetic primal straight into readSolution (the #319 idiom): u_e=1 with
+    // no backing z fired must not enter the report — on tieBreak:false paths a
+    // binary can float numerically, and receipts must never claim an effect no
+    // fired contribution carries.
+    const model = {
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [slot("Necklace", [item("nGT", "Necklace", [["A", "Enhancement", 2], ["Ghost Touch", "Bool", 1]])])],
+    };
+    const program = S.buildProgram(model);
+    assert.strictEqual(program.utilityVars.length, 1, "one indicator minted");
+    const u = program.utilityVars[0];
+    const zs = program.utilityMeta.get(u).zNames;
+    assert.ok(zs.length >= 1, "the indicator has backing contributions");
+    const primalOf = (names) => ({ Columns: Object.fromEntries(names.map((n) => [n, { Primal: 1 }])) });
+    const x = program.xVars[0].name;
+    const floated = S.readSolution(primalOf([x, u]), program);
+    assert.deepStrictEqual(floated.utilityReport, { count: 0, effects: [] },
+      "floated indicator: omitted from the report");
+    assert.deepStrictEqual(floated.utilityEffects, [], "and from the effect list");
+    const fired = S.readSolution(primalOf([x, u, zs[0]]), program);
+    assert.deepStrictEqual(fired.utilityReport, { count: 1, effects: [{ name: "Ghost Touch", item: "nGT" }] },
+      "fired indicator: reported with its credited carrier");
+  });
+
+  await test("#91 U5: the tieBreak:false path (alternatives shape) carries the same guarded report", async () => {
+    const model = {
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+        slot("Necklace", [item("nGT", "Necklace", [["Ghost Touch", "Bool", 1]])]),
+      ],
+    };
+    const opt = await S.solveLexicographic(model, highs);
+    const alt = S.solveConstrained(opt.program, highs, { objectiveStat: "A", tieBreak: false });
+    assert.strictEqual(alt.status, "optimal");
+    assert.ok(alt.utilityReport, "a solveConstrained result over a tier-ranked program carries the report");
+    assert.deepStrictEqual(alt.utilityReport.effects.filter((e) => e.name === "Ghost Touch").length <= 1, true,
+      "no duplicate receipts");
+    for (const e of alt.utilityReport.effects) {
+      assert.ok(e.item != null, `every reported effect names a credited carrier (${e.name})`);
+    }
+    assert.strictEqual(alt.utilityReport.count, alt.utilityReport.effects.length,
+      "count and receipts agree on the same primal");
+  });
+
+  await test("#91 U5/R12: slots the Utility stage fills are NOT reported as empty", async () => {
+    const mk = (targets) => ({
+      targets, mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch", "Feather Falling"]),
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+        slot("Necklace", [item("nGT", "Necklace", [["Ghost Touch", "Bool", 1]])]),
+        slot("Trinket", [item("tFF", "Trinket", [["Feather Falling", "Bool", 1]])]),
+      ],
+    });
+    const bare = await S.solveLexicographic(mk(["A"]), highs);
+    assert.strictEqual(bare.emptySlots.count, 2, "tier-absent: the two utility-only slots are empty");
+    const r = await S.solveLexicographic(mk(["A", SENT]), highs);
+    assert.strictEqual(r.emptySlots.count, 0, "the invitation fires only for slots still empty post-Utility");
+    assert.deepStrictEqual(r.emptySlots.slots, []);
+  });
+
   await test("AE3: dodge cap clamps (item still equipped)", async () => {
     const model = {
       targets: ["Dodge"], mlCap: 34, dodgeCap: 4,

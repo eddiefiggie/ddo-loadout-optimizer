@@ -39,6 +39,12 @@
     // #110 (U7) — the blocklist attribution, computed off the pre-dominance pool
     // at model-build time. Same restore-without-re-solve contract as the rest.
     "blockReport",
+    // #91 (U5, KTD6/R14) — the Utility tier's receipts (count + per-effect
+    // credited carrier) and the stage-locked count. Computed from `program`
+    // (dropped by omission) at solve time; without these a restored character
+    // with the tier ranked could only render the report-absent state, never
+    // its actual effects, because KTD6 forbids re-solving on load.
+    "utilityReport", "utilityCount",
   ];
 
   function stripResult(result) {

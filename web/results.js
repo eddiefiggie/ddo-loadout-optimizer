@@ -36,6 +36,14 @@ const satisfiedSetDetail = Proj.satisfiedSetDetail;
 // while each file keeps its own copy for node's module-scoped `require`.
 var itemMl = (v) => (v && v.ml != null) ? v.ml : (v && v.minimum_level);
 
+// #91 (U5, KTD1) — the Utility tier's sentinel priority token, owned by
+// model.js (single definition). Browser global; Node require — the same bridge
+// solver.js uses. `var` because solver.js declares the same name in the shared
+// browser scope (same value, same source — the itemMl redeclaration precedent).
+var _UTILITY_SENTINEL = (typeof UTILITY_SENTINEL !== "undefined")
+  ? UTILITY_SENTINEL
+  : (typeof require !== "undefined" ? require("./model.js").UTILITY_SENTINEL : "Utility effects");
+
 // Standard fillable augment-slot colors — a generic augment can go here, so an
 // open one is a realizable upgrade. Named crafting slots (Lamordia, celestial)
 // need specific augments and are shown as craft slots, not flagged as unused.
@@ -1058,6 +1066,40 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   if (typeof onAfterRender === "function") onAfterRender(container);
 }
 
+// #91 (U5, KTD6/R9) — the Utility tier's dedicated priority card. Takes the
+// `build` BEING RENDERED (renderBuild is generic over optimum/alternative), so
+// selecting an Alternatives entry re-renders receipts from THAT build — it must
+// never close over the optimum. Three states, deliberately distinct:
+//   1. report-absent (a healed pre-feature restore: the tier is in the priority
+//      list but the snapshot predates `utilityReport`) — a re-solve note, NEVER
+//      the zero-state, which would be a false claim about an unknown count;
+//   2. count-zero — the plain R9 sentence, never an empty receipts list;
+//   3. receipts-present — the count plus one "effect — from item" line each,
+//      credited by the solver's stated first-carrier rule.
+function utilityCard(build, rankIdx) {
+  const head = `<div class="stat-head"><span class="stat-rank">${rankIdx + 1}</span>`
+    + `<span class="stat-name">${esc(_UTILITY_SENTINEL)}</span></div>`;
+  const rep = build ? build.utilityReport : null;
+  if (!rep) {
+    return `<div class="stat-card utility-card utility-stale">${head}
+      <p class="utility-note muted">This saved build predates utility tracking — re-solve to compute utility effects.</p>
+    </div>`;
+  }
+  const effects = rep.effects || [];
+  if (!effects.length) {
+    return `<div class="stat-card utility-card">${head}
+      <div class="stat-value" data-final="0">0</div>
+      <p class="utility-note">0 utility effects on this loadout — no counted on/off effects are present.</p>
+    </div>`;
+  }
+  const list = effects.map((e) =>
+    `<li class="utility-effect">✓ ${esc(e.name)}${e.item ? ` <span class="attrib-src">— from ${esc(e.item)}</span>` : ""}</li>`).join("");
+  return `<div class="stat-card utility-card">${head}
+    <div class="stat-value" data-final="${esc(effects.length)}">${esc(effects.length)}</div>
+    <ul class="attrib utility-receipts">${list}</ul>
+  </div>`;
+}
+
 // Compute the per-build view HTML (paperdoll, weapon row, ranked cards, set panel,
 // deep dive) for ANY result-shaped build — the optimum or a selected alternative,
 // which carry the same fields (chosen, effective, breakdown, capped, setsActive,
@@ -1079,6 +1121,11 @@ function buildViews(build, model, query) {
   // stale-save notice instead of throwing and blanking the whole results area.
   const effective = build.effective || {};
   const cards = query.targets.map((stat, i) => {
+    // #91 (U5) — the Utility sentinel is EXCLUDED from the generic stat-card
+    // body: it is not a stat, has no effective[] entry, and the generic card
+    // would render a phantom 0-value row. Its dedicated card renders at the
+    // sentinel's rank index instead, so the row sits where the player ranked it.
+    if (stat === _UTILITY_SENTINEL) return utilityCard(build, i);
     const total = effective[stat] ?? 0;
     const contribs = attr[stat] || [];
     const cap = build.capped ? build.capped[stat] : null;
@@ -1246,5 +1293,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, blockNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, blockNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }

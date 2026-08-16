@@ -307,8 +307,6 @@ test("U6/#249: the absorption-quarantine disclosure survives the save path", () 
   assert.strictEqual(kept.model, undefined, "and the model still is not");
 });
 
-if (!process.exitCode) console.log(`\n${passed} passed`);
-
 // #245 — the niche-crafting opt-out survives save/load like any other input.
 test("#245: excludeCraftingSystems persists through pickInputs", () => {
   const on = pickInputs(Object.assign({}, state, { excludeCraftingSystems: true }), "NoCrafts");
@@ -355,3 +353,34 @@ test("U3: stripResult keeps crossAdd on breakdown parts (save/load round-trip)",
     "breakdown parts round-trip whole, crossAdd included");
   assert.strictEqual(restored.breakdown.Combustion[1].crossAdd, "Universal Spell Power");
 });
+
+// ---------------------------------------------------------------------------
+// #91 (U5, KTD6/R14) — the Utility receipts survive the save path. `program`
+// is dropped by omission and a restored character is never re-solved, so
+// without utilityReport in RESULT_KEEP a saved tier-ranked build could only
+// ever render the report-absent state on reload.
+test("#91 U5/R14: utilityReport + utilityCount survive stripResult; program still dropped", () => {
+  const report = { count: 2, effects: [
+    { name: "Ghost Touch", item: "rGT" }, { name: "Feather Falling", item: "tFF" }] };
+  const kept = stripResult({ status: "optimal", chosen: [], effective: {},
+    utilityReport: report, utilityCount: 2, program: { cyclic: true } });
+  assert.deepStrictEqual(kept.utilityReport, report, "the receipts are persisted");
+  assert.strictEqual(kept.utilityCount, 2, "the stage-locked count rides along");
+  assert.strictEqual(kept.program, undefined, "the program still is not");
+});
+
+test("#91 U5/R14: a serialized character keeps utilityReport through save -> load -> JSON round-trip", () => {
+  const st = fakeStorage();
+  const report = { count: 1, effects: [{ name: "Ghost Touch", item: "nGT" }] };
+  const run = { query: { targets: ["Constitution", "Utility effects"] },
+    result: { status: "optimal", chosen: [], effective: { Constitution: 12 },
+      utilityReport: report, utilityCount: 1, program: { huge: true } } };
+  saveCharacter(serializeCharacter("Utila", state, run, "b1"), st);
+  const rec = loadCharacter("Utila", st);
+  const restored = JSON.parse(JSON.stringify(rec.snapshot)); // exactly as localStorage stores it
+  assert.deepStrictEqual(restored.utilityReport, report,
+    "the restored snapshot renders receipts without a re-solve");
+  assert.strictEqual(restored.utilityCount, 1);
+});
+
+if (!process.exitCode) console.log(`\n${passed} passed`);
