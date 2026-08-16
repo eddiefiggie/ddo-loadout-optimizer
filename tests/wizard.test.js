@@ -79,6 +79,44 @@ test("wizIsForged", () => {
   assert.ok(!wizIsForged("Elf") && !wizIsForged(""));
 });
 
+// ---------------------------------------------------------------------------
+// #346 (U1/U2) — the crafting/augment ladder at the query boundary.
+
+test("#346: buildQuery threads the rung and fails open to the top", () => {
+  assert.strictEqual(buildQuery(baseState()).craftingRung, "everything",
+    "an absent rung (pre-feature state) reads as the top rung");
+  for (const r of ["everything", "no-niche-crafting", "no-solar-lunar", "printed-only"]) {
+    assert.strictEqual(buildQuery({ ...baseState(), craftingRung: r }).craftingRung, r);
+  }
+  assert.strictEqual(buildQuery({ ...baseState(), craftingRung: "nonsense" }).craftingRung, "everything",
+    "a hand-edited value fails open rather than reaching the solver");
+});
+
+// KTD4 — the control retains the player's typed ceiling, but the SOLVED query
+// must not carry it on a rung that placed no augments, or the results assert a
+// restriction that did nothing. This is the honesty half of R6.
+test("#346: a rung that excludes augments nulls the ceiling in the solved query", () => {
+  const withCeiling = { ...baseState(), ml: 34, augCeiling: 30 };
+  assert.strictEqual(buildQuery({ ...withCeiling, craftingRung: "everything" }).augCeiling, 30);
+  assert.strictEqual(buildQuery({ ...withCeiling, craftingRung: "no-niche-crafting" }).augCeiling, 30);
+  assert.strictEqual(buildQuery({ ...withCeiling, craftingRung: "no-solar-lunar" }).augCeiling, 30,
+    "the Solar/Lunar rung still admits 819 augments, so the ceiling still means something");
+  assert.strictEqual(buildQuery({ ...withCeiling, craftingRung: "printed-only" }).augCeiling, null,
+    "the bottom rung places no augment, so the solve carries no augment restriction");
+});
+
+// R6 — the typed value survives the round trip. The player who sets a ceiling,
+// drops to printed-only, then climbs back must find their number intact; only
+// the QUERY forgets it, never the state.
+test("#346: the ceiling value survives a trip down to the bottom rung and back", () => {
+  const state = { ...baseState(), ml: 34, augCeiling: 28, craftingRung: "everything" };
+  state.craftingRung = "printed-only";
+  assert.strictEqual(buildQuery(state).augCeiling, null, "the solve forgets it");
+  assert.strictEqual(state.augCeiling, 28, "the state does not");
+  state.craftingRung = "no-solar-lunar";
+  assert.strictEqual(buildQuery(state).augCeiling, 28, "climbing back restores it to the solve");
+});
+
 test("buildQuery threads the optional mlFloor (blank/0 -> null)", () => {
   assert.strictEqual(buildQuery({ ...baseState(), mlFloor: 30 }).mlFloor, 30);
   assert.strictEqual(buildQuery({ ...baseState(), mlFloor: "" }).mlFloor, null);

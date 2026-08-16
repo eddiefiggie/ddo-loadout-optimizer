@@ -1086,11 +1086,11 @@ if (typeof window !== "undefined" && window.App) {
       // must never clear this (R2).
       twoWeaponFighting: false,
       includeArtifact: false,
-      // #245 — opt out of the niche crafting systems (Viktranium, seals, Nearly
-      // Completed, Dino crafting, set-membership crafting). Off by default: the
-      // full min-max solve is the product; this is the "items must win on what
-      // is printed on them" mode for players who won't grind the crafts.
-      excludeCraftingSystems: false,
+      // #346 — the crafting/augment ladder (replaced #245's boolean). Defaults to
+      // the top rung: the full min-max solve is the product, and the lower rungs
+      // are the "items must win on what is printed on them" modes for players who
+      // won't grind the crafts or buy the augments.
+      craftingRung: "everything",
       // #110 (U1/KTD6) — the blocklist: variant ids the solver must never place.
       // An ARRAY of id strings, never an object keyed by names — item names are
       // untrusted data, and a name-keyed object lands in the prototype-pollution
@@ -1165,9 +1165,6 @@ if (typeof window !== "undefined" && window.App) {
               <span class="wz-help">Hide low-level gear — the solver ignores items below this. Defaults to your ML cap − 5 and follows the cap until you set it yourself; lower it to consider more gear.</span>
               <input id="wz-mlfloor" class="wz-ml" type="number" min="1" max="40" value="${state.mlFloor ? esc(state.mlFloor) : ""}"></label>
           </div>
-          <label class="wz-field"><span class="wz-label">Augments up to ML <span class="wz-sub">· optional</span></span>
-            <span class="wz-help">Restrict augments to tiers you can realistically obtain — items still follow the ML cap. Defaults to your cap (no restriction); lower it to exclude higher augment tiers from the solve.</span>
-            <input id="wz-augceiling" class="wz-ml" type="number" min="1" max="40" value="${state.augCeiling != null ? esc(state.augCeiling) : esc(state.ml)}"></label>
           <div class="wz-pair">
             <label class="wz-field"><span class="wz-label">Race</span>
               <span class="wz-help">Determines body-slot and race-locked gear.</span>
@@ -1257,9 +1254,36 @@ if (typeof window !== "undefined" && window.App) {
           <label class="wz-check"><input type="checkbox" id="wz-artifact"${state.includeArtifact ? " checked" : ""}>
             <span class="wz-check-body"><span class="wz-label">Include an Artifact</span>
             <span class="wz-help">Build around your one equippable Artifact — the optimizer picks the best-scoring one and tags its slot. Off by default.</span></span></label>
-          <label class="wz-check"><input type="checkbox" id="wz-no-crafting"${state.excludeCraftingSystems ? " checked" : ""}>
-            <span class="wz-check-body"><span class="wz-label">Don't build around niche crafting</span>
-            <span class="wz-help">Exclude the craftable option systems — Viktranium experiments, Sealed-in-X seals, Nearly Completed, Dinosaur Bone crafting, and set-bonus crafting — so every item must win on what is actually printed on it. Regular augments still count. Off by default.</span></span></label>
+          ${(() => {
+            // #346 (U2) — the crafting/augment ladder. A radio group, not a
+            // select: four rungs is few enough to show at once, and the whole
+            // point is that the player can SEE what each step gives up.
+            // Ordered top (least restrictive) to bottom, matching the rank table.
+            const rung = _normalizeRung(state.craftingRung);
+            const RUNGS = [
+              ["everything", "Everything",
+                "Craftable options and every augment are on the table. This is the default."],
+              ["no-niche-crafting", "No niche crafting",
+                "Exclude Viktranium experiments, Sealed-in-X seals, Nearly Completed, Dinosaur Bone crafting, and set-bonus crafting. Augments still count."],
+              ["no-solar-lunar", "No niche crafting or Solar/Lunar gems",
+                "Also exclude Solar and Lunar Gems. Ordinary colour augments — rubies, sapphires, topazes, diamonds — still count."],
+              ["printed-only", "No crafting or augments at all",
+                "Every item wins on what is actually printed on it. Pick this when you won't spend crafting mats on gear you'll replace while levelling."],
+            ];
+            return `<fieldset class="wz-ladder">
+              <legend class="wz-label">What may the solver assume beyond the printed item?</legend>
+              <span class="wz-help">Each step down removes more than the one above it. Lower rungs mean smaller numbers you can actually reach.</span>
+              ${RUNGS.map(([val, label, help]) => `<label class="wz-check">
+                <input type="radio" name="wz-crafting-rung" value="${esc(val)}"${rung === val ? " checked" : ""}>
+                <span class="wz-check-body"><span class="wz-label">${esc(label)}</span>
+                <span class="wz-help">${esc(help)}</span></span></label>`).join("")}
+            </fieldset>
+            <label class="wz-field" id="wz-augceiling-field"><span class="wz-label">Augments up to ML <span class="wz-sub">· optional</span></span>
+              <span class="wz-help" id="wz-augceiling-help">${_rungExcludesAllAugments(rung)
+                ? "Not applicable — the rung you chose solves without augments, so there is no augment tier to restrict. Your value is kept for when you move back up."
+                : "Restrict augments to tiers you can realistically obtain — items still follow the ML cap. Defaults to your cap (no restriction); lower it to exclude higher augment tiers from the solve."}</span>
+              <input id="wz-augceiling" class="wz-ml" type="number" min="1" max="40"${_rungExcludesAllAugments(rung) ? " disabled" : ""} value="${state.augCeiling != null ? esc(state.augCeiling) : esc(state.ml)}"></label>`;
+          })()}
           ${(() => {
             // U6 — Set Augment availability. The 21 set-augment names come from the
             // dataset's augment_set_defs (single source of truth). A checked name is
@@ -2597,7 +2621,14 @@ if (typeof window !== "undefined" && window.App) {
         document.getElementById("wz-race").onchange = (e) => { state.race = e.target.value; if (wizIsForged(state.race)) { state.armor = ""; state.oath = ""; } render(); };
         document.getElementById("wz-align").onchange = (e) => state.alignment = e.target.value;
         document.getElementById("wz-artifact").onchange = (e) => state.includeArtifact = e.target.checked;
-        document.getElementById("wz-no-crafting").onchange = (e) => state.excludeCraftingSystems = e.target.checked;
+        // #346 (U2) — the ladder. Re-render on change so the augment-ceiling
+        // control's enabled/disabled state and its reason line follow the rung
+        // in one place rather than being toggled by hand here (the two would
+        // drift). The typed ceiling value lives on state and is untouched, so
+        // climbing back up restores it — R6.
+        for (const el of document.querySelectorAll('input[name="wz-crafting-rung"]')) {
+          el.onchange = (e) => { if (e.target.checked) { state.craftingRung = _normalizeRung(e.target.value); render(); } };
+        }
         // U6 — set-augment availability checkboxes write into state.ownedSetAugments (a Set).
         root.querySelectorAll("#wz-setaug-list input[data-setaug]").forEach((cb) => cb.onchange = (e) => {
           if (!(state.ownedSetAugments instanceof Set)) state.ownedSetAugments = new Set();
