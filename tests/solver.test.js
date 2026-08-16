@@ -4314,6 +4314,134 @@ async function withCrossAdd(map, fn) {
     });
   });
 
+  // ---- #325 visibility-guard corners: at-floor substitution attribution, ----
+  // ---- credited∩capped net test, floored non-target stats ----
+
+  await test("#325: an at-floor substituted placement leaves the DECLARED part in the breakdown", async () => {
+    // The at-floor tie: a craft z at exactly the credit floor is a feasible
+    // tied vertex (only strictly-below-floor seating is LP-infeasible). The
+    // guard omits the placement — and before #325 nothing explained the total:
+    // the proof panel summed to 0 while effective read 5 and creditReport said
+    // gear supplied it.
+    const program = S.buildProgram(invisModel({
+      dinoAffixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 5, unit: "flat" }],
+      credits: [credit("Melee Power", "Artifact", 5)],
+    }));
+    assert.strictEqual([...program.creditBuckets.values()][0], 5, "credit floor minted");
+    const q = [...program.dinoMeta.keys()][0];
+    const zq = zsForGate(program, q);
+    const res = primalOf([q, zq[0]]);
+    const prim = (n) => (res.Columns[n] ? res.Columns[n].Primal : 0);
+    const r = S.readSolution(res, program);
+    assert.strictEqual((r.dinoPlaced || []).length, 0, "the substituted placement stays omitted");
+    assert.strictEqual(r.effective["Melee Power"], 5, "the total still holds the floor value");
+    const parts = S.breakdownByTarget(program, prim)["Melee Power"] || [];
+    const declared = parts.filter((p) => p.sourceKind === "declared");
+    assert.strictEqual(declared.length, 1, "the DECLARED part is emitted in the hidden placement's place");
+    assert.strictEqual(declared[0].value, 5, "at the floor value");
+    assert.ok(!parts.some((p) => p.sourceKind === "dino"), "the hidden placement is still not named");
+    const sum = parts.reduce((s, p) => s + p.value, 0);
+    assert.ok(sum >= r.effective["Melee Power"],
+      `receipts invariant: parts (${sum}) sum to at least the displayed effective (${r.effective["Melee Power"]})`);
+  });
+
+  await test("#325: creditReport's won/gearInLoadout follow the substitution rule", async () => {
+    const model = invisModel({
+      dinoAffixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 5, unit: "flat" }],
+      credits: [credit("Melee Power", "Artifact", 5)],
+    });
+    const program = S.buildProgram(model);
+    const q = [...program.dinoMeta.keys()][0];
+    const zq = zsForGate(program, q);
+    const res = primalOf([q, zq[0]]);
+    const prim = (n) => (res.Columns[n] ? res.Columns[n].Primal : 0);
+    const report = S.buildCreditReport(program, prim, model, []);
+    assert.strictEqual(report.length, 1, "one credit reported");
+    assert.strictEqual(report[0].won, true,
+      "the credit wins its bucket when the seated craft merely substitutes for it");
+    assert.strictEqual(report[0].gearInLoadout, 0,
+      "a hidden placement is not the endorsed build's gear");
+  });
+
+  await test("#325: in a credited AND capped bucket the cap test uses value minus floor", async () => {
+    // raw = 20 + 8 = 28, cap 24, floor 5. Removing the craft lets the credit
+    // backfill the floor, so the displayed total loses only 8 - 5 = 3:
+    // 28 - 3 = 25 >= 24 -> hidden. The gross test (28 - 8 = 20 < 24) would
+    // have kept it visible — the pre-#325 over-report.
+    const program = S.buildProgram(invisModel({
+      wornAffixes: [["Melee Power", "Enhancement", 20]],
+      dinoAffixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 8, unit: "flat" }],
+      userCaps: { "Melee Power": 24 },
+      credits: [credit("Melee Power", "Artifact", 5)],
+    }));
+    assert.strictEqual(program.cappedStats["Melee Power"], 24, "cap minted");
+    assert.strictEqual([...program.creditBuckets.values()][0], 5, "credit floor minted");
+    const q = [...program.dinoMeta.keys()][0];
+    const zq = zsForGate(program, q);
+    const xa = xOf(program, "BIGMP");
+    const res = primalOf([xa, zsForGate(program, xa)[0], q, zq[0]]);
+    const prim = (n) => (res.Columns[n] ? res.Columns[n].Primal : 0);
+    const r = S.readSolution(res, program);
+    assert.strictEqual((r.dinoPlaced || []).length, 0,
+      "net of the credit floor the placement moves no displayed total, so it is omitted");
+    assert.strictEqual(r.effective["Melee Power"], 24, "total sits at the cap");
+    const parts = S.breakdownByTarget(program, prim)["Melee Power"] || [];
+    assert.ok(parts.some((p) => p.sourceKind === "declared" && p.value === 5),
+      "the DECLARED floor part backfills the hidden placement's bucket");
+    const sum = parts.reduce((s, p) => s + p.value, 0);
+    assert.ok(sum >= r.effective["Melee Power"],
+      `receipts invariant under cap: parts (${sum}) >= displayed (${r.effective["Melee Power"]})`);
+  });
+
+  await test("#325: a craft strictly above cap-plus-floor slack still reports in a credited capped bucket", async () => {
+    // Same shape, cap 27: 28 - 3 = 25 < 27 -> removing the craft would lower
+    // the displayed total even after the credit backfills. Visible.
+    const program = S.buildProgram(invisModel({
+      wornAffixes: [["Melee Power", "Enhancement", 20]],
+      dinoAffixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 8, unit: "flat" }],
+      userCaps: { "Melee Power": 27 },
+      credits: [credit("Melee Power", "Artifact", 5)],
+    }));
+    const q = [...program.dinoMeta.keys()][0];
+    const zq = zsForGate(program, q);
+    const xa = xOf(program, "BIGMP");
+    const r = S.readSolution(primalOf([xa, zsForGate(program, xa)[0], q, zq[0]]), program);
+    assert.strictEqual((r.dinoPlaced || []).length, 1, "net-of-floor load-bearing placement reports");
+  });
+
+  await test("#325: a z feeding a floored NON-target via cross-add stays visible when its capped target is slack", async () => {
+    // The statUniverse gap: Universal Spell Power is floored but NOT a target,
+    // and the craft z's own-stat bucket cross-adds into the capped target
+    // Combustion. Judged on Combustion alone (raw 25 - 5 = 20 >= cap 15) the
+    // placement would hide — but removing it would break the USP floor the
+    // player asked for. flooredStats joins the universe, USP is uncapped, and
+    // the uncapped-sibling short-circuit keeps the placement visible.
+    return withCrossAdd({ Combustion: ["Universal Spell Power"] }, async () => {
+      const dinoHostV = item("DINO-H4", "Ring", []);
+      dinoHostV.dino_slots_norm = ["Fang||Accessory"];
+      const program = S.buildProgram({
+        targets: ["Combustion"], mlCap: 36, dodgeCap: null,
+        userCaps: { Combustion: 15 },
+        floors: { "Universal Spell Power": 5 },
+        worn: [slot("Armor", [item("BIGCOMB", "Armor", [["Combustion", "Enhancement", 20]])]),
+               slot("Ring", [dinoHostV])],
+        dinoInserts: [{ dino_type: "Fang", category: "Accessory", name: "USP Fang",
+          affixes: [{ stat: "Universal Spell Power", bonus_type: "Artifact", value: 5, unit: "flat" }] }],
+      });
+      // Non-vacuity: the floored non-target stat was stamped, and USP is not a target.
+      assert.deepStrictEqual(program.flooredStats, ["Universal Spell Power"], "flooredStats stamped");
+      assert.ok(!program.targetList.includes("Universal Spell Power"), "USP is genuinely a non-target");
+      assert.strictEqual(program.cappedStats.Combustion, 15, "cap minted");
+      const q = [...program.dinoMeta.keys()][0];
+      const zq = zsForGate(program, q);
+      assert.strictEqual(zq.length, 1, "the insert gates one contribution");
+      const xa = xOf(program, "BIGCOMB");
+      const r = S.readSolution(primalOf([xa, zsForGate(program, xa)[0], q, zq[0]]), program);
+      assert.strictEqual((r.dinoPlaced || []).length, 1,
+        "a placement supporting a floored non-target stat is load-bearing even when its capped target is slack");
+    });
+  });
+
   // ---- #321 Thunder-Forged / Green Steel join the fewer-crafts axis ----
   // Clone of the #319 backstop fixture (which must stay green unmodified): here
   // the TF tier OUTVALUES the worn Artifact source, so the placement is

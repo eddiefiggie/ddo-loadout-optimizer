@@ -1056,6 +1056,10 @@ function buildProgram(model) {
     // creditBuckets (bucket key -> declared-credit floor) rides out for the
     // #322 visibility guard (visibleGateSet) rather than being re-derived.
     xVars, zByBucket, cappedStats, targetList: model.targets, model, creditMeta, creditBuckets,
+    // #325 — floored stats (targets or not) join visibleGateSet's stat universe:
+    // a contribution supporting a floored stat is load-bearing even when every
+    // tracked stat it also feeds is capped and slack.
+    flooredStats: Object.keys(model.floors || {}),
     forcedOffVars: forcedOffSlotVars(xVars, model.query && model.query.slotConstraints),
     extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, hostsVar, _zc: zc,
   };
@@ -1294,18 +1298,27 @@ function preferColorlessSetAugments(program, highs, prevRes, locks) {
   return res.Status === "Optimal" ? res : prevRes;
 }
 
+// #322/#325 — is gate g a REPORT-HIDDEN placement? Scoped to the guarded
+// placement families (ordinary augments' pu + the seven crafts) so worn/set
+// display is untouched. Shared by breakdownByTarget and buildCreditReport so
+// attribution and the credit notice can never disagree about which placements
+// the report endorses.
+function hiddenPlacementGateFn(program, visible) {
+  const placementMetas = [program.placeMeta, program.dinoMeta, program.ncMeta, program.rollMeta,
+                          program.vikMeta, program.sealMeta, program.tfMeta, program.gsMeta];
+  return (g) => !visible.has(g) && placementMetas.some((m) => m && m.has(g));
+}
+
 function breakdownByTarget(program, prim, precomputedVisible) {
   const xByName = new Map(program.xVars.map((xv) => [xv.name, xv]));
   // #322 — a placement the report guards omit (fired but invisible: cap-clamped
   // or credit-substituted) must not be named by attribution either. Same
-  // predicate readSolution's guards consume; scoped to the guarded placement
-  // families (ordinary augments' pu + the seven crafts) so worn/set display is
-  // untouched. Production call sites pass readSolution's set to avoid computing
-  // it twice per solve; the 2-arg test seam computes it here.
+  // predicate readSolution's guards consume. Production call sites pass
+  // readSolution's set to avoid computing it twice per solve; the 2-arg test
+  // seam computes it here.
   const visible = precomputedVisible || visibleGateSet(program, prim);
-  const placementMetas = [program.placeMeta, program.dinoMeta, program.ncMeta, program.rollMeta,
-                          program.vikMeta, program.sealMeta, program.tfMeta, program.gsMeta];
-  const hiddenPlacementGate = (g) => !visible.has(g) && placementMetas.some((m) => m && m.has(g));
+  const hiddenPlacementGate = hiddenPlacementGateFn(program, visible);
+  const creditFloors = program.creditBuckets || new Map();
   // Equipped item identity -> its worn slot, so an item-craft (nc/roll/vik/seal)
   // whose meta carries `item` can be attributed back to the slot it sits in (KTD6).
   const slotOfItem = new Map();
@@ -1359,7 +1372,25 @@ function breakdownByTarget(program, prim, precomputedVisible) {
       for (const z of zs) {
         if (prim(z.name) > 0.5) {
           // #322 — skip contributions gated by a hidden placement (see above).
-          if (z.gates.some(hiddenPlacementGate)) continue;
+          // #325 — but in a CREDITED bucket, emit the DECLARED part (value =
+          // floor) in the skipped part's place. Both hidden shapes assume the
+          // credit backfills the floor once the placement is gone: an at-floor
+          // craft merely substitutes for the credit (its whole value is the
+          // floor), and a cap-hidden craft was judged on its value − floor
+          // net. Without this part the proof panel and every export explain
+          // the total short by the floor while creditReport says gear covers
+          // it — the receipts must sum back to the displayed effective.
+          if (z.gates.some(hiddenPlacementGate)) {
+            const floor = creditFloors.get(key);
+            if (floor != null && !(program.creditMeta && program.creditMeta.has(z.name))) {
+              parts.push({
+                bonus_type: bonusType, value: floor, source: DECLARED_LABEL,
+                sourceKind: "declared", slot: null, setYieldingSlots: null,
+                hostIds: null, via: null, crossAdd,
+              });
+            }
+            continue;
+          }
           // U3 — a declared credit is resolved from the CONTRIBUTION, not from a
           // gate. It has none, so `sourceOf(z.gates[0])` reads `undefined` and
           // falls through every branch to `{kind:"other", label: undefined}` —
@@ -1400,6 +1431,23 @@ function computeScale(program) {
   return { variants: program.xVars.length, crafts, stages: (program.targetList || []).length + 1 };
 }
 
+// #326 — THE single definition of a per-stat total read off a primal. These
+// used to be computed independently at four sites (visibleGateSet's raw cache,
+// readSolution's effective loop, probeMax, and solveConstrained's gainVal); a
+// contribution path added to only one of them would silently diverge the
+// guard's arithmetic from the displayed totals. rawTotalOf sums every fired
+// contribution across the stat's buckets; effectiveOf clamps to the stat's cap
+// as min(cap, raw) — NOT the d_ variable, which an alternative's relaxed solve
+// leaves floating at its lower bound (see the note in readSolution).
+function rawTotalOf(program, prim, stat) {
+  return rawExpr(program, stat).reduce((sum, t) => sum + (prim(t.name) > 0.5 ? t.coef : 0), 0);
+}
+function effectiveOf(program, prim, stat) {
+  const cap = program.cappedStats ? program.cappedStats[stat] : null;
+  const raw = rawTotalOf(program, prim, stat);
+  return cap != null ? Math.min(cap, raw) : raw;
+}
+
 // #319/#322 — the shared load-bearing test for every craft/placement family: a
 // placement var is load-bearing iff some contribution it gates fired AND is
 // VISIBLE in the displayed outcome. Two fired-but-invisible shapes exist:
@@ -1408,7 +1456,10 @@ function computeScale(program) {
 //       player does not already hold; such z's are dropped first.
 //   (b) cap clamping — every tracked stat the z feeds is capped, and the
 //       placement's surviving fired contributions are jointly slack under the
-//       cap. The test is placement-level and summed, never per-contribution
+//       cap. In a credited bucket the contribution is counted NET of the
+//       declared-credit floor (#325): removing the z lets the credit backfill
+//       the floor, so the displayed total loses only value − floor. The test
+//       is placement-level and summed, never per-contribution
 //       (two contributions that jointly hold a stat at its cap keep their
 //       placement reported), and SET-CONSISTENT across placements: pending
 //       gates are judged greedily in a deterministic (sorted) order, and each
@@ -1425,10 +1476,27 @@ function computeScale(program) {
 // Outcome-level invariant: a gate enters this set iff removing everything it
 // gates would lower some displayed effective total or force a substitution the
 // credit floor does not already cover — so a guarded report never claims a
-// placement whose absence the displayed totals could not distinguish.
+// placement whose absence the displayed totals could not distinguish. The
+// receipts stay whole: where a hidden placement sat in a credited bucket, the
+// breakdown emits the DECLARED part at the floor in its place, so each stat's
+// parts always sum back to at least its displayed effective.
+//
+// Settled scope (#325 ruling): the bespoke families — joker, set-membership,
+// set-augment — judge on SET ACTIVITY, deliberately not on this visibility
+// set. An active set is a composition fact about the equipped items: the tier
+// fires in game whether or not a cap clamps its contributions, so hiding it
+// would misreport what the player is wearing. A craft placement is different
+// in kind — it prescribes farming, so a placement whose absence the displayed
+// totals cannot distinguish must not be prescribed. Do not "unify" these.
 function visibleGateSet(program, prim) {
   const capped = program.cappedStats || {};
-  const statUniverse = [...new Set([...(program.targetList || []), ...Object.keys(capped)])];
+  // #325 — floored non-target stats belong in the universe: a z feeding one
+  // (directly or as a cross-add source) supports a displayed floor, so it must
+  // count as feeding an uncapped tracked stat rather than being judged on its
+  // capped siblings alone. (A floored stat that is also capped contributes via
+  // the capped path unchanged.)
+  const statUniverse = [...new Set([...(program.targetList || []), ...Object.keys(capped),
+    ...(program.flooredStats || [])])];
   const creditFloors = program.creditBuckets || new Map();
   const visible = new Set();
   const pending = new Map(); // gate -> Map(capped stat -> sum of deferred contributions)
@@ -1448,20 +1516,23 @@ function visibleGateSet(program, prim) {
         if (!fedCapped.length) feedsUncapped = true; // uncapped bucket: short-circuit
       }
       if (feedsUncapped) { for (const g of z.gates) visible.add(g); continue; }
-      // (b) defer to the placement-level cap sum test below.
+      // (b) defer to the placement-level cap sum test below. #325 — in a
+      // credited bucket the removal of this z lets the credit backfill the
+      // floor (only strictly-below-floor seating is LP-infeasible), so the
+      // displayed total loses z.value − floor, not z.value. Summing the gross
+      // value slightly over-reported visibility in the credited∩capped corner.
+      const net = floor != null ? z.value - floor : z.value;
       for (const g of z.gates) {
         let sums = pending.get(g);
         if (!sums) pending.set(g, (sums = new Map()));
-        for (const s of fedCapped) sums.set(s, (sums.get(s) || 0) + z.value);
+        for (const s of fedCapped) sums.set(s, (sums.get(s) || 0) + net);
       }
     }
   }
   if (pending.size) {
     const rawCache = new Map();
     const rawOf = (s) => {
-      if (!rawCache.has(s)) {
-        rawCache.set(s, rawExpr(program, s).reduce((sum, t) => sum + (prim(t.name) > 0.5 ? t.coef : 0), 0));
-      }
+      if (!rawCache.has(s)) rawCache.set(s, rawTotalOf(program, prim, s));
       return rawCache.get(s);
     };
     // #322 set-consistency — judging every gate against the FULL raw lets two
@@ -1493,12 +1564,11 @@ function readSolution(res, program, precomputedVisible) {
   const chosen = program.xVars.filter((xv) => prim(xv.name) > 0.5).map((xv) => ({ slot: xv.slot, variant: xv.variant }));
   const effective = {};
   for (const stat of program.targetList) {
-    const raw = rawExpr(program, stat).reduce((sum, t) => sum + (prim(t.name) > 0.5 ? t.coef : 0), 0);
     // For a capped stat, the achieved value is min(cap, raw) — NOT the d_ variable.
     // In the optimum solve d_ is maximized so d_ == min(cap, raw), but an alternative
     // relaxes the lock and leaves d_ floating at its lower bound, which would misreport
     // the true (capped) value and invent a phantom cost. min(cap, raw) is right for both.
-    effective[stat] = program.cappedStats[stat] != null ? Math.min(program.cappedStats[stat], raw) : raw;
+    effective[stat] = effectiveOf(program, prim, stat);
   }
   // #319/#322 load-bearing guards — on any solve path that does not minimize a
   // family's placement vars (every tieBreak:false alternatives re-solve; the
@@ -1599,9 +1669,7 @@ function probeMax(program, highs, stat, locks) {
   const res = highs.solve(encodeStage(program, { objectiveStat: stat, sense: "max", locks }));
   if (res.Status !== "Optimal") return 0;
   const prim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
-  const raw = rawExpr(program, stat).reduce((s, t) => s + (prim(t.name) > 0.5 ? t.coef : 0), 0);
-  const cap = program.cappedStats[stat];
-  return cap != null ? Math.min(cap, raw) : raw;
+  return effectiveOf(program, prim, stat);
 }
 
 async function solveLexicographic(model, highs) {
@@ -1645,9 +1713,12 @@ async function solveLexicographic(model, highs) {
   for (const stat of program.targetList) {
     const res = highs.solve(encodeStage(program, { objectiveStat: stat, sense: "max", locks }));
     if (res.Status !== "Optimal") return { status: "infeasible", reason: `stage ${stat}: ${res.Status}` };
-    const { effective } = readSolution(res, program);
-    perTarget[stat] = effective[stat];
-    locks.push({ stat, value: effective[stat] });
+    // #326 — only this stage's achieved value is needed; effectiveOf reads it
+    // without paying readSolution's placement-array + visibility construction.
+    const prim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
+    const val = effectiveOf(program, prim, stat);
+    perTarget[stat] = val;
+    locks.push({ stat, value: val });
   }
 
   const tb = highs.solve(encodeStage(program, { sense: "min", tieBreak: true, locks }));
@@ -1667,7 +1738,7 @@ async function solveLexicographic(model, highs) {
     membershipPlaced: sol.membershipPlaced, setAugmentsPlaced: sol.setAugmentsPlaced,
     breakdown: breakdownByTarget(program, prim, visible), computeScale: computeScale(program),
     capped: { ...program.cappedStats }, floorReport, program,
-    creditReport: buildCreditReport(program, prim, model, floorReport),
+    creditReport: buildCreditReport(program, prim, model, floorReport, visible),
     saturationReport: buildSaturationReport(program, prim),
     emptySlots: buildEmptySlotReport(model, sol),
     absorptionQuarantine: buildAbsorptionQuarantineReport(model, program),
@@ -1849,13 +1920,20 @@ function buildSaturationReport(program, prim) {
  *  it beat (null when gear won or there was none), the floor it carried (null when
  *  gear alone already cleared it), and what gear alone reaches in that stat.
  */
-function buildCreditReport(program, prim, model, floorReport) {
+function buildCreditReport(program, prim, model, floorReport, precomputedVisible) {
   const credits = (program && program.creditMeta) ? [...program.creditMeta.values()] : [];
   if (!credits.length) return [];
   const unmet = new Set((floorReport || []).map((f) => f.stat));
   const floors = (model && model.floors) || {};
   const forcedOff = program.forcedOffVars || new Set();
   const reachable = (z) => !(z.gates || []).some((g) => forcedOff.has(g));
+  // #325 — the same substitution rule the breakdown applies: a seated placement
+  // the report guards hide is not part of the endorsed build, so the credit —
+  // not gear — supplies its bucket's floor. Production passes readSolution's
+  // visible set; the 4-arg test seam computes it here.
+  const visible = precomputedVisible || visibleGateSet(program, prim);
+  const hiddenPlacementGate = hiddenPlacementGateFn(program, visible);
+  const hiddenSeated = (z) => prim(z.name) > 0.5 && (z.gates || []).some(hiddenPlacementGate);
 
   return credits.map((c) => {
     const key = `${c.stat}||${_equivType(c.bonus_type)}`;
@@ -1870,7 +1948,11 @@ function buildCreditReport(program, prim, model, floorReport) {
       if (z.value > bestGearInBucket) bestGearInBucket = z.value;
     }
     const creditZ = zs.find((z) => program.creditMeta.get(z.name) === c);
-    const won = !!creditZ && prim(creditZ.name) > 0.5;
+    // #325 — the credit also "wins" when the bucket's seated non-credit z is a
+    // hidden placement: the endorsed build omits that craft, the credit
+    // backfills the floor, and the breakdown shows the declared part there.
+    const won = (!!creditZ && prim(creditZ.name) > 0.5)
+      || zs.some((z) => !program.creditMeta.has(z.name) && hiddenSeated(z));
 
     // What the GEAR IN THIS LOADOUT supplies for the stat: the selected non-credit
     // contribution in each of its buckets.
@@ -1892,6 +1974,8 @@ function buildCreditReport(program, prim, model, floorReport) {
       let best = 0;
       for (const z of list) {
         if (program.creditMeta.has(z.name)) continue;
+        // #325 — a hidden seated placement is not the endorsed build's gear.
+        if (hiddenSeated(z)) continue;
         if (prim(z.name) > 0.5 && z.value > best) best = z.value;
       }
       gearInLoadout += best;
@@ -1942,7 +2026,12 @@ function solveConstrained(program, highs, { objectiveStat, objTerms, sense = "ma
     const gainVal = Math.round(objTerms.reduce((s, t) => s + t.coef * prim1(t.name), 0));
     pin = [`${fmtExpr(objTerms, fb)} = ${gainVal}`];
   } else {
-    const gainVal = readSolution(r1, program).effective[objectiveStat] ?? 0;
+    // #326 — effectiveOf replaces a full readSolution for one number. The
+    // targetList guard preserves the prior domain exactly: readSolution's
+    // effective covered only priority targets, so an unranked objective read
+    // undefined and pinned at 0.
+    const gainVal = program.targetList.includes(objectiveStat)
+      ? effectiveOf(program, prim1, objectiveStat) : 0;
     locks2 = [...locks, { stat: objectiveStat, value: gainVal }];
   }
   const r2 = highs.solve(encodeStage(program, { tieBreak: true, sense: "min", locks: locks2, extra: [...extra, ...pin] }));
@@ -2087,5 +2176,5 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
 if (typeof module !== "undefined" && module.exports) {
   // readSolution is exported for TESTS ONLY — the deterministic guard tests
   // inject a synthetic primal (#319); app code goes through the solve entry points.
-  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, bucketCountsFor, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, readSolution, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars };
+  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, bucketCountsFor, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, readSolution, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars, rawTotalOf, effectiveOf, buildCreditReport };
 }
