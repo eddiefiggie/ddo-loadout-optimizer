@@ -460,7 +460,13 @@ def build() -> dict:
     # blanks now (from the native Dino host layout — src.dino_native, KTD8) and
     # exclude their names from the reader so the synthetic body is the sole host.
     dino_seed = dino_native_mod.native_dino_seed()
-    dino_blanks, dino_inserts, dino_sets, dino_cov = dino_mod.build_dino(dino_seed, crafting)
+    # The set catalog is loaded ONCE here (gearplanner_sets.json parsed a single
+    # time) and threaded to BOTH consumers: the blanks' intrinsic-set stamp inside
+    # build_dino and the native set-bonus attach further down, so the two read the
+    # same catalog state.
+    _set_catalog = set_catalog_mod.load_catalog()
+    dino_blanks, dino_inserts, dino_sets, dino_cov = dino_mod.build_dino(
+        dino_seed, crafting, sets_catalog=_set_catalog)
     _host_pipeline_names = {b.get("source_item") for b in dino_blanks}
     # Native gear-planner records — the sole item roster. The loader already
     # dedups intra-dump same-name collisions (first wins) and surfaces every host
@@ -658,7 +664,7 @@ def build() -> dict:
     # each record carrying an "X (set)" marker (from its `sets[]`), matched on the
     # canonical name so cross-source spelling drift (the " Set" infix) resolves.
     _set_base_defs = {}  # no base seed anymore; all defs come from the catalog
-    _set_catalog = set_catalog_mod.load_catalog()
+    # _set_catalog was loaded once above (before build_dino) and is reused here.
     _KNOWN_UNDEFINED_SETS = ["Legendary Cooking By the Book"]  # novelty set, no catalog def
     _enriched_set_names = set()
     for it in enriched_items:
@@ -681,9 +687,9 @@ def build() -> dict:
         if defs:
             # Copy: definition_for may return the base-seed def by reference; never
             # share a mutable dict across the base item, co-members, and tier variants
-            # (mirrors the seal-slot graft copy). Deep-copy piece_bonuses too.
-            it["set_bonus"] = [{**d, "piece_bonuses": dict(d.get("piece_bonuses") or {})}
-                               for d in defs]
+            # (mirrors the seal-slot graft copy). set_catalog.copy_def is a true deep
+            # copy — the same helper the Dino blank stamp uses (one owner).
+            it["set_bonus"] = [set_catalog_mod.copy_def(d) for d in defs]
     # Fail loudly on unresolved name drift (KTD4) rather than silently splitting a set.
     _set_problems = set_catalog_mod.reconciliation_audit(
         _set_base_defs, _set_catalog, _enriched_set_names, known_undefined=_KNOWN_UNDEFINED_SETS)

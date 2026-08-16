@@ -174,6 +174,21 @@ def test_missing_catalog_def_fails_loudly():
         raise AssertionError("expected SystemExit for a missing catalog def")
 
 
+def test_membership_only_catalog_def_skips_tier_stamp_gracefully():
+    # The set is KNOWN to the catalog but membership-only (every affix flagged ->
+    # set_bonus=None). That is not the missing-set failure: the blanks still count
+    # as pieces (`sets` stamped), and the set_bonus/tier stamp is skipped — the
+    # same disclosed posture the native channel takes for membership-only sets.
+    from src import set_catalog
+    cat = {set_catalog.canonical(_DREAD): {"set_bonus": None, "flagged": []}}
+    blanks, _, _, _ = dino.build_dino(_seed(), sets_catalog=cat)
+    assert blanks, "membership-only must not abort the build"
+    for b in blanks:
+        assert b["sets"] == [_DREAD]
+        assert b["set_bonus"] == []
+        assert "parsed_set_bonuses" not in b
+
+
 _BUILT = None
 
 
@@ -199,13 +214,14 @@ def test_built_blanks_are_dread_isle_pieces_shaped_like_natives():
     native = next(v for v in dataset["items"]
                   if v.get("source") != "dino_crafting_blank"
                   and _DREAD in (v.get("sets") or []))
-    native_tier = next(t for t in native["parsed_set_bonuses"] if t["set"] == _DREAD)
+    native_tiers = [t for t in native["parsed_set_bonuses"] if t["set"] == _DREAD]
+    assert native_tiers, "the native carrier parses Dread Isle tiers"
     for b in blanks:
         assert b["sets"] == [_DREAD]
         assert [s["set"] for s in b["set_bonus"]] == [_DREAD]
-        tier = next(t for t in b["parsed_set_bonuses"] if t["set"] == _DREAD)
-        assert tier == native_tier, \
-            f"blank {b['slot']} tier drifts from the native carrier's"
+        tiers = [t for t in b["parsed_set_bonuses"] if t["set"] == _DREAD]
+        assert tiers == native_tiers, \
+            f"blank {b['slot']} tiers drift from the native carrier's"
     # Native carriers are unchanged: still present, still intrinsic-only.
     natives = [v for v in dataset["items"]
                if v.get("source") != "dino_crafting_blank"

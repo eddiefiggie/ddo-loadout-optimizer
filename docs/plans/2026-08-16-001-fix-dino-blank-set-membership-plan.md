@@ -89,7 +89,7 @@ Stamp `The Legendary Dread Isle's Curse` on all eleven Dinosaur Bone blank hosts
 
 **Files:** `web/index.html`, `web/app.js`, `README.md`, `tests/parity/golden.json` (only if re-ratification is needed).
 
-**Approach:** Full suites (JS file-by-file). Golden diff: solves may legitimately shift where the set now completes via a blank — re-ratify per fixture, never blanket; ranked-stat values must never decrease. Three-way build bump. PR closes #334 with a one-line player-facing note (the dino Rune Arm now counts toward the Dread Isle set).
+**Approach:** Full suites (JS file-by-file). Golden diff: solves may legitimately shift where the set now completes via a blank — re-ratify per fixture, never blanket; the acceptance rule is lexicographic: **the first changed ranked stat in priority order must increase** (stats ranked below it may legitimately reset). Three-way build bump. PR closes #334 with a one-line player-facing note (the dino Rune Arm now counts toward the Dread Isle set).
 
 **Test scenarios:** Test expectation: none — ship mechanics; U1 carries the behavior tests and `tests/test_build_stamp.py` enforces the bump.
 

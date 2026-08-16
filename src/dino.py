@@ -158,31 +158,38 @@ def _stamp_set_membership(blanks, sets_catalog=None):
     """#334 — stamp intrinsic `The Legendary Dread Isle's Curse` membership on
     every blank, in place, with the FULL native field chain (a bare `sets` list
     is solver-inert): `sets`, `set_bonus` = a deep copy of the gear-planner
-    catalog definition (never share a mutable def across records — mirrors the
-    native attach in build_dataset), and `parsed_set_bonuses` via
-    set_parser.annotate_variant. Blanks join `variants` AFTER the native tier
-    passes (umbrella + spell-focus expansion) have run, so the same standalone
-    recipe the membership-def channel uses (umbrella first, then spell focus)
-    is applied here — the built-dataset test pins channel equality against a
-    native carrier so a future pass cannot drift the two silently.
+    catalog definition (set_catalog.copy_def — never share a mutable def across
+    records; same helper as the native attach in build_dataset), and
+    `parsed_set_bonuses` via set_parser.annotate_variant. Blanks join
+    `variants` AFTER the native tier passes have run, so the SAME expansion
+    entry points the native channel uses (umbrella.expand_variants, then
+    spell_focus.expand_variants — one owner for the recipe) are applied here —
+    the built-dataset test pins channel equality against a native carrier so a
+    future pass cannot drift the two silently.
     """
     if not blanks:
         return
     cat = set_catalog.load_catalog() if sets_catalog is None else sets_catalog
-    d = set_catalog.definition_for(INTRINSIC_SET, {}, cat)
-    if d is None:
-        # Strict: never ship set-less blanks silently — the wiki says every
-        # crafted Dinosaur Bone item carries the set.
+    if set_catalog.canonical(INTRINSIC_SET) not in cat:
+        # Strict: a catalog that does not KNOW the set must never ship set-less
+        # blanks silently — the wiki says every crafted Dinosaur Bone item
+        # carries the set.
         raise SystemExit(
             f"dino blank set stamp: no catalog definition for {INTRINSIC_SET!r}")
+    d = set_catalog.definition_for(INTRINSIC_SET, {}, cat)
     for b in blanks:
         b["sets"] = [INTRINSIC_SET]
-        b["set_bonus"] = [{**d, "piece_bonuses": dict(d.get("piece_bonuses") or {})}]
+        if d is None:
+            # Known set, membership-only (every catalog affix flagged ->
+            # set_bonus=None): membership still counts toward the threshold, but
+            # there is no def to attach — the same skip-the-attach posture as
+            # the native channel in build_dataset, disclosed via parse_rate's
+            # membership_only_sets.
+            continue
+        b["set_bonus"] = [set_catalog.copy_def(d)]
         set_parser.annotate_variant(b)
-        for tier in b["parsed_set_bonuses"]:
-            if tier.get("affixes"):
-                tier["affixes"] = spell_focus.expand_affixes(
-                    umbrella.expand_affixes(tier["affixes"]))
+    umbrella.expand_variants(blanks)
+    spell_focus.expand_variants(blanks)
 
 
 def build_dino(seed, catalog=None, sets_catalog=None):
