@@ -749,12 +749,14 @@ function craftingExcludedNotice(query, result) {
     : "";
 }
 
-/** #339 — the augment-ceiling scope disclosure. Reads the solved query off the
- *  result (the shared projection sentence), so a restored character renders it
- *  without a re-solve and a pre-ceiling snapshot stays silent. */
+/** #339 — the augment-ceiling scope disclosure (the shared projection sentence).
+ *  The worker result carries no query field, so the in-scope SOLVED query is
+ *  forwarded as rec.query — on a fresh solve that is the solve's own query; on a
+ *  restored character the wizard passes rec.query (the restored solve's query),
+ *  so a pre-ceiling snapshot stays silent without a re-solve. */
 function augCeilingNotice(query, result) {
   const line = (Proj && Proj.augCeilingLine)
-    ? Proj.augCeilingLine({ snapshot: result }) : null;
+    ? Proj.augCeilingLine({ snapshot: result, query }) : null;
   return line
     ? `<p class="scope-note aug-ceiling-note" role="status">${esc(line)}</p>`
     : "";

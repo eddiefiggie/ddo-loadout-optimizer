@@ -555,10 +555,15 @@
    *  result is the only honest claim, and a restored pre-ceiling snapshot must
    *  stay silent even if the player has since typed a ceiling — that solve was
    *  not restricted. buildQuery already re-normalized a stale ceiling to null,
-   *  so a value here is always a live restriction. */
+   *  so a value here is always a live restriction.
+   *
+   *  The solved query lives at rec.query on saved records (serializeCharacter
+   *  stores it as a SIBLING of the snapshot) and is forwarded there by the live
+   *  render (the worker result carries no query field); snap.query is only a
+   *  legacy/synthetic-shape fallback. rec.query wins when both exist. */
   function augCeilingLine(rec) {
     const snap = (rec && rec.snapshot) || rec || {};
-    const q = snap.query || {};
+    const q = (rec && rec.query) || snap.query || {};
     const n = Number(q.augCeiling) || null;
     if (n == null) return null;
     return `Augments were restricted to ML ${n} and below for this solve; `

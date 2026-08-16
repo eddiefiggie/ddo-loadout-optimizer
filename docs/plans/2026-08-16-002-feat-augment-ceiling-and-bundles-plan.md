@@ -72,7 +72,6 @@ Separately, bundled enchantments are fully credited but invisible as units: the 
 
 - Engraved-name display on loadout/deep-dive surfaces — stays #252.
 - Any automatic notion of "realistic" tiers (drop-rate, currency, content gating) — the shared blocker is #197; the ceiling is deliberately manual.
-- Augment pinning — does not exist today and is not built here; KD5's pin exemption ships inert and activates if pinning ever arrives.
 
 **Outside this product's identity**
 
@@ -81,6 +80,7 @@ Separately, bundled enchantments are fully credited but invisible as units: the 
 **Recorded so a later audit does not re-raise it (do not file)**
 
 - The crafted-channel option catalogs (Dino inserts, Sealed-in-X seals, Thunder-Forged, Green Steel, Lamordia Viktranium, Set-Bonus augments) are outside the ceiling by construction: none carries a numeric augment ML in the shipped data (Viktranium and Nearly Finished collapse their source ML into a binary heroic/legendary tier at build time; the rest never had one), and all are already exempt from the existing ML cap and floor the same way. The ML36 sale-tier augments behind the report are all regular slotted augments, so the ceiling fully addresses the complaint.
+- Augment pinning — does not exist today and is not built here; KD5's pin exemption ships inert and activates if pinning ever arrives.
 
 ### Sources / Research
 

@@ -1055,36 +1055,53 @@ const VIK_COLLAPSED = "Slot Woeful Viktranium augment: Profane Spell Focus Maste
 
 // #340 — the bundled-enchantments section deliberately lists an expansion's
 // members UNDER the engraved name (a spell-focus umbrella is a multi-stat
-// bundle). The no-leak assertion pins the loadout/attribution text, where the
-// solver's expanded shape must never masquerade as separate item affixes — so
-// it tests the document up to the bundles section, in every format.
-const beforeBundles = (s) => s.split("Bundled enchantment")[0];
+// bundle). The no-leak assertions must skip that one section — but ONLY that
+// section: Stat breakdown and Utility render AFTER it in every format, and the
+// expanded shape must never masquerade there either. So the helper EXCISES the
+// bundles block (its heading up to the next section's marker) and rejoins the
+// tail. A missing end marker falls back to truncation; each test's anti-vacuity
+// assertion (the tail marker must survive the excision) turns that fallback
+// into a failure rather than silently weaker coverage.
+const sansBundles = (s, start, end) => {
+  const i = s.indexOf(start);
+  if (i < 0) return s;
+  const j = s.indexOf(end, i + start.length);
+  return j < 0 ? s.slice(0, i) : s.slice(0, i) + s.slice(j);
+};
 
 test("U8/R8/AE6: the Markdown export renders the collapsed worn line, not seven school lines", () => {
   const md = toMarkdown(expansionRec());
   assert.ok(md.includes(COLLAPSED), "names the enchantment engraved on the item");
-  assert.ok(!/Abjuration Focus/.test(beforeBundles(md)), "no expanded school leaks into the share text");
+  const sans = sansBundles(md, "## Bundled enchantments", "## Stat breakdown");
+  assert.ok(sans.includes("## Stat breakdown"), "the tail survived the excision (anti-vacuity)");
+  assert.ok(!/Abjuration Focus/.test(sans), "no expanded school leaks into the share text");
   assert.ok(md.includes(VIK_COLLAPSED), "the crafted choice-slot option reads as the enchantment too");
 });
 
 test("U8/R8: the BBCode export renders the collapsed line", () => {
   const bb = toBBCode(expansionRec());
   assert.ok(bb.includes(COLLAPSED));
-  assert.ok(!/Abjuration Focus/.test(beforeBundles(bb)));
+  const sans = sansBundles(bb, "[b]Bundled enchantments[/b]", "[b]Stat breakdown[/b]");
+  assert.ok(sans.includes("[b]Stat breakdown[/b]"), "the tail survived the excision (anti-vacuity)");
+  assert.ok(!/Abjuration Focus/.test(sans));
   assert.ok(bb.includes(VIK_COLLAPSED));
 });
 
 test("U8/R8: the CSV export renders the collapsed line", () => {
   const csv = toCsv(expansionRec());
   assert.ok(csv.includes(COLLAPSED));
-  assert.ok(!/Abjuration Focus/.test(beforeBundles(csv)));
+  const sans = sansBundles(csv, "Bundled enchantment", "Stat,Total,Capped,Sources");
+  assert.ok(sans.includes("Stat,Total,Capped,Sources"), "the tail survived the excision (anti-vacuity)");
+  assert.ok(!/Abjuration Focus/.test(sans));
   assert.ok(csv.includes(VIK_COLLAPSED));
 });
 
 test("U8/R8: the print HTML export renders the collapsed line", () => {
   const html = toPrintHtml(expansionRec());
   assert.ok(html.includes(COLLAPSED));
-  assert.ok(!/Abjuration Focus/.test(beforeBundles(html)));
+  const sans = sansBundles(html, "<h2>Bundled enchantments</h2>", "<h2>Stat breakdown</h2>");
+  assert.ok(sans.includes("<h2>Stat breakdown</h2>"), "the tail survived the excision (anti-vacuity)");
+  assert.ok(!/Abjuration Focus/.test(sans));
   assert.ok(html.includes(VIK_COLLAPSED));
 });
 
@@ -1121,9 +1138,11 @@ test("#339: the augment-ceiling disclosure reaches MD, CSV, print, BBCode", () =
   const rec = {
     name: "Ceiling Build",
     inputs: { ml: 36, pool: "all", priorities: ["Intelligence"], augCeiling: 32 },
+    // notice keys off the SOLVED query — a SIBLING of snapshot, the shape
+    // serializeCharacter actually produces.
+    query: { augCeiling: 32 },
     snapshot: {
       status: "optimal",
-      query: { augCeiling: 32 },   // notice keys off the SOLVED query
       chosen: [], setsActive: [], breakdown: {}, effective: {},
     },
   };
@@ -1132,8 +1151,21 @@ test("#339: the augment-ceiling disclosure reaches MD, CSV, print, BBCode", () =
   assert.ok(/^Scope,/m.test(csv) && /ML 32 and below/.test(csv), "csv scope row");
   assert.ok(/ML 32 and below/.test(toPrintHtml(rec)), "print notice");
   assert.ok(/ML 32 and below/.test(toBBCode(rec)), "bbcode notice");
-  delete rec.snapshot.query.augCeiling;
+  delete rec.query.augCeiling;
   assert.ok(!/and below/.test(toMarkdown(rec)), "silent when unrestricted");
+});
+
+test("#339: a record built by the REAL serializeCharacter carries the notice into MD", () => {
+  // Integration leg: no hand-shaped record — the persistence layer itself decides
+  // where the solved query lives, and the export must find it there.
+  const { serializeCharacter } = require("../web/persist.js");
+  const state = { ml: 36, race: "Elf", pool: "all", priorities: ["Intelligence"], augCeiling: 32 };
+  const lastRun = {
+    query: { targets: ["Intelligence"], augCeiling: 32 },
+    result: { status: "optimal", chosen: [], setsActive: [], breakdown: {}, effective: {} },
+  };
+  const md = toMarkdown(serializeCharacter("Ceiled", state, lastRun, "bid"));
+  assert.ok(/ML 32 and below/.test(md), "the disclosure survives the real persistence shape");
 });
 
 test("#245: a craft-carried pick and the opt-out notice reach MD, CSV, print, BBCode", () => {
