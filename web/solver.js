@@ -1087,13 +1087,19 @@ function buildProgram(model) {
   const utilityVars = [];
   const utilityMeta = new Map(); // u var -> { name, zNames } (the stage + receipts read this)
   if (utilityCountingSet) {
+    // One grouping pass over zByBucket (stat -> z names, bucket order preserved)
+    // instead of rescanning the whole map per counting-set name.
+    const zNamesByStat = new Map();
+    for (const [key, zs] of zByBucket) {
+      const stat = key.split("||")[0];
+      if (!utilityCountingSet.has(stat)) continue;
+      let list = zNamesByStat.get(stat);
+      if (!list) zNamesByStat.set(stat, (list = []));
+      for (const z of zs) list.push(z.name);
+    }
     let uc = 0;
     for (const name of [...utilityCountingSet].sort()) {
-      const zNames = [];
-      for (const [key, zs] of zByBucket) {
-        if (key.split("||")[0] !== name) continue;
-        for (const z of zs) zNames.push(z.name);
-      }
+      const zNames = zNamesByStat.get(name) || [];
       if (!zNames.length) continue; // no carrier anywhere -> no indicator
       const u = "u" + uc++;
       extraVars.push(u);
@@ -1740,12 +1746,19 @@ function readSolution(res, program, precomputedVisible) {
     // back to that host's x-index for ordering); a set tier credits the set.
     // Built HERE, in readSolution, so the tieBreak:false alternatives path
     // (solveConstrained) carries the identical guarded report for free.
-    const zGates = new Map();
-    for (const [, zs] of program.zByBucket) for (const z of zs) zGates.set(z.name, z.gates);
-    const xIndex = new Map();   // x var name -> its position in the tie-break's item order
+    // zGates/xIndex depend only on the fixed program, not the primal — memoized
+    // on the program so the 30-60 readSolution calls of an alternatives request
+    // don't rebuild them (the per-primal equippedIdx stays per-call).
+    if (!program._utilityStatic) {
+      const zg = new Map();
+      for (const [, zs] of program.zByBucket) for (const z of zs) zg.set(z.name, z.gates);
+      const xi = new Map();   // x var name -> its position in the tie-break's item order
+      program.xVars.forEach((xv, i) => xi.set(xv.name, i));
+      program._utilityStatic = { zGates: zg, xIndex: xi };
+    }
+    const { zGates, xIndex } = program._utilityStatic;
     const equippedIdx = new Map(); // variant_id -> lowest equipped x-index (craft-host resolution)
     program.xVars.forEach((xv, i) => {
-      xIndex.set(xv.name, i);
       if (prim(xv.name) > 0.5) {
         const id = xv.variant.variant_id || xv.variant.source_item;
         if (!equippedIdx.has(id)) equippedIdx.set(id, i);

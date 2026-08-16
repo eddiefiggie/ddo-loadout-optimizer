@@ -1089,7 +1089,7 @@ function utilityCard(build, rankIdx) {
   if (!effects.length) {
     return `<div class="stat-card utility-card">${head}
       <div class="stat-value" data-final="0">0</div>
-      <p class="utility-note">0 utility effects on this loadout — no counted on/off effects are present.</p>
+      <p class="utility-note">${esc(Proj.utilityLine(0))}</p>
     </div>`;
   }
   const list = effects.map((e) =>

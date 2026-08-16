@@ -652,7 +652,7 @@
       say("Utility effects (not importable — informational)");
       say(`  ${view.utility.line}`);
       for (const e of view.utility.effects) {
-        say(`  ${e.name}${e.item ? ` — from ${e.item}` : ""}`);
+        say(`  ${utilityEffectStr(e, (s) => s)}`);
       }
     }
     if (view.sets.length) {
