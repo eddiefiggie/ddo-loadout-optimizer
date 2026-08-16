@@ -332,73 +332,73 @@
    "perTarget": {
     "Universal Spell Power": 104,
     "Combustion": 439,
-    "Corrosion": 437,
-    "Devotion": 394,
-    "Glaciation": 359,
-    "Impulse": 329,
-    "Magnetism": 359,
-    "Nullification": 329,
-    "Radiance": 329,
-    "Reconstruction": 329,
-    "Resonance": 329,
-    "Wisdom": 27,
-    "Charisma": 25
+    "Corrosion": 439,
+    "Devotion": 368,
+    "Glaciation": 247,
+    "Impulse": 247,
+    "Magnetism": 247,
+    "Nullification": 247,
+    "Radiance": 247,
+    "Reconstruction": 247,
+    "Resonance": 247,
+    "Wisdom": 25,
+    "Charisma": 24
    },
    "effective": {
     "Universal Spell Power": 104,
     "Combustion": 439,
-    "Corrosion": 437,
-    "Devotion": 394,
-    "Glaciation": 359,
-    "Impulse": 329,
-    "Magnetism": 359,
-    "Nullification": 329,
-    "Radiance": 329,
-    "Reconstruction": 329,
-    "Resonance": 329,
-    "Wisdom": 27,
-    "Charisma": 25
+    "Corrosion": 439,
+    "Devotion": 368,
+    "Glaciation": 247,
+    "Impulse": 247,
+    "Magnetism": 247,
+    "Nullification": 247,
+    "Radiance": 247,
+    "Reconstruction": 247,
+    "Resonance": 247,
+    "Wisdom": 25,
+    "Charisma": 24
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Legendary Darkmoss"
+     "variant": "Dinosaur Bone Armor"
     },
     {
      "slot": "Belt",
-     "variant": "Belt of the Burrower"
+     "variant": "Legendary Seaweed-woven Belt"
     },
     {
      "slot": "Boots",
-     "variant": "Legendary Lightning Railworker's Boots"
+     "variant": "Legendary Firestorm Greaves"
     },
     {
      "slot": "Bracers",
-     "variant": "Legendary World-Weary Wrappings"
+     "variant": "Legendary Bracers of the Hunter"
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary University Researcher's Cloak"
+     "variant": "Dinosaur Bone Cloak"
     },
     {
      "slot": "Gloves",
-     "variant": "Gloryborne Gloves"
+     "variant": "Baron Aubrecker's Monogrammed Gloves"
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Eyes of Enlightenment"
+     "variant": "Legendary Black Earth Guardian's Lenses"
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary University Mage's Hat"
+     "variant": "Dinosaur Bone Helmet"
     },
     {
      "slot": "Main Hand",
-     "variant": "Mori's Focus"
+     "variant": "Attuned Bone Bastard Sword"
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Shaman's Beads"
+     "variant": "Legendary Pendant of Subtle Pain"
     },
     {
      "slot": "Off Hand",
@@ -406,7 +406,7 @@
     },
     {
      "slot": "Ring",
-     "variant": "Clouded Dreams"
+     "variant": "Legendary Ring of the Black Abishai"
     },
     {
      "slot": "Ring",
@@ -414,7 +414,7 @@
     },
     {
      "slot": "Trinket",
-     "variant": "Legendary Gem of Many Facets"
+     "variant": "Epic Dragon's Eye"
     }
    ]
   },
@@ -1195,27 +1195,27 @@
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Legendary Darkmoss"
+     "variant": "Dinosaur Bone Armor"
     },
     {
      "slot": "Belt",
-     "variant": "Legendary Bladesworn Bandolier"
+     "variant": "Belt of the Sun Soul"
     },
     {
      "slot": "Boots",
-     "variant": "Legendary Lightning Railworker's Boots"
+     "variant": "Legendary Admiral's Gumshoes"
     },
     {
      "slot": "Bracers",
-     "variant": "Bracers of the Sun Soul"
+     "variant": "Legendary Jidz-Tet'ka"
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary Cloak of Autumn"
+     "variant": "Dinosaur Bone Cloak"
     },
     {
      "slot": "Gloves",
-     "variant": "Legendary Absorption Gauntlet"
+     "variant": "Alaric's Grim Gauntlets"
     },
     {
      "slot": "Goggles",
@@ -1223,7 +1223,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Flame Priest's Focus"
+     "variant": "Dinosaur Bone Helmet"
     },
     {
      "slot": "Main Hand",
@@ -1239,15 +1239,15 @@
     },
     {
      "slot": "Ring",
-     "variant": "Clouded Dreams"
-    },
-    {
-     "slot": "Ring",
      "variant": "Legendary Ring of the Red Abishai"
     },
     {
+     "slot": "Ring",
+     "variant": "Legendary The Flame and the Frost"
+    },
+    {
      "slot": "Trinket",
-     "variant": "Legendary Library Card"
+     "variant": "Epic Dragon's Eye"
     }
    ]
   },
