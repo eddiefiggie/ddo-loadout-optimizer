@@ -117,3 +117,9 @@ New batch of reports (2026-08-14):
 2) cannith challenge items don't have any stats (you can pin one and then tell the prioritizer which stats it covers and how much. eg pin epic cloak of flames while prioritizing fire lore/spellpower, and tell it you have 122 equipment combustion and 18 equipment fire lore)
 3) It's not seeing Clank's Sealed in Mist attribute.
 4) It's trying to double dip Perfect Silence 3 aug set with Forbidden Knowledge 5 piece set on the hat.
+
+New batch of reports (2026-08-16):
+1) Ghostly and True Seeing are not showing up when they should be as part of an optimized outcome.
+
+Filed 2026-08-16:
+- #343 (report 1) Premise half-holds. Data present (Ghostly 111 variants ML3-36, True Seeing 60 variants ML5-34) and both ARE targetable presence stats — an explicit priority is satisfied and sourced (Ghostly via Legendary Wraithborn Emerald augment, True Seeing via Dread Stalker's Skullcap). The real defect is that the default-on Utility tier's 38-name counting set is almost entirely weapon procs (Bane family, Holy, Vampirism...) and excludes EVERY worn defensive toggle — Ghostly, True Seeing, Blurry, Freedom of Movement, Blindness Immunity, Deathblock (Feather Falling is the lone exception) — so nothing seeks them unless the player names them by hand. This is also the #91 plan's KTD10 "widen in measured batches" lever, which was never filed; headroom is nearly gone (38 names already measured 1.96x/2.0x).
