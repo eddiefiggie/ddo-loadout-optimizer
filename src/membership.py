@@ -226,12 +226,23 @@ def attach_dino_set_bonus_slots(variants, defs: dict = None) -> int:
     Armor/Helmet/Cloak only) gets a set_membership_slot over the 6 Dino sets, crafted
     at the Dinosaur Bone crafting station. Same primitive as Lost Purpose, different
     pool + station. A host that already carries a Vecna slot is left as-is (a real item
-    is not both a Lost Purpose item and a Dinosaur Bone blank)."""
+    is not both a Lost Purpose item and a Dinosaur Bone blank).
+
+    KTD3 (#334): a set the host already carries INTRINSICALLY (its `set_bonus` /
+    `sets` — every Dinosaur Bone blank carries The Legendary Dread Isle's Curse)
+    is filtered out of the pool. The solver's single-identity constraint covers
+    membership picks and hosted set-augment copies, not the intrinsic piece, so
+    leaving the intrinsic set in the pool would let one equipped item count as
+    two pieces of the same set. If a wiki ruling ever shows the in-game Set
+    Bonus augment double-counts on an already-cursed item, revisit deliberately."""
     n = 0
     for v in variants:
         if not v.get("dino_set_bonus_slot") or v.get("set_membership_slot"):
             continue
-        v["set_membership_slot"] = {"pool": dino_pool(defs), "station": DINO_STATION}
+        intrinsic = {s.get("set") for s in v.get("set_bonus") or []}
+        intrinsic.update(v.get("sets") or [])
+        pool = [name for name in dino_pool(defs) if name not in intrinsic]
+        v["set_membership_slot"] = {"pool": pool, "station": DINO_STATION}
         n += 1
     return n
 

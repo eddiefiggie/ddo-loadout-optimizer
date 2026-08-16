@@ -120,12 +120,33 @@ def test_items_json_has_44_lost_purpose_hosts():
 
 
 def test_items_json_has_dino_set_bonus_hosts():
-    # U4: the Dinosaur Bone Armor/Helmet/Cloak Set-Bonus hosts join one of the 6
-    # Dino sets at the Dinosaur Bone crafting station (same primitive, different pool).
+    # U4: the Dinosaur Bone Armor/Helmet/Cloak Set-Bonus hosts join one of the
+    # Dino sets at the Dinosaur Bone crafting station (same primitive, different
+    # pool). KTD3 (#334): the set every blank carries intrinsically (The
+    # Legendary Dread Isle's Curse) has left the pool — one item can never count
+    # as two Dread Isle pieces — so 5 of the 6 Dino sets remain choosable.
     with open(ITEMS, encoding="utf-8") as fh:
         data = json.load(fh)
     dino = [v for v in data["items"]
             if (v.get("set_membership_slot") or {}).get("station") == "Dinosaur Bone crafting"]
     assert len(dino) >= 3, f"expected the 3 Dino Set-Bonus hosts, got {len(dino)}"
     assert all(v["slot"] in ("Armor", "Helmet", "Cloak") for v in dino), "only Armor/Helmet/Cloak carry a Set-Bonus slot"
-    assert all(len(v["set_membership_slot"]["pool"]) == 6 for v in dino), "6 Dino sets in the pool"
+    assert all(len(v["set_membership_slot"]["pool"]) == 5 for v in dino), "5 choosable Dino sets (intrinsic set excluded)"
+    assert all("The Legendary Dread Isle's Curse" not in v["set_membership_slot"]["pool"]
+               for v in dino), "the intrinsically-carried set is out of the pool"
+
+
+def test_attach_dino_set_bonus_slots_filters_intrinsic_set():
+    # KTD3 (#334) unit: a host's intrinsically-carried set (set_bonus / sets)
+    # leaves its membership pool; a host with no intrinsic set keeps the full pool.
+    curse = "The Legendary Dread Isle's Curse"
+    hosts = [
+        {"variant_id": "B", "dino_set_bonus_slot": True,
+         "sets": [curse], "set_bonus": [{"set": curse}]},
+        {"variant_id": "P", "dino_set_bonus_slot": True},
+    ]
+    n = membership.attach_dino_set_bonus_slots(hosts)
+    assert n == 2
+    full = membership.dino_pool()
+    assert hosts[0]["set_membership_slot"]["pool"] == [s for s in full if s != curse]
+    assert hosts[1]["set_membership_slot"]["pool"] == full

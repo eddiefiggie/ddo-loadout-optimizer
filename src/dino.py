@@ -24,6 +24,10 @@ from __future__ import annotations
 
 from src import dino_parser
 from src import crafting_catalog
+from src import set_catalog
+from src import set_parser
+from src import spell_focus
+from src import umbrella
 
 # The four Dino bone types and the three gear categories whose native
 # ``<Type> (<Category>)`` menu pools feed the insert option pool (U4b-ii). The
@@ -81,6 +85,14 @@ _ACCESSORY_WORN = {"Belt", "Boots", "Bracers", "Gloves", "Necklace", "Ring",
 _ARMOR_NAMES = {"Robe", "Outfit", "Docent", "Light Armor", "Medium Armor", "Heavy Armor"}
 _RUNEARM_NAMES = {"Runearm", "Rune Arm"}
 _DINO_ML = 31  # Dino crafting is a Legendary (ML31) system.
+
+# #334 — every crafted Dinosaur Bone item is intrinsically a piece of this set
+# (wiki: https://ddowiki.com/page/Dinosaur_Bone_Items — every crafted item's
+# enchantment list, including the Rune Arm's, ends with it). Membership is a
+# property of every blank, so it is stamped here in the record builder — one
+# line of truth — never repeated per layout entry. The name must match the
+# gear-planner catalog / membership_set_defs byte-exactly.
+INTRINSIC_SET = "The Legendary Dread Isle's Curse"
 
 
 def _resolve_host(item_name):
@@ -142,7 +154,38 @@ def _blank_variant(layout):
     }
 
 
-def build_dino(seed, catalog=None):
+def _stamp_set_membership(blanks, sets_catalog=None):
+    """#334 — stamp intrinsic `The Legendary Dread Isle's Curse` membership on
+    every blank, in place, with the FULL native field chain (a bare `sets` list
+    is solver-inert): `sets`, `set_bonus` = a deep copy of the gear-planner
+    catalog definition (never share a mutable def across records — mirrors the
+    native attach in build_dataset), and `parsed_set_bonuses` via
+    set_parser.annotate_variant. Blanks join `variants` AFTER the native tier
+    passes (umbrella + spell-focus expansion) have run, so the same standalone
+    recipe the membership-def channel uses (umbrella first, then spell focus)
+    is applied here — the built-dataset test pins channel equality against a
+    native carrier so a future pass cannot drift the two silently.
+    """
+    if not blanks:
+        return
+    cat = set_catalog.load_catalog() if sets_catalog is None else sets_catalog
+    d = set_catalog.definition_for(INTRINSIC_SET, {}, cat)
+    if d is None:
+        # Strict: never ship set-less blanks silently — the wiki says every
+        # crafted Dinosaur Bone item carries the set.
+        raise SystemExit(
+            f"dino blank set stamp: no catalog definition for {INTRINSIC_SET!r}")
+    for b in blanks:
+        b["sets"] = [INTRINSIC_SET]
+        b["set_bonus"] = [{**d, "piece_bonuses": dict(d.get("piece_bonuses") or {})}]
+        set_parser.annotate_variant(b)
+        for tier in b["parsed_set_bonuses"]:
+            if tier.get("affixes"):
+                tier["affixes"] = spell_focus.expand_affixes(
+                    umbrella.expand_affixes(tier["affixes"]))
+
+
+def build_dino(seed, catalog=None, sets_catalog=None):
     """Parse a dino_crafting seed into (blank_variants, insert_records, set_records, coverage).
 
     U4b-ii — SPLIT SOURCING:
@@ -180,6 +223,8 @@ def build_dino(seed, catalog=None):
                     and b["dino_set_bonus_slot"] and not prev["dino_set_bonus_slot"])):
             by_slot[b["slot"]] = b
     blanks = list(by_slot.values())
+    # #334 — every blank is intrinsically a Dread Isle's Curse piece.
+    _stamp_set_membership(blanks, sets_catalog)
 
     # Insert option pool: NATIVE (gearplanner_crafting.json), not the seed's inserts.
     insert_records, insert_source_options = _native_insert_records(catalog)
