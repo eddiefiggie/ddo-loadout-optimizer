@@ -1952,9 +1952,11 @@ if (typeof window !== "undefined" && window.App) {
               .filter((v) => v.category !== "augment" && state.ownedNames.has(v.source_item || v.variant_id))
               .flatMap((v) => v.category === "weapon" ? ["Main Hand", "Off Hand"] : [v.slot]))]
           : [];
+        // #91 (U3, KTD3) — the utility counting set rides as a buildModel
+        // ARGUMENT from the in-scope vocabulary, never on the persisted query.
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
-          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs);
+          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs, vocab.utilityCounting || null);
         const t0 = performance.now();
         // eslint-disable-next-line no-undef
         const result = await solveLexicographic(model, h);
@@ -2173,9 +2175,10 @@ if (typeof window !== "undefined" && window.App) {
       // routes to priorities to re-solve (never a blank results view).
       if (stepAfterLoad(snap) === "results") {
         const query = rec.query || buildQuery(state, vocab);
+        // #91 (U3, KTD3) — same counting-set threading as the solve path above.
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
-          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs);
+          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs, vocab.utilityCounting || null);
         // fresh:false + the original stamp so a later Save preserves staleness (see saveCurrentCharacter).
         state.lastRun = { model, result: snap, query, fresh: false, stampedBuildId: rec.stampedBuildId || null };
         state.loadedStale = !!(rec.stampedBuildId && currentBuildId() && rec.stampedBuildId !== currentBuildId());

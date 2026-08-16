@@ -154,7 +154,10 @@ window.App && window.App.ready((dataset) => {
         classRace: $("q-class").value.trim() || null,
       };
       // eslint-disable-next-line no-undef
-      const model = buildModel(dataset.items, query, dataset.dino_inserts, dataset.nearly_complete, dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs);
+      // #91 (U3, KTD3) — the utility counting set rides as a buildModel ARGUMENT
+      // from the in-scope vocabulary (alias-canonicalized dataset metadata),
+      // never on the persisted query. Inert until the sentinel is ranked.
+      const model = buildModel(dataset.items, query, dataset.dino_inserts, dataset.nearly_complete, dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs, vocab.utilityCounting || null);
       const t0 = performance.now();
       // eslint-disable-next-line no-undef
       const result = await solveLexicographic(model, h);

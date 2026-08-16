@@ -85,6 +85,28 @@ def test_the_four_dual_nature_names_fall_out_via_the_magnitude_subtraction():
         assert n not in counting, n
 
 
+def test_a_bool_name_outside_tier1_does_not_count():
+    # KTD10 — the perf-gate fallback: the Bool half is restricted to the curated
+    # tier-1 list. Keen is a real Bool presence name (189 carriers) that passes
+    # the presence predicate, and it still must not count in v1.
+    recs = [_rec("A", "Boots", [_bool("Keen"), _bool("Ghost Touch")])]
+    assert utility_procs.counting_set(recs, [], set()) == ["Ghost Touch"]
+    assert "Keen" not in utility_procs.UTILITY_TIER1_PRESENCE
+
+
+def test_the_real_counting_set_is_tier1_plus_admitted_only():
+    # The shipped restriction, end to end: every counted name is either a
+    # tier-1 Bool name or an admitted untyped proc; the high-population tier-2
+    # names are out (derivable, not quarantined — nothing filed per name).
+    allow, _ = utility_procs.load(SHARD)
+    counting, _ = _real_counting_set(allow)
+    assert set(counting) <= (utility_procs.UTILITY_TIER1_PRESENCE | allow)
+    for n in ("Keen", "Adamantine", "Returning", "Ghostly"):
+        assert n not in counting, n
+    assert "Ghost Touch" in counting
+    assert allow <= set(counting), "the admitted-untyped union is unchanged"
+
+
 def test_a_sentence_or_clicky_bool_line_never_counts():
     recs = [_rec("A", "Boots", [_bool("Ghost Touch"),
                                 _bool("3 Charges (Recharged/Day: 3)"),
@@ -267,6 +289,12 @@ def test_the_built_dataset_stamps_the_counting_vocabulary():
     assert sorted(allow) == admitted
     cov = meta["utility_procs_coverage"]
     assert cov["candidates"] == cov["allowed"] + cov["quarantined"] > 0
+    # #91 (U3, KTD10) — the tier-1 restriction is DISCLOSED: the stamp states
+    # the curated size, the full derivable population it was cut from, and
+    # that widening happens in measured batches.
+    assert cov["tier1_size"] == len(utility_procs.UTILITY_TIER1_PRESENCE)
+    assert cov["full_presence_population"] > cov["tier1_size"]
+    assert "measured batches" in cov["note"]
 
 
 def test_no_quarantined_name_leaks_into_the_shipping_counting_set():

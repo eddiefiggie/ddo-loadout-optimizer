@@ -63,6 +63,24 @@ PRESENCE_ALLOW = frozenset({
     "Legendary Tet-zik, The Enlightened Change",
 })
 
+# --- MIRROR of web/dataset.js UTILITY_TIER1_PRESENCE (#91 U3, KTD10).
+# The v1 CURATED Bool counting list. The full presence-minus-magnitude
+# population (~800 names) failed the measured perf gate at 7.7x the 2x budget,
+# so the counting set admits this curated high-value subset first and widens in
+# MEASURED BATCHES per KTD10. Names outside it are DERIVABLE from the presence
+# population (not quarantine rulings — nothing is filed per name). Contents:
+# the PRESENCE_ALLOW adjudicated named effects + the plan's acceptance-example
+# effects (Ghost Touch, Echo of Whelm's three procs) + Feather Falling.
+# Keep in lockstep with web/dataset.js — the stamped-set parity test in
+# tests/dataset.test.js fails on drift.
+UTILITY_TIER1_PRESENCE = frozenset({
+    "Ghost Touch",
+    "Whelming Shockwave",
+    "Blunt Trauma",
+    "Lesser Boneshatter",
+    "Feather Falling",
+}) | PRESENCE_ALLOW
+
 
 def is_presence_targetable(name) -> bool:
     """The web picker's presence predicate, mirrored exactly (see block above)."""
@@ -92,13 +110,20 @@ def presence_counting_names(records) -> set:
 
 def counting_set(records, rankable, untyped_admitted) -> list:
     """`metadata.utility_counting_set`: (Bool presence names passing
-    presence-minus-magnitude) ∪ (allow-dispositioned untyped proc names). Sorted.
+    presence-minus-magnitude, RESTRICTED to the curated tier-1 list) ∪
+    (allow-dispositioned untyped proc names). Sorted.
 
-    The subtraction is what drops the four dual-nature names (Deception, Smoke
-    Screen, Protection from Evil, Underwater Action) — they ship a Bool line on
-    some items and a real rankable magnitude on others, and their value is
-    already expressible as a ranked stat (R5)."""
-    return sorted((presence_counting_names(records) - set(rankable or ()))
+    KTD10 — the tier-1 intersection is the measured-batch lever: the full
+    presence population failed U3's perf gate, so v1 counts only the curated
+    subset; widening happens by growing UTILITY_TIER1_PRESENCE in measured
+    batches. The untyped-admitted union is unchanged.
+
+    The magnitude subtraction is what drops the four dual-nature names
+    (Deception, Smoke Screen, Protection from Evil, Underwater Action) — they
+    ship a Bool line on some items and a real rankable magnitude on others, and
+    their value is already expressible as a ranked stat (R5)."""
+    return sorted(((presence_counting_names(records) & UTILITY_TIER1_PRESENCE)
+                   - set(rankable or ()))
                   | set(untyped_admitted or ()))
 
 

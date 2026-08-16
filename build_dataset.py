@@ -898,6 +898,12 @@ def build() -> dict:
     # stamp rather than re-deriving it.
     _utility_counting = utility_procs_mod.counting_set(
         planner_records, _rankable_list, _uproc_allow)
+    # #91 (U3, KTD10) — the FULL presence-minus-magnitude population size, kept
+    # beside the tier-1 restriction for the coverage disclosure: it states how
+    # much of the derivable population v1 deliberately does not count yet.
+    _utility_presence_full = len(
+        utility_procs_mod.presence_counting_names(planner_records)
+        - set(_rankable_list))
     # #305 — per-channel helpless-spelling guard, item-attached channel: no
     # parsed_set_bonuses tier may still carry a fold-away helpless-damage
     # spelling (the set_parser parse seam folds them to `Damage to helpless
@@ -1312,6 +1318,15 @@ def build() -> dict:
                 "candidates": _uproc_checked,
                 "allowed": len(_uproc_allow),
                 "quarantined": len(_uproc_quarantined),
+                # #91 (U3, KTD10) — the counting set's Bool half is restricted
+                # to the curated tier-1 list; the names outside it are
+                # derivable, not quarantined, so the restriction is disclosed
+                # here rather than filed per name.
+                "tier1_size": len(utility_procs_mod.UTILITY_TIER1_PRESENCE),
+                "full_presence_population": _utility_presence_full,
+                "note": ("v1 counts the curated tier-1 presence subset; "
+                         "widening happens in measured batches per KTD10 "
+                         "(plan 2026-08-15-002)"),
             },
             # #223 — DR qualifier split. `kept_numeric` counts magnitudes now
             # sharing the single unconditional bucket (max, never sum);

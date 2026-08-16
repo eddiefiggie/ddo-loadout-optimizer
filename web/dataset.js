@@ -471,6 +471,41 @@ const PRESENCE_ALLOW = new Set([
                                                // effect on the Jidz-Tet'ka bracers
 ]);
 
+// #91 (U3, KTD10) — the Utility tier's v1 CURATED Bool counting list ("tier 1").
+// The full presence-minus-magnitude population (~800 names) blew the measured
+// perf gate at 7.7x the 2x budget, so per KTD10's designed fallback the v1
+// counting set admits a curated high-value subset and widens in MEASURED
+// BATCHES from here. Contents: the PRESENCE_ALLOW wiki-adjudicated named
+// effects, plus the plan's acceptance-example effects — Ghost Touch (AE4) and
+// Echo of Whelm's three procs (AE1/AE2, the feature's marquee case). A name
+// outside this list simply does not count in v1 — it is DERIVABLE from the
+// presence population, not a quarantine ruling, so nothing is filed per name.
+// Deliberately a SEPARATE constant from PRESENCE_ALLOW: that list's meaning is
+// "named effects the four-word cap wrongly hides" (picker visibility), and
+// entangling it with counting admission would make a future picker adjudication
+// silently widen the counting set unreviewed.
+// MIRRORED in src/utility_procs.py (the stamp derivation) — the stamped-set
+// parity test in tests/dataset.test.js guards the two copies against drift.
+const UTILITY_TIER1_PRESENCE = new Set([
+  // The plan's Product Contract examples (must count for AE1/AE2/AE4):
+  "Ghost Touch",
+  "Whelming Shockwave",
+  "Blunt Trauma",
+  "Lesser Boneshatter",
+  // The classic always-on utility archetype, pinned expected-in since U1:
+  "Feather Falling",
+  // The PRESENCE_ALLOW wiki-adjudicated named effects:
+  "Kick 'Em While They're Down",
+  "Way of the Sun Soul",
+  "Lifeblood of the Undead Prince",
+  "Path of the Fire Dragon",
+  "Path of the Guarding Stone",
+  "Brilliance of the Shattered Sun",
+  "Vile Grip of the Hidden Hand",
+  "Legendary Vile Grip of the Hidden Hand",
+  "Legendary Tet-zik, The Enlightened Change",
+]);
+
 /** #228 — every `Bool` presence name that reads like a named effect (it clears the
  *  noise filter) but is hidden anyway because it runs past the four-word cap, and
  *  has not been adjudicated onto PRESENCE_ALLOW. Sorted.
@@ -1040,5 +1075,5 @@ if (typeof window !== "undefined") {
   window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
 }
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
+  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK, UTILITY_TIER1_PRESENCE };
 }
