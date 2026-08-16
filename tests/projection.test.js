@@ -1080,3 +1080,32 @@ test("U6 (#91): the zero-count line matches results.js's zero-state wording verb
   assert.strictEqual(P.utilityLine(1), "1 utility effect on this loadout");
   assert.strictEqual(P.utilityLine(7), "7 utility effects on this loadout");
 });
+
+// #346 (U5, R11, AE3) — a mechanic the rung made UNREACHABLE is named, not
+// silently omitted. Augment Sets are the case: they are set-bonus crafting, so
+// every rung from no-niche-crafting down clears them. Only a player whose own
+// ownership opt-in was overridden needs to hear it.
+test("#346: owned Augment Sets are reported unavailable, not silently dropped", () => {
+  const rec = makeRec();
+  rec.snapshot.query = { craftingRung: "printed-only" };
+
+  rec.inputs = Object.assign({}, rec.inputs, { ownedSetAugments: [] });
+  assert.ok(!/Augment Set/.test(P.project(rec).character.craftingExcludedNotice),
+    "a player who marked none owned is not told about a mechanic they never opted into");
+
+  rec.inputs = Object.assign({}, rec.inputs, { ownedSetAugments: ["Some Set"] });
+  const one = P.project(rec).character.craftingExcludedNotice;
+  assert.match(one, /Augment Set you marked as owned was unavailable/);
+  assert.match(one, /not merely outscored/, "unavailable and outscored are different facts");
+
+  rec.inputs = Object.assign({}, rec.inputs, { ownedSetAugments: ["A", "B"] });
+  assert.match(P.project(rec).character.craftingExcludedNotice, /2 Augment Sets you marked as owned were unavailable/);
+
+  // It rides every restrictive rung, because all of them clear set-bonus crafting.
+  rec.snapshot.query = { craftingRung: "no-niche-crafting" };
+  assert.match(P.project(rec).character.craftingExcludedNotice, /unavailable at this setting/);
+  // ...but never the top rung, where the sets were genuinely available.
+  rec.snapshot.query = { craftingRung: "everything" };
+  rec.snapshot.augmentsPlaced = [{ variant_id: "Sapphire", color: "Blue" }];
+  assert.ok(!/unavailable at this setting/.test(P.project(rec).character.craftingExcludedNotice));
+});

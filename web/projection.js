@@ -557,18 +557,29 @@
       ? _rungOf(q.craftingRung != null ? q.craftingRung : inputs.craftingRung)
       : ((q.excludeCraftingSystems || inputs.excludeCraftingSystems) ? "no-niche-crafting" : "everything");
 
+    // #346 (U5, R11) — a mechanic the rung made UNREACHABLE is named, not
+    // silently omitted. Augment Sets are the motivating case: they are set-bonus
+    // crafting, so every rung from no-niche-crafting down clears them. A player
+    // who never marked one owned would not miss them, so this only speaks to a
+    // player whose own opt-in was overridden by the rung.
+    const ownedSets = (inputs.ownedSetAugments || []).length
+      || (q.ownedSetAugments && (q.ownedSetAugments.size || q.ownedSetAugments.length)) || 0;
+    const setsClause = ownedSets
+      ? ` The ${ownedSets === 1 ? "Augment Set you marked as owned was" : `${ownedSets} Augment Sets you marked as owned were`} unavailable at this setting, not merely outscored.`
+      : "";
+
     if (rung === "no-niche-crafting") {
       return "Niche crafting was excluded from this solve: Viktranium experiments, "
         + "Sealed-in-X seals, Nearly Completed, Dinosaur Bone crafting, and "
-        + "set-bonus crafting were not considered. Augments still were.";
+        + "set-bonus crafting were not considered. Augments still were." + setsClause;
     }
     if (rung === "no-solar-lunar") {
       return "Niche crafting and Solar/Lunar Gems were excluded from this solve. "
-        + "Ordinary colour augments were still considered.";
+        + "Ordinary colour augments were still considered." + setsClause;
     }
     if (rung === "printed-only") {
       return "This solve used nothing beyond what is printed on each item: no "
-        + "niche crafting and no augments of any colour were considered.";
+        + "niche crafting and no augments of any colour were considered." + setsClause;
     }
     // Top rung. R9 — the notice is the discovery path for the control, so it
     // speaks here too rather than staying silent. It reports what the loadout

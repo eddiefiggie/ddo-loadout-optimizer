@@ -1744,3 +1744,41 @@ test("#91 U5: utilityCard takes the build being rendered — an alternative's re
 });
 
 console.log(`\n${passed} passed`);
+
+// #346 (U5, R12, AE7) — a rung can take a stat's last source out of the pool.
+// Twenty targetable stats are augment-only, so telling that player to widen
+// their ML band is advice that cannot work. The ladder joins the owned-pool
+// carve-out: an explicit, single, reversible choice worth naming.
+test("#346: the zero-source notice names the rung when one is excluding augments", () => {
+  const model = { worn: [], augments: [], targets: ["Strikethrough"] };
+  const result = { status: "optimal", perTarget: { Strikethrough: 0 } };
+  const dataset = { items: [{ category: "augment", affixes: [{ name: "Strikethrough", value: 15 }] }] };
+
+  const plain = R.zeroSourceNotice({ targets: ["Strikethrough"] }, result, model, dataset);
+  assert.match(plain, /widening the ML band/, "with no rung set, the advice is unchanged");
+  assert.ok(!/solver assume/.test(plain), "and it does not blame a ladder the player never moved");
+
+  for (const rung of ["no-solar-lunar", "printed-only"]) {
+    const withRung = R.zeroSourceNotice({ targets: ["Strikethrough"], craftingRung: rung }, result, model, dataset);
+    assert.match(withRung, /which exclude augments/, `${rung} names the cause`);
+    assert.match(withRung, /raising "What may the solver assume/, `${rung} points at the control`);
+    assert.ok(!/widening the ML band/.test(withRung),
+      `${rung} does not send the player after their ML band instead`);
+  }
+
+  const niche = R.zeroSourceNotice({ targets: ["Strikethrough"], craftingRung: "no-niche-crafting" }, result, model, dataset);
+  assert.match(niche, /widening the ML band/,
+    "the niche-crafting rung does not touch augments, so it must not claim to");
+});
+
+// The owned-gear pool keeps precedence: it is the more specific explicit choice,
+// and a player in owned mode needs to hear about the catalog first.
+test("#346: the owned-gear pool still wins over the rung in the zero-source notice", () => {
+  const model = { worn: [], augments: [], targets: ["Strikethrough"] };
+  const result = { status: "optimal", perTarget: { Strikethrough: 0 } };
+  const dataset = { items: [{ category: "augment", affixes: [{ name: "Strikethrough", value: 15 }] }] };
+  const out = R.zeroSourceNotice({ targets: ["Strikethrough"], pool: "owned", craftingRung: "printed-only" },
+    result, model, dataset);
+  assert.match(out, /your owned-gear pool/);
+  assert.match(out, /the full catalog may have one/);
+});

@@ -11,6 +11,11 @@
 const Proj = (typeof Projection !== "undefined") ? Projection
   : (typeof require !== "undefined" ? require("./projection.js") : null);
 const affixLabel = Proj.affixLabel;
+// #346 (U5) — the ladder's vocabulary, over the same cross-runtime bridge.
+const _resultsRung = (typeof craftingRung !== "undefined") ? craftingRung
+  : (typeof require !== "undefined" ? require("./model.js").craftingRung : () => "everything");
+const _resultsRungExcludesSolarLunar = (typeof rungExcludesSolarLunar !== "undefined") ? rungExcludesSolarLunar
+  : (typeof require !== "undefined" ? require("./model.js").rungExcludesSolarLunar : () => false);
 // U8 (R8) — bound like every other shared primitive. `renderResults` /
 // `equippedBody` / `loadoutDeepDive` run against the LIVE solve result and have no
 // saved record, so they cannot reach the collapse through `Proj.project(rec)`;
@@ -901,10 +906,21 @@ function zeroSourceNotice(query, result, model, dataset) {
     // 34 that the dominance filter had pruned. Only the owned-pool case is named,
     // because opting into it is an explicit, single, reversible choice.
     const owned = query && query.pool === "owned";
-    const where = owned ? "your owned-gear pool" : "your current filters";
-    parts.push(`No source of ${filtered.map(esc).join(", ")} is available in ${where} — `
-      + `${owned ? "the full catalog may have one" : "widening the ML band or character filters may reach "
-        + (filtered.length > 1 ? "them" : "it")}.`);
+    // #346 (U5, R12) — the ladder joins the owned-pool carve-out for the same
+    // reason that one exists: it is an explicit, single, reversible choice the
+    // player made, not one of the many filters this function deliberately
+    // refuses to guess between. Twenty targetable stats are augment-only
+    // (Strikethrough, Sneak Attack Dice, Imbue Dice, ...), so a lowered rung is
+    // the likeliest cause of a zero here — and telling that player to widen
+    // their ML band is advice that cannot work.
+    const rungRestricts = _resultsRungExcludesSolarLunar(_resultsRung(query || {}));
+    const where = owned ? "your owned-gear pool"
+      : rungRestricts ? "your current filters, which exclude augments" : "your current filters";
+    const fix = owned ? "the full catalog may have one"
+      : rungRestricts ? `raising "What may the solver assume beyond the printed item?" may reach `
+        + (filtered.length > 1 ? "them" : "it")
+      : "widening the ML band or character filters may reach " + (filtered.length > 1 ? "them" : "it");
+    parts.push(`No source of ${filtered.map(esc).join(", ")} is available in ${where} — ${fix}.`);
   }
   return `<p class="scope-note zero-source-note" role="status">${parts.join(" ")}</p>`;
 }
