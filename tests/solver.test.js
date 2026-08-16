@@ -4865,5 +4865,72 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(A.craftCount(crafts.sol), 0, "the candidate genuinely uses fewer crafting steps");
   });
 
+  // -------------------------------------------------------------------------
+  // #91 (U7, KTD7) — generateAlternatives and the Utility sentinel: the generic
+  // families exclude it from target iteration and lock construction, and thread
+  // the achieved-count lock into their re-solves instead.
+  // -------------------------------------------------------------------------
+
+  await test("#91 U7/KTD7: sentinel dragged mid-list — generic axes skip it and their trades preserve the count", async () => {
+    // Optimum: A=10 (Ring), count stage picks the Ghost Touch trinket, B=6
+    // under the count lock. A generic rebalance toward B must NOT iterate the
+    // sentinel as a pair member (no {from|to: sentinel} candidate), must build
+    // no sentinel lock entry, and — because the sentinel ranks before B — must
+    // carry the count lock, so swapping to the B-10 trinket (shedding Ghost
+    // Touch) is locked out and no candidate below the optimum's count appears.
+    const model = {
+      targets: ["A", SENT, "B"], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+        slot("Trinket", [
+          item("tU", "Trinket", [["B", "Enhancement", 6], ["Ghost Touch", "Bool", 1]]),
+          item("tB", "Trinket", [["B", "Enhancement", 10]]),
+        ]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.utilityCount, 1);
+    assert.strictEqual(r.effective.B, 6, "B pays the cost its position permits");
+    const alts = S.generateAlternatives(r, model, highs);
+    for (const a of alts) {
+      assert.ok(a.meta.from !== SENT && a.meta.to !== SENT && a.meta.stat !== SENT,
+        `generic axes never iterate the sentinel (got ${a.gainAxis}: ${JSON.stringify(a.meta)})`);
+      assert.ok((a.sol.utilityReport ? a.sol.utilityReport.count : 0) >= r.utilityCount,
+        `a ${a.gainAxis} trade below the ranked-above count must be locked out`);
+    }
+  });
+
+  await test("#91 U7/KTD7: fewer-crafts re-solve carries the count lock — cannot swap away the counted effect's carrier", async () => {
+    // The #321 GS fixture shape, with the counted effect riding the GS HOST:
+    // the crafts family's craft-free alternative is swapping to PLAIN (55 >=
+    // 60 - give 6), which sheds Ghost Touch. Without the count lock that swap
+    // surfaces as "1 fewer crafting steps" while silently shedding the effect
+    // the player ranked for; with the lock it is infeasible and no crafts
+    // candidate exists.
+    const armor = item("BIG-GS", "Armor", [["Melee Power", "Artifact", 20], ["Melee Power", "Enhancement", 15]]);
+    const gsHostV = item("GSCH", "Ring", [["Ghost Touch", "Bool", 1]]);
+    gsHostV.green_steel_slot = true;
+    const plainRing = item("PLAIN", "Ring", [["Melee Power", "Insightful", 20]]);
+    const model = {
+      targets: ["Melee Power", SENT], mlCap: 36, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [slot("Armor", [armor]), slot("Ring", [gsHostV, plainRing])],
+      greenSteel: [{ name: "Ethereal", stat: "Melee Power", bonus_type: "Insightful", value: 25, unit: "flat" }],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective["Melee Power"], 60, "GS craft (25) beats the craft-free ring (20)");
+    assert.strictEqual(r.utilityCount, 1, "the GS host carries the counted effect");
+    assert.strictEqual((r.gsPlaced || []).length, 1, "the optimum crafts");
+    const alts = S.generateAlternatives(r, model, highs);
+    const crafts = alts.filter((a) => a.gainAxis === "crafts");
+    for (const a of crafts) {
+      assert.ok((a.sol.utilityReport ? a.sol.utilityReport.count : 0) >= 1,
+        "a crafts candidate may never shed the ranked-above count");
+    }
+    assert.strictEqual(crafts.length, 0,
+      "the only 'fewer crafts' build sheds the counted effect, so the count lock rules it out");
+  });
+
   console.log(`\n${passed} passed`);
 })();

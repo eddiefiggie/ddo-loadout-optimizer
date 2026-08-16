@@ -2259,8 +2259,27 @@ function modelStats(model) {
 // `opts.cap` bounds the per-axis re-solve budget so on-demand generation stays fast.
 function generateAlternatives(optimum, model, highs, opts = {}) {
   const program = optimum.program;
-  const targets = program.targetList;              // ranked priorities, in order
+  const targets = program.targetList;              // ranked priorities, in order (may include the Utility sentinel)
   const per = optimum.perTarget || optimum.effective;
+  // #91 (U7, KTD7) — the Utility sentinel is not a stat. It is excluded from
+  // every generic family's target iteration AND from all four lock-construction
+  // sites explicitly (a sentinel lock renders to empty terms and encodeStage
+  // silently skips it — relying on that would hide the bug, not fix it).
+  // Instead, each generic family threads the KTD1 count lock (`>=` the
+  // optimum's achieved count, via the per-call `extra` channel — never mutated
+  // onto the shared program) into its re-solves whenever the sentinel ranks at
+  // or above the positions that family's lock idiom protects, so a set/craft/
+  // unranked trade can never silently shed a ranked-above utility effect.
+  const sentinelIdx = targets.indexOf(_UTILITY_SENTINEL);
+  const ranked = targets.filter((s) => s !== _UTILITY_SENTINEL);
+  const optUtilityCount = (program.utilityEnabled && optimum.utilityCount != null)
+    ? optimum.utilityCount : null;
+  // The count lock body against a given program's indicator vars (the unranked
+  // family re-builds its program, so the u-var names must come from THAT build;
+  // minting is name-sorted, so the names line up build-to-build). `>=`, not `=`:
+  // indicators have no downward pressure, so more effects stay legal.
+  const utilityLock = (prog) => (optUtilityCount > 0 && prog.utilityEnabled && (prog.utilityVars || []).length)
+    ? [`${prog.utilityVars.join(" + ")} >= ${optUtilityCount}`] : [];
   // Caps bound the on-demand generation latency: each candidate is a full MILP solve
   // (~1s cold on a real dataset), so the generators are capped and skip the tie-break
   // second solve (tieBreak:false) — HiGHS is deterministic without it.
@@ -2272,7 +2291,14 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
   // (setGive) so completing a set stays a real trade instead of cratering the build.
   // A set that cannot fit inside that give is proven infeasible fast and dropped.
   const active = new Set((optimum.setsActive || []).map((s) => s.set));
-  const setLocks = targets.map((s) => ({ stat: s, value: per[s], give: setGive(per[s]) }));
+  const setLocks = ranked.map((s) => ({ stat: s, value: per[s], give: setGive(per[s]) }));
+  // Locks all targets → the count lock always rides when the tier is ranked.
+  const setExtra = sentinelIdx !== -1 ? utilityLock(program) : [];
+  // With the sentinel ranked FIRST the top priority to maximize is the first
+  // real stat; with the sentinel as the ONLY entry, maximize the count itself.
+  const setObjective = ranked.length
+    ? { objectiveStat: ranked[0] }
+    : { objTerms: (program.utilityVars || []).map((u) => ({ coef: 1, name: u })) };
   const seenSets = new Set();
   let sCount = 0, sTries = 0;
   for (const [setVar, meta] of program.setMeta || []) {
@@ -2280,7 +2306,7 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
     if (active.has(meta.set) || seenSets.has(meta.set)) continue;
     seenSets.add(meta.set);
     sTries++;
-    const sol = solveConstrained(program, highs, { objectiveStat: targets[0], locks: setLocks, extra: [`${setVar} = 1`], tieBreak: false });
+    const sol = solveConstrained(program, highs, { ...setObjective, locks: setLocks, extra: [`${setVar} = 1`, ...setExtra], tieBreak: false });
     if (sol.status === "optimal" && !sameChosen(sol, optimum)) { out.push({ sol, gainAxis: "set", meta: { set: meta.set } }); sCount++; }
   }
 
@@ -2291,13 +2317,22 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
   let rCount = 0;
   outer:
   for (let i = 0; i < targets.length; i++) {
+    if (targets[i] === _UTILITY_SENTINEL) continue;            // #91 (KTD7) — not a stat, never a pair member
     for (let j = i + 1; j < targets.length; j++) {
+      if (targets[j] === _UTILITY_SENTINEL) continue;          // #91 (KTD7)
       if (rCount >= cap.rebalance) break outer;
       rCount++;
-      const locks = targets.slice(0, j).map((s, k) => (k === i
-        ? { stat: s, value: per[s], give: alternativeGive(per[s]) }
-        : { stat: s, value: per[s] }));
-      const sol = solveConstrained(program, highs, { objectiveStat: targets[j], locks, tieBreak: false });
+      const locks = targets.slice(0, j)
+        .filter((s) => s !== _UTILITY_SENTINEL)                // #91 (KTD7) — no sentinel lock entry
+        .map((s) => (s === targets[i]
+          ? { stat: s, value: per[s], give: alternativeGive(per[s]) }
+          : { stat: s, value: per[s] }));
+      // This idiom locks the positions before the maximized stat, so the count
+      // lock rides exactly when the sentinel ranks before targets[j]; a tier
+      // ranked BELOW the maximized stat is fair game to re-rank, matching what
+      // the lexicographic order means.
+      const rebExtra = (sentinelIdx !== -1 && sentinelIdx < j) ? utilityLock(program) : [];
+      const sol = solveConstrained(program, highs, { objectiveStat: targets[j], locks, extra: rebExtra, tieBreak: false });
       // Only a real trade: the traded-to priority must actually rise above the optimum.
       if (sol.status === "optimal" && !sameChosen(sol, optimum) && (sol.effective[targets[j]] ?? 0) > (per[targets[j]] ?? 0))
         out.push({ sol, gainAxis: "rebalance", meta: { from: targets[i], to: targets[j] } });
@@ -2310,16 +2345,20 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
   // optimum, relax the lowest priority and try once more.
   const targetSet = new Set(targets);
   const unrankedCandidates = [...modelStats(model)].filter((s) => !targetSet.has(s)).slice(0, cap.unranked);
-  const originalExact = targets.map((s) => ({ stat: s, value: per[s] }));
+  const originalExact = ranked.map((s) => ({ stat: s, value: per[s] }));   // #91 (KTD7) — no sentinel lock entry
   for (const u of unrankedCandidates) {
     const p2 = buildProgram({ ...model, targets: [...model.targets, u] });
     if (!p2.xVars.length) continue;
-    let sol = solveConstrained(p2, highs, { objectiveStat: u, locks: originalExact, tieBreak: false });
+    // Locks all ranked targets → the count lock always rides when the tier is
+    // ranked. Built against p2's OWN indicator vars (this family re-builds the
+    // program; sorted minting keeps the names aligned with the count).
+    const unrExtra = sentinelIdx !== -1 ? utilityLock(p2) : [];
+    let sol = solveConstrained(p2, highs, { objectiveStat: u, locks: originalExact, extra: unrExtra, tieBreak: false });
     let zeroCost = true;
-    if (sol.status === "optimal" && sameChosen(sol, optimum) && targets.length) {
+    if (sol.status === "optimal" && sameChosen(sol, optimum) && ranked.length) {
       zeroCost = false;
       const relaxLowest = originalExact.map((l, k) => (k === originalExact.length - 1 ? { ...l, give: alternativeGive(l.value) } : l));
-      sol = solveConstrained(p2, highs, { objectiveStat: u, locks: relaxLowest, tieBreak: false });
+      sol = solveConstrained(p2, highs, { objectiveStat: u, locks: relaxLowest, extra: unrExtra, tieBreak: false });
     }
     if (sol.status === "optimal" && !sameChosen(sol, optimum)) out.push({ sol, gainAxis: "unranked", meta: { stat: u, zeroCost } });
   }
@@ -2341,9 +2380,13 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
     + (optimum.ncPlaced || []).length + (optimum.vikPlaced || []).length + (optimum.sealPlaced || []).length
     + (optimum.tfPlaced || []).length + (optimum.gsPlaced || []).length;
   if (craftVars.length && optCrafts > 0) {
-    const relaxedAll = targets.map((s) => ({ stat: s, value: per[s], give: alternativeGive(per[s]) }));
+    const relaxedAll = ranked.map((s) => ({ stat: s, value: per[s], give: alternativeGive(per[s]) }));   // #91 (KTD7) — no sentinel lock entry
+    // Locks all targets → the count lock always rides when the tier is ranked
+    // (a "fewer crafts" build that drops the counted effect's only carrier
+    // would silently shed what the player ranked for).
+    const craftExtra = sentinelIdx !== -1 ? utilityLock(program) : [];
     const objTerms = craftVars.map((name) => ({ coef: 1, name }));
-    const sol = solveConstrained(program, highs, { objTerms, sense: "min", locks: relaxedAll, tieBreak: false });
+    const sol = solveConstrained(program, highs, { objTerms, sense: "min", locks: relaxedAll, extra: craftExtra, tieBreak: false });
     const solCrafts = sol.status === "optimal"
       ? (sol.augmentsPlaced || []).length + (sol.dinoPlaced || []).length
         + (sol.ncPlaced || []).length + (sol.vikPlaced || []).length + (sol.sealPlaced || []).length
@@ -2352,6 +2395,30 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
     // Only surface when it genuinely uses fewer crafts (a same-count different build
     // would headline "0 fewer crafting steps").
     if (sol.status === "optimal" && !sameChosen(sol, optimum) && solCrafts < optCrafts) out.push({ sol, gainAxis: "crafts", meta: { optCrafts } });
+  }
+
+  // (e) more-utility — #91 (U7, KTD7/R11): the Utility tier's OWN family, the
+  // only axis the tier participates in. Follows the unranked shape: maximize
+  // the indicator sum with the ranked targets locked exact (a zero-cost strict
+  // gain), and if that cannot strictly beat the optimum's count, relax every
+  // ranked target by alternativeGive and try once more. No count lock here —
+  // this family maximizes the count itself. Surfaced ONLY on a strictly
+  // greater achieved count (strict `>` at the claim site — the superlative-
+  // claim rule), and the count is read from the GUARDED utilityReport, never
+  // raw indicator primals: on tieBreak:false paths a binary can float
+  // numerically, and a claim of "more utility" must never rest on an effect no
+  // fired contribution carries.
+  if (program.utilityEnabled && optUtilityCount != null && (program.utilityVars || []).length) {
+    const uObjTerms = program.utilityVars.map((u) => ({ coef: 1, name: u }));
+    const countOf = (sol) => (sol.utilityReport ? sol.utilityReport.count : 0);
+    const exact = ranked.map((s) => ({ stat: s, value: per[s] }));
+    let sol = solveConstrained(program, highs, { objTerms: uObjTerms, sense: "max", locks: exact, tieBreak: false });
+    if (!(sol.status === "optimal" && countOf(sol) > optUtilityCount)) {
+      const relaxed = ranked.map((s) => ({ stat: s, value: per[s], give: alternativeGive(per[s]) }));
+      sol = solveConstrained(program, highs, { objTerms: uObjTerms, sense: "max", locks: relaxed, tieBreak: false });
+    }
+    if (sol.status === "optimal" && !sameChosen(sol, optimum) && countOf(sol) > optUtilityCount)
+      out.push({ sol, gainAxis: "utility", meta: { from: optUtilityCount, to: countOf(sol) } });
   }
 
   return out;
