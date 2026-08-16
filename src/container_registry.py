@@ -153,9 +153,10 @@ REGISTRY = {
         "container count, which counted registry entries rather than real pools."),
     "seal": _c(
         FLAT, (), VERIFIED_SAFE, True,
-        "Flat one-record-per-affix (seal_type-keyed), no expansion pass, 24 source "
-        "options -> 24 records: Undeath's 18 ability-stat options plus Fire's 6 "
-        "unique-enchantment procs, every one single-affix. Same treatment."),
+        "Flat one-record-per-affix (seal_type-keyed), no expansion pass, 48 source "
+        "options -> 48 records: Undeath's and Gloom's 18 ability-stat options each "
+        "plus Fire's and Mist's 6 unique-enchantment procs each, every one "
+        "single-affix. Same treatment."),
     "green_steel": _c(
         FLAT, (), KNOWN_UNSAFE, False,
         "SPLITS OPTIONS, and the solver constrains this pool Sigma <= 1 per host, so a "

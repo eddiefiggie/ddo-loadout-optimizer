@@ -16,9 +16,9 @@ the item pipeline stat name to match the item pipeline's vocabulary), an integer
 ``value``, and a non-empty ``wiki_url``. Anything else is quarantined with a
 reason, never inferred.
 
-Only the Sealed in Undeath pool (Ritual Table clothing/jewelry) is enumerated
-today; Fire/Gloom/Mist carry empty pools until harvested, but the same machinery
-covers them. Sourced via Claude-in-Chrome (plain fetch returns empty for ddowiki).
+All four pools are enumerated and verified: Undeath and Fire from the Ritual
+Table, Gloom and Mist from the Augmentation Altar (Den of Vipers). Sourced via
+Claude-in-Chrome (plain fetch returns empty for ddowiki).
 """
 from __future__ import annotations
 
@@ -32,8 +32,7 @@ SEAL_TYPES = {"Undeath", "Fire", "Gloom", "Mist"}
 
 # Native "Sealed in X" menu-pool key per seal type in gearplanner_crafting.json.
 _NATIVE_SEAL_KEY = {t: f"Sealed in {t}" for t in SEAL_TYPES}
-# Seal types with a hand-verified, solver-eligible pool. Gloom and Mist have
-# native pools that stay EXCLUDED pending the same treatment.
+# Seal types with a hand-verified, solver-eligible pool. All four are verified.
 #
 # Fire's six options are all `{{Unique enchantment}}` procs — five reduce an enemy
 # stat, one grants temporary hitpoints on a cooldown — so none carries a wearer
@@ -43,9 +42,16 @@ _NATIVE_SEAL_KEY = {t: f"Sealed in {t}" for t in SEAL_TYPES}
 # a value the wiki never states about them. The same six names already ship as
 # `Bool` presence via Viktranium and the Dino inserts, so this is a third route to
 # effects the dataset already models. See docs/wiki-evidence/sealed-in-fire.md.
-VERIFIED_SEAL_TYPES = {"Undeath", "Fire"}
+#
+# Gloom and Mist unseal at the AUGMENTATION ALTAR (Den of Vipers raid, U72),
+# not the Ritual Table. Mist is the same six Legendary procs as Fire (presence);
+# Gloom is 18 ability options whose bonus types are wiki-stated in the tooltip
+# layer (Enhancement +15 / Insight +7 / Quality +3), matching the native pool
+# exactly. See docs/wiki-evidence/sealed-in-gloom-mist.md.
+VERIFIED_SEAL_TYPES = {"Undeath", "Fire", "Gloom", "Mist"}
 # The gear domain each seal type's pool applies to (informational; carried for display).
-_SEAL_DOMAIN = {"Undeath": "clothing/jewelry", "Fire": "weapons"}
+_SEAL_DOMAIN = {"Undeath": "clothing/jewelry", "Fire": "weapons",
+                "Gloom": "equipment/accessories", "Mist": "weapons"}
 
 
 def normalize_seal_type(name):
@@ -123,8 +129,9 @@ def parse_seal(seed):
         "item_hosts": "resolved from a Sealed-in-X marker on gear-planner items "
                       "(crafting[] for Undeath/Mist/Gloom, affixes[] Bool for Fire)",
         "note": "single-pick choice-slot: one option per seal slot, mutually "
-                "exclusive (adding another replaces the original). Undeath pool "
-                "sourced from the Ritual Table; Fire/Gloom/Mist pending harvest.",
+                "exclusive (adding another replaces the original). Legacy seed "
+                "path: only Undeath was ever seeded here; the native path "
+                "(build_seal) covers all four seal types.",
     }
     return {"records": records, "quarantined": quarantined, "coverage": coverage}
 
@@ -177,13 +184,15 @@ def build_seal(catalog: dict = None) -> dict:
         "item_hosts": "resolved from a Sealed-in-X marker on gear-planner items "
                       "(crafting[] for Undeath/Mist/Gloom, affixes[] Bool for Fire)",
         "note": "single-pick choice-slot sourced natively from the gear-planner "
-                "crafting catalog. Undeath (Ritual Table, clothing/jewelry stat "
-                "options) and Fire (Ritual Table, weapon unique-enchantment procs) "
-                "are verified live; Gloom/Mist pools exist natively but stay pending "
-                "verification. Ability-Insight options are typed 'Insight' (native), "
-                "correcting the legacy seed's 'Insightful'. Fire's options carry no "
-                "wearer magnitude and ship as presence — see "
-                "docs/wiki-evidence/sealed-in-fire.md.",
+                "crafting catalog. All four seal types are verified live: Undeath "
+                "(Ritual Table, clothing/jewelry stat options), Fire (Ritual Table, "
+                "weapon unique-enchantment procs), Gloom (Augmentation Altar, "
+                "equipment stat options), Mist (Augmentation Altar, weapon "
+                "unique-enchantment procs). Ability-Insight options are typed "
+                "'Insight' (native), wiki-stated in the tooltip layer. Fire's and "
+                "Mist's options carry no wearer magnitude and ship as presence — see "
+                "docs/wiki-evidence/sealed-in-fire.md and "
+                "docs/wiki-evidence/sealed-in-gloom-mist.md.",
     }
     return {"records": records, "quarantined": [], "coverage": coverage,
             "source_options": source_options}

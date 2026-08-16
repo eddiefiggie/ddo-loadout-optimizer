@@ -81,5 +81,8 @@ pre-existing and tracked as
 worsen it, but it does add five more effects whose value to a player depends on a
 proc rate the solver cannot see.
 
-Gloom and Mist remain unharvested. Their native pools exist in the crafting
-catalog and stay excluded pending the same treatment.
+~~Gloom and Mist remain unharvested. Their native pools exist in the crafting
+catalog and stay excluded pending the same treatment.~~ **Resolved 2026-08-15:**
+both harvested and verified — see `docs/wiki-evidence/sealed-in-gloom-mist.md`.
+The predicted shape held: Mist is the same six unique-enchantment procs
+(presence), Gloom is Undeath-shaped stat grants.

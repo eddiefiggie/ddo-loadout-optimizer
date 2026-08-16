@@ -18,7 +18,7 @@ So the solver treats a seal slot as a gated **select-one**: the host may unseal 
 |---|---|---|
 | Sealed in Undeath | clothing / jewelry | Ritual Table |
 | Sealed in Fire | weapons | Ritual Table |
-| Sealed in Gloom | item | Augmentation Altar |
+| Sealed in Gloom | equipment / accessories | Augmentation Altar |
 | Sealed in Mist | weapons | Augmentation Altar |
 
 The pool is keyed by **seal type** (each seal is one flat pool over its gear domain). **`Sealed in Amber` is not a member** — it is Ravenloft "The Vampire Hunters" quest content, not a stat-choice seal, and is deliberately excluded from `SEAL_TYPES`.
@@ -31,7 +31,7 @@ From the Ritual Table "Sealed in Undeath clothing / jewelry upgrades" section �
 - the same at **+7 Insightful**, or
 - the same at **+3 Quality**.
 
-18 options total. The bonus types were verified against `src.affix_parser.parse_line`: a bare `{{Stat|X|15}}` renders untyped → Enhancement; `|Insightful` and `|Quality` render those types. Fire / Gloom / Mist pools are **pending harvest** — their hosts are identified and the machinery covers them, but their option pools are not yet enumerated.
+18 options total. The bonus types were verified against `src.affix_parser.parse_line`: a bare `{{Stat|X|15}}` renders untyped → Enhancement; `|Insightful` and `|Quality` render those types. The Fire pool was harvested 2026-08-11 (`docs/wiki-evidence/sealed-in-fire.md`: six unique-enchantment procs, presence) and the Gloom / Mist pools 2026-08-15 (`docs/wiki-evidence/sealed-in-gloom-mist.md`: Gloom is Undeath-shaped — 18 ability options at the Augmentation Altar, bonus types wiki-stated in the tooltip layer; Mist is the same six procs as Fire). **All four pools are enumerated and solver-live.**
 
 ## Host sourcing and the reachability gap
 

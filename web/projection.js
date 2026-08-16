@@ -399,7 +399,7 @@
   // as native. `set` is neither: an item there to complete a set is not
   // craft-carried. `declared` has no host and never reaches this test.
   const CRAFT_FAMILY_LABEL = {
-    augment: "augments", vik: "Viktranium", seal: "Ritual Table seal",
+    augment: "augments", vik: "Viktranium", seal: "seal crafting",
     nc: "Nearly Completed", dino: "Dino crafting",
     tf: "Thunder-Forged", gs: "Green Steel",
   };
@@ -479,7 +479,7 @@
     const inputs = (rec && rec.inputs) || {};
     if (!q.excludeCraftingSystems && !inputs.excludeCraftingSystems) return null;
     return "Niche crafting was excluded from this solve: Viktranium experiments, "
-      + "Ritual Table seals, Nearly Completed, Dinosaur Bone crafting, and "
+      + "Sealed-in-X seals, Nearly Completed, Dinosaur Bone crafting, and "
       + "set-bonus crafting were not considered. Regular augments still were.";
   }
 
