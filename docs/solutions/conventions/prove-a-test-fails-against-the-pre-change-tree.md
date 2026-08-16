@@ -2,7 +2,7 @@
 title: "Prove a new test fails against the pre-change tree — a green suite can cover none of the diff"
 module: tests
 date: 2026-08-09
-last_updated: 2026-08-10
+last_updated: 2026-08-16
 problem_type: convention
 component: testing_framework
 severity: high
@@ -170,6 +170,8 @@ The compounding hazard is specific: when a plan states what a component emits an
 
 A fourth instance of clearing-both-gates surfaced in PR #323 (2026-08-14), with a per-structure mechanism: a test that loops over N parallel surfaces asserting absence per surface clears the base-tree gate on the strength of its FIRST assertion alone (the first failure aborts the loop, so the red run never reaches the rest), and clears the mutation check for every surface the fixture never materializes (a mutation on an unminted structure is unkillable, not covered). Both gates are per-test; that defect lives per-(assertion, structure). The remedy — an in-test non-vacuity assertion over each structure the loop checks — is in `assert-non-vacuity-for-every-surface-in-a-loop-test.md`.
 
+A fifth instance surfaced in PR #341 (2026-08-16), and it is the #239 shape with a sharper standing remedy. The #339 augment-ceiling disclosure's four tests were genuinely new (all red against the pre-change tree) and genuinely binding (mutating the reader reddens them) — and the feature was completely dead on every production surface, because each fixture nested `query` inside the `snapshot` while every real writer puts the solved query **beside** the snapshot (or omits it entirely, on the worker result). Reader and fixture agreed with each other while both disagreed with reality: one claim written twice, undetectable from inside the test layer, caught only by a review pass tracing the shape from the real writer to the real reader. Where #239's remedy was a one-time real-data run, this instance's remedy is a **permanent** guard: build the fixture through the real writer (the serializer/worker itself decides the shape), so reader/writer drift breaks a test instead of a feature. The full case and rule are in `fixture-shape-must-mirror-the-production-writer.md`.
+
 ## When to Apply
 
 - **Any new or modified test claiming to cover a diff.** This is the default, not an escalation. Every one of the five instances came from ordinary, well-intentioned test writing.
@@ -244,6 +246,7 @@ Covered above. The countermeasure that worked was corrupting the solver, not rea
 - `docs/solutions/conventions/prove-a-guard-fails-before-trusting-it.md` — the vacuity case for build guards; verified by corrupting input data.
 - `docs/solutions/conventions/corrupt-the-value-and-its-reference-together.md` — the binding case for build guards; verified by corrupting the value and its reference together. Its core insight IS this doc's echo shape, one layer down.
 - `docs/solutions/developer-experience/browser-verify-against-real-data-not-just-unit-tests.md` — the synthetic-input shape with a worked example predating this feature.
+- `docs/solutions/conventions/fixture-shape-must-mirror-the-production-writer.md` — the fifth clearing-both-gates instance (PR #341): a fixture shaped to the reader instead of the writer; the standing remedy is building the fixture through the real writer.
 - `docs/solutions/workflow-issues/golden-solve-guard-missing-from-local-test-sweep.md` — the complement: it covers forgetting to RUN the golden guard; instance 3 here is the worse case of running it, seeing green, and having deleted the constraint it protected. That doc now carries the scope limit and points back here.
 - PRs #179 (U1), #180 (U2+U3), #181 (U5), #182 (U4) — the feature these five instances came from.
 - The project's testing instructions: run the JS tests file by file; re-ratify golden/parity diffs deliberately.
