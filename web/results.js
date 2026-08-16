@@ -866,7 +866,12 @@ function zeroSourceNotice(query, result, model, dataset) {
   const targets = (query && query.targets) || (model && model.targets) || [];
   if (!targets.length || !model) return "";
   const reachable = poolStatNames(model);
-  const unsourced = targets.filter((t) => !reachable.has(t));
+  // #91 — the Utility sentinel is never a pool stat (poolStatNames only ever
+  // collects real affix/scaling names), so without this exclusion every solve
+  // with the tier ranked would flag it here — the same false "unsourced"
+  // reading the generic stat-card loop already guards against at its own call
+  // site (mirrors the `stat === _UTILITY_SENTINEL` exclusion above).
+  const unsourced = targets.filter((t) => t !== _UTILITY_SENTINEL && !reachable.has(t));
   if (!unsourced.length) return "";
   // Two causes, two different player actions.
   const absent = [], filtered = [];

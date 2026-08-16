@@ -340,6 +340,119 @@ const tradeModel = () => ({
     assert.strictEqual(setAlt.sol.effective.Constitution, 13, "the lock-respecting completion: 10 Enh + 2 Insight + 1 Profane tier");
   });
 
+  await test("review fix 2: the more-utility family baselines on the DISPLAYED report count, not the stage count", async () => {
+    // The stage utilityCount and the guarded utilityReport.count can differ
+    // (the report is z-backed; the stage count is a lock-time value). The
+    // strict-gain claim must use the number the card displays, or the family
+    // can advertise a "gain" the optimum already wears. Simulate the skew by
+    // doctoring the internal stage count below the report count.
+    const model = {
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [slot("Weapon", [
+        item("W1", "Weapon", [["A", "Enhancement", 10], ["Ghost Touch", "Bool", 1]]),
+        item("W2", "Weapon", [["A", "Enhancement", 9], ["Ghost Touch", "Bool", 1]]),
+      ])],
+      augments: [],
+    };
+    const opt = await S.solveLexicographic(model, highs);
+    assert.strictEqual(opt.utilityReport.count, 1, "the displayed count is 1");
+    opt.utilityCount = 0; // stage count under-reads the displayed truth
+    const alts = S.generateAlternatives(opt, model, highs);
+    assert.ok(!alts.some((a) => a.gainAxis === "utility"),
+      "no candidate may advertise a count the optimum's card already shows");
+  });
+
+  // Review fix 3 — the count lock threaded into the generic families behaves
+  // like a ranked stat (give-relaxed), not an ultra-priority: exact only when
+  // the sentinel is ranked FIRST. Shared fixture: Con stage takes rCon +
+  // nGT/tFF carriers (24); the utility stage adds bWB -> count 3. Completing
+  // Alpha requires its `pieces` member hosts, displacing that many carriers.
+  const shedModel = (targets, pieces) => {
+    const t = [{ n: pieces, affixes: [["Constitution", "Profane", 1]] }];
+    return {
+      targets, mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch", "Feather Falling", "Water Breathing"]),
+      worn: [
+        slot("Ring", [item("rCon", "Ring", [["Constitution", "Enhancement", 20]])]),
+        slot("Necklace", [
+          item("nGT", "Necklace", [["Constitution", "Insight", 2], ["Ghost Touch", "Bool", 1]]),
+          setHost("nSet", "Necklace", [], "Alpha", t),
+        ]),
+        slot("Trinket", [
+          item("tFF", "Trinket", [["Constitution", "Quality", 2], ["Feather Falling", "Bool", 1]]),
+          setHost("tSet", "Trinket", [], "Alpha", t),
+        ]),
+        slot("Boots", [
+          item("bWB", "Boots", [["Water Breathing", "Bool", 1]]),
+          ...(pieces === 3 ? [setHost("bSet", "Boots", [], "Alpha", t)] : []),
+        ]),
+      ],
+      augments: [],
+    };
+  };
+
+  await test("review fix 3: set-family count lock allows shedding within alternativeGive (tier not first)", async () => {
+    // Tier ranked second, count 3, alternativeGive(3)=2 -> floor 1. Alpha's
+    // completion sheds Ghost Touch + Feather Falling (2 effects, keeping Water
+    // Breathing) — legal under the relaxed floor, so the trade SURFACES. The
+    // pre-review exact lock (>= 3) silently suppressed it.
+    const opt = await S.solveLexicographic(shedModel(["Constitution", SENT], 2), highs);
+    assert.strictEqual(opt.effective.Constitution, 24, "20 Enh + 2 Insight + 2 Quality");
+    assert.strictEqual(opt.utilityReport.count, 3, "the optimum wears all three effects");
+    const alts = S.generateAlternatives(opt, shedModel(["Constitution", SENT], 2), highs);
+    const setAlt = alts.find((a) => a.gainAxis === "set" && a.meta.set === "Alpha");
+    assert.ok(setAlt, "the shedding set trade surfaces under the give-relaxed lock");
+    assert.ok(setAlt.sol.setsActive.some((s) => s.set === "Alpha"));
+    assert.strictEqual(setAlt.sol.utilityReport.count, 1, "sheds 2 of 3 — within the give, floor 1 respected");
+    assert.ok(setAlt.sol.chosen.some((c) => c.variant.variant_id === "bWB"), "the floor keeps a carrier equipped");
+    // Review fix 4 — the shed is stated as a cost, never silent:
+    const an = A.analyzeAlternative(opt, setAlt, { targets: ["Constitution", SENT] });
+    assert.strictEqual(an.utilDelta, -2, "the utility delta is computed from the guarded reports");
+    assert.ok(/-2 utility effects/.test(an.costText), "costText names the shed effects");
+    assert.strictEqual(an.totalCost, 3 + 2, "totalCost adds the shed magnitude to the -3 Constitution cost");
+  });
+
+  await test("review fix 3: shedding BELOW the give floor stays blocked (tier not first)", async () => {
+    // 3-piece Alpha displaces all three carriers -> count 0 < floor 1 -> the
+    // candidate is proven infeasible and never surfaces.
+    const opt = await S.solveLexicographic(shedModel(["Constitution", SENT], 3), highs);
+    assert.strictEqual(opt.utilityReport.count, 3);
+    const alts = S.generateAlternatives(opt, shedModel(["Constitution", SENT], 3), highs);
+    assert.ok(!alts.some((a) => a.gainAxis === "set" && a.meta.set === "Alpha"),
+      "a trade shedding below the relaxed floor is suppressed");
+  });
+
+  await test("review fix 3: the lock stays EXACT when the tier is ranked FIRST", async () => {
+    // Sentinel at position 0: the count is the top priority, so the lock is
+    // exact (>= 3) and the 2-effect shed of the 2-piece Alpha stays blocked.
+    const opt = await S.solveLexicographic(shedModel([SENT, "Constitution"], 2), highs);
+    assert.strictEqual(opt.utilityReport.count, 3, "the tier ranked first collects all three effects");
+    const alts = S.generateAlternatives(opt, shedModel([SENT, "Constitution"], 2), highs);
+    assert.ok(!alts.some((a) => a.gainAxis === "set" && a.meta.set === "Alpha"),
+      "no give applies to the top-ranked tier — the exact lock suppresses the shed");
+  });
+
+  await test("review fix 4: a pure utility shed can never claim 'no priority cost'", () => {
+    const mkSol = (ids, report) => ({
+      chosen: ids.map(([sl, id]) => ({ slot: sl, variant: { variant_id: id } })),
+      setsActive: [], augmentsPlaced: [], effective: {},
+      ...(report ? { utilityReport: report } : {}),
+    });
+    const optimum = mkSol([["Ring", "R1"], ["Neck", "N1"]], { count: 2, effects: [] });
+    const an = A.analyzeAlternative(optimum,
+      { sol: mkSol([["Ring", "R2"], ["Neck", "N2"]], { count: 0, effects: [] }), gainAxis: "rebalance", meta: {} },
+      { targets: [] });
+    assert.strictEqual(an.utilDelta, -2);
+    assert.strictEqual(an.costText, "-2 utility effects", "the shed is the stated cost");
+    assert.strictEqual(an.totalCost, 2, "the shed magnitude counts like a stat cost");
+    // ...and results without a utilityReport (tier removed) are untouched:
+    const bare = A.analyzeAlternative(mkSol([["Ring", "R1"]]),
+      { sol: mkSol([["Ring", "R2"]]), gainAxis: "rebalance", meta: {} }, { targets: [] });
+    assert.strictEqual(bare.costText, "no priority cost");
+    assert.strictEqual(bare.totalCost, 0);
+  });
+
   await test("#91 U7: rankAlternatives slots 'utility' after 'set' and before the stat trades", () => {
     const optimum = { chosen: [{ slot: "Ring", variant: { variant_id: "R1" } }, { slot: "Neck", variant: { variant_id: "N1" } }, { slot: "Boots", variant: { variant_id: "B1" } }],
       setsActive: [], augmentsPlaced: [], effective: {} };

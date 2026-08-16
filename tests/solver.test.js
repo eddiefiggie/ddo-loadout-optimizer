@@ -496,11 +496,14 @@ async function withCrossAdd(map, fn) {
       "the roll pick's effect is credited to its host item");
   });
 
-  await test("#91 U5/KTD6 guard: a floated indicator (no fired contribution) is omitted from the report", async () => {
-    // Synthetic primal straight into readSolution (the #319 idiom): u_e=1 with
-    // no backing z fired must not enter the report — on tieBreak:false paths a
-    // binary can float numerically, and receipts must never claim an effect no
-    // fired contribution carries.
+  await test("#91 U5/KTD6 guard: presence is z-backed — floated u omitted, fired z reported even with u=0", async () => {
+    // Synthetic primal straight into readSolution (the #319 idiom). Review fix:
+    // the report predicate is z-backed ONLY — u_e=1 with no backing z fired must
+    // not enter the report (receipts never claim an effect no fired contribution
+    // carries), while a fired z with u_e floated to 0 MUST enter it (after the
+    // utility stage nothing pressures the u vars, so the final primal may hold
+    // an arbitrary count-sized subset of u's up; reading u would under-report
+    // genuinely present effects nondeterministically).
     const model = {
       targets: ["A", SENT], mlCap: 34, dodgeCap: null,
       utilityCountingSet: new Set(["Ghost Touch"]),
@@ -520,6 +523,13 @@ async function withCrossAdd(map, fn) {
     const fired = S.readSolution(primalOf([x, u, zs[0]]), program);
     assert.deepStrictEqual(fired.utilityReport, { count: 1, effects: [{ name: "Ghost Touch", item: "nGT" }] },
       "fired indicator: reported with its credited carrier");
+    // Review fix (the new direction): the z fired but the u floated to 0 —
+    // the effect is genuinely present, so it IS in the report and the list.
+    const zOnly = S.readSolution(primalOf([x, zs[0]]), program);
+    assert.deepStrictEqual(zOnly.utilityReport, { count: 1, effects: [{ name: "Ghost Touch", item: "nGT" }] },
+      "fired z with a floated-to-0 u: reported — presence is z-backed, u primals are not consulted");
+    assert.deepStrictEqual(zOnly.utilityEffects, [{ name: "Ghost Touch", present: true }],
+      "the U3 effect list uses the same z-backed predicate");
   });
 
   await test("#91 U5: the tieBreak:false path (alternatives shape) carries the same guarded report", async () => {
@@ -4868,16 +4878,22 @@ async function withCrossAdd(map, fn) {
   // -------------------------------------------------------------------------
   // #91 (U7, KTD7) — generateAlternatives and the Utility sentinel: the generic
   // families exclude it from target iteration and lock construction, and thread
-  // the achieved-count lock into their re-solves instead.
+  // the count lock into their re-solves instead. Review fix — the lock behaves
+  // like a RANKED STAT, not an ultra-priority: exact only when the sentinel is
+  // ranked FIRST; otherwise relaxed by alternativeGive, and any shed is stated
+  // by alternatives.js cost accounting (never silent). These two tests
+  // previously pinned the exact-lock-everywhere behavior and were rewritten to
+  // the new rule per the code review.
   // -------------------------------------------------------------------------
 
-  await test("#91 U7/KTD7: sentinel dragged mid-list — generic axes skip it and their trades preserve the count", async () => {
+  await test("#91 U7/KTD7 (review): sentinel mid-list — axes skip it; a within-give shed surfaces WITH its loss stated", async () => {
     // Optimum: A=10 (Ring), count stage picks the Ghost Touch trinket, B=6
     // under the count lock. A generic rebalance toward B must NOT iterate the
-    // sentinel as a pair member (no {from|to: sentinel} candidate), must build
-    // no sentinel lock entry, and — because the sentinel ranks before B — must
-    // carry the count lock, so swapping to the B-10 trinket (shedding Ghost
-    // Touch) is locked out and no candidate below the optimum's count appears.
+    // sentinel as a pair member (no {from|to: sentinel} candidate) and must
+    // build no sentinel lock entry. With the tier NOT ranked first, the count
+    // lock relaxes by alternativeGive(1)=2 -> floor 0, so the B-10 trinket
+    // swap (shedding Ghost Touch) is a LEGAL trade — it surfaces, and the
+    // analysis states the shed as a cost instead of suppressing the candidate.
     const model = {
       targets: ["A", SENT, "B"], mlCap: 34, dodgeCap: null,
       utilityCountingSet: new Set(["Ghost Touch"]),
@@ -4891,45 +4907,64 @@ async function withCrossAdd(map, fn) {
     };
     const r = await S.solveLexicographic(model, highs);
     assert.strictEqual(r.utilityCount, 1);
+    assert.strictEqual(r.utilityReport.count, 1, "the displayed baseline");
     assert.strictEqual(r.effective.B, 6, "B pays the cost its position permits");
     const alts = S.generateAlternatives(r, model, highs);
     for (const a of alts) {
       assert.ok(a.meta.from !== SENT && a.meta.to !== SENT && a.meta.stat !== SENT,
         `generic axes never iterate the sentinel (got ${a.gainAxis}: ${JSON.stringify(a.meta)})`);
-      assert.ok((a.sol.utilityReport ? a.sol.utilityReport.count : 0) >= r.utilityCount,
-        `a ${a.gainAxis} trade below the ranked-above count must be locked out`);
     }
+    const reb = alts.find((a) => a.gainAxis === "rebalance" && a.meta.to === "B");
+    assert.ok(reb, "the within-give shedding rebalance now surfaces (review fix)");
+    assert.strictEqual(reb.sol.effective.B, 10, "the trade genuinely gains B");
+    assert.strictEqual(reb.sol.utilityReport.count, 0, "it sheds the counted effect");
+    const A2 = require("../web/alternatives.js");
+    const an = A2.analyzeAlternative(r, reb, { targets: ["A", SENT, "B"] });
+    assert.ok(/-1 utility effects/.test(an.costText), "the shed is stated in costText, never silent");
+    assert.strictEqual(an.utilDelta, -1);
+    assert.ok(an.totalCost >= 1, "totalCost includes the shed magnitude");
   });
 
-  await test("#91 U7/KTD7: fewer-crafts re-solve carries the count lock — cannot swap away the counted effect's carrier", async () => {
+  await test("#91 U7/KTD7 (review): fewer-crafts — shed surfaces with cost mid-list, exact lock blocks it when the tier is FIRST", async () => {
     // The #321 GS fixture shape, with the counted effect riding the GS HOST:
     // the crafts family's craft-free alternative is swapping to PLAIN (55 >=
-    // 60 - give 6), which sheds Ghost Touch. Without the count lock that swap
-    // surfaces as "1 fewer crafting steps" while silently shedding the effect
-    // the player ranked for; with the lock it is infeasible and no crafts
-    // candidate exists.
-    const armor = item("BIG-GS", "Armor", [["Melee Power", "Artifact", 20], ["Melee Power", "Enhancement", 15]]);
-    const gsHostV = item("GSCH", "Ring", [["Ghost Touch", "Bool", 1]]);
-    gsHostV.green_steel_slot = true;
-    const plainRing = item("PLAIN", "Ring", [["Melee Power", "Insightful", 20]]);
-    const model = {
-      targets: ["Melee Power", SENT], mlCap: 36, dodgeCap: null,
-      utilityCountingSet: new Set(["Ghost Touch"]),
-      worn: [slot("Armor", [armor]), slot("Ring", [gsHostV, plainRing])],
-      greenSteel: [{ name: "Ethereal", stat: "Melee Power", bonus_type: "Insightful", value: 25, unit: "flat" }],
+    // 60 - give 6), which sheds Ghost Touch. Review fix: with the tier ranked
+    // BELOW a stat the count lock relaxes by the give (floor 0 here), so the
+    // swap surfaces as "1 fewer crafting steps" WITH the shed stated as a
+    // cost; with the tier ranked FIRST the lock stays exact and the swap is
+    // infeasible.
+    const mk = (targets) => {
+      const armor = item("BIG-GS", "Armor", [["Melee Power", "Artifact", 20], ["Melee Power", "Enhancement", 15]]);
+      const gsHostV = item("GSCH", "Ring", [["Ghost Touch", "Bool", 1]]);
+      gsHostV.green_steel_slot = true;
+      const plainRing = item("PLAIN", "Ring", [["Melee Power", "Insightful", 20]]);
+      return {
+        targets, mlCap: 36, dodgeCap: null,
+        utilityCountingSet: new Set(["Ghost Touch"]),
+        worn: [slot("Armor", [armor]), slot("Ring", [gsHostV, plainRing])],
+        greenSteel: [{ name: "Ethereal", stat: "Melee Power", bonus_type: "Insightful", value: 25, unit: "flat" }],
+      };
     };
-    const r = await S.solveLexicographic(model, highs);
+    const r = await S.solveLexicographic(mk(["Melee Power", SENT]), highs);
     assert.strictEqual(r.effective["Melee Power"], 60, "GS craft (25) beats the craft-free ring (20)");
-    assert.strictEqual(r.utilityCount, 1, "the GS host carries the counted effect");
+    assert.strictEqual(r.utilityReport.count, 1, "the GS host carries the counted effect");
     assert.strictEqual((r.gsPlaced || []).length, 1, "the optimum crafts");
-    const alts = S.generateAlternatives(r, model, highs);
-    const crafts = alts.filter((a) => a.gainAxis === "crafts");
-    for (const a of crafts) {
-      assert.ok((a.sol.utilityReport ? a.sol.utilityReport.count : 0) >= 1,
-        "a crafts candidate may never shed the ranked-above count");
-    }
-    assert.strictEqual(crafts.length, 0,
-      "the only 'fewer crafts' build sheds the counted effect, so the count lock rules it out");
+    const alts = S.generateAlternatives(r, mk(["Melee Power", SENT]), highs);
+    const crafts = alts.find((a) => a.gainAxis === "crafts");
+    assert.ok(crafts, "tier below the stat: the craft-free swap is a legal give-bounded trade (review fix)");
+    assert.strictEqual((crafts.sol.gsPlaced || []).length, 0, "it genuinely drops the craft");
+    const A2 = require("../web/alternatives.js");
+    const an = A2.analyzeAlternative(r, crafts, { targets: ["Melee Power", SENT] });
+    assert.ok(/-1 utility effects/.test(an.costText), "the shed effect is stated in costText");
+    assert.strictEqual(an.totalCost, 5 + 1, "-5 Melee Power plus the shed effect");
+    // Tier ranked FIRST: the count is the top priority -> exact lock -> the
+    // shedding swap is infeasible and no crafts candidate exists.
+    const rf = await S.solveLexicographic(mk([SENT, "Melee Power"]), highs);
+    assert.strictEqual(rf.utilityReport.count, 1);
+    assert.strictEqual((rf.gsPlaced || []).length, 1);
+    const altsF = S.generateAlternatives(rf, mk([SENT, "Melee Power"]), highs);
+    assert.ok(!altsF.some((a) => a.gainAxis === "crafts"),
+      "no give applies to the top-ranked tier — the exact lock rules the shed out");
   });
 
   console.log(`\n${passed} passed`);

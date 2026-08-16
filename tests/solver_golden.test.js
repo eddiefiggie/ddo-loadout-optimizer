@@ -32,18 +32,22 @@ function test(name, fn) {
     path.join(__dirname, "parity", "fixtures.json"), "utf8"));
   const fixtureByName = Object.fromEntries(fixtures.map((f) => [f.name, f]));
 
-  test("golden guard pins exactly 21 fixtures", () => {
-    // 21 = 15 + the #110 blocklist A/B pair (re-ratified 2026-08-12)
+  test("golden guard pins exactly 22 fixtures", () => {
+    // 22 = 15 + the #110 blocklist A/B pair (re-ratified 2026-08-12)
     //        + the #254 per-item Sonic-flag fixture
     //        + the #291 cross-add A/B fixture (re-ratified 2026-08-13)
     //        + the #91 utility-tier A/B pair (2026-08-15, the Utility tier ships:
     //          every legacy fixture gained the "Utility effects" sentinel and was
     //          re-ratified per fixture — zero ranked-stat deltas, previously-empty
     //          slots fill with counting-set carriers; the tier-removed twin pins
-    //          the byte-identical pre-feature program).
-    assert.strictEqual(count, 21, "21 fixtures run against the live solver");
-    assert.strictEqual(golden.fixture_count, 21, "golden.json records 21 fixtures");
-    assert.strictEqual(goldenNames.length, 21, "golden.json carries 21 fixture solves");
+    //          the byte-identical pre-feature program)
+    //        + the #91 review-fix second tier-removed fixture (2026-08-15: the
+    //          blocklist twin cloned minus the sentinel, so the pre-feature
+    //          program is pinned on a complex query, not only the trivial
+    //          single-priority baseline).
+    assert.strictEqual(count, 22, "22 fixtures run against the live solver");
+    assert.strictEqual(golden.fixture_count, 22, "golden.json records 22 fixtures");
+    assert.strictEqual(goldenNames.length, 22, "golden.json carries 22 fixture solves");
     assert.deepStrictEqual(Object.keys(solves).sort(), goldenNames.slice().sort(),
       "the same fixture names are solved and pinned");
   });
@@ -382,12 +386,28 @@ test("the utility A/B pair actually carries (and withholds) its sentinel", () =>
   // Every OTHER fixture must carry the sentinel (on targets, or on aliasTargets
   // where the fixture ranks a provenance label): a silently-dropped sentinel
   // would demote that fixture's tier coverage while the golden kept matching.
+  // Exemptions are the deliberate tier-REMOVED fixtures — the pre-feature-
+  // program pins (the trivial A/B baseline, plus the complex blocklist clone
+  // added in the 2026-08-15 review fix).
+  const TIER_REMOVED = new Set([
+    "utility-ab-kinetic-ml34-baseline",
+    "utility-removed-complex-blocklist-topaz-ml36",
+  ]);
   for (const f of fixtures) {
-    if (f.name === "utility-ab-kinetic-ml34-baseline") continue;
+    if (TIER_REMOVED.has(f.name)) continue;
     const list = f.query.aliasTargets || f.query.targets;
     assert.ok(list.includes("Utility effects"),
       `${f.name} must rank the Utility sentinel (2026-08-15 re-ratification)`);
   }
+  // And the complex tier-removed clone must stay sentinel-free AND keep the
+  // constraints that make it complex — dropping the blocklist would demote it
+  // to an unconstrained solve the golden would happily re-ratify.
+  const removedComplex = fixtures.find((f) => f.name === "utility-removed-complex-blocklist-topaz-ml36");
+  assert.ok(removedComplex, "the complex tier-removed fixture exists");
+  assert.deepStrictEqual(removedComplex.query.targets, ["Melee Power", "Balance"],
+    "no sentinel — this fixture pins the pre-feature program on a complex query");
+  assert.deepStrictEqual(removedComplex.query.blocklist, ["Topaz of Melee Power +14"],
+    "and it still carries the block that makes it complex");
   // The ratified outcomes: the tier at the bottom costs zero ranked points and
   // fills previously-empty slots (the AE3 shape, pinned on real data).
   const golden = JSON.parse(fs.readFileSync(path.join(__dirname, "parity", "golden.json"), "utf-8"));

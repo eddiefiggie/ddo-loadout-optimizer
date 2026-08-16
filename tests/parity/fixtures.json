@@ -373,5 +373,22 @@
    "weaponSetup": null,
    "classRace": null
   }
+ },
+ {
+  "name": "utility-removed-complex-blocklist-topaz-ml36",
+  "note": "#91 (U8 review fix) second tier-REMOVED fixture: the blocklist twin minus the Utility sentinel. The trivial single-priority utility-ab baseline was the only pre-feature-program pin; this clones the richest constrained legacy fixture (blocklist + two priorities) so the tier-removed path is pinned on a complex query too. Must solve byte-identically to the pre-feature capture of blocklist-topaz-ml36 (ratified 2026-08-15 against the pre-feature golden).",
+  "query": {
+   "mlCap": 36,
+   "targets": [
+    "Melee Power",
+    "Balance"
+   ],
+   "armorType": null,
+   "weaponSetup": null,
+   "classRace": null,
+   "blocklist": [
+    "Topaz of Melee Power +14"
+   ]
+  }
  }
 ]

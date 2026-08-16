@@ -1732,10 +1732,15 @@ function readSolution(res, program, precomputedVisible) {
   const out = { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, tfPlaced, gsPlaced, jokerPlaced, membershipPlaced, setAugmentsPlaced };
   // #91 (U3) — utility effects present in THIS primal, only when the tier is
   // ranked (a tier-removed solve returns the exact pre-feature shape). Load-
-  // bearing check: an effect counts only when its u_e is 1 AND a backing z in
-  // its buckets actually fired — u_e is structurally ceilinged by Σz, but on
-  // relaxed/tieBreak:false paths a binary can float numerically, and a report
-  // must never claim an effect no fired contribution carries (the #319 rule).
+  // bearing check (review fix): an effect is present iff ANY backing z in its
+  // buckets actually fired — the u primals are NOT consulted. After the utility
+  // stage no objective pressures the u vars, so a later primal may satisfy the
+  // `>= count` lock with an arbitrary count-sized subset of u's up; reading u
+  // would under-report genuinely present effects nondeterministically. The
+  // #319 rule (never claim an effect no fired contribution carries) is
+  // preserved automatically: a floated u with no fired z still has no fired z,
+  // so it stays omitted. The report count is the deterministic truth and MAY
+  // exceed the stage-locked count (result.utilityCount is internal-only).
   if (program.utilityEnabled) {
     // #91 (U5, KTD6) — receipt attribution. Each reported effect credits ONE
     // carrier by a deterministic, stated rule (R9): the FIRST carrier in the
@@ -1786,10 +1791,10 @@ function readSolution(res, program, precomputedVisible) {
     };
     const utilityEffects = [];
     const reportEffects = [];
-    for (const [u, meta] of program.utilityMeta || []) {
-      // The U3 load-bearing predicate, reused verbatim: indicator up AND a
+    for (const [, meta] of program.utilityMeta || []) {
+      // The z-backed presence predicate (see the block comment above): a
       // backing contribution in the effect's buckets genuinely fired.
-      if (!(prim(u) > 0.5 && meta.zNames.some((z) => prim(z) > 0.5))) continue;
+      if (!meta.zNames.some((z) => prim(z) > 0.5)) continue;
       utilityEffects.push({ name: meta.name, present: true });
       const candidates = [];
       for (const zn of meta.zNames) {
@@ -2278,21 +2283,38 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
   // every generic family's target iteration AND from all four lock-construction
   // sites explicitly (a sentinel lock renders to empty terms and encodeStage
   // silently skips it — relying on that would hide the bug, not fix it).
-  // Instead, each generic family threads the KTD1 count lock (`>=` the
-  // optimum's achieved count, via the per-call `extra` channel — never mutated
+  // Instead, each generic family threads the KTD1 count lock (give-relaxed,
+  // see utilityLock below; via the per-call `extra` channel — never mutated
   // onto the shared program) into its re-solves whenever the sentinel ranks at
   // or above the positions that family's lock idiom protects, so a set/craft/
   // unranked trade can never silently shed a ranked-above utility effect.
   const sentinelIdx = targets.indexOf(_UTILITY_SENTINEL);
   const ranked = targets.filter((s) => s !== _UTILITY_SENTINEL);
-  const optUtilityCount = (program.utilityEnabled && optimum.utilityCount != null)
-    ? optimum.utilityCount : null;
+  // Review fix — the baseline is the optimum's GUARDED report count (the number
+  // the card/exports display), never the internal stage utilityCount: the two
+  // can differ (the report is z-backed and deterministic; the stage count is a
+  // lock-time value), and both the count lock and the more-utility family's
+  // strict-gain claim must be measured against what the player actually sees.
+  const optUtilityCount = program.utilityEnabled
+    ? (optimum.utilityReport ? optimum.utilityReport.count
+      : (optimum.utilityCount != null ? optimum.utilityCount : null))
+    : null;
   // The count lock body against a given program's indicator vars (the unranked
   // family re-builds its program, so the u-var names must come from THAT build;
   // minting is name-sorted, so the names line up build-to-build). `>=`, not `=`:
   // indicators have no downward pressure, so more effects stay legal.
-  const utilityLock = (prog) => (optUtilityCount > 0 && prog.utilityEnabled && (prog.utilityVars || []).length)
-    ? [`${prog.utilityVars.join(" + ")} >= ${optUtilityCount}`] : [];
+  // Review fix — the lock behaves like a RANKED STAT, not an ultra-priority:
+  // exact (`>= baseline`) only when the sentinel is ranked FIRST (position 0);
+  // otherwise the floor relaxes by alternativeGive, mirroring how ranked stats
+  // are relaxed, so a legal trade that sheds a couple of effects can surface
+  // (its loss is stated by alternatives.js cost accounting, never silent).
+  const utilityLock = (prog) => {
+    if (!(optUtilityCount > 0 && prog.utilityEnabled && (prog.utilityVars || []).length)) return [];
+    const floor = sentinelIdx === 0
+      ? optUtilityCount
+      : Math.max(0, optUtilityCount - alternativeGive(optUtilityCount));
+    return floor > 0 ? [`${prog.utilityVars.join(" + ")} >= ${floor}`] : [];
+  };
   // Caps bound the on-demand generation latency: each candidate is a full MILP solve
   // (~1s cold on a real dataset), so the generators are capped and skip the tie-break
   // second solve (tieBreak:false) — HiGHS is deterministic without it.
@@ -2417,10 +2439,10 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
   // ranked target by alternativeGive and try once more. No count lock here —
   // this family maximizes the count itself. Surfaced ONLY on a strictly
   // greater achieved count (strict `>` at the claim site — the superlative-
-  // claim rule), and the count is read from the GUARDED utilityReport, never
-  // raw indicator primals: on tieBreak:false paths a binary can float
-  // numerically, and a claim of "more utility" must never rest on an effect no
-  // fired contribution carries.
+  // claim rule), and BOTH sides of that comparison are guarded-report counts
+  // (optUtilityCount is the optimum's utilityReport.count — review fix): a
+  // claim of "more utility" must never rest on an effect no fired contribution
+  // carries, and never advertise a gain the optimum's card already displays.
   if (program.utilityEnabled && optUtilityCount != null && (program.utilityVars || []).length) {
     const uObjTerms = program.utilityVars.map((u) => ({ coef: 1, name: u }));
     const countOf = (sol) => (sol.utilityReport ? sol.utilityReport.count : 0);

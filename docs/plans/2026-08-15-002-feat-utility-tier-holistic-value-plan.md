@@ -108,7 +108,7 @@ flowchart TB
 - Proc magnitudes, proc rates, and uptime valuation — filed as #331; the tier deliberately counts presence, not power. (#214 is the adjacent-but-distinct data-fidelity issue: numeric affixes stored flat that are secretly conditional or ramping.)
 - Set-tie alternatives (same set value at higher piece cost) — stays #240.
 - Any smart-nudge detection surface ("X lost by 1 — drag Utility up") and inline receipt callouts — declined in session; revisit only if the Alternatives family proves undiscoverable.
-- Marking counted-vs-excluded effects in the Browse view — a discoverability polish, same posture as the smart-nudge deferral; revisit on user reports.
+- Marking counted-vs-excluded effects in the Browse view — filed as #332; a discoverability polish, same posture as the smart-nudge deferral; revisit on user reports.
 
 **Outside this product's identity**
 

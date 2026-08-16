@@ -1000,6 +1000,28 @@ test("U3: set-granted and crafting-pool stats count as sourced", () => {
   assert.strictEqual(html, "", "a set tier and a crafting pool both count as sources");
 });
 
+// #91 (code review fix) — the Utility sentinel is never a pool stat (poolStatNames
+// only ever collects real affix/scaling names), so without an exclusion every solve
+// with the tier ranked falsely names it here — above an already-populated utility
+// card. Mirrors the `stat === _UTILITY_SENTINEL` exclusion the generic stat-card
+// loop already applies at its own call site.
+const _UTIL_SENTINEL = require("../web/model.js").UTILITY_SENTINEL;
+
+test("#91: the Utility sentinel ranked with a normal pool does not trigger the notice", () => {
+  const html = R.zeroSourceNotice(
+    { targets: ["Constitution", _UTIL_SENTINEL] }, _okResult,
+    _modelWith(["Constitution"]), _datasetWith(["Constitution"]));
+  assert.strictEqual(html, "", "the sentinel is never a pool stat but must not read as unsourced");
+});
+
+test("#91: a genuinely absent real stat still fires alongside a ranked sentinel", () => {
+  const html = R.zeroSourceNotice(
+    { targets: ["Sonic Lore", _UTIL_SENTINEL] }, _okResult,
+    _modelWith(["Constitution"]), _datasetWith([]));
+  assert.ok(/Sonic Lore/.test(html), "the real absent stat is still named");
+  assert.ok(!html.includes(_UTIL_SENTINEL), "the sentinel itself is never named");
+});
+
 // ---- plan 003 U6 — a declared build discloses BOTH of its limits (R10) ----
 
 const _declared = { mlFloor: 0, targetCaps: {}, style: "one-hand", twoWeaponFighting: true };

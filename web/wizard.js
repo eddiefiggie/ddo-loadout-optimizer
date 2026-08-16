@@ -10,11 +10,18 @@ const WIZARD_STEPS = ["intro", "character", "pool", "priorities", "results"];
 const FORGED = new Set(["warforged", "bladeforged"]);
 
 /** Can the flow advance FROM `stepId` given the collected state? Gates the
- *  Continue/Solve buttons. Unknown steps are permissive. */
+ *  Continue/Solve buttons. Unknown steps are permissive.
+ *
+ *  #91 (review fix) — the priorities gate must not count the Utility sentinel:
+ *  a fresh list is BORN carrying it (`newPriorityList`), so `length > 0` alone
+ *  passes for a player who ranked nothing at all, letting them advance and
+ *  solve with an empty ask. The sentinel-only query is still valid for the
+ *  solver (programmatic callers may pass it), so the fix lives here in the
+ *  wizard's gate, not in the solver. */
 function canAdvance(stepId, state) {
   if (stepId === "character") return !!state.race && Number(state.ml) > 0;
   if (stepId === "pool") return state.pool !== "owned" || !!state.ownedNames;
-  if (stepId === "priorities") return (state.priorities || []).length > 0;
+  if (stepId === "priorities") return (state.priorities || []).some((p) => p !== _utilitySentinel);
   return true;
 }
 /** Next step id after advancing from `stepId` (clamped at results). */
@@ -750,6 +757,28 @@ function healUtilityTier(priorities, marked) {
   return list;
 }
 
+/** #91 (review fix, beside healUtilityTier for the same reason) — the
+ *  RENDER-ONLY query for a restored record. `healUtilityTier` heals
+ *  `state.priorities` so the ranked list displays the tier, but `query` (the
+ *  record that was ACTUALLY solved, `rec.query`) is a separate object and a
+ *  healed-unmarked restore's query still lacks the sentinel — rendering it
+ *  verbatim skips right past `utilityCard`'s report-absent branch, so the "this
+ *  saved build predates utility tracking" disclosure never shows even though
+ *  the priority list now displays the tier.
+ *
+ *  Returns a NEW object with the sentinel appended to a copy of `targets` when
+ *  healing applies (unmarked AND the sentinel isn't already present); returns
+ *  `query` itself, same reference, otherwise. Pure — never mutates `query`,
+ *  so the caller's `query` (what actually reaches `buildModel`, `state.lastRun`,
+ *  and a later Save) stays exactly the solved record. A genuine re-solve goes
+ *  through `solve()`, which rebuilds the query from live (healed) state and
+ *  produces the real report. */
+function restoredRenderQuery(query, marked) {
+  const targets = (query && query.targets) || [];
+  if (marked || targets.includes(_utilitySentinel)) return query;
+  return Object.assign({}, query, { targets: targets.concat([_utilitySentinel]) });
+}
+
 /** #91 (U4/R15) — the datalist option list for both add-a-stat inputs
  *  (`wz-stats`, `wz-stats2`): the picker vocabulary's suggestions plus the
  *  Utility sentinel's display name. Seeded HERE and not into the vocabulary
@@ -961,7 +990,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -1608,7 +1637,7 @@ if (typeof window !== "undefined" && window.App) {
         slot.querySelectorAll(".wz-toggle button[data-rpool]").forEach((x) => x.classList.toggle("on", x.dataset.rpool === state.pool));
       });
       const rsolve = document.getElementById("wz-radjust-solve");
-      if (rsolve) rsolve.onclick = () => { if (state.priorities.length) solve(false); };
+      if (rsolve) rsolve.onclick = () => { if (canAdvance("priorities", state)) solve(false); };
     }
 
     // U5/R9-R11 — the Share tab's content: pick a saved loadout, export it as a
@@ -2026,7 +2055,7 @@ if (typeof window !== "undefined" && window.App) {
     let solving = false;
     async function solve(firstRun) {
       if (solving) return;
-      if (!state.priorities.length) return;
+      if (!canAdvance("priorities", state)) return;
       solving = true;
       const n = candidateItems().length;
       overlay(true, "Solving your loadout…", firstRun ? `searching ${n.toLocaleString()} eligible items · exact MILP` : "re-solving…");
@@ -2301,8 +2330,12 @@ if (typeof window !== "undefined" && window.App) {
         state.step = "results";
         render();
         const box = document.getElementById("wz-results");
+        // #91 (review fix) — see restoredRenderQuery: a healed-unmarked restore
+        // renders from a sentinel-appended COPY, never `query` itself, so the
+        // report-absent utility card is reachable without touching the solved record.
+        const renderQuery = restoredRenderQuery(query, !!i.utility_tier_aware);
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result: snap, query, dataset, highs: null, onAfterRender: afterResultsRender });
+        if (box) renderResults(box, { model, result: snap, query: renderQuery, dataset, highs: null, onAfterRender: afterResultsRender });
         const stale = document.getElementById("wz-stale");
         if (stale) stale.classList.toggle("wz-hidden", !state.loadedStale);
       } else {
@@ -2713,7 +2746,7 @@ if (typeof window !== "undefined" && window.App) {
           if (cbar) cbar.classList.remove("wz-hidden");
         });
         const cres = document.getElementById("wz-cresolve");
-        if (cres) cres.onclick = () => { if (state.priorities.length) solve(false); };
+        if (cres) cres.onclick = () => { if (canAdvance("priorities", state)) solve(false); };
         // The Adjust & re-solve panel (U3/R6) now lives inside #wz-results, under
         // the tab bar, so it is populated + wired by fillAdjustSlot on every
         // renderResults call — not once here (it would not exist yet).

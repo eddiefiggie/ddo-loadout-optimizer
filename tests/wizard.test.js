@@ -43,6 +43,29 @@ test("canAdvance(priorities): needs at least one ranked stat", () => {
   assert.ok(canAdvance("priorities", { priorities: ["Constitution"] }));
 });
 
+test("#91 (review fix) canAdvance(priorities): a sentinel-only list does not satisfy the gate", () => {
+  // A freshly-born priority list is [UTILITY_SENTINEL] (newPriorityList) — the
+  // player has ranked nothing. `length > 0` alone would wrongly pass this.
+  const { UTILITY_SENTINEL: SENT } = require("../web/model.js");
+  assert.ok(!canAdvance("priorities", { priorities: [SENT] }),
+    "sentinel-only must block, exactly like an empty list did pre-feature");
+  assert.ok(canAdvance("priorities", { priorities: [SENT, "Constitution"] }),
+    "one real stat alongside the sentinel passes");
+  assert.ok(canAdvance("priorities", { priorities: ["Constitution", SENT] }),
+    "order does not matter");
+});
+
+test("#91 (review fix) canAdvance(priorities): removing the last real stat re-blocks", () => {
+  const { UTILITY_SENTINEL: SENT } = require("../web/model.js");
+  let priorities = [SENT, "Constitution"];
+  assert.ok(canAdvance("priorities", { priorities }));
+  priorities = priorities.filter((p) => p !== "Constitution");   // player removes the only real stat
+  assert.deepStrictEqual(priorities, [SENT]);
+  assert.ok(!canAdvance("priorities", { priorities }),
+    "back down to sentinel-only re-blocks the gate");
+});
+
+
 test("nextStep / prevStep clamp at the ends", () => {
   assert.strictEqual(nextStep("intro"), "character");
   assert.strictEqual(nextStep("priorities"), "results");
@@ -1816,7 +1839,7 @@ test("U4/262: the BLOCK search row template appends the note (source wiring)", (
 // closure state; these cover the pure lifecycle helpers plus the query-side
 // defensive gates (R1, R2, R15, KTD8).
 {
-  const { newPriorityList, insertAboveTrailingSentinel, healUtilityTier, datalistStats } = require("../web/wizard.js");
+  const { newPriorityList, insertAboveTrailingSentinel, healUtilityTier, restoredRenderQuery, datalistStats } = require("../web/wizard.js");
   const { UTILITY_SENTINEL } = require("../web/model.js");
   const S = UTILITY_SENTINEL;
   const U4_VOCAB = buildPickerVocabulary(realData);
@@ -1953,5 +1976,61 @@ test("U4/262: the BLOCK search row template appends the note (source wiring)", (
       "allStats — the source of wz-stats AND wz-stats2 — is the seeded list");
     assert.ok(/id="wz-stats">\$\{allStats\.map/.test(WIZARD_SRC), "wz-stats renders from allStats");
     assert.ok(/id="wz-stats2">\$\{allStats\.map/.test(WIZARD_SRC), "wz-stats2 renders from allStats");
+  });
+
+  // ---- review fix — sentinel-only gates ---------------------------------------
+  test("#91 (review fix) the solve-button gate and the two re-solve gates route through canAdvance, not a bare length check (source wiring)", () => {
+    assert.ok(!/state\.priorities\.length\)\s*solve\(/.test(WIZARD_SRC),
+      "no re-solve affordance gates on the bare length any more");
+    assert.ok(!/if\s*\(!state\.priorities\.length\)\s*return;\s*\n\s*solving = true/.test(WIZARD_SRC),
+      "the solve() internal guard also routes through canAdvance");
+    const matches = WIZARD_SRC.match(/canAdvance\("priorities", state\)/g) || [];
+    assert.ok(matches.length >= 4,
+      `expected canAdvance("priorities", state) at the Continue check, the solve-button check, and both re-solve buttons; found ${matches.length}`);
+  });
+
+  // ---- review fix — healed-restore disclosure reachability ------------------
+  test("#91 (review fix) restoredRenderQuery: a healed pre-feature restore's render targets include the sentinel, and the report-absent utility card becomes reachable", () => {
+    const results = require("../web/results.js");
+    const storedQuery = { targets: ["Constitution", "Dodge"], slotConstraints: {} };
+    const snapshotBeforeCall = JSON.parse(JSON.stringify(storedQuery));
+    const renderQuery = restoredRenderQuery(storedQuery, false);   // unmarked (pre-feature)
+
+    assert.deepStrictEqual(storedQuery, snapshotBeforeCall, "the stored record's query is never mutated");
+    assert.notStrictEqual(renderQuery, storedQuery, "a NEW object is returned for rendering");
+    assert.deepStrictEqual(renderQuery.targets, ["Constitution", "Dodge", S]);
+
+    // A restored pre-feature snapshot has no utilityReport — confirm the healed
+    // render targets actually reach utilityCard's report-absent branch (never
+    // the zero-state, which would be a false claim about an unknown count).
+    const snap = { chosen: [], effective: { Constitution: 20, Dodge: 5 } };   // no utilityReport
+    const idx = renderQuery.targets.indexOf(S);
+    const card = results.utilityCard(snap, idx);
+    assert.ok(card.includes("predates utility tracking"), "the report-absent disclosure is reachable");
+  });
+
+  test("#91 (review fix) restoredRenderQuery: a query already carrying the sentinel is returned untouched", () => {
+    const q = { targets: ["Constitution", S] };
+    assert.strictEqual(restoredRenderQuery(q, false), q, "already present: same reference back, unmarked");
+    assert.strictEqual(restoredRenderQuery(q, true), q, "already present: same reference back, marked");
+  });
+
+  test("#91 (review fix) restoredRenderQuery: a MARKED (post-feature) restore renders verbatim, even with no utility ranked", () => {
+    const q = { targets: ["Constitution", "Dodge"] };   // the player legitimately ranked no utility
+    assert.strictEqual(restoredRenderQuery(q, true), q, "marked restores are never healed for render either");
+  });
+
+  test("#91 (review fix) loadCharacter routes the restored render through restoredRenderQuery, while buildModel/state.lastRun keep the unmutated query (source wiring)", () => {
+    const at = WIZARD_SRC.indexOf("function loadCharacter(");
+    assert.ok(at > 0, "loadCharacter exists");
+    const fn = WIZARD_SRC.slice(at, WIZARD_SRC.indexOf("\n    function renderSavedPicker", at));
+    assert.ok(/restoredRenderQuery\(query, !!i\.utility_tier_aware\)/.test(fn),
+      "the render-only query is derived through the shared pure helper");
+    assert.ok(/buildModel\(candidateItems\(\), query,/.test(fn),
+      "the model is still built from the unmutated query");
+    assert.ok(/state\.lastRun = \{ model, result: snap, query,/.test(fn),
+      "state.lastRun (read by a later Save) keeps the original, unhealed query");
+    assert.ok(/query: renderQuery/.test(fn),
+      "renderResults is handed the render-only copy, not `query` itself");
   });
 }

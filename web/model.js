@@ -671,6 +671,18 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // in the query's targets: a tier-removed (or pre-feature) query rebuilds the
   // exact pre-feature pool, byte-identical program included.
   const utilityEnabled = (query.targets || []).includes(UTILITY_SENTINEL);
+  // Fail fast rather than silently solving with zero indicators: utilityCountingSet
+  // is a defaulted 11th positional param, so a forgotten call site would otherwise
+  // widen nothing and the utility stage would place no gear with no error anywhere.
+  // See web/query.js's buildModel call for the reference site that threads it from
+  // dataset metadata (vocab.utilityCounting).
+  if (utilityEnabled && utilityCountingSet == null) {
+    throw new Error(
+      "buildModel: the Utility sentinel is ranked but utilityCountingSet (the 11th "
+      + "argument) was not passed. It must be threaded from dataset metadata "
+      + "(vocab.utilityCounting) — see web/query.js's buildModel call for the reference site."
+    );
+  }
   if (utilityEnabled && utilityCountingSet && utilityCountingSet.size) {
     for (const n of utilityCountingSet) targetSet.add(n);
   }
