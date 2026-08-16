@@ -7,7 +7,8 @@
    "targets": [
     "Strength",
     "Constitution",
-    "Physical Sheltering"
+    "Physical Sheltering",
+    "Utility effects"
    ],
    "armorType": null,
    "weaponSetup": null,
@@ -22,7 +23,8 @@
    "targets": [
     "Intelligence",
     "Universal Spell Power",
-    "Wisdom"
+    "Wisdom",
+    "Utility effects"
    ],
    "armorType": null,
    "weaponSetup": null,
@@ -38,7 +40,8 @@
     "Constitution",
     "Physical Sheltering",
     "Magical Sheltering",
-    "Fortification"
+    "Fortification",
+    "Utility effects"
    ],
    "armorType": null,
    "weaponSetup": null,
@@ -53,7 +56,8 @@
    "targets": [
     "Dexterity",
     "Dodge",
-    "Physical Sheltering"
+    "Physical Sheltering",
+    "Utility effects"
    ],
    "armorType": null,
    "weaponSetup": null,
@@ -69,7 +73,8 @@
     "Strength",
     "Deadly",
     "Seeker",
-    "Accuracy"
+    "Accuracy",
+    "Utility effects"
    ],
    "armorType": null,
    "weaponSetup": null,
@@ -88,7 +93,8 @@
     "Universal Spell Power",
     "Potency",
     "Wisdom",
-    "Charisma"
+    "Charisma",
+    "Utility effects"
    ]
   }
  },
@@ -103,7 +109,8 @@
    "aliasTargets": [
     "Combat Mastery",
     "Constitution",
-    "Physical Sheltering"
+    "Physical Sheltering",
+    "Utility effects"
    ]
   }
  },
@@ -125,7 +132,8 @@
    "aliasTargets": [
     "Combat Mastery",
     "Constitution",
-    "Physical Sheltering"
+    "Physical Sheltering",
+    "Utility effects"
    ]
   }
  },
@@ -137,7 +145,8 @@
    "targets": [
     "Devotion",
     "Wisdom",
-    "Universal Spell Power"
+    "Universal Spell Power",
+    "Utility effects"
    ],
    "armorType": null,
    "weaponSetup": null,
@@ -159,7 +168,8 @@
    "targets": [
     "Devotion",
     "Wisdom",
-    "Universal Spell Power"
+    "Universal Spell Power",
+    "Utility effects"
    ],
    "armorType": null,
    "weaponSetup": null,
@@ -175,7 +185,8 @@
     "Necromancy Focus",
     "Enchantment Focus",
     "Illusion Focus",
-    "Conjuration Focus"
+    "Conjuration Focus",
+    "Utility effects"
    ],
    "armorType": null,
    "weaponSetup": null,
@@ -190,7 +201,8 @@
    "targets": [
     "Evocation Focus",
     "Illusion Focus",
-    "Necromancy Focus"
+    "Necromancy Focus",
+    "Utility effects"
    ],
    "armorType": null,
    "weaponSetup": null,
@@ -205,7 +217,8 @@
    "targets": [
     "Fire Absorption",
     "Electric Absorption",
-    "Wizardry"
+    "Wizardry",
+    "Utility effects"
    ],
    "armorType": null,
    "weaponSetup": null,
@@ -224,7 +237,8 @@
   "query": {
    "mlCap": 34,
    "aliasTargets": [
-    "Sacred Spell Focus Mastery"
+    "Sacred Spell Focus Mastery",
+    "Utility effects"
    ],
    "armorType": null,
    "weaponSetup": null,
@@ -243,7 +257,8 @@
     "Evocation Focus",
     "Illusion Focus",
     "Necromancy Focus",
-    "Transmutation Focus"
+    "Transmutation Focus",
+    "Utility effects"
    ],
    "armorType": null,
    "weaponSetup": null,
@@ -257,7 +272,8 @@
    "mlCap": 36,
    "targets": [
     "Melee Power",
-    "Balance"
+    "Balance",
+    "Utility effects"
    ],
    "armorType": null,
    "weaponSetup": null,
@@ -271,7 +287,8 @@
    "mlCap": 36,
    "targets": [
     "Melee Power",
-    "Balance"
+    "Balance",
+    "Utility effects"
    ],
    "armorType": null,
    "weaponSetup": null,
@@ -288,7 +305,8 @@
    "mlCap": 26,
    "targets": [
     "Sonic Absorption",
-    "Fire Absorption"
+    "Fire Absorption",
+    "Utility effects"
    ],
    "armorType": null,
    "weaponSetup": null,
@@ -321,7 +339,35 @@
    "mlCap": 32,
    "targets": [
     "Combustion",
-    "Universal Spell Power"
+    "Universal Spell Power",
+    "Utility effects"
+   ],
+   "armorType": null,
+   "weaponSetup": null,
+   "classRace": null
+  }
+ },
+ {
+  "name": "utility-ab-kinetic-ml34-baseline",
+  "note": "#91 (U8, KTD9) A/B pair, tier-REMOVED twin: the only sentinel-free fixture. Pins that a query without the Utility sentinel still builds the byte-identical pre-feature program (conditional widening) — ratified against the pre-feature golden capture on 2026-08-15. Single-priority Kinetic Lore saturates on few slots, so the baseline leaves slots empty for the twin to fill.",
+  "query": {
+   "mlCap": 34,
+   "targets": [
+    "Kinetic Lore"
+   ],
+   "armorType": null,
+   "weaponSetup": null,
+   "classRace": null
+  }
+ },
+ {
+  "name": "utility-ab-kinetic-ml34",
+  "note": "#91 (U8, KTD9) A/B pair, tier-PRESENT twin: same query with the Utility sentinel ranked last. Kinetic Lore must equal the baseline exactly (the lexicographic guarantee: a bottom tier can never cost a ranked point) while previously-empty slots fill with counting-set carriers (AE3 shape).",
+  "query": {
+   "mlCap": 34,
+   "targets": [
+    "Kinetic Lore",
+    "Utility effects"
    ],
    "armorType": null,
    "weaponSetup": null,

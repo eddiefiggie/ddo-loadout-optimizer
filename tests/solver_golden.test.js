@@ -32,13 +32,18 @@ function test(name, fn) {
     path.join(__dirname, "parity", "fixtures.json"), "utf8"));
   const fixtureByName = Object.fromEntries(fixtures.map((f) => [f.name, f]));
 
-  test("golden guard pins exactly 19 fixtures", () => {
-    // 19 = 15 + the #110 blocklist A/B pair (re-ratified 2026-08-12)
+  test("golden guard pins exactly 21 fixtures", () => {
+    // 21 = 15 + the #110 blocklist A/B pair (re-ratified 2026-08-12)
     //        + the #254 per-item Sonic-flag fixture
-    //        + the #291 cross-add A/B fixture (re-ratified 2026-08-13).
-    assert.strictEqual(count, 19, "19 fixtures run against the live solver");
-    assert.strictEqual(golden.fixture_count, 19, "golden.json records 19 fixtures");
-    assert.strictEqual(goldenNames.length, 19, "golden.json carries 19 fixture solves");
+    //        + the #291 cross-add A/B fixture (re-ratified 2026-08-13)
+    //        + the #91 utility-tier A/B pair (2026-08-15, the Utility tier ships:
+    //          every legacy fixture gained the "Utility effects" sentinel and was
+    //          re-ratified per fixture — zero ranked-stat deltas, previously-empty
+    //          slots fill with counting-set carriers; the tier-removed twin pins
+    //          the byte-identical pre-feature program).
+    assert.strictEqual(count, 21, "21 fixtures run against the live solver");
+    assert.strictEqual(golden.fixture_count, 21, "golden.json records 21 fixtures");
+    assert.strictEqual(goldenNames.length, 21, "golden.json carries 21 fixture solves");
     assert.deepStrictEqual(Object.keys(solves).sort(), goldenNames.slice().sort(),
       "the same fixture names are solved and pinned");
   });
@@ -149,7 +154,11 @@ function test(name, fn) {
   // Necromancy 30->28, which is the delta these assertions stand on.
   const DC_FIXTURE = "viktranium-multi-affix-dc-ml34";
   test("U2 — ONE atomic Viktranium craft credits every ranked spell school", () => {
-    const schools = fixtureByName[DC_FIXTURE].query.targets;
+    // 2026-08-15 (#91 U8): the Utility sentinel now rides every fixture's
+    // targets; it is not a stat (KTD1 — no perTarget entry), so the
+    // every-school-scores sweep iterates the ranked SCHOOLS only.
+    const schools = fixtureByName[DC_FIXTURE].query.targets
+      .filter((s) => s !== "Utility effects");
     assert.ok(schools.length >= 2, "the fixture must rank two or more schools to prove anything");
     const g = golden.solves[DC_FIXTURE];
     for (const s of schools) {
@@ -286,7 +295,9 @@ function test(name, fn) {
   const COMPONENTS = "provenance-components-sacred-dc-ml34";
   test("U10/U11 — the alias fixture still ranks a LABEL, not its expansion", () => {
     const q = fixtureByName[ALIAS].query;
-    assert.deepStrictEqual(q.aliasTargets, ["Sacred Spell Focus Mastery"],
+    // 2026-08-15 (#91 U8): the Utility sentinel rides the aliasTargets list —
+    // migratePriorities passes it through untouched, mirroring a healed restore.
+    assert.deepStrictEqual(q.aliasTargets, ["Sacred Spell Focus Mastery", "Utility effects"],
       "the fixture must still state the label; rewriting it to the components would " +
       "leave the substitution path unpinned while the guard kept passing");
     assert.ok(!q.targets, "and must NOT also state targets");
@@ -297,9 +308,12 @@ function test(name, fn) {
   test("U10/U11 — a provenance label resolves to its components in declared order", () => {
     assert.deepStrictEqual(details[ALIAS].targets, fixtureByName[COMPONENTS].query.targets,
       "the live vocabulary resolves the label to exactly the twin's ranked list, in order");
-    assert.strictEqual(details[ALIAS].targets.length, 7,
-      "seven schools take seven strict-lexicographic ranks — they are never fused " +
-      "into one objective term (the weighted-sum mode the Non-goals list declines)");
+    // 2026-08-15 (#91 U8): 8 = the label's seven schools + the Utility sentinel
+    // appended after it. The schools still occupy seven strict-lexicographic
+    // ranks — never fused into one objective term (the weighted-sum mode the
+    // Non-goals list declines) — and the sentinel rides through unresolved.
+    assert.strictEqual(details[ALIAS].targets.length, 8,
+      "seven schools take seven strict-lexicographic ranks, plus the Utility sentinel");
   });
 
   test("U10/U11 — ranking the label solves identically to ranking its components", () => {
@@ -346,4 +360,41 @@ test("the blocklist fixture actually carries its block", () => {
   const b = golden.solves["blocklist-topaz-ml36"].perTarget;
   assert.ok(b["Melee Power"] < a["Melee Power"], "the block costs Melee Power");
   assert.strictEqual(b.Balance, a.Balance, "and touches nothing else");
+});
+
+// #91 (U8, KTD9) — the utility-tier A/B pair's integrity guard, mirroring the
+// blocklist guard above. Two demotions are possible and both must fail loudly:
+// dropping the tiered twin's sentinel makes it a twin of its baseline (the
+// tier path unpinned, golden still green), and adding a sentinel to the
+// baseline destroys the suite's ONLY pre-feature-program fixture — the one
+// solve that pins conditional widening to byte-identity (a tier-removed query
+// must rebuild the exact pre-feature program; ratified 2026-08-15 against the
+// pre-feature golden capture).
+test("the utility A/B pair actually carries (and withholds) its sentinel", () => {
+  const fixtures = JSON.parse(fs.readFileSync(path.join(__dirname, "parity", "fixtures.json"), "utf-8"));
+  const tiered = fixtures.find((f) => f.name === "utility-ab-kinetic-ml34");
+  const baseline = fixtures.find((f) => f.name === "utility-ab-kinetic-ml34-baseline");
+  assert.ok(tiered && baseline, "the A/B pair exists");
+  assert.deepStrictEqual(tiered.query.targets, ["Kinetic Lore", "Utility effects"],
+    "the tiered twin ranks the sentinel last");
+  assert.deepStrictEqual(baseline.query.targets, ["Kinetic Lore"],
+    "the baseline carries no sentinel — it is the pre-feature-program pin");
+  // Every OTHER fixture must carry the sentinel (on targets, or on aliasTargets
+  // where the fixture ranks a provenance label): a silently-dropped sentinel
+  // would demote that fixture's tier coverage while the golden kept matching.
+  for (const f of fixtures) {
+    if (f.name === "utility-ab-kinetic-ml34-baseline") continue;
+    const list = f.query.aliasTargets || f.query.targets;
+    assert.ok(list.includes("Utility effects"),
+      `${f.name} must rank the Utility sentinel (2026-08-15 re-ratification)`);
+  }
+  // The ratified outcomes: the tier at the bottom costs zero ranked points and
+  // fills previously-empty slots (the AE3 shape, pinned on real data).
+  const golden = JSON.parse(fs.readFileSync(path.join(__dirname, "parity", "golden.json"), "utf-8"));
+  const on = golden.solves["utility-ab-kinetic-ml34"];
+  const off = golden.solves["utility-ab-kinetic-ml34-baseline"];
+  assert.strictEqual(on.perTarget["Kinetic Lore"], off.perTarget["Kinetic Lore"],
+    "the bottom tier never costs a ranked point (the lexicographic guarantee)");
+  assert.ok(on.chosen.length > off.chosen.length,
+    `the tier fills slots the baseline leaves empty (${off.chosen.length} -> ${on.chosen.length} picks)`);
 });

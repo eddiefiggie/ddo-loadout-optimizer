@@ -60,13 +60,22 @@ async function main() {
   for (const fx of fixtures) {
     const { query } = resolveQuery(fx, vocab);
 
-    // (a) baseline — the fixture as-is (mirrors the golden capture path).
-    const { ms: ta, r: ra } = await coldSolve(build(query, null));
+    // 2026-08-15 (#91 U8): the ratified fixtures now CARRY the sentinel (the
+    // KTD9 re-ratification), so the pair is derived by stripping/ensuring it
+    // rather than appending blindly — (a) must be the pre-feature program
+    // (no sentinel, no counting set) and (b) must rank the sentinel exactly
+    // once (a duplicate would iterate a second no-op stage and tax (b) for
+    // something no real query encodes).
+    const ranked = (query.targets || []).filter((t) => t !== UTILITY_SENTINEL);
+
+    // (a) baseline — the pre-feature program (mirrors a tier-removed query).
+    const qa = Object.assign({}, query, { targets: ranked });
+    const { ms: ta, r: ra } = await coldSolve(build(qa, null));
     base.push(ta);
 
-    // (b) utility — sentinel appended to targets, counting set threaded.
+    // (b) utility — sentinel ranked last, counting set threaded.
     const q2 = Object.assign({}, query,
-      { targets: [...(query.targets || []), UTILITY_SENTINEL] });
+      { targets: [...ranked, UTILITY_SENTINEL] });
     const { ms: tb, r: rb } = await coldSolve(build(q2, vocab.utilityCounting));
     util.push(tb);
 

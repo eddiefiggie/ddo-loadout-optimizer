@@ -98,10 +98,21 @@ async function solveAll() {
   for (const fx of fixtures) {
     const { query: resolvedQuery, substitutions } = resolveQuery(fx, vocab);
     const query = migrateFixtureCredits(resolvedQuery, vocab);
+    // #91 (U8, KTD3/KTD9) — the utility counting set rides as the buildModel
+    // argument, exactly as web/query.js and web/wizard.js pass it
+    // (`vocab.utilityCounting || null`). Without this the capture solves every
+    // sentinel-appended fixture with ZERO indicators — a green golden that
+    // covers none of the tier. The widening is conditional on the sentinel
+    // being in the fixture's targets, so the tier-removed A/B twin (and any
+    // pre-feature fixture) still builds the byte-identical pre-feature program.
+    // augmentSetDefs stays {} (positional): the golden universe was ratified
+    // without set-bonus augments; widening it would be its own deliberate
+    // re-ratification, not a side effect of threading the counting set.
     const model = buildModel(
       dataset.items, query,
       dataset.dino_inserts, dataset.nearly_complete, dataset.viktranium,
       dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel,
+      {}, vocab.utilityCounting || null,
     );
     const r = await solveLexicographic(model, highs);
     solves[fx.name] = {
@@ -130,7 +141,7 @@ if (require.main === module) {
   solveAll().then(({ solves, count }) => {
     const snapshot = {
       schema_note: "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
-      generated: "2026-08-09",
+      generated: "2026-08-15",
       dataset: "web/data/items.json (9045 items)",
       fixture_count: count,
       solves,
