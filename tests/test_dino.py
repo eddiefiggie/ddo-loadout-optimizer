@@ -131,10 +131,125 @@ def test_empty_seed_yields_nothing_gracefully():
     assert cov["blank_hosts"] == 0
 
 
+_DREAD = "The Legendary Dread Isle's Curse"
+
+
+def test_blanks_carry_intrinsic_dread_isle_membership():
+    # #334 — every blank is stamped with the FULL native field chain, not a bare
+    # `sets` list (which the solver never reads).
+    blanks, _, _, _ = dino.build_dino(_seed())
+    assert blanks, "seed produces blanks"
+    for b in blanks:
+        assert b["sets"] == [_DREAD]
+        assert [s["set"] for s in b["set_bonus"]] == [_DREAD]
+        assert b["set_bonus"][0].get("piece_bonuses"), "catalog def carries piece bonuses"
+        tiers = b["parsed_set_bonuses"]
+        assert tiers and all(t["set"] == _DREAD for t in tiers)
+        assert any(t["pieces_required"] and t["affixes"] for t in tiers), \
+            "at least one solvable threshold tier"
+
+
+def test_blank_set_bonus_def_is_a_deep_copy():
+    # Mutating one blank's copy must not leak into the catalog or a sibling record.
+    from src import set_catalog
+    blanks, _, _, _ = dino.build_dino(_seed())
+    assert len(blanks) >= 2
+    a, b = blanks[0], blanks[1]
+    a["set_bonus"][0]["piece_bonuses"]["99 Pieces"] = "MUTATED"
+    a["set_bonus"][0]["set"] = "MUTATED"
+    assert "99 Pieces" not in b["set_bonus"][0]["piece_bonuses"]
+    assert b["set_bonus"][0]["set"] == _DREAD
+    fresh = set_catalog.definition_for(_DREAD, {}, set_catalog.load_catalog())
+    assert "99 Pieces" not in (fresh.get("piece_bonuses") or {})
+    assert fresh.get("set") == _DREAD
+
+
+def test_missing_catalog_def_fails_loudly():
+    # Strict: a catalog without the set must never ship set-less blanks silently.
+    try:
+        dino.build_dino(_seed(), sets_catalog={})
+    except SystemExit as e:
+        assert "no catalog definition" in str(e)
+    else:
+        raise AssertionError("expected SystemExit for a missing catalog def")
+
+
+def test_membership_only_catalog_def_skips_tier_stamp_gracefully():
+    # The set is KNOWN to the catalog but membership-only (every affix flagged ->
+    # set_bonus=None). That is not the missing-set failure: the blanks still count
+    # as pieces (`sets` stamped), and the set_bonus/tier stamp is skipped — the
+    # same disclosed posture the native channel takes for membership-only sets.
+    from src import set_catalog
+    cat = {set_catalog.canonical(_DREAD): {"set_bonus": None, "flagged": []}}
+    blanks, _, _, _ = dino.build_dino(_seed(), sets_catalog=cat)
+    assert blanks, "membership-only must not abort the build"
+    for b in blanks:
+        assert b["sets"] == [_DREAD]
+        assert b["set_bonus"] == []
+        assert "parsed_set_bonuses" not in b
+
+
+_BUILT = None
+
+
+def _built():
+    """Memoize the (expensive) real build so the dataset tests share one run."""
+    global _BUILT
+    if _BUILT is None:
+        import build_dataset
+        _BUILT = build_dataset.build()
+    return _BUILT
+
+
+def test_built_blanks_are_dread_isle_pieces_shaped_like_natives():
+    # #334 end-to-end: all eleven blanks carry the three set fields, shaped
+    # byte-identically to a native carrier's (pins the umbrella/spell-focus tier
+    # recipe against pipeline drift), and the def name matches the exported
+    # membership_set_defs byte-exactly (a typo means silent no-membership).
+    dataset = _built()
+    blanks = [v for v in dataset["items"] if v.get("source") == "dino_crafting_blank"]
+    assert len(blanks) == 11, f"expected the 11 blanks, got {len(blanks)}"
+    assert blanks[0]["sets"][0] in dataset["membership_set_defs"], \
+        "stamped name matches membership_set_defs byte-exactly"
+    native = next(v for v in dataset["items"]
+                  if v.get("source") != "dino_crafting_blank"
+                  and _DREAD in (v.get("sets") or []))
+    native_tiers = [t for t in native["parsed_set_bonuses"] if t["set"] == _DREAD]
+    assert native_tiers, "the native carrier parses Dread Isle tiers"
+    for b in blanks:
+        assert b["sets"] == [_DREAD]
+        assert [s["set"] for s in b["set_bonus"]] == [_DREAD]
+        tiers = [t for t in b["parsed_set_bonuses"] if t["set"] == _DREAD]
+        assert tiers == native_tiers, \
+            f"blank {b['slot']} tiers drift from the native carrier's"
+    # Native carriers are unchanged: still present, still intrinsic-only.
+    natives = [v for v in dataset["items"]
+               if v.get("source") != "dino_crafting_blank"
+               and _DREAD in (v.get("sets") or [])]
+    assert len(natives) >= 90, "the native Dread Isle carriers are still present"
+    assert all("set_membership_slot" not in v for v in natives)
+
+
+def test_built_set_bonus_hosts_pool_excludes_the_intrinsic_set():
+    # KTD3 (#334): the Armor/Helmet/Cloak blanks' Set-Bonus pool must not offer
+    # the set they now carry intrinsically — one item can never count as two
+    # Dread Isle pieces. Other synthesis fields are untouched.
+    dataset = _built()
+    blanks = [v for v in dataset["items"] if v.get("source") == "dino_crafting_blank"]
+    hosts = [b for b in blanks if b.get("set_membership_slot")]
+    assert sorted(h["slot"] for h in hosts) == ["Armor", "Cloak", "Helmet"]
+    for h in hosts:
+        pool = h["set_membership_slot"]["pool"]
+        assert _DREAD not in pool, f"{h['slot']} pool still offers the intrinsic set"
+        assert len(pool) == 5, "the other 5 Dino sets remain choosable"
+    for b in blanks:
+        assert b["dino_slots_norm"], "dino slots unchanged"
+        assert b["augment_slots"] == [], "augment slots unchanged"
+
+
 def test_built_dataset_carries_dino_blanks_and_inserts():
     # End-to-end: the real build wires the shipped seed through.
-    import build_dataset
-    dataset = build_dataset.build()
+    dataset = _built()
     assert "dino_inserts" in dataset
     assert len(dataset["dino_inserts"]) >= 1
     blanks = [v for v in dataset["items"] if v.get("source") == "dino_crafting_blank"]

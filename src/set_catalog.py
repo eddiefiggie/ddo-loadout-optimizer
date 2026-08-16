@@ -25,6 +25,7 @@ Two hazards this module owns (both surfaced by plan doc-review):
 """
 from __future__ import annotations
 
+import copy
 import json
 import os
 import re
@@ -136,6 +137,14 @@ def base_defs_from_seed(seed_items) -> dict:
             if name:
                 defs.setdefault(canonical(name), s)
     return defs
+
+
+def copy_def(d: dict) -> dict:
+    """A true deep copy of a `set_bonus` definition entry. `definition_for` may
+    return a shared def by reference; every attach site must copy through here so
+    mutating one record's def can never leak into the catalog, the base seed, or
+    a sibling record (one owner for the copy recipe)."""
+    return copy.deepcopy(d)
 
 
 def definition_for(name: str, base_defs: dict, catalog: dict):
