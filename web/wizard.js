@@ -2202,7 +2202,12 @@ if (typeof window !== "undefined" && window.App) {
           // procs it deliberately does not, so the result can name a ranked-but-
           // uncounted proc on every surface including exports. THIS file is the live
           // solve path — web/query.js is not loaded by web/index.html at all.
-          vocab.utilityCounting
+          // Gate on SIZE, not truthiness: an empty stamped counting set is truthy, and
+          // threading it would make the card and all six exports assert "weapon procs
+          // are ranked individually rather than counted" while the tier counts nothing
+          // at all. web/browse.js:373 already gates its markers this way; these sites
+          // were the other half of the same asymmetry.
+          vocab.utilityCounting && vocab.utilityCounting.size
             ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set() }
             : null);
         const t0 = performance.now();
@@ -2444,7 +2449,12 @@ if (typeof window !== "undefined" && window.App) {
           // procs it deliberately does not, so the result can name a ranked-but-
           // uncounted proc on every surface including exports. THIS file is the live
           // solve path — web/query.js is not loaded by web/index.html at all.
-          vocab.utilityCounting
+          // Gate on SIZE, not truthiness: an empty stamped counting set is truthy, and
+          // threading it would make the card and all six exports assert "weapon procs
+          // are ranked individually rather than counted" while the tier counts nothing
+          // at all. web/browse.js:373 already gates its markers this way; these sites
+          // were the other half of the same asymmetry.
+          vocab.utilityCounting && vocab.utilityCounting.size
             ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set() }
             : null);
         // fresh:false + the original stamp so a later Save preserves staleness (see saveCurrentCharacter).

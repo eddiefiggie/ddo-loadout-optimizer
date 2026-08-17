@@ -435,11 +435,23 @@ function initBrowse(dataset, vocab) {
     // only when a vocabulary was supplied (so the markers are actually present)
     // and only once, appended after the count.
     if (utilitySets && !status.querySelector(".utility-legend")) {
-      const legend = document.createElement("p");
-      legend.className = "utility-legend";
-      legend.innerHTML = '<span class="chip-mark">★</span> counted by the Utility effects priority'
-        + ' &nbsp;·&nbsp; <span class="chip-mark">◇</span> rankable on its own, not counted by it';
-      status.appendChild(legend);
+      // Each half is gated on ITS OWN set having members. `utilitySets` already
+      // requires a non-empty counting set, but the admitted half is independent: a
+      // dataset that stamps a counting set and no admitted procs would otherwise
+      // explain a glyph no chip can carry. Never teach a symbol that cannot appear.
+      const parts = [];
+      if (utilitySets.counting && utilitySets.counting.size) {
+        parts.push('<span class="chip-mark">★</span> counted by the Utility effects priority');
+      }
+      if (utilitySets.admitted && utilitySets.admitted.size) {
+        parts.push('<span class="chip-mark">◇</span> rankable on its own, not counted by it');
+      }
+      if (parts.length) {
+        const legend = document.createElement("p");
+        legend.className = "utility-legend";
+        legend.innerHTML = parts.join(" &nbsp;·&nbsp; ");
+        status.appendChild(legend);
+      }
     }
     if (rows.length === 0) {
       results.innerHTML = `<div class="empty">No items match these filters. <button id="empty-clear" type="button">Clear filters</button></div>`;

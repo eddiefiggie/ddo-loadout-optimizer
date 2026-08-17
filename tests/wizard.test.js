@@ -2185,6 +2185,18 @@ test("#332: both live buildModel call sites thread {counting, admitted}", () => 
   }
 });
 
+test("#332: initBrowse receives the picker vocabulary", () => {
+  // The call that makes every Browse marker appear. Without a vocabulary, initBrowse
+  // renders chips with no markers at all — a silent, total feature loss that no unit
+  // test can see, which is the same shape as the buildModel wiring defect above.
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  assert.ok(/ItemBrowser\.initBrowse\(\s*dataset\s*,\s*pickerVocabulary\(dataset\)\s*\)/.test(src),
+    "initBrowse must be passed pickerVocabulary(dataset), not dataset alone");
+  assert.ok(!/ItemBrowser\.initBrowse\(\s*dataset\s*\)/.test(src),
+    "the pre-#332 single-argument form must not survive");
+});
+
 test("#332: web/query.js is NOT a live solve path — index.html must not load it", () => {
   // Pins the fact that made #3 possible, so a future reader is not misled again.
   const fs = require("fs"); const path = require("path");

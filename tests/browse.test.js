@@ -471,10 +471,14 @@ test("#332: on REAL data, an untyped admitted proc gets the rankable-only marker
     console.log("  (skipped — web/data/items.json not built)"); return;
   }
   const sets = { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted };
+  // Select by the CANONICAL name and assert on the RAW one. An earlier draft filtered
+  // and asserted on the same raw markName, so a raw-vs-canonical mismatch dropped out
+  // of the loop instead of failing — the test could not detect the very join it guards.
+  const canon = (n) => (typeof vocab.canonical === "function" ? vocab.canonical(n) : n);
   let checked = 0, marked = 0;
   for (const v of items) {
     for (const e of affixEntries(v)) {
-      if (!e.markName || !vocab.utilityAdmitted.has(e.markName)) continue;
+      if (!e.markName || !vocab.utilityAdmitted.has(canon(e.markName))) continue;
       checked++;
       if ((presenceMarker(e.markName, sets) || {}).cls === "rankable-only") marked++;
     }

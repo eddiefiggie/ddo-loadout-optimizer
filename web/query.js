@@ -161,7 +161,11 @@ window.App && window.App.ready((dataset) => {
         // #332 — both sets: the counting roster the tier scores, and the
         // admitted procs it deliberately does not, so the result can name
         // a ranked-but-uncounted proc on every surface including exports.
-        vocab.utilityCounting ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set() } : null);
+        // Gate on SIZE, not truthiness (see web/wizard.js). NOTE: this file is NOT
+        // loaded by web/index.html — web/wizard.js holds the live solve path.
+        vocab.utilityCounting && vocab.utilityCounting.size
+          ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set() }
+          : null);
       const t0 = performance.now();
       // eslint-disable-next-line no-undef
       const result = await solveLexicographic(model, h);

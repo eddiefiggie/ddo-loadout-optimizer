@@ -795,14 +795,6 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // The LIVE reference sites are web/wizard.js's two buildModel calls — web/query.js
   // exists but is NOT loaded by web/index.html, so citing it here sent a #332 change
   // to a file the app never runs. Thread from dataset metadata (vocab.utilityCounting).
-  if (utilityEnabled && utilityCountingSet == null) {
-    throw new Error(
-      "buildModel: the Utility sentinel is ranked but utilityCountingSet (the 11th "
-      + "argument) was not passed. It must be threaded from dataset metadata "
-      + "(vocab.utilityCounting) — see web/wizard.js's buildModel calls, the LIVE reference "
-      + "sites; web/query.js is not loaded by web/index.html."
-    );
-  }
   // #332 — the 11th argument accepts EITHER a bare Set (every existing call site)
   // or `{ counting, admitted }`. The admitted half is the reviewed weapon procs a
   // player can rank individually while the tier never counts them; the solve
@@ -810,11 +802,34 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // name them without a dataset to re-derive from. Widening this one argument
   // keeps KTD3 intact — the sets still ride as an argument, never on the
   // persisted query — and adds no 12th positional param.
+  //
+  // The shape is resolved BEFORE the fail-fast guard below, deliberately: an
+  // earlier draft threw on the raw argument, so `{}` or `{ admitted: X }` — an
+  // object with no `counting` half — sailed past the guard, resolved to a null
+  // counting set, and silently solved with zero utility indicators. That is the
+  // exact failure the guard exists to prevent, reachable through the shape this
+  // change introduced. Resolve first, then validate what was resolved.
   const _uCounting = (utilityCountingSet && typeof utilityCountingSet.has === "function")
     ? utilityCountingSet
     : (utilityCountingSet && utilityCountingSet.counting) || null;
   const _uAdmitted = (utilityCountingSet && !(typeof utilityCountingSet.has === "function")
     && utilityCountingSet.admitted) || null;
+  // Fail fast rather than silently solving with zero indicators: utilityCountingSet
+  // is a defaulted 11th positional param, so a forgotten call site would otherwise
+  // widen nothing and the utility stage would place no gear with no error anywhere.
+  // The LIVE reference sites are web/wizard.js's two buildModel calls — web/query.js
+  // exists but is NOT loaded by web/index.html, so citing it here sent a #332 change
+  // to a file the app never runs. Thread from dataset metadata (vocab.utilityCounting).
+  if (utilityEnabled && _uCounting == null) {
+    throw new Error(
+      "buildModel: the Utility sentinel is ranked but no counting set was resolved from "
+      + "utilityCountingSet (the 11th argument). Pass a Set, or { counting, admitted } with "
+      + "a real `counting` half — an object without it resolves to nothing. Thread it from "
+      + "dataset metadata "
+      + "(vocab.utilityCounting) — see web/wizard.js's buildModel calls, the LIVE reference "
+      + "sites; web/query.js is not loaded by web/index.html."
+    );
+  }
   if (utilityEnabled && _uCounting && _uCounting.size) {
     for (const n of _uCounting) targetSet.add(n);
   }

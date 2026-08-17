@@ -5153,7 +5153,7 @@ async function withCrossAdd(map, fn) {
       "no give applies to the top-ranked tier — the exact lock rules the shed out");
   });
 
-  console.log(`\n${passed} passed`);
+  
 
   // #332 — the model->solver chain that makes rankedNotCounted non-empty. It had ZERO
   // coverage, which is the other half of why the disclosure shipped dead: even with the
@@ -5181,4 +5181,6 @@ async function withCrossAdd(map, fn) {
       "and yields no exclusion names, so the sentence stays silent");
   });
 
+
+  console.log(`\n${passed} passed`);
 })();
