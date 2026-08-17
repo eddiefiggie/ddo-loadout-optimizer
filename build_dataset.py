@@ -897,9 +897,11 @@ def build() -> dict:
             "\n  ".join(f"{s} — {stat} {val}" for s, stat, val in _set_orphans))
 
     _rankable_list = rankable_affixes(planner_records, _untyped_allow)
-    # #91 (U1) — the Utility tier's counting vocabulary: (Bool presence names
-    # passing presence-minus-magnitude — the subtraction drops the four
-    # dual-nature names) ∪ (allow-dispositioned untyped proc names). Computed
+    # #91 (U1) — the Utility tier's counting vocabulary: Bool presence names
+    # passing presence-minus-magnitude (the subtraction drops the four
+    # dual-nature names), RESTRICTED to the curated tier-1 list. #343 removed
+    # the allow-dispositioned untyped procs from this union — they stayed
+    # rankable in the picker but stopped being counted. Computed
     # AFTER every correction/split above so demoted-to-presence affixes are
     # seen, and against the SAME records rankable_affixes read, so the
     # subtraction is exact. Stamped as metadata below; the app consumes the

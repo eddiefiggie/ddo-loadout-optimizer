@@ -11,6 +11,8 @@ execution: code
 
 # Utility Nice-to-Have Container - Plan
 
+**Tracked as #348.**
+
 ## Goal Capsule
 
 - **Objective:** Turn the Utility tier into a pinned, player-curated container of nice-to-have effects, pursued in the player's own order — so a player who wants Ghostly ahead of Feather Falling can say so, and one who never opens the panel still gets a sensible default.
@@ -84,7 +86,7 @@ That is tolerable while the tier is a scavenger filling leftover slots. It stops
 
 - Closing #343. The default-roster plan does that; this plan assumes it shipped.
 - Value-weighting or exchange rates between effects (#331). The player's ordering does that job, and weighted-sum modes remain a standing non-goal.
-- Widening the default roster further. Still governed by the #91 measured-batch rule.
+- Widening the default roster further (#349). Still governed by the #91 measured-batch rule.
 
 ### Dependencies / Assumptions
 

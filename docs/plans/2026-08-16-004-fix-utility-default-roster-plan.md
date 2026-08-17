@@ -43,9 +43,9 @@ The list is that shape because the full 838-name population failed the #91 measu
 | current tier-1 | 38 | 1,904 | 1.96× baseline (recorded by #91) |
 | …of which weapon procs | 24 | 1,638 (86%) | — |
 | …everything else | 14 | 266 | — |
-| **this plan's roster** | **20** | **699 (−63%)** | **1.56× baseline (measured)** |
+| **this plan's roster** | **20** | **699 (−63%)** | **1.50–1.71× baseline (measured, 5 runs)** |
 
-The weapon procs are 86% of the carrying-variant footprint. Swapping them out is not a widening that must fit the budget — it *buys back* budget, taking the tier from 1.96× to 1.56× against a 2.0× ceiling.
+The weapon procs are 86% of the carrying-variant footprint. Swapping them out is not a widening that must fit the budget — it *buys back* budget, taking the tier from 1.96× to roughly 1.5–1.7× against a 2.0× ceiling.
 
 ### Key Decisions
 
@@ -72,9 +72,9 @@ The weapon procs are 86% of the carrying-variant footprint. Swapping them out is
 
 ### Scope Boundaries
 
-- The pinned, player-curated container, its Advanced panel, ordering, and per-character persistence. Scoped separately in `docs/plans/2026-08-16-005-feat-utility-nice-to-have-container-plan.md`.
-- Making the weapon procs re-addable. They leave the counted set here and return as an addable population only when the container ships.
-- Widening toward the full 838-name presence population. Still governed by the #91 measured-batch rule; this plan reduces the budget rather than spending it.
+- The pinned, player-curated container, its Advanced panel, ordering, and per-character persistence. Scoped separately in `docs/plans/2026-08-16-005-feat-utility-nice-to-have-container-plan.md` (#348).
+- Making the weapon procs re-addable. They leave the counted set here and return as an addable population only when the container ships (#348).
+- Widening toward the full 838-name presence population (#349). Still governed by the #91 measured-batch rule; this plan reduces the budget rather than spending it. #349 also carries the wiki adjudication of the six names added here.
 - Value-weighting effects (#331). The count stays flat.
 
 ### Dependencies / Assumptions
@@ -98,7 +98,9 @@ The weapon procs are 86% of the carrying-variant footprint. Swapping them out is
 - Issue #343 carries the verbatim report and the reproduction.
 - `docs/plans/2026-08-15-002-feat-utility-tier-holistic-value-plan.md` — the #91 plan that shipped the tier. Its R13 established the deliberate golden re-ratification pattern this plan reuses; its R2, R15, and R14 stay in force.
 - `CONCEPTS.md` — [[Utility tier]] and [[Boolean feature]]. Both remain accurate after this change, since the counting semantics are untouched.
-- Cold-solve figures: the #91 plan recorded the 38-name roster at 1.96× the pre-feature baseline against a 2.0× budget. This roster measured **1.56×** on the same gate (`tests/perf_utility.js`, 23 fixtures, baseline median 510 ms / sentinel-appended 796 ms) on 2026-08-16. An earlier draft of this plan carried a 0.76× figure taken from a reviewer's measurement during a different review; running the gate directly did not reproduce it, and the measured number replaces it.
+- Cold-solve figures: the #91 plan recorded the 38-name roster at 1.96× the pre-feature baseline against a 2.0× budget. This roster measures **1.50–1.71×** on the same gate (`tests/perf_utility.js`, 23 fixtures; baselines 502–523 ms, sentinel-appended 756–864 ms) across five runs on 2026-08-16, including one taken independently by a reviewer on the same machine.
+
+  **Record a range, not a point.** Two earlier drafts of this line each carried a single figure that did not reproduce: first 0.76×, carried over from a reviewer's measurement during a different review without running the gate; then 1.56×, which was a real measurement but only one sample, and a later reviewer running the same gate got 1.71× and correctly flagged the mismatch. The gate is a wall-clock median on a loaded developer machine — the spread is the honest result, and every sample clears the budget with room.
 
 ---
 
@@ -110,7 +112,9 @@ The weapon procs are 86% of the carrying-variant footprint. Swapping them out is
 
 - KTD2. **The reviewed-proc allow list is not touched.** `data/seed/compendium/utility_procs.json` and its `utility_untyped_admitted` stamp keep every one of the 24 names, because that stamp has a second consumer: `buildPickerVocabulary` reads it to make those names individually rankable. Emptying it would remove Undead Bane from the picker, which is a different and unwanted change. They stop being *counted*, not *available* — R2 of the Product Contract says exactly this, and this is the seam that delivers it.
 
-- KTD3. **The curated constant stays mirrored rather than derived.** R4 asks for one definition; in this codebase that is delivered as two guarded copies, not one file. `UTILITY_TIER1_PRESENCE` exists in `web/dataset.js` (which must classify catalogs built before a stamp existed) and in `src/utility_procs.py` as `frozenset | PRESENCE_ALLOW`, with the stamped-set parity test failing the build the moment they disagree — so there is one *effective* definition even though there are two literals. Both copies gain the six toggles in the same change; collapsing the duplication is out of scope and would break the pre-stamp classification path.
+- KTD3. **The curated constant stays mirrored rather than derived.** R4 asks for one definition; in this codebase that is delivered as two guarded copies, not one file. `UTILITY_TIER1_PRESENCE` exists in `web/dataset.js` and in `src/utility_procs.py` as `frozenset | PRESENCE_ALLOW`, with the stamped-set parity test failing the build the moment they disagree — so there is one *effective* definition even though there are two literals. Both copies gain the six toggles in the same change; collapsing the duplication is out of scope.
+
+  **Correction (post-review):** an earlier draft of this KTD justified the JS copy as needed to "classify catalogs built before a stamp existed". That is false against the tree — `UTILITY_TIER1_PRESENCE` has no in-app reader in `web/` (only its definition and its `module.exports`), and `web/dataset.js` documents the real pre-stamp behavior as "Empty for a cached pre-stamp dataset: the tier then counts nothing." The JS literal is **test-only**: it exists so the parity guard can catch mirror drift. That is a good enough reason to keep it, but it is not the reason this KTD gave.
 
 - KTD4. **Golden and parity fixtures are re-ratified in this change, not a follow-up.** (session-settled: user-approved — chosen over deferring the capture: a mysterious red suite is worse than a large, explained diff.) Every fixture's loadout is expected to move because the tier now secures different effects. This follows R13 of the #91 plan. The dataset is rebuilt from the current tree before any capture, per `docs/solutions/workflow-issues/rebuild-the-dataset-before-any-golden-capture.md`.
 

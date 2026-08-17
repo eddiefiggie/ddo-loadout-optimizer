@@ -55,7 +55,7 @@ You can also point it at **only the gear you actually own** by importing a Trove
 | Endgame ML 30–36 (U81 / Isle of Dread / Myth Drannor) | ✅ named + raid gear |
 | **Wildcard set pieces** (Gem of Many Facets — counts toward a set you choose) | ✅ |
 | **On/off affixes** (Ghost Touch, True Seeing, Freedom of Movement, immunities) | ✅ tracked as present, not as a number |
-| **Utility tier** (on by default, ranked last) | ✅ after your ranked stats are locked, empty slots fill with gear carrying distinct utility effects — drag the tier up if procs matter more than a marginal stat |
+| **Utility tier** (on by default, ranked last) | ✅ after your ranked stats are locked, empty slots fill with gear carrying distinct utility effects (worn toggles like Ghostly, True Seeing and Freedom of Movement — not weapon procs, which stay rankable on their own) — drag the tier up if those matter more than a marginal stat |
 | **Minor Artifacts** (build around one, optimizer picks the best) | ✅ opt-in |
 | Green Steel / Thunder-Forged | ⏳ recipes loaded, no craftable hosts in the roster yet |
 | Filigrees, Essence crafting | ⏳ not yet |
