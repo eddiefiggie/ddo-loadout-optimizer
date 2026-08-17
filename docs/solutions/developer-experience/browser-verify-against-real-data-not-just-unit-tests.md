@@ -21,6 +21,9 @@ tags:
   - verification-topology
   - wrong-call-site
   - wiring-guard
+  - population-definition
+  - denominator
+  - falsy-collapse
 applies_when:
   - "shipping a change to the client-side web app (web/*.js)"
   - "adding a new global script or a helper that matches against dataset records"
@@ -30,6 +33,9 @@ applies_when:
   - "a module or call site was edited but you have not confirmed the app actually loads or invokes it"
   - "code compares against a type name, slot name, or other string constant that crosses a pipeline seam"
   - "a change is verified by calling the function that was just edited, with arguments the verifier supplied"
+  - "stating a count, total, or coverage figure that a reader could recount differently"
+  - "a measured number disagrees with a previously filed or documented figure"
+  - "filtering a collection with a falsy test where empty, null, and absent are distinct states"
 ---
 
 # Verify at the production entry point — unit tests mask browser-only, shape-mismatch, and wrong-call-site bugs
@@ -82,9 +88,9 @@ The same real-data run, in the same minute, also caught a copy defect no unit te
 
 A third class is a hazard *of the browser pass itself*, not a shipped bug: **retained client-side state gives a false reading.** The guided wizard persists its `state` to `sessionStorage`, so navigating/reloading the same tab replayed a prior run's ML and checkbox values and even auto-advanced the step. During the Artifact-checkbox verification, a screenshot showed the box **checked** on what looked like a fresh load — actually retained state from an earlier tab — and `document.getElementById("wz-artifact")` returned `null` because the DOM had already advanced past the character step. Together they manufactured a phantom "the checkbox defaults to checked" bug (R1 says default off). `sessionStorage.clear(); localStorage.clear();` then reload restored a true clean state and confirmed the real default (unchecked). The lesson pairs with the guidance above: the same persistence that makes an SPA pleasant to use makes its manual verification non-deterministic — reset state per run, and trust a live DOM query over a screenshot when the two seem to disagree.
 
-## Two more ways the isolated call lies (2026-08-17)
+## Three more ways verification goes wrong (2026-08-17)
 
-The section above is about a fixture's **shape**. This one is about where the verification *stood*. One session produced four instances of that: a write-side key no reader reads (`weaponStyle`) and a hand-built record of the wrong shape, both already banked in [fixture-shape-must-mirror-the-production-writer](../conventions/fixture-shape-must-mirror-the-production-writer.md), plus the two mechanisms below — which are new here and account for three shipped defects between them.
+The section above is about a fixture's **shape**. This one is about where the verification *stood*. One session produced four instances of that: a write-side key no reader reads (`weaponStyle`) and a hand-built record of the wrong shape, both already banked in [fixture-shape-must-mirror-the-production-writer](../conventions/fixture-shape-must-mirror-the-production-writer.md), plus the three mechanisms below. The first two are about where the verification stood and account for three shipped defects between them; the third is a different failure — a number stated without its population — and it accounts for four more same-day instances, including two inside the correction for the first.
 
 **A constant compared across a pipeline seam.** Six presence checks on the render and export surfaces compared an affix's type against `"boolean"` — `projection.js` (three), `browse.js`, `results.js`, and `exporters.js`. (Two sites already accepted `"Bool"`: `results.js:808` and `dataset.js:435`. PR #354's own body calls the former "the lone correct site." The claim is *six of eight*, not all of them — a sweeping version of this sentence is falsifiable in ten seconds and would discredit the analysis around it.)
 
@@ -96,11 +102,36 @@ This class already has an ancestor here: [prove-a-guard-fails-before-trusting-it
 
 A sibling in the same change: the Browse marker was verified by calling `presenceMarker(name, sets)` directly, which passed, while the real `affixEntries -> presenceMarker` join marked only **75 of 1,656** target chips. `f` correct and `g` correct says nothing about `f -> g` when the field they exchange is optional or untyped. **Test the join, not the two functions either side of it.**
 
+**A count is a claim about a population — and the population's definition lives in code.** The `8,104` figure above needed a stated denominator for a reason that generalises past this one number: when the owning module defines a population, that definition is a **lookup, not an inference**, and skipping the lookup produces a number that is arithmetically right about the wrong set. Later the same day this rule was broken three more times, twice inside the correction for the first break.
+
+**The break.** An issue-verification sweep counted "items with an empty `location_quest`" as `not item.get('location_quest')` — a falsy test — and got **1,242** against issue [#285](https://github.com/eddiefiggie/ddo-loadout-optimizer/issues/285)'s filed **199**. That became a public comment claiming the population had "grown roughly six-fold" and recommending a re-triage. It had not grown. `src/no_drop_source.py:240-245` defines the universe in one sentence:
+
+> The triage universe is `location_quest == ""` (the empty STRING — a worn item whose harvest recorded no quest) plus any location in `RETIRED_PSEUDO_SOURCES` (#93 …): the ~1,063 augment records carry `location_quest: null` and the 11 synthetic Dino crafting blanks carry no key at all, so **both fall outside by construction (R3)**.
+
+A falsy test merges four different facts — empty, null, absent, and zero. Here it merged three. Across all 9,108 records in `items[]`: `== ""` is **199**, `is null` is **1,063** (every one an augment), key-absent is **11** (the synthetic Dino blanks) — falsy total **1,273**. The sweep published **1,242**, which is the same collapse taken over worn slots only (170 + 1,063 + 9). Note that the published total and the numbers later used to explain it came from *different* populations, and no population yields both 1,242 and 199. A second, independent slip compounded it: the "worn slots" exclusion list did not exclude augments, because augment records carry **colour** slots (`Blue`, `Red`, `Colorless`, `Sun`, `Moon`), not gear slots.
+
+**Then the correction repeated the error.** The published correction table gave `is null` as **1,074** — the null count with the 11 key-absent records folded into it, as its own parenthetical "(1,063 augments + 11 others)" admits — and key-absent as **9**, the worn-only figure. Two rows, two different populations, neither matching the third. The true figures, **1,063** and **11**, appear in the very docstring sentence the correction quoted.
+
+**And the correction still read only half the definition.** That sentence has two clauses joined by "plus". Both public comments used the first and dropped `RETIRED_PSEUDO_SOURCES`. Measured: `== ""` is 199, `"Special event items"` adds 24, and the real universe is **223** — which is scope-relevant, because #285 is a backfill issue.
+
+**The number was in the file the whole time.** `web/data/items.json` carries `metadata.no_drop_source_coverage`, stamped at build time with `triage_universe`, `confirmed_no_source`, and the confirmed item list. A hand-rolled count was run against a file that already contained the authoritative answer as a field. `src/no_drop_source.py` even says why the stamp exists: *"Counts come from the dataset, never hardcoded, so harvest refreshes cannot drift them."*
+
+**Four usable tests, in the moment:**
+
+1. **Never let a falsy test define a population.** `not x` / `if (!x)` collapses empty, null, absent, and zero. Name the state you mean: `== ""`, `is None`, `not in obj`.
+2. **When your count disagrees with a filed number, suspect the definition before the data.** An unexplained order-of-magnitude jump in a maintained dataset is nearly always a measurement artifact.
+3. **Read the whole definitional sentence.** A universe joined by "plus" has two clauses; quoting it is not reading it.
+4. **Look for a stamped answer before deriving one.** A pipeline that computes a population usually records it, precisely so later readers do not recount it differently.
+
+**This section's own first draft made the error.** It stated the falsy total as 1,242 and then decomposed it as 199 + 1,063 + 11 — which sums to 1,273, because the total was worn-only and the parts were all-records. A grounding validator caught it before the doc was committed. That is the sixth instance in one day, and it is why the remedy below is a mechanical check rather than a resolution to be careful.
+
+**A hedge is not a substitute.** The wrong comment did carry a caveat — *"I have not established why the population grew."* It limited the damage and did not prevent the false claim. An unexplained result is a **stop condition, not a qualifier**: if you cannot explain your own number, do not publish it.
+
 ### The permanent half of the remedy
 
 A real-data run is a one-time check; it does not stop the next instance. What changed behavior here was a **source-text wiring guard on the live call site** — because no unit test can observe whether the *app's own* call passes the right thing, since a unit test supplies the arguments itself. Three now exist in `tests/wizard.test.js`: one asserting both `buildModel` call sites pass the new shape **and that there are exactly two of them**, so a third cannot appear unguarded; one pinning that `initBrowse` receives the picker vocabulary; and one pinning the loading fact itself, that `index.html` must not load `query.js`. Their verification status differs, and saying so matters in a doc about verifying properly: the `initBrowse` guard was proven red by reverting its fix; the call-site guard is red by construction against the superseded form it names verbatim; and the `index.html` guard is a deliberate nothing-changed pin, which [prove-a-guard-fails-before-trusting-it](../conventions/prove-a-guard-fails-before-trusting-it.md) explicitly exempts — there is no fix to revert, because the app never loaded that file.
 
-**A documented rule is not a guard.** A convention doc for the adjacent fixture-shape failure already existed and was extended the same morning (PR #350, merged 05:53Z); the next instance shipped roughly six and a half hours later (PR #354, 12:29Z) and the one after that at 15:31Z (PR #355). Discovery time is not in any committed artifact, so the interval between *writing* the rule and *breaking* it again is not something a later reader can check — the merge gap is. That is evidence about the rule's *shape*, not about diligence: prose describing a property of the fixture only fires if you already suspect the fixture. A test that fails the build fires whether you suspect anything or not.
+**A documented rule is not a guard.** [prove-a-guard-fails-before-trusting-it](../conventions/prove-a-guard-fails-before-trusting-it.md):255 states it as *"Quoting the learning is not applying it"* — recorded there because that document *"was cited by name in the docstring of the very module carrying the bug."* The population break above is the sharpest instance yet: the docstring was quoted in the very comment that contradicted it, twice. A convention doc for the adjacent fixture-shape failure already existed and was extended the same morning (PR #350, merged 05:53Z); the next instance shipped roughly six and a half hours later (PR #354, 12:29Z) and the one after that at 15:31Z (PR #355). Discovery time is not in any committed artifact, so the interval between *writing* the rule and *breaking* it again is not something a later reader can check — the merge gap is. That is evidence about the rule's *shape*, not about diligence: prose describing a property of the fixture only fires if you already suspect the fixture. A test that fails the build fires whether you suspect anything or not.
 
 ## When to Apply
 
