@@ -1533,11 +1533,17 @@ test("#245: whyThisLine stays a plain contribution line when the item earns its 
 });
 
 test("#346: the ladder notice renders from the shared projection sentence", () => {
-  const on = R.craftingExcludedNotice({}, { query: { craftingRung: "no-niche-crafting" } });
+  // Called the way renderResults calls it: the SOLVED QUERY first, the bare
+  // worker result second. Per
+  // docs/solutions/conventions/fixture-shape-must-mirror-the-production-writer.md
+  // the worker result carries no `query` key at all, so hiding the rung in the
+  // result argument would exercise a branch the live render never takes.
+  const bare = { status: "optimal", augmentsPlaced: [], chosen: [] };
+  const on = R.craftingExcludedNotice({ craftingRung: "no-niche-crafting" }, bare);
   assert.ok(/crafting-excluded-note/.test(on) && /Niche crafting was excluded/.test(on));
-  assert.match(R.craftingExcludedNotice({}, { query: { craftingRung: "printed-only" } }),
+  assert.match(R.craftingExcludedNotice({ craftingRung: "printed-only" }, bare),
     /nothing beyond what is printed/, "the bottom rung has its own sentence");
-  assert.strictEqual(R.craftingExcludedNotice({}, { query: {}, augmentsPlaced: [] }), "",
+  assert.strictEqual(R.craftingExcludedNotice({ craftingRung: "everything" }, bare), "",
     "silent on the top rung when the loadout leans on nothing");
 });
 

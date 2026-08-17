@@ -1176,15 +1176,20 @@ test("#346: the ladder notice is byte-identical across results and all four expo
   const P = require("../web/projection.js");
   const R = require("../web/results.js");
   for (const rung of ["no-niche-crafting", "no-solar-lunar", "printed-only"]) {
+    // The real writer stores `query` as a top-level SIBLING of `snapshot`
+    // (serializeCharacter, web/persist.js) — RESULT_KEEP never admits a `query`
+    // key into the snapshot, so the nested shape cannot exist on a real saved
+    // character. Build the fixture the way production does or the parity claim
+    // rests on a shape nothing produces.
     const rec = {
       name: "Parity", inputs: { ml: 9, pool: "all", priorities: ["Charisma"] },
-      snapshot: { status: "optimal", query: { craftingRung: rung }, chosen: [], setsActive: [],
-        breakdown: {}, effective: {} },
+      query: { craftingRung: rung },
+      snapshot: { status: "optimal", chosen: [], setsActive: [], breakdown: {}, effective: {} },
     };
     const canonical = P.craftingExcludedLine(rec);
     assert.ok(canonical, `${rung} produces a sentence`);
     // results.js wraps the SAME string in its scope-note element.
-    const html = R.craftingExcludedNotice({}, { query: { craftingRung: rung } });
+    const html = R.craftingExcludedNotice({ craftingRung: rung }, { status: "optimal", augmentsPlaced: [], chosen: [] });
     assert.ok(html.includes(canonical.replace(/"/g, "&quot;")) || html.includes(canonical),
       `results renders the canonical ${rung} sentence verbatim`);
     for (const [label, out] of [["markdown", toMarkdown(rec)], ["csv", toCsv(rec)],
