@@ -985,7 +985,7 @@ function outbidTargets(query, result, model) {
   return targets.filter((t) => t !== _UTILITY_SENTINEL && reachable.has(t) && !(Number(per[t]) > 0));
 }
 
-function outbidNotice(query, result, model, canPrice) {
+function outbidNotice(query, result, model, canPrice, canRequire) {
   const names = outbidTargets(query, result, model);
   if (!names.length) return "";
   // Names the targets, never the binding priority — proving which higher-ranked
@@ -1000,14 +1000,21 @@ function outbidNotice(query, result, model, canPrice) {
   // 111-154% of it (2.6s on an endgame melee build). Automatic would more than
   // double the wait the player already sat through; asked-for is affordable.
   // Absent on a restored character, which carries no solver to probe with.
-  const ask = canPrice
-    ? names.map((n) => `<button type="button" class="outbid-price" data-stat="${esc(n)}">What would ${esc(n)} cost?</button>`).join(" ")
-    : "";
+  const ask = names.map((n) => {
+    const price = canPrice
+      ? `<button type="button" class="outbid-price" data-stat="${esc(n)}">What would ${esc(n)} cost?</button>` : "";
+    // #345 (U4, R9) — requiring needs no solver: it writes a floor and re-solves
+    // through the wizard's normal path, so it is offered on a restored character
+    // where pricing is not.
+    const req = canRequire
+      ? `<button type="button" class="outbid-require" data-stat="${esc(n)}">Require ${esc(n)}</button>` : "";
+    return price + (price && req ? " " : "") + req;
+  }).filter(Boolean).join(" ");
   return `<p class="scope-note outbid-note" role="status">${lines.map(esc).join(" ")}`
     + (ask ? `<span class="outbid-ask">${ask}</span>` : "") + `</p>`;
 }
 
-function renderResults(container, { model, result, query, dataset, highs, onAfterRender }) {
+function renderResults(container, { model, result, query, dataset, highs, onAfterRender, onRequire }) {
   if (result.status !== "optimal") {
     // Keep the Adjust & re-solve control available on a non-optimal result — this
     // is exactly when the user needs to loosen priorities/constraints in place.
@@ -1054,7 +1061,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     ${staleSnapshotNotice(result)}
     ${boundNotice(query, result)}
     ${zeroSourceNotice(query, result, model, dataset)}
-    ${outbidNotice(query, result, model, canPriceOutbid())}
+    ${outbidNotice(query, result, model, canPriceOutbid(), typeof onRequire === "function")}
     ${saturationNotice(result)}
     ${emptySlotNotice(query, result)}
     ${absorptionQuarantineNotice(result)}
@@ -1114,6 +1121,16 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     q("#rp-live").textContent = isAlt ? `Now viewing alternative: ${label}` : "Now viewing the optimal build";
   }
   q(".return-optimum").addEventListener("click", () => setActive(optimum, false));
+
+  // #345 (U4, R8/R9) — accepting the trade writes a floor and re-solves. The
+  // handler is the wizard's, so the floor goes through the same sanitizer and
+  // persisted field the Advanced min input writes; one writer, one clear path.
+  for (const btn of container.querySelectorAll(".outbid-require")) {
+    btn.addEventListener("click", () => {
+      btn.disabled = true;
+      if (typeof onRequire === "function") onRequire(btn.dataset.stat);
+    });
+  }
 
   // #345 (U3) — price on request. One probe per click, never on the solve path.
   for (const btn of container.querySelectorAll(".outbid-price")) {

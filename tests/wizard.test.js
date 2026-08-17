@@ -2239,3 +2239,32 @@ test("#345: the pricing gate is a capability probe, not an assumption", () => {
   assert.ok(/!!highs/.test(fn), "and the solver instance — a restored render has none");
   assert.ok(/optimum && optimum\.program/.test(fn), "and the program the probe needs");
 });
+
+test("#345 U4: every live render site can accept a trade, not just the fresh one", () => {
+  // Requiring needs no solver — it writes a floor and re-solves through the
+  // wizard's own path — so the restored-character site offers it even though it
+  // cannot price. If a site drops onRequire, its accept button silently vanishes.
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const calls = [...src.matchAll(/renderResults\(/g)].map((m) => m.index);
+  assert.strictEqual(calls.length, 3, "the three known sites");
+  for (const at of calls) {
+    const region = src.slice(at, src.indexOf(");", at) + 2);
+    assert.ok(/onRequire:\s*requireOutbidStat/.test(region),
+      "each site must pass the accept handler");
+  }
+});
+
+test("#345 U4: the accept handler writes the same field the Advanced input writes", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const fn = src.slice(src.indexOf("function requireOutbidStat(stat)"),
+    src.indexOf("function requireOutbidStat(stat)") + 600);
+  assert.ok(/state\.targetFloors/.test(fn),
+    "writes targetFloors — the field cleanBoundMap sanitizes and persist.js stores");
+  assert.ok(/solve\(false\)/.test(fn), "and re-solves so the player sees the result");
+  // persist.js must actually carry it, or the requirement dies on reload.
+  const persist = fs.readFileSync(path.join(__dirname, "..", "web", "persist.js"), "utf-8");
+  assert.ok(/"targetFloors"/.test(persist),
+    "targetFloors must be a persisted field or an accepted trade is lost on reload");
+});

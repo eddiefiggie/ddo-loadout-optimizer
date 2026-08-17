@@ -269,5 +269,34 @@ function check(name, fn) {
   });
   console.log(`    ${FOM} bound by ${attr.binding} ${attr.bindingValue} -> ${attr.bindingHeld} (cost ${attr.cost})`);
 
+  // ---- AE6 (#345 U4): accepting the trade pays exactly the priced cost. -----
+  console.log("\nAE6 — requiring the outbid effect (#345)");
+  const q6 = { ...q4, targetFloors: { [FOM]: 1 } };
+  const { r: r6 } = await solve(q6);
+  check("AE6: the required effect is secured", () => {
+    assert.strictEqual(r6.status, "optimal", "flooring a reachable effect stays solvable");
+    assert.ok((r6.perTarget[FOM] || 0) >= 1, `${FOM} is now held, was ${r4.perTarget[FOM] || 0}`);
+  });
+  check("AE6: the binding priority gives up exactly what pricing said", () => {
+    const before = r4.perTarget[attr.binding];
+    const after = r6.perTarget[attr.binding];
+    assert.strictEqual(before - after, attr.cost,
+      `${attr.binding} ${before} -> ${after} should cost exactly the quoted ${attr.cost}`);
+  });
+  check("AE6: nothing ranked above the binding priority was silently traded away", () => {
+    // The quoted price is a promise about ONE stat. Everything above the binding
+    // priority must be untouched, or the offer understated what it costs.
+    for (const s of q4.targets) {
+      if (s === attr.binding) break;
+      assert.strictEqual(r6.perTarget[s], r4.perTarget[s],
+        `${s} outranks ${attr.binding} and must not move`);
+    }
+  });
+  check("AE6: the outbid disclosure stops firing for the effect once required", () => {
+    assert.ok(!(r6.outbidReport || []).includes(FOM),
+      "a secured effect is not outbid — the stamped report must drop it");
+  });
+  console.log(`    ${attr.binding} ${r4.perTarget[attr.binding]} -> ${r6.perTarget[attr.binding]}, ${FOM} ${r6.perTarget[FOM]}`);
+
   console.log(`\n${passed} passed`);
 })().catch((e) => { console.error(e); process.exit(1); });

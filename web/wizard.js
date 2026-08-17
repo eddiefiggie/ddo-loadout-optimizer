@@ -2157,6 +2157,18 @@ if (typeof window !== "undefined" && window.App) {
     }
 
     let solving = false;
+    // #345 (U4, R9/R10) — accept an outbid trade: require the effect, then
+    // re-solve. Writes through the SAME state field and sanitizer the Advanced
+    // min input writes (cleanBoundMap on the way to the query, targetFloors in
+    // persist.js), so the requirement survives a save and shows on the row
+    // without a second representation to keep in sync.
+    function requireOutbidStat(stat) {
+      if (!stat) return;
+      const map = state.targetFloors || (state.targetFloors = {});
+      map[stat] = Math.max(1, Number(map[stat]) || 0);
+      if (canAdvance("priorities", state)) solve(false);
+    }
+
     async function solve(firstRun) {
       if (solving) return;
       if (!canAdvance("priorities", state)) return;
@@ -2241,7 +2253,7 @@ if (typeof window !== "undefined" && window.App) {
         render();
         const box = document.getElementById("wz-results");
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result, query, dataset, highs: h, onAfterRender: afterResultsRender });
+        if (box) renderResults(box, { model, result, query, dataset, highs: h, onAfterRender: afterResultsRender, onRequire: requireOutbidStat });
       } catch (err) {
         state.step = "results"; render();
         const box = document.getElementById("wz-results");
@@ -2468,7 +2480,7 @@ if (typeof window !== "undefined" && window.App) {
         // report-absent utility card is reachable without touching the solved record.
         const renderQuery = restoredRenderQuery(query, !!i.utility_tier_aware);
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result: snap, query: renderQuery, dataset, highs: null, onAfterRender: afterResultsRender });
+        if (box) renderResults(box, { model, result: snap, query: renderQuery, dataset, highs: null, onAfterRender: afterResultsRender, onRequire: requireOutbidStat });
         const stale = document.getElementById("wz-stale");
         if (stale) stale.classList.toggle("wz-hidden", !state.loadedStale);
       } else {
@@ -2900,7 +2912,7 @@ if (typeof window !== "undefined" && window.App) {
           if (state.lastRun) {
             state.lastRun.query.slotConstraints = { ...state.slotConstraints };
             // eslint-disable-next-line no-undef
-            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: afterResultsRender });
+            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: afterResultsRender, onRequire: requireOutbidStat });
           }
           if (cbar) cbar.classList.remove("wz-hidden");
         });
