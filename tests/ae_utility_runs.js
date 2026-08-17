@@ -115,5 +115,64 @@ function check(name, fn) {
   });
   console.log(`    picks ${r3a.chosen.length} -> ${r3b.chosen.length}, count ${r3b.utilityCount}`);
 
+
+  // ---- #343 — the roster change. AE1-AE3 of the default-roster plan. ----
+  // These three solves are the evidence the change rests on, run against the
+  // real catalog rather than a fixture: without them the plan's claim that the
+  // fix works under contention is prose.
+  const TOGGLES = ["Ghostly", "True Seeing", "Blurry", "Freedom of Movement",
+    "Blindness Immunity", "Deathblock"];
+  const secured = (r) => (r.utilityReport && r.utilityReport.effects || []).map((e) => e.name);
+
+  console.log("\n#343/AE1 — ML34, one ranked priority: the reported bug closes");
+  const { r: a1 } = await solve({ mlCap: 34, targets: ["Constitution", UTILITY_SENTINEL],
+    armorType: null, weaponSetup: null, classRace: null });
+  check("AE1: every worn defensive toggle is secured", () => {
+    assert.strictEqual(a1.status, "optimal");
+    const got = secured(a1);
+    for (const t of TOGGLES) assert.ok(got.includes(t), `${t} missing — this is the reported bug`);
+  });
+  check("AE1: no Bane-family proc is counted any more", () => {
+    assert.ok(!secured(a1).some((n) => /Bane$/.test(n)),
+      "the weapon procs left the counted set");
+  });
+  console.log(`    count ${a1.utilityCount}: ${secured(a1).join(", ")}`);
+
+  console.log("\n#343/AE2 — ML34, six contested ranked stats: it survives contention");
+  const contested = ["Constitution", "Physical Sheltering", "Magical Sheltering",
+    "Healing Amplification", "Dodge", "Fortification"];
+  const { r: a2 } = await solve({ mlCap: 34, targets: [...contested, UTILITY_SENTINEL],
+    armorType: null, weaponSetup: null, classRace: null });
+  check("AE2: toggles are still secured when ranked stats contest the slots", () => {
+    assert.strictEqual(a2.status, "optimal");
+    const got = secured(a2);
+    assert.ok(TOGGLES.some((t) => got.includes(t)),
+      "under contention the count falls, but the toggles are what survive — " +
+      "the old roster returned five weapon procs and no toggle here");
+  });
+  // AE3 of the plan's Verification: the tier is pinned last, so it cannot buy an
+  // effect with a ranked point. This is the invariant the whole design rests on.
+  const { r: a2NoTier } = await solve({ mlCap: 34, targets: contested,
+    armorType: null, weaponSetup: null, classRace: null });
+  check("AE2: no ranked stat pays for a utility effect", () => {
+    for (const t of contested) {
+      assert.strictEqual(a2.perTarget[t], a2NoTier.perTarget[t],
+        `${t} moved when the tier was added — the tier is not pinned last`);
+    }
+  });
+  console.log(`    count ${a2.utilityCount}: ${secured(a2).join(", ")}`);
+
+  console.log("\n#343/AE3 — a weapon build loses nothing");
+  const { r: a3 } = await solve({ mlCap: 34, targets: ["Melee Power", "Doublestrike", UTILITY_SENTINEL],
+    armorType: null, weaponSetup: null, weaponStyle: "Two Handed", classRace: null });
+  check("AE3: the count does not fall for the build most exposed to losing the Banes", () => {
+    assert.strictEqual(a3.status, "optimal");
+    assert.ok(a3.utilityCount >= 15,
+      `a weapon build should keep its count (got ${a3.utilityCount}); the toggles replace the ` +
+      "Banes rather than reducing the total");
+    assert.ok(TOGGLES.some((t) => secured(a3).includes(t)), "and it gains toggles it never had");
+  });
+  console.log(`    count ${a3.utilityCount}: ${secured(a3).join(", ")}`);
+
   console.log(`\n${passed} passed`);
 })().catch((e) => { console.error(e); process.exit(1); });
