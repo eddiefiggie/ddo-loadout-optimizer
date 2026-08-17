@@ -903,7 +903,7 @@ def build() -> dict:
     # subtraction is exact. Stamped as metadata below; the app consumes the
     # stamp rather than re-deriving it.
     _utility_counting = utility_procs_mod.counting_set(
-        planner_records, _rankable_list, _uproc_allow)
+        planner_records, _rankable_list)
     # #91 (U3, KTD10) — the FULL presence-minus-magnitude population size, kept
     # beside the tier-1 restriction for the coverage disclosure: it states how
     # much of the derivable population v1 deliberately does not count yet.

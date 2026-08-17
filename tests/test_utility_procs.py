@@ -59,12 +59,12 @@ def _real_records():
     return recs
 
 
-def _real_counting_set(uproc_allow=frozenset()):
+def _real_counting_set():
     recs = _real_records()
     untyped_allow, _ = untyped_rankable.load(
         os.path.join(ROOT, "data", "seed", "compendium", "untyped_rankable.json"))
     rankable = build_dataset.rankable_affixes(recs, untyped_allow)
-    return utility_procs.counting_set(recs, rankable, uproc_allow), rankable
+    return utility_procs.counting_set(recs, rankable), rankable
 
 
 # ------------------------------------------------------------ the counting set
@@ -90,53 +90,62 @@ def test_a_bool_name_outside_tier1_does_not_count():
     # tier-1 list. Keen is a real Bool presence name (189 carriers) that passes
     # the presence predicate, and it still must not count in v1.
     recs = [_rec("A", "Boots", [_bool("Keen"), _bool("Ghost Touch")])]
-    assert utility_procs.counting_set(recs, [], set()) == ["Ghost Touch"]
+    assert utility_procs.counting_set(recs, []) == ["Ghost Touch"]
     assert "Keen" not in utility_procs.UTILITY_TIER1_PRESENCE
 
 
-def test_the_real_counting_set_is_tier1_plus_admitted_only():
-    # The shipped restriction, end to end: every counted name is either a
-    # tier-1 Bool name or an admitted untyped proc; the high-population tier-2
-    # names are out (derivable, not quarantined — nothing filed per name).
+def test_the_real_counting_set_is_tier1_only():
+    # #343 — the shipped restriction, end to end: every counted name is a tier-1
+    # Bool name. The admitted untyped procs used to be unioned in and were 24 of
+    # the 38 counted names; they no longer count. Tier-2 presence names remain
+    # out (derivable, not quarantined — nothing filed per name).
     allow, _ = utility_procs.load(SHARD)
-    counting, _ = _real_counting_set(allow)
-    assert set(counting) <= (utility_procs.UTILITY_TIER1_PRESENCE | allow)
-    for n in ("Keen", "Adamantine", "Returning", "Ghostly"):
+    counting, _ = _real_counting_set()
+    assert set(counting) <= utility_procs.UTILITY_TIER1_PRESENCE
+    for n in ("Keen", "Adamantine", "Returning"):
         assert n not in counting, n
     assert "Ghost Touch" in counting
-    assert allow <= set(counting), "the admitted-untyped union is unchanged"
+    # The worn defensive toggles are the point of #343.
+    for n in ("Ghostly", "True Seeing", "Blurry", "Freedom of Movement",
+              "Blindness Immunity", "Deathblock"):
+        assert n in counting, f"{n} is why this change exists"
+    assert not (allow & set(counting)), "no admitted untyped proc is counted any more"
 
 
 def test_a_sentence_or_clicky_bool_line_never_counts():
     recs = [_rec("A", "Boots", [_bool("Ghost Touch"),
                                 _bool("3 Charges (Recharged/Day: 3)"),
                                 _bool("This is a five word sentence")])]
-    out = utility_procs.counting_set(recs, [], set())
+    out = utility_procs.counting_set(recs, [])
     assert out == ["Ghost Touch"]
 
 
-def test_an_allowed_untyped_name_enters_the_counting_set_but_never_rankable():
+def test_an_allowed_untyped_name_is_no_longer_counted_and_still_not_rankable():
+    # #343 — an admitted untyped proc used to be unioned into the count. It is
+    # not any more. It also still must not reach rankable_affixes, which would
+    # hand it the declared-credit control (KTD4) — that half is unchanged.
     recs = [_rec("Sword A", "Weapon", [_untyped("Holy", "6")]),
             _rec("Sword B", "Weapon", [_untyped("Holy", "6")])]
-    counting = utility_procs.counting_set(recs, [], {"Holy"})
-    assert "Holy" in counting
-    # NOT rankable_affixes: an admitted proc must never gain the declared-credit
-    # control (KTD4) — rankable_affixes never sees the utility allow-list.
+    assert "Holy" not in utility_procs.counting_set(recs, [])
     assert "Holy" not in build_dataset.rankable_affixes(recs)
+    # But it stays ADMITTED, which is what keeps it rankable in the picker.
+    allow, _ = utility_procs.load(SHARD)
+    assert "Holy" in allow, "removing it from the allow list would drop it from the picker"
 
 
 def test_a_quarantined_name_counts_zero():
     recs = [_rec("Sword A", "Weapon", [_untyped("Holy", "6"), _bool("Ghost Touch")]),
             _rec("Sword B", "Weapon", [_untyped("Holy", "6")])]
-    # Quarantine = not in the allow set handed to counting_set. AE5 at the
-    # pipeline layer: the unreviewed name contributes nothing.
-    assert utility_procs.counting_set(recs, [], set()) == ["Ghost Touch"]
+    # #343 — untyped procs no longer count at all, reviewed or not, so this
+    # holds a fortiori. Kept because it also pins that a Bool name beside them
+    # still counts normally.
+    assert utility_procs.counting_set(recs, []) == ["Ghost Touch"]
 
 
 def test_the_counting_set_values_arrive_as_strings():
     # Dataset values are strings ('1', '3') — the derivation must not assume ints.
     recs = [_rec("A", "Weapon", [_untyped("Holy", "6"), _bool("Ghost Touch", "1")])]
-    assert utility_procs.counting_set(recs, [], {"Holy"}) == ["Ghost Touch", "Holy"]
+    assert utility_procs.counting_set(recs, []) == ["Ghost Touch"]
 
 
 # ------------------------------------------------------------- candidate rule
@@ -283,7 +292,10 @@ def test_the_built_dataset_stamps_the_counting_vocabulary():
     assert "Ghost Touch" in counting
     for n in DUAL_NATURE:
         assert n not in counting, n
-    assert set(admitted) <= set(counting)
+    # #343 — admitted untyped procs are no longer counted. They stay ADMITTED
+    # (the stamp is unchanged) because the picker reads it to make them
+    # individually rankable; only the counting union went away.
+    assert not (set(admitted) & set(counting))
     assert not set(admitted) & set(meta["rankable_affixes"])
     allow, quarantined = utility_procs.load(SHARD)
     assert sorted(allow) == admitted
@@ -299,7 +311,7 @@ def test_the_built_dataset_stamps_the_counting_vocabulary():
 
 def test_no_quarantined_name_leaks_into_the_shipping_counting_set():
     _, quarantined = utility_procs.load(SHARD)
-    counting, _ = _real_counting_set(utility_procs.load(SHARD)[0])
+    counting, _ = _real_counting_set()
     # A quarantined UNTYPED name stays out of the counting set. NB some names
     # (Holy) also ship a Bool line on a few items — those count via the
     # presence half by design (R5); the quarantine governs only the untyped

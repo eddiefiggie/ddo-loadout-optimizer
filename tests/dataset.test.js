@@ -1625,21 +1625,28 @@ test("#91: the built catalog stamps a real counting set", () => {
   }
 });
 
-// #91 (U3, KTD10) — the perf-gate fallback: the Bool half of the counting set
-// is restricted to the curated tier-1 list; high-population tier-2 names are
-// derivable-but-uncounted in v1 (widening happens in measured batches).
-test("#91/KTD10: tier-2 presence names are OUT of the stamped counting set; tier-1 and admitted procs are IN", () => {
+// #91 (U3, KTD10) — the perf-gate fallback: the counting set is restricted to
+// the curated tier-1 list; high-population tier-2 names are
+// derivable-but-uncounted (widening happens in measured batches).
+// #343 — the curation changed shape: the worn defensive toggles joined tier-1,
+// and the admitted untyped procs left the count entirely.
+test("#343: tier-2 names are OUT of the stamped counting set; tier-1 is IN and admitted procs are not", () => {
   const v = builtVocab();
   if (!v) return console.log("  (skipped — web/data/items.json not built)");
-  for (const n of ["Keen", "Adamantine", "Returning", "Ghostly"]) {
-    assert.ok(!v.utilityCounting.has(n), `tier-2 ${n} does not count in v1`);
+  for (const n of ["Keen", "Adamantine", "Returning"]) {
+    assert.ok(!v.utilityCounting.has(n), `tier-2 ${n} does not count`);
   }
   for (const n of ["Ghost Touch", "Whelming Shockwave", "Blunt Trauma", "Lesser Boneshatter", "Feather Falling"]) {
     assert.ok(v.utilityCounting.has(n), `tier-1 ${n} counts`);
   }
-  // The admitted-untyped union is unchanged by the tiering.
+  // The worn defensive toggles are why #343 exists.
+  for (const n of ["Ghostly", "True Seeing", "Blurry", "Freedom of Movement", "Blindness Immunity", "Deathblock"]) {
+    assert.ok(v.utilityCounting.has(n), `worn toggle ${n} counts — this is the reported bug`);
+  }
+  // The admitted untyped procs are no longer counted, but stay picker-rankable.
   for (const n of ["Holy", "Vampirism", "Giant Bane"]) {
-    assert.ok(v.utilityCounting.has(n), `admitted untyped proc ${n} counts`);
+    assert.ok(!v.utilityCounting.has(n), `admitted untyped proc ${n} no longer counts`);
+    assert.ok(v.suggestions.includes(n), `${n} is still offered in the picker`);
   }
 });
 

@@ -494,6 +494,17 @@ const UTILITY_TIER1_PRESENCE = new Set([
   "Lesser Boneshatter",
   // The classic always-on utility archetype, pinned expected-in since U1:
   "Feather Falling",
+  // #343 — the worn defensive toggles. Feather Falling above was the only one of
+  // this archetype the original curation caught, which is exactly the bug: the
+  // tier filled leftover slots with weapon procs and never reached for the
+  // effects players actually notice. These six are the reported case (Ghostly,
+  // True Seeing) plus their obvious peers.
+  "Ghostly",
+  "True Seeing",
+  "Blurry",
+  "Freedom of Movement",
+  "Blindness Immunity",
+  "Deathblock",
   // The PRESENCE_ALLOW wiki-adjudicated named effects:
   "Kick 'Em While They're Down",
   "Way of the Sun Soul",

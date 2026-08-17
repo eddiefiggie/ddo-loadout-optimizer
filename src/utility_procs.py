@@ -79,6 +79,17 @@ UTILITY_TIER1_PRESENCE = frozenset({
     "Blunt Trauma",
     "Lesser Boneshatter",
     "Feather Falling",
+    # #343 — the worn defensive toggles. Feather Falling above was the only one
+    # of this archetype the original curation caught, which is exactly the bug:
+    # the tier filled leftover slots with weapon procs and never reached for the
+    # effects players actually notice. These six are the reported case (Ghostly,
+    # True Seeing) plus their obvious peers.
+    "Ghostly",
+    "True Seeing",
+    "Blurry",
+    "Freedom of Movement",
+    "Blindness Immunity",
+    "Deathblock",
 }) | PRESENCE_ALLOW
 
 
@@ -108,23 +119,30 @@ def presence_counting_names(records) -> set:
     return out
 
 
-def counting_set(records, rankable, untyped_admitted) -> list:
-    """`metadata.utility_counting_set`: (Bool presence names passing
-    presence-minus-magnitude, RESTRICTED to the curated tier-1 list) ∪
-    (allow-dispositioned untyped proc names). Sorted.
+def counting_set(records, rankable) -> list:
+    """`metadata.utility_counting_set`: Bool presence names passing
+    presence-minus-magnitude, RESTRICTED to the curated tier-1 list. Sorted.
+
+    #343 — the allow-dispositioned untyped procs (the Bane family, Holy,
+    Vampirism, Maiming, Chilling…) used to be unioned in here, and they were 24
+    of the 38 counted names and 86% of the measured cost. A Bane proc is a
+    damage-type decision belonging to the weapon choice, not something a player
+    experiences as one of 24 distinct wins, so the count no longer includes
+    them. They are deliberately NOT removed from `utility_untyped_admitted`,
+    whose other consumer is the picker: a player can still rank Undead Bane as
+    an ordinary priority. They stopped being counted, not being available.
 
     KTD10 — the tier-1 intersection is the measured-batch lever: the full
     presence population failed U3's perf gate, so v1 counts only the curated
     subset; widening happens by growing UTILITY_TIER1_PRESENCE in measured
-    batches. The untyped-admitted union is unchanged.
+    batches.
 
     The magnitude subtraction is what drops the four dual-nature names
     (Deception, Smoke Screen, Protection from Evil, Underwater Action) — they
     ship a Bool line on some items and a real rankable magnitude on others, and
     their value is already expressible as a ranked stat (R5)."""
-    return sorted(((presence_counting_names(records) & UTILITY_TIER1_PRESENCE)
-                   - set(rankable or ()))
-                  | set(untyped_admitted or ()))
+    return sorted((presence_counting_names(records) & UTILITY_TIER1_PRESENCE)
+                  - set(rankable or ()))
 
 
 def candidates(records) -> dict:
