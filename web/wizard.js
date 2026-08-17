@@ -109,11 +109,6 @@ var _rungExcludesAllAugments = (typeof rungExcludesAllAugments !== "undefined")
   ? rungExcludesAllAugments
   // eslint-disable-next-line global-require
   : require("./model.js").rungExcludesAllAugments;
-var _craftingRungs = (typeof CRAFTING_RUNGS !== "undefined")
-  ? CRAFTING_RUNGS
-  // eslint-disable-next-line global-require
-  : require("./model.js").CRAFTING_RUNGS;
-
 /** #346 (U3, KTD3) — which rung a saved character loads at.
  *
  *  Extracted and exported because this is the highest-consequence line in the

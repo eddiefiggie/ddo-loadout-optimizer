@@ -1758,12 +1758,20 @@ test("#346: the zero-source notice names the rung when one is excluding augments
   assert.match(plain, /widening the ML band/, "with no rung set, the advice is unchanged");
   assert.ok(!/solver assume/.test(plain), "and it does not blame a ladder the player never moved");
 
-  for (const rung of ["no-solar-lunar", "printed-only"]) {
-    const withRung = R.zeroSourceNotice({ targets: ["Strikethrough"], craftingRung: rung }, result, model, dataset);
-    assert.match(withRung, /which exclude augments/, `${rung} names the cause`);
-    assert.match(withRung, /raising "What may the solver assume/, `${rung} points at the control`);
+  // Each rung names what it ACTUALLY removed: claiming the Solar/Lunar rung
+  // "excludes augments" would send the player up two rungs to fix a problem one
+  // rung solves.
+  const solarLunar = R.zeroSourceNotice({ targets: ["Strikethrough"], craftingRung: "no-solar-lunar" }, result, model, dataset);
+  assert.match(solarLunar, /which exclude Solar\/Lunar Gems/, "the middle rung names only what it removed");
+  assert.ok(!/which exclude augments/.test(solarLunar), "and does not overclaim");
+
+  const bottom = R.zeroSourceNotice({ targets: ["Strikethrough"], craftingRung: "printed-only" }, result, model, dataset);
+  assert.match(bottom, /which exclude augments/, "the bottom rung did remove them all");
+
+  for (const withRung of [solarLunar, bottom]) {
+    assert.match(withRung, /raising "What may the solver assume/, "points at the control");
     assert.ok(!/widening the ML band/.test(withRung),
-      `${rung} does not send the player after their ML band instead`);
+      "does not send the player after their ML band instead");
   }
 
   const niche = R.zeroSourceNotice({ targets: ["Strikethrough"], craftingRung: "no-niche-crafting" }, result, model, dataset);

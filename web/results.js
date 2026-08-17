@@ -16,6 +16,8 @@ const _resultsRung = (typeof craftingRung !== "undefined") ? craftingRung
   : (typeof require !== "undefined" ? require("./model.js").craftingRung : () => "everything");
 const _resultsRungExcludesSolarLunar = (typeof rungExcludesSolarLunar !== "undefined") ? rungExcludesSolarLunar
   : (typeof require !== "undefined" ? require("./model.js").rungExcludesSolarLunar : () => false);
+const _resultsRungExcludesAllAugments = (typeof rungExcludesAllAugments !== "undefined") ? rungExcludesAllAugments
+  : (typeof require !== "undefined" ? require("./model.js").rungExcludesAllAugments : () => false);
 // U8 (R8) — bound like every other shared primitive. `renderResults` /
 // `equippedBody` / `loadoutDeepDive` run against the LIVE solve result and have no
 // saved record, so they cannot reach the collapse through `Proj.project(rec)`;
@@ -913,9 +915,14 @@ function zeroSourceNotice(query, result, model, dataset) {
     // (Strikethrough, Sneak Attack Dice, Imbue Dice, ...), so a lowered rung is
     // the likeliest cause of a zero here — and telling that player to widen
     // their ML band is advice that cannot work.
-    const rungRestricts = _resultsRungExcludesSolarLunar(_resultsRung(query || {}));
+    const rung = _resultsRung(query || {});
+    // Name what the rung ACTUALLY removed. The Solar/Lunar rung still admits
+    // every other colour, so claiming it "excludes augments" would send the
+    // player up two rungs to fix a problem one rung solves.
+    const rungRestricts = _resultsRungExcludesSolarLunar(rung);
+    const removed = _resultsRungExcludesAllAugments(rung) ? "augments" : "Solar/Lunar Gems";
     const where = owned ? "your owned-gear pool"
-      : rungRestricts ? "your current filters, which exclude augments" : "your current filters";
+      : rungRestricts ? `your current filters, which exclude ${removed}` : "your current filters";
     const fix = owned ? "the full catalog may have one"
       : rungRestricts ? `raising "What may the solver assume beyond the printed item?" may reach `
         + (filtered.length > 1 ? "them" : "it")
