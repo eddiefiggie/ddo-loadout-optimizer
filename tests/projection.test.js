@@ -1134,3 +1134,35 @@ test("#346: the owned-set clause counts a Set and an array identically", () => {
     assert.ok(!/Augment Set/.test(line(junk)), `${JSON.stringify(junk)} counts as none, does not throw`);
   }
 });
+
+// #346 — the ladder notice, read from a record built by the REAL production
+// writer rather than a hand-shaped fixture.
+//
+// docs/solutions/conventions/fixture-shape-must-mirror-the-production-writer.md
+// (2026-08-16, from #339's postmortem): serializeCharacter stores `query` as a
+// top-level SIBLING of `snapshot`, and RESULT_KEEP never admits a `query` key
+// into the snapshot, so the nested shape cannot exist on a real saved character.
+// Every other #346 test here hand-builds `snapshot.query` and therefore only
+// ever exercises the fallback branch — the same blind spot that let the #339
+// disclosure ship rendering nowhere while four dedicated tests passed. This one
+// goes through serializeCharacter so the `rec.query` read is actually guarded.
+test("#346: the notice reads a record built by serializeCharacter, not a hand-shaped fixture", () => {
+  const Store = require("../web/persist.js");
+  const W = require("../web/wizard.js");
+  const state = { ml: 34, race: "Human", armor: "", oath: "", alignment: "", style: "",
+    weaponTypes: [], offHand: [], offHandWeapons: [], priorities: ["Constitution"],
+    slotConstraints: {}, craftingRung: "printed-only",
+    ownedSetAugments: new Set(["Perfect Silence"]) };
+  const query = W.buildQuery(state);
+  const rec = Store.serializeCharacter("Real", state,
+    { query, result: { status: "optimal", chosen: [], perTarget: {}, breakdown: {}, augmentsPlaced: [] } }, "b1");
+
+  assert.ok(!("query" in rec.snapshot),
+    "the real writer never nests query inside the snapshot — if this flips, the other fixtures became valid and this test is moot");
+  assert.strictEqual(typeof rec.query, "object", "it is a top-level sibling");
+
+  const line = P.craftingExcludedLine(rec);
+  assert.match(line, /nothing beyond what is printed/, "the rung is read from rec.query");
+  assert.match(line, /Augment Set you marked as owned was unavailable/,
+    "and the owned-set count survives the real save path's Set-to-array conversion");
+});
