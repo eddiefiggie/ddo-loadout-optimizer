@@ -72,7 +72,7 @@ A structured `(stat, bonus_type, value)` carried by an equippable item, gated si
 An effect placed into a colored slot on an equipped item. Modeled by **aggregate per-color capacity** — total placements of a color are bounded by the open slots of that color across equipped items, not tied to a specific physical slot until reconstructed for display.
 
 ### Multi-fit
-The wiki's augment color-compatibility matrix, baked onto every augment record as `fits_slots` at build time: a Colorless augment fits the seven standard slot colors, a primary color fits its own slot plus its secondaries, Moon/Sun fit only their own. The single eligibility source for where any augment — including a Set Augment copy — may be placed; no placement path may hold a parallel color rule.
+The wiki's augment color-compatibility matrix, baked onto every augment record as `fits_slots` at build time: a Colorless augment fits the seven standard slot colors, a primary color fits its own slot plus its secondaries, Moon/Sun fit only their own. Moon and Sun are the catalog's colors for the **Lunar and Solar Gem** family (77 and 146 records), so an isolated-fit color and a single named acquisition line coincide there and nowhere else. The single eligibility source for where any augment — including a Set Augment copy — may be placed; no placement path may hold a parallel color rule.
 
 ### Set bonus
 A tier of stats that activates only when at least a threshold number of pieces of a named set are equipped. Its stats are gated by a piece-count indicator, so a set completes only when doing so advances a ranked target. The "N pieces" a surface reports is this **threshold**, not a count of the player's equipped members.

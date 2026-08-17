@@ -19,6 +19,26 @@
   const UTILITY_NAME = (typeof UTILITY_SENTINEL !== "undefined") ? UTILITY_SENTINEL
     : (typeof require !== "undefined" ? require("./model.js").UTILITY_SENTINEL : "Utility effects");
 
+  // #346 (U4) — the ladder's normalizer, over the same bridge. Fails open to the
+  // top rung so a hand-edited backup produces a wrong-but-harmless notice rather
+  // than throwing inside the projection every surface reads from.
+  const _rungOf = (typeof craftingRung !== "undefined") ? craftingRung
+    : (typeof require !== "undefined" ? require("./model.js").craftingRung : () => "everything");
+  const _isSolarLunarColor = (typeof isSolarLunarColor !== "undefined") ? isSolarLunarColor
+    : (typeof require !== "undefined" ? require("./model.js").isSolarLunarColor
+      : (c) => c === "Sun" || c === "Moon");
+
+  /** Size of a collection that reaches this layer as a Set (live query) or an
+   *  array (saved record). Returns 0 for absent/unrecognized shapes rather than
+   *  throwing — a projection feeding five surfaces must not die on a hand-edited
+   *  backup. */
+  function _countOf(c) {
+    if (!c) return 0;
+    if (typeof c.size === "number") return c.size;      // Set / Map
+    if (Array.isArray(c)) return c.length;
+    return 0;
+  }
+
   // ---- pure primitives (moved verbatim from results.js so there is one definition) ----
 
   // The key each expansion family stamps on every affix it emits, naming the
@@ -542,12 +562,71 @@
    *  program, so a restored character discloses identically without re-solving. */
   function craftingExcludedLine(rec) {
     const snap = (rec && rec.snapshot) || rec || {};
-    const q = snap.query || {};
+    const q = (rec && rec.query) || snap.query || {};
     const inputs = (rec && rec.inputs) || {};
-    if (!q.excludeCraftingSystems && !inputs.excludeCraftingSystems) return null;
-    return "Niche crafting was excluded from this solve: Viktranium experiments, "
-      + "Sealed-in-X seals, Nearly Completed, Dinosaur Bone crafting, and "
-      + "set-bonus crafting were not considered. Regular augments still were.";
+    // #346 (U4) — one shared precedence for the whole app (model.js): a stored
+    // rung wins wherever it lives, and the legacy boolean speaks only when no
+    // rung exists. Reading the solved query first and the saved inputs second is
+    // this caller's shape; the RULE is not restated here.
+    const rung = _rungOf(q, inputs);
+
+    // #346 (U5, R11) — a mechanic the rung made UNREACHABLE is named, not
+    // silently omitted. Augment Sets are the motivating case: they are set-bonus
+    // crafting, so every rung from no-niche-crafting down clears them. A player
+    // who never marked one owned would not miss them, so this only speaks to a
+    // player whose own opt-in was overridden by the rung.
+    // Count through one shape-tolerant helper. `ownedSetAugments` is a Set on the
+    // LIVE path (results.js forwards the solved query straight in as `inputs`)
+    // and a plain array on the SAVED path (pickInputs converts it for JSON). An
+    // array-only `.length` read made this clause render in every export and never
+    // in the app — R11 half-shipped, with the tests exercising only the saved
+    // shape they were written from.
+    const ownedSets = _countOf(inputs.ownedSetAugments) || _countOf(q.ownedSetAugments);
+    const setsClause = ownedSets
+      ? ` The ${ownedSets === 1 ? "Augment Set you marked as owned was" : `${ownedSets} Augment Sets you marked as owned were`} unavailable at this setting, not merely outscored.`
+      : "";
+
+    if (rung === "no-niche-crafting") {
+      return "Niche crafting was excluded from this solve: Viktranium experiments, "
+        + "Sealed-in-X seals, Nearly Completed, Dinosaur Bone crafting, and "
+        + "set-bonus crafting were not considered. Augments still were." + setsClause;
+    }
+    if (rung === "no-solar-lunar") {
+      return "Niche crafting and Solar/Lunar Gems were excluded from this solve. "
+        + "Ordinary colour augments were still considered." + setsClause;
+    }
+    if (rung === "printed-only") {
+      return "This solve used nothing beyond what is printed on each item: no "
+        + "niche crafting and no augments of any colour were considered." + setsClause;
+    }
+    // Top rung. R9 — the notice is the discovery path for the control, so it
+    // speaks here too rather than staying silent. It reports what the loadout
+    // LEANS ON that a lower rung would take away, which is a fact about the
+    // solve and not about the query — hence the snapshot read.
+    const augs = (snap.augmentsPlaced || []).length;
+    // R9 — the notice is the discovery path for the control, so it has to count
+    // everything a lower rung would take away, not just augments. A build leaning
+    // entirely on Viktranium or seals is exactly the player who most needs to know
+    // the ladder exists, and counting augments alone left them with no notice.
+    const crafts = ["vikPlaced", "sealPlaced", "ncPlaced", "dinoPlaced", "tfPlaced",
+      "gsPlaced", "membershipPlaced", "setAugmentsPlaced"]
+      .reduce((n, k) => n + ((snap[k] || []).length), 0);
+    if (!augs && !crafts) return null;   // nothing to give up; no advice worth crowding the results with
+    const gems = (snap.augmentsPlaced || [])
+      .filter((a) => a && _isSolarLunarColor(a.color)).length;
+    const parts = [];
+    if (gems) parts.push(`${gems} Solar/Lunar Gem${gems === 1 ? "" : "s"}`);
+    // "other" only earns its place once the gems have been named — with no gems
+    // in the sentence there is nothing for these to be other THAN.
+    const rest = augs - gems;
+    if (rest) parts.push(`${rest} ${gems ? "other " : ""}augment${rest === 1 ? "" : "s"}`);
+    if (crafts) parts.push(`${crafts} crafted option${crafts === 1 ? "" : "s"}`);
+    const listed = parts.length > 1
+      ? `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`
+      : parts[0];
+    const lead = gems ? `This loadout leans on ${listed}` : `This loadout uses ${listed}`;
+    return `${lead}. If you would rather not craft or buy them, lower "What may the `
+      + `solver assume beyond the printed item?" and re-solve.`;
   }
 
   /** #339 — the augment-ceiling scope disclosure (null when unrestricted). Reads

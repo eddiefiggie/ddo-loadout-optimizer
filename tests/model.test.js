@@ -1587,11 +1587,12 @@ test("#235: an untyped affix and an explicit Untyped one keep separate buckets, 
 console.log(`\n${passed} passed`);
 
 // ---------------------------------------------------------------------------
-// #245 — the niche-crafting opt-out. A craftable option slot makes its host a
-// wildcard for every rankable stat, so the flag must empty the option-pool
-// families at the model seam — and must change NOTHING when off.
+// #346 (U1) — the crafting/augment ladder that replaced #245's boolean. A
+// craftable option slot makes its host a wildcard for every rankable stat, so
+// the niche-crafting rung must empty the option-pool families at the model seam
+// — and the top rung must change NOTHING.
 
-test("#245: excludeCraftingSystems empties the option-pool families", () => {
+test("#346: the no-niche-crafting rung empties the option-pool families", () => {
   const host = v("Host", "Ring", [["Intelligence", "Enhancement", 5]]);
   const vik = { slot_type: "Melancholic", category: "accessory", tier: "legendary",
     affixes: [{ stat: "Intelligence", value: 7, bonus_type: "Insight" }] };
@@ -1604,19 +1605,144 @@ test("#245: excludeCraftingSystems empties the option-pool families", () => {
   const off = M.buildModel([host], q, [dino], [nc], [vik], [seal], defs, [], [], defs);
   assert.ok(off.viktranium.length && off.seal.length && off.nearlyComplete.length
     && off.dinoInserts.length && Object.keys(off.membershipSetDefs).length,
-    "flag off: every family pool survives (today's behavior)");
+    "top rung: every family pool survives (today's behavior)");
 
-  const on = M.buildModel([host], { ...q, excludeCraftingSystems: true },
+  const on = M.buildModel([host], { ...q, craftingRung: "no-niche-crafting" },
     [dino], [nc], [vik], [seal], defs, [], [], defs);
   assert.deepStrictEqual(
     [on.viktranium, on.seal, on.nearlyComplete, on.dinoInserts, on.thunderForged, on.greenSteel],
-    [[], [], [], [], [], []], "flag on: every option pool is empty");
+    [[], [], [], [], [], []], "rung on: every option pool is empty");
   assert.deepStrictEqual(on.membershipSetDefs, {}, "chosen set-membership crafting is off");
   assert.deepStrictEqual(on.augment_set_defs, {}, "set-bonus augments (Dino crafting) are off");
   // the host itself still competes on its printed affixes
   const ring = on.worn.find((s) => s.slot === "Ring");
   assert.ok(ring && ring.variants.some((x) => x.source_item === "Host"),
     "the host item itself is not excluded — only its craft options are");
+});
+
+// #346 (U1) — the ladder's rank table is the ONLY place ordering lives, and an
+// unreadable value must fail open to the top rung rather than throw. A
+// hand-edited backup is the realistic source of a bad value.
+test("#346: rung normalization fails open to the top rung", () => {
+  // Inherited Object.prototype keys are the interesting case: a plain-object
+  // rank table answered `!= null` for every one of them, so "constructor"
+  // sanitized to itself, persisted, and then ranked as a Function.
+  for (const bad of [undefined, null, "", "nonsense", 3, {}, "Everything",
+    "constructor", "toString", "__proto__", "hasOwnProperty", "valueOf"]) {
+    assert.strictEqual(M.normalizeRung(bad), "everything", `${JSON.stringify(bad)} reads as the top rung`);
+    assert.strictEqual(M.craftingRungRank(bad), 0, `${JSON.stringify(bad)} ranks as the top rung`);
+    assert.strictEqual(typeof M.craftingRungRank(bad), "number", `${JSON.stringify(bad)} ranks to a NUMBER`);
+  }
+  for (const good of M.CRAFTING_RUNGS) {
+    assert.strictEqual(M.normalizeRung(good), good, `${good} round-trips`);
+  }
+  assert.strictEqual(M.craftingRung({ craftingRung: "printed-only" }), "printed-only");
+  assert.strictEqual(M.craftingRung({}), "everything", "an absent rung reads as the top rung");
+});
+
+// #346 (U1) — the model seam honours the legacy boolean, like every other reader
+// of the ladder. It drifted once: the wizard load path, persistence, and the
+// projection notice all applied this precedence while buildModel did not, so a
+// query carrying only the old boolean solved with the craftable option pools
+// fully live — the exact opposite of what that boolean meant.
+test("#346: the model seam honours the legacy boolean when no rung is stored", () => {
+  assert.strictEqual(M.craftingRung({ excludeCraftingSystems: true }), "no-niche-crafting");
+  assert.strictEqual(M.craftingRung({ excludeCraftingSystems: false }), "everything");
+  assert.strictEqual(M.craftingRung({ craftingRung: "printed-only", excludeCraftingSystems: true }),
+    "printed-only", "a stored rung still wins over a stale boolean");
+
+  // And it reaches the pools, not just the accessor.
+  const host = v("Host", "Ring", [["Intelligence", "Enhancement", 5]]);
+  const vik = { slot_type: "Melancholic", category: "accessory", tier: "legendary",
+    affixes: [{ stat: "Intelligence", value: 7, bonus_type: "Insight" }] };
+  const legacy = M.buildModel([host], { mlCap: 34, targets: ["Intelligence"], excludeCraftingSystems: true },
+    [], [], [vik], [], {}, [], [], {});
+  assert.deepStrictEqual(legacy.viktranium, [],
+    "a legacy-only query empties the option pools at the model seam");
+});
+
+// #346 (U1) — the three predicates ARE the ladder's monotonicity. If a rung ever
+// stops implying every exclusion above it, the ladder's promise that no
+// selection can contradict itself is broken.
+test("#346: each rung excludes strictly more than the one above it", () => {
+  const rows = M.CRAFTING_RUNGS.map((r) => [
+    M.rungExcludesNicheCrafting(r), M.rungExcludesSolarLunar(r), M.rungExcludesAllAugments(r),
+  ]);
+  assert.deepStrictEqual(rows, [
+    [false, false, false],   // everything
+    [true, false, false],    // no-niche-crafting
+    [true, true, false],     // no-solar-lunar
+    [true, true, true],      // printed-only
+  ]);
+  for (let i = 1; i < rows.length; i++) {
+    for (let c = 0; c < 3; c++) {
+      assert.ok(!(rows[i - 1][c] && !rows[i][c]),
+        `rung ${M.CRAFTING_RUNGS[i]} must not re-admit what ${M.CRAFTING_RUNGS[i - 1]} excluded`);
+    }
+  }
+});
+
+// #346 (U1) — the augment rungs live in eligible(), the same choke point the
+// #339 ceiling uses, so the augment pool / placement / alternatives / browse
+// reason all inherit them. Colors other than Sun and Moon must survive the
+// Solar/Lunar rung: that rung is about one acquisition line, not augments at
+// large.
+test("#346: the Solar/Lunar rung removes Sun and Moon and keeps every other color", () => {
+  const augOf = (name, color) => Object.assign(
+    v(name, "Augment", [["Intelligence", "Enhancement", 5]], { category: "augment", ml: 10 }),
+    { aug_color: { color, raw: color, reason: null } });
+  const sun = augOf("Solar Gem of Test", "Sun");
+  const moon = augOf("Lunar Gem of Test", "Moon");
+  const blue = augOf("Sapphire of Test", "Blue");
+  const colorless = augOf("Diamond of Test", "Colorless");
+  const q = { mlCap: 34, targets: ["Intelligence"] };
+
+  const keep = (rung) => [sun, moon, blue, colorless]
+    .filter((a) => M.variantConflict(a, { ...q, craftingRung: rung }) == null)
+    .map((a) => a.variant_id);
+
+  assert.deepStrictEqual(keep("everything").length, 4, "top rung keeps every augment");
+  assert.deepStrictEqual(keep("no-niche-crafting").length, 4,
+    "the niche-crafting rung does not touch augments — that was the old boolean's documented carve-out");
+  assert.deepStrictEqual(keep("no-solar-lunar"), ["Sapphire of Test", "Diamond of Test"],
+    "only Sun and Moon leave");
+  assert.deepStrictEqual(keep("printed-only"), [], "the bottom rung removes every augment");
+
+  // The reason string is player-facing (browse shows it) — it must name the
+  // control the player set, not an internal rung id.
+  assert.match(M.variantConflict(sun, { ...q, craftingRung: "no-solar-lunar" }), /Solar\/Lunar/);
+  assert.match(M.variantConflict(blue, { ...q, craftingRung: "printed-only" }), /without augments/);
+});
+
+// #346 (U1) — worn gear is NEVER touched by the augment rungs. The bottom rung
+// means "each item wins on what is printed on it", not "fewer items".
+test("#346: the augment rungs leave worn gear untouched", () => {
+  const ring = v("Ring of Test", "Ring", [["Intelligence", "Enhancement", 5]]);
+  for (const rung of M.CRAFTING_RUNGS) {
+    assert.strictEqual(M.variantConflict(ring, { mlCap: 34, targets: ["Intelligence"], craftingRung: rung }), null,
+      `worn gear survives the ${rung} rung`);
+  }
+});
+
+// #346 (U1) — Augment Sets need no augment-rung handling of their own: they are
+// set-bonus crafting, cleared at the no-niche-crafting rung, and the ladder
+// nests so every augment-excluding rung inherits that. Pinned as a test because
+// the plan's acceptance example reads as though the BOTTOM rung is what removes
+// them — it is not, and a future edit that "restores" sets on a middle rung
+// would break the ladder's monotonicity.
+test("#346: augment sets are cleared from the no-niche-crafting rung down", () => {
+  const host = v("Host", "Ring", [["Intelligence", "Enhancement", 5]]);
+  const defs = { "Some Aug Set": { tiers: [{ pieces_required: 3, affixes: [{ stat: "Intelligence", bonus_type: "Artifact", value: 6 }] }] } };
+  // The family is opt-in: an unowned set is inert regardless of rung, so the
+  // fixture must mark it owned or the rung's effect is unobservable.
+  const q = { mlCap: 34, targets: ["Intelligence"], ownedSetAugments: new Set(["Some Aug Set"]) };
+  const at = (rung) => Object.keys(
+    M.buildModel([host], { ...q, craftingRung: rung }, [], [], [], [], {}, [], [], defs).augment_set_defs);
+
+  assert.deepStrictEqual(at("everything"), ["Some Aug Set"], "the top rung keeps the set");
+  for (const rung of ["no-niche-crafting", "no-solar-lunar", "printed-only"]) {
+    assert.deepStrictEqual(at(rung), [], `${rung} has no augment sets`);
+  }
 });
 
 // ---------------------------------------------------------------------------

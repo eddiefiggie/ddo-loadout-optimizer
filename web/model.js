@@ -27,6 +27,83 @@ const ARMOR_DODGE_CAP = { cloth: 25, light: 25, medium: 11, heavy: 4 };
 // fix), same as pinnedVariantIds/normalizeCredits above it in that file.
 var UTILITY_SENTINEL = "Utility effects";
 
+// #346 (U1, KTD1/KTD2) — the crafting-and-augment ladder. One ordered control
+// replaced the #245 `excludeCraftingSystems` boolean: each rung removes strictly
+// more than the one above it, so no combination of settings can contradict
+// itself and the bottom rung finally reaches the printed-only outcome the old
+// checkbox's own help text described but could not deliver.
+//
+// Stored as a STRING on the query, never an integer: saved characters and backup
+// files are JSON a player can read, and `printed-only` survives inspection where
+// `3` does not. The ordering lives in ONE rank table — callers ask the three
+// predicates below, never compare the stored value directly, so inserting a rung
+// later cannot silently re-order anyone's saved setting.
+//
+// `var`, not `const`: projection.js and wizard.js read these as browser globals
+// via the documented cross-runtime bridge (model.js loads before both), the same
+// mechanism UTILITY_SENTINEL uses above.
+// The array IS the rank table — index is rank, so the two cannot drift and there
+// is no lookup object to be poisoned. A plain `{}` rank map answered `true` for
+// inherited keys (`normalizeRung("constructor")` returned "constructor", and the
+// rank came back as a Function), so a hand-edited backup could persist a value
+// that passed the sanitizer and then compared as neither excluded nor valid.
+var CRAFTING_RUNGS = [
+  "everything",          // today's default — nothing excluded
+  "no-niche-crafting",   // exactly the old boolean's `true`
+  "no-solar-lunar",      // + Sun/Moon augments (the Solar/Lunar Gem family)
+  "printed-only",        // + every remaining augment
+];
+
+/** Normalize a raw rung value. An absent, unrecognized, or hand-edited value
+ *  reads as `everything` rather than throwing — the same fail-open posture #245
+ *  used for its absent boolean. This is the load-boundary sanitizer: the wizard
+ *  state, a restored save, and a hand-edited backup all pass through it. */
+function normalizeRung(value) {
+  return (typeof value === "string" && CRAFTING_RUNGS.indexOf(value) !== -1) ? value : "everything";
+}
+/** THE one implementation of the rung-vs-legacy-boolean precedence: a stored rung
+ *  always wins, and the `excludeCraftingSystems` boolean speaks only when no rung
+ *  exists anywhere. Every reader goes through here — the model seam, the wizard's
+ *  load path, and the projection notice — because writing the rule three times is
+ *  what let the model seam drift out of agreement with the other two, solving a
+ *  legacy-only query with the craftable option pools fully live.
+ *
+ *  Takes two sources so one function serves every caller's shape: `primary` is
+ *  the query (model, projection) or the saved inputs (wizard load), and
+ *  `fallback` is the second place a caller may find either field — projection
+ *  reads a solved query AND the saved inputs, and whichever carries the rung
+ *  wins over whichever carries only the boolean. */
+function craftingRung(primary, fallback) {
+  const a = primary || {}, b = fallback || {};
+  if (a.craftingRung != null) return normalizeRung(a.craftingRung);
+  if (b.craftingRung != null) return normalizeRung(b.craftingRung);
+  return (a.excludeCraftingSystems || b.excludeCraftingSystems) ? "no-niche-crafting" : "everything";
+}
+
+/** The Solar/Lunar Gem family by catalog colour. Named once so the eligibility
+ *  gate, the results attribution, and the notice's gem count cannot disagree
+ *  about what "Solar/Lunar" means. */
+function isSolarLunarColor(color) {
+  return color === "Sun" || color === "Moon";
+}
+function craftingRungRank(rung) {
+  const i = CRAFTING_RUNGS.indexOf(rung);
+  return i === -1 ? 0 : i;
+}
+/** The three questions the rest of the code asks. Rank comparisons live here and
+ *  nowhere else, so the ladder's monotonicity is stated once. */
+function rungExcludesNicheCrafting(rung) { return craftingRungRank(rung) >= 1; }
+function rungExcludesSolarLunar(rung) { return craftingRungRank(rung) >= 2; }
+function rungExcludesAllAugments(rung) { return craftingRungRank(rung) >= 3; }
+
+// The Solar/Lunar Gem family IS the Sun and Moon colors — the one place a
+// catalog color maps to a single named acquisition line (CONCEPTS.md, Multi-fit).
+// Read from the normalized `aug_color.color`, the same field the augment pool
+// groups by, so the exclusion and the color-capacity model cannot disagree.
+function _isSolarLunar(v) {
+  return isSolarLunarColor(((v && v.aug_color) || {}).color);
+}
+
 // U4b-i — stacking-equivalence. gear-planner's native affix `type` IS the
 // stacking bucket, verbatim, EXCEPT curated pairs that do not stack independently
 // in-game and must share ONE bucket (e.g. "Insight Natural" -> "Insight", "Primal
@@ -218,6 +295,7 @@ function queryGates(query) {
     cap: query.mlCap,
     floor: query.mlFloor,                                  // optional item-level floor
     ceiling: query.augCeiling ?? null,                     // #339 — optional augment-only ML ceiling
+    rung: craftingRung(query),                             // #346 — the crafting/augment ladder
     pinnedIds,                                             // R8 — pins bypass the floor
     forged: isForgedRace(query.race),
     weaponAllow: allowedWeaponTypes(query),                // main-hand set | null
@@ -267,6 +345,21 @@ function variantConflict(v, query, gates) {
   if (g.ceiling != null && v.ml != null && v.ml > g.ceiling
       && v.category === "augment"
       && !(g.pinnedIds && g.pinnedIds.has(variantKey(v)))) return `above your augment ML ${g.ceiling} ceiling`;
+
+  // #346 (U1) — the ladder's augment rungs, living beside the ceiling for the
+  // same reason it does: this is the one choke point every augment path reads,
+  // so the augment pool, placement, alternatives re-solves, and the browse
+  // ineligibility reason all inherit the rung without a second code path.
+  // Deliberately NOT pin-exempt, unlike the floor and ceiling: those hide gear
+  // the player probably can't get yet, and a pin says "I have this one." The
+  // ladder says "I will not slot augments at all", which a pin cannot override
+  // without contradicting the rung the player just chose.
+  if (v.category === "augment") {
+    if (rungExcludesAllAugments(g.rung)) return "excluded — you chose to solve without augments";
+    if (rungExcludesSolarLunar(g.rung) && _isSolarLunar(v)) {
+      return "excluded — you chose to solve without Solar/Lunar gems";
+    }
+  }
 
   // R8 — Weapon-type / style lock. A weapon stays eligible if it can serve EITHER
   // hand: the main-hand lock, or (TWF) the off-hand-weapon lock. Untyped weapon
@@ -652,12 +745,22 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // saved queries, exports) inherits the flag from the query it already carries.
   // Augments and intrinsic choice slots (roll groups) are deliberately NOT
   // gated — one is on nearly every item, the other is the item's own identity.
-  if (query.excludeCraftingSystems) {
+  // #346 (U1) — the ladder's niche-crafting rung. Behaviorally identical to the
+  // #245 boolean it replaces; the augment rungs below it are enforced in
+  // eligible() instead, because augments flow through the per-variant gate while
+  // these option pools are model-level collections.
+  if (rungExcludesNicheCrafting(craftingRung(query))) {
     dinoInserts = []; nearlyComplete = []; viktranium = []; seal = [];
     thunderForged = []; greenSteel = [];
     membershipSetDefs = {};   // chosen set-membership (Lost Purpose / Dino Set Bonus)
     augmentSetDefs = {};      // set-bonus augments are Dino crafting too
   }
+  // Note for U5's unavailability reporting: Augment Sets need no separate rung
+  // handling. They are already cleared above as set-bonus crafting, and the
+  // ladder nests — every rung that excludes augments also excludes niche
+  // crafting — so a set is unreachable from the no-niche-crafting rung down.
+  // The bottom rung additionally empties the augment pool that would carry the
+  // Set Augment, which is belt-and-braces, not a second mechanism.
   // U1/U2 (KTD3) — a user cap or floor can name a stat outside the priority list;
   // union those into targetSet so the dominance pre-filter and pools keep items
   // competitive on them and their buckets get built. model.targets (the strict
@@ -1051,6 +1154,8 @@ if (typeof module !== "undefined" && module.exports) {
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,
     isForgedRace, isDocent, isBothHandsWeapon, variantKey, setStackEquiv, equivType,
     UTILITY_SENTINEL,
+    CRAFTING_RUNGS, craftingRung, craftingRungRank, normalizeRung, isSolarLunarColor,
+    rungExcludesNicheCrafting, rungExcludesSolarLunar, rungExcludesAllAugments,
     setCrossAdd: _crossAddApi.setCrossAdd, crossAddSourcesFor: _crossAddApi.crossAddSourcesFor,
     widenWithCrossAddSources: _crossAddApi.widenWithCrossAddSources,
     WORN_SLOTS, SLOT_CARDINALITY, ARMOR_DODGE_CAP,

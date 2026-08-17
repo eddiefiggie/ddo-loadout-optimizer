@@ -697,17 +697,79 @@ test("#245: a set-completing item is not craft-carried, and a filler is null", (
     "a filler pick has no craft story");
 });
 
-test("#245: project() carries craftCarried on the loadout and the opt-out notice", () => {
+test("#346: project() carries craftCarried on the loadout and the ladder notice", () => {
   const rec = makeRec();
-  rec.snapshot.query = { excludeCraftingSystems: true };
+  rec.snapshot.query = { craftingRung: "no-niche-crafting" };
   const view = P.project(rec);
   assert.ok(view.loadout.every((it) => "craftCarried" in it),
     "every loadout entry carries the field (null when not carried)");
   assert.ok(/Niche crafting was excluded/.test(view.character.craftingExcludedNotice),
-    "the opt-out scope disclosure rides the shared content model");
-  delete rec.snapshot.query;
+    "the scope disclosure rides the shared content model");
+  assert.ok(!/Regular augments/.test(view.character.craftingExcludedNotice),
+    "the old carve-out sentence is gone — the ladder now owns augments");
+});
+
+// #346 (U4) — ONE notice covers the whole ladder, with a distinct sentence per
+// rung. A second notice appearing beside this one is the failure mode the merge
+// exists to prevent.
+test("#346: each rung produces its own single notice sentence", () => {
+  const rec = makeRec();
+  const noticeAt = (rung) => {
+    rec.snapshot.query = { craftingRung: rung };
+    return P.project(rec).character.craftingExcludedNotice;
+  };
+  assert.match(noticeAt("no-niche-crafting"), /Niche crafting was excluded/);
+  assert.match(noticeAt("no-solar-lunar"), /Solar\/Lunar Gems were excluded/);
+  assert.match(noticeAt("no-solar-lunar"), /colour augments were still considered/);
+  assert.match(noticeAt("printed-only"), /nothing beyond what is printed/);
+  assert.ok(!/Solar/.test(noticeAt("printed-only")),
+    "the bottom rung does not enumerate what a higher rung would have excluded");
+});
+
+// #346 (U4, R9) — the top rung speaks too: the notice is the discovery path for
+// the control, so a player who never opens the section still learns the ladder
+// exists. It reports what the SOLVE placed, not what the query asked for.
+test("#346: the top rung names what the loadout leans on, or stays silent", () => {
+  const rec = makeRec();
+  rec.snapshot.query = { craftingRung: "everything" };
+
+  // Silence requires nothing to give up AT ALL — no augments and no crafted
+  // options. The base fixture carries a craft, which the notice now counts.
+  rec.snapshot.augmentsPlaced = [];
+  const craftKeys = ["vikPlaced", "sealPlaced", "ncPlaced", "dinoPlaced", "tfPlaced",
+    "gsPlaced", "membershipPlaced", "setAugmentsPlaced"];
+  const stashed = {};
+  for (const k of craftKeys) { stashed[k] = rec.snapshot[k]; rec.snapshot[k] = []; }
   assert.strictEqual(P.project(rec).character.craftingExcludedNotice, null,
-    "silent when the flag is off");
+    "nothing placed at all: nothing to give up, so no advice");
+  for (const k of craftKeys) rec.snapshot[k] = stashed[k];
+  for (const k of craftKeys) rec.snapshot[k] = [];
+
+  rec.snapshot.augmentsPlaced = [{ variant_id: "Solar Gem of X", color: "Sun" },
+    { variant_id: "Lunar Gem of Y", color: "Moon" },
+    { variant_id: "Sapphire of Z", color: "Blue" }];
+  const leaning = P.project(rec).character.craftingExcludedNotice;
+  assert.match(leaning, /leans on 2 Solar\/Lunar Gems/, "the farm-gated family is named and counted");
+  assert.match(leaning, /1 other augment/, "the rest are counted without being named");
+  assert.match(leaning, /lower "What may the solver assume/, "and it points at the control");
+
+  rec.snapshot.augmentsPlaced = [{ variant_id: "Sapphire of Z", color: "Blue" }];
+  const plain = P.project(rec).character.craftingExcludedNotice;
+  assert.match(plain, /uses 1 augment/, "no gems: a plain count, no Solar/Lunar claim");
+  assert.ok(!/Solar/.test(plain));
+});
+
+// #346 (U4) — a snapshot saved before the ladder still discloses correctly
+// without re-solving, which is the restore contract the whole notice family
+// keeps. The legacy boolean speaks only when no rung is stored.
+test("#346: a pre-ladder snapshot falls back to the legacy boolean", () => {
+  const rec = makeRec();
+  rec.snapshot.query = { excludeCraftingSystems: true };
+  assert.match(P.project(rec).character.craftingExcludedNotice, /Niche crafting was excluded/,
+    "an old save discloses without re-solving");
+  rec.snapshot.query = { craftingRung: "printed-only", excludeCraftingSystems: true };
+  assert.match(P.project(rec).character.craftingExcludedNotice, /nothing beyond what is printed/,
+    "a stored rung beside a stale boolean wins");
 });
 
 test("#339: project() carries the augment-ceiling disclosure from the solved query", () => {
@@ -1025,4 +1087,114 @@ test("U6 (#91): the zero-count line matches results.js's zero-state wording verb
   // The wording source itself: singular for one effect, plural otherwise.
   assert.strictEqual(P.utilityLine(1), "1 utility effect on this loadout");
   assert.strictEqual(P.utilityLine(7), "7 utility effects on this loadout");
+});
+
+// #346 (U5, R11, AE3) — a mechanic the rung made UNREACHABLE is named, not
+// silently omitted. Augment Sets are the case: they are set-bonus crafting, so
+// every rung from no-niche-crafting down clears them. Only a player whose own
+// ownership opt-in was overridden needs to hear it.
+test("#346: owned Augment Sets are reported unavailable, not silently dropped", () => {
+  const rec = makeRec();
+  rec.snapshot.query = { craftingRung: "printed-only" };
+
+  rec.inputs = Object.assign({}, rec.inputs, { ownedSetAugments: [] });
+  assert.ok(!/Augment Set/.test(P.project(rec).character.craftingExcludedNotice),
+    "a player who marked none owned is not told about a mechanic they never opted into");
+
+  rec.inputs = Object.assign({}, rec.inputs, { ownedSetAugments: ["Some Set"] });
+  const one = P.project(rec).character.craftingExcludedNotice;
+  assert.match(one, /Augment Set you marked as owned was unavailable/);
+  assert.match(one, /not merely outscored/, "unavailable and outscored are different facts");
+
+  rec.inputs = Object.assign({}, rec.inputs, { ownedSetAugments: ["A", "B"] });
+  assert.match(P.project(rec).character.craftingExcludedNotice, /2 Augment Sets you marked as owned were unavailable/);
+
+  // It rides every restrictive rung, because all of them clear set-bonus crafting.
+  rec.snapshot.query = { craftingRung: "no-niche-crafting" };
+  assert.match(P.project(rec).character.craftingExcludedNotice, /unavailable at this setting/);
+  // ...but never the top rung, where the sets were genuinely available.
+  rec.snapshot.query = { craftingRung: "everything" };
+  rec.snapshot.augmentsPlaced = [{ variant_id: "Sapphire", color: "Blue" }];
+  assert.ok(!/unavailable at this setting/.test(P.project(rec).character.craftingExcludedNotice));
+});
+
+// #346 (U5, R11) — the live call path. results.js forwards the SOLVED QUERY
+// straight in as `inputs`, where ownedSetAugments is a Set; the saved path hands
+// over a plain array because pickInputs converts it for JSON. Counting only
+// `.length` made this clause render in every export and never in the app. The
+// original tests missed it by building records in the saved shape only, so this
+// one asserts BOTH shapes through the same function.
+test("#346: the owned-set clause counts a Set and an array identically", () => {
+  const line = (owned) => P.craftingExcludedLine({
+    inputs: { ownedSetAugments: owned },
+    snapshot: { query: { craftingRung: "printed-only" }, augmentsPlaced: [] },
+  });
+  const asSet = line(new Set(["A", "B"]));
+  const asArray = line(["A", "B"]);
+  assert.match(asSet, /2 Augment Sets you marked as owned were unavailable/,
+    "the live Set shape renders the clause");
+  assert.strictEqual(asSet, asArray,
+    "the live and saved shapes produce the identical sentence — that is the whole contract");
+  assert.strictEqual(line(new Set()), line([]), "both empty shapes agree too");
+  assert.ok(!/Augment Set/.test(line(new Set())), "and neither invents a clause");
+  // A hand-edited backup must not kill the projection five surfaces read from.
+  for (const junk of [null, undefined, 0, "two", { A: 1 }]) {
+    assert.ok(!/Augment Set/.test(line(junk)), `${JSON.stringify(junk)} counts as none, does not throw`);
+  }
+});
+
+// #346 — the ladder notice, read from a record built by the REAL production
+// writer rather than a hand-shaped fixture.
+//
+// docs/solutions/conventions/fixture-shape-must-mirror-the-production-writer.md
+// (2026-08-16, from #339's postmortem): serializeCharacter stores `query` as a
+// top-level SIBLING of `snapshot`, and RESULT_KEEP never admits a `query` key
+// into the snapshot, so the nested shape cannot exist on a real saved character.
+// Every other #346 test here hand-builds `snapshot.query` and therefore only
+// ever exercises the fallback branch — the same blind spot that let the #339
+// disclosure ship rendering nowhere while four dedicated tests passed. This one
+// goes through serializeCharacter so the `rec.query` read is actually guarded.
+test("#346: the notice reads a record built by serializeCharacter, not a hand-shaped fixture", () => {
+  const Store = require("../web/persist.js");
+  const W = require("../web/wizard.js");
+  const state = { ml: 34, race: "Human", armor: "", oath: "", alignment: "", style: "",
+    weaponTypes: [], offHand: [], offHandWeapons: [], priorities: ["Constitution"],
+    slotConstraints: {}, craftingRung: "printed-only",
+    ownedSetAugments: new Set(["Perfect Silence"]) };
+  const query = W.buildQuery(state);
+  const rec = Store.serializeCharacter("Real", state,
+    { query, result: { status: "optimal", chosen: [], perTarget: {}, breakdown: {}, augmentsPlaced: [] } }, "b1");
+
+  assert.ok(!("query" in rec.snapshot),
+    "the real writer never nests query inside the snapshot — if this flips, the other fixtures became valid and this test is moot");
+  assert.strictEqual(typeof rec.query, "object", "it is a top-level sibling");
+
+  const line = P.craftingExcludedLine(rec);
+  assert.match(line, /nothing beyond what is printed/, "the rung is read from rec.query");
+  assert.match(line, /Augment Set you marked as owned was unavailable/,
+    "and the owned-set count survives the real save path's Set-to-array conversion");
+});
+
+// #346 (U4, R9) — the top-rung notice must count everything a lower rung would
+// take away, not just augments. A build leaning entirely on Viktranium or seals
+// is precisely the player who needs to learn the ladder exists, and counting
+// augments alone left them with no notice at all.
+test("#346: the top-rung notice counts crafted options, not just augments", () => {
+  const rec = (extra) => ({ inputs: {},
+    snapshot: Object.assign({ query: { craftingRung: "everything" }, augmentsPlaced: [] }, extra) });
+
+  assert.strictEqual(P.craftingExcludedLine(rec({})), null,
+    "a loadout leaning on nothing still says nothing");
+
+  const craftOnly = P.craftingExcludedLine(rec({ vikPlaced: [{}, {}], sealPlaced: [{}] }));
+  assert.match(craftOnly, /uses 3 crafted options/, "crafted options are counted and named");
+  assert.match(craftOnly, /lower "What may the solver assume/, "and the control is named");
+
+  const mixed = P.craftingExcludedLine(rec({
+    augmentsPlaced: [{ color: "Sun" }, { color: "Blue" }], dinoPlaced: [{}] }));
+  assert.match(mixed, /leans on 1 Solar\/Lunar Gem, 1 other augment and 1 crafted option/,
+    "all three families are listed in one sentence");
+
+  const singular = P.craftingExcludedLine(rec({ ncPlaced: [{}] }));
+  assert.match(singular, /uses 1 crafted option\./, "singular reads correctly");
 });

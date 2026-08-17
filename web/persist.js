@@ -8,6 +8,20 @@
 
   const STORE_KEY = "ddo.characters.v1";
 
+  // #346 — the ladder's normalizer, over the cross-runtime bridge the rest of
+  // web/*.js uses (model.js loads first in the browser; node resolves the
+  // require). Persistence must sanitize at the write boundary too: a hand-edited
+  // backup can carry anything, and a bad rung stored back into localStorage
+  // would outlive the session that produced it.
+  const _rungOf = (typeof normalizeRung !== "undefined")
+    ? normalizeRung
+    // eslint-disable-next-line global-require
+    : require("./model.js").normalizeRung;
+  const _rungExcludesNiche = (typeof rungExcludesNicheCrafting !== "undefined")
+    ? rungExcludesNicheCrafting
+    // eslint-disable-next-line global-require
+    : require("./model.js").rungExcludesNicheCrafting;
+
   // Panel-consumed subset of the solver result (plan KTD1). `status` is required
   // — renderResults short-circuits to the empty state when it isn't "optimal".
   // `program` (the whole MILP, cyclic + non-JSON) and `model`/`highs` are dropped
@@ -64,7 +78,12 @@
     // save marker, no healing. Absent on a pre-feature save -> loads unrestricted.
     "characterName", "ml", "mlFloor", "mlFloorManual", "augCeiling", "race", "alignment", "armor", "oath",
     "style", "weaponTypes", "offHand", "offHandWeapons", "twoWeaponFighting",
-    "includeArtifact", "excludeCraftingSystems", "blocklist", "ownedSetAugments", "pool", "ownedNames", "priorities", "slotConstraints",
+    // #346 — the crafting/augment ladder. `excludeCraftingSystems` stays on the
+    // allowlist as a READ-ONLY legacy key: saves written before the ladder carry
+    // it, and the wizard's load path derives the rung from it (a total mapping —
+    // absent/false -> top rung, true -> no-niche-crafting). pickInputs no longer
+    // writes it, so it ages out of the corpus on the next save of each character.
+    "includeArtifact", "craftingRung", "excludeCraftingSystems", "blocklist", "ownedSetAugments", "pool", "ownedNames", "priorities", "slotConstraints",
     "targetCaps", "targetFloors",
     // U2/U5 — declared stat credits, keyed `stat||bonusType`. Plain JSON, so it
     // needs no special serialization the way the two Sets above do.
@@ -107,6 +126,29 @@
         // `undefined` would drop the key from the JSON entirely, leaving the loader
         // unable to tell "saved as undeclared" from "saved before the feature".
         inputs.twoWeaponFighting = !!s.twoWeaponFighting;
+      } else if (k === "craftingRung") {
+        // #346 (U3) — always written, always one of the four rungs, because the
+        // loader must be able to tell "saved at the top rung" from "saved before
+        // the ladder existed". Storing `undefined` would drop the key and make a
+        // post-ladder save indistinguishable from a legacy one, sending it down
+        // the boolean-derivation path forever.
+        inputs.craftingRung = _rungOf(s.craftingRung);
+      } else if (k === "excludeCraftingSystems") {
+        // #346 (U3) — the legacy key is DERIVED from the rung, not read from
+        // state. Writing it back is a downgrade bridge: this app deploys
+        // continuously to Pages with best-effort cache-busting, so a player can
+        // hand-export a backup from the new build and re-import it into an older
+        // one still sitting in their browser cache. That build reads no
+        // `craftingRung`, and without this key it would silently restore a
+        // restricted character as fully unrestricted.
+        //
+        // Deriving rather than storing is what makes this safe: the value is a
+        // function of the rung, so the two can never contradict each other, and
+        // every reader already prefers a stored rung over the boolean. It
+        // degrades to the closest legal older state — any restrictive rung
+        // becomes the old "don't build around niche crafting" — instead of to
+        // nothing. Drop it once older builds can no longer be in circulation.
+        inputs.excludeCraftingSystems = _rungExcludesNiche(_rungOf(s.craftingRung));
       } else {
         inputs[k] = src[k];
       }

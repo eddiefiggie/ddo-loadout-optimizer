@@ -1532,10 +1532,19 @@ test("#245: whyThisLine stays a plain contribution line when the item earns its 
   assert.ok(/Constitution \+15/.test(html) && !/pd-carried/.test(html));
 });
 
-test("#245: the opt-out notice renders from the shared projection sentence", () => {
-  const on = R.craftingExcludedNotice({}, { query: { excludeCraftingSystems: true } });
+test("#346: the ladder notice renders from the shared projection sentence", () => {
+  // Called the way renderResults calls it: the SOLVED QUERY first, the bare
+  // worker result second. Per
+  // docs/solutions/conventions/fixture-shape-must-mirror-the-production-writer.md
+  // the worker result carries no `query` key at all, so hiding the rung in the
+  // result argument would exercise a branch the live render never takes.
+  const bare = { status: "optimal", augmentsPlaced: [], chosen: [] };
+  const on = R.craftingExcludedNotice({ craftingRung: "no-niche-crafting" }, bare);
   assert.ok(/crafting-excluded-note/.test(on) && /Niche crafting was excluded/.test(on));
-  assert.strictEqual(R.craftingExcludedNotice({}, { query: {} }), "", "silent when off");
+  assert.match(R.craftingExcludedNotice({ craftingRung: "printed-only" }, bare),
+    /nothing beyond what is printed/, "the bottom rung has its own sentence");
+  assert.strictEqual(R.craftingExcludedNotice({ craftingRung: "everything" }, bare), "",
+    "silent on the top rung when the loadout leans on nothing");
 });
 
 test("#339: the augment-ceiling notice renders from the shared projection sentence", () => {
@@ -1741,3 +1750,57 @@ test("#91 U5: utilityCard takes the build being rendered — an alternative's re
 });
 
 console.log(`\n${passed} passed`);
+
+// #346 (U5, R12, AE7) — a rung can take a stat's last source out of the pool.
+// Twenty targetable stats are augment-only, so telling that player to widen
+// their ML band is advice that cannot work. The ladder joins the owned-pool
+// carve-out: an explicit, single, reversible choice worth naming.
+test("#346: the zero-source notice blames the rung only on evidence", () => {
+  const model = { worn: [], augments: [], targets: ["X"] };
+  const result = { status: "optimal", perTarget: { X: 0 } };
+  const notice = (rung, dataset) =>
+    R.zeroSourceNotice({ targets: ["X"], craftingRung: rung }, result, model, dataset);
+
+  // Attribution must be EVIDENCE-based, not rung-based. Keying on the rung value
+  // alone told a player whose stat is missing for ML-band reasons to raise the
+  // ladder — wrong advice, and it displaced the correct advice to make room.
+  const wornOnly = { items: [{ category: "item", affixes: [{ name: "X", value: 5 }] }] };
+  const innocent = notice("printed-only", wornOnly);
+  assert.match(innocent, /widening the ML band/,
+    "an innocent rung keeps the generic advice, which is at least not wrong");
+  assert.ok(!/solver assume/.test(innocent), "and is not blamed for a stat it never touched");
+
+  // Guilty: the stat's only source is an augment the rung removed.
+  const augOnly = { items: [{ category: "augment", aug_color: { color: "Blue" }, affixes: [{ name: "X", value: 5 }] }] };
+  const guilty = notice("printed-only", augOnly);
+  assert.match(guilty, /which exclude augments/);
+  assert.match(guilty, /raising "What may the solver assume/, "and points at the control");
+  assert.ok(!/widening the ML band/.test(guilty));
+
+  // Each rung names only what IT removed: a Blue augment survives the Solar/Lunar
+  // rung, so that rung must not claim responsibility for it.
+  const sunOnly = { items: [{ category: "augment", aug_color: { color: "Sun" }, affixes: [{ name: "X", value: 5 }] }] };
+  assert.match(notice("no-solar-lunar", sunOnly), /which exclude Solar\/Lunar Gems/);
+  assert.match(notice("no-solar-lunar", augOnly), /widening the ML band/,
+    "a Blue augment is untouched by the Solar/Lunar rung, so that rung is innocent here");
+
+  // R12 covers the craftable half too — a Viktranium-carried stat is attributed
+  // to the niche-crafting rung, which previously never named itself at all.
+  const vikCarried = { items: [{ category: "item", affixes: [{ name: "X", value: 5 }] }],
+    viktranium: [{ affixes: [{ stat: "X", value: 7 }] }] };
+  assert.match(notice("no-niche-crafting", vikCarried), /which exclude niche crafting/);
+  assert.match(notice("everything", vikCarried), /widening the ML band/,
+    "the top rung removed nothing and never claims otherwise");
+});
+
+// The owned-gear pool keeps precedence: it is the more specific explicit choice,
+// and a player in owned mode needs to hear about the catalog first.
+test("#346: the owned-gear pool still wins over the rung in the zero-source notice", () => {
+  const model = { worn: [], augments: [], targets: ["Strikethrough"] };
+  const result = { status: "optimal", perTarget: { Strikethrough: 0 } };
+  const dataset = { items: [{ category: "augment", affixes: [{ name: "Strikethrough", value: 15 }] }] };
+  const out = R.zeroSourceNotice({ targets: ["Strikethrough"], pool: "owned", craftingRung: "printed-only" },
+    result, model, dataset);
+  assert.match(out, /your owned-gear pool/);
+  assert.match(out, /the full catalog may have one/);
+});

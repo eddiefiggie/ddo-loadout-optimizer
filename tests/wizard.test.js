@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -77,6 +77,66 @@ test("nextStep / prevStep clamp at the ends", () => {
 test("wizIsForged", () => {
   assert.ok(wizIsForged("Warforged") && wizIsForged("bladeforged"));
   assert.ok(!wizIsForged("Elf") && !wizIsForged(""));
+});
+
+// ---------------------------------------------------------------------------
+// #346 (U1/U2) — the crafting/augment ladder at the query boundary.
+
+test("#346: buildQuery threads the rung and fails open to the top", () => {
+  assert.strictEqual(buildQuery(baseState()).craftingRung, "everything",
+    "an absent rung (pre-feature state) reads as the top rung");
+  for (const r of ["everything", "no-niche-crafting", "no-solar-lunar", "printed-only"]) {
+    assert.strictEqual(buildQuery({ ...baseState(), craftingRung: r }).craftingRung, r);
+  }
+  assert.strictEqual(buildQuery({ ...baseState(), craftingRung: "nonsense" }).craftingRung, "everything",
+    "a hand-edited value fails open rather than reaching the solver");
+});
+
+// KTD4 — the control retains the player's typed ceiling, but the SOLVED query
+// must not carry it on a rung that placed no augments, or the results assert a
+// restriction that did nothing. This is the honesty half of R6.
+test("#346: a rung that excludes augments nulls the ceiling in the solved query", () => {
+  const withCeiling = { ...baseState(), ml: 34, augCeiling: 30 };
+  assert.strictEqual(buildQuery({ ...withCeiling, craftingRung: "everything" }).augCeiling, 30);
+  assert.strictEqual(buildQuery({ ...withCeiling, craftingRung: "no-niche-crafting" }).augCeiling, 30);
+  assert.strictEqual(buildQuery({ ...withCeiling, craftingRung: "no-solar-lunar" }).augCeiling, 30,
+    "the Solar/Lunar rung still admits 819 augments, so the ceiling still means something");
+  assert.strictEqual(buildQuery({ ...withCeiling, craftingRung: "printed-only" }).augCeiling, null,
+    "the bottom rung places no augment, so the solve carries no augment restriction");
+});
+
+// R6 — the typed value survives the round trip. The player who sets a ceiling,
+// drops to printed-only, then climbs back must find their number intact; only
+// the QUERY forgets it, never the state.
+test("#346: the ceiling value survives a trip down to the bottom rung and back", () => {
+  const state = { ...baseState(), ml: 34, augCeiling: 28, craftingRung: "everything" };
+  state.craftingRung = "printed-only";
+  assert.strictEqual(buildQuery(state).augCeiling, null, "the solve forgets it");
+  assert.strictEqual(state.augCeiling, 28, "the state does not");
+  state.craftingRung = "no-solar-lunar";
+  assert.strictEqual(buildQuery(state).augCeiling, 28, "climbing back restores it to the solve");
+});
+
+// #346 (U3, KTD3, AE6) — the migration. This is the highest-consequence line in
+// the feature: a wrong derivation silently changes the loadout of every saved
+// character, with no signal to the player that anything moved.
+test("#346: a pre-ladder save migrates to the rung its boolean meant", () => {
+  assert.strictEqual(rungFromInputs({}), "everything",
+    "a save from before #245 (no boolean at all) loads unrestricted");
+  assert.strictEqual(rungFromInputs({ excludeCraftingSystems: false }), "everything",
+    "the checkbox unticked meant nothing was excluded");
+  assert.strictEqual(rungFromInputs({ excludeCraftingSystems: true }), "no-niche-crafting",
+    "the checkbox ticked meant exactly the niche-crafting rung — never lower");
+});
+
+test("#346: a stored rung always wins over the legacy boolean", () => {
+  assert.strictEqual(rungFromInputs({ craftingRung: "printed-only", excludeCraftingSystems: true }),
+    "printed-only", "a stale boolean beside a rung cannot override it");
+  assert.strictEqual(rungFromInputs({ craftingRung: "everything", excludeCraftingSystems: true }),
+    "everything", "including when the boolean would imply a LOWER rung");
+  assert.strictEqual(rungFromInputs({ craftingRung: "nonsense", excludeCraftingSystems: true }),
+    "everything", "a hand-edited rung fails open rather than falling back to the boolean");
+  assert.strictEqual(rungFromInputs(null), "everything", "a missing record does not throw");
 });
 
 test("buildQuery threads the optional mlFloor (blank/0 -> null)", () => {
@@ -2045,3 +2105,61 @@ test("U4/262: the BLOCK search row template appends the note (source wiring)", (
       "renderResults is handed the render-only copy, not `query` itself");
   });
 }
+
+// #346 — the ladder's UI options must match the model's vocabulary exactly.
+// wizard.js hand-writes the rung list with its player-facing labels (copy belongs
+// in the UI, not the model), so the two CAN drift — this is the assertion that
+// stops a rung being added, removed, or reordered in one place only.
+test("#346: the rendered ladder options match CRAFTING_RUNGS in order and value", () => {
+  const M = require("../web/model.js");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const block = src.slice(src.indexOf("const RUNGS = ["));
+  const rendered = [...block.slice(0, block.indexOf("];")).matchAll(/\["([a-z-]+)",/g)].map((m) => m[1]);
+  assert.deepStrictEqual(rendered, M.CRAFTING_RUNGS,
+    "every rung the model knows is offered, in rank order, with no extras");
+});
+
+// #346 — the three readers of the ladder now share ONE precedence implementation.
+// They did not always: the model seam drifted and solved a legacy-only query with
+// the craftable pools fully live. This table pins that they agree.
+test("#346: every reader of the ladder agrees on the same precedence", () => {
+  const M = require("../web/model.js");
+  const P = require("../web/projection.js");
+  const cases = [
+    [{}, "everything"],
+    [{ excludeCraftingSystems: false }, "everything"],
+    [{ excludeCraftingSystems: true }, "no-niche-crafting"],
+    [{ craftingRung: "printed-only" }, "printed-only"],
+    [{ craftingRung: "printed-only", excludeCraftingSystems: true }, "printed-only"],
+    [{ craftingRung: "everything", excludeCraftingSystems: true }, "everything"],
+    [{ craftingRung: "nonsense", excludeCraftingSystems: true }, "everything"],
+  ];
+  for (const [input, expected] of cases) {
+    assert.strictEqual(M.craftingRung(input), expected, `model seam: ${JSON.stringify(input)}`);
+    assert.strictEqual(rungFromInputs(input), expected, `wizard load path: ${JSON.stringify(input)}`);
+    // The projection reads the same rule through craftingExcludedLine's rung branch.
+    const line = P.craftingExcludedLine({ query: input, snapshot: { augmentsPlaced: [] } }) || "";
+    const impliedRestrictive = /excluded from this solve|nothing beyond what is printed/.test(line);
+    assert.strictEqual(impliedRestrictive, expected !== "everything",
+      `projection notice: ${JSON.stringify(input)} implies ${expected}`);
+  }
+});
+
+// #346 (U2) — the Set Augments picker is set-bonus crafting, cleared by every
+// rung from no-niche-crafting down. Leaving it live there would let a player tick
+// boxes the solve cannot honour: the contradictory-but-permitted state the
+// ladder's own rule exists to prevent. Same treatment as the augment ML ceiling.
+test("#346: the Set Augments picker is disabled on rungs that clear set-bonus crafting", () => {
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const block = src.slice(src.indexOf('id="wz-setaug"'), src.indexOf('id="wz-setaug"') + 1800);
+  assert.match(block, /setAugInert \? " disabled" : ""/,
+    "the checkboxes carry a disabled branch keyed on the rung");
+  assert.match(block, /Not applicable — the rung you chose excludes set-bonus crafting/,
+    "and the reason is stated, never left silently inert");
+  assert.match(block, /Your selections are kept/,
+    "and the player is told their ticks survive the trip");
+  // Keyed on the niche-crafting rung, not the augment rungs — that is where the
+  // model actually clears augmentSetDefs.
+  assert.match(src, /const setAugInert = _rungExcludesNicheCrafting\(/,
+    "gated on the rung that actually clears the family");
+});

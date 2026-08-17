@@ -1895,7 +1895,7 @@ async function withCrossAdd(map, fn) {
   });
 
 
-  await test("#245: excludeCraftingSystems removes every crafted placement from a real solve", async () => {
+  await test("#346: the no-niche-crafting rung removes every crafted placement from a real solve", async () => {
     const fs = require("fs");
     const { buildModel } = require("../web/model.js");
     const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -1907,15 +1907,84 @@ async function withCrossAdd(map, fn) {
       data.membership_set_defs, data.thunder_forged, data.green_steel);
     const off = await S.solveLexicographic(build(q), highs);
     assert.strictEqual(off.status, "optimal");
-    const on = await S.solveLexicographic(build({ ...q, excludeCraftingSystems: true }), highs);
+    const on = await S.solveLexicographic(build({ ...q, craftingRung: "no-niche-crafting" }), highs);
     assert.strictEqual(on.status, "optimal");
     const placements = (r) => [].concat(r.vikPlaced || [], r.sealPlaced || [], r.ncPlaced || [],
       r.dinoPlaced || [], r.tfPlaced || [], r.gsPlaced || [], r.membershipPlaced || []);
-    assert.strictEqual(placements(on).length, 0, "flag on: no crafted placement of any family");
-    // The flag can only remove crafted points, never add: the opt-out optimum is
+    assert.strictEqual(placements(on).length, 0, "rung on: no crafted placement of any family");
+    // The rung can only remove crafted points, never add: the opt-out optimum is
     // bounded by the full one on the first priority.
     assert.ok((on.perTarget.Charisma || 0) <= (off.perTarget.Charisma || 0),
       "P1 without crafting cannot exceed P1 with it");
+  });
+
+  // #346 (U1, AE4) — the ladder nests on REAL data: each rung's augment
+  // placements are a subset of the rung above, and no ranked stat ever improves
+  // as you descend. A rung that added value would mean the exclusion leaked.
+  await test("#346: the rungs nest on a real solve and never improve a ranked stat", async () => {
+    const fs = require("fs");
+    const { buildModel } = require("../web/model.js");
+    const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
+    const targets = ["Melee Power", "Doublestrike", "Accuracy", "Deadly", "Seeker", "Armor-Piercing"];
+    const q = { mlCap: 15, targets, armorType: null, weaponSetup: null, weaponStyle: "Two Handed", classRace: null };
+    const solveAt = async (rung) => {
+      const r = await S.solveLexicographic(buildModel(data.items, { ...q, craftingRung: rung },
+        data.dino_inserts, data.nearly_complete, data.viktranium, data.seal,
+        data.membership_set_defs, data.thunder_forged, data.green_steel, data.augment_set_defs), highs);
+      assert.strictEqual(r.status, "optimal", `${rung} stays feasible`);
+      return r;
+    };
+    const rungs = ["everything", "no-niche-crafting", "no-solar-lunar", "printed-only"];
+    const out = {};
+    for (const rung of rungs) out[rung] = await solveAt(rung);
+
+    const augIds = (r) => new Set((r.augmentsPlaced || []).map((a) => a.variant_id));
+    for (let i = 1; i < rungs.length; i++) {
+      const above = augIds(out[rungs[i - 1]]), here = augIds(out[rungs[i]]);
+      for (const id of here) {
+        assert.ok(above.has(id), `${rungs[i]} placed ${id}, which ${rungs[i - 1]} did not — the ladder leaked`);
+      }
+      for (const t of targets) {
+        assert.ok((out[rungs[i]].perTarget[t] || 0) <= (out[rungs[i - 1]].perTarget[t] || 0),
+          `${t} must not improve descending from ${rungs[i - 1]} to ${rungs[i]}`);
+      }
+    }
+    const isSolarLunar = (a) => ["Sun", "Moon"].includes(a.color);
+    assert.ok((out["no-solar-lunar"].augmentsPlaced || []).every((a) => !isSolarLunar(a)),
+      "no Solar/Lunar gem survives its rung");
+    assert.strictEqual((out["printed-only"].augmentsPlaced || []).length, 0,
+      "the bottom rung places no augment at all");
+  });
+
+  // #346 (U1, AE7) — a rung can take a stat's LAST source out of the pool. Twenty
+  // targetable stats are augment-only (Strikethrough, Sneak Attack Dice, Imbue
+  // Dice, …), so the bottom rung drops them to zero.
+  //
+  // It does NOT go infeasible: per-stat floors are best-effort, so the solve
+  // still reports optimal with the floor unmet. That is the honest failure mode
+  // and the one U5's disclosure has to explain — a player who ranked
+  // Strikethrough first sees a zero and no reason unless the notice names the
+  // rung. Pinned here because a future change making floors hard would flip this
+  // to infeasible and must be a deliberate, visible decision.
+  await test("#346: a rung can remove a stat's only source, and the solve stays optimal at zero", async () => {
+    const fs = require("fs");
+    const { buildModel } = require("../web/model.js");
+    const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
+    const q = { mlCap: 34, targets: ["Strikethrough"], targetFloors: { Strikethrough: 1 },
+      armorType: null, weaponSetup: null, classRace: null };
+    const build = (rung) => buildModel(data.items, { ...q, craftingRung: rung },
+      data.dino_inserts, data.nearly_complete, data.viktranium, data.seal,
+      data.membership_set_defs, data.thunder_forged, data.green_steel, data.augment_set_defs);
+
+    const top = await S.solveLexicographic(build("everything"), highs);
+    assert.strictEqual(top.status, "optimal");
+    assert.ok(top.perTarget.Strikethrough > 0, "augments carry Strikethrough at the top rung");
+
+    const bottom = await S.solveLexicographic(build("printed-only"), highs);
+    assert.strictEqual(bottom.status, "optimal",
+      "floors are best-effort — the solve does not go infeasible, it comes back short");
+    assert.strictEqual(bottom.perTarget.Strikethrough, 0,
+      "the bottom rung leaves no Strikethrough source in the pool");
   });
 
 
