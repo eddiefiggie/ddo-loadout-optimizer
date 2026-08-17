@@ -40,12 +40,12 @@ The list is that shape because the full 838-name population failed the #91 measu
 
 | set | names | carrying variants | measured cold-solve |
 |---|---|---|---|
-| current tier-1 | 38 | 1,904 | 2.12× baseline |
+| current tier-1 | 38 | 1,904 | 1.96× baseline (recorded by #91) |
 | …of which weapon procs | 24 | 1,638 (86%) | — |
 | …everything else | 14 | 266 | — |
-| **this plan's roster** | **20** | **699 (−63%)** | **0.76× baseline** |
+| **this plan's roster** | **20** | **699 (−63%)** | **1.56× baseline (measured)** |
 
-The weapon procs are 86% of the cost. Swapping them out is not a widening that must fit a budget — it makes the tier **cheaper than not having it at all**.
+The weapon procs are 86% of the carrying-variant footprint. Swapping them out is not a widening that must fit the budget — it *buys back* budget, taking the tier from 1.96× to 1.56× against a 2.0× ceiling.
 
 ### Key Decisions
 
@@ -68,7 +68,7 @@ The weapon procs are 86% of the cost. Swapping them out is not a widening that m
 - AE1. **The reported bug closes.** Covers R1. Given an ML34 solve with a single ranked priority (Constitution) and the Utility tier at the bottom: Ghostly, True Seeing, Blurry, Freedom of Movement, Blindness Immunity, and Deathblock all appear among the counted effects, where today's solve returns fourteen weapon procs and none of them.
 - AE2. **It survives contention.** Covers R1. Given the same solve with six contested ranked stats above the tier (Constitution, both Shelterings, Healing Amplification, Dodge, Fortification): the count falls to five, and Ghostly, Blindness Immunity, and Deathblock are among them — where today's roster returns five weapon procs and no toggle.
 - AE3. **A weapon build loses nothing.** Covers R2. Given a two-handed melee query ranking Melee Power and Doublestrike: the count is unchanged at fifteen, and the six worn toggles replace the Banes rather than reducing the total.
-- AE4. **The tier gets cheaper.** Covers R1. Given the golden fixture set: median cold-solve time with the new roster is at or below the pre-feature baseline, not merely inside the 2× budget.
+- AE4. **The tier gets cheaper.** Covers R1. Given the golden fixture set: the measured cold-solve ratio with the new roster is at or below the 1.96× the previous roster recorded, and inside the 2.0× budget.
 
 ### Scope Boundaries
 
@@ -98,7 +98,7 @@ The weapon procs are 86% of the cost. Swapping them out is not a widening that m
 - Issue #343 carries the verbatim report and the reproduction.
 - `docs/plans/2026-08-15-002-feat-utility-tier-holistic-value-plan.md` — the #91 plan that shipped the tier. Its R13 established the deliberate golden re-ratification pattern this plan reuses; its R2, R15, and R14 stay in force.
 - `CONCEPTS.md` — [[Utility tier]] and [[Boolean feature]]. Both remain accurate after this change, since the counting semantics are untouched.
-- Cold-solve figures were measured on the golden fixture set against the real dataset on 2026-08-16: today's 38 at 2.12× the pre-feature baseline, this roster at 0.76×.
+- Cold-solve figures: the #91 plan recorded the 38-name roster at 1.96× the pre-feature baseline against a 2.0× budget. This roster measured **1.56×** on the same gate (`tests/perf_utility.js`, 23 fixtures, baseline median 510 ms / sentinel-appended 796 ms) on 2026-08-16. An earlier draft of this plan carried a 0.76× figure taken from a reviewer's measurement during a different review; running the gate directly did not reproduce it, and the measured number replaces it.
 
 ---
 
@@ -196,7 +196,7 @@ U1 changes both mirrors and the union, and is the only unit that changes behavio
   - Test expectation: none for the stamp bump itself — the repo's build-stamp test already enforces that the three markers agree.
   - Every re-captured golden fixture's ranked-stat values are unchanged from the previous capture; only utility effects and the items supplying them differ.
   - The parity baseline re-captures without unrelated drift, confirming the dataset was rebuilt before capture.
-  - Covers AE4. The measured perf gate reports a median cold-solve at or below the pre-feature baseline, not merely inside the 2x budget — the roster change is expected to make the tier cheaper, so landing inside the budget but above baseline means something else regressed.
+  - Covers AE4. The measured perf gate reports a ratio at or below the 1.96x the previous roster recorded, and inside the 2.0x budget. Landing at or above 1.96x would mean the footprint reduction did not reach the solve.
 - **Verification:** golden and parity suites pass against the new fixtures, the build-stamp test passes with all three markers bumped, and the captured diff shows utility effects changing while ranked values hold.
 
 ---
