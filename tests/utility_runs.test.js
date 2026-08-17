@@ -226,5 +226,48 @@ function check(name, fn) {
       "a reachable target is not unsourced; conflating them was the bug");
   });
 
+  // ---- AE5 (#345 U2): attribution and price, proven against real data. ------
+  console.log("\nAE5 — attributing the outbid target (#345)");
+  const attr = S.attributeOutbid(r4.program, highs, FOM, q4.targets, r4.perTarget);
+  check("AE5: the binding priority is named, and it is Accuracy for this list", () => {
+    assert.ok(attr, "attribution succeeded on the reported case");
+    // NOT Deadly. Issue #345's table came from the reporter's 13-priority list
+    // with aasimar/scourge gating, where the pivot sat lower. Under the plain
+    // Melee preset, Accuracy's lock already kills Freedom of Movement, and
+    // Deadly sits BELOW Accuracy — by the time Deadly locks, it is long dead.
+    // The prefix walk names the FIRST lock that binds, which is the one whose
+    // relaxation would actually help. Naming a later stat would be advice that
+    // cannot work.
+    assert.strictEqual(attr.binding, "Accuracy",
+      `expected Accuracy to bind under this list, got ${attr && attr.binding}`);
+    const order = q4.targets;
+    assert.ok(order.indexOf(attr.binding) < order.indexOf(FOM), "and it outranks the target");
+  });
+  check("AE5: the price is one point of the binding priority", () => {
+    assert.strictEqual(attr.cost, 1, `expected a cost of 1, got ${attr.cost}`);
+    assert.strictEqual(attr.bindingValue - attr.bindingHeld, attr.cost, "the cost is the give");
+    assert.ok(attr.cost > 0, "a non-positive price would contradict the boundary");
+  });
+  check("AE5: the binary search agrees with an exhaustive walk", () => {
+    // Monotonicity is structural (each lock only shrinks the feasible set), but
+    // a binary search over a non-monotone predicate fails silently, so prove it.
+    const linear = S.attributeOutbid(r4.program, highs, FOM, q4.targets, r4.perTarget, { linear: true });
+    assert.deepStrictEqual(attr, linear, "binary-searched boundary must equal the walked one");
+  });
+  // Way of the Sun Soul has no source in this ML15 melee pool (measured: ten of
+  // the twenty toggles are unreachable here). The probe must decline rather than
+  // blame whichever stat happens to sit above it.
+  const q5 = { ...q4, targets: [...MELEE, "Way of the Sun Soul"] };
+  const { r: r5 } = await solve(q5);
+  check("AE5: an unreachable target is refused, not attributed", () => {
+    const none = S.attributeOutbid(r5.program, highs, "Way of the Sun Soul", q5.targets, r5.perTarget);
+    assert.strictEqual(none, null, "no source means no attribution — that is the other zero cause");
+  });
+  check("AE5: a target ranked first has nothing above it and is refused", () => {
+    const none = S.attributeOutbid(r4.program, highs, q4.targets[0], q4.targets, r4.perTarget);
+    assert.strictEqual(none, null, "nothing outranks the first priority, so nothing outbid it");
+  });
+  console.log(`    ${FOM} bound by ${attr.binding} ${attr.bindingValue} -> ${attr.bindingHeld} (cost ${attr.cost})`);
+
   console.log(`\n${passed} passed`);
 })().catch((e) => { console.error(e); process.exit(1); });

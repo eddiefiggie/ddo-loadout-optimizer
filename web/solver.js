@@ -1860,6 +1860,60 @@ function probeMax(program, highs, stat, locks) {
   return effectiveOf(program, prim, stat);
 }
 
+/** #345 (U2, R2/R6) — which higher-ranked priority bound an outbid target, and
+ *  what taking it back would cost. Returns null rather than guessing.
+ *
+ *  A PREFIX walk, not a leave-one-out. Locks accumulate in rank order and each
+ *  one's value was achieved UNDER the locks above it, so relaxing a single lock
+ *  while retaining the ones beneath it describes a state the solve never
+ *  occupied — and is often infeasible. Instead: probe the target under the first
+ *  k locks for increasing k. It holds while k is small and dies once k includes
+ *  the lock that binds it. That boundary is the binding priority.
+ *
+ *  Each added lock only shrinks the feasible set, so reachability is monotone in
+ *  k and the boundary is binary-searchable. `linear` forces the exhaustive walk
+ *  so a test can prove the two agree rather than assuming monotonicity.
+ *
+ *  The price is a second probe: with the target floored at 1 and only the locks
+ *  ABOVE the boundary held, how high can the binding stat still reach? The
+ *  difference from what it actually achieved is what the trade costs. */
+function attributeOutbid(program, highs, stat, targetList, perTarget, opts) {
+  const higher = [];
+  for (const s of targetList || []) {
+    if (s === stat) break;
+    // The sentinel's lock is an LP body (a count), not a stat lock, so it cannot
+    // participate in a prefix of stat locks. A tier-bound target reports as
+    // unattributable rather than being blamed on the nearest real stat.
+    if (s === _UTILITY_SENTINEL) continue;
+    higher.push({ stat: s, value: Number(perTarget[s]) || 0 });
+  }
+  if (!higher.length) return null;
+  const at = (k) => probeMax(program, highs, stat, higher.slice(0, k));
+  if (!(at(0) > 0)) return null;              // unreachable even unlocked — a different cause
+  if (at(higher.length) > 0) return null;     // these locks did not bind it
+
+  let boundary;
+  if (opts && opts.linear) {
+    boundary = 1;
+    while (boundary <= higher.length && at(boundary) > 0) boundary++;
+  } else {
+    let lo = 0, hi = higher.length;           // at(lo) > 0, at(hi) === 0
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1;
+      if (at(mid) > 0) lo = mid; else hi = mid;
+    }
+    boundary = hi;
+  }
+  const binding = higher[boundary - 1];
+  const prefix = higher.slice(0, boundary - 1);
+  const held = probeMax(program, highs, binding.stat, [...prefix, { stat, value: 1, floor: true }]);
+  const cost = binding.value - held;
+  // A non-positive cost contradicts the boundary: the target would be free. Do
+  // not report a price the solve does not support.
+  if (!(cost > 0)) return null;
+  return { stat, binding: binding.stat, bindingValue: binding.value, bindingHeld: held, cost };
+}
+
 async function solveLexicographic(model, highs) {
   const program = buildProgram(model);
   if (!program.xVars.length) return { status: "infeasible", reason: "no eligible items for these constraints" };
@@ -2499,5 +2553,5 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
 if (typeof module !== "undefined" && module.exports) {
   // readSolution is exported for TESTS ONLY — the deterministic guard tests
   // inject a synthetic primal (#319); app code goes through the solve entry points.
-  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, bucketCountsFor, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, readSolution, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars, rawTotalOf, effectiveOf, buildCreditReport, outbidReportFor };
+  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, bucketCountsFor, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, readSolution, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars, rawTotalOf, effectiveOf, buildCreditReport, outbidReportFor, attributeOutbid };
 }
