@@ -1749,34 +1749,42 @@ console.log(`\n${passed} passed`);
 // Twenty targetable stats are augment-only, so telling that player to widen
 // their ML band is advice that cannot work. The ladder joins the owned-pool
 // carve-out: an explicit, single, reversible choice worth naming.
-test("#346: the zero-source notice names the rung when one is excluding augments", () => {
-  const model = { worn: [], augments: [], targets: ["Strikethrough"] };
-  const result = { status: "optimal", perTarget: { Strikethrough: 0 } };
-  const dataset = { items: [{ category: "augment", affixes: [{ name: "Strikethrough", value: 15 }] }] };
+test("#346: the zero-source notice blames the rung only on evidence", () => {
+  const model = { worn: [], augments: [], targets: ["X"] };
+  const result = { status: "optimal", perTarget: { X: 0 } };
+  const notice = (rung, dataset) =>
+    R.zeroSourceNotice({ targets: ["X"], craftingRung: rung }, result, model, dataset);
 
-  const plain = R.zeroSourceNotice({ targets: ["Strikethrough"] }, result, model, dataset);
-  assert.match(plain, /widening the ML band/, "with no rung set, the advice is unchanged");
-  assert.ok(!/solver assume/.test(plain), "and it does not blame a ladder the player never moved");
+  // Attribution must be EVIDENCE-based, not rung-based. Keying on the rung value
+  // alone told a player whose stat is missing for ML-band reasons to raise the
+  // ladder — wrong advice, and it displaced the correct advice to make room.
+  const wornOnly = { items: [{ category: "item", affixes: [{ name: "X", value: 5 }] }] };
+  const innocent = notice("printed-only", wornOnly);
+  assert.match(innocent, /widening the ML band/,
+    "an innocent rung keeps the generic advice, which is at least not wrong");
+  assert.ok(!/solver assume/.test(innocent), "and is not blamed for a stat it never touched");
 
-  // Each rung names what it ACTUALLY removed: claiming the Solar/Lunar rung
-  // "excludes augments" would send the player up two rungs to fix a problem one
-  // rung solves.
-  const solarLunar = R.zeroSourceNotice({ targets: ["Strikethrough"], craftingRung: "no-solar-lunar" }, result, model, dataset);
-  assert.match(solarLunar, /which exclude Solar\/Lunar Gems/, "the middle rung names only what it removed");
-  assert.ok(!/which exclude augments/.test(solarLunar), "and does not overclaim");
+  // Guilty: the stat's only source is an augment the rung removed.
+  const augOnly = { items: [{ category: "augment", aug_color: { color: "Blue" }, affixes: [{ name: "X", value: 5 }] }] };
+  const guilty = notice("printed-only", augOnly);
+  assert.match(guilty, /which exclude augments/);
+  assert.match(guilty, /raising "What may the solver assume/, "and points at the control");
+  assert.ok(!/widening the ML band/.test(guilty));
 
-  const bottom = R.zeroSourceNotice({ targets: ["Strikethrough"], craftingRung: "printed-only" }, result, model, dataset);
-  assert.match(bottom, /which exclude augments/, "the bottom rung did remove them all");
+  // Each rung names only what IT removed: a Blue augment survives the Solar/Lunar
+  // rung, so that rung must not claim responsibility for it.
+  const sunOnly = { items: [{ category: "augment", aug_color: { color: "Sun" }, affixes: [{ name: "X", value: 5 }] }] };
+  assert.match(notice("no-solar-lunar", sunOnly), /which exclude Solar\/Lunar Gems/);
+  assert.match(notice("no-solar-lunar", augOnly), /widening the ML band/,
+    "a Blue augment is untouched by the Solar/Lunar rung, so that rung is innocent here");
 
-  for (const withRung of [solarLunar, bottom]) {
-    assert.match(withRung, /raising "What may the solver assume/, "points at the control");
-    assert.ok(!/widening the ML band/.test(withRung),
-      "does not send the player after their ML band instead");
-  }
-
-  const niche = R.zeroSourceNotice({ targets: ["Strikethrough"], craftingRung: "no-niche-crafting" }, result, model, dataset);
-  assert.match(niche, /widening the ML band/,
-    "the niche-crafting rung does not touch augments, so it must not claim to");
+  // R12 covers the craftable half too — a Viktranium-carried stat is attributed
+  // to the niche-crafting rung, which previously never named itself at all.
+  const vikCarried = { items: [{ category: "item", affixes: [{ name: "X", value: 5 }] }],
+    viktranium: [{ affixes: [{ stat: "X", value: 7 }] }] };
+  assert.match(notice("no-niche-crafting", vikCarried), /which exclude niche crafting/);
+  assert.match(notice("everything", vikCarried), /widening the ML band/,
+    "the top rung removed nothing and never claims otherwise");
 });
 
 // The owned-gear pool keeps precedence: it is the more specific explicit choice,

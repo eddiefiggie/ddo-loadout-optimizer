@@ -18,6 +18,8 @@ const _resultsRungExcludesSolarLunar = (typeof rungExcludesSolarLunar !== "undef
   : (typeof require !== "undefined" ? require("./model.js").rungExcludesSolarLunar : () => false);
 const _resultsRungExcludesAllAugments = (typeof rungExcludesAllAugments !== "undefined") ? rungExcludesAllAugments
   : (typeof require !== "undefined" ? require("./model.js").rungExcludesAllAugments : () => false);
+const _resultsRungExcludesNicheCrafting = (typeof rungExcludesNicheCrafting !== "undefined") ? rungExcludesNicheCrafting
+  : (typeof require !== "undefined" ? require("./model.js").rungExcludesNicheCrafting : () => false);
 // U8 (R8) — bound like every other shared primitive. `renderResults` /
 // `equippedBody` / `loadoutDeepDive` run against the LIVE solve result and have no
 // saved record, so they cannot reach the collapse through `Proj.project(rec)`;
@@ -881,6 +883,49 @@ function datasetHasStat(dataset, stat) {
   return false;
 }
 
+/** #346 (U5, R12) — the stat names the current rung actually took out of reach.
+ *
+ *  Attribution has to be evidence-based, not rung-based: the ladder is one of
+ *  several things that can empty a stat's pool, and naming it without checking
+ *  produces confidently wrong advice ("raise the ladder") for a stat the ladder
+ *  never touched. Covers both halves of the ladder — the craftable option pools
+ *  the niche-crafting rung empties, and the augments the two rungs below it gate
+ *  — so a Viktranium-only stat is attributed as readily as an augment-only one.
+ *
+ *  Runs only when a target already came back with no reachable source, which is
+ *  rare, so the scan cost never lands on an ordinary solve. */
+function _rungRemovedStats(dataset, rung) {
+  const out = new Set();
+  if (!dataset || !_resultsRungExcludesNicheCrafting(rung)) return out;
+  const add = (affixes) => {
+    for (const a of affixes || []) {
+      const n = a && (a.name != null ? a.name : a.stat);
+      if (n) out.add(n);
+    }
+  };
+  // The craftable option families buildModel empties at the niche-crafting rung.
+  for (const pool of [dataset.dino_inserts, dataset.nearly_complete, dataset.viktranium,
+    dataset.seal, dataset.thunder_forged, dataset.green_steel]) {
+    for (const o of pool || []) add(o && (o.affixes || (o.stat ? [o] : [])));
+  }
+  for (const defs of [dataset.membership_set_defs, dataset.augment_set_defs]) {
+    for (const def of Object.values(defs || {})) {
+      for (const t of (def && def.tiers) || []) add(t.affixes);
+    }
+  }
+  // The augments the two lower rungs gate, by the same colour rule model.js uses.
+  const allAugs = _resultsRungExcludesAllAugments(rung);
+  const solarLunar = _resultsRungExcludesSolarLunar(rung);
+  if (allAugs || solarLunar) {
+    for (const v of dataset.items || []) {
+      if (!v || v.category !== "augment") continue;
+      const isSL = ((v.aug_color || {}).color === "Sun" || (v.aug_color || {}).color === "Moon");
+      if (allAugs || isSL) add(v.affixes);
+    }
+  }
+  return out;
+}
+
 function zeroSourceNotice(query, result, model, dataset) {
   if (!result || result.status !== "optimal") return "";
   const targets = (query && query.targets) || (model && model.targets) || [];
@@ -916,11 +961,15 @@ function zeroSourceNotice(query, result, model, dataset) {
     // the likeliest cause of a zero here — and telling that player to widen
     // their ML band is advice that cannot work.
     const rung = _resultsRung(query || {});
-    // Name what the rung ACTUALLY removed. The Solar/Lunar rung still admits
-    // every other colour, so claiming it "excludes augments" would send the
-    // player up two rungs to fix a problem one rung solves.
-    const rungRestricts = _resultsRungExcludesSolarLunar(rung);
-    const removed = _resultsRungExcludesAllAugments(rung) ? "augments" : "Solar/Lunar Gems";
+    // Blame the rung only on EVIDENCE that it removed a source of one of these
+    // stats. Keying on the rung value alone told a player whose stat is missing
+    // for ML-band reasons to raise the ladder — wrong advice, and it discarded
+    // the correct advice to make room. That is worse than the generic sentence
+    // this function deliberately falls back to, which is why the fallback stays.
+    const removedByRung = _rungRemovedStats(dataset, rung);
+    const rungRestricts = filtered.some((s) => removedByRung.has(s));
+    const removed = _resultsRungExcludesAllAugments(rung) ? "augments"
+      : _resultsRungExcludesSolarLunar(rung) ? "Solar/Lunar Gems" : "niche crafting";
     const where = owned ? "your owned-gear pool"
       : rungRestricts ? `your current filters, which exclude ${removed}` : "your current filters";
     const fix = owned ? "the full catalog may have one"
