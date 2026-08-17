@@ -301,7 +301,7 @@ U1 establishes the rung and the model seam; U2, U3, and U4 each consume it and a
 | Python suite | `python3 tests/run_tests.py` | U6 (build stamp), any seed or pipeline touch |
 | JS suite | `for t in tests/*.test.js; do node "$t"; done` | U1-U6 — run file by file; `node a.js b.js` executes only the first |
 | Golden solver fixtures | `node tests/solver_golden.test.js` | U1, U6 — zero diff expected on the default rung |
-| Real-data acceptance | `node tests/ae_utility_runs.js` | U1 — re-run after any pool-composition change |
+| Real-data acceptance | `node tests/utility_runs.test.js` | U1 — re-run after any pool-composition change |
 
 A golden or parity diff on the default rung is a regression, not a fixture to re-ratify. If a capture ever becomes necessary, rebuild `web/data/items.json` from the current tree first.
 

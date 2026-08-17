@@ -1293,7 +1293,14 @@ if (typeof window !== "undefined" && window.App) {
             ];
             return `<fieldset class="wz-ladder">
               <legend class="wz-label">What may the solver assume beyond the printed item?</legend>
-              <span class="wz-help">Each step down removes more than the one above it. Lower rungs mean smaller numbers you can actually reach.</span>
+              <!-- #343 — this used to read "Lower rungs mean smaller numbers you
+                   can actually reach", which is false per stat. Under strict
+                   lexicographic priority a smaller pool that lowers a HIGH
+                   priority relaxes every later stage, so a lower priority can
+                   genuinely rise: measured ML15/THF, stepping to "No niche
+                   crafting" takes Seeker 12 -> 10 and Armor-Piercing 17 -> 22.
+                   What is guaranteed is the pool nesting and the top priority. -->
+              <span class="wz-help">Each step down removes more than the one above it, so your top priority can only stay the same or get smaller. Priorities below it may shift either way as the solver re-optimises around what is left.</span>
               ${RUNGS.map(([val, label, help]) => `<label class="wz-check">
                 <input type="radio" name="wz-crafting-rung" value="${esc(val)}"${rung === val ? " checked" : ""}>
                 <span class="wz-check-body"><span class="wz-label">${esc(label)}</span>

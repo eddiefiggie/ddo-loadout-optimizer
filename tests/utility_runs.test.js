@@ -1,11 +1,20 @@
 // #91 (U8) — AE1/AE2/AE3 acceptance runs on REAL data (web/data/items.json).
 //
-// A rerunnable verification script, deliberately NOT named *.test.js: it is
-// evidence for the Utility tier's acceptance examples, re-run when the dataset
-// or solver changes, not a per-commit suite member (the golden guard owns
-// drift detection; the perf gate lives in tests/perf_utility.js).
+// A rerunnable verification script that IS a per-commit suite member.
 //
-// Run: node tests/ae_utility_runs.js
+// It was deliberately named `ae_utility_runs.js` (outside the tests/*.test.js
+// glob) on the theory that it is evidence rather than a guard, and that the
+// golden owns drift detection. #343's review disproved that: re-introducing the
+// reported bug (a solver cap that stops the tier securing the late toggles)
+// leaves 829/829 Python and 22/23 JS green, and the ONE red — solver_golden —
+// reports opaque `chosen` drift naming no utility effect. Re-capturing the
+// golden, the documented remedy this very PR performed on 18/23 fixtures, then
+// turns the whole per-commit gate green with the bug live. The golden CANNOT
+// name it: capture_golden.js snapshots status/perTarget/effective/chosen only,
+// with no utility count and no effect names. These assertions are the only
+// per-commit guard on the reported behavior, and they cost ~10 seconds.
+//
+// Run: node tests/utility_runs.test.js
 //
 // HONEST DEVIATION from the #91 report's telling, ratified 2026-08-15: the
 // report compared Calamitous Warhammer against Echo of Whelm, but on the real
@@ -38,16 +47,18 @@ function check(name, fn) {
 (async () => {
   const Highs = require(path.join(ROOT, "web", "vendor", "highs.js"));
   const highs = await Highs({ locateFile: (f) => path.join(ROOT, "web", "vendor", f) });
-  const dataset = normalizeDataset(JSON.parse(
-    fs.readFileSync(path.join(ROOT, "web", "data", "items.json"), "utf8")));
+  const raw = JSON.parse(fs.readFileSync(path.join(ROOT, "web", "data", "items.json"), "utf8"));
+  const dataset = normalizeDataset(raw);
   const vocab = buildPickerVocabulary(dataset);
 
   // The counting set rides as the buildModel argument, exactly as
-  // web/query.js and web/wizard.js pass it (#91 U3, KTD3).
-  const solve = async (query) => {
+  // web/query.js and web/wizard.js pass it (#91 U3, KTD3). AE3 passes the
+  // PRE-#343 set explicitly so the two rosters are compared on one dataset
+  // rather than against a remembered number.
+  const solve = async (query, counting) => {
     const model = buildModel(dataset.items, query, dataset.dino_inserts, dataset.nearly_complete,
       dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged,
-      dataset.green_steel, dataset.augment_set_defs, vocab.utilityCounting);
+      dataset.green_steel, dataset.augment_set_defs, counting || vocab.utilityCounting);
     const r = await S.solveLexicographic(model, highs);
     return { model, r };
   };
@@ -114,6 +125,79 @@ function check(name, fn) {
     assert.ok(r3b.utilityCount > 0, "and the count is real");
   });
   console.log(`    picks ${r3a.chosen.length} -> ${r3b.chosen.length}, count ${r3b.utilityCount}`);
+
+
+  // ---- #343 — the roster change. AE1-AE3 of the default-roster plan. ----
+  // These three solves are the evidence the change rests on, run against the
+  // real catalog rather than a fixture: without them the plan's claim that the
+  // fix works under contention is prose.
+  const TOGGLES = ["Ghostly", "True Seeing", "Blurry", "Freedom of Movement",
+    "Blindness Immunity", "Deathblock"];
+  const secured = (r) => (r.utilityReport && r.utilityReport.effects || []).map((e) => e.name);
+
+  console.log("\n#343/AE1 — ML34, one ranked priority: the reported bug closes");
+  const { r: a1 } = await solve({ mlCap: 34, targets: ["Constitution", UTILITY_SENTINEL],
+    armorType: null, weaponSetup: null, classRace: null });
+  check("AE1: every worn defensive toggle is secured", () => {
+    assert.strictEqual(a1.status, "optimal");
+    const got = secured(a1);
+    for (const t of TOGGLES) assert.ok(got.includes(t), `${t} missing — this is the reported bug`);
+  });
+  check("AE1: no Bane-family proc is counted any more", () => {
+    assert.ok(!secured(a1).some((n) => /Bane$/.test(n)),
+      "the weapon procs left the counted set");
+  });
+  console.log(`    count ${a1.utilityCount}: ${secured(a1).join(", ")}`);
+
+  console.log("\n#343/AE2 — ML34, six contested ranked stats: it survives contention");
+  const contested = ["Constitution", "Physical Sheltering", "Magical Sheltering",
+    "Healing Amplification", "Dodge", "Fortification"];
+  const { r: a2 } = await solve({ mlCap: 34, targets: [...contested, UTILITY_SENTINEL],
+    armorType: null, weaponSetup: null, classRace: null });
+  check("AE2: toggles are still secured when ranked stats contest the slots", () => {
+    assert.strictEqual(a2.status, "optimal");
+    const got = secured(a2);
+    assert.ok(TOGGLES.some((t) => got.includes(t)),
+      "under contention the count falls, but the toggles are what survive — " +
+      "the old roster returned five weapon procs and no toggle here");
+  });
+  // AE3 of the plan's Verification: the tier is pinned last, so it cannot buy an
+  // effect with a ranked point. This is the invariant the whole design rests on.
+  const { r: a2NoTier } = await solve({ mlCap: 34, targets: contested,
+    armorType: null, weaponSetup: null, classRace: null });
+  check("AE2: no ranked stat pays for a utility effect", () => {
+    for (const t of contested) {
+      assert.strictEqual(a2.perTarget[t], a2NoTier.perTarget[t],
+        `${t} moved when the tier was added — the tier is not pinned last`);
+    }
+  });
+  console.log(`    count ${a2.utilityCount}: ${secured(a2).join(", ")}`);
+
+  console.log("\n#343/AE3 — a weapon build loses nothing");
+  // The style gate reads `style` (web/model.js:210) and wants a style id —
+  // "thf". An earlier draft of this run passed `weaponStyle: "Two Handed"`,
+  // which NOTHING reads, so it solved unconstrained and picked a one-handed
+  // war hammer: the build most exposed to losing the Banes was never actually
+  // under test. Both rosters are solved here so the comparison is measured.
+  const thf = { mlCap: 34, targets: ["Melee Power", "Doublestrike", UTILITY_SENTINEL],
+    armorType: null, weaponSetup: null, style: "thf", classRace: null };
+  const oldCounting = new Set([
+    ...[...vocab.utilityCounting].filter((n) => !TOGGLES.includes(n)),
+    ...(raw.metadata.utility_untyped_admitted || []),
+  ]);
+  const { r: a3 } = await solve(thf);
+  const { r: a3Old } = await solve(thf, oldCounting);
+  check("AE3: the count does not fall for the build most exposed to losing the Banes", () => {
+    assert.strictEqual(a3.status, "optimal");
+    assert.strictEqual(a3Old.status, "optimal");
+    assert.ok(a3.utilityCount >= a3Old.utilityCount,
+      `a two-handed build should not lose count to the reshaped roster (new ${a3.utilityCount} ` +
+      `vs old ${a3Old.utilityCount}); the toggles replace the Banes rather than reducing the total`);
+    assert.ok(TOGGLES.some((t) => secured(a3).includes(t)), "and it gains toggles it never had");
+    assert.ok(!TOGGLES.some((t) => secured(a3Old).includes(t)),
+      "the old roster could not have counted them — otherwise this proves nothing");
+  });
+  console.log(`    count ${a3.utilityCount} (old roster ${a3Old.utilityCount}): ${secured(a3).join(", ")}`);
 
   console.log(`\n${passed} passed`);
 })().catch((e) => { console.error(e); process.exit(1); });

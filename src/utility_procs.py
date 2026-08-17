@@ -20,10 +20,11 @@ their stale-checks can never fight over one name: a quarantined proc that later
 gains a worn-slot carrier stops being a candidate HERE (stale — build fails,
 review event) and becomes a candidate THERE.
 
-Admitted names feed `metadata.utility_counting_set` and
-`metadata.utility_untyped_admitted` (a presence-path picker entry) — NEVER
-`metadata.rankable_affixes`, which would hand Holy/Vampirism the declared-credit
-control `web/dataset.js` documents as a defect for exactly these names.
+Admitted names feed `metadata.utility_untyped_admitted` (a presence-path
+picker entry) — NEVER `metadata.rankable_affixes`, which would hand
+Holy/Vampirism the declared-credit control `web/dataset.js` documents as a
+defect for exactly these names. Since #343 they do NOT feed
+`metadata.utility_counting_set`: see `counting_set` below for why.
 
 This module also derives the Bool half of the counting set:
 `presence_counting_names` mirrors `web/dataset.js`'s presence predicate
@@ -70,7 +71,9 @@ PRESENCE_ALLOW = frozenset({
 # MEASURED BATCHES per KTD10. Names outside it are DERIVABLE from the presence
 # population (not quarantine rulings — nothing is filed per name). Contents:
 # the PRESENCE_ALLOW adjudicated named effects + the plan's acceptance-example
-# effects (Ghost Touch, Echo of Whelm's three procs) + Feather Falling.
+# effects (Ghost Touch, Echo of Whelm's three procs) + Feather Falling + the
+# six #343 worn defensive toggles. Since #343 this list bounds the WHOLE
+# counting set — the untyped procs are no longer unioned in.
 # Keep in lockstep with web/dataset.js — the stamped-set parity test in
 # tests/dataset.test.js fails on drift.
 UTILITY_TIER1_PRESENCE = frozenset({
@@ -79,6 +82,17 @@ UTILITY_TIER1_PRESENCE = frozenset({
     "Blunt Trauma",
     "Lesser Boneshatter",
     "Feather Falling",
+    # #343 — the worn defensive toggles. Feather Falling above was the only one
+    # of this archetype the original curation caught, which is exactly the bug:
+    # the tier filled leftover slots with weapon procs and never reached for the
+    # effects players actually notice. These six are the reported case (Ghostly,
+    # True Seeing) plus their obvious peers.
+    "Ghostly",
+    "True Seeing",
+    "Blurry",
+    "Freedom of Movement",
+    "Blindness Immunity",
+    "Deathblock",
 }) | PRESENCE_ALLOW
 
 
@@ -108,23 +122,30 @@ def presence_counting_names(records) -> set:
     return out
 
 
-def counting_set(records, rankable, untyped_admitted) -> list:
-    """`metadata.utility_counting_set`: (Bool presence names passing
-    presence-minus-magnitude, RESTRICTED to the curated tier-1 list) ∪
-    (allow-dispositioned untyped proc names). Sorted.
+def counting_set(records, rankable) -> list:
+    """`metadata.utility_counting_set`: Bool presence names passing
+    presence-minus-magnitude, RESTRICTED to the curated tier-1 list. Sorted.
+
+    #343 — the allow-dispositioned untyped procs (the Bane family, Holy,
+    Vampirism, Maiming, Chilling…) used to be unioned in here, and they were 24
+    of the 38 counted names and 86% of the measured cost. A Bane proc is a
+    damage-type decision belonging to the weapon choice, not something a player
+    experiences as one of 24 distinct wins, so the count no longer includes
+    them. They are deliberately NOT removed from `utility_untyped_admitted`,
+    whose other consumer is the picker: a player can still rank Undead Bane as
+    an ordinary priority. They stopped being counted, not being available.
 
     KTD10 — the tier-1 intersection is the measured-batch lever: the full
     presence population failed U3's perf gate, so v1 counts only the curated
     subset; widening happens by growing UTILITY_TIER1_PRESENCE in measured
-    batches. The untyped-admitted union is unchanged.
+    batches.
 
     The magnitude subtraction is what drops the four dual-nature names
     (Deception, Smoke Screen, Protection from Evil, Underwater Action) — they
     ship a Bool line on some items and a real rankable magnitude on others, and
     their value is already expressible as a ranked stat (R5)."""
-    return sorted(((presence_counting_names(records) & UTILITY_TIER1_PRESENCE)
-                   - set(rankable or ()))
-                  | set(untyped_admitted or ()))
+    return sorted((presence_counting_names(records) & UTILITY_TIER1_PRESENCE)
+                  - set(rankable or ()))
 
 
 def candidates(records) -> dict:

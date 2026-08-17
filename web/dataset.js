@@ -484,6 +484,10 @@ const PRESENCE_ALLOW = new Set([
 // "named effects the four-word cap wrongly hides" (picker visibility), and
 // entangling it with counting admission would make a future picker adjudication
 // silently widen the counting set unreviewed.
+// #343 widened this list with the six worn defensive toggles (Ghostly, True
+// Seeing, Blurry, Freedom of Movement, Blindness Immunity, Deathblock) and
+// made it the WHOLE counting set: the reviewed untyped procs are no longer
+// unioned in, so this constant now bounds the count on its own.
 // MIRRORED in src/utility_procs.py (the stamp derivation) — the stamped-set
 // parity test in tests/dataset.test.js guards the two copies against drift.
 const UTILITY_TIER1_PRESENCE = new Set([
@@ -494,6 +498,17 @@ const UTILITY_TIER1_PRESENCE = new Set([
   "Lesser Boneshatter",
   // The classic always-on utility archetype, pinned expected-in since U1:
   "Feather Falling",
+  // #343 — the worn defensive toggles. Feather Falling above was the only one of
+  // this archetype the original curation caught, which is exactly the bug: the
+  // tier filled leftover slots with weapon procs and never reached for the
+  // effects players actually notice. These six are the reported case (Ghostly,
+  // True Seeing) plus their obvious peers.
+  "Ghostly",
+  "True Seeing",
+  "Blurry",
+  "Freedom of Movement",
+  "Blindness Immunity",
+  "Deathblock",
   // The PRESENCE_ALLOW wiki-adjudicated named effects:
   "Kick 'Em While They're Down",
   "Way of the Sun Soul",
@@ -747,8 +762,10 @@ function buildPickerVocabulary(dataset) {
   for (const c of untypedSeen) if (!typedSeen.has(c) && magnitude.has(c)) untypedOnly.add(c);
 
   // #91 (U1) — the Utility tier's counting vocabulary, consumed from the build
-  // stamp (metadata.utility_counting_set = presence-minus-magnitude Bool names
-  // ∪ admitted untyped procs). The stamp is authoritative — the Python pipeline
+  // stamp (metadata.utility_counting_set = presence-minus-magnitude Bool names,
+  // restricted to the curated tier-1 list). #343 removed the admitted untyped
+  // procs from the count; they remain in metadata.utility_untyped_admitted for
+  // the picker, so the two sets are now disjoint. The stamp is authoritative — the Python pipeline
   // derives it with a mirror of the presence predicate above, so app and build
   // agree; nothing here re-derives it. Canonicalized through the alias table so
   // a counting predicate matches gear/augments/crafting by the ONE shared name.

@@ -539,8 +539,10 @@ def build() -> dict:
     # adjudication is keyed on the canonical name. An un-dispositioned candidate
     # fails the build, so a new untyped weapon proc is a reviewed event instead
     # of a silent zero in the utility count. Allowed names feed
-    # metadata.utility_counting_set + utility_untyped_admitted below — never
-    # rankable_affixes (the declared-credit defect web/dataset.js documents).
+    # metadata.utility_untyped_admitted below (the picker's presence path) —
+    # never rankable_affixes (the declared-credit defect web/dataset.js
+    # documents), and since #343 no longer metadata.utility_counting_set
+    # either: the procs stayed rankable but stopped being counted.
     _uproc_allow, _uproc_quarantined = utility_procs_mod.load(UTILITY_PROCS_PATH)
     _uproc_checked = utility_procs_mod.assert_adjudicated(
         planner_records, _uproc_allow, _uproc_quarantined)
@@ -895,15 +897,17 @@ def build() -> dict:
             "\n  ".join(f"{s} — {stat} {val}" for s, stat, val in _set_orphans))
 
     _rankable_list = rankable_affixes(planner_records, _untyped_allow)
-    # #91 (U1) — the Utility tier's counting vocabulary: (Bool presence names
-    # passing presence-minus-magnitude — the subtraction drops the four
-    # dual-nature names) ∪ (allow-dispositioned untyped proc names). Computed
+    # #91 (U1) — the Utility tier's counting vocabulary: Bool presence names
+    # passing presence-minus-magnitude (the subtraction drops the four
+    # dual-nature names), RESTRICTED to the curated tier-1 list. #343 removed
+    # the allow-dispositioned untyped procs from this union — they stayed
+    # rankable in the picker but stopped being counted. Computed
     # AFTER every correction/split above so demoted-to-presence affixes are
     # seen, and against the SAME records rankable_affixes read, so the
     # subtraction is exact. Stamped as metadata below; the app consumes the
     # stamp rather than re-deriving it.
     _utility_counting = utility_procs_mod.counting_set(
-        planner_records, _rankable_list, _uproc_allow)
+        planner_records, _rankable_list)
     # #91 (U3, KTD10) — the FULL presence-minus-magnitude population size, kept
     # beside the tier-1 restriction for the coverage disclosure: it states how
     # much of the derivable population v1 deliberately does not count yet.

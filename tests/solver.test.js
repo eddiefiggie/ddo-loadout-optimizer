@@ -1918,35 +1918,69 @@ async function withCrossAdd(map, fn) {
       "P1 without crafting cannot exceed P1 with it");
   });
 
-  // #346 (U1, AE4) — the ladder nests on REAL data: each rung's augment
-  // placements are a subset of the rung above, and no ranked stat ever improves
-  // as you descend. A rung that added value would mean the exclusion leaked.
-  await test("#346: the rungs nest on a real solve and never improve a ranked stat", async () => {
+  // #346 (U1, AE4) — the ladder nests on REAL data: each rung OFFERS a subset of
+  // the rung above, and descending never improves the target vector
+  // lexicographically. A rung that offered more, or bought a better
+  // lexicographic outcome from a smaller pool, would mean the exclusion leaked.
+  // (Two weaker invariants this test once asserted are wrong and are explained
+  // inline below — neither chosen placements nor per-stat values need nest.)
+  await test("#346: the rungs nest on a real solve and never improve the priority vector", async () => {
     const fs = require("fs");
     const { buildModel } = require("../web/model.js");
     const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
     const targets = ["Melee Power", "Doublestrike", "Accuracy", "Deadly", "Seeker", "Armor-Piercing"];
-    const q = { mlCap: 15, targets, armorType: null, weaponSetup: null, weaponStyle: "Two Handed", classRace: null };
-    const solveAt = async (rung) => {
-      const r = await S.solveLexicographic(buildModel(data.items, { ...q, craftingRung: rung },
-        data.dino_inserts, data.nearly_complete, data.viktranium, data.seal,
-        data.membership_set_defs, data.thunder_forged, data.green_steel, data.augment_set_defs), highs);
-      assert.strictEqual(r.status, "optimal", `${rung} stays feasible`);
-      return r;
-    };
+    // `style` with a style id — NOT `weaponStyle: "Two Handed"`, which nothing
+    // reads (web/model.js:210 + web/weapon-taxonomy.js STYLES) and which left
+    // an earlier draft of this test solving unconstrained.
+    const q = { mlCap: 15, targets, armorType: null, weaponSetup: null, style: "thf", classRace: null };
+    const modelAt = (rung) => buildModel(data.items, { ...q, craftingRung: rung },
+      data.dino_inserts, data.nearly_complete, data.viktranium, data.seal,
+      data.membership_set_defs, data.thunder_forged, data.green_steel, data.augment_set_defs);
     const rungs = ["everything", "no-niche-crafting", "no-solar-lunar", "printed-only"];
-    const out = {};
-    for (const rung of rungs) out[rung] = await solveAt(rung);
+    const models = {}, out = {};
+    for (const rung of rungs) {
+      models[rung] = modelAt(rung);
+      out[rung] = await S.solveLexicographic(models[rung], highs);
+      assert.strictEqual(out[rung].status, "optimal", `${rung} stays feasible`);
+    }
 
-    const augIds = (r) => new Set((r.augmentsPlaced || []).map((a) => a.variant_id));
+    // The ladder nests in the OPTION POOL, which is the guarantee. It does NOT
+    // nest in the chosen placements, and asserting that was this test's own bug:
+    // once the constraint above was corrected to a real THF query, losing niche
+    // crafting made the solver SUBSTITUTE a Solar Gem it had not needed at
+    // "everything" — legitimate re-optimization over a smaller pool, not a leak.
+    // Pool nesting is exact and needs no solve; the solve-level guarantees are
+    // monotone non-improvement and the absence of each rung's own category.
+    const poolIds = (m) => new Set((m.augments || []).map((a) => a.variant_id || a.name));
+    const nichePools = ["viktranium", "seal", "thunderForged", "greenSteel", "dinoInserts",
+      "nearlyComplete", "membershipSetDefs", "augment_set_defs"];
     for (let i = 1; i < rungs.length; i++) {
-      const above = augIds(out[rungs[i - 1]]), here = augIds(out[rungs[i]]);
+      const above = poolIds(models[rungs[i - 1]]), here = poolIds(models[rungs[i]]);
       for (const id of here) {
-        assert.ok(above.has(id), `${rungs[i]} placed ${id}, which ${rungs[i - 1]} did not — the ladder leaked`);
+        assert.ok(above.has(id),
+          `${rungs[i]} OFFERS ${id}, which ${rungs[i - 1]} did not — the ladder leaked`);
       }
-      for (const t of targets) {
-        assert.ok((out[rungs[i]].perTarget[t] || 0) <= (out[rungs[i - 1]].perTarget[t] || 0),
-          `${t} must not improve descending from ${rungs[i - 1]} to ${rungs[i]}`);
+      for (const p of nichePools) {
+        const a = models[rungs[i - 1]][p], h = models[rungs[i]][p];
+        const size = (x) => (Array.isArray(x) ? x.length : x ? Object.keys(x).length : 0);
+        assert.ok(size(h) <= size(a),
+          `${p} grew descending from ${rungs[i - 1]} to ${rungs[i]} — the ladder leaked`);
+      }
+      // Descending must not improve the target vector LEXICOGRAPHICALLY — the
+      // first stat that differs must fall. Per-stat non-improvement is NOT
+      // guaranteed and asserting it was this test's second bug: on this query
+      // Seeker (priority 5) drops 12 -> 10 when niche crafting goes, which
+      // RELAXES the stage-6 constraint set, so Armor-Piercing (priority 6)
+      // rises 17 -> 22. That is strict lexicographic priority working — a lower
+      // stat may gain once a higher ceiling falls — not a leak.
+      const vAbove = targets.map((t) => out[rungs[i - 1]].perTarget[t] || 0);
+      const vHere = targets.map((t) => out[rungs[i]].perTarget[t] || 0);
+      const d = vHere.findIndex((v, k) => v !== vAbove[k]);
+      if (d !== -1) {
+        assert.ok(vHere[d] < vAbove[d],
+          `${targets[d]} IMPROVED (${vAbove[d]} -> ${vHere[d]}) at the first differing priority ` +
+          `descending from ${rungs[i - 1]} to ${rungs[i]} — a smaller pool cannot buy a better ` +
+          "lexicographic outcome");
       }
     }
     const isSolarLunar = (a) => ["Sun", "Moon"].includes(a.color);
