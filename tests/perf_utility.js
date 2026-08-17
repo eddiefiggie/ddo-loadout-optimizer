@@ -22,9 +22,18 @@
 //                       toggles, plus the 24 admitted untyped procs
 //   hybrid            — the counterfactual: the six toggles added AND the procs
 //                       still counted (44 names)
-// Measured 2026-08-16, 3 runs each: shipped 1.66-1.67x, pre343 2.09x, hybrid
-// 2.23-2.26x. That A/B is the real justification for #343 dropping the procs
-// from the count — `hybrid` closes the reported bug too, but not inside budget.
+// Measured 2026-08-16 on one developer machine. Sample counts are stated
+// because they are uneven, and ranges rather than points because these are
+// wall-clock medians that drift with machine load:
+//   shipped  1.50-1.75x  (many runs across the session, including the
+//                         pre-parameterization gate — same code path)
+//   pre343   2.09x       (1 run)
+//   hybrid   2.09-2.26x  (4 runs)
+// Budget 2.0x. Re-measure rather than cite these.
+// That A/B is the real justification for #343 dropping the procs from the count:
+// `hybrid` closes the reported bug too, but no sample of it came in under
+// budget. Note hybrid's best sample (2.09x) is nearer the line than its worst,
+// so the margin is real but not comfortable.
 // Only `shipped` is asserted against the budget; the alternates report and exit 0.
 //
 // Usage:  node tests/perf_utility.js

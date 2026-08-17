@@ -85,7 +85,16 @@ Thirty seconds. The finding had been written into the plan's Scope Boundaries an
 
 That last clause is the durable half. Verifying a claim once fixes one document; converting the verification into an assertion fixes the class.
 
+## Scope note — the cheap-check class is dominant, not universal (added 2026-08-16)
+
+This doc frames the whole class as cheap: "the check is usually one command", "specificity is what makes a claim cheap to check." That holds for claims about the current state of the code, which is the dominant case and the one every instance above came from.
+
+It does not hold for one sub-class: a **causal** claim about the effect of your own change. `docs/solutions/conventions/measure-the-counterfactual-before-crediting-your-fix.md` records an instance where the check required adding an A/B axis to a measurement harness before it could be run at all — the instrument could only measure the configuration that shipped, so the comparative claim was untestable by construction rather than merely unchecked. The discipline is the same; the cost estimate is not. Do not let "the check is one command" become a reason to treat an expensive check as optional.
+
 ## Related
+
+- `docs/solutions/conventions/never-infer-a-claim-about-your-own-results.md` — the mirror image on the other side of the same axis. That doc governs claims you **emit** (a notice, a label, an export line) and its remedy is *reword it*; this one governs claims you **consume** (a plan sentence, a review finding, a carried-forward note) and its remedy is *check it*. It has long cited this doc; the reciprocal link was missing until 2026-08-16.
+- `docs/solutions/conventions/measure-the-counterfactual-before-crediting-your-fix.md` — the third cell: a claim you emit about your own diff, where the counterfactual is neither barred nor grep-able. See the Scope note above.
 
 - `docs/solutions/conventions/exclude-until-verified-data-gates.md` — the same discipline applied to game values rather than repo facts.
 - `docs/solutions/conventions/prove-a-guard-fails-before-trusting-it.md` — the assertion half: turning a one-time check into a standing one.
