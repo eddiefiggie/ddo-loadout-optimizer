@@ -488,7 +488,13 @@ details.saturation-note .sat-sentences p { margin: var(--sp-1) 0 0; }
   overflow: hidden;
 }
 .pd-slot.occupied { border-color: var(--border-2); }
-.pd-slot.empty { opacity: 0.45; }
+.pd-slot/* #345 — the outbid disclosure and its on-request price. Inherits .scope-note;
+   the ask sits on its own line so the sentence stays readable at narrow widths. */
+.outbid-ask { display: block; margin-top: var(--sp-2); }
+.outbid-ask .outbid-price { font-size: var(--fs-xs); padding: 2px var(--sp-2); margin-right: var(--sp-2); }
+.outbid-priced { display: block; margin-top: var(--sp-2); color: var(--fg); }
+
+.empty { opacity: 0.45; }
 /* a set piece gets a themed gold highlight frame (R15). */
 .pd-slot.is-set {
   border-color: var(--set);

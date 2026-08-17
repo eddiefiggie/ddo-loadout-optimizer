@@ -1920,6 +1920,8 @@ test("U1: renderResults emits the outbid notice — the render, not just the fun
   // called from the render is inert on every surface. Assert the call site.
   const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
   const block = src.slice(src.indexOf("container.innerHTML = `"), src.indexOf("active-build-bar"));
-  assert.ok(/\$\{outbidNotice\(query, result, model\)\}/.test(block),
+  assert.ok(/\$\{outbidNotice\(query, result, model/.test(block),
     "renderResults must emit outbidNotice, or it renders nowhere");
+  assert.ok(/canPriceOutbid\(\)/.test(block),
+    "and it must pass the pricing capability, or the ask never renders");
 });

@@ -2204,3 +2204,38 @@ test("#332: web/query.js is NOT a live solve path — index.html must not load i
   assert.ok(!/src="query\.js/.test(html),
     "if query.js becomes loaded, it is a live solve path and must thread both sets too");
 });
+
+// ---------------------------------------------------------------------------
+// U3 (plan 2026-08-17-001, #345) — the outbid disclosure renders wherever
+// results render. No unit test can observe what the app's OWN calls pass, so
+// the call sites are asserted as source text, with a count so a fourth cannot
+// appear unguarded. #332 shipped a feature that passed its tests and rendered
+// on one surface of four; this is the guard that would have caught it.
+// ---------------------------------------------------------------------------
+
+test("#345: every live renderResults call site is accounted for", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const calls = [...src.matchAll(/renderResults\(/g)].map((m) => m.index);
+  assert.strictEqual(calls.length, 3,
+    `wizard.js has exactly the three known renderResults call sites; found ${calls.length}`);
+  for (const at of calls) {
+    const region = src.slice(at, src.indexOf(");", at) + 2);
+    assert.ok(/\bmodel\b/.test(region) && /\bquery\b/.test(region) && /\bresult\b|\bsnap\b/.test(region),
+      "each site must pass model, query and a result — the disclosure needs all three");
+  }
+  // Exactly one site renders a restored character with no solver attached. That
+  // is KTD4's defined degraded state (disclose, do not price), not an oversight.
+  const withoutHighs = [...src.matchAll(/renderResults\([^)]*highs:\s*null/g)];
+  assert.strictEqual(withoutHighs.length, 1,
+    "exactly one restored-snapshot site passes highs: null; pricing is withheld there by design");
+});
+
+test("#345: the pricing gate is a capability probe, not an assumption", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "results.js"), "utf-8");
+  const fn = src.slice(src.indexOf("function canPriceOutbid()"), src.indexOf("function canPriceOutbid()") + 400);
+  assert.ok(/typeof attributeOutbid === "function"/.test(fn), "probes the solver function");
+  assert.ok(/!!highs/.test(fn), "and the solver instance — a restored render has none");
+  assert.ok(/optimum && optimum\.program/.test(fn), "and the program the probe needs");
+});

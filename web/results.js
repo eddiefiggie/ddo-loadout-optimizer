@@ -985,7 +985,7 @@ function outbidTargets(query, result, model) {
   return targets.filter((t) => t !== _UTILITY_SENTINEL && reachable.has(t) && !(Number(per[t]) > 0));
 }
 
-function outbidNotice(query, result, model) {
+function outbidNotice(query, result, model, canPrice) {
   const names = outbidTargets(query, result, model);
   if (!names.length) return "";
   // Names the targets, never the binding priority — proving which higher-ranked
@@ -995,7 +995,16 @@ function outbidNotice(query, result, model) {
   // Projection owns the wording so the panel and all six exports say one thing.
   const lines = (Proj && Proj.outbidNoticeLines) ? Proj.outbidNoticeLines(names) : [];
   if (!lines.length) return "";
-  return `<p class="scope-note outbid-note" role="status">${lines.map(esc).join(" ")}</p>`;
+  // #345 (U3, R7) — pricing is ON REQUEST. Measured: one attribution costs
+  // 28-58% of the solve it follows, and pricing every outbid target costs
+  // 111-154% of it (2.6s on an endgame melee build). Automatic would more than
+  // double the wait the player already sat through; asked-for is affordable.
+  // Absent on a restored character, which carries no solver to probe with.
+  const ask = canPrice
+    ? names.map((n) => `<button type="button" class="outbid-price" data-stat="${esc(n)}">What would ${esc(n)} cost?</button>`).join(" ")
+    : "";
+  return `<p class="scope-note outbid-note" role="status">${lines.map(esc).join(" ")}`
+    + (ask ? `<span class="outbid-ask">${ask}</span>` : "") + `</p>`;
 }
 
 function renderResults(container, { model, result, query, dataset, highs, onAfterRender }) {
@@ -1045,7 +1054,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     ${staleSnapshotNotice(result)}
     ${boundNotice(query, result)}
     ${zeroSourceNotice(query, result, model, dataset)}
-    ${outbidNotice(query, result, model)}
+    ${outbidNotice(query, result, model, canPriceOutbid())}
     ${saturationNotice(result)}
     ${emptySlotNotice(query, result)}
     ${absorptionQuarantineNotice(result)}
@@ -1105,6 +1114,30 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     q("#rp-live").textContent = isAlt ? `Now viewing alternative: ${label}` : "Now viewing the optimal build";
   }
   q(".return-optimum").addEventListener("click", () => setActive(optimum, false));
+
+  // #345 (U3) — price on request. One probe per click, never on the solve path.
+  for (const btn of container.querySelectorAll(".outbid-price")) {
+    btn.addEventListener("click", () => {
+      const stat = btn.dataset.stat;
+      btn.disabled = true;
+      btn.textContent = `Pricing ${stat}…`;
+      // Defer so the label paints before the synchronous probe runs.
+      setTimeout(() => {
+        let attr = null;
+        try {
+          attr = attributeOutbid(optimum.program, highs, stat,
+            (query && query.targets) || [], optimum.perTarget || {});
+        } catch (e) { attr = null; }
+        const out = document.createElement("span");
+        out.className = "outbid-priced";
+        out.textContent = attr
+          ? `${stat} costs ${attr.cost} ${attr.binding} (${attr.bindingValue} to ${attr.bindingHeld}). `
+            + `Set a minimum on ${stat} to require it.`
+          : `Could not isolate a single priority holding ${stat} back — more than one is binding it.`;
+        btn.replaceWith(out);
+      }, 0);
+    });
+  }
   renderBuild(optimum);
 
   // Alternatives tab (U4): gated behind an explicit "Run analysis" button (R7) so
@@ -1115,6 +1148,13 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   // never left spinning.
   const altState = { list: null, computing: false };
   const altUnavailable = () => typeof generateAlternatives !== "function" || !highs;
+
+  // #345 (U3, KTD4) — same shape as altUnavailable: a capability probe, not an
+  // assumption. The restored-character render passes highs: null, so pricing is
+  // withheld there and the disclosure still stands on its own.
+  function canPriceOutbid() {
+    return typeof attributeOutbid === "function" && !!highs && !!(optimum && optimum.program);
+  }
   // Small helper: a message + a button that (re)runs the analysis.
   function altPrompt(msg, btnLabel, cls) {
     const panel = q("#rp-altspanel");
