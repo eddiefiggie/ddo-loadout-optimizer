@@ -31,7 +31,7 @@ Replace the "Don't build around niche crafting" checkbox with one ordered contro
 
 A player leveling through past lives will not spend crafting mats on gear they replace in four levels. The optimizer has no way to hear that. It solves against the full 1,063-augment catalog and returns a loadout whose numbers depend on augments the player has no intention of acquiring — and the gap is invisible, because every augment in the pool is technically obtainable.
 
-Measurement on the reported case (ML15, two-handed, melee preset, no crafting) shows the dependency is larger and differently shaped than expected:
+Measurement on the reported case shows the dependency is larger and differently shaped than expected:
 
 | pool | augments placed | Accuracy | Deadly | Seeker | Armor-Piercing | Armor Class |
 |---|---|---|---|---|---|---|
@@ -41,6 +41,25 @@ Measurement on the reported case (ML15, two-handed, melee preset, no crafting) s
 | no augments | 0 | 19 | 10 | 12 | 5 | 43 |
 
 Six of the eight augments the solver chose were Solar/Lunar gems, while removing every ordinary color augment moved no ranked stat except Armor Class. On this query the optimizer leans hardest on a single augment family. Whether that holds across classes, levels, and priority sets is unmeasured — one query motivates the control, it does not establish a general law.
+
+> **Correction (2026-08-16, post-merge).** This paragraph originally described the run above as *"(ML15, two-handed, melee preset, no crafting)"*. It was **not** two-handed. The query passed `weaponStyle: "Two Handed"`, and `weaponStyle` is read nowhere in `web/` — the style gate is `query.style` (`web/model.js:210`) taking a style id from `web/weapon-taxonomy.js` (`"thf"`; `"Two Handed"` is only a display label). A query object has no schema validation, so the key was silently discarded and the table above is an **unconstrained** solve. The reported build was two-handed; this measurement was not.
+>
+> Re-measured with the constraint applied — ML15 ranking Accuracy > Deadly > Seeker > Armor-Piercing > Armor Class. The original run's exact priority list could not be recovered, so this is a reconstruction, run both ways to keep the comparison like-for-like:
+>
+> | | augments placed | of which Solar/Lunar | Acc / Deadly / Seeker / AP / AC |
+> |---|---|---|---|
+> | unconstrained | 7 | 5 | 25 / 15 / 15 / 32 / 58 |
+> | unconstrained, no Solar/Lunar | 1 | 0 | 24 / 14 / 13 / 22 / 56 |
+> | unconstrained, no augments | 0 | 0 | 24 / 14 / 13 / 22 / 50 |
+> | `style: "thf"` | 6 | 4 | 25 / 15 / 11 / 25 / **33** |
+> | `style: "thf"`, no Solar/Lunar | 2 | 0 | 24 / 14 / 9 / 15 / 33 |
+> | `style: "thf"`, no augments | 0 | 0 | 24 / 14 / 9 / 15 / 22 |
+>
+> **The conclusion holds and the shipped control needs no revisiting.** Solar/Lunar gems still dominate the chosen augments under a genuine two-handed constraint (4 of 6, against 5 of 7 unconstrained), and the augment dependency is still large — printed-only costs 10 Armor-Piercing and 11 Armor Class.
+>
+> **The specific numbers do not transfer.** Armor Class reads 58 unconstrained against 33 under THF, because an unconstrained solve is free to take a one-handed weapon and add a shield. Citing the table above for a two-handed build would cite the wrong figures.
+>
+> Both tests carrying the inert key were corrected in PR #350. Correcting the constraint immediately falsified two invariants the ladder test asserted — see `docs/solutions/design-patterns/lexicographic-descent-bounds-the-vector-not-each-stat.md`. The general lesson (*a key with zero reads in production is a constraint you did not apply*) is an addendum to `docs/solutions/conventions/fixture-shape-must-mirror-the-production-writer.md`. Recorded on #346.
 
 The control that already restricts this surface is trying to be the answer and cannot reach it. "Don't build around niche crafting" states its purpose as *"so every item must win on what is actually printed on it"* — and then concedes in the same breath that *regular augments still count*. It describes printed-only and delivers something short of it. Adding a second augment control beside it would leave the first one's stated purpose false rather than fix it.
 
@@ -78,7 +97,7 @@ The control that already restricts this surface is trying to be the answer and c
 
 ### Acceptance Examples
 
-- AE1. **Leveling solve, gems excluded.** Covers R3, R8. Given the ML15 two-handed melee query on the Solar/Lunar rung: no Sun or Moon augment appears in the result, ordinary color augments still do, and the ranked stats settle at the measured no-Sun/Moon values rather than the all-gear values.
+- AE1. **Leveling solve, gems excluded.** Covers R3, R8. Given the ML15 melee query on the Solar/Lunar rung (see the correction above — the run behind these figures was unconstrained, not two-handed): no Sun or Moon augment appears in the result, ordinary color augments still do, and the ranked stats settle at the measured no-Sun/Moon values rather than the all-gear values.
 - AE2. **Ceiling cannot apply.** Covers R6. Given the bottom rung: the augment ML ceiling is disabled and states that no augment can reach it. Returning to a rung that admits augments restores it with its prior value intact.
 - AE3. **Augment sets follow the augments.** Covers R4, R11. Given the bottom rung: no Augment Set activates, because a Set Augment is itself a Colorless augment and the pool no longer holds one. The results say the set was unavailable rather than silently omitting it.
 - AE4. **The rungs nest.** Covers R1, R2, R3. Given the same query solved on each rung in turn: every item excluded at one rung stays excluded at every rung below it, and the No-niche-crafting rung returns exactly the loadout today's ticked checkbox returns.
@@ -209,7 +228,7 @@ U1 establishes the rung and the model seam; U2, U3, and U4 each consume it and a
   - The Solar/Lunar rung leaves Colorless, Red, Blue, Yellow, Green, Orange, and Purple augments in the pool and removes every Sun and Moon one.
   - Covers AE4. The rungs nest: an item excluded at one rung is absent at every rung below it, across a real solve on each rung in turn.
   - The bottom rung places zero augments and leaves the printed affixes untouched.
-  - Covers AE1. The ML15 two-handed melee query on the Solar/Lunar rung reproduces the measured no-Sun/Moon values rather than the all-gear values.
+  - Covers AE1. The ML15 melee query on the Solar/Lunar rung reproduces the measured no-Sun/Moon values rather than the all-gear values. (The figures it reproduces are the unconstrained ones — see the correction in the Problem Frame.)
   - A rung that excludes augments yields a solved query whose augment ceiling is null even when the input carried a number.
   - An unrecognized or absent rung value resolves to the top rung rather than throwing.
   - Covers AE7. An ML34 query targeting Strikethrough returns a non-zero value on the top rung and zero on the bottom rung, staying optimal — per-stat floors are best-effort, so the rung takes the last source away without making the solve infeasible.
