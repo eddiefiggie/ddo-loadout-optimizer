@@ -127,7 +127,7 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
   await test("U4: whyThis flags a boolean win; whyThisLine renders presence not +1", async () => {
     const r = await S.solveLexicographic({
       targets: ["Salt"], mlCap: 34, dodgeCap: null,
-      worn: [slot("Trinket", [item("T", "Trinket", [["Salt", "boolean", 1]])])],
+      worn: [slot("Trinket", [item("T", "Trinket", [["Salt", "Bool", 1]])])],
     }, highs);
     const wins = R.whyThis(r, { slot: "Trinket", variant_id: "T" });
     assert.strictEqual(wins.length, 1);
@@ -140,7 +140,7 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
 
   await test("U4: attributionList renders a boolean contribution as presence", async () => {
     const html = R.attributionList([{
-      bonus_type: "boolean", value: 1, source: "Some Trinket", sourceKind: "worn",
+      bonus_type: "Bool", value: 1, source: "Some Trinket", sourceKind: "worn",
       slots: ["Trinket"], hostIds: ["T"], isSet: false,
     }]);
     assert.ok(html.includes("✓"), "presence glyph, not a magnitude");

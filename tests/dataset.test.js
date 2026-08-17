@@ -472,10 +472,16 @@ test("R12: a composite and its component never render as the same name twice", (
   const it = { affixes: [{ name: "Blurry", type: "Bool", value: 1 }] };
   normalizeItem(it);
   const labels = P.collapseExpansions(it.affixes).map(P.affixLabel);
-  assert.ok(labels.includes("Blurry +1 Bool"), "the composite states its own presence");
+  // #353 — this asserted the literal "Blurry +1 Bool", which was the DEFECT: a
+  // Bool-typed affix must render as a presence tick, not a magnitude. The test's
+  // intent (the composite states its own presence, exactly once) is unchanged.
+  assert.ok(labels.includes("✓ Blurry"), "the composite states its own presence");
   assert.ok(labels.some((l) => /^Concealment \+20/.test(l)),
     "the component keeps its stat name and magnitude");
-  assert.strictEqual(labels.filter((l) => l.startsWith("Blurry")).length, 1,
+  // #353 — match on MENTION, not prefix: the presence label is "✓ Blurry", so a
+  // startsWith("Blurry") count reads 0 once the rendering is correct. The intent
+  // is unchanged — exactly one line names Blurry.
+  assert.strictEqual(labels.filter((l) => /Blurry/.test(l)).length, 1,
     "exactly one Blurry line — a stamped component would produce a second, `Blurry +20`");
 });
 

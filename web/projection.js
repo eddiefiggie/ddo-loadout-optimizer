@@ -47,6 +47,29 @@
   // either side would silently stop grouping and quietly restore the expanded shape.
   const PROVENANCE_KEY = "via";
 
+  // #353 — the ONE presence predicate. Every surface used to inline
+  // `=== "boolean"` and the pipeline only ever emits `"Bool"`, so the presence
+  // branch was dead everywhere at once: Browse, Results attribution, and every
+  // export rendered `Ghostly +1 Bool` instead of `✓ Ghostly`. Five tests pinned
+  // the correct output and passed, each on a hand-built fixture typed
+  // `"boolean"` — a value no writer produces.
+  //
+  // Both spellings are accepted rather than one being canonicalized at the
+  // seam: `"Bool"` is what the gear-planner catalog types and what the solver
+  // carries, while `"boolean"` is what `src/affix_parser.py`'s curated
+  // allowlist path would emit if the build ever installed one (it does not
+  // today, so that path is inert). Canonicalizing in `normalizeAffix` would
+  // reach stored and exported shapes; a predicate does not. Reads TYPE
+  // native-first with the legacy `bonus_type` fallback, exactly as
+  // `affixLabel` does, so it accepts an item affix, a solver contribution, or
+  // a pool option interchangeably.
+  const PRESENCE_TYPES = ["Bool", "boolean"];
+  function isPresenceType(bt) { return PRESENCE_TYPES.indexOf(bt) !== -1; }
+  function isPresence(a) {
+    if (!a) return false;
+    return isPresenceType(a.type != null ? a.type : a.bonus_type);
+  }
+
   // Shared affix formatter. Reads NAME/TYPE native-first (`{name,type}`) with the
   // legacy `{stat,bonus_type}` fallback, because it formats native item affixes AND
   // the not-yet-native crafting-pool / set-bonus / Dino affixes (and any pre-overhaul
@@ -60,7 +83,7 @@
     // listed rather than reduced to a number the data does not have.
     if (Array.isArray(a.parts) && a.parts.length) return `${name}: ${a.parts.join(", ")}`;
     const bt = a.type != null ? a.type : a.bonus_type;
-    if (bt === "boolean") return `✓ ${name}`;
+    if (isPresenceType(bt)) return `✓ ${name}`;
     const type = bt && bt !== "Enhancement" ? ` ${bt}` : "";
     return `${name} +${a.value}${a.unit === "pct" ? "%" : ""}${type}`;
   }
@@ -425,7 +448,7 @@
         if ((p.hostIds || []).includes(item.variant_id)) {
           val += p.value;
           if (p.isSet) viaSet = true;
-          if (p.bonus_type === "boolean") boolean = true;
+          if (isPresence(p)) boolean = true;
         }
       }
       if (val > 0) wins.push({ stat, value: val, viaSet, boolean });
@@ -454,7 +477,7 @@
       const rows = [];
       for (const p of attr[stat] || []) {
         if (!(p.hostIds || []).includes(item.variant_id)) continue;
-        const boolean = p.bonus_type === "boolean";
+        const boolean = isPresence(p);
         if (!boolean && !(p.value > 0)) continue;
         rows.push({ stat, value: p.value, bonus_type: p.bonus_type,
           viaSet: !!p.isSet, boolean, via: p.via || null,
@@ -1461,7 +1484,7 @@
     // model.js; re-exported so exporters can recognize the sentinel row)
     utilityLine, UTILITY_SENTINEL: UTILITY_NAME,
     // pure primitives (results.js binds these; single definition, no drift)
-    affixLabel, collapseExpansions, bundleGroups, itemMl, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
+    affixLabel, isPresence, isPresenceType, collapseExpansions, bundleGroups, itemMl, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,
     satisfiedSets, suppressedHostIds, slotSetNames,
     setContributors, contributorsFor, setMemberLabel, activeSetDetail, satisfiedSetDetail,

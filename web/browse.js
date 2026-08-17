@@ -13,6 +13,15 @@ const affixType = (a) => (a && a.type != null) ? a.type : (a && a.bonus_type);
 // resolves it in module scope; `var` tolerates the browser-global redeclaration.
 var itemMl = (v) => (v && v.ml != null) ? v.ml : (v && v.minimum_level);
 
+// #353 — the presence predicate comes from projection.js (one definition for the
+// whole app); browser-global-first, require() under node. `var` for the shared
+// browser global scope, same rationale as itemMl above. This file's own
+// `=== "boolean"` check was dead: the pipeline types presence affixes `"Bool"`,
+// so Browse rendered `Ghostly +1 Bool` instead of `✓ Ghostly`.
+var _browseIsPresenceType = (typeof Projection !== "undefined" && Projection.isPresenceType)
+  ? Projection.isPresenceType
+  : (typeof require !== "undefined" ? require("./projection.js").isPresenceType : null);
+
 // plan 2026-08-12-003 (U4, #262) — the no-drop-source disclosure. The wording is
 // owned by projection.js (NO_DROP_SOURCE_WORDING: one constant, every surface);
 // bridged here browser-global-first, require() under node. `var` for the shared
@@ -81,7 +90,7 @@ function distinct(items, fn) {
 function affixText(v) {
   const parts = (v.affixes || []).map((a) => {
     const name = affixName(a), bt = affixType(a);
-    if (bt === "boolean") return `✓ ${name}`;   // U4: presence, not a magnitude
+    if (_browseIsPresenceType(bt)) return `✓ ${name}`;   // U4: presence, not a magnitude
     const type = bt && bt !== "Enhancement" ? ` ${bt}` : "";
     const unit = a.unit === "pct" ? "%" : "";
     return `${name} +${a.value}${unit}${type}`;

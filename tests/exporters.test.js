@@ -1523,3 +1523,50 @@ test("U6 (#91): ABSENT report → no Utility section on any surface", () => {
   }
   assert.ok(!("utility" in toPortableJSON(recAbsent).resolved), "portable JSON omits the field");
 });
+
+// #353 — presence rendering reaches EVERY export. The bug: every surface
+// compared the type against "boolean" while the pipeline only ever emits "Bool",
+// so exports printed `Ghostly +1 Bool` instead of `✓ Ghostly`, and the source
+// line printed the raw type instead of "feature". Built through the real writer
+// (`Proj.project`) rather than hand-shaped, per
+// docs/solutions/conventions/fixture-shape-must-mirror-the-production-writer.md.
+test("#353: a Bool-typed contribution renders as presence in the markdown export", () => {
+  const presRec = {
+    name: "Presence Export",
+    inputs: { ml: 34, pool: "all", priorities: ["Ghostly"] },
+    snapshot: {
+      status: "optimal", effective: { Ghostly: 1 }, perTarget: { Ghostly: 1 },
+      breakdown: { Ghostly: [{ bonus_type: "Bool", value: 1, source: "Belt of the Black Sands",
+        sourceKind: "worn", slot: "Waist", slots: ["Waist"], hostIds: ["B"] }] },
+      chosen: [{ slot: "Waist", variant: { variant_id: "Belt of the Black Sands", ml: 34,
+        affixes: [{ name: "Ghostly", type: "Bool", value: 1 }] } }],
+      setsActive: [],
+    },
+  };
+  const md = toMarkdown(presRec);
+  assert.ok(/✓ Ghostly/.test(md), "the item affix reads as a presence tick");
+  assert.ok(!/Ghostly \+1/.test(md), "no magnitude for a presence affix");
+  assert.ok(/feature/.test(md), "the source line names the type 'feature'");
+  assert.ok(!/\bBool\b/.test(md), "the raw type name never reaches a share export");
+});
+
+test("#353: the legacy 'boolean' spelling renders identically", () => {
+  // src/affix_parser.py's curated allowlist path would emit "boolean"; the build
+  // installs no allowlist today, so it is inert — but both spellings must render
+  // the same, which is why the predicate accepts either rather than canonicalizing.
+  const legacy = {
+    name: "Legacy Spelling",
+    inputs: { ml: 34, pool: "all", priorities: ["Ghostly"] },
+    snapshot: {
+      status: "optimal", effective: { Ghostly: 1 }, perTarget: { Ghostly: 1 },
+      breakdown: { Ghostly: [{ bonus_type: "boolean", value: 1, source: "Belt",
+        sourceKind: "worn", slot: "Waist", slots: ["Waist"], hostIds: ["B"] }] },
+      chosen: [{ slot: "Waist", variant: { variant_id: "Belt", ml: 34,
+        affixes: [{ name: "Ghostly", type: "boolean", value: 1 }] } }],
+      setsActive: [],
+    },
+  };
+  const md = toMarkdown(legacy);
+  assert.ok(/✓ Ghostly/.test(md), "presence tick for the legacy spelling too");
+  assert.ok(/feature/.test(md), "same 'feature' type label");
+});

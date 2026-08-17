@@ -12,6 +12,12 @@
 (function () {
   "use strict";
 
+
+// #353 — the presence predicate from projection.js (one definition app-wide);
+// browser-global-first, require() under node.
+const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPresenceType)
+  ? Projection.isPresenceType
+  : (typeof require !== "undefined" ? require("./projection.js").isPresenceType : null);
   // The shared content projection (loaded before exporters.js in the browser;
   // require()'d in Node tests). Sole source of the resolved content model.
   const Proj = (typeof Projection !== "undefined") ? Projection
@@ -151,7 +157,9 @@
 
   // One attribution source line: "Type +Value — Source [ (set)] [ via slots]".
   function sourceStr(p, esc) {
-    const isBool = p.bonusType === "boolean";
+    // #353 — the shared predicate; this shape names the field `bonusType`
+    // (camelCase) rather than `bonus_type`, so probe it explicitly.
+    const isBool = _expIsPresenceType(p.bonusType);
     // #227 — an adjudicated untyped affix has no bonus type; without this every
     // share format printed the literal "null". Matches the label results.js uses,
     // so a shared loadout reads the same as the one on screen.

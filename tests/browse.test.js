@@ -29,7 +29,7 @@ test("filter by stat returns exactly items carrying that stat", () => {
 
 test("U4: affixText renders a boolean feature as presence, not a magnitude", () => {
   const v = { affixes: [
-    { stat: "Salt", bonus_type: "boolean", value: 1, unit: "flat" },
+    { stat: "Salt", bonus_type: "Bool", value: 1, unit: "flat" },
     { stat: "Intelligence", bonus_type: "Enhancement", value: 10, unit: "flat" },
   ] };
   const parts = affixText(v);
@@ -41,7 +41,7 @@ test("U4: affixText renders a boolean feature as presence, not a magnitude", () 
 test("U5: affixText / variantStats read NATIVE {name,type} affixes and item `ml`", () => {
   // A live item affix is native ({name,type}); the ML filter reads native `ml`.
   const v = { ml: 30, affixes: [
-    { name: "Salt", type: "boolean", value: 1, unit: "flat" },
+    { name: "Salt", type: "Bool", value: 1, unit: "flat" },
     { name: "Constitution", type: "Insightful", value: 7, unit: "flat" },
   ] };
   const parts = affixText(v);
@@ -79,7 +79,31 @@ test("affixText renders typed and untyped affixes", () => {
   const withAffix = items.find((v) => (v.affixes || []).length > 0);
   const texts = affixText(withAffix);
   assert.ok(texts.length > 0);
-  assert.ok(texts.every((t) => /\+\d/.test(t)));
+  // #353 — this used to assert EVERY text matched /\+\d/, which was only true
+  // because presence rendering was broken: real items carry `Bool` affixes, and
+  // a presence affix must render `✓ Name` with NO magnitude. The old assertion
+  // encoded the bug, so it went red the moment the bug was fixed. The contract
+  // is per-affix: a magnitude affix carries +N, a presence affix carries ✓.
+  assert.ok(texts.every((s) => /\+\d/.test(s) || /^✓ /.test(s) || /scales to/.test(s)),
+    `every affix text is a magnitude, a presence tick, or a scaling note: ${texts.join(" | ")}`);
+});
+
+test("#353: on REAL data, a Bool-typed affix renders as a presence tick", () => {
+  // The regression guard that the fixture-based tests could not be: it reads the
+  // built dataset, where presence affixes are typed `Bool` (never `boolean`).
+  const carrier = items.find((v) => (v.affixes || [])
+    .some((a) => ((a.type != null ? a.type : a.bonus_type)) === "Bool"));
+  assert.ok(carrier, "the dataset carries at least one Bool-typed affix");
+  const texts = affixText(carrier);
+  const boolNames = (carrier.affixes || [])
+    .filter((a) => ((a.type != null ? a.type : a.bonus_type)) === "Bool")
+    .map((a) => (a.name != null ? a.name : a.stat));
+  for (const n of boolNames) {
+    assert.ok(texts.includes(`✓ ${n}`),
+      `${n} is Bool-typed and must render as "✓ ${n}", got: ${texts.join(" | ")}`);
+    assert.ok(!texts.some((s) => new RegExp(`^${n} \\+`).test(s)),
+      `${n} must not render a magnitude`);
+  }
 });
 
 // ---- Dino content is browsable (insert pool + blank slots) ----
