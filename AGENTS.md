@@ -59,6 +59,8 @@ These are non-obvious and each one has cost a real defect.
 
 **Prove a new test fails against the pre-change tree.** A fully green suite can cover none of the diff. Export the base commit to a scratch dir, copy the new tests over it, and run them — anything that still passes is covering nothing. Copy the gitignored generated data in first, or the suite crashes and the crash reads as a pass. Deliberate "nothing changed" guards are the exception; every test claiming new behavior is not. See `docs/solutions/conventions/prove-a-test-fails-against-the-pre-change-tree.md`.
 
+**A count is a claim about a population — look the population up.** Before citing "how many records are X", read the definition in the module that owns X, and check whether the built dataset already stamps the answer (`metadata.no_drop_source_coverage.triage_universe`, for one). A falsy test (`not rec.get(k)`) is not a population: empty string, null, and key-absent are three different facts, and a universe defined as one clause "plus" another has two clauses. Getting this wrong once produced a six-fold-growth claim, a correction whose own table mixed two populations, and a second correction that again read only the first clause — all against a file carrying the right number as a field. See `docs/solutions/developer-experience/browser-verify-against-real-data-not-just-unit-tests.md`.
+
 **`web/data/items.json` is generated and gitignored.** Edit `build_dataset.py`, `src/`, or the seed data under `data/seed/` — never the JSON.
 
 **gear-planner is the single source of truth for item affixes**, read structurally. Do not re-parse its free text, and do not re-harvest set definitions into a parallel file.
