@@ -841,38 +841,14 @@ function emptySlotNotice(query, result) {
 // what the CHOSEN loadout achieved: a zero there cannot tell "nothing supplies this"
 // from "higher priorities took the slots". The pool lives in `model`, which survives
 // a saved-snapshot restore (persist.js drops the MILP program, not the model).
-function _collectStatNames(into, affixes) {
-  for (const a of affixes || []) {
-    const n = a && (a.name != null ? a.name : a.stat);
-    if (n) into.add(n);
-  }
-}
-
-/** Every stat name any source in the ACTIVE pool can contribute. */
-function poolStatNames(model) {
-  const out = new Set();
-  for (const slot of (model && model.worn) || []) {
-    for (const v of slot.variants || []) {
-      _collectStatNames(out, v.affixes);
-      for (const s of v.scaling || []) if (s && s.stat) out.add(s.stat);
-      for (const t of v.parsed_set_bonuses || []) _collectStatNames(out, t.affixes);
-    }
-  }
-  const pools = [model.augments, model.dinoInserts, model.nearlyComplete, model.viktranium,
-                 model.seal, model.thunderForged, model.greenSteel];
-  for (const pool of pools) {
-    for (const o of pool || []) {
-      if (o && o.stat) out.add(o.stat);
-      _collectStatNames(out, o && o.affixes);
-    }
-  }
-  for (const defs of [model.membershipSetDefs, model.augment_set_defs]) {
-    for (const def of Object.values(defs || {})) {
-      for (const t of (def && def.tiers) || []) _collectStatNames(out, t.affixes);
-    }
-  }
-  return out;
-}
+// #345 (U1) — the pool traversal moved to model.js so the SOLVER and the render
+// layer share one answer to "what can this pool supply". The solver stamps the
+// outbid set onto the result (a restored character has no model to re-derive
+// from), and this layer renders it; two implementations would drift.
+var _poolStatNames = (typeof poolStatNames !== "undefined")
+  ? poolStatNames
+  // eslint-disable-next-line global-require
+  : require("./model.js").poolStatNames;
 
 /** True when the whole dataset carries the stat somewhere — used only to tell the
  *  two causes apart, and only for stats already known to be pool-unreachable. */
@@ -934,7 +910,7 @@ function zeroSourceNotice(query, result, model, dataset) {
   if (!result || result.status !== "optimal") return "";
   const targets = (query && query.targets) || (model && model.targets) || [];
   if (!targets.length || !model) return "";
-  const reachable = poolStatNames(model);
+  const reachable = _poolStatNames(model);
   // #91 — the Utility sentinel is never a pool stat (poolStatNames only ever
   // collects real affix/scaling names), so without this exclusion every solve
   // with the tier ranked would flag it here — the same false "unsourced"
@@ -985,6 +961,43 @@ function zeroSourceNotice(query, result, model, dataset) {
   return `<p class="scope-note zero-source-note" role="status">${parts.join(" ")}</p>`;
 }
 
+/** #345 (U1, R1/R3/R4) — the targets that were OUTBID: reachable in the active
+ *  pool, and still zero, because a higher-ranked priority locked the only slot
+ *  that could carry them.
+ *
+ *  This is deliberately NOT a third branch inside `zeroSourceNotice`. That
+ *  function's contract is "no source exists", and its own test pins the opposite
+ *  behaviour for this case with the reason stated: a stat that merely lost its
+ *  slots "is a different case and must not be conflated". Both hold at once —
+ *  the zero-source notice stays silent here, and this one speaks.
+ *
+ *  A free rider is excluded by construction: it scored above zero, so it never
+ *  enters this set. Nothing was spent on it and nothing outbid it. */
+function outbidTargets(query, result, model) {
+  if (!result || result.status !== "optimal") return [];
+  const targets = (query && query.targets) || (model && model.targets) || [];
+  if (!targets.length || !model) return [];
+  // Same exclusion zeroSourceNotice applies: the Utility sentinel is never a
+  // pool stat, so every solve with the tier ranked would otherwise flag here.
+  if (Array.isArray(result.outbidReport)) return result.outbidReport;
+  const reachable = _poolStatNames(model);
+  const per = (result && result.perTarget) || {};
+  return targets.filter((t) => t !== _UTILITY_SENTINEL && reachable.has(t) && !(Number(per[t]) > 0));
+}
+
+function outbidNotice(query, result, model) {
+  const names = outbidTargets(query, result, model);
+  if (!names.length) return "";
+  // Names the targets, never the binding priority — proving which higher-ranked
+  // stat bound them costs a solve and belongs to the on-request path (U2/U3).
+  // Naming one from rank order alone would be the guess this repo already paid
+  // for once in zeroSourceNotice's rung attribution.
+  // Projection owns the wording so the panel and all six exports say one thing.
+  const lines = (Proj && Proj.outbidNoticeLines) ? Proj.outbidNoticeLines(names) : [];
+  if (!lines.length) return "";
+  return `<p class="scope-note outbid-note" role="status">${lines.map(esc).join(" ")}</p>`;
+}
+
 function renderResults(container, { model, result, query, dataset, highs, onAfterRender }) {
   if (result.status !== "optimal") {
     // Keep the Adjust & re-solve control available on a non-optimal result — this
@@ -1032,6 +1045,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     ${staleSnapshotNotice(result)}
     ${boundNotice(query, result)}
     ${zeroSourceNotice(query, result, model, dataset)}
+    ${outbidNotice(query, result, model)}
     ${saturationNotice(result)}
     ${emptySlotNotice(query, result)}
     ${absorptionQuarantineNotice(result)}
@@ -1418,5 +1432,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, incidentalStats, poolStatNames: _poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }

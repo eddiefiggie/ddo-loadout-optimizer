@@ -33,6 +33,7 @@ const assert = require("assert");
 const { buildModel, UTILITY_SENTINEL } = require("../web/model.js");
 const S = require("../web/solver.js");
 const A = require("../web/alternatives.js");
+const R = require("../web/results.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 
 const ROOT = path.join(__dirname, "..");
@@ -198,6 +199,32 @@ function check(name, fn) {
       "the old roster could not have counted them — otherwise this proves nothing");
   });
   console.log(`    count ${a3.utilityCount} (old roster ${a3Old.utilityCount}): ${secured(a3).join(", ")}`);
+
+  // ---- AE4 (#345 U1): the outbid disclosure fires against REAL data. -------
+  // The golden fixture set never produces this condition — 85 ranked targets
+  // across 23 fixtures, zero occurrences — so a unit test on a synthetic model
+  // proves only that the branch reads its own fixture. This solves the reported
+  // build and asserts the disclosure on the result the app would actually show.
+  console.log("\nAE4 — ML15 THF, Melee preset + Freedom of Movement ranked last (#345)");
+  const MELEE = ["Melee Power", "Doublestrike", "Melee Alacrity", "Accuracy",
+                 "Deadly", "Seeker", "Armor-Piercing", "Armor Class"];
+  const FOM = "Freedom of Movement";
+  const q4 = { mlCap: 15, targets: [...MELEE, FOM], style: "thf", armorType: null, classRace: null };
+  const { model: m4, r: r4 } = await solve(q4);
+  check("AE4: the solve is optimal and Freedom of Movement is reachable but zero", () => {
+    assert.strictEqual(r4.status, "optimal");
+    assert.strictEqual(r4.perTarget[FOM] || 0, 0, "the reported symptom: ranked, and nothing");
+    assert.ok(R.poolStatNames(m4).has(FOM), "and it IS reachable — otherwise this is the other zero cause");
+  });
+  check("AE4: the outbid disclosure fires and names it", () => {
+    const html = R.outbidNotice(q4, r4, m4);
+    assert.ok(html, "a disclosure renders on the real result");
+    assert.ok(html.includes(FOM), "names the target that got nothing");
+  });
+  check("AE4: the zero-source notice stays silent — this is not that cause", () => {
+    assert.strictEqual(R.zeroSourceNotice(q4, r4, m4, dataset), "",
+      "a reachable target is not unsourced; conflating them was the bug");
+  });
 
   console.log(`\n${passed} passed`);
 })().catch((e) => { console.error(e); process.exit(1); });

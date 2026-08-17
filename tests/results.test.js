@@ -1851,3 +1851,75 @@ test("#346: the owned-gear pool still wins over the rung in the zero-source noti
   assert.match(out, /your owned-gear pool/);
   assert.match(out, /the full catalog may have one/);
 });
+
+// ---------------------------------------------------------------------------
+// U1 (plan 2026-08-17-001, #345) — the OUTBID disclosure. The third zero cause:
+// the target is reachable in the pool, and a higher-ranked priority took the
+// only slot that could carry it.
+//
+// Deliberately a separate function from zeroSourceNotice rather than a third
+// branch inside it. That function's own test at "a priority with sources that
+// merely lost slots does NOT fire" pins the opposite behaviour and states the
+// reason — "That is a different case and must not be conflated." Both hold: the
+// zero-source notice stays silent here, and this one speaks.
+// ---------------------------------------------------------------------------
+
+test("U1: a reachable target that scored zero is disclosed as outbid", () => {
+  const html = R.outbidNotice(
+    { targets: ["Deadly", "Freedom of Movement"] },
+    { status: "optimal", perTarget: { Deadly: 13, "Freedom of Movement": 0 }, chosen: [] },
+    _modelWith(["Deadly", "Freedom of Movement"]));
+  assert.ok(html, "a notice renders");
+  assert.ok(/Freedom of Movement/.test(html), "names the target that got nothing");
+  assert.ok(!/>[^<]*Deadly/.test(html.replace(/Freedom of Movement/g, "")),
+    "does not name a binding priority it has not proven");
+});
+
+test("U1: a target no pool source carries is left to the zero-source notice", () => {
+  const html = R.outbidNotice(
+    { targets: ["Sonic Lore"] },
+    { status: "optimal", perTarget: { "Sonic Lore": 0 }, chosen: [] },
+    _modelWith(["Constitution"]));
+  assert.strictEqual(html, "", "unreachable is a different cause and already disclosed");
+});
+
+test("U1: a free rider produces no outbid disclosure", () => {
+  const html = R.outbidNotice(
+    { targets: ["Deadly", "Ghostly"] },
+    { status: "optimal", perTarget: { Deadly: 13, Ghostly: 1 }, chosen: [] },
+    _modelWith(["Deadly", "Ghostly"]));
+  assert.strictEqual(html, "", "a satisfied effect cost nothing and is not outbid");
+});
+
+test("U1: the Utility sentinel never reports as outbid", () => {
+  const html = R.outbidNotice(
+    { targets: [_UTIL_SENTINEL] },
+    { status: "optimal", perTarget: {}, chosen: [], utilityCount: 0 },
+    _modelWith(["Constitution"]));
+  assert.strictEqual(html, "", "the sentinel is never a pool stat and must not flag");
+});
+
+test("U1: several outbid targets are named together in one disclosure", () => {
+  const html = R.outbidNotice(
+    { targets: ["Deadly", "Blurry", "Freedom of Movement"] },
+    { status: "optimal", perTarget: { Deadly: 13, Blurry: 0, "Freedom of Movement": 0 }, chosen: [] },
+    _modelWith(["Deadly", "Blurry", "Freedom of Movement"]));
+  assert.ok(/Blurry/.test(html) && /Freedom of Movement/.test(html), "both named");
+  assert.strictEqual((html.match(/<p /g) || []).length, 1, "one disclosure, not one per target");
+});
+
+test("U1: a non-optimal solve produces no outbid disclosure", () => {
+  const html = R.outbidNotice(
+    { targets: ["Freedom of Movement"] },
+    { status: "infeasible" }, _modelWith(["Freedom of Movement"]));
+  assert.strictEqual(html, "");
+});
+
+test("U1: renderResults emits the outbid notice — the render, not just the function", () => {
+  // #332's lesson: a disclosure that passes its own unit tests and is never
+  // called from the render is inert on every surface. Assert the call site.
+  const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
+  const block = src.slice(src.indexOf("container.innerHTML = `"), src.indexOf("active-build-bar"));
+  assert.ok(/\$\{outbidNotice\(query, result, model\)\}/.test(block),
+    "renderResults must emit outbidNotice, or it renders nowhere");
+});

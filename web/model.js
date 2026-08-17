@@ -1178,8 +1178,41 @@ function normalizeCredits(declared) {
 }
 
 // exports for node tests; harmless in the browser
+function _collectStatNames(into, affixes) {
+  for (const a of affixes || []) {
+    const n = a && (a.name != null ? a.name : a.stat);
+    if (n) into.add(n);
+  }
+}
+
+/** Every stat name any source in the ACTIVE pool can contribute. */
+function poolStatNames(model) {
+  const out = new Set();
+  for (const slot of (model && model.worn) || []) {
+    for (const v of slot.variants || []) {
+      _collectStatNames(out, v.affixes);
+      for (const s of v.scaling || []) if (s && s.stat) out.add(s.stat);
+      for (const t of v.parsed_set_bonuses || []) _collectStatNames(out, t.affixes);
+    }
+  }
+  const pools = [model.augments, model.dinoInserts, model.nearlyComplete, model.viktranium,
+                 model.seal, model.thunderForged, model.greenSteel];
+  for (const pool of pools) {
+    for (const o of pool || []) {
+      if (o && o.stat) out.add(o.stat);
+      _collectStatNames(out, o && o.affixes);
+    }
+  }
+  for (const defs of [model.membershipSetDefs, model.augment_set_defs]) {
+    for (const def of Object.values(defs || {})) {
+      for (const t of (def && def.tiers) || []) _collectStatNames(out, t.affixes);
+    }
+  }
+  return out;
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = {
+  module.exports = { poolStatNames,
     buildModel, normalizeCredits, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
     offHandItemsExcluded, allowedOffHandWeaponTypes, pinSlotConflict,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,

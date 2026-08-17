@@ -1624,3 +1624,50 @@ test("#332: a stat the loadout does not carry is NOT named", () => {
   assert.ok(!/ranked as its own priority/.test(toMarkdown(noSources)),
     "an unsourced stat is left out of the sentence");
 });
+
+// ---------------------------------------------------------------------------
+// U1 (plan 2026-08-17-001, #345) — the outbid disclosure reaches all six
+// exports. Built through the shared writer, never hand-shaped: a hand-built
+// record produced a false negative on this very channel during #353.
+// ---------------------------------------------------------------------------
+
+function outbidRec() {
+  const r = disclosureRec({ saturation: false, empty: false });
+  r.inputs.priorities = ["Deadly", "Freedom of Movement"];
+  r.snapshot.perTarget = { Deadly: 13, "Freedom of Movement": 0 };
+  // The set the solver stamps. A restored character has no model, so this is
+  // the only thing the export path can read.
+  r.snapshot.outbidReport = ["Freedom of Movement"];
+  return r;
+}
+
+test("#345 U1: projection carries the outbid line for a stamped report", () => {
+  const view = Projection.project(outbidRec());
+  assert.ok(Array.isArray(view.character.outbidNotice), "the channel exists");
+  assert.strictEqual(view.character.outbidNotice.length, 1, "one line for one outbid target");
+  assert.ok(view.character.outbidNotice[0].includes("Freedom of Movement"), "names it");
+});
+
+test("#345 U1: an empty report produces no line", () => {
+  const r = outbidRec();
+  r.snapshot.outbidReport = [];
+  assert.deepStrictEqual(Projection.project(r).character.outbidNotice, []);
+});
+
+test("#345 U1: all six exports carry the outbid disclosure", () => {
+  const rec = outbidRec();
+  const surfaces = [
+    ["markdown", toMarkdown(rec)],
+    ["bbcode", toBBCode(rec)],
+    ["csv", toCsv(rec)],
+    ["print html", toPrintHtml(rec)],
+    ["portable json", JSON.stringify(toPortableJSON(rec))],
+    ["gearset", toGearset(rec)],
+  ];
+  for (const [name, out] of surfaces) {
+    assert.ok(typeof out === "string" && out.length, `${name} produced output`);
+    assert.ok(out.includes("Freedom of Movement"),
+      `${name} names the outbid target — solve-visible must never be share-invisible`);
+    assert.ok(/scored 0|outbid/i.test(out), `${name} carries the disclosure, not just the stat name`);
+  }
+});

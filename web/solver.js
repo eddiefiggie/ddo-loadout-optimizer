@@ -40,6 +40,14 @@ const _lamordiaWeaponVariant = (typeof lamordiaWeaponVariant !== "undefined")
 // types (e.g. "Insight Natural" and "Insight") collapse to ONE bucket and cannot
 // double-count. Shares model.js's single equivType (browser global; Node require)
 // so the solver and the model/dominance guard can never disagree on a bucket key.
+// #345 (U1, R5) — the outbid set is stamped on the result, not recomputed at
+// render time, for the same reason creditReport is: a restored character has no
+// model and cannot re-derive it, and every share export reads the stored record.
+const _poolStatNames = (typeof poolStatNames !== "undefined")
+  ? poolStatNames
+  // eslint-disable-next-line global-require
+  : require("./model.js").poolStatNames;
+
 const _equivType = (typeof equivType !== "undefined")
   ? equivType
   // eslint-disable-next-line global-require
@@ -1837,6 +1845,14 @@ function readSolution(res, program, precomputedVisible) {
  *  Optimal or the stat has no sources). Computed directly from the primal — not via
  *  readSolution.effective, which only covers priority targets, so a non-priority
  *  floored stat would read undefined. Used by the U2 floor pre-pass. */
+/** #345 (U1) — targets that came back zero while the pool can still supply
+ *  them. A free rider is excluded by construction: it scored above zero. */
+function outbidReportFor(model, targetList, perTarget) {
+  const reachable = _poolStatNames(model);
+  return (targetList || []).filter((t) =>
+    t !== _UTILITY_SENTINEL && reachable.has(t) && !(Number(perTarget[t]) > 0));
+}
+
 function probeMax(program, highs, stat, locks) {
   const res = highs.solve(encodeStage(program, { objectiveStat: stat, sense: "max", locks }));
   if (res.Status !== "Optimal") return 0;
@@ -1945,6 +1961,7 @@ async function solveLexicographic(model, highs) {
 
   return {
     status: "optimal", perTarget, effective: sol.effective, chosen: sol.chosen,
+    outbidReport: outbidReportFor(model, program.targetList, perTarget),
     // #91 (U3) — present only when the tier is ranked: the achieved distinct-
     // effect count (a plain number, locked into every post-stage solve) and
     // the load-bearing-checked effect list (U5 builds the full report).
@@ -2482,5 +2499,5 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
 if (typeof module !== "undefined" && module.exports) {
   // readSolution is exported for TESTS ONLY — the deterministic guard tests
   // inject a synthetic primal (#319); app code goes through the solve entry points.
-  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, bucketCountsFor, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, readSolution, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars, rawTotalOf, effectiveOf, buildCreditReport };
+  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, bucketCountsFor, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, readSolution, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars, rawTotalOf, effectiveOf, buildCreditReport, outbidReportFor };
 }
