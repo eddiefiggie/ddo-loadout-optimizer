@@ -1122,6 +1122,24 @@ function buildProgram(model) {
     // #91 (U3) — the Utility tier's stage state: whether the sentinel is
     // ranked, the per-effect indicator binaries, and their name/ceiling meta.
     utilityEnabled, utilityVars, utilityMeta,
+    // #332 — the ranked stats the tier will NOT count. Counting-set membership is
+    // knowable HERE and nowhere downstream: a restored character's exports have no
+    // dataset to re-derive it from, so it has to ride the result. This list is
+    // deliberately unfiltered — every ranked non-counted stat, magnitude or
+    // presence — because the type of an affix is the display layer's knowledge
+    // (it reads the breakdown), not the solver's. Projection narrows it to the
+    // presence ones, which are the only case a player could mistake for a
+    // counted effect.
+    // Narrowed to the ADMITTED procs when the host supplies them: those are the
+    // names a player can rank while the tier never counts them, i.e. the only ones
+    // the exclusion sentence should name. Without an admitted set the list stays
+    // empty rather than naming every ranked magnitude — an unhelpful sentence is
+    // worse than none, and a host that has not threaded the set has not opted in.
+    utilityRankedNotCounted: (utilityEnabled && model.utilityAdmittedSet)
+      ? (model.targets || []).filter((s) => s !== _UTILITY_SENTINEL
+          && model.utilityAdmittedSet.has(s)
+          && !(utilityCountingSet && utilityCountingSet.has(s)))
+      : [],
   };
 }
 
@@ -1808,7 +1826,9 @@ function readSolution(res, program, precomputedVisible) {
       reportEffects.push({ name: meta.name, item: candidates.length ? candidates[0].item : null });
     }
     out.utilityEffects = utilityEffects;
-    out.utilityReport = { count: reportEffects.length, effects: reportEffects };
+    out.utilityReport = { count: reportEffects.length, effects: reportEffects,
+      // #332 — see the program field: the ranked stats this count excludes.
+      rankedNotCounted: (program.utilityRankedNotCounted || []).slice() };
   }
   return out;
 }

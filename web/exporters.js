@@ -286,6 +286,9 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       out += `\n## Utility effects (${mdEsc(view.utility.count)})\n\n`;
       out += `_${mdEsc(view.utility.line)}_\n\n`;
       for (const e of view.utility.effects) out += `- ${utilityEffectStr(e, mdEsc)}\n`;
+      // #332 — the ranked-but-uncounted disclosure travels with every export, not
+      // just the app card: a shared loadout must read the same as the one on screen.
+      if (view.utility.excludedLine) out += `\n_${mdEsc(view.utility.excludedLine)}_\n`;
     }
     return out;
   }
@@ -360,6 +363,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
         for (const e of view.utility.effects) out += `[*]${utilityEffectStr(e, bbEsc)}\n`;
         out += `[/list]\n`;
       }
+      if (view.utility.excludedLine) out += `[i]${bbEsc(view.utility.excludedLine)}[/i]\n`;   // #332
     }
     return out;
   }
@@ -437,6 +441,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
         rows.push(csvRow(["Utility effect", "From"]));
         for (const e of view.utility.effects) rows.push(csvRow([e.name, e.item == null ? "" : e.item]));
       }
+      if (view.utility.excludedLine) rows.push(csvRow(["Utility exclusion", view.utility.excludedLine]));   // #332
     }
     return rows.join("\n");
   }
@@ -511,6 +516,9 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
         for (const e of view.utility.effects) h += `<li>${utilityEffectStr(e, htmlEsc)}</li>`;
         h += `</ul>`;
       }
+      if (view.utility.excludedLine) {   // #332
+        h += `<p class="declared-note"><em>${htmlEsc(view.utility.excludedLine)}</em></p>`;
+      }
     }
     return h;
   }
@@ -522,7 +530,9 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
   // content projection for later compare/diff. `format` carries the identifier so a
   // future import reader can tell a portable loadout from a plain backup file.
   // #91 (U6/R10) — the Utility tier rides as `resolved.utility` ({count, effects,
-  // line}, schema-stable naming from projection) and verbatim in `core`'s snapshot
+  // line}, plus #332's {excluded, excludedLine}: the ranked procs the count leaves
+  // out and the one sentence naming them — inherited from Proj.project, so the
+  // envelope needs no per-field wiring) and verbatim in `core`'s snapshot
   // (`utilityReport`); a report-less snapshot carries neither, never a zero.
   // WRITE-ONCE: `core` aliases the live record and `resolved` shares its affix arrays
   // by reference. The only caller stringifies immediately (safe). The future

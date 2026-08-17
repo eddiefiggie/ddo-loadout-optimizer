@@ -2555,7 +2555,10 @@ if (typeof window !== "undefined" && window.App) {
         ov.addEventListener("click", (e) => { if (e.target === ov) ov.classList.remove("on"); });
         document.addEventListener("keydown", (e) => { if (e.key === "Escape") ov.classList.remove("on"); });
         // eslint-disable-next-line no-undef
-        if (window.ItemBrowser) window.ItemBrowser.initBrowse(dataset);
+        // #332 — pass the picker vocabulary so Browse can mark which presence
+        // effects the Utility tier counts. Same builder the priorities picker
+        // uses, so the two surfaces cannot disagree about membership.
+        if (window.ItemBrowser) window.ItemBrowser.initBrowse(dataset, pickerVocabulary(dataset));
       }
       ov.classList.add("on");
     }

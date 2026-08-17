@@ -87,21 +87,60 @@ function distinct(items, fn) {
   return [...new Set(items.flatMap(fn))].filter(Boolean).sort();
 }
 
-function affixText(v) {
-  const parts = (v.affixes || []).map((a) => {
+// #332 — the STRUCTURED form of affixText. The row builder needs to know which
+// entries are presence effects (and under which name) so it can mark the ones the
+// Utility tier counts; recovering that by slicing the rendered "✓ Name" string
+// would couple the marker to the label's formatting. `affixText` is retained as
+// the text-only projection of this, so every existing caller and test is
+// unaffected. `presenceName` is null for magnitudes, scaling notes, and Dino
+// slot lines — only a presence affix can carry a marker.
+// #332 — the presence marker. Three cases, and only two of them are marked:
+//   counted   — the Utility tier scores this effect (the curated tier-1 roster)
+//   rankable  — a reviewed weapon proc: rank it as its own priority, but the tier
+//               never counts it. Since #343 this is 24 names, and the gap it
+//               explains is real — a player can rank Undead Bane, see it
+//               satisfied at 13, and find it absent from the utility count.
+//   unmarked  — every other presence effect (~1,067 of them). Deliberately silent:
+//               a glyph on all of them would be noise, not signal, and "no mark"
+//               already reads as "not counted" once the marked cases are learned.
+// Returns null when no marker applies OR when no vocabulary was supplied, so a
+// caller without one (a test, an older host) renders exactly as it does today.
+function presenceMarker(name, sets) {
+  if (!name || !sets) return null;
+  const counting = sets.counting, admitted = sets.admitted;
+  if (counting && typeof counting.has === "function" && counting.has(name)) {
+    return { cls: "counted", glyph: "★",
+      title: "Counted by the Utility effects priority — this effect earns a point toward that priority's total." };
+  }
+  if (admitted && typeof admitted.has === "function" && admitted.has(name)) {
+    return { cls: "rankable-only", glyph: "◇",
+      title: "Rank this on its own to have the optimizer seek it. The Utility effects priority does NOT count it — weapon procs are ranked individually rather than counted." };
+  }
+  return null;
+}
+
+function affixEntries(v) {
+  const entries = (v.affixes || []).map((a) => {
     const name = affixName(a), bt = affixType(a);
-    if (_browseIsPresenceType(bt)) return `✓ ${name}`;   // U4: presence, not a magnitude
+    if (_browseIsPresenceType(bt)) {
+      return { text: `✓ ${name}`, presenceName: name };   // U4: presence, not a magnitude
+    }
     const type = bt && bt !== "Enhancement" ? ` ${bt}` : "";
     const unit = a.unit === "pct" ? "%" : "";
-    return `${name} +${a.value}${unit}${type}`;
+    return { text: `${name} +${a.value}${unit}${type}`, presenceName: null };
   });
-  (v.scaling || []).forEach((s) => parts.push(`${s.stat} (scales to +${s.val_hi}${s.unit === "pct" ? "%" : ""})`));
+  (v.scaling || []).forEach((s) => entries.push({
+    text: `${s.stat} (scales to +${s.val_hi}${s.unit === "pct" ? "%" : ""})`, presenceName: null }));
   // A Dinosaur Bone blank's value is its typed Dino slots, not affixes — surface
   // them so it reads as a host, not an empty row.
   if ((v.dino_slots_norm || []).length) {
-    parts.push(`Isle of Dread slots: ${v.dino_slots_norm.join(" / ")}`);
+    entries.push({ text: `Isle of Dread slots: ${v.dino_slots_norm.join(" / ")}`, presenceName: null });
   }
-  return parts;
+  return entries;
+}
+
+function affixText(v) {
+  return affixEntries(v).map((e) => e.text);
 }
 
 /** Display-only pseudo-variant for one Dino insert, so the crafting pool is
@@ -317,7 +356,14 @@ function browsableItems(dataset) {
 
 // ---- DOM rendering (browser only) ----
 
-function initBrowse(dataset) {
+function initBrowse(dataset, vocab) {
+  // #332 — the counted / rankable-only sets come from the picker vocabulary the
+  // host already built (canonicalized through the shared alias table there, so a
+  // chip matches by the ONE name the solver uses). Optional: without it, chips
+  // render exactly as before rather than guessing at membership.
+  const utilitySets = (vocab && vocab.utilityCounting)
+    ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted }
+    : null;
   const controls = document.getElementById("browse-controls");
   const status = document.getElementById("browse-status");
   const results = document.getElementById("browse-results");
@@ -376,6 +422,16 @@ function initBrowse(dataset) {
   function render() {
     const rows = filterVariants(items, read());
     status.textContent = `${rows.length} of ${items.length} items`;
+    // #332 — a glyph nobody can decode is worse than no glyph. The legend renders
+    // only when a vocabulary was supplied (so the markers are actually present)
+    // and only once, appended after the count.
+    if (utilitySets && !status.querySelector(".utility-legend")) {
+      const legend = document.createElement("p");
+      legend.className = "utility-legend";
+      legend.innerHTML = '<span class="chip-mark">★</span> counted by the Utility effects priority'
+        + ' &nbsp;·&nbsp; <span class="chip-mark">◇</span> rankable on its own, not counted by it';
+      status.appendChild(legend);
+    }
     if (rows.length === 0) {
       results.innerHTML = `<div class="empty">No items match these filters. <button id="empty-clear" type="button">Clear filters</button></div>`;
       document.getElementById("empty-clear").addEventListener("click", clearAll);
@@ -391,7 +447,12 @@ function initBrowse(dataset) {
       // U3 — item-carried chips first, then set-granted ones. Beyond three set
       // chips the remainder collapses: 1,381 items carry threshold tiers and five
       // carry twelve, so an uncapped list would swamp the cell.
-      const ownChips = affixText(v).map((t) => `<span class="chip">${esc(t)}</span>`);
+      const ownChips = affixEntries(v).map((e) => {
+        const m = presenceMarker(e.presenceName, utilitySets);
+        return m
+          ? `<span class="chip presence ${m.cls}" title="${esc(m.title)}">${esc(e.text)} <span class="chip-mark" aria-hidden="true">${m.glyph}</span><span class="sr-only"> — ${esc(m.cls === "counted" ? "counted by the Utility effects priority" : "rankable on its own; not counted by the Utility effects priority")}</span></span>`
+          : `<span class="chip">${esc(e.text)}</span>`;
+      });
       const setEntries = v._setGranted || [];
       const shown = setEntries.slice(0, 3).map((e) => `<span class="chip setbonus">${esc(setChipText(e))}</span>`);
       if (setEntries.length > 3) {
@@ -440,5 +501,5 @@ if (typeof window !== "undefined") {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { filterVariants, variantStats, variantSetStats, affixText, setChipText, collectSetDefs, resolveSetGranted, dinoInsertRow, ncRow, vikRow, compendiumRow, browsableItems, noDropBadge };
+  module.exports = { filterVariants, variantStats, variantSetStats, affixText, affixEntries, presenceMarker, setChipText, collectSetDefs, resolveSetGranted, dinoInsertRow, ncRow, vikRow, compendiumRow, browsableItems, noDropBadge };
 }

@@ -1570,3 +1570,57 @@ test("#353: the legacy 'boolean' spelling renders identically", () => {
   assert.ok(/✓ Ghostly/.test(md), "presence tick for the legacy spelling too");
   assert.ok(/feature/.test(md), "same 'feature' type label");
 });
+
+// #332 — the ranked-but-uncounted disclosure reaches EVERY export. Standing
+// invariant: a mechanic that is solve-visible must never be share-invisible.
+// The record is shaped like a real solve result (utilityReport carrying
+// rankedNotCounted, plus the breakdown that proves the loadout holds the stat).
+const excludedRec = {
+  name: "Excluded Proc",
+  inputs: { ml: 34, pool: "all", priorities: ["Undead Bane", "Utility effects"] },
+  snapshot: {
+    status: "optimal", effective: { "Undead Bane": 13 }, perTarget: { "Undead Bane": 13 },
+    breakdown: { "Undead Bane": [{ bonus_type: "Untyped", value: 13, source: "Echo of the Sunsword",
+      sourceKind: "worn", slot: "Main Hand", slots: ["Main Hand"], hostIds: ["E"] }] },
+    chosen: [{ slot: "Main Hand", variant: { variant_id: "Echo of the Sunsword", ml: 34,
+      affixes: [{ name: "Undead Bane", value: 13 }] } }],
+    setsActive: [],
+    utilityReport: { count: 1, effects: [{ name: "Ghostly", item: "Belt" }],
+      rankedNotCounted: ["Undead Bane"] },
+  },
+};
+
+test("#332: every text export names a ranked-but-uncounted proc", () => {
+  const want = /Undead Bane is ranked as its own priority/;
+  assert.ok(want.test(toMarkdown(excludedRec)), "markdown");
+  assert.ok(want.test(toBBCode(excludedRec)), "bbcode");
+  assert.ok(want.test(toCsv(excludedRec)), "csv");
+  assert.ok(want.test(toPrintHtml(excludedRec)), "print html");
+  assert.ok(want.test(JSON.stringify(toPortableJSON(excludedRec, "2026-08-17T00:00:00Z"))),
+    "portable ddo-loadout/v1 envelope");
+});
+
+test("#332: the portable envelope carries the exclusion as DATA, not just prose", () => {
+  const env = toPortableJSON(excludedRec, "2026-08-17T00:00:00Z");
+  assert.deepStrictEqual(env.resolved.utility.excluded, ["Undead Bane"],
+    "a future import/compare reads the names, not a sentence it has to parse");
+  assert.ok(env.resolved.utility.excludedLine, "and the rendered sentence beside them");
+});
+
+test("#332: nothing is said when no ranked proc was excluded", () => {
+  const clean = JSON.parse(JSON.stringify(excludedRec));
+  clean.snapshot.utilityReport.rankedNotCounted = [];
+  const md = toMarkdown(clean);
+  assert.ok(!/ranked as its own priority/.test(md), "no disclosure without an exclusion");
+  const env = toPortableJSON(clean, "2026-08-17T00:00:00Z");
+  assert.deepStrictEqual(env.resolved.utility.excluded, []);
+  assert.strictEqual(env.resolved.utility.excludedLine, null, "null line, not an empty string");
+});
+
+test("#332: a stat the loadout does not carry is NOT named", () => {
+  // "not counted" is a confusing thing to say about a stat with no sources at all.
+  const noSources = JSON.parse(JSON.stringify(excludedRec));
+  noSources.snapshot.breakdown = {};
+  assert.ok(!/ranked as its own priority/.test(toMarkdown(noSources)),
+    "an unsourced stat is left out of the sentence");
+});

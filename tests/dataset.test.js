@@ -1660,6 +1660,24 @@ test("#343: tier-2 names are OUT of the stamped counting set; tier-1 is IN and a
 // (derived by src/utility_procs.py's mirror) must agree with web/dataset.js's
 // UTILITY_TIER1_PRESENCE. If either copy gains or loses a name, the stamped
 // set diverges from this constant and one direction below fails.
+test("#332: utilityAdmitted is exposed and DISJOINT from utilityCounting", () => {
+  const v = builtVocab();
+  if (!v) { console.log("  (skipped — web/data/items.json not built)"); return; }
+  assert.ok(v.utilityAdmitted instanceof Set, "the admitted procs are exposed as a Set");
+  assert.ok(v.utilityAdmitted.size > 0, "a real dataset admits some untyped procs");
+  assert.ok(v.utilityCounting.size > 0, "and counts some presence effects");
+  // The split every surface renders: a name is counted, or rankable-only, never
+  // both. An overlap would put two contradictory markers on one Browse chip.
+  const both = [...v.utilityCounting].filter((n) => v.utilityAdmitted.has(n));
+  assert.deepStrictEqual(both, [],
+    `counted and admitted must be disjoint since #343; overlapping: ${both.join(", ")}`);
+  // Anchored on the reported case: the tier seeks Ghostly, never Undead Bane.
+  assert.ok(v.utilityCounting.has("Ghostly"), "Ghostly is counted");
+  assert.ok(!v.utilityAdmitted.has("Ghostly"), "and is not an admitted proc");
+  assert.ok(v.utilityAdmitted.has("Undead Bane"), "Undead Bane is an admitted proc");
+  assert.ok(!v.utilityCounting.has("Undead Bane"), "and is NOT counted");
+});
+
 test("#91/KTD10: the stamped counting set and UTILITY_TIER1_PRESENCE cannot drift", () => {
   const v = builtVocab();
   if (!v) return console.log("  (skipped — web/data/items.json not built)");

@@ -801,8 +801,20 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
       + "(vocab.utilityCounting) — see web/query.js's buildModel call for the reference site."
     );
   }
-  if (utilityEnabled && utilityCountingSet && utilityCountingSet.size) {
-    for (const n of utilityCountingSet) targetSet.add(n);
+  // #332 — the 11th argument accepts EITHER a bare Set (every existing call site)
+  // or `{ counting, admitted }`. The admitted half is the reviewed weapon procs a
+  // player can rank individually while the tier never counts them; the solve
+  // stamps the ranked ones onto its report so a restored character's exports can
+  // name them without a dataset to re-derive from. Widening this one argument
+  // keeps KTD3 intact — the sets still ride as an argument, never on the
+  // persisted query — and adds no 12th positional param.
+  const _uCounting = (utilityCountingSet && typeof utilityCountingSet.has === "function")
+    ? utilityCountingSet
+    : (utilityCountingSet && utilityCountingSet.counting) || null;
+  const _uAdmitted = (utilityCountingSet && !(typeof utilityCountingSet.has === "function")
+    && utilityCountingSet.admitted) || null;
+  if (utilityEnabled && _uCounting && _uCounting.size) {
+    for (const n of _uCounting) targetSet.add(n);
   }
   const mlCap = query.mlCap;
   const eligAll = eligible(variants, query);
@@ -1070,7 +1082,9 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     // mint the per-effect indicator binaries. `utilityEnabled` mirrors the
     // widening condition above (sentinel ranked), so the two layers cannot
     // disagree about whether the tier is live for this solve.
-    utilityCountingSet: utilityCountingSet || null,
+    utilityCountingSet: _uCounting || null,
+    // #332 — the rankable-only procs, for the report's exclusion sentence.
+    utilityAdmittedSet: _uAdmitted || null,
     utilityEnabled,
     // U1 — user-set per-stat caps (clamp a stat's counted value); merged with the
     // armor dodge cap in buildProgram. U2 — user-set per-stat floors (best-effort).
