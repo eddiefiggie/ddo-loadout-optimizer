@@ -3,7 +3,7 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 
-const { filterVariants, variantStats, affixText, dinoInsertRow, ncRow, vikRow, compendiumRow, browsableItems } = require("../web/browse.js");
+const { filterVariants, variantStats, affixText, dinoInsertRow, ncRow, vikRow, compendiumRow, browsableItems, affixEntries, presenceMarker } = require("../web/browse.js");
 const B = require("../web/browse.js");
 const { normalizeDataset, normalizeItem, isNoiseAffix } = require("../web/dataset.js");
 const data = normalizeDataset(JSON.parse(
@@ -406,6 +406,86 @@ test("U4/262: the render template composes the badge into the status cell", () =
   const i = src.indexOf("const badge =");
   const row = src.slice(i, src.indexOf("</tr>", i));
   assert.ok(/noDropBadge\(v\)/.test(row), "the status-cell badge string appends noDropBadge(v)");
+});
+
+
+// ---- #332: the Utility-tier presence markers ----
+
+test("#332: affixEntries is the structured form and affixText its exact text projection", () => {
+  const v = { affixes: [{ name: "Ghostly", type: "Bool", value: 1 },
+                        { name: "PRR", type: "Enhancement", value: 15 }] };
+  const entries = affixEntries(v);
+  assert.deepStrictEqual(entries.map((e) => e.text), affixText(v),
+    "affixText must stay the text projection of affixEntries — no caller changes behavior");
+  assert.strictEqual(entries[0].presenceName, "Ghostly", "a presence affix carries its name");
+  assert.strictEqual(entries[1].presenceName, null, "a magnitude carries none");
+});
+
+test("#332: presenceMarker marks counted and rankable-only, and nothing else", () => {
+  const sets = { counting: new Set(["Ghostly"]), admitted: new Set(["Undead Bane"]) };
+  assert.strictEqual(presenceMarker("Ghostly", sets).cls, "counted");
+  assert.strictEqual(presenceMarker("Undead Bane", sets).cls, "rankable-only");
+  assert.strictEqual(presenceMarker("Keen", sets), null,
+    "a presence effect outside both sets is deliberately unmarked (~1,067 of them)");
+  assert.strictEqual(presenceMarker(null, sets), null, "a magnitude is never marked");
+});
+
+test("#332: without a vocabulary nothing is marked — Browse renders as before", () => {
+  // initBrowse's vocab argument is optional; a host that does not pass one must
+  // not get guessed-at membership.
+  assert.strictEqual(presenceMarker("Ghostly", null), null);
+  assert.strictEqual(presenceMarker("Ghostly", { counting: null, admitted: null }), null);
+});
+
+test("#332: the two markers state DIFFERENT things and neither is symbol-only", () => {
+  const sets = { counting: new Set(["Ghostly"]), admitted: new Set(["Undead Bane"]) };
+  const counted = presenceMarker("Ghostly", sets), rankable = presenceMarker("Undead Bane", sets);
+  assert.notStrictEqual(counted.glyph, rankable.glyph, "distinct glyphs");
+  assert.notStrictEqual(counted.title, rankable.title, "distinct explanations");
+  assert.ok(/counted/i.test(counted.title), "the counted marker says it is counted");
+  assert.ok(/not count/i.test(rankable.title),
+    "the rankable-only marker says the tier does NOT count it — the #343 split");
+});
+
+test("#332: on REAL data, a counted effect and an admitted proc mark differently", () => {
+  const { buildPickerVocabulary } = require("../web/dataset.js");
+  const vocab = buildPickerVocabulary(data);
+  if (!vocab || !vocab.utilityCounting || !vocab.utilityCounting.size) {
+    console.log("  (skipped — web/data/items.json not built)"); return;
+  }
+  const sets = { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted };
+  assert.strictEqual(presenceMarker("Ghostly", sets).cls, "counted",
+    "the reported case is marked as counted");
+  assert.strictEqual(presenceMarker("Undead Bane", sets).cls, "rankable-only",
+    "and the proc a player can rank but the tier ignores is marked rankable-only");
+});
+
+test("#332: on REAL data, an untyped admitted proc gets the rankable-only marker", () => {
+  // The guard whose absence let the marker reach 75 of 1,656 chips. The isolated
+  // presenceMarker tests passed because they fed name strings directly; the defect
+  // lived at the affixEntries -> presenceMarker join, where the admitted procs are
+  // untyped MAGNITUDES and the old code only tagged the presence-typed branch.
+  const { buildPickerVocabulary } = require("../web/dataset.js");
+  const vocab = buildPickerVocabulary(data);
+  if (!vocab || !vocab.utilityAdmitted || !vocab.utilityAdmitted.size) {
+    console.log("  (skipped — web/data/items.json not built)"); return;
+  }
+  const sets = { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted };
+  // Select by the CANONICAL name and assert on the RAW one. An earlier draft filtered
+  // and asserted on the same raw markName, so a raw-vs-canonical mismatch dropped out
+  // of the loop instead of failing — the test could not detect the very join it guards.
+  const canon = (n) => (typeof vocab.canonical === "function" ? vocab.canonical(n) : n);
+  let checked = 0, marked = 0;
+  for (const v of items) {
+    for (const e of affixEntries(v)) {
+      if (!e.markName || !vocab.utilityAdmitted.has(canon(e.markName))) continue;
+      checked++;
+      if ((presenceMarker(e.markName, sets) || {}).cls === "rankable-only") marked++;
+    }
+  }
+  assert.ok(checked > 100, `the dataset carries many admitted-proc chips (got ${checked})`);
+  assert.strictEqual(marked, checked,
+    `EVERY admitted-proc chip must be marked rankable-only, untyped or not (${marked}/${checked})`);
 });
 
 console.log(`\n${passed} passed`);

@@ -1182,16 +1182,27 @@ function utilityCard(build, rankIdx) {
   }
   const effects = rep.effects || [];
   if (!effects.length) {
+    // #332 — the zero-count state needs the disclosure too: ranking only weapon
+    // procs is exactly how a player reaches a count of zero while their ranked
+    // stats are satisfied, which is the most confusing version of this gap.
+    const exc0 = Proj.utilityExcludedFor ? Proj.utilityExcludedFor(build) : { line: null };
     return `<div class="stat-card utility-card">${head}
       <div class="stat-value" data-final="0">0</div>
-      <p class="utility-note">${esc(Proj.utilityLine(0))}</p>
+      <p class="utility-note">${esc(Proj.utilityLine(0))}</p>${exc0.line ? `
+      <p class="utility-note muted">${esc(exc0.line)}</p>` : ""}
     </div>`;
   }
   const list = effects.map((e) =>
     `<li class="utility-effect">✓ ${esc(e.name)}${e.item ? ` <span class="attrib-src">— from ${esc(e.item)}</span>` : ""}</li>`).join("");
+  // #332 — a ranked presence effect the tier does NOT count is named here, not
+  // left as a silent contradiction between a satisfied stat and a count that
+  // omits it. Same helper and same sentence the exports use (projection.js owns
+  // both), so the shared loadout reads exactly like the one on screen.
+  const exc = Proj.utilityExcludedFor ? Proj.utilityExcludedFor(build) : { line: null };
+  const excNote = exc.line ? `<p class="utility-note muted">${esc(exc.line)}</p>` : "";
   return `<div class="stat-card utility-card">${head}
     <div class="stat-value" data-final="${esc(effects.length)}">${esc(effects.length)}</div>
-    <ul class="attrib utility-receipts">${list}</ul>
+    <ul class="attrib utility-receipts">${list}</ul>${excNote}
   </div>`;
 }
 

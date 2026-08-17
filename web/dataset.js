@@ -776,6 +776,21 @@ function buildPickerVocabulary(dataset) {
     const c = canonical(n); if (c) utilityCounting.add(c);
   }
 
+  // #332 — the reviewed untyped weapon procs, as their OWN set. They were already
+  // folded into `presence` and `suggest` above (that is what makes Undead Bane
+  // rankable), but no display surface could tell them apart from a counted
+  // effect, because the distinguishing set was never exposed. Since #343 these
+  // are precisely the names a player can rank individually and the Utility tier
+  // never counts, which is the split every surface has to be able to state.
+  // Canonicalized through the same alias table as utilityCounting so a chip
+  // matches by the ONE shared name. Disjoint from utilityCounting by
+  // construction (#343 removed them from the count) and asserted so in
+  // tests/dataset.test.js — an overlap would mean a chip claiming both.
+  const utilityAdmitted = new Set();
+  for (const n of (meta.utility_untyped_admitted || [])) {
+    const c = canonical(n); if (c) utilityAdmitted.add(c);
+  }
+
   // known = the unfiltered union (canonicalized), plus every suggestion.
   const known = new Set();
   for (const n of _allAffixNames(ds)) { const c = canonical(n); if (c) known.add(c); }
@@ -878,7 +893,7 @@ function buildPickerVocabulary(dataset) {
   const labelMap = {};
   for (const key of labelKeys) labelMap[key] = provenanceLabels[key].to.slice();
   return { suggestions: [...suggest].sort(), known, canonical, presence, magnitude, untypedOnly,
-           utilityCounting, expandedAway, provenanceLabels: labelMap };
+           utilityCounting, utilityAdmitted, expandedAway, provenanceLabels: labelMap };
 }
 
 /** U10 — is this name an enchantment label an expansion stamps (as opposed to a bare

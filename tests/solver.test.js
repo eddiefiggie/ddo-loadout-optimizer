@@ -517,16 +517,23 @@ async function withCrossAdd(map, fn) {
     const primalOf = (names) => ({ Columns: Object.fromEntries(names.map((n) => [n, { Primal: 1 }])) });
     const x = program.xVars[0].name;
     const floated = S.readSolution(primalOf([x, u]), program);
-    assert.deepStrictEqual(floated.utilityReport, { count: 0, effects: [] },
+    // #332 added `rankedNotCounted` to the report, so assert the two fields this
+    // guard is ABOUT rather than the whole object — a whole-object compare makes
+    // every future report field a false failure here, and the claim is specifically
+    // that a floated indicator contributes no counted effect.
+    assert.strictEqual(floated.utilityReport.count, 0, "floated indicator: not counted");
+    assert.deepStrictEqual(floated.utilityReport.effects, [],
       "floated indicator: omitted from the report");
     assert.deepStrictEqual(floated.utilityEffects, [], "and from the effect list");
     const fired = S.readSolution(primalOf([x, u, zs[0]]), program);
-    assert.deepStrictEqual(fired.utilityReport, { count: 1, effects: [{ name: "Ghost Touch", item: "nGT" }] },
+    assert.strictEqual(fired.utilityReport.count, 1, "fired indicator: counted once");
+    assert.deepStrictEqual(fired.utilityReport.effects, [{ name: "Ghost Touch", item: "nGT" }],
       "fired indicator: reported with its credited carrier");
     // Review fix (the new direction): the z fired but the u floated to 0 —
     // the effect is genuinely present, so it IS in the report and the list.
     const zOnly = S.readSolution(primalOf([x, zs[0]]), program);
-    assert.deepStrictEqual(zOnly.utilityReport, { count: 1, effects: [{ name: "Ghost Touch", item: "nGT" }] },
+    assert.strictEqual(zOnly.utilityReport.count, 1, "z-only: counted from the backing z");
+    assert.deepStrictEqual(zOnly.utilityReport.effects, [{ name: "Ghost Touch", item: "nGT" }],
       "fired z with a floated-to-0 u: reported — presence is z-backed, u primals are not consulted");
     assert.deepStrictEqual(zOnly.utilityEffects, [{ name: "Ghost Touch", present: true }],
       "the U3 effect list uses the same z-backed predicate");
@@ -5145,6 +5152,35 @@ async function withCrossAdd(map, fn) {
     assert.ok(!altsF.some((a) => a.gainAxis === "crafts"),
       "no give applies to the top-ranked tier — the exact lock rules the shed out");
   });
+
+  
+
+  // #332 — the model->solver chain that makes rankedNotCounted non-empty. It had ZERO
+  // coverage, which is the other half of why the disclosure shipped dead: even with the
+  // call sites wired, nothing pinned that the object-shaped argument reaches the report.
+  await test("#332: the object-shaped 11th argument feeds rankedNotCounted", async () => {
+    const { buildModel } = require("../web/model.js");
+    const mk = (n, t2, v) => ({ variant_id: "W", slot: "Main Hand", ml: 1, minimum_level: 1,
+      verification: "verified", affixes: [{ name: n, type: t2, value: v }] });
+    const items = [mk("Undead Bane", null, 6), mk("Ghostly", "Bool", 1)];
+    items[1].variant_id = "R"; items[1].slot = "Ring 1";
+    const q = { mlCap: 34, targets: ["Undead Bane", require("../web/model.js").UTILITY_SENTINEL], armorType: null,
+      weaponSetup: null, classRace: null };
+    const sets = { counting: new Set(["Ghostly"]), admitted: new Set(["Undead Bane"]) };
+
+    const m = buildModel(items, q, [], [], [], [], {}, [], [], {}, sets);
+    assert.ok(m.utilityAdmittedSet, "the admitted set reaches the model");
+    const prog = S.buildProgram(m);
+    assert.deepStrictEqual(prog.utilityRankedNotCounted, ["Undead Bane"],
+      "a ranked admitted proc is recorded as not counted");
+
+    // And the bare-Set form must NOT populate it — that is the pre-#332 shape.
+    const bare = buildModel(items, q, [], [], [], [], {}, [], [], {}, new Set(["Ghostly"]));
+    assert.strictEqual(bare.utilityAdmittedSet, null, "a bare Set carries no admitted half");
+    assert.deepStrictEqual(S.buildProgram(bare).utilityRankedNotCounted, [],
+      "and yields no exclusion names, so the sentence stays silent");
+  });
+
 
   console.log(`\n${passed} passed`);
 })();

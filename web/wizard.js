@@ -2197,7 +2197,19 @@ if (typeof window !== "undefined" && window.App) {
         // ARGUMENT from the in-scope vocabulary, never on the persisted query.
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
-          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs, vocab.utilityCounting || null);
+          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs,
+          // #332 — BOTH sets: the counting roster the tier scores, and the admitted
+          // procs it deliberately does not, so the result can name a ranked-but-
+          // uncounted proc on every surface including exports. THIS file is the live
+          // solve path — web/query.js is not loaded by web/index.html at all.
+          // Gate on SIZE, not truthiness: an empty stamped counting set is truthy, and
+          // threading it would make the card and all six exports assert "weapon procs
+          // are ranked individually rather than counted" while the tier counts nothing
+          // at all. web/browse.js:373 already gates its markers this way; these sites
+          // were the other half of the same asymmetry.
+          vocab.utilityCounting && vocab.utilityCounting.size
+            ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set() }
+            : null);
         const t0 = performance.now();
         // eslint-disable-next-line no-undef
         const result = await solveLexicographic(model, h);
@@ -2432,7 +2444,19 @@ if (typeof window !== "undefined" && window.App) {
         // #91 (U3, KTD3) — same counting-set threading as the solve path above.
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
-          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs, vocab.utilityCounting || null);
+          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs,
+          // #332 — BOTH sets: the counting roster the tier scores, and the admitted
+          // procs it deliberately does not, so the result can name a ranked-but-
+          // uncounted proc on every surface including exports. THIS file is the live
+          // solve path — web/query.js is not loaded by web/index.html at all.
+          // Gate on SIZE, not truthiness: an empty stamped counting set is truthy, and
+          // threading it would make the card and all six exports assert "weapon procs
+          // are ranked individually rather than counted" while the tier counts nothing
+          // at all. web/browse.js:373 already gates its markers this way; these sites
+          // were the other half of the same asymmetry.
+          vocab.utilityCounting && vocab.utilityCounting.size
+            ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set() }
+            : null);
         // fresh:false + the original stamp so a later Save preserves staleness (see saveCurrentCharacter).
         state.lastRun = { model, result: snap, query, fresh: false, stampedBuildId: rec.stampedBuildId || null };
         state.loadedStale = !!(rec.stampedBuildId && currentBuildId() && rec.stampedBuildId !== currentBuildId());
@@ -2555,7 +2579,10 @@ if (typeof window !== "undefined" && window.App) {
         ov.addEventListener("click", (e) => { if (e.target === ov) ov.classList.remove("on"); });
         document.addEventListener("keydown", (e) => { if (e.key === "Escape") ov.classList.remove("on"); });
         // eslint-disable-next-line no-undef
-        if (window.ItemBrowser) window.ItemBrowser.initBrowse(dataset);
+        // #332 — pass the picker vocabulary so Browse can mark which presence
+        // effects the Utility tier counts. Same builder the priorities picker
+        // uses, so the two surfaces cannot disagree about membership.
+        if (window.ItemBrowser) window.ItemBrowser.initBrowse(dataset, pickerVocabulary(dataset));
       }
       ov.classList.add("on");
     }

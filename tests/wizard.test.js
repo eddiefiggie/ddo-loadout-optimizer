@@ -2163,3 +2163,44 @@ test("#346: the Set Augments picker is disabled on rungs that clear set-bonus cr
   assert.match(src, /const setAugInert = _rungExcludesNicheCrafting\(/,
     "gated on the rung that actually clears the family");
 });
+
+// #332 — SOURCE-TEXT WIRING GUARD. This is the guard whose absence let the whole
+// disclosure ship dead: web/query.js is not loaded by web/index.html, so wiring the
+// sets there reached a file the app never runs. Every unit test passed because each
+// one drove buildModel directly. This asserts the LIVE call sites pass the object
+// shape, which no unit test can observe.
+test("#332: both live buildModel call sites thread {counting, admitted}", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const calls = [...src.matchAll(/buildModel\(/g)].map((m) => m.index);
+  assert.strictEqual(calls.length, 2, "wizard.js has exactly the two known buildModel call sites");
+  for (const at of calls) {
+    const region = src.slice(at, src.indexOf(");", at) + 2);
+    assert.ok(/counting:\s*vocab\.utilityCounting/.test(region),
+      `a buildModel call at index ${at} must pass the counting set as { counting: ... }`);
+    assert.ok(/admitted:\s*vocab\.utilityAdmitted/.test(region),
+      `a buildModel call at index ${at} must pass the admitted procs as { admitted: ... }`);
+    assert.ok(!/augment_set_defs,\s*vocab\.utilityCounting\s*\|\|\s*null/.test(region),
+      "the pre-#332 bare-Set form must not survive at a live call site");
+  }
+});
+
+test("#332: initBrowse receives the picker vocabulary", () => {
+  // The call that makes every Browse marker appear. Without a vocabulary, initBrowse
+  // renders chips with no markers at all — a silent, total feature loss that no unit
+  // test can see, which is the same shape as the buildModel wiring defect above.
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  assert.ok(/ItemBrowser\.initBrowse\(\s*dataset\s*,\s*pickerVocabulary\(dataset\)\s*\)/.test(src),
+    "initBrowse must be passed pickerVocabulary(dataset), not dataset alone");
+  assert.ok(!/ItemBrowser\.initBrowse\(\s*dataset\s*\)/.test(src),
+    "the pre-#332 single-argument form must not survive");
+});
+
+test("#332: web/query.js is NOT a live solve path — index.html must not load it", () => {
+  // Pins the fact that made #3 possible, so a future reader is not misled again.
+  const fs = require("fs"); const path = require("path");
+  const html = fs.readFileSync(path.join(__dirname, "..", "web", "index.html"), "utf-8");
+  assert.ok(!/src="query\.js/.test(html),
+    "if query.js becomes loaded, it is a live solve path and must thread both sets too");
+});

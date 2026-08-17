@@ -1256,10 +1256,17 @@
     // results.js utilityCard holds. `line` is the one canonical sentence every
     // surface prints (surfaces may shape around it, never re-write it).
     const rep = snap.utilityReport;
+    // #332 — one shared narrowing (see utilityExcludedFor): the solver's list is
+    // every ranked non-counted stat; only the presence ones belong in the sentence.
+    const { names: excluded } = utilityExcludedFor(snap);
     const utility = rep ? {
       count: rep.count != null ? rep.count : (rep.effects || []).length,
       effects: (rep.effects || []).map((e) => ({ name: e.name, item: e.item != null ? e.item : null })),
       line: utilityLine(rep.count != null ? rep.count : (rep.effects || []).length),
+      // #332 — the names and the one canonical sentence. Empty array + null line
+      // when nothing was ranked-but-uncounted, so a surface can test either.
+      excluded,
+      excludedLine: utilityExcludedLine(excluded),
     } : null;
 
     return {
@@ -1430,6 +1437,47 @@
     return `${count} utility ${count === 1 ? "effect" : "effects"} on this loadout`;
   }
 
+  // #332 — the ranked-but-uncounted disclosure. THE gap it closes: rank Undead
+  // Bane with the tier on and the solve reports it satisfied at 13 while the
+  // utility card says 11 effects without it. Both statements are true and nothing
+  // reconciled them; #343 took this from 0 names to 24 by removing the reviewed
+  // weapon procs from the count while leaving them rankable.
+  //
+  // `names` is already narrowed to PRESENCE effects by the caller — a ranked
+  // magnitude like Melee Power is not something a player would expect the utility
+  // count to include, so naming it here would be noise. One sentence, every
+  // surface (the app card and all five exports render this string).
+  // #332 — the narrowing, extracted so the app card and the exports cannot drift.
+  // Accepts either a snapshot or a live solve result: both carry `utilityReport`
+  // and `breakdown`. Returns { names, line } with an empty array and a null line
+  // when nothing qualifies, so a caller can test either shape.
+  function utilityExcludedFor(snapOrResult) {
+    const s = snapOrResult || {};
+    const rep = s.utilityReport;
+    if (!rep) return { names: [], line: null };
+    // The solve already narrowed this to the reviewed weapon procs (see
+    // web/solver.js's utilityRankedNotCounted). Do NOT re-filter on affix type: an
+    // earlier draft required every contribution to be presence-typed, which
+    // silently emptied the list — these procs are UNTYPED magnitudes (Undead Bane
+    // reads bonus_type "Untyped"/null with a real value), not Bool presences. The
+    // only remaining condition is that the loadout actually carries the stat,
+    // since "not counted" is a confusing thing to say about a stat with no sources.
+    const names = ((rep.rankedNotCounted) || []).filter((stat) => {
+      const parts = (s.breakdown && s.breakdown[stat]) || [];
+      return parts.length > 0;
+    });
+    return { names, line: utilityExcludedLine(names) };
+  }
+
+  function utilityExcludedLine(names) {
+    const list = (names || []).filter(Boolean);
+    if (!list.length) return null;
+    const which = list.length === 1 ? `${list[0]} is` : `${list.join(", ")} are`;
+    return `${which} ranked as ${list.length === 1 ? "its own priority" : "their own priorities"} and `
+      + `${list.length === 1 ? "is" : "are"} not part of this count — `
+      + "weapon procs are ranked individually rather than counted by the Utility effects priority.";
+  }
+
   function creditNoticeLines(result) {
     const report = (result && result.creditReport) || [];
     if (!report.length) return [];
@@ -1484,7 +1532,7 @@
     // model.js; re-exported so exporters can recognize the sentinel row)
     utilityLine, UTILITY_SENTINEL: UTILITY_NAME,
     // pure primitives (results.js binds these; single definition, no drift)
-    affixLabel, isPresence, isPresenceType, collapseExpansions, bundleGroups, itemMl, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
+    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, collapseExpansions, bundleGroups, itemMl, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,
     satisfiedSets, suppressedHostIds, slotSetNames,
     setContributors, contributorsFor, setMemberLabel, activeSetDetail, satisfiedSetDetail,

@@ -1734,6 +1734,53 @@ test("#91 U5/R14: a JSON round-tripped snapshot (restored character) renders rec
     "the persisted report alone is enough to render the receipts");
 });
 
+// #332 — the results-panel exclusion note. THIS is the surface the issue names first
+// and the one round 1 found dead in the shipped app; it had no test in either branch,
+// which is precisely how it shipped dead. Drives the real utilityCard against a build
+// shaped like a real solve result (utilityReport.rankedNotCounted plus the breakdown
+// entry that proves the loadout carries the stat).
+function excludedBuild(report, breakdown) {
+  const b = utilityBuild(report);
+  b.breakdown = breakdown || {};
+  return b;
+}
+
+test("#332: the utility card names a ranked-but-uncounted proc", () => {
+  const build = excludedBuild(
+    { count: 1, effects: [{ name: "Ghostly", item: "Belt" }], rankedNotCounted: ["Undead Bane"] },
+    { "Undead Bane": [{ bonus_type: "Untyped", value: 13, source: "Echo", sourceKind: "worn",
+      slot: "Main Hand", slots: ["Main Hand"], hostIds: ["E"] }] });
+  const html = R.utilityCard(build, 0);
+  assert.ok(/Undead Bane is ranked as its own priority/.test(html),
+    "the card reconciles a satisfied ranked proc with a count that omits it");
+  assert.ok(/utility-note muted/.test(html), "rendered as the muted note, not a receipt row");
+});
+
+test("#332: the ZERO-count card discloses too", () => {
+  // Ranking only weapon procs is exactly how a player reaches a count of zero while
+  // their ranked stats are satisfied — the most confusing version of this gap.
+  const build = excludedBuild(
+    { count: 0, effects: [], rankedNotCounted: ["Undead Bane"] },
+    { "Undead Bane": [{ bonus_type: "Untyped", value: 13, source: "Echo", sourceKind: "worn",
+      slot: "Main Hand", slots: ["Main Hand"], hostIds: ["E"] }] });
+  const html = R.utilityCard(build, 0);
+  assert.ok(/data-final="0"/.test(html), "still a zero count");
+  assert.ok(/Undead Bane is ranked as its own priority/.test(html),
+    "and the zero-count branch carries the same disclosure");
+});
+
+test("#332: the card says NOTHING when no ranked proc was excluded", () => {
+  const clean = excludedBuild(
+    { count: 1, effects: [{ name: "Ghostly", item: "Belt" }], rankedNotCounted: [] }, {});
+  assert.ok(!/ranked as its own priority/.test(R.utilityCard(clean, 0)),
+    "no disclosure without an exclusion");
+  // And a stat the loadout does not carry is not named (no breakdown entry).
+  const unsourced = excludedBuild(
+    { count: 1, effects: [{ name: "Ghostly", item: "Belt" }], rankedNotCounted: ["Undead Bane"] }, {});
+  assert.ok(!/ranked as its own priority/.test(R.utilityCard(unsourced, 0)),
+    "an unsourced stat is left out — 'not counted' would be confusing about a stat with no sources");
+});
+
 test("#91 U5: utilityCard takes the build being rendered — an alternative's receipts, not the optimum's", () => {
   const optimum = utilityBuild({ count: 1, effects: [{ name: "Ghost Touch", item: "OPT-ITEM" }] });
   const alt = utilityBuild({ count: 2, effects: [
