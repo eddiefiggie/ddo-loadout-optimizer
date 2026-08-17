@@ -1,7 +1,7 @@
 ---
 module: solver
 date: 2026-08-03
-last_updated: 2026-08-09
+last_updated: 2026-08-17
 problem_type: workflow_issue
 component: development_workflow
 severity: medium
@@ -10,6 +10,8 @@ tags:
   - golden-tests
   - solver
   - regression-guard
+  - test-glob
+  - ci-configuration
   - ci-deploy
   - test-suite
 related_components:
@@ -42,11 +44,15 @@ When it fails **because the change is an intentional, verified improvement** (no
 node tests/parity/capture_golden.js   # regenerates tests/parity/golden.json
 ```
 
-Before committing the regenerated `golden.json`, confirm the diff is **contained to the fixtures you expected to change** and that **no priority target regressed** (only lower-priority or tied stats should move). Then commit it. `web/data/items.json` is a gitignored generated artifact, but `tests/parity/golden.json` is committed and IS the ratified baseline.
+Before committing the regenerated `golden.json`, confirm the diff is **contained to the fixtures you expected to change** and that **no priority target regressed** (only lower-priority or tied stats should move). Then commit it.
+
+> **These two clauses cannot adjudicate a `chosen`-only diff (added 2026-08-17, from #343).** When item identities move but no per-target total does, there is no stat tell to attribute — and both clauses above are satisfied. A reviewer demonstrated this concretely: with a live regression re-opening a reported bug, the only red was `chosen`-item drift naming none of the affected behavior, and no priority target regressed — so the second clause was satisfied by a diff hiding the bug. The first clause fares no better in practice: in that same PR's own *legitimate* re-ratification, 18 of 23 fixtures moved with zero `perTarget`/`effective` change, so "contained to the fixtures you expected" was satisfied there too. (Those are two different golden diffs — the injected-regression run and the shipped re-ratification. Neither clause separates them.) Re-capturing the golden then turned the whole per-commit gate green with the bug still live — using this doc's own sanctioned workflow.
+>
+> **Rule:** when the change under review adds or alters a *named* behavior, the golden must not be the sole in-glob witness. A named assertion for that behavior has to exist inside `tests/*.test.js` **before** the golden is regenerated. A snapshot is a change detector, not a behavior specification, and its accepted remedy for a red is to overwrite the objection. See `docs/solutions/conventions/a-guard-outside-the-ci-glob-is-not-a-guard.md`. `web/data/items.json` is a gitignored generated artifact, but `tests/parity/golden.json` is committed and IS the ratified baseline.
 
 ## Why This Matters
 
-The golden guard exists to catch the exact failure mode the tool is built to prevent — a silent change to which loadout is "optimal." Because it is gated in CI but absent from the hand-run local list, the safety net only fires *after* merge, where a red result is a **stuck deploy** (the site stays on the previous build) rather than a bad deploy. Re-ratifying blindly is the opposite danger: it would launder a real regression into the baseline. So the discipline is two-sided — always run it, and only regenerate after confirming the solve change is a correct improvement.
+The golden guard exists to catch the exact failure mode the tool is built to prevent — a silent change to which loadout is "optimal." Because it is gated in CI but absent from the hand-run local list, the safety net only fires *after* merge (and note CI runs a **glob**, not the directory — a test file whose name the glob does not match is not gated at all; see the note above), where a red result is a **stuck deploy** (the site stays on the previous build) rather than a bad deploy. Re-ratifying blindly is the opposite danger: it would launder a real regression into the baseline. So the discipline is two-sided — always run it, and only regenerate after confirming the solve change is a correct improvement.
 
 ## The guard can be green while the thing it protects is gone
 
