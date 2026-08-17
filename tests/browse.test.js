@@ -408,7 +408,6 @@ test("U4/262: the render template composes the badge into the status cell", () =
   assert.ok(/noDropBadge\(v\)/.test(row), "the status-cell badge string appends noDropBadge(v)");
 });
 
-console.log(`\n${passed} passed`);
 
 // ---- #332: the Utility-tier presence markers ----
 
@@ -460,3 +459,29 @@ test("#332: on REAL data, a counted effect and an admitted proc mark differently
   assert.strictEqual(presenceMarker("Undead Bane", sets).cls, "rankable-only",
     "and the proc a player can rank but the tier ignores is marked rankable-only");
 });
+
+test("#332: on REAL data, an untyped admitted proc gets the rankable-only marker", () => {
+  // The guard whose absence let the marker reach 75 of 1,656 chips. The isolated
+  // presenceMarker tests passed because they fed name strings directly; the defect
+  // lived at the affixEntries -> presenceMarker join, where the admitted procs are
+  // untyped MAGNITUDES and the old code only tagged the presence-typed branch.
+  const { buildPickerVocabulary } = require("../web/dataset.js");
+  const vocab = buildPickerVocabulary(data);
+  if (!vocab || !vocab.utilityAdmitted || !vocab.utilityAdmitted.size) {
+    console.log("  (skipped — web/data/items.json not built)"); return;
+  }
+  const sets = { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted };
+  let checked = 0, marked = 0;
+  for (const v of items) {
+    for (const e of affixEntries(v)) {
+      if (!e.markName || !vocab.utilityAdmitted.has(e.markName)) continue;
+      checked++;
+      if ((presenceMarker(e.markName, sets) || {}).cls === "rankable-only") marked++;
+    }
+  }
+  assert.ok(checked > 100, `the dataset carries many admitted-proc chips (got ${checked})`);
+  assert.strictEqual(marked, checked,
+    `EVERY admitted-proc chip must be marked rankable-only, untyped or not (${marked}/${checked})`);
+});
+
+console.log(`\n${passed} passed`);

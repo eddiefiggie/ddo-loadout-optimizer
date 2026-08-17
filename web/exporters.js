@@ -715,6 +715,11 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       for (const e of view.utility.effects) {
         say(`  ${utilityEffectStr(e, (s) => s)}`);
       }
+      // #332 — the ranked-but-uncounted disclosure reaches THIS export too. It is the
+      // sixth surface, and the easiest to forget: the other five are text/JSON shares,
+      // this one is a .gearset download (wired at web/wizard.js). "Never solve-visible
+      // but share-invisible" counts it.
+      if (view.utility.excludedLine) say(`  ${view.utility.excludedLine}`);
     }
     if (view.sets.length) {
       rl.push("#");

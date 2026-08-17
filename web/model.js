@@ -792,13 +792,15 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // Fail fast rather than silently solving with zero indicators: utilityCountingSet
   // is a defaulted 11th positional param, so a forgotten call site would otherwise
   // widen nothing and the utility stage would place no gear with no error anywhere.
-  // See web/query.js's buildModel call for the reference site that threads it from
-  // dataset metadata (vocab.utilityCounting).
+  // The LIVE reference sites are web/wizard.js's two buildModel calls — web/query.js
+  // exists but is NOT loaded by web/index.html, so citing it here sent a #332 change
+  // to a file the app never runs. Thread from dataset metadata (vocab.utilityCounting).
   if (utilityEnabled && utilityCountingSet == null) {
     throw new Error(
       "buildModel: the Utility sentinel is ranked but utilityCountingSet (the 11th "
       + "argument) was not passed. It must be threaded from dataset metadata "
-      + "(vocab.utilityCounting) — see web/query.js's buildModel call for the reference site."
+      + "(vocab.utilityCounting) — see web/wizard.js's buildModel calls, the LIVE reference "
+      + "sites; web/query.js is not loaded by web/index.html."
     );
   }
   // #332 — the 11th argument accepts EITHER a bare Set (every existing call site)

@@ -2197,7 +2197,14 @@ if (typeof window !== "undefined" && window.App) {
         // ARGUMENT from the in-scope vocabulary, never on the persisted query.
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
-          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs, vocab.utilityCounting || null);
+          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs,
+          // #332 — BOTH sets: the counting roster the tier scores, and the admitted
+          // procs it deliberately does not, so the result can name a ranked-but-
+          // uncounted proc on every surface including exports. THIS file is the live
+          // solve path — web/query.js is not loaded by web/index.html at all.
+          vocab.utilityCounting
+            ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set() }
+            : null);
         const t0 = performance.now();
         // eslint-disable-next-line no-undef
         const result = await solveLexicographic(model, h);
@@ -2432,7 +2439,14 @@ if (typeof window !== "undefined" && window.App) {
         // #91 (U3, KTD3) — same counting-set threading as the solve path above.
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
-          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs, vocab.utilityCounting || null);
+          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs,
+          // #332 — BOTH sets: the counting roster the tier scores, and the admitted
+          // procs it deliberately does not, so the result can name a ranked-but-
+          // uncounted proc on every surface including exports. THIS file is the live
+          // solve path — web/query.js is not loaded by web/index.html at all.
+          vocab.utilityCounting
+            ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set() }
+            : null);
         // fresh:false + the original stamp so a later Save preserves staleness (see saveCurrentCharacter).
         state.lastRun = { model, result: snap, query, fresh: false, stampedBuildId: rec.stampedBuildId || null };
         state.loadedStale = !!(rec.stampedBuildId && currentBuildId() && rec.stampedBuildId !== currentBuildId());

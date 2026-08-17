@@ -123,18 +123,24 @@ function affixEntries(v) {
   const entries = (v.affixes || []).map((a) => {
     const name = affixName(a), bt = affixType(a);
     if (_browseIsPresenceType(bt)) {
-      return { text: `✓ ${name}`, presenceName: name };   // U4: presence, not a magnitude
+      // U4: presence, not a magnitude.
+      return { text: `✓ ${name}`, presenceName: name, markName: name };
     }
     const type = bt && bt !== "Enhancement" ? ` ${bt}` : "";
     const unit = a.unit === "pct" ? "%" : "";
-    return { text: `${name} +${a.value}${unit}${type}`, presenceName: null };
+    // #332 — `markName` is carried on the MAGNITUDE branch too, so set membership is
+    // the only gate on the marker. The reviewed weapon procs are untyped MAGNITUDES
+    // (Undead Bane appears 115 times, only 6 of them Bool), so gating the marker on
+    // presence type reached 75 of 1,656 admitted chips. `presenceName` keeps its
+    // narrower "renders as a presence tick" meaning for any caller that wants it.
+    return { text: `${name} +${a.value}${unit}${type}`, presenceName: null, markName: name };
   });
   (v.scaling || []).forEach((s) => entries.push({
-    text: `${s.stat} (scales to +${s.val_hi}${s.unit === "pct" ? "%" : ""})`, presenceName: null }));
+    text: `${s.stat} (scales to +${s.val_hi}${s.unit === "pct" ? "%" : ""})`, presenceName: null, markName: null }));
   // A Dinosaur Bone blank's value is its typed Dino slots, not affixes — surface
   // them so it reads as a host, not an empty row.
   if ((v.dino_slots_norm || []).length) {
-    entries.push({ text: `Isle of Dread slots: ${v.dino_slots_norm.join(" / ")}`, presenceName: null });
+    entries.push({ text: `Isle of Dread slots: ${v.dino_slots_norm.join(" / ")}`, presenceName: null, markName: null });
   }
   return entries;
 }
@@ -361,8 +367,11 @@ function initBrowse(dataset, vocab) {
   // host already built (canonicalized through the shared alias table there, so a
   // chip matches by the ONE name the solver uses). Optional: without it, chips
   // render exactly as before rather than guessing at membership.
-  const utilitySets = (vocab && vocab.utilityCounting)
-    ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted }
+  // #332 — gate on SIZE, not truthiness: a cached pre-stamp dataset yields an empty
+  // Set (documented in dataset.js), which is truthy, so the legend would explain two
+  // glyphs no chip can carry.
+  const utilitySets = (vocab && vocab.utilityCounting && vocab.utilityCounting.size)
+    ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set() }
     : null;
   const controls = document.getElementById("browse-controls");
   const status = document.getElementById("browse-status");
@@ -448,7 +457,7 @@ function initBrowse(dataset, vocab) {
       // chips the remainder collapses: 1,381 items carry threshold tiers and five
       // carry twelve, so an uncapped list would swamp the cell.
       const ownChips = affixEntries(v).map((e) => {
-        const m = presenceMarker(e.presenceName, utilitySets);
+        const m = presenceMarker(e.markName, utilitySets);
         return m
           ? `<span class="chip presence ${m.cls}" title="${esc(m.title)}">${esc(e.text)} <span class="chip-mark" aria-hidden="true">${m.glyph}</span><span class="sr-only"> — ${esc(m.cls === "counted" ? "counted by the Utility effects priority" : "rankable on its own; not counted by the Utility effects priority")}</span></span>`
           : `<span class="chip">${esc(e.text)}</span>`;
