@@ -166,3 +166,36 @@ test("U5: a hand-edited backup cannot smuggle an invalid credit into the solve",
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);
+
+// #346 (U3) — the ladder survives the hand-export / re-import round trip, which
+// is the real cross-version boundary: users export these to files and import
+// them into whatever build they are running later.
+test("#346: craftingRung round-trips through export and re-import", () => {
+  const { serializeCharacter } = require("../web/persist.js");
+  const state = { ml: 34, race: "Human", priorities: ["Constitution"], slotConstraints: {} };
+  const run = { query: {}, result: { status: "optimal", chosen: [], effective: {} } };
+
+  for (const rung of ["everything", "no-niche-crafting", "no-solar-lunar", "printed-only"]) {
+    const saved = serializeCharacter("R", Object.assign({}, state, { craftingRung: rung }), run, "b");
+    const parsed = parseBackup(JSON.stringify(serializeAll({ R: saved })));
+    assert.ok(parsed.ok, `${rung}: the backup parses (${parsed.message || ""})`);
+    const back = parsed.characters.R;
+    assert.strictEqual(back.inputs.craftingRung, rung,
+      `${rung} survives the export/import round trip unchanged`);
+    // The derived downgrade bridge rides along and still agrees with the rung.
+    assert.strictEqual(back.inputs.excludeCraftingSystems, rung !== "everything",
+      `${rung}: the legacy bridge stays consistent with the rung across the round trip`);
+  }
+});
+
+// The allowlist is shared with persist.js precisely so a field cannot persist on
+// one path and be stripped on the other. If craftingRung ever falls off it, the
+// round-trip test above would still pass on a fresh save while silently losing
+// the field for anyone importing an older file — so pin membership directly.
+test("#346: the shared input allowlist carries craftingRung", () => {
+  const { INPUT_KEYS } = require("../web/persist.js");
+  assert.ok(INPUT_KEYS.includes("craftingRung"),
+    "a key outside the allowlist is stripped on import and the rung would not survive");
+  assert.ok(INPUT_KEYS.includes("excludeCraftingSystems"),
+    "the legacy bridge must also survive import, or a downgrade loses the restriction");
+});

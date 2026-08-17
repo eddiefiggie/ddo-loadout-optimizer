@@ -733,9 +733,17 @@ test("#346: the top rung names what the loadout leans on, or stays silent", () =
   const rec = makeRec();
   rec.snapshot.query = { craftingRung: "everything" };
 
+  // Silence requires nothing to give up AT ALL — no augments and no crafted
+  // options. The base fixture carries a craft, which the notice now counts.
   rec.snapshot.augmentsPlaced = [];
+  const craftKeys = ["vikPlaced", "sealPlaced", "ncPlaced", "dinoPlaced", "tfPlaced",
+    "gsPlaced", "membershipPlaced", "setAugmentsPlaced"];
+  const stashed = {};
+  for (const k of craftKeys) { stashed[k] = rec.snapshot[k]; rec.snapshot[k] = []; }
   assert.strictEqual(P.project(rec).character.craftingExcludedNotice, null,
-    "no augments placed: nothing to give up, so no advice");
+    "nothing placed at all: nothing to give up, so no advice");
+  for (const k of craftKeys) rec.snapshot[k] = stashed[k];
+  for (const k of craftKeys) rec.snapshot[k] = [];
 
   rec.snapshot.augmentsPlaced = [{ variant_id: "Solar Gem of X", color: "Sun" },
     { variant_id: "Lunar Gem of Y", color: "Moon" },
@@ -1165,4 +1173,28 @@ test("#346: the notice reads a record built by serializeCharacter, not a hand-sh
   assert.match(line, /nothing beyond what is printed/, "the rung is read from rec.query");
   assert.match(line, /Augment Set you marked as owned was unavailable/,
     "and the owned-set count survives the real save path's Set-to-array conversion");
+});
+
+// #346 (U4, R9) — the top-rung notice must count everything a lower rung would
+// take away, not just augments. A build leaning entirely on Viktranium or seals
+// is precisely the player who needs to learn the ladder exists, and counting
+// augments alone left them with no notice at all.
+test("#346: the top-rung notice counts crafted options, not just augments", () => {
+  const rec = (extra) => ({ inputs: {},
+    snapshot: Object.assign({ query: { craftingRung: "everything" }, augmentsPlaced: [] }, extra) });
+
+  assert.strictEqual(P.craftingExcludedLine(rec({})), null,
+    "a loadout leaning on nothing still says nothing");
+
+  const craftOnly = P.craftingExcludedLine(rec({ vikPlaced: [{}, {}], sealPlaced: [{}] }));
+  assert.match(craftOnly, /uses 3 crafted options/, "crafted options are counted and named");
+  assert.match(craftOnly, /lower "What may the solver assume/, "and the control is named");
+
+  const mixed = P.craftingExcludedLine(rec({
+    augmentsPlaced: [{ color: "Sun" }, { color: "Blue" }], dinoPlaced: [{}] }));
+  assert.match(mixed, /leans on 1 Solar\/Lunar Gem, 1 other augment and 1 crafted option/,
+    "all three families are listed in one sentence");
+
+  const singular = P.craftingExcludedLine(rec({ ncPlaced: [{}] }));
+  assert.match(singular, /uses 1 crafted option\./, "singular reads correctly");
 });

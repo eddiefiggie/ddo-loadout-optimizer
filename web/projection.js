@@ -604,13 +604,27 @@
     // LEANS ON that a lower rung would take away, which is a fact about the
     // solve and not about the query — hence the snapshot read.
     const augs = (snap.augmentsPlaced || []).length;
-    if (!augs) return null;   // nothing to give up; no advice worth crowding the results with
+    // R9 — the notice is the discovery path for the control, so it has to count
+    // everything a lower rung would take away, not just augments. A build leaning
+    // entirely on Viktranium or seals is exactly the player who most needs to know
+    // the ladder exists, and counting augments alone left them with no notice.
+    const crafts = ["vikPlaced", "sealPlaced", "ncPlaced", "dinoPlaced", "tfPlaced",
+      "gsPlaced", "membershipPlaced", "setAugmentsPlaced"]
+      .reduce((n, k) => n + ((snap[k] || []).length), 0);
+    if (!augs && !crafts) return null;   // nothing to give up; no advice worth crowding the results with
     const gems = (snap.augmentsPlaced || [])
       .filter((a) => a && _isSolarLunarColor(a.color)).length;
-    const lead = gems
-      ? `This loadout leans on ${gems} Solar/Lunar Gem${gems === 1 ? "" : "s"}`
-        + (augs > gems ? ` and ${augs - gems} other augment${augs - gems === 1 ? "" : "s"}` : "")
-      : `This loadout uses ${augs} augment${augs === 1 ? "" : "s"}`;
+    const parts = [];
+    if (gems) parts.push(`${gems} Solar/Lunar Gem${gems === 1 ? "" : "s"}`);
+    // "other" only earns its place once the gems have been named — with no gems
+    // in the sentence there is nothing for these to be other THAN.
+    const rest = augs - gems;
+    if (rest) parts.push(`${rest} ${gems ? "other " : ""}augment${rest === 1 ? "" : "s"}`);
+    if (crafts) parts.push(`${crafts} crafted option${crafts === 1 ? "" : "s"}`);
+    const listed = parts.length > 1
+      ? `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`
+      : parts[0];
+    const lead = gems ? `This loadout leans on ${listed}` : `This loadout uses ${listed}`;
     return `${lead}. If you would rather not craft or buy them, lower "What may the `
       + `solver assume beyond the printed item?" and re-solve.`;
   }

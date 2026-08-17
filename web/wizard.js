@@ -109,6 +109,10 @@ var _craftingRung = (typeof craftingRung !== "undefined")
   ? craftingRung
   // eslint-disable-next-line global-require
   : require("./model.js").craftingRung;
+var _rungExcludesNicheCrafting = (typeof rungExcludesNicheCrafting !== "undefined")
+  ? rungExcludesNicheCrafting
+  // eslint-disable-next-line global-require
+  : require("./model.js").rungExcludesNicheCrafting;
 var _rungExcludesAllAugments = (typeof rungExcludesAllAugments !== "undefined")
   ? rungExcludesAllAugments
   // eslint-disable-next-line global-require
@@ -1310,13 +1314,21 @@ if (typeof window !== "undefined" && window.App) {
             if (!setNames.length) return "";
             const owned = state.ownedSetAugments instanceof Set ? state.ownedSetAugments : new Set();
             const n = owned.size;
+            // #346 (U2) — a Set Augment is set-bonus crafting, so every rung from
+            // no-niche-crafting down clears the whole family. Leaving this picker
+            // live there would let the player tick boxes the solve cannot honour —
+            // exactly the contradictory-but-permitted state the ladder's own rule
+            // exists to prevent, and the same treatment the augment ML ceiling gets.
+            // Ticks are kept on state so they return when the player climbs back.
+            const setAugInert = _rungExcludesNicheCrafting(_normalizeRung(state.craftingRung));
             return `<details class="wz-data" id="wz-setaug">
               <summary>Set Augments I own${n ? ` · ${n} selected` : ""}</summary>
               <div class="wz-data-body">
-                <p class="wz-help">Check the <strong>Set Augments</strong> you own. Only checked ones are considered — each grants
-                  its bonus once 3 pieces of its set are equipped. None are considered by default.</p>
+                <p class="wz-help">${setAugInert
+                  ? "Not applicable — the rung you chose excludes set-bonus crafting, so no Augment Set can activate. Your selections are kept for when you move back up."
+                  : "Check the <strong>Set Augments</strong> you own. Only checked ones are considered — each grants its bonus once 3 pieces of its set are equipped. None are considered by default."}</p>
                 <div class="wz-seg wz-setaug-list" id="wz-setaug-list">${setNames.map((s) =>
-                  `<label class="wz-check wz-check-inline"><input type="checkbox" data-setaug="${esc(s)}"${owned.has(s) ? " checked" : ""}>
+                  `<label class="wz-check wz-check-inline"><input type="checkbox" data-setaug="${esc(s)}"${owned.has(s) ? " checked" : ""}${setAugInert ? " disabled" : ""}>
                     <span class="wz-check-body"><span class="wz-label">${esc(s)}</span></span></label>`).join("")}</div>
               </div>
             </details>`;

@@ -2144,3 +2144,22 @@ test("#346: every reader of the ladder agrees on the same precedence", () => {
       `projection notice: ${JSON.stringify(input)} implies ${expected}`);
   }
 });
+
+// #346 (U2) — the Set Augments picker is set-bonus crafting, cleared by every
+// rung from no-niche-crafting down. Leaving it live there would let a player tick
+// boxes the solve cannot honour: the contradictory-but-permitted state the
+// ladder's own rule exists to prevent. Same treatment as the augment ML ceiling.
+test("#346: the Set Augments picker is disabled on rungs that clear set-bonus crafting", () => {
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const block = src.slice(src.indexOf('id="wz-setaug"'), src.indexOf('id="wz-setaug"') + 1800);
+  assert.match(block, /setAugInert \? " disabled" : ""/,
+    "the checkboxes carry a disabled branch keyed on the rung");
+  assert.match(block, /Not applicable — the rung you chose excludes set-bonus crafting/,
+    "and the reason is stated, never left silently inert");
+  assert.match(block, /Your selections are kept/,
+    "and the player is told their ticks survive the trip");
+  // Keyed on the niche-crafting rung, not the augment rungs — that is where the
+  // model actually clears augmentSetDefs.
+  assert.match(src, /const setAugInert = _rungExcludesNicheCrafting\(/,
+    "gated on the rung that actually clears the family");
+});
