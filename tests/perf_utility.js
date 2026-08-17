@@ -13,7 +13,22 @@
 // Budget: median(b) <= 2 x median(a). Over budget -> stop and surface (the
 // plan's lever is trimming/tiering the counting set, not lazy minting).
 //
+// ROSTER (#343) — the gate measures the SHIPPED counting set by default, but the
+// lever KTD10 describes is the roster itself, so a roster decision needs an A/B
+// and the gate could not do one. Set ROSTER to compare alternates on identical
+// fixtures and machine conditions:
+//   shipped (default) — vocab.utilityCounting, whatever the build stamped
+//   pre343            — the 38-name roster: tier-1 minus the six worn defensive
+//                       toggles, plus the 24 admitted untyped procs
+//   hybrid            — the counterfactual: the six toggles added AND the procs
+//                       still counted (44 names)
+// Measured 2026-08-16, 3 runs each: shipped 1.66-1.67x, pre343 2.09x, hybrid
+// 2.23-2.26x. That A/B is the real justification for #343 dropping the procs
+// from the count — `hybrid` closes the reported bug too, but not inside budget.
+// Only `shipped` is asserted against the budget; the alternates report and exit 0.
+//
 // Usage:  node tests/perf_utility.js
+//         ROSTER=hybrid node tests/perf_utility.js
 "use strict";
 const path = require("path");
 const fs = require("fs");
@@ -56,6 +71,29 @@ async function main() {
     dataset.seal, dataset.membership_set_defs, dataset.thunder_forged,
     dataset.green_steel, dataset.augment_set_defs, counting);
 
+  // #343 — the ROSTER A/B (see header). `pre343` and `hybrid` are derived from
+  // the shipped stamp rather than hardcoded, so they stay correct as the roster
+  // widens: the admitted procs come from metadata.utility_untyped_admitted, and
+  // the six toggles from the named list below.
+  const ROSTER_KEY = process.env.ROSTER || "shipped";
+  const TOGGLES_343 = ["Ghostly", "True Seeing", "Blurry", "Freedom of Movement",
+    "Blindness Immunity", "Deathblock"];
+  const admitted = JSON.parse(fs.readFileSync(DATASET, "utf8"))
+    .metadata.utility_untyped_admitted || [];
+  const shipped = vocab.utilityCounting;
+  const ROSTERS = {
+    shipped,
+    pre343: new Set([...[...shipped].filter((n) => !TOGGLES_343.includes(n)), ...admitted]),
+    hybrid: new Set([...shipped, ...admitted]),
+  };
+  const roster = ROSTERS[ROSTER_KEY];
+  if (!roster) {
+    console.error(`unknown ROSTER '${ROSTER_KEY}' — expected one of: ${Object.keys(ROSTERS).join(", ")}`);
+    process.exit(2);
+  }
+  console.log(`roster: ${ROSTER_KEY} (${roster.size} counted names)`
+    + (ROSTER_KEY === "shipped" ? "" : " — ALTERNATE, not asserted against the budget"));
+
   const base = [], util = [];
   for (const fx of fixtures) {
     const { query } = resolveQuery(fx, vocab);
@@ -76,7 +114,7 @@ async function main() {
     // (b) utility — sentinel ranked last, counting set threaded.
     const q2 = Object.assign({}, query,
       { targets: [...ranked, UTILITY_SENTINEL] });
-    const { ms: tb, r: rb } = await coldSolve(build(q2, vocab.utilityCounting));
+    const { ms: tb, r: rb } = await coldSolve(build(q2, roster));
     util.push(tb);
 
     console.log(`  ${fx.name}: base ${ta.toFixed(0)} ms (${ra.status})`
@@ -90,6 +128,12 @@ async function main() {
   console.log(`(a) baseline median cold solve: ${ma.toFixed(0)} ms`);
   console.log(`(b) sentinel-appended median:   ${mb.toFixed(0)} ms`);
   console.log(`ratio (b)/(a): ${ratio.toFixed(2)}x  — budget <= 2.00x`);
+  if (ROSTER_KEY !== "shipped") {
+    // An alternate roster is a measurement, not the shipping gate. Failing the
+    // build on it would make an informational A/B look like a regression.
+    console.log(`(informational — ROSTER=${ROSTER_KEY}; the budget is asserted only on the shipped roster)`);
+    return;
+  }
   console.log(ratio <= 2 ? "PERF GATE: PASS" : "PERF GATE: FAIL — stop and surface (KTD10)");
   if (ratio > 2) process.exitCode = 1;
 }

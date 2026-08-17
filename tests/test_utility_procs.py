@@ -134,19 +134,14 @@ def test_an_allowed_untyped_name_is_no_longer_counted_and_still_not_rankable():
     assert "Holy" in allow, "removing it from the allow list would drop it from the picker"
 
 
-def test_a_quarantined_name_counts_zero():
-    recs = [_rec("Sword A", "Weapon", [_untyped("Holy", "6"), _bool("Ghost Touch")]),
-            _rec("Sword B", "Weapon", [_untyped("Holy", "6")])]
-    # #343 — untyped procs no longer count at all, reviewed or not, so this
-    # holds a fortiori. Kept because it also pins that a Bool name beside them
-    # still counts normally.
-    assert utility_procs.counting_set(recs, []) == ["Ghost Touch"]
-
-
-def test_the_counting_set_values_arrive_as_strings():
-    # Dataset values are strings ('1', '3') — the derivation must not assume ints.
-    recs = [_rec("A", "Weapon", [_untyped("Holy", "6"), _bool("Ghost Touch", "1")])]
-    assert utility_procs.counting_set(recs, []) == ["Ghost Touch"]
+# #343 — two tests were REMOVED here rather than left passing for the wrong
+# reason. `test_a_quarantined_name_counts_zero` had already conceded in its own
+# comment that it held "a fortiori" once untyped procs stopped counting at all.
+# `test_the_counting_set_values_arrive_as_strings` claimed to pin that the
+# derivation "must not assume ints", but presence_counting_names never reads the
+# affix value — only its type and name — so int values returned an identical
+# result and the claim was unfalsifiable. Both duplicated
+# test_the_counting_set_contains_the_bool_presence_names, which does the work.
 
 
 # ------------------------------------------------------------- candidate rule
@@ -310,14 +305,21 @@ def test_the_built_dataset_stamps_the_counting_vocabulary():
     assert "measured batches" in cov["note"]
 
 
-def test_no_quarantined_name_leaks_into_the_shipping_counting_set():
-    _, quarantined = utility_procs.load(SHARD)
-    counting, _ = _real_counting_set()
-    # A quarantined UNTYPED name stays out of the counting set. NB some names
-    # (Holy) also ship a Bool line on a few items — those count via the
-    # presence half by design (R5); the quarantine governs only the untyped
-    # admission channel, so the assertion excludes the Bool-presence names.
-    recs = _real_records()
-    bool_presence = utility_procs.presence_counting_names(recs)
-    for n in sorted(quarantined - bool_presence):
-        assert n not in counting, n
+def test_no_quarantined_name_leaks_into_the_shipping_admitted_stamp():
+    # #343 — this test USED to assert quarantined names stay out of the counting
+    # set. That became structurally unfalsifiable: counting_set is now
+    # (presence & TIER1) - rankable, so no untyped name can enter it by any
+    # route, and the old loop ran over `quarantined - bool_presence`, a set
+    # disjoint from the counting set by construction. It could not fail for any
+    # shard content — promoting a quarantined name into `allow` left the whole
+    # suite green.
+    #
+    # Since #343 the quarantine governs exactly ONE live channel: admission to
+    # metadata.utility_untyped_admitted, which is what makes a proc individually
+    # rankable in the picker. That is what this pins now.
+    allow, quarantined = utility_procs.load(SHARD)
+    assert allow, "an empty allow list would make this pass vacuously"
+    assert quarantined, "an empty quarantine list would make this pass vacuously"
+    assert not (allow & quarantined), "a name on both lists has no defined disposition"
+    for n in sorted(quarantined):
+        assert n not in allow, n

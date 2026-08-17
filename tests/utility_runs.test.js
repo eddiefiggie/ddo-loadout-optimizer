@@ -1,11 +1,20 @@
 // #91 (U8) — AE1/AE2/AE3 acceptance runs on REAL data (web/data/items.json).
 //
-// A rerunnable verification script, deliberately NOT named *.test.js: it is
-// evidence for the Utility tier's acceptance examples, re-run when the dataset
-// or solver changes, not a per-commit suite member (the golden guard owns
-// drift detection; the perf gate lives in tests/perf_utility.js).
+// A rerunnable verification script that IS a per-commit suite member.
 //
-// Run: node tests/ae_utility_runs.js
+// It was deliberately named `ae_utility_runs.js` (outside the tests/*.test.js
+// glob) on the theory that it is evidence rather than a guard, and that the
+// golden owns drift detection. #343's review disproved that: re-introducing the
+// reported bug (a solver cap that stops the tier securing the late toggles)
+// leaves 829/829 Python and 22/23 JS green, and the ONE red — solver_golden —
+// reports opaque `chosen` drift naming no utility effect. Re-capturing the
+// golden, the documented remedy this very PR performed on 18/23 fixtures, then
+// turns the whole per-commit gate green with the bug live. The golden CANNOT
+// name it: capture_golden.js snapshots status/perTarget/effective/chosen only,
+// with no utility count and no effect names. These assertions are the only
+// per-commit guard on the reported behavior, and they cost ~10 seconds.
+//
+// Run: node tests/utility_runs.test.js
 //
 // HONEST DEVIATION from the #91 report's telling, ratified 2026-08-15: the
 // report compared Calamitous Warhammer against Echo of Whelm, but on the real

@@ -36,6 +36,16 @@ The [[Utility tier]] exists to fill slots that ranked stats left empty, and it c
 
 So the one mechanism meant to fill spare slots with felt effects reaches for Undead Bane and never for True Seeing.
 
+**Correction (post-review): the procs did not crowd the toggles out.** An earlier draft of this frame said the tier "filled its count with cheap procs and never reached for the toggles", implying the two competed. They do not — the procs live on weapons and the toggles on worn slots, so the solver takes both when both are counted. The toggles were absent for one reason only: they were not in `UTILITY_TIER1_PRESENCE`. Measured on one dataset, ML34 ranking Constitution:
+
+| roster | counted | toggles secured |
+|---|---|---|
+| pre-#343 (38) | 14 | 0 / 6 |
+| six toggles added, procs KEPT (44) | 20 | **6 / 6** |
+| this plan (20) | 14 | **6 / 6** |
+
+**Adding the six names is the entire fix for #343.** Dropping the 24 procs is a separate decision, and it is justified by the budget rather than by the bug — see below. Stating it the other way round was wrong, and it mattered: it made a real trade look like a free consequence.
+
 The list is that shape because the full 838-name population failed the #91 measured perf gate at 7.7× a 2× budget, so v1 shipped a curated subset intended to widen in measured batches. That widening was never filed, and the shipped 38 already measured 1.96× — apparently no headroom. Measuring what the 38 actually cost inverts the problem:
 
 | set | names | carrying variants | measured cold-solve |
@@ -45,7 +55,17 @@ The list is that shape because the full 838-name population failed the #91 measu
 | …everything else | 14 | 266 | — |
 | **this plan's roster** | **20** | **699 (−63%)** | **1.50–1.71× baseline (measured, 5 runs)** |
 
-The weapon procs are 86% of the carrying-variant footprint. Swapping them out is not a widening that must fit the budget — it *buys back* budget, taking the tier from 1.96× to roughly 1.5–1.7× against a 2.0× ceiling.
+The weapon procs are 86% of the carrying-variant footprint.
+
+**The decisive measurement is the A/B, not that footprint share.** Review correctly objected that the table above compares a figure #91 recorded in another session against a sample taken here, which is not an A/B, and that run-to-run noise on one roster (1.50–1.75×) is comparable to the claimed saving. So the gate was made roster-parameterizable (`ROSTER=` in `tests/perf_utility.js`) and all three rosters measured on identical fixtures and machine conditions:
+
+| roster | names | measured ratio (3–4 runs) | 2.0× budget |
+|---|---|---|---|
+| pre-#343 | 38 | 2.09× | **over** |
+| six toggles added, procs kept | 44 | 2.09×, 2.23×, 2.24×, 2.26× | **over** |
+| **this plan** | **20** | **1.51×, 1.66×, 1.67×** | **pass** |
+
+This says three things the old framing did not. The 38-name roster shipped by #91 is **already over budget** on today's dataset. The counterfactual that closes #343 while keeping the procs is over budget too, in every sample. And the shipped roster is the only one of the three that fits. That — not "the procs are 86% of the cost" — is the argument for dropping them, and it is a real trade rather than a free win: the player gives up 24 countable effects to stay inside the solve-time budget.
 
 ### Key Decisions
 
@@ -58,7 +78,8 @@ The weapon procs are 86% of the carrying-variant footprint. Swapping them out is
 ### Requirements
 
 - R1. The Utility tier's counted set becomes these 20 names: Blunt Trauma, Brilliance of the Shattered Sun, Feather Falling, Ghost Touch, Kick 'Em While They're Down, Legendary Tet-zik The Enlightened Change, Legendary Vile Grip of the Hidden Hand, Lesser Boneshatter, Lifeblood of the Undead Prince, Path of the Fire Dragon, Path of the Guarding Stone, Vile Grip of the Hidden Hand, Way of the Sun Soul, Whelming Shockwave, Ghostly, True Seeing, Blurry, Freedom of Movement, Blindness Immunity, Deathblock.
-- R2. The weapon procs leave the counted set entirely. Nothing in this plan makes them re-addable; that is the container plan's job.
+- R2. The weapon procs leave the counted set entirely. Nothing in this plan makes them re-addable; that is the container plan's job (#348).
+- R2a. **The count may fall for some builds, and that is accepted, not denied.** An earlier draft claimed "a weapon build loses nothing" as a general property. It is not one: measured at ML34 ranking Melee Power and Doublestrike, a two-handed build rises 10 → 12, but a **sword-and-board build falls 15 → 14**. Equipped weapon procs also drop for builds that were carrying them — the two-handed case swaps a main hand carrying Vampirism and two Banes for one carrying none. The count is not the product; securing the effects players actually notice is. But the regression is real and is disclosed here rather than asserted away.
 - R3. Everything else about the tier is unchanged: draggable position, flat distinct-count value, one solve stage, existing receipts, existing Alternatives family, existing exports.
 - R4. The counted set stays defined in one place, with the Python build and the browser reading the same list — the parity the stamped-set test already guards.
 - R5. Saved characters need no migration and no notice. Nothing about a saved record's shape changes, and R14 of the #91 plan still holds: nothing re-solves until the player re-solves.
@@ -177,15 +198,15 @@ U1 changes both mirrors and the union, and is the only unit that changes behavio
 - **Goal:** The three measured behaviors that justify this change are enforced by tests, not just recorded in the plan.
 - **Requirements:** R1, R2.
 - **Dependencies:** U1.
-- **Files:** `tests/ae_utility_runs.js`
+- **Files:** `tests/utility_runs.test.js` (renamed from `tests/ae_utility_runs.js`)
 - **Approach:** Extend the existing real-data acceptance-run script with the three solves this plan measured. It already builds a model against the built catalog and solves with HiGHS, so the additions are queries and assertions rather than new scaffolding.
-- **Patterns to follow:** `tests/ae_utility_runs.js`'s existing AE1–AE3 shape — a labelled query, a solve, and named assertions with the reasoning in comments. Note it is deliberately not a `*.test.js` file, so it is re-run when the dataset or solver changes rather than on every commit.
+- **Patterns to follow:** that file's existing AE1–AE3 shape — a labelled query, a solve, and named assertions with the reasoning in comments. **Post-review correction:** it was deliberately not a `*.test.js` file, on the theory that it is evidence rather than a guard. Review disproved that by re-introducing the reported bug: 829/829 Python and 22/23 JS stayed green, the one red named no utility effect, and re-capturing the golden (the documented remedy this PR itself performed on 18/23 fixtures) turned the whole per-commit gate green with the bug live. It is now `tests/utility_runs.test.js` and runs in CI.
 - **Test scenarios:**
   - Covers AE1. ML34 with a single ranked priority and the tier ranked: all six worn toggles appear among the counted effects.
   - Covers AE2. The same solve with six contested ranked stats above the tier: the count is five and at least Ghostly, Blindness Immunity, and Deathblock are among them.
   - Covers AE3. A two-handed melee query (`style: "thf"`) ranking Melee Power and Doublestrike: the count does not fall against the pre-#343 roster solved on the same dataset (measured 10 -> 12), and no Bane-family name appears.
   - The ranked-stat values in the contested run are identical with the tier present and absent, proving the tier still cannot buy an effect with a ranked point.
-- **Verification:** `node tests/ae_utility_runs.js` passes with the new cases, and its output shows the secured effects by name so a reader can see the fix rather than infer it.
+- **Verification:** `node tests/utility_runs.test.js` passes with the new cases, and its output shows the secured effects by name so a reader can see the fix rather than infer it.
 
 ### U3. Re-ratify fixtures and ship
 
@@ -211,7 +232,7 @@ U1 changes both mirrors and the union, and is the only unit that changes behavio
 |---|---|---|
 | Python suite | `python3 tests/run_tests.py` | U1, U3 |
 | JS suite | `for t in tests/*.test.js; do node "$t"; done` | U1-U3 — run file by file; `node a.js b.js` executes only the first |
-| Real-data acceptance | `node tests/ae_utility_runs.js` | U2 — not part of the suite glob; run by hand |
+| Real-data acceptance | `node tests/utility_runs.test.js` | U2 — in the suite glob, runs in CI (~10s) |
 | Golden fixtures | `node tests/solver_golden.test.js` | U3 — expected to fail until re-captured, then pass |
 | Measured perf gate | `node tests/perf_utility.js` | U3 (AE4) — hand-run, not in the suite glob; record the numbers in the PR |
 

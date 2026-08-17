@@ -1,5 +1,5 @@
 {
- "_README": "Adjudication of UNTYPED weapon/off-hand proc names for the Utility tier (#91). The candidate rule in src/utility_procs.py is 'untyped + numeric + well-formed + every carrying slot is Weapon/Off Hand' - the deliberate complement of src/untyped_rankable.py's worn-slot rule, so the two gates' populations are disjoint. A candidate in NEITHER list fails the build, so a new untyped weapon proc is a reviewed event rather than a silent zero-count. Only 'allow' names enter metadata.utility_counting_set and metadata.utility_untyped_admitted (presence-path picker entry); they NEVER enter metadata.rankable_affixes - a declared-credit control on Holy/Vampirism is the documented defect web/dataset.js warns against.",
+ "_README": "Adjudication of UNTYPED weapon/off-hand proc names for the Utility tier (#91). The candidate rule in src/utility_procs.py is 'untyped + numeric + well-formed + every carrying slot is Weapon/Off Hand' - the deliberate complement of src/untyped_rankable.py's worn-slot rule, so the two gates' populations are disjoint. A candidate in NEITHER list fails the build, so a new untyped weapon proc is a reviewed event rather than a silent zero-count. SINCE #343: 'allow' names enter metadata.utility_untyped_admitted ONLY - the presence-path picker entry that makes them individually rankable. They are NO LONGER unioned into metadata.utility_counting_set, so admitting a name here makes it available to rank, not counted by the Utility tier. Two reasons: a proc is a damage-type decision belonging to the weapon choice rather than a distinct win a player feels, and the 24 admitted procs were 86% of the counting set's measured solve cost - keeping them counted put the tier over its 2.0x perf budget once the worn defensive toggles were added. They NEVER enter metadata.rankable_affixes - a declared-credit control on Holy/Vampirism is the documented defect web/dataset.js warns against.",
  "_discipline": "exclude-until-verified. Add to 'allow' ONLY with wiki evidence (wiki_url + evidence + verified date) that the name is a player-felt utility effect worth counting. 'unreviewed' is an honest reason and marks the filed backlog; it is not a judgement that the name is noise. An empty 'allow' list counts zero untyped procs - the Bool presence half of the counting set is unaffected.",
  "allow": [
   {
@@ -8,7 +8,7 @@
    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
    "verified": "2026-08-15",
    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Anarchic",
@@ -16,7 +16,7 @@
    "wiki_url": "https://ddowiki.com/page/Alignment_damage_(weapon)",
    "verified": "2026-08-15",
    "evidence": "Holy weapons will deal 2d6 Good damage to Evil enemies; scaling variants (e.g. Holy 3) deal Xd6 on hit and also affect Neutral enemies.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Animal Bane",
@@ -24,7 +24,7 @@
    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
    "verified": "2026-08-15",
    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Axiomatic",
@@ -32,7 +32,7 @@
    "wiki_url": "https://ddowiki.com/page/Alignment_damage_(weapon)",
    "verified": "2026-08-15",
    "evidence": "Holy weapons will deal 2d6 Good damage to Evil enemies; scaling variants (e.g. Holy 3) deal Xd6 on hit and also affect Neutral enemies.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Chaotic Outsider Bane",
@@ -40,7 +40,7 @@
    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
    "verified": "2026-08-15",
    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Chilling",
@@ -48,7 +48,7 @@
    "wiki_url": "https://ddowiki.com/page/Chilling",
    "verified": "2026-08-15",
    "evidence": "This effect causes the edges of this weapon to become frozen to the touch, dealing (x)d6 ice damage on each hit.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Construct Bane",
@@ -56,7 +56,7 @@
    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
    "verified": "2026-08-15",
    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Dragon Bane",
@@ -64,7 +64,7 @@
    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
    "verified": "2026-08-15",
    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Elf Bane",
@@ -72,7 +72,7 @@
    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
    "verified": "2026-08-15",
    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Evil Outsider Bane",
@@ -80,7 +80,7 @@
    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
    "verified": "2026-08-15",
    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Giant Bane",
@@ -88,7 +88,7 @@
    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
    "verified": "2026-08-15",
    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Holy",
@@ -96,7 +96,7 @@
    "wiki_url": "https://ddowiki.com/page/Alignment_damage_(weapon)",
    "verified": "2026-08-15",
    "evidence": "Holy weapons will deal 2d6 Good damage to Evil enemies; scaling variants (e.g. Holy 3) deal Xd6 on hit and also affect Neutral enemies.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Human Bane",
@@ -104,7 +104,7 @@
    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
    "verified": "2026-08-15",
    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Humanoid Bane",
@@ -112,7 +112,7 @@
    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
    "verified": "2026-08-15",
    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Lawful Outsider Bane",
@@ -120,7 +120,7 @@
    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
    "verified": "2026-08-15",
    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Maiming",
@@ -128,7 +128,7 @@
    "wiki_url": "https://ddowiki.com/page/Maiming",
    "verified": "2026-08-15",
    "evidence": "Whenever you score a critical hit with this weapon it deals extra untyped damage depending on its critical multiplier: x2 1-6, x3 2-12, x4 3-18.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Monstrous Humanoid Bane",
@@ -136,7 +136,7 @@
    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
    "verified": "2026-08-15",
    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Ooze Bane",
@@ -144,7 +144,7 @@
    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
    "verified": "2026-08-15",
    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Plant Bane",
@@ -152,7 +152,7 @@
    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
    "verified": "2026-08-15",
    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Reptilian Bane",
@@ -160,7 +160,7 @@
    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
    "verified": "2026-08-15",
    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Undead Bane",
@@ -168,7 +168,7 @@
    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
    "verified": "2026-08-15",
    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Unholy",
@@ -176,7 +176,7 @@
    "wiki_url": "https://ddowiki.com/page/Alignment_damage_(weapon)",
    "verified": "2026-08-15",
    "evidence": "Holy weapons will deal 2d6 Good damage to Evil enemies; scaling variants (e.g. Holy 3) deal Xd6 on hit and also affect Neutral enemies.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Vampirism",
@@ -184,7 +184,7 @@
    "wiki_url": "https://ddowiki.com/page/Vampirism",
    "verified": "2026-08-15",
    "evidence": "This weapon drains a tiny portion of the target's life force whenever it does damage.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   },
   {
    "name": "Vermin Bane",
@@ -192,7 +192,7 @@
    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
    "verified": "2026-08-15",
    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; presence-counted, worth exactly 1"
+   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
   }
  ],
  "quarantined": [
