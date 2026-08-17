@@ -43,7 +43,7 @@
     },
     {
      "slot": "Goggles",
-     "variant": "Drider's Vision"
+     "variant": "Glasses of the Meditative Mind"
     },
     {
      "slot": "Helmet",
@@ -98,15 +98,15 @@
     },
     {
      "slot": "Boots",
-     "variant": "Legendary Flightfoot Greaves"
+     "variant": "Legendary Windriders"
     },
     {
      "slot": "Bracers",
-     "variant": "Legendary Green Dragonscale Bracers"
+     "variant": "Bracelets of Flourishing Fauna"
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary Silverthread Cloak"
+     "variant": "Dread Pirate's Cloak (level 12)"
     },
     {
      "slot": "Gloves",
@@ -114,7 +114,7 @@
     },
     {
      "slot": "Goggles",
-     "variant": "Drider's Vision"
+     "variant": "Van Richten's Spectacles"
     },
     {
      "slot": "Helmet",
@@ -126,7 +126,7 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Pendant of Crippling Strikes"
+     "variant": "Fleetfoot Necklace"
     },
     {
      "slot": "Off Hand",
@@ -179,7 +179,7 @@
     },
     {
      "slot": "Gloves",
-     "variant": "Legendary Grick-skin Gauntlets"
+     "variant": "The Cruel Hands of Fate"
     },
     {
      "slot": "Goggles",
@@ -187,7 +187,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "The Anguished Mind"
+     "variant": "Dread Stalker's Skullcap"
     },
     {
      "slot": "Main Hand",
@@ -200,6 +200,18 @@
     {
      "slot": "Off Hand",
      "variant": "Legendary Cataclysmic Buckler"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Neglected Wedding Ring"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Ring of Shadows (level 23)"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Bauble of Draconic Resistance"
     }
    ]
   },
@@ -237,6 +249,10 @@
      "variant": "Legendary Duergarcraft Cloak"
     },
     {
+     "slot": "Gloves",
+     "variant": "Gloves of Tranquility"
+    },
+    {
      "slot": "Goggles",
      "variant": "Discerning Gaze"
     },
@@ -255,6 +271,14 @@
     {
      "slot": "Off Hand",
      "variant": "Legendary Cataclysmic Buckler"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Neglected Wedding Ring"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Nocturne Ring"
     },
     {
      "slot": "Trinket",
@@ -320,6 +344,10 @@
     {
      "slot": "Ring",
      "variant": "Kyosho's Ring"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Neglected Wedding Ring"
     },
     {
      "slot": "Trinket",
@@ -579,19 +607,19 @@
     },
     {
      "slot": "Belt",
-     "variant": "Belt of the Burrower"
+     "variant": "Legendary Many-Pouched Belt of the Healer"
     },
     {
      "slot": "Boots",
-     "variant": "Flower Boots"
+     "variant": "Legendary Windriders"
     },
     {
      "slot": "Bracers",
-     "variant": "Legendary Admiral's Wristwatch"
+     "variant": "Bracelets of Flourishing Fauna"
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary Cloak of Autumn"
+     "variant": "Dinosaur Bone Cloak"
     },
     {
      "slot": "Gloves",
@@ -599,7 +627,7 @@
     },
     {
      "slot": "Goggles",
-     "variant": "Drider's Vision"
+     "variant": "Goggles of the Frozen Night"
     },
     {
      "slot": "Helmet",
@@ -650,19 +678,19 @@
     },
     {
      "slot": "Belt",
-     "variant": "Belt of the Burrower"
+     "variant": "Legendary Many-Pouched Belt of the Healer"
     },
     {
      "slot": "Boots",
-     "variant": "Flower Boots"
+     "variant": "Legendary Windriders"
     },
     {
      "slot": "Bracers",
-     "variant": "Legendary Admiral's Wristwatch"
+     "variant": "Bracelets of Flourishing Fauna"
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary Cloak of Autumn"
+     "variant": "Dinosaur Bone Cloak"
     },
     {
      "slot": "Gloves",
@@ -670,7 +698,7 @@
     },
     {
      "slot": "Goggles",
-     "variant": "Drider's Vision"
+     "variant": "Goggles of the Frozen Night"
     },
     {
      "slot": "Helmet",
@@ -731,7 +759,7 @@
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary Gravekeeper's Mystic Cloak"
+     "variant": "Dread Pirate's Cloak (level 12)"
     },
     {
      "slot": "Gloves",
@@ -743,11 +771,11 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Cowl of the Drow Devotee"
+     "variant": "Malicia's Crown (level 12)"
     },
     {
      "slot": "Main Hand",
-     "variant": "Legendary Calamitous Bastard Sword"
+     "variant": "Caustica, the Volley of Pain"
     },
     {
      "slot": "Necklace",
@@ -760,6 +788,10 @@
     {
      "slot": "Ring",
      "variant": "Legendary Argonnessen Eye Band"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Nocturne Ring"
     },
     {
      "slot": "Trinket",
@@ -794,15 +826,19 @@
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary Gravekeeper's Mystic Cloak"
+     "variant": "Dread Pirate's Cloak (level 12)"
     },
     {
      "slot": "Gloves",
      "variant": "Legendary Darstil's Gloves"
     },
     {
+     "slot": "Goggles",
+     "variant": "Legendary Goggles of Dusk"
+    },
+    {
      "slot": "Helmet",
-     "variant": "Cowl of the Drow Devotee"
+     "variant": "Malicia's Crown (level 12)"
     },
     {
      "slot": "Main Hand",
@@ -823,6 +859,10 @@
     {
      "slot": "Ring",
      "variant": "Legendary Band of Mental Magic"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Echo of Ravenkind"
     }
    ]
   },
@@ -841,7 +881,7 @@
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Vestments of the Sun Soul"
+     "variant": "Chain Shirt of Toppling (level 12)"
     },
     {
      "slot": "Belt",
@@ -853,7 +893,7 @@
     },
     {
      "slot": "Bracers",
-     "variant": "Legendary Jidz-Tet'ka"
+     "variant": "Bracers of the Sun Soul"
     },
     {
      "slot": "Cloak",
@@ -861,7 +901,7 @@
     },
     {
      "slot": "Gloves",
-     "variant": "Deadringers"
+     "variant": "Gloves of Tranquility"
     },
     {
      "slot": "Helmet",
@@ -873,7 +913,7 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Pendant of Crippling Strikes"
+     "variant": "Amber Pendant"
     },
     {
      "slot": "Off Hand",
@@ -881,11 +921,11 @@
     },
     {
      "slot": "Ring",
-     "variant": "Duskbone Ring"
+     "variant": "Legendary Neglected Wedding Ring"
     },
     {
      "slot": "Ring",
-     "variant": "Lionheart Ring"
+     "variant": "Nocturne Ring"
     }
    ]
   },
@@ -920,7 +960,7 @@
     },
     {
      "slot": "Boots",
-     "variant": "Bulette-Armored Boots"
+     "variant": "The Final Climb"
     },
     {
      "slot": "Bracers",
@@ -940,7 +980,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Circlet of Shar"
+     "variant": "Malicia's Crown (level 12)"
     },
     {
      "slot": "Main Hand",
@@ -999,7 +1039,7 @@
     },
     {
      "slot": "Boots",
-     "variant": "Bulette-Armored Boots"
+     "variant": "The Final Climb"
     },
     {
      "slot": "Bracers",
@@ -1019,7 +1059,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Circlet of Shar"
+     "variant": "Malicia's Crown (level 12)"
     },
     {
      "slot": "Main Hand",
@@ -1063,8 +1103,8 @@
      "variant": "Vestments of the Sun Soul"
     },
     {
-     "slot": "Belt",
-     "variant": "Belt of the Burrower"
+     "slot": "Boots",
+     "variant": "Legendary Bulette-Armored Boots"
     },
     {
      "slot": "Bracers",
@@ -1076,11 +1116,11 @@
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Drider's Vision"
+     "variant": "Legendary Scientist's Sights"
     },
     {
      "slot": "Helmet",
-     "variant": "Cowl of the Drow Devotee"
+     "variant": "Legendary Cowl of the Drow Devotee"
     },
     {
      "slot": "Main Hand",
@@ -1092,7 +1132,11 @@
     },
     {
      "slot": "Off Hand",
-     "variant": "Legendary Cataclysmic Buckler"
+     "variant": "The Heart of the Prince"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Guidance of Shar (level 13)"
     }
    ]
   },
@@ -1112,8 +1156,8 @@
      "variant": "Vestments of the Sun Soul"
     },
     {
-     "slot": "Belt",
-     "variant": "Belt of the Burrower"
+     "slot": "Boots",
+     "variant": "Legendary Bulette-Armored Boots"
     },
     {
      "slot": "Bracers",
@@ -1125,11 +1169,11 @@
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Drider's Vision"
+     "variant": "Legendary Scientist's Sights"
     },
     {
      "slot": "Helmet",
-     "variant": "Cowl of the Drow Devotee"
+     "variant": "Legendary Cowl of the Drow Devotee"
     },
     {
      "slot": "Main Hand",
@@ -1141,7 +1185,11 @@
     },
     {
      "slot": "Off Hand",
-     "variant": "Legendary Cataclysmic Buckler"
+     "variant": "The Heart of the Prince"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Guidance of Shar (level 13)"
     }
    ]
   },
@@ -1170,7 +1218,7 @@
     },
     {
      "slot": "Goggles",
-     "variant": "Drider's Vision"
+     "variant": "Scientist's Sights"
     },
     {
      "slot": "Main Hand",
@@ -1179,6 +1227,14 @@
     {
      "slot": "Off Hand",
      "variant": "Golden Orb of Death (level 26)"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Neglected Wedding Ring"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Ring of Shadows (level 23)"
     }
    ]
   },
@@ -1195,35 +1251,35 @@
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Dinosaur Bone Armor"
+     "variant": "Legendary Darkmoss"
     },
     {
      "slot": "Belt",
-     "variant": "Belt of the Sun Soul"
+     "variant": "Legendary Bladesworn Bandolier"
     },
     {
      "slot": "Boots",
-     "variant": "Legendary Admiral's Gumshoes"
+     "variant": "Legendary Windriders"
     },
     {
      "slot": "Bracers",
-     "variant": "Legendary Jidz-Tet'ka"
+     "variant": "Bracelets of Flourishing Fauna"
     },
     {
      "slot": "Cloak",
-     "variant": "Dinosaur Bone Cloak"
+     "variant": "Cloak of Autumn"
     },
     {
      "slot": "Gloves",
-     "variant": "Alaric's Grim Gauntlets"
+     "variant": "Legendary Absorption Gauntlet"
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Blazing Sniper's Sights"
+     "variant": "Legendary Eyes of Enlightenment"
     },
     {
      "slot": "Helmet",
-     "variant": "Dinosaur Bone Helmet"
+     "variant": "Legendary Alchemist's Crown"
     },
     {
      "slot": "Main Hand",
@@ -1231,7 +1287,7 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Pendant of Crippling Strikes"
+     "variant": "Legendary Alchemist's Pendant"
     },
     {
      "slot": "Off Hand",
@@ -1239,15 +1295,15 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Ring of the Red Abishai"
+     "variant": "Clouded Dreams"
     },
     {
      "slot": "Ring",
-     "variant": "Legendary The Flame and the Frost"
+     "variant": "Legendary Ring of the Red Abishai"
     },
     {
      "slot": "Trinket",
-     "variant": "Epic Dragon's Eye"
+     "variant": "Legendary Library Card"
     }
    ]
   },
@@ -1313,15 +1369,15 @@
     },
     {
      "slot": "Boots",
-     "variant": "Piston Boots"
+     "variant": "Blackfeather Boots"
     },
     {
      "slot": "Bracers",
-     "variant": "Legendary Jidz-Tet'ka"
+     "variant": "Bracelets of Flourishing Fauna"
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary Cloak of Autumn"
+     "variant": "Cloak of Autumn"
     },
     {
      "slot": "Gloves",
@@ -1333,7 +1389,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Faedark Faerielights"
+     "variant": "Legendary Elder's Cap"
     },
     {
      "slot": "Main Hand",
@@ -1341,11 +1397,11 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Torc of Prince Raiyum-de II"
+     "variant": "Legendary Pendant of Crippling Strikes"
     },
     {
      "slot": "Off Hand",
-     "variant": "Legendary Cataclysmic Buckler"
+     "variant": "The Heart of the Prince"
     },
     {
      "slot": "Ring",
@@ -1357,7 +1413,7 @@
     },
     {
      "slot": "Trinket",
-     "variant": "Bottled Rainstorm"
+     "variant": "Legendary Gem of Many Facets"
     }
    ]
   },
@@ -1417,11 +1473,11 @@
     },
     {
      "slot": "Belt",
-     "variant": "Legendary Admiral's Cummerbund"
+     "variant": "Legendary Belt of the Black Sands"
     },
     {
      "slot": "Boots",
-     "variant": "Legendary Admiral's Gumshoes"
+     "variant": "Legendary Windriders"
     },
     {
      "slot": "Bracers",
@@ -1441,7 +1497,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Crown of Leaves"
+     "variant": "Dread Stalker's Skullcap"
     },
     {
      "slot": "Main Hand",
@@ -1449,7 +1505,7 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Pendant of Crippling Strikes"
+     "variant": "Legendary Climber's Remembrance"
     },
     {
      "slot": "Off Hand",
@@ -1457,11 +1513,11 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Contraption Keyring"
+     "variant": "Legendary Duskbone Ring"
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Duskbone Ring"
+     "variant": "Legendary Signet Ring of the Earth"
     },
     {
      "slot": "Trinket",
