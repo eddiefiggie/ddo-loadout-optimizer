@@ -532,7 +532,7 @@ test("plan 2026-08-12-001 U3: same-stat contributions list separately and the ca
 test("plan 2026-08-12-001 U3: a boolean contribution reads as a feature tick", () => {
   const res = whyResult();
   res.breakdown["Ghost Touch"] = [
-    { bonus_type: "boolean", value: 1, source: "R", sourceKind: "worn", slot: "Ring", hostIds: ["R"] }];
+    { bonus_type: "Bool", value: 1, source: "R", sourceKind: "worn", slot: "Ring", hostIds: ["R"] }];
   const html = R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null, ["Ghost Touch"]);
   assert.ok(/✓ Ghost Touch/.test(html), "presence, not a magnitude");
   assert.ok(!/\+1/.test(html), "no fake +1");

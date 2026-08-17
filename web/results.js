@@ -11,6 +11,8 @@
 const Proj = (typeof Projection !== "undefined") ? Projection
   : (typeof require !== "undefined" ? require("./projection.js") : null);
 const affixLabel = Proj.affixLabel;
+// #353 — one presence predicate for the whole app, over the same bridge.
+const _isPresence = Proj.isPresence;
 // #346 (U5) — the ladder's vocabulary, over the same cross-runtime bridge.
 const _resultsRung = (typeof craftingRung !== "undefined") ? craftingRung
   : (typeof require !== "undefined" ? require("./model.js").craftingRung : () => "everything");
@@ -519,7 +521,7 @@ function attributionList(contribs) {
       : c.isSet
         ? `<span class="attrib-set">set: ${esc(c.source)}</span>${c.slots.length ? `<span class="attrib-slots"> via ${c.slots.map(esc).join(", ")}</span>` : ""}`
         : `<span class="attrib-slots">${c.slots.length ? c.slots.map(esc).join(", ") : "—"}</span><span class="attrib-src"> · ${esc(c.source)}</span>`;
-    const isBool = c.bonus_type === "boolean";   // U4: presence, not a magnitude
+    const isBool = _isPresence(c);   // U4: presence, not a magnitude (#353)
     // #227 — an adjudicated untyped affix (Enhanced Ki) has no bonus type at all.
     // Printing the raw value put the literal string "null" in the receipts. Name
     // it, because untyped is a real and meaningful bucket in DDO: it collides with
@@ -805,7 +807,7 @@ function incidentalStats(query, result) {
       const n = a && (a.name != null ? a.name : a.stat);
       // Presence-only features have no magnitude to chase, so they make poor
       // suggestions for a player trying to give the solver something to optimize.
-      if (!n || ranked.has(n) || seen.has(n) || a.type === "Bool" || a.type === "boolean") continue;
+      if (!n || ranked.has(n) || seen.has(n) || _isPresence(a)) continue;   // #353: one predicate
       seen.add(n);
       counts.set(n, (counts.get(n) || 0) + 1);
     }
