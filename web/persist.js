@@ -17,6 +17,10 @@
     ? normalizeRung
     // eslint-disable-next-line global-require
     : require("./model.js").normalizeRung;
+  const _rungExcludesNiche = (typeof rungExcludesNicheCrafting !== "undefined")
+    ? rungExcludesNicheCrafting
+    // eslint-disable-next-line global-require
+    : require("./model.js").rungExcludesNicheCrafting;
 
   // Panel-consumed subset of the solver result (plan KTD1). `status` is required
   // — renderResults short-circuits to the empty state when it isn't "optimal".
@@ -130,12 +134,21 @@
         // the boolean-derivation path forever.
         inputs.craftingRung = _rungOf(s.craftingRung);
       } else if (k === "excludeCraftingSystems") {
-        // #346 (U3) — the legacy key is READ on load and never written again. A
-        // save from this code carries the rung, so re-emitting the boolean would
-        // leave two sources of truth that can disagree after the player moves the
-        // ladder. Omitted entirely: JSON drops the key, and the loader's
-        // derivation only fires when the rung is genuinely absent.
-        continue;
+        // #346 (U3) — the legacy key is DERIVED from the rung, not read from
+        // state. Writing it back is a downgrade bridge: this app deploys
+        // continuously to Pages with best-effort cache-busting, so a player can
+        // hand-export a backup from the new build and re-import it into an older
+        // one still sitting in their browser cache. That build reads no
+        // `craftingRung`, and without this key it would silently restore a
+        // restricted character as fully unrestricted.
+        //
+        // Deriving rather than storing is what makes this safe: the value is a
+        // function of the rung, so the two can never contradict each other, and
+        // every reader already prefers a stored rung over the boolean. It
+        // degrades to the closest legal older state — any restrictive rung
+        // becomes the old "don't build around niche crafting" — instead of to
+        // nothing. Drop it once older builds can no longer be in circulation.
+        inputs.excludeCraftingSystems = _rungExcludesNiche(_rungOf(s.craftingRung));
       } else {
         inputs[k] = src[k];
       }

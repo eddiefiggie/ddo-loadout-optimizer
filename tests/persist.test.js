@@ -347,11 +347,29 @@ test("#346: craftingRung persists through pickInputs and is always written", () 
 // #346 (U3, KTD3) — the legacy boolean is read on load and never written again.
 // Re-emitting it would leave two sources of truth that disagree the moment the
 // player moves the ladder.
-test("#346: pickInputs no longer writes the legacy excludeCraftingSystems key", () => {
-  const s = pickInputs(Object.assign({}, state, { craftingRung: "printed-only", excludeCraftingSystems: true }), "Legacy");
-  assert.strictEqual(s.excludeCraftingSystems, undefined,
-    "the legacy key is not re-emitted, so it cannot contradict the rung");
-  assert.strictEqual(s.craftingRung, "printed-only", "the rung is the only stored truth");
+// #346 (U3) — the legacy boolean is written as a DOWNGRADE BRIDGE, derived from
+// the rung rather than read from state. This app deploys continuously to Pages
+// with best-effort cache-busting, so a backup exported from the new build can be
+// re-imported into an older build still in a browser cache; without this key
+// that build would restore a restricted character as fully unrestricted.
+// Deriving is what makes it safe — it cannot contradict the rung it came from.
+test("#346: the legacy boolean is derived from the rung, never read from state", () => {
+  const at = (rung, stale) => pickInputs(
+    Object.assign({}, state, { craftingRung: rung, excludeCraftingSystems: stale }), "L");
+
+  assert.strictEqual(at("everything").excludeCraftingSystems, false);
+  for (const rung of ["no-niche-crafting", "no-solar-lunar", "printed-only"]) {
+    assert.strictEqual(at(rung).excludeCraftingSystems, true,
+      `${rung} degrades to the closest legal older state, not to nothing`);
+  }
+
+  // A stale value on state must never survive — the rung is the only truth.
+  assert.strictEqual(at("everything", true).excludeCraftingSystems, false,
+    "a stale true beside the top rung is overwritten, not preserved");
+  assert.strictEqual(at("printed-only", false).excludeCraftingSystems, true,
+    "and a stale false beside a restrictive rung likewise");
+  assert.strictEqual(at("printed-only", false).craftingRung, "printed-only",
+    "the rung remains the primary stored truth");
 });
 
 // #110 U1 — the blocklist persists like any other collection input.
