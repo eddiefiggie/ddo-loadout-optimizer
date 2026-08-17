@@ -38,16 +38,18 @@ function check(name, fn) {
 (async () => {
   const Highs = require(path.join(ROOT, "web", "vendor", "highs.js"));
   const highs = await Highs({ locateFile: (f) => path.join(ROOT, "web", "vendor", f) });
-  const dataset = normalizeDataset(JSON.parse(
-    fs.readFileSync(path.join(ROOT, "web", "data", "items.json"), "utf8")));
+  const raw = JSON.parse(fs.readFileSync(path.join(ROOT, "web", "data", "items.json"), "utf8"));
+  const dataset = normalizeDataset(raw);
   const vocab = buildPickerVocabulary(dataset);
 
   // The counting set rides as the buildModel argument, exactly as
-  // web/query.js and web/wizard.js pass it (#91 U3, KTD3).
-  const solve = async (query) => {
+  // web/query.js and web/wizard.js pass it (#91 U3, KTD3). AE3 passes the
+  // PRE-#343 set explicitly so the two rosters are compared on one dataset
+  // rather than against a remembered number.
+  const solve = async (query, counting) => {
     const model = buildModel(dataset.items, query, dataset.dino_inserts, dataset.nearly_complete,
       dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged,
-      dataset.green_steel, dataset.augment_set_defs, vocab.utilityCounting);
+      dataset.green_steel, dataset.augment_set_defs, counting || vocab.utilityCounting);
     const r = await S.solveLexicographic(model, highs);
     return { model, r };
   };
@@ -163,16 +165,30 @@ function check(name, fn) {
   console.log(`    count ${a2.utilityCount}: ${secured(a2).join(", ")}`);
 
   console.log("\n#343/AE3 — a weapon build loses nothing");
-  const { r: a3 } = await solve({ mlCap: 34, targets: ["Melee Power", "Doublestrike", UTILITY_SENTINEL],
-    armorType: null, weaponSetup: null, weaponStyle: "Two Handed", classRace: null });
+  // The style gate reads `style` (web/model.js:210) and wants a style id —
+  // "thf". An earlier draft of this run passed `weaponStyle: "Two Handed"`,
+  // which NOTHING reads, so it solved unconstrained and picked a one-handed
+  // war hammer: the build most exposed to losing the Banes was never actually
+  // under test. Both rosters are solved here so the comparison is measured.
+  const thf = { mlCap: 34, targets: ["Melee Power", "Doublestrike", UTILITY_SENTINEL],
+    armorType: null, weaponSetup: null, style: "thf", classRace: null };
+  const oldCounting = new Set([
+    ...[...vocab.utilityCounting].filter((n) => !TOGGLES.includes(n)),
+    ...(raw.metadata.utility_untyped_admitted || []),
+  ]);
+  const { r: a3 } = await solve(thf);
+  const { r: a3Old } = await solve(thf, oldCounting);
   check("AE3: the count does not fall for the build most exposed to losing the Banes", () => {
     assert.strictEqual(a3.status, "optimal");
-    assert.ok(a3.utilityCount >= 15,
-      `a weapon build should keep its count (got ${a3.utilityCount}); the toggles replace the ` +
-      "Banes rather than reducing the total");
+    assert.strictEqual(a3Old.status, "optimal");
+    assert.ok(a3.utilityCount >= a3Old.utilityCount,
+      `a two-handed build should not lose count to the reshaped roster (new ${a3.utilityCount} ` +
+      `vs old ${a3Old.utilityCount}); the toggles replace the Banes rather than reducing the total`);
     assert.ok(TOGGLES.some((t) => secured(a3).includes(t)), "and it gains toggles it never had");
+    assert.ok(!TOGGLES.some((t) => secured(a3Old).includes(t)),
+      "the old roster could not have counted them — otherwise this proves nothing");
   });
-  console.log(`    count ${a3.utilityCount}: ${secured(a3).join(", ")}`);
+  console.log(`    count ${a3.utilityCount} (old roster ${a3Old.utilityCount}): ${secured(a3).join(", ")}`);
 
   console.log(`\n${passed} passed`);
 })().catch((e) => { console.error(e); process.exit(1); });

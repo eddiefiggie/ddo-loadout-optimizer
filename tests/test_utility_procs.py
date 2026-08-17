@@ -1,15 +1,16 @@
 """#91 (U1) — the Utility tier's counting vocabulary and the untyped-proc gate.
 
-`metadata.utility_counting_set` = (Bool presence names passing the
-presence-minus-magnitude test) ∪ (allow-dispositioned untyped weapon procs).
+`metadata.utility_counting_set` = Bool presence names passing the
+presence-minus-magnitude test, RESTRICTED to the curated tier-1 list. Since
+#343 the allow-dispositioned untyped weapon procs are NOT unioned in.
 These tests pin the derivation (Ghost Touch counts; the four dual-nature names
 fall out via the magnitude subtraction), the candidate rule that makes this
 gate's population the deliberate complement of `untyped_rankable`'s (the two
 gates' stale-checks must never fight over one name), and the adjudication
 guard — including the zero-candidate refusal and the stale-entry failure.
 
-Admitted names enter the counting set and `metadata.utility_untyped_admitted`
-(the picker's presence path) but NEVER `metadata.rankable_affixes` — a
+Admitted names enter `metadata.utility_untyped_admitted` (the picker's
+presence path) but NEVER `metadata.rankable_affixes` — a
 declared-credit control on Holy/Vampirism is the documented defect
 `web/dataset.js` warns against.
 """

@@ -20,10 +20,11 @@ their stale-checks can never fight over one name: a quarantined proc that later
 gains a worn-slot carrier stops being a candidate HERE (stale — build fails,
 review event) and becomes a candidate THERE.
 
-Admitted names feed `metadata.utility_counting_set` and
-`metadata.utility_untyped_admitted` (a presence-path picker entry) — NEVER
-`metadata.rankable_affixes`, which would hand Holy/Vampirism the declared-credit
-control `web/dataset.js` documents as a defect for exactly these names.
+Admitted names feed `metadata.utility_untyped_admitted` (a presence-path
+picker entry) — NEVER `metadata.rankable_affixes`, which would hand
+Holy/Vampirism the declared-credit control `web/dataset.js` documents as a
+defect for exactly these names. Since #343 they do NOT feed
+`metadata.utility_counting_set`: see `counting_set` below for why.
 
 This module also derives the Bool half of the counting set:
 `presence_counting_names` mirrors `web/dataset.js`'s presence predicate
@@ -70,7 +71,9 @@ PRESENCE_ALLOW = frozenset({
 # MEASURED BATCHES per KTD10. Names outside it are DERIVABLE from the presence
 # population (not quarantine rulings — nothing is filed per name). Contents:
 # the PRESENCE_ALLOW adjudicated named effects + the plan's acceptance-example
-# effects (Ghost Touch, Echo of Whelm's three procs) + Feather Falling.
+# effects (Ghost Touch, Echo of Whelm's three procs) + Feather Falling + the
+# six #343 worn defensive toggles. Since #343 this list bounds the WHOLE
+# counting set — the untyped procs are no longer unioned in.
 # Keep in lockstep with web/dataset.js — the stamped-set parity test in
 # tests/dataset.test.js fails on drift.
 UTILITY_TIER1_PRESENCE = frozenset({

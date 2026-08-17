@@ -67,7 +67,7 @@ The weapon procs are 86% of the carrying-variant footprint. Swapping them out is
 
 - AE1. **The reported bug closes.** Covers R1. Given an ML34 solve with a single ranked priority (Constitution) and the Utility tier at the bottom: Ghostly, True Seeing, Blurry, Freedom of Movement, Blindness Immunity, and Deathblock all appear among the counted effects, where today's solve returns fourteen weapon procs and none of them.
 - AE2. **It survives contention.** Covers R1. Given the same solve with six contested ranked stats above the tier (Constitution, both Shelterings, Healing Amplification, Dodge, Fortification): the count falls to five, and Ghostly, Blindness Immunity, and Deathblock are among them — where today's roster returns five weapon procs and no toggle.
-- AE3. **A weapon build loses nothing.** Covers R2. Given a two-handed melee query ranking Melee Power and Doublestrike: the count is unchanged at fifteen, and the six worn toggles replace the Banes rather than reducing the total.
+- AE3. **A weapon build loses nothing.** Covers R2. Given a two-handed melee query ranking Melee Power and Doublestrike: the count does not fall, and the six worn toggles replace the Banes rather than reducing the total. **Measured: it rises, 10 to 12.**
 - AE4. **The tier gets cheaper.** Covers R1. Given the golden fixture set: the measured cold-solve ratio with the new roster is at or below the 1.96× the previous roster recorded, and inside the 2.0× budget.
 
 ### Scope Boundaries
@@ -81,7 +81,7 @@ The weapon procs are 86% of the carrying-variant footprint. Swapping them out is
 
 - Assumes the six named toggles are the right roster. The wider set of worn presence effects has not been adjudicated against the wiki, and the final list may change on review — which is cheap here precisely because this is a data change.
 - Verified, not assumed: all twenty names have worn-gear sources, so the crafting/augment ladder shipped in #346 cannot strand them. Ghostly has 110 worn carriers to 1 augment; True Seeing 60 to 0.
-- Verified, not assumed: dropping the Banes does not reduce the count even for the build most exposed to it. A weapon-focused query returns fifteen effects before and after.
+- Verified, not assumed: dropping the Banes does not reduce the count even for the build most exposed to it. A genuine two-handed query (`style: "thf"`) returns 10 effects on the old roster and 12 on the new. An earlier draft of this line claimed "fifteen before and after" — that pair was measured with `weaponStyle: "Two Handed"`, a key nothing reads, so it described an unconstrained solve rather than a weapon build.
 
 ### Outstanding Questions
 
@@ -179,7 +179,7 @@ U1 changes both mirrors and the union, and is the only unit that changes behavio
 - **Test scenarios:**
   - Covers AE1. ML34 with a single ranked priority and the tier ranked: all six worn toggles appear among the counted effects.
   - Covers AE2. The same solve with six contested ranked stats above the tier: the count is five and at least Ghostly, Blindness Immunity, and Deathblock are among them.
-  - Covers AE3. A two-handed melee query ranking Melee Power and Doublestrike: the count is fifteen, and no Bane-family name appears.
+  - Covers AE3. A two-handed melee query (`style: "thf"`) ranking Melee Power and Doublestrike: the count does not fall against the pre-#343 roster solved on the same dataset (measured 10 -> 12), and no Bane-family name appears.
   - The ranked-stat values in the contested run are identical with the tier present and absent, proving the tier still cannot buy an effect with a ranked point.
 - **Verification:** `node tests/ae_utility_runs.js` passes with the new cases, and its output shows the secured effects by name so a reader can see the fix rather than infer it.
 

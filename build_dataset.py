@@ -539,8 +539,10 @@ def build() -> dict:
     # adjudication is keyed on the canonical name. An un-dispositioned candidate
     # fails the build, so a new untyped weapon proc is a reviewed event instead
     # of a silent zero in the utility count. Allowed names feed
-    # metadata.utility_counting_set + utility_untyped_admitted below — never
-    # rankable_affixes (the declared-credit defect web/dataset.js documents).
+    # metadata.utility_untyped_admitted below (the picker's presence path) —
+    # never rankable_affixes (the declared-credit defect web/dataset.js
+    # documents), and since #343 no longer metadata.utility_counting_set
+    # either: the procs stayed rankable but stopped being counted.
     _uproc_allow, _uproc_quarantined = utility_procs_mod.load(UTILITY_PROCS_PATH)
     _uproc_checked = utility_procs_mod.assert_adjudicated(
         planner_records, _uproc_allow, _uproc_quarantined)

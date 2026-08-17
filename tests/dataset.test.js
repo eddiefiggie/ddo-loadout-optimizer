@@ -1663,10 +1663,14 @@ test("#91/KTD10: the stamped counting set and UTILITY_TIER1_PRESENCE cannot drif
   const meta = JSON.parse(fs.readFileSync(
     path.join(__dirname, "..", "web", "data", "items.json"), "utf8")).metadata || {};
   const admitted = new Set((meta.utility_untyped_admitted || []).map((n) => v.canonical(n)));
-  // Direction 1: every counted non-admitted name is a tier-1 name (the Python
-  // mirror admitted nothing the JS curation does not list).
+  // Direction 1: every counted name is a tier-1 name (the Python mirror
+  // admitted nothing the JS curation does not list). #343 dropped the admitted
+  // procs from the counting set, so the old `if (admitted.has(n)) continue;`
+  // exemption is not just dead — it would hide exactly the drift that
+  // re-unioning them would cause. Counted and admitted are now disjoint.
   for (const n of v.utilityCounting) {
-    if (admitted.has(n)) continue;
+    assert.ok(!admitted.has(n),
+      `counted name ${n} is an admitted untyped proc — #343 removed those from the count`);
     assert.ok(UTILITY_TIER1_PRESENCE.has(n),
       `stamped counting name ${n} is not in UTILITY_TIER1_PRESENCE — the mirrors drifted`);
   }

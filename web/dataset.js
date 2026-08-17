@@ -484,6 +484,10 @@ const PRESENCE_ALLOW = new Set([
 // "named effects the four-word cap wrongly hides" (picker visibility), and
 // entangling it with counting admission would make a future picker adjudication
 // silently widen the counting set unreviewed.
+// #343 widened this list with the six worn defensive toggles (Ghostly, True
+// Seeing, Blurry, Freedom of Movement, Blindness Immunity, Deathblock) and
+// made it the WHOLE counting set: the reviewed untyped procs are no longer
+// unioned in, so this constant now bounds the count on its own.
 // MIRRORED in src/utility_procs.py (the stamp derivation) — the stamped-set
 // parity test in tests/dataset.test.js guards the two copies against drift.
 const UTILITY_TIER1_PRESENCE = new Set([
