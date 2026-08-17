@@ -105,6 +105,10 @@ var _normalizeRung = (typeof normalizeRung !== "undefined")
   ? normalizeRung
   // eslint-disable-next-line global-require
   : require("./model.js").normalizeRung;
+var _craftingRung = (typeof craftingRung !== "undefined")
+  ? craftingRung
+  // eslint-disable-next-line global-require
+  : require("./model.js").craftingRung;
 var _rungExcludesAllAugments = (typeof rungExcludesAllAugments !== "undefined")
   ? rungExcludesAllAugments
   // eslint-disable-next-line global-require
@@ -124,9 +128,7 @@ var _rungExcludesAllAugments = (typeof rungExcludesAllAugments !== "undefined")
  *  indistinguishable; these two states are not. A stored rung always wins, so
  *  the derivation fires only when the rung is genuinely absent. */
 function rungFromInputs(inputs) {
-  const i = inputs || {};
-  if (i.craftingRung != null) return _normalizeRung(i.craftingRung);
-  return i.excludeCraftingSystems ? "no-niche-crafting" : "everything";
+  return _craftingRung(inputs);
 }
 
 /** Clean a stat->value bound map (caps/floors): keep only entries whose value is a

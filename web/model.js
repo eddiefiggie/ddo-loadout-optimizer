@@ -61,16 +61,30 @@ var CRAFTING_RUNGS = [
 function normalizeRung(value) {
   return (typeof value === "string" && CRAFTING_RUNGS.indexOf(value) !== -1) ? value : "everything";
 }
-/** The query's rung, honouring the legacy `excludeCraftingSystems` boolean when
- *  no rung is present. Every other reader of the ladder — the wizard's load path,
- *  persistence, and the projection notice — applies this same precedence, and the
- *  model seam drifting from them meant a query carrying only the old boolean
- *  solved with the craftable option pools fully live. Stored rung wins; the
- *  boolean speaks only when there is none. */
-function craftingRung(query) {
-  const q = query || {};
-  if (q.craftingRung != null) return normalizeRung(q.craftingRung);
-  return q.excludeCraftingSystems ? "no-niche-crafting" : "everything";
+/** THE one implementation of the rung-vs-legacy-boolean precedence: a stored rung
+ *  always wins, and the `excludeCraftingSystems` boolean speaks only when no rung
+ *  exists anywhere. Every reader goes through here — the model seam, the wizard's
+ *  load path, and the projection notice — because writing the rule three times is
+ *  what let the model seam drift out of agreement with the other two, solving a
+ *  legacy-only query with the craftable option pools fully live.
+ *
+ *  Takes two sources so one function serves every caller's shape: `primary` is
+ *  the query (model, projection) or the saved inputs (wizard load), and
+ *  `fallback` is the second place a caller may find either field — projection
+ *  reads a solved query AND the saved inputs, and whichever carries the rung
+ *  wins over whichever carries only the boolean. */
+function craftingRung(primary, fallback) {
+  const a = primary || {}, b = fallback || {};
+  if (a.craftingRung != null) return normalizeRung(a.craftingRung);
+  if (b.craftingRung != null) return normalizeRung(b.craftingRung);
+  return (a.excludeCraftingSystems || b.excludeCraftingSystems) ? "no-niche-crafting" : "everything";
+}
+
+/** The Solar/Lunar Gem family by catalog colour. Named once so the eligibility
+ *  gate, the results attribution, and the notice's gem count cannot disagree
+ *  about what "Solar/Lunar" means. */
+function isSolarLunarColor(color) {
+  return color === "Sun" || color === "Moon";
 }
 function craftingRungRank(rung) {
   const i = CRAFTING_RUNGS.indexOf(rung);
@@ -86,9 +100,8 @@ function rungExcludesAllAugments(rung) { return craftingRungRank(rung) >= 3; }
 // catalog color maps to a single named acquisition line (CONCEPTS.md, Multi-fit).
 // Read from the normalized `aug_color.color`, the same field the augment pool
 // groups by, so the exclusion and the color-capacity model cannot disagree.
-const _SOLAR_LUNAR_COLORS = new Set(["Sun", "Moon"]);
 function _isSolarLunar(v) {
-  return _SOLAR_LUNAR_COLORS.has(((v && v.aug_color) || {}).color);
+  return isSolarLunarColor(((v && v.aug_color) || {}).color);
 }
 
 // U4b-i — stacking-equivalence. gear-planner's native affix `type` IS the
@@ -1141,7 +1154,7 @@ if (typeof module !== "undefined" && module.exports) {
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,
     isForgedRace, isDocent, isBothHandsWeapon, variantKey, setStackEquiv, equivType,
     UTILITY_SENTINEL,
-    CRAFTING_RUNGS, craftingRung, craftingRungRank, normalizeRung,
+    CRAFTING_RUNGS, craftingRung, craftingRungRank, normalizeRung, isSolarLunarColor,
     rungExcludesNicheCrafting, rungExcludesSolarLunar, rungExcludesAllAugments,
     setCrossAdd: _crossAddApi.setCrossAdd, crossAddSourcesFor: _crossAddApi.crossAddSourcesFor,
     widenWithCrossAddSources: _crossAddApi.widenWithCrossAddSources,

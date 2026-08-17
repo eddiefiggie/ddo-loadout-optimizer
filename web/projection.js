@@ -22,8 +22,11 @@
   // #346 (U4) — the ladder's normalizer, over the same bridge. Fails open to the
   // top rung so a hand-edited backup produces a wrong-but-harmless notice rather
   // than throwing inside the projection every surface reads from.
-  const _rungOf = (typeof normalizeRung !== "undefined") ? normalizeRung
-    : (typeof require !== "undefined" ? require("./model.js").normalizeRung : (v) => v || "everything");
+  const _rungOf = (typeof craftingRung !== "undefined") ? craftingRung
+    : (typeof require !== "undefined" ? require("./model.js").craftingRung : () => "everything");
+  const _isSolarLunarColor = (typeof isSolarLunarColor !== "undefined") ? isSolarLunarColor
+    : (typeof require !== "undefined" ? require("./model.js").isSolarLunarColor
+      : (c) => c === "Sun" || c === "Moon");
 
   /** Size of a collection that reaches this layer as a Set (live query) or an
    *  array (saved record). Returns 0 for absent/unrecognized shapes rather than
@@ -561,12 +564,11 @@
     const snap = (rec && rec.snapshot) || rec || {};
     const q = (rec && rec.query) || snap.query || {};
     const inputs = (rec && rec.inputs) || {};
-    // #346 (U4) — the rung, with the legacy boolean as the restore-path fallback
-    // for snapshots saved before the ladder. Same precedence as the loader's:
-    // a stored rung wins, the boolean only speaks when there is none.
-    const rung = (q.craftingRung != null || inputs.craftingRung != null)
-      ? _rungOf(q.craftingRung != null ? q.craftingRung : inputs.craftingRung)
-      : ((q.excludeCraftingSystems || inputs.excludeCraftingSystems) ? "no-niche-crafting" : "everything");
+    // #346 (U4) — one shared precedence for the whole app (model.js): a stored
+    // rung wins wherever it lives, and the legacy boolean speaks only when no
+    // rung exists. Reading the solved query first and the saved inputs second is
+    // this caller's shape; the RULE is not restated here.
+    const rung = _rungOf(q, inputs);
 
     // #346 (U5, R11) — a mechanic the rung made UNREACHABLE is named, not
     // silently omitted. Augment Sets are the motivating case: they are set-bonus
@@ -604,7 +606,7 @@
     const augs = (snap.augmentsPlaced || []).length;
     if (!augs) return null;   // nothing to give up; no advice worth crowding the results with
     const gems = (snap.augmentsPlaced || [])
-      .filter((a) => a && (a.color === "Sun" || a.color === "Moon")).length;
+      .filter((a) => a && _isSolarLunarColor(a.color)).length;
     const lead = gems
       ? `This loadout leans on ${gems} Solar/Lunar Gem${gems === 1 ? "" : "s"}`
         + (augs > gems ? ` and ${augs - gems} other augment${augs - gems === 1 ? "" : "s"}` : "")

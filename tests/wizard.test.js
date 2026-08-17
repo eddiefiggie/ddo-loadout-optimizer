@@ -2105,3 +2105,42 @@ test("U4/262: the BLOCK search row template appends the note (source wiring)", (
       "renderResults is handed the render-only copy, not `query` itself");
   });
 }
+
+// #346 — the ladder's UI options must match the model's vocabulary exactly.
+// wizard.js hand-writes the rung list with its player-facing labels (copy belongs
+// in the UI, not the model), so the two CAN drift — this is the assertion that
+// stops a rung being added, removed, or reordered in one place only.
+test("#346: the rendered ladder options match CRAFTING_RUNGS in order and value", () => {
+  const M = require("../web/model.js");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const block = src.slice(src.indexOf("const RUNGS = ["));
+  const rendered = [...block.slice(0, block.indexOf("];")).matchAll(/\["([a-z-]+)",/g)].map((m) => m[1]);
+  assert.deepStrictEqual(rendered, M.CRAFTING_RUNGS,
+    "every rung the model knows is offered, in rank order, with no extras");
+});
+
+// #346 — the three readers of the ladder now share ONE precedence implementation.
+// They did not always: the model seam drifted and solved a legacy-only query with
+// the craftable pools fully live. This table pins that they agree.
+test("#346: every reader of the ladder agrees on the same precedence", () => {
+  const M = require("../web/model.js");
+  const P = require("../web/projection.js");
+  const cases = [
+    [{}, "everything"],
+    [{ excludeCraftingSystems: false }, "everything"],
+    [{ excludeCraftingSystems: true }, "no-niche-crafting"],
+    [{ craftingRung: "printed-only" }, "printed-only"],
+    [{ craftingRung: "printed-only", excludeCraftingSystems: true }, "printed-only"],
+    [{ craftingRung: "everything", excludeCraftingSystems: true }, "everything"],
+    [{ craftingRung: "nonsense", excludeCraftingSystems: true }, "everything"],
+  ];
+  for (const [input, expected] of cases) {
+    assert.strictEqual(M.craftingRung(input), expected, `model seam: ${JSON.stringify(input)}`);
+    assert.strictEqual(rungFromInputs(input), expected, `wizard load path: ${JSON.stringify(input)}`);
+    // The projection reads the same rule through craftingExcludedLine's rung branch.
+    const line = P.craftingExcludedLine({ query: input, snapshot: { augmentsPlaced: [] } }) || "";
+    const impliedRestrictive = /excluded from this solve|nothing beyond what is printed/.test(line);
+    assert.strictEqual(impliedRestrictive, expected !== "everything",
+      `projection notice: ${JSON.stringify(input)} implies ${expected}`);
+  }
+});

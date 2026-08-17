@@ -20,6 +20,8 @@ const _resultsRungExcludesAllAugments = (typeof rungExcludesAllAugments !== "und
   : (typeof require !== "undefined" ? require("./model.js").rungExcludesAllAugments : () => false);
 const _resultsRungExcludesNicheCrafting = (typeof rungExcludesNicheCrafting !== "undefined") ? rungExcludesNicheCrafting
   : (typeof require !== "undefined" ? require("./model.js").rungExcludesNicheCrafting : () => false);
+const _resultsIsSolarLunarColor = (typeof isSolarLunarColor !== "undefined") ? isSolarLunarColor
+  : (typeof require !== "undefined" ? require("./model.js").isSolarLunarColor : (c) => c === "Sun" || c === "Moon");
 // U8 (R8) — bound like every other shared primitive. `renderResults` /
 // `equippedBody` / `loadoutDeepDive` run against the LIVE solve result and have no
 // saved record, so they cannot reach the collapse through `Proj.project(rec)`;
@@ -919,7 +921,7 @@ function _rungRemovedStats(dataset, rung) {
   if (allAugs || solarLunar) {
     for (const v of dataset.items || []) {
       if (!v || v.category !== "augment") continue;
-      const isSL = ((v.aug_color || {}).color === "Sun" || (v.aug_color || {}).color === "Moon");
+      const isSL = _resultsIsSolarLunarColor((v.aug_color || {}).color);
       if (allAugs || isSL) add(v.affixes);
     }
   }
