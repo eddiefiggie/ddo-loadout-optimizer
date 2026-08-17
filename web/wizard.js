@@ -288,6 +288,9 @@ function advancedRowModel(stat, state, vocab) {
   // effect. Those rows keep their min/max. Only CREDITS are refused there, which
   // is the documented U2/U3 defect — a declared magnitude on a Bool-only stat
   // forms a separate additive bucket and satisfies the floor without the item.
+  // #345 (U5, R10) — a floor is what makes an effect non-negotiable, so the row
+  // says so without the player opening Advanced. Derived, never a second stored
+  // flag: one representation, so it cannot disagree with the bound the solve got.
   const pick = (map) => {
     if (!map || typeof map !== "object") return null;
     // hasOwnProperty, not `map[stat] != null`: a stat named "__proto__" would
@@ -320,7 +323,7 @@ function advancedRowModel(stat, state, vocab) {
   // while still rendering "+ already have" left a button that silently wrote
   // state the query then discarded: clicking it on an on/off row produced no
   // visible row, no error, and one more orphan entry per click.
-  return { canCredit: canDeclareCredit(stat, vocab), floor, cap, credits, badgeCount };
+  return { canCredit: canDeclareCredit(stat, vocab), floor, cap, credits, badgeCount, required: floor != null && Number(floor) > 0 };
 }
 
 // U3 — the Advanced panel's prose, defined ONCE here and interpolated per row.
@@ -1887,7 +1890,11 @@ if (typeof window !== "undefined" && window.App) {
     // whether the list was rebuilt or patched.
     function advSummaryHTML(adv) {
       const t = advancedBadgeText(adv.badgeCount);
-      return `Advanced${t ? ` <span class="wz-adv-badge">${esc(t)}</span>` : ""}`;
+      // #345 (U5) — "Required" is part of the summary TEXT, not a visual-only
+      // chip, for the reason the settings badge is: a purely visual mark loses
+      // the state for screen-reader users instead of for everyone.
+      const req = adv.required ? ` <span class="wz-adv-req">· Required</span>` : "";
+      return `Advanced${req}${t ? ` <span class="wz-adv-badge">${esc(t)}</span>` : ""}`;
     }
 
     function advancedHTML(stat, i, adv) {
@@ -1898,6 +1905,7 @@ if (typeof window !== "undefined" && window.App) {
           <span class="wz-bounds">
             <input class="wz-bound" type="number" min="0" step="1" inputmode="numeric" data-min="${i}" value="${esc(adv.floor == null ? "" : adv.floor)}" placeholder="min" aria-label="${esc(stat)} minimum (floor)" draggable="false">
             <input class="wz-bound" type="number" min="0" step="1" inputmode="numeric" data-max="${i}" value="${esc(adv.cap == null ? "" : adv.cap)}" placeholder="max" aria-label="${esc(stat)} maximum (cap)" draggable="false"></span>
+          ${adv.required ? `<p class="wz-adv-req-note">This effect is required: the solve must include it, giving up higher-ranked stats if that is what it takes. <button type="button" class="wz-clear-req" data-clearreq="${i}">Clear requirement</button></p>` : ""}
           <p class="wz-adv-note">${ADVANCED_PANEL_HELP.min}</p>
           <p class="wz-adv-note">${ADVANCED_PANEL_HELP.max}</p>
           ${adv.canCredit ? `<p class="wz-adv-note">${ADVANCED_PANEL_HELP.credit}</p>
@@ -2007,6 +2015,20 @@ if (typeof window !== "undefined" && window.App) {
         }
         rerender();
         if (after) after();
+      });
+      // #345 (U5, R10) — clear a requirement from the row that shows it. Deletes
+      // the floor through the same map the min input writes, then rerenders so
+      // the summary marker goes with it; no second flag to fall out of step.
+      ol.querySelectorAll("button.wz-clear-req").forEach((btn) => {
+        btn.onpointerdown = (e) => e.stopPropagation();
+        btn.onclick = (e) => {
+          e.preventDefault();
+          const p = state.priorities[+btn.dataset.clearreq];
+          if (!p || !state.targetFloors) return;
+          delete state.targetFloors[p];
+          rerender();
+          if (after) after();
+        };
       });
       // U4 — min/max bound inputs. Write to the stat-keyed maps (clamped to a
       // non-negative integer); a blank clears the bound. Stop pointer propagation so

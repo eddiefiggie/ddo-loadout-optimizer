@@ -2268,3 +2268,47 @@ test("#345 U4: the accept handler writes the same field the Advanced input write
   assert.ok(/"targetFloors"/.test(persist),
     "targetFloors must be a persisted field or an accepted trade is lost on reload");
 });
+
+// ---------------------------------------------------------------------------
+// U5 (plan 2026-08-17-001, #345) — a required effect says so on its row.
+// ---------------------------------------------------------------------------
+
+test("#345 U5: a floored row reports required; an unfloored one does not", () => {
+  const st = { priorities: ["Ghostly", "Deadly"], targetFloors: { Ghostly: 1 }, targetCaps: {} };
+  assert.strictEqual(advancedRowModel("Ghostly", st, {}).required, true);
+  assert.strictEqual(advancedRowModel("Deadly", st, {}).required, false);
+});
+
+test("#345 U5: required is derived from the floor, never stored separately", () => {
+  // One representation. A second stored flag could disagree with the bound the
+  // solve actually received, and the row would assert a constraint that is not real.
+  const st = { priorities: ["Ghostly"], targetFloors: { Ghostly: 1 }, targetCaps: {} };
+  assert.strictEqual(advancedRowModel("Ghostly", st, {}).required, true);
+  delete st.targetFloors.Ghostly;
+  assert.strictEqual(advancedRowModel("Ghostly", st, {}).required, false,
+    "clearing the floor clears the marker with no second write");
+});
+
+test("#345 U5: a zero floor is not a requirement", () => {
+  const st = { priorities: ["Ghostly"], targetFloors: { Ghostly: 0 }, targetCaps: {} };
+  assert.strictEqual(advancedRowModel("Ghostly", st, {}).required, false,
+    "min 0 constrains nothing and must not read as required");
+});
+
+test("#345 U5: the Utility container never reports required", () => {
+  const S = require("../web/model.js").UTILITY_SENTINEL;
+  const st = { priorities: [S], targetFloors: { [S]: 1 }, targetCaps: {} };
+  const m = advancedRowModel(S, st, {});
+  assert.strictEqual(m.suppressed, true, "the sentinel row renders no Advanced panel");
+  assert.ok(!m.required, "and never claims a requirement — it is not a ranked stat");
+});
+
+test("#345 U5: the marker and the clear control are both on the row", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  assert.ok(/adv\.required \? ` <span class="wz-adv-req">/.test(src),
+    "the summary carries Required as text, visible without opening Advanced");
+  assert.ok(/wz-clear-req/.test(src), "and the row offers a way to clear it");
+  assert.ok(/delete state\.targetFloors\[p\]/.test(src),
+    "clearing deletes the floor itself, not a parallel flag");
+});

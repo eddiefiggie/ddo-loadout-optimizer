@@ -1925,3 +1925,39 @@ test("U1: renderResults emits the outbid notice — the render, not just the fun
   assert.ok(/canPriceOutbid\(\)/.test(block),
     "and it must pass the pricing capability, or the ask never renders");
 });
+
+// ---------------------------------------------------------------------------
+// U6 (plan 2026-08-17-001, #345) — an unmet requirement and a lost preference
+// are different failures. They must never both speak for the same stat.
+// ---------------------------------------------------------------------------
+
+test("U6: a stat with an unmet floor gets the shortfall notice, not the outbid one", () => {
+  const res = { status: "optimal", perTarget: { "Freedom of Movement": 0 }, chosen: [],
+    floorReport: [{ stat: "Freedom of Movement", floor: 1, achieved: 0 }] };
+  const html = R.outbidNotice({ targets: ["Deadly", "Freedom of Movement"] }, res,
+    _modelWith(["Deadly", "Freedom of Movement"]));
+  assert.strictEqual(html, "", "the requirement failed — boundNotice owns that story");
+});
+
+test("U6: one unmet floor and one outbid preference each keep their own notice", () => {
+  const res = { status: "optimal", perTarget: { Blurry: 0, "Freedom of Movement": 0 }, chosen: [],
+    floorReport: [{ stat: "Blurry", floor: 1, achieved: 0 }] };
+  const html = R.outbidNotice({ targets: ["Deadly", "Blurry", "Freedom of Movement"] }, res,
+    _modelWith(["Deadly", "Blurry", "Freedom of Movement"]));
+  assert.ok(/Freedom of Movement/.test(html), "the outbid preference is still disclosed");
+  assert.ok(!/Blurry/.test(html), "the failed requirement is not");
+});
+
+test("U6: a satisfied floor produces neither", () => {
+  const res = { status: "optimal", perTarget: { "Freedom of Movement": 1 }, chosen: [], floorReport: [] };
+  assert.strictEqual(R.outbidNotice({ targets: ["Freedom of Movement"] }, res,
+    _modelWith(["Freedom of Movement"])), "");
+});
+
+test("U6: a target absent from perTarget is unknown, not outbid", () => {
+  // Inventing a zero for a stat the solve never reported is the same class of
+  // error as naming a binding priority we have not proven.
+  const res = { status: "optimal", perTarget: {}, chosen: [] };
+  assert.strictEqual(R.outbidNotice({ targets: ["Deadly"] }, res, _modelWith(["Deadly"])), "",
+    "no reported value means no claim");
+});

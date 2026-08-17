@@ -982,7 +982,15 @@ function outbidTargets(query, result, model) {
   if (Array.isArray(result.outbidReport)) return result.outbidReport;
   const reachable = _poolStatNames(model);
   const per = (result && result.perTarget) || {};
-  return targets.filter((t) => t !== _UTILITY_SENTINEL && reachable.has(t) && !(Number(per[t]) > 0));
+  // Same exclusion the solver applies: an unmet floor is a failed requirement,
+  // and boundNotice already explains it. Two notices for one zero is worse than one.
+  const unmet = new Set(((result && result.floorReport) || []).map((f) => f && f.stat));
+  // A target ABSENT from perTarget is unknown, not zero. Claiming it was outbid
+  // would be inventing a value the solve never reported — the same class of
+  // error as naming an unproven binding priority.
+  const scoredZero = (t) => Object.prototype.hasOwnProperty.call(per, t) && Number(per[t]) <= 0;
+  return targets.filter((t) =>
+    t !== _UTILITY_SENTINEL && reachable.has(t) && !unmet.has(t) && scoredZero(t));
 }
 
 function outbidNotice(query, result, model, canPrice, canRequire) {

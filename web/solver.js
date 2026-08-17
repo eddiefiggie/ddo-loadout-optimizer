@@ -1847,10 +1847,19 @@ function readSolution(res, program, precomputedVisible) {
  *  floored stat would read undefined. Used by the U2 floor pre-pass. */
 /** #345 (U1) — targets that came back zero while the pool can still supply
  *  them. A free rider is excluded by construction: it scored above zero. */
-function outbidReportFor(model, targetList, perTarget) {
+function outbidReportFor(model, targetList, perTarget, floorReport) {
   const reachable = _poolStatNames(model);
+  // #345 (U6, R11) — a stat carrying an UNMET floor is a requirement that
+  // failed, and the shortfall disclosure already names it with the number it
+  // could not reach. Reporting it as outbid too would put two explanations of
+  // the same zero in front of the player, one of them the weaker.
+  const unmet = new Set((floorReport || []).map((f) => f && f.stat));
+  // A target ABSENT from perTarget is unknown, not zero. Claiming it was outbid
+  // would be inventing a value the solve never reported — the same class of
+  // error as naming an unproven binding priority.
+  const scoredZero = (t) => Object.prototype.hasOwnProperty.call(perTarget, t) && Number(perTarget[t]) <= 0;
   return (targetList || []).filter((t) =>
-    t !== _UTILITY_SENTINEL && reachable.has(t) && !(Number(perTarget[t]) > 0));
+    t !== _UTILITY_SENTINEL && reachable.has(t) && !unmet.has(t) && scoredZero(t));
 }
 
 function probeMax(program, highs, stat, locks) {
@@ -2015,7 +2024,7 @@ async function solveLexicographic(model, highs) {
 
   return {
     status: "optimal", perTarget, effective: sol.effective, chosen: sol.chosen,
-    outbidReport: outbidReportFor(model, program.targetList, perTarget),
+    outbidReport: outbidReportFor(model, program.targetList, perTarget, floorReport),
     // #91 (U3) — present only when the tier is ranked: the achieved distinct-
     // effect count (a plain number, locked into every post-stage solve) and
     // the load-bearing-checked effect list (U5 builds the full report).
