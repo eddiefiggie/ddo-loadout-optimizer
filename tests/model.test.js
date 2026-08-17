@@ -1624,14 +1624,41 @@ test("#346: the no-niche-crafting rung empties the option-pool families", () => 
 // unreadable value must fail open to the top rung rather than throw. A
 // hand-edited backup is the realistic source of a bad value.
 test("#346: rung normalization fails open to the top rung", () => {
-  for (const bad of [undefined, null, "", "nonsense", 3, {}, "Everything"]) {
+  // Inherited Object.prototype keys are the interesting case: a plain-object
+  // rank table answered `!= null` for every one of them, so "constructor"
+  // sanitized to itself, persisted, and then ranked as a Function.
+  for (const bad of [undefined, null, "", "nonsense", 3, {}, "Everything",
+    "constructor", "toString", "__proto__", "hasOwnProperty", "valueOf"]) {
     assert.strictEqual(M.normalizeRung(bad), "everything", `${JSON.stringify(bad)} reads as the top rung`);
+    assert.strictEqual(M.craftingRungRank(bad), 0, `${JSON.stringify(bad)} ranks as the top rung`);
+    assert.strictEqual(typeof M.craftingRungRank(bad), "number", `${JSON.stringify(bad)} ranks to a NUMBER`);
   }
   for (const good of M.CRAFTING_RUNGS) {
     assert.strictEqual(M.normalizeRung(good), good, `${good} round-trips`);
   }
   assert.strictEqual(M.craftingRung({ craftingRung: "printed-only" }), "printed-only");
   assert.strictEqual(M.craftingRung({}), "everything", "an absent rung reads as the top rung");
+});
+
+// #346 (U1) — the model seam honours the legacy boolean, like every other reader
+// of the ladder. It drifted once: the wizard load path, persistence, and the
+// projection notice all applied this precedence while buildModel did not, so a
+// query carrying only the old boolean solved with the craftable option pools
+// fully live — the exact opposite of what that boolean meant.
+test("#346: the model seam honours the legacy boolean when no rung is stored", () => {
+  assert.strictEqual(M.craftingRung({ excludeCraftingSystems: true }), "no-niche-crafting");
+  assert.strictEqual(M.craftingRung({ excludeCraftingSystems: false }), "everything");
+  assert.strictEqual(M.craftingRung({ craftingRung: "printed-only", excludeCraftingSystems: true }),
+    "printed-only", "a stored rung still wins over a stale boolean");
+
+  // And it reaches the pools, not just the accessor.
+  const host = v("Host", "Ring", [["Intelligence", "Enhancement", 5]]);
+  const vik = { slot_type: "Melancholic", category: "accessory", tier: "legendary",
+    affixes: [{ stat: "Intelligence", value: 7, bonus_type: "Insight" }] };
+  const legacy = M.buildModel([host], { mlCap: 34, targets: ["Intelligence"], excludeCraftingSystems: true },
+    [], [], [vik], [], {}, [], [], {});
+  assert.deepStrictEqual(legacy.viktranium, [],
+    "a legacy-only query empties the option pools at the model seam");
 });
 
 // #346 (U1) — the three predicates ARE the ladder's monotonicity. If a rung ever

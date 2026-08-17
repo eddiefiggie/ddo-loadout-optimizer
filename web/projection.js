@@ -25,6 +25,17 @@
   const _rungOf = (typeof normalizeRung !== "undefined") ? normalizeRung
     : (typeof require !== "undefined" ? require("./model.js").normalizeRung : (v) => v || "everything");
 
+  /** Size of a collection that reaches this layer as a Set (live query) or an
+   *  array (saved record). Returns 0 for absent/unrecognized shapes rather than
+   *  throwing — a projection feeding five surfaces must not die on a hand-edited
+   *  backup. */
+  function _countOf(c) {
+    if (!c) return 0;
+    if (typeof c.size === "number") return c.size;      // Set / Map
+    if (Array.isArray(c)) return c.length;
+    return 0;
+  }
+
   // ---- pure primitives (moved verbatim from results.js so there is one definition) ----
 
   // The key each expansion family stamps on every affix it emits, naming the
@@ -562,8 +573,13 @@
     // crafting, so every rung from no-niche-crafting down clears them. A player
     // who never marked one owned would not miss them, so this only speaks to a
     // player whose own opt-in was overridden by the rung.
-    const ownedSets = (inputs.ownedSetAugments || []).length
-      || (q.ownedSetAugments && (q.ownedSetAugments.size || q.ownedSetAugments.length)) || 0;
+    // Count through one shape-tolerant helper. `ownedSetAugments` is a Set on the
+    // LIVE path (results.js forwards the solved query straight in as `inputs`)
+    // and a plain array on the SAVED path (pickInputs converts it for JSON). An
+    // array-only `.length` read made this clause render in every export and never
+    // in the app — R11 half-shipped, with the tests exercising only the saved
+    // shape they were written from.
+    const ownedSets = _countOf(inputs.ownedSetAugments) || _countOf(q.ownedSetAugments);
     const setsClause = ownedSets
       ? ` The ${ownedSets === 1 ? "Augment Set you marked as owned was" : `${ownedSets} Augment Sets you marked as owned were`} unavailable at this setting, not merely outscored.`
       : "";

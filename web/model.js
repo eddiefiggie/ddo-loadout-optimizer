@@ -42,28 +42,39 @@ var UTILITY_SENTINEL = "Utility effects";
 // `var`, not `const`: projection.js and wizard.js read these as browser globals
 // via the documented cross-runtime bridge (model.js loads before both), the same
 // mechanism UTILITY_SENTINEL uses above.
-var CRAFTING_RUNGS = ["everything", "no-niche-crafting", "no-solar-lunar", "printed-only"];
-var CRAFTING_RUNG_RANK = {
-  "everything": 0,          // today's default — nothing excluded
-  "no-niche-crafting": 1,   // exactly the old boolean's `true`
-  "no-solar-lunar": 2,      // + Sun/Moon augments (the Solar/Lunar Gem family)
-  "printed-only": 3,        // + every remaining augment
-};
+// The array IS the rank table — index is rank, so the two cannot drift and there
+// is no lookup object to be poisoned. A plain `{}` rank map answered `true` for
+// inherited keys (`normalizeRung("constructor")` returned "constructor", and the
+// rank came back as a Function), so a hand-edited backup could persist a value
+// that passed the sanitizer and then compared as neither excluded nor valid.
+var CRAFTING_RUNGS = [
+  "everything",          // today's default — nothing excluded
+  "no-niche-crafting",   // exactly the old boolean's `true`
+  "no-solar-lunar",      // + Sun/Moon augments (the Solar/Lunar Gem family)
+  "printed-only",        // + every remaining augment
+];
 
 /** Normalize a raw rung value. An absent, unrecognized, or hand-edited value
  *  reads as `everything` rather than throwing — the same fail-open posture #245
  *  used for its absent boolean. This is the load-boundary sanitizer: the wizard
  *  state, a restored save, and a hand-edited backup all pass through it. */
 function normalizeRung(value) {
-  return (typeof value === "string" && CRAFTING_RUNG_RANK[value] != null) ? value : "everything";
+  return (typeof value === "string" && CRAFTING_RUNGS.indexOf(value) !== -1) ? value : "everything";
 }
-/** The query's rung. Convenience wrapper over normalizeRung for the model side,
- *  which reads whole query objects rather than loose values. */
+/** The query's rung, honouring the legacy `excludeCraftingSystems` boolean when
+ *  no rung is present. Every other reader of the ladder — the wizard's load path,
+ *  persistence, and the projection notice — applies this same precedence, and the
+ *  model seam drifting from them meant a query carrying only the old boolean
+ *  solved with the craftable option pools fully live. Stored rung wins; the
+ *  boolean speaks only when there is none. */
 function craftingRung(query) {
-  return normalizeRung(query && query.craftingRung);
+  const q = query || {};
+  if (q.craftingRung != null) return normalizeRung(q.craftingRung);
+  return q.excludeCraftingSystems ? "no-niche-crafting" : "everything";
 }
 function craftingRungRank(rung) {
-  return CRAFTING_RUNG_RANK[rung] != null ? CRAFTING_RUNG_RANK[rung] : 0;
+  const i = CRAFTING_RUNGS.indexOf(rung);
+  return i === -1 ? 0 : i;
 }
 /** The three questions the rest of the code asks. Rank comparisons live here and
  *  nowhere else, so the ladder's monotonicity is stated once. */
@@ -1130,7 +1141,7 @@ if (typeof module !== "undefined" && module.exports) {
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,
     isForgedRace, isDocent, isBothHandsWeapon, variantKey, setStackEquiv, equivType,
     UTILITY_SENTINEL,
-    CRAFTING_RUNGS, CRAFTING_RUNG_RANK, craftingRung, craftingRungRank, normalizeRung,
+    CRAFTING_RUNGS, craftingRung, craftingRungRank, normalizeRung,
     rungExcludesNicheCrafting, rungExcludesSolarLunar, rungExcludesAllAugments,
     setCrossAdd: _crossAddApi.setCrossAdd, crossAddSourcesFor: _crossAddApi.crossAddSourcesFor,
     widenWithCrossAddSources: _crossAddApi.widenWithCrossAddSources,

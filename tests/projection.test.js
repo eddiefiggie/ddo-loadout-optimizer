@@ -1109,3 +1109,28 @@ test("#346: owned Augment Sets are reported unavailable, not silently dropped", 
   rec.snapshot.augmentsPlaced = [{ variant_id: "Sapphire", color: "Blue" }];
   assert.ok(!/unavailable at this setting/.test(P.project(rec).character.craftingExcludedNotice));
 });
+
+// #346 (U5, R11) — the live call path. results.js forwards the SOLVED QUERY
+// straight in as `inputs`, where ownedSetAugments is a Set; the saved path hands
+// over a plain array because pickInputs converts it for JSON. Counting only
+// `.length` made this clause render in every export and never in the app. The
+// original tests missed it by building records in the saved shape only, so this
+// one asserts BOTH shapes through the same function.
+test("#346: the owned-set clause counts a Set and an array identically", () => {
+  const line = (owned) => P.craftingExcludedLine({
+    inputs: { ownedSetAugments: owned },
+    snapshot: { query: { craftingRung: "printed-only" }, augmentsPlaced: [] },
+  });
+  const asSet = line(new Set(["A", "B"]));
+  const asArray = line(["A", "B"]);
+  assert.match(asSet, /2 Augment Sets you marked as owned were unavailable/,
+    "the live Set shape renders the clause");
+  assert.strictEqual(asSet, asArray,
+    "the live and saved shapes produce the identical sentence — that is the whole contract");
+  assert.strictEqual(line(new Set()), line([]), "both empty shapes agree too");
+  assert.ok(!/Augment Set/.test(line(new Set())), "and neither invents a clause");
+  // A hand-edited backup must not kill the projection five surfaces read from.
+  for (const junk of [null, undefined, 0, "two", { A: 1 }]) {
+    assert.ok(!/Augment Set/.test(line(junk)), `${JSON.stringify(junk)} counts as none, does not throw`);
+  }
+});
