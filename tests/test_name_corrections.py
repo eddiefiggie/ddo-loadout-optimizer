@@ -45,7 +45,7 @@ def test_the_rename_applies_to_every_occurrence():
     ]
     cov = name_corrections.apply(records, [_corr()])
     assert [r["affixes"][0]["name"] for r in records] == ["Enhanced Ki", "Enhanced Ki"]
-    assert cov == {"names_corrected": 1, "affixes_renamed": 2}
+    assert cov == {"names_corrected": 1, "affixes_renamed": 2, "hit_names": ["Ki"]}
 
 
 def test_the_rename_preserves_the_value_and_the_absent_type():
@@ -118,11 +118,20 @@ def test_a_missing_shard_loads_empty():
 
 # ---------------------------------------------------------------------- guards
 
-def test_guard_fires_when_the_source_name_is_gone_upstream():
+def test_guard_fires_when_the_source_name_is_gone_from_EVERY_channel():
+    """#376 moved this guard, it did not remove it.
+
+    Once the family has more than one channel, a per-channel miss is expected —
+    an augment-pool name is absent from the item roster by design — so `apply`
+    is silent and `assert_all_reached` owns staleness after every channel has
+    run. The rot this guards against (a correction nobody applies) is unchanged.
+    """
     records = [_rec("Icewalkers", [{"name": "Reinforced Fists", "type": "Bool", "value": 1}])]
-    err = _raises(SystemExit, name_corrections.apply, records, [_corr()])
+    cov = name_corrections.apply(records, [_corr()])      # silent per-channel
+    assert cov["affixes_renamed"] == 0 and cov["hit_names"] == []
+    err = _raises(SystemExit, name_corrections.assert_all_reached, [_corr()], cov)
     assert "'Ki'" in str(err)
-    assert "no longer present" in str(err)
+    assert "reached no record in any channel" in str(err)
 
 
 def test_guard_fires_when_the_canonical_name_arrives_upstream_natively():
@@ -150,8 +159,11 @@ def test_a_malformed_correction_fails_rather_than_being_skipped():
 
 def test_the_shipping_shard_renames_ki_and_cites_the_wiki():
     entries = name_corrections.load(SHARD)
-    assert len(entries) == 1
-    e = entries[0]
+    # #376 added a second entry on the AUGMENT channel (False Life (%) ->
+    # Conditioning). Assert this one by name rather than by position, so a third
+    # entry does not silently re-point the assertion at someone else.
+    assert len(entries) == 2
+    e = next(x for x in entries if x["source_name"] == "Ki")
     assert e["source_name"] == "Ki"
     assert e["canonical_name"] == "Enhanced Ki"
     assert e["wiki_url"].endswith("/Enhanced_Ki")
@@ -170,7 +182,84 @@ def test_every_correction_has_a_matching_alias_so_the_upstream_name_still_resolv
 def test_the_shipping_shard_applies_cleanly_to_the_real_roster():
     records = vocabulary._load(vocabulary.ITEMS_PATH)
     cov = name_corrections.apply(records, name_corrections.load(SHARD))
-    assert cov["names_corrected"] == 1
+    # Both shard entries are loaded; only `Ki` has carriers in the ITEM roster —
+    # the other is augment-pool-only and correctly renames nothing here (#376).
+    assert cov["names_corrected"] == 2
+    assert cov["hit_names"] == ["Ki"]
     assert cov["affixes_renamed"] == 19
     assert not any(a.get("name") == "Ki"
                    for r in records for a in (r.get("affixes") or []))
+
+
+# ---------------------------------------------------------------------------
+# #376 — the augment channel. Both `Solar Gem of Enduring` stones live in the
+# augment pool, not the item roster, so a correction can legitimately reach one
+# channel and not the other. Per-channel misses became silent; `assert_all_reached`
+# is what keeps the family from rotting.
+# ---------------------------------------------------------------------------
+
+def test_376_a_per_channel_miss_is_silent_not_fatal():
+    """An augment-pool name is absent from the item roster BY DESIGN."""
+    corr = [{"source_name": "False Life (%)", "canonical_name": "Legendary Conditioning"}]
+    items_only = [{"affixes": [{"name": "Deadly", "type": "Enhancement", "value": 3}]}]
+    cov = name_corrections.apply(items_only, corr)   # must not raise
+    assert cov["affixes_renamed"] == 0
+    assert cov["hit_names"] == []
+
+
+def test_376_assert_all_reached_fails_when_no_channel_matched():
+    corr = [{"source_name": "Nowhere At All", "canonical_name": "X"}]
+    empty = {"hit_names": []}
+    try:
+        name_corrections.assert_all_reached(corr, empty, empty)
+    except SystemExit as exc:
+        assert "reached no record in any channel" in str(exc)
+        assert "Nowhere At All" in str(exc)
+    else:
+        raise AssertionError("a correction matching no channel must fail the build")
+
+
+def test_376_assert_all_reached_passes_when_one_channel_matched():
+    corr = [{"source_name": "False Life (%)", "canonical_name": "Legendary Conditioning"}]
+    name_corrections.assert_all_reached(
+        corr, {"hit_names": []}, {"hit_names": ["False Life (%)"]})   # must not raise
+
+
+def test_376_the_shipped_shard_folds_the_hp_percent_pair():
+    """The wiki ruling, pinned: Conditioning and False Life (%) are one mechanic
+    (both a Legendary-typed % bonus to Maximum Hit Points), so they must share a
+    bucket. Flat False Life is a different enchantment and must NOT be folded."""
+    shard = name_corrections.load(SHARD)
+    pairs = {(c["source_name"], c["canonical_name"]) for c in shard}
+    assert ("False Life (%)", "Legendary Conditioning") in pairs
+    assert not any(c["source_name"] == "False Life" for c in shard), \
+        "flat False Life is a different enchantment (no percentage variant) — never fold it"
+
+
+def test_376_the_built_dataset_lands_both_gems_in_the_conditioning_bucket():
+    """End-to-end: the correction is only worth anything if it survives the whole
+    pipeline. Both Solar Gem of Enduring stones must arrive as Conditioning at type
+    Legendary — the same bucket the 34 worn carriers land in — and the upstream
+    name must be gone entirely, since a survivor would be an invisible second
+    bucket that scores zero against a `Conditioning` priority.
+    """
+    path = os.path.join(ROOT, "web", "data", "items.json")
+    if not os.path.exists(path):
+        return
+    with open(path) as fh:
+        data = json.load(fh)
+    survivors = [
+        (it.get("variant_id"), a)
+        for it in data["items"]
+        for a in (it.get("affixes") or [])
+        if a.get("name") == "False Life (%)"
+    ]
+    assert survivors == [], survivors
+    gems = {
+        it["source_item"]: [(a["name"], a.get("type")) for a in (it.get("affixes") or [])]
+        for it in data["items"]
+        if str(it.get("source_item", "")).startswith("Solar Gem of Enduring")
+    }
+    assert len(gems) == 2, gems
+    for name, affixes in gems.items():
+        assert ("Conditioning", "Legendary") in affixes, (name, affixes)

@@ -127,7 +127,11 @@ def test_built_dataset_carries_no_prefixed_stat_and_credits_the_base():
                 based[a["name"]] += 1
     assert prefixed == [], "no built affix keeps the prefixed stat name"
     # All five base stats are represented at type Legendary with receipts
-    # (85 affixes at fold time: 14+22+3+34+12).
+    # (87 affixes at fold time: 14+22+3+36+12). Conditioning went 34 -> 36 in
+    # #376: the two Solar Gem of Enduring augments carry the same mechanic under
+    # the upstream name `False Life (%)`, and the name correction now renames
+    # them to `Legendary Conditioning` upstream of this fold, so they arrive
+    # here as folded Conditioning like the 34 worn carriers always did.
     assert set(based) == {"Accuracy", "Armor-Piercing", "Deadly",
                           "Conditioning", "Spell Penetration"}, based
-    assert sum(based.values()) == 85, based
+    assert sum(based.values()) == 87, based

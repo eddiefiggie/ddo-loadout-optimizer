@@ -76,6 +76,11 @@
    "reason": "#374 — upstream flipped its canonical vocabulary (their items.json now emits this name where ours emits the canonical). We keep the in-game enchantment name as canon: a player checking the app against an item tooltip must find the same words. Verified 2026-08-18: ZERO items in either snapshot carry both names, so this is a spelling of one mechanic and not a merge of two (the same-item co-occurrence rule). Doubles as picker discoverability — a player who types upstream's name still finds it."
   },
   {
+   "variant": "False Life (%)",
+   "canonical": "Legendary Conditioning",
+   "reason": "#376 — the picker half of the pipeline rename. name_corrections mints `Conditioning` on the augment pool (the Solar Gem of Enduring pair), and this alias keeps the gear-planner spelling resolving in the search box, per the documented pair: mint the real name in the pipeline, then alias the variant on top so both resolve."
+  },
+  {
    "variant": "Fire Spell Power",
    "canonical": "Combustion",
    "reason": "#374 — upstream flipped its canonical vocabulary (their items.json now emits this name where ours emits the canonical). We keep the in-game enchantment name as canon: a player checking the app against an item tooltip must find the same words. Verified 2026-08-18: ZERO items in either snapshot carry both names, so this is a spelling of one mechanic and not a merge of two (the same-item co-occurrence rule). Doubles as picker discoverability — a player who types upstream's name still finds it."

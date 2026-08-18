@@ -108,11 +108,14 @@ def apply(records: list, corrections: list) -> dict:
                 f"malformed correction {corr!r}: both source_name and "
                 "canonical_name are required")
             continue
+        # #376 — a per-channel miss is EXPECTED once this family has more than one
+        # channel: an augment-pool name is absent from the item roster by design,
+        # and vice versa. Staleness is "reached no channel at all", which
+        # `assert_all_reached` decides after every channel has run — the same
+        # split `type_corrections` already uses. Failing here would make the
+        # augment channel impossible to add.
         if source not in present:
-            problems.append(
-                f"{source!r} is no longer present upstream, so the rename to "
-                f"{canonical!r} is a silent no-op — re-verify against the wiki "
-                "and drop the entry if gear-planner fixed it")
+            continue
         if canonical in present:
             problems.append(
                 f"{canonical!r} is already a native gear-planner name, so "
@@ -126,10 +129,33 @@ def apply(records: list, corrections: list) -> dict:
 
     rename = {c["source_name"]: c["canonical_name"] for c in corrections}
     renamed = 0
+    hit_names = set()
     for a in affixes:
         target = rename.get(a.get("name"))
         if target is not None:
+            hit_names.add(a["name"])
             a["name"] = target
             renamed += 1
 
-    return {"names_corrected": len(rename), "affixes_renamed": renamed}
+    return {"names_corrected": len(rename), "affixes_renamed": renamed,
+            "hit_names": sorted(hit_names)}
+
+
+def assert_all_reached(corrections: list, *coverages) -> None:
+    """Fail the build when a correction reached no record in ANY channel.
+
+    #376 — the per-channel silent no-op is correct (an augment-pool name is
+    absent from the item roster by design), but an entry absent from every
+    channel means the source was renamed or dropped upstream, which is exactly
+    the quiet staleness this family exists to prevent. Mirrors
+    ``type_corrections.assert_all_reached``; call once, after every channel.
+    """
+    reached = set()
+    for cov in coverages:
+        reached.update((cov or {}).get("hit_names") or [])
+    missing = {c["source_name"] for c in corrections} - reached
+    if missing:
+        raise SystemExit(
+            "affix name correction(s) reached no record in any channel: "
+            + ", ".join(sorted(repr(m) for m in missing))
+            + " — renamed or dropped upstream; re-verify against the wiki")
