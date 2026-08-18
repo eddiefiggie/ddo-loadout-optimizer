@@ -1671,3 +1671,70 @@ test("#345 U1: all six exports carry the outbid disclosure", () => {
     assert.ok(/scored 0|outbid/i.test(out), `${name} carries the disclosure, not just the stat name`);
   }
 });
+
+// ---------------------------------------------------------------------------
+// #348 (U5, R14) — the container's misses and the priced top miss reach every
+// share surface. The standing rule is that a mechanic is never solve-visible but
+// share-invisible: a recipient who cannot re-solve would otherwise receive a
+// loadout whose container silently omits the effect the player most wanted.
+// ---------------------------------------------------------------------------
+
+function containerRec(price) {
+  const r = disclosureRec({ saturation: false, empty: false });
+  r.snapshot.utilityReport = { count: 1, effects: [{ name: "Blurry", item: "Some Trinket" }] };
+  r.snapshot.utilityOrdered = {
+    secured: ["Blurry"],
+    unsecured: [{ name: "Ghostly", reason: "outbid" }, { name: "Deathblock", reason: "unreachable" }],
+    price: price === undefined ? { name: "Ghostly", stat: "Deadly", give: 2, free: false } : price,
+  };
+  return r;
+}
+
+test("#348 U5: all six exports carry the container's misses and the priced top miss", () => {
+  const rec = containerRec();
+  const surfaces = [
+    ["markdown", toMarkdown(rec)],
+    ["bbcode", toBBCode(rec)],
+    ["csv", toCsv(rec)],
+    ["print html", toPrintHtml(rec)],
+    ["portable json", JSON.stringify(toPortableJSON(rec))],
+    ["gearset", toGearset(rec)],
+  ];
+  for (const [name, out] of surfaces) {
+    assert.ok(typeof out === "string" && out.length, `${name} produced output`);
+    assert.ok(out.includes("Ghostly"), `${name} names the unsecured effect`);
+    assert.ok(/at least 2 Deadly/.test(out) || name === "gearset",
+      `${name} carries the price, not just the name`);
+  }
+});
+
+test("#348 U5: the three price outcomes read as three different sentences", () => {
+  const line = (p) => Projection.utilityPriceLine(p);
+  const priced = line({ name: "Ghostly", stat: "Deadly", give: 2, free: false });
+  const free = line({ name: "Ghostly", stat: "Deadly", give: 0, free: true });
+  const blocked = line({ name: "Ghostly", stat: "Deadly", give: null, infeasible: true, blockedByHigherOrder: true });
+  const stuck = line({ name: "Ghostly", stat: "Deadly", give: null, infeasible: true, blockedByHigherOrder: false });
+
+  assert.ok(/at least 2 Deadly/.test(priced), "a real price states the give and that it is a floor");
+  // The zero case is the most common on the parity set (7 of 17) and the easiest to
+  // get wrong: "costs 0 Deadly" reads as free, when the effect is unsecured
+  // precisely because something blocks it. It must not render as a number.
+  assert.ok(!/0 Deadly/.test(free), "a zero give never renders as a numeric price");
+  assert.ok(/costs nothing on Deadly/.test(free) && /lower-ranked/.test(free),
+    `the zero case locates the block instead: ${free}`);
+  assert.ok(/an effect you placed above it/.test(blocked), "ordering-blocked says so");
+  assert.ok(/nothing you can equip/.test(stuck), "structurally blocked says so");
+  assert.strictEqual(line(null), null, "no price, no sentence");
+});
+
+test("#348 U5: a snapshot predating the container asserts nothing about it", () => {
+  const r = disclosureRec({ saturation: false, empty: false });
+  r.snapshot.utilityReport = { count: 1, effects: [{ name: "Blurry", item: "Some Trinket" }] };
+  delete r.snapshot.utilityOrdered;      // saved before #348
+  const view = Projection.project(r);
+  assert.strictEqual(view.utility.ordered, null, "no container is invented");
+  assert.deepStrictEqual(view.utility.unsecuredLines, [], "and nothing is claimed unsecured");
+  assert.strictEqual(view.utility.priceLine, null);
+  const md = toMarkdown(r);
+  assert.ok(!/Not secured/.test(md), "the export stays silent rather than implying a full container");
+});

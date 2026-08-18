@@ -59,6 +59,10 @@
     // with the tier ranked could only render the report-absent state, never
     // its actual effects, because KTD6 forbids re-solving on load.
     "utilityReport", "utilityCount",
+    // #348 (U3/U5) — the ordered secured/unsecured split and the priced top miss.
+    // Same restore-without-re-solving contract as utilityReport: a character saved
+    // before #348 simply lacks the key, and every consumer treats it as optional.
+    "utilityOrdered",
   ];
 
   function stripResult(result) {

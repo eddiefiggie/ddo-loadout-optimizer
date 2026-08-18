@@ -461,6 +461,92 @@ async function withCrossAdd(map, fn) {
       "the declared order, not alphabetical order, decides the winner");
   });
 
+  await test("#348 U5/R14/AE3: a reachable miss is priced; an unreachable one is not probed", async () => {
+    // Ghost Touch loses the Trinket to the higher-ordered Blurry carrier, so it is
+    // outbid and priceable. "Nonexistent Effect" has no carrier at all, so there is
+    // no price to find and the probe must not spend a solve looking for one.
+    const model = {
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Blurry", "Ghost Touch", "Nonexistent Effect"]),
+      utilityOrder: ["Blurry", "Ghost Touch", "Nonexistent Effect"],
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+        slot("Trinket", [
+          item("tBlur", "Trinket", [["A", "Enhancement", 4], ["Blurry", "Bool", 1]]),
+          item("tGT", "Trinket", [["Ghost Touch", "Bool", 1]]),
+        ]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.deepStrictEqual(r.utilityOrdered.secured, ["Blurry"]);
+    const price = r.utilityOrdered.price;
+    assert.ok(price, "a price was computed");
+    assert.strictEqual(price.name, "Ghost Touch",
+      "the highest-ordered OUTBID effect is priced — not the unreachable one below it");
+    assert.strictEqual(price.stat, "A", "priced against priority 1");
+  });
+
+  await test("#348 U5/KTD5: exactly one probe, however many effects went unsecured", async () => {
+    // The budget is one MILP. Counted directly rather than inferred from wall time:
+    // a probe-per-miss would scale with the container and is the thing KTD5 forbids.
+    const mk = (names, order) => ({
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(names), utilityOrder: order,
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+        slot("Trinket", [
+          item("tHi", "Trinket", [["A", "Enhancement", 4], [order[0], "Bool", 1]]),
+          ...order.slice(1).map((n, i) => item(`t${i}`, "Trinket", [[n, "Bool", 1]])),
+        ]),
+      ],
+    });
+    const counting = (h) => { let n = 0; return { proxy: { solve: (...a) => { n++; return h.solve(...a); } }, count: () => n }; };
+
+    const oneMiss = ["Blurry", "Ghost Touch"];
+    const manyMiss = ["Blurry", "Ghost Touch", "Deathblock", "True Seeing", "Feather Falling"];
+    const a = counting(highs);
+    const ra = await S.solveLexicographic(mk(oneMiss, oneMiss), a.proxy);
+    const b = counting(highs);
+    const rb = await S.solveLexicographic(mk(manyMiss, manyMiss), b.proxy);
+
+    assert.strictEqual(ra.utilityOrdered.unsecured.length, 1, "one miss");
+    assert.ok(rb.utilityOrdered.unsecured.length >= 3, "several misses");
+    assert.strictEqual(b.count(), a.count(),
+      `solve count must not grow with the number of misses (${a.count()} vs ${b.count()})`);
+  });
+
+  await test("#348 U5: a container that secured everything runs no probe and prices nothing", async () => {
+    const counting = (h) => { let n = 0; return { proxy: { solve: (...a) => { n++; return h.solve(...a); } }, count: () => n }; };
+    const mk = (order) => ({
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(order), utilityOrder: order,
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+        slot("Trinket", [item("tBoth", "Trinket", [["Blurry", "Bool", 1], ["Ghost Touch", "Bool", 1]])]),
+      ],
+    });
+    const full = counting(highs);
+    const r = await S.solveLexicographic(mk(["Blurry", "Ghost Touch"]), full.proxy);
+    assert.deepStrictEqual(r.utilityOrdered.unsecured, [], "nothing was missed");
+    assert.strictEqual(r.utilityOrdered.price, null, "so nothing is priced");
+
+    // ...and the probe genuinely did not run: same model with one effect made
+    // unreachable-but-outbid costs exactly one more solve.
+    const miss = counting(highs);
+    await S.solveLexicographic({
+      ...mk(["Blurry", "Ghost Touch"]),
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+        slot("Trinket", [
+          item("tB", "Trinket", [["A", "Enhancement", 4], ["Blurry", "Bool", 1]]),
+          item("tG", "Trinket", [["Ghost Touch", "Bool", 1]]),
+        ]),
+      ],
+    }, miss.proxy);
+    assert.strictEqual(miss.count(), full.count() + 1,
+      `the probe is exactly one solve (${full.count()} with no miss, ${miss.count()} with one)`);
+  });
+
   await test("#91 U3/KTD10: a tier-2 name (carried, but outside the counting set) mints no indicator", async () => {
     // Keen is a real Bool presence effect excluded from the v1 tier-1 curation:
     // its carrier is equipped, but no u_e exists for it and it never counts.

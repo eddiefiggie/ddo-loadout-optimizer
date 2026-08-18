@@ -1256,6 +1256,24 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
 //   2. count-zero — the plain R9 sentence, never an empty receipts list;
 //   3. receipts-present — the count plus one "effect — from item" line each,
 //      credited by the solver's stated first-carrier rule.
+/** #348 (U5, R14) — the container's misses and the priced top miss, as one block
+ *  used by BOTH the zero-count and populated states. A player whose container
+ *  secured nothing is exactly the one who most needs to know why, so rendering
+ *  this only in the populated branch would hide it in the case that matters most.
+ *  Sentences come from projection.js — the same strings the exports print. */
+function utilityMissBlock(build) {
+  const ordered = build && build.utilityOrdered;
+  if (!ordered) return "";   // pre-#348 snapshot: say nothing rather than assert an empty container
+  const lines = Proj.utilityUnsecuredLines ? Proj.utilityUnsecuredLines(ordered) : [];
+  const price = Proj.utilityPriceLine ? Proj.utilityPriceLine(ordered.price) : null;
+  if (!lines.length && !price) return "";
+  const list = lines.length
+    ? `<ul class="utility-unsecured">${lines.map((l) => `<li>${esc(l)}</li>`).join("")}</ul>`
+    : "";
+  const priceNote = price ? `<p class="utility-note utility-price">${esc(price)}</p>` : "";
+  return `<details class="utility-misses"><summary>Not secured (${lines.length})</summary>${list}${priceNote}</details>`;
+}
+
 function utilityCard(build, rankIdx) {
   const head = `<div class="stat-head"><span class="stat-rank">${rankIdx + 1}</span>`
     + `<span class="stat-name">${esc(_UTILITY_SENTINEL)}</span></div>`;
@@ -1275,6 +1293,7 @@ function utilityCard(build, rankIdx) {
       <div class="stat-value" data-final="0">0</div>
       <p class="utility-note">${esc(Proj.utilityLine(0))}</p>${exc0.line ? `
       <p class="utility-note muted">${esc(exc0.line)}</p>` : ""}
+      ${utilityMissBlock(build)}
     </div>`;
   }
   const list = effects.map((e) =>
@@ -1288,6 +1307,7 @@ function utilityCard(build, rankIdx) {
   return `<div class="stat-card utility-card">${head}
     <div class="stat-value" data-final="${esc(effects.length)}">${esc(effects.length)}</div>
     <ul class="attrib utility-receipts">${list}</ul>${excNote}
+    ${utilityMissBlock(build)}
   </div>`;
 }
 

@@ -290,6 +290,14 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       // #332 — the ranked-but-uncounted disclosure travels with every export, not
       // just the app card: a shared loadout must read the same as the one on screen.
       if (view.utility.excludedLine) out += `\n_${mdEsc(view.utility.excludedLine)}_\n`;
+      // #348 (U5/R14) — what the container could not secure, and the price of the
+      // top miss. Same single-source contract as every other line here: the
+      // sentences come from projection.js, never re-worded per format.
+      if ((view.utility.unsecuredLines || []).length) {
+        out += `\n**Not secured**\n\n`;
+        for (const l of view.utility.unsecuredLines) out += `- ${mdEsc(l)}\n`;
+      }
+      if (view.utility.priceLine) out += `\n_${mdEsc(view.utility.priceLine)}_\n`;
     }
     return out;
   }
@@ -366,6 +374,12 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
         out += `[/list]\n`;
       }
       if (view.utility.excludedLine) out += `[i]${bbEsc(view.utility.excludedLine)}[/i]\n`;   // #332
+      if ((view.utility.unsecuredLines || []).length) {                                        // #348
+        out += `[b]Not secured[/b]\n[list]\n`;
+        for (const l of view.utility.unsecuredLines) out += `[*]${bbEsc(l)}\n`;
+        out += `[/list]\n`;
+      }
+      if (view.utility.priceLine) out += `[i]${bbEsc(view.utility.priceLine)}[/i]\n`;          // #348
     }
     return out;
   }
@@ -445,6 +459,8 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
         for (const e of view.utility.effects) rows.push(csvRow([e.name, e.item == null ? "" : e.item]));
       }
       if (view.utility.excludedLine) rows.push(csvRow(["Utility exclusion", view.utility.excludedLine]));   // #332
+      for (const l of (view.utility.unsecuredLines || [])) rows.push(csvRow(["Utility not secured", l]));   // #348
+      if (view.utility.priceLine) rows.push(csvRow(["Utility price", view.utility.priceLine]));             // #348
     }
     return rows.join("\n");
   }
@@ -520,6 +536,14 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
         for (const e of view.utility.effects) h += `<li>${utilityEffectStr(e, htmlEsc)}</li>`;
         h += `</ul>`;
       }
+      if ((view.utility.unsecuredLines || []).length) {   // #348
+        h += `<p class="declared-note"><strong>Not secured:</strong></p><ul>`;
+        for (const l of view.utility.unsecuredLines) h += `<li>${htmlEsc(l)}</li>`;
+        h += `</ul>`;
+      }
+      if (view.utility.priceLine) {                       // #348
+        h += `<p class="declared-note"><em>${htmlEsc(view.utility.priceLine)}</em></p>`;
+      }
       if (view.utility.excludedLine) {   // #332
         h += `<p class="declared-note"><em>${htmlEsc(view.utility.excludedLine)}</em></p>`;
       }
@@ -535,8 +559,10 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
   // future import reader can tell a portable loadout from a plain backup file.
   // #91 (U6/R10) — the Utility tier rides as `resolved.utility` ({count, effects,
   // line}, plus #332's {excluded, excludedLine}: the ranked procs the count leaves
-  // out and the one sentence naming them — inherited from Proj.project, so the
-  // envelope needs no per-field wiring) and verbatim in `core`'s snapshot
+  // out and the one sentence naming them, plus #348's {ordered, unsecuredLines,
+  // priceLine}: the container's order, what it could not secure and why, and the
+  // priced top miss — all inherited from Proj.project, so the envelope needs no
+  // per-field wiring) and verbatim in `core`'s snapshot
   // (`utilityReport`); a report-less snapshot carries neither, never a zero.
   // WRITE-ONCE: `core` aliases the live record and `resolved` shares its affix arrays
   // by reference. The only caller stringifies immediately (safe). The future
@@ -734,6 +760,8 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       // this one is a .gearset download (wired at web/wizard.js). "Never solve-visible
       // but share-invisible" counts it.
       if (view.utility.excludedLine) say(`  ${view.utility.excludedLine}`);
+      for (const l of (view.utility.unsecuredLines || [])) say(`  not secured: ${l}`);   // #348
+      if (view.utility.priceLine) say(`  ${view.utility.priceLine}`);                    // #348
     }
     if (view.sets.length) {
       rl.push("#");

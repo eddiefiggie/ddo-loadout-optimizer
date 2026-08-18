@@ -2083,6 +2083,61 @@ async function solveLexicographic(model, highs) {
     locks.push({ stat, value: val });
   }
 
+  // #348 (U5, R14/KTD5) — PRICE THE TOP MISS. Exactly one probe, for the
+  // highest-ordered effect the container could not secure. Cost matters here: this
+  // runs on every solve, so the budget is one MILP and no more.
+  //
+  // Only an `outbid` effect is priced. `unreachable` means no eligible variant
+  // carries it under this query at all — there is no price to find, and probing it
+  // would spend a full solve to learn nothing.
+  //
+  // The measurement (user-directed, 2026-08-18): the minimum give on PRIORITY 1.
+  // Maximizing priority 1 subject to the effect being secured IS that minimum — no
+  // slack variable needed, and one solve rather than the ranked chain. Lower
+  // priorities are left free, so the number is a lower bound on the true cost and
+  // the wording downstream must not present it as the whole bill.
+  //
+  // Effects ordered ABOVE the priced one keep their locks; everything below is
+  // freed. Freeing everything would price "secure X having abandoned the rest of
+  // the container", which is not the question the player is asking; locking
+  // everything would price a trade the ordering says they should not want.
+  let utilityPrice = null;
+  const _priceRanked = program.targetList.filter((t) => t !== _UTILITY_SENTINEL);
+  if (program.utilityEnabled && _priceRanked.length && utilityUnsecured.length) {
+    const target = utilityUnsecured.find((u) => u.reason === "outbid");
+    const ov = program.utilityOrderVars || [];
+    const idx = target ? ov.findIndex((o) => o.name === target.name) : -1;
+    if (target && idx >= 0) {
+      const keepAbove = ov.slice(0, idx)
+        .filter((o) => utilitySecured.includes(o.name))
+        .map((o) => `${o.u} >= 1`);
+      const stat = _priceRanked[0];
+      const res = highs.solve(encodeStage(program, {
+        objectiveStat: stat, sense: "max", locks: [],
+        extra: keepAbove.concat([`${ov[idx].u} >= 1`]),
+      }));
+      if (res.Status === "Optimal") {
+        const pp = (n) => (res.Columns[n] ? res.Columns[n].Primal : 0);
+        const give = Math.max(0, (perTarget[stat] ?? 0) - effectiveOf(program, pp, stat));
+        // Measured across the 17 sentinel-ranking parity fixtures: 6 priced, 7 zero,
+        // 4 infeasible. A zero is NOT "free" — the container solves last, so an
+        // unsecured effect is always blocked by something; a zero says only that the
+        // block is not on priority 1. Rendering it as "costs 0 Strength" would tell a
+        // player the effect is free and leave them wondering why it is not equipped,
+        // so the three cases are distinguished HERE and worded separately downstream.
+        utilityPrice = { name: target.name, stat, give, free: give === 0 };
+      } else {
+        // A carrier exists (an indicator was minted, so this is `outbid`, not
+        // `unreachable`) but no solution secures it. With no ranked locks applied,
+        // the only remaining constraints are structural (slots, conflicts) and the
+        // locks on higher-ordered container effects — so when nothing is locked
+        // above, the block is purely structural. Knowing which costs no extra solve.
+        utilityPrice = { name: target.name, stat, give: null, infeasible: true,
+          blockedByHigherOrder: keepAbove.length > 0 };
+      }
+    }
+  }
+
   const tb = highs.solve(encodeStage(program, { sense: "min", tieBreak: true, locks, extra: utilityExtra }));
   // #91 (KTD1) — the tie-break fallback's objectiveStat must never be the
   // sentinel: re-max the LAST non-sentinel target, or — when the sentinel is
@@ -2111,7 +2166,9 @@ async function solveLexicographic(model, highs) {
           // #348 (U3/R14) — the ordered secured/unsecured split. Plain JSON so
           // persist.js can keep it under RESULT_KEEP and a restored character
           // renders it without re-solving.
-          utilityOrdered: { secured: utilitySecured.slice(), unsecured: utilityUnsecured.slice() },
+          utilityOrdered: { secured: utilitySecured.slice(), unsecured: utilityUnsecured.slice(),
+            // #348 (U5) — the priced top miss, or null when nothing was outbid.
+            price: utilityPrice },
           // #91 (U5, KTD6) — the render/persist report: count + per-effect
           // credited carriers, guarded and deterministic (built in readSolution).
           utilityReport: sol.utilityReport || { count: 0, effects: [] } } : {}),
