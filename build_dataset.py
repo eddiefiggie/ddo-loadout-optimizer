@@ -754,6 +754,19 @@ def build() -> dict:
     # one of the five names today (folded: 0), but the unknown-instance guard
     # must watch this pool too, or a future 'Legendary <stat>' augment would
     # ship split from its worn siblings without a sound.
+    # #376 — the augment channel of the name corrections loaded above. The
+    # `False Life (%)` -> `Legendary Conditioning` fold lives ONLY here: both Solar
+    # Gem of Enduring stones are augment-pool records, absent from the item roster,
+    # so the item-channel apply is a correct no-op for it (and the `Ki` entry is the
+    # mirror case). `assert_all_reached` below is what keeps that no-op honest.
+    #
+    # Runs BEFORE legendary_fold deliberately: renaming to the RAW `Legendary
+    # Conditioning` puts the gem into the same fold chain the 34 worn carriers use,
+    # so both arrive as `Conditioning` + type Legendary from one owner rather than
+    # two. It also keeps the alias pointing at a name the frozen raw registry knows.
+    _name_coverage_augments = name_corrections_mod.apply(aug_pool, _name_corrections)
+    name_corrections_mod.assert_all_reached(
+        _name_corrections, _name_coverage, _name_coverage_augments)
     legendary_fold_mod.apply(aug_pool)
     # U3 (#134) — the same classifier on the augment pool, against its own shard.
     # Augments join by NAME: they have no item page and share one `Augment Slot`
