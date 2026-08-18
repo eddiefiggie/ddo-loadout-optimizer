@@ -547,6 +547,62 @@ async function withCrossAdd(map, fn) {
       `the probe is exactly one solve (${full.count()} with no miss, ${miss.count()} with one)`);
   });
 
+  await test("#348 U5: a zero give requires something BELOW priority 1 to be the block", async () => {
+    // The invariant the priced disclosure's wording rests on. `give === 0` renders as
+    // "costs nothing on <stat> — it is competing with your lower-ranked priorities",
+    // which is only true if a lower-ranked priority exists and is the binding
+    // constraint. The claim implies a falsifiable prediction: with exactly ONE ranked
+    // stat there is nothing below priority 1, so a zero give must be unreachable.
+    //
+    // Both single-ranked shapes are exercised, because the second is the one that
+    // would have made the copy a lie: an effect blocked only by a higher-ordered
+    // container effect must route to the INFEASIBLE sentence, not to a zero.
+    const mk = (targets, order, worn) => ({
+      targets, mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(order), utilityOrder: order, worn,
+    });
+
+    // (a) one ranked stat, and securing the effect costs it -> a real price.
+    const costsP1 = await S.solveLexicographic(mk(["A", SENT], ["Y", "X"], [
+      slot("Trinket", [
+        item("hiA", "Trinket", [["A", "Enhancement", 10]]),
+        item("xA", "Trinket", [["A", "Enhancement", 6], ["X", "Bool", 1]]),
+        item("yA", "Trinket", [["A", "Enhancement", 8], ["Y", "Bool", 1]]),
+      ]),
+    ]), highs);
+    assert.ok(costsP1.utilityOrdered.price.give > 0,
+      "with nothing below priority 1, an outbid effect must cost priority 1 something");
+    assert.strictEqual(costsP1.utilityOrdered.price.free, false);
+
+    // (b) one ranked stat, and the block is a HIGHER-ORDERED container effect, not a
+    // stat. This must not surface as a zero — there is no lower-ranked priority for
+    // it to be "competing with".
+    const blockedAbove = await S.solveLexicographic(mk(["A", SENT], ["Y", "X"], [
+      slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+      slot("Trinket", [
+        item("tX", "Trinket", [["X", "Bool", 1]]),
+        item("tY", "Trinket", [["Y", "Bool", 1]]),
+      ]),
+    ]), highs);
+    const bp = blockedAbove.utilityOrdered.price;
+    assert.strictEqual(bp.infeasible, true, "it routes to the infeasible sentence");
+    assert.strictEqual(bp.blockedByHigherOrder, true, "and names the ordering as the block");
+    assert.notStrictEqual(bp.free, true, "and never renders as 'costs nothing'");
+
+    // (c) control: two ranked stats with the block on priority 2 -> the zero case,
+    // where the shipped wording is accurate.
+    const onP2 = await S.solveLexicographic(mk(["A", "B", SENT], ["X"], [
+      slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+      slot("Trinket", [
+        item("hiB", "Trinket", [["B", "Enhancement", 10]]),
+        item("xB", "Trinket", [["B", "Enhancement", 4], ["X", "Bool", 1]]),
+      ]),
+    ]), highs);
+    assert.strictEqual(onP2.utilityOrdered.price.give, 0);
+    assert.strictEqual(onP2.utilityOrdered.price.free, true,
+      "a zero appears exactly where a lower-ranked priority is the block");
+  });
+
   await test("#91 U3/KTD10: a tier-2 name (carried, but outside the counting set) mints no indicator", async () => {
     // Keen is a real Bool presence effect excluded from the v1 tier-1 curation:
     // its carrier is equipped, but no u_e exists for it and it never counts.

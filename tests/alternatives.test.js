@@ -400,6 +400,35 @@ const tradeModel = () => ({
       "no give applies to the top-ranked tier — the exact lock suppresses the shed");
   });
 
+  await test("#348 U4: the cost accounting reads the GUARDED source, not the stage count", async () => {
+    // Restores the guard `review fix 2` provided for the retired more-utility family.
+    // The family is gone, but the confusable pair it protected against is NOT: a solve
+    // result still carries BOTH `utilityCount` (the stage's lock-time value) and the
+    // guarded, z-backed `utilityReport` / `utilityOrdered` the player actually sees.
+    // Those two can differ, and alternatives.js still consumes utility state to state
+    // what a trade gives up. Reaching for the stage count would measure a player-facing
+    // claim against a number no surface displays.
+    //
+    // The technique is the original's: force the two apart, then assert the consumer
+    // followed the guarded one.
+    const mk = () => shedModel(["Constitution", SENT], 2, ["Water Breathing", "Ghost Touch", "Feather Falling"]);
+    const opt = await S.solveLexicographic(mk(), highs);
+    const alts = S.generateAlternatives(opt, mk(), highs);
+    const setAlt = alts.find((a) => a.gainAxis === "set" && a.meta.set === "Alpha");
+    assert.ok(setAlt, "the tail-shed candidate exists to analyze");
+
+    const truth = A.analyzeAlternative(opt, setAlt, { targets: ["Constitution", SENT] });
+    assert.deepStrictEqual(truth.shedEffects, ["Ghost Touch", "Feather Falling"]);
+
+    // Now corrupt ONLY the stage count, leaving every guarded field intact.
+    const corrupted = { ...opt, utilityCount: 0 };
+    const after = A.analyzeAlternative(corrupted, setAlt, { targets: ["Constitution", SENT] });
+    assert.deepStrictEqual(after.shedEffects, truth.shedEffects,
+      "the named losses are unchanged — the stage count is not what the cost line reads");
+    assert.strictEqual(after.costText, truth.costText);
+    assert.strictEqual(after.utilDelta, truth.utilDelta);
+  });
+
   await test("#348 U4/R16: a pure utility shed can never claim 'no priority cost'", () => {
     // The fixture carries effect NAMES, not just a count. Production's readSolution
     // always writes both (count === effects.length), and #348 reads the names to say
