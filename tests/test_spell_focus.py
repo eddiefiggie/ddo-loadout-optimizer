@@ -50,10 +50,27 @@ def test_school_specific_names_are_not_universal():
         assert not spell_focus.is_universal(school), school
 
 
-def test_spell_lore_is_not_universal():
-    # docs/wiki-evidence/spell-lore.md: universal and element lore genuinely
-    # STACK. Treating either as an umbrella would collapse two real sources.
-    for name in ("Spell Lore", "Universal Spell Lore", "Void Lore", "Fire Lore"):
+def test_base_spell_lore_is_universal_but_universal_spell_lore_is_not():
+    # #366 (2026-08-18) — the two lore universals sit in DIFFERENT families, and
+    # which one goes where is the whole ruling.
+    #
+    # Base `Spell Lore` IS an umbrella: Spell_Lore types it as "an equipment
+    # bonus to your chance to score a spell critical" and lists it as a peer of
+    # the element lores separated only by coverage ("Spell Lore - all spell
+    # types"). No page states a stacking rule for it, so DDO's default applies
+    # and a same-type element source competes with it — which is what expansion
+    # reproduces. This inverts the original #290 reading; see the module
+    # docstring.
+    assert spell_focus.is_universal("Spell Lore")
+
+    # `Universal Spell Lore` is the documented EXCEPTION — "a separate and
+    # stacking source of Spell Critical chance modifiers" — so it must stay out
+    # of this family and cross-add instead. Expanding it would collapse a source
+    # the wiki says outright does stack.
+    assert not spell_focus.is_universal("Universal Spell Lore")
+
+    # Element lores are targets, never sources.
+    for name in ("Void Lore", "Fire Lore"):
         assert not spell_focus.is_universal(name), name
 
 
@@ -189,7 +206,13 @@ def test_all_universal_names_map_to_their_family_targets():
                          "wisdom skills",
                          # set-channel wordings of the same families (#289
                          # catalog-wording precedent)
-                         "all saving throws", "saving throws", "tactical dcs"}
+                         "all saving throws", "saving throws", "tactical dcs",
+                         # #366 — base Spell Lore joins as Potency's analogue.
+                         "spell lore"}
+    assert away["spell lore"] == spell_focus.LORE_TARGETS
+    # ...and its stacking twin stays OUT, or the expansion would collapse a
+    # source the wiki explicitly calls separate and stacking.
+    assert "universal spell lore" not in away
     for name in ("spell focus mastery", "spell focus", "spell dcs"):
         assert away[name] == spell_focus.SCHOOLS, name
     assert away["potency"] == spell_focus.SPELLPOWERS

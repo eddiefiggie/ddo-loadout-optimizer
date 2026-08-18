@@ -1927,7 +1927,8 @@ test("U1: setCrossAdd installs the map; unmapped stats and uninstall stay []", (
 
 test("U1: the built catalog's cross_add reaches model.js through normalizeDataset", () => {
   assert.deepStrictEqual(M.crossAddSourcesFor("Combustion"), ["Universal Spell Power"]);
-  assert.deepStrictEqual(M.crossAddSourcesFor("Fire Lore"), ["Spell Lore", "Universal Spell Lore"]);
+  // #366 — see tests/dataset.test.js: `Spell Lore` expands now, it does not add.
+  assert.deepStrictEqual(M.crossAddSourcesFor("Fire Lore"), ["Universal Spell Lore"]);
 });
 
 // U2 (#290/#291) — dominance widening. buildModel unions each tracked stat's

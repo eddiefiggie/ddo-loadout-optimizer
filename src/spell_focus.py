@@ -51,10 +51,14 @@ out:
     Casting a spell from another school clears all stacks." A conditional,
     ramping, single-school buff — expanding it would credit +3 Sacred to all
     seven schools permanently. See docs/wiki-evidence/spell-focus-universal.md.
-  * Spell **lore** of any kind. `docs/wiki-evidence/spell-lore.md` ruled that
-    universal and element-specific lore genuinely STACK — different stats, not
-    an umbrella. Expanding lore would collapse two stacking sources, which is a
-    regression, not an extension of this module.
+  * `Universal Spell Lore` — genuinely stacks. Its own page calls it "a separate
+    and stacking source of Spell Critical chance modifiers", which is exactly the
+    explicit exception that keeps a name OUT of this table. It cross-adds instead.
+
+    Base `Spell Lore` is a different case and IS in this table (below). The
+    original #290 ruling excluded "spell lore of any kind" by reading the
+    Universal-Spell-Lore sentence as licensing lore-name stacking generally; it
+    does not. Corrected 2026-08-18 — see the `spell lore` entry.
 
 This is NOT folded into `src/umbrella.py`. That module's own docstring says its
 set "is deliberately NOT extended" for a mechanism with a different expansion
@@ -168,11 +172,34 @@ SKILLS_WIS = ["Heal", "Listen", "Spot"]
 # to all of your other Spell Powers"), so a same-type expansion would wrongly
 # put it in max-competition with element sources. Full quotes:
 # docs/wiki-evidence/spellpower-universal.md.
+# #366 — the `Spell_Lore` page's "Types of spell lore" roster, verbatim, minus
+# the universal itself. Shared with src/cross_add.py's LORE_ROSTER (which keeps
+# using it for `Universal Spell Lore`); defined here because this module is the
+# expansion family's source of truth and the overlap guard reads both.
+LORE_TARGETS = [
+    "Acid Lore", "Fire Lore", "Ice Lore", "Lightning Lore", "Healing Lore",
+    "Kinetic Lore", "Radiance Lore", "Repair Lore", "Sonic Lore", "Void Lore",
+]
+
 _UNIVERSAL = {
     "spell focus mastery": SCHOOLS,
     "spell focus": SCHOOLS,
     "spell dcs": SCHOOLS,
     "potency": SPELLPOWERS,
+    # #366 (2026-08-18) — base Spell Lore is Potency's exact analogue, and was
+    # the one member of its family filed in the wrong place. `Spell_Lore` types
+    # it as "an equipment bonus to your chance to score a spell critical" and
+    # lists it as a PEER of the element lores, separated only by coverage:
+    # "Void Lore - negative energy and poison spells" / "Spell Lore - all spell
+    # types". The page states no stacking rule at all, and neither does
+    # `Spell_critical` — so DDO's default applies and a same-type element source
+    # competes with it rather than summing.
+    #
+    # Contrast `Universal Spell Lore`, which the wiki explicitly calls "a
+    # separate and stacking source" — that is the documented exception, and its
+    # absence here is the whole point. Reported as an over-stack by a player
+    # (Void Lore reaching 55 where 50 was correct); expanding restores the max.
+    "spell lore": LORE_TARGETS,
     # #211 — found by the umbrella detector's first sweep, each with the
     # rendered-tooltip quote beside its component list above. All three are
     # same-bonus-kind grants (a Resistance bonus to saves, an Equipment bonus to

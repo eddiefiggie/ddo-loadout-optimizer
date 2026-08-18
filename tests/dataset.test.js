@@ -1537,7 +1537,12 @@ test("U1: the built catalog carries both cross-add families", () => {
                     "Magnetism", "Nullification", "Radiance", "Reconstruction", "Resonance"]) {
     assert.deepStrictEqual(ca[sp], ["Universal Spell Power"], sp);
   }
-  assert.deepStrictEqual(ca["Fire Lore"], ["Spell Lore", "Universal Spell Lore"]);
+  // #366 — base `Spell Lore` left this family: it is a same-type umbrella and
+  // now EXPANDS (highest-of-type), matching Potency in the spellpower channel.
+  // Only the wiki-declared "separate and stacking" source cross-adds.
+  assert.deepStrictEqual(ca["Fire Lore"], ["Universal Spell Lore"]);
+  assert.ok(!(ca["Fire Lore"] || []).includes("Spell Lore"),
+    "a same-type umbrella must never also cross-add — that would sum a source it competes with");
 });
 
 // #316 — the load normalizer must not strip the color matrix the build stamps

@@ -63,7 +63,10 @@ def test_built_metadata_lore_cross_add():
     # below), and this equality is the deliberate signal to re-check the roster.
     assert sorted(emitted_lore) == sorted(cross_add_mod.LORE_ROSTER), emitted_lore
     for lore in emitted_lore:
-        assert ca[lore] == ["Spell Lore", "Universal Spell Lore"], (lore, ca[lore])
+        # #366 — `Spell Lore` was REMOVED from this family: it is a same-type
+        # umbrella and now expands. Only the wiki-declared "separate and
+        # stacking" source cross-adds.
+        assert ca[lore] == ["Universal Spell Lore"], (lore, ca[lore])
     # nothing beyond the two families
     extras = [t for t in ca
               if t not in set(spell_focus_mod.SPELLPOWERS)
@@ -94,7 +97,7 @@ def test_lore_target_absent_from_vocabulary_is_omitted_not_emitted():
     known = [n for n in _FULL_KNOWN if n != "Healing Lore"]
     m = cross_add_mod.cross_add_map(known)
     assert "Healing Lore" not in m
-    assert m.get("Fire Lore") == ["Spell Lore", "Universal Spell Lore"]
+    assert m.get("Fire Lore") == ["Universal Spell Lore"]
     assert m.get("Combustion") == ["Universal Spell Power"]
 
 

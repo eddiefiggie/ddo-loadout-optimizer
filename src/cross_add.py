@@ -46,8 +46,14 @@ quotes in ``docs/wiki-evidence/spell-lore.md`` §#290). ``Universal_Spell_Lore``
     bonus will stack with another item with a Spell Lore or Acid Lore Equipment
     bonus,
 
-— same-bonus-type stacking across lore names, stated outright, grouping
-``Spell Lore`` and an element lore as peer stackable sources. The ten targets
+**Corrected 2026-08-18 (#366).** That sentence names ``Spell Lore`` and
+``Acid Lore`` as two separate things Universal Spell Lore stacks *with* — it does
+NOT say those two stack with each other, which is how it was originally read. The
+``Spell_Lore`` page lists base Spell Lore as a peer of the element lores
+("Spell Lore - all spell types") and states no stacking rule anywhere; neither
+does ``Spell_critical``. So base ``Spell Lore`` is a same-type umbrella and now
+EXPANDS (``spell_focus._UNIVERSAL``), exactly as ``Potency`` does in the
+spellpower channel. Only ``Universal Spell Lore`` cross-adds. The ten targets
 are the ``Spell_Lore`` page's "Types of spell lore" roster verbatim. Deliberate
 exclusions (recorded in ``spell-lore.md`` §#290 and the sweep doc): the
 combined/flavored lores (``Blighted Lore``, ``Purifying Flame Lore``, ...) are
@@ -67,7 +73,11 @@ from src import spell_focus
 # Sources per family. The map's VALUES — each names a stat whose bucket totals
 # flat-add into the target's total.
 SPELLPOWER_SOURCES = ["Universal Spell Power"]
-LORE_SOURCES = ["Spell Lore", "Universal Spell Lore"]
+# #366 (2026-08-18) — `Spell Lore` REMOVED. It is a same-type umbrella and moved
+# to spell_focus._UNIVERSAL (expansion -> highest-of-type), matching Potency in
+# the spellpower channel. Only the wiki-declared "separate and stacking" source
+# remains here. The overlap guard in validate_map now enforces the split.
+LORE_SOURCES = ["Universal Spell Lore"]
 
 # The Spell_Lore page's "Types of spell lore" roster, verbatim order. Targets
 # only — bounded against the built vocabulary in cross_add_map().

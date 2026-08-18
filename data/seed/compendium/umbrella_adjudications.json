@@ -18,6 +18,12 @@
    "observed_on": "Item:Daggertooth's Belt (level 12)",
    "harvested": "2026-08-13"
   },
+  "Blighted Lore": {
+   "disposition": "atomic",
+   "evidence": "Blighted Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Acid + Negative + Poison + Evil (Specifically Evil, not other alignments or Light). It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
+   "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
+   "harvested": "2026-08-18"
+  },
   "Breath Weapon Focus": {
    "disposition": "atomic",
    "evidence": "Breath Weapon Focus +4: +4 Equipment bonus to the DC of Breath Weapon spells.",
@@ -32,12 +38,24 @@
    "observed_on": "Item:Bracers of Order and Chaos",
    "harvested": "2026-08-13"
   },
+  "Creeping Dust Lore": {
+   "disposition": "atomic",
+   "evidence": "Creeping Dust Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Acid + Cold. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
+   "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
+   "harvested": "2026-08-18"
+  },
   "Curse Resistance": {
    "disposition": "atomic",
    "evidence": "Curse Resistance +5: Passive: +5 Enhancement bonus to saves versus curses.",
    "source_invocation": "{{Save|Curse|5}}",
    "observed_on": "Item:Cursebane Focus",
    "harvested": "2026-08-13"
+  },
+  "Dark Restoration Lore": {
+   "disposition": "atomic",
+   "evidence": "Dark Restoration Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Positive + Negative + Poison. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
+   "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
+   "harvested": "2026-08-18"
   },
   "Deific Focus": {
    "disposition": "atomic",
@@ -60,6 +78,12 @@
    "observed_on": "Item:Bone Figurine",
    "harvested": "2026-08-13"
   },
+  "Firestorm Lore": {
+   "disposition": "atomic",
+   "evidence": "Firestorm Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Fire + Electric. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
+   "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
+   "harvested": "2026-08-18"
+  },
   "Force Absorption": {
    "disposition": "atomic",
    "evidence": "Force Absorption +11%: Passive: 11% Enhancement Bonus to Force Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)",
@@ -73,6 +97,18 @@
    "source_invocation": "green_steel option 'Fortitude Save Vs Disease' (Insight 4)",
    "observed_on": "green_steel pool",
    "harvested": "2026-08-13"
+  },
+  "Frozen Depths Lore": {
+   "disposition": "atomic",
+   "evidence": "Frozen Depths Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Cold + Negative + Poison. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
+   "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
+   "harvested": "2026-08-18"
+  },
+  "Frozen Storm Lore": {
+   "disposition": "atomic",
+   "evidence": "Frozen Storm Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Cold + Electric. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
+   "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
+   "harvested": "2026-08-18"
   },
   "Good Absorption": {
    "disposition": "atomic",
@@ -116,6 +152,12 @@
    "observed_on": "membership/augment set defs (Adherent of the Mists)",
    "harvested": "2026-08-14"
   },
+  "Moonlit Haunt Lore": {
+   "disposition": "atomic",
+   "evidence": "Moonlit Haunt Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Force + Negative + Poison. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
+   "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
+   "harvested": "2026-08-18"
+  },
   "Negative Energy Absorption": {
    "disposition": "atomic",
    "evidence": "Negative Energy Absorption +20%: This effect absorbs 20% of all negative damage the character would have taken, after all other protections have been penetrated.",
@@ -144,17 +186,16 @@
    "observed_on": "Item:Crystalline Wristlet",
    "harvested": "2026-08-13"
   },
+  "Purifying Flame Lore": {
+   "disposition": "atomic",
+   "evidence": "Purifying Flame Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Fire + Light + Alignment. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
+   "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
+   "harvested": "2026-08-18"
+  },
   "Radiance Intensity": {
    "disposition": "atomic",
    "evidence": "Radiance Intensity +12%: +12% Enhancement bonus to critical damage with Light and Alignment spells.",
    "source_invocation": "{{Intensity|Radiance|12}}",
-   "observed_on": "Item:Mad Angels' Manacles",
-   "harvested": "2026-08-13"
-  },
-  "Radiance Lore": {
-   "disposition": "atomic",
-   "evidence": "Radiance Lore +12: Passive: Your Light and Aligned spells gain a 12% Equipment bonus to their chance to critical hit. Element lores are distinct stacking stats per the standing spell-lore ruling (docs/wiki-evidence/spell-lore.md); this one is additionally a cross-add TARGET, never a source.",
-   "source_invocation": "{{Spell Lore|Radiance|12}}",
    "observed_on": "Item:Mad Angels' Manacles",
    "harvested": "2026-08-13"
   },
@@ -172,19 +213,18 @@
    "observed_on": "rendered invocation (carrier family: Mad Angels' Manacles pattern)",
    "harvested": "2026-08-13"
   },
-  "Repair Lore": {
-   "disposition": "atomic",
-   "evidence": "Repair Lore +12: Passive: Your Repair and Rust spells gain a 12% Equipment bonus to their chance to critical hit. Element lores are distinct stacking stats per docs/wiki-evidence/spell-lore.md; cross-add TARGET, never a source.",
-   "source_invocation": "{{Spell Lore|Repair|12}}",
-   "observed_on": "rendered invocation",
-   "harvested": "2026-08-13"
-  },
   "Rune Arm Focus": {
    "disposition": "atomic",
    "evidence": "Standing ruling, docs/wiki-evidence/spell-focus-universal.md quoting the wiki: Rune Arm Focus 'isn't directly tied to a Spell School but to the Rune Arm itself'.",
    "source_invocation": "wiki quote (see ruling)",
    "observed_on": "docs/wiki-evidence/spell-focus-universal.md",
    "harvested": "2026-08-13"
+  },
+  "Silver Flame Lore": {
+   "disposition": "atomic",
+   "evidence": "Silver Flame Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Positive + Light + Alignment. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
+   "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
+   "harvested": "2026-08-18"
   },
   "Spell Resistance": {
    "disposition": "atomic",
@@ -206,6 +246,12 @@
    "source_invocation": "viktranium option, Bool",
    "observed_on": "viktranium pool",
    "harvested": "2026-08-13"
+  },
+  "Thunderstorm Lore": {
+   "disposition": "atomic",
+   "evidence": "Thunderstorm Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Electric + Sonic. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
+   "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
+   "harvested": "2026-08-18"
   },
   "Your attacks and offensive spells have a chance to reduce enemy Physical and Magical Resistance Rating.": {
    "disposition": "atomic",
