@@ -544,3 +544,68 @@ def test_the_real_seed_resolves_the_real_vocabulary():
     for name in ("Resistance", "Elemental Resonance", "Combat Mastery",
                  "Charisma Skills", "Dexterity Skills", "Intelligence Skills"):
         assert name not in rankable, f"{name} must stay expanded away"
+
+
+def test_374_every_upstream_flip_of_our_canon_is_aliased_back():
+    """#374 — upstream flipped ten stat names we store under the in-game
+    enchantment name. We keep our canon and absorb the divergence in
+    affix_aliases.json, so a refreshed import lands on our names.
+
+    This guard is the maintenance contract: if a future snapshot folds ANOTHER
+    of our stored names away, that is a silent vocabulary change, and it fails
+    here instead of quietly renaming a stat in the built catalog.
+    """
+    import json
+    import os
+
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    built_path = os.path.join(root, "web", "data", "items.json")
+    if not os.path.exists(built_path):
+        return  # dataset not built; the JS suite covers the built-artifact side
+
+    with open(built_path, encoding="utf-8") as fh:
+        built = json.load(fh)
+    stored = {a.get("name") for it in built.get("items", [])
+              for a in (it.get("affixes") or []) if a.get("name")}
+
+    live = V.load_live_affix_synonyms()
+    entries = live.get("affix_synonyms", live) if isinstance(live, dict) else live
+    upstream_folds = {syn: e["name"] for e in entries for syn in (e.get("synonyms") or [])}
+
+    alias_map, _distinct = V.load_affix_aliases()
+
+    unabsorbed = []
+    for name in sorted(stored):
+        target = upstream_folds.get(name)
+        if not target or target == name:
+            continue                      # upstream agrees with us, or is silent
+        # Upstream folds OUR stored name onto a different canonical. The import
+        # must map their name back to ours, or the next refresh renames the stat.
+        if alias_map.get(target) != name:
+            unabsorbed.append(f"{name!r} (upstream folds it to {target!r}, "
+                              f"no alias {target!r} -> {name!r})")
+
+    assert not unabsorbed, (
+        "upstream folds these stored names away with no inverse alias — a refresh "
+        "would silently rename them in the built catalog:\n  "
+        + "\n  ".join(unabsorbed)
+        + "\nAdd the inverse to data/seed/compendium/affix_aliases.json after "
+          "confirming no item carries both names (the co-occurrence rule).")
+
+
+def test_374_the_ten_known_flips_resolve_to_our_canon():
+    """The explicit list, so a deletion from affix_aliases.json is caught even if
+    the vendored upstream table has not been refreshed yet."""
+    alias_map, _ = V.load_affix_aliases()
+    expected = {
+        "Fire Spell Power": "Combustion", "Acid Spell Power": "Corrosion",
+        "Positive Spell Power": "Devotion", "Cold Spell Power": "Glaciation",
+        "Force Spell Power": "Impulse", "Electric Spell Power": "Magnetism",
+        "Negative Spell Power": "Nullification", "Sonic Spell Power": "Resonance",
+        "Cold Lore": "Ice Lore", "Negative Lore": "Void Lore",
+        # #368 — discoverability, not a flip: ours is the wiki wording.
+        "Force Lore": "Kinetic Lore",
+    }
+    for variant, canonical in expected.items():
+        assert alias_map.get(variant) == canonical, (
+            f"{variant!r} must alias to {canonical!r}, got {alias_map.get(variant)!r}")
