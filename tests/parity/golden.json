@@ -43,7 +43,7 @@
     },
     {
      "slot": "Goggles",
-     "variant": "Scientist's Sights"
+     "variant": "Glasses of the Meditative Mind"
     },
     {
      "slot": "Helmet",
@@ -347,7 +347,7 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Neglected Wedding Ring"
+     "variant": "Legendary Nocturne Ring"
     },
     {
      "slot": "Trinket",
@@ -881,7 +881,7 @@
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Vestments of the Sun Soul"
+     "variant": "Chain Shirt of Toppling (level 12)"
     },
     {
      "slot": "Belt",
@@ -893,7 +893,7 @@
     },
     {
      "slot": "Bracers",
-     "variant": "Legendary Jidz-Tet'ka"
+     "variant": "Bracers of the Sun Soul"
     },
     {
      "slot": "Cloak",
@@ -1263,7 +1263,7 @@
     },
     {
      "slot": "Bracers",
-     "variant": "Legendary Crystalline Wristlet"
+     "variant": "Bracelets of Flourishing Fauna"
     },
     {
      "slot": "Cloak",
@@ -1275,11 +1275,11 @@
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Blazing Sniper's Sights"
+     "variant": "Legendary Eyes of Enlightenment"
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Flame Priest's Focus"
+     "variant": "Legendary Alchemist's Crown"
     },
     {
      "slot": "Main Hand",
@@ -1287,7 +1287,7 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Pendant of Crippling Strikes"
+     "variant": "Legendary Alchemist's Pendant"
     },
     {
      "slot": "Off Hand",
@@ -1369,11 +1369,11 @@
     },
     {
      "slot": "Boots",
-     "variant": "Piston Boots"
+     "variant": "Blackfeather Boots"
     },
     {
      "slot": "Bracers",
-     "variant": "Legendary Jidz-Tet'ka"
+     "variant": "Bracelets of Flourishing Fauna"
     },
     {
      "slot": "Cloak",
@@ -1389,7 +1389,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Dread Stalker's Skullcap"
+     "variant": "Legendary Elder's Cap"
     },
     {
      "slot": "Main Hand",
@@ -1397,11 +1397,11 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Elder's Focus"
+     "variant": "Legendary Pendant of Crippling Strikes"
     },
     {
      "slot": "Off Hand",
-     "variant": "Legendary Crabshell Buckler"
+     "variant": "The Heart of the Prince"
     },
     {
      "slot": "Ring",

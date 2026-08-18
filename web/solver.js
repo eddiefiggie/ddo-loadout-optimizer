@@ -1116,6 +1116,31 @@ function buildProgram(model) {
       extraConstraints.push(`${u} - ${zNames.join(" - ")} <= 0`);
     }
   }
+  // #348 (U3, R6) — the container as an ORDERED list of indicators. Var NAMES stay
+  // sorted-minted above so the encoded program is byte-stable; this is the pursuit
+  // order laid over them. A name the player ordered but no variant carries mints no
+  // indicator, so it drops out here and is reported unsecured rather than silently
+  // shifting every later position up.
+  const utilityOrderVars = [];
+  // Ordered container names with NO minted indicator: nothing in the eligible pool
+  // carries them at all. They are unsecured for a different reason than "lost to a
+  // ranked stat", and R14 has to be able to say which.
+  const utilityUnreachable = [];
+  if (utilityCountingSet) {
+    const uByName = new Map();
+    for (const [u, meta] of utilityMeta) uByName.set(meta.name, u);
+    const order = Array.isArray(model.utilityOrder) && model.utilityOrder.length
+      ? model.utilityOrder
+      : [...utilityCountingSet].sort();
+    const seen = new Set();
+    for (const name of order) {
+      if (seen.has(name)) continue;            // a duplicate would pursue one effect twice
+      seen.add(name);
+      const u = uByName.get(name);
+      if (u) utilityOrderVars.push({ name, u });
+      else utilityUnreachable.push(name);
+    }
+  }
 
   return {
     // creditBuckets (bucket key -> declared-credit floor) rides out for the
@@ -1130,6 +1155,9 @@ function buildProgram(model) {
     // #91 (U3) — the Utility tier's stage state: whether the sentinel is
     // ranked, the per-effect indicator binaries, and their name/ceiling meta.
     utilityEnabled, utilityVars, utilityMeta,
+    // #348 (U3) — [{ name, u }] in the player's pursuit order (see above), plus
+    // the ordered names no eligible variant carries.
+    utilityOrderVars, utilityUnreachable,
     // #332 — the ranked stats the tier will NOT count. Counting-set membership is
     // knowable HERE and nowhere downstream: a restored character's exports have no
     // dataset to re-derive it from, so it has to ride the result. This list is
@@ -1970,9 +1998,30 @@ async function solveLexicographic(model, highs) {
   // settle stages (KTD5). `>=`, not `=`: the indicators have no downward
   // pressure (u_e ≤ Σz only), so a later solve is free to keep MORE effects
   // but never fewer.
-  const utilityObjTerms = (program.utilityVars || []).map((u) => ({ coef: 1, name: u }));
+  // #348 (U3, R6/KTD1) — the container is ONE stage with a weighted objective, not
+  // a flat count and not one stage per effect. Weight 2^(k-1-i) makes effect i
+  // outrank every lower-ordered effect combined, which is what turns a single
+  // linear objective into strict lexicographic order over the indicators.
+  // Sequential sub-ranking measured 3.94x median / 6.93x worst against a 2.0x
+  // budget; this reproduces it exactly at 11.35x lower cost, proven across the 17
+  // sentinel-ranking parity fixtures at sizes 4/8/12/16/20 by
+  // tests/encoding_equivalence.js.
+  const _uOrderVars = program.utilityOrderVars || [];
+  const utilityObjTerms = _uOrderVars.map((o, i) =>
+    ({ coef: Math.pow(2, _uOrderVars.length - 1 - i), name: o.u }));
+  // The weighted objective spans 2^0..2^(k-1) — at k=20 that is a range of ~5.2e5,
+  // and HiGHS's default relative MIP gap would admit an absolute error larger than
+  // the lowest-ordered weights, i.e. it could stop on a solution that is wrong in
+  // exactly the effects the player ranked last. The gate measured no drift at k<=20,
+  // so this is a reasoned precaution against the weight span rather than a fix for
+  // an observed failure — cheap, and the failure it prevents is silent.
+  const UTILITY_STAGE_OPTS = { mip_rel_gap: 0, mip_abs_gap: 0 };
   const utilityExtra = [];
   let utilityCount = null;
+  // #348 (U3/R14) — ordered receipts: what the container secured, and what it did
+  // not, each in container order with the reason it was missed.
+  const utilitySecured = [];
+  const utilityUnsecured = [];
 
   for (const stat of program.targetList) {
     if (stat === _UTILITY_SENTINEL) {
@@ -1980,7 +2029,9 @@ async function solveLexicographic(model, highs) {
       // the locks accumulated so far. Stats ranked BELOW the sentinel still
       // get their stages after this one, solved with the count lock active —
       // that ordering is exactly what dragging the tier means (R2).
-      const res = highs.solve(encodeStage(program, { objTerms: utilityObjTerms, sense: "max", locks, extra: utilityExtra }));
+      const res = highs.solve(
+        encodeStage(program, { objTerms: utilityObjTerms, sense: "max", locks, extra: utilityExtra }),
+        UTILITY_STAGE_OPTS);
       if (res.Status !== "Optimal") return { status: "infeasible", reason: `stage utility: ${res.Status}` };
       const uprim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
       // The achieved count, read from the primal by the BACKING z vars (an
@@ -2001,13 +2052,25 @@ async function solveLexicographic(model, highs) {
       // effect's buckets actually fired), never from the u primal. The indicator is
       // ceilinged `u_e − Σz ≤ 0`, so `u_e >= 1` forces a real carrier rather than
       // merely floating the indicator.
-      let count = 0;
-      for (const [u, meta] of program.utilityMeta || []) {
-        if (!meta.zNames.some((z) => uprim(z) > 0.5)) continue;
-        count++;
-        utilityExtra.push(`${u} >= 1`);
+      // Walked in CONTAINER ORDER, not indicator-mint order, so the receipts read
+      // the way the player arranged them (R14) and the locks are a prefix-shaped
+      // structure U4 can slice.
+      for (const o of _uOrderVars) {
+        const meta = program.utilityMeta.get(o.u);
+        if (meta && meta.zNames.some((z) => uprim(z) > 0.5)) {
+          utilitySecured.push(o.name);
+          utilityExtra.push(`${o.u} >= 1`);
+        } else {
+          utilityUnsecured.push({ name: o.name, reason: "outbid" });
+        }
       }
-      utilityCount = count;
+      // Nothing in the eligible pool carries these at all — a different fact from
+      // losing the slot to a ranked stat, and one the player can act on differently
+      // (there is no gear to farm).
+      for (const name of program.utilityUnreachable || []) {
+        utilityUnsecured.push({ name, reason: "unreachable" });
+      }
+      utilityCount = utilitySecured.length;
       continue;
     }
     const res = highs.solve(encodeStage(program, { objectiveStat: stat, sense: "max", locks, extra: utilityExtra }));
@@ -2045,6 +2108,10 @@ async function solveLexicographic(model, highs) {
     // the load-bearing-checked effect list (U5 builds the full report).
     ...(program.utilityEnabled
       ? { utilityCount, utilityEffects: sol.utilityEffects || [],
+          // #348 (U3/R14) — the ordered secured/unsecured split. Plain JSON so
+          // persist.js can keep it under RESULT_KEEP and a restored character
+          // renders it without re-solving.
+          utilityOrdered: { secured: utilitySecured.slice(), unsecured: utilityUnsecured.slice() },
           // #91 (U5, KTD6) — the render/persist report: count + per-effect
           // credited carriers, guarded and deterministic (built in readSolution).
           utilityReport: sol.utilityReport || { count: 0, effects: [] } } : {}),

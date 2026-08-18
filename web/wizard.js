@@ -1103,7 +1103,14 @@ if (typeof window !== "undefined" && window.App) {
     // #339 — augCeiling: the augment-only ML ceiling. null = unrestricted (the
     // default: augments follow the item cap); a number strictly below the cap
     // restricts augment tiers only. buildQuery owns the clamp.
-    const state = { step: "intro", ml: 36, mlFloor: 31, mlFloorManual: false, augCeiling: null, race: "", alignment: "", armor: "", oath: "",
+    const state = { step: "intro", ml: 36, mlFloor: 31, mlFloorManual: false, augCeiling: null,
+      // #348 (U3, KTD3) — the Utility container. `null` means "follow the current
+      // default roster and order", so a player who never opens the curation panel
+      // picks up a later roster revision (#349) instead of being frozen at whatever
+      // the roster was the day they saved. An ARRAY means the player curated it, and
+      // is frozen against roster changes on purpose — their list is theirs.
+      utilityContainer: null,
+      race: "", alignment: "", armor: "", oath: "",
       style: "", weaponTypes: [], offHand: [], offHandWeapons: [],
       // plan 003 U1 — the Two Weapon Fighting declaration. Character state, not gear
       // state: the combat-style handler clears weaponTypes/offHand/offHandWeapons but
@@ -2242,7 +2249,11 @@ if (typeof window !== "undefined" && window.App) {
           // at all. web/browse.js:373 already gates its markers this way; these sites
           // were the other half of the same asymmetry.
           vocab.utilityCounting && vocab.utilityCounting.size
-            ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set() }
+            ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set(),
+                // #348 (U3) — the container's ORDER rides with its contents. Without
+                // it the solver falls back to alphabetical, which is not a product
+                // decision and would pursue Blindness Immunity before Ghostly.
+                order: state.utilityContainer || vocab.utilityOrder || null }
             : null);
         const t0 = performance.now();
         // eslint-disable-next-line no-undef
@@ -2489,7 +2500,11 @@ if (typeof window !== "undefined" && window.App) {
           // at all. web/browse.js:373 already gates its markers this way; these sites
           // were the other half of the same asymmetry.
           vocab.utilityCounting && vocab.utilityCounting.size
-            ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set() }
+            ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set(),
+                // #348 (U3) — the container's ORDER rides with its contents. Without
+                // it the solver falls back to alphabetical, which is not a product
+                // decision and would pursue Blindness Immunity before Ghostly.
+                order: state.utilityContainer || vocab.utilityOrder || null }
             : null);
         // fresh:false + the original stamp so a later Save preserves staleness (see saveCurrentCharacter).
         state.lastRun = { model, result: snap, query, fresh: false, stampedBuildId: rec.stampedBuildId || null };
