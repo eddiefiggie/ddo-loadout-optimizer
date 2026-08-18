@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -2311,4 +2311,129 @@ test("#345 U5: the marker and the clear control are both on the row", () => {
   assert.ok(/wz-clear-req/.test(src), "and the row offers a way to clear it");
   assert.ok(/delete state\.targetFloors\[p\]/.test(src),
     "clearing deletes the floor itself, not a parallel flag");
+});
+
+// ---------------------------------------------------------------------------
+// #348 (U6) — the pinned Utility container row and its curation panel.
+// ---------------------------------------------------------------------------
+
+test("#348 U6/KTD3: null follows the default roster, an array is the player's own", () => {
+  const vocab = { presence: new Set(["Ghostly", "True Seeing", "Blurry"]), magnitude: new Set(),
+    utilityOrder: ["Ghostly", "True Seeing"] };
+  assert.deepStrictEqual(containerList({ utilityContainer: null }, vocab), ["Ghostly", "True Seeing"],
+    "untouched follows the current default — a later roster revision reaches the player");
+  assert.deepStrictEqual(containerList({ utilityContainer: ["Blurry"] }, vocab), ["Blurry"],
+    "curated is frozen against roster changes — their list is theirs");
+  assert.deepStrictEqual(containerList({ utilityContainer: [] }, vocab), [],
+    "an EMPTY array is a real state, not a synonym for untouched");
+});
+
+test("#348 U6/R5: an add beyond the cap is refused with a stated reason", () => {
+  const full = Array.from({ length: UTILITY_CONTAINER_CAP }, (_, i) => `Effect ${i}`);
+  const res = containerEdit(full, "add", "One More");
+  assert.strictEqual(res.ok, false, "refused");
+  assert.deepStrictEqual(res.list, full, "and the list is untouched");
+  assert.ok(res.message && /at most 20 effects/.test(res.message), "the cap is named");
+  assert.ok(/strict order/.test(res.message), "and WHY it exists, not just that it does");
+  // The cap is the encoding gate's number, not a UI choice.
+  assert.strictEqual(UTILITY_CONTAINER_CAP, 20);
+});
+
+test("#348 U6/R4: reorder and remove work by position; a duplicate add is a no-op", () => {
+  assert.deepStrictEqual(containerEdit(["a", "b", "c"], "up", 2).list, ["a", "c", "b"]);
+  assert.deepStrictEqual(containerEdit(["a", "b", "c"], "down", 0).list, ["b", "a", "c"]);
+  assert.deepStrictEqual(containerEdit(["a", "b", "c"], "remove", 1).list, ["a", "c"]);
+  assert.strictEqual(containerEdit(["a"], "up", 0).ok, false, "no-op at the top");
+  assert.strictEqual(containerEdit(["a"], "down", 0).ok, false, "no-op at the bottom");
+  assert.strictEqual(containerEdit(["a"], "add", "a").ok, false, "a duplicate never doubles a position");
+});
+
+test("#348 U6/KTD9: search spans every presence effect; empty search suggests the defaults", () => {
+  const vocab = {
+    presence: new Set(["Ghostly", "True Seeing", "Blurry", "Deathblock", "Seeker"]),
+    magnitude: new Set(["Seeker"]),                    // has a magnitude -> not a presence toggle
+    utilityOrder: ["Ghostly", "True Seeing"],
+  };
+  assert.deepStrictEqual(containerAddable(vocab, [], "", 12), ["Ghostly", "True Seeing"],
+    "no query -> the declared defaults, in declared order");
+  assert.deepStrictEqual(containerAddable(vocab, ["Ghostly"], "", 12), ["True Seeing"],
+    "what the container already holds is never offered again");
+  const hits = containerAddable(vocab, [], "bl", 12);
+  assert.ok(hits.includes("Blurry") && hits.includes("Deathblock"),
+    "a query reaches the whole presence population, not just the defaults");
+  assert.ok(!containerAddable(vocab, [], "seek", 12).includes("Seeker"),
+    "a name with a magnitude is rankable on its own and is not a container effect");
+});
+
+test("#348 U6/R3/KTD10: the collapsed summary distinguishes empty from removed", () => {
+  assert.ok(/Empty/.test(containerSummary([])), "an empty container says so");
+  assert.ok(/remove this row entirely/.test(containerSummary([])),
+    "and points at the different action that means 'no utility at all'");
+  assert.strictEqual(containerSummary(["A", "B"]), "A, B", "short lists show in full");
+  assert.strictEqual(containerSummary(["A", "B", "C", "D"]), "A, B, C +1 more",
+    "long lists still show what leads, so the panel is not the only way to see it");
+});
+
+// ---------------------------------------------------------------------------
+// #348 (U7) — the second-generation heal. Three generations of saved character
+// must be distinguishable, and each must heal exactly once.
+// ---------------------------------------------------------------------------
+
+const SENT_U7 = "Utility effects";
+
+test("#348 U7/R13/AE6: a mid-list tier is pinned to the bottom and the player is told", () => {
+  const saved = ["Strength", "Constitution", SENT_U7, "Dodge"];
+  const h = healUtilityContainer(saved, false);       // tier-aware, pre-container
+  assert.deepStrictEqual(h.priorities, ["Strength", "Constitution", "Dodge", SENT_U7],
+    "the row moves to the bottom, and the ranked stats keep their order");
+  assert.strictEqual(h.moved, true);
+  assert.ok(h.message, "a notice fires");
+  assert.ok(/moved there from where you had it/.test(h.message), "it names the move");
+  assert.ok(/default set of nice-to-have effects/.test(h.message), "and the seeding");
+  assert.ok(/unchanged until you re-solve/.test(h.message),
+    "and that the saved loadout has not changed — without this the notice reads as 'your build changed'");
+});
+
+test("#348 U7/R12/AE6: a post-container save restores verbatim and never re-heals", () => {
+  const saved = ["Strength", SENT_U7, "Dodge"];       // deliberately mid-list
+  const h = healUtilityContainer(saved, true);        // container-aware
+  assert.deepStrictEqual(h.priorities, saved, "a marked record is never rearranged");
+  assert.strictEqual(h.message, null, "and never re-notified");
+});
+
+test("#348 U7: a tier already at the bottom is seeded and told, without claiming it moved", () => {
+  const h = healUtilityContainer(["Strength", SENT_U7], false);
+  assert.strictEqual(h.moved, false);
+  assert.ok(h.message && !/moved there/.test(h.message),
+    "the notice must not assert a move that did not happen");
+  assert.ok(/pinned container/.test(h.message), "but still explains what the row became");
+});
+
+test("#348 U7: a player who removed the row keeps it removed, with nothing to say", () => {
+  const h = healUtilityContainer(["Strength", "Dodge"], false);
+  assert.deepStrictEqual(h.priorities, ["Strength", "Dodge"], "removal is a decision, not damage");
+  assert.strictEqual(h.message, null, "and there is nothing to tell them about");
+});
+
+
+test("#348 U6/R5: the empty-suggestion copy answers the dead end the player is in", () => {
+  // Found by opening the panel in a browser, not by reading the code: the DEFAULT
+  // container holds 20 and the cap is 20, so an untouched panel opens already full
+  // with an empty suggestion list. The original copy ("Every default effect is
+  // already in your container") was true, useless, and left both the cap and the
+  // ~818 other addable effects unexplained.
+  const full = Array.from({ length: UTILITY_CONTAINER_CAP }, (_, i) => `E${i}`);
+  const atCap = containerAddHint(full, "", false);
+  assert.ok(/full \(20\/20\)/.test(atCap), "names the cap");
+  assert.ok(/Remove an effect/.test(atCap), "and the action that resolves it");
+  assert.ok(/order is what decides/.test(atCap), "and points at the thing that still helps them");
+
+  const room = containerAddHint(["E0"], "", false);
+  assert.ok(/Search to add any other/.test(room), "with room, invite the search that reaches the rest");
+  assert.ok(!/full/.test(room), "and do not imply a cap that is not binding");
+
+  assert.ok(/No on\/off effect matches/.test(containerAddHint(["E0"], "zzzz", false)),
+    "a failed search says so plainly");
+  assert.strictEqual(containerAddHint(["E0"], "", true), null,
+    "when there ARE suggestions, no hint at all");
 });

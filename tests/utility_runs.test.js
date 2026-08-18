@@ -81,19 +81,42 @@ function check(name, fn) {
       "the report's Calamitous Warhammer (EB 4) never wins — see the header note");
   });
   const alts1 = S.generateAlternatives(r1, m1, highs);
-  const u1 = alts1.find((a) => a.gainAxis === "utility");
-  check("AE1: the Alternatives utility family surfaces Echo of Whelm", () => {
-    assert.ok(u1, "a 'utility' family entry exists");
-    assert.strictEqual(mainHand(u1.sol), "Echo of Whelm");
-    assert.ok(u1.meta.to > u1.meta.from, "strictly more counted effects");
+  // #348 (U4, KTD7) — the Alternatives utility family is RETIRED. It used to
+  // surface Echo of Whelm here as a gain ("+2 utility effects"). With the container
+  // pinned last and solved lexicographically under ranked-exact locks, a zero-cost
+  // strict win is impossible by construction, so every candidate that family could
+  // produce costs a ranked stat — and that trade is better stated than offered.
+  //
+  // The AE1 SHAPE still holds and is still guarded: the proc-poor ranked winner
+  // keeps the slot (asserted above), and AE2 below still flips the slot to Echo when
+  // the container outranks the marginal stat. What changed is only where the Echo
+  // trade is COMMUNICATED — U5's priced disclosure names the unsecured effect and
+  // what securing it would cost, in place of a card offering the swap.
+  check("AE1: no candidate carries the retired utility gain axis", () => {
+    assert.strictEqual(alts1.filter((a) => a.gainAxis === "utility").length, 0);
+    for (const a of alts1) {
+      const an = A.analyzeAlternative(r1, a, { targets: q1.targets });
+      assert.ok(!an.tags.includes("utility effects"), "no candidate is tagged a utility gain");
+    }
   });
-  const an1 = u1 && A.analyzeAlternative(r1, u1, { targets: q1.targets });
-  check("AE1: the trade states the ranked cost", () => {
-    assert.ok(an1.tags.includes("utility effects"));
-    assert.ok(an1.cost.some((c) => c.stat === EB && c.delta < 0),
-      "the Enhancement Bonus surrendered for the procs is stated");
+  check("AE1: the container names what it could not secure, and why", () => {
+    // The receipt a player reads instead of the retired card. U5 adds its price.
+    // At ML9 both reasons are exercised on real data: Echo of Whelm's procs are
+    // `outbid` (a carrier exists in band and lost the slot), while the endgame named
+    // effects are `unreachable` (nothing at this ML carries them at all). Asserting
+    // BOTH appear is what keeps this from passing on a list that is all one reason.
+    const unsecured = (r1.utilityOrdered && r1.utilityOrdered.unsecured) || [];
+    assert.ok(unsecured.length, "the container names what it could not secure");
+    assert.ok(unsecured.every((u) => u.reason === "outbid" || u.reason === "unreachable"),
+      "every unsecured effect says why");
+    assert.ok(unsecured.some((u) => u.reason === "outbid"), "the outbid case is exercised");
+    assert.ok(unsecured.some((u) => u.reason === "unreachable"), "the unreachable case is exercised");
+    // Echo of Whelm's procs are the reported case: in band, carried, and outbid.
+    const outbid = unsecured.filter((u) => u.reason === "outbid").map((u) => u.name);
+    assert.ok(outbid.includes("Whelming Shockwave"),
+      `Echo's proc is outbid, not unreachable: ${JSON.stringify(outbid)}`);
   });
-  if (an1) console.log(`    gainText: "${an1.gainText}" | cost: ${JSON.stringify(an1.cost)}`);
+  console.log(`    unsecured: ${JSON.stringify((r1.utilityOrdered || {}).unsecured || [])}`);
 
   // ---- AE2: sentinel dragged ABOVE the marginal stat — Echo wins the slot ----
   console.log("AE2 — same query, sentinel above Enhancement Bonus");

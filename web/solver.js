@@ -1116,6 +1116,31 @@ function buildProgram(model) {
       extraConstraints.push(`${u} - ${zNames.join(" - ")} <= 0`);
     }
   }
+  // #348 (U3, R6) — the container as an ORDERED list of indicators. Var NAMES stay
+  // sorted-minted above so the encoded program is byte-stable; this is the pursuit
+  // order laid over them. A name the player ordered but no variant carries mints no
+  // indicator, so it drops out here and is reported unsecured rather than silently
+  // shifting every later position up.
+  const utilityOrderVars = [];
+  // Ordered container names with NO minted indicator: nothing in the eligible pool
+  // carries them at all. They are unsecured for a different reason than "lost to a
+  // ranked stat", and R14 has to be able to say which.
+  const utilityUnreachable = [];
+  if (utilityCountingSet) {
+    const uByName = new Map();
+    for (const [u, meta] of utilityMeta) uByName.set(meta.name, u);
+    const order = Array.isArray(model.utilityOrder) && model.utilityOrder.length
+      ? model.utilityOrder
+      : [...utilityCountingSet].sort();
+    const seen = new Set();
+    for (const name of order) {
+      if (seen.has(name)) continue;            // a duplicate would pursue one effect twice
+      seen.add(name);
+      const u = uByName.get(name);
+      if (u) utilityOrderVars.push({ name, u });
+      else utilityUnreachable.push(name);
+    }
+  }
 
   return {
     // creditBuckets (bucket key -> declared-credit floor) rides out for the
@@ -1130,6 +1155,9 @@ function buildProgram(model) {
     // #91 (U3) — the Utility tier's stage state: whether the sentinel is
     // ranked, the per-effect indicator binaries, and their name/ceiling meta.
     utilityEnabled, utilityVars, utilityMeta,
+    // #348 (U3) — [{ name, u }] in the player's pursuit order (see above), plus
+    // the ordered names no eligible variant carries.
+    utilityOrderVars, utilityUnreachable,
     // #332 — the ranked stats the tier will NOT count. Counting-set membership is
     // knowable HERE and nowhere downstream: a restored character's exports have no
     // dataset to re-derive it from, so it has to ride the result. This list is
@@ -1970,9 +1998,30 @@ async function solveLexicographic(model, highs) {
   // settle stages (KTD5). `>=`, not `=`: the indicators have no downward
   // pressure (u_e ≤ Σz only), so a later solve is free to keep MORE effects
   // but never fewer.
-  const utilityObjTerms = (program.utilityVars || []).map((u) => ({ coef: 1, name: u }));
+  // #348 (U3, R6/KTD1) — the container is ONE stage with a weighted objective, not
+  // a flat count and not one stage per effect. Weight 2^(k-1-i) makes effect i
+  // outrank every lower-ordered effect combined, which is what turns a single
+  // linear objective into strict lexicographic order over the indicators.
+  // Sequential sub-ranking measured 3.94x median / 6.93x worst against a 2.0x
+  // budget; this reproduces it exactly at 11.35x lower cost, proven across the 17
+  // sentinel-ranking parity fixtures at sizes 4/8/12/16/20 by
+  // tests/encoding_equivalence.js.
+  const _uOrderVars = program.utilityOrderVars || [];
+  const utilityObjTerms = _uOrderVars.map((o, i) =>
+    ({ coef: Math.pow(2, _uOrderVars.length - 1 - i), name: o.u }));
+  // The weighted objective spans 2^0..2^(k-1) — at k=20 that is a range of ~5.2e5,
+  // and HiGHS's default relative MIP gap would admit an absolute error larger than
+  // the lowest-ordered weights, i.e. it could stop on a solution that is wrong in
+  // exactly the effects the player ranked last. The gate measured no drift at k<=20,
+  // so this is a reasoned precaution against the weight span rather than a fix for
+  // an observed failure — cheap, and the failure it prevents is silent.
+  const UTILITY_STAGE_OPTS = { mip_rel_gap: 0, mip_abs_gap: 0 };
   const utilityExtra = [];
   let utilityCount = null;
+  // #348 (U3/R14) — ordered receipts: what the container secured, and what it did
+  // not, each in container order with the reason it was missed.
+  const utilitySecured = [];
+  const utilityUnsecured = [];
 
   for (const stat of program.targetList) {
     if (stat === _UTILITY_SENTINEL) {
@@ -1980,19 +2029,48 @@ async function solveLexicographic(model, highs) {
       // the locks accumulated so far. Stats ranked BELOW the sentinel still
       // get their stages after this one, solved with the count lock active —
       // that ordering is exactly what dragging the tier means (R2).
-      const res = highs.solve(encodeStage(program, { objTerms: utilityObjTerms, sense: "max", locks, extra: utilityExtra }));
+      const res = highs.solve(
+        encodeStage(program, { objTerms: utilityObjTerms, sense: "max", locks, extra: utilityExtra }),
+        UTILITY_STAGE_OPTS);
       if (res.Status !== "Optimal") return { status: "infeasible", reason: `stage utility: ${res.Status}` };
       const uprim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
       // The achieved count, read from the primal by the BACKING z vars (an
       // effect is present iff a contribution in its buckets fired) — at this
       // stage's optimum Σu equals this count, since the objective pulls every
       // ceilinged u_e up.
-      let count = 0;
-      for (const [, meta] of program.utilityMeta || []) {
-        if (meta.zNames.some((z) => uprim(z) > 0.5)) count++;
+      // #348 (U2/R15) — one lock body per SECURED effect, never one summed count.
+      // A count floor (`Σu >= count`, what shipped through #91) is satisfied by ANY
+      // equal-size set, so every solve after this stage — the tie-break, both settle
+      // stages, the colorless post-stage — was free to trade a secured effect for a
+      // different one at the same total. Reproduced on a synthetic two-slot model:
+      // the stage secured {Blunt Trauma, Ghost Touch} and the returned loadout
+      // carried {Feather Falling, Ghost Touch}. Harmless while the tier was a flat
+      // count; fatal once the player orders the container, because the effect traded
+      // away can be the one they ranked first.
+      //
+      // KTD2 — the secured set is read z-backed and guarded (a contribution in the
+      // effect's buckets actually fired), never from the u primal. The indicator is
+      // ceilinged `u_e − Σz ≤ 0`, so `u_e >= 1` forces a real carrier rather than
+      // merely floating the indicator.
+      // Walked in CONTAINER ORDER, not indicator-mint order, so the receipts read
+      // the way the player arranged them (R14) and the locks are a prefix-shaped
+      // structure U4 can slice.
+      for (const o of _uOrderVars) {
+        const meta = program.utilityMeta.get(o.u);
+        if (meta && meta.zNames.some((z) => uprim(z) > 0.5)) {
+          utilitySecured.push(o.name);
+          utilityExtra.push(`${o.u} >= 1`);
+        } else {
+          utilityUnsecured.push({ name: o.name, reason: "outbid" });
+        }
       }
-      utilityCount = count;
-      if (count > 0) utilityExtra.push(`${program.utilityVars.join(" + ")} >= ${count}`);
+      // Nothing in the eligible pool carries these at all — a different fact from
+      // losing the slot to a ranked stat, and one the player can act on differently
+      // (there is no gear to farm).
+      for (const name of program.utilityUnreachable || []) {
+        utilityUnsecured.push({ name, reason: "unreachable" });
+      }
+      utilityCount = utilitySecured.length;
       continue;
     }
     const res = highs.solve(encodeStage(program, { objectiveStat: stat, sense: "max", locks, extra: utilityExtra }));
@@ -2003,6 +2081,61 @@ async function solveLexicographic(model, highs) {
     const val = effectiveOf(program, prim, stat);
     perTarget[stat] = val;
     locks.push({ stat, value: val });
+  }
+
+  // #348 (U5, R14/KTD5) — PRICE THE TOP MISS. Exactly one probe, for the
+  // highest-ordered effect the container could not secure. Cost matters here: this
+  // runs on every solve, so the budget is one MILP and no more.
+  //
+  // Only an `outbid` effect is priced. `unreachable` means no eligible variant
+  // carries it under this query at all — there is no price to find, and probing it
+  // would spend a full solve to learn nothing.
+  //
+  // The measurement (user-directed, 2026-08-18): the minimum give on PRIORITY 1.
+  // Maximizing priority 1 subject to the effect being secured IS that minimum — no
+  // slack variable needed, and one solve rather than the ranked chain. Lower
+  // priorities are left free, so the number is a lower bound on the true cost and
+  // the wording downstream must not present it as the whole bill.
+  //
+  // Effects ordered ABOVE the priced one keep their locks; everything below is
+  // freed. Freeing everything would price "secure X having abandoned the rest of
+  // the container", which is not the question the player is asking; locking
+  // everything would price a trade the ordering says they should not want.
+  let utilityPrice = null;
+  const _priceRanked = program.targetList.filter((t) => t !== _UTILITY_SENTINEL);
+  if (program.utilityEnabled && _priceRanked.length && utilityUnsecured.length) {
+    const target = utilityUnsecured.find((u) => u.reason === "outbid");
+    const ov = program.utilityOrderVars || [];
+    const idx = target ? ov.findIndex((o) => o.name === target.name) : -1;
+    if (target && idx >= 0) {
+      const keepAbove = ov.slice(0, idx)
+        .filter((o) => utilitySecured.includes(o.name))
+        .map((o) => `${o.u} >= 1`);
+      const stat = _priceRanked[0];
+      const res = highs.solve(encodeStage(program, {
+        objectiveStat: stat, sense: "max", locks: [],
+        extra: keepAbove.concat([`${ov[idx].u} >= 1`]),
+      }));
+      if (res.Status === "Optimal") {
+        const pp = (n) => (res.Columns[n] ? res.Columns[n].Primal : 0);
+        const give = Math.max(0, (perTarget[stat] ?? 0) - effectiveOf(program, pp, stat));
+        // Measured across the 17 sentinel-ranking parity fixtures: 6 priced, 7 zero,
+        // 4 infeasible. A zero is NOT "free" — the container solves last, so an
+        // unsecured effect is always blocked by something; a zero says only that the
+        // block is not on priority 1. Rendering it as "costs 0 Strength" would tell a
+        // player the effect is free and leave them wondering why it is not equipped,
+        // so the three cases are distinguished HERE and worded separately downstream.
+        utilityPrice = { name: target.name, stat, give, free: give === 0 };
+      } else {
+        // A carrier exists (an indicator was minted, so this is `outbid`, not
+        // `unreachable`) but no solution secures it. With no ranked locks applied,
+        // the only remaining constraints are structural (slots, conflicts) and the
+        // locks on higher-ordered container effects — so when nothing is locked
+        // above, the block is purely structural. Knowing which costs no extra solve.
+        utilityPrice = { name: target.name, stat, give: null, infeasible: true,
+          blockedByHigherOrder: keepAbove.length > 0 };
+      }
+    }
   }
 
   const tb = highs.solve(encodeStage(program, { sense: "min", tieBreak: true, locks, extra: utilityExtra }));
@@ -2030,6 +2163,12 @@ async function solveLexicographic(model, highs) {
     // the load-bearing-checked effect list (U5 builds the full report).
     ...(program.utilityEnabled
       ? { utilityCount, utilityEffects: sol.utilityEffects || [],
+          // #348 (U3/R14) — the ordered secured/unsecured split. Plain JSON so
+          // persist.js can keep it under RESULT_KEEP and a restored character
+          // renders it without re-solving.
+          utilityOrdered: { secured: utilitySecured.slice(), unsecured: utilityUnsecured.slice(),
+            // #348 (U5) — the priced top miss, or null when nothing was outbid.
+            price: utilityPrice },
           // #91 (U5, KTD6) — the render/persist report: count + per-effect
           // credited carriers, guarded and deterministic (built in readSolution).
           utilityReport: sol.utilityReport || { count: 0, effects: [] } } : {}),
@@ -2408,12 +2547,27 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
   // otherwise the floor relaxes by alternativeGive, mirroring how ranked stats
   // are relaxed, so a legal trade that sheds a couple of effects can surface
   // (its loss is stated by alternatives.js cost accounting, never silent).
+  // #348 (U4, R16/KTD6) — TAIL-ONLY shedding. The count floor this replaces let a
+  // candidate shed a higher-ordered effect to gain two lower ones, which is exactly
+  // what an ordered container forbids. The allowance is now expressed as a PREFIX of
+  // per-effect locks: everything above the shed depth is pinned, the tail is free.
+  // Same constraint class as U2's optimum-path locks, just a shorter prefix.
+  //
+  // Small containers: with two secured effects, alternativeGive is 2, so the whole
+  // container is tail and a candidate may shed all of it. That is R16-compliant —
+  // nothing is kept BELOW something shed — and the cost line names every effect
+  // given up, so the trade is stated rather than silent. Recorded here because it
+  // reads like an oversight and is not one.
+  const optSecured = (optimum.utilityOrdered && optimum.utilityOrdered.secured) || [];
+  const shedDepth = sentinelIdx === 0 ? 0 : alternativeGive(optSecured.length);
+  const mustKeep = optSecured.slice(0, Math.max(0, optSecured.length - shedDepth));
   const utilityLock = (prog) => {
-    if (!(optUtilityCount > 0 && prog.utilityEnabled && (prog.utilityVars || []).length)) return [];
-    const floor = sentinelIdx === 0
-      ? optUtilityCount
-      : Math.max(0, optUtilityCount - alternativeGive(optUtilityCount));
-    return floor > 0 ? [`${prog.utilityVars.join(" + ")} >= ${floor}`] : [];
+    if (!(prog.utilityEnabled && mustKeep.length)) return [];
+    const uByName = new Map((prog.utilityOrderVars || []).map((o) => [o.name, o.u]));
+    // The unranked family REBUILDS its program, so the u names must come from THAT
+    // build; resolving by effect name rather than by var index is what makes the
+    // lock survive a rebuild.
+    return mustKeep.map((n) => uByName.get(n)).filter(Boolean).map((u) => `${u} >= 1`);
   };
   // Caps bound the on-demand generation latency: each candidate is a full MILP solve
   // (~1s cold on a real dataset), so the generators are capped and skip the tie-break
@@ -2532,29 +2686,13 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
     if (sol.status === "optimal" && !sameChosen(sol, optimum) && solCrafts < optCrafts) out.push({ sol, gainAxis: "crafts", meta: { optCrafts } });
   }
 
-  // (e) more-utility — #91 (U7, KTD7/R11): the Utility tier's OWN family, the
-  // only axis the tier participates in. Follows the unranked shape: maximize
-  // the indicator sum with the ranked targets locked exact (a zero-cost strict
-  // gain), and if that cannot strictly beat the optimum's count, relax every
-  // ranked target by alternativeGive and try once more. No count lock here —
-  // this family maximizes the count itself. Surfaced ONLY on a strictly
-  // greater achieved count (strict `>` at the claim site — the superlative-
-  // claim rule), and BOTH sides of that comparison are guarded-report counts
-  // (optUtilityCount is the optimum's utilityReport.count — review fix): a
-  // claim of "more utility" must never rest on an effect no fired contribution
-  // carries, and never advertise a gain the optimum's card already displays.
-  if (program.utilityEnabled && optUtilityCount != null && (program.utilityVars || []).length) {
-    const uObjTerms = program.utilityVars.map((u) => ({ coef: 1, name: u }));
-    const countOf = (sol) => (sol.utilityReport ? sol.utilityReport.count : 0);
-    const exact = ranked.map((s) => ({ stat: s, value: per[s] }));
-    let sol = solveConstrained(program, highs, { objTerms: uObjTerms, sense: "max", locks: exact, tieBreak: false });
-    if (!(sol.status === "optimal" && countOf(sol) > optUtilityCount)) {
-      const relaxed = ranked.map((s) => ({ stat: s, value: per[s], give: alternativeGive(per[s]) }));
-      sol = solveConstrained(program, highs, { objTerms: uObjTerms, sense: "max", locks: relaxed, tieBreak: false });
-    }
-    if (sol.status === "optimal" && !sameChosen(sol, optimum) && countOf(sol) > optUtilityCount)
-      out.push({ sol, gainAxis: "utility", meta: { from: optUtilityCount, to: countOf(sol) } });
-  }
+  // #348 (U4, KTD7) — the `more-utility` family (#91 U7/R11) is DELETED, not
+  // redefined. With the container pinned last and solved lexicographically under
+  // ranked-exact locks, its result is already lexicographically maximal at those
+  // values, so the family's zero-cost probe could never strictly win; every
+  // candidate it could surface costs a ranked stat. That trade is better stated
+  // than offered, so R14's disclosure prices the top miss instead (U5). The tier
+  // now appears in Alternatives only as a named cost.
 
   return out;
 }

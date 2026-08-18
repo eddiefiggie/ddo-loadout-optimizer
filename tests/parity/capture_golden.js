@@ -112,7 +112,13 @@ async function solveAll() {
       dataset.items, query,
       dataset.dino_inserts, dataset.nearly_complete, dataset.viktranium,
       dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel,
-      {}, vocab.utilityCounting || null,
+      {}, vocab.utilityCounting && vocab.utilityCounting.size
+        // #348 (U3) — the capture solves what the app solves, ORDER included: a
+        // golden captured in alphabetical order would ratify a loadout no player
+        // can ever get.
+        ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set(),
+            order: vocab.utilityOrder || null }
+        : null,
     );
     const r = await solveLexicographic(model, highs);
     solves[fx.name] = {

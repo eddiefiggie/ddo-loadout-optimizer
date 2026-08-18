@@ -327,6 +327,282 @@ async function withCrossAdd(map, fn) {
     assert.deepStrictEqual(r.utilityEffects, []);
   });
 
+  await test("#348 U2/R15: no solve after the container stage may swap a secured effect", async () => {
+    // The count floor this replaces (`Σu >= count`) is satisfied by ANY equal-size
+    // set, so the tie-break and settle stages could trade one secured effect for a
+    // different one. This model reproduces exactly that against the pre-change tree:
+    // two slots, three counting names, only two securable — the stage secures
+    // {Blunt Trauma, Ghost Touch} (nGT + tBT) and the shipped count floor let the
+    // final solve return {Feather Falling, Ghost Touch} (nGT + tFF) instead.
+    //
+    // The assertion is set preservation, not a hardcoded set: whatever the stage
+    // secures, the returned loadout must carry the same effects. Ordering (R6) is
+    // U3's; this unit only forbids the substitution ordering would be defenceless
+    // against.
+    const model = {
+      targets: [SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch", "Feather Falling", "Blunt Trauma"]),
+      worn: [
+        slot("Necklace", [
+          item("nGT", "Necklace", [["Ghost Touch", "Bool", 1]]),
+          item("nFF", "Necklace", [["Feather Falling", "Bool", 1]]),
+        ]),
+        slot("Trinket", [
+          item("tFF", "Trinket", [["Feather Falling", "Bool", 1]]),
+          item("tBT", "Trinket", [["Blunt Trauma", "Bool", 1]]),
+        ]),
+      ],
+    };
+
+    // Re-run the container stage alone to learn what it secured, reading the same
+    // guarded z-backed rule the stage itself uses (KTD2) — never the u primal. That
+    // rule's own falsification lives in the "#91 U5/KTD6 guard" test above, which
+    // injects synthetic primals through readSolution in both directions; the lock
+    // built here applies the identical predicate at the stage site.
+    //
+    // The objective mirrors production's ordered weighting (#348 U3) rather than a
+    // flat count: re-deriving with a different objective would compare the full
+    // solve against a stage it never ran, which is a broken oracle, not a guard.
+    const program = S.buildProgram(model);
+    const ov = program.utilityOrderVars;
+    const objTerms = ov.map((o, i) => ({ coef: Math.pow(2, ov.length - 1 - i), name: o.u }));
+    const res = highs.solve(S.encodeStage(program, { objTerms, sense: "max", locks: [] }));
+    assert.strictEqual(res.Status, "Optimal");
+    const prim = (n) => (res.Columns[n] ? res.Columns[n].Primal : 0);
+    const staged = [];
+    for (const [, meta] of program.utilityMeta) {
+      if (meta.zNames.some((z) => prim(z) > 0.5)) staged.push(meta.name);
+    }
+    assert.strictEqual(staged.length, 2, "the stage secures two of the three names");
+
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.utilityCount, staged.length, "the count is preserved");
+    assert.deepStrictEqual(
+      r.utilityEffects.map((e) => e.name).sort(), staged.slice().sort(),
+      "the SAME effects survive the tie-break and both settle stages — not merely as many");
+    // The ordered receipt agrees with the effect list, and every container name is
+    // accounted for exactly once as either secured or unsecured.
+    assert.deepStrictEqual(r.utilityOrdered.secured.slice().sort(), staged.slice().sort());
+    const accounted = r.utilityOrdered.secured.concat(r.utilityOrdered.unsecured.map((u) => u.name));
+    assert.deepStrictEqual(accounted.slice().sort(),
+      ["Blunt Trauma", "Feather Falling", "Ghost Touch"],
+      "every container name is reported as secured or unsecured — none silently vanish");
+  });
+
+  await test("#348 U3/R6/AE1: order beats breadth — the top choice wins over two lower ones", async () => {
+    // One slot, two ways to fill it: the top-ordered effect alone, or two
+    // lower-ordered effects together. A count-maximizing tier takes the pair every
+    // time — that is the value-blindness #348 exists to remove. An ordered container
+    // must take the single effect the player ranked first, and taking the pair when
+    // the order is reversed is what proves the choice is the ORDER's doing rather
+    // than an artifact of the model.
+    const mk = (order) => ({
+      targets: [SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["A-eff", "B-eff", "C-eff"]), utilityOrder: order,
+      worn: [slot("Trinket", [
+        item("tA", "Trinket", [["A-eff", "Bool", 1]]),
+        item("tBC", "Trinket", [["B-eff", "Bool", 1], ["C-eff", "Bool", 1]]),
+      ])],
+    });
+
+    const top = await S.solveLexicographic(mk(["A-eff", "B-eff", "C-eff"]), highs);
+    assert.deepStrictEqual(top.utilityOrdered.secured, ["A-eff"],
+      "the first-ordered effect is secured even though it costs two lower ones");
+    assert.strictEqual(top.utilityCount, 1, "breadth is surrendered to order — one effect, not two");
+    assert.deepStrictEqual(top.chosen.map((c) => c.variant.variant_id), ["tA"]);
+
+    const pair = await S.solveLexicographic(mk(["B-eff", "C-eff", "A-eff"]), highs);
+    assert.deepStrictEqual(pair.utilityOrdered.secured, ["B-eff", "C-eff"],
+      "reversing the order takes the pair — the selection follows the order, not the model");
+    assert.deepStrictEqual(pair.chosen.map((c) => c.variant.variant_id), ["tBC"]);
+  });
+
+  await test("#348 U3/R14: an unsecured effect says WHY — outbid or unreachable", async () => {
+    // Two different facts a player acts on differently: an effect that lost the slot
+    // (gear exists; something outranked it) and an effect nothing in the pool carries
+    // at all (there is nothing to farm). Collapsing them into one "not secured" line
+    // would send a player hunting for gear that does not exist in their band.
+    const r = await S.solveLexicographic({
+      targets: [SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch", "Feather Falling", "Nonexistent Effect"]),
+      utilityOrder: ["Ghost Touch", "Nonexistent Effect", "Feather Falling"],
+      worn: [slot("Trinket", [
+        item("tGT", "Trinket", [["Ghost Touch", "Bool", 1]]),
+        item("tFF", "Trinket", [["Feather Falling", "Bool", 1]]),
+      ])],
+    }, highs);
+    assert.deepStrictEqual(r.utilityOrdered.secured, ["Ghost Touch"]);
+    const byName = Object.fromEntries(r.utilityOrdered.unsecured.map((u) => [u.name, u.reason]));
+    assert.strictEqual(byName["Feather Falling"], "outbid",
+      "a carrier exists but lost the slot");
+    assert.strictEqual(byName["Nonexistent Effect"], "unreachable",
+      "no eligible variant carries it — no indicator was ever minted");
+  });
+
+  await test("#348 U3/R10: the same query and container return the same loadout", async () => {
+    const mk = () => ({
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch", "Feather Falling"]),
+      utilityOrder: ["Feather Falling", "Ghost Touch"],
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+        slot("Trinket", [
+          item("tGT", "Trinket", [["Ghost Touch", "Bool", 1]]),
+          item("tFF", "Trinket", [["Feather Falling", "Bool", 1]]),
+        ]),
+      ],
+    });
+    const a = await S.solveLexicographic(mk(), highs);
+    const b = await S.solveLexicographic(mk(), highs);
+    assert.deepStrictEqual(chosenIds(b), chosenIds(a));
+    assert.deepStrictEqual(b.utilityOrdered, a.utilityOrdered);
+    assert.deepStrictEqual(a.utilityOrdered.secured, ["Feather Falling"],
+      "the declared order, not alphabetical order, decides the winner");
+  });
+
+  await test("#348 U5/R14/AE3: a reachable miss is priced; an unreachable one is not probed", async () => {
+    // Ghost Touch loses the Trinket to the higher-ordered Blurry carrier, so it is
+    // outbid and priceable. "Nonexistent Effect" has no carrier at all, so there is
+    // no price to find and the probe must not spend a solve looking for one.
+    const model = {
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Blurry", "Ghost Touch", "Nonexistent Effect"]),
+      utilityOrder: ["Blurry", "Ghost Touch", "Nonexistent Effect"],
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+        slot("Trinket", [
+          item("tBlur", "Trinket", [["A", "Enhancement", 4], ["Blurry", "Bool", 1]]),
+          item("tGT", "Trinket", [["Ghost Touch", "Bool", 1]]),
+        ]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.deepStrictEqual(r.utilityOrdered.secured, ["Blurry"]);
+    const price = r.utilityOrdered.price;
+    assert.ok(price, "a price was computed");
+    assert.strictEqual(price.name, "Ghost Touch",
+      "the highest-ordered OUTBID effect is priced — not the unreachable one below it");
+    assert.strictEqual(price.stat, "A", "priced against priority 1");
+  });
+
+  await test("#348 U5/KTD5: exactly one probe, however many effects went unsecured", async () => {
+    // The budget is one MILP. Counted directly rather than inferred from wall time:
+    // a probe-per-miss would scale with the container and is the thing KTD5 forbids.
+    const mk = (names, order) => ({
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(names), utilityOrder: order,
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+        slot("Trinket", [
+          item("tHi", "Trinket", [["A", "Enhancement", 4], [order[0], "Bool", 1]]),
+          ...order.slice(1).map((n, i) => item(`t${i}`, "Trinket", [[n, "Bool", 1]])),
+        ]),
+      ],
+    });
+    const counting = (h) => { let n = 0; return { proxy: { solve: (...a) => { n++; return h.solve(...a); } }, count: () => n }; };
+
+    const oneMiss = ["Blurry", "Ghost Touch"];
+    const manyMiss = ["Blurry", "Ghost Touch", "Deathblock", "True Seeing", "Feather Falling"];
+    const a = counting(highs);
+    const ra = await S.solveLexicographic(mk(oneMiss, oneMiss), a.proxy);
+    const b = counting(highs);
+    const rb = await S.solveLexicographic(mk(manyMiss, manyMiss), b.proxy);
+
+    assert.strictEqual(ra.utilityOrdered.unsecured.length, 1, "one miss");
+    assert.ok(rb.utilityOrdered.unsecured.length >= 3, "several misses");
+    assert.strictEqual(b.count(), a.count(),
+      `solve count must not grow with the number of misses (${a.count()} vs ${b.count()})`);
+  });
+
+  await test("#348 U5: a container that secured everything runs no probe and prices nothing", async () => {
+    const counting = (h) => { let n = 0; return { proxy: { solve: (...a) => { n++; return h.solve(...a); } }, count: () => n }; };
+    const mk = (order) => ({
+      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(order), utilityOrder: order,
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+        slot("Trinket", [item("tBoth", "Trinket", [["Blurry", "Bool", 1], ["Ghost Touch", "Bool", 1]])]),
+      ],
+    });
+    const full = counting(highs);
+    const r = await S.solveLexicographic(mk(["Blurry", "Ghost Touch"]), full.proxy);
+    assert.deepStrictEqual(r.utilityOrdered.unsecured, [], "nothing was missed");
+    assert.strictEqual(r.utilityOrdered.price, null, "so nothing is priced");
+
+    // ...and the probe genuinely did not run: same model with one effect made
+    // unreachable-but-outbid costs exactly one more solve.
+    const miss = counting(highs);
+    await S.solveLexicographic({
+      ...mk(["Blurry", "Ghost Touch"]),
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+        slot("Trinket", [
+          item("tB", "Trinket", [["A", "Enhancement", 4], ["Blurry", "Bool", 1]]),
+          item("tG", "Trinket", [["Ghost Touch", "Bool", 1]]),
+        ]),
+      ],
+    }, miss.proxy);
+    assert.strictEqual(miss.count(), full.count() + 1,
+      `the probe is exactly one solve (${full.count()} with no miss, ${miss.count()} with one)`);
+  });
+
+  await test("#348 U5: a zero give requires something BELOW priority 1 to be the block", async () => {
+    // The invariant the priced disclosure's wording rests on. `give === 0` renders as
+    // "costs nothing on <stat> — it is competing with your lower-ranked priorities",
+    // which is only true if a lower-ranked priority exists and is the binding
+    // constraint. The claim implies a falsifiable prediction: with exactly ONE ranked
+    // stat there is nothing below priority 1, so a zero give must be unreachable.
+    //
+    // Both single-ranked shapes are exercised, because the second is the one that
+    // would have made the copy a lie: an effect blocked only by a higher-ordered
+    // container effect must route to the INFEASIBLE sentence, not to a zero.
+    const mk = (targets, order, worn) => ({
+      targets, mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(order), utilityOrder: order, worn,
+    });
+
+    // (a) one ranked stat, and securing the effect costs it -> a real price.
+    const costsP1 = await S.solveLexicographic(mk(["A", SENT], ["Y", "X"], [
+      slot("Trinket", [
+        item("hiA", "Trinket", [["A", "Enhancement", 10]]),
+        item("xA", "Trinket", [["A", "Enhancement", 6], ["X", "Bool", 1]]),
+        item("yA", "Trinket", [["A", "Enhancement", 8], ["Y", "Bool", 1]]),
+      ]),
+    ]), highs);
+    assert.ok(costsP1.utilityOrdered.price.give > 0,
+      "with nothing below priority 1, an outbid effect must cost priority 1 something");
+    assert.strictEqual(costsP1.utilityOrdered.price.free, false);
+
+    // (b) one ranked stat, and the block is a HIGHER-ORDERED container effect, not a
+    // stat. This must not surface as a zero — there is no lower-ranked priority for
+    // it to be "competing with".
+    const blockedAbove = await S.solveLexicographic(mk(["A", SENT], ["Y", "X"], [
+      slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+      slot("Trinket", [
+        item("tX", "Trinket", [["X", "Bool", 1]]),
+        item("tY", "Trinket", [["Y", "Bool", 1]]),
+      ]),
+    ]), highs);
+    const bp = blockedAbove.utilityOrdered.price;
+    assert.strictEqual(bp.infeasible, true, "it routes to the infeasible sentence");
+    assert.strictEqual(bp.blockedByHigherOrder, true, "and names the ordering as the block");
+    assert.notStrictEqual(bp.free, true, "and never renders as 'costs nothing'");
+
+    // (c) control: two ranked stats with the block on priority 2 -> the zero case,
+    // where the shipped wording is accurate.
+    const onP2 = await S.solveLexicographic(mk(["A", "B", SENT], ["X"], [
+      slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
+      slot("Trinket", [
+        item("hiB", "Trinket", [["B", "Enhancement", 10]]),
+        item("xB", "Trinket", [["B", "Enhancement", 4], ["X", "Bool", 1]]),
+      ]),
+    ]), highs);
+    assert.strictEqual(onP2.utilityOrdered.price.give, 0);
+    assert.strictEqual(onP2.utilityOrdered.price.free, true,
+      "a zero appears exactly where a lower-ranked priority is the block");
+  });
+
   await test("#91 U3/KTD10: a tier-2 name (carried, but outside the counting set) mints no indicator", async () => {
     // Keen is a real Bool presence effect excluded from the v1 tier-1 curation:
     // its carrier is equipped, but no u_e exists for it and it never counts.
@@ -5106,7 +5382,10 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(reb.sol.utilityReport.count, 0, "it sheds the counted effect");
     const A2 = require("../web/alternatives.js");
     const an = A2.analyzeAlternative(r, reb, { targets: ["A", SENT, "B"] });
-    assert.ok(/-1 utility effects/.test(an.costText), "the shed is stated in costText, never silent");
+    // #348 (U4/R16) — the loss is NAMED now, not counted: "gives up Ghost Touch"
+    // tells a player who curated an ordered container what the trade actually takes.
+    assert.ok(/gives up Ghost Touch/.test(an.costText), "the shed is stated by name, never silent");
+    assert.deepStrictEqual(an.shedEffects, ["Ghost Touch"]);
     assert.strictEqual(an.utilDelta, -1);
     assert.ok(an.totalCost >= 1, "totalCost includes the shed magnitude");
   });
@@ -5141,7 +5420,7 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual((crafts.sol.gsPlaced || []).length, 0, "it genuinely drops the craft");
     const A2 = require("../web/alternatives.js");
     const an = A2.analyzeAlternative(r, crafts, { targets: ["Melee Power", SENT] });
-    assert.ok(/-1 utility effects/.test(an.costText), "the shed effect is stated in costText");
+    assert.ok(/gives up Ghost Touch/.test(an.costText), "the shed effect is stated by name");
     assert.strictEqual(an.totalCost, 5 + 1, "-5 Melee Power plus the shed effect");
     // Tier ranked FIRST: the count is the top priority -> exact lock -> the
     // shedding swap is infeasible and no crafts candidate exists.

@@ -1267,6 +1267,13 @@
       // when nothing was ranked-but-uncounted, so a surface can test either.
       excluded,
       excludedLine: utilityExcludedLine(excluded),
+      // #348 (U3/R14) — the ordered secured/unsecured split and the priced top
+      // miss. Absent on a snapshot written before #348 (KTD6 forbids re-solving on
+      // load), so every consumer must treat these as optional rather than assuming
+      // an ordered container behind every saved character.
+      ordered: snap.utilityOrdered || null,
+      unsecuredLines: utilityUnsecuredLines(snap.utilityOrdered),
+      priceLine: utilityPriceLine(snap.utilityOrdered && snap.utilityOrdered.price),
     } : null;
 
     return {
@@ -1435,6 +1442,51 @@
    *  The zero-state wording matches results.js's utilityCard verbatim — R9 says
    *  a zero count is stated plainly, never rendered as an empty receipts list.
    */
+  /** #348 (U5, R14) — the ONE canonical sentence for the priced top miss.
+   *
+   *  Three outcomes, three sentences, because they are three different facts and
+   *  only one of them is a price:
+   *
+   *  - give > 0   the effect is reachable, and this is what it costs on the top
+   *               priority. Lower priorities are left free by the probe, so it is a
+   *               LOWER BOUND and says so — never presented as the whole bill.
+   *  - give === 0 securing it costs nothing on the top priority. This is not "free":
+   *               the container solves last, so an unsecured effect is always
+   *               blocked by something, and a zero only locates the block below
+   *               priority 1. Measured on the parity set this is the most common
+   *               outcome (7 of 17), which is exactly why it gets its own wording
+   *               instead of rendering as "costs 0".
+   *  - infeasible no solution secures it at any price on the top priority, either
+   *               because a higher-ordered container effect holds the slot or
+   *               because nothing equippable can carry it here.
+   *
+   *  Returns null when nothing was outbid — the caller renders nothing at all. */
+  function utilityPriceLine(price) {
+    if (!price || !price.name) return null;
+    const what = price.name;
+    if (price.infeasible) {
+      return price.blockedByHigherOrder
+        ? `${what} could not be secured at any cost here — an effect you placed above it holds the slot.`
+        : `${what} could not be secured at any cost here — nothing you can equip carries it alongside this build.`;
+    }
+    if (price.free) {
+      return `${what} costs nothing on ${price.stat} — it is competing with your lower-ranked priorities, `
+        + "so moving it up your list or relaxing one of those is what would win it.";
+    }
+    return `${what} is reachable: it would cost at least ${price.give} ${price.stat}. `
+      + "Lower priorities may pay as well — this is the give on your top priority alone.";
+  }
+
+  /** #348 (U3, R14) — the container's misses, in the player's order, each with the
+   *  reason it was missed. One line per effect so a surface can list them; the
+   *  priced sentence above covers only the top one. */
+  function utilityUnsecuredLines(ordered) {
+    const list = (ordered && ordered.unsecured) || [];
+    return list.map((u) => (u.reason === "unreachable"
+      ? `${u.name} — nothing in your gear pool carries it at this level.`
+      : `${u.name} — carried by gear you could equip, but it lost the slot.`));
+  }
+
   function utilityLine(count) {
     if (!count) return "0 utility effects on this loadout — no counted on/off effects are present.";
     return `${count} utility ${count === 1 ? "effect" : "effects"} on this loadout`;
@@ -1547,7 +1599,7 @@
     absorptionQuarantineNoticeLines, declaredCreditsLine,
     // #91 (U6) — the one utility sentence + the tier's display name (from
     // model.js; re-exported so exporters can recognize the sentinel row)
-    utilityLine, UTILITY_SENTINEL: UTILITY_NAME,
+    utilityLine, utilityPriceLine, utilityUnsecuredLines, UTILITY_SENTINEL: UTILITY_NAME,
     // pure primitives (results.js binds these; single definition, no drift)
     affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, bundleGroups, itemMl, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,

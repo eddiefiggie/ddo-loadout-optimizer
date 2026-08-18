@@ -1714,6 +1714,40 @@ test("#91/KTD10: the stamped counting set and UTILITY_TIER1_PRESENCE cannot drif
   }
 });
 
+test("#348 U3/KTD8: the declared container order covers the stamped counting set exactly", () => {
+  const v = builtVocab();
+  if (!v) return console.log("  (skipped — web/data/items.json not built)");
+  const { UTILITY_CONTAINER_DEFAULT_ORDER, defaultUtilityOrder } = require("../web/dataset.js");
+
+  // No duplicates: a name listed twice would be pursued twice and consume two
+  // container slots for one effect.
+  assert.strictEqual(new Set(UTILITY_CONTAINER_DEFAULT_ORDER).size, UTILITY_CONTAINER_DEFAULT_ORDER.length,
+    "the declared order lists a name twice");
+
+  // Direction 1: the order mentions nothing the dataset does not stamp. A name
+  // here that is not counted would occupy a container position pursuing an effect
+  // the solver has no indicator for.
+  for (const n of UTILITY_CONTAINER_DEFAULT_ORDER) {
+    assert.ok(v.utilityCounting.has(n),
+      `declared order names ${n}, which the dataset does not stamp as counted`);
+  }
+
+  // Direction 2 — the one that matters for #349. defaultUtilityOrder appends any
+  // stamped-but-unordered name in sorted order rather than dropping it, so a
+  // widened roster still solves. That tail is a safety net, NOT a resting place:
+  // it means a roster widened without an ordering decision would silently land at
+  // the bottom alphabetically, which R9 says is not allowed to be how order is set.
+  const ordered = defaultUtilityOrder(v.utilityCounting);
+  const declared = new Set(UTILITY_CONTAINER_DEFAULT_ORDER);
+  const tail = ordered.filter((n) => !declared.has(n));
+  assert.deepStrictEqual(tail, [],
+    `the stamped counting set gained ${JSON.stringify(tail)} with no position in the declared order — ` +
+    "widening the roster is also an ordering decision (R9); place these in UTILITY_CONTAINER_DEFAULT_ORDER");
+
+  assert.strictEqual(ordered.length, v.utilityCounting.size,
+    "the default container must cover every counted name exactly once");
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);
 
 // ---------------------------------------------------------------------------

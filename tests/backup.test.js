@@ -199,3 +199,16 @@ test("#346: the shared input allowlist carries craftingRung", () => {
   assert.ok(INPUT_KEYS.includes("excludeCraftingSystems"),
     "the legacy bridge must also survive import, or a downgrade loses the restriction");
 });
+
+test("#348 U7/R11: the export/import round-trip carries the container and its marker", () => {
+  const { INPUT_KEYS } = require("../web/persist.js");
+  // backup.js filters imported inputs through this same list, so a key outside it
+  // is stripped on import. Without the container the player's curation would be
+  // silently reset by moving a character between devices; without the marker the
+  // imported record would read as pre-container and re-heal (and re-notify) on
+  // every single load.
+  assert.ok(INPUT_KEYS.includes("utilityContainer"),
+    "a container outside the allowlist is stripped on import — curation lost on transfer");
+  assert.ok(INPUT_KEYS.includes("utility_container_aware"),
+    "the marker must survive too, or an imported record heals forever");
+});

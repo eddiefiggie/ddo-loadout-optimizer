@@ -814,6 +814,14 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     : (utilityCountingSet && utilityCountingSet.counting) || null;
   const _uAdmitted = (utilityCountingSet && !(typeof utilityCountingSet.has === "function")
     && utilityCountingSet.admitted) || null;
+  // #348 (U3, R6) — the container's ORDER. Optional on the object form; when it is
+  // absent the solver falls back to the counting set in sorted order so there is
+  // exactly ONE encoding path rather than an ordered one and a count-maximizing
+  // one. Sorted is a deterministic default, not a product decision — the product
+  // order is web/dataset.js's UTILITY_CONTAINER_DEFAULT_ORDER, which the app passes
+  // through vocab.utilityOrder.
+  const _uOrder = (utilityCountingSet && typeof utilityCountingSet.has !== "function"
+    && Array.isArray(utilityCountingSet.order)) ? utilityCountingSet.order.slice() : null;
   // Fail fast rather than silently solving with zero indicators: utilityCountingSet
   // is a defaulted 11th positional param, so a forgotten call site would otherwise
   // widen nothing and the utility stage would place no gear with no error anywhere.
@@ -1102,6 +1110,8 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     utilityCountingSet: _uCounting || null,
     // #332 — the rankable-only procs, for the report's exclusion sentence.
     utilityAdmittedSet: _uAdmitted || null,
+    // #348 (U3) — the container's order, or null when the caller passed only a set.
+    utilityOrder: _uOrder,
     utilityEnabled,
     // U1 — user-set per-stat caps (clamp a stat's counted value); merged with the
     // armor dodge cap in buildProgram. U2 — user-set per-stat floors (best-effort).

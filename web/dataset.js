@@ -521,6 +521,68 @@ const UTILITY_TIER1_PRESENCE = new Set([
   "Legendary Tet-zik, The Enlightened Change",
 ]);
 
+/** #348 (U3, KTD8) — the container's DEFAULT ORDER.
+ *
+ *  R9 makes the order a product decision, so it is DECLARED here rather than
+ *  derived from UTILITY_TIER1_PRESENCE's iteration order, which is an artifact of
+ *  how the roster literal was edited: adding a name in the wrong place would
+ *  silently re-rank what the solver pursues first.
+ *
+ *  The six worn defensive toggles lead, because they are the effects a player
+ *  notices in play and the reported #343 bug was precisely that the tier never
+ *  reached them. The fourteen inherited names follow.
+ *
+ *  This list has NO Python counterpart. The build pipeline derives the counting
+ *  set's MEMBERSHIP (src/utility_procs.py, stamped into the dataset) and nothing
+ *  in it consumes an order — order is read only by the solver stage and the
+ *  curation panel. A mirrored copy would be a second thing to drift for no
+ *  consumer. `tests/dataset.test.js` instead asserts this order covers the
+ *  stamped counting set exactly, so a roster change that skips this list fails.
+ */
+const UTILITY_CONTAINER_DEFAULT_ORDER = [
+  // The #343 worn defensive toggles, first.
+  "Ghostly",
+  "True Seeing",
+  "Blurry",
+  "Freedom of Movement",
+  "Blindness Immunity",
+  "Deathblock",
+  // The classic always-on utility archetype.
+  "Feather Falling",
+  // The plan's Product Contract examples.
+  "Ghost Touch",
+  "Whelming Shockwave",
+  "Blunt Trauma",
+  "Lesser Boneshatter",
+  // The PRESENCE_ALLOW wiki-adjudicated named effects.
+  "Kick 'Em While They're Down",
+  "Way of the Sun Soul",
+  "Lifeblood of the Undead Prince",
+  "Path of the Fire Dragon",
+  "Path of the Guarding Stone",
+  "Brilliance of the Shattered Sun",
+  "Vile Grip of the Hidden Hand",
+  "Legendary Vile Grip of the Hidden Hand",
+  "Legendary Tet-zik, The Enlightened Change",
+];
+
+/** #348 (U3) — the default container for a given counting set: the declared order,
+ *  restricted to names the dataset actually stamps, with any stamped name the order
+ *  does not mention appended in sorted order rather than dropped.
+ *
+ *  The append tail is a safety net, not a design: the dataset.test.js guard fails
+ *  when it is non-empty, so a widened roster (#349) is forced through a deliberate
+ *  ordering decision instead of silently landing at the bottom in alphabetical
+ *  order. Dropping the name instead would be worse — a stamped effect the solver
+ *  can never pursue is invisible in a way nothing reports. */
+function defaultUtilityOrder(counting) {
+  const have = (counting && typeof counting.has === "function") ? counting : new Set();
+  const out = UTILITY_CONTAINER_DEFAULT_ORDER.filter((n) => have.has(n));
+  const named = new Set(out);
+  const rest = [...have].filter((n) => !named.has(n)).sort();
+  return out.concat(rest);
+}
+
 /** #228 — every `Bool` presence name that reads like a named effect (it clears the
  *  noise filter) but is hidden anyway because it runs past the four-word cap, and
  *  has not been adjudicated onto PRESENCE_ALLOW. Sorted.
@@ -893,7 +955,13 @@ function buildPickerVocabulary(dataset) {
   const labelMap = {};
   for (const key of labelKeys) labelMap[key] = provenanceLabels[key].to.slice();
   return { suggestions: [...suggest].sort(), known, canonical, presence, magnitude, untypedOnly,
-           utilityCounting, utilityAdmitted, expandedAway, provenanceLabels: labelMap };
+           utilityCounting, utilityAdmitted,
+           // #348 (U3) — the container's default contents AND order, derived from
+           // the declared order restricted to what this dataset stamps. Carried
+           // beside the set so every caller (solve, wizard, browse) reads ONE
+           // ordering rather than re-deriving it and drifting.
+           utilityOrder: defaultUtilityOrder(utilityCounting),
+           expandedAway, provenanceLabels: labelMap };
 }
 
 /** U10 — is this name an enchantment label an expansion stamps (as opposed to a bare
@@ -1107,5 +1175,6 @@ if (typeof window !== "undefined") {
   window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
 }
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK, UTILITY_TIER1_PRESENCE };
+  module.exports = { UTILITY_CONTAINER_DEFAULT_ORDER, defaultUtilityOrder,
+    normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK, UTILITY_TIER1_PRESENCE };
 }

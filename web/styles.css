@@ -1155,3 +1155,30 @@ input.wz-ml { width: 120px; }
 .wz-block-hit { display: flex; align-items: center; gap: 8px; padding: 6px 8px; cursor: pointer; }
 .wz-block-hit-off { opacity: 0.55; cursor: default; }
 .wz-block-stage { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
+
+/* #348 (U6) — the pinned Utility container row.
+   R2: visually distinct from the ranked rows above it, so a player can see at a
+   glance that it is not competing with them. Muted rather than loud: it is the
+   lowest-stakes row on the page and should not read as a warning. */
+.wz-utility-row { background: var(--panel-2, rgba(255,255,255,0.03)); border-radius: 6px; }
+.wz-grip-pinned { cursor: default; opacity: 0.7; letter-spacing: normal; }
+.wz-rk-pinned {
+  /* Browser-verified fix: `.wz-rk` is a filled, rounded rank badge, so the pinned
+     row inherited a 22px blue chip containing a bare "·" — it read as an empty
+     rank number on a row that is deliberately NOT ranked. */
+  background: transparent; color: var(--faint); font-weight: normal;
+}
+.wz-util-summary { display: block; font-size: 0.85em; color: var(--faint); margin-top: 2px; }
+.wz-util-panel .wz-adv-body { display: block; }
+.wz-util-list { list-style: none; margin: var(--sp-2) 0; padding: 0; }
+.wz-util-item { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+.wz-util-pos { color: var(--faint); min-width: 1.4em; text-align: right; font-variant-numeric: tabular-nums; }
+.wz-util-name { flex: 1 1 auto; }
+.wz-util-search { display: block; margin-top: var(--sp-2); }
+.wz-util-search input { width: 100%; max-width: 26rem; }
+.wz-util-sugg { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.wz-util-add { font-size: 0.9em; }
+/* The cap refusal (R5) must be readable, not a whisper — it is the one message
+   here that explains why an action did nothing. */
+.wz-util-status:empty { display: none; }
+.wz-util-status { margin-top: 6px; color: var(--warn, #d9a441); font-size: 0.9em; }
