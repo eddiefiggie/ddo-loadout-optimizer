@@ -242,62 +242,29 @@ const tradeModel = () => ({
     augments: [],
   });
 
-  await test("#91 U7/AE1-shape: the utility family surfaces the proc-richer weapon with the ranked cost stated", async () => {
+  await test("#348 U4/R17/KTD7: the utility gain axis is retired — the tier is only ever a cost", async () => {
+    // The `more-utility` family used to surface Echo of Whelm as a gain: strictly
+    // more counted effects for a bounded ranked cost. It is deleted, not redefined.
+    // With the container pinned last and solved lexicographically under ranked-exact
+    // locks, the optimum's container result is already lexicographically maximal at
+    // those values, so a zero-cost strict win is impossible by construction — every
+    // candidate the family could surface costs a ranked stat, and that trade is
+    // better STATED (R14's priced disclosure, U5) than offered as a card.
+    //
+    // This replaces three tests that asserted the family's behavior in three
+    // situations ("surfaces the proc-richer weapon", "no trade within the give
+    // yields nothing", "a tie in count does not surface"). All three would now
+    // assert the absence of something that cannot exist, which is not coverage.
     const opt = await S.solveLexicographic(echoModel(), highs);
-    assert.strictEqual(opt.effective.A, 10, "the ranked stat picks Calamitous");
     assert.strictEqual(opt.utilityCount, 0, "no utility reachable without surrendering a ranked point");
     const alts = S.generateAlternatives(opt, echoModel(), highs);
-    const u = alts.find((a) => a.gainAxis === "utility");
-    assert.ok(u, "produced a more-utility candidate");
-    assert.deepStrictEqual(u.meta, { from: 0, to: 2 }, "meta carries the optimum's count and the candidate's");
-    assert.ok(u.sol.chosen.some((c) => c.variant.variant_id === "Echo"), "equips the proc-richer weapon");
-    assert.strictEqual(u.sol.effective.A, 9, "the ranked cost stays within alternativeGive");
-    // receipts available for inspect (U5 integration): the guarded utilityReport rides the candidate
-    assert.strictEqual(u.sol.utilityReport.count, 2, "the candidate carries its guarded utilityReport");
-    assert.deepStrictEqual(u.sol.utilityReport.effects.map((e) => e.name).sort(),
-      ["Feather Falling", "Ghost Touch"]);
-    // and the analysis states the trade
-    const an = A.analyzeAlternative(opt, u, { targets: ["A", SENT] });
-    assert.ok(an.tags.includes("utility effects"), "tagged as a utility trade");
-    assert.strictEqual(an.gainText, "+2 utility effects (0 → 2)", "gainText states the counts");
-    assert.deepStrictEqual(an.cost, [{ stat: "A", delta: -1 }], "the ranked cost is stated");
-    assert.strictEqual(an.gainMag, 2);
-  });
-
-  await test("#91 U7: no utility-richer trade within the give -> the family yields nothing", async () => {
-    // The proc carrier costs 10 ranked points; alternativeGive(20) = 2, so the
-    // trade is out of reach and no noise entry may appear.
-    const model = {
-      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
-      utilityCountingSet: new Set(["Ghost Touch"]),
-      worn: [slot("Weapon", [
-        item("Calamitous", "Weapon", [["A", "Enhancement", 20]]),
-        item("Echo", "Weapon", [["A", "Enhancement", 10], ["Ghost Touch", "Bool", 1]]),
-      ])],
-      augments: [],
-    };
-    const opt = await S.solveLexicographic(model, highs);
-    assert.strictEqual(opt.utilityCount, 0);
-    const alts = S.generateAlternatives(opt, model, highs);
-    assert.ok(!alts.some((a) => a.gainAxis === "utility"), "no candidate inside the bounded give -> nothing surfaced");
-  });
-
-  await test("#91 U7: a tie in count does not surface (strict > at the claim site)", async () => {
-    // Both weapons carry the same counted effect: any trade re-achieves count 1,
-    // never exceeds it, so the family must stay silent.
-    const model = {
-      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
-      utilityCountingSet: new Set(["Ghost Touch"]),
-      worn: [slot("Weapon", [
-        item("W1", "Weapon", [["A", "Enhancement", 10], ["Ghost Touch", "Bool", 1]]),
-        item("W2", "Weapon", [["A", "Enhancement", 9], ["Ghost Touch", "Bool", 1]]),
-      ])],
-      augments: [],
-    };
-    const opt = await S.solveLexicographic(model, highs);
-    assert.strictEqual(opt.utilityCount, 1);
-    const alts = S.generateAlternatives(opt, model, highs);
-    assert.ok(!alts.some((a) => a.gainAxis === "utility"), "an equal count is not 'more utility'");
+    assert.strictEqual(alts.filter((a) => a.gainAxis === "utility").length, 0,
+      "no generator emits the retired axis");
+    for (const a of alts) {
+      const an = A.analyzeAlternative(opt, a, { targets: ["A", SENT] });
+      assert.ok(!an.tags.includes("utility effects"), "no candidate is tagged as a utility gain");
+      assert.ok(!/utility effects/.test(an.gainText || ""), "no candidate headlines a utility count");
+    }
   });
 
   await test("#91 U7/KTD7: tier ranked first -> a set-activation alternative preserves the optimum's utility count", async () => {
@@ -340,39 +307,20 @@ const tradeModel = () => ({
     assert.strictEqual(setAlt.sol.effective.Constitution, 13, "the lock-respecting completion: 10 Enh + 2 Insight + 1 Profane tier");
   });
 
-  await test("review fix 2: the more-utility family baselines on the DISPLAYED report count, not the stage count", async () => {
-    // The stage utilityCount and the guarded utilityReport.count can differ
-    // (the report is z-backed; the stage count is a lock-time value). The
-    // strict-gain claim must use the number the card displays, or the family
-    // can advertise a "gain" the optimum already wears. Simulate the skew by
-    // doctoring the internal stage count below the report count.
-    const model = {
-      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
-      utilityCountingSet: new Set(["Ghost Touch"]),
-      worn: [slot("Weapon", [
-        item("W1", "Weapon", [["A", "Enhancement", 10], ["Ghost Touch", "Bool", 1]]),
-        item("W2", "Weapon", [["A", "Enhancement", 9], ["Ghost Touch", "Bool", 1]]),
-      ])],
-      augments: [],
-    };
-    const opt = await S.solveLexicographic(model, highs);
-    assert.strictEqual(opt.utilityReport.count, 1, "the displayed count is 1");
-    opt.utilityCount = 0; // stage count under-reads the displayed truth
-    const alts = S.generateAlternatives(opt, model, highs);
-    assert.ok(!alts.some((a) => a.gainAxis === "utility"),
-      "no candidate may advertise a count the optimum's card already shows");
-  });
-
-  // Review fix 3 — the count lock threaded into the generic families behaves
-  // like a ranked stat (give-relaxed), not an ultra-priority: exact only when
-  // the sentinel is ranked FIRST. Shared fixture: Con stage takes rCon +
+  // #348 (U4) — the lock threaded into the generic families is a PREFIX of
+  // per-effect locks: everything above the shed depth is pinned, the tail is free.
+  // Shed depth is alternativeGive(secured), and zero when the container is the only
+  // priority. Shared fixture: Con stage takes rCon +
   // nGT/tFF carriers (24); the utility stage adds bWB -> count 3. Completing
   // Alpha requires its `pieces` member hosts, displacing that many carriers.
-  const shedModel = (targets, pieces) => {
+  const shedModel = (targets, pieces, order) => {
     const t = [{ n: pieces, affixes: [["Constitution", "Profane", 1]] }];
     return {
       targets, mlCap: 34, dodgeCap: null,
       utilityCountingSet: new Set(["Ghost Touch", "Feather Falling", "Water Breathing"]),
+      // Stated explicitly so these tests turn on the ORDER rather than on the
+      // alphabetical accident of the effect names.
+      utilityOrder: order || ["Ghost Touch", "Feather Falling", "Water Breathing"],
       worn: [
         slot("Ring", [item("rCon", "Ring", [["Constitution", "Enhancement", 20]])]),
         slot("Necklace", [
@@ -392,25 +340,44 @@ const tradeModel = () => ({
     };
   };
 
-  await test("review fix 3: set-family count lock allows shedding within alternativeGive (tier not first)", async () => {
-    // Tier ranked second, count 3, alternativeGive(3)=2 -> floor 1. Alpha's
-    // completion sheds Ghost Touch + Feather Falling (2 effects, keeping Water
-    // Breathing) — legal under the relaxed floor, so the trade SURFACES. The
-    // pre-review exact lock (>= 3) silently suppressed it.
-    const opt = await S.solveLexicographic(shedModel(["Constitution", SENT], 2), highs);
+  await test("#348 U4/R16/AE8: a candidate may shed from the TAIL of the container order", async () => {
+    // Alpha's 2-piece completion displaces the Ghost Touch and Feather Falling
+    // carriers, keeping Water Breathing. Ordered with Water Breathing FIRST, the two
+    // it sheds are the bottom two — a legal tail shed, so the trade surfaces and
+    // names what it gives up.
+    const ORDER = ["Water Breathing", "Ghost Touch", "Feather Falling"];
+    const mk = () => shedModel(["Constitution", SENT], 2, ORDER);
+    const opt = await S.solveLexicographic(mk(), highs);
     assert.strictEqual(opt.effective.Constitution, 24, "20 Enh + 2 Insight + 2 Quality");
-    assert.strictEqual(opt.utilityReport.count, 3, "the optimum wears all three effects");
-    const alts = S.generateAlternatives(opt, shedModel(["Constitution", SENT], 2), highs);
+    assert.deepStrictEqual(opt.utilityOrdered.secured, ORDER, "the optimum wears all three, in order");
+
+    const alts = S.generateAlternatives(opt, mk(), highs);
     const setAlt = alts.find((a) => a.gainAxis === "set" && a.meta.set === "Alpha");
-    assert.ok(setAlt, "the shedding set trade surfaces under the give-relaxed lock");
-    assert.ok(setAlt.sol.setsActive.some((s) => s.set === "Alpha"));
-    assert.strictEqual(setAlt.sol.utilityReport.count, 1, "sheds 2 of 3 — within the give, floor 1 respected");
-    assert.ok(setAlt.sol.chosen.some((c) => c.variant.variant_id === "bWB"), "the floor keeps a carrier equipped");
-    // Review fix 4 — the shed is stated as a cost, never silent:
+    assert.ok(setAlt, "the tail shed is legal, so the set trade surfaces");
+    assert.ok(setAlt.sol.chosen.some((c) => c.variant.variant_id === "bWB"),
+      "the top-ordered effect's carrier stays equipped — the prefix lock pinned it");
+
+    // R16 — the loss is NAMED, in container order, never a bare count.
     const an = A.analyzeAlternative(opt, setAlt, { targets: ["Constitution", SENT] });
-    assert.strictEqual(an.utilDelta, -2, "the utility delta is computed from the guarded reports");
-    assert.ok(/-2 utility effects/.test(an.costText), "costText names the shed effects");
-    assert.strictEqual(an.totalCost, 3 + 2, "totalCost adds the shed magnitude to the -3 Constitution cost");
+    assert.deepStrictEqual(an.shedEffects, ["Ghost Touch", "Feather Falling"],
+      "the shed effects are listed in container order");
+    assert.ok(/gives up Ghost Touch, Feather Falling/.test(an.costText),
+      `costText names them: ${an.costText}`);
+    assert.ok(!/utility effects/.test(an.costText), "and never as a bare count");
+    assert.strictEqual(an.totalCost, 3 + 2, "the shed magnitude still joins totalCost");
+  });
+
+  await test("#348 U4/R16/AE8: the SAME trade is blocked when it would shed from the top", async () => {
+    // Identical model, identical displacement — only the container order differs.
+    // With Ghost Touch first and Water Breathing last, completing Alpha would shed
+    // the top-ordered effect while KEEPING a lower-ordered one, which is exactly
+    // what R6 forbids. The prefix lock makes it infeasible rather than filtering it
+    // out after the fact.
+    const mk = () => shedModel(["Constitution", SENT], 2, ["Ghost Touch", "Feather Falling", "Water Breathing"]);
+    const opt = await S.solveLexicographic(mk(), highs);
+    const alts = S.generateAlternatives(opt, mk(), highs);
+    assert.ok(!alts.some((a) => a.gainAxis === "set" && a.meta.set === "Alpha"),
+      "shedding the top-ordered effect to keep a lower one never surfaces");
   });
 
   await test("review fix 3: shedding BELOW the give floor stays blocked (tier not first)", async () => {
@@ -433,18 +400,26 @@ const tradeModel = () => ({
       "no give applies to the top-ranked tier — the exact lock suppresses the shed");
   });
 
-  await test("review fix 4: a pure utility shed can never claim 'no priority cost'", () => {
+  await test("#348 U4/R16: a pure utility shed can never claim 'no priority cost'", () => {
+    // The fixture carries effect NAMES, not just a count. Production's readSolution
+    // always writes both (count === effects.length), and #348 reads the names to say
+    // which effects a trade gives up — a count-only fixture would exercise a shape
+    // the writer never produces and would report no cost at all.
+    // See docs/solutions/conventions/fixture-shape-must-mirror-the-production-writer.md
     const mkSol = (ids, report) => ({
       chosen: ids.map(([sl, id]) => ({ slot: sl, variant: { variant_id: id } })),
       setsActive: [], augmentsPlaced: [], effective: {},
       ...(report ? { utilityReport: report } : {}),
     });
-    const optimum = mkSol([["Ring", "R1"], ["Neck", "N1"]], { count: 2, effects: [] });
+    const two = { count: 2, effects: [{ name: "Ghostly", item: "R1" }, { name: "Deathblock", item: "N1" }] };
+    const optimum = { ...mkSol([["Ring", "R1"], ["Neck", "N1"]], two),
+      utilityOrdered: { secured: ["Ghostly", "Deathblock"], unsecured: [] } };
     const an = A.analyzeAlternative(optimum,
       { sol: mkSol([["Ring", "R2"], ["Neck", "N2"]], { count: 0, effects: [] }), gainAxis: "rebalance", meta: {} },
       { targets: [] });
+    assert.deepStrictEqual(an.shedEffects, ["Ghostly", "Deathblock"], "both losses are named, in order");
     assert.strictEqual(an.utilDelta, -2);
-    assert.strictEqual(an.costText, "-2 utility effects", "the shed is the stated cost");
+    assert.strictEqual(an.costText, "gives up Ghostly, Deathblock", "the shed is the stated cost");
     assert.strictEqual(an.totalCost, 2, "the shed magnitude counts like a stat cost");
     // ...and results without a utilityReport (tier removed) are untouched:
     const bare = A.analyzeAlternative(mkSol([["Ring", "R1"]]),
@@ -453,19 +428,23 @@ const tradeModel = () => ({
     assert.strictEqual(bare.totalCost, 0);
   });
 
-  await test("#91 U7: rankAlternatives slots 'utility' after 'set' and before the stat trades", () => {
+  await test("#348 U4/KTD7: the interleave order has no utility slot", () => {
+    // The axis is deleted, so there is nothing to rank. This replaces a test that
+    // asserted "utility sorts after set and before the stat trades". Guarding the
+    // absence still matters: an axis string surviving in one generator but not in
+    // typeOrder sorts as `undefined`, which compares false against every number and
+    // silently lands that candidate first.
     const optimum = { chosen: [{ slot: "Ring", variant: { variant_id: "R1" } }, { slot: "Neck", variant: { variant_id: "N1" } }, { slot: "Boots", variant: { variant_id: "B1" } }],
       setsActive: [], augmentsPlaced: [], effective: {} };
     const mk = (ids, axis, extra = {}) => A.analyzeAlternative(optimum,
       { sol: { chosen: ids.map(([slot, id]) => ({ slot, variant: { variant_id: id } })), setsActive: [], augmentsPlaced: [], effective: {} }, gainAxis: axis, meta: extra },
       { targets: [] });
-    const util = mk([["Ring", "R2"], ["Neck", "N2"], ["Boots", "B1"]], "utility", { from: 0, to: 2 });
     const reb = mk([["Ring", "R3"], ["Neck", "N3"], ["Boots", "B3"]], "rebalance", {});
-    const ranked = A.rankAlternatives([reb, util], optimum, { n: 5, k: 2 });
-    assert.deepStrictEqual(ranked.map((a) => a.gainAxis), ["utility", "rebalance"],
-      "utility (a categorical gain) ranks ahead of the stat rebalance");
-    assert.strictEqual(util.gainText, "+2 utility effects (0 → 2)");
-    assert.strictEqual(util.gainMag, 2);
+    const crafts = mk([["Ring", "R4"], ["Neck", "N4"], ["Boots", "B4"]], "crafts", { optCrafts: 3 });
+    const ranked = A.rankAlternatives([crafts, reb], optimum, { n: 5, k: 2 });
+    assert.deepStrictEqual(ranked.map((a) => a.gainAxis), ["rebalance", "crafts"],
+      "the remaining axes keep their relative order with no gap where utility was");
+    for (const a of ranked) assert.ok(!a.tags.includes("utility effects"));
   });
 
   console.log(`\n${passed} passed`);

@@ -5240,7 +5240,10 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(reb.sol.utilityReport.count, 0, "it sheds the counted effect");
     const A2 = require("../web/alternatives.js");
     const an = A2.analyzeAlternative(r, reb, { targets: ["A", SENT, "B"] });
-    assert.ok(/-1 utility effects/.test(an.costText), "the shed is stated in costText, never silent");
+    // #348 (U4/R16) — the loss is NAMED now, not counted: "gives up Ghost Touch"
+    // tells a player who curated an ordered container what the trade actually takes.
+    assert.ok(/gives up Ghost Touch/.test(an.costText), "the shed is stated by name, never silent");
+    assert.deepStrictEqual(an.shedEffects, ["Ghost Touch"]);
     assert.strictEqual(an.utilDelta, -1);
     assert.ok(an.totalCost >= 1, "totalCost includes the shed magnitude");
   });
@@ -5275,7 +5278,7 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual((crafts.sol.gsPlaced || []).length, 0, "it genuinely drops the craft");
     const A2 = require("../web/alternatives.js");
     const an = A2.analyzeAlternative(r, crafts, { targets: ["Melee Power", SENT] });
-    assert.ok(/-1 utility effects/.test(an.costText), "the shed effect is stated in costText");
+    assert.ok(/gives up Ghost Touch/.test(an.costText), "the shed effect is stated by name");
     assert.strictEqual(an.totalCost, 5 + 1, "-5 Melee Power plus the shed effect");
     // Tier ranked FIRST: the count is the top priority -> exact lock -> the
     // shedding swap is infeasible and no crafts candidate exists.

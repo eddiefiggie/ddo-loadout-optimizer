@@ -2490,12 +2490,27 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
   // otherwise the floor relaxes by alternativeGive, mirroring how ranked stats
   // are relaxed, so a legal trade that sheds a couple of effects can surface
   // (its loss is stated by alternatives.js cost accounting, never silent).
+  // #348 (U4, R16/KTD6) — TAIL-ONLY shedding. The count floor this replaces let a
+  // candidate shed a higher-ordered effect to gain two lower ones, which is exactly
+  // what an ordered container forbids. The allowance is now expressed as a PREFIX of
+  // per-effect locks: everything above the shed depth is pinned, the tail is free.
+  // Same constraint class as U2's optimum-path locks, just a shorter prefix.
+  //
+  // Small containers: with two secured effects, alternativeGive is 2, so the whole
+  // container is tail and a candidate may shed all of it. That is R16-compliant —
+  // nothing is kept BELOW something shed — and the cost line names every effect
+  // given up, so the trade is stated rather than silent. Recorded here because it
+  // reads like an oversight and is not one.
+  const optSecured = (optimum.utilityOrdered && optimum.utilityOrdered.secured) || [];
+  const shedDepth = sentinelIdx === 0 ? 0 : alternativeGive(optSecured.length);
+  const mustKeep = optSecured.slice(0, Math.max(0, optSecured.length - shedDepth));
   const utilityLock = (prog) => {
-    if (!(optUtilityCount > 0 && prog.utilityEnabled && (prog.utilityVars || []).length)) return [];
-    const floor = sentinelIdx === 0
-      ? optUtilityCount
-      : Math.max(0, optUtilityCount - alternativeGive(optUtilityCount));
-    return floor > 0 ? [`${prog.utilityVars.join(" + ")} >= ${floor}`] : [];
+    if (!(prog.utilityEnabled && mustKeep.length)) return [];
+    const uByName = new Map((prog.utilityOrderVars || []).map((o) => [o.name, o.u]));
+    // The unranked family REBUILDS its program, so the u names must come from THAT
+    // build; resolving by effect name rather than by var index is what makes the
+    // lock survive a rebuild.
+    return mustKeep.map((n) => uByName.get(n)).filter(Boolean).map((u) => `${u} >= 1`);
   };
   // Caps bound the on-demand generation latency: each candidate is a full MILP solve
   // (~1s cold on a real dataset), so the generators are capped and skip the tie-break
@@ -2614,29 +2629,13 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
     if (sol.status === "optimal" && !sameChosen(sol, optimum) && solCrafts < optCrafts) out.push({ sol, gainAxis: "crafts", meta: { optCrafts } });
   }
 
-  // (e) more-utility — #91 (U7, KTD7/R11): the Utility tier's OWN family, the
-  // only axis the tier participates in. Follows the unranked shape: maximize
-  // the indicator sum with the ranked targets locked exact (a zero-cost strict
-  // gain), and if that cannot strictly beat the optimum's count, relax every
-  // ranked target by alternativeGive and try once more. No count lock here —
-  // this family maximizes the count itself. Surfaced ONLY on a strictly
-  // greater achieved count (strict `>` at the claim site — the superlative-
-  // claim rule), and BOTH sides of that comparison are guarded-report counts
-  // (optUtilityCount is the optimum's utilityReport.count — review fix): a
-  // claim of "more utility" must never rest on an effect no fired contribution
-  // carries, and never advertise a gain the optimum's card already displays.
-  if (program.utilityEnabled && optUtilityCount != null && (program.utilityVars || []).length) {
-    const uObjTerms = program.utilityVars.map((u) => ({ coef: 1, name: u }));
-    const countOf = (sol) => (sol.utilityReport ? sol.utilityReport.count : 0);
-    const exact = ranked.map((s) => ({ stat: s, value: per[s] }));
-    let sol = solveConstrained(program, highs, { objTerms: uObjTerms, sense: "max", locks: exact, tieBreak: false });
-    if (!(sol.status === "optimal" && countOf(sol) > optUtilityCount)) {
-      const relaxed = ranked.map((s) => ({ stat: s, value: per[s], give: alternativeGive(per[s]) }));
-      sol = solveConstrained(program, highs, { objTerms: uObjTerms, sense: "max", locks: relaxed, tieBreak: false });
-    }
-    if (sol.status === "optimal" && !sameChosen(sol, optimum) && countOf(sol) > optUtilityCount)
-      out.push({ sol, gainAxis: "utility", meta: { from: optUtilityCount, to: countOf(sol) } });
-  }
+  // #348 (U4, KTD7) — the `more-utility` family (#91 U7/R11) is DELETED, not
+  // redefined. With the container pinned last and solved lexicographically under
+  // ranked-exact locks, its result is already lexicographically maximal at those
+  // values, so the family's zero-cost probe could never strictly win; every
+  // candidate it could surface costs a ranked stat. That trade is better stated
+  // than offered, so R14's disclosure prices the top miss instead (U5). The tier
+  // now appears in Alternatives only as a named cost.
 
   return out;
 }
