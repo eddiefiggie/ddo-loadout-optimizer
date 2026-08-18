@@ -845,7 +845,7 @@ function emptySlotNotice(query, result) {
 // layer share one answer to "what can this pool supply". The solver stamps the
 // outbid set onto the result (a restored character has no model to re-derive
 // from), and this layer renders it; two implementations would drift.
-var _poolStatNames = (typeof poolStatNames !== "undefined")
+var _resultsPoolStatNames = (typeof poolStatNames !== "undefined")
   ? poolStatNames
   // eslint-disable-next-line global-require
   : require("./model.js").poolStatNames;
@@ -910,7 +910,7 @@ function zeroSourceNotice(query, result, model, dataset) {
   if (!result || result.status !== "optimal") return "";
   const targets = (query && query.targets) || (model && model.targets) || [];
   if (!targets.length || !model) return "";
-  const reachable = _poolStatNames(model);
+  const reachable = _resultsPoolStatNames(model);
   // #91 — the Utility sentinel is never a pool stat (poolStatNames only ever
   // collects real affix/scaling names), so without this exclusion every solve
   // with the tier ranked would flag it here — the same false "unsourced"
@@ -980,7 +980,7 @@ function outbidTargets(query, result, model) {
   // Same exclusion zeroSourceNotice applies: the Utility sentinel is never a
   // pool stat, so every solve with the tier ranked would otherwise flag here.
   if (Array.isArray(result.outbidReport)) return result.outbidReport;
-  const reachable = _poolStatNames(model);
+  const reachable = _resultsPoolStatNames(model);
   const per = (result && result.perTarget) || {};
   // Same exclusion the solver applies: an unmet floor is a failed requirement,
   // and boundNotice already explains it. Two notices for one zero is worse than one.
@@ -1152,7 +1152,13 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
         try {
           attr = attributeOutbid(optimum.program, highs, stat,
             (query && query.targets) || [], optimum.perTarget || {});
-        } catch (e) { attr = null; }
+        } catch (e) {
+          // Fall back to the honest "cannot tell" wording, but never silently:
+          // a swallowed probe failure would be indistinguishable from a genuine
+          // jointly-bound target, which is the one thing this must not blur.
+          attr = null;
+          console.error("outbid pricing failed", e);
+        }
         const out = document.createElement("span");
         out.className = "outbid-priced";
         out.textContent = attr
@@ -1497,5 +1503,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, incidentalStats, poolStatNames: _poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, incidentalStats, poolStatNames: _resultsPoolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }

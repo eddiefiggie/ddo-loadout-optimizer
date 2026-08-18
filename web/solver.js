@@ -43,7 +43,7 @@ const _lamordiaWeaponVariant = (typeof lamordiaWeaponVariant !== "undefined")
 // #345 (U1, R5) — the outbid set is stamped on the result, not recomputed at
 // render time, for the same reason creditReport is: a restored character has no
 // model and cannot re-derive it, and every share export reads the stored record.
-const _poolStatNames = (typeof poolStatNames !== "undefined")
+const _solverPoolStatNames = (typeof poolStatNames !== "undefined")
   ? poolStatNames
   // eslint-disable-next-line global-require
   : require("./model.js").poolStatNames;
@@ -1848,7 +1848,7 @@ function readSolution(res, program, precomputedVisible) {
 /** #345 (U1) — targets that came back zero while the pool can still supply
  *  them. A free rider is excluded by construction: it scored above zero. */
 function outbidReportFor(model, targetList, perTarget, floorReport) {
-  const reachable = _poolStatNames(model);
+  const reachable = _solverPoolStatNames(model);
   // #345 (U6, R11) — a stat carrying an UNMET floor is a requirement that
   // failed, and the shortfall disclosure already names it with the number it
   // could not reach. Reporting it as outbid too would put two explanations of

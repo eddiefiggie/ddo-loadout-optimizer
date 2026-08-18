@@ -1715,3 +1715,36 @@ test("#91/KTD10: the stamped counting set and UTILITY_TIER1_PRESENCE cannot drif
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);
+
+// ---------------------------------------------------------------------------
+// #345 — THE BROWSER SHARES ONE GLOBAL SCOPE. Node gives every file its own
+// module scope, so two files can each declare the same top-level name and every
+// Node test passes while the browser throws a SyntaxError on the SECOND file and
+// discards it whole. That is exactly what happened here: a `_poolStatNames`
+// bridge added to both solver.js and results.js killed the entire results panel,
+// and 1000+ green Node tests could not see it.
+//
+// This compiles the scripts index.html loads the way the browser does — one
+// concatenated program — so a redeclaration fails the build instead of the page.
+// ---------------------------------------------------------------------------
+test("#345: web scripts compile together in one shared global scope", () => {
+  const fs = require("fs"); const path = require("path"); const vm = require("vm");
+  const webDir = path.join(__dirname, "..", "web");
+  const html = fs.readFileSync(path.join(webDir, "index.html"), "utf-8");
+  const srcs = [...html.matchAll(/<script[^>]+src="([^"?]+)(?:\?[^"]*)?"/g)].map((m) => m[1]);
+  const local = srcs.filter((s) => !/^https?:|vendor\//.test(s));
+  assert.ok(local.length >= 5, `expected the app's own scripts; found ${local.length}`);
+  const parts = [];
+  for (const s of local) {
+    const f = path.join(webDir, s);
+    if (!fs.existsSync(f)) continue;
+    parts.push(`// ===== ${s} =====\n` + fs.readFileSync(f, "utf-8"));
+  }
+  try {
+    new vm.Script(parts.join("\n;\n"), { filename: "browser-shared-scope.js" });
+  } catch (e) {
+    assert.fail(`the scripts index.html loads do not compile together: ${e.message}\n` +
+      "In the browser they share ONE global scope. Two files declaring the same " +
+      "top-level name is a SyntaxError that discards the second file entirely.");
+  }
+});
