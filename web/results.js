@@ -841,38 +841,14 @@ function emptySlotNotice(query, result) {
 // what the CHOSEN loadout achieved: a zero there cannot tell "nothing supplies this"
 // from "higher priorities took the slots". The pool lives in `model`, which survives
 // a saved-snapshot restore (persist.js drops the MILP program, not the model).
-function _collectStatNames(into, affixes) {
-  for (const a of affixes || []) {
-    const n = a && (a.name != null ? a.name : a.stat);
-    if (n) into.add(n);
-  }
-}
-
-/** Every stat name any source in the ACTIVE pool can contribute. */
-function poolStatNames(model) {
-  const out = new Set();
-  for (const slot of (model && model.worn) || []) {
-    for (const v of slot.variants || []) {
-      _collectStatNames(out, v.affixes);
-      for (const s of v.scaling || []) if (s && s.stat) out.add(s.stat);
-      for (const t of v.parsed_set_bonuses || []) _collectStatNames(out, t.affixes);
-    }
-  }
-  const pools = [model.augments, model.dinoInserts, model.nearlyComplete, model.viktranium,
-                 model.seal, model.thunderForged, model.greenSteel];
-  for (const pool of pools) {
-    for (const o of pool || []) {
-      if (o && o.stat) out.add(o.stat);
-      _collectStatNames(out, o && o.affixes);
-    }
-  }
-  for (const defs of [model.membershipSetDefs, model.augment_set_defs]) {
-    for (const def of Object.values(defs || {})) {
-      for (const t of (def && def.tiers) || []) _collectStatNames(out, t.affixes);
-    }
-  }
-  return out;
-}
+// #345 (U1) — the pool traversal moved to model.js so the SOLVER and the render
+// layer share one answer to "what can this pool supply". The solver stamps the
+// outbid set onto the result (a restored character has no model to re-derive
+// from), and this layer renders it; two implementations would drift.
+var _resultsPoolStatNames = (typeof poolStatNames !== "undefined")
+  ? poolStatNames
+  // eslint-disable-next-line global-require
+  : require("./model.js").poolStatNames;
 
 /** True when the whole dataset carries the stat somewhere — used only to tell the
  *  two causes apart, and only for stats already known to be pool-unreachable. */
@@ -934,7 +910,7 @@ function zeroSourceNotice(query, result, model, dataset) {
   if (!result || result.status !== "optimal") return "";
   const targets = (query && query.targets) || (model && model.targets) || [];
   if (!targets.length || !model) return "";
-  const reachable = poolStatNames(model);
+  const reachable = _resultsPoolStatNames(model);
   // #91 — the Utility sentinel is never a pool stat (poolStatNames only ever
   // collects real affix/scaling names), so without this exclusion every solve
   // with the tier ranked would flag it here — the same false "unsourced"
@@ -985,7 +961,68 @@ function zeroSourceNotice(query, result, model, dataset) {
   return `<p class="scope-note zero-source-note" role="status">${parts.join(" ")}</p>`;
 }
 
-function renderResults(container, { model, result, query, dataset, highs, onAfterRender }) {
+/** #345 (U1, R1/R3/R4) — the targets that were OUTBID: reachable in the active
+ *  pool, and still zero, because a higher-ranked priority locked the only slot
+ *  that could carry them.
+ *
+ *  This is deliberately NOT a third branch inside `zeroSourceNotice`. That
+ *  function's contract is "no source exists", and its own test pins the opposite
+ *  behaviour for this case with the reason stated: a stat that merely lost its
+ *  slots "is a different case and must not be conflated". Both hold at once —
+ *  the zero-source notice stays silent here, and this one speaks.
+ *
+ *  A free rider is excluded by construction: it scored above zero, so it never
+ *  enters this set. Nothing was spent on it and nothing outbid it. */
+function outbidTargets(query, result, model) {
+  if (!result || result.status !== "optimal") return [];
+  const targets = (query && query.targets) || (model && model.targets) || [];
+  if (!targets.length || !model) return [];
+  // Same exclusion zeroSourceNotice applies: the Utility sentinel is never a
+  // pool stat, so every solve with the tier ranked would otherwise flag here.
+  if (Array.isArray(result.outbidReport)) return result.outbidReport;
+  const reachable = _resultsPoolStatNames(model);
+  const per = (result && result.perTarget) || {};
+  // Same exclusion the solver applies: an unmet floor is a failed requirement,
+  // and boundNotice already explains it. Two notices for one zero is worse than one.
+  const unmet = new Set(((result && result.floorReport) || []).map((f) => f && f.stat));
+  // A target ABSENT from perTarget is unknown, not zero. Claiming it was outbid
+  // would be inventing a value the solve never reported — the same class of
+  // error as naming an unproven binding priority.
+  const scoredZero = (t) => Object.prototype.hasOwnProperty.call(per, t) && Number(per[t]) <= 0;
+  return targets.filter((t) =>
+    t !== _UTILITY_SENTINEL && reachable.has(t) && !unmet.has(t) && scoredZero(t));
+}
+
+function outbidNotice(query, result, model, canPrice, canRequire) {
+  const names = outbidTargets(query, result, model);
+  if (!names.length) return "";
+  // Names the targets, never the binding priority — proving which higher-ranked
+  // stat bound them costs a solve and belongs to the on-request path (U2/U3).
+  // Naming one from rank order alone would be the guess this repo already paid
+  // for once in zeroSourceNotice's rung attribution.
+  // Projection owns the wording so the panel and all six exports say one thing.
+  const lines = (Proj && Proj.outbidNoticeLines) ? Proj.outbidNoticeLines(names) : [];
+  if (!lines.length) return "";
+  // #345 (U3, R7) — pricing is ON REQUEST. Measured: one attribution costs
+  // 28-58% of the solve it follows, and pricing every outbid target costs
+  // 111-154% of it (2.6s on an endgame melee build). Automatic would more than
+  // double the wait the player already sat through; asked-for is affordable.
+  // Absent on a restored character, which carries no solver to probe with.
+  const ask = names.map((n) => {
+    const price = canPrice
+      ? `<button type="button" class="outbid-price" data-stat="${esc(n)}">What would ${esc(n)} cost?</button>` : "";
+    // #345 (U4, R9) — requiring needs no solver: it writes a floor and re-solves
+    // through the wizard's normal path, so it is offered on a restored character
+    // where pricing is not.
+    const req = canRequire
+      ? `<button type="button" class="outbid-require" data-stat="${esc(n)}">Require ${esc(n)}</button>` : "";
+    return price + (price && req ? " " : "") + req;
+  }).filter(Boolean).join(" ");
+  return `<p class="scope-note outbid-note" role="status">${lines.map(esc).join(" ")}`
+    + (ask ? `<span class="outbid-ask">${ask}</span>` : "") + `</p>`;
+}
+
+function renderResults(container, { model, result, query, dataset, highs, onAfterRender, onRequire }) {
   if (result.status !== "optimal") {
     // Keep the Adjust & re-solve control available on a non-optimal result — this
     // is exactly when the user needs to loosen priorities/constraints in place.
@@ -1032,6 +1069,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     ${staleSnapshotNotice(result)}
     ${boundNotice(query, result)}
     ${zeroSourceNotice(query, result, model, dataset)}
+    ${outbidNotice(query, result, model, canPriceOutbid(), typeof onRequire === "function")}
     ${saturationNotice(result)}
     ${emptySlotNotice(query, result)}
     ${absorptionQuarantineNotice(result)}
@@ -1091,6 +1129,46 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     q("#rp-live").textContent = isAlt ? `Now viewing alternative: ${label}` : "Now viewing the optimal build";
   }
   q(".return-optimum").addEventListener("click", () => setActive(optimum, false));
+
+  // #345 (U4, R8/R9) — accepting the trade writes a floor and re-solves. The
+  // handler is the wizard's, so the floor goes through the same sanitizer and
+  // persisted field the Advanced min input writes; one writer, one clear path.
+  for (const btn of container.querySelectorAll(".outbid-require")) {
+    btn.addEventListener("click", () => {
+      btn.disabled = true;
+      if (typeof onRequire === "function") onRequire(btn.dataset.stat);
+    });
+  }
+
+  // #345 (U3) — price on request. One probe per click, never on the solve path.
+  for (const btn of container.querySelectorAll(".outbid-price")) {
+    btn.addEventListener("click", () => {
+      const stat = btn.dataset.stat;
+      btn.disabled = true;
+      btn.textContent = `Pricing ${stat}…`;
+      // Defer so the label paints before the synchronous probe runs.
+      setTimeout(() => {
+        let attr = null;
+        try {
+          attr = attributeOutbid(optimum.program, highs, stat,
+            (query && query.targets) || [], optimum.perTarget || {});
+        } catch (e) {
+          // Fall back to the honest "cannot tell" wording, but never silently:
+          // a swallowed probe failure would be indistinguishable from a genuine
+          // jointly-bound target, which is the one thing this must not blur.
+          attr = null;
+          console.error("outbid pricing failed", e);
+        }
+        const out = document.createElement("span");
+        out.className = "outbid-priced";
+        out.textContent = attr
+          ? `${stat} costs ${attr.cost} ${attr.binding} (${attr.bindingValue} to ${attr.bindingHeld}). `
+            + `Set a minimum on ${stat} to require it.`
+          : `Could not isolate a single priority holding ${stat} back — more than one is binding it.`;
+        btn.replaceWith(out);
+      }, 0);
+    });
+  }
   renderBuild(optimum);
 
   // Alternatives tab (U4): gated behind an explicit "Run analysis" button (R7) so
@@ -1101,6 +1179,13 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   // never left spinning.
   const altState = { list: null, computing: false };
   const altUnavailable = () => typeof generateAlternatives !== "function" || !highs;
+
+  // #345 (U3, KTD4) — same shape as altUnavailable: a capability probe, not an
+  // assumption. The restored-character render passes highs: null, so pricing is
+  // withheld there and the disclosure still stands on its own.
+  function canPriceOutbid() {
+    return typeof attributeOutbid === "function" && !!highs && !!(optimum && optimum.program);
+  }
   // Small helper: a message + a button that (re)runs the analysis.
   function altPrompt(msg, btnLabel, cls) {
     const panel = q("#rp-altspanel");
@@ -1418,5 +1503,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, incidentalStats, poolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, incidentalStats, poolStatNames: _resultsPoolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }

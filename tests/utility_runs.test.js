@@ -33,6 +33,7 @@ const assert = require("assert");
 const { buildModel, UTILITY_SENTINEL } = require("../web/model.js");
 const S = require("../web/solver.js");
 const A = require("../web/alternatives.js");
+const R = require("../web/results.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 
 const ROOT = path.join(__dirname, "..");
@@ -198,6 +199,104 @@ function check(name, fn) {
       "the old roster could not have counted them — otherwise this proves nothing");
   });
   console.log(`    count ${a3.utilityCount} (old roster ${a3Old.utilityCount}): ${secured(a3).join(", ")}`);
+
+  // ---- AE4 (#345 U1): the outbid disclosure fires against REAL data. -------
+  // The golden fixture set never produces this condition — 85 ranked targets
+  // across 23 fixtures, zero occurrences — so a unit test on a synthetic model
+  // proves only that the branch reads its own fixture. This solves the reported
+  // build and asserts the disclosure on the result the app would actually show.
+  console.log("\nAE4 — ML15 THF, Melee preset + Freedom of Movement ranked last (#345)");
+  const MELEE = ["Melee Power", "Doublestrike", "Melee Alacrity", "Accuracy",
+                 "Deadly", "Seeker", "Armor-Piercing", "Armor Class"];
+  const FOM = "Freedom of Movement";
+  const q4 = { mlCap: 15, targets: [...MELEE, FOM], style: "thf", armorType: null, classRace: null };
+  const { model: m4, r: r4 } = await solve(q4);
+  check("AE4: the solve is optimal and Freedom of Movement is reachable but zero", () => {
+    assert.strictEqual(r4.status, "optimal");
+    assert.strictEqual(r4.perTarget[FOM] || 0, 0, "the reported symptom: ranked, and nothing");
+    assert.ok(R.poolStatNames(m4).has(FOM), "and it IS reachable — otherwise this is the other zero cause");
+  });
+  check("AE4: the outbid disclosure fires and names it", () => {
+    const html = R.outbidNotice(q4, r4, m4);
+    assert.ok(html, "a disclosure renders on the real result");
+    assert.ok(html.includes(FOM), "names the target that got nothing");
+  });
+  check("AE4: the zero-source notice stays silent — this is not that cause", () => {
+    assert.strictEqual(R.zeroSourceNotice(q4, r4, m4, dataset), "",
+      "a reachable target is not unsourced; conflating them was the bug");
+  });
+
+  // ---- AE5 (#345 U2): attribution and price, proven against real data. ------
+  console.log("\nAE5 — attributing the outbid target (#345)");
+  const attr = S.attributeOutbid(r4.program, highs, FOM, q4.targets, r4.perTarget);
+  check("AE5: the binding priority is named, and it is Accuracy for this list", () => {
+    assert.ok(attr, "attribution succeeded on the reported case");
+    // NOT Deadly. Issue #345's table came from the reporter's 13-priority list
+    // with aasimar/scourge gating, where the pivot sat lower. Under the plain
+    // Melee preset, Accuracy's lock already kills Freedom of Movement, and
+    // Deadly sits BELOW Accuracy — by the time Deadly locks, it is long dead.
+    // The prefix walk names the FIRST lock that binds, which is the one whose
+    // relaxation would actually help. Naming a later stat would be advice that
+    // cannot work.
+    assert.strictEqual(attr.binding, "Accuracy",
+      `expected Accuracy to bind under this list, got ${attr && attr.binding}`);
+    const order = q4.targets;
+    assert.ok(order.indexOf(attr.binding) < order.indexOf(FOM), "and it outranks the target");
+  });
+  check("AE5: the price is one point of the binding priority", () => {
+    assert.strictEqual(attr.cost, 1, `expected a cost of 1, got ${attr.cost}`);
+    assert.strictEqual(attr.bindingValue - attr.bindingHeld, attr.cost, "the cost is the give");
+    assert.ok(attr.cost > 0, "a non-positive price would contradict the boundary");
+  });
+  check("AE5: the binary search agrees with an exhaustive walk", () => {
+    // Monotonicity is structural (each lock only shrinks the feasible set), but
+    // a binary search over a non-monotone predicate fails silently, so prove it.
+    const linear = S.attributeOutbid(r4.program, highs, FOM, q4.targets, r4.perTarget, { linear: true });
+    assert.deepStrictEqual(attr, linear, "binary-searched boundary must equal the walked one");
+  });
+  // Way of the Sun Soul has no source in this ML15 melee pool (measured: ten of
+  // the twenty toggles are unreachable here). The probe must decline rather than
+  // blame whichever stat happens to sit above it.
+  const q5 = { ...q4, targets: [...MELEE, "Way of the Sun Soul"] };
+  const { r: r5 } = await solve(q5);
+  check("AE5: an unreachable target is refused, not attributed", () => {
+    const none = S.attributeOutbid(r5.program, highs, "Way of the Sun Soul", q5.targets, r5.perTarget);
+    assert.strictEqual(none, null, "no source means no attribution — that is the other zero cause");
+  });
+  check("AE5: a target ranked first has nothing above it and is refused", () => {
+    const none = S.attributeOutbid(r4.program, highs, q4.targets[0], q4.targets, r4.perTarget);
+    assert.strictEqual(none, null, "nothing outranks the first priority, so nothing outbid it");
+  });
+  console.log(`    ${FOM} bound by ${attr.binding} ${attr.bindingValue} -> ${attr.bindingHeld} (cost ${attr.cost})`);
+
+  // ---- AE6 (#345 U4): accepting the trade pays exactly the priced cost. -----
+  console.log("\nAE6 — requiring the outbid effect (#345)");
+  const q6 = { ...q4, targetFloors: { [FOM]: 1 } };
+  const { r: r6 } = await solve(q6);
+  check("AE6: the required effect is secured", () => {
+    assert.strictEqual(r6.status, "optimal", "flooring a reachable effect stays solvable");
+    assert.ok((r6.perTarget[FOM] || 0) >= 1, `${FOM} is now held, was ${r4.perTarget[FOM] || 0}`);
+  });
+  check("AE6: the binding priority gives up exactly what pricing said", () => {
+    const before = r4.perTarget[attr.binding];
+    const after = r6.perTarget[attr.binding];
+    assert.strictEqual(before - after, attr.cost,
+      `${attr.binding} ${before} -> ${after} should cost exactly the quoted ${attr.cost}`);
+  });
+  check("AE6: nothing ranked above the binding priority was silently traded away", () => {
+    // The quoted price is a promise about ONE stat. Everything above the binding
+    // priority must be untouched, or the offer understated what it costs.
+    for (const s of q4.targets) {
+      if (s === attr.binding) break;
+      assert.strictEqual(r6.perTarget[s], r4.perTarget[s],
+        `${s} outranks ${attr.binding} and must not move`);
+    }
+  });
+  check("AE6: the outbid disclosure stops firing for the effect once required", () => {
+    assert.ok(!(r6.outbidReport || []).includes(FOM),
+      "a secured effect is not outbid — the stamped report must drop it");
+  });
+  console.log(`    ${attr.binding} ${r4.perTarget[attr.binding]} -> ${r6.perTarget[attr.binding]}, ${FOM} ${r6.perTarget[FOM]}`);
 
   console.log(`\n${passed} passed`);
 })().catch((e) => { console.error(e); process.exit(1); });

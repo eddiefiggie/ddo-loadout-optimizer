@@ -61,6 +61,11 @@ A report-layer condition a `*Placed` family must satisfy before a placement is s
 
 A **fired contribution is visible** unless it changes nothing the player sees, in exactly two shapes: it merely substitutes for a [[Declared credit]] (seated in a credited bucket at or below the floor, duplicating a bonus the player already holds), or every tracked stat it feeds is at its [[Stat cap]] with the contribution clamped out. Cap-clamp redundancy is judged **set-consistently, never per-item**: removal decisions must jointly keep every displayed total reachable from what is still reported, because two contributions — or two placements — each individually slack can jointly hold a stat at its cap. Pattern: `docs/solutions/design-patterns/redundancy-under-a-shared-cap-must-be-judged-set-consistently.md`.
 
+### Outbid target
+A ranked [[Target]] that resolves to zero even though a source for it is reachable in the active pool, because a higher-ranked target locked the only slot that could carry it. The [[Lexicographic solve]] fixes each target at its maximum before the next is considered, so a target below the binding one is unreachable at *any* rank beneath it — dragging it up one place changes nothing until it crosses the stat that actually bound it.
+
+It is the third way a target reaches zero, and the only one that is not a data or filter problem: the other two are "nothing carries it" and "the filters removed every source." A lower-ranked effect can be satisfied in the same solve as a **free rider** — carried by an item that won its slot on other merit, costing nothing — which is why rank order alone never explains the outcome and never identifies the binding target. Rank position expresses a preference that competes; only a [[Best-effort floor]] makes an effect non-negotiable.
+
 ## Stat sources
 
 Each source family below feeds the same bonus-type buckets as a gated contribution; they differ only in what gates them.

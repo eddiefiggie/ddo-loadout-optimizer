@@ -229,6 +229,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     // share-invisible. Carrying them through the model is necessary, not
     // sufficient; each renderer has to print them.
     for (const line of view.character.saturationNotice || []) out += `> ${mdEsc(line)}\n\n`;
+    for (const line of view.character.outbidNotice || []) out += `> ${mdEsc(line)}\n\n`;
     for (const line of view.character.emptySlotNotice || []) out += `> ${mdEsc(line)}\n\n`;
     // U6/#249 — the third disclosure on the same channel.
     for (const line of view.character.absorptionQuarantineNotice || []) out += `> ${mdEsc(line)}\n\n`;
@@ -301,6 +302,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     out += `[i]Optimal loadout — built with the DDO Loadout Optimizer.[/i]\n\n`;
     for (const line of view.character.creditNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
     for (const line of view.character.saturationNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
+    for (const line of view.character.outbidNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
     for (const line of view.character.emptySlotNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
     for (const line of view.character.absorptionQuarantineNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
     if (view.character.craftingExcludedNotice) out += `[i]${bbEsc(view.character.craftingExcludedNotice)}[/i]\n\n`;
@@ -376,6 +378,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     for (const [k, v] of view.character.constraints) rows.push(csvRow([k, v]));
     for (const line of view.character.creditNotice || []) rows.push(csvRow(["Declared", line]));
     for (const line of view.character.saturationNotice || []) rows.push(csvRow(["Saturated", line]));
+    for (const line of view.character.outbidNotice || []) rows.push(csvRow(["Outbid", line]));
     for (const line of view.character.emptySlotNotice || []) rows.push(csvRow(["Free slots", line]));
     for (const line of view.character.absorptionQuarantineNotice || []) rows.push(csvRow(["Excluded", line]));
     if (view.character.craftingExcludedNotice) rows.push(csvRow(["Scope", view.character.craftingExcludedNotice]));
@@ -456,6 +459,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     h += `<p class="pc">${view.character.constraints.filter(([k]) => k !== "Character").map(([k, v]) => `<strong>${htmlEsc(k)}:</strong> ${htmlEsc(v)}`).join(" &middot; ")}</p>`;
     for (const line of view.character.creditNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
     for (const line of view.character.saturationNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
+    for (const line of view.character.outbidNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
     for (const line of view.character.emptySlotNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
     for (const line of view.character.absorptionQuarantineNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
     if (view.character.craftingExcludedNotice) h += `<p class="declared-note"><em>${htmlEsc(view.character.craftingExcludedNotice)}</em></p>`;
@@ -657,6 +661,16 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
         const cap = (a.cap != null && a.total != null) ? ` (capped at ${a.cap})` : "";
         say(`  ${i + 1}. ${stat}  ${a.total == null ? "-" : a.total}${cap}${bounds.length ? ` [${bounds.join(", ")}]` : ""}`);
       });
+    }
+
+    // #345 (U1, R5) — the outbid disclosure reaches THIS export too. It is the
+    // sixth writer, and the one #332 missed: a recipient reading a priority
+    // sitting at 0 with a source in their own gear otherwise has no way to learn
+    // that a higher-ranked priority took the slot rather than the data lacking it.
+    for (const line of view.character.outbidNotice || []) {
+      rl.push("#");
+      say("Priorities a higher-ranked one outbid (informational)");
+      say(`  ${line}`);
     }
 
     const augLines = [];

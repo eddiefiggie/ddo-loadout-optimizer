@@ -1283,6 +1283,9 @@
         // ceiling, or that slots were tie-broken rather than chosen.
         saturationNotice: saturationNoticeLines(snap),
         emptySlotNotice: emptySlotNoticeLines(snap),
+        // #345 (U1, R5) — reads the solver-stamped set, so a shared build
+        // discloses the outbid targets without the recipient re-solving.
+        outbidNotice: outbidNoticeLines(snap && snap.outbidReport),
         // U6/#249 — same channel, same reason: a recipient who cannot re-solve
         // would otherwise get a build asserting an optimal loadout with no way
         // to learn that an item's absorption enchantment was withheld from it.
@@ -1478,6 +1481,20 @@
       + "weapon procs are ranked individually rather than counted by the Utility effects priority.";
   }
 
+  /** #345 (U1, R5) — the outbid sentence, owned here so the results panel and
+   *  all six exports render one wording. Reads the names the solver stamped;
+   *  a restored character has no model and cannot re-derive them. */
+  function outbidNoticeLines(names) {
+    const list = (names || []).filter(Boolean);
+    if (!list.length) return [];
+    const many = list.length > 1;
+    return [`Your gear can supply ${list.join(", ")}, but ${many ? "they" : "it"} scored 0 — `
+      + `a higher-ranked priority took the ${many ? "slots" : "slot"}. `
+      + `Ranking ${many ? "them" : "it"} higher only helps once ${many ? "they rank" : "it ranks"} `
+      + `above whatever outbid ${many ? "them" : "it"}; setting a minimum makes `
+      + `${many ? "them" : "it"} a requirement instead.`];
+  }
+
   function creditNoticeLines(result) {
     const report = (result && result.creditReport) || [];
     if (!report.length) return [];
@@ -1532,7 +1549,7 @@
     // model.js; re-exported so exporters can recognize the sentinel row)
     utilityLine, UTILITY_SENTINEL: UTILITY_NAME,
     // pure primitives (results.js binds these; single definition, no drift)
-    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, collapseExpansions, bundleGroups, itemMl, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
+    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, bundleGroups, itemMl, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,
     satisfiedSets, suppressedHostIds, slotSetNames,
     setContributors, contributorsFor, setMemberLabel, activeSetDetail, satisfiedSetDetail,

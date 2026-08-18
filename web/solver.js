@@ -40,6 +40,14 @@ const _lamordiaWeaponVariant = (typeof lamordiaWeaponVariant !== "undefined")
 // types (e.g. "Insight Natural" and "Insight") collapse to ONE bucket and cannot
 // double-count. Shares model.js's single equivType (browser global; Node require)
 // so the solver and the model/dominance guard can never disagree on a bucket key.
+// #345 (U1, R5) — the outbid set is stamped on the result, not recomputed at
+// render time, for the same reason creditReport is: a restored character has no
+// model and cannot re-derive it, and every share export reads the stored record.
+const _solverPoolStatNames = (typeof poolStatNames !== "undefined")
+  ? poolStatNames
+  // eslint-disable-next-line global-require
+  : require("./model.js").poolStatNames;
+
 const _equivType = (typeof equivType !== "undefined")
   ? equivType
   // eslint-disable-next-line global-require
@@ -1837,11 +1845,82 @@ function readSolution(res, program, precomputedVisible) {
  *  Optimal or the stat has no sources). Computed directly from the primal — not via
  *  readSolution.effective, which only covers priority targets, so a non-priority
  *  floored stat would read undefined. Used by the U2 floor pre-pass. */
+/** #345 (U1) — targets that came back zero while the pool can still supply
+ *  them. A free rider is excluded by construction: it scored above zero. */
+function outbidReportFor(model, targetList, perTarget, floorReport) {
+  const reachable = _solverPoolStatNames(model);
+  // #345 (U6, R11) — a stat carrying an UNMET floor is a requirement that
+  // failed, and the shortfall disclosure already names it with the number it
+  // could not reach. Reporting it as outbid too would put two explanations of
+  // the same zero in front of the player, one of them the weaker.
+  const unmet = new Set((floorReport || []).map((f) => f && f.stat));
+  // A target ABSENT from perTarget is unknown, not zero. Claiming it was outbid
+  // would be inventing a value the solve never reported — the same class of
+  // error as naming an unproven binding priority.
+  const scoredZero = (t) => Object.prototype.hasOwnProperty.call(perTarget, t) && Number(perTarget[t]) <= 0;
+  return (targetList || []).filter((t) =>
+    t !== _UTILITY_SENTINEL && reachable.has(t) && !unmet.has(t) && scoredZero(t));
+}
+
 function probeMax(program, highs, stat, locks) {
   const res = highs.solve(encodeStage(program, { objectiveStat: stat, sense: "max", locks }));
   if (res.Status !== "Optimal") return 0;
   const prim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
   return effectiveOf(program, prim, stat);
+}
+
+/** #345 (U2, R2/R6) — which higher-ranked priority bound an outbid target, and
+ *  what taking it back would cost. Returns null rather than guessing.
+ *
+ *  A PREFIX walk, not a leave-one-out. Locks accumulate in rank order and each
+ *  one's value was achieved UNDER the locks above it, so relaxing a single lock
+ *  while retaining the ones beneath it describes a state the solve never
+ *  occupied — and is often infeasible. Instead: probe the target under the first
+ *  k locks for increasing k. It holds while k is small and dies once k includes
+ *  the lock that binds it. That boundary is the binding priority.
+ *
+ *  Each added lock only shrinks the feasible set, so reachability is monotone in
+ *  k and the boundary is binary-searchable. `linear` forces the exhaustive walk
+ *  so a test can prove the two agree rather than assuming monotonicity.
+ *
+ *  The price is a second probe: with the target floored at 1 and only the locks
+ *  ABOVE the boundary held, how high can the binding stat still reach? The
+ *  difference from what it actually achieved is what the trade costs. */
+function attributeOutbid(program, highs, stat, targetList, perTarget, opts) {
+  const higher = [];
+  for (const s of targetList || []) {
+    if (s === stat) break;
+    // The sentinel's lock is an LP body (a count), not a stat lock, so it cannot
+    // participate in a prefix of stat locks. A tier-bound target reports as
+    // unattributable rather than being blamed on the nearest real stat.
+    if (s === _UTILITY_SENTINEL) continue;
+    higher.push({ stat: s, value: Number(perTarget[s]) || 0 });
+  }
+  if (!higher.length) return null;
+  const at = (k) => probeMax(program, highs, stat, higher.slice(0, k));
+  if (!(at(0) > 0)) return null;              // unreachable even unlocked — a different cause
+  if (at(higher.length) > 0) return null;     // these locks did not bind it
+
+  let boundary;
+  if (opts && opts.linear) {
+    boundary = 1;
+    while (boundary <= higher.length && at(boundary) > 0) boundary++;
+  } else {
+    let lo = 0, hi = higher.length;           // at(lo) > 0, at(hi) === 0
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1;
+      if (at(mid) > 0) lo = mid; else hi = mid;
+    }
+    boundary = hi;
+  }
+  const binding = higher[boundary - 1];
+  const prefix = higher.slice(0, boundary - 1);
+  const held = probeMax(program, highs, binding.stat, [...prefix, { stat, value: 1, floor: true }]);
+  const cost = binding.value - held;
+  // A non-positive cost contradicts the boundary: the target would be free. Do
+  // not report a price the solve does not support.
+  if (!(cost > 0)) return null;
+  return { stat, binding: binding.stat, bindingValue: binding.value, bindingHeld: held, cost };
 }
 
 async function solveLexicographic(model, highs) {
@@ -1945,6 +2024,7 @@ async function solveLexicographic(model, highs) {
 
   return {
     status: "optimal", perTarget, effective: sol.effective, chosen: sol.chosen,
+    outbidReport: outbidReportFor(model, program.targetList, perTarget, floorReport),
     // #91 (U3) — present only when the tier is ranked: the achieved distinct-
     // effect count (a plain number, locked into every post-stage solve) and
     // the load-bearing-checked effect list (U5 builds the full report).
@@ -2482,5 +2562,5 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
 if (typeof module !== "undefined" && module.exports) {
   // readSolution is exported for TESTS ONLY — the deterministic guard tests
   // inject a synthetic primal (#319); app code goes through the solve entry points.
-  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, bucketCountsFor, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, readSolution, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars, rawTotalOf, effectiveOf, buildCreditReport };
+  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, bucketCountsFor, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, readSolution, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars, rawTotalOf, effectiveOf, buildCreditReport, outbidReportFor, attributeOutbid };
 }
