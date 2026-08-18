@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -2415,3 +2415,25 @@ test("#348 U7: a player who removed the row keeps it removed, with nothing to sa
   assert.strictEqual(h.message, null, "and there is nothing to tell them about");
 });
 
+
+test("#348 U6/R5: the empty-suggestion copy answers the dead end the player is in", () => {
+  // Found by opening the panel in a browser, not by reading the code: the DEFAULT
+  // container holds 20 and the cap is 20, so an untouched panel opens already full
+  // with an empty suggestion list. The original copy ("Every default effect is
+  // already in your container") was true, useless, and left both the cap and the
+  // ~818 other addable effects unexplained.
+  const full = Array.from({ length: UTILITY_CONTAINER_CAP }, (_, i) => `E${i}`);
+  const atCap = containerAddHint(full, "", false);
+  assert.ok(/full \(20\/20\)/.test(atCap), "names the cap");
+  assert.ok(/Remove an effect/.test(atCap), "and the action that resolves it");
+  assert.ok(/order is what decides/.test(atCap), "and points at the thing that still helps them");
+
+  const room = containerAddHint(["E0"], "", false);
+  assert.ok(/Search to add any other/.test(room), "with room, invite the search that reaches the rest");
+  assert.ok(!/full/.test(room), "and do not imply a cap that is not binding");
+
+  assert.ok(/No on\/off effect matches/.test(containerAddHint(["E0"], "zzzz", false)),
+    "a failed search says so plainly");
+  assert.strictEqual(containerAddHint(["E0"], "", true), null,
+    "when there ARE suggestions, no hint at all");
+});

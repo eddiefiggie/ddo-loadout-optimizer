@@ -872,6 +872,26 @@ function containerEdit(list, action, arg) {
   return { ok: false, list: out, message: null };
 }
 
+/** #348 (U6/R5, browser-verified) — what to say when the suggestion list is empty.
+ *
+ *  Found by actually opening the panel: the DEFAULT container holds 20 effects and
+ *  the cap is 20, so a player who has never curated opens a panel that is already
+ *  full, with an empty suggestion list. The first copy said "Every default effect
+ *  is already in your container" — true, useless, and it left the ~818 other
+ *  addable effects undiscoverable and the cap unexplained.
+ *
+ *  Three distinct dead ends, three answers. Pure. */
+function containerAddHint(list, query, hasHits) {
+  if (hasHits) return null;
+  const q = String(query == null ? "" : query).trim();
+  if (q) return "No on/off effect matches that.";
+  if ((list || []).length >= UTILITY_CONTAINER_CAP) {
+    return `Your container is full (${UTILITY_CONTAINER_CAP}/${UTILITY_CONTAINER_CAP}). `
+      + "Remove an effect to make room, or reorder what is already here — the order is what decides which ones you actually get.";
+  }
+  return "Search to add any other on/off effect — the defaults are only a starting point.";
+}
+
 /** #348 (U6/R3, KTD10) — the collapsed row's one-line summary, so a player who
  *  never opens the panel still sees the contents. An empty container is a DISTINCT
  *  state from a removed row and says so: removing the row means "do not pursue
@@ -1175,7 +1195,7 @@ function yieldToPaint() {
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs,
     // #348 (U6) — the Utility container's pure logic.
-    UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary };
+    UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -2029,9 +2049,8 @@ if (typeof window !== "undefined" && window.App) {
 
     function containerSuggHTML(list, q) {
       const sugg = containerAddable(vocab, list, q, 12);
-      return sugg.length
-        ? sugg.map((n) => `<button type="button" class="wz-util-add" data-uadd="${esc(n)}">+ ${esc(n)}</button>`).join("")
-        : `<span class="wz-hint">${q ? "No matching effect." : "Every default effect is already in your container."}</span>`;
+      if (sugg.length) return sugg.map((n) => `<button type="button" class="wz-util-add" data-uadd="${esc(n)}">+ ${esc(n)}</button>`).join("");
+      return `<span class="wz-hint">${esc(containerAddHint(list, q, false))}</span>`;
     }
 
     /** #348 (U6/R4, KTD9) — the curation panel. A list manager, sharing only the name

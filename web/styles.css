@@ -1162,7 +1162,12 @@ input.wz-ml { width: 120px; }
    lowest-stakes row on the page and should not read as a warning. */
 .wz-utility-row { background: var(--panel-2, rgba(255,255,255,0.03)); border-radius: 6px; }
 .wz-grip-pinned { cursor: default; opacity: 0.7; letter-spacing: normal; }
-.wz-rk-pinned { color: var(--faint); }
+.wz-rk-pinned {
+  /* Browser-verified fix: `.wz-rk` is a filled, rounded rank badge, so the pinned
+     row inherited a 22px blue chip containing a bare "·" — it read as an empty
+     rank number on a row that is deliberately NOT ranked. */
+  background: transparent; color: var(--faint); font-weight: normal;
+}
 .wz-util-summary { display: block; font-size: 0.85em; color: var(--faint); margin-top: 2px; }
 .wz-util-panel .wz-adv-body { display: block; }
 .wz-util-list { list-style: none; margin: var(--sp-2) 0; padding: 0; }
