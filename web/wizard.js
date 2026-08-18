@@ -902,6 +902,44 @@ function healUtilityTier(priorities, marked) {
   return list;
 }
 
+/** #348 (U7, R12/R13, KTD4) — the SECOND-generation heal, beside its predecessor
+ *  because they repair the same list at the same boundary.
+ *
+ *  There are now THREE distinguishable generations of saved character, and the
+ *  #91 marker only separates the first:
+ *
+ *    pre-tier      no `utility_tier_aware`      -> healUtilityTier appends the row
+ *    pre-container `utility_tier_aware` only    -> THIS heals: pin the row to the
+ *                                                 bottom, seed the container
+ *    post-#348     `utility_container_aware`    -> restore verbatim, always
+ *
+ *  Seeding is free rather than written: a save with no `utilityContainer` key
+ *  loads as `null`, which KTD3 defines as "follow the current default roster and
+ *  order". So this only has to move the row and say what happened.
+ *
+ *  A player who REMOVED the row keeps it removed — that was their decision, and
+ *  there is nothing to tell them. Pure; returns a new list.
+ *  Returns `{ priorities, moved, seeded, message }`. */
+function healUtilityContainer(priorities, containerMarked) {
+  const list = (Array.isArray(priorities) ? priorities : []).slice();
+  if (containerMarked) return { priorities: list, moved: false, seeded: false, message: null };
+  const at = list.indexOf(_utilitySentinel);
+  if (at < 0) return { priorities: list, moved: false, seeded: false, message: null };
+  const moved = at !== list.length - 1;
+  if (moved) { list.splice(at, 1); list.push(_utilitySentinel); }
+  return {
+    priorities: list, moved, seeded: true,
+    // R13 — BOTH facts in one sentence, and the third fact the player needs most:
+    // nothing re-solves until they ask, so the loadout on screen is still the one
+    // they saved. A notice that omitted that would read as "your build changed".
+    message: (moved
+      ? `"${_utilitySentinel}" is now a pinned container at the bottom of your priorities — it moved there from where you had it, `
+      : `"${_utilitySentinel}" is now a pinned container at the bottom of your priorities — `)
+      + "and it holds a default set of nice-to-have effects you can reorder or replace under Curate. "
+      + "Your saved loadout is unchanged until you re-solve.",
+  };
+}
+
 /** #91 (review fix, beside healUtilityTier for the same reason) — the
  *  RENDER-ONLY query for a restored record. `healUtilityTier` heals
  *  `state.priorities` so the ranked list displays the tier, but `query` (the
@@ -1135,7 +1173,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary };
 }
@@ -2666,6 +2704,14 @@ if (typeof window !== "undefined" && window.App) {
       // list is born with. A MARKED save restores verbatim: the player's removal
       // or dragged position is their decision and persists. Never duplicates.
       state.priorities = healUtilityTier(state.priorities, !!i.utility_tier_aware);
+      // #348 (U7, R12/R13) — the second generation. Runs AFTER the #91 heal so a
+      // pre-tier save gets its row appended first and then lands already pinned.
+      // KTD3 — `undefined` (a save with no container key) becomes `null`, which
+      // means "follow the current default", NOT an empty container.
+      state.utilityContainer = Array.isArray(i.utilityContainer) ? i.utilityContainer.slice() : null;
+      const _uHeal = healUtilityContainer(state.priorities, !!i.utility_container_aware);
+      state.priorities = _uHeal.priorities;
+      state.utilityHealNotice = _uHeal.message;
       state.slotConstraints = i.slotConstraints || {};
       state.constraintsDirty = false;   // loaded constraints are the saved state, not a pending change
       // #110 (U5/U6) — the load-path blocklist reconciliation: a save holding a
@@ -2843,6 +2889,14 @@ if (typeof window !== "undefined" && window.App) {
         out += `<div id="wz-awaymig" class="wz-cbar">${esc(state.expandedAwayMigrated)}
         <button class="btn ghost" id="wz-awaymig-ok" type="button">Got it</button></div>`;
       }
+      // #348 (U7, R13) — the container heal rides the same channel, for the same
+      // reason: a loaded character lands on either results or priorities and must
+      // be told on both paths. Fires exactly once, because the next Save stamps
+      // `utility_container_aware` and the heal then restores verbatim.
+      if (state.utilityHealNotice) {
+        out += `<div id="wz-utilmig" class="wz-cbar">${esc(state.utilityHealNotice)}
+        <button class="btn ghost" id="wz-utilmig-ok" type="button">Got it</button></div>`;
+      }
       // #110 (U5/U6) — the blocklist load report rides the same channel: above
       // the step body, because a loaded character routes to either results or
       // priorities and the player must be told on both paths.
@@ -2867,6 +2921,13 @@ if (typeof window !== "undefined" && window.App) {
       if (awayOk) awayOk.onclick = () => {
         state.expandedAwayMigrated = null;
         const bar = document.getElementById("wz-awaymig");
+        if (bar) bar.remove();
+      };
+      // #348 (U7) — dismiss the container heal notice the same way as its siblings.
+      const utilOk = document.getElementById("wz-utilmig-ok");
+      if (utilOk) utilOk.onclick = () => {
+        state.utilityHealNotice = null;
+        const bar = document.getElementById("wz-utilmig");
         if (bar) bar.remove();
       };
       const blockOk = document.getElementById("wz-blockmig-ok");

@@ -100,6 +100,17 @@
     // and a player's removal of the tier would resurrect on every load. backup.js
     // imports this list, so the export/import round-trip carries it for free.
     "utility_tier_aware",
+    // #348 (U7, R11/R12, KTD3/KTD4) — the container's contents+order, and the
+    // SECOND-generation marker. Three generations must be distinguishable
+    // (pre-tier / tier-but-pre-container / post-container) and #91's marker only
+    // separates the first, so this is a new key rather than a reused one.
+    //
+    // `utilityContainer` is nullable ON PURPOSE: `null` means "follow the current
+    // default roster and order", an array means the player curated it. Both must
+    // survive the round-trip distinguishably — collapsing null to [] would freeze
+    // every untouched container at today's roster, and collapsing [] to null would
+    // silently refill a container the player deliberately emptied.
+    "utilityContainer", "utility_container_aware",
   ];
 
   function pickInputs(state, name) {
@@ -117,6 +128,16 @@
         // loader rebuilds the Set. Absent/other -> [] (default: none owned).
         inputs.ownedSetAugments = s.ownedSetAugments instanceof Set ? Array.from(s.ownedSetAugments)
           : (Array.isArray(s.ownedSetAugments) ? s.ownedSetAugments : []);
+      } else if (k === "utility_container_aware") {
+        // #348 (U7, KTD4) — same contract as its #91 predecessor: always `true`,
+        // never read from state. The marker means "this record was written by
+        // container-aware code", which is a property of the CODE doing the saving,
+        // not of the character.
+        inputs.utility_container_aware = true;
+      } else if (k === "utilityContainer") {
+        // Preserve the null/array distinction exactly; anything else is treated as
+        // untouched rather than guessed at.
+        inputs.utilityContainer = Array.isArray(s.utilityContainer) ? s.utilityContainer.slice() : null;
       } else if (k === "utility_tier_aware") {
         // #91 (U4/KTD8) — always `true`, never read from state: the marker means
         // "this record was written by tier-aware code", which is a property of

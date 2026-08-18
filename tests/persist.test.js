@@ -475,3 +475,53 @@ test("#91 U4/R2: a removed sentinel stays removed in the saved record — still 
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);
+
+// ---------------------------------------------------------------------------
+// #348 (U7, R11/KTD3/KTD4) — the container and its second-generation marker.
+// ---------------------------------------------------------------------------
+
+test("#348 U7/R11: INPUT_KEYS carries the container and the second-generation marker", () => {
+  assert.ok(INPUT_KEYS.includes("utilityContainer"), "the container is on the save allowlist");
+  assert.ok(INPUT_KEYS.includes("utility_container_aware"),
+    "so is the marker — #91's utility_tier_aware only separates the FIRST generation");
+  // backup.js imports this list, so the export/import round-trip carries both for
+  // free and the two lists cannot drift.
+});
+
+test("#348 U7/KTD3/AE4: a curated container round-trips exactly, order included", () => {
+  const st = fakeStorage();
+  const curated = { ...state, utilityContainer: ["Deathblock", "Ghostly", "True Seeing"] };
+  saveCharacter(serializeCharacter("Curated", curated, lastRun, "idc"), st);
+  const back = loadCharacter("Curated", st);
+  assert.deepStrictEqual(back.inputs.utilityContainer, ["Deathblock", "Ghostly", "True Seeing"],
+    "contents AND order survive — a reordered container that reloads sorted is a silent data loss");
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(back)).inputs.utilityContainer,
+    ["Deathblock", "Ghostly", "True Seeing"], "and survives JSON exactly as localStorage stores it");
+  assert.strictEqual(back.inputs.utility_container_aware, true, "the marker is stamped by the writing code");
+});
+
+test("#348 U7/KTD3: null and an EMPTY array round-trip as different things", () => {
+  const st = fakeStorage();
+  // null  = never curated -> follow the current default roster (so a later roster
+  //         revision reaches this player).
+  // []    = deliberately emptied -> pursue nothing.
+  // Collapsing either into the other is a silent data change: one freezes every
+  // untouched container at today's roster, the other refills one the player emptied.
+  saveCharacter(serializeCharacter("Untouched", { ...state, utilityContainer: null }, lastRun, "idc"), st);
+  saveCharacter(serializeCharacter("Emptied", { ...state, utilityContainer: [] }, lastRun, "idc"), st);
+  const untouched = JSON.parse(JSON.stringify(loadCharacter("Untouched", st)));
+  const emptied = JSON.parse(JSON.stringify(loadCharacter("Emptied", st)));
+  assert.strictEqual(untouched.inputs.utilityContainer, null, "untouched stays null through JSON");
+  assert.deepStrictEqual(emptied.inputs.utilityContainer, [], "emptied stays an empty array through JSON");
+  assert.notStrictEqual(untouched.inputs.utilityContainer, emptied.inputs.utilityContainer);
+});
+
+test("#348 U7/R12: a pre-container save is distinguishable from a post-container one", () => {
+  const rec = serializeCharacter("Post", state, lastRun, "idc");
+  assert.strictEqual(rec.inputs.utility_container_aware, true, "everything this code writes is marked");
+  // A record written before #348 simply lacks the key — the same shape #91 used,
+  // and what the wizard's load path reads as "heal me once".
+  const pre = JSON.parse(JSON.stringify(rec));
+  delete pre.inputs.utility_container_aware;
+  assert.ok(!("utility_container_aware" in pre.inputs), "absence is the pre-container signal");
+});

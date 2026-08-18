@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -2373,3 +2373,45 @@ test("#348 U6/R3/KTD10: the collapsed summary distinguishes empty from removed",
   assert.strictEqual(containerSummary(["A", "B", "C", "D"]), "A, B, C +1 more",
     "long lists still show what leads, so the panel is not the only way to see it");
 });
+
+// ---------------------------------------------------------------------------
+// #348 (U7) — the second-generation heal. Three generations of saved character
+// must be distinguishable, and each must heal exactly once.
+// ---------------------------------------------------------------------------
+
+const SENT_U7 = "Utility effects";
+
+test("#348 U7/R13/AE6: a mid-list tier is pinned to the bottom and the player is told", () => {
+  const saved = ["Strength", "Constitution", SENT_U7, "Dodge"];
+  const h = healUtilityContainer(saved, false);       // tier-aware, pre-container
+  assert.deepStrictEqual(h.priorities, ["Strength", "Constitution", "Dodge", SENT_U7],
+    "the row moves to the bottom, and the ranked stats keep their order");
+  assert.strictEqual(h.moved, true);
+  assert.ok(h.message, "a notice fires");
+  assert.ok(/moved there from where you had it/.test(h.message), "it names the move");
+  assert.ok(/default set of nice-to-have effects/.test(h.message), "and the seeding");
+  assert.ok(/unchanged until you re-solve/.test(h.message),
+    "and that the saved loadout has not changed — without this the notice reads as 'your build changed'");
+});
+
+test("#348 U7/R12/AE6: a post-container save restores verbatim and never re-heals", () => {
+  const saved = ["Strength", SENT_U7, "Dodge"];       // deliberately mid-list
+  const h = healUtilityContainer(saved, true);        // container-aware
+  assert.deepStrictEqual(h.priorities, saved, "a marked record is never rearranged");
+  assert.strictEqual(h.message, null, "and never re-notified");
+});
+
+test("#348 U7: a tier already at the bottom is seeded and told, without claiming it moved", () => {
+  const h = healUtilityContainer(["Strength", SENT_U7], false);
+  assert.strictEqual(h.moved, false);
+  assert.ok(h.message && !/moved there/.test(h.message),
+    "the notice must not assert a move that did not happen");
+  assert.ok(/pinned container/.test(h.message), "but still explains what the row became");
+});
+
+test("#348 U7: a player who removed the row keeps it removed, with nothing to say", () => {
+  const h = healUtilityContainer(["Strength", "Dodge"], false);
+  assert.deepStrictEqual(h.priorities, ["Strength", "Dodge"], "removal is a decision, not damage");
+  assert.strictEqual(h.message, null, "and there is nothing to tell them about");
+});
+
