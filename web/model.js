@@ -427,7 +427,26 @@ function variantConflict(v, query, gates) {
   // R2/AE2 — Artifact opt-in: unless the player checked "Include an Artifact",
   // no Artifact-quality item is considered. Absent flag => non-Artifact (KTD5),
   // so this is a no-op until the seed is populated AND the box is checked.
-  if (v.artifact && !query.includeArtifact) return 'needs the "Include an Artifact" option';
+  //
+  // #369 — the pinnedIds exemption, for the same reason the ML floor and the
+  // augment ceiling carry one: a pin is an explicit instruction that overrides
+  // the filter (KD5). The checkbox governs whether the solver may CHOOSE an
+  // artifact on its own; pinning one is the player choosing it themselves, and
+  // the more specific instruction wins.
+  //
+  // Without this the pin was not merely ignored, it was ignored SILENTLY: the
+  // variant never entered the pool, so its pick var never existed, and
+  // slotConstraintBodies' documented "a pinned id absent from the pool is a
+  // silent no-op" swallowed the constraint. reconcilePinLegality did not catch
+  // it either — it consults weapon/armor/slot legality, which knows nothing
+  // about this opt-in. Reproduced: pinning Baphomet's Reign with the box
+  // unchecked left the Ring slot EMPTY and dropped its Conditioning 15 -> 0.
+  //
+  // dominanceFilter already protects pins from the pre-filter for the identical
+  // structural reason; this closes the earlier gate it could never reach.
+  if (v.artifact && !query.includeArtifact
+      && !(g.pinnedIds && g.pinnedIds.has(variantKey(v))))
+    return 'needs the "Include an Artifact" option';
 
   // U6/AE — Set-augment ownership gate (v1): a Set Augment insert is only
   // considered when the player has marked it available. `ownedSetAugments` is a

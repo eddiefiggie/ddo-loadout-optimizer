@@ -1999,3 +1999,57 @@ test("#91: sentinel ranked + a real (even empty) counting set does not throw", (
   assert.doesNotThrow(() => M.buildModel([A], { mlCap: 34, targets: ["Intelligence", M.UTILITY_SENTINEL] },
     [], [], [], [], {}, [], [], {}, new Set()));
 });
+
+// ---------------------------------------------------------------------------
+// #369 — a pin overrides the Artifact opt-in.
+//
+// Reported as "why does it sometimes ignore my pins?". Pinning an Artifact with
+// the box unchecked dropped the pin SILENTLY: the eligibility gate removed the
+// variant before it reached the pool, so its pick var never existed and
+// slotConstraintBodies' documented "a pinned id absent from the pool is a silent
+// no-op" swallowed the constraint. reconcilePinLegality did not catch it either
+// (it consults weapon/armor/slot legality, which knows nothing about this
+// opt-in). Reproduced on real data: pinning Baphomet's Reign left the Ring slot
+// EMPTY and dropped its Conditioning 15 -> 0.
+// ---------------------------------------------------------------------------
+
+test("#369: a pinned Artifact survives eligibility with the opt-in OFF", () => {
+  const A = v("Plain", "Ring", [["Intelligence", "Enhancement", 9]]);
+  const B = art("Arti", "Ring", [["Intelligence", "Enhancement", 5]]);
+  const query = {
+    mlCap: 34, targets: ["Intelligence"], includeArtifact: false,
+    slotConstraints: { Ring: { type: "pin", variant_id: "Arti" } },
+  };
+  const ring = M.buildModel([A, B], query).worn.find((s) => s.slot === "Ring");
+  const kept = ring.variants.map((x) => x.source_item).sort();
+  assert.deepStrictEqual(kept, ["Arti", "Plain"],
+    "the pinned Artifact must reach the pool, or the `= 1` constraint has no var to bind");
+});
+
+test("#369: with no pin, the opt-in still excludes the Artifact", () => {
+  // The control. Without this the test above could pass because the gate broke
+  // entirely rather than because the exemption is scoped to pins.
+  const A = v("Plain", "Ring", [["Intelligence", "Enhancement", 9]]);
+  const B = art("Arti", "Ring", [["Intelligence", "Enhancement", 5]]);
+  const ring = M.buildModel([A, B], { mlCap: 34, targets: ["Intelligence"], includeArtifact: false })
+    .worn.find((s) => s.slot === "Ring");
+  assert.deepStrictEqual(ring.variants.map((x) => x.source_item), ["Plain"],
+    "an unpinned Artifact stays excluded when the box is off");
+});
+
+test("#369: the exemption is per-variant — an UNPINNED Artifact stays excluded", () => {
+  // The pin exempts itself, never the whole gate. Without this a pin anywhere
+  // would quietly turn the opt-in off for every Artifact in the build.
+  const pinned = art("PinnedArt", "Ring", [["Intelligence", "Enhancement", 5]]);
+  const other = art("OtherArt", "Necklace", [["Intelligence", "Enhancement", 50]]);
+  const query = {
+    mlCap: 34, targets: ["Intelligence"], includeArtifact: false,
+    slotConstraints: { Ring: { type: "pin", variant_id: "PinnedArt" } },
+  };
+  const model = M.buildModel([pinned, other], query);
+  const ring = model.worn.find((s) => s.slot === "Ring");
+  const neck = model.worn.find((s) => s.slot === "Necklace");
+  assert.ok(ring && ring.variants.some((x) => x.source_item === "PinnedArt"), "the pinned one is in");
+  assert.ok(!neck || !neck.variants.some((x) => x.source_item === "OtherArt"),
+    "the unpinned Artifact is still excluded — a pin exempts itself, not the gate");
+});

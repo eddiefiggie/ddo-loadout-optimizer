@@ -1961,3 +1961,36 @@ test("U6: a target absent from perTarget is unknown, not outbid", () => {
   assert.strictEqual(R.outbidNotice({ targets: ["Deadly"] }, res, _modelWith(["Deadly"])), "",
     "no reported value means no claim");
 });
+
+// #369 — when a pin overrides the Artifact opt-in, the player must be told.
+// Honoring the pin silently would be its own bug: they left the box unchecked
+// and an Artifact is in the build anyway.
+test("#369: a pin-included Artifact is disclosed by name", () => {
+  const arti = { variant_id: "Baphomet's Reign", source_item: "Baphomet's Reign", artifact: true };
+  const plain = { variant_id: "Plain Ring", source_item: "Plain Ring" };
+  const result = { chosen: [{ slot: "Ring", variant: arti }, { slot: "Neck", variant: plain }] };
+  const query = { includeArtifact: false, slotConstraints: { Ring: { type: "pin", variant_id: "Baphomet's Reign" } } };
+
+  assert.deepStrictEqual(R.artifactsIncludedByPin(result, query), ["Baphomet's Reign"]);
+  const html = R.artifactNotice(result, query);
+  // The item name is HTML-ESCAPED (`Baphomet&#39;s Reign`) because this returns
+  // markup — asserting the raw apostrophe would have been asserting an XSS hole.
+  assert.ok(/Baphomet&#39;s Reign/.test(html),
+    `names the item, escaped — a bare "an Artifact" leaves them hunting: ${html}`);
+  assert.ok(!/Baphomet's Reign/.test(html), "and never unescaped into markup");
+  assert.ok(/because you pinned it/.test(html), "and says why it is there");
+  assert.ok(/Unpin to exclude it/.test(html), "and how to undo it");
+});
+
+test("#369: no disclosure when the opt-in is ON or nothing pinned is an Artifact", () => {
+  const arti = { variant_id: "A", source_item: "A", artifact: true };
+  const onQuery = { includeArtifact: true, slotConstraints: { Ring: { type: "pin", variant_id: "A" } } };
+  const result = { chosen: [{ slot: "Ring", variant: arti }] };
+  assert.deepStrictEqual(R.artifactsIncludedByPin(result, onQuery), [],
+    "the player already asked for an Artifact — nothing to disclose");
+
+  const plainPin = { includeArtifact: false, slotConstraints: { Ring: { type: "pin", variant_id: "Plain" } } };
+  const plainResult = { chosen: [{ slot: "Ring", variant: { variant_id: "Plain", source_item: "Plain" } }] };
+  assert.deepStrictEqual(R.artifactsIncludedByPin(plainResult, plainPin), [],
+    "a pinned non-Artifact triggers nothing");
+});
