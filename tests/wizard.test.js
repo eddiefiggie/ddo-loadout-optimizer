@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs } = require("../web/wizard.js");
+const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -2311,4 +2311,65 @@ test("#345 U5: the marker and the clear control are both on the row", () => {
   assert.ok(/wz-clear-req/.test(src), "and the row offers a way to clear it");
   assert.ok(/delete state\.targetFloors\[p\]/.test(src),
     "clearing deletes the floor itself, not a parallel flag");
+});
+
+// ---------------------------------------------------------------------------
+// #348 (U6) — the pinned Utility container row and its curation panel.
+// ---------------------------------------------------------------------------
+
+test("#348 U6/KTD3: null follows the default roster, an array is the player's own", () => {
+  const vocab = { presence: new Set(["Ghostly", "True Seeing", "Blurry"]), magnitude: new Set(),
+    utilityOrder: ["Ghostly", "True Seeing"] };
+  assert.deepStrictEqual(containerList({ utilityContainer: null }, vocab), ["Ghostly", "True Seeing"],
+    "untouched follows the current default — a later roster revision reaches the player");
+  assert.deepStrictEqual(containerList({ utilityContainer: ["Blurry"] }, vocab), ["Blurry"],
+    "curated is frozen against roster changes — their list is theirs");
+  assert.deepStrictEqual(containerList({ utilityContainer: [] }, vocab), [],
+    "an EMPTY array is a real state, not a synonym for untouched");
+});
+
+test("#348 U6/R5: an add beyond the cap is refused with a stated reason", () => {
+  const full = Array.from({ length: UTILITY_CONTAINER_CAP }, (_, i) => `Effect ${i}`);
+  const res = containerEdit(full, "add", "One More");
+  assert.strictEqual(res.ok, false, "refused");
+  assert.deepStrictEqual(res.list, full, "and the list is untouched");
+  assert.ok(res.message && /at most 20 effects/.test(res.message), "the cap is named");
+  assert.ok(/strict order/.test(res.message), "and WHY it exists, not just that it does");
+  // The cap is the encoding gate's number, not a UI choice.
+  assert.strictEqual(UTILITY_CONTAINER_CAP, 20);
+});
+
+test("#348 U6/R4: reorder and remove work by position; a duplicate add is a no-op", () => {
+  assert.deepStrictEqual(containerEdit(["a", "b", "c"], "up", 2).list, ["a", "c", "b"]);
+  assert.deepStrictEqual(containerEdit(["a", "b", "c"], "down", 0).list, ["b", "a", "c"]);
+  assert.deepStrictEqual(containerEdit(["a", "b", "c"], "remove", 1).list, ["a", "c"]);
+  assert.strictEqual(containerEdit(["a"], "up", 0).ok, false, "no-op at the top");
+  assert.strictEqual(containerEdit(["a"], "down", 0).ok, false, "no-op at the bottom");
+  assert.strictEqual(containerEdit(["a"], "add", "a").ok, false, "a duplicate never doubles a position");
+});
+
+test("#348 U6/KTD9: search spans every presence effect; empty search suggests the defaults", () => {
+  const vocab = {
+    presence: new Set(["Ghostly", "True Seeing", "Blurry", "Deathblock", "Seeker"]),
+    magnitude: new Set(["Seeker"]),                    // has a magnitude -> not a presence toggle
+    utilityOrder: ["Ghostly", "True Seeing"],
+  };
+  assert.deepStrictEqual(containerAddable(vocab, [], "", 12), ["Ghostly", "True Seeing"],
+    "no query -> the declared defaults, in declared order");
+  assert.deepStrictEqual(containerAddable(vocab, ["Ghostly"], "", 12), ["True Seeing"],
+    "what the container already holds is never offered again");
+  const hits = containerAddable(vocab, [], "bl", 12);
+  assert.ok(hits.includes("Blurry") && hits.includes("Deathblock"),
+    "a query reaches the whole presence population, not just the defaults");
+  assert.ok(!containerAddable(vocab, [], "seek", 12).includes("Seeker"),
+    "a name with a magnitude is rankable on its own and is not a container effect");
+});
+
+test("#348 U6/R3/KTD10: the collapsed summary distinguishes empty from removed", () => {
+  assert.ok(/Empty/.test(containerSummary([])), "an empty container says so");
+  assert.ok(/remove this row entirely/.test(containerSummary([])),
+    "and points at the different action that means 'no utility at all'");
+  assert.strictEqual(containerSummary(["A", "B"]), "A, B", "short lists show in full");
+  assert.strictEqual(containerSummary(["A", "B", "C", "D"]), "A, B, C +1 more",
+    "long lists still show what leads, so the panel is not the only way to see it");
 });

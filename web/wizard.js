@@ -801,6 +801,89 @@ function insertAboveTrailingSentinel(ranked, stat) {
   return out;
 }
 
+// ---- #348 (U6) — the Utility CONTAINER's pure logic ------------------------
+//
+// Everything below is pure so the row's behavior is unit-testable; the DOM closure
+// holds only rendering and event wiring.
+
+/** #348 (U6/R5, KTD1) — the container cap. Set by the U1 encoding gate, not by UI
+ *  taste: the single-stage weighted objective gives effect i a coefficient of
+ *  2^(k-1-i), so the span grows exponentially with size and the cap is wherever
+ *  that stops reproducing the sequential reference exactly. The gate measured clean
+ *  equivalence at every size through 20 across all 17 sentinel-ranking fixtures
+ *  (tests/encoding_equivalence.js), covering the whole default roster. Widening the
+ *  roster (#349) must re-run that gate before raising this number. */
+var UTILITY_CONTAINER_CAP = 20;
+
+/** #348 (U6, KTD3) — the effective container: the player's curated list, or the
+ *  dataset's declared default when they have never touched it.
+ *
+ *  `null` is not "empty" — it means "follow the current default roster and order",
+ *  so a player who never opens the panel picks up a later roster revision instead
+ *  of being frozen at whatever shipped the day they saved. An empty ARRAY is a
+ *  real, deliberate state: a container the player emptied (KTD10). Pure. */
+function containerList(state, vocab) {
+  const cur = state && state.utilityContainer;
+  if (Array.isArray(cur)) return cur.slice();
+  return ((vocab && vocab.utilityOrder) || []).slice();
+}
+
+/** #348 (U6/R4, KTD9) — the addable population: every targetable presence effect,
+ *  minus what the container already holds. ~838 names, which is a search problem
+ *  rather than a menu — `query` filters, and an empty query returns the default
+ *  roster as suggestions so the panel is useful before the player types. Pure. */
+function containerAddable(vocab, held, query, limit) {
+  const have = new Set(held || []);
+  const q = String(query == null ? "" : query).trim().toLowerCase();
+  const all = [...((vocab && vocab.presence) || [])]
+    .filter((n) => isPresenceOnly(n, vocab) && !have.has(n));
+  const pool = q
+    ? all.filter((n) => n.toLowerCase().includes(q))
+    : ((vocab && vocab.utilityOrder) || []).filter((n) => !have.has(n));
+  return pool.sort((a, b) => {
+    if (!q) return 0;                                   // suggestions keep declared order
+    const ai = a.toLowerCase().indexOf(q), bi = b.toLowerCase().indexOf(q);
+    return ai - bi || a.localeCompare(b);               // prefix matches first
+  }).slice(0, limit == null ? 12 : limit);
+}
+
+/** #348 (U6) — one container mutation. Returns `{ ok, list, message }`; the caller
+ *  owns state and disclosure, mirroring `resolvePriorityAdd`. Pure.
+ *
+ *  R5 — an add beyond the cap is REFUSED WITH A REASON, never silently dropped and
+ *  never silently accepted into a solve the gate never validated. */
+function containerEdit(list, action, arg) {
+  const out = (Array.isArray(list) ? list : []).slice();
+  if (action === "add") {
+    if (!arg || out.includes(arg)) return { ok: false, list: out, message: null };
+    if (out.length >= UTILITY_CONTAINER_CAP) {
+      return { ok: false, list: out,
+        message: `The container holds at most ${UTILITY_CONTAINER_CAP} effects — remove one to add another. `
+          + "The limit is what the solver can pursue in strict order without losing the guarantee." };
+    }
+    out.push(arg);
+    return { ok: true, list: out, message: null };
+  }
+  const i = typeof arg === "number" ? arg : out.indexOf(arg);
+  if (i < 0 || i >= out.length) return { ok: false, list: out, message: null };
+  if (action === "remove") { out.splice(i, 1); return { ok: true, list: out, message: null }; }
+  if (action === "up" && i > 0) { [out[i - 1], out[i]] = [out[i], out[i - 1]]; return { ok: true, list: out, message: null }; }
+  if (action === "down" && i < out.length - 1) { [out[i + 1], out[i]] = [out[i], out[i + 1]]; return { ok: true, list: out, message: null }; }
+  return { ok: false, list: out, message: null };
+}
+
+/** #348 (U6/R3, KTD10) — the collapsed row's one-line summary, so a player who
+ *  never opens the panel still sees the contents. An empty container is a DISTINCT
+ *  state from a removed row and says so: removing the row means "do not pursue
+ *  utility at all", an empty container means "pursue it, but I have not chosen
+ *  what". Pure. */
+function containerSummary(list) {
+  const l = Array.isArray(list) ? list : [];
+  if (!l.length) return "Empty — nothing will fill your leftover slots. Add effects, or remove this row entirely.";
+  const shown = l.slice(0, 3).join(", ");
+  return l.length <= 3 ? shown : `${shown} +${l.length - 3} more`;
+}
+
 /** #91 (U4/KTD8) — the load-path healing rule, beside `migratePriorities` in
  *  spirit and in call site. `marked` is the save's `utility_tier_aware` flag:
  *
@@ -1052,7 +1135,9 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs };
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs,
+    // #348 (U6) — the Utility container's pure logic.
+    UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary };
 }
 
 // ---- browser flow ----------------------------------------------------------
@@ -1110,6 +1195,9 @@ if (typeof window !== "undefined" && window.App) {
       // the roster was the day they saved. An ARRAY means the player curated it, and
       // is frozen against roster changes on purpose — their list is theirs.
       utilityContainer: null,
+      // #348 (U6) — transient panel state: the search box's text and the last
+      // refusal message. Deliberately NOT persisted — neither is part of the build.
+      utilityQuery: "", utilityStatus: "",
       race: "", alignment: "", armor: "", oath: "",
       style: "", weaponTypes: [], offHand: [], offHandWeapons: [],
       // plan 003 U1 — the Two Weapon Fighting declaration. Character state, not gear
@@ -1867,15 +1955,70 @@ if (typeof window !== "undefined" && window.App) {
         // U1 — the row's optional settings as data. The markup renders FROM this
         // and re-derives none of it, so the badge and the presence rule are the
         // same decision the unit tests assert.
+        // #348 (U6/R1) — the container row is PINNED: no drag handle, no drag
+        // attribute, no reorder buttons. It stays removable through the same ✕ every
+        // row has, because "do not pursue utility at all" is still a choice.
+        if (p === _utilitySentinel) return utilityRowHTML(i);
         const adv = advancedRowModel(p, state, vocab);
         return `<li data-i="${i}" draggable="true">
         <span class="wz-grip" title="drag to reorder">⋮⋮</span>
         <span class="wz-rk">${i + 1}</span><span class="wz-nm">${esc(p)}${isPresenceOnly(p, vocab) ? ` <span class="rank-tag" title="On/off effect — the solver secures an item that has it. A min of 1 makes it a hard requirement; there is no magnitude to maximize.">on/off</span>` : ""}</span>
         ${adv.suppressed ? "" : advancedHTML(p, i, adv)}
         <span class="wz-ctl"><button data-up="${i}" ${i === 0 ? "disabled" : ""} aria-label="move up">↑</button>
-          <button data-down="${i}" ${i === state.priorities.length - 1 ? "disabled" : ""} aria-label="move down">↓</button>
+          <button data-down="${i}" ${(i === state.priorities.length - 1
+            // #348 (U6/R1) — also disabled when the NEXT row is the pinned container:
+            // a swap there would push a ranked stat below it, the exact displacement
+            // pinning exists to prevent.
+            || state.priorities[i + 1] === _utilitySentinel) ? "disabled" : ""} aria-label="move down">↓</button>
           <button data-del="${i}" aria-label="remove">✕</button></span></li>`;
       }).join("");
+    }
+
+    // #348 (U6) — the pinned container row. Distinct from every ranked row: no rank
+    // number (it is not ranked), no drag affordance, and a panel that is a LIST
+    // MANAGER rather than the numeric-bounds panel the others carry. R2's copy states
+    // what the row is for, so a player does not put a must-have in it.
+    function utilityRowHTML(i) {
+      const list = containerList(state, vocab);
+      return `<li data-i="${i}" class="wz-utility-row">
+        <span class="wz-grip wz-grip-pinned" title="Pinned to the bottom" aria-hidden="true">📌</span>
+        <span class="wz-rk wz-rk-pinned" title="Not ranked — pursued only after every stat above">·</span>
+        <span class="wz-nm">${esc(_utilitySentinel)} <span class="rank-tag" title="Pursued only if there is room, after every ranked stat is locked. Anything you actually need belongs in the list above, not here.">nice to have</span>
+          <span class="wz-util-summary">${esc(containerSummary(list))}</span></span>
+        ${containerPanelHTML(list)}
+        <span class="wz-ctl"><button data-del="${i}" aria-label="remove">✕</button></span></li>`;
+    }
+
+    function containerSuggHTML(list, q) {
+      const sugg = containerAddable(vocab, list, q, 12);
+      return sugg.length
+        ? sugg.map((n) => `<button type="button" class="wz-util-add" data-uadd="${esc(n)}">+ ${esc(n)}</button>`).join("")
+        : `<span class="wz-hint">${q ? "No matching effect." : "Every default effect is already in your container."}</span>`;
+    }
+
+    /** #348 (U6/R4, KTD9) — the curation panel. A list manager, sharing only the name
+     *  with the numeric Advanced panel: reorder, remove, and a search-first add over
+     *  every targetable presence effect. */
+    function containerPanelHTML(list) {
+      const q = state.utilityQuery || "";
+      const rows = list.length
+        ? list.map((n, j) => `<li class="wz-util-item"><span class="wz-util-pos">${j + 1}</span>
+            <span class="wz-util-name">${esc(n)}</span>
+            <span class="wz-ctl"><button type="button" data-uup="${j}" ${j === 0 ? "disabled" : ""} aria-label="move ${esc(n)} up">↑</button>
+              <button type="button" data-udown="${j}" ${j === list.length - 1 ? "disabled" : ""} aria-label="move ${esc(n)} down">↓</button>
+              <button type="button" data-udel="${j}" aria-label="remove ${esc(n)}">✕</button></span></li>`).join("")
+        : `<li class="wz-hint">${esc(containerSummary([]))}</li>`;
+      return `<details class="wz-adv wz-util-panel" data-adv="${esc(_utilitySentinel)}"${panelOpenAttr(_utilitySentinel)}>
+        <summary>Curate (${list.length}/${UTILITY_CONTAINER_CAP})</summary>
+        <div class="wz-adv-body">
+          <p class="wz-help">These are pursued in this order, after every stat above is locked. The first one is secured before the second is attempted.</p>
+          <ol class="wz-util-list">${rows}</ol>
+          <label class="wz-util-search">Add an effect
+            <input type="search" data-usearch value="${esc(q)}" placeholder="search on/off effects" aria-label="search effects to add">
+          </label>
+          <div class="wz-util-sugg">${containerSuggHTML(list, q)}</div>
+          <p class="wz-util-status" role="status">${esc(state.utilityStatus || "")}</p>
+        </div></details>`;
     }
 
     // U2/U3 — one row's Advanced panel: everything optional, behind one closed
@@ -2023,6 +2166,45 @@ if (typeof window !== "undefined" && window.App) {
         rerender();
         if (after) after();
       });
+
+      // #348 (U6) — the curation panel's controls, wired AFTER the generic button
+      // sweep above. Assigning `onclick` again on the same elements replaces the
+      // generic handler for exactly these buttons, so the container needs no
+      // early-return branches inside the priority handler.
+      //
+      // Placement is load-bearing for a second reason: `containerApply` contains a
+      // `rerender()`, and the D1 focus guard slices the wiring source from the
+      // credit-remove marker to the FIRST `rerender();` it finds. Defining this
+      // above the sweep put an earlier one in the file, inverted that slice, and
+      // failed a guard about focus that has nothing to do with the container.
+      const containerApply = (action, arg) => {
+        const res = containerEdit(containerList(state, vocab), action, arg);
+        state.utilityStatus = res.message || "";
+        if (res.ok) state.utilityContainer = res.list;   // KTD3 — curating materializes the list
+        openPanelToggle(_utilitySentinel, true);         // keep the panel open across the rebuild
+        rerender();
+      };
+      const wireAddButtons = (root) => root.querySelectorAll("button[data-uadd]").forEach((b) => {
+        b.onclick = () => containerApply("add", b.dataset.uadd);
+      });
+      wireAddButtons(ol);
+      ol.querySelectorAll("button[data-udel]").forEach((b) => { b.onclick = () => containerApply("remove", +b.dataset.udel); });
+      ol.querySelectorAll("button[data-uup]").forEach((b) => { b.onclick = () => containerApply("up", +b.dataset.uup); });
+      ol.querySelectorAll("button[data-udown]").forEach((b) => { b.onclick = () => containerApply("down", +b.dataset.udown); });
+      ol.querySelectorAll("input[data-usearch]").forEach((el) => {
+        // Deliberately does NOT rerender per keystroke — a rebuild would destroy the
+        // field under the caret, the same rule the bound/credit inputs follow. The
+        // suggestion list is patched in place from the same builder the render uses.
+        el.oninput = () => {
+          state.utilityQuery = el.value;
+          const body = el.closest(".wz-adv-body");
+          const box = body && body.querySelector(".wz-util-sugg");
+          if (!box) return;
+          box.innerHTML = containerSuggHTML(containerList(state, vocab), el.value);
+          wireAddButtons(box);
+        };
+      });
+
       // #345 (U5, R10) — clear a requirement from the row that shows it. Deletes
       // the floor through the same map the min input writes, then rerenders so
       // the summary marker goes with it; no second flag to fall out of step.
@@ -2105,7 +2287,21 @@ if (typeof window !== "undefined" && window.App) {
         li.ondragstart = (e) => { const t = e.target; if (t && (t.tagName === "INPUT" || t.tagName === "SELECT" || (t.closest && t.closest("details.wz-adv")))) { e.preventDefault(); return; } from = +li.dataset.i; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", ""); };
         li.ondragend = () => { li.classList.remove("dragging"); from = null; };
         li.ondragover = (e) => e.preventDefault();
-        li.ondrop = (e) => { e.preventDefault(); const to = +li.dataset.i; if (from === null || to === from) return; const m = state.priorities.splice(from, 1)[0]; state.priorities.splice(to, 0, m); from = null; rerender(); };
+        li.ondrop = (e) => {
+          e.preventDefault();
+          let to = +li.dataset.i;
+          if (from === null || to === from) return;
+          // #348 (U6/R1) — the pinned row is not draggable, but it is still a DROP
+          // TARGET, and dropping onto it would splice a ranked stat below it. Clamp
+          // to the last position above the container rather than ignoring the drop:
+          // ignoring reads as a broken drag, clamping does what the player meant.
+          const pin = state.priorities.indexOf(_utilitySentinel);
+          if (pin >= 0 && to >= pin) to = Math.max(0, pin - 1);
+          if (to === from) return;
+          const m = state.priorities.splice(from, 1)[0];
+          state.priorities.splice(to, 0, m);
+          from = null; rerender();
+        };
       });
     }
     function renderRanked() { renderRankedList(document.getElementById("wz-ranked"), renderRanked); }
