@@ -629,9 +629,43 @@ function animateCounters(container) {
 function artifactNotice(result, query) {
   const missing = !!(query && query.includeArtifact && result && result.chosen
     && !result.chosen.some((c) => c.variant && c.variant.artifact));
-  return missing
-    ? `<div class="artifact-notice" role="status">No Artifact could be included — none is flagged in the current data.</div>`
+  if (missing) {
+    return `<div class="artifact-notice" role="status">No Artifact could be included — none is flagged in the current data.</div>`;
+  }
+  // #369 — a pin overrides the opt-in (a pin is the more specific instruction),
+  // so when that happened the player MUST be told: they left the box unchecked
+  // and an Artifact is in the build anyway. Naming the items is the point — a
+  // bare "an Artifact was included" would leave them hunting for which one.
+  const pinnedArtifacts = artifactsIncludedByPin(result, query);
+  return pinnedArtifacts.length
+    ? `<div class="artifact-notice" role="status">${esc(pinnedArtifacts.join(", "))} ${
+        pinnedArtifacts.length === 1 ? "is an Artifact and was" : "are Artifacts and were"
+      } included because you pinned ${pinnedArtifacts.length === 1 ? "it" : "them"}, even though "Include an Artifact" is off. Unpin to exclude ${
+        pinnedArtifacts.length === 1 ? "it" : "them"}.</div>`
     : "";
+}
+
+/** #369 — Artifacts in the loadout that are there ONLY because they were pinned:
+ *  the opt-in is off, the item is flagged, and a slot constraint names it. Returns
+ *  their display names, in loadout order. Empty when the opt-in is on (the player
+ *  already asked for an Artifact) or nothing pinned is one. */
+function artifactsIncludedByPin(result, query) {
+  if (!result || !query || query.includeArtifact) return [];
+  const pinned = new Set();
+  for (const c of Object.values((query.slotConstraints) || {})) {
+    if (!c || c.type !== "pin") continue;
+    if (Array.isArray(c.variant_ids)) c.variant_ids.forEach((id) => pinned.add(id));
+    else if (c.variant_id != null) pinned.add(c.variant_id);
+  }
+  if (!pinned.size) return [];
+  const out = [];
+  for (const c of result.chosen || []) {
+    const v = c && c.variant;
+    if (!v || !v.artifact) continue;
+    const id = v.variant_id || v.source_item;
+    if (pinned.has(id)) out.push(v.source_item || id);
+  }
+  return out;
 }
 
 // plan 003 U6/KTD6 — the SAME authority the off-hand pool used, not a re-derivation
@@ -1523,5 +1557,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, boundNotice, zeroSourceNotice, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, incidentalStats, poolStatNames: _resultsPoolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactsIncludedByPin, boundNotice, zeroSourceNotice, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, incidentalStats, poolStatNames: _resultsPoolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }

@@ -57,6 +57,45 @@ Pages: `Spell_Lore`, `Spell_critical`, `Universal_Spell_Lore`, `Lunar_and_Solar_
 (redirect target of `Sun_and_Moon_Augments`), `Solar_Gem_of_Spell_Critical_Chance`
 (still no article — see resolution path below).
 
+### CORRECTED 2026-08-18 (#366) — the base-Spell-Lore leg was a misreading
+
+**This section's original conclusion was wrong in one half, and shipped an
+over-stack for five days.** Read the correction before the evidence below.
+
+The quoted sentence licenses **`Universal Spell Lore` <-> anything**. It does
+**not** license **base `Spell Lore` <-> element lore**, which is how it was read.
+"an item with a Universal Spell Lore Equipment bonus will stack with another item
+with a Spell Lore or Acid Lore Equipment bonus" names `Spell Lore` and
+`Acid Lore` as two separate things USL stacks *with*; it says nothing about those
+two stacking with each other.
+
+Re-read 2026-08-18, same-origin:
+
+* `Universal_Spell_Lore`'s item table is headed **"Exceptional Universal Spell
+  Lore items"** with rows reading `Exceptional Universal Spell Lore +3%`. That
+  matches our stored `Universal Spell Lore | Exceptional` (65 items) — so the
+  wiki's term is our affix of that name, **not** our `Spell Lore | Equipment`.
+  The alternative reading, which would have vindicated the cross-add, is dead.
+* `Spell_Lore` lists base Spell Lore as a **peer of the element lores**,
+  separated only by coverage: "Void Lore - negative energy and poison spells" /
+  "**Spell Lore - all spell types**", and types it as an equipment bonus. The
+  page states **no stacking rule anywhere**; neither does `Spell_critical`.
+
+So the wiki documents an explicit "separate and stacking" exception for Universal
+Spell Lore and documents none for base Spell Lore. DDO's default applies: same
+bonus type, only the highest counts.
+
+**Resolution.** Base `Spell Lore` moved to the EXPANSION family
+(`spell_focus._UNIVERSAL`), exactly like `Potency` in the spellpower channel — it
+was the one member of its family filed in the wrong place. `Universal Spell Lore`
+stays in `cross_add`. Reported by a player as Void Lore summing to 55 where 50 was
+correct; the fix reproduces 50.
+
+**Why it survived review:** the conclusion below presents both legs at equal
+strength and flags the difference only in passing ("additionally rests on"). A
+leg that rests on an inference should be labelled as one, not folded into a
+section titled "stated outright".
+
 ### Additivity — universal lore stacks with element lore, stated outright
 
 `https://ddowiki.com/page/Universal_Spell_Lore`, lead paragraph (verbatim):

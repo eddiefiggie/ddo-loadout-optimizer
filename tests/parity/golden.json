@@ -1310,10 +1310,10 @@
   "utility-ab-kinetic-ml34-baseline": {
    "status": "optimal",
    "perTarget": {
-    "Kinetic Lore": 68
+    "Kinetic Lore": 49
    },
    "effective": {
-    "Kinetic Lore": 68
+    "Kinetic Lore": 49
    },
    "chosen": [
     {
@@ -1321,42 +1321,30 @@
      "variant": "Downcast Robe"
     },
     {
-     "slot": "Cloak",
-     "variant": "Legendary Cloak of Autumn"
-    },
-    {
      "slot": "Goggles",
      "variant": "Red Wizard's Sight"
     },
     {
      "slot": "Helmet",
-     "variant": "Faedark Faerielights"
-    },
-    {
-     "slot": "Main Hand",
-     "variant": "Blessed Longsword of the Undying Age"
+     "variant": "Legendary Elder's Cap"
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Torc of Prince Raiyum-de II"
-    },
-    {
-     "slot": "Ring",
-     "variant": "Legendary Ring of Spell Storing"
+     "variant": "Legendary Elder's Focus"
     },
     {
      "slot": "Trinket",
-     "variant": "Bottled Rainstorm"
+     "variant": "Epic Dragon's Eye"
     }
    ]
   },
   "utility-ab-kinetic-ml34": {
    "status": "optimal",
    "perTarget": {
-    "Kinetic Lore": 68
+    "Kinetic Lore": 49
    },
    "effective": {
-    "Kinetic Lore": 68
+    "Kinetic Lore": 49
    },
    "chosen": [
     {
@@ -1369,19 +1357,15 @@
     },
     {
      "slot": "Boots",
-     "variant": "Blackfeather Boots"
+     "variant": "Legendary Windriders"
     },
     {
      "slot": "Bracers",
-     "variant": "Bracelets of Flourishing Fauna"
+     "variant": "Legendary Jidz-Tet'ka"
     },
     {
      "slot": "Cloak",
      "variant": "Cloak of Autumn"
-    },
-    {
-     "slot": "Gloves",
-     "variant": "Legendary Darstil's Gloves"
     },
     {
      "slot": "Goggles",
@@ -1389,7 +1373,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Elder's Cap"
+     "variant": "Dread Stalker's Skullcap"
     },
     {
      "slot": "Main Hand",
@@ -1409,11 +1393,11 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Ring of Spell Storing"
+     "variant": "Legendary Duskbone Ring"
     },
     {
      "slot": "Trinket",
-     "variant": "Legendary Gem of Many Facets"
+     "variant": "Bottled Rainstorm"
     }
    ]
   },

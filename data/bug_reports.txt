@@ -123,3 +123,55 @@ New batch of reports (2026-08-16):
 
 Filed 2026-08-16:
 - #343 (report 1) Premise half-holds. Data present (Ghostly 111 variants ML3-36, True Seeing 60 variants ML5-34) and both ARE targetable presence stats — an explicit priority is satisfied and sourced (Ghostly via Legendary Wraithborn Emerald augment, True Seeing via Dread Stalker's Skullcap). The real defect is that the default-on Utility tier's 38-name counting set is almost entirely weapon procs (Bane family, Holy, Vampirism...) and excludes EVERY worn defensive toggle — Ghostly, True Seeing, Blurry, Freedom of Movement, Blindness Immunity, Deathblock (Feather Falling is the lone exception) — so nothing seeks them unless the player names them by hand. This is also the #91 plan's KTD10 "widen in measured batches" lever, which was never filed; headroom is nearly gone (38 names already measured 1.96x/2.0x).
+
+================================================================================
+2026-08-18 — user report batch (verbatim)
+================================================================================
+At ML33 and below, Insightful INT +7 does not exist. The best available is +6 is
+incorrect, all FoM/ToN/Den artifacts/accessories provide such crafting options.
+
+Its stacking equipment spell lore (general) on top of element equipment lore,
+like stacking 13 equipment spell lore on top of 25 Kinetic lore. I don't think
+it works like that.
+
+Lamordia raid accessories do not seem to see the option for +2 quality DCs. I've
+done loadouts with The Deathly Shroud and it didn't put anything in the Woeful
+slot, when quality DCs were missing from everything except necro.
+(I feel like the Lamordia items might be struggling to show four crafted slots in
+general. All I've seen show three crafts at the end, not four, with the type of
+slot (Woeful, Dolorous etc.) but I could easily have just been unlucky with this
+one.)
+
+Equipment spell lore seems to be stacking with individual spell lores. At least,
+spell lore 13% on Darstil's Gloves is stacking with void lore 24% on the Cracked
+Symbol of Lolth.
+
+The Wormwrithe Ring - and potentially the other (now confirmed the cowl does as
+well) Nearly Complete: Heal Amp items - are giving enhancement to positive and
+negative, instead of competence and profane. This flags it as stacking with e.g.
+sapphire of negative amplification, when it should not. This tool actually made
+me realise they were wrong on the wiki - it was listed as enhancement for all
+options - and I edited it. But in the solver the error remains.
+
+Essence of Pomura's Memento insightful lore V is stacking with insightful void
+lore 15% in Orcus' Reign. Void lore is summing to 55 with my loadout when it
+should go to 50: 24 equipment + 15 insight + 5 exceptional + 6 artifact (+ 5
+insight from Pomura's).
+
+Dino Armor, Helmet and Cloak selected both Dread Isle Curse and Defender of Tanoa
+sets, double dipping. Also makes it very desired combo for selector.
+
+I'm finding its not reaching out and grabbing sets after a while. I set force lore
+to priority 1 and I know I can manually pull in 3xAutumn for example to get more
+force lore but it won't do it on its own. Manually I can pin 3 autumn pieces to
+get Force Lore to 47% but on its own it does not pull in a set to get it past 41%.
+
+why does it sometimes ignore my pins? only using gear I own, Pinned Baphomet's
+Reign, Kinesis, and Greaves of Season's Warding. Have all of Baphomet's stats as
+ones I want. It replaces it with an artifact that has no stats I want, but filled
+with augments. The two items have identical blue, yellow, green slots. It seems to
+think Dinosaur Bone Ring is not an artifact. Gave me a solution with this and
+another artifact when I tweaked it.
+
+Profane Well Rounded item attribute and Essence of Epic Litany of the Dead augment
+profane well rounded should show up on the Sets tab.

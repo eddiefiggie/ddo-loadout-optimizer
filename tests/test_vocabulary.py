@@ -525,12 +525,20 @@ def test_the_real_seed_resolves_the_real_vocabulary():
     cands = V.umbrella_candidates(universe, components, modeled)
     seed = V._load(V.UMBRELLA_ADJUDICATIONS_PATH)
     report = V.check_umbrella_adjudications(cands, seed, universe)
-    # Re-pinned across the sweep's iterations (20 -> 25 -> 29 -> 30): each
+    # Re-pinned across the sweep's iterations (20 -> 25 -> 29 -> 30 -> 38): each
     # widening of the universe (skills components, pool names, set-def
     # channels) flagged more names, and each got its ruling. The count pins
     # the converged state.
-    assert report["candidates"] == 30
-    assert report["atomic"] == 30
+    #
+    # 30 -> 38 at #366, and the arithmetic is the point: admitting base
+    # `Spell Lore` to the expansion family made "Lore" a family head-word, which
+    # (a) retired TWO entries — `Radiance Lore` and `Repair Lore` became
+    # expansion COMPONENTS, so the detector stops asking about them and their
+    # rulings went stale — and (b) newly flagged the TEN Combined Spell Lores
+    # (Blighted, Creeping Dust, ...), each now ruled `atomic` on its own row of
+    # the Spell_Lore "Combined Spell Lore" table. 30 - 2 + 10 = 38.
+    assert report["candidates"] == 38
+    assert report["atomic"] == 38
     # The detector's first sweep found three live umbrellas; they must stay
     # MODELED (expanded away), never re-enter the rankable vocabulary silently.
     for name in ("Resistance", "Elemental Resonance", "Combat Mastery",

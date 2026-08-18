@@ -1537,7 +1537,12 @@ test("U1: the built catalog carries both cross-add families", () => {
                     "Magnetism", "Nullification", "Radiance", "Reconstruction", "Resonance"]) {
     assert.deepStrictEqual(ca[sp], ["Universal Spell Power"], sp);
   }
-  assert.deepStrictEqual(ca["Fire Lore"], ["Spell Lore", "Universal Spell Lore"]);
+  // #366 — base `Spell Lore` left this family: it is a same-type umbrella and
+  // now EXPANDS (highest-of-type), matching Potency in the spellpower channel.
+  // Only the wiki-declared "separate and stacking" source cross-adds.
+  assert.deepStrictEqual(ca["Fire Lore"], ["Universal Spell Lore"]);
+  assert.ok(!(ca["Fire Lore"] || []).includes("Spell Lore"),
+    "a same-type umbrella must never also cross-add — that would sum a source it competes with");
 });
 
 // #316 — the load normalizer must not strip the color matrix the build stamps
@@ -1780,5 +1785,51 @@ test("#345: web scripts compile together in one shared global scope", () => {
     assert.fail(`the scripts index.html loads do not compile together: ${e.message}\n` +
       "In the browser they share ONE global scope. Two files declaring the same " +
       "top-level name is a SyntaxError that discards the second file entirely.");
+  }
+});
+
+// ---------------------------------------------------------------------------
+// #364 — a synthesized body must inherit the item-quality fields of the record
+// it replaces. The Dinosaur Bone blanks REPLACE same-named gear-planner records
+// (their names are excluded from the reader), and the six native accessory
+// blanks are flagged `artifact: true` upstream. The synthetic bodies were not,
+// so the built catalog shipped 95 Artifacts where the dump has 101 — and an
+// unflagged Artifact is invisible to the one-Artifact constraint, letting the
+// solver equip it alongside a real one. Reported by a player.
+// ---------------------------------------------------------------------------
+
+test("#364: no Artifact is lost between the gear-planner dump and the built catalog", () => {
+  if (!realData || !(realData.items || []).length) return console.log("  (skipped — dataset not built)");
+  const fs = require("fs");
+  const path = require("path");
+  const rawPath = path.join(__dirname, "..", "data", "seed", "compendium", "raw", "gearplanner_items.json");
+  if (!fs.existsSync(rawPath)) return console.log("  (skipped — raw dump absent)");
+  const raw = JSON.parse(fs.readFileSync(rawPath, "utf8"));
+  const rawItems = raw.items || raw;
+  const rawCount = rawItems.filter((it) => it.artifact).length;
+  const builtCount = (realData.items || []).filter((it) => it.artifact === true).length;
+  assert.ok(rawCount > 0, "the dump must flag some Artifacts, or this test proves nothing");
+  assert.strictEqual(builtCount, rawCount,
+    `the built catalog must carry every Artifact the dump flags (${builtCount} vs ${rawCount}) — ` +
+    "a synthesized body that replaces a native record has to inherit its item-quality fields");
+});
+
+test("#364: the six Dinosaur Bone accessory blanks are flagged Artifacts", () => {
+  if (!realData || !(realData.items || []).length) return console.log("  (skipped — dataset not built)");
+  const byName = new Map((realData.items || []).map((it) => [it.source_item, it]));
+  // Exactly the set the dump flags, and the line the wiki draws:
+  // "Minor Artifact accessory blanks are available from the raid ..." while
+  // "Dinosaur Bone armors and shields are only available as loot from the raid".
+  for (const n of ["Belt", "Boots", "Bracers", "Gloves", "Necklace", "Ring"]) {
+    const it = byName.get(`Dinosaur Bone ${n}`);
+    assert.ok(it, `Dinosaur Bone ${n} must exist`);
+    assert.strictEqual(it.artifact, true, `Dinosaur Bone ${n} must be flagged an Artifact`);
+  }
+  // NOT extended to the armor/weapon bodies on family resemblance — the dump
+  // does not flag them and the wiki puts them in a different acquisition class.
+  for (const n of ["Armor", "Helmet", "Cloak", "Quarterstaff"]) {
+    const it = byName.get(`Dinosaur Bone ${n}`);
+    if (it) assert.notStrictEqual(it.artifact, true,
+      `Dinosaur Bone ${n} is not flagged upstream — flagging it would be inference`);
   }
 });

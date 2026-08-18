@@ -217,6 +217,14 @@ def assert_crafting_vocab() -> int:
     return vocabulary_mod.check_crafting_integrity(items, crafting, slot_reg, aug_reg)
 
 
+def _raw_planner_items():
+    """#364 — the raw gear-planner item dump, for carrying native item-quality
+    fields onto synthetic bodies that replace a same-named record."""
+    with open(GEARPLANNER_ITEMS_PATH, encoding="utf-8") as fh:
+        raw = json.load(fh)
+    return raw.get("items", raw) if isinstance(raw, dict) else raw
+
+
 def assert_affix_synonyms() -> int:
     """Referential-integrity gate for upstream's affix-synonym table (U6), against
     the FROZEN checked-in registry. Upstream folds distinct game mechanics under one
@@ -468,6 +476,28 @@ def build() -> dict:
     dino_blanks, dino_inserts, dino_sets, dino_cov = dino_mod.build_dino(
         dino_seed, crafting, sets_catalog=_set_catalog)
     _host_pipeline_names = {b.get("source_item") for b in dino_blanks}
+    # #364 — the blank REPLACES the same-named gear-planner record (its name is
+    # excluded from the reader just below), so it must inherit that record's
+    # item-quality fields or they are silently lost. `artifact` was: the six
+    # native Dinosaur Bone accessory blanks are flagged `artifact: true` upstream,
+    # our synthetic bodies were not, and the built catalog shipped 95 Artifacts
+    # where the dump has 101. An unflagged Artifact is invisible to the one-
+    # Artifact constraint, so the solver could equip it alongside a real one —
+    # which is exactly what a player reported.
+    #
+    # Carried, never inferred. The wiki draws the same line the dump does
+    # (Dinosaur_Bone_crafting: "Minor Artifact accessory blanks are available
+    # from the raid ..." while "armors and shields are only available as loot"),
+    # so the Armor/Helmet/Cloak bodies stay unflagged rather than being extended
+    # to on a family resemblance. Same field-chain rule `_stamp_set_membership`
+    # already enforces for `sets` — a synthesized record needs the full chain.
+    _native_artifact_names = {
+        it.get("name") for it in _raw_planner_items()
+        if it.get("artifact") and it.get("name") in _host_pipeline_names
+    }
+    for _b in dino_blanks:
+        if _b.get("source_item") in _native_artifact_names:
+            _b["artifact"] = True
     # Native gear-planner records — the sole item roster. The loader already
     # dedups intra-dump same-name collisions (first wins) and surfaces every host
     # choice-slot marker (augment/seal/lamordia/nearly-complete/lost-purpose)
