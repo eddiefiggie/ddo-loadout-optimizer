@@ -1,425 +1,481 @@
 {
-  "_README": "Curated affix-NAME ambiguity decisions (KTD10/U10; hardened U6.5). AFFIX NAMES ONLY. The lint SURFACES near-duplicates; a human (or the co-occurrence detector) decides same-vs-distinct here. NEVER auto-merge. 'aliases' rewrites a variant to its canonical entry (incl. the U6.5-ported semantic synonyms whose canonical is verified native). 'distinct' whitelists similar-but-different pairs so the lint stops flagging them and serves as anti-false-merge test fixtures; entries are either a bare [A,B] pair or a {pair,reason} object (the co-occurrence detector auto-classifies same-item pairs DISTINCT with evidence).",
-  "_meta": {
-    "generated_from": "illusionistpm/ddo-gear-planner",
-    "upstream_commit": "ec3e595d",
-    "seeded": "2026-08-01",
-    "scope": "affix names only; types use type_stacking_equivalence.json; slots/augments are closed sets (no alias table)",
-    "distinct_note": "High-similarity-but-distinct pairs (Alchemical Air/Fire, 1d4/1d6, +66/+108, Summon Monster II/III, etc.) are auto-seeded distinct by the non-blocking lint and are NOT enumerated here; only the punctuation-collision danger pairs are pinned as explicit anti-false-merge anchors.",
-    "u65_notes": "U6.5: ported 12 legacy STAT_ALIASES semantic synonyms (Str/Dex/.../Cha, PRR/MRR, Physical/Magical Resistance Rating, Fortification Bypass -> Armor-Piercing); 'All Abilities'->'All Ability Scores' was NOT ported because 'All Ability Scores' is not a native registry affix. Added 35 same-item co-occurrence-proven distinct pairs (incl. Blood Rage/Bloodrage). % / (%) unit marker is significant (flat-vs-percent is always distinct)."
+ "_README": "Curated affix-NAME ambiguity decisions (KTD10/U10; hardened U6.5). AFFIX NAMES ONLY. The lint SURFACES near-duplicates; a human (or the co-occurrence detector) decides same-vs-distinct here. NEVER auto-merge. 'aliases' rewrites a variant to its canonical entry (incl. the U6.5-ported semantic synonyms whose canonical is verified native). 'distinct' whitelists similar-but-different pairs so the lint stops flagging them and serves as anti-false-merge test fixtures; entries are either a bare [A,B] pair or a {pair,reason} object (the co-occurrence detector auto-classifies same-item pairs DISTINCT with evidence).",
+ "_meta": {
+  "generated_from": "illusionistpm/ddo-gear-planner",
+  "upstream_commit": "ec3e595d",
+  "seeded": "2026-08-01",
+  "scope": "affix names only; types use type_stacking_equivalence.json; slots/augments are closed sets (no alias table)",
+  "distinct_note": "High-similarity-but-distinct pairs (Alchemical Air/Fire, 1d4/1d6, +66/+108, Summon Monster II/III, etc.) are auto-seeded distinct by the non-blocking lint and are NOT enumerated here; only the punctuation-collision danger pairs are pinned as explicit anti-false-merge anchors.",
+  "u65_notes": "U6.5: ported 12 legacy STAT_ALIASES semantic synonyms (Str/Dex/.../Cha, PRR/MRR, Physical/Magical Resistance Rating, Fortification Bypass -> Armor-Piercing); 'All Abilities'->'All Ability Scores' was NOT ported because 'All Ability Scores' is not a native registry affix. Added 35 same-item co-occurrence-proven distinct pairs (incl. Blood Rage/Bloodrage). % / (%) unit marker is significant (flat-vs-percent is always distinct).",
+  "vocabulary_divergence_note": "2026-08-18 (#374): upstream renamed ten stats we store under the in-game enchantment names. Rather than migrate the whole product (solver tables, goldens, saved characters, docs), the divergence is absorbed HERE — their name is an alias of ours, so a refreshed import lands on our canon and the picker resolves either spelling. Re-check this list whenever the snapshot is refreshed: a name upstream adds to the flip is a silent vocabulary change until it is aliased."
+ },
+ "aliases": [
+  {
+   "variant": "Acid Spell Power",
+   "canonical": "Corrosion",
+   "reason": "#374 — upstream flipped its canonical vocabulary (their items.json now emits this name where ours emits the canonical). We keep the in-game enchantment name as canon: a player checking the app against an item tooltip must find the same words. Verified 2026-08-18: ZERO items in either snapshot carry both names, so this is a spelling of one mechanic and not a merge of two (the same-item co-occurrence rule). Doubles as picker discoverability — a player who types upstream's name still finds it."
   },
-  "aliases": [
-    {
-      "variant": "damage vs the Helpless",
-      "canonical": "Damage to helpless enemies",
-      "reason": "#305 (was a case-only alias to 'Damage vs the Helpless'): one wiki-verified helpless-damage mechanic; the pipeline folds every set-channel spelling to the native canonical (docs/wiki-evidence/helpless-damage.md), so the picker must resolve here too"
-    },
-    {
-      "variant": "Damage vs. Helpless opponents",
-      "canonical": "Damage to helpless enemies",
-      "reason": "#305 (was a case-only alias to 'Damage vs. Helpless Opponents'): one wiki-verified helpless-damage mechanic; folded to the native canonical (docs/wiki-evidence/helpless-damage.md)"
-    },
-    {
-      "variant": "Damage vs the Helpless",
-      "canonical": "Damage to helpless enemies",
-      "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
-    },
-    {
-      "variant": "Damage vs. Helpless Opponents",
-      "canonical": "Damage to helpless enemies",
-      "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
-    },
-    {
-      "variant": "Damage vs. Helpless",
-      "canonical": "Damage to helpless enemies",
-      "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
-    },
-    {
-      "variant": "Damage vs. the Helpless",
-      "canonical": "Damage to helpless enemies",
-      "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
-    },
-    {
-      "variant": "Additional Damage to Helpless Targets",
-      "canonical": "Damage to helpless enemies",
-      "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
-    },
-    {
-      "variant": "Helplessness Damage",
-      "canonical": "Damage to helpless enemies",
-      "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
-    },
-    {
-      "variant": "damage versus the Helpless",
-      "canonical": "Damage to helpless enemies",
-      "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
-    },
-    {
-      "variant": "damage vs. helpless",
-      "canonical": "Damage to helpless enemies",
-      "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
-    },
-    {
-      "variant": "damage vs. the helpless",
-      "canonical": "Damage to helpless enemies",
-      "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
-    },
-    {
-      "variant": "Greater Dragonmark charges",
-      "canonical": "Greater Dragonmark Charges",
-      "reason": "case-only"
-    },
-    {
-      "variant": "item becomes a Spellcasting Implement",
-      "canonical": "Item becomes a Spellcasting Implement",
-      "reason": "case-only"
-    },
-    {
-      "variant": "Str",
-      "canonical": "Strength",
-      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
-    },
-    {
-      "variant": "Dex",
-      "canonical": "Dexterity",
-      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
-    },
-    {
-      "variant": "Con",
-      "canonical": "Constitution",
-      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
-    },
-    {
-      "variant": "Int",
-      "canonical": "Intelligence",
-      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
-    },
-    {
-      "variant": "Wis",
-      "canonical": "Wisdom",
-      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
-    },
-    {
-      "variant": "Cha",
-      "canonical": "Charisma",
-      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
-    },
-    {
-      "variant": "PRR",
-      "canonical": "Physical Sheltering",
-      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
-    },
-    {
-      "variant": "MRR",
-      "canonical": "Magical Sheltering",
-      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
-    },
-    {
-      "variant": "Physical Resistance Rating",
-      "canonical": "Physical Sheltering",
-      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
-    },
-    {
-      "variant": "Magical Resistance Rating",
-      "canonical": "Magical Sheltering",
-      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
-    },
-    {
-      "variant": "Fortification Bypass",
-      "canonical": "Armor-Piercing",
-      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
-    },
-    {
-      "variant": "Fortification Bypass (Armor-Piercing)",
-      "canonical": "Armor-Piercing",
-      "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
-    },
-    {
-      "variant": "Striding",
-      "canonical": "Movement Speed",
-      "reason": "the DDO wiki's name for the movement-speed stat; upstream folds it into 'Speed', which in game names an enchantment granting three stats (#154)"
-    },
-    {
-      "variant": "Ki",
-      "canonical": "Enhanced Ki",
-      "reason": "upstream shortens the wiki's 'Enhanced Ki' to bare 'Ki'; the pipeline mints the wiki name via affix_name_corrections.json, so this keeps the gear-planner name resolving for a free-typed priority (#227)"
-    }
+  {
+   "variant": "Additional Damage to Helpless Targets",
+   "canonical": "Damage to helpless enemies",
+   "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
+  },
+  {
+   "variant": "Cha",
+   "canonical": "Charisma",
+   "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+  },
+  {
+   "variant": "Cold Lore",
+   "canonical": "Ice Lore",
+   "reason": "#374 — upstream flipped its canonical vocabulary (their items.json now emits this name where ours emits the canonical). We keep the in-game enchantment name as canon: a player checking the app against an item tooltip must find the same words. Verified 2026-08-18: ZERO items in either snapshot carry both names, so this is a spelling of one mechanic and not a merge of two (the same-item co-occurrence rule). Doubles as picker discoverability — a player who types upstream's name still finds it."
+  },
+  {
+   "variant": "Cold Spell Power",
+   "canonical": "Glaciation",
+   "reason": "#374 — upstream flipped its canonical vocabulary (their items.json now emits this name where ours emits the canonical). We keep the in-game enchantment name as canon: a player checking the app against an item tooltip must find the same words. Verified 2026-08-18: ZERO items in either snapshot carry both names, so this is a spelling of one mechanic and not a merge of two (the same-item co-occurrence rule). Doubles as picker discoverability — a player who types upstream's name still finds it."
+  },
+  {
+   "variant": "Con",
+   "canonical": "Constitution",
+   "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+  },
+  {
+   "variant": "Damage vs the Helpless",
+   "canonical": "Damage to helpless enemies",
+   "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
+  },
+  {
+   "variant": "Damage vs. Helpless",
+   "canonical": "Damage to helpless enemies",
+   "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
+  },
+  {
+   "variant": "Damage vs. Helpless Opponents",
+   "canonical": "Damage to helpless enemies",
+   "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
+  },
+  {
+   "variant": "Damage vs. Helpless opponents",
+   "canonical": "Damage to helpless enemies",
+   "reason": "#305 (was a case-only alias to 'Damage vs. Helpless Opponents'): one wiki-verified helpless-damage mechanic; folded to the native canonical (docs/wiki-evidence/helpless-damage.md)"
+  },
+  {
+   "variant": "Damage vs. the Helpless",
+   "canonical": "Damage to helpless enemies",
+   "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
+  },
+  {
+   "variant": "Dex",
+   "canonical": "Dexterity",
+   "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+  },
+  {
+   "variant": "Electric Spell Power",
+   "canonical": "Magnetism",
+   "reason": "#374 — upstream flipped its canonical vocabulary (their items.json now emits this name where ours emits the canonical). We keep the in-game enchantment name as canon: a player checking the app against an item tooltip must find the same words. Verified 2026-08-18: ZERO items in either snapshot carry both names, so this is a spelling of one mechanic and not a merge of two (the same-item co-occurrence rule). Doubles as picker discoverability — a player who types upstream's name still finds it."
+  },
+  {
+   "variant": "Fire Spell Power",
+   "canonical": "Combustion",
+   "reason": "#374 — upstream flipped its canonical vocabulary (their items.json now emits this name where ours emits the canonical). We keep the in-game enchantment name as canon: a player checking the app against an item tooltip must find the same words. Verified 2026-08-18: ZERO items in either snapshot carry both names, so this is a spelling of one mechanic and not a merge of two (the same-item co-occurrence rule). Doubles as picker discoverability — a player who types upstream's name still finds it."
+  },
+  {
+   "variant": "Force Lore",
+   "canonical": "Kinetic Lore",
+   "reason": "#368 — a player ranked \"force lore\" and the picker knew no such name. Spell_Lore lists ours as the wiki wording (\"Kinetic - force, physical and untyped\"), so the canon is right and only the search term was missing. Upstream canonicalizes to Force Lore, so this also lands their data on ours."
+  },
+  {
+   "variant": "Force Spell Power",
+   "canonical": "Impulse",
+   "reason": "#374 — upstream flipped its canonical vocabulary (their items.json now emits this name where ours emits the canonical). We keep the in-game enchantment name as canon: a player checking the app against an item tooltip must find the same words. Verified 2026-08-18: ZERO items in either snapshot carry both names, so this is a spelling of one mechanic and not a merge of two (the same-item co-occurrence rule). Doubles as picker discoverability — a player who types upstream's name still finds it."
+  },
+  {
+   "variant": "Fortification Bypass",
+   "canonical": "Armor-Piercing",
+   "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+  },
+  {
+   "variant": "Fortification Bypass (Armor-Piercing)",
+   "canonical": "Armor-Piercing",
+   "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+  },
+  {
+   "variant": "Greater Dragonmark charges",
+   "canonical": "Greater Dragonmark Charges",
+   "reason": "case-only"
+  },
+  {
+   "variant": "Helplessness Damage",
+   "canonical": "Damage to helpless enemies",
+   "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
+  },
+  {
+   "variant": "Int",
+   "canonical": "Intelligence",
+   "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+  },
+  {
+   "variant": "Ki",
+   "canonical": "Enhanced Ki",
+   "reason": "upstream shortens the wiki's 'Enhanced Ki' to bare 'Ki'; the pipeline mints the wiki name via affix_name_corrections.json, so this keeps the gear-planner name resolving for a free-typed priority (#227)"
+  },
+  {
+   "variant": "MRR",
+   "canonical": "Magical Sheltering",
+   "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+  },
+  {
+   "variant": "Magical Resistance Rating",
+   "canonical": "Magical Sheltering",
+   "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+  },
+  {
+   "variant": "Negative Lore",
+   "canonical": "Void Lore",
+   "reason": "#374 — upstream flipped its canonical vocabulary (their items.json now emits this name where ours emits the canonical). We keep the in-game enchantment name as canon: a player checking the app against an item tooltip must find the same words. Verified 2026-08-18: ZERO items in either snapshot carry both names, so this is a spelling of one mechanic and not a merge of two (the same-item co-occurrence rule). Doubles as picker discoverability — a player who types upstream's name still finds it."
+  },
+  {
+   "variant": "Negative Spell Power",
+   "canonical": "Nullification",
+   "reason": "#374 — upstream flipped its canonical vocabulary (their items.json now emits this name where ours emits the canonical). We keep the in-game enchantment name as canon: a player checking the app against an item tooltip must find the same words. Verified 2026-08-18: ZERO items in either snapshot carry both names, so this is a spelling of one mechanic and not a merge of two (the same-item co-occurrence rule). Doubles as picker discoverability — a player who types upstream's name still finds it."
+  },
+  {
+   "variant": "PRR",
+   "canonical": "Physical Sheltering",
+   "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+  },
+  {
+   "variant": "Physical Resistance Rating",
+   "canonical": "Physical Sheltering",
+   "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+  },
+  {
+   "variant": "Positive Spell Power",
+   "canonical": "Devotion",
+   "reason": "#374 — upstream flipped its canonical vocabulary (their items.json now emits this name where ours emits the canonical). We keep the in-game enchantment name as canon: a player checking the app against an item tooltip must find the same words. Verified 2026-08-18: ZERO items in either snapshot carry both names, so this is a spelling of one mechanic and not a merge of two (the same-item co-occurrence rule). Doubles as picker discoverability — a player who types upstream's name still finds it."
+  },
+  {
+   "variant": "Sonic Spell Power",
+   "canonical": "Resonance",
+   "reason": "#374 — upstream flipped its canonical vocabulary (their items.json now emits this name where ours emits the canonical). We keep the in-game enchantment name as canon: a player checking the app against an item tooltip must find the same words. Verified 2026-08-18: ZERO items in either snapshot carry both names, so this is a spelling of one mechanic and not a merge of two (the same-item co-occurrence rule). Doubles as picker discoverability — a player who types upstream's name still finds it."
+  },
+  {
+   "variant": "Str",
+   "canonical": "Strength",
+   "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+  },
+  {
+   "variant": "Striding",
+   "canonical": "Movement Speed",
+   "reason": "the DDO wiki's name for the movement-speed stat; upstream folds it into 'Speed', which in game names an enchantment granting three stats (#154)"
+  },
+  {
+   "variant": "Wis",
+   "canonical": "Wisdom",
+   "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
+  },
+  {
+   "variant": "damage versus the Helpless",
+   "canonical": "Damage to helpless enemies",
+   "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
+  },
+  {
+   "variant": "damage vs the Helpless",
+   "canonical": "Damage to helpless enemies",
+   "reason": "#305 (was a case-only alias to 'Damage vs the Helpless'): one wiki-verified helpless-damage mechanic; the pipeline folds every set-channel spelling to the native canonical (docs/wiki-evidence/helpless-damage.md), so the picker must resolve here too"
+  },
+  {
+   "variant": "damage vs. helpless",
+   "canonical": "Damage to helpless enemies",
+   "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
+  },
+  {
+   "variant": "damage vs. the helpless",
+   "canonical": "Damage to helpless enemies",
+   "reason": "#305: helpless-damage family fold; canonical verified native (Solar Gem of Cruelty); docs/wiki-evidence/helpless-damage.md"
+  },
+  {
+   "variant": "item becomes a Spellcasting Implement",
+   "canonical": "Item becomes a Spellcasting Implement",
+   "reason": "case-only"
+  }
+ ],
+ "distinct": [
+  [
+   "Armor Class",
+   "Armor Class (%)"
   ],
-  "distinct": [
-    [
-      "Armor Class",
-      "Armor Class (%)"
-    ],
-    [
-      "False Life",
-      "False Life (%)"
-    ],
-    [
-      "Maximum Spellpoints",
-      "Maximum Spell Points (%)"
-    ],
-    [
-      "Acid",
-      "Acidic"
-    ],
-    {
-      "pair": [
-        "Acid",
-        "Acid Resistance"
-      ],
-      "reason": "co-occurs on Elemental Longbow of Earth (level 4)"
-    },
-    {
-      "pair": [
-        "Anarchic",
-        "Anarchic Blast"
-      ],
-      "reason": "co-occurs on Bastard Sword of the Fallen Age"
-    },
-    {
-      "pair": [
-        "Anarchic",
-        "Anarchic Burst"
-      ],
-      "reason": "co-occurs on Demogorgon's Sinew"
-    },
-    {
-      "pair": [
-        "Blinding",
-        "Blinding Flash clicky"
-      ],
-      "reason": "co-occurs on Coronation Shield"
-    },
-    {
-      "pair": [
-        "Blood Rage",
-        "Bloodrage"
-      ],
-      "reason": "co-occurs on Legendary Dagger of the Liturgist"
-    },
-    {
-      "pair": [
-        "Blood Sacrifice",
-        "Blood Sacrifice clicky"
-      ],
-      "reason": "co-occurs on Epic Twisted Talisman"
-    },
-    {
-      "pair": [
-        "Charisma",
-        "Charisma Skills"
-      ],
-      "reason": "co-occurs on Fancy Flayer's Cape"
-    },
-    {
-      "pair": [
-        "Constitution",
-        "Constitution Skills"
-      ],
-      "reason": "co-occurs on Pink Ioun Stone (unsuppressed)"
-    },
-    {
-      "pair": [
-        "Dexterity",
-        "Dexterity Skills"
-      ],
-      "reason": "co-occurs on Deep Red Ioun Stone (unsuppressed)"
-    },
-    {
-      "pair": [
-        "Extra damage vs Giants",
-        "Extra damage vs non-Giants"
-      ],
-      "reason": "co-occurs on Dwarven Thrower"
-    },
-    {
-      "pair": [
-        "Final Litany of the Crimson Covenant",
-        "First Litany of the Crimson Covenant"
-      ],
-      "reason": "co-occurs on Keeper of the Crimson Covenant"
-    },
-    {
-      "pair": [
-        "Fire Shield (Cold)",
-        "Fire Shield (Cold) Miss-Guard"
-      ],
-      "reason": "co-occurs on Epic Cloak of Ice"
-    },
-    {
-      "pair": [
-        "First Litany of the Crimson Covenant",
-        "Third Litany of the Crimson Covenant"
-      ],
-      "reason": "co-occurs on Keeper of the Crimson Covenant"
-    },
-    {
-      "pair": [
-        "Freezing",
-        "Freezing Ice"
-      ],
-      "reason": "co-occurs on Legendary Menzoberranzan's Memory"
-    },
-    {
-      "pair": [
-        "Frost",
-        "Frostbite"
-      ],
-      "reason": "co-occurs on Frostbite Blade (level 17)"
-    },
-    {
-      "pair": [
-        "Greater Disruption",
-        "Greater Disruption Guard"
-      ],
-      "reason": "co-occurs on Epic Hammer of Life"
-    },
-    {
-      "pair": [
-        "Heal",
-        "Heal, Mass clicky"
-      ],
-      "reason": "co-occurs on Epic Hammer of Life"
-    },
-    {
-      "pair": [
-        "Heal",
-        "Healing Amplification"
-      ],
-      "reason": "co-occurs on Epic Pouch of Jerky"
-    },
-    {
-      "pair": [
-        "Heal",
-        "Healing Lore"
-      ],
-      "reason": "co-occurs on Epic Halcyonia"
-    },
-    {
-      "pair": [
-        "Holy",
-        "Holy Burst"
-      ],
-      "reason": "co-occurs on Epic Ship-Chaplain's Sidearm (level 20)"
-    },
-    {
-      "pair": [
-        "Impact",
-        "Impactful"
-      ],
-      "reason": "co-occurs on Beacon of Day"
-    },
-    {
-      "pair": [
-        "Intelligence",
-        "Intelligence Skills"
-      ],
-      "reason": "co-occurs on Scarlet and Blue Ioun Stone (unsuppressed)"
-    },
-    {
-      "pair": [
-        "Legendary Magma Surge",
-        "Legendary Magma Surge Guard"
-      ],
-      "reason": "co-occurs on Legendary Tinder"
-    },
-    {
-      "pair": [
-        "Negative Energy Absorption",
-        "Negative Energy Absorption clicky"
-      ],
-      "reason": "co-occurs on Epic Sacred Helm"
-    },
-    {
-      "pair": [
-        "Radiance",
-        "Radiance Guard"
-      ],
-      "reason": "co-occurs on Epic Vambraces of Inner Light"
-    },
-    {
-      "pair": [
-        "Radiance",
-        "Radiance Lore"
-      ],
-      "reason": "co-occurs on Celestial Beacon"
-    },
-    {
-      "pair": [
-        "Repair",
-        "Repair Amplification"
-      ],
-      "reason": "co-occurs on Boots of Uncanny Mending"
-    },
-    {
-      "pair": [
-        "Repair",
-        "Repair Lore"
-      ],
-      "reason": "co-occurs on Epic Trapsmith's Toolbelt"
-    },
-    {
-      "pair": [
-        "Repair",
-        "Repair Moderate Damage clicky"
-      ],
-      "reason": "co-occurs on Brass Beaver"
-    },
-    {
-      "pair": [
-        "Shocking",
-        "Shocking Blast"
-      ],
-      "reason": "co-occurs on Storm's Harness"
-    },
-    {
-      "pair": [
-        "Shocking",
-        "Shocking Burst"
-      ],
-      "reason": "co-occurs on Storm's Harness"
-    },
-    {
-      "pair": [
-        "Strength",
-        "Strength Skills"
-      ],
-      "reason": "co-occurs on Pale Blue Ioun Stone (unsuppressed)"
-    },
-    {
-      "pair": [
-        "Summon Legendary Werewolf",
-        "Summon Legendary Werewolf clicky"
-      ],
-      "reason": "co-occurs on Legendary Wolf Whistle"
-    },
-    {
-      "pair": [
-        "Swim",
-        "Swim like a Fish"
-      ],
-      "reason": "co-occurs on Aquatic Bracers (level 14)"
-    },
-    {
-      "pair": [
-        "Wisdom",
-        "Wisdom Skills"
-      ],
-      "reason": "co-occurs on Incandescent Blue Ioun Stone (unsuppressed)"
-    },
-    {
-      "pair": [
-        "Vitality",
-        "False Life"
-      ],
-      "reason": "bonus TYPE vs affix NAME, not synonyms -- Ravil's Book grants False Life with bonus type Vitality natively, so targeting False Life already catches it; the literal Vitality-named affixes (Chimera's Vitality, Pirate Vitality) are unrelated Bool procs. Aliasing would be a false merge (cf. the Blood Rage/Bloodrage lesson). Ruled 2026-08-01, docs/reports/2026-08-01-bug-report-audit.md section 2."
-    },
-    {
-      "pair": [
-        "Spell Lore",
-        "Universal Spell Lore"
-      ],
-      "reason": "different bonus-type channels that legitimately stack, not synonyms -- Spell Lore is Equipment/Insight/Exceptional/Artifact, Universal Spell Lore is Exceptional-only, and ten items (the Longsword of the Undying Age family) carry BOTH at different bonus types. Merging would collapse two genuinely-stacking sources. Ruled 2026-08-04, docs/wiki-evidence/spell-lore.md."
-    }
-  ]
+  [
+   "False Life",
+   "False Life (%)"
+  ],
+  [
+   "Maximum Spellpoints",
+   "Maximum Spell Points (%)"
+  ],
+  [
+   "Acid",
+   "Acidic"
+  ],
+  {
+   "pair": [
+    "Acid",
+    "Acid Resistance"
+   ],
+   "reason": "co-occurs on Elemental Longbow of Earth (level 4)"
+  },
+  {
+   "pair": [
+    "Anarchic",
+    "Anarchic Blast"
+   ],
+   "reason": "co-occurs on Bastard Sword of the Fallen Age"
+  },
+  {
+   "pair": [
+    "Anarchic",
+    "Anarchic Burst"
+   ],
+   "reason": "co-occurs on Demogorgon's Sinew"
+  },
+  {
+   "pair": [
+    "Blinding",
+    "Blinding Flash clicky"
+   ],
+   "reason": "co-occurs on Coronation Shield"
+  },
+  {
+   "pair": [
+    "Blood Rage",
+    "Bloodrage"
+   ],
+   "reason": "co-occurs on Legendary Dagger of the Liturgist"
+  },
+  {
+   "pair": [
+    "Blood Sacrifice",
+    "Blood Sacrifice clicky"
+   ],
+   "reason": "co-occurs on Epic Twisted Talisman"
+  },
+  {
+   "pair": [
+    "Charisma",
+    "Charisma Skills"
+   ],
+   "reason": "co-occurs on Fancy Flayer's Cape"
+  },
+  {
+   "pair": [
+    "Constitution",
+    "Constitution Skills"
+   ],
+   "reason": "co-occurs on Pink Ioun Stone (unsuppressed)"
+  },
+  {
+   "pair": [
+    "Dexterity",
+    "Dexterity Skills"
+   ],
+   "reason": "co-occurs on Deep Red Ioun Stone (unsuppressed)"
+  },
+  {
+   "pair": [
+    "Extra damage vs Giants",
+    "Extra damage vs non-Giants"
+   ],
+   "reason": "co-occurs on Dwarven Thrower"
+  },
+  {
+   "pair": [
+    "Final Litany of the Crimson Covenant",
+    "First Litany of the Crimson Covenant"
+   ],
+   "reason": "co-occurs on Keeper of the Crimson Covenant"
+  },
+  {
+   "pair": [
+    "Fire Shield (Cold)",
+    "Fire Shield (Cold) Miss-Guard"
+   ],
+   "reason": "co-occurs on Epic Cloak of Ice"
+  },
+  {
+   "pair": [
+    "First Litany of the Crimson Covenant",
+    "Third Litany of the Crimson Covenant"
+   ],
+   "reason": "co-occurs on Keeper of the Crimson Covenant"
+  },
+  {
+   "pair": [
+    "Freezing",
+    "Freezing Ice"
+   ],
+   "reason": "co-occurs on Legendary Menzoberranzan's Memory"
+  },
+  {
+   "pair": [
+    "Frost",
+    "Frostbite"
+   ],
+   "reason": "co-occurs on Frostbite Blade (level 17)"
+  },
+  {
+   "pair": [
+    "Greater Disruption",
+    "Greater Disruption Guard"
+   ],
+   "reason": "co-occurs on Epic Hammer of Life"
+  },
+  {
+   "pair": [
+    "Heal",
+    "Heal, Mass clicky"
+   ],
+   "reason": "co-occurs on Epic Hammer of Life"
+  },
+  {
+   "pair": [
+    "Heal",
+    "Healing Amplification"
+   ],
+   "reason": "co-occurs on Epic Pouch of Jerky"
+  },
+  {
+   "pair": [
+    "Heal",
+    "Healing Lore"
+   ],
+   "reason": "co-occurs on Epic Halcyonia"
+  },
+  {
+   "pair": [
+    "Holy",
+    "Holy Burst"
+   ],
+   "reason": "co-occurs on Epic Ship-Chaplain's Sidearm (level 20)"
+  },
+  {
+   "pair": [
+    "Impact",
+    "Impactful"
+   ],
+   "reason": "co-occurs on Beacon of Day"
+  },
+  {
+   "pair": [
+    "Intelligence",
+    "Intelligence Skills"
+   ],
+   "reason": "co-occurs on Scarlet and Blue Ioun Stone (unsuppressed)"
+  },
+  {
+   "pair": [
+    "Legendary Magma Surge",
+    "Legendary Magma Surge Guard"
+   ],
+   "reason": "co-occurs on Legendary Tinder"
+  },
+  {
+   "pair": [
+    "Negative Energy Absorption",
+    "Negative Energy Absorption clicky"
+   ],
+   "reason": "co-occurs on Epic Sacred Helm"
+  },
+  {
+   "pair": [
+    "Radiance",
+    "Radiance Guard"
+   ],
+   "reason": "co-occurs on Epic Vambraces of Inner Light"
+  },
+  {
+   "pair": [
+    "Radiance",
+    "Radiance Lore"
+   ],
+   "reason": "co-occurs on Celestial Beacon"
+  },
+  {
+   "pair": [
+    "Repair",
+    "Repair Amplification"
+   ],
+   "reason": "co-occurs on Boots of Uncanny Mending"
+  },
+  {
+   "pair": [
+    "Repair",
+    "Repair Lore"
+   ],
+   "reason": "co-occurs on Epic Trapsmith's Toolbelt"
+  },
+  {
+   "pair": [
+    "Repair",
+    "Repair Moderate Damage clicky"
+   ],
+   "reason": "co-occurs on Brass Beaver"
+  },
+  {
+   "pair": [
+    "Shocking",
+    "Shocking Blast"
+   ],
+   "reason": "co-occurs on Storm's Harness"
+  },
+  {
+   "pair": [
+    "Shocking",
+    "Shocking Burst"
+   ],
+   "reason": "co-occurs on Storm's Harness"
+  },
+  {
+   "pair": [
+    "Strength",
+    "Strength Skills"
+   ],
+   "reason": "co-occurs on Pale Blue Ioun Stone (unsuppressed)"
+  },
+  {
+   "pair": [
+    "Summon Legendary Werewolf",
+    "Summon Legendary Werewolf clicky"
+   ],
+   "reason": "co-occurs on Legendary Wolf Whistle"
+  },
+  {
+   "pair": [
+    "Swim",
+    "Swim like a Fish"
+   ],
+   "reason": "co-occurs on Aquatic Bracers (level 14)"
+  },
+  {
+   "pair": [
+    "Wisdom",
+    "Wisdom Skills"
+   ],
+   "reason": "co-occurs on Incandescent Blue Ioun Stone (unsuppressed)"
+  },
+  {
+   "pair": [
+    "Vitality",
+    "False Life"
+   ],
+   "reason": "bonus TYPE vs affix NAME, not synonyms -- Ravil's Book grants False Life with bonus type Vitality natively, so targeting False Life already catches it; the literal Vitality-named affixes (Chimera's Vitality, Pirate Vitality) are unrelated Bool procs. Aliasing would be a false merge (cf. the Blood Rage/Bloodrage lesson). Ruled 2026-08-01, docs/reports/2026-08-01-bug-report-audit.md section 2."
+  },
+  {
+   "pair": [
+    "Spell Lore",
+    "Universal Spell Lore"
+   ],
+   "reason": "different bonus-type channels that legitimately stack, not synonyms -- Spell Lore is Equipment/Insight/Exceptional/Artifact, Universal Spell Lore is Exceptional-only, and ten items (the Longsword of the Undying Age family) carry BOTH at different bonus types. Merging would collapse two genuinely-stacking sources. Ruled 2026-08-04, docs/wiki-evidence/spell-lore.md."
+  }
+ ]
 }
