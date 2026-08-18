@@ -1987,12 +1987,27 @@ async function solveLexicographic(model, highs) {
       // effect is present iff a contribution in its buckets fired) — at this
       // stage's optimum Σu equals this count, since the objective pulls every
       // ceilinged u_e up.
+      // #348 (U2/R15) — one lock body per SECURED effect, never one summed count.
+      // A count floor (`Σu >= count`, what shipped through #91) is satisfied by ANY
+      // equal-size set, so every solve after this stage — the tie-break, both settle
+      // stages, the colorless post-stage — was free to trade a secured effect for a
+      // different one at the same total. Reproduced on a synthetic two-slot model:
+      // the stage secured {Blunt Trauma, Ghost Touch} and the returned loadout
+      // carried {Feather Falling, Ghost Touch}. Harmless while the tier was a flat
+      // count; fatal once the player orders the container, because the effect traded
+      // away can be the one they ranked first.
+      //
+      // KTD2 — the secured set is read z-backed and guarded (a contribution in the
+      // effect's buckets actually fired), never from the u primal. The indicator is
+      // ceilinged `u_e − Σz ≤ 0`, so `u_e >= 1` forces a real carrier rather than
+      // merely floating the indicator.
       let count = 0;
-      for (const [, meta] of program.utilityMeta || []) {
-        if (meta.zNames.some((z) => uprim(z) > 0.5)) count++;
+      for (const [u, meta] of program.utilityMeta || []) {
+        if (!meta.zNames.some((z) => uprim(z) > 0.5)) continue;
+        count++;
+        utilityExtra.push(`${u} >= 1`);
       }
       utilityCount = count;
-      if (count > 0) utilityExtra.push(`${program.utilityVars.join(" + ")} >= ${count}`);
       continue;
     }
     const res = highs.solve(encodeStage(program, { objectiveStat: stat, sense: "max", locks, extra: utilityExtra }));

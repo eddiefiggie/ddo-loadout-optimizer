@@ -327,6 +327,57 @@ async function withCrossAdd(map, fn) {
     assert.deepStrictEqual(r.utilityEffects, []);
   });
 
+  await test("#348 U2/R15: no solve after the container stage may swap a secured effect", async () => {
+    // The count floor this replaces (`Σu >= count`) is satisfied by ANY equal-size
+    // set, so the tie-break and settle stages could trade one secured effect for a
+    // different one. This model reproduces exactly that against the pre-change tree:
+    // two slots, three counting names, only two securable — the stage secures
+    // {Blunt Trauma, Ghost Touch} (nGT + tBT) and the shipped count floor let the
+    // final solve return {Feather Falling, Ghost Touch} (nGT + tFF) instead.
+    //
+    // The assertion is set preservation, not a hardcoded set: whatever the stage
+    // secures, the returned loadout must carry the same effects. Ordering (R6) is
+    // U3's; this unit only forbids the substitution ordering would be defenceless
+    // against.
+    const model = {
+      targets: [SENT], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch", "Feather Falling", "Blunt Trauma"]),
+      worn: [
+        slot("Necklace", [
+          item("nGT", "Necklace", [["Ghost Touch", "Bool", 1]]),
+          item("nFF", "Necklace", [["Feather Falling", "Bool", 1]]),
+        ]),
+        slot("Trinket", [
+          item("tFF", "Trinket", [["Feather Falling", "Bool", 1]]),
+          item("tBT", "Trinket", [["Blunt Trauma", "Bool", 1]]),
+        ]),
+      ],
+    };
+
+    // Re-run the container stage alone to learn what it secured, reading the same
+    // guarded z-backed rule the stage itself uses (KTD2) — never the u primal. That
+    // rule's own falsification lives in the "#91 U5/KTD6 guard" test above, which
+    // injects synthetic primals through readSolution in both directions; the lock
+    // built here applies the identical predicate at the stage site.
+    const program = S.buildProgram(model);
+    const objTerms = program.utilityVars.map((u) => ({ coef: 1, name: u }));
+    const res = highs.solve(S.encodeStage(program, { objTerms, sense: "max", locks: [] }));
+    assert.strictEqual(res.Status, "Optimal");
+    const prim = (n) => (res.Columns[n] ? res.Columns[n].Primal : 0);
+    const staged = [];
+    for (const [, meta] of program.utilityMeta) {
+      if (meta.zNames.some((z) => prim(z) > 0.5)) staged.push(meta.name);
+    }
+    assert.strictEqual(staged.length, 2, "the stage secures two of the three names");
+
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.utilityCount, staged.length, "the count is preserved");
+    assert.deepStrictEqual(
+      r.utilityEffects.map((e) => e.name).sort(), staged.slice().sort(),
+      "the SAME effects survive the tie-break and both settle stages — not merely as many");
+  });
+
   await test("#91 U3/KTD10: a tier-2 name (carried, but outside the counting set) mints no indicator", async () => {
     // Keen is a real Bool presence effect excluded from the v1 tier-1 curation:
     // its carrier is equipped, but no u_e exists for it and it never counts.
