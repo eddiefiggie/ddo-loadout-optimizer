@@ -544,7 +544,14 @@
         if (NATIVE_KINDS.has(p.sourceKind)) native += p.value;
         else if (p.sourceKind === "set") viaSet += p.value;
         else if (CRAFT_FAMILY_LABEL[p.sourceKind]) {
-          parts.push({ stat, value: p.value, family: CRAFT_FAMILY_LABEL[p.sourceKind] });
+          // #371 — the `nc` kind now carries TWO crafting systems (the category
+          // menu and the per-item Nearly Finished / Almost There pools). `source`
+          // is the gate's own label, which is the pool name for a per-item craft
+          // and "Nearly Completed" for the category path, so preferring it here
+          // names the right system and leaves the category path byte-identical.
+          const family = (p.sourceKind === "nc" && p.source)
+            ? p.source : CRAFT_FAMILY_LABEL[p.sourceKind];
+          parts.push({ stat, value: p.value, family });
         }
       }
     }
@@ -980,7 +987,11 @@
       // #211 — ATOMIC like vik/dino: a Skill-menu option grants six skills, so
       // the label renders the option's whole affix list (craftAffixes falls
       // back to the flat single-affix shape byte-identically).
-      case "nc": return `Nearly Completed: ${o.name ? o.name + ", " : ""}${craftAffixes(o)}`;
+      // #371 — the per-item pools (`Nearly Finished` / `Almost There`) ride this
+      // same channel, and they are a DIFFERENT crafting system with a different
+      // in-game name. `pool` carries it; the category path has none and keeps
+      // "Nearly Completed" byte-identically.
+      case "nc": return `${o.pool || "Nearly Completed"}: ${o.name ? o.name + ", " : ""}${craftAffixes(o)}`;
       case "roll": return `Choice: ${craftValue(o)}`;
       case "vik": return `Slot ${o.slot_type} Viktranium augment: ${craftAffixes(o)}`;
       case "seal": return `Sealed in ${o.seal_type}: ${craftValue(o)}`;

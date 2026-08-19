@@ -171,6 +171,12 @@ def _make_variant(item, ml, tier_label, parsed):
         # NC machinery can attach a craftable 4th affix to this item.
         "nearly_complete": item.get("nearly_complete"),
         "nc_tier": item.get("nc_tier"),
+        # #371 — per-item Nearly Complete host markers [{pool}] ("Nearly Finished"
+        # / "Almost There"). Emitted ONLY when the item's own pool covers it, so a
+        # present marker means the solver has options to offer; propagated so the
+        # solver crafts one option from THIS item's pool per slot.
+        **({"nc_per_item_slots": item["nc_per_item_slots"]}
+           if item.get("nc_per_item_slots") else {}),
         # U81 Viktranium ("Lamordia") typed-slot host markers [{type, category}] —
         # propagated so the solver crafts the best option per slot from its pool.
         "lamordia_slots": item.get("lamordia_slots"),

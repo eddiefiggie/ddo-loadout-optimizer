@@ -702,6 +702,53 @@ function buildProgram(model) {
     if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single choice per slot
   }
 
+  // #371 per-item Nearly Complete ("Nearly Finished" / "Almost There"). Same
+  // gated select-one primitive as the category path above, with ONE structural
+  // difference: the option pool is keyed by the host's OWN NAME, so an item's
+  // slot offers only that item's options — there is no shared menu and no tier
+  // parameter (the pool already states the host's magnitudes; the ML18 and ML29
+  // Alchemist's Crowns are separate entries, not two tiers of one).
+  //
+  // Each declared pool on a host is an INDEPENDENT slot: `Collective Sight`
+  // declares both, so it gets two choices, one per pool — hence Σ n <= 1 per
+  // pool, never one constraint across the item.
+  //
+  // Rides the SAME ncMeta channel as the category path so every downstream
+  // surface (receipts, results chips, all six exports, alternatives) inherits it
+  // with no new placement family; the `pool` field is what keeps the two apart
+  // in the label, so a Nearly Finished craft is never reported as "Nearly
+  // Completed".
+  for (const xv of xVars) {
+    const slots = xv.variant.nc_per_item_slots || [];
+    if (!slots.length) continue;
+    const host = xv.variant.source_item || xv.variant.variant_id;
+    const hostPool = (model.nearlyCompletePerItem || {})[host] || [];
+    if (!hostPool.length) continue;
+    for (const slot of slots) {
+      const slotVars = [];
+      for (const opt of hostPool) {
+        if (opt.pool !== slot.pool) continue;
+        if (!(targetSet.has(opt.stat) && opt.value > 0)) continue;
+        const n = "n" + ncc++;
+        extraVars.push(n);
+        ncMeta.set(n, {
+          item: xv.variant.variant_id, category: opt.pool, pool: opt.pool,
+          ...(opt.name ? { name: opt.name } : {}),
+          affixes: [{ stat: opt.stat, bonus_type: opt.bonus_type,
+                      value: opt.value, unit: opt.unit || "flat" }],
+          stat: opt.stat, bonus_type: opt.bonus_type, value: opt.value,
+          unit: opt.unit || "flat", tier: null, wiki_url: opt.wiki_url,
+        });
+        slotVars.push(n);
+        extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
+        const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
+        if (!zByBucket.has(k)) zByBucket.set(k, []);
+        zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: opt.value });
+      }
+      if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single choice per slot
+    }
+  }
+
   // Choice-slots (roll groups). An item's `roll_groups` each offer several
   // mutually-exclusive options ("Rolls one of: A / B / C"); the solver picks the
   // one that best advances the ranked targets. Same gated primitive as NC: a
@@ -1470,7 +1517,7 @@ function breakdownByTarget(program, prim, precomputedVisible) {
     }
     if (program.sealMeta && program.sealMeta.has(gate)) { const m = program.sealMeta.get(gate); return { kind: "seal", label: `Sealed in ${m.seal_type}`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.dinoMeta && program.dinoMeta.has(gate)) return { kind: "dino", label: `${program.dinoMeta.get(gate).dino_type} insert` };
-    if (program.ncMeta && program.ncMeta.has(gate)) { const m = program.ncMeta.get(gate); return { kind: "nc", label: "Nearly Completed", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
+    if (program.ncMeta && program.ncMeta.has(gate)) { const m = program.ncMeta.get(gate); return { kind: "nc", label: m.pool || "Nearly Completed", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.rollMeta && program.rollMeta.has(gate)) { const m = program.rollMeta.get(gate); return { kind: "roll", label: "choice slot", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.vikMeta && program.vikMeta.has(gate)) { const m = program.vikMeta.get(gate); return { kind: "vik", label: `Slot ${m.slot_type} Viktranium augment`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.tfMeta && program.tfMeta.has(gate)) { const m = program.tfMeta.get(gate); return { kind: "tf", label: `Thunder-Forged Tier ${m.tier}`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }

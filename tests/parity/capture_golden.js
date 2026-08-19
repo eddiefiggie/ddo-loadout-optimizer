@@ -120,6 +120,13 @@ async function solveFixture(fx, env) {
       ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set(),
           order: vocab.utilityOrder || null }
       : null,
+    // #371 — the per-item Nearly Complete pools ("Nearly Finished" / "Almost
+    // There"). Threaded for the same reason the counting set is: the capture
+    // must solve what the app solves. Left out, the 43 hosts would still survive
+    // the dominance prune (their craft is invisible to variantBuckets, so they
+    // are never dominated) and the golden would ratify loadouts that swap in a
+    // crafting host and then craft nothing — churn with no gain, pinned forever.
+    dataset.nearly_complete_per_item,
   );
   const r = await solveLexicographic(model, highs);
   return {
@@ -137,6 +144,14 @@ async function solveFixture(fx, env) {
       // the dataset's per-augment ML. Side channel like the rest of `details`:
       // never part of the ratified golden.json snapshot.
       augmentsPlaced: (r.augmentsPlaced || []).map((m) => m.variant_id),
+      // #371 — the per-item Nearly Complete crafts a fixture placed, so an
+      // assertion can prove the pool actually fired rather than inferring it
+      // from a moved loadout. `pool` is what separates these from the category
+      // path, which carries none. Side channel, never part of golden.json.
+      ncPerItemPlaced: (r.ncPlaced || []).filter((m) => m.pool).map((m) => ({
+        item: m.item, pool: m.pool, stat: m.stat,
+        bonus_type: m.bonus_type, value: m.value,
+      })),
       vikPlaced: (r.vikPlaced || []).map((m) => ({
         item: m.item, name: m.name, slot_type: m.slot_type, category: m.category, tier: m.tier,
         affixes: (m.affixes || []).map((a) => ({

@@ -217,7 +217,9 @@ var _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined") ? pinnedVarian
 // glow/setLine instead, so a joker/membership rendering change only hits the Deep Dive.
 function craftSlotChips(v, idx, maps) {
   const dinos = (maps.dinoAssign.byIndex.get(idx) || []).map((d) => `<span class="chip dino" title="Isle of Dread insert">${esc(Proj.craftLabel(d, "dino"))}</span>`);
-  const ncs = (maps.ncByItem.get(v.variant_id) || []).map((n) => `<span class="chip nc" title="Terror of Demogorgon — Nearly Completed">${esc(Proj.craftLabel(n, "nc"))}</span>`);
+  // #371 — the per-item pools share this chip family; the tooltip names the
+  // system the placement actually came from (`pool`), not the category path's.
+  const ncs = (maps.ncByItem.get(v.variant_id) || []).map((n) => `<span class="chip nc" title="${esc(n.pool ? n.pool + " — per-item upgrade slot" : "Terror of Demogorgon — Nearly Completed")}">${esc(Proj.craftLabel(n, "nc"))}</span>`);
   const rolls = (maps.rollByItem.get(v.variant_id) || []).map((r) => `<span class="chip roll" title="choice slot, best option selected">${esc(Proj.craftLabel(r, "roll"))}</span>`);
   const viks = (maps.vikByItem.get(v.variant_id) || []).map((n) => `<span class="chip lamordia" title="The Chill of Ravenloft — Viktranium Experiment crafting">${esc(Proj.craftLabel(n, "vik"))}</span>`);
   const seals = (maps.sealByItem.get(v.variant_id) || []).map((n) => `<span class="chip seal" title="unseal one effect at the crafting table">${esc(Proj.craftLabel(n, "seal"))}</span>`);
@@ -921,6 +923,11 @@ function _rungRemovedStats(dataset, rung) {
   for (const pool of [dataset.dino_inserts, dataset.nearly_complete, dataset.viktranium,
     dataset.seal, dataset.thunder_forged, dataset.green_steel]) {
     for (const o of pool || []) add(o && (o.affixes || (o.stat ? [o] : [])));
+  }
+  // #371 — the per-item pools buildModel empties on the same rung; a map of
+  // host -> options, so they cannot ride the flat list above.
+  for (const opts of Object.values(dataset.nearly_complete_per_item || {})) {
+    for (const o of opts || []) add(o && (o.affixes || (o.stat ? [o] : [])));
   }
   for (const defs of [dataset.membership_set_defs, dataset.augment_set_defs]) {
     for (const def of Object.values(defs || {})) {

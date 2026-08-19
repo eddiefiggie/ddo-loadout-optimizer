@@ -9,29 +9,29 @@
    "perTarget": {
     "Strength": 18,
     "Constitution": 18,
-    "Physical Sheltering": 28
+    "Physical Sheltering": 41
    },
    "effective": {
     "Strength": 18,
     "Constitution": 18,
-    "Physical Sheltering": 28
+    "Physical Sheltering": 41
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Scales of the Exile"
+     "variant": "Downcast Armor"
     },
     {
      "slot": "Belt",
-     "variant": "Bronze Dragonscale Belt"
+     "variant": "Belt of the Scoundrel"
     },
     {
      "slot": "Boots",
-     "variant": "Bulette-Armored Boots"
+     "variant": "Ship Kickers"
     },
     {
      "slot": "Bracers",
-     "variant": "Barbette's Bracers"
+     "variant": "Bracelets of Flourishing Fauna"
     },
     {
      "slot": "Cloak",
@@ -39,19 +39,19 @@
     },
     {
      "slot": "Gloves",
-     "variant": "Gloves of the Strong"
+     "variant": "Gloves of the Resilient"
     },
     {
      "slot": "Goggles",
-     "variant": "Glasses of the Meditative Mind"
+     "variant": "Collective Sight"
     },
     {
      "slot": "Helmet",
-     "variant": "Helm of Eternal Day"
+     "variant": "Malicia's Crown (level 12)"
     },
     {
      "slot": "Main Hand",
-     "variant": "Calamitous Bastard Sword"
+     "variant": "Dice"
     },
     {
      "slot": "Necklace",
@@ -71,7 +71,7 @@
     },
     {
      "slot": "Trinket",
-     "variant": "Eagle's Eye"
+     "variant": "Abyssal Compass"
     }
    ]
   },
@@ -98,7 +98,7 @@
     },
     {
      "slot": "Boots",
-     "variant": "Legendary Flightfoot Greaves"
+     "variant": "Legendary Windriders"
     },
     {
      "slot": "Bracers",
@@ -134,7 +134,7 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Duskbone Ring"
+     "variant": "Legendary Adversion"
     },
     {
      "slot": "Ring",

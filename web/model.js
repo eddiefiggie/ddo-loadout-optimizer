@@ -514,7 +514,7 @@ function eligible(variants, query) {
 
 /** Does A dominate B in the same slot? A must be >= on every bucket, superset
  *  of sets, and >= augment colors. Dominated variants are never optimal. */
-function dominates(A, B, targetSet, mlCap) {
+function dominates(A, B, targetSet, mlCap, ncPerItemLiveHosts = null) {
   const ba = variantBuckets(A, targetSet, mlCap);
   const bb = variantBuckets(B, targetSet, mlCap);
   for (const [key, vb] of bb) {
@@ -560,6 +560,41 @@ function dominates(A, B, targetSet, mlCap) {
   const sealA = countColors((A.seal_slots || []).map((s) => s.seal_type));
   const sealB = countColors((B.seal_slots || []).map((s) => s.seal_type));
   for (const [k, n] of sealB) if ((sealA.get(k) || 0) < n) return false;
+  // #371 — per-item Nearly Complete ("Nearly Finished" / "Almost There"): the
+  // craftable value lives in a pool keyed by the host's OWN NAME, outside
+  // variantBuckets, so a slotted host looks value-less to the bucket check. It is
+  // also the one choice-slot family no OTHER item can substitute for: two items
+  // both declaring `Nearly Finished` offer different options, so matching the
+  // slot count is not enough — A must be the same host. Anything less prunes a
+  // craft nothing else in the pool can supply.
+  //
+  // Gated on `ncPerItemLiveHosts` — the hosts whose pool survived the
+  // target-advancing filter for THIS query — and NOT on the marker alone. The
+  // marker says "this item can craft something"; only the pool says whether that
+  // something is on a ranked target. Protecting a host whose options are all
+  // off-target keeps a value-less item in the pool, where it ties with the
+  // incumbent and wins or loses the tie-break arbitrarily: four golden fixtures
+  // swapped in a Celestial Topaz Ring (Enhancement Cha/Int/Str) on Constitution
+  // and Dexterity builds, gaining exactly nothing. Absent (null) the guard is
+  // inert, so a caller that does not thread the pool gets the pre-#371 prune.
+  // #371 — a live per-item Nearly Complete host is never dominated by a DIFFERENT
+  // item. This is deliberately blunter than the augment/dino slot rules a few
+  // lines below, and the reason is the mechanism, not caution: an augment slot is
+  // generic, so A owning a Red slot really does substitute for B's Red slot and a
+  // slot-COUNT comparison is sound. A per-item pool is keyed by the host's own
+  // name, so A owning a `Nearly Finished` slot says nothing about whether A's
+  // options cover B's — they are different option lists that merely share a label.
+  // Counting slots here would prune a host whose craftable stats no peer can
+  // offer. Same-item variants still compare normally (they share the pool).
+  //
+  // Cost: the 43 live hosts stay in the candidate set. That is why re-ratifying
+  // the golden after this landed showed strict gains — the pre-filter had been
+  // pruning items whose craftable value was invisible to it.
+  if (ncPerItemLiveHosts && ncPerItemLiveHosts.size
+      && ncPerItemLiveHosts.has(B.source_item || B.variant_id)
+      && (A.source_item || A.variant_id) !== (B.source_item || B.variant_id)) {
+    return false;
+  }
   // Thunder-Forged multi-tier choice-slot: the craftable value lives in
   // thunder_forged_tiers (a list of tier slots), outside variantBuckets — so a
   // slot-only TF host would be pruned by any affix rival. A must offer at least as
@@ -712,7 +747,7 @@ function offHandHasShield(query, variants) {
   return false;
 }
 
-function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinnedIds = null, includeArtifact = false, handMutex = false) {
+function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinnedIds = null, includeArtifact = false, handMutex = false, ncPerItemLiveHosts = null) {
   const kept = [];
   for (let i = 0; i < slotVariants.length; i++) {
     const A = slotVariants[i];
@@ -741,7 +776,8 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinned
       // the Main Hand slot (handMutex passed true there).
       if (handMutex && isBothHandsWeapon(B) && !isBothHandsWeapon(A)) continue;
       // B dominates A, and to break exact ties keep the lower index
-      if (dominates(B, A, targetSet, mlCap) && !(dominates(A, B, targetSet, mlCap) && i < j)) {
+      if (dominates(B, A, targetSet, mlCap, ncPerItemLiveHosts)
+          && !(dominates(A, B, targetSet, mlCap, ncPerItemLiveHosts) && i < j)) {
         dominated = true;
         break;
       }
@@ -753,7 +789,7 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinned
 
 /** Build the abstract model. Returns worn slots (filtered + pruned), the
  *  augment source pool, the Dino insert pool, target list, and the dodge cap. */
-function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}, thunderForged = [], greenSteel = [], augmentSetDefs = {}, utilityCountingSet = null) {
+function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}, thunderForged = [], greenSteel = [], augmentSetDefs = {}, utilityCountingSet = null, nearlyCompletePerItem = {}) {
   // #245 — the niche-crafting opt-out. A craftable option slot makes its host a
   // wildcard for every rankable stat (the Viktranium pool alone reaches 126), so
   // under strict lexicographic priority a Lamordia base is never worse and
@@ -771,6 +807,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   if (rungExcludesNicheCrafting(craftingRung(query))) {
     dinoInserts = []; nearlyComplete = []; viktranium = []; seal = [];
     thunderForged = []; greenSteel = [];
+    nearlyCompletePerItem = {};   // #371 — Nearly Finished / Almost There
     membershipSetDefs = {};   // chosen set-membership (Lost Purpose / Dino Set Bonus)
     augmentSetDefs = {};      // set-bonus augments are Dino crafting too
   }
@@ -905,6 +942,25 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     for (const v of elig) if (v.artifact) pinnedIds.add(variantKey(v));
   }
 
+  // #371 Nearly Finished / Almost There: the per-item option pools, keyed by
+  // HOST NAME rather than by a shared menu — each host's slot offers only that
+  // host's own options. Filtered to target-advancing options, host by host, for
+  // the same reason every other pool is: an off-target option adds a binary and
+  // a constraint the objective can never use. A host left with no surviving
+  // option is dropped, so `model.nearlyCompletePerItem` never carries an empty
+  // list the solver would emit a vacuous `<= 1` for.
+  //
+  // Computed HERE — before the dominance pre-filter, not down with the other
+  // pools — because `ncPerItemLive` is what tells `dominates` which hosts have
+  // a craft worth protecting. Done after the prune it would be too late: the
+  // host is already gone.
+  const ncPerItemPool = {};
+  for (const [host, opts] of Object.entries(nearlyCompletePerItem || {})) {
+    const kept = (opts || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
+    if (kept.length) ncPerItemPool[host] = kept;
+  }
+  const ncPerItemLive = new Set(Object.keys(ncPerItemPool));
+
   const withArt = !!query.includeArtifact;
   const worn = [];
   // #110 (U8/KTD3) — a worn slot whose candidate list empties is OMITTED from
@@ -928,7 +984,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     if (!cands.length && !lockedEmpty(slotName) && blocked.some((b) => b.slot === slotName)) {
       blockEmptiedSlots.push(slotName);
     }
-    cands = dominanceFilter(cands, targetSet, mlCap, card, pinnedIds, withArt);
+    cands = dominanceFilter(cands, targetSet, mlCap, card, pinnedIds, withArt, false, ncPerItemLive);
     if (cands.length) {
       worn.push({ slot: slotName, cardinality: card, variants: cands });
     }
@@ -955,7 +1011,8 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   }
   const mainHand = dominanceFilter(
     mainHandPool,
-    targetSet, mlCap, 1, pinnedIds, withArt, true);   // handMutex: a both-hands weapon must not prune a 1H peer (KTD2)
+    targetSet, mlCap, 1, pinnedIds, withArt, true,   // handMutex: a both-hands weapon must not prune a 1H peer (KTD2)
+    ncPerItemLive);
   if (mainHand.length) worn.push({ slot: "Main Hand", cardinality: 1, variants: mainHand });
 
   // U2/B1 — Off Hand slot (at-most-one): orbs, shields (buckler/small/large/tower),
@@ -990,7 +1047,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
       || (offWeaponAllow != null && b.category === "weapon" && offHandWeaponOk(b, offWeaponAllow)))) {
     blockEmptiedSlots.push("Off Hand");
   }
-  const offHand = dominanceFilter(offHandPool, targetSet, mlCap, 1, pinnedIds, withArt);
+  const offHand = dominanceFilter(offHandPool, targetSet, mlCap, 1, pinnedIds, withArt, false, ncPerItemLive);
   if (offHand.length) worn.push({ slot: "Off Hand", cardinality: 1, variants: offHand });
 
   // Augment pool: augments (category augment) as a compatible-color-capacity
@@ -1102,6 +1159,8 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
       };
     }),
     dinoInserts: dinoPool, nearlyComplete: ncPool, viktranium: vikPool, seal: sealPool,
+    // #371 — `{host name: [option]}`, read per host via the item's `nc_per_item_slots`.
+    nearlyCompletePerItem: ncPerItemPool,
     thunderForged: tfPool, greenSteel: gsPool,
     membershipSetDefs: membershipSetDefs || {},
     // U6 — set-augment definitions (piece thresholds + affixes), forwarded like
@@ -1228,6 +1287,13 @@ function poolStatNames(model) {
                  model.seal, model.thunderForged, model.greenSteel];
   for (const pool of pools) {
     for (const o of pool || []) {
+      if (o && o.stat) out.add(o.stat);
+      _collectStatNames(out, o && o.affixes);
+    }
+  }
+  // #371 — the per-item pools are a map of host -> options, not a flat list.
+  for (const opts of Object.values((model && model.nearlyCompletePerItem) || {})) {
+    for (const o of opts || []) {
       if (o && o.stat) out.add(o.stat);
       _collectStatNames(out, o && o.affixes);
     }
