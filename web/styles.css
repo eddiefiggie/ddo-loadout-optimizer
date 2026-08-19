@@ -270,17 +270,18 @@ button.primary:hover { filter: brightness(1.08); }
 .chip.nc { border-color: #5a3a6a; background: #171220; }
 .chip.roll { border-color: #3a5a4a; background: #121a16; }
 .chip.lamordia { border-color: #6a3a4a; background: #1a1216; }
-/* #332 — the two Utility-tier presence markers. `counted` is the affirmative
-   signal (this effect earns a point); `rankable-only` explains the split #343
-   created (rank it yourself, the tier will not count it). Every other presence
-   effect stays deliberately unmarked — ~1,067 of them, where a glyph would be
-   noise. The glyph is aria-hidden with an .sr-only sentence beside it, so the
-   meaning is not carried by a symbol alone. */
+/* #332 — the ONE Utility-tier presence marker. `counted` is the affirmative
+   signal (this effect earns a point). Every other presence effect stays
+   deliberately unmarked, and #380 made that the whole rule: a second glyph for
+   "rankable but not counted" would have landed on 10,981 of 41,776 chips (28%)
+   against ★'s 699, so the legend states the default in words instead. The glyph
+   is aria-hidden with an .sr-only sentence beside it, so the meaning is not
+   carried by a symbol alone. */
 .chip.presence.counted { border-color: #3a6a4a; background: #121a15; }
-.chip.presence.rankable-only { border-color: #6a6a3a; background: #1a1a12; }
 .chip .chip-mark { opacity: 0.85; font-size: 0.9em; }
 .utility-legend { margin: 0.35rem 0 0; font-size: var(--fs-xs); color: var(--muted); }
 .utility-legend .chip-mark { opacity: 0.85; }
+.utility-legend-note { opacity: 0.8; }
 .chip.seal { border-color: #3a5a6a; background: #121a1e; }
 .muted { color: var(--muted); font-size: var(--fs-xs); }
 

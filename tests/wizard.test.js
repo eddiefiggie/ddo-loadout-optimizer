@@ -2197,7 +2197,7 @@ test("#346: the Set Augments picker is disabled on rungs that clear set-bonus cr
 // sets there reached a file the app never runs. Every unit test passed because each
 // one drove buildModel directly. This asserts the LIVE call sites pass the object
 // shape, which no unit test can observe.
-test("#332: both live buildModel call sites thread {counting, admitted}", () => {
+test("#332/#380: both live buildModel call sites thread {counting, notCounted}", () => {
   const fs = require("fs"); const path = require("path");
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
   const calls = [...src.matchAll(/buildModel\(/g)].map((m) => m.index);
@@ -2206,8 +2206,10 @@ test("#332: both live buildModel call sites thread {counting, admitted}", () => 
     const region = src.slice(at, src.indexOf(");", at) + 2);
     assert.ok(/counting:\s*vocab\.utilityCounting/.test(region),
       `a buildModel call at index ${at} must pass the counting set as { counting: ... }`);
-    assert.ok(/admitted:\s*vocab\.utilityAdmitted/.test(region),
-      `a buildModel call at index ${at} must pass the admitted procs as { admitted: ... }`);
+    assert.ok(/notCounted:\s*vocab\.utilityNotCounted/.test(region),
+      `a buildModel call at index ${at} must pass the not-counted names as { notCounted: ... }`);
+    assert.ok(!/\badmitted:/.test(region),
+      `a buildModel call at index ${at} must not carry the pre-#380 \`admitted\` key`);
     assert.ok(!/augment_set_defs,\s*vocab\.utilityCounting\s*\|\|\s*null/.test(region),
       "the pre-#332 bare-Set form must not survive at a live call site");
   }

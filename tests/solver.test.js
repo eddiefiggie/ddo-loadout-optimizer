@@ -5445,17 +5445,26 @@ async function withCrossAdd(map, fn) {
     items[1].variant_id = "R"; items[1].slot = "Ring 1";
     const q = { mlCap: 34, targets: ["Undead Bane", require("../web/model.js").UTILITY_SENTINEL], armorType: null,
       weaponSetup: null, classRace: null };
-    const sets = { counting: new Set(["Ghostly"]), admitted: new Set(["Undead Bane"]) };
+    const sets = { counting: new Set(["Ghostly"]), notCounted: new Set(["Undead Bane"]) };
 
     const m = buildModel(items, q, [], [], [], [], {}, [], [], {}, sets);
-    assert.ok(m.utilityAdmittedSet, "the admitted set reaches the model");
+    assert.ok(m.utilityNotCountedSet, "the not-counted set reaches the model");
     const prog = S.buildProgram(m);
     assert.deepStrictEqual(prog.utilityRankedNotCounted, ["Undead Bane"],
-      "a ranked admitted proc is recorded as not counted");
+      "a ranked not-counted name is recorded as not counted");
+
+    // #380 renamed the key. The old one is still accepted, deliberately: a caller
+    // built against the earlier shape must keep disclosing rather than resolve to
+    // null and silently say nothing — the exact failure mode #380 was filed for.
+    const legacy = { counting: new Set(["Ghostly"]), admitted: new Set(["Undead Bane"]) };
+    const mLegacy = buildModel(items, q, [], [], [], [], {}, [], [], {}, legacy);
+    assert.ok(mLegacy.utilityNotCountedSet, "the pre-#380 `admitted` key still resolves");
+    assert.deepStrictEqual(S.buildProgram(mLegacy).utilityRankedNotCounted, ["Undead Bane"],
+      "and produces the same exclusion names");
 
     // And the bare-Set form must NOT populate it — that is the pre-#332 shape.
     const bare = buildModel(items, q, [], [], [], [], {}, [], [], {}, new Set(["Ghostly"]));
-    assert.strictEqual(bare.utilityAdmittedSet, null, "a bare Set carries no admitted half");
+    assert.strictEqual(bare.utilityNotCountedSet, null, "a bare Set carries no not-counted half");
     assert.deepStrictEqual(S.buildProgram(bare).utilityRankedNotCounted, [],
       "and yields no exclusion names, so the sentence stays silent");
   });

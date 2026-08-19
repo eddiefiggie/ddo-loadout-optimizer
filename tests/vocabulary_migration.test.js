@@ -341,15 +341,24 @@ test("#380: the retired untyped-proc adjudications still reach the presence path
     "every retired proc but the two word-cap casualties is still a presence effect");
 });
 
-test("#380: `utilityAdmitted` is the build stamp, and its emptiness is the stamp's", () => {
-  // Recorded honestly rather than papered over: the admitted-proc set is empty
-  // because the build stamps it empty, not because the web layer stopped reading
-  // it. When #380 re-derives the set the stamp fills and this assertion moves
-  // with it.
-  const stamped = (realData.metadata || {}).utility_untyped_admitted || [];
-  assert.ok(vocab.utilityAdmitted instanceof Set, "exposed as a Set");
-  assert.strictEqual(vocab.utilityAdmitted.size, stamped.length,
-    "the vocabulary's admitted set is exactly the build stamp");
+test("#380: `utilityNotCounted` is the build stamp, both halves of it", () => {
+  // The set is the union of two stamps: the DERIVED presence-minus-counting
+  // population (#380), and the shard's reviewed untyped procs, which stay armed
+  // for their own population should upstream ever emit an untyped weapon proc
+  // again. Nothing is re-derived in the web layer — a drift between the two
+  // would mean the picker disagrees with the build about what is counted.
+  const meta = realData.metadata || {};
+  const derived = meta.utility_presence_not_counted || [];
+  const untyped = meta.utility_untyped_admitted || [];
+  assert.ok(vocab.utilityNotCounted instanceof Set, "exposed as a Set");
+  assert.ok(derived.length > 100,
+    `the derived half is the population that replaced the retired adjudications (${derived.length})`);
+  assert.strictEqual(vocab.utilityNotCounted.size, new Set([...derived, ...untyped]).size,
+    "the vocabulary's not-counted set is exactly the union of the two stamps");
+  // The retirement emptied the untyped half and that is still true — the fix was
+  // to stop depending on it, not to refill it.
+  assert.strictEqual(untyped.length, 0,
+    "the untyped-proc allow list is still empty; upstream types them all Bool");
   assert.ok(vocab.utilityCounting.size > 0,
     "and the COUNTING set — the scoring half — is untouched by the retirement");
 });

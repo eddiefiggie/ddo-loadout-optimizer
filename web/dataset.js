@@ -850,19 +850,35 @@ function buildPickerVocabulary(dataset) {
     const c = canonical(n); if (c) utilityCounting.add(c);
   }
 
-  // #332 — the reviewed untyped weapon procs, as their OWN set. They were already
-  // folded into `presence` and `suggest` above (that is what makes Undead Bane
-  // rankable), but no display surface could tell them apart from a counted
-  // effect, because the distinguishing set was never exposed. Since #343 these
-  // are precisely the names a player can rank individually and the Utility tier
-  // never counts, which is the split every surface has to be able to state.
-  // Canonicalized through the same alias table as utilityCounting so a chip
-  // matches by the ONE shared name. Disjoint from utilityCounting by
-  // construction (#343 removed them from the count) and asserted so in
-  // tests/dataset.test.js — an overlap would mean a chip claiming both.
-  const utilityAdmitted = new Set();
-  for (const n of (meta.utility_untyped_admitted || [])) {
-    const c = canonical(n); if (c) utilityAdmitted.add(c);
+  // #332/#380 — the names a player can rank individually that the Utility tier
+  // never counts. They are already folded into `presence` and `suggest` above
+  // (that is what makes Undead Bane rankable), but no surface could tell them
+  // apart from a counted effect, because the distinguishing set was never
+  // exposed.
+  //
+  // #380 RENAMED from `utilityAdmitted`. The old name meant "allow-dispositioned
+  // UNTYPED weapon proc", and the 2026-08-18 re-encoding typed every one of them
+  // `Bool` — so the candidate rule stopped seeing them, the shard's allow list
+  // emptied, and the whole distinction went dark while nothing about the player-
+  // facing meaning had changed. The meaning never depended on untypedness, so
+  // the set is now derived from the presence population minus the counting set
+  // (`metadata.utility_presence_not_counted`).
+  //
+  // Both halves are unioned: the derived population, and the shard's reviewed
+  // untyped procs, which stay armed for their own population should upstream
+  // ever emit an untyped weapon proc again. Canonicalized through the same alias
+  // table as utilityCounting so a name matches by the ONE shared name. Disjoint
+  // from utilityCounting by construction (the derivation subtracts it, and #343
+  // removed the untyped half from the count) and asserted so in
+  // tests/dataset.test.js — an overlap would mean a surface claiming both.
+  //
+  // Empty for a cached pre-stamp dataset, same fail-safe as utilityCounting: the
+  // exclusion sentence then names nothing rather than naming an unreviewed stat.
+  const utilityNotCounted = new Set();
+  for (const key of ["utility_presence_not_counted", "utility_untyped_admitted"]) {
+    for (const n of (meta[key] || [])) {
+      const c = canonical(n); if (c) utilityNotCounted.add(c);
+    }
   }
 
   // known = the unfiltered union (canonicalized), plus every suggestion.
@@ -993,7 +1009,7 @@ function buildPickerVocabulary(dataset) {
   const labelMap = {};
   for (const key of labelKeys) labelMap[key] = provenanceLabels[key].to.slice();
   return { suggestions: [...suggest].sort(), known, canonical, presence, magnitude, untypedOnly,
-           utilityCounting, utilityAdmitted,
+           utilityCounting, utilityNotCounted,
            // #348 (U3) — the container's default contents AND order, derived from
            // the declared order restricted to what this dataset stamps. Carried
            // beside the set so every caller (solve, wizard, browse) reads ONE

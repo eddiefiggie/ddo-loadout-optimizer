@@ -1860,41 +1860,41 @@ test("#343: tier-2 names are OUT of the stamped counting set; tier-1 is IN and a
 // (derived by src/utility_procs.py's mirror) must agree with web/dataset.js's
 // UTILITY_TIER1_PRESENCE. If either copy gains or loses a name, the stamped
 // set diverges from this constant and one direction below fails.
-// RE-POINTED 2026-08-18 (#374/U6, tracked as #380). This asserted against real
-// data that the admitted-proc set is non-empty and that `Undead Bane` is in it.
-// The 2026-08-18 refresh typed every untyped weapon proc `Bool`, so all 104
-// `utility_procs` adjudications were retired and the `allow` list — and with it
-// `utilityAdmitted` — is EMPTY BY DESIGN. The property "an admitted proc exists"
-// is therefore no longer expressible against real data, and #380 owns the
-// decision about whether to re-derive the set from the `Bool` population.
-//
-// Rather than delete the marker or let it pass vacuously, it now pins the two
-// things that ARE still true and states the collapse as an assertion, so this
-// test goes red the moment #380 refills the set and demands the real-data
-// distinction be re-pinned.
-test("#332/#380: utilityAdmitted is exposed, disjoint from utilityCounting, and empty by design", () => {
+// RE-POINTED TWICE. It first asserted against real data that the admitted-proc
+// set is non-empty and holds `Undead Bane`. The 2026-08-18 refresh typed every
+// untyped weapon proc `Bool`, so all 104 `utility_procs` adjudications were
+// retired, the `allow` list emptied, and the set collapsed — the marker was then
+// re-pointed to assert that emptiness so it would go red the moment #380 refilled
+// it. #380 refilled it, and this is that re-pin: the set is now DERIVED
+// (`metadata.utility_presence_not_counted` = the presence population minus the
+// counting set), so the original property is expressible again and is restored
+// here, on the same anchor case.
+test("#332/#380: utilityNotCounted is derived, non-empty, and disjoint from utilityCounting", () => {
   const v = builtVocab();
   if (!v) { console.log("  (skipped — web/data/items.json not built)"); return; }
-  assert.ok(v.utilityAdmitted instanceof Set, "the admitted procs are exposed as a Set");
+  assert.ok(v.utilityNotCounted instanceof Set, "the not-counted names are exposed as a Set");
   assert.ok(v.utilityCounting.size > 0, "and the counting half still counts presence effects");
+  // The bug this test exists to catch: the set went empty for a day and the
+  // solve's exclusion sentence silently named nothing. Emptiness is now the
+  // failure, not the expectation.
+  assert.ok(v.utilityNotCounted.size > 100,
+    `the not-counted set must be populated from the Bool presence population; got ${v.utilityNotCounted.size}`);
   // The split every surface renders: a name is counted, or rankable-only, never
-  // both. An overlap would put two contradictory markers on one Browse chip.
-  const both = [...v.utilityCounting].filter((n) => v.utilityAdmitted.has(n));
+  // both. An overlap would state two contradictory things about one effect.
+  const both = [...v.utilityCounting].filter((n) => v.utilityNotCounted.has(n));
   assert.deepStrictEqual(both, [],
-    `counted and admitted must be disjoint since #343; overlapping: ${both.join(", ")}`);
+    `counted and not-counted must be disjoint; overlapping: ${both.join(", ")}`);
   // Anchored on the reported case: the tier seeks Ghostly, never Undead Bane.
   assert.ok(v.utilityCounting.has("Ghostly"), "Ghostly is counted");
-  assert.ok(!v.utilityAdmitted.has("Ghostly"), "and is not an admitted proc");
+  assert.ok(!v.utilityNotCounted.has("Ghostly"), "and is therefore not in the not-counted half");
   assert.ok(!v.utilityCounting.has("Undead Bane"), "Undead Bane is NOT counted");
-  // #380 — the surviving property. The proc is no longer *admitted* (it is typed
-  // `Bool` now, not untyped), but it must still reach the player through the
-  // presence/suggestion path, which is what makes the empty allow list a DISPLAY
-  // change and not a scoring one.
+  assert.ok(v.utilityNotCounted.has("Undead Bane"),
+    "and IS named as rankable-but-not-counted — the property that went dark when " +
+    "upstream typed the weapon procs Bool, restored by deriving the set rather " +
+    "than curating it");
+  // The scoring half was never affected: the proc still reaches the picker.
   assert.ok(v.presence.has("Undead Bane") || v.suggestions.includes("Undead Bane"),
     "Undead Bane still reaches the picker as a presence effect");
-  assert.strictEqual(v.utilityAdmitted.size, 0,
-    "the admitted set is empty by design (#380) — when it refills, re-pin the " +
-    "real-data counted-vs-admitted distinction here and in browse.test.js");
 });
 
 test("#91/KTD10: the stamped counting set and UTILITY_TIER1_PRESENCE cannot drift", () => {

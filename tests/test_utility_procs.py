@@ -60,6 +60,14 @@ def _real_records():
     return recs
 
 
+def _rankable_names(recs=None):
+    """The curated magnitude vocabulary, derived the same way build_dataset does."""
+    recs = _real_records() if recs is None else recs
+    untyped_allow, _ = untyped_rankable.load(
+        os.path.join(ROOT, "data", "seed", "compendium", "untyped_rankable.json"))
+    return build_dataset.rankable_affixes(recs, untyped_allow)
+
+
 def _retired_2026_08_18():
     """The #374/U4 retirement block: `{name: entry}`. The 2026-08-18 refresh
     re-encoded the type field, giving 104 of this shard's adjudicated names a
@@ -314,6 +322,63 @@ def test_the_shipping_seed_adjudicates_the_real_roster_completely():
     allow, quarantined = utility_procs.load(SHARD)
     checked = utility_procs.assert_adjudicated(_real_records(), allow, quarantined)
     assert checked == len(allow) + len(quarantined)
+
+
+def test_presence_not_counted_is_the_presence_population_minus_the_counted():
+    """#380 — the display split, derived rather than curated.
+
+    The set that expressed "rankable, not counted" was the untyped-weapon-proc
+    allow list. Upstream typed every one of them `Bool` on 2026-08-18, the
+    candidate rule stopped seeing them, the allow list emptied, and the split
+    went dark with nothing failing. The meaning never depended on untypedness,
+    so it is derived from the population that carries these effects now."""
+    recs = _real_records()
+    rankable = _rankable_names()
+    counting = utility_procs.counting_set(recs, rankable)
+    out = utility_procs.presence_not_counted(recs, counting, rankable)
+    assert out == sorted(set(out)), "sorted and deduplicated"
+    # Non-vacuity in both directions: the population is real, and the
+    # subtraction actually removed something.
+    assert len(out) > 100, f"the not-counted population must be real ({len(out)})"
+    assert counting, "and the counting set must be non-empty for the subtraction to mean anything"
+    assert not (set(out) & set(counting)), "disjoint from the counting set by construction"
+    # Every member is a presence name — the set must never name a magnitude
+    # stat, or the exclusion sentence would fire on ordinary ranked stats.
+    assert set(out) <= utility_procs.presence_counting_names(recs)
+    # The dual-nature names are subtracted, exactly as counting_set subtracts
+    # them: their value is already expressible as a ranked magnitude.
+    assert not (set(out) & set(rankable)), "no dual-nature magnitude name survives"
+    # The anchor case: the reported proc is named again.
+    assert "Undead Bane" in out, "the proc whose disclosure went dark is named once more"
+    assert "Ghostly" in counting and "Ghostly" not in out
+
+
+def test_an_empty_counting_set_leaves_the_whole_presence_population_not_counted():
+    """The degenerate direction, asserted rather than assumed: with nothing
+    counted, every presence name is not-counted. A derivation that silently
+    returned empty here would reproduce the #380 collapse."""
+    recs = _real_records()
+    every = utility_procs.presence_not_counted(recs, [], [])
+    assert set(every) == utility_procs.presence_counting_names(recs)
+    rankable = _rankable_names()
+    assert len(every) > len(utility_procs.presence_not_counted(
+        recs, utility_procs.counting_set(recs, rankable), rankable)), \
+        "and subtracting a non-empty counting set must actually shrink it"
+
+
+def test_the_built_dataset_stamps_the_not_counted_split():
+    """#380 — the stamp the app consumes, and its disjointness."""
+    with open(DATASET, encoding="utf-8") as fh:
+        meta = json.load(fh)["metadata"]
+    not_counted = meta["utility_presence_not_counted"]
+    counting = meta["utility_counting_set"]
+    assert not_counted == sorted(set(not_counted))
+    assert len(not_counted) > 100, f"populated ({len(not_counted)})"
+    assert not (set(not_counted) & set(counting)), "disjoint from the counted half"
+    # KTD4 — the same rule the untyped half carries: a not-counted name must not
+    # gain a declared-credit control by leaking into rankable_affixes.
+    assert not (set(not_counted) & set(meta["rankable_affixes"]))
+    assert "Undead Bane" in not_counted
 
 
 def test_the_built_dataset_stamps_the_counting_vocabulary():

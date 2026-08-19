@@ -1213,14 +1213,18 @@ function buildProgram(model) {
     // (it reads the breakdown), not the solver's. Projection narrows it to the
     // presence ones, which are the only case a player could mistake for a
     // counted effect.
-    // Narrowed to the ADMITTED procs when the host supplies them: those are the
-    // names a player can rank while the tier never counts them, i.e. the only ones
-    // the exclusion sentence should name. Without an admitted set the list stays
-    // empty rather than naming every ranked magnitude — an unhelpful sentence is
-    // worse than none, and a host that has not threaded the set has not opted in.
-    utilityRankedNotCounted: (utilityEnabled && model.utilityAdmittedSet)
+    // Narrowed to the NOT-COUNTED presence names when the host supplies them:
+    // those are the names a player can rank while the tier never counts them,
+    // i.e. the only ones the exclusion sentence should name. Without that set the
+    // list stays empty rather than naming every ranked magnitude — an unhelpful
+    // sentence is worse than none, and a host that has not threaded the set has
+    // not opted in. #380 renamed the set; it went empty for a day when upstream
+    // typed the untyped weapon procs `Bool`, which silenced this sentence
+    // entirely without any assertion catching it — hence the real-data
+    // non-emptiness pin in tests/dataset.test.js.
+    utilityRankedNotCounted: (utilityEnabled && model.utilityNotCountedSet)
       ? (model.targets || []).filter((s) => s !== _UTILITY_SENTINEL
-          && model.utilityAdmittedSet.has(s)
+          && model.utilityNotCountedSet.has(s)
           && !(utilityCountingSet && utilityCountingSet.has(s)))
       : [],
   };

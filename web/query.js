@@ -169,7 +169,7 @@ window.App && window.App.ready((dataset) => {
         // Gate on SIZE, not truthiness (see web/wizard.js). NOTE: this file is NOT
         // loaded by web/index.html — web/wizard.js holds the live solve path.
         vocab.utilityCounting && vocab.utilityCounting.size
-          ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set(),
+          ? { counting: vocab.utilityCounting, notCounted: vocab.utilityNotCounted || new Set(),
               // #348 (U3) — the container's ORDER rides with its contents. Without
               // it the solver falls back to alphabetical, which is not a product
               // decision and would pursue Blindness Immunity before Ghostly.
