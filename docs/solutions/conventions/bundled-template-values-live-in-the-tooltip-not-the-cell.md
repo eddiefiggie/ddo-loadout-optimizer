@@ -2,6 +2,7 @@
 title: "A bundled template's numbers live in the tooltip, not the visible cell"
 module: data-pipeline
 date: 2026-08-08
+last_updated: 2026-08-19
 problem_type: convention
 component: tooling
 severity: high
@@ -51,6 +52,17 @@ the tooltip behind it carries the numbers. When one template bundles several
 stats under one name, the visible layer omits every stat not spelled out in the
 cell. Reading only that layer does not produce a gap you can see — it produces a
 confident, wrong, complete-looking answer.
+
+**There is a third layer above both: the template invocation itself.** The
+tooltip is a *rendering* of `{{Speed|30}}`; the invocation is the page author
+stating the fact, and its parameters outrank anything rendered from them. Two
+consequences. First, the failure mode is not limited to omitted numbers — a
+visible cell can also assert a *wrong bonus type* that the invocation settles
+outright, as the legacy `Elemental Resistance` dialect does. Second, when a seed
+shard already stores the invocation in a `raw` or `template` field, layer 1 is
+local: no harvest, no throttle, no browser round trip. See
+[`read-the-standing-ruling-and-judge-the-strongest-evidence-layer.md`](read-the-standing-ruling-and-judge-the-strongest-evidence-layer.md),
+which owns the full hierarchy and the triage step that precedes it.
 
 **1. Treat a bare label as a question, not an answer.** `Speed +30%` beside
 `Striding +30% Melee Alacrity 5%` is the tell: same shape, fewer stats. That

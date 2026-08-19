@@ -2,6 +2,7 @@
 title: "A gate cascade during a data refresh is the refresh report, not an obstacle"
 module: data-pipeline
 date: 2026-08-19
+last_updated: 2026-08-19
 category: conventions
 problem_type: convention
 component: tooling
@@ -302,11 +303,20 @@ refresh: absolute arm-(a) median 466ms -> 460–463ms (the data did not raise so
 ratio 1.69x -> 1.80x against a 2.00x budget.
 
 Filed rather than folded in: **#379** (six Elemental Resistance carriers lost their components —
-upstream re-typed Insight -> Competence and the harvested evidence contradicts itself), **#380** (the
+upstream re-typed Insight -> Competence), **#380** (the
 predicate re-encoding and the collapsed `utilityAdmitted` stamp), **#381** (four adopted
 `Legendary <stat>` labels stop resolving for pre-refresh saved characters). Related open threads the
 report touches without claiming to close: **#371**, **#283**, **#229**, **#214** (**#372** is
 addressed in the PR body rather than the report).
+
+**Amendment, 2026-08-19.** #379 was filed on a wrong premise. This doc originally recorded it as
+"the harvested evidence contradicts itself"; it does not. `docs/wiki-evidence/elemental-resistance.md`
+had ruled on 2026-08-13 (#191) that the legacy dialect's *visible label* lies about the type and the
+tooltip is the authority, naming these exact six carriers — and the shard's own `raw` field stored
+the wiki's `{{Elemental Resistance|elemental|10|insight}}` invocation, which states the type as a
+parameter. Nothing was ambiguous and no harvest was needed. Closed by PR #387 with six
+`affix_type_corrections.json` entries. See
+[`read-the-standing-ruling-and-judge-the-strongest-evidence-layer.md`](read-the-standing-ruling-and-judge-the-strongest-evidence-layer.md).
 
 ## Related
 
