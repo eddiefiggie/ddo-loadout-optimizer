@@ -183,15 +183,27 @@ def is_noise_affix_name(name: str) -> bool:
     return n in NOISE_AFFIX_NAMES or bool(_BARE_NUMBER_NAME.match(n))
 
 
-def load_affix_vocabulary() -> tuple:
+def load_affix_vocabulary(path=None) -> tuple:
     """U5 — the affix-name registry + the variant->canonical alias table the web
     priority-picker consumes. The registry is the frozen checked-in affix-name
     vocabulary (``vocab_registries.json``); the alias map is the curated
     ``affix_aliases.json`` (``load_affix_aliases``). Emitting them to the dataset
     lets the picker canonicalize a typed/selected target to the ONE name gear,
     augments, and crafting all carry — so a single target matches every source.
-    Deterministic (sorted list from a checked-in file; dict order from the file)."""
-    registry = vocabulary_mod._load(VOCAB_REGISTRIES_PATH).get("affix_names", [])
+    Deterministic (sorted list from a checked-in file; dict order from the file).
+
+    #374/KTD5 — the frozen section is UNIONED with the curated
+    ``local_affix_names`` section (``vocabulary.local_affix_names``, which
+    validates each entry back to a rename or a local fold). This registry is the
+    vocabulary ``cross_add_map`` bounds its targets to (``:1529``), and that
+    family fails in two different ways when one of our canon names leaves raw:
+    an absent ``spell_focus.SPELLPOWERS`` entry raises ``SystemExit``, while an
+    absent ``LORE_ROSTER`` entry is dropped SILENTLY. The union is a no-op until
+    upstream's refreshed vocabulary lands — every minted name is still in
+    ``affix_names`` today."""
+    table = vocabulary_mod._load(path or VOCAB_REGISTRIES_PATH)
+    registry = sorted(set(table.get("affix_names", []))
+                      | set(vocabulary_mod.local_affix_names(table)))
     # U2 — filter noise names HERE, at the emit site, not in generate_registries().
     # `check_referential_integrity()` validates every raw affix name against the
     # frozen checked-in registry as its baseline, so removing names at generation

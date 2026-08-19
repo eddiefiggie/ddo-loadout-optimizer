@@ -4,6 +4,53 @@
   "upstream_commit": "ec3e595d0d879b29c13f3c34ffc155e71d0418c4",
   "generated": "2026-08-01"
  },
+ "_local_names_why": "REPO-MINTED affix names the frozen baseline above cannot contain (#374/KTD5). generate_registries() reads the RAW gear-planner files, before any rename runs, so a name this repo mints with a pipeline rename can never appear in `affix_names` once upstream stops emitting it. Two consumers then break, and only one of them shouts: check_referential_integrity resolves through affix_aliases.json FIRST and then requires registry membership (Rule A -> IntegrityError), while cross_add_map BOUNDS its lore targets to the known vocabulary and drops an absent one SILENTLY. This section is unioned into both: src/vocabulary.check_referential_integrity (loading this file directly -- its caller builds the baseline from raw and would never carry the section) and build_dataset.load_affix_vocabulary, whose registry feeds cross_add_map. LEGITIMACY, asserted mechanically by local_affix_names(): a name here must be either the `canonical_name` of an affix_name_corrections.json entry OR the `name` of a `local_affix_synonyms` entry in affix_synonyms_registry.json -- the two files this repo mints names in. Anything else is an invented affix and is rejected. A `pending_upstream` correction COUNTS as a minting source: every canon-defence entry is pending by construction until U4 vendors the refreshed snapshot, so requiring a retired marker would reject exactly the names this section exists to protect -- and the marker means 'the data has not armed it yet', not 'unverified' (each entry carries its wiki evidence, and assert_canon_defense fails the moment the marker outlives the data). Every name below is STILL in `affix_names` today, so the union is a no-op until the refresh lands; it is declared ahead of the data deliberately, so the refresh is a data change rather than a migration. Two canonicals are deliberately NOT minted: `Legendary Conditioning` (native upstream, so it stays in the baseline -- minting it would be a permanent no-op) and `Enhanced Ki` (absent from the baseline today, but untyped upstream and therefore invisible to the gate's walk; it belongs with issue #229, which owns that blindness, not here).",
+ "local_affix_names": [
+  {
+   "name": "Combustion",
+   "evidence": "docs/wiki-evidence/spellpower-universal.md quotes the ddowiki Spell_power / Equipment_bonus pages using the enchantment name (\"+2 [[Combustion]] Scepter\"), which is what a player reads on the item tooltip. Minted by the `Fire Spell Power` -> `Combustion` correction in affix_name_corrections.json (KTD1/KTD2); also one of vocabulary.PROTECTED_CANON, so no upstream fold may take it away."
+  },
+  {
+   "name": "Corrosion",
+   "evidence": "docs/wiki-evidence/spellpower-universal.md quotes the ddowiki Spell_power / Equipment_bonus pages using the enchantment name (\"+2 [[Corrosion]] Scepter\"), which is what a player reads on the item tooltip. Minted by the `Acid Spell Power` -> `Corrosion` correction in affix_name_corrections.json (KTD1/KTD2); also one of vocabulary.PROTECTED_CANON, so no upstream fold may take it away."
+  },
+  {
+   "name": "Devotion",
+   "evidence": "docs/wiki-evidence/spellpower-universal.md quotes the ddowiki Spell_power / Equipment_bonus pages using the enchantment name (\"+2 [[Devotion]] Scepter\"), which is what a player reads on the item tooltip. Minted by the `Positive Spell Power` -> `Devotion` correction in affix_name_corrections.json (KTD1/KTD2); also one of vocabulary.PROTECTED_CANON, so no upstream fold may take it away."
+  },
+  {
+   "name": "Glaciation",
+   "evidence": "docs/wiki-evidence/spellpower-universal.md quotes the ddowiki Spell_power / Equipment_bonus pages using the enchantment name (\"+2 [[Glaciation]] Scepter\"), which is what a player reads on the item tooltip. Minted by the `Cold Spell Power` -> `Glaciation` correction in affix_name_corrections.json (KTD1/KTD2); also one of vocabulary.PROTECTED_CANON, so no upstream fold may take it away."
+  },
+  {
+   "name": "Impulse",
+   "evidence": "docs/wiki-evidence/spellpower-universal.md quotes the ddowiki Spell_power / Equipment_bonus pages using the enchantment name (\"+2 [[Impulse]] Scepter\"), which is what a player reads on the item tooltip. Minted by the `Force Spell Power` -> `Impulse` correction in affix_name_corrections.json (KTD1/KTD2); also one of vocabulary.PROTECTED_CANON, so no upstream fold may take it away."
+  },
+  {
+   "name": "Magnetism",
+   "evidence": "docs/wiki-evidence/spellpower-universal.md quotes the ddowiki Spell_power / Equipment_bonus pages using the enchantment name (\"+2 [[Magnetism]] Scepter\"), which is what a player reads on the item tooltip. Minted by the `Electric Spell Power` -> `Magnetism` correction in affix_name_corrections.json (KTD1/KTD2); also one of vocabulary.PROTECTED_CANON, so no upstream fold may take it away."
+  },
+  {
+   "name": "Nullification",
+   "evidence": "docs/wiki-evidence/spellpower-universal.md quotes the ddowiki Spell_power / Equipment_bonus pages using the enchantment name (\"+2 [[Nullification]] Scepter\"), which is what a player reads on the item tooltip. Minted by the `Negative Spell Power` -> `Nullification` correction in affix_name_corrections.json (KTD1/KTD2); also one of vocabulary.PROTECTED_CANON, so no upstream fold may take it away."
+  },
+  {
+   "name": "Resonance",
+   "evidence": "docs/wiki-evidence/spellpower-universal.md quotes the ddowiki Spell_power / Equipment_bonus pages using the enchantment name (\"+2 [[Resonance]] Scepter\"), which is what a player reads on the item tooltip. Minted by the `Sonic Spell Power` -> `Resonance` correction in affix_name_corrections.json (KTD1/KTD2); also one of vocabulary.PROTECTED_CANON, so no upstream fold may take it away."
+  },
+  {
+   "name": "Ice Lore",
+   "evidence": "docs/wiki-evidence/spell-lore.md quotes the ddowiki Spell_Lore \"Types of spell lore\" roster, which names this lore `Ice Lore`. Minted by the `Cold Lore` -> `Ice Lore` correction in affix_name_corrections.json; also one of vocabulary.PROTECTED_CANON, and a cross_add target whose absence from the vocabulary would be dropped silently."
+  },
+  {
+   "name": "Void Lore",
+   "evidence": "docs/wiki-evidence/spell-lore.md quotes the ddowiki Spell_Lore \"Types of spell lore\" roster, which names this lore `Void Lore`. Minted by the `Negative Lore` -> `Void Lore` correction in affix_name_corrections.json; also one of vocabulary.PROTECTED_CANON, and a cross_add target whose absence from the vocabulary would be dropped silently."
+  },
+  {
+   "name": "Damage to helpless enemies",
+   "evidence": "docs/wiki-evidence/helpless-damage.md (#305): the ddowiki Helpless hub page lists every gear source of the one percent-extra-damage mechanic, and this is the spelling the Solar Gem of Cruelty affixes carry natively. Backed by BOTH arms -- the `Damage vs. the Helpless` -> `Damage to helpless enemies` correction and the local_affix_synonyms entry of the same name in affix_synonyms_registry.json (which folds eleven spellings onto it)."
+  }
+ ],
  "affix_names": [
   "",
   "+0.5[W] to each of your Daggers",

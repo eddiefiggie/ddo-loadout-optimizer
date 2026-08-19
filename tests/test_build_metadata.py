@@ -124,3 +124,29 @@ def test_noise_filter_is_at_the_emit_site_leaving_the_frozen_baseline_intact():
         "the frozen baseline must still carry the noise name -- it is what the "
         "integrity gate validates raw data against"
     )
+
+
+# --- #374/KTD5: the locally minted registry names ---------------------------
+
+def test_374_minted_local_names_reach_the_emitted_picker_vocabulary():
+    """`load_affix_vocabulary` unions the curated `local_affix_names` section into
+    the emitted registry — the same list `cross_add_map` bounds its targets to.
+    Without it, our canon leaves the picker vocabulary the moment the refreshed
+    snapshot lands, because the frozen baseline is generated from RAW."""
+    from src import vocabulary as V
+    reg = set(_build()["metadata"]["affix_registry"])
+    minted = V.local_affix_names()
+    assert minted, "the curated section must not be empty"
+    for name in minted:
+        assert name in reg, f"{name!r} was minted but never reached the registry"
+
+
+def test_374_the_minted_union_moves_nothing_before_the_refresh():
+    """Nothing-changed guard, deliberately: every minted name is still in raw
+    today, so the union is a no-op and no player-facing vocabulary moves in this
+    unit. U4 is what arms it."""
+    import json
+    import build_dataset as B
+    frozen = json.load(open(B.VOCAB_REGISTRIES_PATH))["affix_names"]
+    expected = [n for n in frozen if not B.is_noise_affix_name(n)]
+    assert _build()["metadata"]["affix_registry"] == expected

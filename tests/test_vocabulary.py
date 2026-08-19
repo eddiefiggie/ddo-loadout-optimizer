@@ -775,3 +775,155 @@ def test_374_armed_canon_variants_cannot_see_an_untyped_variant():
 
 def test_374_armed_canon_variants_is_empty_before_the_refresh_is_vendored():
     assert V.armed_canon_variants() == {}
+
+
+# --- KTD5: minting our canon into the frozen registry -------------------------
+#
+# `generate_registries` reads RAW only, before any rename runs, so once upstream
+# stops emitting one of our canon names no pipeline change can put it back. The
+# curated `local_affix_names` section is the way back in, and it is unioned into
+# BOTH consumers (the gate here; `build_dataset.load_affix_vocabulary` for
+# `cross_add`, covered in tests/test_cross_add.py).
+
+def _canon_flips():
+    """`{upstream generic name: our canon}` — derived from the shipped canon-defence
+    corrections, never hand-listed, so a shard edit moves this fixture with it."""
+    shard = V._load(V.AFFIX_NAME_CORRECTIONS_PATH)["corrections"]
+    return {c["source_name"]: c["canonical_name"]
+            for c in shard if c.get("canon_defense")}
+
+
+def _refreshed_baseline():
+    """The baseline U4's re-freeze will produce: today's raw-derived registry with
+    our canon names REMOVED and upstream's generic spellings added. This is what
+    `generate_registries()` returns over refreshed raw, and the shape the gate's
+    only caller passes in."""
+    base = V.generate_registries()
+    flips = _canon_flips()
+    names = set(base["affix_names"]) - set(flips.values()) | set(flips)
+    return {"affix_names": sorted(names), "bonus_types": base["bonus_types"]}
+
+
+def _registry_file(mutate):
+    """Write the shipped vocab_registries.json to a temp file after `mutate(dict)`,
+    and return the path — the gate and the picker vocabulary both load this file
+    directly, so a scenario is expressed by editing the FILE, not a passed dict."""
+    import json
+    import tempfile
+    table = V._load(V.VOCAB_REGISTRIES_PATH)
+    mutate(table)
+    fh = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8")
+    json.dump(table, fh)
+    fh.close()
+    return fh.name
+
+
+def test_374_local_affix_names_are_minted_by_a_rename_or_a_local_fold():
+    """The legitimacy join, asserted mechanically against the two files that mint
+    names. NOT "minted by a reviewed local fold" — that arm alone would reject
+    every spell-power and lore name here, which renames mint."""
+    renames, folds = V._minting_sources()
+    minted = V.local_affix_names()
+    assert minted, "the section must not be empty"
+    for name in minted:
+        assert name in renames or name in folds, (
+            f"{name!r} is backed by neither a correction canonical nor a local synonym")
+    # both arms are actually exercised by the shipped section
+    assert [n for n in minted if n in renames], "no entry is backed by a rename"
+    assert [n for n in minted if n in folds], "no entry is backed by a local fold"
+    # the explicit set, so a deletion is caught even before the refresh arms it
+    assert set(minted) == {
+        "Combustion", "Corrosion", "Devotion", "Glaciation", "Impulse",
+        "Magnetism", "Nullification", "Resonance", "Ice Lore", "Void Lore",
+        "Damage to helpless enemies"}, minted
+    # the ten folded names are exactly PROTECTED_CANON; the eleventh is rename-only
+    assert set(V.PROTECTED_CANON) < set(minted)
+
+
+def test_374_pending_corrections_count_as_a_minting_source():
+    """Deliberate: every canon-defence correction is `pending_upstream` until U4
+    vendors the data that arms it, so requiring a retired marker would reject
+    exactly the names this section exists to protect."""
+    shard = V._load(V.AFFIX_NAME_CORRECTIONS_PATH)["corrections"]
+    pending = {c["canonical_name"] for c in shard if c.get("pending_upstream")}
+    assert pending, "fixture assumes U2's pending markers are still on the shard"
+    assert pending & set(V.local_affix_names()), (
+        "the minted names are backed by pending corrections — if pending stopped "
+        "counting, this section would be rejected wholesale")
+
+
+def test_374_minted_canon_passes_the_gate_against_a_refreshed_baseline():
+    """The whole point: after the refresh the alias map rewrites upstream's generic
+    name to our canon, which the regenerated baseline no longer contains."""
+    baseline = _refreshed_baseline()
+    alias_map, _ = V.load_affix_aliases()
+    flips = _canon_flips()
+    for canonical in flips.values():
+        assert canonical not in set(baseline["affix_names"]), canonical
+    injected = {"items": [{"name": "Refreshed Item",
+                           "affixes": [_raw_pair(v) for v in flips]}]}
+    n = V.check_referential_integrity(injected, {}, {}, baseline, alias_map)
+    assert n == len(flips), (n, len(flips))
+    names = set(baseline["affix_names"]) | set(V.local_affix_names())
+    for variant, canonical in flips.items():
+        assert V.resolve_affix_name(variant, names, alias_map) == canonical
+
+
+def test_374_without_minting_the_refresh_turns_the_gate_red():
+    """The predicted failure, reproduced deliberately — this is what the tree does
+    TODAY if U4 lands without this unit."""
+    path = _registry_file(lambda t: t.pop("local_affix_names"))
+    alias_map, _ = V.load_affix_aliases()
+    injected = {"items": [{"name": "Refreshed Item",
+                           "affixes": [_raw_pair("Fire Spell Power")]}]}
+    err = _raises_msg(V.IntegrityError, V.check_referential_integrity,
+                      injected, {}, {}, _refreshed_baseline(), alias_map,
+                      registry_path=path)
+    assert "'Fire Spell Power'" in err and "frozen registry" in err, err
+
+
+def test_374_the_gate_is_not_widened_into_an_escape_hatch():
+    """A genuinely new upstream name still raises with the section minted."""
+    alias_map, _ = V.load_affix_aliases()
+    injected = {"items": [{"name": "Refreshed Item",
+                           "affixes": [_raw_pair("Totally Not A Real Affix Zzz")]}]}
+    err = _raises_msg(V.IntegrityError, V.check_referential_integrity,
+                      injected, {}, {}, _refreshed_baseline(), alias_map)
+    assert "Totally Not A Real Affix Zzz" in err, err
+
+
+def test_374_a_minted_name_backed_by_neither_arm_is_rejected():
+    def _invent(t):
+        t["local_affix_names"].append(
+            {"name": "Totally Invented Affix Zzz", "evidence": "none, deliberately"})
+    err = _raises_msg(V.IntegrityError, V.local_affix_names,
+                      path=_registry_file(_invent))
+    assert "Totally Invented Affix Zzz" in err, err
+    assert "not minted by anything this repo owns" in err, err
+
+
+def test_374_a_minted_name_without_evidence_is_rejected():
+    def _strip(t):
+        t["local_affix_names"][0].pop("evidence")
+    err = _raises_msg(V.IntegrityError, V.local_affix_names,
+                      path=_registry_file(_strip))
+    assert "carries no evidence" in err, err
+
+
+def test_374_the_upstream_synonym_section_is_not_a_minting_source():
+    """Only `local_affix_synonyms` mints. Upstream's own `affix_synonyms` section is
+    upstream's vocabulary — treating it as a minting source would let any upstream
+    fold silently widen what the gate accepts (KTD5's rejected alternative)."""
+    renames, folds = V._minting_sources()
+    upstream = {e["name"] for e in
+                V._load(V.AFFIX_SYNONYMS_REGISTRY_PATH)["affix_synonyms"]}
+    assert "Speed" in upstream, "fixture assumes the upstream section is populated"
+    assert "Speed" not in folds and "Speed" not in renames
+
+
+def test_374_the_local_names_union_is_a_no_op_before_the_refresh():
+    """Nothing-changed guard: every minted name is still in raw today, so this unit
+    moves no live behavior. It also states the sequencing plainly — the section is
+    declared AHEAD of the data, and U4 is what arms it."""
+    raw = set(V.generate_registries()["affix_names"])
+    assert set(V.local_affix_names()) <= raw
