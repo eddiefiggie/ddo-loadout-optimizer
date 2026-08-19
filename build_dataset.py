@@ -65,6 +65,7 @@ from src import vocabulary as vocabulary_mod
 from src import crafting_catalog as crafting_catalog_mod
 from src import dino_native as dino_native_mod
 from src import container_registry as container_registry_mod
+from src import crafting_coverage as crafting_coverage_mod
 import re as _re
 
 import collections
@@ -1468,6 +1469,17 @@ def build() -> dict:
     # left no stamp at all is evidence the pass was reverted to a no-op.
     out["metadata"]["container_registry_coverage"] = container_registry_mod.check(
         out, _container_source_options)
+
+    # U1 — the unserved-crafting-slot gate. Runs over the ASSEMBLED dataset for
+    # the same reason the fan-out gate above does, plus one of its own: it reads
+    # each pool's DERIVED keying (`fits_slots`, `dino_type`, `seal_type`,
+    # `category`), none of which exists in gearplanner_crafting.json. A declared
+    # slot label no pool can fill is an inert slot — visible in the compendium,
+    # uncraftable by the solver — and 35 such labels are allowlisted as known
+    # gaps. A NEW one fails the build, and so does an allowlist entry the data no
+    # longer justifies. Stamped as metadata (`labels_validated` is the validated
+    # universe, not the walked one) so nobody hand-recounts a different predicate.
+    out["metadata"]["crafting_slot_coverage"] = crafting_coverage_mod.check(out)
 
     # build_id hashes the full assembled dataset (everything except metadata) so
     # drift in sets, augments, or crafting inputs — not just base variants —
