@@ -131,3 +131,49 @@ def test_marker_host_counts_reported():
     assert stats["planner_lamordia_hosts"] >= 100
     assert stats["planner_nearly_complete_hosts"] >= 100
     assert stats["planner_lost_purpose_hosts"] >= 40
+
+
+# --- #371: the per-item Nearly Complete host gate ------------------------------
+
+_NF_ITEM = {"name": "Legendary Alchemist's Crown", "slot": "Helm", "ml": 29,
+            "affixes": [], "crafting": ["Nearly Finished", "Green Augment Slot"]}
+
+
+def test_per_item_nearly_complete_marker_gated_on_the_pool_covering_this_host():
+    """The seal gate's shape, one family over: a host is marked only when the
+    per-item pool actually carries options for it. Ungated, the 22 declarers
+    upstream never sourced would each grow a slot the solver cannot fill —
+    exactly the inert slot #371 exists to remove."""
+    covered = P._record(dict(_NF_ITEM), set(),
+                        {"Nearly Finished": {"Legendary Alchemist's Crown"}})
+    assert covered["nc_per_item_slots"] == [{"pool": "Nearly Finished"}]
+
+    # Same item, pool has no entry for it -> no marker at all (not an empty list).
+    uncovered = P._record(dict(_NF_ITEM), set(), {"Nearly Finished": {"Someone Else"}})
+    assert "nc_per_item_slots" not in uncovered
+
+    # No pool threaded at all -> the pre-#371 behavior, marker absent.
+    assert "nc_per_item_slots" not in P._record(dict(_NF_ITEM), set(), None)
+
+
+def test_a_host_declaring_both_per_item_pools_gets_both_slots():
+    """`Collective Sight` declares `Almost There` AND `Nearly Finished`. They are
+    two INDEPENDENT choices in game, so they must surface as two slots — one
+    merged marker would silently halve what the item can craft."""
+    it = {"name": "Collective Sight", "slot": "Goggles", "ml": 15, "affixes": [],
+          "crafting": ["Almost There", "Nearly Finished", "Blue Augment Slot"]}
+    rec = P._record(it, set(), {"Nearly Finished": {"Collective Sight"},
+                                "Almost There": {"Collective Sight"}})
+    assert rec["nc_per_item_slots"] == [{"pool": "Almost There"},
+                                        {"pool": "Nearly Finished"}]
+
+
+def test_per_item_host_count_reported_and_matches_the_live_pool():
+    from src import nearly_complete as NC
+    hosts = NC.per_item_hosts()
+    recs, stats = P.load_planner_items(nc_per_item_hosts=hosts)
+    marked = [r for r in recs if r.get("nc_per_item_slots")]
+    assert stats["planner_nc_per_item_hosts"] == len(marked) == 43
+    # And the gate is what produced that: with no pool threaded, zero hosts.
+    _, off = P.load_planner_items()
+    assert off["planner_nc_per_item_hosts"] == 0

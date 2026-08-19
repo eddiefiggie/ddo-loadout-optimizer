@@ -31,6 +31,7 @@ The mapping per pool:
 | `membership_set_defs` | each def's `tier`, and membership.dino_pool() for the Dino half | `"Lost Purpose"` / `"Legendary Lost Purpose"` / the Dino Set-Bonus label |
 | `viktranium` | `slot_type` | as-is (`"Dolorous"`) |
 | `nearly_complete` | `category` | `"Nearly Complete: <category>"` |
+| `nearly_complete_per_item` | each option's `pool`, **plus the host name** | `"Nearly Finished"` / `"Almost There"` |
 | `dino_inserts` | `dino_type` | as-is (`"Claw"`) |
 | `seal` | `seal_type` | `"Sealed in <seal_type>"` |
 | `green_steel` | `tier_key` (`"T1 (Equipment)"`) | base label (`"T1"`) |
@@ -45,6 +46,17 @@ None of `fits_slots`, `dino_type`, `category` or `seal_type` exists in
 pool by name. An aggregate "did we inspect anything" check would stay green while
 one pool quietly emptied, because a populated sibling vouches for it — and a
 retired pool is exactly how a refresh strands slots.
+
+**A per-item pool needs a second, finer gate (#371).** Every pool above serves a
+LABEL: once `Sealed in Fire` is sourced, every item declaring it is served. The
+per-item Nearly Complete pools are keyed by HOST NAME instead, so sourcing the
+pool serves 43 of the 65 `Nearly Finished` declarers and none of the other 22.
+Label-level coverage would call that whole slot "served" and the 22 inert slots
+would be invisible again — the exact failure mode of the blanket allowlist entry
+this replaced. `per_item_host_coverage` therefore checks membership per host and
+names every uncovered one, and `PER_ITEM_UNCOVERED_HOSTS` must match it exactly:
+a 23rd uncovered item fails the build, and so does an entry upstream has since
+sourced.
 """
 from __future__ import annotations
 
@@ -114,11 +126,12 @@ UNSERVED_ALLOWLIST = frozenset({
     "Legendary Slaver's Prefix Slot",
     "Legendary Slaver's Suffix Slot",
     "Legendary Slaver's Set Bonus",
-    # Per-item Nearly Complete (Nearly Finished / Almost There) — the pool ships
-    # as `nearly_complete_per_item`, browse-visible but not solver-wired, so the
-    # slot is genuinely unserved for solving purposes.
-    "Nearly Finished",
-    "Almost There",
+    # #371 — `Nearly Finished` and `Almost There` were here, as "browse-visible
+    # but not solver-wired". They are now SERVED by `nearly_complete_per_item`
+    # (see POOL_READERS below), so the blanket entry would be a lie. The 22
+    # declarers upstream's pool does not cover are disclosed BY NAME in
+    # `PER_ITEM_UNCOVERED_HOSTS` instead — a slot-level allowlist cannot tell a
+    # covered host from an uncovered one, which is the whole lesson of #195.
     # Random / "one of the following" wordings: the item rolls one effect from a
     # list the catalog states as prose. Not a craftable choice slot.
     "One of the following",
@@ -185,6 +198,19 @@ def _nearly_complete(dataset):
                        if r.get("category")}
 
 
+def _nearly_complete_per_item(dataset):
+    """#371 — the per-item Nearly Complete pools, keyed by HOST NAME.
+
+    Labels come from each option's own `pool` field, never from the pool's name,
+    for the same reason the seal reader keys off `seal_type`. Serving is only
+    half the story here: a per-item pool serves the hosts it has entries for, so
+    label-level coverage is checked below by `per_item_host_coverage`.
+    """
+    by_host = dataset.get("nearly_complete_per_item") or {}
+    recs = [r for opts in by_host.values() for r in opts or []]
+    return len(recs), {r["pool"] for r in recs if r.get("pool")}
+
+
 def _dino_inserts(dataset):
     recs = dataset.get("dino_inserts") or []
     return len(recs), {base_label(r.get("dino_type")) for r in recs
@@ -216,6 +242,7 @@ POOL_READERS = {
     "membership_set_defs": _membership_set_defs,
     "viktranium": _viktranium,
     "nearly_complete": _nearly_complete,
+    "nearly_complete_per_item": _nearly_complete_per_item,
     "dino_inserts": _dino_inserts,
     "seal": _seal,
     "green_steel": _green_steel,
@@ -269,6 +296,152 @@ def declared_examples(dataset: dict) -> dict:
         for entry in it.get("crafting") or []:
             example.setdefault(base_label(entry), it.get("source_item"))
     return example
+
+
+# --- per-item pool host coverage (#371) ---------------------------------------
+
+# The labels whose pool is keyed by HOST NAME rather than by a shared menu. Both
+# are served by `nearly_complete_per_item`; both need the per-host gate below.
+PER_ITEM_POOL_LABELS = ("Nearly Finished", "Almost There")
+
+# The `Nearly Finished` declarers upstream's pool carries NO entry for. Named
+# rather than allowlisted at the slot level, because the slot IS served for the
+# other 43 and a label-level exception cannot tell the two apart.
+#
+# Reason, one shared cause: gear-planner's `data-builder/nearly-finished.json`
+# (merged into `gearplanner_crafting.json`) enumerates the option list per item,
+# and these 22 are not in it. That is an upstream sourcing gap, not a modelling
+# decision of ours — every one of them is an item whose in-game slot exists. We
+# do NOT infer the options (`Never infer a value`): the four Fire Over Morgrave
+# heroics would be a plausible tier-down of their Legendary twins and a plausible
+# number is still a guess. Their Legendary counterparts ARE covered, which is why
+# the reporter's ML29 case is fixed and their ML18 case is not.
+#
+# The gate below fails in BOTH directions, so this list cannot rot: a new
+# uncovered declarer must be added deliberately, and one upstream later sources
+# must be removed.
+PER_ITEM_UNCOVERED_HOSTS = frozenset({
+    # Fire Over Morgrave — heroic tier (the Legendary twins are covered).
+    "Alchemist's Crown",
+    "Alchemist's Pendant",
+    "Fabricator's Bracers",
+    "Fabricator's Gauntlets",
+    "Magewright's Cloak",
+    "Magewright's Spectacles",
+    "Tinker's Gloves",
+    "Tinker's Goggles",
+    # Weapons and accessories whose per-item option list upstream never filled in.
+    "Baz'Morath, the Curator of Decay",
+    "Constellation, Cursed Blade",
+    "Fetters of the Forgewraith",
+    "Hoarfrost, Herald of the Bitter Ice",
+    "Stickerclick, the Bitter Hail of Bolts",
+    "The Broken Blade of Constellation",
+    "The Eclipse Itself",
+    "The Everstorm, Maelstrom Courser",
+    "The Fractured Elegance",
+    "The Hallowed Splinters",
+    "The Labrythine Edge",
+    "The Shattered Hilt of Constellation",
+    "The Wide Open Sky",
+    "Untold, Crack in the Sky",
+})
+
+
+def per_item_host_coverage(dataset: dict) -> dict:
+    """`{covered, uncovered, by_pool}` for the host-keyed pools — and the gate.
+
+    Two independent facts are checked, because they can break independently:
+
+    * **pool coverage** — every item declaring a per-item label either has an
+      entry in `nearly_complete_per_item` or is named in
+      `PER_ITEM_UNCOVERED_HOSTS`. Fails on a new uncovered host (the slot would
+      ship inert and unnamed) and on a stale one (upstream sourced it, or the
+      item was renamed, and the exception now vouches for nothing).
+    * **marker threading** — a covered host carries the `nc_per_item_slots`
+      marker the solver reads. Pool coverage alone does not prove the solver can
+      see it: the pool shipped for two builds while every slot stayed inert
+      precisely because nothing joined pool to host.
+
+    Raises `SystemExit` on either. Refuses to pass on an empty universe.
+    """
+    by_host = dataset.get("nearly_complete_per_item") or {}
+    declarers = {}          # pool label -> {item name}
+    marked = {}             # pool label -> {item name carrying the marker}
+    for it in dataset.get("items") or []:
+        name = it.get("source_item")
+        slots = {s.get("pool") for s in it.get("nc_per_item_slots") or []}
+        for entry in it.get("crafting") or []:
+            label = base_label(entry)
+            if label not in PER_ITEM_POOL_LABELS:
+                continue
+            declarers.setdefault(label, set()).add(name)
+            if label in slots:
+                marked.setdefault(label, set()).add(name)
+
+    if not declarers:
+        raise SystemExit(
+            "per-item crafting coverage: no item declares any of "
+            f"{', '.join(PER_ITEM_POOL_LABELS)} — the gate refuses to pass on an "
+            "empty universe. Either the labels were renamed upstream (follow the "
+            "rename) or the pools were retired (drop this gate deliberately).")
+
+    all_declarers = {n for names in declarers.values() for n in names}
+    uncovered = {n for n in all_declarers if n not in by_host}
+    problems = []
+
+    new_uncovered = sorted(uncovered - PER_ITEM_UNCOVERED_HOSTS)
+    if new_uncovered:
+        problems.append(
+            f"{len(new_uncovered)} item(s) declare a per-item Nearly Complete slot "
+            f"that the pool has NO entry for:\n  "
+            + "\n  ".join(repr(n) for n in new_uncovered)
+            + "\n  Their slot ships inert — visible in the compendium, and the "
+              "solver can craft nothing into it. Either the pool gained/lost hosts "
+              "upstream, or these are a new sourcing gap: add each one to "
+              "PER_ITEM_UNCOVERED_HOSTS in src/crafting_coverage.py with the reason.")
+
+    stale = sorted(PER_ITEM_UNCOVERED_HOSTS - uncovered)
+    if stale:
+        problems.append(
+            f"{len(stale)} named per-item exception(s) are no longer uncovered: "
+            + ", ".join(repr(n) for n in stale)
+            + " — either upstream sourced the pool for them (good news, drop the "
+              "entry) or the item was renamed/retired (follow it). A one-"
+              "directional exception list keeps vouching for names that no longer "
+              "mean anything, and the next real gap hides in the noise.")
+
+    unthreaded = sorted(
+        n for label, names in declarers.items()
+        for n in names
+        if n in by_host and n not in (marked.get(label) or set()))
+    if unthreaded:
+        problems.append(
+            f"{len(unthreaded)} item(s) the pool DOES cover carry no "
+            f"`nc_per_item_slots` marker: {', '.join(repr(n) for n in unthreaded[:8])}"
+            + (" …" if len(unthreaded) > 8 else "")
+            + " — the pool is sourced but the solver cannot reach it, which is the "
+              "inert slot with extra steps. Check the host gate threaded through "
+              "src/planner_items.py and src/variants.py.")
+
+    if problems:
+        raise SystemExit("per-item crafting coverage gate failed:\n"
+                         + "\n".join(problems))
+
+    return {
+        "pools": list(PER_ITEM_POOL_LABELS),
+        "declaring_items": len(all_declarers),
+        "covered_items": len(all_declarers) - len(uncovered),
+        "uncovered_items": len(uncovered),
+        "pool_hosts": len(by_host),
+        "by_pool": {label: {"declared": len(names),
+                            "covered": len(marked.get(label) or ()),
+                            "uncovered": len(names - set(by_host))}
+                    for label, names in sorted(declarers.items())},
+        # By NAME, in the dataset itself — the disclosure a slot-level allowlist
+        # could not make.
+        "uncovered": sorted(uncovered),
+    }
 
 
 def check(dataset: dict) -> dict:
@@ -331,6 +504,10 @@ def check(dataset: dict) -> dict:
             "crafting-slot coverage: internal — "
             f"{len(declared) - len(validated)} declared label(s) reached no verdict.")
 
+    # #371 — the finer, per-HOST gate for the host-keyed pools. Runs after the
+    # label gate, so a per-item label reaches this only once a pool serves it.
+    per_item = per_item_host_coverage(dataset)
+
     return {
         "declared_labels": len(declared),
         # Labels the gate reached a VERDICT on. Equal to `declared_labels` when
@@ -342,6 +519,8 @@ def check(dataset: dict) -> dict:
         "unserved_item_slots": sum(unserved.values()),
         "unserved": dict(sorted(unserved.items(), key=lambda kv: (-kv[1], kv[0]))),
         "allowlisted": len(UNSERVED_ALLOWLIST),
+        # The host-keyed pools' own coverage, uncovered hosts named.
+        "per_item": per_item,
         "pools": {name: p["records"] for name, p in per_pool.items()},
         "pool_labels": {name: len(p["labels"]) for name, p in per_pool.items()},
     }

@@ -27,11 +27,23 @@ DATASET = os.path.join(ROOT, "web", "data", "items.json")
 sys.path.insert(0, ROOT)
 from src import crafting_coverage as cc  # noqa: E402
 
-# The baseline this unit converts into a gate: 35 declared labels no pool serves,
-# across 415 item-slot declarations. A diff here is a finding to attribute, never
+# The baseline this unit converts into a gate: 33 declared labels no pool serves,
+# across 348 item-slot declarations. A diff here is a finding to attribute, never
 # a number to edit into agreement.
-BASELINE_UNSERVED_LABELS = 35
-BASELINE_UNSERVED_ITEM_SLOTS = 415
+#
+# #371 moved it from 35/415: `Nearly Finished` (65 declarations) and `Almost
+# There` (2) left the allowlist when `nearly_complete_per_item` started serving
+# them. The 22 items that pool does NOT cover are no longer counted here at all —
+# they are named individually, and asserted by the per-item scenarios at the foot
+# of this file, because a slot-level count cannot tell a covered host from an
+# uncovered one.
+BASELINE_UNSERVED_LABELS = 33
+BASELINE_UNSERVED_ITEM_SLOTS = 348
+
+# #371 — the per-item split as measured on the built dataset.
+BASELINE_PER_ITEM_DECLARERS = 65
+BASELINE_PER_ITEM_COVERED = 43
+BASELINE_PER_ITEM_UNCOVERED = 22
 
 
 # --- helpers ------------------------------------------------------------------
@@ -39,6 +51,22 @@ BASELINE_UNSERVED_ITEM_SLOTS = 415
 def _built():
     with open(DATASET, "r", encoding="utf-8") as fh:
         return json.load(fh)
+
+
+@contextlib.contextmanager
+def per_item_exceptions(*names):
+    """Swap the named per-item uncovered-host exceptions for a test's duration.
+
+    A fixture carries its own tiny universe, so the shipped 22-name list would
+    read as 22 stale exceptions against it (#371's gate fails in both
+    directions — that is the point).
+    """
+    saved = cc.PER_ITEM_UNCOVERED_HOSTS
+    cc.PER_ITEM_UNCOVERED_HOSTS = frozenset(names)
+    try:
+        yield
+    finally:
+        cc.PER_ITEM_UNCOVERED_HOSTS = saved
 
 
 @contextlib.contextmanager
@@ -68,9 +96,28 @@ def augment(name="Augment", colors=("Blue",)):
     return {"source_item": name, "category": "augment", "fits_slots": list(colors)}
 
 
-def full_dataset(**overrides):
+# #371 — a covered per-item host: it declares the label, the pool carries an
+# option for it, and it carries the marker the solver reads. All three, because
+# the per-item gate checks all three.
+PER_ITEM_HOST = "Legendary Collective Sight"
+PER_ITEM_OPTION = {"stat": "Wisdom", "bonus_type": "Insight", "value": 6,
+                   "unit": "flat", "pool": "Almost There"}
+
+
+def per_item_host_item():
+    return item(PER_ITEM_HOST, ["Almost There"],
+                nc_per_item_slots=[{"pool": "Almost There"}])
+
+
+def full_dataset(per_item=True, **overrides):
     """A minimal dataset with EVERY pool populated by its real keying, so a test
-    can empty exactly one pool and know the failure is about that pool."""
+    can empty exactly one pool and know the failure is about that pool.
+
+    #371 — the per-item host is APPENDED to whatever `items` the caller supplies
+    (rather than living in the default list, which most callers replace), so the
+    per-item gate always has a non-empty universe. `per_item=False` opts out, for
+    the one test that asserts the empty-universe refusal itself.
+    """
     data = {
         "items": [augment("Topaz", ["Blue", "Colorless"])],
         "augment_set_defs": {"Arcane Barrier": {"fits_slots": ["Red"]}},
@@ -85,8 +132,11 @@ def full_dataset(**overrides):
         "seal": [{"seal_type": "Fire"}],
         "green_steel": [{"tier_key": "T1 (Equipment)"}],
         "thunder_forged": [{"tier": 1}],
+        "nearly_complete_per_item": {PER_ITEM_HOST: [dict(PER_ITEM_OPTION)]},
     }
     data.update(overrides)
+    if per_item:
+        data["items"] = list(data.get("items") or []) + [per_item_host_item()]
     return data
 
 
@@ -186,7 +236,7 @@ def test_a_label_the_allowlist_covers_does_not_fail():
         item("Chains", ["Blue Augment Slot", "Slaver's Prefix Slot"]),
     ])
 
-    with allowlist("Slaver's Prefix Slot"):
+    with allowlist("Slaver's Prefix Slot"), per_item_exceptions():
         cov = cc.check(data)
 
     assert cov["unserved"] == {"Slaver's Prefix Slot": 1}
@@ -209,6 +259,7 @@ def test_each_pool_raises_distinguishably_when_it_walks_zero_records():
         "seal": {"seal": []},
         "green_steel": {"green_steel": []},
         "thunder_forged": {"thunder_forged": []},
+        "nearly_complete_per_item": {"nearly_complete_per_item": {}},
     }
     assert set(empty) == set(cc.POOL_READERS), "a pool was added without a vacuity case"
 
@@ -235,7 +286,8 @@ def test_a_populated_sibling_cannot_vouch_for_a_dark_pool():
 
 def test_an_empty_universe_of_declarations_refuses_to_pass():
     """No item declaring any crafting slot at all is not 'zero unserved slots'."""
-    msg = raises_systemexit(lambda: cc.check(full_dataset(items=[augment()])))
+    msg = raises_systemexit(
+        lambda: cc.check(full_dataset(per_item=False, items=[augment()])))
 
     assert "no item declared a crafting slot" in msg
 
@@ -311,3 +363,132 @@ def test_the_build_stamps_the_guards_own_numbers():
     assert stamped["unserved_labels"] == BASELINE_UNSERVED_LABELS
     assert stamped["unserved_item_slots"] == BASELINE_UNSERVED_ITEM_SLOTS
     assert stamped["labels_validated"] == stamped["declared_labels"]
+
+
+# --- scenario 7 (#371): the per-item pools, checked per HOST ------------------
+#
+# The label gate above can only say "some pool serves `Nearly Finished`". For a
+# pool keyed by HOST NAME that is not the question a player cares about: 43 of
+# the 65 declarers are served and 22 are not, and a slot-level verdict calls all
+# 65 covered. These scenarios pin the finer gate, in every direction it can rot.
+
+def test_the_per_item_labels_left_the_allowlist_and_are_served():
+    """The allowlist entry #371 removed. Both labels are now SERVED, by the
+    per-item pool — asserted through the pool's own record keying (`pool`), not
+    its name, for the same reason every other pool is."""
+    data = _built()
+    served, _ = cc.served_labels(data)
+
+    assert served.get("Nearly Finished") == "nearly_complete_per_item"
+    assert served.get("Almost There") == "nearly_complete_per_item"
+    assert "Nearly Finished" not in cc.UNSERVED_ALLOWLIST
+    assert "Almost There" not in cc.UNSERVED_ALLOWLIST
+
+
+def test_the_per_item_split_holds_on_the_built_dataset():
+    """S7. The measured 43 + 2 covered / 22 uncovered split, and the uncovered
+    are disclosed BY NAME in the artifact rather than summarized as a count."""
+    per_item = cc.check(_built())["per_item"]
+
+    assert per_item["declaring_items"] == BASELINE_PER_ITEM_DECLARERS
+    assert per_item["covered_items"] == BASELINE_PER_ITEM_COVERED
+    assert per_item["uncovered_items"] == BASELINE_PER_ITEM_UNCOVERED
+    assert per_item["by_pool"]["Almost There"] == {
+        "declared": 2, "covered": 2, "uncovered": 0}
+    assert per_item["by_pool"]["Nearly Finished"] == {
+        "declared": 65, "covered": 43, "uncovered": 22}
+    assert sorted(per_item["uncovered"]) == sorted(cc.PER_ITEM_UNCOVERED_HOSTS)
+    # Named, not counted: the reporter's own ML18 pair must be findable.
+    assert "Alchemist's Crown" in per_item["uncovered"]
+    assert "Legendary Alchemist's Crown" not in per_item["uncovered"]
+
+
+def test_a_twenty_third_uncovered_host_fails_and_names_it():
+    """The whole point of replacing the slot-level allowlist. A new declarer the
+    pool has no entry for must NOT slip in behind a label that is already served
+    for 43 other items."""
+    # Declares the label the fixture's covered host also declares, so the pool
+    # SERVES the label and the finer per-item gate is the one under test. Using a
+    # label no host covers would trip the slot-level "no pool serves them" gate
+    # instead — a sibling's red, which proves nothing about this gate.
+    data = full_dataset(items=[
+        augment("Topaz", ["Blue"]),
+        item("Legendary Whatsit of Sharn", ["Almost There"]),
+    ])
+
+    with allowlist(), per_item_exceptions():
+        msg = raises_systemexit(lambda: cc.check(data))
+
+    assert "Legendary Whatsit of Sharn" in msg
+    assert "NO entry for" in msg
+    assert "ships inert" in msg
+
+
+def test_a_named_exception_upstream_has_since_sourced_fails():
+    """The other direction: the exception list rots exactly as the allowlist does.
+    An entry whose item is now covered (or renamed away) keeps vouching for a gap
+    that no longer exists, and the next real one hides behind it."""
+    data = full_dataset()
+
+    with allowlist(), per_item_exceptions("Alchemist's Crown"):
+        msg = raises_systemexit(lambda: cc.check(data))
+
+    assert "Alchemist's Crown" in msg
+    assert "no longer uncovered" in msg
+
+
+def test_a_covered_host_missing_the_solver_marker_fails():
+    """Pool coverage is not solver reach. The pool shipped for two builds while
+    every slot stayed inert, because nothing joined pool to host — so the gate
+    checks the `nc_per_item_slots` marker too, not just the pool."""
+    data = full_dataset(items=[
+        augment("Topaz", ["Blue"]),
+        # Declares the label, the pool covers it, marker ABSENT.
+        item(PER_ITEM_HOST, ["Almost There"]),
+    ], per_item=False)
+
+    with allowlist(), per_item_exceptions():
+        msg = raises_systemexit(lambda: cc.check(data))
+
+    assert PER_ITEM_HOST in msg
+    assert "carry no `nc_per_item_slots` marker" in msg
+    assert "inert slot with extra steps" in msg
+
+
+def test_the_per_item_gate_refuses_an_empty_universe():
+    """A rename upstream would leave nothing declaring either label, and a gate
+    with nothing to inspect must not report success."""
+    data = full_dataset(per_item=False, items=[
+        augment("Topaz", ["Blue"]),
+        item("Chains", ["Blue Augment Slot"]),
+    ])
+
+    with allowlist(), per_item_exceptions():
+        msg = raises_systemexit(lambda: cc.check(data))
+
+    assert "empty universe" in msg
+    assert "Nearly Finished" in msg
+
+
+def test_the_shipped_exception_list_names_only_real_uncovered_declarers():
+    """Measured against the live artifact rather than asserted: every named
+    exception really declares a per-item label and really has no pool entry."""
+    data = _built()
+    by_host = data["nearly_complete_per_item"]
+    declarers = {it["source_item"] for it in data["items"]
+                 for c in it.get("crafting") or []
+                 if cc.base_label(c) in cc.PER_ITEM_POOL_LABELS}
+
+    for name in cc.PER_ITEM_UNCOVERED_HOSTS:
+        assert name in declarers, f"{name!r} is excepted but declares no per-item slot"
+        assert name not in by_host, f"{name!r} is excepted but the pool covers it"
+
+
+def test_the_build_stamps_the_uncovered_names():
+    """The disclosure has to reach the artifact, not just the build log — that is
+    what makes it visible to anything downstream of the pipeline."""
+    stamped = _built()["metadata"]["crafting_slot_coverage"]["per_item"]
+
+    assert stamped["uncovered_items"] == BASELINE_PER_ITEM_UNCOVERED
+    assert len(stamped["uncovered"]) == BASELINE_PER_ITEM_UNCOVERED
+    assert all(isinstance(n, str) and n for n in stamped["uncovered"])

@@ -102,3 +102,62 @@ def test_pass2_grafts_nc_and_lamordia_markers_onto_the_winner():
     # grafted list values are independent copies (no shared ref across variants)
     lam_lists = [it["lamordia_slots"] for it in items if it.get("lamordia_slots")]
     assert len({id(x) for x in lam_lists}) == len(lam_lists), "lamordia_slots lists are shared by reference"
+
+
+# --- #371: the per-item host set the planner gate reads ------------------------
+
+def test_per_item_hosts_reports_the_hosts_each_pool_really_covers():
+    """`per_item_hosts` is the gate `src/planner_items.py` marks hosts from, so it
+    must read the SAME pools `build_nearly_complete` reads. 43 `Nearly Finished`
+    hosts and 2 `Almost There` — the measured upstream coverage."""
+    hosts = nearly_complete.per_item_hosts()
+
+    assert set(hosts) == {"Nearly Finished", "Almost There"}
+    assert len(hosts["Nearly Finished"]) == 43
+    assert hosts["Almost There"] == {"Collective Sight", "Legendary Collective Sight"}
+    assert "Legendary Alchemist's Crown" in hosts["Nearly Finished"]
+    # It cannot drift from the pool the builder emits.
+    built = nearly_complete.build_nearly_complete()["per_item"]
+    assert set(built) == hosts["Nearly Finished"] | hosts["Almost There"]
+
+
+def test_a_host_whose_options_carry_no_affix_is_not_covered():
+    """An empty option list would mark a slot and then offer nothing to put in
+    it — the inert slot the marker exists to prevent, re-created by the gate
+    itself. Coverage means options WITH affixes."""
+    catalog = {"Nearly Finished": {"Hollow Crown": [{"affixes": []}, {}],
+                                   "Real Crown": [{"affixes": [
+                                       {"name": "Wisdom", "type": "Quality", "value": 3}]}]},
+               "Almost There": {}}
+
+    hosts = nearly_complete.per_item_hosts(catalog)
+
+    assert hosts["Nearly Finished"] == {"Real Crown"}
+    assert hosts["Almost There"] == set()
+
+
+def test_the_insight_cap_across_both_per_item_pools_is_six():
+    """#371's contested value. The reporter expected Insightful +7 at ML<=33; the
+    pools cap Insight at +6 for every ability, and the wiki agrees (Legendary
+    Alchemist's Crown reads Wisdom +13 / Insightful Wisdom +6 / Quality Wisdom
+    +3). Recorded so the +7 is not manufactured on a later pass — see
+    docs/wiki-evidence/nearly-finished.md."""
+    abilities = {"Strength", "Dexterity", "Constitution",
+                 "Intelligence", "Wisdom", "Charisma"}
+    per_item = nearly_complete.build_nearly_complete()["per_item"]
+
+    caps = {}
+    for recs in per_item.values():
+        for r in recs:
+            if r["stat"] in abilities:
+                caps[r["bonus_type"]] = max(caps.get(r["bonus_type"], 0), r["value"])
+
+    assert caps == {"Enhancement": 14, "Insight": 6, "Quality": 3}, caps
+    assert per_item["Legendary Alchemist's Crown"] == [
+        {"stat": "Wisdom", "bonus_type": "Enhancement", "value": 13, "unit": "flat",
+         "pool": "Nearly Finished"},
+        {"stat": "Wisdom", "bonus_type": "Insight", "value": 6, "unit": "flat",
+         "pool": "Nearly Finished"},
+        {"stat": "Wisdom", "bonus_type": "Quality", "value": 3, "unit": "flat",
+         "pool": "Nearly Finished"},
+    ]

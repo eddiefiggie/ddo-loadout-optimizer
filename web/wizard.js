@@ -2516,7 +2516,12 @@ if (typeof window !== "undefined" && window.App) {
                 // it the solver falls back to alphabetical, which is not a product
                 // decision and would pursue Blindness Immunity before Ghostly.
                 order: state.utilityContainer || vocab.utilityOrder || null }
-            : null);
+            : null,
+          // #371 — the per-item Nearly Complete pools ("Nearly Finished" /
+          // "Almost There"), keyed by host name. Threaded as an ARGUMENT like
+          // every other pool; the solver reaches a host's options through its
+          // own `nc_per_item_slots` marker.
+          dataset.nearly_complete_per_item);
         const t0 = performance.now();
         // eslint-disable-next-line no-undef
         const result = await solveLexicographic(model, h);
@@ -2781,7 +2786,12 @@ if (typeof window !== "undefined" && window.App) {
                 // it the solver falls back to alphabetical, which is not a product
                 // decision and would pursue Blindness Immunity before Ghostly.
                 order: state.utilityContainer || vocab.utilityOrder || null }
-            : null);
+            : null,
+          // #371 — the per-item Nearly Complete pools ("Nearly Finished" /
+          // "Almost There"), keyed by host name. Threaded as an ARGUMENT like
+          // every other pool; the solver reaches a host's options through its
+          // own `nc_per_item_slots` marker.
+          dataset.nearly_complete_per_item);
         // fresh:false + the original stamp so a later Save preserves staleness (see saveCurrentCharacter).
         state.lastRun = { model, result: snap, query, fresh: false, stampedBuildId: rec.stampedBuildId || null };
         state.loadedStale = !!(rec.stampedBuildId && currentBuildId() && rec.stampedBuildId !== currentBuildId());

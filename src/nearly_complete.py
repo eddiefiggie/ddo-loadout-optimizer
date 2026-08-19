@@ -45,6 +45,32 @@ def _nc_tier_from_ml(ml):
     return "legendary" if (ml or 0) >= _NC_LEGENDARY_ML else "heroic"
 
 
+def per_item_hosts(catalog: dict = None) -> dict:
+    """`{pool label: {host name, ...}}` — the hosts each per-item pool actually
+    serves (#371).
+
+    This is the per-item analogue of the seal family's `verified_seal_types` gate:
+    `src/planner_items.py` marks a `Nearly Finished` / `Almost There` host only
+    when THIS pool has options for it, so an item upstream never sourced never
+    grows a slot the solver cannot fill. A host whose option list carries no
+    affix is not covered — an empty option list would mark a slot and then offer
+    nothing, which is the inert slot the marker exists to prevent.
+
+    Read from the same `crafting_catalog` per-item pools `build_nearly_complete`
+    reads, so the gate cannot drift away from the pool it gates on.
+    """
+    catalog = crafting_catalog.load_catalog() if catalog is None else catalog
+    out = {}
+    for key in _NC_PER_ITEM_KEYS:
+        hosts = set()
+        if key in catalog:
+            for host, opts in crafting_catalog.peritem_options(key, catalog).items():
+                if any(list(crafting_catalog.iter_affixes(o)) for o in opts or []):
+                    hosts.add(host)
+        out[key] = hosts
+    return out
+
+
 def parse_categories(cats):
     """Parse the seed's category list into ``(records, quarantined)``.
 

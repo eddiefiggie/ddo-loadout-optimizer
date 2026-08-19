@@ -13,6 +13,7 @@ Key mappings (the dump keeps these in *separate* keys):
       - `"Sealed in X"`                        -> `seal_slots`      (gated)
       - `"<Dolorous|Melancholic|Miserable|Woeful> (<Category>)"` -> `lamordia_slots`
       - `"Nearly Complete: <category>"`        -> `nearly_complete`
+      - `"Nearly Finished" / "Almost There"`   -> `nc_per_item_slots` (gated)
       - `"Lost Purpose" / "Legendary Lost Purpose"` -> `lost_purpose`
     Each host marker is surfaced NATIVELY (the plan's native host-marker
     surfacing) so the crafting families activate from the authority, not from the
@@ -45,6 +46,10 @@ _WIKI_BASE = "https://ddowiki.com"
 # grammar `"<Type> (<Category>)"` (an optional "(quarterstaff)" tail is ignored).
 _LAMORDIA_RE = re.compile(r"^(Dolorous|Melancholic|Miserable|Woeful) \((Armor|Accessory|Weapon)\)")
 _NEARLY_PREFIX = "Nearly Complete: "
+# The per-item Nearly Complete pools (#371). A DISTINCT mechanism from the
+# `Nearly Complete: <category>` menu above: these are keyed by HOST NAME, so the
+# options one item can craft are its own, not a shared menu's.
+_NC_PER_ITEM_POOLS = ("Nearly Finished", "Almost There")
 
 
 def _slot(raw_slot):
@@ -113,6 +118,25 @@ def _nearly_complete(crafting):
     return None
 
 
+def _nc_per_item_slots(crafting, name, per_item_hosts):
+    """Per-item Nearly Complete host markers (#371) from the crafting[] list.
+
+    Gated on `per_item_hosts` (`{pool: {host name}}`, from
+    `nearly_complete.per_item_hosts`) exactly as `_seal_slots` is gated on the
+    verified seal types: a declared label whose pool has no entry for THIS item
+    gets no marker, so the solver is never handed a slot it cannot fill. The 22
+    such items are disclosed by name by the crafting-coverage gate rather than
+    silently marked — see `src/crafting_coverage.py`.
+    """
+    out = []
+    for c in crafting or []:
+        if not (isinstance(c, str) and c in _NC_PER_ITEM_POOLS):
+            continue
+        if name in ((per_item_hosts or {}).get(c) or ()):
+            out.append({"pool": c})
+    return out
+
+
 def _lost_purpose(crafting):
     """Vecna "Lost Purpose" tier marker: `"Legendary Lost Purpose"` -> 'legendary',
     `"Lost Purpose"` -> 'heroic'. None if absent."""
@@ -125,7 +149,7 @@ def _lost_purpose(crafting):
     return None
 
 
-def _record(it, verified_seal_types):
+def _record(it, verified_seal_types, nc_per_item_hosts=None):
     slot = _slot(it.get("slot"))
     quests = it.get("quests") or []
     rec = {
@@ -162,6 +186,9 @@ def _record(it, verified_seal_types):
     nc = _nearly_complete(it.get("crafting"))
     if nc:
         rec["nearly_complete"] = nc
+    ncp = _nc_per_item_slots(it.get("crafting"), it.get("name"), nc_per_item_hosts)
+    if ncp:
+        rec["nc_per_item_slots"] = ncp
     lp = _lost_purpose(it.get("crafting"))
     if lp:
         rec["lost_purpose"] = lp
@@ -169,7 +196,7 @@ def _record(it, verified_seal_types):
 
 
 def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
-                       exclude_names=None):
+                       exclude_names=None, nc_per_item_hosts=None):
     """Load and map the gear-planner raw dump into native pipeline records.
     `verified_seal_types` (seal types with a non-empty pool) gates which "Sealed
     in X" crafting entries become seal-slot hosts; default empty -> none.
@@ -183,12 +210,14 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
     disclosure."""
     seal_types = set(verified_seal_types or ())
     excluded = set(exclude_names or ())
+    nc_hosts = nc_per_item_hosts or {}
     with open(path, encoding="utf-8") as fh:
         raw = json.load(fh)
 
     records, seen = [], set()
     collapsed = host_owned = 0
     seal_hosts = lamordia_hosts = nearly_hosts = lost_purpose_hosts = 0
+    nc_per_item_hosts_marked = 0
     for it in raw:
         name = it.get("name")
         if name in excluded:
@@ -198,13 +227,15 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
             collapsed += 1
             continue
         seen.add(name)
-        rec = _record(it, seal_types)
+        rec = _record(it, seal_types, nc_hosts)
         if rec.get("seal_slots"):
             seal_hosts += 1
         if rec.get("lamordia_slots"):
             lamordia_hosts += 1
         if rec.get("nearly_complete"):
             nearly_hosts += 1
+        if rec.get("nc_per_item_slots"):
+            nc_per_item_hosts_marked += 1
         if rec.get("lost_purpose"):
             lost_purpose_hosts += 1
         records.append(rec)
@@ -216,6 +247,7 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
         "planner_seal_hosts": seal_hosts,
         "planner_lamordia_hosts": lamordia_hosts,
         "planner_nearly_complete_hosts": nearly_hosts,
+        "planner_nc_per_item_hosts": nc_per_item_hosts_marked,
         "planner_lost_purpose_hosts": lost_purpose_hosts,
     }
     return records, stats

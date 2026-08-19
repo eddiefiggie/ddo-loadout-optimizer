@@ -563,6 +563,12 @@ def build() -> dict:
     # reader recovers from the raw dump (Undeath sourced; Mist/Gloom pending).
     _verified_seal_types = {r["seal_type"]
                             for r in seal_mod.build_seal(crafting)["records"]}
+    # #371 — the same pool-backed gate for the per-item Nearly Complete pools
+    # ("Nearly Finished" / "Almost There"): only a host the pool actually covers
+    # becomes a host, so a declared label upstream never sourced grows no slot the
+    # solver cannot fill. The uncovered declarers are disclosed BY NAME by
+    # src/crafting_coverage.py rather than hidden behind a slot-level allowlist.
+    _nc_per_item_hosts = nc_mod.per_item_hosts(crafting)
     # Dinosaur Bone hosts are synthetic bodies generated post-verify (dino_blanks
     # below); they never pass through the name dedup, so a same-name gear-planner
     # record would double-list with an identical variant_id (KTD8 trap). Build the
@@ -625,7 +631,8 @@ def build() -> dict:
     # NATIVELY from crafting[], so no cross-source graft is needed.
     planner_records, planner_stats = planner_mod.load_planner_items(
         verified_seal_types=_verified_seal_types,
-        exclude_names=_host_pipeline_names)
+        exclude_names=_host_pipeline_names,
+        nc_per_item_hosts=_nc_per_item_hosts)
     # #262 — the "no known live drop source" evidence shard. check() runs HERE,
     # against the planner records pre-variant-expansion, because the staleness
     # guard keys off the raw `quests` array (KTD8: the list, not the derived
@@ -1629,7 +1636,8 @@ def build() -> dict:
         "nearly_complete": nc["records"],
         # Per-item Nearly Complete pools (Nearly Finished / Almost There), keyed by
         # host name — a DISTINCT mechanism from the category path above (never
-        # conflated). Browse/inventory visibility; not solver-wired.
+        # conflated). SOLVER-WIRED since #371: a host carrying `nc_per_item_slots`
+        # crafts one option from ITS OWN entry here, per declared pool.
         "nearly_complete_per_item": nc.get("per_item", {}),
         "viktranium": vik["records"],
         "seal": sl["records"],
