@@ -2,7 +2,7 @@
 title: Re-check a quarantined or deferred claim on adjacent and hub pages before building an exception or writing a deferral
 module: wiki-evidence
 date: 2026-08-13
-last_updated: 2026-08-14
+last_updated: 2026-08-19
 problem_type: convention
 component: development_workflow
 severity: medium
@@ -55,7 +55,19 @@ The re-harvest resolved it in two page reads, with **no code at all**:
 
 Before designing around a quarantined claim — and especially before building an
 exception mechanism to model the unverified interaction — spend one harvest pass
-re-checking sources *adjacent* to the one that failed:
+re-checking sources *adjacent* to the one that failed.
+
+**Step zero, before any harvest pass: grep `docs/wiki-evidence/` and the seed
+shard.** This sweep points outward to the wiki; the cheapest source is inward
+and gets skipped. A standing ruling may already have answered the question, and
+the shard may already store the template invocation that settles it. Added
+2026-08-19 after #379 was filed asking for a ruling that
+`docs/wiki-evidence/elemental-resistance.md` had recorded six days earlier — see
+[`read-the-standing-ruling-and-judge-the-strongest-evidence-layer.md`](read-the-standing-ruling-and-judge-the-strongest-evidence-layer.md).
+This doc's own cost-asymmetry argument applies far more strongly to a grep than
+to two page reads.
+
+Then the outward sweep:
 
 1. **Re-try the original source first** (it may have been written since; here it
    had not — record the re-check date either way).
