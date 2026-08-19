@@ -1,0 +1,30 @@
+{
+  "_meta": {
+    "title": "wiki-sourced Viktranium pool relocations (#365)",
+    "note": "gear-planner's crafting.json misfiles a Viktranium Wicked option into the wrong (slot_type, category) pool. The DDO wiki's Viktranium Experiment crafting page splits each slot into a base table and a Wicked table, one pair per item category; 'Woeful Quality Spell Focus Mastery' sits in the Woeful (Accessories) Wicked table, while gear-planner carries it in 'Woeful (Weapon)' alongside its genuinely-weapon sibling 'Woeful Exceptional Spell Focus Mastery'. The Woeful (Accessory) pool therefore offers spell DCs only as Profane and Sacred, so a caster slotting a Woeful ACCESSORY (the Downcast * items, The Deathly Shroud) can never reach the +2 Quality DC option they get in game. The option is MISFILED, not missing: this shard is the curated wiki-sourced correction, a pool RELOCATION applied to the loaded catalog in memory immediately before build_viktranium reads it, so the pools the solver sees match the wiki's table assignment. Never edit the vendored snapshot under raw/ (#207).",
+    "vocabulary_rule": "The affix (name, type, value) is gear-planner's, recorded verbatim as the catalog emits it today and asserted at build time — per the structural-sourcing rule, gear-planner is the single source of truth for affix vocabulary. Only the POOL ASSIGNMENT is corrected, and the wiki is the authority for that. Nothing is re-typed, re-valued or invented; the record that lands in the destination pool is byte-identical to the one that left the source pool.",
+    "evidence_rule": "Every relocation carries the verbatim effect text from the wiki table that owns it, that table's heading, the page URL, and the harvest date. Harvested same-origin from a ddowiki tab (plain fetch returns empty behind Cloudflare — see docs/wiki-evidence/harvest-method.md).",
+    "stale_guard": "The build FAILS, never warns, when (a) the option is no longer in its `from` pool — upstream fixed the misfiling, so RETIRE this shard entry rather than leaving a dead correction in the tree (#207); (b) the option is ALREADY in its `to` pool — the relocation is a no-op and the shard is claiming credit for work upstream did; (c) the option's affix vocabulary (name, type, value) or its ml no longer matches what this shard recorded — upstream re-typed or re-valued the option and the correction must be re-verified against the wiki; (d) either named pool is absent or is not a '*' menu pool — the catalog shape moved; (e) the shard is empty, or a relocation pass moves nothing. A shard that cannot go stale unnoticed is the only kind worth having.",
+    "scope_note": "Woeful only, and within Woeful only the Quality DC option. 'Woeful: Strength of Purpose' is a second wiki/catalog divergence in the same Wicked table (unconsciousness range + positive-healing regeneration); whether it is a rankable stat at all needs its own adjudication and it is deliberately NOT relocated here. The same base/Wicked audit is owed to the Melancholic, Dolorous and Miserable families and has not been done."
+  },
+  "relocations": [
+    {
+      "option": "Woeful: Quality Spell Focus Mastery",
+      "from": "Woeful (Weapon)",
+      "to": "Woeful (Accessory)",
+      "ml": 34,
+      "affixes": [
+        {
+          "name": "Spell Focus Mastery",
+          "type": "Quality",
+          "value": "2"
+        }
+      ],
+      "wiki_table": "Woeful (Accessories) — Wicked",
+      "wiki_effect": "+2 Quality Bonus to spell DCs.",
+      "wiki_url": "https://ddowiki.com/page/Viktranium_Experiment_crafting",
+      "verified": "2026-08-17",
+      "issue": 365
+    }
+  ]
+}
