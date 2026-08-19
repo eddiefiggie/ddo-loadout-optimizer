@@ -34,6 +34,16 @@
 // `hybrid` closes the reported bug too, but no sample of it came in under
 // budget. Note hybrid's best sample (2.09x) is nearer the line than its worst,
 // so the margin is real but not comfortable.
+//
+// Re-measured 2026-08-18 after the gear-planner refresh (#374, U7), same machine,
+// one session, shipped roster (20 counted names both sides):
+//   shipped, pre-refresh dataset (upstream ec3e595)  1.69x  (2 runs, a=466 ms)
+//   shipped, post-refresh dataset (upstream 767a7f7) 1.80-1.81x (2 runs, a=460-463 ms)
+// So the band above is stale for the current dataset: still inside the 2.0x budget,
+// with less margin than 1.50-1.75x suggests. Note what the ratio does NOT measure —
+// both arms move with the data, so the refresh's own cost is the change in the
+// ABSOLUTE (a) medians (-0.6% to -1.3%: the refresh did not raise solve cost).
+// docs/reports/2026-08-18-gear-planner-canon-migration.md §18.
 // Only `shipped` is asserted against the budget; the alternates report and exit 0.
 //
 // Usage:  node tests/perf_utility.js

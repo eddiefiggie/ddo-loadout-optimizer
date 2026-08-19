@@ -542,3 +542,193 @@ credit our expansion granted off a mis-typed record). Neither is a solver or pip
    Insight → Exceptional, which changes stacking and gained 5 points on `endgame-dps-ml33`. #379
    already tracks a re-type (Insight → Competence on Elemental Resistance) whose harvested evidence
    contradicts itself; `Seeker` belongs in that review.
+
+---
+
+# U7 — close-out: unserved diff, #283, perf, build trio
+
+## 15. Method for every number below
+
+Two datasets, one session, one machine. The **pre-refresh** dataset is the pre-U4 commit `96a26bd`
+(upstream `ec3e595`) exported with `git archive` into a scratch tree and built there; the
+**post-refresh** dataset is this tree (upstream `767a7f7`) rebuilt before any capture, per
+`docs/solutions/workflow-issues/rebuild-the-dataset-before-any-golden-capture.md`. Nothing was
+stashed and the working tree was never checked out to an older commit — the shared working directory
+stays on this branch throughout.
+
+`tests/perf_utility.js` and `tests/parity/fixtures.json` are **byte-identical** between the two
+trees (`diff -q`), so the perf comparison varies the dataset, not the harness. The only `web/`
+difference between the two trees is `web/dataset.js`'s untyped predicate (U4's fourth `#380` site);
+its effect on the counting set was measured as nil — see §17.
+
+## 16. Unserved crafting slots — the diff, attributed
+
+Both figures come from U1's guard itself, read out of `metadata.crafting_slot_coverage` in each
+built dataset. The guard runs on the derived pool records, so this is the shipped population, not a
+re-derivation.
+
+| field | pre-refresh | post-refresh | Δ |
+|---|---|---|---|
+| declared labels | 68 | 68 | 0 |
+| labels validated | 68 | 68 | 0 |
+| served labels | 33 | 33 | 0 |
+| **unserved labels** | **35** | **35** | **0** |
+| **unserved item-slots** | **415** | **415** | **0** |
+| allowlist size | 35 | 35 | 0 |
+
+The baseline holds exactly: **35 unserved labels / 415 item-slots**, as U1 stamped it.
+
+### Every change, attributed
+
+The unserved population changed in exactly **24 entries — 12 removals and 12 additions — and they
+are the same twelve slots under their new name.** Each rename carries its item-slot count across
+unchanged, which is what makes it a rename rather than two coincident events:
+
+| removed (`Cannith:`) | added (`Essence Crafting:`) | item-slots, both sides |
+|---|---|---|
+| `Cannith: Rune Arm - Extra` | `Essence Crafting: Rune Arm - Extra` | 39 |
+| `Cannith: Rune Arm - Prefix` | `Essence Crafting: Rune Arm - Prefix` | 39 |
+| `Cannith: Rune Arm - Suffix` | `Essence Crafting: Rune Arm - Suffix` | 39 |
+| `Cannith: Trinket - Extra` | `Essence Crafting: Trinket - Extra` | 4 |
+| `Cannith: Trinket - Prefix` | `Essence Crafting: Trinket - Prefix` | 4 |
+| `Cannith: Trinket - Suffix` | `Essence Crafting: Trinket - Suffix` | 4 |
+| `Cannith: Melee - Extra` | `Essence Crafting: Melee - Extra` | 1 |
+| `Cannith: Melee - Prefix` | `Essence Crafting: Melee - Prefix` | 1 |
+| `Cannith: Melee - Suffix` | `Essence Crafting: Melee - Suffix` | 1 |
+| `Cannith: Ring - Extra` | `Essence Crafting: Ring - Extra` | 1 |
+| `Cannith: Ring - Prefix` | `Essence Crafting: Ring - Prefix` | 1 |
+| `Cannith: Ring - Suffix` | `Essence Crafting: Ring - Suffix` | 1 |
+
+Sum on both sides: 135 item-slots. Cause: the U4/U5 adoption of upstream's Update-79 rename (§1) —
+the one place in this migration where matching the player-visible name meant following upstream
+rather than defending our spelling.
+
+**Nothing else moved.** All 23 remaining unserved labels are identical in name *and* count on both
+sides — `One of the following` 103, `Nearly Finished` 65, the two `Slaver's` families 15/15 and
+3×4 + 3×4, `Almost There` 2, the `Random set` pair 6/6, and the rest. So does the served side: 33
+labels, and every pool walked the same number of records pre and post (`augments` 1063,
+`augment_set_defs` 21, `membership_set_defs` 28, `viktranium` 297, `nearly_complete` 68,
+`dino_inserts` 107, `seal` 48, `green_steel` 108, `thunder_forged` 36), with the same per-pool label
+counts. **No named cause is owed beyond the 12 renames, because no other change exists.**
+
+Worth stating because it was the risk this gate was built for: roughly three weeks of new item data
+arrived (+364 KB of raw items, roster 8188 → 8190) and **stranded no slot** — no label appeared that
+no pool serves, and no allowlisted label went undeclared or became served.
+
+## 17. #283 — the measured state, and what was posted
+
+Full method and tables in the comment on the issue
+(`gh issue view 283`); summary here.
+
+**The premise in the U7 brief is false, and measuring it was the first step.** The two
+`(quarterstaff)`-qualified **Lamordia** slots — `Dolorous (Weapon) (quarterstaff)` and
+`Melancholic (Weapon) (quarterstaff)` — have **not** stopped being emitted. Both keys are present in
+`ec3e595` **and** `767a7f7` (83 crafting keys in each), and the built dataset sources both in both,
+identically: `quarterstaff_pools_sourced` = the two keys, `quarterstaff_options` 46,
+`quarterstaff_options_identical` 38. #282's fix is intact.
+
+**#283's actual subject is the Dino channel**, not Lamordia: `Fang (Weapon) (quarterstaff)` and
+`Scale (Weapon) (quarterstaff)`. Measured across the refresh, byte-identical:
+
+- both pools present in both snapshots, 7 option names each, matching the base Weapon pool by name;
+- the same 4 options still differ in content — `Iridiscent Fang`; `Brightscale`, `Iridiscent Scale`,
+  `Shadowscale` — each still carrying the extra `uniquePropertyRequired: {"requireQuarterstaff": true}`
+  affixes at unchanged name, type and value;
+- the same 4 host→pool references, from `Attuned Bone Quarterstaff` and `Dinosaur Bone Quarterstaff`;
+- `Claw` and `Horn` still have no `(quarterstaff)` variant at all.
+
+**Verdict posted: the refresh leaves #283 open and unchanged** — not resolved, not invalidated.
+Every fact in the issue body is still true, and the design question (declare the untyped Dino
+weapon blank a quarterstaff from the query, or split it into typed variants, settling the THF
+handedness interaction at the same time) is untouched. **No code changed** (KTD6).
+
+The comment also records the silence property for whoever fixes it: `src/viktranium.py` reads these
+through a soft `has_qs = category == "Weapon" and qs_key in catalog`, so an upstream drop would fail
+nothing — the three `metadata.viktranium_coverage` fields would simply go to zero, and they are the
+only detector today. Deliberately **not** filed separately: it is the same code path as the fix.
+
+## 18. Perf — two numbers, because one cannot answer both questions
+
+`tests/perf_utility.js` is a **self-relative A/B**: per fixture it solves the ratified form (a) and
+the sentinel-appended form (b) against whatever dataset is on disk. Both arms move together with the
+data, so its ratio answers "is the Utility widening still under 2.00×" and **cannot** answer "did the
+refresh raise solve cost". The refresh delta is the change in the **absolute arm-(a) medians** across
+two runs of the same harness on two datasets.
+
+23 fixtures, shipped roster (20 counted names in **both** trees — so U4's `web/dataset.js` untyped
+predicate did not change the counting set; the presence population it walks is also identical, 699
+affix incidences over 647 carrier items pre and post).
+
+| run | dataset | (a) baseline median | (b) sentinel median | ratio |
+|---|---|---|---|---|
+| pre #1 | `ec3e595` (scratch build of `96a26bd`) | 466 ms | 786 ms | 1.69× |
+| pre #2 | same | 466 ms | 786 ms | 1.69× |
+| post #1 | `767a7f7` (this tree) | 460 ms | 833 ms | 1.81× |
+| post #2 | same | 463 ms | 832 ms | 1.80× |
+
+**Number 1 — the refresh delta (absolute arm (a)):** 466 ms → 460–463 ms, **−0.6 % to −1.3 %**.
+Three weeks of new item data did **not** raise solve cost. The all-fixture arm-(a) total moved
+40.5 s → 38.1 s (−5.8 %), pulled down by the one heavy fixture (`endgame-caster-ml32`
+29.1 s → 25.1 s, ×0.86). Per fixture the picture is two-sided and worth recording rather than
+averaging away: `trance-credit-additive-ml32` and its `-baseline` twin both rose ×1.79
+(≈1.0 s → ≈1.79 s) and `endgame-tank-ml34` rose ×1.22, while everything else sat inside ×0.92–×1.06.
+The two trance fixtures moving together by the same factor is the coherent signal — that pair shares
+a query — and the median is unmoved, so nothing here is a budget question.
+
+**Number 2 — the Utility gate:** **1.80–1.81×, inside its 2.00× budget. PASS.** It did move up from
+1.69× pre-refresh, and it sits above the 1.50–1.75× band recorded in the script header from
+2026-08-16, so the margin is thinner than the header implies (the header's own instruction is to
+re-measure rather than cite, and this section is that re-measurement — the band is annotated there
+with today's numbers). Under budget, so it ships; nothing was waived and no caveat was needed.
+
+## 19. Build trio
+
+Bumped together, because this is a **solver-affecting data change**: the dataset is fetched
+`no-cache`, so a data-only merge changes every solve on the live site the moment it deploys, and the
+footer is the only version signal a player has.
+
+| thing | from | to |
+|---|---|---|
+| `web/index.html` `?v=` (17 references) | 146 | **147** |
+| `web/app.js` `const BUILD` | 08182026.5 | **08182026.6** |
+| `README.md` `**Current build:**` | 08182026.5 | **08182026.6** |
+
+`tests/test_build_stamp.py` passes on all three of its checks (well-formed stamp, one `?v=` version
+across the file, README matches the footer).
+
+## 20. What a player actually notices
+
+Written in player terms rather than gate terms, because everything above is a gate.
+
+- **Affix names do not change, deliberately.** A character saved with `Combustion` ranked still
+  ranks `Combustion`; the search box still offers `Combustion`; every share export still reads
+  `Combustion`. Upstream renamed these ten enchantment stats to generic mechanic names and we kept
+  ours, because the enchantment name is what the item tooltip shows in game. This is the whole point
+  of the migration and a player should be unable to tell it happened.
+- **Upstream's generic names now additionally resolve in the picker.** Typing `Fire Spell Power`
+  finds `Combustion` rather than nothing. Search vocabulary and tooltip fidelity are served
+  separately, on purpose.
+- **Crafting slots relabel.** Items that used to list `Cannith: Rune Arm - Prefix` now list
+  `Essence Crafting: Rune Arm - Prefix`, in the compendium and in every share export. That one
+  follows upstream, because Update 79 renamed the system in game and `Cannith` was our stale name.
+  Neither name is craftable in the tool today — it is a label on an inert slot either way — and a
+  player searching the old term will not find it (noted on #193).
+- **Recommended loadouts may shift, and that is expected.** Roughly three weeks of new item data
+  arrived, so every solve re-runs against a larger, corrected catalog. Eleven of 23 golden fixtures
+  moved and each was attributed to a named upstream cause (§12). Nothing about *how* the solver
+  values gear changed.
+- **One thing a returning player can hit:** a character saved before this build that ranked
+  `Legendary Accuracy`, `Legendary Armor-Piercing`, `Legendary Deadly` or `Legendary Spell
+  Penetration` now ranks a name nothing carries, with no substitution message — the points still
+  exist under `Accuracy` / `Armor-Piercing` / `Deadly` / `Spell Penetration`, but the saved priority
+  no longer points at them. Filed as **#381**; not fixed here.
+- **The footer reads `08182026.6`.** That is how a player tells the new data is live.
+
+## 21. Residue filed
+
+| residue (§14) | where it went | verified before filing |
+|---|---|---|
+| The four adopted `Legendary <stat>` names no longer redirect | **new issue #381** | `known` true→false on all four across the two built datasets; `provenanceLabels` / `expandedAwayFor` both empty post-refresh; neither `PROVENANCE_LABEL_FALLBACK` nor `EXPANDED_AWAY_FALLBACK` covers them; the base stats still carry 14 / 22 / 3 / 12 `Legendary`-typed affixes; `Legendary Conditioning` still resolves, as the contrast |
+| Cause A ratifies a ramping proc as a flat constant | **comment on #214** (not a new issue — it is that issue's shape) | `Meridian Fragment` and `Crystallized Drop of Tea` went from an untyped free-text affix at value 1 (unrankable, contributed nothing) to `Universal Spell Power` @ `Psionic` = **24**; they are the only two Psionic USP carriers in the dataset (0 pre-refresh, 2 post) |
+| Cause C's `Seeker` re-type belongs in #379's review | **comment on #379** | `Seeker` Insight 50 → 32, Exceptional 0 → **18**, with Enhancement 123, Quality 23, Artifact 2 unmoved on both sides |
+| (added) The `Cannith:` → `Essence Crafting:` label alias U4's commit says "is filed" — it was not | **comment on #193**, the system that owns those labels | searched issues open and closed: no such issue exists |
