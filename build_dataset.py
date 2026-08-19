@@ -237,6 +237,46 @@ def assert_affix_synonyms() -> int:
         vocabulary_mod._load(vocabulary_mod.AFFIX_SYNONYMS_REGISTRY_PATH))
 
 
+def _local_synonym_corpus():
+    """`(exact_names, free_text)` — every place a `local_affix_synonyms` fold can bite.
+
+    `exact_names` are structured affix `name` / `stat` values: the three raw
+    gear-planner sources plus the curated augment-set seed. `free_text` is the
+    verbatim wiki tier text the Dino seam parses, where a spelling is embedded in
+    a sentence rather than stored as a name. Split because the two need different
+    match modes — see `vocabulary.check_local_synonym_staleness`.
+    """
+    exact = set()
+    for src in vocabulary_mod._sources():
+        for a in name_corrections_mod._iter_affix_dicts(src):
+            if isinstance(a.get("name"), str):
+                exact.add(a["name"])
+    _aug_sets = vocabulary_mod._load(membership_mod.AUGMENT_SETS_PATH).get("sets") or {}
+    for spec in _aug_sets.values():
+        if not isinstance(spec, dict):
+            continue
+        for a in spec.get("affixes") or []:
+            if isinstance(a, dict) and isinstance(a.get("stat"), str):
+                exact.add(a["stat"])
+    free_text = [sa.get("tier_text") for sa
+                 in dino_native_mod.native_dino_seed().get("set_augments") or []]
+    return exact, [t for t in free_text if isinstance(t, str)]
+
+
+def assert_local_affix_synonyms() -> int:
+    """#374 — the staleness guard `local_affix_synonyms` never had.
+
+    `assert_affix_synonyms` above diffs the UPSTREAM section against the frozen
+    registry, so it says nothing about the repo-reviewed local section. A local
+    fold whose spelling has left the corpus is a silent no-op, and upstream's
+    consolidation of the helpless family retires most of the #305 spellings in one
+    refresh. Non-mutating; returns the count of declared synonyms validated."""
+    exact, free_text = _local_synonym_corpus()
+    return vocabulary_mod.check_local_synonym_staleness(
+        vocabulary_mod._load(vocabulary_mod.AFFIX_SYNONYMS_REGISTRY_PATH),
+        exact, free_text)
+
+
 GAP_CORRECTIONS_PATH = os.path.join(HERE, "data", "seed", "gap_corrections.json")
 VALUE_CORRECTIONS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "item_value_corrections.json")
@@ -445,10 +485,38 @@ def build() -> dict:
     # exactly how #154 (Speed <- Striding) went unnoticed. Diff the vendored upstream
     # table against the frozen registry before anything reads an affix. Non-mutating.
     _affix_synonyms_checked = assert_affix_synonyms()
+    # #374 — the LOCAL half of the same gate. `assert_affix_synonyms` diffs only
+    # upstream's section, so a repo-reviewed fold whose spelling has left the
+    # corpus is invisible. Non-mutating; runs beside its upstream sibling.
+    _local_synonyms_checked = assert_local_affix_synonyms()
+    # #227/#374 — wiki-sourced NAME corrections, loaded ONCE and applied at each
+    # catalog's single load point (KTD2): crafting here, sets below, the item
+    # roster further down, the augment pool last. gear-planner remains the sole
+    # authority for WHICH affixes an item has; the wiki is the authority for what
+    # the enchantment is CALLED, and upstream's vocabulary generalization
+    # (`Combustion` -> `Fire Spell Power`) does not move our canon.
+    _name_corrections = name_corrections_mod.load(NAME_CORRECTIONS_PATH)
+    # KTD3 — what the raw snapshot has ARMED must equal what the shard declares
+    # live, derived by the direct Rule A predicate rather than hand-listed. Runs
+    # against the raw files, so it is deliberately upstream of every rename.
+    name_corrections_mod.assert_canon_defense(
+        _name_corrections, vocabulary_mod.armed_canon_variants())
     # The active crafting families source their option pools NATIVELY from
     # gearplanner_crafting.json (the gear-planner crafting catalog). Load once and
     # thread it into each family builder.
     crafting = crafting_catalog_mod.load_catalog()
+    # #374/KTD2 — the crafting channel of the name corrections. ONE call at the
+    # catalog's single load point covers every pool derived from it: augment,
+    # seal, dino, viktranium, nearly-complete, green-steel, thunder-forged. The
+    # 244 protected-name occurrences in gearplanner_crafting.json are unreachable
+    # from the item-roster call further down.
+    #
+    # KTD8 — this MUST stay above `ml36_augments.check` below. Our own ML36 shard
+    # carries protected canon names anchored to their gear-planner siblings, and
+    # `check` raises SystemExit when an entry's affix vocabulary no longer matches
+    # its sibling's. Renaming first makes that comparison our canon against our
+    # canon; renaming after it would kill the build before any of this runs.
+    _name_coverage_crafting = name_corrections_mod.apply(crafting, _name_corrections)
     # #260 — inject the wiki-sourced ML36 augment tier into the color pools.
     # gear-planner stops at ML32; the wiki holds the 63 top-tier sale augments,
     # each anchored to its gear-planner sibling's affix vocabulary and guarded
@@ -456,6 +524,14 @@ def build() -> dict:
     # a tooltip that no longer states the value. check() runs on the PRISTINE
     # catalog — that is what the staleness guard means — then inject() appends
     # in the pools' native shape so every consumer below treats them as natives.
+    #
+    # #374/KTD8 — "pristine" now means pristine with respect to TIER CONTENT (the
+    # staleness guard's actual subject: upstream adding an ML36 tier), NOT with
+    # respect to affix spelling. The name corrections above have already run, by
+    # design: the shard's own affix names are our canon, so comparing them to a
+    # not-yet-renamed sibling would fail the build on a spelling difference this
+    # pipeline exists to erase. Chosen over re-anchoring the shard entries, which
+    # would need redoing on every future upstream rename.
     _ml36_entries = ml36_augments_mod.load(ML36_AUGMENTS_PATH)
     _ml36_checked = ml36_augments_mod.check(_ml36_entries, crafting)
     _ml36_coverage = ml36_augments_mod.inject(_ml36_entries, crafting)
@@ -473,7 +549,15 @@ def build() -> dict:
     # time) and threaded to BOTH consumers: the blanks' intrinsic-set stamp inside
     # build_dino and the native set-bonus attach further down, so the two read the
     # same catalog state.
-    _set_catalog = set_catalog_mod.load_catalog()
+    #
+    # #374/KTD2 — the sets channel of the name corrections. Applied to the RAW
+    # catalog, before `catalog_from_raw` synthesizes it: `load_catalog` returns
+    # `piece_bonuses` TEXT, so a rename applied to its output would find no
+    # `affixes` list and be a permanent silent no-op. The 121 protected-name
+    # occurrences in gearplanner_sets.json are reachable only here.
+    _sets_raw = set_catalog_mod.load_raw()
+    _name_coverage_sets = name_corrections_mod.apply(_sets_raw, _name_corrections)
+    _set_catalog = set_catalog_mod.catalog_from_raw(_sets_raw)
     dino_blanks, dino_inserts, dino_sets, dino_cov = dino_mod.build_dino(
         dino_seed, crafting, sets_catalog=_set_catalog)
     _host_pipeline_names = {b.get("source_item") for b in dino_blanks}
@@ -532,8 +616,8 @@ def build() -> dict:
     # variant expansion and before rankable_affixes, so the corrected name reaches the
     # picker vocabulary, the solver, browse, and the exports from ONE place. An alias
     # alone cannot do this: the solver matches item affixes by name, so a canonical
-    # name no item carries is a priority that scores zero.
-    _name_corrections = name_corrections_mod.load(NAME_CORRECTIONS_PATH)
+    # name no item carries is a priority that scores zero. `_name_corrections` was
+    # loaded once above, with the crafting and sets channels; this is the item one.
     _name_coverage = name_corrections_mod.apply(planner_records, _name_corrections)
     # #259 — wiki-sourced BONUS TYPE corrections, the fourth corrections
     # mechanism (gap=additive, value, name, type — each changes one field and
@@ -766,8 +850,13 @@ def build() -> dict:
     # so both arrive as `Conditioning` + type Legendary from one owner rather than
     # two. It also keeps the alias pointing at a name the frozen raw registry knows.
     _name_coverage_augments = name_corrections_mod.apply(aug_pool, _name_corrections)
+    # #374/KTD2 — one honesty guard across ALL FOUR channels. A per-channel miss is
+    # a correct silent no-op; reaching nothing anywhere is staleness. The crafting
+    # and sets coverage dicts must be threaded here or the two new channels vouch
+    # for nothing and an entry they alone reach reads as dead.
     name_corrections_mod.assert_all_reached(
-        _name_corrections, _name_coverage, _name_coverage_augments)
+        _name_corrections, _name_coverage, _name_coverage_augments,
+        _name_coverage_crafting, _name_coverage_sets)
     legendary_fold_mod.apply(aug_pool)
     # U3 (#134) — the same classifier on the augment pool, against its own shard.
     # Augments join by NAME: they have no item page and share one `Augment Slot`

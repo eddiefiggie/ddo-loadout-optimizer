@@ -141,6 +141,20 @@ def apply(records: list, corrections: list) -> dict:
             "hit_names": sorted(hit_names)}
 
 
+def is_pending(corr: dict) -> bool:
+    """True for an entry declared AHEAD of the upstream data that arms it.
+
+    #374 — the canon-defence entries are written one unit before the refreshed
+    gear-planner snapshot is vendored, so their source names do not exist in the
+    raw files yet. Such an entry reaches no channel by construction, and
+    ``assert_all_reached`` would fail the build on a correction that is right and
+    simply early. Marking it exempts it from the staleness guard; the exemption
+    is not a hole because ``assert_canon_defense`` fails the moment the entry is
+    actually armed and the marker has not been retired.
+    """
+    return bool(corr.get("pending_upstream"))
+
+
 def assert_all_reached(corrections: list, *coverages) -> None:
     """Fail the build when a correction reached no record in ANY channel.
 
@@ -149,13 +163,65 @@ def assert_all_reached(corrections: list, *coverages) -> None:
     channel means the source was renamed or dropped upstream, which is exactly
     the quiet staleness this family exists to prevent. Mirrors
     ``type_corrections.assert_all_reached``; call once, after every channel.
+
+    #374 — ``pending_upstream`` entries are exempt (see ``is_pending``) and must
+    carry a ``pending_reason``, so the exemption is always readable next to the
+    entry rather than inferred from a bare boolean.
     """
+    unexplained = [c["source_name"] for c in corrections
+                   if is_pending(c) and not (c.get("pending_reason") or "").strip()]
+    if unexplained:
+        raise SystemExit(
+            "affix name correction(s) marked pending_upstream without a "
+            "pending_reason: " + ", ".join(sorted(repr(m) for m in unexplained))
+            + " — an exemption with no stated reason cannot be retired by review")
+
     reached = set()
     for cov in coverages:
         reached.update((cov or {}).get("hit_names") or [])
-    missing = {c["source_name"] for c in corrections} - reached
+    missing = {c["source_name"] for c in corrections
+               if not is_pending(c)} - reached
     if missing:
         raise SystemExit(
             "affix name correction(s) reached no record in any channel: "
             + ", ".join(sorted(repr(m) for m in missing))
             + " — renamed or dropped upstream; re-verify against the wiki")
+
+
+def assert_canon_defense(corrections: list, armed: dict) -> None:
+    """KTD3 — the declared canon defence must equal what the raw data has ARMED.
+
+    ``armed`` is ``vocabulary.armed_canon_variants()``: the aliases for which
+    upstream now emits the variant and no longer emits our canonical, derived from
+    the snapshot on disk rather than hand-listed. The declared side is every
+    ``canon_defense`` correction whose ``pending_upstream`` marker has been
+    retired — i.e. every defence claiming to be live right now.
+
+    Both directions fail, and each names a different real defect:
+
+      * armed but not declared-live — upstream flipped a name nothing renames
+        back, so the stat silently scores zero on one channel and the picker alias
+        points at a name the frozen registry cannot contain. This is the
+        "a fourteenth arrived" event a hand-list would miss.
+      * declared-live but not armed — the defence is inert: either upstream never
+        flipped (or reverted) that name, or the entry landed and still carries a
+        marker that says it has not.
+    """
+    declared = {c["source_name"] for c in corrections
+                if c.get("canon_defense") and not is_pending(c)}
+    live = set(armed)
+    problems = []
+    for variant in sorted(live - declared):
+        problems.append(
+            f"{variant!r} is ARMED upstream (canonical {armed[variant]!r} has left "
+            "the raw registry) but no live canon_defense correction renames it — "
+            "the canon would import as upstream's spelling and score zero")
+    for variant in sorted(declared - live):
+        problems.append(
+            f"{variant!r} declares a live canon_defense but the raw data does not "
+            "arm it — upstream still carries our canonical, so the rename is inert; "
+            "re-verify, or restore its pending_upstream marker")
+    if problems:
+        raise SystemExit(
+            "canon defence does not match the raw snapshot (KTD3):\n  "
+            + "\n  ".join(problems))

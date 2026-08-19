@@ -36,6 +36,24 @@ AFFIX_SYNONYMS_REGISTRY_PATH = os.path.join(CURATED_DIR, "affix_synonyms_registr
 # The augment-stone pools share this key suffix (see crafting_catalog).
 _AUGMENT_SLOT_SUFFIX = "Augment Slot"
 
+# #374 / KTD1+KTD4 — the in-game enchantment names upstream flipped away from when
+# it generalized its affix vocabulary (`Combustion` -> `Fire Spell Power`). We keep
+# ours: the DDO wiki is this repo's source of truth and it uses the enchantment
+# names, so an item tooltip and this app say the same words. These ten are the
+# subset upstream also carries a FOLD for, which is what makes them protected
+# rather than merely renamed — a fold applies itself, a rename does not. Nothing
+# may fold one of these AWAY; see `_suppressed_upstream_folds`.
+#
+# The other three defended names (`Damage to helpless enemies`,
+# `Legendary Conditioning`, `Enhanced Ki`) are rename-only: upstream carries no
+# fold keyed on them, so they need no suppression. Keep this set to the folded
+# subset — widening it to every corrected name would suppress folds that were
+# never a threat.
+PROTECTED_CANON = frozenset({
+    "Combustion", "Devotion", "Nullification", "Glaciation", "Impulse",
+    "Magnetism", "Resonance", "Corrosion", "Void Lore", "Ice Lore",
+})
+
 
 # --------------------------------------------------------------------------- raw walk
 
@@ -237,6 +255,31 @@ def _local_synonym_folds(table):
     return folds
 
 
+def _suppressed_upstream_folds(folds):
+    """Drop every upstream fold whose KEY is one of our protected canon names.
+
+    #374/KTD4 — upstream flipped its affix vocabulary to generic names, so its
+    table now reads ``Combustion -> Fire Spell Power``: our canon on the SYNONYM
+    side. ``registry_synonym_folds`` is applied single-pass by the Dino parse seam
+    (``src/dino_parser.py``), so a Dino set stat literally named ``Combustion``
+    would fold AWAY from the canon the rest of the pipeline mints, and
+    ``check_set_records_spelling`` would then raise because the output is itself a
+    fold key.
+
+    Suppress rather than invert. A local INVERSE fold does not fix this and makes
+    it worse: ``_local_synonym_folds``' collision guard compares synonym KEYS, and
+    an inverse fold's key is upstream's canonical, so it does not collide — both
+    directions then survive in the merged map as a 2-cycle, splitting one mechanic
+    across two buckets by whichever spelling a record happened to carry. That is
+    the same silent under-credit class as #376.
+
+    Keyed on membership in ``PROTECTED_CANON`` rather than an explicit suppression
+    list, so a future refresh cannot leave a flipped fold behind by omission.
+    """
+    return {syn: canon for syn, canon in folds.items()
+            if syn not in PROTECTED_CANON}
+
+
 def registry_synonym_folds(path=AFFIX_SYNONYMS_REGISTRY_PATH):
     """Public ``{synonym: canonical}`` fold map from the FROZEN checked-in
     affix-synonym registry (U4): the upstream ``affix_synonyms`` section merged
@@ -245,11 +288,113 @@ def registry_synonym_folds(path=AFFIX_SYNONYMS_REGISTRY_PATH):
     above (upstream section only, by design); pipeline channels that need to
     APPLY a fold to a parsed stat name (rather than diff two tables) read this.
     Reviewed mappings only — the registry is frozen, so a fold appearing here has
-    already been confirmed as the same game mechanic (see ``check_affix_synonyms``)."""
+    already been confirmed as the same game mechanic (see ``check_affix_synonyms``).
+
+    #374/KTD4 — upstream folds keyed on one of OUR canon names are suppressed
+    here (``_suppressed_upstream_folds``). Deliberately NOT in ``_synonym_folds``:
+    that normalizer feeds the live-vs-frozen gate, which must keep seeing
+    upstream's table verbatim or a flip would stop being a reviewable event.
+    """
     table = _load(path)
-    folds = dict(_synonym_folds(table))
+    folds = _suppressed_upstream_folds(_synonym_folds(table))
     folds.update(_local_synonym_folds(table))
     return folds
+
+
+def check_local_synonym_staleness(table, exact_names, free_text):
+    """Fail when a declared ``local_affix_synonyms`` synonym matches NOTHING.
+
+    The ``assert_all_reached`` equivalent this section never had. A local fold is
+    a repo-reviewed rewrite of a spelling the corpus actually carries; once the
+    spelling leaves the corpus the fold is a silent no-op pinning a rewrite nobody
+    is applying — the exact staleness ``name_corrections`` fails loudly on. #374
+    makes that urgent: upstream's consolidation of the helpless family retires
+    most of the #305 spellings in one refresh, with nothing to say so.
+
+    Two match modes, because the fold reaches two shapes of channel:
+      * ``exact_names`` — structured affix ``name`` / ``stat`` values. Exact
+        equality, never substring: ``Damage vs. Helpless`` is a prefix of
+        ``Damage vs. Helpless Opponents``, so substring matching here would let a
+        longer sibling vouch for a retired spelling.
+      * ``free_text`` — verbatim wiki tier text the Dino seam parses. Substring,
+        because the spelling is embedded in a sentence there.
+
+    An entry may declare ``unmatched_synonyms``: spellings knowingly absent from
+    today's corpus, each of which must ALSO be listed in ``synonyms``. The
+    allowlist is two-directional — an allowlisted spelling that starts matching
+    again fails too, so it cannot rot into a permanent exemption.
+
+    Refuses to vouch for an empty corpus. Returns the number of synonyms checked.
+    """
+    entries = table.get("local_affix_synonyms", []) if isinstance(table, dict) else []
+    exact = set(exact_names or ())
+    texts = [t for t in (free_text or ()) if isinstance(t, str)]
+    if not exact and not texts:
+        raise IntegrityError(
+            "local affix-synonym staleness guard: empty corpus — zero names and "
+            "zero free text is a guard failure, not a pass")
+
+    def _matches(syn):
+        return syn in exact or any(syn in t for t in texts)
+
+    problems, checked = [], 0
+    for e in entries:
+        canonical = e.get("name")
+        allowed = list(e.get("unmatched_synonyms") or [])
+        declared = list(e.get("synonyms") or [])
+        for syn in allowed:
+            if syn not in declared:
+                problems.append(
+                    f"{syn!r} is listed under unmatched_synonyms for {canonical!r} "
+                    "but is not a declared synonym — the allowlist may only "
+                    "excuse spellings the fold actually carries")
+        for syn in declared:
+            checked += 1
+            hit = _matches(syn)
+            if hit and syn in allowed:
+                problems.append(
+                    f"{syn!r} -> {canonical!r} is allowlisted as unmatched but the "
+                    "corpus carries it again — drop it from unmatched_synonyms")
+            elif not hit and syn not in allowed:
+                problems.append(
+                    f"{syn!r} -> {canonical!r} matches nothing in the corpus — the "
+                    "spelling left upstream, so this local fold is a silent no-op; "
+                    "retire it or record it under unmatched_synonyms with evidence")
+    if problems:
+        raise IntegrityError(
+            "local affix-synonym registry is stale:\n  " + "\n  ".join(problems))
+    return checked
+
+
+def armed_canon_variants(items=None, crafting=None, sets=None, alias_map=None):
+    """The alias entries upstream has ARMED against our canon, by direct predicate.
+
+    KTD3 — an alias is armed when both halves of the Rule A test hold against the
+    raw snapshot on disk:
+
+      * the VARIANT is gate-visible (``iter_affixes`` sees it — name + type +
+        value together, the same walk ``check_referential_integrity`` uses), and
+      * the CANONICAL is absent from ``generate_registries()`` over that same raw.
+
+    That pair is exactly "upstream now emits this spelling and no longer emits
+    ours", which is the state in which a picker alias resolves to a name the
+    frozen registry cannot contain and a solver priority scores zero. Derived from
+    the data every time rather than hand-listed: a hand-list is right once and
+    rots at the next refresh, silently.
+
+    Returns ``{variant: canonical}``.
+    """
+    items, crafting, sets = _sources(items, crafting, sets)
+    if alias_map is None:
+        alias_map, _distinct = load_affix_aliases()
+    names = set(generate_registries(items, crafting, sets)["affix_names"])
+    visible = set()
+    for src in (items, crafting, sets):
+        for a in iter_affixes(src):
+            if isinstance(a.get("name"), str):
+                visible.add(a["name"])
+    return {variant: canonical for variant, canonical in alias_map.items()
+            if variant in visible and canonical not in names}
 
 
 def check_affix_synonyms(live, frozen):

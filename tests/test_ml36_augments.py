@@ -128,3 +128,71 @@ def test_the_shipped_shard_carries_its_wiki_evidence():
             assert e.get(field), f"{name}: entry is missing {field!r}"
         assert e["ml"] == 36, f"{name}: not ML36"
         assert len(e["affixes"]) == 1, f"{name}: expected exactly one affix"
+
+
+# ---------------------------------------------------------------------------
+# #374/KTD8 — the crafting rename must run BEFORE this guard.
+#
+# Eight shard entries (the Ruby spell-power line) carry affix names that are our
+# canon. `check` compares each entry's affix vocabulary to its gear-planner
+# sibling's, so once upstream flips to generic names the sibling and the shard
+# disagree and the build dies here — before any of the migration's work runs.
+# Renaming the catalog first makes the comparison our canon against our canon.
+# ---------------------------------------------------------------------------
+
+from src import name_corrections  # noqa: E402
+from src import vocabulary  # noqa: E402
+
+CORRECTIONS = os.path.join(ROOT, "data", "seed", "compendium",
+                           "affix_name_corrections.json")
+
+_FLIP = {
+    "Combustion": "Fire Spell Power", "Devotion": "Positive Spell Power",
+    "Nullification": "Negative Spell Power", "Glaciation": "Cold Spell Power",
+    "Impulse": "Force Spell Power", "Magnetism": "Electric Spell Power",
+    "Resonance": "Sonic Spell Power", "Corrosion": "Acid Spell Power",
+}
+
+
+def _refreshed_catalog():
+    """The real catalog with upstream's post-flip spelling — what U4 vendors."""
+    catalog = crafting_catalog.load_catalog()
+    for a in name_corrections._iter_affix_dicts(catalog):
+        if a.get("name") in _FLIP:
+            a["name"] = _FLIP[a["name"]]
+    return catalog
+
+
+def test_374_the_shard_carries_eight_protected_canon_names():
+    entries = ml36_augments.load(SHARD)
+    protected = sorted(n for n, e in entries.items()
+                       if any(a["name"] in vocabulary.PROTECTED_CANON
+                              for a in e["affixes"]))
+    assert len(protected) == 8, protected
+    assert all(n.startswith("Ruby of ") for n in protected), protected
+
+
+def test_374_check_fails_on_a_refreshed_catalog_that_was_not_renamed_first():
+    """Rename AFTER this guard and the build never reaches the migration."""
+    entries = ml36_augments.load(SHARD)
+    err = _raises(SystemExit, ml36_augments.check, entries, _refreshed_catalog())
+    assert "no longer matches its sibling's" in str(err)
+    assert "Ruby of Combustion 166" in str(err)
+
+
+def test_374_check_passes_once_the_crafting_rename_runs_first():
+    """The shipped ordering: name_corrections at the catalog load point, then
+    check. `pristine` now means pristine with respect to TIER CONTENT."""
+    catalog = _refreshed_catalog()
+    name_corrections.apply(catalog, name_corrections.load(CORRECTIONS))
+    counts = ml36_augments.check(ml36_augments.load(SHARD), catalog)
+    assert counts["Red"] == 14
+
+
+def test_374_the_build_pins_the_rename_above_the_ml36_check():
+    """A source-order pin, because the ordering is the whole of KTD8 and nothing
+    else in the suite would notice the two lines being swapped."""
+    src = open(os.path.join(ROOT, "build_dataset.py"), encoding="utf-8").read()
+    rename = src.index("name_corrections_mod.apply(crafting, _name_corrections)")
+    check = src.index("ml36_augments_mod.check(_ml36_entries, crafting)")
+    assert rename < check, "the crafting rename must precede ml36_augments.check"

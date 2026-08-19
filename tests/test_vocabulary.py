@@ -609,3 +609,169 @@ def test_374_the_ten_known_flips_resolve_to_our_canon():
     for variant, canonical in expected.items():
         assert alias_map.get(variant) == canonical, (
             f"{variant!r} must alias to {canonical!r}, got {alias_map.get(variant)!r}")
+
+
+# ---------------------------------------------------------------------------
+# #374 — defending our canon against upstream's flipped vocabulary.
+# ---------------------------------------------------------------------------
+
+def _raises_msg(exc, fn, *args, **kwargs):
+    """`_raises` above returns True, not the exception. These tests assert on the
+    message, because a red proves *a* gate fired, not that yours did."""
+    try:
+        fn(*args, **kwargs)
+    except exc as e:
+        return str(e)
+    raise AssertionError(f"expected {exc.__name__} to be raised")
+
+
+_FLIPPED_TABLE = {
+    "affix_synonyms": [
+        # What upstream's table looks like AFTER the flip: our canon on the
+        # SYNONYM side, its generic name as the canonical.
+        {"name": "Fire Spell Power", "synonyms": ["Combustion", "Fire Spellpower"]},
+        {"name": "Positive Spell Power", "synonyms": ["Devotion"]},
+        {"name": "Negative Lore", "synonyms": ["Void Lore"]},
+        # An unrelated fold, which must survive untouched.
+        {"name": "Speed", "synonyms": ["Striding"]},
+    ],
+    "local_affix_synonyms": [
+        {"name": "Damage to helpless enemies", "synonyms": ["Helplessness Damage"]},
+    ],
+}
+
+
+def test_374_registry_synonym_folds_drops_a_fold_keyed_on_our_canon():
+    folds = V._suppressed_upstream_folds(V._synonym_folds(_FLIPPED_TABLE))
+    for canon in ("Combustion", "Devotion", "Void Lore"):
+        assert canon not in folds, f"{canon!r} must not fold away"
+    # Suppression is by KEY membership, so a non-canon synonym of the same entry
+    # and an unrelated fold both survive.
+    assert folds["Fire Spellpower"] == "Fire Spell Power"
+    assert folds["Striding"] == "Speed"
+
+
+def test_374_suppression_never_inverts_so_no_two_cycle_can_form():
+    """KTD4 — an inverse LOCAL fold would slip past `_local_synonym_folds`'
+    collision guard (it compares synonym keys) and leave both directions live,
+    splitting one mechanic across two buckets. Suppression cannot: the merged map
+    holds at most one direction because the upstream key is simply gone."""
+    merged = dict(V._suppressed_upstream_folds(V._synonym_folds(_FLIPPED_TABLE)))
+    merged.update(V._local_synonym_folds(_FLIPPED_TABLE))
+    for syn, canon in merged.items():
+        assert merged.get(canon) != syn, f"2-cycle {syn!r} <-> {canon!r}"
+
+
+def test_374_the_shipped_fold_map_has_no_protected_canon_name_as_a_key():
+    folds = V.registry_synonym_folds()
+    assert folds, "the shipped fold map must not be empty"
+    leaked = sorted(set(folds) & V.PROTECTED_CANON)
+    assert leaked == [], leaked
+
+
+def test_374_suppression_does_not_reach_the_live_vs_frozen_gate():
+    """The gate must keep seeing upstream's table verbatim, or a flip stops being
+    a reviewable event. `_synonym_folds` is unfiltered by design."""
+    raw = V._synonym_folds(_FLIPPED_TABLE)
+    assert raw["Combustion"] == "Fire Spell Power"
+    frozen = {"affix_synonyms": [{"name": "Combustion", "synonyms": ["Fire Spell Power"]}]}
+    _raises(V.IntegrityError, V.check_affix_synonyms, _FLIPPED_TABLE, frozen)
+
+
+# --- the `local_affix_synonyms` staleness guard -------------------------------
+
+def _local(synonyms, unmatched=None):
+    e = {"name": "Damage to helpless enemies", "synonyms": list(synonyms)}
+    if unmatched is not None:
+        e["unmatched_synonyms"] = list(unmatched)
+    return {"local_affix_synonyms": [e]}
+
+
+def test_374_local_synonym_staleness_fires_on_a_synonym_that_matches_nothing():
+    err = _raises_msg(
+        V.IntegrityError, V.check_local_synonym_staleness,
+        _local(["Helplessness Damage", "Gone Upstream"]),
+        {"Helplessness Damage"}, [])
+    assert "'Gone Upstream'" in err
+    assert "silent no-op" in err
+
+
+def test_374_local_synonym_staleness_matches_free_text_by_substring():
+    """The Dino seam parses verbatim wiki sentences, so the spelling is embedded
+    rather than stored as a name."""
+    V.check_local_synonym_staleness(
+        _local(["damage vs. the helpless"]), set(),
+        ["+15% Artifact bonus to damage vs. the helpless"])
+
+
+def test_374_local_synonym_staleness_matches_names_exactly_not_by_prefix():
+    """A longer sibling must never vouch for a retired spelling."""
+    _raises(V.IntegrityError, V.check_local_synonym_staleness,
+            _local(["Damage vs. Helpless"]),
+            {"Damage vs. Helpless Opponents"}, [])
+
+
+def test_374_local_synonym_staleness_allowlist_is_two_directional():
+    # Allowlisted and absent -> passes.
+    V.check_local_synonym_staleness(
+        _local(["Helplessness Damage", "Damage vs. Helpless"],
+               unmatched=["Damage vs. Helpless"]),
+        {"Helplessness Damage"}, [])
+    # Allowlisted and PRESENT again -> fails, so the exemption cannot rot.
+    err = _raises_msg(
+        V.IntegrityError, V.check_local_synonym_staleness,
+        _local(["Helplessness Damage", "Damage vs. Helpless"],
+               unmatched=["Damage vs. Helpless"]),
+        {"Helplessness Damage", "Damage vs. Helpless"}, [])
+    assert "carries it again" in err
+
+
+def test_374_local_synonym_staleness_rejects_an_allowlist_entry_that_is_not_declared():
+    err = _raises_msg(V.IntegrityError, V.check_local_synonym_staleness,
+                      _local(["Helplessness Damage"], unmatched=["Never Declared"]),
+                      {"Helplessness Damage"}, [])
+    assert "is not a declared synonym" in err
+
+
+def test_374_local_synonym_staleness_refuses_an_empty_corpus():
+    err = _raises_msg(V.IntegrityError, V.check_local_synonym_staleness,
+                      _local(["Helplessness Damage"]), set(), [])
+    assert "empty corpus" in err
+
+
+def test_374_the_shipped_local_registry_is_not_stale():
+    import build_dataset
+    assert build_dataset.assert_local_affix_synonyms() == 11
+
+
+# --- KTD3: the armed set is derived, never hand-listed ------------------------
+
+def _raw_pair(name, value="10"):
+    return {"name": name, "type": "Artifact", "value": value}
+
+
+def test_374_armed_canon_variants_arms_a_flip_and_only_a_flip():
+    items = {"items": [{"name": "Some Item", "affixes": [
+        _raw_pair("Fire Spell Power"),      # flipped: variant present, canon gone
+        _raw_pair("Positive Spell Power"),  # both spellings present -> NOT armed
+        _raw_pair("Devotion"),
+    ]}]}
+    empty = {}
+    armed = V.armed_canon_variants(items, empty, empty,
+                                   alias_map={"Fire Spell Power": "Combustion",
+                                              "Positive Spell Power": "Devotion",
+                                              "Cold Spell Power": "Glaciation"})
+    # `Cold Spell Power` is absent from raw entirely, so it is not armed either.
+    assert armed == {"Fire Spell Power": "Combustion"}, armed
+
+
+def test_374_armed_canon_variants_cannot_see_an_untyped_variant():
+    """The predicate uses the same walk the integrity gate uses (name+type+value),
+    so an untyped affix is invisible to both — the `Ki` boundary case."""
+    items = {"items": [{"name": "Icewalkers", "affixes": [{"name": "Ki", "value": "3"}]}]}
+    assert V.armed_canon_variants(items, {}, {},
+                                  alias_map={"Ki": "Enhanced Ki"}) == {}
+
+
+def test_374_armed_canon_variants_is_empty_before_the_refresh_is_vendored():
+    assert V.armed_canon_variants() == {}
