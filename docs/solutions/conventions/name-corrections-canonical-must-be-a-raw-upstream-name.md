@@ -2,6 +2,7 @@
 title: "A `name_corrections` canonical must be a RAW upstream name, placed upstream of the fold"
 module: data-pipeline
 date: 2026-08-18
+last_updated: 2026-08-19
 category: conventions
 problem_type: convention
 component: tooling
@@ -102,18 +103,23 @@ V.resolve_affix_name('False Life (%)', names, {'False Life (%)': 'Conditioning'}
 ```
 
 Measured membership in the shipped frozen registry
-(`data/seed/compendium/vocab_registries.json`, 1441 `affix_names`). Every registry key is
-element-for-element identical today to `generate_registries` over the raw snapshot — the
-shipped file adds only `_README` and `_meta` — so the two readings agree:
+(`data/seed/compendium/vocab_registries.json`). **Re-measured 2026-08-19 after the #374
+gear-planner refresh (PR #382), which moved two of these rows** — the registry grew
+1441 → 1483 `affix_names`, with 102 added and 60 removed:
 
-| name | in registry |
-| --- | --- |
-| `Conditioning` | no |
-| `Legendary Conditioning` | yes |
-| `False Life (%)` | yes |
-| `False Life` | yes |
-| `Ki` | no |
-| `Enhanced Ki` | no |
+| name | in registry (2026-08-18) | now (2026-08-19) |
+| --- | --- | --- |
+| `Conditioning` | no | no |
+| `Legendary Conditioning` | yes | **no** — upstream stopped emitting it; folded into `False Life (%)` |
+| `False Life (%)` | yes | yes |
+| `False Life` | yes | yes |
+| `Ki` | no | **yes** — upstream started emitting a `type` key, so the gate can see it |
+| `Enhanced Ki` | no | no |
+
+Both moves are the same event seen twice: a refresh can take a canonical *out* of the raw
+registry and put a variant *in*, so this table is a snapshot, not a constant. Re-measure it
+against the current snapshot rather than trusting the column — the check below is the
+durable form of the question.
 
 Check before you write the alias:
 
@@ -124,7 +130,23 @@ b = V.generate_registries(*[V._load(p) for p in (V.ITEMS_PATH, V.CRAFTING_PATH, 
 print('CANONICAL' in set(b['affix_names']))"
 ```
 
-`False` means the canonical is a fold output, not a raw name — Rule A will fail.
+`False` means the canonical is a fold output, not a raw name — Rule A will fail **unless the
+name is minted** (below).
+
+**Amendment (#374, PR #382): there is now a curated way to satisfy Rule A without the name
+being raw.** `check_referential_integrity` accepts `baseline` UNIONED with a
+`local_affix_names` section it loads from the registry file itself
+(`src/vocabulary.py:587-609`) — deliberately loaded there rather than taken from `baseline`,
+because the only caller builds its baseline with `generate_registries()` over raw, which
+cannot carry a repo-minted name, so a caller-side union would be a no-op at the one call
+site that matters. This exists because a refresh can drop our canonical from raw while every
+shipped alias still points at it (see the table above), which would raise on data that is
+perfectly correct.
+
+The widening stops there: each entry is mechanically joined back to either a
+`name_corrections` canonical or a `local_affix_synonyms` name, so a genuinely new upstream
+name still raises. So Rule A now reads: **the canonical must be in the frozen registry, or
+minted into `local_affix_names` with that join.** Thirteen names are minted today.
 
 ### Rule B — `name_corrections`: rename to the raw name, upstream of the fold. Fails SILENTLY.
 
@@ -250,37 +272,44 @@ legendary_fold total 85 -> 87, whose documented breakdown carries `Conditioning`
 existing chain rather than a parallel one. Only the total is an `assert`; the per-stat
 figure lives in the comment breakdown beside it.
 
-### The `Ki` entry is NOT a precedent for either rule
+### The `Ki` entry was NOT a precedent — and its prediction has since fired
 
-`Ki` -> `Enhanced Ki` has shipped since #227 and never trips the gate, which makes it look
-like a passing example. It is not one: measured above, **neither** `Ki` nor `Enhanced Ki` is
-in the registry, and the alias `Ki -> Enhanced Ki` is live. By Rule A's mechanism that
-should raise.
+**Updated 2026-08-19.** This section originally read: *"If upstream ever attaches a bonus
+type to `Ki`, that alias raises the same `IntegrityError` with no other change on our side."*
+That is exactly what happened, four months earlier than anyone expected — on 2026-08-18, in
+the #374 refresh (PR #382). It is preserved here because a prediction that fires is the
+strongest evidence a rule is real.
 
-It does not, because `resolve_affix_name` is never called on `Ki` at all. Counted across the
-gate-checked sources, `Ki` is referenced **zero** times: every raw `Ki` record is untyped
-(`{'name': 'Ki', 'value': '3'}`), and `iter_affixes` yields only dicts carrying `name`,
-`type`, **and** `value` together (`src/vocabulary.py:47-58`), so the gate cannot see them.
-`src/name_corrections.py` documents that same blindness in `_iter_affix_dicts`, calling it
-"the exact blindness that hid this enchantment".
+**What it said, and why it was true then.** `Ki -> Enhanced Ki` had shipped since #227 and
+never tripped the gate, which made it look like a passing example of Rule A. It was not:
+neither `Ki` nor `Enhanced Ki` was in the registry, and the alias was live, so by Rule A's
+mechanism it should have raised. It did not, because `resolve_affix_name` was never called
+on `Ki` at all — every raw `Ki` record was untyped (`{'name': 'Ki', 'value': '3'}`), and
+`iter_affixes` yields only dicts carrying `name`, `type`, **and** `value` together, so the
+gate walked exactly 0 of the 20. `src/name_corrections.py` documents the same blindness in
+`_iter_affix_dicts`, calling it *"the exact blindness that hid this enchantment"*.
 
-So `Ki` illustrates the boundary, not the rule: **Rule A only bites when the variant name is
-actually referenced in the gate-checked sources.** Cite it that way, never as evidence that
-a post-fold canonical is acceptable. If upstream ever attaches a bonus type to `Ki`, that
-alias raises the same `IntegrityError` with no other change on our side. The `False Life
-(%)` carriers are typed upstream (`{'name': 'False Life (%)', 'type': 'Legendary', 'value':
-'5'}` and `'10'`, in the crafting channel), which is why the gate saw them immediately and
-why the error text says `in crafting`.
+**What changed.** The refresh re-encoded upstream's type field wholesale: it had been
+omitting `type` for an untyped affix and began emitting a literal marker instead. Measured
+now, all 20 `Ki` records carry `name` + `type` + `value`, and the gate walks all 20 (19
+items, 1 crafting) where it previously walked none. `Ki` is consequently *in* the registry;
+`Enhanced Ki` still is not, so the alias armed exactly as predicted and was resolved by
+minting `Enhanced Ki` into `local_affix_names` during the migration.
 
-Measured at the current tree: 20 raw records carry `name: "Ki"`, every one of them with
-`name` + `value` and no `type`, so the gate walks exactly 0 of them.
+Note the marker itself is still `Untyped` — the affix did not become typed in any meaningful
+sense. What changed is that upstream now *writes the key at all*, which is all `iter_affixes`
+needs. **The cause is structural, not a per-name decision**, which is why it armed a whole
+class of dormant aliases at once rather than just this one.
 
-**This blindness is already tracked as issue #229** ("Untyped affixes are invisible to the
-registry and the referential-integrity gate"), which names `Ki` as its confirming case. Do
-not file it again. What this learning adds to #229 is a consequence its filing did not
-cover: the gap is currently *masking* a live Rule A violation, so closing #229 turns the
-`Ki` alias into an immediate build failure. Whoever closes it must re-point that canonical
-at a raw name in the same commit.
+**The boundary rule still stands, and is the durable part:** Rule A only bites when the
+variant name is actually referenced in the gate-checked sources. `Ki` illustrated the
+boundary; it never was evidence that a post-fold canonical is acceptable.
+
+**On #229.** This section used to warn that #229's gap was *masking* a live Rule A violation,
+and that whoever closed #229 would have to re-point the canonical in the same commit. The
+refresh answered that instead: the mask is gone because upstream started emitting the key, so
+the re-pointing happened during the migration rather than during a fix to #229. #229 itself
+remains open and is now narrower than its title suggests — re-read it before acting on it.
 
 ### Supporting shape: a per-channel miss is silent, "reached nothing" is fatal
 
@@ -302,5 +331,6 @@ after all of them — the same split `type_corrections` already uses.
 - [`docs/solutions/conventions/golden-fixtures-resolve-aliases-like-saved-builds.md`](golden-fixtures-resolve-aliases-like-saved-builds.md) — the other place alias resolution must be modelled deliberately rather than assumed.
 - [`docs/solutions/conventions/prove-a-guard-fails-before-trusting-it.md`](prove-a-guard-fails-before-trusting-it.md) — why the `Ki` boundary case is worth naming: a gate never observed to fail on a class of input is not known to cover it.
 - [`docs/solutions/conventions/a-test-that-defines-the-rule-it-asserts-proves-nothing.md`](a-test-that-defines-the-rule-it-asserts-proves-nothing.md) — the tautological-verification mode that produced the wrong PR #375 claim described above.
+- [`docs/solutions/conventions/a-gate-cascade-is-the-refresh-report-not-an-obstacle.md`](a-gate-cascade-is-the-refresh-report-not-an-obstacle.md) — the migration that fired this doc's `Ki` prediction, and the adjudication discipline for the cascade of gates it set off. Read it alongside this one when a refresh turns several guards red at once.
 - Issue #229 — the untyped-affix blindness currently masking the `Ki` Rule A violation.
 - Issue #376 / PR #377 — the defect this learning came out of; shipped in build `08182026.5`.
