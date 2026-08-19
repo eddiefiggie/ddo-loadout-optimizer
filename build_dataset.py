@@ -58,6 +58,7 @@ from src import dr_qualifiers as dr_qualifiers_mod
 from src import type_corrections as type_corrections_mod
 from src import legendary_fold as legendary_fold_mod
 from src import ml36_augments as ml36_augments_mod
+from src import viktranium_pool_corrections as vik_pool_mod
 from src import no_drop_source as no_drop_source_mod
 from src import planner_items as planner_mod
 from src import variants as variants_mod
@@ -298,6 +299,9 @@ TYPE_CORRECTIONS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "affix_type_corrections.json")
 ML36_AUGMENTS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "ml36_augments.json")
+# #365 — curated wiki-sourced Viktranium pool relocations (misfiled options).
+VIK_POOL_CORRECTIONS_PATH = os.path.join(
+    HERE, "data", "seed", "compendium", "viktranium_pool_corrections.json")
 # #262 — per-item wiki verdicts for the "no known live drop source" disclosure.
 NO_DROP_SOURCE_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "no_drop_source.json")
@@ -1182,6 +1186,22 @@ def build() -> dict:
     # U75 (Chill of Ravenloft) Viktranium ("Lamordia") crafting: expose the typed choice-slot pool
     # keyed by (slot_type, item-category). Items carrying `lamordia_slots` draw
     # one option per slot from the matching pool (tier from host ML at solve time).
+    # #365 — the curated wiki-sourced pool relocation, applied to the loaded
+    # catalog immediately BELOW the loader and ABOVE the builder, so
+    # `build_viktranium` reads pools that match the wiki's table assignment and
+    # no second code path exists. gear-planner owns the affix vocabulary; the
+    # wiki owns which (slot_type, category) pool an option belongs to, and it
+    # files `Woeful Quality Spell Focus Mastery` in the Accessories Wicked
+    # table while gear-planner carries it under `Woeful (Weapon)`. That left
+    # the Woeful accessory pool offering DCs as Profane and Sacred only, so a
+    # caster slotting a Woeful accessory could never reach the +2 Quality DC
+    # the game grants. `check` runs on the catalog as loaded — that is what the
+    # staleness guard means: it fails the build if upstream fixed the
+    # misfiling (retire the shard), if the destination already offers the
+    # option (a no-op correction), or if the option's vocabulary/ml moved.
+    _vik_pool_relocations = vik_pool_mod.load(VIK_POOL_CORRECTIONS_PATH)
+    _vik_pool_checked = vik_pool_mod.check(_vik_pool_relocations, crafting)
+    _vik_pool_coverage = vik_pool_mod.apply(_vik_pool_relocations, crafting)
     vik = vik_mod.build_viktranium(crafting)
     # #205, third channel. A Viktranium option is a multi-affix record like a dino
     # insert, so the expansion goes one level IN — inside the option's own affix
@@ -1479,6 +1499,10 @@ def build() -> dict:
             # #260 — the wiki-sourced ML36 augment tier: what the guard vouched
             # for per color, and what was injected into the pools.
             "ml36_augment_coverage": {**_ml36_coverage, "checked": _ml36_checked},
+            # #365 — the wiki-sourced Viktranium pool relocations: which
+            # misfiled options were moved, and into which pools.
+            "viktranium_pool_corrections": {**_vik_pool_coverage,
+                                            "checked": _vik_pool_checked},
             # #262 — wiki-confirmed no-drop-source coverage. Present ONLY when
             # the shard has entries; the empty seed emits no block at all (AE2).
             **_no_drop_meta,

@@ -363,6 +363,36 @@ function test(name, fn) {
     }
   });
 
+  // #365 — the Viktranium pool relocation, pinned where it landed. gear-planner
+  // misfiled `Woeful: Quality Spell Focus Mastery` under `Woeful (Weapon)`; the
+  // wiki puts it in the Accessories Wicked table, so the shard moves it and a
+  // Woeful ACCESSORY host can finally craft the +2 Quality DC. The provenance
+  // twins were the only fixtures whose ratified loadout moved, and they moved
+  // identically (which is the pair's whole guarantee). This asserts the OUTPUT
+  // the re-ratification was accepted for, so a future regression that quietly
+  // put the option back on weapons fails here with a reason rather than as an
+  // unexplained loadout diff.
+  const DC_TWINS = ["provenance-alias-sacred-dc-ml34",
+                    "provenance-components-sacred-dc-ml34"];
+  for (const name of DC_TWINS) {
+    test(`#365 — ${name} crafts the Quality DC on an ACCESSORY host`, () => {
+      const placed = details[name].vikPlaced;
+      const quality = placed.filter((v) => v.name === "Woeful: Quality Spell Focus Mastery");
+      assert.strictEqual(quality.length, 1,
+        "the relocated Quality DC option is crafted exactly once");
+      assert.strictEqual(quality[0].category, "Accessory",
+        "and on an Accessory host — crafting it on a Weapon means the relocation regressed");
+      assert.ok(quality[0].affixes.every((a) => a.bonus_type === "Quality" && a.value === 2),
+        "carrying the wiki's +2 Quality bonus on every spell school");
+      // Its genuinely-weapon sibling stays a weapon craft in the same solve, so
+      // the relocation moved one option and not the family.
+      const exceptional = placed.filter(
+        (v) => v.name === "Woeful: Exceptional Spell Focus Mastery");
+      assert.ok(exceptional.every((v) => v.category === "Weapon"),
+        "the Exceptional sibling is still crafted on a Weapon host");
+    });
+  }
+
   for (const name of goldenNames) {
     test(`golden solve unchanged: ${name}`, () => {
       const cur = solves[name];

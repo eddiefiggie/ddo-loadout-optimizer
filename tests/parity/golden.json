@@ -1,6 +1,6 @@
 {
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
- "generated": "2026-08-18",
+ "generated": "2026-08-19",
  "dataset": "web/data/items.json (9110 items)",
  "fixture_count": 23,
  "solves": {
@@ -968,7 +968,7 @@
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary Gravekeeper's Mystic Cloak"
+     "variant": "Lamordian Elegant Cloak"
     },
     {
      "slot": "Gloves",
@@ -1004,7 +1004,7 @@
     },
     {
      "slot": "Trinket",
-     "variant": "Bauble of Draconic Resistance"
+     "variant": "The Bloodstained Letter"
     }
    ]
   },
@@ -1047,7 +1047,7 @@
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary Gravekeeper's Mystic Cloak"
+     "variant": "Lamordian Elegant Cloak"
     },
     {
      "slot": "Gloves",
@@ -1083,7 +1083,7 @@
     },
     {
      "slot": "Trinket",
-     "variant": "Bauble of Draconic Resistance"
+     "variant": "The Bloodstained Letter"
     }
    ]
   },
