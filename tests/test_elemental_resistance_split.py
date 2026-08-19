@@ -21,6 +21,8 @@ from src import elemental_resistance_split as er  # noqa: E402
 from src import variants as variants_mod  # noqa: E402
 
 DATASET = os.path.join(ROOT, "web", "data", "items.json")
+TYPE_CORRECTIONS_PATH = os.path.join(
+    ROOT, "data", "seed", "compendium", "affix_type_corrections.json")
 SHARD_PATH = os.path.join(ROOT, "data", "seed", "compendium",
                           "elemental_resistance.json")
 
@@ -390,29 +392,35 @@ def test_the_built_dataset_credits_dumathoins_sonic_and_the_gem_without():
     assert "Sonic Resistance" not in gem_names
 
 
-def test_the_only_quarantined_carriers_are_the_six_upstream_retyped():
-    """Was `test_today_no_carrier_is_quarantined`, and it caught a real one.
+def test_no_carrier_is_quarantined_and_the_retyped_six_are_restored():
+    """Was `test_the_only_quarantined_carriers_are_the_six_upstream_retyped`, and
+    before that `test_today_no_carrier_is_quarantined`. It has now caught a real
+    defect twice and been resolved once, so the history is worth keeping.
 
-    #374/U4 — the 2026-08-18 gear-planner refresh RE-TYPED `Elemental Resistance`
-    from `Insight` to `Competence` on six carriers. This shard keys its readings by
-    bonus TYPE (two carriers bear two `Elemental Resistance` affixes with different
-    element sets, so a per-item flag cannot represent them), so the `Insight`
-    reading no longer joins and the affix is quarantined — REMOVED and disclosed,
-    which is the module's designed fail-safe, not a pipeline defect. The visible
-    effect is real and solver-facing: those six items no longer contribute their
-    four resistance components.
+    #374/U4 — the 2026-08-18 refresh RE-TYPED `Elemental Resistance` from `Insight`
+    to `Competence` on six carriers. This shard keys its readings by bonus TYPE (two
+    carriers bear two `Elemental Resistance` affixes with different element sets, so
+    a per-item flag cannot represent them), so the `Insight` reading stopped joining
+    and all six were quarantined — REMOVED and disclosed, the module's designed
+    fail-safe rather than a pipeline defect.
 
-    NOT re-keyed to `Competence` here, deliberately. The shard's own recorded
-    evidence is ambiguous on exactly this point — the harvested tooltip reads
-    "Competence Elemental Resistance - 10: This item provides a +10 **Insight**
-    bonus to your Acid, Cold, Fire, and Electrical resistances" — so the wiki does
-    not state the type outright and "never infer a value" applies. Adopting
-    upstream's new type, or pinning the old one, would both be guesses. It needs a
-    wiki re-read and a ruling.
+    #379 — resolved by RULING, not by adopting upstream. The earlier note here said
+    the evidence was ambiguous because the harvested tooltip reads "Competence
+    Elemental Resistance - 10: This item provides a +10 **Insight** bonus...". That
+    was wrong: `docs/wiki-evidence/elemental-resistance.md` (#191) had already ruled
+    on exactly this dialect — "The legacy dialect's visible label lies about the
+    type" — and names these same carriers. The wiki is more explicit still than the
+    tooltip: the template invocation itself carries the type,
+    `{{Elemental Resistance|elemental|10|insight}}`, so the bonus type is stated
+    outright and "never infer a value" is satisfied rather than blocked.
 
-    So the quarantine is pinned as a DISCLOSED, NAMED and TEMPORARY state, exactly
-    two-directional: a seventh quarantined carrier fails, and so does one of these
-    six being silently un-quarantined without the ruling landing.
+    So `Insight` is defended in `affix_type_corrections.json`, upstream's
+    label-following `Competence` is corrected back, and the join is restored.
+    Measured: quarantined 6 -> 0, expanded 53 -> 59, components 218 -> 242 (exactly
+    the six readings and their 6 x 4 components; all six are `sonic: false`).
+
+    Two-directional, as before: a newly quarantined carrier fails, and so does a
+    silent regression in the restored counts.
     """
     with open(DATASET, "r", encoding="utf-8") as fh:
         data = json.load(fh)
@@ -420,26 +428,35 @@ def test_the_only_quarantined_carriers_are_the_six_upstream_retyped():
     _RETYPED = ["Barnacled Buckler", "Epic Chain of Conviction",
                 "Epic Death's Rampart", "Jeweled Cloak (level 23)",
                 "Jeweled Cloak (level 24)", "Jeweled Cloak (level 25)"]
+
     assert cov["augments"]["quarantined"] == 0, "the augment channel is unaffected"
-    assert cov["quarantined"] == 6, cov["quarantined"]
-    # every one is the SAME cause — an absent per-type reading, not an unconfirmed
-    # or unreadable one, which would be a different defect entirely
-    assert cov["quarantined_absent"] == 6 and cov["quarantined_unconfirmed"] == 0
-    assert sorted(e["item"] for e in cov["excluded"]) == sorted(_RETYPED), \
-        cov["excluded"]
-    # ...and the shard still HAS an entry for each: the join broke on the type,
-    # not on the item, which is what makes this a ruling and not a harvest gap.
+    assert cov["quarantined"] == 0, cov["excluded"]
+    assert cov["quarantined_absent"] == 0 and cov["quarantined_unconfirmed"] == 0
+    assert cov["excluded"] == [], cov["excluded"]
+
+    # The shard still keys these by `Insight` — the correction restores upstream to
+    # the shard's reading, never the other way round.
     with open(SHARD_PATH, "r", encoding="utf-8") as fh:
         harvested = json.load(fh)["harvested"]
     for item in _RETYPED:
         assert item in harvested, item
         assert any(a.get("type") == "Insight" for a in harvested[item]["affixes"]), item
 
-    # 54 readings across both channels: 53 item-channel affixes + 1 augment.
-    # Re-ratified 60 -> 54 and 246 -> 222: exactly the six quarantined readings and
-    # their 6 x 4 = 24 components (all six are `sonic: false`, so four each).
-    assert cov["expanded"] + cov["augments"]["expanded"] == 54
-    assert cov["components"] + cov["augments"]["components"] == 222
+    # ...and the correction that makes that join work is present and pointed the
+    # right way. Without this the test would pass on a build that simply dropped
+    # the carriers.
+    with open(TYPE_CORRECTIONS_PATH, "r", encoding="utf-8") as fh:
+        corrections = json.load(fh)
+    for item in _RETYPED:
+        entry = corrections.get(item)
+        assert entry, f"{item} has no type correction — the join would break again"
+        assert any(c["name"] == "Elemental Resistance"
+                   and c["from"] == "Competence" and c["to"] == "Insight"
+                   for c in entry), entry
+
+    # 60 readings across both channels: 59 item-channel affixes + 1 augment.
+    assert cov["expanded"] + cov["augments"]["expanded"] == 60
+    assert cov["components"] + cov["augments"]["components"] == 246
     assert cov["expanded"] + cov["quarantined"] == 59, \
         "expanded + quarantined must still account for every item-channel reading"
 
