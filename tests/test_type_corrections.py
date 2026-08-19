@@ -252,9 +252,16 @@ def test_374_a_retired_correction_is_one_upstream_actually_adopted():
 
 def test_374_the_moment_corrections_are_still_live_because_upstream_kept_the_bug():
     """Both #259 entries are load-bearing after the refresh, stated as the fact
-    that makes them so: the augment pool still types the charges `Untyped`."""
+    that makes them so: the augment pool still types the charges `Untyped`.
+
+    Asserts PRESENCE, not exclusivity. This used to pin the shard's whole key set,
+    which was accurate while the #259 pair were the only survivors of the #374
+    retirement — but #379 added six `Elemental Resistance` corrections, and an
+    exclusivity assertion would have failed for a reason that has nothing to do
+    with what this test is about."""
     loaded = type_corrections.load(SHARD)
-    assert set(loaded) == {"Moment to Moment", "Legendary Moment to Legendary Moment"}
+    assert {"Moment to Moment", "Legendary Moment to Legendary Moment"} <= set(loaded), \
+        sorted(loaded)
     raw = _raw_affixes()
     for value in ("1", "3"):
         assert [a for a in raw if a.get("name") == "Action Boost Charges"
