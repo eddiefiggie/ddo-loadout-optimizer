@@ -183,23 +183,38 @@ def test_apply_refuses_an_empty_shard():
 # ---------------------------------------------------------------------------
 
 def test_the_shipped_shard_passes_against_the_real_catalog():
-    """The integration fact: one relocation, guarded clean, appliable — and the
-    premise it rests on holds against the vendored snapshot (the option IS in
-    the Weapon pool and is NOT in the Accessory pool)."""
+    """The integration fact: every shipped relocation is guarded clean and
+    appliable, and the premise each rests on holds against the vendored snapshot
+    (the option IS in its `from` pool and is NOT in its `to` pool).
+
+    #386 widened this from one relocation to the shard's full set. A full audit of
+    all four Lamordia families found the Woeful pools off by exactly -2 accessory
+    and +2 weapon, and the pair is `Quality Spell Focus Mastery` (#365) and
+    `Strength of Purpose` (#386) — both in the wiki's Woeful (Accessories) Wicked
+    table, both carried by gear-planner under Weapon. Asserting a hard count of 1
+    would fail the moment a sibling misfiling is corrected, which is not what this
+    test is about; it asserts the shard is non-empty and that EVERY entry holds.
+    """
     relocations = vpc.load(SHARD)
-    assert len(relocations) == 1
+    assert relocations, "refusing to pass vacuously over an empty shard"
     catalog = crafting_catalog.load_catalog()
     # The build applies the crafting rename at the catalog's single load point,
     # above every family builder; check() runs against that same renamed state.
     name_corrections.apply(catalog, name_corrections.load(CORRECTIONS))
-    src_names = [o.get("name") for o in catalog[FROM_POOL]["*"]]
-    dst_names = [o.get("name") for o in catalog[TO_POOL]["*"]]
-    assert OPTION in src_names, "premise: upstream still misfiles it under Weapon"
-    assert OPTION not in dst_names, "premise: the Accessory pool still lacks it"
-    assert vpc.check(relocations, catalog) == {TO_POOL: 1}
-    assert vpc.apply(relocations, catalog)["relocated"] == 1
-    assert OPTION not in [o.get("name") for o in catalog[FROM_POOL]["*"]]
-    assert OPTION in [o.get("name") for o in catalog[TO_POOL]["*"]]
+    for rel in relocations:
+        opt, src, dst = rel["option"], rel["from"], rel["to"]
+        assert opt in [o.get("name") for o in catalog[src]["*"]], \
+            f"premise: upstream still misfiles {opt!r} under {src!r}"
+        assert opt not in [o.get("name") for o in catalog[dst]["*"]], \
+            f"premise: {dst!r} still lacks {opt!r}"
+    expected = {}
+    for rel in relocations:
+        expected[rel["to"]] = expected.get(rel["to"], 0) + 1
+    assert vpc.check(relocations, catalog) == expected
+    assert vpc.apply(relocations, catalog)["relocated"] == len(relocations)
+    for rel in relocations:
+        assert rel["option"] not in [o.get("name") for o in catalog[rel["from"]]["*"]]
+        assert rel["option"] in [o.get("name") for o in catalog[rel["to"]]["*"]]
 
 
 def test_the_relocation_reaches_the_viktranium_builder():
