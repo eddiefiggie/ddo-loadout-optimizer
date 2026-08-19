@@ -1054,6 +1054,15 @@ function resolvePriorityAdd(name, vocab, priorities) {
     return { ok: true, priorities: migrated.priorities, substitutions: migrated.substitutions };
   }
 
+  // #381 — a RETIRED label is refused, never added: it is the same enchantment under
+  // a name the game data stopped using, so nothing carries it and ranking it would
+  // score zero. Refusing it is what keeps the migration one-way — a retired label is
+  // repaired on load and can never re-enter the priority list. It only needs a better
+  // sentence than the generic unknown-affix one below, which would leave the player
+  // hunting for a name that reads correct off their own gear.
+  const retiredMsg = (DN && DN.retiredLabelMessage) ? DN.retiredLabelMessage(vocab, v) : null;
+  if (retiredMsg) return { ok: false, priorities: ranked, substitutions: [], message: retiredMsg };
+
   if (!vocab.known.has(v)) {
     return { ok: false, priorities: ranked, substitutions: [],
              message: `"${v}" isn't a known affix in the dataset.` };
@@ -2693,11 +2702,16 @@ if (typeof window !== "undefined" && window.App) {
       state.expandedAwayMigrated = null;
       if (_dnMig && _dnMig.migratePriorities) {
         const migrated = _dnMig.migratePriorities(state.priorities, pickerVocabulary(dataset));
-        if (migrated.substitutions.length) {
+        const _retiredSubs = migrated.retired || [];
+        if (migrated.substitutions.length || _retiredSubs.length) {
           state.priorities = migrated.priorities;
           const droppedBounds = [];
           const droppedCredits = [];
-          for (const sub of migrated.substitutions) {
+          // #381 — a retired label strands bounds and credits by the same mechanism,
+          // so it walks the same loop, and they are DROPPED rather than remapped for
+          // the same reason: "min 4 Legendary Accuracy" bounded only the
+          // Legendary-typed carriers, and `Accuracy` is a broader population.
+          for (const sub of migrated.substitutions.concat(_retiredSubs)) {
             for (const map of [state.targetCaps, state.targetFloors]) {
               if (map && map[sub.from] != null) { droppedBounds.push(sub.from); delete map[sub.from]; }
             }
@@ -2712,7 +2726,8 @@ if (typeof window !== "undefined" && window.App) {
               }
             }
           }
-          state.expandedAwayMigrated = _dnMig.migrationMessage(migrated.substitutions, droppedBounds, droppedCredits);
+          state.expandedAwayMigrated = _dnMig.migrationMessage(
+            migrated.substitutions, droppedBounds, droppedCredits, { retired: _retiredSubs });
         }
       }
       // #91 (U4/KTD8) — pre-feature save healing, beside the priority migration

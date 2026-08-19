@@ -591,7 +591,8 @@ def build() -> dict:
     # worn carriers, which is the two-names-one-mechanic split #376 exists to
     # close — and the engraved name becomes NATIVE, which deletes its provenance
     # label and leaves a player who ranks what the item prints scoring nothing.
-    legendary_fold_mod.apply([t for tiers in _sets_raw.values() for t in tiers])
+    _legendary_fold_cov_sets = legendary_fold_mod.apply(
+        [t for tiers in _sets_raw.values() for t in tiers])
     _set_catalog = set_catalog_mod.catalog_from_raw(_sets_raw)
     dino_blanks, dino_inserts, dino_sets, dino_cov = dino_mod.build_dino(
         dino_seed, crafting, sets_catalog=_set_catalog)
@@ -892,7 +893,7 @@ def build() -> dict:
     name_corrections_mod.assert_all_reached(
         _name_corrections, _name_coverage, _name_coverage_augments,
         _name_coverage_crafting, _name_coverage_sets)
-    legendary_fold_mod.apply(aug_pool)
+    _legendary_fold_cov_augments = legendary_fold_mod.apply(aug_pool)
     # U3 (#134) — the same classifier on the augment pool, against its own shard.
     # Augments join by NAME: they have no item page and share one `Augment Slot`
     # url, so the item shard's title join cannot reach them. `Topaz of Swiftness
@@ -1065,6 +1066,26 @@ def build() -> dict:
             "\n  ".join(f"{s} — {stat} {val}" for s, stat, val in _set_orphans))
 
     _rankable_list = rankable_affixes(planner_records, _untyped_allow)
+    # #381 — the fold entries no channel fired this build. Upstream ADOPTED four
+    # of the five `Legendary <stat>` folds in the 2026-08-18 refresh: they now
+    # arrive already folded, so nothing is left to fold, no affix carries the
+    # provenance receipt, and the engraved names left the picker vocabulary — a
+    # character saved before the refresh ranks a name nothing carries and nothing
+    # redirects. Derived, never hand-listed: the next adoption does this again,
+    # silently.
+    #
+    # UNIONED across all three channels the fold runs on: a label folded in the
+    # augment pool alone (`Legendary Conditioning`, which name_corrections mints
+    # from `False Life (%)` upstream of the fold) is live, not retired. That is
+    # also why the condition is "did not fire" rather than "has zero
+    # occurrences" — all five have zero RAW occurrences today.
+    _retired_legendary = legendary_fold_mod.retired_labels(
+        _legendary_fold_cov_sets, _legendary_fold_cov, _legendary_fold_cov_augments)
+    # And the guard that keeps the migration honest: substituting a saved
+    # priority onto a stat the picker no longer ships would repair the save into
+    # a different silent zero. Checked against the SAME curated list the picker
+    # suggests from.
+    legendary_fold_mod.assert_targets_rankable(_retired_legendary, _rankable_list)
     # #91 (U1) — the Utility tier's counting vocabulary: Bool presence names
     # passing presence-minus-magnitude (the subtraction drops the four
     # dual-nature names), RESTRICTED to the curated tier-1 list. #343 removed
@@ -1557,6 +1578,15 @@ def build() -> dict:
                                     **heightened_awareness_mod.EXPANDED_AWAY,
                                     **absorption_split_mod.EXPANDED_AWAY,
                                     **er_split_mod.EXPANDED_AWAY},
+            # #381 — names this build RETIRED, mapped to what they became. Same
+            # `{name: [stats]}` shape as `expanded_away_names` so the client's
+            # substitution logic is familiar, but a DELIBERATELY SEPARATE map:
+            # these were never shorthand for anything. Upstream adopted our fold,
+            # so the enchantment is unchanged and still scores — it simply arrives
+            # under its base-stat name now. The saved-character load path
+            # substitutes them; they never re-enter the picker vocabulary, because
+            # there is nothing left for a player to newly pick.
+            "retired_labels": _retired_legendary,
             # U10 (R13) — the ORIGINATING enchantment name every expansion stamps on
             # the affixes it emits ("Sacred Spell Focus Mastery"), mapped to the stats
             # it becomes. The item surfaces DISPLAY these names, so the picker must be

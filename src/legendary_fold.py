@@ -46,6 +46,12 @@ Each folded affix is stamped with ``spell_focus.PROVENANCE_KEY`` carrying the
 engraved name, so item surfaces keep displaying what the item actually says
 ("Legendary Accuracy +2") and the web picker's provenance-label scan makes the
 engraved name a redirecting, rankable entry automatically.
+
+#381 — and the other end of that: when upstream ADOPTS one of these folds the
+entry stops firing, the receipt stops being stamped, and the engraved name
+leaves the vocabulary while its points stay put under the base stat. See
+:func:`retired_labels`, which derives that set so a saved character keeps
+resolving without anybody remembering to register the name by hand.
 """
 from __future__ import annotations
 
@@ -75,6 +81,11 @@ def _is_numeric(value) -> bool:
 def apply(records: list) -> dict:
     """Fold prefixed stats in place across ``records[].affixes``. Returns counts.
 
+    Returns ``{"folded": total, "by_name": {fold_key: fires}, "records": n}``.
+    ``by_name`` carries EVERY ``FOLD`` key, zeros included, so a caller unioning
+    several channels never has to distinguish "this channel folded none" from
+    "this channel forgot the key" — see :func:`retired_labels`.
+
     Raises ``SystemExit`` when the walk sees an un-adjudicated ``Legendary *``
     numeric stat at type ``Legendary``, an allowlisted name at a foreign type,
     or zero records (a vacuous pass proves nothing).
@@ -85,6 +96,7 @@ def apply(records: list) -> dict:
 
     problems = []
     folded = 0
+    by_name = {key: 0 for key in FOLD}
     for rec in records:
         for a in rec.get("affixes") or []:
             name = (a.get("name") or "").strip()
@@ -100,6 +112,7 @@ def apply(records: list) -> dict:
                 a[PROVENANCE_KEY] = name
                 a["name"] = FOLD[low]
                 folded += 1
+                by_name[low] += 1
             elif (low.startswith(_PREFIX) and a_type == "Legendary"
                     and _is_numeric(a.get("value"))):
                 problems.append(
@@ -111,4 +124,80 @@ def apply(records: list) -> dict:
     if problems:
         raise SystemExit(
             "legendary fold cannot proceed:\n  " + "\n  ".join(problems))
-    return {"folded": folded}
+    return {"folded": folded, "by_name": by_name, "records": len(records)}
+
+
+def retired_labels(*coverages) -> dict:
+    """#381 — the fold entries that DID NOT FIRE this build, mapped to targets.
+
+    Upstream can ADOPT one of these folds: ``Legendary Accuracy`` stopped
+    arriving as its own affix name and started arriving as ``Accuracy`` at type
+    ``Legendary``, which is what the fold was producing anyway. Nothing is left
+    to fold, so no affix carries the provenance receipt, so the engraved name
+    leaves the shipped vocabulary entirely — and a character saved before the
+    refresh keeps ranking a name nothing carries and nothing redirects. Scoring
+    is unaffected (the points are still there under ``Accuracy``); the saved
+    priority just no longer points at them.
+
+    Derived, never hand-listed: every future upstream adoption does this again,
+    silently, and a seed file has a registration step somebody will forget.
+
+    THE CONDITION IS "the entry did not fire", NOT "the name has zero
+    occurrences", and the difference is load-bearing. All five names have zero
+    RAW occurrences today, yet ``Legendary Conditioning`` is not retired:
+    ``name_corrections`` mints it from upstream's ``False Life (%)`` on the
+    augment channel (#376) UPSTREAM of this fold, so the fold does fire, does
+    stamp its receipt, and the label stays rankable and redirecting. Deriving
+    from occurrences would retire a label that works.
+
+    Unions ``by_name`` across every channel ``apply()`` ran on — a label folded
+    in one channel only is live, not retired — and refuses to vouch vacuously:
+    an empty ``FOLD``, no coverage at all, a coverage missing counts, or zero
+    records inspected across the union all fail the build.
+    """
+    if not FOLD:
+        raise SystemExit(
+            "legendary fold retired-label derivation: FOLD is empty, so every "
+            "label would read as retired — there is nothing to vouch for")
+    if not coverages:
+        raise SystemExit(
+            "legendary fold retired-label derivation received no channel "
+            "coverage — a label is retired only when NO channel folded it, "
+            "which zero channels cannot establish")
+
+    union = {key: 0 for key in FOLD}
+    records = 0
+    for index, cov in enumerate(coverages):
+        counts = (cov or {}).get("by_name")
+        if not isinstance(counts, dict) or set(counts) != set(FOLD):
+            raise SystemExit(
+                f"legendary fold retired-label derivation: channel {index} "
+                "returned no usable by_name counts (expected one entry per "
+                f"FOLD key, got {sorted(counts) if isinstance(counts, dict) else counts!r})")
+        for key, n in counts.items():
+            union[key] += int(n)
+        records += int((cov or {}).get("records") or 0)
+    if not records:
+        raise SystemExit(
+            "legendary fold retired-label derivation inspected zero records "
+            f"across {len(coverages)} channel(s) — a vacuous pass would retire "
+            "every label")
+    return {key: [FOLD[key]] for key in FOLD if union[key] == 0}
+
+
+def assert_targets_rankable(retired: dict, vocabulary) -> None:
+    """Every retired label must migrate onto a name the picker still ships.
+
+    Migrating a saved priority onto a dead name is worse than not migrating: the
+    player is told their priority was repaired and it still scores nothing, with
+    the original name gone from the save. If upstream ever adopts a fold AND
+    drops the base stat in the same refresh, this fails the build instead.
+    """
+    vocab = set(vocabulary or ())
+    missing = [(label, target) for label, targets in sorted((retired or {}).items())
+               for target in targets if target not in vocab]
+    if missing:
+        raise SystemExit(
+            "retired legendary labels migrate onto stats absent from the "
+            "shipped picker vocabulary:\n  " + "\n  ".join(
+                f"{label!r} -> {target!r}" for label, target in missing))

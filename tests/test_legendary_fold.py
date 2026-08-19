@@ -72,6 +72,143 @@ def test_coverage_counts_the_folds():
     assert cov["folded"] == 2
 
 
+def test_coverage_reports_per_name_fires_over_the_whole_fold_table():
+    # #381 — every FOLD key is present with a count, zeros included. A caller
+    # unioning channels must never have to tell "this channel folded none" apart
+    # from "this channel forgot the key".
+    rec = _rec(_aff("Legendary Accuracy"), _aff("Legendary Deadly", value="3"))
+    cov = legendary_fold.apply([rec])
+    assert set(cov["by_name"]) == set(legendary_fold.FOLD)
+    assert cov["by_name"]["legendary accuracy"] == 1
+    assert cov["by_name"]["legendary deadly"] == 1
+    assert cov["by_name"]["legendary conditioning"] == 0
+    assert cov["records"] == 1
+    assert cov["folded"] == 2, "the pre-existing key still means what it meant"
+
+
+# ---- #381: retired labels, DERIVED from what fired ---------------------------------
+
+def _cov(*fired, records=1):
+    """A channel coverage in which exactly ``fired`` folded."""
+    return {"folded": len(fired), "records": records,
+            "by_name": {k: (1 if k in fired else 0) for k in legendary_fold.FOLD}}
+
+
+def test_a_fold_entry_that_no_channel_fired_is_retired_to_its_base_stat():
+    retired = legendary_fold.retired_labels(_cov("legendary conditioning"))
+    assert retired["legendary accuracy"] == ["Accuracy"]
+    assert retired["legendary armor-piercing"] == ["Armor-Piercing"]
+    assert retired["legendary deadly"] == ["Deadly"]
+    assert retired["legendary spell penetration"] == ["Spell Penetration"]
+    assert "legendary conditioning" not in retired, (
+        "an entry that FIRED is live, not retired")
+
+
+def test_retirement_is_the_UNION_across_channels_not_any_one_of_them():
+    # `Legendary Conditioning` folds on the augment channel ALONE — name_corrections
+    # mints it there from `False Life (%)`. Judging any single channel would retire
+    # a label the build still resolves.
+    items = _cov()
+    sets = _cov()
+    augments = _cov("legendary conditioning")
+    assert "legendary conditioning" in legendary_fold.retired_labels(items)
+    assert "legendary conditioning" not in legendary_fold.retired_labels(
+        sets, items, augments)
+
+
+def test_retirement_is_keyed_on_FIRING_not_on_raw_occurrences():
+    # The distinction this whole derivation rests on. All five names have zero RAW
+    # occurrences in the refreshed snapshot; `Legendary Conditioning` still resolves
+    # because a rename upstream of the fold mints it. A record that arrives already
+    # spelled `Conditioning` never fires the entry; one renamed INTO the engraved
+    # name does — and only the second keeps the label alive.
+    already_folded = _rec({"name": "Conditioning", "type": "Legendary", "value": "15"})
+    renamed_in = _rec(_aff("Legendary Conditioning", value="15"))
+    assert "legendary conditioning" in legendary_fold.retired_labels(
+        legendary_fold.apply([already_folded]))
+    assert "legendary conditioning" not in legendary_fold.retired_labels(
+        legendary_fold.apply([renamed_in]))
+
+
+def test_retired_labels_refuses_zero_channels():
+    try:
+        legendary_fold.retired_labels()
+    except SystemExit as e:
+        assert "no channel coverage" in str(e)
+    else:
+        raise AssertionError("zero channels cannot establish that nothing folded")
+
+
+def test_retired_labels_refuses_zero_records():
+    try:
+        legendary_fold.retired_labels(_cov(records=0), _cov(records=0))
+    except SystemExit as e:
+        assert "inspected zero records" in str(e)
+    else:
+        raise AssertionError("a vacuous pass would retire every label")
+
+
+def test_retired_labels_refuses_an_empty_fold_table():
+    saved = dict(legendary_fold.FOLD)
+    legendary_fold.FOLD.clear()
+    try:
+        legendary_fold.retired_labels({"by_name": {}, "records": 1})
+    except SystemExit as e:
+        assert "FOLD is empty" in str(e)
+    else:
+        raise AssertionError("an empty allowlist vouches for nothing")
+    finally:
+        legendary_fold.FOLD.update(saved)
+
+
+def test_retired_labels_refuses_a_channel_with_drifted_counts():
+    try:
+        legendary_fold.retired_labels({"folded": 0, "records": 5})
+    except SystemExit as e:
+        assert "no usable by_name counts" in str(e)
+    else:
+        raise AssertionError("a coverage without per-name counts proves nothing")
+
+
+def test_a_retired_label_whose_target_left_the_vocabulary_fails_the_build():
+    # Migrating a saved priority onto a dead name is worse than not migrating: the
+    # player is told the priority was repaired and it still scores nothing.
+    retired = {"legendary accuracy": ["Accuracy"]}
+    legendary_fold.assert_targets_rankable(retired, ["Accuracy", "Deadly"])
+    try:
+        legendary_fold.assert_targets_rankable(retired, ["Deadly"])
+    except SystemExit as e:
+        assert "absent from the shipped picker vocabulary" in str(e)
+        assert "'Accuracy'" in str(e)
+    else:
+        raise AssertionError("a retired label must never migrate onto a dead name")
+
+
+def test_built_dataset_retires_exactly_the_four_adopted_labels():
+    path = os.path.join(ROOT, "web", "data", "items.json")
+    if not os.path.exists(path):
+        return
+    with open(path) as fh:
+        data = json.load(fh)
+    meta = data["metadata"]
+    assert meta["retired_labels"] == {
+        "legendary accuracy": ["Accuracy"],
+        "legendary armor-piercing": ["Armor-Piercing"],
+        "legendary deadly": ["Deadly"],
+        "legendary spell penetration": ["Spell Penetration"],
+    }, meta["retired_labels"]
+    # The survivor, asserted from the OTHER side: it is a provenance label rather
+    # than a retired one, which is the whole fire-vs-occurrence distinction.
+    assert "Legendary Conditioning" in meta["provenance_labels"]
+    rankable = set(meta["rankable_affixes"])
+    for targets in meta["retired_labels"].values():
+        for t in targets:
+            assert t in rankable, t
+    # And the two maps stay disjoint — a name cannot both redirect as shorthand
+    # and be renamed in place; the player would get two contradictory sentences.
+    assert not (set(meta["retired_labels"]) & set(meta["expanded_away_names"]))
+
+
 # ---- the guards -----------------------------------------------------------------
 
 def test_an_unknown_numeric_legendary_stat_fails_the_build():

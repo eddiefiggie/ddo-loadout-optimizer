@@ -86,6 +86,11 @@ window.App && window.App.ready((dataset) => {
     const DN = window.DatasetNormalizer;
     const awayMsg = (DN && DN.expandedAwayMessage) ? DN.expandedAwayMessage(vocab, stat) : null;
     if (awayMsg) { $("q-status").textContent = awayMsg; return; }
+    // #381 — same shape for a retired label: nothing carries the name anymore, so
+    // refuse it and say what it became rather than falling through to the generic
+    // unknown-affix message. Must also precede the `known` check.
+    const retMsg = (DN && DN.retiredLabelMessage) ? DN.retiredLabelMessage(vocab, stat) : null;
+    if (retMsg) { $("q-status").textContent = retMsg; return; }
     if (!vocab.known.has(stat)) { $("q-status").textContent = `"${stat}" isn't a known affix in the dataset.`; return; }
     ranked.push(stat);
     $("q-add").value = "";
