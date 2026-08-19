@@ -816,6 +816,133 @@ test("#169: the disclosure names a dropped bound", () => {
   assert.ok(!/removed rather than copied/.test(quiet), "no bound, no bound sentence");
 });
 
+// --- #381: RETIRED labels (an upstream-adopted fold) ---------------------------
+// Distinct from an expanded-away name and deliberately kept in its own map. When
+// upstream adopts one of the build's folds, the engraved name stops arriving, the
+// fold stops minting a receipt, and the label leaves the vocabulary — while the
+// points stay exactly where they were, under the base stat. Nothing was shorthand
+// and nothing split, so the substitution is one-for-one and the disclosure has to
+// say something different from "rank those instead".
+
+const RETIRED_VOCAB = {
+  expandedAway: { "parrying": ["Armor Class", "Fortitude Save"] },
+  retiredLabels: {
+    "legendary accuracy": ["Accuracy"],
+    "legendary deadly": ["Deadly"],
+  },
+};
+
+test("#381: a retired label is substituted in place, preserving rank order", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const out = migratePriorities(["Strength", "Legendary Accuracy", "Dodge"], RETIRED_VOCAB);
+  assert.deepStrictEqual(out.priorities, ["Strength", "Accuracy", "Dodge"]);
+  assert.deepStrictEqual(out.retired, [{ from: "Legendary Accuracy", to: ["Accuracy"] }]);
+  assert.deepStrictEqual(out.substitutions, [],
+    "reported separately from an expansion — the two disclosures say different things");
+});
+
+test("#381: a retired label already ranked alongside its target does not duplicate it", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const out = migratePriorities(["Accuracy", "Legendary Accuracy"], RETIRED_VOCAB);
+  assert.deepStrictEqual(out.priorities, ["Accuracy"]);
+  assert.strictEqual(out.retired.length, 1, "the collapse is still disclosed");
+});
+
+test("#381: retired migration is idempotent and case-insensitive", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const once = migratePriorities(["  LEGENDARY DEADLY "], RETIRED_VOCAB);
+  assert.deepStrictEqual(once.priorities, ["Deadly"], "free-typed casing still matches");
+  const twice = migratePriorities(once.priorities, RETIRED_VOCAB);
+  assert.deepStrictEqual(twice.priorities, once.priorities);
+  assert.strictEqual(twice.retired.length, 0, "a live base stat is never a retired key");
+});
+
+test("#381: an expanded-away name still wins, and both kinds migrate in one pass", () => {
+  const { migratePriorities } = require("../web/dataset.js");
+  const out = migratePriorities(["Parrying", "Legendary Deadly"], RETIRED_VOCAB);
+  assert.deepStrictEqual(out.priorities, ["Armor Class", "Fortitude Save", "Deadly"]);
+  assert.strictEqual(out.substitutions.length, 1);
+  assert.strictEqual(out.retired.length, 1);
+});
+
+test("#381: a retired label collides with Object.prototype without resolving or throwing", () => {
+  const { migratePriorities, retiredLabelFor } = require("../web/dataset.js");
+  // Verbatim the hazard `expandedAwayFor` documents: priority names arrive from
+  // localStorage and from imported character files, so the new map is not trusted
+  // input either. `Object.length === 1` sails past a bare `hit && hit.length`.
+  for (const hostile of ["constructor", "toString", "valueOf", "__proto__", "hasOwnProperty"]) {
+    assert.strictEqual(retiredLabelFor(RETIRED_VOCAB, hostile), null, `${hostile} must not resolve`);
+    const out = migratePriorities([hostile], RETIRED_VOCAB);
+    assert.deepStrictEqual(out.priorities, [hostile], `${hostile} passes through untouched`);
+    assert.strictEqual(out.retired.length, 0);
+  }
+});
+
+test("#381: a non-array retired value is rejected rather than trusted", () => {
+  const { retiredLabelFor } = require("../web/dataset.js");
+  assert.strictEqual(
+    retiredLabelFor({ retiredLabels: { "legendary accuracy": "Accuracy" } }, "Legendary Accuracy"),
+    null, "a bare string has .length and would have passed a naive check");
+});
+
+test("#381: the retired disclosure says renamed, NOT shorthand", () => {
+  const { retiredLabelMessage, expandedAwayMessage, migratePriorities, migrationMessage } =
+    require("../web/dataset.js");
+  const picked = retiredLabelMessage(RETIRED_VOCAB, "Legendary Accuracy");
+  assert.ok(picked.includes("Accuracy"), "names what it became");
+  assert.ok(!/shorthand/.test(picked),
+    `a retired label was never shorthand for anything: ${picked}`);
+  assert.ok(/shorthand/.test(expandedAwayMessage(RETIRED_VOCAB, "Parrying")),
+    "while the expanded-away wording is unchanged");
+  assert.strictEqual(retiredLabelMessage(RETIRED_VOCAB, "Accuracy"), null,
+    "a live stat gets no disclosure");
+
+  const out = migratePriorities(["Legendary Accuracy"], RETIRED_VOCAB);
+  const msg = migrationMessage(out.substitutions, [], [], { retired: out.retired });
+  assert.ok(msg, "a retirement alone still produces a load-time disclosure");
+  assert.ok(msg.includes("Legendary Accuracy") && msg.includes("Accuracy"));
+  assert.ok(!/expand/.test(msg), `nothing expanded: ${msg}`);
+  assert.ok(/still scores/.test(msg),
+    "the reassurance is the point — the player's priority did not stop working");
+});
+
+test("#381: a retired-only migration still discloses its dropped bounds and credits", () => {
+  const { migrationMessage } = require("../web/dataset.js");
+  const retired = [{ from: "Legendary Accuracy", to: ["Accuracy"] }];
+  const msg = migrationMessage([], ["Legendary Accuracy"], ["Legendary Accuracy"], { retired });
+  assert.ok(/min\/max/.test(msg), "the stranded bound is named");
+  assert.ok(/already have/.test(msg), "and the stranded credit through its own channel");
+  assert.strictEqual(migrationMessage([], ["X"], ["X"], { retired: [] }), null,
+    "still null when nothing migrated at all");
+});
+
+test("#381: a vocabulary without the map behaves exactly as before", () => {
+  const { migratePriorities, retiredLabelFor } = require("../web/dataset.js");
+  const out = migratePriorities(["Legendary Accuracy"], { expandedAway: {} });
+  assert.deepStrictEqual(out.priorities, ["Legendary Accuracy"]);
+  assert.deepStrictEqual(out.retired, [], "the arm is always present, just empty");
+  assert.strictEqual(retiredLabelFor(undefined, "Legendary Accuracy"), null);
+});
+
+test("#381: the built dataset's real map drives the migration and stays unpickable", () => {
+  const v = builtVocab();
+  if (!v) return console.log("  (skipped — web/data/items.json not built)");
+  const { migratePriorities } = require("../web/dataset.js");
+  const labels = Object.keys(v.retiredLabels || {});
+  assert.ok(labels.length > 0, "the shipped dataset declares retired labels");
+  for (const key of labels) {
+    assert.ok(!v.known.has(key), `${key} did not re-enter the known vocabulary`);
+    for (const target of v.retiredLabels[key]) {
+      assert.ok(v.suggestions.includes(target), `${key} migrates onto the pickable ${target}`);
+    }
+  }
+  const out = migratePriorities(labels, v);
+  assert.strictEqual(out.retired.length, labels.length, "every one of them migrates");
+  for (const p of out.priorities) {
+    assert.ok(v.suggestions.includes(p), `${p} is a real rankable target`);
+  }
+});
+
 // --- helpless-fold review: saved priorities carrying a picker ALIAS ------------
 // The helpless-damage fold re-pointed 11 picker aliases at one canonical stat.
 // migratePriorities substituted only expanded-away names, so a character saved

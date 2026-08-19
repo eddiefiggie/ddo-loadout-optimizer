@@ -845,19 +845,38 @@ test("U4/003: the migration notice is a distinct message, not the catalog-stalen
 // source text. Without this, the player-facing half of #169 -- the part that stops
 // a saved `Parrying` priority from silently scoring zero -- had no coverage at all.
 
+// The window is sized to hold the whole migration block, not tuned to it: #381
+// added the retired-label arm inside it and pushed the last assertion past a
+// 1200-char slice, which reads as "the wizard stopped recording the disclosure"
+// when the wizard does exactly what it did before.
+const MIGRATION_BLOCK = 2200;
+
 test("#169: the load path migrates expanded-away priorities and flags the disclosure", () => {
   const at = WIZARD_SRC.indexOf("migratePriorities(state.priorities");
   assert.ok(at > 0, "loadCharacter consults the migration helper");
-  const near = WIZARD_SRC.slice(at, at + 1200);
+  const near = WIZARD_SRC.slice(at, at + MIGRATION_BLOCK);
   assert.ok(/state\.priorities = migrated\.priorities/.test(near), "it adopts the substitution");
   assert.ok(/state\.expandedAwayMigrated = /.test(near), "and records it so the notice can render");
 });
 
 test("#169: the migration drops bounds stranded on the old name, and discloses it", () => {
   const at = WIZARD_SRC.indexOf("migratePriorities(state.priorities");
-  const near = WIZARD_SRC.slice(at, at + 1200);
+  const near = WIZARD_SRC.slice(at, at + MIGRATION_BLOCK);
   assert.ok(/delete map\[sub\.from\]/.test(near), "a cap/floor keyed to the old name is removed");
   assert.ok(/droppedBounds/.test(near), "and passed to the disclosure rather than dropped silently");
+});
+
+test("#381: the load path sweeps RETIRED substitutions through the same cleanup", () => {
+  // A retired label's stranded cap/floor/credit is the same orphan #169 closed for
+  // expanded-away names: model.js still unions the old name into the target set and
+  // the solver reports a floor it can never satisfy, with no UI row to delete it.
+  const at = WIZARD_SRC.indexOf("migratePriorities(state.priorities");
+  const near = WIZARD_SRC.slice(at, at + MIGRATION_BLOCK);
+  assert.ok(/migrated\.retired/.test(near), "the retired arm is read");
+  assert.ok(/migrated\.substitutions\.concat\(_retiredSubs\)/.test(near),
+    "and it walks the SAME bound/credit sweep, not a parallel one that can drift");
+  assert.ok(/\{ retired: _retiredSubs \}/.test(near),
+    "and reaches the disclosure, which gives it its own sentence");
 });
 
 test("#169: bounds are restored BEFORE the migration runs, or it cannot clean them", () => {
@@ -1119,7 +1138,8 @@ test("U5: a dropped credit is disclosed as a credit, not as a min/max", () => {
 
   // The stat-keyed bounds loop cannot reach a `stat||bonusType` key, so the sweep
   // must match on the entry's own stat.
-  const at = WIZARD_SRC.indexOf("for (const sub of migrated.substitutions)");
+  const at = WIZARD_SRC.indexOf("for (const sub of migrated.substitutions");
+  assert.ok(at > 0, "the sweep loop is found");
   const loop = WIZARD_SRC.slice(at, at + 1000);
   assert.ok(/c\.stat === sub\.from/.test(loop) && /droppedCredits\.push/.test(loop),
     "the sweep matches on the credit's stat and reports through its own channel");

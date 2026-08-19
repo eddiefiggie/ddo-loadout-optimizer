@@ -888,6 +888,32 @@ function buildPickerVocabulary(dataset) {
     ? emitted : EXPANDED_AWAY_FALLBACK;
   for (const k of Object.keys(src)) expandedAway[String(k).trim().toLowerCase()] = src[k].slice();
 
+  // #381 — names this build RETIRED, mapped to what they became. Keyed lowercase,
+  // same `{name: [stats]}` shape as `expandedAway`, DELIBERATELY a separate map:
+  // an expanded-away name is shorthand for several stats and the player is told to
+  // rank those instead, while a retired label is the SAME enchantment under a new
+  // name — upstream adopted the build's `Legendary <stat>` fold, so the points are
+  // still there, just under `Accuracy`. Reusing the expanded-away map would tell
+  // the player their priority was shorthand for something it never was.
+  //
+  // No stale-cache fallback, and none is possible to need: a dataset built before
+  // this field existed is one where the labels are still carried as live affixes,
+  // so there is nothing to migrate. The map is derived per build (a label is
+  // retired when NO channel folded it), so it grows itself on the next adoption.
+  //
+  // Never added to `suggest` or `known`: a retired label is migrated on load and
+  // can never be newly picked, because no gear carries the name anymore.
+  const retiredLabels = {};
+  const retiredSrc = meta.retired_labels;
+  if (retiredSrc && typeof retiredSrc === "object") {
+    for (const k of Object.keys(retiredSrc)) {
+      const to = retiredSrc[k];
+      if (Array.isArray(to) && to.length) {
+        retiredLabels[String(k).trim().toLowerCase()] = to.slice();
+      }
+    }
+  }
+
   // U10 (R13/R14) — the enchantment names the item surfaces DISPLAY as an expansion's
   // origin must be rankable. `expanded_away_names` above is NOT that set: it carries
   // only the BARE keys a family declares ("spell focus mastery"), while the surfaces
@@ -973,7 +999,7 @@ function buildPickerVocabulary(dataset) {
            // beside the set so every caller (solve, wizard, browse) reads ONE
            // ordering rather than re-deriving it and drifting.
            utilityOrder: defaultUtilityOrder(utilityCounting),
-           expandedAway, provenanceLabels: labelMap };
+           expandedAway, provenanceLabels: labelMap, retiredLabels };
 }
 
 /** U10 — is this name an enchantment label an expansion stamps (as opposed to a bare
@@ -1011,6 +1037,33 @@ function expandedAwayMessage(vocab, name) {
   return to ? `"${name}" is shorthand for ${to.join(", ")} — rank those instead.` : null;
 }
 
+/** #381 — the stat a RETIRED enchantment label became, or null.
+ *
+ *  Own-property only, for exactly the reason `expandedAwayFor` documents above and
+ *  in the same words: a priority named `constructor` reaches here from localStorage
+ *  and from imported character files, inherits `Object` off the prototype chain, and
+ *  `Object.length === 1` sails past a bare `hit && hit.length` — which is how the
+ *  load path once threw with a character's priorities already half-overwritten. */
+function retiredLabelFor(vocab, name) {
+  const map = (vocab && vocab.retiredLabels) || {};
+  const key = String(name == null ? "" : name).trim().toLowerCase();
+  if (!Object.prototype.hasOwnProperty.call(map, key)) return null;
+  const hit = map[key];
+  return (Array.isArray(hit) && hit.length) ? hit : null;
+}
+
+/** #381 — the player-facing disclosure for a retired label, or null.
+ *
+ *  Deliberately NOT the expanded-away wording. "X is shorthand for A, B — rank those
+ *  instead" is false here: nothing was shorthand and nothing split. The game data
+ *  started spelling one enchantment the way this build already scored it, so the
+ *  priority keeps working and only its name changed. Say that. */
+function retiredLabelMessage(vocab, name) {
+  const to = retiredLabelFor(vocab, name);
+  return to ? `"${name}" is now recorded as ${to.join(", ")} — same enchantment, ` +
+    `new name, so rank ${to.length > 1 ? "those" : "that"} instead.` : null;
+}
+
 /** #169 — load migration for a SAVED CHARACTER's ranked priorities.
  *
  *  The add-a-priority paths refuse an expanded-away name, but nothing guarded the
@@ -1042,10 +1095,26 @@ function migratePriorities(priorities, vocab) {
   const out = [];
   const seen = new Set();
   const substitutions = [];
+  const retired = [];
   const known = (vocab && vocab.known instanceof Set) ? vocab.known : null;
   const canonicalFn = (vocab && typeof vocab.canonical === "function") ? vocab.canonical : null;
   for (const p of (Array.isArray(priorities) ? priorities : [])) {
     let to = expandedAwayFor(vocab, p);
+    // #381 — a RETIRED label: upstream adopted one of the build's folds, so the
+    // engraved name stopped arriving and left the vocabulary while the points
+    // stayed put under the base stat. Substituted here, in the same pass and the
+    // same rank position as an expansion, but reported SEPARATELY: it is not a
+    // shorthand that expanded, and the disclosure must not say it was.
+    //
+    // Decided BEFORE the alias fallback below, which would otherwise see an
+    // unknown name, find no alias, and pass it through unchanged — the exact
+    // silent zero this migration exists to prevent. Idempotent: the replacement
+    // is a live base stat, and a live stat is never a retired key.
+    let wasRetired = false;
+    if (!to) {
+      const back = retiredLabelFor(vocab, p);
+      if (back) { to = back; wasRetired = true; }
+    }
     if (!to && known && canonicalFn) {
       const trimmed = String(p == null ? "" : p).trim();
       if (trimmed && !known.has(trimmed)) {
@@ -1058,7 +1127,7 @@ function migratePriorities(priorities, vocab) {
         if (typeof c === "string" && c && c !== trimmed) to = expandedAwayFor(vocab, c) || [c];
       }
     }
-    if (to) substitutions.push({ from: p, to: to.slice() });
+    if (to) (wasRetired ? retired : substitutions).push({ from: p, to: to.slice() });
     for (const name of (to || [p])) {
       const key = String(name == null ? "" : name).trim().toLowerCase();
       if (seen.has(key)) continue;
@@ -1066,7 +1135,7 @@ function migratePriorities(priorities, vocab) {
       out.push(name);
     }
   }
-  return { priorities: out, substitutions };
+  return { priorities: out, substitutions, retired };
 }
 
 /** #169 — the player-facing sentence for a set of load-time substitutions.
@@ -1075,8 +1144,16 @@ function migratePriorities(priorities, vocab) {
  *  is not optional: a floor the player set is a number they chose, and removing
  *  it silently changes what the solver optimizes for without telling them. */
 function migrationMessage(substitutions, droppedBounds, droppedCredits, opts) {
-  if (!substitutions || !substitutions.length) return null;
-  const parts = substitutions.map((s) => `"${s.from}" -> ${s.to.join(", ")}`);
+  // #381 — retired labels ride in via `opts.retired` rather than the substitution
+  // list, because they need their OWN sentence: an expanded-away name became the
+  // several stats it was shorthand for, a retired one is the same enchantment
+  // wearing the name the game now uses. Merging them would tell a player their
+  // `Legendary Accuracy` priority was shorthand, which it never was.
+  const retired = (opts && Array.isArray(opts.retired)) ? opts.retired : [];
+  const subs = substitutions || [];
+  if (!subs.length && !retired.length) return null;
+  if (!subs.length) return _retiredSentence(retired) + _droppedSuffix(droppedBounds, droppedCredits);
+  const parts = subs.map((s) => `"${s.from}" -> ${s.to.join(", ")}`);
   // U11 (R15) — the picker add reuses this disclosure but not its wording: "This
   // character ranked…" is about a save being repaired, and reads as nonsense next to
   // a name the player just picked. Same clauses, different lead.
@@ -1096,6 +1173,27 @@ function migrationMessage(substitutions, droppedBounds, droppedCredits, opts) {
     : `This character ranked ${parts.length > 1 ? "names" : "a name"} that ` +
       `now expand${parts.length > 1 ? "" : "s"} into the stats they actually grant: ` +
       `${parts.join("; ")}. Your priorities were updated to match.`;
+  if (retired.length) msg += " " + _retiredSentence(retired);
+  return msg + _droppedSuffix(droppedBounds, droppedCredits);
+}
+
+/** #381 — the retired-label clause. Leads with what the player cares about: the
+ *  priority still scores. Nothing expanded, nothing was shorthand, no extra rank
+ *  was consumed — the game data simply renamed one enchantment onto the base stat
+ *  this build was already scoring it as. */
+function _retiredSentence(retired) {
+  const parts = retired.map((s) => `"${s.from}" -> ${s.to.join(", ")}`);
+  const many = parts.length > 1;
+  return `This character ranked ${many ? "names" : "a name"} the game data no longer ` +
+    `uses: ${parts.join("; ")}. ${many ? "Those enchantments are" : "That enchantment is"} ` +
+    `unchanged and still ${many ? "score" : "scores"} — ${many ? "they are" : "it is"} ` +
+    `recorded under the base stat now, so your ${many ? "priorities were" : "priority was"} ` +
+    `renamed in place.`;
+}
+
+/** The dropped-bounds and dropped-credit clauses, shared by every migration lead. */
+function _droppedSuffix(droppedBounds, droppedCredits) {
+  let msg = "";
   const dropped = [...new Set(droppedBounds || [])];
   if (dropped.length) {
     msg += ` The min/max you had set on ${dropped.map((d) => `"${d}"`).join(", ")} ` +
@@ -1184,9 +1282,9 @@ function migrateCredits(credits, vocab) {
 // Browser: expose a global so app.js can normalize the fetched dataset without a
 // module system. Node: CommonJS export for the tests + parity harness.
 if (typeof window !== "undefined") {
-  window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
+  window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
 }
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { UTILITY_CONTAINER_DEFAULT_ORDER, defaultUtilityOrder,
-    normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK, UTILITY_TIER1_PRESENCE };
+    normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK, UTILITY_TIER1_PRESENCE };
 }

@@ -202,6 +202,75 @@ test("#287: the engraved `Legendary Conditioning` stays a redirecting picker lab
 });
 
 // ---------------------------------------------------------------------------
+// 2b. The four labels upstream ADOPTED (#381)
+//
+// Same refresh, opposite outcome. Upstream took over four of the five folds:
+// `Legendary Accuracy` now arrives as `Accuracy` at type `Legendary`, which is
+// what the fold was producing anyway. Nothing is left to fold, so no affix
+// carries the receipt, so the engraved name left the vocabulary — and a
+// character saved before the refresh ranked a name nothing carries and nothing
+// redirected. Scoring never moved; the saved priority stopped pointing at it.
+// ---------------------------------------------------------------------------
+
+const ADOPTED = {
+  "Legendary Accuracy": "Accuracy",
+  "Legendary Armor-Piercing": "Armor-Piercing",
+  "Legendary Deadly": "Deadly",
+  "Legendary Spell Penetration": "Spell Penetration",
+};
+
+test("#381: the adopted labels are retired to their base stats, and Conditioning is not", () => {
+  const retired = (realData.metadata || {}).retired_labels || {};
+  assert.deepStrictEqual(
+    Object.fromEntries(Object.entries(retired).map(([k, v]) => [k, v.join(",")])),
+    Object.fromEntries(Object.entries(ADOPTED).map(([k, v]) => [k.toLowerCase(), v])),
+    "exactly the four adopted labels, each mapped to the stat that now carries it");
+  assert.ok(!("legendary conditioning" in retired),
+    "the survivor is NOT retired — the condition is whether the fold FIRED, not " +
+    "whether the name occurs. All five have zero raw occurrences; this one is " +
+    "minted by a rename upstream of the fold, so it fires and keeps its receipt");
+});
+
+test("#381: each retired label's base stat is what the solver actually credits", () => {
+  for (const [label, base] of Object.entries(ADOPTED)) {
+    assert.deepStrictEqual(carriersOf(label).map((x) => x.chan), [],
+      `${label} is credited by no channel — that is why it needed retiring`);
+    assert.ok(carriersOf(base).length > 0, `${base} is credited, so the migration lands somewhere`);
+    assert.ok(vocab.suggestions.includes(base), `${base} is still pickable`);
+  }
+});
+
+test("#381: a saved character ranking an adopted label loads with the base stat in its place", () => {
+  // The reported defect, end to end, on the shipped dataset.
+  const saved = ["Constitution", "Legendary Accuracy", "Dodge"];
+  const out = migratePriorities(saved, vocab);
+  assert.deepStrictEqual(out.priorities, ["Constitution", "Accuracy", "Dodge"],
+    "substituted IN PLACE — rank order is the product, so it cannot shift");
+  assert.deepStrictEqual(out.substitutions, [],
+    "not reported as an expansion: nothing was shorthand for anything");
+  assert.deepStrictEqual(out.retired, [{ from: "Legendary Accuracy", to: ["Accuracy"] }],
+    "reported as a retirement, so the disclosure can say what actually happened");
+  assert.deepStrictEqual(migratePriorities(out.priorities, vocab).priorities, out.priorities,
+    "idempotent — a second load is a no-op");
+});
+
+test("#381: all four adopted labels migrate, and a duplicate collapses", () => {
+  const out = migratePriorities([...Object.keys(ADOPTED), "Accuracy"], vocab);
+  assert.deepStrictEqual(out.priorities, Object.values(ADOPTED),
+    "each becomes its base stat, and the already-ranked Accuracy does not repeat");
+  assert.strictEqual(out.retired.length, 4, "every one of them is disclosed");
+});
+
+test("#381: a retired label never re-enters the pickable vocabulary", () => {
+  for (const label of Object.keys(ADOPTED)) {
+    assert.ok(!vocab.suggestions.includes(label), `${label} is not suggested`);
+    assert.ok(!vocab.known.has(label), `${label} is not known — it cannot be free-typed either`);
+    assert.ok(!vocab.provenanceLabels[label.toLowerCase()],
+      `${label} is not a provenance label — nothing stamps it anymore`);
+  }
+});
+
+// ---------------------------------------------------------------------------
 // 3. The untyped predicate, after upstream re-encoded the type field (#380)
 // ---------------------------------------------------------------------------
 
