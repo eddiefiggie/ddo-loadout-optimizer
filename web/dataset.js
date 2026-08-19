@@ -811,14 +811,26 @@ function buildPickerVocabulary(dataset) {
   // both an absent type and an explicit `Untyped` — an item's own effect beside
   // an augment's — which are meant to add. Collapsing them would turn those sums
   // into maxes. The gate belongs on the control, not on the stacking rule.
+  //
+  // #380 — "untyped" has TWO spellings upstream. The 2026-08-18 gear-planner
+  // refresh stopped omitting the `type` key and started emitting the literal
+  // string `"Untyped"` (key-less affixes 5709 -> 90, `"Untyped"` 148 -> 886).
+  // Three Python predicates of exactly this shape were widened for it in the same
+  // migration; this is the fourth. Reading only the absent-key spelling made the
+  // whole gate inert — `Enhanced Ki`, the stat it was built for, has all 19 of
+  // its carriers typed with the literal string and read as TYPED, so the picker
+  // offered a declared-credit control on a stat with no bonus type to declare.
+  // This classifies the control, not the bucket key, so the stacking rule the
+  // paragraph above protects is untouched.
   const untypedOnly = new Set();
   const typedSeen = new Set();
   const untypedSeen = new Set();
+  const _isUntyped = (t) => t == null || t === "" || t === "Untyped";
   for (const [name, type, value] of [..._itemAffixTriples(ds), ..._craftingAffixTriples(ds)]) {
     if (PRESENCE_TYPES.has(type)) continue;      // on/off is `presence`, not this
     const c = canonical(name);
     if (!c) continue;
-    if (type == null || type === "") { if (_isMagnitude(value)) untypedSeen.add(c); }
+    if (_isUntyped(type)) { if (_isMagnitude(value)) untypedSeen.add(c); }
     else typedSeen.add(c);
   }
   for (const c of untypedSeen) if (!typedSeen.has(c) && magnitude.has(c)) untypedOnly.add(c);

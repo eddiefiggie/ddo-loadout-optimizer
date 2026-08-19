@@ -577,6 +577,17 @@ def build() -> dict:
     # occurrences in gearplanner_sets.json are reachable only here.
     _sets_raw = set_catalog_mod.load_raw()
     _name_coverage_sets = name_corrections_mod.apply(_sets_raw, _name_corrections)
+    # #287/#376 — the sets channel of the Legendary fold, and it has to run HERE,
+    # right after the rename and before `catalog_from_raw` synthesizes the tier
+    # text. The correction above rewrites upstream's `False Life (%)` to the
+    # ENGRAVED name `Legendary Conditioning`; the item and augment channels then
+    # fold that into `Conditioning` + bonus type `Legendary` (the wiki's model:
+    # `{{Conditioning|15|Legendary}}`). Without the same fold here, four set tiers
+    # credit a stat name no item affix carries — a bucket disjoint from the 36
+    # worn carriers, which is the two-names-one-mechanic split #376 exists to
+    # close — and the engraved name becomes NATIVE, which deletes its provenance
+    # label and leaves a player who ranks what the item prints scoring nothing.
+    legendary_fold_mod.apply([t for tiers in _sets_raw.values() for t in tiers])
     _set_catalog = set_catalog_mod.catalog_from_raw(_sets_raw)
     dino_blanks, dino_inserts, dino_sets, dino_cov = dino_mod.build_dino(
         dino_seed, crafting, sets_catalog=_set_catalog)
@@ -1196,8 +1207,17 @@ def build() -> dict:
     # remap, no quarantine (F1). Host-marker surfacing (which items carry the slot)
     # lands with the native reader in U3; until then the pools are populated but
     # inert (no host references them), so the solver behavior is unchanged.
-    tf = tf_mod.build_thunder_forged()
-    gs = gs_mod.build_green_steel()
+    # #374/KTD2 — thread the ALREADY-RENAMED `crafting` catalog, do not let these
+    # two builders re-load it from disk. Their `catalog=None` default calls
+    # `crafting_catalog.load_catalog()` a second time, which re-reads the raw file
+    # and so bypasses the canon rename applied at the catalog's single load point
+    # above. That is not hypothetical: the Thunder-Forged Weapon pools shipped 18
+    # records under upstream's generic spellings (`Fire Spell Power`, ...) while
+    # every other pool carried our canon, splitting one mechanic across two
+    # buckets. The comment on that rename claimed it already covered green-steel
+    # and thunder-forged; it did not, because of these two argument-less calls.
+    tf = tf_mod.build_thunder_forged(crafting)
+    gs = gs_mod.build_green_steel(crafting)
 
     # #211 — the umbrella-affix detector. Every rankable-or-craftable name
     # sharing a registered family's component head-word (`... Focus`,

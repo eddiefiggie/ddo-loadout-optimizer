@@ -398,3 +398,147 @@ None of the three triggers fired. No new user report of a player searching upstr
 the wiki's `Spell_power` / `Spell_Lore` pages are unchanged as the basis for
 `docs/wiki-evidence/spellpower-universal.md` and `spell-lore.md`; and the armed set is **13**, well
 under the ~20-name threshold at which the override layer's cost was to be re-weighed. KTD1 holds.
+
+---
+
+# U6 — named assertions, then golden re-ratification
+
+## 10. Order, and why it is the point
+
+The 2026-08-17 amendment to
+`docs/solutions/workflow-issues/golden-solve-guard-missing-from-local-test-sweep.md` governs this
+unit: the two classic re-ratification clauses ("diff contained to expected fixtures" + "no priority
+target regressed") **cannot adjudicate a `chosen`-only diff**, and a golden's sanctioned remedy for
+a red is to overwrite the objection. So `tests/vocabulary_migration.test.js` (20 named assertions)
+was written and run **before** `tests/parity/golden.json` was regenerated, and none of its
+assertions reads `golden.json` — re-capturing the golden cannot silence any of them.
+
+`web/data/items.json` was rebuilt from this tree before every capture
+(`docs/solutions/workflow-issues/rebuild-the-dataset-before-any-golden-capture.md`).
+
+## 11. What the named assertions found before the golden was touched
+
+Writing the assertions first surfaced **three defects the migration had left live**, each red with
+its own message before any golden was regenerated:
+
+| # | Defect | Where | Effect |
+|---|---|---|---|
+| 1 | The Thunder-Forged and Green Steel pool builders call `crafting_catalog.load_catalog()` a **second time** via their `catalog=None` default, bypassing the canon rename applied at the catalog's single load point | `build_dataset.py` (the `tf_mod.build_thunder_forged()` / `gs_mod.build_green_steel()` call site) | 18 Thunder-Forged records shipped under upstream's generic spellings (`Fire Spell Power`, `Positive Spell Power`, `Negative Spell Power`, `Cold Spell Power`, `Electric Spell Power`, `Acid Spell Power`) while every other pool carried our canon — one mechanic, two buckets. The comment on that rename explicitly claimed it already covered green-steel and thunder-forged; it did not. |
+| 2 | `legendary_fold` runs on the item and augment channels but **not** on the set catalog | `build_dataset.py` (sets channel) | Our own `False Life (%)` → `Legendary Conditioning` correction minted the engraved name into the raw set catalog, so 22 set-tier affixes credited a stat name no item affix carries — disjoint from the 36 worn `Conditioning` (Legendary) carriers, reopening the split #376 closed. It also made the engraved name **native**, which deleted its provenance label: a player ranking what the item prints scored nothing. |
+| 3 | The `#235` untyped-only predicate reads only the *absent-key* spelling of "untyped" | `web/dataset.js` `buildPickerVocabulary` | This is the **fourth predicate of the shape #380 widened three of**. Upstream now emits the literal string `"Untyped"` (key-less 5709 → 90, `"Untyped"` 148 → 886), so all 19 `Enhanced Ki` carriers read as *typed*, `untypedOnly` collapsed to size 0, and the declared-credit gate went globally inert. |
+
+All three are fixed. With the predicate widened, `untypedOnly` is exactly `{Enhanced Ki}` — size 1,
+unchanged from before the refresh, which is independent evidence that the widening is the right
+shape and not an over-reach.
+
+**Red-proof.** Defects 1–3 were each observed red, with their own assertion's message, against the
+pre-fix tree. For the canon defence itself, a scratch copy of `HEAD` had the ten spell-power/lore
+renames reverted in the built dataset (4,326 stat names put back to upstream's spelling); the two
+data-layer assertions went red there and pass here.
+
+**Measured scope limit, recorded in the test.** On that disarmed dataset the *fixture-level*
+detector did **not** go red: `Combustion` fell 464 → 128 and `Ice Lore` 46 → 11 but both stayed
+non-zero, because `Universal Spell Power` and the lore roster cross-add into those buckets
+independently of the affix name. So "a ranked stat at zero" catches a name that vanishes entirely;
+a partial miss inside a cross-add family is caught by the data-layer assertions, which is where the
+teeth are. That limitation is written into `tests/vocabulary_migration.test.js` as a `SCOPE LIMIT`.
+
+## 12. Golden attribution — every fixture, with cause
+
+Captured with `node tests/parity/capture_golden.js` against a dataset rebuilt from this tree
+(9,110 items). **12 of 23 fixtures are byte-identical; 11 moved.**
+
+**None of the 11 moved because of U6's own fixes.** Proven, not asserted: a scratch export of `HEAD`
+*without* the three fixes above was built and all 23 fixtures captured — **0 of 23 differ** from the
+ratified capture. Every diff below is therefore attributable to U4/U5's vendored refresh.
+
+### 12a. The five upstream causes
+
+| Cause | Evidence | Fixtures it explains |
+|---|---|---|
+| **A. Two augments re-encoded from prose to a structured affix.** `Meridian Fragment` (Orange, ML28) and `Crystallized Drop of Tea` (Yellow, ML28) carried their spell-power line as a 200-character untyped sentence; the refresh stores it as `Universal Spell Power / Psionic / 24`. Newly scorable ⇒ **+24 Universal Spell Power** at every cap ≥ 28. | raw dump before/after, both stones | `mid-caster`, `endgame-caster-ml32`, `trance-credit-additive-ml32`, `trance-credit-additive-ml32-baseline`, `cross-add-combustion-usp-ml32`, `aug-ceiling-32-int-caster-ml36` |
+| **B. 42 key-less `Wizardry` affixes typed `Enhancement`** (Enhancement 173 → 215, key-less 42 → 0). Untyped affixes stack; Enhancement takes the max ⇒ the sum **drops**. | type histogram before/after; `Epic Rod of Mythant` `Wizardry None 11` → `Enhancement 11` | `absorption-compound-crown-ml35` |
+| **C. 18 `Seeker` affixes re-typed Insight → Exceptional** (Insight 50 → 32, Exceptional 0 → 18). Exceptional is a distinct bucket, so a carrier that used to collide with the best Insight source now stacks. | type histogram before/after; `Horseshoe Crab Shield (level 26)` moved Insight → Exceptional | `endgame-dps-ml33` |
+| **D. Upstream corrected its single Exceptional-typed `Spell Lore` record.** `Downcast Robe` read `Spell Lore / Exceptional / 3` and now reads `Universal Spell Lore / Exceptional / 3`. Before: `Spell Lore` had exactly one Exceptional carrier; after: zero, and `Universal Spell Lore` Exceptional went 65 → 66. Our umbrella expands `Spell Lore` into the ten element lores; `Universal Spell Lore` is a **separate stat by standing ruling** (`docs/wiki-evidence/spell-lore.md` §"Adjacent finding", #89: same-item co-occurrence ⇒ distinct, never merge), so it correctly does not expand. ⇒ **Kinetic Lore −3**. | raw dump before/after; the wiki's channel model (Exceptional ⇒ Universal) | `utility-ab-kinetic-ml34`, `utility-ab-kinetic-ml34-baseline` |
+| **E. `Magical Efficiency` typed `Enhancement`** on its 100 magnitude carriers (key-less before), which puts it in the curated rankable list and makes it the fifth dual-nature stat. Changes the tie-break surface without changing any ranked target. | type histogram; `Epic Fanged Gloves` `Magical Efficiency None 10` → `Enhancement 10` | `endgame-dex-ml36` |
+
+Roster delta from the same refresh: **+14 / −12 items** (the Oozing Hunger family in, the
+Doublestrike-suffix duplicates and two historic records out), so every tie-break index shifted.
+
+### 12b. Per fixture
+
+| Fixture | Verdict | perTarget delta | chosen delta | Cause |
+|---|---|---|---|---|
+| `heroic-str-melee` | unchanged | — | — | control, clean |
+| `mid-caster` | re-ratified | `Universal Spell Power` 94 → 118 | Boots/Goggles/Helmet swapped | A (+24; hosts move because the two stones need Orange/Yellow slots) |
+| `endgame-tank-ml34` | unchanged | — | — | control, clean |
+| `endgame-dex-ml36` | re-ratified | **none** | Gloves: `Gloves of Tranquility` → `Epic Fanged Gloves` | E. A genuine tie: neither glove carries Dexterity, Dodge or Physical Sheltering, and each contributes exactly one counting-set presence effect (`Blurry`). The tie-break order moved with the roster and the re-typing. |
+| `endgame-dps-ml33` | re-ratified | `Seeker` 28 → 33 | Helmet + Ring swapped | C |
+| `endgame-caster-ml32` | re-ratified | `Universal Spell Power` 104 → 128 and the ten expanded spellpowers each +24 (`Combustion` 439 → 463, `Devotion` 368 → 392, seven at 247 → 271) | none | A, cascading through the `Potency` expansion and the USP cross-add |
+| `trance-credit-displaces-ml34-baseline` | unchanged | — | — | control, clean |
+| `trance-credit-displaces-ml34` | unchanged | — | — | control, clean |
+| `trance-credit-additive-ml32` | re-ratified | `Devotion` 448 → 472, `Universal Spell Power` 104 → 128 | none | A |
+| `trance-credit-additive-ml32-baseline` | re-ratified | `Devotion` 436 → 460, `Universal Spell Power` 104 → 128 | none | A |
+| `endgame-necro-dc-ml34` | unchanged | — | — | control, clean |
+| `viktranium-multi-affix-dc-ml34` | unchanged | — | — | control, clean |
+| `absorption-compound-crown-ml35` | re-ratified | `Wizardry` 631 → 620 | Main Hand: `Epic Rod of Mythant` → `Echo of Whelm` | B — the drop is the **removal of an untyped double-count**, not a loss |
+| `provenance-alias-sacred-dc-ml34` | unchanged | — | — | control, clean |
+| `provenance-components-sacred-dc-ml34` | unchanged | — | — | control, clean |
+| `blocklist-topaz-ml36-baseline` | unchanged | — | — | control, clean |
+| `blocklist-topaz-ml36` | unchanged | — | — | control, clean |
+| `absorption-sonic-flag-ml26` | unchanged | — | — | control, clean |
+| `cross-add-combustion-usp-ml32` | re-ratified | `Combustion` 440 → 464, `Universal Spell Power` 101 → 125 | none | A. The A/B still proves the cross-add: both stats move by the same +24. |
+| `utility-ab-kinetic-ml34-baseline` | re-ratified | `Kinetic Lore` 49 → 46 | 4 out / 3 in, 5 → 4 slots filled | D |
+| `utility-ab-kinetic-ml34` | re-ratified | `Kinetic Lore` 49 → 46 | 3 out / 1 in, 13 → 11 slots filled | D |
+| `utility-removed-complex-blocklist-topaz-ml36` | unchanged | — | — | control, clean |
+| `aug-ceiling-32-int-caster-ml36` | re-ratified | `Universal Spell Power` 104 → 128 | none | A. Both stones are ML28, so the ceiling-32 gate is unaffected — the fixture still pins what it exists to pin. |
+
+### 12c. Control fixtures — leakage check
+
+Reading "the six non-sentinel control fixtures" as the six general endgame fixtures that predate the
+mechanism-specific A/B pairs (`heroic-str-melee`, `mid-caster`, `endgame-tank-ml34`,
+`endgame-dex-ml36`, `endgame-dps-ml33`, `endgame-caster-ml32`): **two are byte-identical and four
+moved, and none of the four moved for a canon-rename reason.** `mid-caster` and
+`endgame-caster-ml32` move by exactly the +24 of cause A; `endgame-dps-ml33` by cause C;
+`endgame-dex-ml36` is a tie-break-only move under cause E. No control fixture shows a stat that our
+rename touches changing value — which is the leakage signal, and it is absent.
+
+The eleven A/B and mechanism fixtures give a second reading of the same question: the
+`blocklist-topaz` pair, the `trance-credit-displaces` pair, `absorption-sonic-flag-ml26`,
+`utility-removed-complex-blocklist-topaz-ml36`, `provenance-alias`/`provenance-components`,
+`endgame-necro-dc-ml34` and `viktranium-multi-affix-dc-ml34` are all byte-identical.
+
+**Two priority targets regressed and both were adjudicated rather than accepted:** `Wizardry`
+−11 (cause B, an untyped double-count removed) and `Kinetic Lore` −3 (cause D, upstream removing a
+credit our expansion granted off a mis-typed record). Neither is a solver or pipeline defect.
+
+## 13. The four red JS files
+
+| File | Test | Verdict |
+|---|---|---|
+| `dataset.test.js` | `#228` word-cap casualty set | **Re-ratified.** `The Dragging of the Depths` is not a new item — its **encoding** is. Six carriers stored `{name, value: "6"}` (key-less, a numeric magnitude); the refresh stores `{type: "Bool", value: 1}`, moving it into the presence population where its five words exceed the word cap exactly as intended. Cause #380. The population moved; the cap did not. |
+| `dataset.test.js` | `#305` tier-raw verbatim | **Re-ratified, re-pointed.** It asserted `Damage vs. Helpless Opponents` (13 tier raws) and `Helplessness Damage` (33) survived verbatim. Both spellings **left upstream**: the refreshed `gearplanner_sets.json` consolidated every helpless wording onto `Damage vs. the Helpless` (1 → 27 occurrences; the other two 2 → 0 and 6 → 0). Since tier raw is synthesized from the set catalog's own affix names and the one surviving spelling is the one our #305 rename maps, the verbatim property is no longer demonstrable in this channel — it is still demonstrated in the dino channel, which the same test asserts. Replaced with the stronger claim the fold owes: **every** helpless tier raw reads as the canonical. |
+| `dataset.test.js` | `#287` folded Legendary names | **Re-ratified, split in two.** Upstream **adopted** the fold: `Legendary Accuracy`, `Legendary Armor-Piercing`, `Legendary Deadly` and `Legendary Spell Penetration` have zero occurrences left in the raw dump (14 / 22 / 3 / 12 before) and the **same carrier counts** now arrive as the base stat at bonus type `Legendary`. With nothing to fold there is no provenance receipt, so those four stop being shipped labels. The new test states that as a premise (base stat still carried at type `Legendary`), so an upstream revert goes red instead of drifting back. `Legendary Conditioning` is the survivor and is ours — and it was a **genuine regression** (defect 2, §11) until the sets-channel fold landed. |
+| `dataset.test.js` | `#332` `utilityAdmitted` real-data marker | **Re-pointed, recorded as no longer expressible, referencing #380.** The `allow` list is empty by design (all 104 adjudications retired because upstream typed those procs `Bool`), so "an admitted proc exists" cannot be asserted against real data. The test now pins what is still true — exposure, disjointness, a non-empty counting set, `Ghostly` counted, `Undead Bane` **not** counted but still reaching the picker via the presence path — and asserts the emptiness itself, so it goes red the moment #380 refills the set. |
+| `browse.test.js` | `#332` counted-vs-admitted on real data | **Re-pointed, same cause.** The counted half still fires (`Ghostly` → `counted`); the admitted half has no population, so `presenceMarker("Undead Bane", …)` is now asserted to be `null`. The two-markers-differ mechanism stays pinned by the hand-built test above it, which feeds both sets. |
+| `browse.test.js` | `#332` admitted-proc chip join | **Re-pointed.** Its `if (!utilityAdmitted.size) return` early-out was a guard that could stop checking without failing — and the refresh made that branch the only branch. The emptiness is now asserted, and the **counted** half of the same `affixEntries` → `presenceMarker` join is exercised against real data (`> 100` chips) so the seam the test exists to guard is still covered. |
+| `wizard.test.js` | `F2` dual-nature escape list | **Re-ratified.** `Magical Efficiency` is the fifth dual-nature stat, and upstream is why: its 100 magnitude carriers were key-less (so it never reached the curated rankable list) and are now typed `Enhancement`, beside the 8 `Bool` lines it already had. Gating it on `presence` alone would hide the min/max of a stat that has one — the exact defect the test blocks, now on a fifth name. |
+| `wizard.test.js` | `#235` `Enhanced Ki` untyped-only | **Genuine regression, fixed, test unchanged.** See defect 3 in §11. |
+| `solver_golden.test.js` | 11 fixtures | **Re-ratified last, with §12's per-fixture attribution.** |
+
+## 14. Residue for follow-up
+
+1. **The four adopted `Legendary <stat>` names no longer redirect.** A character saved before the
+   refresh that ranks `Legendary Accuracy` now ranks a name nothing carries, with no substitution —
+   the label path that used to migrate it is gone with the fold. The stat it should resolve to
+   (`Accuracy`) is still suggested and still carries the Legendary-typed carriers, so this is a
+   migration gap, not a scoring one.
+2. **Cause A ratifies a ramping proc as a constant.** `Meridian Fragment` and `Crystallized Drop of
+   Tea` grant +8 per stack, up to +24, on taking physical damage, each stack lasting 20 seconds.
+   Upstream now stores the ceiling as a flat `24`, so six fixtures ratify a conditional maximum as
+   an always-on bonus. This is exactly **#214** (conditional and ramping effects stored as flat
+   constants); it should be added there.
+3. **Cause C is an upstream re-type of the same shape as #379.** 18 `Seeker` affixes moved
+   Insight → Exceptional, which changes stacking and gained 5 points on `endgame-dps-ml33`. #379
+   already tracks a re-type (Insight → Competence on Elemental Resistance) whose harvested evidence
+   contradicts itself; `Seeker` belongs in that review.
