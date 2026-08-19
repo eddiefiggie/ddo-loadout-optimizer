@@ -89,44 +89,176 @@ def test_meta_keys_are_stripped_from_the_shard():
     assert not any(str(k).startswith("_") for k in loaded)
 
 
+# --- #374/U4: the shard is retired, and a retirement has to prove itself -------
+#
+# The 2026-08-18 gear-planner refresh ADOPTED every correction in this shard, so
+# the live payload is empty and all 17 entries moved into `_retired_2026_08_18`.
+# That is the #207 staleness rule working as designed — the corrections' premise
+# was "upstream is wrong", and it stopped being true. The tests below keep the
+# coverage that the live entries used to carry by asserting it against the
+# retirement block instead, which is now the thing that can silently go wrong:
+# retirement is the one exit from this shard that no build guard watches.
+
+def _retired():
+    with open(SHARD, encoding="utf-8") as fh:
+        return json.load(fh).get("_retired_2026_08_18") or {}
+
+
+def _retired_entries():
+    return _retired().get("entries") or {}
+
+
+def _raw_affixes(record):
+    """The `{name, type, value}` dicts on the NAMED record across all three raw
+    channels. Scoped deliberately: a global walk finds some other record carrying
+    the corrected number and would wave through a bogus retirement."""
+    from src import vocabulary
+
+    def _named(obj):
+        out = []
+        if isinstance(obj, dict):
+            if obj.get("name") == record and "affixes" in obj:
+                out.append(obj)
+            else:
+                for v in obj.values():
+                    out += _named(v)
+        elif isinstance(obj, list):
+            for v in obj:
+                out += _named(v)
+        return out
+
+    seen = []
+    for path in (vocabulary.ITEMS_PATH, vocabulary.CRAFTING_PATH, vocabulary.SETS_PATH):
+        seen += [a for r in _named(vocabulary._load(path))
+                 for a in vocabulary.iter_affixes(r)]
+    return seen
+
+
+def _flip(name):
+    """Our canon -> upstream's spelling, from the shipped canon-defence shard.
+    Two retired entries are keyed on a name upstream renamed in the same refresh
+    (`Impulse`/`Force Spell Power`, `Corrosion`/`Acid Spell Power`), so the
+    adoption check has to look for the value under BOTH spellings."""
+    shard = os.path.join(ROOT, "data", "seed", "compendium",
+                         "affix_name_corrections.json")
+    with open(shard, encoding="utf-8") as fh:
+        corr = json.load(fh)["corrections"]
+    return {c["canonical_name"]: c["source_name"] for c in corr}.get(name)
+
+
+def _retyped_to(item, affix):
+    """The bonus type a RETIRED `affix_type_corrections` entry moved this affix to,
+    if any. `Juiblex's Reign / Acid Absorption` was corrected on both axes and
+    upstream adopted both, so the value now lives under the corrected TYPE."""
+    path = os.path.join(ROOT, "data", "seed", "compendium",
+                        "affix_type_corrections.json")
+    with open(path, encoding="utf-8") as fh:
+        doc = json.load(fh)
+    pools = [doc, (doc.get("_retired_2026_08_18") or {}).get("entries") or {}]
+    for pool in pools:
+        for e in pool.get(item) or []:
+            if isinstance(e, dict) and e.get("name") == affix:
+                return str(e["to"])
+    return None
+
+
+def test_the_live_shard_is_empty_and_the_retirement_is_on_the_record():
+    """The live payload is gone; the evidence is not."""
+    assert value_corrections.load(SHARD) == {}, \
+        "a live correction reappeared — it needs its own re-verification, not this block"
+    block = _retired()
+    assert (block.get("why") or "").strip(), "a retirement with no stated reason"
+    assert "767a7f747d0e7d211a702b8c456348e1c36ba699" in (block.get("verified") or ""), \
+        "a retirement must name the upstream commit it was verified against"
+    assert sum(len(v) for v in _retired_entries().values()) == 17, \
+        "all 17 corrections retired together; a partial move loses the evidence"
+
+
 def test_the_shipped_shard_carries_its_wiki_evidence():
-    """Every correction states the rendered tooltip it came from, not just a number."""
+    """Every correction states the rendered tooltip it came from, not just a
+    number — asserted over live entries AND retired ones, so retirement cannot be
+    used to smuggle an entry past the evidence rule."""
     with open(SHARD, encoding="utf-8") as fh:
         raw = json.load(fh)
-    for item, entries in raw.items():
-        if str(item).startswith("_"):
-            continue
+    live = [(k, v) for k, v in raw.items() if not str(k).startswith("_")]
+    seen = 0
+    for item, entries in live + list(_retired_entries().items()):
         for e in entries:
+            seen += 1
             for field in ("name", "type", "from", "to", "tooltip", "wiki_url", "verified"):
                 assert e.get(field), f"{item}: correction is missing {field!r}"
             assert str(e["to"]) in e["tooltip"], (
                 f"{item}: the corrected value {e['to']!r} does not appear in the "
                 f"recorded tooltip — the evidence does not support the number")
+    assert seen == 17, seen
 
 
-def test_the_argonnessen_correction_is_the_one_we_verified():
-    loaded = value_corrections.load(SHARD)
-    entry = loaded["Legendary Argonnessen Eye Band"][0]
-    assert (entry["name"], entry["type"], entry["from"], entry["to"]) == (
-        "Spell Focus Mastery", "Equipment", "5", "8")
+def test_a_retired_correction_is_one_upstream_actually_adopted():
+    """The claim a retirement makes, checked against the data rather than taken on
+    the note's word: upstream must now read our corrected `to` value on that exact
+    record, and must no longer read the `from` value we were correcting away.
+
+    This is the guard the retirement itself did not have. Its sibling shard
+    (`affix_type_corrections.json`) was retired in the same migration with a note
+    that justified one of its three entries; the other two were still live. Nothing
+    catches that except a per-entry comparison against raw.
+    """
+    checked = 0
+    for item, entries in _retired_entries().items():
+        raw = _raw_affixes(item)
+        assert raw, f"{item}: no such record in the refreshed raw to verify against"
+        for e in entries:
+            names = {e["name"], _flip(e["name"])} - {None}
+            # a correction targets ONE (name, type) pair — `Legendary Argonnessen
+            # Eye Band` carries both Equipment and Sacred `Spell Focus Mastery`,
+            # so matching on name alone reads the wrong affix.
+            types = {str(e["type"]), _retyped_to(item, e["name"])} - {None}
+            hits = [a for a in raw if a.get("name") in names
+                    and str(a.get("type")) in types]
+            assert hits, (item, e["name"], e["type"],
+                          "affix vanished upstream — not an adoption")
+            values = {str(a.get("value")) for a in hits}
+            assert values == {str(e["to"])}, (
+                f"{item} / {e['name']} / {e['type']}: retired on the premise that "
+                f"upstream adopted {e['to']!r}, but raw reads {sorted(values)}. A "
+                f"correction upstream has not adopted is still live and must not "
+                f"be retired")
+            checked += 1
+    assert checked == 17, checked
 
 
-# --- #288: the U81 Reign pull-back batch -----------------------------------------
+def test_the_288_batch_is_retired_intact_and_still_names_no_verified_unchanged_item():
+    """The #288 U81 Reign pull-back batch, re-ratified onto the retirement block.
 
-def test_the_288_batch_covers_the_seven_drifted_reigns():
-    loaded = value_corrections.load(SHARD)
+    Same two claims as before — the seven drifted Reigns each carry their exact
+    entry count, and the artifacts verified as matching the wiki carry none — so
+    a retirement that quietly drops or invents an item is still caught.
+    """
+    entries = _retired_entries()
     reigns = {"Orcus' Reign": 1, "Juiblex's Reign": 3, "Demogorgon's Reign": 2,
               "Fraz-Urb'luu's Reign": 4, "Zuggtmoy's Reign": 4,
               "Lolth's Reign": 1, "Graz'zt's Reign": 1}
     for item, n in reigns.items():
-        assert len(loaded.get(item) or []) == n, (item, len(loaded.get(item) or []))
+        assert len(entries.get(item) or []) == n, (item, len(entries.get(item) or []))
     # Verified-and-unchanged artifacts must NOT carry entries: Baphomet's and
     # Yeenoghu's Reigns match the wiki, as do all six ML32 Unholy Defiler
     # artifacts (swept 2026-08-13).
     for item in ("Baphomet's Reign", "Yeenoghu's Reign", "Beltstrap of Forbidden Tomes",
                  "Blade-Barbed Bandolier", "Buckle of Assimilation",
                  "Desolation Spectacles", "Eyes of Defilement", "Misery Monocle"):
-        assert item not in loaded, f"{item} was verified unchanged — no entry belongs"
+        assert item not in entries, f"{item} was verified unchanged — no entry belongs"
+
+
+def test_the_argonnessen_correction_is_the_one_we_verified():
+    """Re-ratified onto the retirement block: the entry is unchanged, it has simply
+    moved, and the wiki value it established (Equipment Spell Focus Mastery 8) is
+    what upstream now ships natively."""
+    entry = _retired_entries()["Legendary Argonnessen Eye Band"][0]
+    assert (entry["name"], entry["type"], entry["from"], entry["to"]) == (
+        "Spell Focus Mastery", "Equipment", "5", "8")
+    assert [a for a in _raw_affixes("Legendary Argonnessen Eye Band")
+            if a.get("name") == "Spell Focus Mastery"
+            and a.get("type") == "Equipment" and str(a.get("value")) == "8"]
 
 
 def test_the_built_reigns_score_the_wiki_values():

@@ -97,3 +97,57 @@ def test_parse_rate_reports_applied_and_membership_only():
     assert r["sets_with_applied_affixes"] >= 1
     assert "Legendary Cooking By the Book" in r["membership_only_sets"] or \
         "The Legendary Dread Isle's Curse" not in r["membership_only_sets"]
+
+
+# ---------------------------------------------------------------------------
+# #374 — the sets channel is only reachable on the RAW catalog.
+# ---------------------------------------------------------------------------
+
+def test_374_load_raw_exposes_the_affix_dicts_that_load_catalog_synthesizes_away():
+    """`load_catalog` renders `piece_bonuses` TEXT, so a pipeline rename applied to
+    its output finds no `affixes` list and is a permanent silent no-op. The 121
+    protected-name occurrences in gearplanner_sets.json are reachable only here."""
+    import sys as _sys, os as _os
+    _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+    from src import name_corrections
+
+    raw = SC.load_raw()
+    assert len(list(name_corrections._iter_affix_dicts(raw))) > 1000
+    assert list(name_corrections._iter_affix_dicts(SC.load_catalog())) == []
+
+
+def test_374_catalog_from_raw_reads_the_corrected_raw_not_the_file():
+    # #374/U4 — the probe name was hard-coded as `Combustion`, our canon, which
+    # the refreshed sets file no longer carries: upstream flipped it to
+    # `Fire Spell Power`, so the loop matched nothing and the mutation never
+    # happened. Nothing about `catalog_from_raw` moved. The probe is now DERIVED
+    # from the canon-defence shard — whichever spelling upstream currently emits
+    # for that mechanic — so the next flip carries the fixture with it instead of
+    # silently emptying it. The vacuity assert below is what caught this.
+    import sys as _sys, os as _os
+    _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+    import json as _json
+    with open(_os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+                            "data", "seed", "compendium",
+                            "affix_name_corrections.json"), encoding="utf-8") as fh:
+        probe = next(c["source_name"] for c in _json.load(fh)["corrections"]
+                     if c["canonical_name"] == "Combustion")
+
+    raw = SC.load_raw()
+    hits = 0
+    for tiers in raw.values():
+        for tier in tiers:
+            for a in tier.get("affixes") or []:
+                if a.get("name") == probe:
+                    a["name"] = "Renamed In Memory"
+                    hits += 1
+    assert hits, f"{probe!r} occurs nowhere in the raw sets — the fixture mutated nothing"
+    text = " ".join(t for e in SC.catalog_from_raw(raw).values() if e["set_bonus"]
+                    for t in e["set_bonus"]["piece_bonuses"].values())
+    assert "Renamed In Memory" in text
+    assert f"bonus to {probe}" not in text
+    # `load_catalog` still reads the file, so it is unaffected.
+    fresh = " ".join(t for e in SC.load_catalog().values() if e["set_bonus"]
+                     for t in e["set_bonus"]["piece_bonuses"].values())
+    assert "Renamed In Memory" not in fresh
+    assert f"bonus to {probe}" in fresh

@@ -99,15 +99,21 @@ def _synthesize(tiers: list):
     return piece_bonuses, flagged
 
 
-def load_catalog(path: str = CATALOG_PATH) -> dict:
-    """Return `{canonical_set_name: {"set_bonus": <entry>, "flagged": [...]}}`.
+def load_raw(path: str = CATALOG_PATH) -> dict:
+    """The gear-planner set catalog verbatim: `{set_name: [{threshold, affixes}]}`.
 
-    `set_bonus` is a base-seed-shaped entry ready to attach to a member's
-    `set_bonus` list; a set whose every affix flagged yields `set_bonus=None`
-    (membership-only, disclosed).
+    Split out of `load_catalog` so a pipeline stage can rewrite the catalog's own
+    affix dicts BEFORE `_synthesize` renders them (#374). `load_catalog` already
+    returns synthesized `piece_bonuses` TEXT, so a rename applied to its output
+    would find no `affixes` list to touch and be a permanent silent no-op — the
+    set channel is only reachable here.
     """
     with open(path, "r", encoding="utf-8") as fh:
-        raw = json.load(fh)
+        return json.load(fh)
+
+
+def catalog_from_raw(raw: dict) -> dict:
+    """Synthesize the catalog from an already-loaded (and possibly corrected) raw."""
     out = {}
     for name, tiers in raw.items():
         ckey = canonical(name)
@@ -125,6 +131,16 @@ def load_catalog(path: str = CATALOG_PATH) -> dict:
         if ckey not in out or (out[ckey]["set_bonus"] is None and entry is not None):
             out[ckey] = {"set_bonus": entry, "flagged": flagged}
     return out
+
+
+def load_catalog(path: str = CATALOG_PATH) -> dict:
+    """Return `{canonical_set_name: {"set_bonus": <entry>, "flagged": [...]}}`.
+
+    `set_bonus` is a base-seed-shaped entry ready to attach to a member's
+    `set_bonus` list; a set whose every affix flagged yields `set_bonus=None`
+    (membership-only, disclosed).
+    """
+    return catalog_from_raw(load_raw(path))
 
 
 def base_defs_from_seed(seed_items) -> dict:

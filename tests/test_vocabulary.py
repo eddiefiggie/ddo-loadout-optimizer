@@ -69,9 +69,19 @@ def test_lint_surfaces_collisions_without_mutating():
     before = list(names)
     out = V.lint_affix_names(names, distinct)
     assert names == before, "lint must never mutate the input"
-    # the known case/whitespace collisions surface as blocking candidates
+    # the known case/whitespace collisions surface as blocking candidates.
+    # #374/U4 — re-ratified off the `Greater Dragonmark charges`/`Greater Dragonmark
+    # Charges` pair: upstream normalized that capitalization in the refresh (the old
+    # spellings survive as alias VARIANTS, so resolution is unaffected — see
+    # docs/reports/2026-08-18-gear-planner-canon-migration.md §4). Re-anchored on the
+    # `Item becomes a Spellcasting Implement` pair, which the pre-refresh registry
+    # also carried, so this pins a long-standing collision rather than a fresh one.
     flat = {n for grp in out["collisions"].values() for n in grp}
-    assert "Greater Dragonmark charges" in flat and "Greater Dragonmark Charges" in flat
+    assert "item becomes a Spellcasting Implement" in flat and \
+        "Item becomes a Spellcasting Implement" in flat
+    # the lint keys on a case-folded form, so both spellings land in ONE group
+    assert set(out["collisions"]["item becomes a spellcasting implement"]) == {
+        "Item becomes a Spellcasting Implement", "item becomes a Spellcasting Implement"}
     # a whitelisted distinct pair is not re-flagged as similar
     for a, b in out["similar"]:
         assert frozenset((a, b)) not in distinct
@@ -126,7 +136,10 @@ def test_every_stacking_equivalence_entry_carries_wiki_evidence():
 
 def test_freshness_reads_and_detects_drift():
     recorded = V.assert_freshness()
-    assert recorded == "ec3e595d0d879b29c13f3c34ffc155e71d0418c4"
+    # #374/U4 — re-ratified from `ec3e595…` (2026-08-01) to the vendored refresh.
+    # The raw mirror was re-fetched pinned to this SHA; SOURCE.json records the
+    # exact four-file curl. The stamp moves ONLY when a vendoring happens.
+    assert recorded == "767a7f747d0e7d211a702b8c456348e1c36ba699"
     # a wrong expected commit surfaces drift
     _raises(V.FreshnessError, V.assert_freshness, expected_commit="deadbeef")
 
@@ -138,10 +151,21 @@ def test_crafting_slot_registry_generates_and_matches_frozen():
     # deterministic + sorted
     assert gen == V.generate_crafting_slot_registry()
     assert gen == sorted(gen)
-    # pool keys (83) ∪ item markers (adds the 12 pool-less Cannith slots) = 95
+    # pool keys (83) ∪ item markers (adds the 12 pool-less crafting slots) = 95
     assert len(gen) == 95, "crafting-slot registry = 83 pool keys ∪ item crafting[] markers"
     assert "Sealed in Undeath" in gen and "T1 (Weapon)" in gen
-    assert "Cannith: Rune Arm - Extra" in gen, "pool-less item markers are still in the registry"
+    # #374/U5 — the 12 pool-less markers are unchanged in COUNT and identity; only
+    # their prefix moved, 1:1, `Cannith: *` -> `Essence Crafting: *`. Update 79
+    # renamed the system in game (wiki ruling recorded in src/crafting_coverage.py),
+    # so this is upstream tracking DDO, not upstream inventing a spelling — the one
+    # class of rename KTD1 says to ADOPT. Both directions are pinned: the new label
+    # must be present and the retired one absent, so a half-applied rename fails.
+    assert "Essence Crafting: Rune Arm - Extra" in gen, \
+        "pool-less item markers are still in the registry"
+    assert not [s for s in gen if s.startswith("Cannith:")], \
+        "the retired `Cannith:` prefix must not survive anywhere in the registry"
+    assert len([s for s in gen if s.startswith("Essence Crafting:")]) == 12, \
+        "all 12 pool-less markers carry the renamed prefix"
     frozen = V._load(V.CRAFTING_SLOT_REGISTRY_PATH)["crafting_slots"]
     assert frozen == gen, "checked-in frozen registry matches the generator"
 
@@ -609,3 +633,394 @@ def test_374_the_ten_known_flips_resolve_to_our_canon():
     for variant, canonical in expected.items():
         assert alias_map.get(variant) == canonical, (
             f"{variant!r} must alias to {canonical!r}, got {alias_map.get(variant)!r}")
+
+
+# ---------------------------------------------------------------------------
+# #374 — defending our canon against upstream's flipped vocabulary.
+# ---------------------------------------------------------------------------
+
+def _raises_msg(exc, fn, *args, **kwargs):
+    """`_raises` above returns True, not the exception. These tests assert on the
+    message, because a red proves *a* gate fired, not that yours did."""
+    try:
+        fn(*args, **kwargs)
+    except exc as e:
+        return str(e)
+    raise AssertionError(f"expected {exc.__name__} to be raised")
+
+
+_FLIPPED_TABLE = {
+    "affix_synonyms": [
+        # What upstream's table looks like AFTER the flip: our canon on the
+        # SYNONYM side, its generic name as the canonical.
+        {"name": "Fire Spell Power", "synonyms": ["Combustion", "Fire Spellpower"]},
+        {"name": "Positive Spell Power", "synonyms": ["Devotion"]},
+        {"name": "Negative Lore", "synonyms": ["Void Lore"]},
+        # An unrelated fold, which must survive untouched.
+        {"name": "Speed", "synonyms": ["Striding"]},
+    ],
+    "local_affix_synonyms": [
+        {"name": "Damage to helpless enemies", "synonyms": ["Helplessness Damage"]},
+    ],
+}
+
+
+def test_374_registry_synonym_folds_drops_a_fold_keyed_on_our_canon():
+    folds = V._suppressed_upstream_folds(V._synonym_folds(_FLIPPED_TABLE))
+    for canon in ("Combustion", "Devotion", "Void Lore"):
+        assert canon not in folds, f"{canon!r} must not fold away"
+    # Suppression is by KEY membership, so a non-canon synonym of the same entry
+    # and an unrelated fold both survive.
+    assert folds["Fire Spellpower"] == "Fire Spell Power"
+    assert folds["Striding"] == "Speed"
+
+
+def test_374_suppression_never_inverts_so_no_two_cycle_can_form():
+    """KTD4 — an inverse LOCAL fold would slip past `_local_synonym_folds`'
+    collision guard (it compares synonym keys) and leave both directions live,
+    splitting one mechanic across two buckets. Suppression cannot: the merged map
+    holds at most one direction because the upstream key is simply gone."""
+    merged = dict(V._suppressed_upstream_folds(V._synonym_folds(_FLIPPED_TABLE)))
+    merged.update(V._local_synonym_folds(_FLIPPED_TABLE))
+    for syn, canon in merged.items():
+        assert merged.get(canon) != syn, f"2-cycle {syn!r} <-> {canon!r}"
+
+
+def test_374_the_shipped_fold_map_has_no_protected_canon_name_as_a_key():
+    folds = V.registry_synonym_folds()
+    assert folds, "the shipped fold map must not be empty"
+    leaked = sorted(set(folds) & V.PROTECTED_CANON)
+    assert leaked == [], leaked
+
+
+def test_374_suppression_does_not_reach_the_live_vs_frozen_gate():
+    """The gate must keep seeing upstream's table verbatim, or a flip stops being
+    a reviewable event. `_synonym_folds` is unfiltered by design."""
+    raw = V._synonym_folds(_FLIPPED_TABLE)
+    assert raw["Combustion"] == "Fire Spell Power"
+    frozen = {"affix_synonyms": [{"name": "Combustion", "synonyms": ["Fire Spell Power"]}]}
+    _raises(V.IntegrityError, V.check_affix_synonyms, _FLIPPED_TABLE, frozen)
+
+
+# --- the `local_affix_synonyms` staleness guard -------------------------------
+
+def _local(synonyms, unmatched=None):
+    e = {"name": "Damage to helpless enemies", "synonyms": list(synonyms)}
+    if unmatched is not None:
+        e["unmatched_synonyms"] = list(unmatched)
+    return {"local_affix_synonyms": [e]}
+
+
+def test_374_local_synonym_staleness_fires_on_a_synonym_that_matches_nothing():
+    err = _raises_msg(
+        V.IntegrityError, V.check_local_synonym_staleness,
+        _local(["Helplessness Damage", "Gone Upstream"]),
+        {"Helplessness Damage"}, [])
+    assert "'Gone Upstream'" in err
+    assert "silent no-op" in err
+
+
+def test_374_local_synonym_staleness_matches_free_text_by_substring():
+    """The Dino seam parses verbatim wiki sentences, so the spelling is embedded
+    rather than stored as a name."""
+    V.check_local_synonym_staleness(
+        _local(["damage vs. the helpless"]), set(),
+        ["+15% Artifact bonus to damage vs. the helpless"])
+
+
+def test_374_local_synonym_staleness_matches_names_exactly_not_by_prefix():
+    """A longer sibling must never vouch for a retired spelling."""
+    _raises(V.IntegrityError, V.check_local_synonym_staleness,
+            _local(["Damage vs. Helpless"]),
+            {"Damage vs. Helpless Opponents"}, [])
+
+
+def test_374_local_synonym_staleness_allowlist_is_two_directional():
+    # Allowlisted and absent -> passes.
+    V.check_local_synonym_staleness(
+        _local(["Helplessness Damage", "Damage vs. Helpless"],
+               unmatched=["Damage vs. Helpless"]),
+        {"Helplessness Damage"}, [])
+    # Allowlisted and PRESENT again -> fails, so the exemption cannot rot.
+    err = _raises_msg(
+        V.IntegrityError, V.check_local_synonym_staleness,
+        _local(["Helplessness Damage", "Damage vs. Helpless"],
+               unmatched=["Damage vs. Helpless"]),
+        {"Helplessness Damage", "Damage vs. Helpless"}, [])
+    assert "carries it again" in err
+
+
+def test_374_local_synonym_staleness_rejects_an_allowlist_entry_that_is_not_declared():
+    err = _raises_msg(V.IntegrityError, V.check_local_synonym_staleness,
+                      _local(["Helplessness Damage"], unmatched=["Never Declared"]),
+                      {"Helplessness Damage"}, [])
+    assert "is not a declared synonym" in err
+
+
+def test_374_local_synonym_staleness_refuses_an_empty_corpus():
+    err = _raises_msg(V.IntegrityError, V.check_local_synonym_staleness,
+                      _local(["Helplessness Damage"]), set(), [])
+    assert "empty corpus" in err
+
+
+def test_374_the_shipped_local_registry_is_not_stale():
+    import build_dataset
+    # #374/U4 — re-ratified 11 -> 12 synonyms. The helpless family still declares
+    # its eleven; the twelfth is `all Ability Scores` -> `Well Rounded`, re-adopted
+    # locally because upstream RETIRED its own copy of that fold in this refresh.
+    # The retirement was cleared on structured-affix occurrence counts (0/0/0), but
+    # `registry_synonym_folds` also folds the Dino channel's verbatim wiki tier
+    # text, where the spelling is live — without it the two dino sets stamped
+    # `via: "Artifact all Ability Scores"` while `membership_set_defs`, the live
+    # defs the SAME set scores through, stamped `via: "Artifact Well Rounded"`.
+    # Display provenance only: both spellings already expand to the same six
+    # abilities at the same bonus type, so no value, bucket or solve moves.
+    n = build_dataset.assert_local_affix_synonyms()
+    assert n == 12, n
+    table = V._load(V.AFFIX_SYNONYMS_REGISTRY_PATH)
+    assert {e["name"] for e in table["local_affix_synonyms"]} == {
+        "Damage to helpless enemies", "Well Rounded"}
+    assert n == sum(len(e["synonyms"]) for e in table["local_affix_synonyms"]) \
+        == table["local_count"], "the declared local_count must match the section"
+
+
+# --- KTD3: the armed set is derived, never hand-listed ------------------------
+
+def _raw_pair(name, value="10"):
+    return {"name": name, "type": "Artifact", "value": value}
+
+
+def test_374_armed_canon_variants_arms_a_flip_and_only_a_flip():
+    items = {"items": [{"name": "Some Item", "affixes": [
+        _raw_pair("Fire Spell Power"),      # flipped: variant present, canon gone
+        _raw_pair("Positive Spell Power"),  # both spellings present -> NOT armed
+        _raw_pair("Devotion"),
+    ]}]}
+    empty = {}
+    armed = V.armed_canon_variants(items, empty, empty,
+                                   alias_map={"Fire Spell Power": "Combustion",
+                                              "Positive Spell Power": "Devotion",
+                                              "Cold Spell Power": "Glaciation"})
+    # `Cold Spell Power` is absent from raw entirely, so it is not armed either.
+    assert armed == {"Fire Spell Power": "Combustion"}, armed
+
+
+def test_374_armed_canon_variants_cannot_see_an_untyped_variant():
+    """The predicate uses the same walk the integrity gate uses (name+type+value),
+    so an untyped affix is invisible to both — the `Ki` boundary case."""
+    items = {"items": [{"name": "Icewalkers", "affixes": [{"name": "Ki", "value": "3"}]}]}
+    assert V.armed_canon_variants(items, {}, {},
+                                  alias_map={"Ki": "Enhanced Ki"}) == {}
+
+
+def test_374_armed_canon_variants_is_exactly_the_canon_defence_after_the_refresh():
+    """Was `…_is_empty_before_the_refresh_is_vendored` — the deliberate pre-refresh
+    pin U2/U3 wrote knowing U4 would invert it. It guarded ONE direction of a
+    two-directional property: on the pre-refresh snapshot nothing was armed, so
+    every canon-defence correction had to be `pending_upstream`.
+
+    The refresh arms all thirteen, so the same property now reads from the other
+    side: the armed set, derived from the raw snapshot, must equal the live
+    canon-defence set, derived from the shard. Still never hand-listed — a shard
+    edit and a data change each move one side and this fails.
+    """
+    armed = V.armed_canon_variants()
+    declared = {c["source_name"]: c["canonical_name"]
+                for c in V._load(V.AFFIX_NAME_CORRECTIONS_PATH)["corrections"]
+                if c.get("canon_defense")}
+    assert armed, "the refresh is vendored — an empty armed set would mean it is not"
+    assert armed == declared, {"armed_only": set(armed) - set(declared),
+                               "declared_only": set(declared) - set(armed)}
+
+
+# --- KTD5: minting our canon into the frozen registry -------------------------
+#
+# `generate_registries` reads RAW only, before any rename runs, so once upstream
+# stops emitting one of our canon names no pipeline change can put it back. The
+# curated `local_affix_names` section is the way back in, and it is unioned into
+# BOTH consumers (the gate here; `build_dataset.load_affix_vocabulary` for
+# `cross_add`, covered in tests/test_cross_add.py).
+
+def _canon_flips():
+    """`{upstream generic name: our canon}` — derived from the shipped canon-defence
+    corrections, never hand-listed, so a shard edit moves this fixture with it."""
+    shard = V._load(V.AFFIX_NAME_CORRECTIONS_PATH)["corrections"]
+    return {c["source_name"]: c["canonical_name"]
+            for c in shard if c.get("canon_defense")}
+
+
+def _refreshed_baseline():
+    """The baseline U4's re-freeze will produce: today's raw-derived registry with
+    our canon names REMOVED and upstream's generic spellings added. This is what
+    `generate_registries()` returns over refreshed raw, and the shape the gate's
+    only caller passes in."""
+    base = V.generate_registries()
+    flips = _canon_flips()
+    names = set(base["affix_names"]) - set(flips.values()) | set(flips)
+    return {"affix_names": sorted(names), "bonus_types": base["bonus_types"]}
+
+
+def _registry_file(mutate):
+    """Write the shipped vocab_registries.json to a temp file after `mutate(dict)`,
+    and return the path — the gate and the picker vocabulary both load this file
+    directly, so a scenario is expressed by editing the FILE, not a passed dict."""
+    import json
+    import tempfile
+    table = V._load(V.VOCAB_REGISTRIES_PATH)
+    mutate(table)
+    fh = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8")
+    json.dump(table, fh)
+    fh.close()
+    return fh.name
+
+
+def test_374_local_affix_names_are_minted_by_a_rename_or_a_local_fold():
+    """The legitimacy join, asserted mechanically against the two files that mint
+    names. NOT "minted by a reviewed local fold" — that arm alone would reject
+    every spell-power and lore name here, which renames mint."""
+    renames, folds = V._minting_sources()
+    minted = V.local_affix_names()
+    assert minted, "the section must not be empty"
+    for name in minted:
+        assert name in renames or name in folds, (
+            f"{name!r} is backed by neither a correction canonical nor a local synonym")
+    # both arms are actually exercised by the shipped section
+    assert [n for n in minted if n in renames], "no entry is backed by a rename"
+    assert [n for n in minted if n in folds], "no entry is backed by a local fold"
+    # the explicit set, so a deletion is caught even before the refresh arms it.
+    # #374/U4 — re-ratified 11 -> 13. U3 declined both additions on measurements
+    # that were true of the PRE-refresh snapshot and are false of this one:
+    #   `Legendary Conditioning` — "native upstream, minting it is a permanent
+    #     no-op". Gate-visible occurrences went 34 -> 0; upstream now folds the
+    #     family into `False Life (%)` (2 -> 40, all `type: "Legendary"`).
+    #   `Enhanced Ki` — "untyped and invisible to the gate's walk". Upstream
+    #     re-encoded the type field, so `Ki` went 0 -> 20 gate-visible occurrences.
+    # Both are additions to the SAME two-arm legitimacy join asserted above, not a
+    # widening of it. See docs/reports/2026-08-18-gear-planner-canon-migration.md §6.1.
+    assert set(minted) == {
+        "Combustion", "Corrosion", "Devotion", "Glaciation", "Impulse",
+        "Magnetism", "Nullification", "Resonance", "Ice Lore", "Void Lore",
+        "Damage to helpless enemies", "Legendary Conditioning", "Enhanced Ki"}, minted
+    # the folded names are exactly PROTECTED_CANON (11 after the refresh added
+    # `Legendary Conditioning -> False Life (%)` upstream); the rest are rename-only
+    assert set(V.PROTECTED_CANON) < set(minted)
+
+
+def test_374_pending_corrections_count_as_a_minting_source():
+    """Deliberate: a `pending_upstream` correction still mints its canonical.
+
+    U3 wrote this against the shipped shard, where all eleven canon-defence
+    corrections carried the marker by construction. U4 vendored the data that arms
+    them, so `assert_canon_defense` required every marker to be stripped and the
+    shard now has none — reading the property off the shipped file is no longer
+    possible without re-introducing the exact staleness that guard exists to catch.
+
+    The property itself is unchanged and still load-bearing: it is what makes the
+    section survivable ACROSS refreshes, since the next upstream flip re-introduces
+    pending markers for names already minted here. So it is asserted against
+    `_minting_sources` directly, with the marker injected — the same claim, sourced
+    from the function that implements it rather than from a transient file state.
+    """
+    shard = V._load(V.AFFIX_NAME_CORRECTIONS_PATH)["corrections"]
+    assert not [c for c in shard if c.get("pending_upstream")], (
+        "post-refresh the shard must carry no pending markers — "
+        "assert_canon_defense fails when one outlives its data")
+
+    # take a real shipped correction whose canonical this section mints, and mark
+    # it pending: the canonical must still be a legitimate minting source.
+    minted = set(V.local_affix_names())
+    victim = next(c for c in shard if c.get("canonical_name") in minted)
+    marked = [dict(c, pending_upstream=True) if c is victim else c for c in shard]
+    renames, _folds = V._minting_sources({"corrections": marked})
+    assert victim["canonical_name"] in renames, (
+        "a pending correction stopped minting — every canon-defence entry is "
+        "pending by construction between an upstream flip and the vendoring that "
+        "arms it, so this section would be rejected wholesale in that window")
+    # and the marker is not what makes it legitimate: unmarked mints identically
+    unmarked, _ = V._minting_sources({"corrections": shard})
+    assert renames == unmarked
+
+
+def test_374_minted_canon_passes_the_gate_against_a_refreshed_baseline():
+    """The whole point: after the refresh the alias map rewrites upstream's generic
+    name to our canon, which the regenerated baseline no longer contains."""
+    baseline = _refreshed_baseline()
+    alias_map, _ = V.load_affix_aliases()
+    flips = _canon_flips()
+    for canonical in flips.values():
+        assert canonical not in set(baseline["affix_names"]), canonical
+    injected = {"items": [{"name": "Refreshed Item",
+                           "affixes": [_raw_pair(v) for v in flips]}]}
+    n = V.check_referential_integrity(injected, {}, {}, baseline, alias_map)
+    assert n == len(flips), (n, len(flips))
+    names = set(baseline["affix_names"]) | set(V.local_affix_names())
+    for variant, canonical in flips.items():
+        assert V.resolve_affix_name(variant, names, alias_map) == canonical
+
+
+def test_374_without_minting_the_refresh_turns_the_gate_red():
+    """The predicted failure, reproduced deliberately — this is what the tree does
+    TODAY if U4 lands without this unit."""
+    path = _registry_file(lambda t: t.pop("local_affix_names"))
+    alias_map, _ = V.load_affix_aliases()
+    injected = {"items": [{"name": "Refreshed Item",
+                           "affixes": [_raw_pair("Fire Spell Power")]}]}
+    err = _raises_msg(V.IntegrityError, V.check_referential_integrity,
+                      injected, {}, {}, _refreshed_baseline(), alias_map,
+                      registry_path=path)
+    assert "'Fire Spell Power'" in err and "frozen registry" in err, err
+
+
+def test_374_the_gate_is_not_widened_into_an_escape_hatch():
+    """A genuinely new upstream name still raises with the section minted."""
+    alias_map, _ = V.load_affix_aliases()
+    injected = {"items": [{"name": "Refreshed Item",
+                           "affixes": [_raw_pair("Totally Not A Real Affix Zzz")]}]}
+    err = _raises_msg(V.IntegrityError, V.check_referential_integrity,
+                      injected, {}, {}, _refreshed_baseline(), alias_map)
+    assert "Totally Not A Real Affix Zzz" in err, err
+
+
+def test_374_a_minted_name_backed_by_neither_arm_is_rejected():
+    def _invent(t):
+        t["local_affix_names"].append(
+            {"name": "Totally Invented Affix Zzz", "evidence": "none, deliberately"})
+    err = _raises_msg(V.IntegrityError, V.local_affix_names,
+                      path=_registry_file(_invent))
+    assert "Totally Invented Affix Zzz" in err, err
+    assert "not minted by anything this repo owns" in err, err
+
+
+def test_374_a_minted_name_without_evidence_is_rejected():
+    def _strip(t):
+        t["local_affix_names"][0].pop("evidence")
+    err = _raises_msg(V.IntegrityError, V.local_affix_names,
+                      path=_registry_file(_strip))
+    assert "carries no evidence" in err, err
+
+
+def test_374_the_upstream_synonym_section_is_not_a_minting_source():
+    """Only `local_affix_synonyms` mints. Upstream's own `affix_synonyms` section is
+    upstream's vocabulary — treating it as a minting source would let any upstream
+    fold silently widen what the gate accepts (KTD5's rejected alternative)."""
+    renames, folds = V._minting_sources()
+    upstream = {e["name"] for e in
+                V._load(V.AFFIX_SYNONYMS_REGISTRY_PATH)["affix_synonyms"]}
+    assert "Speed" in upstream, "fixture assumes the upstream section is populated"
+    assert "Speed" not in folds and "Speed" not in renames
+
+
+def test_374_the_local_names_union_is_now_load_bearing_not_a_no_op():
+    """Was `…_is_a_no_op_before_the_refresh` — the nothing-changed guard U3 wrote to
+    prove it moved no live behavior, stated as `local_affix_names ⊆ raw`.
+
+    U4 vendored the data that arms it, so the sequencing the old name described has
+    completed and the subset relation inverts: upstream no longer emits ANY of these
+    spellings, so every minted name is absent from the raw-derived registry and the
+    union is the only thing putting it back. Asserted as a partition (both halves),
+    not a bare `not <=`, so a partially-armed refresh cannot pass either.
+    """
+    raw = set(V.generate_registries()["affix_names"])
+    minted = set(V.local_affix_names())
+    assert minted, "the section must not be empty"
+    assert not (minted & raw), sorted(minted & raw)

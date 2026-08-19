@@ -447,7 +447,16 @@ test("#332: the two markers state DIFFERENT things and neither is symbol-only", 
     "the rankable-only marker says the tier does NOT count it — the #343 split");
 });
 
-test("#332: on REAL data, a counted effect and an admitted proc mark differently", () => {
+// RE-POINTED 2026-08-18 (#374/U6, tracked as #380). The admitted-proc half of
+// this assertion is gone from real data: the refresh typed every untyped weapon
+// proc `Bool`, all 104 `utility_procs` adjudications were retired, and
+// `utilityAdmitted` is empty by design. So on real data there is no chip that
+// can carry the rankable-only marker, and `presenceMarker("Undead Bane", …)`
+// returns null rather than a marker.
+//
+// The counted half is unaffected and stays pinned here. The two-markers-differ
+// mechanism stays pinned by the hand-built test above, which feeds both sets.
+test("#332/#380: on REAL data the counted marker still fires; the admitted marker has no population", () => {
   const { buildPickerVocabulary } = require("../web/dataset.js");
   const vocab = buildPickerVocabulary(data);
   if (!vocab || !vocab.utilityCounting || !vocab.utilityCounting.size) {
@@ -456,20 +465,34 @@ test("#332: on REAL data, a counted effect and an admitted proc mark differently
   const sets = { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted };
   assert.strictEqual(presenceMarker("Ghostly", sets).cls, "counted",
     "the reported case is marked as counted");
-  assert.strictEqual(presenceMarker("Undead Bane", sets).cls, "rankable-only",
-    "and the proc a player can rank but the tier ignores is marked rankable-only");
+  assert.strictEqual(vocab.utilityAdmitted.size, 0,
+    "the admitted set is empty by design (#380) — when it refills, restore the " +
+    "rankable-only real-data assertion below");
+  assert.strictEqual(presenceMarker("Undead Bane", sets), null,
+    "with nothing admitted, the rankable-only marker is unreachable on real data");
 });
 
-test("#332: on REAL data, an untyped admitted proc gets the rankable-only marker", () => {
+test("#332/#380: the admitted-proc chip join has no population left to check", () => {
   // The guard whose absence let the marker reach 75 of 1,656 chips. The isolated
   // presenceMarker tests passed because they fed name strings directly; the defect
   // lived at the affixEntries -> presenceMarker join, where the admitted procs are
   // untyped MAGNITUDES and the old code only tagged the presence-typed branch.
+  //
+  // RE-POINTED 2026-08-18 (#374/U6, tracked as #380). Its old `if
+  // (!vocab.utilityAdmitted.size) return` early-out is exactly the shape this
+  // repo has been bitten by — a guard that stops checking without failing — and
+  // the 2026-08-18 refresh made that branch the ONLY branch by emptying the
+  // admitted set. So the emptiness is now asserted rather than silently
+  // tolerated: this test goes red when #380 refills the set, at which point the
+  // join guard below becomes meaningful again and its `checked > 100` floor
+  // should be restored.
   const { buildPickerVocabulary } = require("../web/dataset.js");
   const vocab = buildPickerVocabulary(data);
-  if (!vocab || !vocab.utilityAdmitted || !vocab.utilityAdmitted.size) {
+  if (!vocab || !vocab.utilityCounting || !vocab.utilityCounting.size) {
     console.log("  (skipped — web/data/items.json not built)"); return;
   }
+  assert.strictEqual(vocab.utilityAdmitted.size, 0,
+    "no admitted procs remain (#380) — restore the real-data join guard when they return");
   const sets = { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted };
   // Select by the CANONICAL name and assert on the RAW one. An earlier draft filtered
   // and asserted on the same raw markName, so a raw-vs-canonical mismatch dropped out
@@ -483,9 +506,25 @@ test("#332: on REAL data, an untyped admitted proc gets the rankable-only marker
       if ((presenceMarker(e.markName, sets) || {}).cls === "rankable-only") marked++;
     }
   }
-  assert.ok(checked > 100, `the dataset carries many admitted-proc chips (got ${checked})`);
+  assert.strictEqual(checked, 0,
+    `no chip can join an empty admitted set (got ${checked}) — #380`);
   assert.strictEqual(marked, checked,
     `EVERY admitted-proc chip must be marked rankable-only, untyped or not (${marked}/${checked})`);
+  // The counted half of the same join still has a population, so the
+  // affixEntries -> presenceMarker seam this test exists to guard is still
+  // exercised end to end against real data rather than left unexercised.
+  let countedChips = 0, countedMarked = 0;
+  for (const v of items) {
+    for (const e of affixEntries(v)) {
+      if (!e.markName || !vocab.utilityCounting.has(canon(e.markName))) continue;
+      countedChips++;
+      if ((presenceMarker(e.markName, sets) || {}).cls === "counted") countedMarked++;
+    }
+  }
+  assert.ok(countedChips > 100,
+    `the dataset carries many counted chips (got ${countedChips})`);
+  assert.strictEqual(countedMarked, countedChips,
+    `EVERY counted chip must be marked counted (${countedMarked}/${countedChips})`);
 });
 
 console.log(`\n${passed} passed`);

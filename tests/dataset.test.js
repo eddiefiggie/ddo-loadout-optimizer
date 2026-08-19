@@ -944,6 +944,14 @@ const WORD_CAP_CASUALTIES = [
   "Magnetism +66 (only from chest)",
   "Nut-hull Toffee Surprise (Lasting Stoneskin, CL 10, 10 minutes)",
   "Second Litany of the Crimson Covenant",
+  // Re-ratified 2026-08-18 (#374/U6, cause #380). The item is not new; its
+  // ENCODING is. The previous dump stored it key-less with a numeric value
+  // (`{name, value: "6"}`), so it sat in the untyped-magnitude population and
+  // never reached the presence scan at all. The refresh re-encoded it as
+  // `{type: "Bool", value: 1}` on all six carriers, which moves it into the
+  // presence population — where its five words put it over the word cap, exactly
+  // as the cap intends. The population moved; the cap did not.
+  "The Dragging of the Depths",
   "Third Litany of the Crimson Covenant",
   "Vitality +20 (only from chain end reward)",
   "You also gain immunity to Mind-Altering Enchantments as if you were under the effects of the Protection from Evil spell",
@@ -1449,11 +1457,27 @@ test("#305: every solver channel carries only 'Damage to helpless enemies'; raw 
   const dino = (realData.dino_sets || []).find((s) => s.set === "Dread Stalker");
   assert.ok(dino.affixes.some((a) => a.stat === CANON), "dino Dread Stalker carries the canonical");
   assert.ok((dino.raw || "").includes("damage vs. the helpless"), "dino raw stays verbatim");
-  // verbatim provenance keeps the wiki spellings in tier raw
+  // Tier raw, re-ratified 2026-08-18 (#374/U6). This used to assert that
+  // `Damage vs. Helpless Opponents` (13 tier raws) and `Helplessness Damage`
+  // (33) survived verbatim, proving the fold rewrote stats and not provenance
+  // text. BOTH SPELLINGS LEFT UPSTREAM: the refreshed gearplanner_sets.json
+  // consolidated every helpless wording onto `Damage vs. the Helpless` (1 -> 27
+  // occurrences; the other two 2 -> 0 and 6 -> 0), and tier raw is synthesized
+  // from the set catalog's own affix names. The one surviving upstream spelling
+  // is the one our #305 rename maps, so the verbatim property is no longer
+  // demonstrable in THIS channel — it is still demonstrated in the dino channel
+  // above, whose raw is upstream free text the fold never touches.
+  //
+  // What replaces it is the stronger claim the fold actually owes: every
+  // helpless mention in every tier raw reads as the canonical, so no surface
+  // shows a player a wording the picker cannot resolve.
   const raws = [];
   for (const v of realData.items) for (const t of v.parsed_set_bonuses || []) raws.push(t.raw || "");
-  assert.ok(raws.some((r) => r.includes("Damage vs. Helpless Opponents")), "tier raw verbatim");
-  assert.ok(raws.some((r) => r.includes("Helplessness Damage")), "tier raw verbatim");
+  const helplessRaws = raws.filter((r) => /helpless/i.test(r));
+  assert.ok(helplessRaws.length > 0, "tier raws still describe the helpless mechanic");
+  const offCanon = [...new Set(helplessRaws.filter((r) => !r.includes(CANON)))];
+  assert.deepStrictEqual(offCanon, [],
+    "every helpless tier raw reads as the canonical spelling");
   // the picker resolves every old spelling to the canonical rankable target
   for (const syn of away) {
     assert.strictEqual((realData.metadata.affix_aliases || {})[syn], CANON,
@@ -1461,30 +1485,74 @@ test("#305: every solver channel carries only 'Damage to helpless enemies'; raw 
   }
 });
 
-// #287 — the five folded engraved names arrive as provenance labels: suggested,
+// #287 — the folded engraved names arrive as provenance labels: suggested,
 // rankable, and resolving to their base stat, with the prefixed name gone from
 // every built affix. No bespoke web code — the label scan picks up any family
 // the moment it stamps its first affix.
-test("#287: folded Legendary names are redirecting labels, not dead stats", () => {
+//
+// RE-RATIFIED 2026-08-18 (#374/U6). The 2026-08-18 gear-planner refresh ADOPTED
+// this fold: `Legendary Accuracy`, `Legendary Armor-Piercing`, `Legendary Deadly`
+// and `Legendary Spell Penetration` have zero occurrences left in the raw dump
+// (14 / 22 / 3 / 12 before), and the same carrier counts now arrive as the base
+// stat at bonus type `Legendary` — which is what the fold produced. With nothing
+// left to fold, the fold stamps no provenance receipt and those four names stop
+// being shipped labels. That is upstream's change, not a lost mechanism, and the
+// split below is what makes it visible if upstream ever reverts.
+//
+// `Legendary Conditioning` is the survivor, and it is ours: upstream re-spelled
+// its carriers `False Life (%)`, our #376 canon correction renames that to the
+// engraved name, and the fold then folds it exactly as before (36 stamps).
+const LEGENDARY_ADOPTED_UPSTREAM = {
+  "Legendary Accuracy": "Accuracy",
+  "Legendary Armor-Piercing": "Armor-Piercing",
+  "Legendary Deadly": "Deadly",
+  "Legendary Spell Penetration": "Spell Penetration",
+};
+const LEGENDARY_STILL_FOLDED = { "Legendary Conditioning": "Conditioning" };
+
+test("#287: the locally folded Legendary name is a redirecting label, not a dead stat", () => {
   const v = buildPickerVocabulary(realData);
-  const pairs = {
-    "Legendary Accuracy": "Accuracy",
-    "Legendary Armor-Piercing": "Armor-Piercing",
-    "Legendary Deadly": "Deadly",
-    "Legendary Conditioning": "Conditioning",
-    "Legendary Spell Penetration": "Spell Penetration",
-  };
-  for (const [engraved, base] of Object.entries(pairs)) {
+  for (const [engraved, base] of Object.entries(LEGENDARY_STILL_FOLDED)) {
     assert.ok(v.provenanceLabels[engraved.toLowerCase()], `${engraved} is a shipped label`);
     assert.deepStrictEqual(expandedAwayFor(v, engraved), [base],
       `${engraved} resolves to ${base}`);
     assert.ok(v.suggestions.includes(base), `${base} stays suggested`);
   }
+});
+
+test("#287: upstream adopted four of the folds — the base stat carries the Legendary type natively", () => {
+  // Stated as the PREMISE of the retirement, not as an absence. If upstream
+  // re-introduces a prefixed spelling, the fold fires again, the engraved name
+  // becomes a label again, and the first assertion here goes red demanding a
+  // fresh adjudication rather than silently drifting back.
+  const v = buildPickerVocabulary(realData);
+  for (const [engraved, base] of Object.entries(LEGENDARY_ADOPTED_UPSTREAM)) {
+    assert.ok(!v.provenanceLabels[engraved.toLowerCase()],
+      `${engraved} ships no label — upstream emits the base stat directly`);
+    const carriers = realData.items.filter((it) => (it.affixes || []).some(
+      (a) => a.name === base && a.type === "Legendary"));
+    assert.ok(carriers.length > 0,
+      `${base} is still carried at bonus type Legendary — the fold's purpose, served upstream`);
+    assert.ok(v.suggestions.includes(base), `${base} stays suggested`);
+  }
+});
+
+test("#287: no built affix keeps a prefixed Legendary stat name", () => {
+  const prefixed = new Set(Object.keys(LEGENDARY_ADOPTED_UPSTREAM)
+    .concat(Object.keys(LEGENDARY_STILL_FOLDED)).map((k) => k.toLowerCase()));
   for (const it of realData.items) {
     for (const a of it.affixes || []) {
-      assert.ok(!(String(a.name || "").toLowerCase() in
-        Object.fromEntries(Object.keys(pairs).map((k) => [k.toLowerCase(), 1]))),
+      assert.ok(!prefixed.has(String(a.name || "").toLowerCase()),
         `no built affix keeps a prefixed stat name (${it.variant_id})`);
+    }
+    // #374/U6 — the set-tier channel too. Our own `False Life (%)` correction
+    // mints the engraved name into the RAW set catalog, so without the fold
+    // running there the tier credits a stat name no item affix carries.
+    for (const t of it.parsed_set_bonuses || []) {
+      for (const a of t.affixes || []) {
+        assert.ok(!prefixed.has(String(a.stat || "").toLowerCase()),
+          `no set tier credits a prefixed stat name (${it.variant_id}/${t.set})`);
+      }
     }
   }
 });
@@ -1665,12 +1733,23 @@ test("#343: tier-2 names are OUT of the stamped counting set; tier-1 is IN and a
 // (derived by src/utility_procs.py's mirror) must agree with web/dataset.js's
 // UTILITY_TIER1_PRESENCE. If either copy gains or loses a name, the stamped
 // set diverges from this constant and one direction below fails.
-test("#332: utilityAdmitted is exposed and DISJOINT from utilityCounting", () => {
+// RE-POINTED 2026-08-18 (#374/U6, tracked as #380). This asserted against real
+// data that the admitted-proc set is non-empty and that `Undead Bane` is in it.
+// The 2026-08-18 refresh typed every untyped weapon proc `Bool`, so all 104
+// `utility_procs` adjudications were retired and the `allow` list — and with it
+// `utilityAdmitted` — is EMPTY BY DESIGN. The property "an admitted proc exists"
+// is therefore no longer expressible against real data, and #380 owns the
+// decision about whether to re-derive the set from the `Bool` population.
+//
+// Rather than delete the marker or let it pass vacuously, it now pins the two
+// things that ARE still true and states the collapse as an assertion, so this
+// test goes red the moment #380 refills the set and demands the real-data
+// distinction be re-pinned.
+test("#332/#380: utilityAdmitted is exposed, disjoint from utilityCounting, and empty by design", () => {
   const v = builtVocab();
   if (!v) { console.log("  (skipped — web/data/items.json not built)"); return; }
   assert.ok(v.utilityAdmitted instanceof Set, "the admitted procs are exposed as a Set");
-  assert.ok(v.utilityAdmitted.size > 0, "a real dataset admits some untyped procs");
-  assert.ok(v.utilityCounting.size > 0, "and counts some presence effects");
+  assert.ok(v.utilityCounting.size > 0, "and the counting half still counts presence effects");
   // The split every surface renders: a name is counted, or rankable-only, never
   // both. An overlap would put two contradictory markers on one Browse chip.
   const both = [...v.utilityCounting].filter((n) => v.utilityAdmitted.has(n));
@@ -1679,8 +1758,16 @@ test("#332: utilityAdmitted is exposed and DISJOINT from utilityCounting", () =>
   // Anchored on the reported case: the tier seeks Ghostly, never Undead Bane.
   assert.ok(v.utilityCounting.has("Ghostly"), "Ghostly is counted");
   assert.ok(!v.utilityAdmitted.has("Ghostly"), "and is not an admitted proc");
-  assert.ok(v.utilityAdmitted.has("Undead Bane"), "Undead Bane is an admitted proc");
-  assert.ok(!v.utilityCounting.has("Undead Bane"), "and is NOT counted");
+  assert.ok(!v.utilityCounting.has("Undead Bane"), "Undead Bane is NOT counted");
+  // #380 — the surviving property. The proc is no longer *admitted* (it is typed
+  // `Bool` now, not untyped), but it must still reach the player through the
+  // presence/suggestion path, which is what makes the empty allow list a DISPLAY
+  // change and not a scoring one.
+  assert.ok(v.presence.has("Undead Bane") || v.suggestions.includes("Undead Bane"),
+    "Undead Bane still reaches the picker as a presence effect");
+  assert.strictEqual(v.utilityAdmitted.size, 0,
+    "the admitted set is empty by design (#380) — when it refills, re-pin the " +
+    "real-data counted-vs-admitted distinction here and in browse.test.js");
 });
 
 test("#91/KTD10: the stamped counting set and UTILITY_TIER1_PRESENCE cannot drift", () => {

@@ -1246,9 +1246,17 @@ test("F2: every rankable stat keeps its Advanced control against the REAL vocab"
   // stats (Holy, Vampirism, Wounding, the Bane lines) out of the credit gate and
   // reopened the defect it exists to block. Intended overlap is exactly the
   // dual-nature four.
+  // Re-ratified 2026-08-18 (#374/U6): `Magical Efficiency` became the fifth
+  // dual-nature stat, and upstream is why. Its 100 magnitude carriers were
+  // key-less (untyped) in the previous dump, which kept it out of the curated
+  // rankable list; the refresh types them `Enhancement`, so it now carries a
+  // real magnitude AND the 8 `Bool` lines it already had. Gating it on
+  // `presence` alone would hide the min/max of a stat that has one — the exact
+  // defect this test exists to block, now on a fifth name.
   const leaked = [...rv.presence].filter((x) => rv.magnitude.has(x));
   assert.deepStrictEqual(leaked.sort(),
-    ["Deception", "Protection from Evil", "Smoke Screen", "Underwater Action"],
+    ["Deception", "Magical Efficiency", "Protection from Evil", "Smoke Screen",
+     "Underwater Action"],
     `only the dual-nature stats may escape the presence gate; got ${leaked.length}`);
   for (const stat of realData.metadata.rankable_affixes) {
     assert.strictEqual(isPresenceOnly(stat, rv), false, `${stat} has a magnitude bucket`);

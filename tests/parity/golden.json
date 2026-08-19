@@ -1,7 +1,7 @@
 {
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
- "generated": "2026-08-15",
- "dataset": "web/data/items.json (9045 items)",
+ "generated": "2026-08-18",
+ "dataset": "web/data/items.json (9110 items)",
  "fixture_count": 23,
  "solves": {
   "heroic-str-melee": {
@@ -79,12 +79,12 @@
    "status": "optimal",
    "perTarget": {
     "Intelligence": 34,
-    "Universal Spell Power": 94,
+    "Universal Spell Power": 118,
     "Wisdom": 28
    },
    "effective": {
     "Intelligence": 34,
-    "Universal Spell Power": 94,
+    "Universal Spell Power": 118,
     "Wisdom": 28
    },
    "chosen": [
@@ -98,7 +98,7 @@
     },
     {
      "slot": "Boots",
-     "variant": "Legendary Windriders"
+     "variant": "Legendary Flightfoot Greaves"
     },
     {
      "slot": "Bracers",
@@ -114,11 +114,11 @@
     },
     {
      "slot": "Goggles",
-     "variant": "Van Richten's Spectacles"
+     "variant": "Goggles of the Frozen Night"
     },
     {
      "slot": "Helmet",
-     "variant": "Duergarcraft Cowl"
+     "variant": "Legendary Crown of Leaves"
     },
     {
      "slot": "Main Hand",
@@ -250,7 +250,7 @@
     },
     {
      "slot": "Gloves",
-     "variant": "Gloves of Tranquility"
+     "variant": "Epic Fanged Gloves"
     },
     {
      "slot": "Goggles",
@@ -291,13 +291,13 @@
    "perTarget": {
     "Strength": 37,
     "Deadly": 31,
-    "Seeker": 28,
+    "Seeker": 33,
     "Accuracy": 55
    },
    "effective": {
     "Strength": 37,
     "Deadly": 31,
-    "Seeker": 28,
+    "Seeker": 33,
     "Accuracy": 55
    },
    "chosen": [
@@ -331,7 +331,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Helm of the Sun's Wrath"
+     "variant": "Legendary Helm of the Warblade"
     },
     {
      "slot": "Main Hand",
@@ -347,7 +347,7 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Nocturne Ring"
+     "variant": "Legendary Band of Acrobatics"
     },
     {
      "slot": "Trinket",
@@ -358,32 +358,32 @@
   "endgame-caster-ml32": {
    "status": "optimal",
    "perTarget": {
-    "Universal Spell Power": 104,
-    "Combustion": 439,
-    "Corrosion": 439,
-    "Devotion": 368,
-    "Glaciation": 247,
-    "Impulse": 247,
-    "Magnetism": 247,
-    "Nullification": 247,
-    "Radiance": 247,
-    "Reconstruction": 247,
-    "Resonance": 247,
+    "Universal Spell Power": 128,
+    "Combustion": 463,
+    "Corrosion": 463,
+    "Devotion": 392,
+    "Glaciation": 271,
+    "Impulse": 271,
+    "Magnetism": 271,
+    "Nullification": 271,
+    "Radiance": 271,
+    "Reconstruction": 271,
+    "Resonance": 271,
     "Wisdom": 25,
     "Charisma": 24
    },
    "effective": {
-    "Universal Spell Power": 104,
-    "Combustion": 439,
-    "Corrosion": 439,
-    "Devotion": 368,
-    "Glaciation": 247,
-    "Impulse": 247,
-    "Magnetism": 247,
-    "Nullification": 247,
-    "Radiance": 247,
-    "Reconstruction": 247,
-    "Resonance": 247,
+    "Universal Spell Power": 128,
+    "Combustion": 463,
+    "Corrosion": 463,
+    "Devotion": 392,
+    "Glaciation": 271,
+    "Impulse": 271,
+    "Magnetism": 271,
+    "Nullification": 271,
+    "Radiance": 271,
+    "Reconstruction": 271,
+    "Resonance": 271,
     "Wisdom": 25,
     "Charisma": 24
    },
@@ -591,14 +591,14 @@
   "trance-credit-additive-ml32": {
    "status": "optimal",
    "perTarget": {
-    "Devotion": 448,
+    "Devotion": 472,
     "Wisdom": 29,
-    "Universal Spell Power": 104
+    "Universal Spell Power": 128
    },
    "effective": {
-    "Devotion": 448,
+    "Devotion": 472,
     "Wisdom": 29,
-    "Universal Spell Power": 104
+    "Universal Spell Power": 128
    },
    "chosen": [
     {
@@ -662,14 +662,14 @@
   "trance-credit-additive-ml32-baseline": {
    "status": "optimal",
    "perTarget": {
-    "Devotion": 436,
+    "Devotion": 460,
     "Wisdom": 29,
-    "Universal Spell Power": 104
+    "Universal Spell Power": 128
    },
    "effective": {
-    "Devotion": 436,
+    "Devotion": 460,
     "Wisdom": 29,
-    "Universal Spell Power": 104
+    "Universal Spell Power": 128
    },
    "chosen": [
     {
@@ -871,12 +871,12 @@
    "perTarget": {
     "Fire Absorption": 57,
     "Electric Absorption": 64,
-    "Wizardry": 631
+    "Wizardry": 620
    },
    "effective": {
     "Fire Absorption": 57,
     "Electric Absorption": 64,
-    "Wizardry": 631
+    "Wizardry": 620
    },
    "chosen": [
     {
@@ -909,7 +909,7 @@
     },
     {
      "slot": "Main Hand",
-     "variant": "Epic Rod of Mythant"
+     "variant": "Echo of Whelm"
     },
     {
      "slot": "Necklace",
@@ -1241,12 +1241,12 @@
   "cross-add-combustion-usp-ml32": {
    "status": "optimal",
    "perTarget": {
-    "Combustion": 440,
-    "Universal Spell Power": 101
+    "Combustion": 464,
+    "Universal Spell Power": 125
    },
    "effective": {
-    "Combustion": 440,
-    "Universal Spell Power": 101
+    "Combustion": 464,
+    "Universal Spell Power": 125
    },
    "chosen": [
     {
@@ -1310,15 +1310,15 @@
   "utility-ab-kinetic-ml34-baseline": {
    "status": "optimal",
    "perTarget": {
-    "Kinetic Lore": 49
+    "Kinetic Lore": 46
    },
    "effective": {
-    "Kinetic Lore": 49
+    "Kinetic Lore": 46
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Downcast Robe"
+     "variant": "Legendary Darkmoss"
     },
     {
      "slot": "Goggles",
@@ -1326,30 +1326,26 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Elder's Cap"
+     "variant": "Faedark Faerielights"
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Elder's Focus"
-    },
-    {
-     "slot": "Trinket",
-     "variant": "Epic Dragon's Eye"
+     "variant": "Celestial Insignia"
     }
    ]
   },
   "utility-ab-kinetic-ml34": {
    "status": "optimal",
    "perTarget": {
-    "Kinetic Lore": 49
+    "Kinetic Lore": 46
    },
    "effective": {
-    "Kinetic Lore": 49
+    "Kinetic Lore": 46
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Downcast Robe"
+     "variant": "Legendary Darkmoss"
     },
     {
      "slot": "Belt",
@@ -1386,14 +1382,6 @@
     {
      "slot": "Off Hand",
      "variant": "The Heart of the Prince"
-    },
-    {
-     "slot": "Ring",
-     "variant": "Clouded Dreams"
-    },
-    {
-     "slot": "Ring",
-     "variant": "Legendary Duskbone Ring"
     },
     {
      "slot": "Trinket",
@@ -1443,12 +1431,12 @@
    "perTarget": {
     "Intelligence": 37,
     "Spell Penetration": 31,
-    "Universal Spell Power": 104
+    "Universal Spell Power": 128
    },
    "effective": {
     "Intelligence": 37,
     "Spell Penetration": 31,
-    "Universal Spell Power": 104
+    "Universal Spell Power": 128
    },
    "chosen": [
     {

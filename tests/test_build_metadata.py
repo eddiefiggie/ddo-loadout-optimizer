@@ -119,8 +119,64 @@ def test_noise_filter_is_at_the_emit_site_leaving_the_frozen_baseline_intact():
     the frozen checked-in registry as its baseline."""
     import json
     import build_dataset as B
+    from src import vocabulary as V
     frozen = json.load(open(B.VOCAB_REGISTRIES_PATH))["affix_names"]
-    assert "See the item description page for details." in frozen, (
-        "the frozen baseline must still carry the noise name -- it is what the "
-        "integrity gate validates raw data against"
+    # #374/U4 — the fixture noise name is gone from the frozen baseline, and so is
+    # every other one: upstream fixed its parser in the 2026-08-18 refresh and
+    # retired all 28 scrape artifacts (11 bare numerals, 17 tooltip-bleed blobs),
+    # so the re-frozen registry legitimately carries none. See
+    # docs/reports/2026-08-18-gear-planner-canon-migration.md §4.
+    assert not [n for n in frozen if B.is_noise_affix_name(n)], \
+        "no noise name survives upstream's parser cleanup"
+    # The claim itself is unchanged and is asserted where it is still falsifiable:
+    # `generate_registries` must NOT filter, so a noise name present in raw reaches
+    # the baseline the integrity gate validates against. Filtering there would make
+    # the gate reject data it has to accept.
+    noise = "See the item description page for details."
+    assert B.is_noise_affix_name(noise)
+    injected = {"items": [{"name": "Noisy Item", "affixes": [
+        {"name": noise, "type": "Enhancement", "value": "1"}]}]}
+    baseline = V.generate_registries(injected, {}, {})
+    assert noise in baseline["affix_names"], (
+        "the raw-derived baseline must still carry the noise name -- it is what "
+        "the integrity gate validates raw data against"
     )
+    # ...and the emit site is what drops it.
+    assert noise not in _build()["metadata"]["affix_registry"]
+
+
+# --- #374/KTD5: the locally minted registry names ---------------------------
+
+def test_374_minted_local_names_reach_the_emitted_picker_vocabulary():
+    """`load_affix_vocabulary` unions the curated `local_affix_names` section into
+    the emitted registry — the same list `cross_add_map` bounds its targets to.
+    Without it, our canon leaves the picker vocabulary the moment the refreshed
+    snapshot lands, because the frozen baseline is generated from RAW."""
+    from src import vocabulary as V
+    reg = set(_build()["metadata"]["affix_registry"])
+    minted = V.local_affix_names()
+    assert minted, "the curated section must not be empty"
+    for name in minted:
+        assert name in reg, f"{name!r} was minted but never reached the registry"
+
+
+def test_374_the_minted_union_moves_exactly_the_minted_names_and_nothing_else():
+    """Was `…_moves_nothing_before_the_refresh` — the nothing-changed guard U3 wrote
+    while every minted name was still in the frozen (raw-derived) section, making
+    the union a no-op.
+
+    U4 vendored the refresh, so upstream's re-frozen registry no longer carries any
+    of them and the union is now the only thing putting them in the picker
+    vocabulary. The guard keeps its shape — an exact equality against a derived
+    expectation, never a length or a subset — so the union still cannot smuggle in
+    a fourteenth name.
+    """
+    import json
+    import build_dataset as B
+    from src import vocabulary as V
+    frozen = json.load(open(B.VOCAB_REGISTRIES_PATH))["affix_names"]
+    minted = V.local_affix_names()
+    assert not (set(minted) & set(frozen)), \
+        "a minted name reappeared in the frozen section — the union would be a no-op"
+    expected = sorted({n for n in frozen if not B.is_noise_affix_name(n)} | set(minted))
+    assert _build()["metadata"]["affix_registry"] == expected

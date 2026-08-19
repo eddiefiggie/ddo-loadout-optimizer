@@ -131,3 +131,62 @@ def test_guard_expansion_overlap_fails():
     _expect_exit(lambda: cross_add_mod.validate_map(m, known), "Potency")
     m2 = {"Combustion": ["Potency"]}
     _expect_exit(lambda: cross_add_mod.validate_map(m2, known), "Potency")
+
+
+# --- #374/KTD5: the refresh must not empty the target rosters ----------------
+#
+# `cross_add_map` bounds LORE_ROSTER to the dataset vocabulary, so a lore target
+# the vocabulary has lost is dropped with NO error, while a lost spellpower
+# target raises. Both halves are asserted by COUNT below: a presence-only test
+# ("every emitted lore maps to Universal Spell Lore") passes happily on a map
+# that emitted eight of ten.
+
+def _refreshed_registry_file(with_local_names=True):
+    """The vocab_registries.json U4's re-freeze produces: our canon names gone from
+    `affix_names`, upstream's generic spellings in their place. The curated
+    `local_affix_names` section is what puts ours back — dropped here when the
+    scenario is "the refresh landed without KTD5"."""
+    import json
+    import tempfile
+    from src import vocabulary as V
+    table = V._load(V.VOCAB_REGISTRIES_PATH)
+    flips = {c["source_name"]: c["canonical_name"]
+             for c in V._load(V.AFFIX_NAME_CORRECTIONS_PATH)["corrections"]
+             if c.get("canon_defense")}
+    table["affix_names"] = sorted(
+        (set(table["affix_names"]) - set(flips.values())) | set(flips))
+    if not with_local_names:
+        table.pop("local_affix_names")
+    fh = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8")
+    json.dump(table, fh)
+    fh.close()
+    return fh.name
+
+
+def test_374_refreshed_registry_keeps_every_cross_add_target():
+    registry, _ = build_dataset.load_affix_vocabulary(
+        path=_refreshed_registry_file(with_local_names=True))
+    m = cross_add_mod.cross_add_map(registry)          # must not SystemExit
+    assert len([t for t in m if t in set(spell_focus_mod.SPELLPOWERS)]) == 10, m
+    assert len([t for t in m if t in set(cross_add_mod.LORE_ROSTER)]) == 10, m
+
+
+def test_374_without_minting_the_refresh_breaks_both_halves_differently():
+    """The predicted failure, reproduced deliberately: the spellpower half raises,
+    the lore half goes quiet. Two failure modes, one cause."""
+    registry, _ = build_dataset.load_affix_vocabulary(
+        path=_refreshed_registry_file(with_local_names=False))
+    # loud half — eight of the ten spellpower targets have left the vocabulary
+    _expect_exit(lambda: cross_add_mod.cross_add_map(registry), "Combustion")
+    # silent half — the lore bounding simply omits, which is why the assertion
+    # above this one counts instead of checking presence
+    known = set(registry)
+    assert len([l for l in cross_add_mod.LORE_ROSTER if l in known]) == 8
+
+
+def test_374_built_metadata_cross_add_target_counts():
+    """Standing count guard on the emitted map, so U4's data landing cannot quietly
+    shrink either roster."""
+    ca = _meta()["cross_add"]
+    assert len([t for t in ca if t in set(spell_focus_mod.SPELLPOWERS)]) == 10
+    assert len([t for t in ca if t in set(cross_add_mod.LORE_ROSTER)]) == 10

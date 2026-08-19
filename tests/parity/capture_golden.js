@@ -77,7 +77,12 @@ function migrateFixtureCredits(query, vocab) {
     { declaredCredits: migrateCredits(query.declaredCredits, vocab).credits });
 }
 
-async function solveAll() {
+/** Load the solve environment once: the HiGHS instance, the normalized dataset,
+ *  and the picker vocabulary built from it. Split out of `solveAll` so a test
+ *  that only needs a handful of fixtures (or one ad-hoc query) reuses the SAME
+ *  environment and the SAME `solveFixture` threading below, rather than growing
+ *  a second copy of the buildModel argument list that can drift out of step. */
+async function solveEnv() {
   const Highs = require(path.join(ROOT, "web", "vendor", "highs.js"));
   const highs = await Highs({ locateFile: (f) => path.join(ROOT, "web", "vendor", f) });
   const dataset = normalizeDataset(JSON.parse(fs.readFileSync(DATASET, "utf8")));
@@ -85,49 +90,46 @@ async function solveAll() {
   // `pickerVocabulary(dataset)`: the vocabulary a fixture's alias resolves through
   // must be the one the running app builds, not a differently-prepared twin.
   const vocab = buildPickerVocabulary(dataset);
-  const fixtures = JSON.parse(fs.readFileSync(FIXTURES, "utf8"));
+  return { highs, dataset, vocab };
+}
 
-  const solves = {};
-  // Side channel, deliberately NOT part of the snapshot. golden.json pins the
-  // ratified OUTCOME (status/perTarget/effective/chosen) and its shape is shared by
-  // every fixture; the evidence a specific fixture exists to show — which crafts the
-  // solve placed, what an alias resolved to — belongs to the assertions, not to the
-  // ratified record. Keeping it out means adding a fixture never rewrites the pinned
-  // entries of the fixtures already ratified.
-  const details = {};
-  for (const fx of fixtures) {
-    const { query: resolvedQuery, substitutions } = resolveQuery(fx, vocab);
-    const query = migrateFixtureCredits(resolvedQuery, vocab);
-    // #91 (U8, KTD3/KTD9) — the utility counting set rides as the buildModel
-    // argument, exactly as web/query.js and web/wizard.js pass it
-    // (`vocab.utilityCounting || null`). Without this the capture solves every
-    // sentinel-appended fixture with ZERO indicators — a green golden that
-    // covers none of the tier. The widening is conditional on the sentinel
-    // being in the fixture's targets, so the tier-removed A/B twin (and any
-    // pre-feature fixture) still builds the byte-identical pre-feature program.
-    // augmentSetDefs stays {} (positional): the golden universe was ratified
-    // without set-bonus augments; widening it would be its own deliberate
-    // re-ratification, not a side effect of threading the counting set.
-    const model = buildModel(
-      dataset.items, query,
-      dataset.dino_inserts, dataset.nearly_complete, dataset.viktranium,
-      dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel,
-      {}, vocab.utilityCounting && vocab.utilityCounting.size
-        // #348 (U3) — the capture solves what the app solves, ORDER included: a
-        // golden captured in alphabetical order would ratify a loadout no player
-        // can ever get.
-        ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set(),
-            order: vocab.utilityOrder || null }
-        : null,
-    );
-    const r = await solveLexicographic(model, highs);
-    solves[fx.name] = {
+/** Solve ONE fixture in a prepared environment. Returns `{ solve, detail }` —
+ *  the ratified-shape outcome and the side-channel evidence. */
+async function solveFixture(fx, env) {
+  const { highs, dataset, vocab } = env;
+  const { query: resolvedQuery, substitutions } = resolveQuery(fx, vocab);
+  const query = migrateFixtureCredits(resolvedQuery, vocab);
+  // #91 (U8, KTD3/KTD9) — the utility counting set rides as the buildModel
+  // argument, exactly as web/query.js and web/wizard.js pass it
+  // (`vocab.utilityCounting || null`). Without this the capture solves every
+  // sentinel-appended fixture with ZERO indicators — a green golden that
+  // covers none of the tier. The widening is conditional on the sentinel
+  // being in the fixture's targets, so the tier-removed A/B twin (and any
+  // pre-feature fixture) still builds the byte-identical pre-feature program.
+  // augmentSetDefs stays {} (positional): the golden universe was ratified
+  // without set-bonus augments; widening it would be its own deliberate
+  // re-ratification, not a side effect of threading the counting set.
+  const model = buildModel(
+    dataset.items, query,
+    dataset.dino_inserts, dataset.nearly_complete, dataset.viktranium,
+    dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel,
+    {}, vocab.utilityCounting && vocab.utilityCounting.size
+      // #348 (U3) — the capture solves what the app solves, ORDER included: a
+      // golden captured in alphabetical order would ratify a loadout no player
+      // can ever get.
+      ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set(),
+          order: vocab.utilityOrder || null }
+      : null,
+  );
+  const r = await solveLexicographic(model, highs);
+  return {
+    solve: {
       status: r.status,
       perTarget: r.perTarget || null,
       effective: r.effective || null,
       chosen: chosenSorted(r),
-    };
-    details[fx.name] = {
+    },
+    detail: {
       targets: (query.targets || []).slice(),
       substitutions,
       // #339 — the placed regular-slot augments' variant ids, so the ceiling
@@ -141,19 +143,49 @@ async function solveAll() {
           stat: a.stat, bonus_type: a.bonus_type, value: a.value, via: a.via || null,
         })),
       })),
-    };
+    },
+  };
+}
+
+async function solveAll() {
+  const env = await solveEnv();
+  const fixtures = JSON.parse(fs.readFileSync(FIXTURES, "utf8"));
+
+  const solves = {};
+  // Side channel, deliberately NOT part of the snapshot. golden.json pins the
+  // ratified OUTCOME (status/perTarget/effective/chosen) and its shape is shared by
+  // every fixture; the evidence a specific fixture exists to show — which crafts the
+  // solve placed, what an alias resolved to — belongs to the assertions, not to the
+  // ratified record. Keeping it out means adding a fixture never rewrites the pinned
+  // entries of the fixtures already ratified.
+  const details = {};
+  for (const fx of fixtures) {
+    const { solve, detail } = await solveFixture(fx, env);
+    solves[fx.name] = solve;
+    details[fx.name] = detail;
   }
   return { solves, count: fixtures.length, details };
 }
 
-module.exports = { solveAll, chosenSorted, chosenId, resolveQuery };
+module.exports = { solveAll, solveEnv, solveFixture, chosenSorted, chosenId, resolveQuery };
 
 if (require.main === module) {
   solveAll().then(({ solves, count }) => {
+    // Provenance, DERIVED. Both fields were hand-written literals and both had
+    // gone stale (2026-08-15 / 9045 items against a 9110-item build) — a
+    // ratified snapshot that misreports which dataset ratified it is exactly the
+    // provenance trap docs/solutions/workflow-issues/rebuild-the-dataset-before-
+    // any-golden-capture.md is about.
+    const itemCount = JSON.parse(fs.readFileSync(DATASET, "utf8")).items.length;
+    // Local date, not `toISOString()` — a UTC slice stamps tomorrow's date on an
+    // evening capture, which reads as a provenance error to the next reader.
+    const d = new Date();
+    const stamp = [d.getFullYear(), d.getMonth() + 1, d.getDate()]
+      .map((n, i) => (i ? String(n).padStart(2, "0") : String(n))).join("-");
     const snapshot = {
       schema_note: "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
-      generated: "2026-08-15",
-      dataset: "web/data/items.json (9045 items)",
+      generated: stamp,
+      dataset: `web/data/items.json (${itemCount} items)`,
       fixture_count: count,
       solves,
     };

@@ -10,15 +10,130 @@
    "verified": "2026-08-10",
    "evidence": "The Enhancements list on Item:Legendary_Icewalkers renders 'Enhanced Ki'; the Enhanced Ki page describes it as increasing the rate at which the user gains ki with each successful attack. gear-planner stores the same enchantment as bare 'Ki' with a magnitude and no type.",
    "reason": "Reported by a player who could not find 'enhanced ki' in the priority picker. The stored name is a shortening, not a different enchantment: 19 worn variants across 5 slots carry values 1-5, matching the wiki's per-item values.",
-   "note": "This affix is untyped upstream, so it is ALSO gated by data/seed/compendium/untyped_rankable.json. Renaming it does not by itself make it rankable."
+   "note": "This affix is untyped upstream, so it is ALSO gated by data/seed/compendium/untyped_rankable.json. Renaming it does not by itself make it rankable.",
+   "canon_defense": true,
+   "channel": "all channels. Inert until the 2026-08-18 refresh, which re-encoded the type field: `Ki` went from untyped (invisible to iter_affixes, #229's mask) to 20 gate-visible records typed `Untyped`, arming this entry."
   },
   {
    "source_name": "False Life (%)",
    "canonical_name": "Legendary Conditioning",
    "wiki_url": "https://ddowiki.com/page/Conditioning",
    "verified": "2026-08-18",
-   "channel": "augment pool only (both carriers are Solar Gem of Enduring stones), and applied BEFORE legendary_fold so the raw name enters the same fold chain the 34 worn carriers use",
-   "evidence": "#376 — one mechanic stored under two names, so the two sat in separate buckets and SUMMED. ddowiki Conditioning: \"This enchantment gives a +X% Legendary bonus to Maximum Hit points\". Our only two False Life (%) carriers are the Solar Gem of Enduring pair, listed on Lunar_and_Solar_Gems as \"Enduring - Legendary Bonus to Maximum Hit Points\". Same mechanic, same bonus type, so they must share a bucket and take the highest: Baphomet's Reign 15% + Solar Gem 10% reported 25% where the game gives 15%. Flat False Life is a DIFFERENT enchantment (no percentage variant; Vitality/Profane/Insight/Enhancement/Quality across 510 items) and is untouched. No item carries both names."
+   "channel": "all channels. Was augment-pool-only pre-refresh (two Solar Gem of Enduring stones); the 2026-08-18 refresh moved upstream to `False Life (%)` wholesale — 34 items / 2 crafting / 4 sets — while `Legendary Conditioning` left raw entirely, which is what arms this entry.",
+   "evidence": "#376 — one mechanic stored under two names, so the two sat in separate buckets and SUMMED. ddowiki Conditioning: \"This enchantment gives a +X% Legendary bonus to Maximum Hit points\". Our only two False Life (%) carriers are the Solar Gem of Enduring pair, listed on Lunar_and_Solar_Gems as \"Enduring - Legendary Bonus to Maximum Hit Points\". Same mechanic, same bonus type, so they must share a bucket and take the highest: Baphomet's Reign 15% + Solar Gem 10% reported 25% where the game gives 15%. Flat False Life is a DIFFERENT enchantment (no percentage variant; Vitality/Profane/Insight/Enhancement/Quality across 510 items) and is untouched. No item carries both names.",
+   "canon_defense": true
+  },
+  {
+   "source_name": "Fire Spell Power",
+   "canonical_name": "Combustion",
+   "wiki_url": "https://ddowiki.com/page/Combustion",
+   "verified": "2026-08-18",
+   "canon_defense": true,
+   "channel": "items, crafting and sets — renamed at each catalog's single load point (KTD2), so every derived pool inherits it",
+   "evidence": "docs/wiki-evidence/spellpower-universal.md quotes ddowiki Spell_power / Equipment_bonus rendering the enchantment name (\"+2 [[Combustion]] Scepter\"). Measured against upstream master 2026-08-18: the refreshed snapshot carries the generic spelling and zero occurrences of ours; no item carries both, so this is one mechanic under two spellings and not a merge of two (the same-item co-occurrence rule).",
+   "reason": "#374 — upstream generalized its affix vocabulary and now emits this name where its previous snapshot (and ours) emits the in-game enchantment name. KTD1 keeps our canon: the DDO wiki is this repo's source of truth and uses the enchantment names, so the app and the item tooltip say the same words. The paired affix_aliases.json entry keeps upstream's spelling resolving in the picker, so tooltip fidelity and search vocabulary are served separately."
+  },
+  {
+   "source_name": "Positive Spell Power",
+   "canonical_name": "Devotion",
+   "wiki_url": "https://ddowiki.com/page/Devotion",
+   "verified": "2026-08-18",
+   "canon_defense": true,
+   "channel": "items, crafting and sets — renamed at each catalog's single load point (KTD2), so every derived pool inherits it",
+   "evidence": "docs/wiki-evidence/spellpower-universal.md quotes ddowiki Spell_power / Equipment_bonus rendering the enchantment name (\"+2 [[Combustion]] Scepter\"). Measured against upstream master 2026-08-18: the refreshed snapshot carries the generic spelling and zero occurrences of ours; no item carries both, so this is one mechanic under two spellings and not a merge of two (the same-item co-occurrence rule).",
+   "reason": "#374 — upstream generalized its affix vocabulary and now emits this name where its previous snapshot (and ours) emits the in-game enchantment name. KTD1 keeps our canon: the DDO wiki is this repo's source of truth and uses the enchantment names, so the app and the item tooltip say the same words. The paired affix_aliases.json entry keeps upstream's spelling resolving in the picker, so tooltip fidelity and search vocabulary are served separately."
+  },
+  {
+   "source_name": "Negative Spell Power",
+   "canonical_name": "Nullification",
+   "wiki_url": "https://ddowiki.com/page/Nullification",
+   "verified": "2026-08-18",
+   "canon_defense": true,
+   "channel": "items, crafting and sets — renamed at each catalog's single load point (KTD2), so every derived pool inherits it",
+   "evidence": "docs/wiki-evidence/spellpower-universal.md quotes ddowiki Spell_power / Equipment_bonus rendering the enchantment name (\"+2 [[Combustion]] Scepter\"). Measured against upstream master 2026-08-18: the refreshed snapshot carries the generic spelling and zero occurrences of ours; no item carries both, so this is one mechanic under two spellings and not a merge of two (the same-item co-occurrence rule).",
+   "reason": "#374 — upstream generalized its affix vocabulary and now emits this name where its previous snapshot (and ours) emits the in-game enchantment name. KTD1 keeps our canon: the DDO wiki is this repo's source of truth and uses the enchantment names, so the app and the item tooltip say the same words. The paired affix_aliases.json entry keeps upstream's spelling resolving in the picker, so tooltip fidelity and search vocabulary are served separately."
+  },
+  {
+   "source_name": "Cold Spell Power",
+   "canonical_name": "Glaciation",
+   "wiki_url": "https://ddowiki.com/page/Glaciation",
+   "verified": "2026-08-18",
+   "canon_defense": true,
+   "channel": "items, crafting and sets — renamed at each catalog's single load point (KTD2), so every derived pool inherits it",
+   "evidence": "docs/wiki-evidence/spellpower-universal.md quotes ddowiki Spell_power / Equipment_bonus rendering the enchantment name (\"+2 [[Combustion]] Scepter\"). Measured against upstream master 2026-08-18: the refreshed snapshot carries the generic spelling and zero occurrences of ours; no item carries both, so this is one mechanic under two spellings and not a merge of two (the same-item co-occurrence rule).",
+   "reason": "#374 — upstream generalized its affix vocabulary and now emits this name where its previous snapshot (and ours) emits the in-game enchantment name. KTD1 keeps our canon: the DDO wiki is this repo's source of truth and uses the enchantment names, so the app and the item tooltip say the same words. The paired affix_aliases.json entry keeps upstream's spelling resolving in the picker, so tooltip fidelity and search vocabulary are served separately."
+  },
+  {
+   "source_name": "Force Spell Power",
+   "canonical_name": "Impulse",
+   "wiki_url": "https://ddowiki.com/page/Impulse",
+   "verified": "2026-08-18",
+   "canon_defense": true,
+   "channel": "items, crafting and sets — renamed at each catalog's single load point (KTD2), so every derived pool inherits it",
+   "evidence": "docs/wiki-evidence/spellpower-universal.md quotes ddowiki Spell_power / Equipment_bonus rendering the enchantment name (\"+2 [[Combustion]] Scepter\"). Measured against upstream master 2026-08-18: the refreshed snapshot carries the generic spelling and zero occurrences of ours; no item carries both, so this is one mechanic under two spellings and not a merge of two (the same-item co-occurrence rule).",
+   "reason": "#374 — upstream generalized its affix vocabulary and now emits this name where its previous snapshot (and ours) emits the in-game enchantment name. KTD1 keeps our canon: the DDO wiki is this repo's source of truth and uses the enchantment names, so the app and the item tooltip say the same words. The paired affix_aliases.json entry keeps upstream's spelling resolving in the picker, so tooltip fidelity and search vocabulary are served separately."
+  },
+  {
+   "source_name": "Electric Spell Power",
+   "canonical_name": "Magnetism",
+   "wiki_url": "https://ddowiki.com/page/Magnetism",
+   "verified": "2026-08-18",
+   "canon_defense": true,
+   "channel": "items, crafting and sets — renamed at each catalog's single load point (KTD2), so every derived pool inherits it",
+   "evidence": "docs/wiki-evidence/spellpower-universal.md quotes ddowiki Spell_power / Equipment_bonus rendering the enchantment name (\"+2 [[Combustion]] Scepter\"). Measured against upstream master 2026-08-18: the refreshed snapshot carries the generic spelling and zero occurrences of ours; no item carries both, so this is one mechanic under two spellings and not a merge of two (the same-item co-occurrence rule).",
+   "reason": "#374 — upstream generalized its affix vocabulary and now emits this name where its previous snapshot (and ours) emits the in-game enchantment name. KTD1 keeps our canon: the DDO wiki is this repo's source of truth and uses the enchantment names, so the app and the item tooltip say the same words. The paired affix_aliases.json entry keeps upstream's spelling resolving in the picker, so tooltip fidelity and search vocabulary are served separately."
+  },
+  {
+   "source_name": "Sonic Spell Power",
+   "canonical_name": "Resonance",
+   "wiki_url": "https://ddowiki.com/page/Resonance",
+   "verified": "2026-08-18",
+   "canon_defense": true,
+   "channel": "items, crafting and sets — renamed at each catalog's single load point (KTD2), so every derived pool inherits it",
+   "evidence": "docs/wiki-evidence/spellpower-universal.md quotes ddowiki Spell_power / Equipment_bonus rendering the enchantment name (\"+2 [[Combustion]] Scepter\"). Measured against upstream master 2026-08-18: the refreshed snapshot carries the generic spelling and zero occurrences of ours; no item carries both, so this is one mechanic under two spellings and not a merge of two (the same-item co-occurrence rule).",
+   "reason": "#374 — upstream generalized its affix vocabulary and now emits this name where its previous snapshot (and ours) emits the in-game enchantment name. KTD1 keeps our canon: the DDO wiki is this repo's source of truth and uses the enchantment names, so the app and the item tooltip say the same words. The paired affix_aliases.json entry keeps upstream's spelling resolving in the picker, so tooltip fidelity and search vocabulary are served separately."
+  },
+  {
+   "source_name": "Acid Spell Power",
+   "canonical_name": "Corrosion",
+   "wiki_url": "https://ddowiki.com/page/Corrosion",
+   "verified": "2026-08-18",
+   "canon_defense": true,
+   "channel": "items, crafting and sets — renamed at each catalog's single load point (KTD2), so every derived pool inherits it",
+   "evidence": "docs/wiki-evidence/spellpower-universal.md quotes ddowiki Spell_power / Equipment_bonus rendering the enchantment name (\"+2 [[Combustion]] Scepter\"). Measured against upstream master 2026-08-18: the refreshed snapshot carries the generic spelling and zero occurrences of ours; no item carries both, so this is one mechanic under two spellings and not a merge of two (the same-item co-occurrence rule).",
+   "reason": "#374 — upstream generalized its affix vocabulary and now emits this name where its previous snapshot (and ours) emits the in-game enchantment name. KTD1 keeps our canon: the DDO wiki is this repo's source of truth and uses the enchantment names, so the app and the item tooltip say the same words. The paired affix_aliases.json entry keeps upstream's spelling resolving in the picker, so tooltip fidelity and search vocabulary are served separately."
+  },
+  {
+   "source_name": "Negative Lore",
+   "canonical_name": "Void Lore",
+   "wiki_url": "https://ddowiki.com/page/Spell_Lore",
+   "verified": "2026-08-18",
+   "canon_defense": true,
+   "channel": "items, crafting and sets — renamed at each catalog's single load point (KTD2), so every derived pool inherits it",
+   "evidence": "docs/wiki-evidence/spell-lore.md quotes the ddowiki Spell_Lore \"Types of spell lore\" roster as Ice Lore / Void Lore / Kinetic [Lore]. Measured against upstream master 2026-08-18: the refreshed snapshot carries the generic spelling and zero occurrences of ours; no item carries both.",
+   "reason": "#374 — upstream generalized its affix vocabulary and now emits this name where its previous snapshot (and ours) emits the in-game enchantment name. KTD1 keeps our canon: the DDO wiki is this repo's source of truth and uses the enchantment names, so the app and the item tooltip say the same words. The paired affix_aliases.json entry keeps upstream's spelling resolving in the picker, so tooltip fidelity and search vocabulary are served separately."
+  },
+  {
+   "source_name": "Cold Lore",
+   "canonical_name": "Ice Lore",
+   "wiki_url": "https://ddowiki.com/page/Spell_Lore",
+   "verified": "2026-08-18",
+   "canon_defense": true,
+   "channel": "items, crafting and sets — renamed at each catalog's single load point (KTD2), so every derived pool inherits it",
+   "evidence": "docs/wiki-evidence/spell-lore.md quotes the ddowiki Spell_Lore \"Types of spell lore\" roster as Ice Lore / Void Lore / Kinetic [Lore]. Measured against upstream master 2026-08-18: the refreshed snapshot carries the generic spelling and zero occurrences of ours; no item carries both.",
+   "reason": "#374 — upstream generalized its affix vocabulary and now emits this name where its previous snapshot (and ours) emits the in-game enchantment name. KTD1 keeps our canon: the DDO wiki is this repo's source of truth and uses the enchantment names, so the app and the item tooltip say the same words. The paired affix_aliases.json entry keeps upstream's spelling resolving in the picker, so tooltip fidelity and search vocabulary are served separately."
+  },
+  {
+   "source_name": "Damage vs. the Helpless",
+   "canonical_name": "Damage to helpless enemies",
+   "wiki_url": "https://ddowiki.com/page/Helpless",
+   "verified": "2026-08-18",
+   "canon_defense": true,
+   "channel": "sets (one occurrence today); becomes the whole family's channel once U4's refresh consolidates upstream's spellings",
+   "evidence": "docs/wiki-evidence/helpless-damage.md (#305): the ddowiki Helpless hub page lists every gear source of the ONE percent-extra-damage-vs-helpless mechanic in a single table, and the canonical spelling is the one carried natively by the Solar Gem of Cruelty affixes. Upstream consolidates the eleven spellings onto this one variant in the refreshed snapshot, which takes our canonical to zero occurrences in raw.",
+   "reason": "#374 — the same canon-defence shape as the ten spell-power/lore flips, but a family consolidation rather than a vocabulary generalization. The #305 local_affix_synonyms folds stay: they cover the set-tier free-text channels this rename does not reach, and check_local_synonym_staleness is what makes their retirement visible."
   }
- ]
+ ],
+ "_pending": "#374/U2 — an entry may carry pending_upstream + pending_reason when it is declared one unit AHEAD of the refreshed gear-planner snapshot that arms it. Pending entries are exempt from assert_all_reached (they reach nothing by construction) and excluded from the KTD3 declared-live set. The exemption is self-retiring: assert_canon_defense fails the build the moment the raw data arms an entry whose marker is still set.",
+ "_canon_defense": "#374/KTD3 — canon_defense marks an entry that defends one of OUR enchantment names against an upstream vocabulary flip. src/name_corrections.assert_canon_defense compares the live (non-pending) canon_defense set against vocabulary.armed_canon_variants(), derived from the raw snapshot by the direct Rule A predicate, and fails in EITHER direction. Never hand-list the armed set: a hand-list is right once and rots at the next refresh, silently."
 }

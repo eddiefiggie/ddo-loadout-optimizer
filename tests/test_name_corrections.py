@@ -162,7 +162,9 @@ def test_the_shipping_shard_renames_ki_and_cites_the_wiki():
     # #376 added a second entry on the AUGMENT channel (False Life (%) ->
     # Conditioning). Assert this one by name rather than by position, so a third
     # entry does not silently re-point the assertion at someone else.
-    assert len(entries) == 2
+    # #374 added the eleven canon-defence entries (ten spell-power/lore flips plus
+    # the helpless-family consolidation), taking the shard to 13.
+    assert len(entries) == 13
     e = next(x for x in entries if x["source_name"] == "Ki")
     assert e["source_name"] == "Ki"
     assert e["canonical_name"] == "Enhanced Ki"
@@ -182,13 +184,27 @@ def test_every_correction_has_a_matching_alias_so_the_upstream_name_still_resolv
 def test_the_shipping_shard_applies_cleanly_to_the_real_roster():
     records = vocabulary._load(vocabulary.ITEMS_PATH)
     cov = name_corrections.apply(records, name_corrections.load(SHARD))
-    # Both shard entries are loaded; only `Ki` has carriers in the ITEM roster —
-    # the other is augment-pool-only and correctly renames nothing here (#376).
-    assert cov["names_corrected"] == 2
-    assert cov["hit_names"] == ["Ki"]
-    assert cov["affixes_renamed"] == 19
-    assert not any(a.get("name") == "Ki"
-                   for r in records for a in (r.get("affixes") or []))
+    # #374/U4 — re-ratified. Pre-refresh only `Ki` had carriers in the ITEM roster
+    # (19 affixes): `False Life (%)` was augment-pool-only (#376) and the eleven
+    # canon-defence entries were armed by a snapshot this tree had not vendored.
+    # The refresh vendors it, so upstream's generic spellings are now IN the roster
+    # and twelve of the thirteen corrections fire here. Derived, not hand-counted:
+    # the hit set must be exactly the shard entries whose source_name occurs in raw.
+    assert cov["names_corrected"] == 13
+    shard = name_corrections.load(SHARD)
+    raw_names = {a.get("name") for a in name_corrections._iter_affix_dicts(
+        vocabulary._load(vocabulary.ITEMS_PATH))}
+    assert cov["hit_names"] == sorted(
+        e["source_name"] for e in shard if e["source_name"] in raw_names)
+    # `Damage vs. the Helpless` is the one entry with no ITEM-roster carrier — it
+    # lives in the sets/crafting channels, the per-channel miss #376 made silent.
+    assert set(cov["hit_names"]) == {e["source_name"] for e in shard} - \
+        {"Damage vs. the Helpless"}
+    assert cov["affixes_renamed"] == 1391, cov["affixes_renamed"]
+    # whatever the count, no source spelling may survive the pass
+    for e in shard:
+        assert not any(a.get("name") == e["source_name"]
+                       for r in records for a in (r.get("affixes") or [])), e["source_name"]
 
 
 # ---------------------------------------------------------------------------
@@ -263,3 +279,286 @@ def test_376_the_built_dataset_lands_both_gems_in_the_conditioning_bucket():
     assert len(gems) == 2, gems
     for name, affixes in gems.items():
         assert ("Conditioning", "Legendary") in affixes, (name, affixes)
+
+
+# ---------------------------------------------------------------------------
+# #374 — defending our canon through every channel.
+#
+# Upstream generalized its affix vocabulary (`Combustion` -> `Fire Spell Power`)
+# and we keep ours (KTD1). These tests run against a SYNTHETIC refreshed snapshot:
+# the real raw files with our canon flipped to upstream's spelling, exactly the
+# state U4 will vendor. The pre-refresh tree cannot exercise the renames any other
+# way — every one of them is correctly inert against today's data.
+# ---------------------------------------------------------------------------
+
+from src import crafting_catalog  # noqa: E402
+from src import set_catalog  # noqa: E402
+from src.affix_parser import BONUS_TYPES, _split_type  # noqa: E402
+
+# The flip upstream made, measured against its master on 2026-08-18.
+FLIPPED = {
+    "Combustion": "Fire Spell Power",
+    "Devotion": "Positive Spell Power",
+    "Nullification": "Negative Spell Power",
+    "Glaciation": "Cold Spell Power",
+    "Impulse": "Force Spell Power",
+    "Magnetism": "Electric Spell Power",
+    "Resonance": "Sonic Spell Power",
+    "Corrosion": "Acid Spell Power",
+    "Void Lore": "Negative Lore",
+    "Ice Lore": "Cold Lore",
+    "Damage to helpless enemies": "Damage vs. the Helpless",
+}
+
+
+def _flip(obj):
+    """Rewrite every affix name in a raw structure to upstream's spelling."""
+    for a in name_corrections._iter_affix_dicts(obj):
+        nm = a.get("name")
+        if nm in FLIPPED:
+            a["name"] = FLIPPED[nm]
+    return obj
+
+
+def _names(obj):
+    return [a.get("name") for a in name_corrections._iter_affix_dicts(obj)]
+
+
+def _shard():
+    return name_corrections.load(SHARD)
+
+
+def test_374_the_shard_declares_thirteen_and_marks_the_canon_defence():
+    entries = _shard()
+    assert len(entries) == 13
+    defence = [e for e in entries if e.get("canon_defense")]
+    # #374/U4 — re-ratified 11 -> 13, and the marker assertion inverted.
+    #
+    # The shard size did NOT move; what moved is how many of its entries are canon
+    # defence. The two pre-#374 entries (`Ki`, `False Life (%)`) were plain wiki-name
+    # corrections against names upstream still emitted natively. The refresh flipped
+    # both into the same hazard as the other eleven — upstream stopped emitting
+    # `Enhanced Ki` (typing `Ki` instead, 0 -> 20 gate-visible) and folded
+    # `Legendary Conditioning` away into `False Life (%)` (34 -> 0) — so they now
+    # carry `canon_defense` on their own merits, and `armed_canon_variants()` arms
+    # all thirteen. See docs/reports/2026-08-18-gear-planner-canon-migration.md §6.1.
+    assert len(defence) == 13, [e["source_name"] for e in defence]
+    # And no pending markers survive: the refresh armed every entry, and the
+    # exemption is self-retiring — `assert_canon_defense` is red while one outlives
+    # its data (pinned by test_374_assert_canon_defense_fires_when_a_landed_entry…).
+    assert not [e for e in defence if name_corrections.is_pending(e)]
+    # `Force Lore` must NOT be declared: it has zero occurrences in refreshed raw,
+    # so a correction for it would be a rename nobody applies. `Kinetic Lore`
+    # survives natively.
+    assert "Force Lore" not in {e["source_name"] for e in entries}
+    # The two pre-#374 entries are still present, by name — the count above cannot
+    # tell a re-pointed entry from a new one.
+    assert {"Ki", "False Life (%)"} <= {e["source_name"] for e in entries}
+
+
+def test_374_every_canonical_survives_split_type_with_a_stat_left():
+    """`_split_type` peels a leading bonus-type word — a canonical whose first word
+    is a bonus type and which is one word long would be peeled to `stat=""`, minting
+    a nameless affix. Checked per canonical, never in aggregate."""
+    canonicals = {e["canonical_name"] for e in _shard()}
+    assert canonicals == set(FLIPPED) | {"Enhanced Ki", "Legendary Conditioning"}, \
+        sorted(canonicals)
+    for e in _shard():
+        canonical = e["canonical_name"]
+        btype, stat = _split_type(canonical)
+        assert stat, f"{canonical!r} peels to an empty stat"
+        if canonical == "Legendary Conditioning":
+            # The one deliberate peel: legendary_fold owns this name and the
+            # `Legendary` type is the point of it.
+            assert (btype, stat) == ("Legendary", "Conditioning")
+        else:
+            assert stat == canonical, (canonical, btype, stat)
+            assert canonical.split()[0] not in BONUS_TYPES
+
+
+# --- per-channel reach: never asserted in aggregate --------------------------
+
+def test_374_the_items_channel_renames_every_flipped_name():
+    items = _flip(vocabulary._load(vocabulary.ITEMS_PATH))
+    before = set(_names(items)) & set(FLIPPED.values())
+    assert before, "the synthetic refreshed items must carry upstream's spelling"
+    name_corrections.apply(items, _shard())
+    after = set(_names(items)) & set(FLIPPED.values())
+    assert after == set(), sorted(after)
+    restored = set(_names(items)) & set(FLIPPED)
+    assert restored == {c for c, u in FLIPPED.items() if u in before}
+
+
+def test_374_the_crafting_channel_renames_every_flipped_name():
+    """KTD2 — the 244 protected-name occurrences in gearplanner_crafting.json are
+    unreachable from the item-roster call; only the catalog load point covers them."""
+    crafting = _flip(crafting_catalog.load_catalog())
+    before = [n for n in _names(crafting) if n in set(FLIPPED.values())]
+    assert len(before) >= 200, len(before)
+    cov = name_corrections.apply(crafting, _shard())
+    assert [n for n in _names(crafting) if n in set(FLIPPED.values())] == []
+    assert cov["affixes_renamed"] >= 200
+
+
+def test_374_the_augment_pool_inherits_the_crafting_rename():
+    """One call at the catalog load point covers every pool derived from it — the
+    augment pool is asserted on its own records, not on the catalog it came from."""
+    crafting = _flip(crafting_catalog.load_catalog())
+    name_corrections.apply(crafting, _shard())
+    pool = crafting_catalog.augment_pool_records(crafting)
+    survivors = [n for n in _names(pool) if n in set(FLIPPED.values())]
+    assert survivors == [], sorted(set(survivors))
+    assert any(n in FLIPPED for n in _names(pool)), "the augment pool must carry canon"
+
+
+def test_374_the_dino_pool_inherits_the_crafting_rename():
+    from src import dino as dino_mod
+    from src import dino_native
+    crafting = _flip(crafting_catalog.load_catalog())
+    name_corrections.apply(crafting, _shard())
+    blanks, inserts, sets_, cov = dino_mod.build_dino(
+        dino_native.native_dino_seed(), crafting)
+    for label, pool in (("inserts", inserts), ("dino_sets", sets_), ("blanks", blanks)):
+        stats = [a.get("stat") for r in pool for a in (r.get("affixes") or [])]
+        stats += [n for n in _names(pool)]
+        assert not (set(stats) & set(FLIPPED.values())), (
+            label, sorted(set(stats) & set(FLIPPED.values())))
+
+
+def test_374_the_sets_channel_renames_every_flipped_name():
+    """The 121 protected-name occurrences in gearplanner_sets.json. Applied to the
+    RAW catalog — `load_catalog` returns synthesized TEXT, so a rename on its output
+    would be a permanent no-op (the seam the first design missed)."""
+    raw = _flip(set_catalog.load_raw())
+    before = [n for n in _names(raw) if n in set(FLIPPED.values())]
+    assert len(before) >= 100, len(before)
+    name_corrections.apply(raw, _shard())
+    assert [n for n in _names(raw) if n in set(FLIPPED.values())] == []
+    # And the rename reaches the synthesized text every downstream consumer reads.
+    catalog = set_catalog.catalog_from_raw(raw)
+    text = " || ".join(
+        t for entry in catalog.values() if entry.get("set_bonus")
+        for t in entry["set_bonus"]["piece_bonuses"].values())
+    assert "Combustion" in text
+    for upstream in FLIPPED.values():
+        assert upstream not in text, upstream
+
+
+# --- the staleness / honesty guards ------------------------------------------
+
+def test_374_a_pending_entry_is_exempt_from_the_reached_guard():
+    """A canon-defence entry is written one unit before the data that arms it, so
+    it reaches nothing by construction. Without the exemption the build dies on a
+    correction that is right and simply early."""
+    pending = {"source_name": "Fire Spell Power", "canonical_name": "Combustion",
+               "pending_upstream": True, "pending_reason": "armed by the U4 refresh"}
+    name_corrections.assert_all_reached([pending], {"hit_names": []})  # must not raise
+    live = dict(pending)
+    live.pop("pending_upstream")
+    try:
+        name_corrections.assert_all_reached([live], {"hit_names": []})
+    except SystemExit as e:
+        assert "reached no record in any channel" in str(e)
+    else:
+        raise AssertionError("a non-pending entry reaching nothing must fail")
+
+
+def test_374_a_pending_entry_without_a_reason_fails():
+    bare = {"source_name": "Fire Spell Power", "canonical_name": "Combustion",
+            "pending_upstream": True}
+    try:
+        name_corrections.assert_all_reached([bare], {"hit_names": ["Fire Spell Power"]})
+    except SystemExit as e:
+        assert "without a pending_reason" in str(e)
+    else:
+        raise AssertionError("an unexplained exemption must fail")
+
+
+def test_374_assert_canon_defense_fails_when_an_armed_variant_has_no_live_rename():
+    """The `a fourteenth arrived upstream` event a hand-list would miss."""
+    try:
+        name_corrections.assert_canon_defense(
+            _shard(), {"Vitality": "False Life"})
+    except SystemExit as e:
+        assert "'Vitality' is ARMED upstream" in str(e)
+        assert "score zero" in str(e)
+    else:
+        raise AssertionError("an armed variant with no live rename must fail")
+
+
+def test_374_assert_canon_defense_fails_when_a_live_defence_is_not_armed():
+    live = [{"source_name": "Fire Spell Power", "canonical_name": "Combustion",
+             "canon_defense": True}]
+    try:
+        name_corrections.assert_canon_defense(live, {})
+    except SystemExit as e:
+        assert "declares a live canon_defense but the raw data does not arm it" in str(e)
+    else:
+        raise AssertionError("an inert live defence must fail")
+
+
+def test_374_assert_canon_defense_fires_when_a_landed_entry_keeps_its_marker():
+    """The exemption is self-retiring: once the refresh arms an entry, the marker
+    must go in the same commit or the build is red.
+
+    #374/U4 — the fixture was read off the shipped shard, which carried the marker
+    on every canon-defence entry pre-refresh. The refresh armed all thirteen and
+    this very guard forced every marker off, so the scenario is now constructed by
+    putting one marker BACK. Same claim, and strictly stronger as a regression
+    test: it no longer depends on a transient state of the file, and it proves the
+    guard would have caught U4 landing the data while leaving a marker behind.
+    """
+    shard = _shard()
+    assert not [e for e in shard if name_corrections.is_pending(e)], \
+        "post-refresh the shipped shard must carry no markers"
+    relapsed = [dict(e, pending_upstream=True,
+                     pending_reason="marker left behind by a landed refresh")
+                if e["source_name"] == "Fire Spell Power" else e
+                for e in shard]
+    assert name_corrections.is_pending(
+        next(e for e in relapsed if e["source_name"] == "Fire Spell Power"))
+    try:
+        name_corrections.assert_canon_defense(
+            relapsed, {"Fire Spell Power": "Combustion"})
+    except SystemExit as e:
+        assert "'Fire Spell Power' is ARMED upstream" in str(e)
+    else:
+        raise AssertionError("a landed pending entry must fail until retired")
+
+
+def test_374_assert_canon_defense_passes_on_the_refreshed_tree():
+    """Was `…_on_the_pre_refresh_tree`, where both sides were empty: nothing armed,
+    no defence claiming to be live. U4 vendored the snapshot that arms the flips, so
+    the guard now has to hold with both sides POPULATED and equal — the direction it
+    was actually written to defend, and no longer a vacuous pass. It is also not
+    vacuous in the other sense: the four tests above show it firing both ways.
+    """
+    armed = vocabulary.armed_canon_variants()
+    assert len(armed) == 13, armed
+    name_corrections.assert_canon_defense(_shard(), armed)
+    # the equality is real, checked from the declared side too
+    declared = {c["source_name"] for c in _shard()
+                if c.get("canon_defense") and not name_corrections.is_pending(c)}
+    assert declared == set(armed), {"declared_only": declared - set(armed),
+                                    "armed_only": set(armed) - declared}
+
+
+def test_374_the_real_shard_applies_cleanly_to_a_synthetic_refreshed_snapshot():
+    """End-to-end honesty: with the refresh vendored, every one of the eleven
+    canon-defence entries reaches a channel, so `assert_all_reached` would pass on
+    its own merits rather than on the pending exemption."""
+    shard = _shard()
+    items = _flip(vocabulary._load(vocabulary.ITEMS_PATH))
+    crafting = _flip(crafting_catalog.load_catalog())
+    sets_raw = _flip(set_catalog.load_raw())
+    covs = [name_corrections.apply(o, shard) for o in (items, crafting, sets_raw)]
+    reached = set()
+    for c in covs:
+        reached.update(c["hit_names"])
+    missing = set(FLIPPED.values()) - reached
+    assert missing == set(), sorted(missing)
+    retired = [dict(e, pending_upstream=False) for e in shard]
+    # `Ki` and `False Life (%)` live in the item roster / augment pool, which the
+    # three catalogs above do not fully cover, so feed their real coverage in.
+    name_corrections.assert_all_reached(
+        retired, *covs, {"hit_names": ["Ki", "False Life (%)"]})

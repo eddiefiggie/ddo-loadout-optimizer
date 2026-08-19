@@ -26,6 +26,15 @@ BRACERS_HEROIC = "Bracers of the Spider Queen"
 BRACERS_LEGENDARY = "Legendary Bracers of the Spider Queen"
 
 
+def _retired_2026_08_18():
+    """The #374/U4 retirement block: `{item name: recorded evidence}`."""
+    with open(SHARD, encoding="utf-8") as fh:
+        doc = json.load(fh)
+    return (doc.get("_retired") or {}).get(
+        "2026-08-18-gear-planner-refresh", {}).get("entries") or {}
+
+
+
 def _raises(exc, fn, *args, **kwargs):
     try:
         fn(*args, **kwargs)
@@ -296,13 +305,24 @@ def test_the_shipped_shard_passes_the_guards_against_the_real_roster():
     # (19 confirmed_no_source + 179 wiki_has_source) out of the 199-item
     # universe; the one remaining item (an invalid wiki title) is tracker-only
     # in docs/wiki-evidence/no-drop-source.md and deliberately NOT in the shard.
+    #
+    # #374/U4 — re-ratified 222 -> 216 and confirmed 40 -> 36. The 2026-08-18
+    # gear-planner refresh started recording a quest source for six entries, which
+    # fired the staleness guard; the guard says un-flagging is a manual review
+    # event, so each was re-read on the wiki before being retired into
+    # `_retired["2026-08-18-gear-planner-refresh"]`. Four of the six carried
+    # `confirmed_no_source`, hence exactly -6 entries and -4 confirmed. The delta
+    # is pinned as arithmetic below, not just as two new numbers.
     entries = no_drop_source.load(SHARD)
-    assert len(entries) == 222
+    assert len(entries) == 216
+    retired = _retired_2026_08_18()
+    assert len(retired) == 6 and not (set(retired) & set(entries)), \
+        "a retired entry must leave the live shard, not sit in both"
     assert {BRACERS_HEROIC, BRACERS_LEGENDARY} <= set(entries)
     assert "Coronach (historic) [Crafted]" not in entries
     records, _stats = planner_items.load_planner_items()
     result = no_drop_source.check(entries, records)
-    assert len(result["confirmed"]) == 40
+    assert len(result["confirmed"]) == 36
     assert BRACERS_HEROIC in result["confirmed"]
     assert BRACERS_LEGENDARY in result["confirmed"]
     assert "Cataclysmic Buckler" in result["confirmed"]  # the #244 verdict
@@ -310,7 +330,7 @@ def test_the_shipped_shard_passes_the_guards_against_the_real_roster():
     assert "Seeker Tap of Spellsight" in result["confirmed"]
     assert "Green Steel Greatclub" in result["wiki_has_source"]
     assert "The Admiral of Bling" in result["wiki_has_source"]
-    assert result["checked"] == 222
+    assert result["checked"] == 216
     # Every confirmed entry carries its evidence chain (the guard enforces it;
     # this asserts the shipped data actually exercises that path 19 times).
     for name in result["confirmed"]:
@@ -328,7 +348,10 @@ def test_the_built_dataset_flags_the_seeded_items_and_counts_coverage():
                      if v.get(no_drop_source.FIELD))
     # Re-ratified after the #93 event-item triage: 40 confirmed items, one
     # variant each. The original player-reported instances stay pinned by name.
-    assert len(flagged) == 40
+    # #374/U4 — re-ratified 40 -> 36: the 2026-08-18 refresh records a quest source
+    # for four previously `confirmed_no_source` items (both `… of the Deep`
+    # families), each wiki-re-read before retirement. See the sibling shard test.
+    assert len(flagged) == 36
     assert BRACERS_HEROIC in flagged and BRACERS_LEGENDARY in flagged
     assert "Cataclysmic Buckler" in flagged
     assert "Seeker Tap of Spellsight" in flagged   # the #93 exemplar
@@ -347,19 +370,38 @@ def test_the_built_dataset_flags_the_seeded_items_and_counts_coverage():
     assert not [v for v in universe if v.get("category") == "augment"]
     assert not [v for v in universe if v["source_item"].startswith("Dinosaur Bone")]
     assert cov["triage_universe"] == len({v["source_item"] for v in universe})
-    # Current-roster expectation (like the ml36 63-entry count): 199 worn items
+    # Current-roster expectation (like the ml36 63-entry count): 200 worn items
     # carry an empty location_quest today, plus the 24 `Special event items`
     # pseudo-source carriers (#93). A roster refresh may move this.
-    assert cov["triage_universe"] == 223
-    assert cov["confirmed_no_source"] == 40
-    assert cov["wiki_has_source"] == 182
-    # 223-item universe, 222 dispositioned in the shard: the remainder is the
-    # single invalid-title item recorded tracker-only.
-    assert cov["unverified"] == cov["triage_universe"] - 222 == 1
-    assert cov["flagged_variants"] == 40
+    #
+    # #374/U4 — re-ratified 223 -> 224, and every part of the delta is attributed
+    # to a named cause rather than read off the build:
+    #   -6  the retired entries LEAVE the universe (upstream now records a quest
+    #       source for each, which is exactly why they were retired)
+    #   +7  upstream's scraper added seven `Flame Blade (level N)` tiers, all with
+    #       an empty location_quest, so all seven enter the universe undispositioned
+    #   ------
+    #   +1  net, 223 -> 224
+    # and correspondingly confirmed 40 -> 36 (four retired entries were
+    # `confirmed_no_source`), wiki_has_source 182 -> 180 (the other two).
+    assert cov["triage_universe"] == 224
+    assert cov["confirmed_no_source"] == 36
+    assert cov["wiki_has_source"] == 180
+    # 224-item universe, 216 dispositioned in the shard: the remainder is the
+    # single invalid-title item recorded tracker-only, plus the seven new
+    # `Flame Blade` tiers awaiting triage. Named, so a NINTH cannot appear silently.
+    assert cov["unverified"] == cov["triage_universe"] - 216 == 8
+    undispositioned = sorted({v["source_item"] for v in universe}
+                             - set(no_drop_source.load(SHARD)))
+    assert undispositioned == ["Coronach (historic) [Crafted]"] + [
+        f"Flame Blade (level {n})" for n in (1, 10, 15, 20, 25, 30, 5)], undispositioned
+    assert cov["flagged_variants"] == 36
     assert BRACERS_HEROIC in cov["confirmed_items"]
     assert BRACERS_LEGENDARY in cov["confirmed_items"]
-    assert len(cov["confirmed_items"]) == 40
+    assert len(cov["confirmed_items"]) == 36
+    # the six retired items really did leave the universe — that is the premise
+    # the retirement rests on, checked at the built-dataset level too
+    assert not (set(_retired_2026_08_18()) & {v["source_item"] for v in universe})
 
 
 def test_the_shipped_shard_carries_its_wiki_evidence():
@@ -372,3 +414,31 @@ def test_the_shipped_shard_carries_its_wiki_evidence():
                 assert e.get(field), f"{name}: entry is missing {field!r}"
             assert e["provenance"] == "stated", name
             assert e["wiki_url"].startswith("https://ddowiki.com/page/Item:"), name
+
+
+def test_374_every_retired_entry_records_the_review_that_un_flagged_it():
+    """Un-flagging is "a manual review event, never automatic" — the module says so
+    and the retirement is the only place that promise can be checked.
+
+    Two arms, because either alone is waveable: every retired name must carry a
+    non-empty evidence string, AND the refreshed upstream snapshot must actually
+    record a quest for it. A retirement whose premise is not in the data is a
+    no-drop flag deleted on assertion.
+    """
+    entries = _retired_2026_08_18()
+    assert len(entries) == 6, sorted(entries)
+    records, _stats = planner_items.load_planner_items()
+    by_name = {r.get("name"): r for r in records}
+    for name, evidence in entries.items():
+        assert isinstance(evidence, str) and evidence.strip(), \
+            f"{name}: retired with no recorded review"
+        rec = by_name.get(name)
+        assert rec is not None, f"{name}: retired but absent from the roster"
+        quests = [q for q in (rec.get("quests") or []) if str(q).strip()]
+        assert quests, (
+            f"{name}: retired on the premise that upstream now records a source, "
+            f"but the refreshed roster still records none — the no-drop flag is "
+            f"still live and must not be retired")
+    # and the retirement really is what moved the pinned counts
+    assert len(no_drop_source.load(SHARD)) + len(entries) == 222, \
+        "222 was the pre-refresh entry count; the delta must be exactly the retirement"

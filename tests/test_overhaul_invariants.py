@@ -44,7 +44,36 @@ def test_no_legacy_affix_keys_at_rest():
     data = _load()
     items = data["items"]
     # 9108 = 9045 + the 63 wiki-sourced ML36 augments (#260), re-ratified 2026-08-12.
-    assert len(items) == 9108, f"expected 9108 items, saw {len(items)}"
+    #
+    # #374/U4 — re-ratified 9108 -> 9110. The whole delta is upstream's scraper
+    # moving its ROSTER (raw item records 8188 -> 8190); nothing in this repo's
+    # pipeline changed how many variants an item yields. Attributed name by name,
+    # and each of the 26 moved items yields exactly one variant, so the built
+    # delta equals the raw delta:
+    #
+    #   +14  7 new `Flame Blade (level N)` tiers, and 7 items that upstream
+    #        RENAMED into the existing `… of the Oozing Hunger` family
+    #        (`… of Doublestrike N` -> `… of the Oozing Hunger`)
+    #   -12  the 8 `… of Doublestrike N` names those renames vacated, the
+    #        de-duplicated `Legendary Dart of the Oozing Hunger of the Oozing
+    #        Hunger`, and 3 retired names (`Allegiance (historic)`,
+    #        `Legendary Sceptre`, `Potent 49 Sceptre`)
+    #   ----
+    #    +2  net
+    #
+    # The Oozing Hunger renames are a rename, not a loss: every Legendary tier of
+    # that family was already in the roster before the refresh.
+    assert len(items) == 9110, f"expected 9110 items, saw {len(items)}"
+    # the +2 is those 26 items and nothing else — a coincidental +2 from an
+    # unrelated cause would satisfy the count alone.
+    by_name = {it.get("source_item") for it in items}
+    for name in ("Flame Blade (level 1)", "Flame Blade (level 30)",
+                 "Buckler of the Oozing Hunger", "Sceptre of the Oozing Hunger"):
+        assert name in by_name, name
+    for name in ("Buckler of Doublestrike 4", "Legendary Sceptre",
+                 "Potent 49 Sceptre", "Allegiance (historic)",
+                 "Legendary Dart of the Oozing Hunger of the Oozing Hunger"):
+        assert name not in by_name, name
     offenders = []
     extra = set()
     for it in items:

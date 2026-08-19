@@ -570,3 +570,99 @@ def test_built_dino_sets_raw_stays_verbatim():
     curse = _built_dino_sets()["The Legendary Dread Isle's Curse"]["raw"]
     assert "all Ability Scores" in curse and "Attack and Damage" in curse
     assert "Melee and Ranged Power" in curse
+
+
+# ---------------------------------------------------------------------------
+# #374 — the Dino seam is the ONE pipeline channel that APPLIES the upstream
+# synonym map, single-pass. Post-refresh upstream carries `Combustion -> Fire
+# Spell Power`, so without suppression a Dino set stat named `Combustion` folds
+# the WRONG way and `check_set_records_spelling` then raises, because the output
+# is itself a fold key. Inert against today's vendored table (no protected canon
+# name is a fold key yet), so it is exercised against a flipped fixture.
+# ---------------------------------------------------------------------------
+
+import contextlib  # noqa: E402
+
+from src import vocabulary  # noqa: E402
+from src import helpless_fold  # noqa: E402
+
+_FLIPPED_REGISTRY = {
+    "affix_synonyms": [
+        {"name": "Fire Spell Power", "synonyms": ["Combustion"]},
+        {"name": "Negative Lore", "synonyms": ["Void Lore"]},
+        {"name": "Universal Spell Power", "synonyms": ["Universal Spellpower"]},
+    ],
+    "local_affix_synonyms": [
+        {"name": "Damage to helpless enemies",
+         "synonyms": ["damage vs. the helpless"]},
+    ],
+}
+
+
+@contextlib.contextmanager
+def _flipped_upstream_table():
+    """Serve the flipped registry to `registry_synonym_folds` without touching the
+    checked-in file. Patches `_load` rather than the module path constant, because
+    the path is bound as a default argument at def time."""
+    real_load = vocabulary._load
+    helpless_fold._FOLD_CACHE = None
+
+    def fake(path):
+        if path == vocabulary.AFFIX_SYNONYMS_REGISTRY_PATH:
+            return _FLIPPED_REGISTRY
+        return real_load(path)
+
+    vocabulary._load = fake
+    try:
+        yield
+    finally:
+        vocabulary._load = real_load
+        helpless_fold._FOLD_CACHE = None
+
+
+def test_374_a_dino_stat_named_combustion_survives_the_parse_seam():
+    with _flipped_upstream_table():
+        affixes, rejected = dino_parser._parse_effect(
+            "+20 Artifact bonus to Combustion")
+        assert [a["stat"] for a in affixes] == ["Combustion"], affixes
+        assert rejected == []
+
+
+def test_374_a_dino_stat_named_void_lore_survives_the_parse_seam():
+    with _flipped_upstream_table():
+        affixes, _ = dino_parser._parse_effect("+4 Artifact bonus to Void Lore")
+        assert [a["stat"] for a in affixes] == ["Void Lore"], affixes
+
+
+def test_374_the_dino_spelling_guard_accepts_the_canon_it_just_kept():
+    """Without suppression the fold output would itself be a fold key and this
+    guard would raise on a record the pipeline produced correctly."""
+    with _flipped_upstream_table():
+        records = [{"set": "Dread Stalker", "affixes": [
+            {"stat": "Combustion", "bonus_type": "Artifact", "value": 20}]}]
+        assert dino_parser.check_set_records_spelling(records) == 1
+
+
+def test_374_suppression_is_scoped_and_a_real_fold_still_applies():
+    """Only protected canon KEYS are dropped — an unrelated upstream fold and the
+    repo-reviewed local family both still fold at this seam."""
+    with _flipped_upstream_table():
+        affixes, _ = dino_parser._parse_effect(
+            "+20 Artifact bonus to Universal Spellpower")
+        assert [a["stat"] for a in affixes] == ["Universal Spell Power"]
+        affixes, _ = dino_parser._parse_effect(
+            "+15% Artifact bonus to damage vs. the helpless")
+        assert [a["stat"] for a in affixes] == ["Damage to helpless enemies"]
+
+
+def test_374_helpless_fold_map_is_still_a_non_empty_family():
+    """`fold_map` filters `registry_synonym_folds` to its own canonical, so the
+    suppression must not empty it — an empty map turns every fold site AND every
+    guard into a silent no-op at once."""
+    helpless_fold._FOLD_CACHE = None
+    try:
+        folds = helpless_fold.fold_map()
+        assert len(folds) == 11, sorted(folds)
+        assert all(c == helpless_fold.CANONICAL for c in folds.values())
+    finally:
+        helpless_fold._FOLD_CACHE = None
