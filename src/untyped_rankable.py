@@ -73,7 +73,10 @@ def candidates(records: list) -> dict:
         slot = r.get("slot")
         item = r.get("name")
         for a in r.get("affixes") or []:
-            if a.get("type") not in (None, ""):
+            # #374 — "Untyped" is upstream's post-2026-08-18 spelling of the same
+            # no-type marker it used to express by omitting the key. See the note at
+            # the untyped filter in build_dataset.py.
+            if a.get("type") not in (None, "", "Untyped"):
                 continue
             name = a.get("name")
             if not isinstance(name, str) or not name:

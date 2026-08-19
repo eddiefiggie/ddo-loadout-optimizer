@@ -1,10 +1,10 @@
 {
   "_source": "FROZEN copy of data/seed/compendium/raw/gearplanner_affix_synonyms.json (upstream site/src/assets/affix-synonyms.json). The gate diffs the vendored live table against this frozen one; any added/removed/re-pointed fold fails the build until a human confirms the two names are the same game mechanic. Re-freeze only in the same commit that handles the change.",
   "_why": "Upstream folds distinct mechanics under one affix name. Speed <- Striding is why #154 existed: Striding grants movement only, the Speed enchantment also grants melee/ranged attack speed, and the fold lost the attack-speed half silently.",
-  "count": 94,
+  "count": 145,
   "_local_why": "REPO-REVIEWED synonym folds that upstream gear-planner does NOT carry. The U6 gate (check_affix_synonyms) diffs ONLY the upstream 'affix_synonyms' section against the vendored live table, so entries here never trip the added/dropped/re-pointed fold events; registry_synonym_folds() merges this section on top for the pipeline channels that APPLY folds. Each entry cites its wiki evidence; a local synonym may not collide with an upstream fold key.",
   "_local_staleness": "#374 — vocabulary.check_local_synonym_staleness (called from build_dataset.assert_local_affix_synonyms) fails the build when a declared synonym matches nothing in the corpus: the raw gear-planner affix names + the augment-set seed stats (exact match) and the Dino wiki tier text (substring). This section previously had no assert_all_reached equivalent, so a fold could rot into a silent no-op — which is exactly what upstream's consolidation of the helpless family does to most of these spellings. An entry may allowlist a knowingly-absent spelling under unmatched_synonyms, with evidence; that allowlist is two-directional.",
-  "local_count": 1,
+  "local_count": 12,
   "local_affix_synonyms": [
     {
       "name": "Damage to helpless enemies",
@@ -23,9 +23,24 @@
       ],
       "evidence": "docs/wiki-evidence/helpless-damage.md (#305): the ddowiki Helpless hub page lists every gear source of the ONE percent-extra-damage-vs-helpless mechanic in a single table; the canonical spelling is the one carried natively by the Solar Gem of Cruelty affixes.",
       "unmatched_synonyms": [
-        "Damage vs. Helpless"
+        "Additional Damage to Helpless Targets",
+        "damage versus the Helpless",
+        "Damage vs the Helpless",
+        "damage vs the Helpless",
+        "Damage vs. Helpless",
+        "damage vs. helpless",
+        "Damage vs. Helpless Opponents",
+        "Damage vs. Helpless opponents",
+        "Helplessness Damage"
       ],
-      "unmatched_evidence": "#374 — 'Damage vs. Helpless' is the Cruel Cut augment-set tier wording (docs/wiki-evidence/helpless-damage.md), but #305 canonicalized that stat IN PLACE in data/seed/compendium/augment_sets.json (see its stat_note), so no corpus record carries the spelling any more and the fold is already a no-op. Retained rather than deleted: it is the recorded wiki wording, and a re-harvest of augment_sets.json would bring it back verbatim. check_local_synonym_staleness fails in BOTH directions, so if the spelling returns this allowlist entry must be dropped in the same commit."
+      "unmatched_evidence": "#374/U4 — the gear-planner refresh (upstream 767a7f7, 2026-08-18) CONSOLIDATED the whole helpless family to one spelling: only `Damage vs. the Helpless` (structured affix names) and `damage vs. the helpless` (Dino free text) still occur, so nine of the eleven #305 spellings now match nothing. Retained rather than deleted, on the precedent of the `Damage vs. Helpless` entry below it: every spelling here is a RECORDED WIKI WORDING (docs/wiki-evidence/helpless-damage.md tabulates each one with the set or item that carries it), upstream re-scrapes ddowiki near-daily, and a re-harvest or an upstream revert would bring the spelling back verbatim — at which point the fold must already exist or the one mechanic re-splits into two buckets silently. check_local_synonym_staleness is two-directional, so a returning spelling fails the build until its allowlist entry is dropped in the same commit. Per-spelling detail: `Damage vs. Helpless` is the Cruel Cut augment-set tier wording, canonicalized IN PLACE in data/seed/compendium/augment_sets.json by #305 (see its stat_note), so it was already a no-op before this refresh."
+    },
+    {
+      "name": "Well Rounded",
+      "synonyms": [
+        "all Ability Scores"
+      ],
+      "evidence": "#374/U4 — upstream RETIRED its own `all Ability Scores` -> `Well Rounded` fold in the 2026-08-18 refresh. The refresh-diff adjudication cleared that removal on structured-affix occurrence counts (the key occurs 0/0/0 in gearplanner_items/crafting/sets), but registry_synonym_folds also folds the DINO channel's verbatim wiki TIER TEXT, where the spelling is live: src/dino_native.py records `+3 Artifact bonus to all Ability Scores` (Echoes of the Walking Ancestors) and `+2 Profane bonus to all Ability Scores` (The Legendary Dread Isle's Curse). Without the fold those two sets stamp `via: \"Artifact all Ability Scores\"` while membership_set_defs — the live defs the SAME set is scored through, built from the structured sets catalog — stamps `via: \"Artifact Well Rounded\"`, so one mechanic on one set displays under two provenance labels. `Well Rounded` is DDO's enchantment name and the spelling every other channel emits (items stamp `Enhancement/Exceptional/Profane Well Rounded`), which is why it is the canonical here. Both spellings already expand to the same six abilities at the same bonus type, so no value, bucket or solve moves — this is display provenance only. Re-adopted locally rather than left to upstream, on the KTD1 principle: we keep the enchantment name a player reads on a tooltip."
     }
   ],
   "affix_synonyms": [
@@ -33,9 +48,27 @@
       "name": "Accuracy",
       "synonyms": [
         "Attack",
-        "Attack Bonus",
         "Hit",
-        "hit"
+        "Attack Bonus"
+      ]
+    },
+    {
+      "name": "Acid Spell Power",
+      "synonyms": [
+        "Corrosion",
+        "Acid Spellpower"
+      ]
+    },
+    {
+      "name": "Acid Intensity",
+      "synonyms": [
+        "Corrosion Intensity"
+      ]
+    },
+    {
+      "name": "Acid Lore",
+      "synonyms": [
+        "Corrosion Lore"
       ]
     },
     {
@@ -48,15 +81,10 @@
     {
       "name": "Arcane Casting Dexterity",
       "synonyms": [
+        "Lesser Arcane Casting Dexterity",
         "Greater Arcane Casting Dexterity",
-        "Lesser Arcane Casting Dexterity"
-      ]
-    },
-    {
-      "name": "Arcane Casting Dexterity",
-      "synonyms": [
-        "Arcane Spell Failure",
-        "reduce your Arcane Spell Failure by"
+        "reduce your Arcane Spell Failure by",
+        "Arcane Spell Failure"
       ]
     },
     {
@@ -77,14 +105,36 @@
       "name": "Armor-Piercing",
       "synonyms": [
         "Armor Piercing",
-        "Fortification Bypass",
-        "Fortification bypass"
+        "Fortification Bypass"
       ]
     },
     {
       "name": "Assassinate",
       "synonyms": [
         "Assassinate DCs"
+      ]
+    },
+    {
+      "name": "Cold Spell Power",
+      "synonyms": [
+        "Glaciation",
+        "Cold Spellpower",
+        "Ice Spell Power",
+        "Ice Spellpower"
+      ]
+    },
+    {
+      "name": "Ice Intensity",
+      "synonyms": [
+        "Cold Intensity",
+        "Glaciation Intensity"
+      ]
+    },
+    {
+      "name": "Cold Lore",
+      "synonyms": [
+        "Glaciation Lore",
+        "Ice Lore"
       ]
     },
     {
@@ -101,10 +151,29 @@
       ]
     },
     {
-      "name": "Devotion",
+      "name": "Electric Spell Power",
       "synonyms": [
-        "Positive Spell Power",
-        "Positive Spellpower"
+        "Magnetism",
+        "Magnetic",
+        "Electric Spellpower",
+        "Lightning Spell Power",
+        "Lightning Spellpower"
+      ]
+    },
+    {
+      "name": "Lightning Intensity",
+      "synonyms": [
+        "Electric Intensity",
+        "Magnetic Intensity",
+        "Magnetism Intensity"
+      ]
+    },
+    {
+      "name": "Lightning Lore",
+      "synonyms": [
+        "Electric Lore",
+        "Magnetic Lore",
+        "Magnetism Lore"
       ]
     },
     {
@@ -120,21 +189,48 @@
         "Lifeforce",
         "Maximum HP",
         "Maximum Hit Points",
-        "Vitality",
         "maximum hitpoints",
+        "Vitality",
         "your maximum hit points"
       ]
     },
     {
       "name": "False Life (%)",
       "synonyms": [
-        "Conditioning (%)"
+        "Conditioning (%)",
+        "Legendary Conditioning"
       ]
     },
     {
-      "name": "Force Spell Crit Damage",
+      "name": "Fire Spell Power",
       "synonyms": [
-        "Force and Physical Spell Crit Damage"
+        "Combustion",
+        "Fire Spellpower"
+      ]
+    },
+    {
+      "name": "Fire Intensity",
+      "synonyms": [
+        "Combustion Intensity"
+      ]
+    },
+    {
+      "name": "Fire Lore",
+      "synonyms": [
+        "Combustion Lore"
+      ]
+    },
+    {
+      "name": "Force Lore",
+      "synonyms": [
+        "Impulse Lore"
+      ]
+    },
+    {
+      "name": "Force Spell Power",
+      "synonyms": [
+        "Impulse",
+        "Force Spellpower"
       ]
     },
     {
@@ -152,15 +248,25 @@
     {
       "name": "Healing Amplification",
       "synonyms": [
-        "Positive Amplification",
-        "Positive Healing Amplification"
+        "Positive Healing Amplification",
+        "Positive Amplification"
       ]
     },
     {
       "name": "Healing Lore",
       "synonyms": [
+        "Devotion Lore",
         "Positive Spell Crit Chance",
         "Positive Spellcrit Chance"
+      ]
+    },
+    {
+      "name": "Kinetic Intensity",
+      "synonyms": [
+        "Impulse Intensity",
+        "Force Spell Crit Damage",
+        "Physical Spell Crit Damage",
+        "Force and Physical Spell Crit Damage"
       ]
     },
     {
@@ -171,10 +277,14 @@
       ]
     },
     {
-      "name": "Light Spell Crit Damage",
+      "name": "Light Spell Power",
       "synonyms": [
-        "Light and Alignment Spell Crit Damage"
+        "Light Spellpower"
       ]
+    },
+    {
+      "name": "Light Lore",
+      "synonyms": []
     },
     {
       "name": "Magical Efficiency",
@@ -185,16 +295,16 @@
     {
       "name": "Magical Sheltering",
       "synonyms": [
-        "MRR",
         "Magical Resistance Rating",
+        "MRR",
         "your Magical Resistance Rating"
       ]
     },
     {
       "name": "Magical Sheltering Cap",
       "synonyms": [
-        "MRR Cap",
-        "Magical Resistance Rating Cap"
+        "Magical Resistance Rating Cap",
+        "MRR Cap"
       ]
     },
     {
@@ -204,17 +314,42 @@
       ]
     },
     {
-      "name": "Nullification",
+      "name": "Negative Spell Power",
       "synonyms": [
-        "Negative Spell Power"
+        "Nullification",
+        "Negative Spellpower"
       ]
     },
     {
       "name": "Physical Sheltering",
       "synonyms": [
-        "PRR",
-        "Physical Resistance Rating"
+        "Physical Resistance Rating",
+        "PRR"
       ]
+    },
+    {
+      "name": "Positive Spell Power",
+      "synonyms": [
+        "Devotion",
+        "Positive Spellpower"
+      ]
+    },
+    {
+      "name": "Radiance",
+      "synonyms": []
+    },
+    {
+      "name": "Radiance Intensity",
+      "synonyms": [
+        "Light Intensity",
+        "Light Spell Crit Damage",
+        "Alignment Spell Crit Damage",
+        "Light and Alignment Spell Crit Damage"
+      ]
+    },
+    {
+      "name": "Radiance Lore",
+      "synonyms": []
     },
     {
       "name": "Rage Charges",
@@ -234,6 +369,18 @@
       "name": "Repair Amplification",
       "synonyms": [
         "Repair Healing Amplification"
+      ]
+    },
+    {
+      "name": "Repair Lore",
+      "synonyms": [
+        "Reconstruction Lore"
+      ]
+    },
+    {
+      "name": "Repair Intensity",
+      "synonyms": [
+        "Reconstruction Intensity"
       ]
     },
     {
@@ -261,6 +408,25 @@
       ]
     },
     {
+      "name": "Sonic Spell Power",
+      "synonyms": [
+        "Resonance",
+        "Sonic Spellpower"
+      ]
+    },
+    {
+      "name": "Sonic Intensity",
+      "synonyms": [
+        "Resonance Intensity"
+      ]
+    },
+    {
+      "name": "Sonic Lore",
+      "synonyms": [
+        "Resonance Lore"
+      ]
+    },
+    {
       "name": "Speed",
       "synonyms": [
         "Striding",
@@ -271,10 +437,9 @@
       "name": "Spell Focus Mastery",
       "synonyms": [
         "DCs",
-        "Spell DC's",
         "Spell DCs",
         "all Spell DCs",
-        "all spell DCs"
+        "Spell DC's"
       ]
     },
     {
@@ -290,28 +455,17 @@
       ]
     },
     {
-      "name": "Sunder",
-      "synonyms": [
-        "Sunder DCs"
-      ]
-    },
-    {
       "name": "Sundering",
       "synonyms": [
         "Sunder",
-        "Sunder DC"
+        "Sunder DC",
+        "Sunder DCs"
       ]
     },
     {
       "name": "Tactical Abilities",
       "synonyms": [
         "your Tactical Abilities"
-      ]
-    },
-    {
-      "name": "Trip",
-      "synonyms": [
-        "Trip DCs"
       ]
     },
     {
@@ -322,17 +476,42 @@
       ]
     },
     {
-      "name": "Vertigo",
+      "name": "Use Magic Device",
       "synonyms": [
-        "Trip",
-        "Trip DC"
+        "UMD"
       ]
     },
     {
-      "name": "Void Lore",
+      "name": "Vertigo",
       "synonyms": [
-        "Negative Lore",
+        "Trip",
+        "Trip DC",
+        "Trip DCs"
+      ]
+    },
+    {
+      "name": "Void Intensity",
+      "synonyms": [
+        "Nullification Intensity",
+        "Negative Intensity",
+        "Negative Spell Crit Damage",
+        "Poison Spell Crit Damage",
+        "Negative and Poison Spell Crit Damage"
+      ]
+    },
+    {
+      "name": "Negative Lore",
+      "synonyms": [
+        "Nullification Lore",
+        "Void Lore",
         "Negative Spell Crit Chance"
+      ]
+    },
+    {
+      "name": "Healing Intensity",
+      "synonyms": [
+        "Devotion Intensity",
+        "Positive Intensity"
       ]
     },
     {
@@ -340,11 +519,10 @@
       "synonyms": [
         "Ability stats",
         "All Ability Scores",
-        "Well-Rounded",
         "all Abilities",
-        "all Ability Scores",
         "all of your Ability Scores",
-        "each Ability Score"
+        "each Ability Score",
+        "Well-Rounded"
       ]
     },
     {

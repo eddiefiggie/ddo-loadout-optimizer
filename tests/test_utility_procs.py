@@ -60,6 +60,26 @@ def _real_records():
     return recs
 
 
+def _retired_2026_08_18():
+    """The #374/U4 retirement block: `{name: entry}`. The 2026-08-18 refresh
+    re-encoded the type field, giving 104 of this shard's adjudicated names a
+    real `Bool` type — an untyped-proc adjudication has nothing left to match on
+    a name that is no longer untyped."""
+    with open(SHARD, encoding="utf-8") as fh:
+        return (json.load(fh).get("_retired_2026_08_18") or {}).get("entries") or {}
+
+
+def _real_untyped_candidates():
+    """The untyped-weapon-proc candidate names on the real roster — the exact
+    population this shard adjudicates. A retired name must not be in it."""
+    return set(utility_procs.candidates(_real_records()))
+
+
+def _real_bool_names():
+    """Every `Bool`-typed affix name on the real item roster."""
+    return utility_procs.presence_counting_names(_real_records())
+
+
 def _real_counting_set():
     recs = _real_records()
     untyped_allow, _ = untyped_rankable.load(
@@ -129,9 +149,30 @@ def test_an_allowed_untyped_name_is_no_longer_counted_and_still_not_rankable():
             _rec("Sword B", "Weapon", [_untyped("Holy", "6")])]
     assert "Holy" not in utility_procs.counting_set(recs, [])
     assert "Holy" not in build_dataset.rankable_affixes(recs)
-    # But it stays ADMITTED, which is what keeps it rankable in the picker.
+    # #374/U4 — it used to stay ADMITTED, and the assertion here was
+    # `"Holy" in allow`, because the allow list was what kept it in the picker.
+    # The refresh re-encoded the type field and upstream now types every `Holy`
+    # instance `Bool`, so it is no longer an untyped candidate at all and its
+    # adjudication was retired (with per-entry evidence). The PROPERTY the old
+    # line guarded — "this name must not silently drop out of the picker" — is
+    # what is asserted now, on the route that actually carries it today:
+    # dataset.js adds every `Bool`-typed item affix to `presence`/`suggest`
+    # regardless of the admitted list, so the picker path survives the retirement.
     allow, _ = utility_procs.load(SHARD)
-    assert "Holy" in allow, "removing it from the allow list would drop it from the picker"
+    assert "Holy" not in allow, "retired names must leave the live allow list"
+    retired = _retired_2026_08_18()
+    assert retired.get("Holy", {}).get("retired_from") == "allow"
+    assert (retired["Holy"].get("retired_2026_08_18") or "").strip(), \
+        "a retirement must record why the adjudication no longer applies"
+    bool_recs = [_rec("Sword A", "Weapon", [_bool("Holy")]),
+                 _rec("Sword B", "Weapon", [_bool("Holy")])]
+    assert "Holy" in utility_procs.presence_counting_names(bool_recs), \
+        "the picker's presence path must still reach it, or the retirement dropped it"
+    assert "Holy" not in build_dataset.rankable_affixes(bool_recs), \
+        "and it still must not get a declared-credit control (KTD4, unchanged)"
+    # the real roster is what makes that route live, not just the fixture
+    assert "Holy" in _real_bool_names(), \
+        "upstream must actually type Holy `Bool` — that is the premise of the retirement"
 
 
 # #343 — two tests were REMOVED here rather than left passing for the wrong
@@ -317,9 +358,41 @@ def test_no_quarantined_name_leaks_into_the_shipping_admitted_stamp():
     # Since #343 the quarantine governs exactly ONE live channel: admission to
     # metadata.utility_untyped_admitted, which is what makes a proc individually
     # rankable in the picker. That is what this pins now.
+    #
+    # #374/U4 — the live `allow` list is now EMPTY: the refresh typed all 24
+    # admitted procs `Bool`, so every one of them was retired (with per-entry
+    # evidence) and the untyped adjudication has nothing left to admit. Reading
+    # the disjointness off the shipped file would therefore pass vacuously — the
+    # exact failure mode the two vacuity guards below were written to prevent.
+    #
+    # So the property is asserted where it is still falsifiable: across the union
+    # of the live lists AND the retirement block, which is the full set of names
+    # this shard has ever dispositioned. A name cannot be admitted and quarantined
+    # at once in ANY of those states, and a retired name cannot be quietly
+    # re-admitted while its quarantine entry stands.
     allow, quarantined = utility_procs.load(SHARD)
-    assert allow, "an empty allow list would make this pass vacuously"
+    retired = _retired_2026_08_18()
+    assert not allow, (
+        "the live allow list is empty post-refresh; a name reappearing here needs "
+        "its own untyped-candidate evidence, not the retired adjudication")
     assert quarantined, "an empty quarantine list would make this pass vacuously"
+    assert retired, "an empty retirement block would make this pass vacuously"
     assert not (allow & quarantined), "a name on both lists has no defined disposition"
-    for n in sorted(quarantined):
-        assert n not in allow, n
+
+    retired_allow = {n for n, e in retired.items() if e.get("retired_from") == "allow"}
+    retired_quar = {n for n, e in retired.items()
+                    if e.get("retired_from") == "quarantined"}
+    assert len(retired_allow) == 24 and len(retired_quar) == 80, \
+        (len(retired_allow), len(retired_quar))
+    assert not (retired_allow & retired_quar), \
+        "a retired name must record exactly one list it came from"
+    # the disposition stays single-valued across the retirement boundary too
+    assert not (retired_allow & quarantined), sorted(retired_allow & quarantined)
+    assert not (retired_quar & allow), sorted(retired_quar & quarantined & allow)
+    # every retired name states the premise of its retirement
+    for n, e in retired.items():
+        assert e.get("retired_from") in ("allow", "quarantined"), n
+        assert (e.get("retired_2026_08_18") or "").strip(), f"{n}: no stated reason"
+        assert n not in _real_untyped_candidates(), (
+            f"{n}: retired as no-longer-untyped, but the roster still carries an "
+            f"untyped instance — the adjudication is still live")

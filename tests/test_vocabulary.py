@@ -69,9 +69,19 @@ def test_lint_surfaces_collisions_without_mutating():
     before = list(names)
     out = V.lint_affix_names(names, distinct)
     assert names == before, "lint must never mutate the input"
-    # the known case/whitespace collisions surface as blocking candidates
+    # the known case/whitespace collisions surface as blocking candidates.
+    # #374/U4 — re-ratified off the `Greater Dragonmark charges`/`Greater Dragonmark
+    # Charges` pair: upstream normalized that capitalization in the refresh (the old
+    # spellings survive as alias VARIANTS, so resolution is unaffected — see
+    # docs/reports/2026-08-18-gear-planner-canon-migration.md §4). Re-anchored on the
+    # `Item becomes a Spellcasting Implement` pair, which the pre-refresh registry
+    # also carried, so this pins a long-standing collision rather than a fresh one.
     flat = {n for grp in out["collisions"].values() for n in grp}
-    assert "Greater Dragonmark charges" in flat and "Greater Dragonmark Charges" in flat
+    assert "item becomes a Spellcasting Implement" in flat and \
+        "Item becomes a Spellcasting Implement" in flat
+    # the lint keys on a case-folded form, so both spellings land in ONE group
+    assert set(out["collisions"]["item becomes a spellcasting implement"]) == {
+        "Item becomes a Spellcasting Implement", "item becomes a Spellcasting Implement"}
     # a whitelisted distinct pair is not re-flagged as similar
     for a, b in out["similar"]:
         assert frozenset((a, b)) not in distinct
@@ -126,7 +136,10 @@ def test_every_stacking_equivalence_entry_carries_wiki_evidence():
 
 def test_freshness_reads_and_detects_drift():
     recorded = V.assert_freshness()
-    assert recorded == "ec3e595d0d879b29c13f3c34ffc155e71d0418c4"
+    # #374/U4 — re-ratified from `ec3e595…` (2026-08-01) to the vendored refresh.
+    # The raw mirror was re-fetched pinned to this SHA; SOURCE.json records the
+    # exact four-file curl. The stamp moves ONLY when a vendoring happens.
+    assert recorded == "767a7f747d0e7d211a702b8c456348e1c36ba699"
     # a wrong expected commit surfaces drift
     _raises(V.FreshnessError, V.assert_freshness, expected_commit="deadbeef")
 
@@ -138,10 +151,21 @@ def test_crafting_slot_registry_generates_and_matches_frozen():
     # deterministic + sorted
     assert gen == V.generate_crafting_slot_registry()
     assert gen == sorted(gen)
-    # pool keys (83) ∪ item markers (adds the 12 pool-less Cannith slots) = 95
+    # pool keys (83) ∪ item markers (adds the 12 pool-less crafting slots) = 95
     assert len(gen) == 95, "crafting-slot registry = 83 pool keys ∪ item crafting[] markers"
     assert "Sealed in Undeath" in gen and "T1 (Weapon)" in gen
-    assert "Cannith: Rune Arm - Extra" in gen, "pool-less item markers are still in the registry"
+    # #374/U5 — the 12 pool-less markers are unchanged in COUNT and identity; only
+    # their prefix moved, 1:1, `Cannith: *` -> `Essence Crafting: *`. Update 79
+    # renamed the system in game (wiki ruling recorded in src/crafting_coverage.py),
+    # so this is upstream tracking DDO, not upstream inventing a spelling — the one
+    # class of rename KTD1 says to ADOPT. Both directions are pinned: the new label
+    # must be present and the retired one absent, so a half-applied rename fails.
+    assert "Essence Crafting: Rune Arm - Extra" in gen, \
+        "pool-less item markers are still in the registry"
+    assert not [s for s in gen if s.startswith("Cannith:")], \
+        "the retired `Cannith:` prefix must not survive anywhere in the registry"
+    assert len([s for s in gen if s.startswith("Essence Crafting:")]) == 12, \
+        "all 12 pool-less markers carry the renamed prefix"
     frozen = V._load(V.CRAFTING_SLOT_REGISTRY_PATH)["crafting_slots"]
     assert frozen == gen, "checked-in frozen registry matches the generator"
 
@@ -741,7 +765,23 @@ def test_374_local_synonym_staleness_refuses_an_empty_corpus():
 
 def test_374_the_shipped_local_registry_is_not_stale():
     import build_dataset
-    assert build_dataset.assert_local_affix_synonyms() == 11
+    # #374/U4 — re-ratified 11 -> 12 synonyms. The helpless family still declares
+    # its eleven; the twelfth is `all Ability Scores` -> `Well Rounded`, re-adopted
+    # locally because upstream RETIRED its own copy of that fold in this refresh.
+    # The retirement was cleared on structured-affix occurrence counts (0/0/0), but
+    # `registry_synonym_folds` also folds the Dino channel's verbatim wiki tier
+    # text, where the spelling is live — without it the two dino sets stamped
+    # `via: "Artifact all Ability Scores"` while `membership_set_defs`, the live
+    # defs the SAME set scores through, stamped `via: "Artifact Well Rounded"`.
+    # Display provenance only: both spellings already expand to the same six
+    # abilities at the same bonus type, so no value, bucket or solve moves.
+    n = build_dataset.assert_local_affix_synonyms()
+    assert n == 12, n
+    table = V._load(V.AFFIX_SYNONYMS_REGISTRY_PATH)
+    assert {e["name"] for e in table["local_affix_synonyms"]} == {
+        "Damage to helpless enemies", "Well Rounded"}
+    assert n == sum(len(e["synonyms"]) for e in table["local_affix_synonyms"]) \
+        == table["local_count"], "the declared local_count must match the section"
 
 
 # --- KTD3: the armed set is derived, never hand-listed ------------------------
@@ -773,8 +813,24 @@ def test_374_armed_canon_variants_cannot_see_an_untyped_variant():
                                   alias_map={"Ki": "Enhanced Ki"}) == {}
 
 
-def test_374_armed_canon_variants_is_empty_before_the_refresh_is_vendored():
-    assert V.armed_canon_variants() == {}
+def test_374_armed_canon_variants_is_exactly_the_canon_defence_after_the_refresh():
+    """Was `…_is_empty_before_the_refresh_is_vendored` — the deliberate pre-refresh
+    pin U2/U3 wrote knowing U4 would invert it. It guarded ONE direction of a
+    two-directional property: on the pre-refresh snapshot nothing was armed, so
+    every canon-defence correction had to be `pending_upstream`.
+
+    The refresh arms all thirteen, so the same property now reads from the other
+    side: the armed set, derived from the raw snapshot, must equal the live
+    canon-defence set, derived from the shard. Still never hand-listed — a shard
+    edit and a data change each move one side and this fails.
+    """
+    armed = V.armed_canon_variants()
+    declared = {c["source_name"]: c["canonical_name"]
+                for c in V._load(V.AFFIX_NAME_CORRECTIONS_PATH)["corrections"]
+                if c.get("canon_defense")}
+    assert armed, "the refresh is vendored — an empty armed set would mean it is not"
+    assert armed == declared, {"armed_only": set(armed) - set(declared),
+                               "declared_only": set(declared) - set(armed)}
 
 
 # --- KTD5: minting our canon into the frozen registry -------------------------
@@ -831,25 +887,58 @@ def test_374_local_affix_names_are_minted_by_a_rename_or_a_local_fold():
     # both arms are actually exercised by the shipped section
     assert [n for n in minted if n in renames], "no entry is backed by a rename"
     assert [n for n in minted if n in folds], "no entry is backed by a local fold"
-    # the explicit set, so a deletion is caught even before the refresh arms it
+    # the explicit set, so a deletion is caught even before the refresh arms it.
+    # #374/U4 — re-ratified 11 -> 13. U3 declined both additions on measurements
+    # that were true of the PRE-refresh snapshot and are false of this one:
+    #   `Legendary Conditioning` — "native upstream, minting it is a permanent
+    #     no-op". Gate-visible occurrences went 34 -> 0; upstream now folds the
+    #     family into `False Life (%)` (2 -> 40, all `type: "Legendary"`).
+    #   `Enhanced Ki` — "untyped and invisible to the gate's walk". Upstream
+    #     re-encoded the type field, so `Ki` went 0 -> 20 gate-visible occurrences.
+    # Both are additions to the SAME two-arm legitimacy join asserted above, not a
+    # widening of it. See docs/reports/2026-08-18-gear-planner-canon-migration.md §6.1.
     assert set(minted) == {
         "Combustion", "Corrosion", "Devotion", "Glaciation", "Impulse",
         "Magnetism", "Nullification", "Resonance", "Ice Lore", "Void Lore",
-        "Damage to helpless enemies"}, minted
-    # the ten folded names are exactly PROTECTED_CANON; the eleventh is rename-only
+        "Damage to helpless enemies", "Legendary Conditioning", "Enhanced Ki"}, minted
+    # the folded names are exactly PROTECTED_CANON (11 after the refresh added
+    # `Legendary Conditioning -> False Life (%)` upstream); the rest are rename-only
     assert set(V.PROTECTED_CANON) < set(minted)
 
 
 def test_374_pending_corrections_count_as_a_minting_source():
-    """Deliberate: every canon-defence correction is `pending_upstream` until U4
-    vendors the data that arms it, so requiring a retired marker would reject
-    exactly the names this section exists to protect."""
+    """Deliberate: a `pending_upstream` correction still mints its canonical.
+
+    U3 wrote this against the shipped shard, where all eleven canon-defence
+    corrections carried the marker by construction. U4 vendored the data that arms
+    them, so `assert_canon_defense` required every marker to be stripped and the
+    shard now has none — reading the property off the shipped file is no longer
+    possible without re-introducing the exact staleness that guard exists to catch.
+
+    The property itself is unchanged and still load-bearing: it is what makes the
+    section survivable ACROSS refreshes, since the next upstream flip re-introduces
+    pending markers for names already minted here. So it is asserted against
+    `_minting_sources` directly, with the marker injected — the same claim, sourced
+    from the function that implements it rather than from a transient file state.
+    """
     shard = V._load(V.AFFIX_NAME_CORRECTIONS_PATH)["corrections"]
-    pending = {c["canonical_name"] for c in shard if c.get("pending_upstream")}
-    assert pending, "fixture assumes U2's pending markers are still on the shard"
-    assert pending & set(V.local_affix_names()), (
-        "the minted names are backed by pending corrections — if pending stopped "
-        "counting, this section would be rejected wholesale")
+    assert not [c for c in shard if c.get("pending_upstream")], (
+        "post-refresh the shard must carry no pending markers — "
+        "assert_canon_defense fails when one outlives its data")
+
+    # take a real shipped correction whose canonical this section mints, and mark
+    # it pending: the canonical must still be a legitimate minting source.
+    minted = set(V.local_affix_names())
+    victim = next(c for c in shard if c.get("canonical_name") in minted)
+    marked = [dict(c, pending_upstream=True) if c is victim else c for c in shard]
+    renames, _folds = V._minting_sources({"corrections": marked})
+    assert victim["canonical_name"] in renames, (
+        "a pending correction stopped minting — every canon-defence entry is "
+        "pending by construction between an upstream flip and the vendoring that "
+        "arms it, so this section would be rejected wholesale in that window")
+    # and the marker is not what makes it legitimate: unmarked mints identically
+    unmarked, _ = V._minting_sources({"corrections": shard})
+    assert renames == unmarked
 
 
 def test_374_minted_canon_passes_the_gate_against_a_refreshed_baseline():
@@ -921,9 +1010,17 @@ def test_374_the_upstream_synonym_section_is_not_a_minting_source():
     assert "Speed" not in folds and "Speed" not in renames
 
 
-def test_374_the_local_names_union_is_a_no_op_before_the_refresh():
-    """Nothing-changed guard: every minted name is still in raw today, so this unit
-    moves no live behavior. It also states the sequencing plainly — the section is
-    declared AHEAD of the data, and U4 is what arms it."""
+def test_374_the_local_names_union_is_now_load_bearing_not_a_no_op():
+    """Was `…_is_a_no_op_before_the_refresh` — the nothing-changed guard U3 wrote to
+    prove it moved no live behavior, stated as `local_affix_names ⊆ raw`.
+
+    U4 vendored the data that arms it, so the sequencing the old name described has
+    completed and the subset relation inverts: upstream no longer emits ANY of these
+    spellings, so every minted name is absent from the raw-derived registry and the
+    union is the only thing putting it back. Asserted as a partition (both halves),
+    not a bare `not <=`, so a partially-armed refresh cannot pass either.
+    """
     raw = set(V.generate_registries()["affix_names"])
-    assert set(V.local_affix_names()) <= raw
+    minted = set(V.local_affix_names())
+    assert minted, "the section must not be empty"
+    assert not (minted & raw), sorted(minted & raw)

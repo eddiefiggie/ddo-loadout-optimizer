@@ -116,22 +116,38 @@ def test_built_dataset_carries_no_prefixed_stat_and_credits_the_base():
     with open(path) as fh:
         data = json.load(fh)
     folded = dict(legendary_fold.FOLD)
+    targets = set(folded.values())
     prefixed = []
-    based = {}
+    based = {}      # base stat at type Legendary WITH a fold receipt
+    native = {}     # base stat at type Legendary that upstream already emitted
     for it in data["items"]:
         for a in it.get("affixes") or []:
             if (a.get("name") or "").lower() in folded:
                 prefixed.append((it["variant_id"], a["name"]))
-            if a.get("type") == "Legendary" and a.get(PROVENANCE_KEY):
-                based.setdefault(a["name"], 0)
-                based[a["name"]] += 1
+            if a.get("type") == "Legendary" and a.get("name") in targets:
+                bucket = based if a.get(PROVENANCE_KEY) else native
+                bucket[a["name"]] = bucket.get(a["name"], 0) + 1
     assert prefixed == [], "no built affix keeps the prefixed stat name"
-    # All five base stats are represented at type Legendary with receipts
-    # (87 affixes at fold time: 14+22+3+36+12). Conditioning went 34 -> 36 in
-    # #376: the two Solar Gem of Enduring augments carry the same mechanic under
-    # the upstream name `False Life (%)`, and the name correction now renames
-    # them to `Legendary Conditioning` upstream of this fold, so they arrive
-    # here as folded Conditioning like the 34 worn carriers always did.
-    assert set(based) == {"Accuracy", "Armor-Piercing", "Deadly",
-                          "Conditioning", "Spell Penetration"}, based
-    assert sum(based.values()) == 87, based
+    # #374/U4 — re-ratified. The EMITTED data is byte-for-byte the same shape it
+    # was: all five base stats at type Legendary, 87 affixes, same per-stat counts
+    # (14 + 22 + 3 + 36 + 12). What moved is the ROUTE four of them take.
+    #
+    # The 2026-08-18 refresh had upstream adopt this exact fold: it now emits the
+    # BASE name at `type: "Legendary"` for Accuracy, Armor-Piercing, Deadly and
+    # Spell Penetration, so those four arrive already-folded and carry no receipt
+    # — there was nothing to rewrite. The fold becomes inert for them (it has no
+    # `assert_all_reached`, so that would otherwise be silent, which is exactly why
+    # it is pinned here). See the migration report §4.
+    #
+    # `Conditioning` is the one family still routed through the fold, and for the
+    # opposite reason: upstream FOLDED `Legendary Conditioning` away into
+    # `False Life (%)`, our canon-defence correction renames it back above this
+    # fold, and it folds to `Conditioning` — including the two Solar Gem of
+    # Enduring augments #376 added (34 worn carriers + 2 = 36).
+    assert set(based) == {"Conditioning"}, based
+    assert based["Conditioning"] == 36, based
+    assert native == {"Accuracy": 14, "Armor-Piercing": 22, "Deadly": 3,
+                      "Spell Penetration": 12}, native
+    # the population as a whole is unchanged, which is the claim that matters
+    assert set(based) | set(native) == targets
+    assert sum(based.values()) + sum(native.values()) == 87, (based, native)

@@ -1,0 +1,400 @@
+# gear-planner canon migration — vendoring + re-freeze report (#374, U4)
+
+**Date:** 2026-08-18 · **Plan:** `docs/plans/2026-08-18-001-fix-gear-planner-canon-migration-plan.md` (U4)
+**Status: BLOCKED.** The data is vendored and all four registries are re-frozen, but the build does not
+complete. The refresh arms two aliases U3 deliberately declined to mint, and then cascades into five
+further curated-shard adjudications that no unit in the plan owns. Every finding below is measured
+against the vendored snapshot, not predicted.
+
+---
+
+## 1. Vendoring
+
+**Upstream commit:** `767a7f747d0e7d211a702b8c456348e1c36ba699` (`illusionistpm/ddo-gear-planner`,
+`master`, authored + committed 2026-08-18T03:58:14Z, `[auto-update] Latest data`).
+Previous stamp: `ec3e595d0d879b29c13f3c34ffc155e71d0418c4` (2026-08-01) — 17 days stale.
+
+SHA resolved first, then every file fetched **pinned to that SHA**, never from `master`, so an upstream
+push mid-import cannot mix commits:
+
+```
+git ls-remote https://github.com/illusionistpm/ddo-gear-planner master
+# 767a7f747d0e7d211a702b8c456348e1c36ba699  refs/heads/master
+
+SHA=767a7f747d0e7d211a702b8c456348e1c36ba699
+BASE=https://raw.githubusercontent.com/illusionistpm/ddo-gear-planner/$SHA/site/src/assets
+curl -sSfL -o data/seed/compendium/raw/gearplanner_items.json          $BASE/items.json
+curl -sSfL -o data/seed/compendium/raw/gearplanner_crafting.json       $BASE/crafting.json
+curl -sSfL -o data/seed/compendium/raw/gearplanner_sets.json           $BASE/sets.json
+curl -sSfL -o data/seed/compendium/raw/gearplanner_affix_synonyms.json $BASE/affix-synonyms.json
+```
+
+`site/src/assets/nearly-finished.json` is deliberately **not** vendored — that is #371, out of scope.
+
+`assert_freshness` reads only the hand-written `upstream_commit` string in `SOURCE.json` and never
+inspects the raw files, so it cannot corroborate the vendoring. The pinned-SHA fetch is the mitigation;
+the guard is only a stamp check. Verified both directions:
+
+| check | result |
+|---|---|
+| `assert_freshness('767a7f7…')` | returns the commit — pass |
+| `assert_freshness('ec3e595…')` (old stamp) | `FreshnessError: raw mirror commit '767a7f7…' != expected 'ec3e595…' — re-import` |
+
+**Raw population deltas.** `SOURCE.json` updated first, before any other edit.
+
+| file | old | new |
+|---|---|---|
+| items (raw records) | 8188 | 8190 |
+| crafting pools | 83 | 83 |
+| set defs | 282 | 282 |
+| affix-synonym entries | 46 | 69 |
+
+The +2 net item movement is 14 added / 12 removed, all attributable to upstream's scraper:
+7 `Flame Blade (level N)` tiers added; the `… of Doublestrike N` shield/dart family renamed to
+`… of the Oozing Hunger` (7 pairs); `Allegiance (historic)`, `Legendary Sceptre`, `Potent 49 Sceptre`
+retired; and one doubled name (`Legendary Dart of the Oozing Hunger of the Oozing Hunger`) de-duplicated.
+The +364 KB of item data is therefore *affix detail on existing items*, not new items.
+
+---
+
+## 2. The upstream change nobody modelled: the type-field re-encoding
+
+This is the largest finding in the refresh and the root cause of four of the six gates that fire.
+**Upstream changed how it encodes "no bonus type".** It used to omit the `type` key; it now emits a
+literal string.
+
+| encoding | old snapshot | new snapshot |
+|---|---|---|
+| `type` key absent | 5709 | 90 |
+| `"type": "Untyped"` | 148 | 886 |
+| `"type": "Bool"` | 8554 | 13088 |
+| total affix dicts (items+crafting+sets) | 33865 | 39642 |
+
+Roughly 5,619 previously key-less affixes were re-encoded, overwhelmingly into `Bool` and `Untyped`.
+Four measured consequences:
+
+1. **`iter_affixes` now sees them.** The walk requires `name` + `type` + `value` together, so those
+   affixes were invisible to the referential-integrity gate and to `armed_canon_variants`. `Ki` goes
+   from 0 gate-visible occurrences to 20 (19 items + 1 crafting). This — not any per-name decision —
+   is why **#229's mask is gone**, exactly as the plan predicted but for a structural reason.
+2. **`build_dataset.rankable_affixes` tests `untyped = bt in (None, "")`** (`:458`). The literal
+   `"Untyped"` is neither, and it is not in `("boolean","Bool")` nor `NON_RANKABLE_TYPES`, so 886
+   affix occurrences now fall through as **rankable stats carrying a bonus type of `"Untyped"`** —
+   the population the repo deliberately excludes as procs/banes. 148 already leaked this way before
+   the refresh; the refresh multiplies it ~6×. This is solver-visible and needs a ruling.
+3. **`untyped_rankable.assert_adjudicated`** walks the same empty-type candidate predicate. 35 of its
+   43 entries (including the `Enhanced Ki` allow entry) now match nothing.
+4. **`utility_procs`** — the whole ~118-name weapon-proc adjudication is stale for the same reason.
+
+---
+
+## 3. Fold-diff adjudication (`check_affix_synonyms`)
+
+Upstream's table moves **46 entries / 94 folds → 69 entries / 145 folds**. `check_affix_synonyms`
+raises on the FIRST added/removed/re-pointed fold in sorted order, so the diff was computed offline
+and adjudicated in full before the registry was re-frozen once, as one act.
+
+Occurrence columns are `items/crafting/sets` counts in the **refreshed** raw.
+
+### 3a. Added folds — 58
+
+**Verdict: no added fold can merge two mechanics we treat as distinct. 57 of the 58 have ZERO
+occurrences of their fold KEY anywhere in the refreshed raw** — they are historical-spelling aliases
+upstream added defensively alongside its rename, not live merges. A fold whose key occurs nowhere
+cannot move a record.
+
+| group | count | example | key occ | adjudication |
+|---|---|---|---|---|
+| **Flipped canon** — our enchantment name on the *synonym* side | 11 | `Combustion` → `Fire Spell Power` | 0/0/0 | 10 are in `vocabulary.PROTECTED_CANON` and dropped by `_suppressed_upstream_folds` (KTD4). **`Legendary Conditioning` → `False Life (%)` is NOT** — see §6.3 |
+| **`Spellpower` → `Spell Power`** orthography | 11 | `Fire Spellpower` → `Fire Spell Power` | 0/0/0 | Same mechanic, one-word vs two-word spelling. Accept |
+| **Element-name synonyms** | 4 | `Ice Spell Power` → `Cold Spell Power`, `Magnetic` → `Electric Spell Power` | 0/0/0 | Same mechanic. Accept |
+| **`Spell Crit Damage` → `Intensity`** rename | 7 | `Force Spell Crit Damage` → `Kinetic Intensity` | 0/0/0 | Upstream renamed the crit-damage family. Accept |
+| **`X Intensity` consolidation** | 13 | `Combustion Intensity` → `Fire Intensity` | 0/0/0 | Accept |
+| **Lore renames** | 11 | `Corrosion Lore` → `Acid Lore`, `Nullification Lore` → `Negative Lore` | 0/0/0 | Accept; `Ice Lore`/`Void Lore` keys are protected and suppressed |
+| **Abbreviation** | 1 | `UMD` → `Use Magic Device` | 0/**3**/0 | The ONLY live added fold. Same skill; `Use Magic Device` occurs 46/6/0. Accept |
+
+**Merge-risk check, done explicitly (this is the #154 question).** Three added folds send two different
+keys to one canonical:
+
+- `Light Spell Crit Damage` **and** `Alignment Spell Crit Damage` → `Radiance Intensity`
+- `Force Spell Crit Damage` **and** `Physical Spell Crit Damage` → `Kinetic Intensity`
+- `Negative Spell Crit Damage`, `Poison Spell Crit Damage` **and** `Negative and Poison Spell Crit Damage` → `Void Intensity`
+
+These are not merges of distinct mechanics — they are the DDO spell-lore groupings the wiki itself
+uses, already recorded in `docs/wiki-evidence/spell-lore.md`: Radiance Lore covers Light **and**
+Alignment, Kinetic Lore covers Force **and** Physical, Void Lore covers Negative **and** Poison.
+All six keys occur 0/0/0 regardless, so nothing moves today either way.
+
+### 3b. Removed folds — 7
+
+| fold | key occ in new raw | canonical occ | adjudication |
+|---|---|---|---|
+| `Fortification bypass` → `Armor-Piercing` | 0/0/0 | 182/14/19 | Dead key. Upstream retired a fold that was already a no-op. No second bucket possible. Accept |
+| `all Ability Scores` → `Well Rounded` | 0/0/0 | 87/4/24 | Same. Accept |
+| `all spell DCs` → `Spell Focus Mastery` | 0/0/0 | 227/35/40 | Same. Accept |
+| `hit` → `Accuracy` | 0/0/0 | 233/52/21 | Same. Accept |
+| `Negative Lore` → `Void Lore` | 92/5/7 | 0/0/0 | **The flip.** Direction reversed; our canon leaves raw. Handled by the `Negative Lore` → `Void Lore` name correction + `local_affix_names` mint |
+| `Negative Spell Power` → `Nullification` | 153/22/8 | 0/0/0 | The flip. Same handling |
+| `Positive Spell Power` → `Devotion` | 168/22/14 | 0/0/0 | The flip. Same handling |
+
+### 3c. Re-pointed folds — 6
+
+**Every re-pointed key occurs 0/0/0 in the refreshed raw, so all six are inert and no mechanic moves.**
+
+| key | was | now | adjudication |
+|---|---|---|---|
+| `Force and Physical Spell Crit Damage` | `Force Spell Crit Damage` | `Kinetic Intensity` | Target renamed, same mechanic |
+| `Light and Alignment Spell Crit Damage` | `Light Spell Crit Damage` | `Radiance Intensity` | Target renamed, same mechanic |
+| `Negative Spell Crit Chance` | `Void Lore` | `Negative Lore` | The flip, on a non-protected key. Inert today; see §6.3 for the class |
+| `Positive Spellpower` | `Devotion` | `Positive Spell Power` | The flip, non-protected key. Inert today; same class |
+| `Sunder DCs` | `Sunder` | `Sundering` | Target renamed |
+| `Trip DCs` | `Trip` | `Vertigo` | Target renamed to the enchantment name (`Vertigo` grants Trip DCs). Consistent with KTD1's own principle |
+
+**Re-frozen** `affix_synonyms_registry.json` in one act: `affix_synonyms` 46 → 69 entries, `count`
+94 → 145 folds. The `local_affix_synonyms` section is untouched by the gate by design.
+
+---
+
+## 4. Registry removal attribution (`affix_names` 1441 → 1483: +102, −60)
+
+The gate resolves through the alias map *before* checking membership, so it catches alias
+misdirection but never a name **leaving** raw. Every one of the 60 removals is attributed below.
+
+| class | count | names | verdict |
+|---|---|---|---|
+| **Silent upstream rename of OUR canon — minted by U3** | 11 | `Combustion`, `Corrosion`, `Devotion`, `Glaciation`, `Impulse`, `Magnetism`, `Nullification`, `Resonance`, `Ice Lore`, `Void Lore`, `Damage to helpless enemies` | Covered — all 11 are in `local_affix_names`, all 11 pass `_split_type` with a non-empty stat, none collides with `BONUS_TYPES` |
+| **Silent upstream rename of OUR canon — NOT minted** | 1 | `Legendary Conditioning` | **BLOCKING** — see §6.1 |
+| **Fold-away: helpless-family consolidation** | 8 | `Additional Damage to Helpless Targets`, `Damage vs the Helpless`, `Damage vs. Helpless Opponents`, `Damage vs. Helpless opponents`, `Helplessness Damage`, `damage versus the Helpless`, `damage vs the Helpless`, `damage vs. helpless` | `local_affix_synonyms` **synonyms**, not canonicals. Adjudicated in §5 |
+| **Legendary-prefix family: upstream adopted our fold** | 4 | `Legendary Accuracy`, `Legendary Armor-Piercing`, `Legendary Deadly`, `Legendary Spell Penetration` | Upstream now emits the BASE name at `type: "Legendary"` (`Accuracy` 14, `Armor-Piercing` 22, `Deadly` 3, `Spell Penetration` 12 items) — i.e. upstream pre-applied exactly what `src/legendary_fold.py` produces. The fold becomes inert (it has no `assert_all_reached`, so this is silent) but the emitted data is unchanged. **No action needed; recorded so a later audit does not read the inert fold as a defect** |
+| **Upstream scrape-noise cleanup: bare numerals** | 11 | `+1`, `+3`, `+6`, `+7`, `+9`, `+10`, `+11`, `+13`, `+14`, `+16`, `-1 Enhancement Bonus` | Genuinely retired parse artifacts. `is_noise_affix_name` already filters this class at the emit site |
+| **Upstream scrape-noise cleanup: tooltip bleed** | 17 | the 10 `Hidden effect: …` names, the 3 `Spellcasting Implement +15, …` blobs, the 2 `Once every three seconds …` blobs, `Evocation Focus II, Kinetic Lore V…`, `Necromancy Focus II, Void Lore V…`, `See the item description page for details.`, `Silver , alchemical` | Genuinely retired. Upstream fixed its parser |
+| **Capitalization normalization** | 2 | `Greater Dragonmark Charge`, `Greater Dragonmark charges` | Upstream settled on `Greater Dragonmark Charges` (present in the new registry). Both old spellings are alias **variants** pointing at it — the alias still resolves. Accept |
+| **Genuinely retired / renamed, no repo dependency** | 6 | `Feat: Proficiency: Bastard Sword`, `Feat: Wind through the Trees`, `Ground Lore`, `Litany of the Dead - Ability Bonus`, plus 2 folded above | Referenced only in `vocab_registries.json` itself and the generated artifact. Accept |
+
+**Blocking test, stated precisely.** Twelve removals are simultaneously an alias canonical *and* a
+name-correction canonical. Eleven are covered by U3's `local_affix_names` mint. The twelfth,
+`Legendary Conditioning`, is not — and that is the blocking case.
+
+**Other registry channels:**
+
+| registry | before | after | movement |
+|---|---|---|---|
+| `bonus_types` | 43 | 42 | `Maximum dexterity` retired upstream |
+| `crafting_slots` (pool keys) | 83 | 83 | unchanged |
+| `augments` (affix + option names in colour pools) | 1224 | 1223 | +13 / −14; the substantive pairs are `Shock` → `Electrifying`, `Melee Alacrity` → `Swiftness`, `Greater Dragonmark charges` → `Greater Dragonmark Charges`, plus the 8 flipped spell-power names and 2 retired blobs |
+| `crafting_slot_registry` (pool keys ∪ item markers) | 95 | 95 | +12 / −12 — the `Cannith:` → `Essence Crafting:` relabel. **Re-frozen here; U5 owns the allowlist re-curation, the pinned assertions and the KTD1 principle check on the label itself** |
+| `augment_registry` (option names only) | 1000 | 1000 | byte-identical; file unchanged |
+
+---
+
+## 5. Gates that fired, and how each was adjudicated
+
+### 5.1 `check_local_synonym_staleness` — FIRED, adjudicated, resolved
+
+Eight of the eleven #305 helpless spellings now match nothing: upstream consolidated the family to
+one spelling. Only `Damage vs. the Helpless` (structured affix names) and `damage vs. the helpless`
+(Dino free text) still occur.
+
+**Adjudication: retain and allowlist, not retire** — following the precedent of the existing
+`Damage vs. Helpless` entry. Every spelling is a recorded wiki wording tabulated in
+`docs/wiki-evidence/helpless-damage.md` with the set or item that carries it; upstream re-scrapes
+ddowiki near-daily, so a re-harvest or an upstream revert brings the spelling back verbatim, at which
+point the fold must already exist or the one mechanic re-splits into two buckets silently.
+`check_local_synonym_staleness` is two-directional, so a returning spelling fails the build until its
+allowlist entry is dropped in the same commit — the exemption cannot rot.
+
+`unmatched_synonyms` goes 1 → 9, with the reasoning recorded in `unmatched_evidence`.
+
+### 5.2 `check_set_records_spelling` — did NOT fire
+
+As U4 predicted. U2's `_suppressed_upstream_folds` is in the tree, so none of the ten
+`PROTECTED_CANON` names is a fold key in `registry_synonym_folds()` (verified directly: all ten
+return absent). No wave-through was needed.
+
+### 5.3 `assert_canon_defense` (KTD3) — FIRED. **This is the blocker.** See §6.1
+
+### 5.4 `ml36_augments.check` — FIRED, needs a wiki ruling. See §6.2
+
+### 5.5 `no_drop_source` shard guard — FIRED
+
+Upstream's `quests` field now records a source for six items previously verified as having none:
+`Dark Star of the Deep`, `Shards of the Deep`, `Legendary Dark Star of the Deep`,
+`Legendary Shards of the Deep` (all → *A Blood Pact*), and `Drow Wizard's Greaves`,
+`Legendary Drow Wizard's Greaves` (→ *Stealing from Sorcere*). The guard's remedy is retirement, and
+it explicitly calls un-flagging "a manual review event, never automatic" — so these need a wiki
+re-verification pass, not a deletion. **Not absorbed.**
+
+### 5.6 `value_corrections` + `affix_type_corrections` staleness — FIRED, fully diagnosed
+
+All 17 item-value corrections and the one affix-type correction are now **upstream-native no-ops**:
+
+| outcome | count | detail |
+|---|---|---|
+| upstream now reads exactly our corrected `to` value | 14 | e.g. `Legendary Argonnessen Eye Band / Spell Focus Mastery / Equipment` 5→8, upstream now 8 |
+| target "absent" only because of the vocabulary flip | 2 | `Fraz-Urb'luu's Reign / Impulse / Quality` 44→43 — upstream carries `Force Spell Power / Quality = 43`; `Zuggtmoy's Reign / Corrosion / Quality` 44→43 — upstream carries `Acid Spell Power / Quality = 43`. Both already at our corrected value under upstream's spelling |
+| value adopted **and** re-typed upstream | 1 | `Juiblex's Reign / Acid Absorption` — our corrections said value 16→15 and type `Enhancement`→`Insight`; upstream now carries `Insight / 15` natively. Both the value and the type correction retire together |
+
+**Upstream adopted the 2026-08-13 batch's wiki-verified numbers.** The clean adjudication is to
+retire the whole `item_value_corrections.json` payload and the `Juiblex's Reign` type entry — a
+verify-first win, and the #207 staleness rule working exactly as designed. **Not absorbed** (it
+empties a curated shard; the vacuity behaviour of both guards needs checking in the same change).
+
+**Ordering defect this exposed, worth its own issue.** `value_corrections_mod.apply` runs at
+`build_dataset.py:625`, **before** the item-channel `name_corrections_mod.apply` at `:633`. Any
+curated shard keyed on one of our protected canon names and applied before line 633 cannot find its
+target once upstream flips the spelling. It bit two entries here. KTD2 placed the rename at each
+catalog's single load point; for the *item* channel that load point is downstream of two correction
+passes.
+
+### 5.7 `untyped_rankable.assert_adjudicated` and `utility_procs` — FIRED
+
+Both are pinned to the old empty-type encoding (§2). 35 of 43 `untyped_rankable` entries and
+essentially the whole ~118-name `utility_procs` adjudication no longer match any candidate. Both need
+a policy ruling on how `"Untyped"` and `Bool` are read now, not entry-by-entry curation.
+**Not absorbed.**
+
+### 5.8 `crafting_coverage` allowlist (U1) — not reached
+
+The build stops before it. The 12 `Cannith:` allowlist entries will fire as stale exceptions once the
+earlier gates clear. **That is U5's, per the unit boundary.**
+
+---
+
+## 6. Blocking findings
+
+### 6.1 U3 minted 11 names; the refresh arms 13 — `Legendary Conditioning` and `Enhanced Ki` are undefended
+
+`armed_canon_variants()` against the vendored snapshot returns **13**, matching the plan's Problem
+Frame exactly. `assert_canon_defense` fails with both directions of its own message:
+
+```
+canon defence does not match the raw snapshot (KTD3):
+  'False Life (%)' is ARMED upstream (canonical 'Legendary Conditioning' has left the raw registry)
+      but no live canon_defense correction renames it — the canon would import as upstream's
+      spelling and score zero
+  'Ki' is ARMED upstream (canonical 'Enhanced Ki' has left the raw registry) but no live
+      canon_defense correction renames it — …
+```
+
+U3's commit body declined both on measurements that were true of the **pre-refresh** snapshot and are
+false of this one:
+
+| U3's stated reason | measured against the refreshed raw |
+|---|---|
+| "`Legendary Conditioning` is native upstream (minting it is a permanent no-op)" | gate-visible occurrences **34 → 0**. Upstream folded the whole family into `False Life (%)`, which goes **2 → 40** (34 items / 2 crafting / 4 sets, all `type: "Legendary"`). It is not native any more |
+| "`Enhanced Ki` is untyped and invisible to the gate's walk — #229's territory" | `Ki` gate-visible occurrences **0 → 20**. The type-field re-encoding (§2) made every one of them visible. #229's mask is gone |
+
+The plan itself says both (lines 75–76). The pipeline outcome after minting is stable and verified
+safe: `False Life (%)` → `Legendary Conditioning` → `legendary_fold` → `Conditioning` reproduces the
+prior canonical for all 40 occurrences, uniformly, and `_split_type('Legendary Conditioning')` yields
+`('Legendary', 'Conditioning')` — a non-empty stat, no `BONUS_TYPES` hazard.
+
+**Minimal fix (U3's, not absorbed here):** set `canon_defense: true` on the `Ki` and `False Life (%)`
+corrections; add `Enhanced Ki` and `Legendary Conditioning` to `local_affix_names` with evidence; and
+add `Legendary Conditioning` to `PROTECTED_CANON` (§6.3).
+
+### 6.2 `ml36_augments` anchors broke, and the re-anchor is a KTD1 question
+
+```
+ML36 augment shard guard failed:
+  Ruby of Acid (10d6):  [('Acidic','Untyped')]  vs sibling [('Acidic','Bool')]
+  Ruby of Flame (10d6): [('Flaming','Untyped')] vs sibling [('Flaming','Bool')]
+  Ruby of Frost (10d6): [('Frost','Untyped')]   vs sibling [('Frost','Bool')]
+  Ruby of Shock (10d6): [('Shock','Untyped')]   vs sibling [('Electrifying','Bool')]
+```
+
+Three are the type re-encoding (§2) and re-anchor mechanically. The fourth is an upstream **rename**:
+`Shock` → `Electrifying` (upstream also renamed `Melee Alacrity` → `Swiftness` in the same pools).
+Adopting a rename wholesale is precisely what KTD1 exists to interrogate — confirm against the DDO
+wiki whether the in-game enchantment on a *Ruby of Shock* reads Shock or Electrifying before taking
+upstream's word. **Not absorbed:** no value may be inferred here.
+
+### 6.3 `Legendary Conditioning → False Life (%)` is an unsuppressed flipped fold
+
+`src/vocabulary.py:48–52` states: *"The other three defended names (`Damage to helpless enemies`,
+`Legendary Conditioning`, `Enhanced Ki`) are rename-only: upstream carries no fold keyed on them, so
+they need no suppression."* **That is now false.** The refreshed table adds
+`Legendary Conditioning → False Life (%)`, and `registry_synonym_folds()` carries it (verified):
+our canon on the synonym side, exactly the KTD4 hazard, in the one channel — Dino — that applies the
+map single-pass.
+
+Latent today (no Dino stat is spelled `Legendary Conditioning`), which is why
+`check_set_records_spelling` correctly did not fire. It becomes live the moment a Dino set does.
+`PROTECTED_CANON` must gain `Legendary Conditioning`, and the comment above it must be corrected.
+
+The same structural gap exists for folds whose **value** is a generic name we replace
+(`Negative Spell Crit Chance` → `Negative Lore`, `Positive Spellpower` → `Positive Spell Power`, and
+the whole `X Spellpower` group): `_suppressed_upstream_folds` filters on the fold KEY only. All of
+those keys occur 0/0/0 today, so this is a latent widening, not a live defect — recorded rather than
+fixed.
+
+---
+
+## 7. Verification evidence
+
+Passing, run against the vendored snapshot and the re-frozen registries:
+
+| check | result |
+|---|---|
+| `assert_freshness` new commit / old stamp | pass / correctly `FreshnessError` |
+| `cross_add.validate_map` on the emitted `_affix_registry` (1494 names) | no `SystemExit` |
+| `cross_add` targets **by count** | 20 = all 10 `spell_focus.SPELLPOWERS` + all 10 `cross_add.LORE_ROSTER`; **zero missing on either half** (the lore half omits silently, so count is the only sound assertion) |
+| `spell_focus._UNIVERSAL` targets present in the registry | 53/53 |
+| no name in both `_UNIVERSAL` key space and its target space | confirmed, empty intersection |
+| all 11 minted canon names vs `affix_parser.BONUS_TYPES` | no collision; `_split_type` leaves a non-empty stat for every one |
+| `registry_synonym_folds()` suppression | all 10 `PROTECTED_CANON` names absent as fold keys |
+
+**Per-channel generic-name survivors — measured at each catalog's rename seam** (the built artifact
+does not exist, because the build is blocked; this is the closest sound substitute and is reported
+per pool, never aggregated). Counting all 13 upstream generic names:
+
+| channel | before rename | after rename |
+|---|---|---|
+| items — raw roster | 1391 | **0** |
+| crafting — `crafting_catalog.load_catalog()` (feeds augment / seal / dino / viktranium / nearly-complete / green-steel / thunder-forged) | 251 | **0** |
+| sets — `set_catalog.load_raw()` | 140 | **0** |
+
+Not verifiable while the build is blocked, and therefore **not claimed**: the built-artifact grep per
+pool, both orphan guards (`set_bonus_orphans`, `set_def_orphans`), and the pinned-population
+re-ratifications (`test_overhaul_invariants` `len(items) == 9108`; the 83 crafting pool keys in
+`test_vocabulary` / `test_crafting_catalog`). Note the raw pool-key count is **unchanged at 83**, so
+that pinned number needs no movement; the item count cannot be attributed until a build completes.
+
+**Golden fixtures were not regenerated** and `solver_golden.test.js` was not re-ratified — U6 owns
+that. The build trio was not touched — U7 owns that.
+
+---
+
+## 8. Suite state
+
+`python3 tests/run_tests.py` → **66 failures across 19 modules**, exit 1. The great majority are
+downstream of the blocked build (they shell out to `build_dataset.py` or read the built dataset):
+`test_build_metadata` 12, `test_vocabulary` 7, `test_seal` 5, `test_provenance` 5,
+`test_enriched_set_bonuses` 5, `test_cross_add` 5, `test_name_corrections` 4, then 1–3 each across
+`test_planner_import`, `test_no_drop_source`, `test_gap_corrections`, `test_dino`,
+`test_untyped_rankable`, `test_nearly_complete`, `test_ml36_augments`, `test_verify`,
+`test_utility_procs`, `test_set_catalog`, `test_helpless_fold`, `test_compendium`.
+
+Three failures are **deliberate pre-refresh pins that this unit is supposed to invert**, and they
+belong to whichever commit finally lands the refresh:
+
+- `test_vocabulary.test_freshness_reads_and_detects_drift` — pinned to `ec3e595…`
+- `test_vocabulary.test_374_armed_canon_variants_is_empty_before_the_refresh_is_vendored`
+- `test_vocabulary.test_374_the_local_names_union_is_a_no_op_before_the_refresh`
+
+One is explicitly **U5's** and confirms the unit boundary held:
+`test_vocabulary.test_crafting_slot_registry_generates_and_matches_frozen`, which asserts
+`"Cannith: Rune Arm - Extra"` is in the generated registry — the label upstream renamed.
+
+The **JS suite was deliberately not run.** `web/data/items.json` is gitignored and generated, and the
+blocked build never wrote a new one, so every JS test would be reading the pre-refresh dataset — a
+green result there would mean nothing. The golden was not regenerated (U6 owns it).
+
+---
+
+## 9. KTD1 revisit-trigger check (required each refresh)
+
+None of the three triggers fired. No new user report of a player searching upstream's generic name;
+the wiki's `Spell_power` / `Spell_Lore` pages are unchanged as the basis for
+`docs/wiki-evidence/spellpower-universal.md` and `spell-lore.md`; and the armed set is **13**, well
+under the ~20-name threshold at which the override layer's cost was to be re-weighed. KTD1 holds.

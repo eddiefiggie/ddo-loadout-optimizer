@@ -147,3 +147,116 @@ def test_the_moment_corrections_are_the_ones_we_verified():
     heroic = loaded["Moment to Moment"][0]
     assert (heroic["from"], heroic["to"], heroic["value"]) == (
         "Untyped", "Enhancement", "1")
+
+
+# --- #374/U4: retirement, and what a retirement must prove -------------------
+
+def _retired(shard_path=SHARD):
+    with open(shard_path, encoding="utf-8") as fh:
+        return json.load(fh).get("_retired_2026_08_18") or {}
+
+
+def _raw_affixes(record=None):
+    """The ``{name, type, value}`` dicts in the refreshed raw, across all three
+    channels — the corpus a retirement's premise has to be true of.
+
+    ``record`` scopes the walk to the named item/augment. Scoping matters: a
+    global walk finds SOME record carrying the corrected pair and would wave
+    through a retirement whose own target still carries the bug.
+    """
+    from src import vocabulary
+    seen = []
+    for path in (vocabulary.ITEMS_PATH, vocabulary.CRAFTING_PATH, vocabulary.SETS_PATH):
+        raw = vocabulary._load(path)
+        if record is None:
+            seen += list(vocabulary.iter_affixes(raw))
+        else:
+            seen += [a for r in _records_named(raw, record)
+                     for a in vocabulary.iter_affixes(r)]
+    return seen
+
+
+def _records_named(obj, name):
+    """Every dict in a raw structure whose ``name`` is ``name`` and which owns an
+    ``affixes`` block — i.e. the record a correction is keyed on."""
+    out = []
+    if isinstance(obj, dict):
+        if obj.get("name") == name and "affixes" in obj:
+            out.append(obj)
+        else:
+            for v in obj.values():
+                out += _records_named(v, name)
+    elif isinstance(obj, list):
+        for v in obj:
+            out += _records_named(v, name)
+    return out
+
+
+def test_374_the_retirement_block_records_evidence_for_every_retired_entry():
+    """A correction may only leave this shard with its reason on the record.
+
+    Retirement is the one exit that is not a guard firing, so nothing in the
+    pipeline checks it — it has to be checked here or a live correction can be
+    deleted with a sentence that describes a different entry.
+    """
+    block = _retired()
+    assert block, "the #374 retirement block must stay as the record"
+    assert (block.get("why") or "").strip(), "a retirement with no stated reason"
+    assert "767a7f747d0e7d211a702b8c456348e1c36ba699" in (block.get("verified") or ""), \
+        "a retirement must name the upstream commit it was verified against"
+    entries = block.get("entries") or {}
+    assert entries, "an empty retirement block records nothing"
+    for record, corrections in entries.items():
+        for e in corrections:
+            for field in ("name", "from", "to", "value", "tooltip", "wiki_url",
+                          "verified"):
+                assert e.get(field), f"{record}: retired entry is missing {field!r}"
+
+
+def test_374_a_retired_correction_is_one_upstream_actually_adopted():
+    """The invariant a retirement asserts, checked against the data rather than
+    taken on the note's word: upstream must now carry the corrected ``to`` type at
+    the recorded value, so the correction really is a no-op.
+
+    This is the guard the migration needed and did not have. The same edit that
+    retired the (genuinely adopted) `Juiblex's Reign` entry also retired both
+    `Moment to Moment` entries, which upstream has NOT adopted — it still emits
+    ('Action Boost Charges', 'Untyped') on both stones. They are restored to the
+    live shard; this test is what stops the same silent deletion happening again.
+    """
+    checked = 0
+    for record, corrections in (_retired().get("entries") or {}).items():
+        raw = _raw_affixes(record)
+        assert raw, f"{record}: no such record in the refreshed raw to verify against"
+        for e in corrections:
+            adopted = [a for a in raw
+                       if a.get("name") == e["name"]
+                       and str(a.get("type")) == str(e["to"])
+                       and str(a.get("value")) == str(e["value"])]
+            assert adopted, (
+                f"{record}: retired on the premise that upstream adopted "
+                f"({e['name']!r}, {e['to']!r}, {e['value']!r}) — but no affix in the "
+                f"refreshed raw carries it. A correction upstream has not adopted is "
+                f"still live and must not be retired")
+            still_wrong = [a for a in raw
+                           if a.get("name") == e["name"]
+                           and str(a.get("type")) == str(e["from"])
+                           and str(a.get("value")) == str(e["value"])]
+            assert not still_wrong, (
+                f"{record}: upstream still emits the uncorrected "
+                f"({e['name']!r}, {e['from']!r}, {e['value']!r}) — the retype is not "
+                f"a no-op and the entry must stay live")
+            checked += 1
+    assert checked, "no retired entry was compared — the check must not pass vacuously"
+
+
+def test_374_the_moment_corrections_are_still_live_because_upstream_kept_the_bug():
+    """Both #259 entries are load-bearing after the refresh, stated as the fact
+    that makes them so: the augment pool still types the charges `Untyped`."""
+    loaded = type_corrections.load(SHARD)
+    assert set(loaded) == {"Moment to Moment", "Legendary Moment to Legendary Moment"}
+    raw = _raw_affixes()
+    for value in ("1", "3"):
+        assert [a for a in raw if a.get("name") == "Action Boost Charges"
+                and str(a.get("type")) == "Untyped" and str(a.get("value")) == value], \
+            f"expected an Untyped Action Boost Charges +{value} still in raw"

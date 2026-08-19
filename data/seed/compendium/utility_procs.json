@@ -1,284 +1,11 @@
 {
  "_README": "Adjudication of UNTYPED weapon/off-hand proc names for the Utility tier (#91). The candidate rule in src/utility_procs.py is 'untyped + numeric + well-formed + every carrying slot is Weapon/Off Hand' - the deliberate complement of src/untyped_rankable.py's worn-slot rule, so the two gates' populations are disjoint. A candidate in NEITHER list fails the build, so a new untyped weapon proc is a reviewed event rather than a silent zero-count. SINCE #343: 'allow' names enter metadata.utility_untyped_admitted ONLY - the presence-path picker entry that makes them individually rankable. They are NO LONGER unioned into metadata.utility_counting_set, so admitting a name here makes it available to rank, not counted by the Utility tier. Two reasons: a proc is a damage-type decision belonging to the weapon choice rather than a distinct win a player feels, and the 24 admitted procs were 86% of the counting set's measured solve cost - keeping them counted put the tier over its 2.0x perf budget once the worn defensive toggles were added. They NEVER enter metadata.rankable_affixes - a declared-credit control on Holy/Vampirism is the documented defect web/dataset.js warns against.",
  "_discipline": "exclude-until-verified. Add to 'allow' ONLY with wiki evidence (wiki_url + evidence + verified date) that the name is a player-felt utility effect worth counting. 'unreviewed' is an honest reason and marks the filed backlog; it is not a judgement that the name is noise. An empty 'allow' list counts zero untyped procs - the Bool presence half of the counting set is unaffected.",
- "allow": [
-  {
-   "name": "Aberration Bane",
-   "items": 1,
-   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
-   "verified": "2026-08-15",
-   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Anarchic",
-   "items": 106,
-   "wiki_url": "https://ddowiki.com/page/Alignment_damage_(weapon)",
-   "verified": "2026-08-15",
-   "evidence": "Holy weapons will deal 2d6 Good damage to Evil enemies; scaling variants (e.g. Holy 3) deal Xd6 on hit and also affect Neutral enemies.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Animal Bane",
-   "items": 18,
-   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
-   "verified": "2026-08-15",
-   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Axiomatic",
-   "items": 18,
-   "wiki_url": "https://ddowiki.com/page/Alignment_damage_(weapon)",
-   "verified": "2026-08-15",
-   "evidence": "Holy weapons will deal 2d6 Good damage to Evil enemies; scaling variants (e.g. Holy 3) deal Xd6 on hit and also affect Neutral enemies.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Chaotic Outsider Bane",
-   "items": 2,
-   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
-   "verified": "2026-08-15",
-   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Chilling",
-   "items": 191,
-   "wiki_url": "https://ddowiki.com/page/Chilling",
-   "verified": "2026-08-15",
-   "evidence": "This effect causes the edges of this weapon to become frozen to the touch, dealing (x)d6 ice damage on each hit.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Construct Bane",
-   "items": 105,
-   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
-   "verified": "2026-08-15",
-   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Dragon Bane",
-   "items": 6,
-   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
-   "verified": "2026-08-15",
-   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Elf Bane",
-   "items": 2,
-   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
-   "verified": "2026-08-15",
-   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Evil Outsider Bane",
-   "items": 133,
-   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
-   "verified": "2026-08-15",
-   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Giant Bane",
-   "items": 7,
-   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
-   "verified": "2026-08-15",
-   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Holy",
-   "items": 197,
-   "wiki_url": "https://ddowiki.com/page/Alignment_damage_(weapon)",
-   "verified": "2026-08-15",
-   "evidence": "Holy weapons will deal 2d6 Good damage to Evil enemies; scaling variants (e.g. Holy 3) deal Xd6 on hit and also affect Neutral enemies.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Human Bane",
-   "items": 92,
-   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
-   "verified": "2026-08-15",
-   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Humanoid Bane",
-   "items": 28,
-   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
-   "verified": "2026-08-15",
-   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Lawful Outsider Bane",
-   "items": 2,
-   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
-   "verified": "2026-08-15",
-   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Maiming",
-   "items": 157,
-   "wiki_url": "https://ddowiki.com/page/Maiming",
-   "verified": "2026-08-15",
-   "evidence": "Whenever you score a critical hit with this weapon it deals extra untyped damage depending on its critical multiplier: x2 1-6, x3 2-12, x4 3-18.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Monstrous Humanoid Bane",
-   "items": 90,
-   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
-   "verified": "2026-08-15",
-   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Ooze Bane",
-   "items": 4,
-   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
-   "verified": "2026-08-15",
-   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Plant Bane",
-   "items": 2,
-   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
-   "verified": "2026-08-15",
-   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Reptilian Bane",
-   "items": 5,
-   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
-   "verified": "2026-08-15",
-   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Undead Bane",
-   "items": 107,
-   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
-   "verified": "2026-08-15",
-   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Unholy",
-   "items": 113,
-   "wiki_url": "https://ddowiki.com/page/Alignment_damage_(weapon)",
-   "verified": "2026-08-15",
-   "evidence": "Holy weapons will deal 2d6 Good damage to Evil enemies; scaling variants (e.g. Holy 3) deal Xd6 on hit and also affect Neutral enemies.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Vampirism",
-   "items": 161,
-   "wiki_url": "https://ddowiki.com/page/Vampirism",
-   "verified": "2026-08-15",
-   "evidence": "This weapon drains a tiny portion of the target's life force whenever it does damage.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  },
-  {
-   "name": "Vermin Bane",
-   "items": 8,
-   "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
-   "verified": "2026-08-15",
-   "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
-   "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)"
-  }
- ],
+ "allow": [],
  "quarantined": [
-  {
-   "name": "Acid",
-   "items": 7,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Acid Blast",
-   "items": 48,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Acidic",
-   "items": 100,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Anarchic Blast",
-   "items": 83,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Anarchic Burst",
-   "items": 4,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Antimagic Spike",
-   "items": 2,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Axiomatic Blast",
-   "items": 5,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Axiomatic Burst",
-   "items": 5,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Banishing",
-   "items": 80,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Bashing",
-   "items": 14,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Bewildering",
-   "items": 3,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Blazing",
-   "items": 93,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Bleeding",
-   "items": 75,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Bloodletter",
-   "items": 20,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Bludgeoning",
-   "items": 70,
-   "reason": "unreviewed"
-  },
   {
    "name": "Corroding",
    "items": 4,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Coruscating",
-   "items": 124,
    "reason": "unreviewed"
   },
   {
@@ -292,43 +19,8 @@
    "reason": "unreviewed"
   },
   {
-   "name": "Critical Befouling",
-   "items": 7,
-   "reason": "unreviewed"
-  },
-  {
    "name": "Critical Bewildering",
    "items": 1,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Critical Weakening",
-   "items": 3,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Critical Wounding",
-   "items": 3,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Crushing",
-   "items": 56,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Destructive Acid",
-   "items": 91,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Disintegrate",
-   "items": 10,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Echoes of Angdrelve",
-   "items": 8,
    "reason": "unreviewed"
   },
   {
@@ -337,118 +29,8 @@
    "reason": "unreviewed"
   },
   {
-   "name": "Electrifying",
-   "items": 110,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Entropic",
-   "items": 103,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Evil Blast",
-   "items": 85,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Feeding",
-   "items": 14,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Feybane",
-   "items": 80,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Fiery",
-   "items": 113,
-   "reason": "unreviewed"
-  },
-  {
    "name": "Finesse",
    "items": 2,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Flaming",
-   "items": 21,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Flaming Blast",
-   "items": 27,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Force Blast",
-   "items": 114,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Fracturing",
-   "items": 9,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Freezing",
-   "items": 21,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Freezing Ice",
-   "items": 2,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Frost",
-   "items": 12,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Gashing",
-   "items": 54,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Ghostbane",
-   "items": 129,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Good Blast",
-   "items": 10,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Heartseeker",
-   "items": 19,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Hidden Effect: Increases all threat generated by",
-   "items": 1,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Holy Blast",
-   "items": 3,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Holy Burst",
-   "items": 15,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Icy Blast",
-   "items": 13,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Impactful",
-   "items": 154,
    "reason": "unreviewed"
   },
   {
@@ -462,73 +44,8 @@
    "reason": "unreviewed"
   },
   {
-   "name": "Jolting",
-   "items": 19,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Magma Surge",
-   "items": 2,
-   "reason": "unreviewed"
-  },
-  {
    "name": "Maximum Charge Tier",
    "items": 165,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Negative Blast",
-   "items": 2,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Negativity",
-   "items": 6,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Nightshade Venom",
-   "items": 6,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Paralyzing",
-   "items": 4,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Percussive Maintenance",
-   "items": 2,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Piercing",
-   "items": 52,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Poison",
-   "items": 6,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Poison Blast",
-   "items": 10,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Poisonous",
-   "items": 27,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Reverberating",
-   "items": 30,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Ribcracker",
-   "items": 9,
    "reason": "unreviewed"
   },
   {
@@ -602,119 +119,819 @@
    "reason": "unreviewed"
   },
   {
-   "name": "Screeching",
-   "items": 13,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Shock",
-   "items": 12,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Shocking Blast",
-   "items": 23,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Shrieking",
-   "items": 9,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Sirocco",
-   "items": 2,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Slashing",
-   "items": 44,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Smashing",
-   "items": 38,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Solar",
-   "items": 13,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Sonic Blast",
-   "items": 13,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Stabbing",
-   "items": 30,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Staggering",
-   "items": 2,
-   "reason": "unreviewed"
-  },
-  {
    "name": "Sunburst",
    "items": 2,
    "reason": "unreviewed"
   },
   {
-   "name": "Sundering",
-   "items": 12,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Telekinetic",
-   "items": 4,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "The Dragging of the Depths",
-   "items": 6,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Thorny Crown of Madness",
-   "items": 4,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Tidal",
-   "items": 7,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Toxic",
-   "items": 11,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Unholy Burst",
+   "name": "Increases all threat generated by",
    "items": 1,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Unnatural Bane",
-   "items": 44,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Weakening",
-   "items": 82,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Wind Frenzy",
-   "items": 2,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Wounding",
-   "items": 36,
-   "reason": "unreviewed"
+   "reason": "unreviewed — and the name is a tooltip SENTENCE FRAGMENT, not an enchantment name (`Rahl's Might` carries it as {name: 'Increases all threat generated by', value: '15'} with no type key). Threat generation is a real mechanic, so this may be a genuine utility effect hiding behind an upstream parse gap, but admitting a fragment into the counting set would be wrong either way. Surfaced by the #374 refresh; quarantined pending a wiki read of https://ddowiki.com/page/Item:Rahl's_Might"
   }
- ]
+ ],
+ "_retired_2026_08_18": {
+  "why": "#374/U4 — the 2026-08-18 refresh re-encoded the type field and gave these procs a real `Bool` type (two exceptions noted per-entry). They are no longer untyped, so this shard's adjudication cannot apply to them. They continue to count via presence_counting_names, whose PRESENCE_TYPES already includes `Bool`. Retired, not deleted.",
+  "entries": {
+   "Aberration Bane": {
+    "name": "Aberration Bane",
+    "items": 1,
+    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+    "verified": "2026-08-15",
+    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 1}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Anarchic": {
+    "name": "Anarchic",
+    "items": 106,
+    "wiki_url": "https://ddowiki.com/page/Alignment_damage_(weapon)",
+    "verified": "2026-08-15",
+    "evidence": "Holy weapons will deal 2d6 Good damage to Evil enemies; scaling variants (e.g. Holy 3) deal Xd6 on hit and also affect Neutral enemies.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 119}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Animal Bane": {
+    "name": "Animal Bane",
+    "items": 18,
+    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+    "verified": "2026-08-15",
+    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 22}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Axiomatic": {
+    "name": "Axiomatic",
+    "items": 18,
+    "wiki_url": "https://ddowiki.com/page/Alignment_damage_(weapon)",
+    "verified": "2026-08-15",
+    "evidence": "Holy weapons will deal 2d6 Good damage to Evil enemies; scaling variants (e.g. Holy 3) deal Xd6 on hit and also affect Neutral enemies.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 23}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Chaotic Outsider Bane": {
+    "name": "Chaotic Outsider Bane",
+    "items": 2,
+    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+    "verified": "2026-08-15",
+    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 3}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Chilling": {
+    "name": "Chilling",
+    "items": 191,
+    "wiki_url": "https://ddowiki.com/page/Chilling",
+    "verified": "2026-08-15",
+    "evidence": "This effect causes the edges of this weapon to become frozen to the touch, dealing (x)d6 ice damage on each hit.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 196}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Construct Bane": {
+    "name": "Construct Bane",
+    "items": 105,
+    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+    "verified": "2026-08-15",
+    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 121}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Dragon Bane": {
+    "name": "Dragon Bane",
+    "items": 6,
+    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+    "verified": "2026-08-15",
+    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 8}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Elf Bane": {
+    "name": "Elf Bane",
+    "items": 2,
+    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+    "verified": "2026-08-15",
+    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 7}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Evil Outsider Bane": {
+    "name": "Evil Outsider Bane",
+    "items": 133,
+    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+    "verified": "2026-08-15",
+    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 143}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Giant Bane": {
+    "name": "Giant Bane",
+    "items": 7,
+    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+    "verified": "2026-08-15",
+    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 7}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Holy": {
+    "name": "Holy",
+    "items": 197,
+    "wiki_url": "https://ddowiki.com/page/Alignment_damage_(weapon)",
+    "verified": "2026-08-15",
+    "evidence": "Holy weapons will deal 2d6 Good damage to Evil enemies; scaling variants (e.g. Holy 3) deal Xd6 on hit and also affect Neutral enemies.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 213}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Human Bane": {
+    "name": "Human Bane",
+    "items": 92,
+    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+    "verified": "2026-08-15",
+    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 95}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Humanoid Bane": {
+    "name": "Humanoid Bane",
+    "items": 28,
+    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+    "verified": "2026-08-15",
+    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 28}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Lawful Outsider Bane": {
+    "name": "Lawful Outsider Bane",
+    "items": 2,
+    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+    "verified": "2026-08-15",
+    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 3}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Maiming": {
+    "name": "Maiming",
+    "items": 157,
+    "wiki_url": "https://ddowiki.com/page/Maiming",
+    "verified": "2026-08-15",
+    "evidence": "Whenever you score a critical hit with this weapon it deals extra untyped damage depending on its critical multiplier: x2 1-6, x3 2-12, x4 3-18.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 182}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Monstrous Humanoid Bane": {
+    "name": "Monstrous Humanoid Bane",
+    "items": 90,
+    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+    "verified": "2026-08-15",
+    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 102}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Ooze Bane": {
+    "name": "Ooze Bane",
+    "items": 4,
+    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+    "verified": "2026-08-15",
+    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 5}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Plant Bane": {
+    "name": "Plant Bane",
+    "items": 2,
+    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+    "verified": "2026-08-15",
+    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 2}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Reptilian Bane": {
+    "name": "Reptilian Bane",
+    "items": 5,
+    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+    "verified": "2026-08-15",
+    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 5}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Undead Bane": {
+    "name": "Undead Bane",
+    "items": 107,
+    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+    "verified": "2026-08-15",
+    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 119}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Unholy": {
+    "name": "Unholy",
+    "items": 113,
+    "wiki_url": "https://ddowiki.com/page/Alignment_damage_(weapon)",
+    "verified": "2026-08-15",
+    "evidence": "Holy weapons will deal 2d6 Good damage to Evil enemies; scaling variants (e.g. Holy 3) deal Xd6 on hit and also affect Neutral enemies.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 117}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Vampirism": {
+    "name": "Vampirism",
+    "items": 161,
+    "wiki_url": "https://ddowiki.com/page/Vampirism",
+    "verified": "2026-08-15",
+    "evidence": "This weapon drains a tiny portion of the target's life force whenever it does damage.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 171}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Vermin Bane": {
+    "name": "Vermin Bane",
+    "items": 8,
+    "wiki_url": "https://ddowiki.com/page/Bane_(enchantment)",
+    "verified": "2026-08-15",
+    "evidence": "A bane weapon deals an additional Xd10 Bane (untyped) damage to a specific type of creature.",
+    "reason": "player-felt on-hit/on-crit combat effect; rankable as its own priority (not Utility-counted since #343)",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 27}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "allow"
+   },
+   "Acid": {
+    "name": "Acid",
+    "items": 7,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 12}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Acid Blast": {
+    "name": "Acid Blast",
+    "items": 48,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 50}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Acidic": {
+    "name": "Acidic",
+    "items": 100,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 99}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Anarchic Blast": {
+    "name": "Anarchic Blast",
+    "items": 83,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 85}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Anarchic Burst": {
+    "name": "Anarchic Burst",
+    "items": 4,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 7}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Antimagic Spike": {
+    "name": "Antimagic Spike",
+    "items": 2,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 4}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Axiomatic Blast": {
+    "name": "Axiomatic Blast",
+    "items": 5,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 5}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Axiomatic Burst": {
+    "name": "Axiomatic Burst",
+    "items": 5,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 6}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Banishing": {
+    "name": "Banishing",
+    "items": 80,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 88}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Bashing": {
+    "name": "Bashing",
+    "items": 14,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 16}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Bewildering": {
+    "name": "Bewildering",
+    "items": 3,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 8}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Blazing": {
+    "name": "Blazing",
+    "items": 93,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 101}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Bleeding": {
+    "name": "Bleeding",
+    "items": 75,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 76}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Bloodletter": {
+    "name": "Bloodletter",
+    "items": 20,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 20}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Bludgeoning": {
+    "name": "Bludgeoning",
+    "items": 70,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 70}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Coruscating": {
+    "name": "Coruscating",
+    "items": 124,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 133}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Critical Befouling": {
+    "name": "Critical Befouling",
+    "items": 7,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 13}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Critical Weakening": {
+    "name": "Critical Weakening",
+    "items": 3,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 3}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Critical Wounding": {
+    "name": "Critical Wounding",
+    "items": 3,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 3}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Crushing": {
+    "name": "Crushing",
+    "items": 56,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 63}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Destructive Acid": {
+    "name": "Destructive Acid",
+    "items": 91,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 90}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Disintegrate": {
+    "name": "Disintegrate",
+    "items": 10,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 10}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Echoes of Angdrelve": {
+    "name": "Echoes of Angdrelve",
+    "items": 8,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 8}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Electrifying": {
+    "name": "Electrifying",
+    "items": 110,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 115}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Entropic": {
+    "name": "Entropic",
+    "items": 103,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 108}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Evil Blast": {
+    "name": "Evil Blast",
+    "items": 85,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 87}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Feeding": {
+    "name": "Feeding",
+    "items": 14,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 15}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Feybane": {
+    "name": "Feybane",
+    "items": 80,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 82}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Fiery": {
+    "name": "Fiery",
+    "items": 113,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 134}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Flaming": {
+    "name": "Flaming",
+    "items": 21,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 36}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Flaming Blast": {
+    "name": "Flaming Blast",
+    "items": 27,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 34}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Force Blast": {
+    "name": "Force Blast",
+    "items": 114,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 116}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Fracturing": {
+    "name": "Fracturing",
+    "items": 9,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 13}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Freezing": {
+    "name": "Freezing",
+    "items": 21,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 21}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Freezing Ice": {
+    "name": "Freezing Ice",
+    "items": 2,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 7}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Frost": {
+    "name": "Frost",
+    "items": 12,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 18}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Gashing": {
+    "name": "Gashing",
+    "items": 54,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 54}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Ghostbane": {
+    "name": "Ghostbane",
+    "items": 129,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 137}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Good Blast": {
+    "name": "Good Blast",
+    "items": 10,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 10}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Heartseeker": {
+    "name": "Heartseeker",
+    "items": 19,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 25}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Hidden Effect: Increases all threat generated by": {
+    "name": "Hidden Effect: Increases all threat generated by",
+    "items": 1,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Holy Blast": {
+    "name": "Holy Blast",
+    "items": 3,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 3}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Holy Burst": {
+    "name": "Holy Burst",
+    "items": 15,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 27}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Icy Blast": {
+    "name": "Icy Blast",
+    "items": 13,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 13}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Impactful": {
+    "name": "Impactful",
+    "items": 154,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 157}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Jolting": {
+    "name": "Jolting",
+    "items": 19,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 19}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Magma Surge": {
+    "name": "Magma Surge",
+    "items": 2,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 7}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Negative Blast": {
+    "name": "Negative Blast",
+    "items": 2,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 2}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Negativity": {
+    "name": "Negativity",
+    "items": 6,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 6}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Nightshade Venom": {
+    "name": "Nightshade Venom",
+    "items": 6,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 10}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Paralyzing": {
+    "name": "Paralyzing",
+    "items": 4,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 16}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Percussive Maintenance": {
+    "name": "Percussive Maintenance",
+    "items": 2,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 2}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Piercing": {
+    "name": "Piercing",
+    "items": 52,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 57}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Poison": {
+    "name": "Poison",
+    "items": 6,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 9}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Poison Blast": {
+    "name": "Poison Blast",
+    "items": 10,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 10}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Poisonous": {
+    "name": "Poisonous",
+    "items": 27,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 38}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Reverberating": {
+    "name": "Reverberating",
+    "items": 30,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 31}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Ribcracker": {
+    "name": "Ribcracker",
+    "items": 9,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 9}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Screeching": {
+    "name": "Screeching",
+    "items": 13,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 13}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Shock": {
+    "name": "Shock",
+    "items": 12,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 17}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Shocking Blast": {
+    "name": "Shocking Blast",
+    "items": 23,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 27}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Shrieking": {
+    "name": "Shrieking",
+    "items": 9,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 20}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Sirocco": {
+    "name": "Sirocco",
+    "items": 2,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 3, 'Long Swords': 1}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Slashing": {
+    "name": "Slashing",
+    "items": 44,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 44}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Smashing": {
+    "name": "Smashing",
+    "items": 38,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 38}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Solar": {
+    "name": "Solar",
+    "items": 13,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 13}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Sonic Blast": {
+    "name": "Sonic Blast",
+    "items": 13,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 19}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Stabbing": {
+    "name": "Stabbing",
+    "items": 30,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 32}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Staggering": {
+    "name": "Staggering",
+    "items": 2,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 2}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Sundering": {
+    "name": "Sundering",
+    "items": 12,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 12}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Telekinetic": {
+    "name": "Telekinetic",
+    "items": 4,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 8}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "The Dragging of the Depths": {
+    "name": "The Dragging of the Depths",
+    "items": 6,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 6}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Thorny Crown of Madness": {
+    "name": "Thorny Crown of Madness",
+    "items": 4,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 4}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Tidal": {
+    "name": "Tidal",
+    "items": 7,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 15}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Toxic": {
+    "name": "Toxic",
+    "items": 11,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 15}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Unholy Burst": {
+    "name": "Unholy Burst",
+    "items": 1,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 1}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Unnatural Bane": {
+    "name": "Unnatural Bane",
+    "items": 44,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 45}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Weakening": {
+    "name": "Weakening",
+    "items": 82,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 85}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Wind Frenzy": {
+    "name": "Wind Frenzy",
+    "items": 2,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 3}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   },
+   "Wounding": {
+    "name": "Wounding",
+    "items": 36,
+    "reason": "unreviewed",
+    "retired_2026_08_18": "upstream now types every instance ({'Bool': 39}); no untyped instance remains, so this untyped-proc adjudication has nothing to match. Bool procs are already handled by presence_counting_names via PRESENCE_TYPES, so the counting behaviour is unchanged — only the adjudication surface moved.",
+    "retired_from": "quarantined"
+   }
+  }
+ }
 }

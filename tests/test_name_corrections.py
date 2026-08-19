@@ -184,15 +184,27 @@ def test_every_correction_has_a_matching_alias_so_the_upstream_name_still_resolv
 def test_the_shipping_shard_applies_cleanly_to_the_real_roster():
     records = vocabulary._load(vocabulary.ITEMS_PATH)
     cov = name_corrections.apply(records, name_corrections.load(SHARD))
-    # All 13 shard entries are loaded; only `Ki` has carriers in the ITEM roster.
-    # `False Life (%)` is augment-pool-only (#376) and the eleven #374 canon-defence
-    # entries are armed by an upstream snapshot this tree has not vendored yet, so
-    # every one of them correctly renames nothing here.
+    # #374/U4 — re-ratified. Pre-refresh only `Ki` had carriers in the ITEM roster
+    # (19 affixes): `False Life (%)` was augment-pool-only (#376) and the eleven
+    # canon-defence entries were armed by a snapshot this tree had not vendored.
+    # The refresh vendors it, so upstream's generic spellings are now IN the roster
+    # and twelve of the thirteen corrections fire here. Derived, not hand-counted:
+    # the hit set must be exactly the shard entries whose source_name occurs in raw.
     assert cov["names_corrected"] == 13
-    assert cov["hit_names"] == ["Ki"]
-    assert cov["affixes_renamed"] == 19
-    assert not any(a.get("name") == "Ki"
-                   for r in records for a in (r.get("affixes") or []))
+    shard = name_corrections.load(SHARD)
+    raw_names = {a.get("name") for a in name_corrections._iter_affix_dicts(
+        vocabulary._load(vocabulary.ITEMS_PATH))}
+    assert cov["hit_names"] == sorted(
+        e["source_name"] for e in shard if e["source_name"] in raw_names)
+    # `Damage vs. the Helpless` is the one entry with no ITEM-roster carrier — it
+    # lives in the sets/crafting channels, the per-channel miss #376 made silent.
+    assert set(cov["hit_names"]) == {e["source_name"] for e in shard} - \
+        {"Damage vs. the Helpless"}
+    assert cov["affixes_renamed"] == 1391, cov["affixes_renamed"]
+    # whatever the count, no source spelling may survive the pass
+    for e in shard:
+        assert not any(a.get("name") == e["source_name"]
+                       for r in records for a in (r.get("affixes") or [])), e["source_name"]
 
 
 # ---------------------------------------------------------------------------
@@ -320,18 +332,28 @@ def test_374_the_shard_declares_thirteen_and_marks_the_canon_defence():
     entries = _shard()
     assert len(entries) == 13
     defence = [e for e in entries if e.get("canon_defense")]
-    assert len(defence) == 11, [e["source_name"] for e in defence]
-    # Every canon-defence entry is still pending: this tree has not vendored the
-    # refreshed snapshot that arms it. U4 retires the markers.
-    assert all(name_corrections.is_pending(e) for e in defence)
-    assert all((e.get("pending_reason") or "").strip() for e in defence)
+    # #374/U4 — re-ratified 11 -> 13, and the marker assertion inverted.
+    #
+    # The shard size did NOT move; what moved is how many of its entries are canon
+    # defence. The two pre-#374 entries (`Ki`, `False Life (%)`) were plain wiki-name
+    # corrections against names upstream still emitted natively. The refresh flipped
+    # both into the same hazard as the other eleven — upstream stopped emitting
+    # `Enhanced Ki` (typing `Ki` instead, 0 -> 20 gate-visible) and folded
+    # `Legendary Conditioning` away into `False Life (%)` (34 -> 0) — so they now
+    # carry `canon_defense` on their own merits, and `armed_canon_variants()` arms
+    # all thirteen. See docs/reports/2026-08-18-gear-planner-canon-migration.md §6.1.
+    assert len(defence) == 13, [e["source_name"] for e in defence]
+    # And no pending markers survive: the refresh armed every entry, and the
+    # exemption is self-retiring — `assert_canon_defense` is red while one outlives
+    # its data (pinned by test_374_assert_canon_defense_fires_when_a_landed_entry…).
+    assert not [e for e in defence if name_corrections.is_pending(e)]
     # `Force Lore` must NOT be declared: it has zero occurrences in refreshed raw,
     # so a correction for it would be a rename nobody applies. `Kinetic Lore`
     # survives natively.
     assert "Force Lore" not in {e["source_name"] for e in entries}
-    # The two pre-#374 entries are untouched and are NOT canon defence.
-    plain = {e["source_name"] for e in entries if not e.get("canon_defense")}
-    assert plain == {"Ki", "False Life (%)"}
+    # The two pre-#374 entries are still present, by name — the count above cannot
+    # tell a re-pointed entry from a new one.
+    assert {"Ki", "False Life (%)"} <= {e["source_name"] for e in entries}
 
 
 def test_374_every_canonical_survives_split_type_with_a_stat_left():
@@ -477,24 +499,48 @@ def test_374_assert_canon_defense_fails_when_a_live_defence_is_not_armed():
 
 def test_374_assert_canon_defense_fires_when_a_landed_entry_keeps_its_marker():
     """The exemption is self-retiring: once the refresh arms an entry, the marker
-    must go in the same commit or the build is red."""
-    still_pending = [e for e in _shard() if e["source_name"] == "Fire Spell Power"]
-    assert still_pending and name_corrections.is_pending(still_pending[0])
+    must go in the same commit or the build is red.
+
+    #374/U4 — the fixture was read off the shipped shard, which carried the marker
+    on every canon-defence entry pre-refresh. The refresh armed all thirteen and
+    this very guard forced every marker off, so the scenario is now constructed by
+    putting one marker BACK. Same claim, and strictly stronger as a regression
+    test: it no longer depends on a transient state of the file, and it proves the
+    guard would have caught U4 landing the data while leaving a marker behind.
+    """
+    shard = _shard()
+    assert not [e for e in shard if name_corrections.is_pending(e)], \
+        "post-refresh the shipped shard must carry no markers"
+    relapsed = [dict(e, pending_upstream=True,
+                     pending_reason="marker left behind by a landed refresh")
+                if e["source_name"] == "Fire Spell Power" else e
+                for e in shard]
+    assert name_corrections.is_pending(
+        next(e for e in relapsed if e["source_name"] == "Fire Spell Power"))
     try:
         name_corrections.assert_canon_defense(
-            _shard(), {"Fire Spell Power": "Combustion"})
+            relapsed, {"Fire Spell Power": "Combustion"})
     except SystemExit as e:
         assert "'Fire Spell Power' is ARMED upstream" in str(e)
     else:
         raise AssertionError("a landed pending entry must fail until retired")
 
 
-def test_374_assert_canon_defense_passes_on_the_pre_refresh_tree():
-    """Both sides are empty today: nothing is armed and no defence claims to be
-    live. The assertion is not vacuous — the four tests above show it firing."""
+def test_374_assert_canon_defense_passes_on_the_refreshed_tree():
+    """Was `…_on_the_pre_refresh_tree`, where both sides were empty: nothing armed,
+    no defence claiming to be live. U4 vendored the snapshot that arms the flips, so
+    the guard now has to hold with both sides POPULATED and equal — the direction it
+    was actually written to defend, and no longer a vacuous pass. It is also not
+    vacuous in the other sense: the four tests above show it firing both ways.
+    """
     armed = vocabulary.armed_canon_variants()
-    assert armed == {}, armed
+    assert len(armed) == 13, armed
     name_corrections.assert_canon_defense(_shard(), armed)
+    # the equality is real, checked from the declared side too
+    declared = {c["source_name"] for c in _shard()
+                if c.get("canon_defense") and not name_corrections.is_pending(c)}
+    assert declared == set(armed), {"declared_only": declared - set(armed),
+                                    "armed_only": set(armed) - declared}
 
 
 def test_374_the_real_shard_applies_cleanly_to_a_synthetic_refreshed_snapshot():

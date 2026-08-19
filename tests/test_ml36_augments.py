@@ -109,10 +109,23 @@ def test_inject_appends_in_native_shape():
 
 
 def test_the_shipped_shard_passes_against_the_real_catalog():
-    """The integration fact: 63 entries, guarded clean, injectable."""
+    """The integration fact: 63 entries, guarded clean, injectable.
+
+    #374/U4 — the catalog is now renamed before the check, which is what the
+    shipped build does (`build_dataset.py` applies `name_corrections` to
+    `crafting` immediately above `ml36_augments.check`, pinned by
+    `test_374_the_build_pins_the_rename_above_the_ml36_check`). Before the
+    refresh the raw catalog already spelled the Ruby spell-power line in our
+    canon, so reading it un-renamed was equivalent; the refresh flipped those
+    eight names upstream, so an un-renamed read now compares our canon against
+    upstream's generic and fails — which is the point of KTD8, not a defect
+    here. Nothing about what this test asserts has changed: same 63 entries,
+    same per-color counts.
+    """
     entries = ml36_augments.load(SHARD)
     assert len(entries) == 63
     crafting = crafting_catalog.load_catalog()
+    name_corrections.apply(crafting, name_corrections.load(CORRECTIONS))
     counts = ml36_augments.check(entries, crafting)
     assert counts == {"Blue": 13, "Colorless": 26, "Red": 14, "Yellow": 10}
     cov = ml36_augments.inject(entries, crafting)

@@ -71,10 +71,21 @@ def test_local_section_does_not_disturb_the_u6_live_vs_frozen_gate():
     # the U6 gate diffs the UPSTREAM section only; the repo-local additions must
     # be invisible to it (adding them to `affix_synonyms` would read as 11
     # dropped-fold events on the next re-import)
-    n = vocabulary.check_affix_synonyms(
-        vocabulary.load_live_affix_synonyms(),
-        vocabulary._load(vocabulary.AFFIX_SYNONYMS_REGISTRY_PATH))
-    assert n == 94, f"expected the 94 upstream folds validated, got {n}"
+    table = vocabulary._load(vocabulary.AFFIX_SYNONYMS_REGISTRY_PATH)
+    n = vocabulary.check_affix_synonyms(vocabulary.load_live_affix_synonyms(), table)
+    # #374/U4 — re-ratified 94 -> 145. The refresh grew upstream's table from 46
+    # entries / 94 folds to 69 / 145; every added, removed and re-pointed fold was
+    # adjudicated before the registry was re-frozen once, as one act (see
+    # docs/reports/2026-08-18-gear-planner-canon-migration.md §3). The count is
+    # DERIVED from the upstream section rather than pinned as a literal, which is
+    # the actual claim this test makes: the gate counts upstream folds only, so
+    # the repo-local section must contribute exactly zero to it.
+    upstream_folds = sum(len(e["synonyms"]) for e in table["affix_synonyms"])
+    local_folds = sum(len(e["synonyms"]) for e in table["local_affix_synonyms"])
+    assert local_folds, "an empty local section would make this pass vacuously"
+    assert n == upstream_folds == 145, (n, upstream_folds)
+    assert n != upstream_folds + local_folds, \
+        "the local section leaked into the upstream gate — it would read as dropped folds"
 
 
 def test_local_fold_colliding_with_an_upstream_fold_raises():
@@ -213,10 +224,60 @@ def test_dataset_set_tier_credit_reaches_the_canonical_name():
         assert aliases.get(syn) == CANONICAL, f"picker alias missing for {syn!r}"
 
 
-def test_dataset_raw_provenance_keeps_the_original_spellings():
+def test_dataset_raw_provenance_is_not_reconstructed_from_the_parsed_stat():
+    """Was `test_dataset_raw_provenance_keeps_the_original_spellings`, which pinned
+    `Damage vs. Helpless Opponents` and `Helplessness Damage` surviving verbatim in
+    the tier `raw`.
+
+    WEAKENED DELIBERATELY, and the reason is stated rather than hidden. Two
+    separate, both-attributed changes make the helpless family unable to carry
+    this claim any more:
+
+      1. Upstream's 2026-08-18 refresh CONSOLIDATED the helpless family to one
+         spelling. Nine of the eleven #305 wordings — including both pinned here —
+         now occur nowhere in the corpus, so no tier text can contain them. This
+         is recorded in the registry's `unmatched_evidence` and re-checked from
+         both directions by `check_local_synonym_staleness`: if upstream re-emits
+         one of these spellings, the build goes red until its allowlist entry is
+         dropped, so the fold cannot silently rot while it waits.
+      2. Since U2 the affix RENAME runs at the sets catalog's single load point,
+         above the piece-bonus text synthesis, so a renamed name legitimately
+         appears in `raw` as our canonical. That was a deliberate, documented U2
+         behavior change ("7 items now render `Damage to helpless enemies` in
+         piece-bonus text"), not a refresh effect.
+
+    Together those mean NO helpless spelling can demonstrate this property today,
+    and the search for a substitute found no other fold-away spelling surviving in
+    a set tier `raw` either. What survives, and is asserted here, is the half that
+    is still falsifiable and is what the property was protecting: `raw` is the
+    verbatim tier wording, NOT rebuilt from the normalized stat — provable through
+    the expansion families, where one tier line yields several stats and every one
+    of them keeps the single original wording.
+    """
     data = _load_items()
-    raws = [t.get("raw") or "" for v in data["items"]
-            for t in v.get("parsed_set_bonuses") or []]
-    assert any("Damage vs. Helpless Opponents" in r for r in raws), \
-        "verbatim tier raw must keep the wiki spelling"
-    assert any("Helplessness Damage" in r for r in raws)
+    tiers = [t for v in data["items"] for t in v.get("parsed_set_bonuses") or []]
+    raws = [t.get("raw") or "" for t in tiers]
+    assert raws, "no parsed set bonuses to inspect"
+
+    divergent = [(a["stat"], a["raw"]) for t in tiers for a in t.get("affixes") or []
+                 if a.get("raw") and a.get("stat")
+                 and a["stat"] not in a["raw"]]
+    assert divergent, (
+        "every parsed stat appears verbatim in its own raw — `raw` may have been "
+        "reconstructed from the stat instead of preserved from the tier text")
+    # a named exemplar, so a shrinking population is visible rather than silent:
+    # one `Saving Throws` line expands to three saves and all three keep the wording
+    saves = {stat for stat, raw in divergent if "bonus to Saving Throws" in raw}
+    assert {"Fortitude Save", "Reflex Save", "Will Save"} <= saves, sorted(saves)
+
+    # and the helpless family's CURRENT state, pinned so the consolidation above is
+    # a stated fact rather than an absence nobody notices
+    helpless = {a["raw"] for t in tiers for a in t.get("affixes") or []
+                if a.get("stat") == CANONICAL}
+    assert helpless, "the canonical stat must still reach the set-bonus channel"
+    for r in helpless:
+        assert CANONICAL in r, r
+    for gone in ("Damage vs. Helpless Opponents", "Helplessness Damage"):
+        assert not any(gone in r for r in raws), (
+            f"{gone!r} is back in the corpus — the local fold's unmatched_synonyms "
+            f"allowlist must drop it in the same commit")

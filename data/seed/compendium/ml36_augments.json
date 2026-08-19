@@ -401,7 +401,7 @@
    "affixes": [
     {
      "name": "Acidic",
-     "type": "Untyped",
+     "type": "Bool",
      "value": "10"
     }
    ],
@@ -409,8 +409,9 @@
    "ml": 36,
    "sibling": "Ruby of Acid (9d6)",
    "tooltip": "Drag this augment into a slot to upgrade a weapon with an additional 10d6 Acid damage on hit. This augment can go in a Red, Orange, or Purple Augment Slot.",
-   "verified": "2026-08-12",
-   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Acid_%2810d6%29"
+   "verified": "2026-08-18",
+   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Acid_%2810d6%29",
+   "reanchor_note": "#374/U4 — type only. The 2026-08-18 refresh re-encoded the type field upstream (key-less affixes 5709 -> 90); this proc moved `Untyped` -> `Bool` with its name unchanged, so the sibling anchor is restored without a naming ruling."
   },
   "Ruby of Combustion 166": {
    "affixes": [
@@ -461,7 +462,7 @@
    "affixes": [
     {
      "name": "Flaming",
-     "type": "Untyped",
+     "type": "Bool",
      "value": "10"
     }
    ],
@@ -469,14 +470,15 @@
    "ml": 36,
    "sibling": "Ruby of Flame (9d6)",
    "tooltip": "Drag this augment into a slot to upgrade a weapon with an additional 10d6 Fire damage on hit. This augment can go in a Red, Orange, or Purple Augment Slot.",
-   "verified": "2026-08-12",
-   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Flame_%2810d6%29"
+   "verified": "2026-08-18",
+   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Flame_%2810d6%29",
+   "reanchor_note": "#374/U4 — type only. The 2026-08-18 refresh re-encoded the type field upstream (key-less affixes 5709 -> 90); this proc moved `Untyped` -> `Bool` with its name unchanged, so the sibling anchor is restored without a naming ruling."
   },
   "Ruby of Frost (10d6)": {
    "affixes": [
     {
      "name": "Frost",
-     "type": "Untyped",
+     "type": "Bool",
      "value": "10"
     }
    ],
@@ -484,8 +486,9 @@
    "ml": 36,
    "sibling": "Ruby of Frost (9d6)",
    "tooltip": "Drag this augment into a slot to upgrade a weapon with an additional 10d6 Cold damage on hit. This augment can go in a Red, Orange, or Purple Augment Slot.",
-   "verified": "2026-08-12",
-   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Frost_%2810d6%29"
+   "verified": "2026-08-18",
+   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Frost_%2810d6%29",
+   "reanchor_note": "#374/U4 — type only. The 2026-08-18 refresh re-encoded the type field upstream (key-less affixes 5709 -> 90); this proc moved `Untyped` -> `Bool` with its name unchanged, so the sibling anchor is restored without a naming ruling."
   },
   "Ruby of Glaciation 166": {
    "affixes": [
@@ -595,8 +598,8 @@
   "Ruby of Shock (10d6)": {
    "affixes": [
     {
-     "name": "Shock",
-     "type": "Untyped",
+     "name": "Electrifying",
+     "type": "Bool",
      "value": "10"
     }
    ],
@@ -604,8 +607,9 @@
    "ml": 36,
    "sibling": "Ruby of Shock (9d6)",
    "tooltip": "Drag this augment into a slot to upgrade a weapon with an additional 10d6 Electric damage on hit. This augment can go in a Red, Orange, or Purple Augment Slot.",
-   "verified": "2026-08-12",
-   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Shock_%2810d6%29"
+   "verified": "2026-08-18",
+   "wiki_url": "https://ddowiki.com/page/Item:Ruby_of_Shock_%2810d6%29",
+   "reanchor_note": "#374/U4 — re-anchored `Shock` -> `Electrifying` on the wiki's own wording. The ITEM is named Ruby of Shock; the ENCHANTMENT is not. https://ddowiki.com/page/Item:Ruby_of_Shock_(10d6) reads `Enchantments: Electrifying 10` and files the page under `Electrifying 10 items`, so `Electrifying` is what a player reads on the tooltip. KTD1 says match the tooltip, so here that means ADOPTING upstream's name rather than defending ours — our `Shock` was the stale spelling, not the canonical one."
   },
   "Sapphire of Accuracy +24": {
    "affixes": [

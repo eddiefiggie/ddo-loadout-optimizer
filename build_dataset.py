@@ -454,7 +454,15 @@ def rankable_affixes(planner_records, untyped_allow=frozenset()) -> list:
             # because it happens to arrive untyped. An adjudicated, wiki-verified name
             # is admitted; everything else untyped still goes. Membership is checked
             # against the affix NAME, so the exception cannot widen to a whole type.
-            untyped = bt in (None, "")
+            # #374 — the 2026-08-18 refresh re-encoded the type field: upstream used
+            # to OMIT `type` for an untyped affix and now emits the literal string
+            # "Untyped" (key-less affixes 5709 -> 90, "Untyped" 148 -> 886). Both
+            # spellings mean the same thing, so both must read as untyped here —
+            # otherwise 886 affix occurrences stop being filtered and arrive as
+            # rankable stats typed "Untyped", turning procs and flags into stackable
+            # bonuses. src/set_catalog.py and src/membership.py already treat the
+            # literal marker this way; these two sites simply predate the change.
+            untyped = bt in (None, "", "Untyped")
             if untyped and a.get("name") in untyped_allow:
                 pass
             elif untyped or bt in ("boolean", "Bool") or bt in NON_RANKABLE_TYPES:

@@ -30,16 +30,22 @@
       "note": "Enchantments line reads 'Action Boost Enhancement'. Player-reported (2026-08-12 batch, data/bug_reports.txt); the report named this tier."
     }
   ],
-  "Juiblex's Reign": [
-    {
-      "name": "Acid Absorption",
-      "from": "Enhancement",
-      "to": "Insight",
-      "value": "15",
-      "tooltip": "Insightful Acid Absorption +15%: Passive: 15% Insight Bonus to Acid Absorption.",
-      "wiki_url": "https://ddowiki.com/page/Item:Juiblex%27s_Reign",
-      "verified": "2026-08-13",
-      "note": "#288 — the tooltip states an Insight bonus; gear-planner types it Enhancement, so it wrongly max-competed with worn Enhancement absorption. `value` is the post-value-correction magnitude: the sibling item_value_corrections.json entry lands 16 -> 15 first (value corrections apply before type corrections in build_dataset.py)."
+  "_retired_2026_08_18": {
+    "why": "#374/U4 — upstream adopted this retype in the 2026-08-18 refresh: Juiblex's Reign now carries ('Acid Absorption','Insight','15') natively, which is exactly what this shard and its paired item_value_corrections entry produced. Retired as a no-op; kept as the record. SCOPE, re-checked 2026-08-18 during the test re-ratification: ONLY the Juiblex entry was adopted. The two `Moment to Moment` augment entries were retired in the same edit WITHOUT cause — upstream still emits ('Action Boost Charges','Untyped') on both Yellow-Augment-Slot stones, so their wiki-verified retype is still live and still needed, and retiring them would have silently re-opened the #259 double-count against the 19 Enhancement-typed worn sources. They are restored above. Every entry retired here must be confirmed adopted in the refreshed raw, per-entry.",
+    "verified": "2026-08-18 against upstream commit 767a7f747d0e7d211a702b8c456348e1c36ba699",
+    "entries": {
+      "Juiblex's Reign": [
+        {
+          "name": "Acid Absorption",
+          "from": "Enhancement",
+          "to": "Insight",
+          "value": "15",
+          "tooltip": "Insightful Acid Absorption +15%: Passive: 15% Insight Bonus to Acid Absorption.",
+          "wiki_url": "https://ddowiki.com/page/Item:Juiblex%27s_Reign",
+          "verified": "2026-08-13",
+          "note": "#288 — the tooltip states an Insight bonus; gear-planner types it Enhancement, so it wrongly max-competed with worn Enhancement absorption. `value` is the post-value-correction magnitude: the sibling item_value_corrections.json entry lands 16 -> 15 first (value corrections apply before type corrections in build_dataset.py)."
+        }
+      ]
     }
-  ]
+  }
 }

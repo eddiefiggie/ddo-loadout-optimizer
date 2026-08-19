@@ -54,6 +54,10 @@ _AUGMENT_SLOT_SUFFIX = "Augment Slot"
 PROTECTED_CANON = frozenset({
     "Combustion", "Devotion", "Nullification", "Glaciation", "Impulse",
     "Magnetism", "Resonance", "Corrosion", "Void Lore", "Ice Lore",
+    # #374/U4 — the refresh added `Legendary Conditioning -> False Life (%)`
+    # upstream, so our canonical is now folded away like the other ten. Latent
+    # today (no Dino stat uses the spelling) but suppressed for the same reason.
+    "Legendary Conditioning",
 })
 
 

@@ -5,7 +5,7 @@ Slot", "Claw (Accessory)", "Sealed in Fire", ...]`). A *pool* is what the solver
 can actually put into such a slot. When a label no pool serves appears, the slot
 is inert: the player sees it in the compendium and the solver crafts nothing into
 it. 35 such labels exist today (415 item-slot declarations) — Slaver's crafting,
-Cannith crafting, the "One of the following" random-effect wordings — and each is
+Essence Crafting, the "One of the following" random-effect wordings — and each is
 a known, deliberate gap.
 
 This module turns that baseline into a build gate, so a snapshot refresh cannot
@@ -76,19 +76,33 @@ DINO_SET_BONUS_LABEL = "Isle of Dread: Set Bonus Slot: Empty"
 # Every entry is an inert slot with a known reason; adding one is a deliberate
 # act, and removing a label from the data must remove it from here too.
 UNSERVED_ALLOWLIST = frozenset({
-    # Cannith crafting — the crafted-blank prefix/suffix/extra menus. No pool.
-    "Cannith: Melee - Extra",
-    "Cannith: Melee - Prefix",
-    "Cannith: Melee - Suffix",
-    "Cannith: Ring - Extra",
-    "Cannith: Ring - Prefix",
-    "Cannith: Ring - Suffix",
-    "Cannith: Rune Arm - Extra",
-    "Cannith: Rune Arm - Prefix",
-    "Cannith: Rune Arm - Suffix",
-    "Cannith: Trinket - Extra",
-    "Cannith: Trinket - Prefix",
-    "Cannith: Trinket - Suffix",
+    # Essence Crafting — the crafted-blank prefix/suffix/extra menus. No pool.
+    #
+    # #374 — renamed 1:1 from `Cannith: *` in the 2026-08-18 refresh, and this one
+    # ADOPTS upstream rather than defending our spelling. KTD1 says match what the
+    # player sees, and the wiki's Essence Crafting page states outright: "Update 79
+    # renamed it from Cannith Crafting to Essence Crafting". So `Essence Crafting`
+    # is the current in-game name and ours was the stale one — the mirror of the
+    # affix-vocabulary case, where the wiki backed us instead.
+    #
+    # These labels ARE player-visible: web/exporters.js renders each item's crafting
+    # labels into every share export. The wiki also notes the system is "still better
+    # known as" Cannith Crafting, so an old-name alias would help a player searching
+    # the old term — but crafting slots have no alias mechanism (check_crafting_integrity
+    # is exact-match set membership), so that needs new machinery and is filed, not
+    # invented here.
+    "Essence Crafting: Melee - Extra",
+    "Essence Crafting: Melee - Prefix",
+    "Essence Crafting: Melee - Suffix",
+    "Essence Crafting: Ring - Extra",
+    "Essence Crafting: Ring - Prefix",
+    "Essence Crafting: Ring - Suffix",
+    "Essence Crafting: Rune Arm - Extra",
+    "Essence Crafting: Rune Arm - Prefix",
+    "Essence Crafting: Rune Arm - Suffix",
+    "Essence Crafting: Trinket - Extra",
+    "Essence Crafting: Trinket - Prefix",
+    "Essence Crafting: Trinket - Suffix",
     # Slaver's crafting — heroic and legendary. No pool.
     "Slaver's Bonus Slot",
     "Slaver's Extra Slot",
