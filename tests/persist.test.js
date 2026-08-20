@@ -525,3 +525,20 @@ test("#348 U7/R12: a pre-container save is distinguishable from a post-container
   delete pre.inputs.utility_container_aware;
   assert.ok(!("utility_container_aware" in pre.inputs), "absence is the pre-container signal");
 });
+
+
+// #359 — the owned-augment opt-in must survive a save/load round trip, and a
+// character saved BEFORE it shipped must reload solving what it solved before.
+test("#359: ownedAugments round-trips, and a pre-feature save reads as off", () => {
+  const inputs = { characterName: "Aug", ml: 34, pool: "owned",
+                   ownedNames: ["My Ring"], ownedAugments: true, priorities: ["Constitution"] };
+  assert.ok(INPUT_KEYS.includes("ownedAugments"), "the key is on the input allowlist");
+  const kept = pickInputs(inputs);
+  assert.strictEqual(kept.ownedAugments, true, "the opt-in is persisted");
+
+  // The pre-feature shape: the key simply is not there.
+  const legacy = { characterName: "Old", ml: 34, pool: "owned", ownedNames: ["My Ring"] };
+  assert.ok(!("ownedAugments" in legacy));
+  assert.strictEqual(!!legacy.ownedAugments, false,
+    "absent reads as off — a saved character does not silently change what it solves");
+});

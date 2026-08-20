@@ -56,6 +56,7 @@ from src import untyped_rankable as untyped_rankable_mod
 from src import utility_procs as utility_procs_mod
 from src import dr_qualifiers as dr_qualifiers_mod
 from src import type_corrections as type_corrections_mod
+from src import augment_acquirability as acquirability_mod
 from src import legendary_fold as legendary_fold_mod
 from src import ml36_augments as ml36_augments_mod
 from src import viktranium_pool_corrections as vik_pool_mod
@@ -297,6 +298,8 @@ NAME_CORRECTIONS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "affix_name_corrections.json")
 TYPE_CORRECTIONS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "affix_type_corrections.json")
+ACQUIRABILITY_PATH = os.path.join(
+    HERE, "data", "seed", "compendium", "augment_acquirability.json")
 ML36_AUGMENTS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "ml36_augments.json")
 # #365 — curated wiki-sourced Viktranium pool relocations (misfiled options).
@@ -878,6 +881,13 @@ def build() -> dict:
     _type_coverage_augments = type_corrections_mod.apply(aug_pool, _type_corrections)
     type_corrections_mod.assert_all_reached(
         _type_corrections, _type_coverage_items, _type_coverage_augments)
+    # #359 — wiki-sourced ACQUIRABILITY, stamped on the augment pool. Owned-augment
+    # mode offers `owned UNION acquirable`; this is the acquirable half. Stamped
+    # here, after the type corrections and before variant expansion, so the flag
+    # rides every derived pool from one place. The guard fails the build when the
+    # exact-name join stops being complete — a silently smaller acquirable set
+    # would make owned mode forget augments the player can simply buy.
+    _acquirable = acquirability_mod.load(ACQUIRABILITY_PATH)
     # #287 — the augment channel of the legendary fold above. No augment carries
     # one of the five names today (folded: 0), but the unknown-instance guard
     # must watch this pool too, or a future 'Legendary <stat>' augment would
@@ -969,6 +979,12 @@ def build() -> dict:
     # Expand umbrella ability affixes ("All Ability Scores +15", "Well Rounded")
     # into the six concrete abilities so single-ability targets get credited.
     umbrella_mod.expand_variants(variants)
+    # #359 — stamp acquirability on the emitted variants (an augment's variant_id
+    # is its name). Here rather than on the upstream pool record, for the same
+    # reason `aug_color` is annotated here: the variant is what every consumer
+    # reads, and a pool-record field does not survive expansion.
+    _acq_coverage = acquirability_mod.apply(variants, _acquirable)
+    acquirability_mod.assert_join(_acq_coverage, ACQUIRABILITY_PATH)
     # #205 — the same treatment for universal spell-DC affixes. `Spell Focus
     # Mastery` raises the DC of every school, but a school-ranked target credited
     # only exact name matches, so no sacred/quality/insightful focus could ever be
@@ -1547,6 +1563,11 @@ def build() -> dict:
             # on/off badge) — deliberately NOT rankable_affixes: a
             # declared-credit control on Holy/Vampirism is the documented
             # defect web/dataset.js warns against.
+            # #359 — owned-augment mode's disclosure reads these, so the sentence
+            # it shows the player is a build-time fact rather than a recount in the
+            # view layer (the stamped-universe convention: see [[Triage universe]]).
+            "augment_acquirable_count": _acq_coverage["stamped"],
+            "augment_total_count": _acq_coverage["augments"],
             "utility_counting_set": _utility_counting,
             "utility_untyped_admitted": sorted(_uproc_allow),
             # #380 — the counted/not-counted split, restated against the

@@ -1308,7 +1308,7 @@ if (typeof window !== "undefined" && window.App) {
       // #91 (U4/R1) — a NEW list is born with the Utility tier seeded at the
       // bottom, on by default. Seeding happens only here (list birth), never on
       // load — load-path presence is healUtilityTier's decision (KTD8).
-      pool: "all", ownedNames: null, priorities: newPriorityList(), slotConstraints: {}, constraintsDirty: false, lastRun: null,
+      pool: "all", ownedNames: null, ownedAugments: false, priorities: newPriorityList(), slotConstraints: {}, constraintsDirty: false, lastRun: null,
       characterName: "", loadedStale: false,
       // plan 003 U4 — set on load when a pre-U1 save is migrated to declared.
       twfMigrated: false,
@@ -1549,8 +1549,8 @@ if (typeof window !== "undefined" && window.App) {
       return `<section class="wz-card">
         <p class="wz-eyebrow">Step 2 of 4 · Which gear should we search?</p>
         <h2>Optimize over everything, or only what you own</h2>
-        <p class="wz-lead">Augments and crafting options always come from the full catalog — owned mode only
-          restricts the base gear.</p>
+        <p class="wz-lead">Crafting options always come from the full catalog. Owned mode restricts your base
+          gear, and — if you turn it on below — your augments too.</p>
         <div class="wz-seg wz-pool">
           <button class="wz-chip big ${!owned ? "on" : ""}" data-pool="all"><strong>All gear in the game</strong><small>Every wiki-sourced named item — theoretical best-in-slot.</small></button>
           <button class="wz-chip big ${owned ? "on" : ""}" data-pool="owned"><strong>Only what I own</strong><small>Upload your Trove inventory export.</small></button>
@@ -1561,6 +1561,17 @@ if (typeof window !== "undefined" && window.App) {
             <input id="wz-file-label" type="text" readonly placeholder="Click to choose a .csv file…" class="wz-file">
             <input id="wz-file" type="file" accept=".csv" class="wz-hidden"></label>
           <div id="wz-file-stat" class="wz-filestat"></div>
+          <!-- #359 — the augment half of inventory mode, OPT-IN and default off.
+               Off is today's shipped behavior, so no saved character changes what it
+               solves until the player asks. "Acquirable" is not a guess about the
+               player: the wiki classifies every augment by rarity, and the 675
+               Common/Uncommon/Rare ones are bought from vendors or traded for
+               Mysterious Remnants rather than farmed. Restricting to the export
+               alone would delete ~88% of the pool, most of it augments nobody hunts. -->
+          <label class="wz-check wz-ownedaug"><input id="wz-owned-augments" type="checkbox"${state.ownedAugments ? " checked" : ""}>
+            <span><strong>Also restrict augments</strong>
+              <small>Use only augments your export lists, plus the ones anyone can buy or trade for.
+                Off by default — augments otherwise come from the full catalog.</small></span></label>
         </div>
         <div class="wz-pinbox">
           <span class="wz-label">Pin specific items <span class="wz-sub">· optional · force gear you've already decided on into the build</span></span>
@@ -2447,9 +2458,17 @@ if (typeof window !== "undefined" && window.App) {
     // ---- solve (real engine) ----------------------------------------------
     function candidateItems() {
       if (state.pool === "owned" && state.ownedNames) {
-        // owned base items + full-catalog augments (KTD4/R13)
-        return dataset.items.filter((v) => v.category === "augment"
-          || state.ownedNames.has(v.source_item || v.variant_id));
+        // Base items: always restricted to the export (KTD4/R13).
+        // Augments: full catalog UNLESS the player opted in (#359), in which case
+        // `owned UNION acquirable` — what their export lists, plus what the wiki
+        // classifies Common/Uncommon/Rare (vendor / Mysterious Remnant / generic
+        // loot). Strict-to-the-export would cut 1,063 augments to ~123 and delete
+        // gear nobody farms, which reads as the tool being broken.
+        return dataset.items.filter((v) => (v.category === "augment"
+          ? (!state.ownedAugments
+             || v.acquirable === true
+             || state.ownedNames.has(v.source_item || v.variant_id))
+          : state.ownedNames.has(v.source_item || v.variant_id)));
       }
       return dataset.items;
     }
@@ -2510,6 +2529,9 @@ if (typeof window !== "undefined" && window.App) {
         // for pinning, wrong for coverage), else an owned dual-wield weapon would falsely
         // read "you own no item" on an empty Off Hand. Plain/serializable (no Set saved).
         query.ownedMode = state.pool === "owned" && !!state.ownedNames;
+        // #359 — rides the SOLVED query (not just live state) so a restored
+        // character discloses the pool it actually solved, per the saved-query rule.
+        query.ownedAugments = query.ownedMode && !!state.ownedAugments;
         query.ownedSlotsCovered = query.ownedMode
           ? [...new Set(dataset.items
               .filter((v) => v.category !== "augment" && state.ownedNames.has(v.source_item || v.variant_id))
@@ -2691,6 +2713,7 @@ if (typeof window !== "undefined" && window.App) {
       state.ownedSetAugments = Array.isArray(i.ownedSetAugments) ? new Set(i.ownedSetAugments) : new Set();
       state.pool = i.pool || "all";
       state.ownedNames = Array.isArray(i.ownedNames) ? new Set(i.ownedNames) : null;
+      state.ownedAugments = !!i.ownedAugments;   // #359 — absent on a pre-feature save = off
       state.priorities = Array.isArray(i.priorities) ? i.priorities.slice() : [];
       // U4 — restore per-priority caps/floors (absent on pre-U4 saves -> empty).
       state.targetCaps = (i.targetCaps && typeof i.targetCaps === "object") ? { ...i.targetCaps } : {};
@@ -3135,6 +3158,11 @@ if (typeof window !== "undefined" && window.App) {
           document.getElementById("wz-upload").classList.toggle("wz-hidden", state.pool !== "owned");
           root.querySelectorAll(".wz-chip[data-pool]").forEach((x) => x.classList.toggle("on", x.dataset.pool === state.pool));
         });
+        // #359 — the opt-in augment restriction. Plain state, no re-render: the
+        // control's own checked attribute is the display, and nothing else on this
+        // step depends on it.
+        const oaug = document.getElementById("wz-owned-augments");
+        if (oaug) oaug.onchange = (e) => { state.ownedAugments = e.target.checked; };
         const disp = document.getElementById("wz-file-label"), real = document.getElementById("wz-file");
         if (disp) {
           disp.onclick = () => real.click();
