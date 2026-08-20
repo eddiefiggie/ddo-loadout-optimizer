@@ -93,6 +93,15 @@ UTILITY_TIER1_PRESENCE = frozenset({
     "Freedom of Movement",
     "Blindness Immunity",
     "Deathblock",
+    # #349 (batch 1) — six more worn toggles, each admitted on a verbatim
+    # wiki reading of a PASSIVE equipped effect (see
+    # docs/wiki-evidence/utility-worn-toggles.md for every admission AND
+    # every refusal with its reason). Keep in lockstep with web/dataset.js.
+    "Lesser Displacement",
+    "Ethereal",
+    "Dusk",
+    "Soundproof",
+    "Immunity to Fear",
 }) | PRESENCE_ALLOW
 
 
