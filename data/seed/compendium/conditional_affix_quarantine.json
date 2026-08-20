@@ -1,0 +1,32 @@
+{
+ "_README": "Curated quarantine for affixes upstream stores as a FLAT CONSTANT that the wiki states are CONDITIONAL, RAMPING or TEMPORARY (#88, #214). The stored number is typically the fully-stacked maximum, so crediting it flat grants permanently what the game grants only while a trigger keeps firing. Each entry carries the verbatim wiki sentence that proves it. An affix here is DROPPED, not re-valued: the wiki states no sustained value, and inventing one would violate the never-infer rule.",
+ "_discipline": "Quarantine is the conservative direction — a visible gap beats a confident wrong number. If the wiki ever states a sustained or unconditional value, the entry moves to a value correction instead and is retired from here deliberately.",
+ "_precedent": "Deific Focus, ruled NOT universal on exactly this shape: 'On Spell Cast: +1 Sacred bonus to DC of that school for five seconds. Stacks up to III times.' See src/spell_focus.py's module docstring and docs/wiki-evidence/spell-focus-universal.md.",
+ "_stale_guard": "Every entry records `from_value` — the flat number gear-planner carries today. The build FAILS when it no longer matches (upstream changed the encoding, so the ruling must be re-read) and FAILS when an entry reaches no record in any channel (renamed or dropped upstream).",
+ "quarantined": {
+  "Meridian Fragment": [
+   {
+    "name": "Universal Spell Power",
+    "type": "Psionic",
+    "from_value": "24",
+    "reason": "conditional + ramping + temporary",
+    "wiki_text": "once every three seconds when you take physical damage, you get +8 Psionic Bonus to Universal Spell Power. This can stack up to three times and each stack lasts for 20 seconds.",
+    "wiki_url": "https://ddowiki.com/page/Item:Meridian_Fragment",
+    "verified": "2026-08-20",
+    "note": "#88 - stored as the fully-stacked maximum (8 x 3 = 24) with no trigger and no duration. Credited flat it grants +24 Universal Spell Power permanently for an augment that requires being hit repeatedly. Universal Spell Power CROSS-ADDS into all ten element spellpowers (#290/#301), so the over-credit propagates to every spellpower a caster ranks. Arrived 2026-08-18 with the canon migration, whose own report recorded it as 'newly scorable' - a gain that was really an over-credit."
+   }
+  ],
+  "Crystallized Drop of Tea": [
+   {
+    "name": "Universal Spell Power",
+    "type": "Psionic",
+    "from_value": "24",
+    "reason": "conditional + ramping + temporary",
+    "wiki_text": "once every three seconds when you take physical damage, you get +8 Psionic Bonus to Universal Spell Power. This can stack up to three times and each stack lasts for 20 seconds.",
+    "wiki_url": "https://ddowiki.com/page/Item:Crystallized_Drop_of_Tea",
+    "verified": "2026-08-20",
+    "note": "#88 - the Yellow-slot sibling of Meridian Fragment, identical wording and identical defect."
+   }
+  ]
+ }
+}
