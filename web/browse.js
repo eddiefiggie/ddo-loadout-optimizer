@@ -107,15 +107,19 @@ function distinct(items, fn) {
 // caller without one (a test, an older host) renders exactly as it does today.
 function presenceMarker(name, sets) {
   if (!name || !sets) return null;
-  const counting = sets.counting, admitted = sets.admitted;
+  const counting = sets.counting;
   if (counting && typeof counting.has === "function" && counting.has(name)) {
     return { cls: "counted", glyph: "★",
-      title: "Counted by the Utility effects priority — this effect earns a point toward that priority's total." };
+      title: "Counted by the Utility effects priority — this effect earns a point toward that priority's total. Effects without this mark can still be ranked on their own; the Utility priority just does not count them." };
   }
-  if (admitted && typeof admitted.has === "function" && admitted.has(name)) {
-    return { cls: "rankable-only", glyph: "◇",
-      title: "Rank this on its own to have the optimizer seek it. The Utility effects priority does NOT count it — weapon procs are ranked individually rather than counted." };
-  }
+  // #380 — there is deliberately NO second glyph for "rankable, not counted".
+  // The set is 821 names against the counting set's 20, so marking it reached
+  // 10,981 of 41,776 chips (28%) — a mark on a quarter of the catalog states
+  // nothing a reader can act on, and it dilutes the 699 chips that carry the
+  // one fact worth spotting. Absence of ★ IS the not-counted answer, and the
+  // legend says so outright rather than teaching a second symbol for the
+  // default case. The set still rides the solve, where it names only the
+  // handful of stats the player actually ranked (utilityRankedNotCounted).
   return null;
 }
 
@@ -129,10 +133,9 @@ function affixEntries(v) {
     const type = bt && bt !== "Enhancement" ? ` ${bt}` : "";
     const unit = a.unit === "pct" ? "%" : "";
     // #332 — `markName` is carried on the MAGNITUDE branch too, so set membership is
-    // the only gate on the marker. The reviewed weapon procs are untyped MAGNITUDES
-    // (Undead Bane appears 115 times, only 6 of them Bool), so gating the marker on
-    // presence type reached 75 of 1,656 admitted chips. `presenceName` keeps its
-    // narrower "renders as a presence tick" meaning for any caller that wants it.
+    // the only gate on the marker: a counted name that happens to render as a
+    // magnitude on some item still earns its ★. `presenceName` keeps its narrower
+    // "renders as a presence tick" meaning for any caller that wants it.
     return { text: `${name} +${a.value}${unit}${type}`, presenceName: null, markName: name };
   });
   (v.scaling || []).forEach((s) => entries.push({
@@ -363,15 +366,15 @@ function browsableItems(dataset) {
 // ---- DOM rendering (browser only) ----
 
 function initBrowse(dataset, vocab) {
-  // #332 — the counted / rankable-only sets come from the picker vocabulary the
-  // host already built (canonicalized through the shared alias table there, so a
-  // chip matches by the ONE name the solver uses). Optional: without it, chips
-  // render exactly as before rather than guessing at membership.
+  // #332 — the counted set comes from the picker vocabulary the host already
+  // built (canonicalized through the shared alias table there, so a chip matches
+  // by the ONE name the solver uses). Optional: without it, chips render exactly
+  // as before rather than guessing at membership.
   // #332 — gate on SIZE, not truthiness: a cached pre-stamp dataset yields an empty
-  // Set (documented in dataset.js), which is truthy, so the legend would explain two
-  // glyphs no chip can carry.
+  // Set (documented in dataset.js), which is truthy, so the legend would explain a
+  // glyph no chip can carry.
   const utilitySets = (vocab && vocab.utilityCounting && vocab.utilityCounting.size)
-    ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set() }
+    ? { counting: vocab.utilityCounting }
     : null;
   const controls = document.getElementById("browse-controls");
   const status = document.getElementById("browse-status");
@@ -435,16 +438,15 @@ function initBrowse(dataset, vocab) {
     // only when a vocabulary was supplied (so the markers are actually present)
     // and only once, appended after the count.
     if (utilitySets && !status.querySelector(".utility-legend")) {
-      // Each half is gated on ITS OWN set having members. `utilitySets` already
-      // requires a non-empty counting set, but the admitted half is independent: a
-      // dataset that stamps a counting set and no admitted procs would otherwise
-      // explain a glyph no chip can carry. Never teach a symbol that cannot appear.
+      // Gated on the counting set having members — never teach a symbol that
+      // cannot appear. #380 dropped the second glyph (see presenceMarker), so the
+      // legend carries the not-counted half as a sentence instead: one symbol to
+      // learn, and the default case stated rather than marked 10,981 times.
       const parts = [];
       if (utilitySets.counting && utilitySets.counting.size) {
-        parts.push('<span class="chip-mark">★</span> counted by the Utility effects priority');
-      }
-      if (utilitySets.admitted && utilitySets.admitted.size) {
-        parts.push('<span class="chip-mark">◇</span> rankable on its own, not counted by it');
+        parts.push('<span class="chip-mark">★</span> counted by the Utility effects priority'
+          + ' <span class="utility-legend-note">(unmarked effects are not counted by it,'
+          + ' but can still be ranked on their own)</span>');
       }
       if (parts.length) {
         const legend = document.createElement("p");

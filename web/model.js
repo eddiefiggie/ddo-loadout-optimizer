@@ -852,10 +852,14 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // exists but is NOT loaded by web/index.html, so citing it here sent a #332 change
   // to a file the app never runs. Thread from dataset metadata (vocab.utilityCounting).
   // #332 — the 11th argument accepts EITHER a bare Set (every existing call site)
-  // or `{ counting, admitted }`. The admitted half is the reviewed weapon procs a
-  // player can rank individually while the tier never counts them; the solve
+  // or `{ counting, notCounted }`. The not-counted half is the names a player can
+  // rank individually while the tier never counts them; the solve
   // stamps the ranked ones onto its report so a restored character's exports can
-  // name them without a dataset to re-derive from. Widening this one argument
+  // name them without a dataset to re-derive from. #380 renamed the key from
+  // `admitted` (it meant "reviewed UNTYPED weapon proc", which stopped describing
+  // the population when upstream typed them all `Bool`); the old key is still
+  // accepted so a caller built against the earlier shape keeps working rather
+  // than silently resolving to null and disclosing nothing. Widening this one argument
   // keeps KTD3 intact — the sets still ride as an argument, never on the
   // persisted query — and adds no 12th positional param.
   //
@@ -868,8 +872,8 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   const _uCounting = (utilityCountingSet && typeof utilityCountingSet.has === "function")
     ? utilityCountingSet
     : (utilityCountingSet && utilityCountingSet.counting) || null;
-  const _uAdmitted = (utilityCountingSet && !(typeof utilityCountingSet.has === "function")
-    && utilityCountingSet.admitted) || null;
+  const _uNotCounted = (utilityCountingSet && !(typeof utilityCountingSet.has === "function")
+    && (utilityCountingSet.notCounted || utilityCountingSet.admitted)) || null;
   // #348 (U3, R6) — the container's ORDER. Optional on the object form; when it is
   // absent the solver falls back to the counting set in sorted order so there is
   // exactly ONE encoding path rather than an ordered one and a count-maximizing
@@ -887,7 +891,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   if (utilityEnabled && _uCounting == null) {
     throw new Error(
       "buildModel: the Utility sentinel is ranked but no counting set was resolved from "
-      + "utilityCountingSet (the 11th argument). Pass a Set, or { counting, admitted } with "
+      + "utilityCountingSet (the 11th argument). Pass a Set, or { counting, notCounted } with "
       + "a real `counting` half — an object without it resolves to nothing. Thread it from "
       + "dataset metadata "
       + "(vocab.utilityCounting) — see web/wizard.js's buildModel calls, the LIVE reference "
@@ -1186,8 +1190,9 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     // widening condition above (sentinel ranked), so the two layers cannot
     // disagree about whether the tier is live for this solve.
     utilityCountingSet: _uCounting || null,
-    // #332 — the rankable-only procs, for the report's exclusion sentence.
-    utilityAdmittedSet: _uAdmitted || null,
+    // #332/#380 — the rankable-but-not-counted names, for the report's exclusion
+    // sentence.
+    utilityNotCountedSet: _uNotCounted || null,
     // #348 (U3) — the container's order, or null when the caller passed only a set.
     utilityOrder: _uOrder,
     utilityEnabled,

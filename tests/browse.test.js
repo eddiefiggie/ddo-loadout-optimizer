@@ -421,110 +421,113 @@ test("#332: affixEntries is the structured form and affixText its exact text pro
   assert.strictEqual(entries[1].presenceName, null, "a magnitude carries none");
 });
 
-test("#332: presenceMarker marks counted and rankable-only, and nothing else", () => {
-  const sets = { counting: new Set(["Ghostly"]), admitted: new Set(["Undead Bane"]) };
+test("#380: presenceMarker marks ONLY the counted set — there is no second glyph", () => {
+  // #380 removed the rankable-only ◇. The not-counted population is 851 names
+  // against the counting set's 20, so marking it reached 28% of all chips; the
+  // legend states the default in words instead. Absence of ★ IS the answer.
+  const sets = { counting: new Set(["Ghostly"]) };
   assert.strictEqual(presenceMarker("Ghostly", sets).cls, "counted");
-  assert.strictEqual(presenceMarker("Undead Bane", sets).cls, "rankable-only");
+  assert.strictEqual(presenceMarker("Undead Bane", sets), null,
+    "a rankable-but-not-counted effect is deliberately unmarked since #380");
   assert.strictEqual(presenceMarker("Keen", sets), null,
-    "a presence effect outside both sets is deliberately unmarked (~1,067 of them)");
+    "and so is every other presence effect outside the counting set");
   assert.strictEqual(presenceMarker(null, sets), null, "a magnitude is never marked");
+  // The old shape must not quietly come back through a stale caller: a `sets`
+  // object still carrying an `admitted` half marks nothing extra.
+  const legacy = { counting: new Set(["Ghostly"]), admitted: new Set(["Undead Bane"]) };
+  assert.strictEqual(presenceMarker("Undead Bane", legacy), null,
+    "an `admitted` half on the sets object is ignored, not honoured");
 });
 
 test("#332: without a vocabulary nothing is marked — Browse renders as before", () => {
   // initBrowse's vocab argument is optional; a host that does not pass one must
   // not get guessed-at membership.
   assert.strictEqual(presenceMarker("Ghostly", null), null);
-  assert.strictEqual(presenceMarker("Ghostly", { counting: null, admitted: null }), null);
+  assert.strictEqual(presenceMarker("Ghostly", { counting: null }), null);
 });
 
-test("#332: the two markers state DIFFERENT things and neither is symbol-only", () => {
-  const sets = { counting: new Set(["Ghostly"]), admitted: new Set(["Undead Bane"]) };
-  const counted = presenceMarker("Ghostly", sets), rankable = presenceMarker("Undead Bane", sets);
-  assert.notStrictEqual(counted.glyph, rankable.glyph, "distinct glyphs");
-  assert.notStrictEqual(counted.title, rankable.title, "distinct explanations");
-  assert.ok(/counted/i.test(counted.title), "the counted marker says it is counted");
-  assert.ok(/not count/i.test(rankable.title),
-    "the rankable-only marker says the tier does NOT count it — the #343 split");
+test("#380: the one marker carries BOTH halves of the split, not a symbol alone", () => {
+  // With the second glyph gone, the counted marker's own text has to state what
+  // the unmarked case means — otherwise dropping ◇ would drop the information
+  // rather than relocate it.
+  const counted = presenceMarker("Ghostly", { counting: new Set(["Ghostly"]) });
+  assert.ok(/counted/i.test(counted.title), "it says the effect IS counted");
+  assert.ok(/not count/i.test(counted.title),
+    "and says what an unmarked effect means — the #343 split, stated on the one marker");
+  assert.ok(/rank/i.test(counted.title),
+    "including that an unmarked effect can still be ranked on its own");
 });
 
-// RE-POINTED 2026-08-18 (#374/U6, tracked as #380). The admitted-proc half of
-// this assertion is gone from real data: the refresh typed every untyped weapon
-// proc `Bool`, all 104 `utility_procs` adjudications were retired, and
-// `utilityAdmitted` is empty by design. So on real data there is no chip that
-// can carry the rankable-only marker, and `presenceMarker("Undead Bane", …)`
-// returns null rather than a marker.
+// RE-POINTED TWICE, and this is the second. It first asserted that the
+// rankable-only marker fires on real data; the 2026-08-18 refresh emptied the
+// admitted set, so it was re-pointed to assert the emptiness and go red when
+// #380 refilled it. #380 refilled the SET but deleted the MARKER — the
+// not-counted population is 851 names and marking it reached 10,981 of 41,776
+// chips, so the second glyph was dropped and its meaning moved into the legend
+// and the counted marker's own title.
 //
-// The counted half is unaffected and stays pinned here. The two-markers-differ
-// mechanism stays pinned by the hand-built test above, which feeds both sets.
-test("#332/#380: on REAL data the counted marker still fires; the admitted marker has no population", () => {
+// So the real-data property under test changed shape: it is no longer "the
+// rankable-only marker fires", it is "a populated not-counted set produces NO
+// chip marker, and never silently produces the counted one".
+test("#380: on REAL data the counted marker fires and the not-counted set marks nothing", () => {
   const { buildPickerVocabulary } = require("../web/dataset.js");
   const vocab = buildPickerVocabulary(data);
   if (!vocab || !vocab.utilityCounting || !vocab.utilityCounting.size) {
     console.log("  (skipped — web/data/items.json not built)"); return;
   }
-  const sets = { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted };
+  const sets = { counting: vocab.utilityCounting };
   assert.strictEqual(presenceMarker("Ghostly", sets).cls, "counted",
     "the reported case is marked as counted");
-  assert.strictEqual(vocab.utilityAdmitted.size, 0,
-    "the admitted set is empty by design (#380) — when it refills, restore the " +
-    "rankable-only real-data assertion below");
+  // Non-vacuity: the population EXISTS, so "nothing is marked" is a real result
+  // rather than an empty loop. This is the assertion that was missing when the
+  // set silently collapsed.
+  assert.ok(vocab.utilityNotCounted.size > 100,
+    `the not-counted set must be populated for this check to mean anything; got ${vocab.utilityNotCounted.size}`);
+  assert.ok(vocab.utilityNotCounted.has("Undead Bane"),
+    "Undead Bane is in it — the anchor case");
   assert.strictEqual(presenceMarker("Undead Bane", sets), null,
-    "with nothing admitted, the rankable-only marker is unreachable on real data");
+    "and it carries no chip marker: absence of ★ is the not-counted answer");
 });
 
-test("#332/#380: the admitted-proc chip join has no population left to check", () => {
+test("#380: every counted chip is marked, and no not-counted chip is", () => {
   // The guard whose absence let the marker reach 75 of 1,656 chips. The isolated
   // presenceMarker tests passed because they fed name strings directly; the defect
-  // lived at the affixEntries -> presenceMarker join, where the admitted procs are
-  // untyped MAGNITUDES and the old code only tagged the presence-typed branch.
-  //
-  // RE-POINTED 2026-08-18 (#374/U6, tracked as #380). Its old `if
-  // (!vocab.utilityAdmitted.size) return` early-out is exactly the shape this
-  // repo has been bitten by — a guard that stops checking without failing — and
-  // the 2026-08-18 refresh made that branch the ONLY branch by emptying the
-  // admitted set. So the emptiness is now asserted rather than silently
-  // tolerated: this test goes red when #380 refills the set, at which point the
-  // join guard below becomes meaningful again and its `checked > 100` floor
-  // should be restored.
+  // lived at the affixEntries -> presenceMarker join, where membership is decided
+  // on the canonical name.
   const { buildPickerVocabulary } = require("../web/dataset.js");
   const vocab = buildPickerVocabulary(data);
   if (!vocab || !vocab.utilityCounting || !vocab.utilityCounting.size) {
     console.log("  (skipped — web/data/items.json not built)"); return;
   }
-  assert.strictEqual(vocab.utilityAdmitted.size, 0,
-    "no admitted procs remain (#380) — restore the real-data join guard when they return");
-  const sets = { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted };
+  const sets = { counting: vocab.utilityCounting };
   // Select by the CANONICAL name and assert on the RAW one. An earlier draft filtered
   // and asserted on the same raw markName, so a raw-vs-canonical mismatch dropped out
   // of the loop instead of failing — the test could not detect the very join it guards.
   const canon = (n) => (typeof vocab.canonical === "function" ? vocab.canonical(n) : n);
-  let checked = 0, marked = 0;
+  let countedChips = 0, countedMarked = 0, notCountedChips = 0, strayMarks = 0;
   for (const v of items) {
     for (const e of affixEntries(v)) {
-      if (!e.markName || !vocab.utilityAdmitted.has(canon(e.markName))) continue;
-      checked++;
-      if ((presenceMarker(e.markName, sets) || {}).cls === "rankable-only") marked++;
-    }
-  }
-  assert.strictEqual(checked, 0,
-    `no chip can join an empty admitted set (got ${checked}) — #380`);
-  assert.strictEqual(marked, checked,
-    `EVERY admitted-proc chip must be marked rankable-only, untyped or not (${marked}/${checked})`);
-  // The counted half of the same join still has a population, so the
-  // affixEntries -> presenceMarker seam this test exists to guard is still
-  // exercised end to end against real data rather than left unexercised.
-  let countedChips = 0, countedMarked = 0;
-  for (const v of items) {
-    for (const e of affixEntries(v)) {
-      if (!e.markName || !vocab.utilityCounting.has(canon(e.markName))) continue;
-      countedChips++;
-      if ((presenceMarker(e.markName, sets) || {}).cls === "counted") countedMarked++;
+      if (!e.markName) continue;
+      const c = canon(e.markName);
+      if (vocab.utilityCounting.has(c)) {
+        countedChips++;
+        if ((presenceMarker(e.markName, sets) || {}).cls === "counted") countedMarked++;
+      } else if (vocab.utilityNotCounted.has(c)) {
+        notCountedChips++;
+        if (presenceMarker(e.markName, sets)) strayMarks++;
+      }
     }
   }
   assert.ok(countedChips > 100,
     `the dataset carries many counted chips (got ${countedChips})`);
   assert.strictEqual(countedMarked, countedChips,
     `EVERY counted chip must be marked counted (${countedMarked}/${countedChips})`);
+  // Both halves are non-vacuous: the not-counted join has thousands of rows and
+  // every one of them must come back unmarked.
+  assert.ok(notCountedChips > 1000,
+    `the not-counted join must have a real population (got ${notCountedChips})`);
+  assert.strictEqual(strayMarks, 0,
+    `no not-counted chip may carry a marker (${strayMarks}/${notCountedChips}) — #380`);
 });
 
 console.log(`\n${passed} passed`);

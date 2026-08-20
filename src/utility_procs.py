@@ -148,6 +148,39 @@ def counting_set(records, rankable) -> list:
                   - set(rankable or ()))
 
 
+def presence_not_counted(records, counting, rankable) -> list:
+    """`metadata.utility_presence_not_counted`: every presence-targetable Bool
+    name the Utility tier does NOT count. Sorted.
+
+    #380 — this is the set `utility_untyped_admitted` used to express, restated
+    against the population that now carries these effects. The 2026-08-18
+    refresh typed every untyped weapon proc `Bool`, so `candidates` stopped
+    seeing them, `allow` emptied, and no surface could tell a counted effect
+    from a rankable-only one. The DISPLAY meaning never depended on the affix
+    being untyped — it is "a player can rank this individually and the tier
+    will not count it" — so it is derived from the presence population minus
+    the counting set, and is disjoint from that set by construction.
+
+    Derived, never curated. Admission to the picker no longer runs through this
+    list: a Bool name reaches `presence`/`suggest` on its type alone, so gating
+    the display distinction on a review would disclose less than the app
+    already offers. The reviewed-untyped channel (`allow` in the shard) stays
+    armed for its own population and is unioned in by `web/dataset.js`.
+
+    The magnitude subtraction is the SAME one `counting_set` applies, and for
+    the same reason: the five dual-nature names (Deception, Smoke Screen,
+    Protection from Evil, Underwater Action, Magical Efficiency) ship a Bool
+    line on some items and a real rankable magnitude on others. A player ranking
+    one of those ranks the magnitude and gets it, so they were never at risk of
+    mistaking it for a counted effect — and naming them would put a
+    declared-credit control on a not-counted name, the KTD4 defect the untyped
+    half is already kept clear of. Applying it here keeps both halves under one
+    rule instead of two.
+    """
+    return sorted(presence_counting_names(records)
+                  - set(counting or ()) - set(rankable or ()))
+
+
 def candidates(records) -> dict:
     """`{affix_name: {"items": n, "slots": {slot: count}}}` for every untyped
     affix name whose carriers are ALL Weapon/Off Hand slots — the proc

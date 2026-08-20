@@ -117,7 +117,7 @@ async function solveFixture(fx, env) {
       // #348 (U3) — the capture solves what the app solves, ORDER included: a
       // golden captured in alphabetical order would ratify a loadout no player
       // can ever get.
-      ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set(),
+      ? { counting: vocab.utilityCounting, notCounted: vocab.utilityNotCounted || new Set(),
           order: vocab.utilityOrder || null }
       : null,
     // #371 — the per-item Nearly Complete pools ("Nearly Finished" / "Almost

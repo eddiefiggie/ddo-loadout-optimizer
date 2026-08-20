@@ -2511,7 +2511,7 @@ if (typeof window !== "undefined" && window.App) {
           // at all. web/browse.js:373 already gates its markers this way; these sites
           // were the other half of the same asymmetry.
           vocab.utilityCounting && vocab.utilityCounting.size
-            ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set(),
+            ? { counting: vocab.utilityCounting, notCounted: vocab.utilityNotCounted || new Set(),
                 // #348 (U3) — the container's ORDER rides with its contents. Without
                 // it the solver falls back to alphabetical, which is not a product
                 // decision and would pursue Blindness Immunity before Ghostly.
@@ -2781,7 +2781,7 @@ if (typeof window !== "undefined" && window.App) {
           // at all. web/browse.js:373 already gates its markers this way; these sites
           // were the other half of the same asymmetry.
           vocab.utilityCounting && vocab.utilityCounting.size
-            ? { counting: vocab.utilityCounting, admitted: vocab.utilityAdmitted || new Set(),
+            ? { counting: vocab.utilityCounting, notCounted: vocab.utilityNotCounted || new Set(),
                 // #348 (U3) — the container's ORDER rides with its contents. Without
                 // it the solver falls back to alphabetical, which is not a product
                 // decision and would pursue Blindness Immunity before Ghostly.

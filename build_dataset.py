@@ -1549,6 +1549,14 @@ def build() -> dict:
             # defect web/dataset.js warns against.
             "utility_counting_set": _utility_counting,
             "utility_untyped_admitted": sorted(_uproc_allow),
+            # #380 — the counted/not-counted split, restated against the
+            # population that carries these effects since the 2026-08-18
+            # re-encoding typed every weapon proc `Bool`. Derived, never
+            # curated; disjoint from utility_counting_set by construction. The
+            # app unions it with the untyped allow half above, which stays
+            # armed for its own (now 25-name, fully quarantined) population.
+            "utility_presence_not_counted": utility_procs_mod.presence_not_counted(
+                planner_records, _utility_counting, _rankable_list),
             "utility_procs_coverage": {
                 "candidates": _uproc_checked,
                 "allowed": len(_uproc_allow),
