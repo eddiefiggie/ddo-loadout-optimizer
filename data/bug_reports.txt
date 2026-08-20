@@ -175,3 +175,16 @@ another artifact when I tweaked it.
 
 Profane Well Rounded item attribute and Essence of Epic Litany of the Dead augment
 profane well rounded should show up on the Sets tab.
+
+New report (2026-08-20):
+I notice that the solar gem of spell critical damage seems not to be being
+noticed for [element] intensity. I put void Intensity higher in my priorities
+than nullification to check if it would put the critical damage gem in rather
+than spellpower, and it did not. It still seems to be missing this.
+
+Filed 2026-08-20:
+- #402 Solar Gem of Spell Critical Damage vs element Intensity — reproduces, but as a
+  SHIPPED RULING (`Spell Intensity` record-only, docs/wiki-evidence/universal-name-sweep.md),
+  not a defect. That ruling rests on an evidence gap the sweep itself flagged as the known
+  residual, so the issue is a re-harvest to settle it either way — not a defence of the
+  current behavior.
