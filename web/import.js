@@ -84,13 +84,76 @@ function itemName(v) {
   return (v && (v.source_item || v.variant_id || v.name)) || "";
 }
 
+/** #408 — Trove writes a STACKED item's name in the plural, and the catalog
+ *  stores the singular. `Solar Gems of Constitution (Legendary)` in the export
+ *  is `Solar Gem of Constitution (Legendary)` in the dataset, so a player who
+ *  owns two of something had it silently dropped from their pool — in the one
+ *  mode whose whole promise is "only what I have".
+ *
+ *  That went from cosmetic to load-bearing when #359 shipped owned-augment
+ *  mode: every recovered name in the sample export is an augment (Solar/Lunar
+ *  Gems, a Ruby), so the names this drops are exactly the ones that mode now
+ *  filters on.
+ *
+ *  Deliberately NOT a general singularizer. Each rule below is a specific
+ *  head-noun plural observed in a real export; a blanket trailing-`s` strip
+ *  would map `Bolts` onto `Bolt` and invent matches. Returns the candidates to
+ *  try, never a rewrite of the player's data.
+ */
+const _STACK_PLURALS = [
+  [/\bGems of\b/, "Gem of"],
+  [/\bRubies of\b/, "Ruby of"],
+  [/\bDiamonds of\b/, "Diamond of"],
+  [/\bSapphires of\b/, "Sapphire of"],
+  [/\bTopazes of\b/, "Topaz of"],
+  [/\bEmeralds of\b/, "Emerald of"],
+  [/\bGlobes of\b/, "Globe of"],
+  [/\bEssences of\b/, "Essence of"],
+  [/\bFacets of\b/, "Facet of"],
+];
+
+function singularCandidates(name) {
+  const n = String(name || "");
+  const out = [];
+  for (const [re, to] of _STACK_PLURALS) {
+    if (re.test(n)) out.push(n.replace(re, to));
+  }
+  return out;
+}
+
+/** The reverse direction: is this catalog name owned, allowing for the export
+ *  having written it in the plural? */
+function ownedHasCatalogName(ownedNames, catalogName) {
+  if (!ownedNames || !catalogName) return false;
+  if (ownedNames.has(catalogName)) return true;
+  // The export may hold the plural of this catalog name.
+  for (const [re, to] of _STACK_PLURALS) {
+    // Build the plural by inverting the rule: "Gem of" -> "Gems of".
+    const singular = to;
+    if (catalogName.includes(singular)) {
+      const plural = catalogName.replace(singular, singular.replace(/^(\w+?)( of)$/, (m, head, tail) => {
+        if (/y$/.test(head)) return head.replace(/y$/, "ies") + tail;
+        if (/(s|x|z|ch|sh)$/.test(head)) return head + "es" + tail;
+        return head + "s" + tail;
+      }));
+      if (plural !== catalogName && ownedNames.has(plural)) return true;
+    }
+  }
+  return false;
+}
+
 /** Coverage disclosure (R11): how many owned distinct names matched the dataset
  *  by base-item name. `items` is the worn/weapon variant pool. */
 function ownedMatch(ownedNames, items) {
   const datasetNames = new Set();
   (items || []).forEach((v) => { const n = itemName(v); if (n) datasetNames.add(n); });
   let matched = 0;
-  ownedNames.forEach((n) => { if (datasetNames.has(n)) matched++; });
+  // #408 — a stacked-item plural counts as matched, because the pool filter
+  // below now admits it. The two must agree or the disclosure lies.
+  ownedNames.forEach((n) => {
+    if (datasetNames.has(n)) { matched++; return; }
+    if (singularCandidates(n).some((s2) => datasetNames.has(s2))) matched++;
+  });
   const ownedCount = ownedNames.size;
   return {
     ownedCount,
@@ -105,12 +168,14 @@ function ownedMatch(ownedNames, items) {
  *  the caller forwards them to buildModel unchanged so enhancements stay
  *  full-catalog. */
 function filterItemsToOwned(items, ownedNames) {
-  return (items || []).filter((v) => ownedNames.has(itemName(v)));
+  return (items || []).filter((v) => ownedHasCatalogName(ownedNames, itemName(v)));
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { splitCsvLine, parseTroveCsv, ownedMatch, filterItemsToOwned, itemName, USED_COLUMNS };
+  module.exports = { splitCsvLine, parseTroveCsv, ownedMatch, filterItemsToOwned, itemName,
+    ownedHasCatalogName, singularCandidates, USED_COLUMNS };
 }
 if (typeof window !== "undefined") {
-  window.TroveImport = { splitCsvLine, parseTroveCsv, ownedMatch, filterItemsToOwned, itemName };
+  window.TroveImport = { splitCsvLine, parseTroveCsv, ownedMatch, filterItemsToOwned, itemName,
+    ownedHasCatalogName, singularCandidates };
 }

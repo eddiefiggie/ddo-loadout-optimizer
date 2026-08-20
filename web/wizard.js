@@ -2464,11 +2464,19 @@ if (typeof window !== "undefined" && window.App) {
         // classifies Common/Uncommon/Rare (vendor / Mysterious Remnant / generic
         // loot). Strict-to-the-export would cut 1,063 augments to ~123 and delete
         // gear nobody farms, which reads as the tool being broken.
+        // #408 — ownership is tested through TroveImport's shared predicate, never
+        // a bare Set.has here. Trove writes a STACKED item's name in the plural
+        // ("Solar Gems of Constitution (Legendary)") while the catalog stores the
+        // singular, so a raw membership test silently drops gear the player owns.
+        // This path bypassed filterItemsToOwned, which is exactly how it kept its
+        // own copy of the rule — one predicate now, so the pool and the import
+        // disclosure cannot disagree about what "owned" means.
+        const owns = (v) => (typeof TroveImport !== "undefined" && TroveImport.ownedHasCatalogName)
+          ? TroveImport.ownedHasCatalogName(state.ownedNames, v.source_item || v.variant_id)
+          : state.ownedNames.has(v.source_item || v.variant_id);
         return dataset.items.filter((v) => (v.category === "augment"
-          ? (!state.ownedAugments
-             || v.acquirable === true
-             || state.ownedNames.has(v.source_item || v.variant_id))
-          : state.ownedNames.has(v.source_item || v.variant_id)));
+          ? (!state.ownedAugments || v.acquirable === true || owns(v))
+          : owns(v)));
       }
       return dataset.items;
     }
@@ -3178,7 +3186,16 @@ if (typeof window !== "undefined" && window.App) {
                 // eslint-disable-next-line no-undef
                 const m = TroveImport.ownedMatch(ownedNames, dataset.items);
                 stat.className = "wz-filestat" + (m.matched ? "" : " warn");
-                stat.innerHTML = `✓ Parsed <strong>${rowCount.toLocaleString()}</strong> entries · <strong>${m.ownedCount}</strong> distinct names · matched <strong>${m.matched}</strong> in the dataset (${m.unrecognized} unrecognized).`;
+                // #408 — the bare count read as breakage. Measured against a real
+                // export, ~75% of unmatched names are out of scope BY DESIGN
+                // (filigrees, collectables, consumables, randomly-generated loot)
+                // because this is a named-gear catalog, not an inventory. Saying so
+                // turns an alarming number into an expected one; saying nothing left
+                // a player to conclude the import had failed.
+                stat.innerHTML = `✓ Parsed <strong>${rowCount.toLocaleString()}</strong> entries · <strong>${m.ownedCount}</strong> distinct names · matched <strong>${m.matched}</strong> named items.`
+                  + (m.unrecognized
+                    ? ` <span class="wz-sub">The other ${m.unrecognized.toLocaleString()} are mostly things this tool doesn't optimize over — filigrees, collectables, consumables and randomly-generated loot. Only named gear is searched.</span>`
+                    : "");
               } catch (err) {
                 state.ownedNames = null;
                 stat.className = "wz-filestat warn";
