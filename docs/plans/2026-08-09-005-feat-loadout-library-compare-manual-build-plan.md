@@ -4,8 +4,10 @@ type: feat
 date: 2026-08-09
 topic: loadout-library-compare-manual-build
 artifact_contract: ce-unified-plan/v1
-artifact_readiness: requirements-only
+artifact_readiness: implementation-ready
 product_contract_source: ce-brainstorm
+planning_source: ce-plan
+planned: 2026-08-20
 execution: code
 ---
 
@@ -17,7 +19,9 @@ execution: code
 - **Product authority:** This document. Requirements and Key Decisions here are settled unless a later plan supersedes them in place.
 - **Sequencing:** This effort is queued behind the open player-reported correctness issues — #88 (bonus-type stacking), #91 (niche gear over holistic value), #92 (set-bonus over-fitting), #93 (data currency). A build library is built on top of the optimizer's core claim, and that claim is what players are currently disputing. Plan and ship those first.
   - **Gate status (checked 2026-08-17):** #91, #92 and #93 are CLOSED; only #88 remains open. Three quarters of this gate has lifted since the plan was written, so re-read the sequencing before assuming the effort is blocked. The plan itself was never committed — it sat in a git stash on a since-deleted branch until this recovery, which is why the note went stale unnoticed.
-- **Open blockers:** None. The effort ships whole rather than staged (KD12).
+- **Open blockers:** None for planning. **Execution is still gated on #88** — see Sequencing. The effort ships whole rather than staged (KD12).
+- **Planning status (2026-08-20):** Enriched to implementation-ready. The seven Outstanding Questions are resolved below under *Planning Contract*; #190 is folded in as U2 rather than left an external dependency, on KD12's ships-whole reasoning.
+- **Product Contract preservation:** unchanged. No R/A/F/AE ID or Key Decision was altered by planning; every question planning answered was already marked "deferred to planning".
 
 ---
 
@@ -342,6 +346,182 @@ flowchart TB
 - How large the storage budget actually is in practice, and whether the snapshot needs slimming before a library of builds is realistic.
 - How Compare and Alternatives are distinguished for the player, given that Alternatives already answers "how does another loadout differ from mine" for solver-generated candidates.
 - Whether a hand-set augment becomes a hard equality constraint or a preference, since only the former survives the settle stage's placement minimization.
+
+---
+
+## Planning Contract
+
+### Resolved Outstanding Questions
+
+Each of the seven questions the Product Contract deferred to planning, answered. These are now decisions; the Outstanding Questions section above is retained as the record of what was open.
+
+**PQ1 — Does per-host placement for ordinary augments replace the aggregate per-colour capacity model, or sit alongside it?**
+
+**Sits alongside, for pinned assignments only.** The premise that made this the effort's largest piece does not hold as stated. The recorded ~100x blowup (`web/solver.js:360`) is specific to **per-physical-slot** variables, which "scaled with the candidate-item count". Per-**host** binding is a different shape and already ships: the Set Augment path (`web/solver.js:494-508`) creates a `y` per (augment, host) gated `y - x_host <= 0`, then one `cv` per **distinct compatible colour** — never per physical slot — with `sum(cv) - y = 0`.
+
+Crucially those `cv` vars feed the **same `placeByColor` supply** the aggregate model consumes. So the double-booking risk this question raises is already solved in the tree: two placement models share one per-colour capacity constraint, and that constraint is what prevents them from both claiming the same physical slot.
+
+The extension is therefore bounded: create per-host binding vars **only for augment assignments the player pinned**, leaving every unpinned augment on the aggregate model. Pinned assignments are a handful, so the variable count added is O(pins), not O(pool x candidates).
+
+**PQ2 — How many differences does the informational section report, and how are candidate stats chosen before the solver stages run?**
+
+Bounded at **the 8 largest absolute differences**, chosen from the union of both builds' *non-zero* affix names minus the benchmark's ranked priorities, ranked by a cheap pre-solve delta read off each record's `effective` map. The solver then runs bounded extra stages over only those 8 (KD7 keeps totals solver-derived). Eight is a display bound first — a section a reader scans at a glance — and it caps the added stages at a knowable number rather than the union's size.
+
+**PQ3 — What threshold makes two character setups incompatible under R23?**
+
+Two tests, both exact, no heuristics:
+1. **ML cap equality.** Different caps mean differently-scaled affix values (KD11's own reasoning).
+2. **Equippability dry-run.** Run the candidate's chosen items through the benchmark's existing equippability filter (race, armor proficiency, weapon style, oath, off-hand rules — the gates `web/model.js` already applies). If **any** item would be dropped, decline.
+
+The dry-run reuses the live filter rather than reimplementing the gates, so a future gate is covered by construction. R42's message names the first failing test and the specific item or cap that tripped it.
+
+**PQ4 — Do existing saved records need migration, and what does a pre-effort record render as in Compare?**
+
+**No migration.** KD8 replaces the *result allowlist* as the render seam; the record's `inputs` shape is unchanged, and a pre-effort record simply lacks the new fields. Compare treats a pre-effort record as a **valid candidate** — it carries `chosen`, `effective` and `inputs`, which is everything R16 scoring needs. What it lacks is the manual-pick channel (R30), so it compares as an all-solver-chosen loadout, which is what it was. R12's provenance shows blank rather than fabricated.
+
+**PQ5 — How large is the storage budget in practice, and does the snapshot need slimming first?**
+
+**Measure before slimming; do not slim in this effort.** A record's snapshot carries full item objects for ~14 slots. `localStorage` is ~5MB per origin in every current browser. U1 adds a measured figure (bytes per saved record, taken from the real store) and R5's quota-exceeded path is the correctness requirement regardless of the number. Slimming is deferred to follow-up work with the measurement as its input — slimming on an unmeasured guess would trade a real disclosure for a speculative saving.
+
+**PQ6 — How are Compare and Alternatives distinguished for the player?**
+
+By **what they are for**, stated in each tab's own copy. **Alternatives** answers "what else could the solver have given me *for this query*" — solver-generated candidates over one ranking. **Compare** answers "how does this build do against *another build I have*" — arbitrary saved or imported records, which the solver never generated and may not be reachable from the current query at all. R21's disclosure is the seam that makes the difference concrete: a Compare candidate can be drawn from a pool the benchmark was never solved over.
+
+**PQ7 — Is a hand-set augment a hard equality constraint or a preference?**
+
+**A hard equality constraint**, and this is forced rather than chosen. R29 requires a hand-set augment to survive "even when it contributes nothing to the ranked priorities". The settle stage minimizes placements, so a preference-weighted assignment contributing nothing is exactly what that stage removes. Only an equality constraint survives it. This is the same reason `setAugmentsPlaced` uses `sum(cvars) - y = 0` rather than an objective term.
+
+### Key Technical Decisions
+
+- **KTD1. Per-host binding is added as a pinned-assignment overlay on the existing per-colour capacity model, not a replacement.** Reuses the Set Augment pattern verbatim, including sharing `placeByColor`. Rationale and the blowup distinction: PQ1. *Alternatives:* replacing the capacity model (re-opens the dominance pre-filter's soundness obligations for no benefit to unpinned augments); a parallel placement model with its own supply (the double-booking failure PQ1 names).
+- **KTD2. The envelope reader (#190) is U2 of this plan, not a prerequisite.** KD12 ships the effort whole, and Compare is unreachable without import. The envelope's `core` **is** the saved record (`web/exporters.js:571-580`), so the reader is validation plus a deep clone, not a new persistence path. It validates **per-record through `backup.js`'s `sanitizeCharacter`**, not through its whole-file parser, per the origin's Dependencies note.
+- **KTD3. `RESULT_KEEP` is deleted, not extended.** KD8's seam removal. Worth recording that the allowlist has grown to **27 fields** since the Product Contract cited 20 — seven more chances to have missed one, which is the argument for removing the mechanism rather than maintaining it.
+- **KTD4. The manual-pick channel is a separate map from the pin list.** R30 requires the two be distinguishable; KD6 puts both in the pin list conceptually. Implemented as `slotConstraints` (unchanged, player pins) plus a new `manualPicks` map keyed by host `variant_id`. Pin-provenance and per-item escape hatches keep reading `slotConstraints` alone, so no existing pin behavior shifts.
+
+### Sequencing and Gate Status
+
+**Execution remains gated on #88** (bonus-type stacking accuracy). The Product Contract queued this effort behind #88/#91/#92/#93 because "a build library is built on top of the optimizer's core claim, and that claim is what players are currently disputing." #91, #92 and #93 are closed; **#88 is open**, and it is a stacking-accuracy issue — a Compare verdict computed on wrong stacking is wrong in exactly the way this effort's whole value depends on being right.
+
+Planning proceeds regardless (it costs nothing and this artifact is the deliverable), but `ce-work` should not start until #88 closes or the gate is deliberately re-judged.
+
+---
+
+## Implementation Units
+
+### U1. Record shape and the render seam
+
+- **Goal:** Make the saved record the single shape the results view, exports, and Compare all read. Delete `RESULT_KEEP`.
+- **Requirements:** R1, R2, R4, R5; KD8, KTD3.
+- **Dependencies:** none.
+- **Files:** `web/persist.js`, `web/results.js`, `web/wizard.js`, `tests/persist.test.js`, `tests/results.test.js`.
+- **Approach:** Render from the record shape rather than the stripped result. Remove `RESULT_KEEP` and its strip step; keep `INPUT_KEYS` (a genuine input allowlist, and `backup.js` imports it). Add R5's quota-exceeded path: catch the storage write failure, surface it, leave existing builds untouched. Record the measured bytes-per-record figure PQ5 calls for.
+- **Execution note:** Characterization first — capture what the results view renders for a saved build today, then prove it unchanged after the seam moves. This is a refactor of a path that has already dropped a field silently.
+- **Test scenarios:**
+  - A field present on a fresh solve but absent from the old allowlist (e.g. `creditReport`) now survives a save/load round trip and renders identically. *This is the `creditReport` incident as a regression test.*
+  - A saved record round-trips byte-identically through save then load.
+  - A quota-exceeded write surfaces a message, writes nothing, and leaves every existing saved build readable.
+  - A pre-effort saved record still loads and renders (no migration — PQ4).
+  - Measured: bytes per saved record over the real store, recorded in the PR.
+
+### U2. Portable envelope reader (folds in #190)
+
+- **Goal:** Read a `ddo-loadout/v1` file back into a record.
+- **Requirements:** R6, R10, R11, R12, R32; KTD2. **Closes #190.**
+- **Dependencies:** U1.
+- **Files:** `web/import.js` (or a sibling `web/portable.js`), `web/backup.js`, `tests/import.test.js`.
+- **Approach:** Validate the envelope, then validate `core` **per-record through `sanitizeCharacter`**, not the whole-file parser. **Deep-clone** before use — the origin's Dependencies note records that an import editing the envelope in place would edit the user's saved build. Refuse whole on any failure (R10): a message, nothing written. On name collision, store under a disclosed alternate name and never overwrite (R11). Stamp provenance (R12).
+- **Test scenarios:**
+  - A round trip (export then import) reproduces the record.
+  - A file with a bad `format`, a bad `schema_version`, or a malformed `core` is refused whole, with nothing written to storage.
+  - An import whose name collides stores alongside the existing build; the existing build is byte-unchanged afterward.
+  - Mutating the imported record does **not** mutate the source envelope object (the deep-clone guard).
+  - Provenance is stamped and survives a save/load round trip.
+  - A file that is valid JSON but not an envelope at all is refused with the same whole-file refusal.
+
+### U3. Per-host augment binding for pinned assignments
+
+- **Goal:** Let the solver be told "this augment goes on this item" without re-triggering the blowup.
+- **Requirements:** R25, R28, R29; KTD1, PQ1, PQ7.
+- **Dependencies:** U1.
+- **Files:** `web/solver.js`, `web/model.js`, `tests/solver.test.js`, `tests/constraints.test.js`.
+- **Approach:** For each pinned (augment, host) pair, emit a per-host binding var following the Set Augment pattern at `web/solver.js:494-508` — gate on the host being equipped, one `cv` per distinct compatible colour, and **consume from the same `placeByColor` supply** so the two models cannot double-book. A hand-set assignment is a **hard equality** (PQ7), because the settle stage would otherwise drop a zero-contribution pick. Unpinned augments are untouched.
+- **Execution note:** Add a program-size assertion alongside the behavioral tests — the whole point of KTD1 is that this does not scale with the candidate count, and that claim should be measured rather than asserted in prose.
+- **Test scenarios:**
+  - A pinned augment on a pinned host appears in the result on that host.
+  - A pinned augment contributing **nothing** to any ranked priority still survives the settle stage (R29 — the reason PQ7 chose equality).
+  - A pinned augment whose host is not equipped is reported, not silently dropped (feeds R33).
+  - A pinned augment and an aggregate-model augment never both claim the same physical slot (the shared-supply guard).
+  - Program size grows O(pins), not O(pool x candidates): measured var count with 0, 1 and 14 pinned assignments.
+  - An unpinned solve produces a byte-identical program to today's (the no-op guard).
+
+### U4. Manual picks channel and "Score as-is"
+
+- **Goal:** Pin expansion down to augments and crafts, and a control that totals the loadout as picked.
+- **Requirements:** R24, R26, R27, R28, R30, R31, R36, R37, R38; KD6, KD9, KTD4.
+- **Dependencies:** U3.
+- **Files:** `web/wizard.js`, `web/query.js`, `web/model.js`, `web/persist.js`, `tests/wizard.test.js`, `tests/constraints.test.js`.
+- **Approach:** Add `manualPicks` beside `slotConstraints` (KTD4) so pin-provenance and per-item escape hatches keep reading pins alone. "Score as-is" is the existing model with everything pinned (KD7) — same objective, same stages — never a projection. R36's summary reads the two maps.
+- **Test scenarios:**
+  - Every slot pinned plus every augment and craft set produces a complete manual build with no search.
+  - "Score as-is" off: the solver fills only unset slots and changes nothing set (R28).
+  - A manual build saves, exports and compares through the same path as a solved one (R31).
+  - The manual channel is distinguishable from explicit pins in the record (R30) — asserted on the persisted shape, not just in memory.
+  - R36's per-item summary reports the right set/unset counts without expansion.
+
+### U5. Compare — verdict, informational section, and compatibility
+
+- **Goal:** The Compare tab.
+- **Requirements:** R13, R14, R15, R16, R17, R18, R19, R20, R21, R22, R23, R34, R39, R40, R42; KD2, KD3, KD4, KD11, PQ2, PQ3, PQ6. *(Enumerated rather than given as a range so every ID is greppable — the trace is the point.)*
+- **Dependencies:** U1, U2, U3, U4.
+- **Files:** `web/results.js`, `web/solver.js`, `web/projection.js`, `tests/results.test.js`, `tests/solver.test.js`.
+- **Approach:** Candidates are scored as given (R16) — everything pinned, through the solver per KD7. The verdict covers the benchmark's ranked priorities only (R15/R17). The informational section is bounded to the 8 largest differences (PQ2) over bounded extra stages. Compatibility is the two exact tests of PQ3, with the equippability dry-run reusing the live filter. An incompatible pair is **declined** with the specific blocking difference (R42), never scored.
+- **Test scenarios:**
+  - The verdict reports benchmark, candidate and difference for each ranked priority.
+  - A candidate's own priorities are ignored (R15) — a candidate saved with a different ranking scores under the benchmark's.
+  - Differing ML caps decline with a message naming the cap (R22/R42).
+  - An item the benchmark's character cannot equip declines and names that item.
+  - Compatible setups that differ only in ways that do not corrupt the comparison still run.
+  - The player picks which saved builds take part; an unpicked build is not scored (R14).
+  - The informational section reports at most 8 rows of stats **neither build ranked** (R18), with totals from the solver rather than a projection (KD7), and is visually distinguishable from the verdict (R40).
+  - A candidate from a pool the benchmark was not solved over carries R21's disclosure.
+  - Every candidate carries R34's recomputed-against-current-catalog disclosure.
+  - A stale verdict is signalled once the working build changes (R20).
+
+### U6. Library surfaces, provenance and disclosure
+
+- **Goal:** The entry picker, import points, provenance display, and every empty state.
+- **Requirements:** R3, R7, R8, R9, R12, R33, R35, R41; KD3, KD10.
+- **Dependencies:** U2, U5.
+- **Files:** `web/wizard.js`, `web/results.js`, `web/styles.css`, `tests/wizard.test.js`, `tests/tabs.test.js`.
+- **Approach:** Import at exactly two points (R7). A first-step import becomes the working build (R8); a Compare import never does (R9). Every state uses the existing badge-and-glow vocabulary (R35/KD10) rather than a parallel one. R33 names any pinned item excluded from a scored loadout and why.
+- **Test scenarios:**
+  - The first step offers load-a-build and does **not** offer to name or save one (R3).
+  - A first-step import becomes the working build; a Compare import does not (R8/R9).
+  - A pinned item dropped for each distinct reason (pool mode, ML cap, equippability, catalog resolution) is named with that reason (R33).
+  - Every empty state names the action that fills it (R41).
+  - New states reuse existing badge/glow classes — asserted against the class names, so a parallel vocabulary fails the test.
+
+---
+
+## Verification Contract
+
+- Full Python suite and every `tests/*.test.js` file run individually (the repo's standing rule).
+- **Goldens re-ratified deliberately.** U3 changes program construction; U1 changes the render seam. Any golden movement is inspected before acceptance, and `perTarget` movement on an unpinned solve is a regression, not a re-ratification.
+- **Program-size measurement** from U3 recorded in the PR (var counts at 0, 1, 14 pinned assignments) — KTD1's claim is quantitative and should be reported as a number.
+- **Storage measurement** from U1 recorded in the PR (bytes per saved record), per PQ5.
+- Browser verification of the Compare tab and the manual-build flow against a real solve, not unit tests alone.
+- Build stamp bumped in all three places if any `web/` or pipeline file changes.
+
+## Definition of Done
+
+- All 42 requirements are implemented or explicitly deferred in Scope Boundaries with a reason.
+- #190 is closed by U2.
+- `RESULT_KEEP` no longer exists.
+- An unpinned solve produces a byte-identical program to today's.
+- Compare declines incompatible setups rather than scoring them, and says why.
+- Both measurements (program size, storage) are recorded.
+
+---
 
 ### Sources / Research
 
