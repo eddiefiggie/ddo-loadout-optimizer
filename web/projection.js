@@ -168,13 +168,39 @@
    *  for a placement record saved before placements carried them — the same
    *  fallback the set-like block uses.
    *
-   *  `carrierKind` ("item" | "augment") is external-facing metadata: no app
-   *  surface reads it, but it rides the portable ddo-loadout/v1 JSON so a
+   *  `carrierKind` ("item" | "augment" | "craft") is external-facing metadata: no
+   *  app surface reads it, but it rides the portable ddo-loadout/v1 JSON so a
    *  consumer can tell a worn carrier from a slotted one — not dead code.
+   *
+   *  #370 — the CRAFTED channels are scanned too. A bundle earned by crafting is
+   *  the same engraved multi-stat enchantment as one printed on the item, and 43
+   *  crafted options across three pools carry `via` (24 Viktranium, 12 Nearly
+   *  Complete, 7 Dino inserts) — every one of them was invisible here, which is
+   *  the "solve-visible but share-invisible" shape this repo has ruled against.
+   *  Only the multi-affix channels are scanned: `rollPlaced`/`sealPlaced`/
+   *  `tfPlaced`/`gsPlaced` are flat single-affix records with no `affixes` array,
+   *  so they cannot reach the 2+ member floor by construction. Add them here if
+   *  they ever gain multi-affix options — do not add them speculatively, or the
+   *  coverage would be a claim no fixture can fail.
+   *
+   *  A crafted carrier renders as `host (source)` so the "from X" grammar every
+   *  export already prints stays correct with no per-format edit; the machine
+   *  -readable split rides alongside as `host`/`craftFamily`/`craftName`.
    */
+  function craftBundleSource(o, family) {
+    if (family === "vik") return `Slot ${o.slot_type} Viktranium augment`;
+    // #371 — the per-item pools are a different in-game system from the category
+    // menu, and `pool` is what separates them. Same fork `craftLabel` makes.
+    if (family === "nc") return o.pool || "Nearly Completed";
+    if (family === "dino") return `${o.dino_type} insert`;
+    // Unreachable from the table below; named rather than silently interpolating
+    // an undefined field into player-facing text if a channel is added carelessly.
+    return "crafted";
+  }
+
   function bundleGroups(result, augLookup) {
     const out = [];
-    const collect = (carrier, kind, affixes) => {
+    const collect = (carrier, kind, affixes, extra) => {
       const groups = new Map();
       for (const a of affixes || []) {
         const via = a && a[PROVENANCE_KEY];
@@ -192,6 +218,7 @@
             type: m.type != null ? m.type : m.bonus_type,
             ...(m.unit ? { unit: m.unit } : {}),
           })),
+          ...(extra || {}),
         });
       }
     };
@@ -203,6 +230,29 @@
       const affixes = (a.affixes && a.affixes.length) ? a.affixes
         : ((augLookup && augLookup.get(a.variant_id)) || {}).affixes;
       collect(a.variant_id, "augment", affixes);
+    }
+    // #370 — crafted bundles. `vikPlaced`/`ncPlaced` name their host outright;
+    // a Dino insert does not, so its host comes from the SAME greedy
+    // reconstruction every other Dino surface reads (never a second walk that
+    // could disagree with the chips).
+    const dinoHosts = new Map();
+    const dinoAssign = assignDinoInserts((result && result.chosen) || [], result && result.dinoPlaced);
+    for (const [i, list] of dinoAssign.byIndex) {
+      const host = ((((result.chosen || [])[i] || {}).variant) || {}).variant_id;
+      for (const ins of list) dinoHosts.set(ins, host);
+    }
+    const craftChannels = [
+      [(result && result.vikPlaced) || [], "vik", (o) => o.item],
+      [(result && result.ncPlaced) || [], "nc", (o) => o.item],
+      [(result && result.dinoPlaced) || [], "dino", (o) => dinoHosts.get(o)],
+    ];
+    for (const [list, family, hostOf] of craftChannels) {
+      for (const o of list) {
+        const host = hostOf(o) || null;
+        const source = craftBundleSource(o, family);
+        collect(host ? `${host} (${source})` : source, "craft", o.affixes,
+          { host, craftFamily: family, craftName: o.name || null });
+      }
     }
     return out;
   }
@@ -958,6 +1008,43 @@
     };
   }
 
+  /** #370 — the Viktranium slots an equipped item DECLARES but the solve left
+   *  empty, in the same in-game slot order `buildCraftMaps` sorts placements by.
+   *
+   *  A Lamordia slot is part of the item's identity, not a discretionary
+   *  placement: the item ships with all four whether or not an option in the pool
+   *  advances your priorities. Rendering only the placements made a 4-slot item
+   *  read as a 3-slot item, which is indistinguishable from "the tool does not
+   *  know that slot exists" — and that is exactly how #365 was reported ("it
+   *  didn't put anything in the Woeful slot"). So the empty slot is DISCLOSED
+   *  rather than dropped.
+   *
+   *  Multiset difference, not a set difference: an item may declare two slots of
+   *  one type, and filling one must not silently account for both.
+   *
+   *  Shared by the app chips and `craftingForItem` (every export), so the two
+   *  surfaces cannot disagree about how many slots an item has.
+   */
+  function unfilledVikSlots(variant, placed) {
+    const declared = (variant && variant.lamordia_slots) || [];
+    if (!declared.length) return [];
+    const filled = new Map();
+    for (const p of placed || []) filled.set(p.slot_type, (filled.get(p.slot_type) || 0) + 1);
+    const out = [];
+    for (const slot of declared) {
+      const n = filled.get(slot.type) || 0;
+      if (n > 0) { filled.set(slot.type, n - 1); continue; }
+      out.push({ slot_type: slot.type, category: slot.category || null });
+    }
+    const order = Craft && Craft.get("viktranium") && Craft.get("viktranium").slot_types;
+    if (order && order.length) {
+      const rank = new Map(order.map((s, i) => [s, i]));
+      const rankOf = (s) => (rank.has(s) ? rank.get(s) : order.length);
+      out.sort((a, b) => rankOf(a.slot_type) - rankOf(b.slot_type));
+    }
+    return out;
+  }
+
   // One craft option's value label (e.g. "Constitution +15") — the unit inside a
   // family label. Mirrors results.js craftLbl minus its esc() wrapper (callers escape).
   function craftValue(o) {
@@ -994,6 +1081,13 @@
       case "nc": return `${o.pool || "Nearly Completed"}: ${o.name ? o.name + ", " : ""}${craftAffixes(o)}`;
       case "roll": return `Choice: ${craftValue(o)}`;
       case "vik": return `Slot ${o.slot_type} Viktranium augment: ${craftAffixes(o)}`;
+      // #370 — a declared slot the solve left empty. Says why, so the player can
+      // tell "no option helps your priorities" apart from "this tool has no data
+      // for that slot" — the two look identical when the slot simply vanishes.
+      // Deliberately NOT given an export cue (`CUE.craft` in exporters.js): a cue
+      // would file an empty slot under a crafting family in the legend and read as
+      // a craft to go apply. The label stands alone on every surface instead.
+      case "vikEmpty": return `Slot ${o.slot_type} Viktranium augment: left empty — no option adds to your ranked stats`;
       case "seal": return `Sealed in ${o.seal_type}: ${craftValue(o)}`;
       case "tf": return `Thunder-Forged T${o.tier}: ${craftValue(o)}`;
       case "gs": return `Green Steel: ${craftValue(o)}`;
@@ -1152,7 +1246,12 @@
     for (const d of maps.dinoAssign.byIndex.get(idx) || []) out.push({ family: "dino", label: craftLabel(d, "dino") });
     for (const n of maps.ncByItem.get(v.variant_id) || []) out.push({ family: "nc", label: craftLabel(n, "nc") });
     for (const r of maps.rollByItem.get(v.variant_id) || []) out.push({ family: "roll", label: craftLabel(r, "roll") });
-    for (const n of maps.vikByItem.get(v.variant_id) || []) out.push({ family: "vik", label: craftLabel(n, "vik") });
+    const viks = maps.vikByItem.get(v.variant_id) || [];
+    for (const n of viks) out.push({ family: "vik", label: craftLabel(n, "vik") });
+    // #370 — the declared-but-empty Lamordia slots ride the same resolved view,
+    // so every export states the item's real slot count (R6: never app-visible
+    // but share-invisible).
+    for (const s of unfilledVikSlots(v, viks)) out.push({ family: "vikEmpty", label: craftLabel(s, "vikEmpty"), slot_type: s.slot_type });
     for (const n of maps.sealByItem.get(v.variant_id) || []) out.push({ family: "seal", label: craftLabel(n, "seal") });
     for (const n of maps.tfByItem.get(v.variant_id) || []) out.push({ family: "tf", label: craftLabel(n, "tf") });
     for (const n of maps.gsByItem.get(v.variant_id) || []) out.push({ family: "gs", label: craftLabel(n, "gs") });
@@ -1617,7 +1716,7 @@
     satisfiedSets, suppressedHostIds, slotSetNames,
     setContributors, contributorsFor, setMemberLabel, activeSetDetail, satisfiedSetDetail,
     // craft + cue helpers
-    buildCraftMaps, craftLabel, craftValue, lunarSolar, setAugmentSlotRule,
+    buildCraftMaps, craftLabel, craftValue, unfilledVikSlots, lunarSolar, setAugmentSlotRule,
     // #245 — craft-carried disclosure + the opt-out notice line
     craftCarried, craftingExcludedLine,
     // #339 — the augment-ceiling scope disclosure line

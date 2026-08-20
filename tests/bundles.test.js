@@ -167,4 +167,119 @@ test("R8: every sets-rendering export includes the grouping when bundles exist",
   assert.strictEqual(pj.resolved.bundles.length, 2);
 });
 
+// ---- #370 — crafted bundles ------------------------------------------------
+//
+// A bundle earned by CRAFTING is the same engraved multi-stat enchantment as one
+// printed on the item, but `bundleGroups` scanned only items and augments, so 43
+// via-carrying crafted options (24 Viktranium, 12 Nearly Complete, 7 Dino
+// inserts) could never name themselves — solve-visible, share-invisible. These
+// pin the three multi-affix channels, their host attribution, and the fact that
+// the flat single-affix channels cannot reach the 2+ member floor at all.
+
+const SWORD = "Legendary Calamitous Bastard Sword";
+const DINO_RING = "Dinosaur Bone Ring";
+
+// The real shape of a via-stamped Viktranium option: one craft, seven schools.
+const SCHOOLS = ["Abjuration", "Conjuration", "Divination", "Enchantment", "Evocation", "Illusion", "Necromancy"];
+const schoolSpread = (bonus_type, via) =>
+  SCHOOLS.map((s) => ({ stat: `${s} Focus`, bonus_type, value: 2, unit: "flat", via }));
+
+function craftResult() {
+  return {
+    status: "optimal", setsActive: [],
+    chosen: [
+      { slot: "Main Hand", variant: { variant_id: SWORD, ml: 34, affixes: [] } },
+      { slot: "Ring", variant: { variant_id: DINO_RING, ml: 32, affixes: [], dino_slots_norm: ["Dread||Accessory"] } },
+    ],
+    augmentsPlaced: [], setAugmentsPlaced: [],
+    vikPlaced: [{
+      item: SWORD, slot_type: "Woeful", category: "Weapon",
+      name: "Woeful: Exceptional Spell Focus Mastery",
+      affixes: schoolSpread("Exceptional", "Exceptional Spell Focus Mastery"),
+    }],
+    ncPlaced: [{
+      item: SWORD, category: "Skills", pool: "Nearly Finished", name: "Exceptional Strength Skills",
+      affixes: [
+        { stat: "Jump", bonus_type: "Exceptional", value: 3, unit: "flat", via: "Exceptional Strength Skills" },
+        { stat: "Swim", bonus_type: "Exceptional", value: 3, unit: "flat", via: "Exceptional Strength Skills" },
+      ],
+    }],
+    dinoPlaced: [{
+      dino_type: "Dread", category: "Accessory", name: "Dread Potency",
+      affixes: [
+        { stat: "Fire Spell Power", bonus_type: "Profane", value: 10, unit: "flat", via: "Profane Potency" },
+        { stat: "Cold Spell Power", bonus_type: "Profane", value: 10, unit: "flat", via: "Profane Potency" },
+      ],
+    }],
+    // Flat single-affix channels — one affix each, no `affixes` array, no `via`.
+    rollPlaced: [{ item: SWORD, stat: "Deadly", bonus_type: "Insight", value: 4 }],
+    sealPlaced: [{ item: SWORD, seal_type: "Undeath", stat: "Melee Power", bonus_type: "Profane", value: 3 }],
+    tfPlaced: [{ item: SWORD, tier: 3, stat: "Accuracy", bonus_type: "Enhancement", value: 8 }],
+    gsPlaced: [{ item: SWORD, name: "Air/Air", stat: "Doubleshot", bonus_type: "Enhancement", value: 5 }],
+  };
+}
+
+test("#370: a Viktranium craft's via-stamped spread becomes a bundle, hosted on the item it was crafted into", () => {
+  const g = P.bundleGroups(craftResult()).find((b) => b.name === "Exceptional Spell Focus Mastery");
+  assert.ok(g, "the crafted bundle is surfaced at all — it was invisible before #370");
+  assert.strictEqual(g.carrierKind, "craft");
+  assert.strictEqual(g.host, SWORD, "the machine-readable host is the equipped item");
+  assert.strictEqual(g.craftFamily, "vik");
+  assert.strictEqual(g.craftName, "Woeful: Exceptional Spell Focus Mastery");
+  assert.strictEqual(g.members.length, 7);
+  // The display carrier names BOTH, so the "from X" grammar every export already
+  // prints stays correct without a per-format edit.
+  assert.strictEqual(g.carrier, `${SWORD} (Slot Woeful Viktranium augment)`);
+});
+
+test("#370: a Nearly Complete craft names the pool it actually came from, not the category path's name", () => {
+  const g = P.bundleGroups(craftResult()).find((b) => b.name === "Exceptional Strength Skills");
+  assert.ok(g);
+  assert.strictEqual(g.craftFamily, "nc");
+  assert.strictEqual(g.carrier, `${SWORD} (Nearly Finished)`,
+    "the per-item pool is a different in-game system from Nearly Completed (#371)");
+});
+
+test("#370: a Dino insert's host comes from the shared assignment, not a second walk", () => {
+  const g = P.bundleGroups(craftResult()).find((b) => b.name === "Profane Potency");
+  assert.ok(g);
+  assert.strictEqual(g.host, DINO_RING, "the insert lands on the item whose dino slot accepts it");
+  assert.strictEqual(g.carrier, `${DINO_RING} (Dread insert)`);
+});
+
+test("#370 guard: the flat single-affix craft channels cannot form a bundle", () => {
+  // Not an assertion about the scan list — an assertion about the DATA. These
+  // four channels store one stat per placement with no `affixes` array, so the
+  // 2+ member floor is unreachable by construction. If that ever changes, this
+  // fixture assumption (and the decision to leave them unscanned) is void.
+  const r = craftResult();
+  for (const key of ["rollPlaced", "sealPlaced", "tfPlaced", "gsPlaced"]) {
+    assert.ok(r[key].length, `${key} guard inspects a real record, not an empty list`);
+    for (const o of r[key]) {
+      assert.ok(!Array.isArray(o.affixes), `${key} records carry no affixes array`);
+    }
+  }
+  const names = P.bundleGroups(r).map((b) => b.name);
+  assert.deepStrictEqual(
+    names.sort(),
+    ["Exceptional Spell Focus Mastery", "Exceptional Strength Skills", "Profane Potency"].sort(),
+    "exactly the three multi-affix channels contribute bundles");
+});
+
+test("#370: a crafted bundle reaches the Sets tab and every sets-rendering export", () => {
+  const r = craftResult();
+  const html = R.bundlesBlock(r, new Map());
+  assert.ok(html.includes("Exceptional Spell Focus Mastery"), "the Sets tab names the crafted bundle");
+  assert.ok(html.includes(`from ${SWORD} (Slot Woeful Viktranium augment)`), "and says where to craft it");
+  const rec = { name: "Crafter", inputs: { ml: 34, pool: "all", priorities: [] }, snapshot: r };
+  for (const [fmt, out] of Object.entries({
+    markdown: X.toMarkdown(rec), bbcode: X.toBBCode(rec), csv: X.toCsv(rec),
+    printHtml: X.toPrintHtml(rec), gearset: X.toGearset(rec),
+  })) {
+    assert.ok(out.includes("Exceptional Spell Focus Mastery"), `${fmt} carries the crafted bundle`);
+  }
+  const pj = X.toPortableJSON(rec, "2026-08-19T00:00:00Z");
+  assert.strictEqual(pj.resolved.bundles.filter((b) => b.carrierKind === "craft").length, 3);
+});
+
 console.log(`\n${passed} passed`);

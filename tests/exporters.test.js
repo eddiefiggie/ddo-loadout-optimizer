@@ -1119,7 +1119,16 @@ test("U8/R8: the .gearset carries the collapse through its CRAFTING line", () =>
   // plus crafting lines — so its behavior is asserted through the crafting line.
   const gs = toGearset(expansionRec());
   assert.ok(gs.includes(VIK_COLLAPSED), `crafting line names the enchantment; got:\n${gs}`);
-  assert.ok(!/Necromancy Focus \+2/.test(gs), "not the single ranked school the option happened to match");
+  // #370 — the bundles block is excised first, exactly as the MD/BBCode/CSV/print
+  // siblings do it. That block DELIBERATELY lists an expansion's members under
+  // the engraved name, and since #370 a via-stamped Viktranium craft reaches it
+  // too, so the seven schools legitimately appear there. Everything ABOVE it must
+  // still name only the enchantment. No end marker: the bundles block is the last
+  // thing the .gearset record emits, so the helper truncates — the anti-vacuity
+  // assertion below is what stops that from silently gutting the coverage.
+  const sans = sansBundles(gs, "Bundled enchantments", " never");
+  assert.ok(sans.includes(VIK_COLLAPSED), "the crafting line survived the excision (anti-vacuity)");
+  assert.ok(!/Necromancy Focus \+2/.test(sans), "not the single ranked school the option happened to match");
 });
 
 test("U8/R8: an export of a build with no expanded affix is unchanged", () => {
