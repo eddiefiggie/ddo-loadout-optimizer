@@ -126,9 +126,17 @@ def test_the_shipped_shard_carries_its_wiki_evidence():
             continue
         for e in entries:
             entries_seen += 1
-            for field in ("name", "from", "to", "value", "tooltip", "wiki_url",
+            for field in ("name", "to", "value", "tooltip", "wiki_url",
                           "verified"):
                 assert e.get(field), f"{record}: correction is missing {field!r}"
+            # #367 — `from` is the one field whose legitimate value can be falsy.
+            # Upstream carries some affixes with NO `type` key at all, and `None`
+            # is the faithful record of that: `apply()` matches it against
+            # `a.get("type")`, so a null `from` is what makes a key-less affix
+            # correctable. A truthiness check conflated "field absent from the
+            # entry" with "entry recording an absent upstream type" — the same
+            # falsy-is-not-a-population trap AGENTS.md records. Require the KEY.
+            assert "from" in e, f"{record}: correction is missing 'from'"
             assert str(e["to"]) in e["tooltip"], (
                 f"{record}: the corrected type {e['to']!r} does not appear in the "
                 f"recorded tooltip — the evidence does not support it")

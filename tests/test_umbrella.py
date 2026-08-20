@@ -108,3 +108,89 @@ def test_shipped_dataset_has_no_umbrella_stats_left():
             # items.json affixes are native at rest (U3): the stat name is `name`.
             stat = a.get("name", a.get("stat"))
             assert not umbrella.is_umbrella(stat), f"{v.get('source_item')}: {stat}"
+
+
+# --- #367: named umbrella enchantments -------------------------------------
+#
+# `Litany of the Dead (II) - Ability Bonus` grants "+N Profane bonus to all
+# Abilities" (wiki-ruled: docs/wiki-evidence/litany-of-the-dead.md), but was
+# stored as one opaque affix, so it credited nothing and the Sets tab could show
+# no bundle for it. It is the same expansion target as `Well Rounded` with a
+# different LABEL rule: the name is already the engraved name, so the bonus type
+# must not be prefixed onto it.
+
+NAMED = "Litany of the Dead II - Ability Bonus"
+
+
+def test_named_umbrella_is_recognized_and_generic_umbrella_still_is():
+    assert umbrella.is_umbrella(NAMED)
+    assert umbrella.is_umbrella("litany of the dead - ability bonus")
+    assert umbrella.is_umbrella("Well Rounded")          # unchanged
+    # Its Combat sibling is deliberately NOT registered — the wiki says "attack
+    # bonus and damage", a different grant awaiting its own determination.
+    assert not umbrella.is_umbrella("Litany of the Dead II - Combat Bonus")
+    assert not umbrella.is_umbrella("Litany of the Dead - Combat Bonus")
+
+
+def test_named_umbrella_expands_into_six_abilities_preserving_type_and_value():
+    v = {"affixes": [_aff(NAMED, "Profane", 2)]}
+    umbrella.expand_variants([v])
+    assert sorted(a["stat"] for a in v["affixes"]) == sorted(umbrella.ABILITIES)
+    assert all(a["bonus_type"] == "Profane" and a["value"] == 2 for a in v["affixes"])
+
+
+def test_named_umbrella_provenance_is_the_engraved_name_verbatim():
+    """The label must NOT be bonus-type-prefixed.
+
+    `Well Rounded` is a generic word the type completes into the engraved name
+    ("Profane Well Rounded"). This name is already complete, so prefixing would
+    print "Profane Litany of the Dead II - Ability Bonus" — a name no item bears
+    — on the one surface whose job is to show what is engraved on the gear.
+    """
+    v = {"affixes": [_aff(NAMED, "Profane", 2)]}
+    umbrella.expand_variants([v])
+    labels = {a[VIA] for a in v["affixes"]}
+    assert labels == {NAMED}, labels
+    # and the generic family still gets its prefix
+    g = {"affixes": [_aff("Well Rounded", "Profane", 2)]}
+    umbrella.expand_variants([g])
+    assert {a[VIA] for a in g["affixes"]} == {"Profane Well Rounded"}
+
+
+def test_named_umbrella_is_offered_to_the_picker_as_expanded_away():
+    """The picker must redirect the name to the six stats, not offer it."""
+    exp = umbrella.umbrella_expansion()
+    assert exp["litany of the dead ii - ability bonus"] == list(umbrella.ABILITIES)
+    assert exp["litany of the dead - ability bonus"] == list(umbrella.ABILITIES)
+    assert exp["well rounded"] == list(umbrella.ABILITIES)   # unchanged
+
+
+def test_shipped_dataset_expands_both_litany_tiers_with_the_profane_type():
+    """Behavior against the real dataset, not just the unit rule.
+
+    Also pins the base tier's TYPE: upstream carries that affix with no `type`
+    key, and untyped the six abilities would stack with every Profane source
+    instead of competing with them (see the affix_type_corrections entry).
+    """
+    import json
+    p = os.path.join(ROOT, "web", "data", "items.json")
+    if not os.path.exists(p):
+        return
+    d = json.load(open(p, encoding="utf-8"))
+    by_id = {v.get("variant_id"): v for v in d["items"]}
+    expected = {
+        "Litany of the Dead": ("Litany of the Dead - Ability Bonus", "1"),
+        "Epic Litany of the Dead": ("Litany of the Dead II - Ability Bonus", "2"),
+    }
+    checked = 0
+    for variant_id, (label, value) in expected.items():
+        v = by_id.get(variant_id)
+        assert v is not None, f"{variant_id} left the roster — re-verify the ruling"
+        members = [a for a in v.get("affixes", []) or [] if a.get("via") == label]
+        assert sorted(a["name"] for a in members) == sorted(umbrella.ABILITIES), \
+            f"{variant_id}: expected the six abilities under {label!r}, got {members}"
+        for a in members:
+            assert a.get("type") == "Profane", f"{variant_id}: {a['name']} is {a.get('type')!r}"
+            assert str(a.get("value")) == value, f"{variant_id}: {a['name']} = {a.get('value')!r}"
+        checked += 1
+    assert checked == 2, "the guard inspected fewer than both tiers"

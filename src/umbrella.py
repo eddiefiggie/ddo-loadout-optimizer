@@ -27,9 +27,31 @@ ABILITIES = ["Strength", "Dexterity", "Constitution",
 # lowercased stat names that mean "+X to all six abilities"
 _UMBRELLA = {"all ability scores", "all ability score", "well rounded"}
 
+# #367 — engraved names that mean the same thing but carry their OWN identity.
+#
+# `_UMBRELLA` holds generic words that a bonus type prefixes into the engraved
+# name ("Well Rounded" + Profane -> "Profane Well Rounded"). These are already
+# complete names as the item prints them, so their provenance label is the name
+# VERBATIM: prefixing would print "Profane Litany of the Dead II - Ability
+# Bonus", a name no item bears, on the very surface (the Sets tab's bundle card)
+# whose job is to show the player the name engraved on their gear.
+#
+# Membership requires the wiki stating the all-abilities grant outright, per
+# affix, in the template invocation or its rendered tooltip — never inferred
+# from a sibling variant's shape. Evidence: `docs/wiki-evidence/litany-of-the-dead.md`.
+_NAMED_UMBRELLA = {
+    "litany of the dead - ability bonus",
+    "litany of the dead ii - ability bonus",
+}
+
 
 def is_umbrella(stat: str) -> bool:
-    return (stat or "").strip().lower() in _UMBRELLA
+    key = (stat or "").strip().lower()
+    return key in _UMBRELLA or key in _NAMED_UMBRELLA
+
+
+def _is_named_umbrella(stat: str) -> bool:
+    return (stat or "").strip().lower() in _NAMED_UMBRELLA
 
 
 def umbrella_expansion() -> dict:
@@ -39,14 +61,14 @@ def umbrella_expansion() -> dict:
     expands away — no item can ever carry it, so ranking it scores nothing — and
     (b) redirect the player to the concrete stats it becomes.
 
-    ``_UMBRELLA`` is the single source of truth and is deliberately NOT extended
-    for picker purposes: it drives :func:`_expand_affix`, so adding a name here
-    rewrites every matching affix into the six ability scores at build time. Bare
-    ``Sheltering`` is a different mechanism with a different expansion target
-    (Physical + Magical Sheltering, expanded at the web/dataset.js seam) and must
-    never be added to this set.
+    ``_UMBRELLA`` and ``_NAMED_UMBRELLA`` are the single source of truth and are
+    deliberately NOT extended for picker purposes: they drive
+    :func:`_expand_affix`, so adding a name to either rewrites every matching
+    affix into the six ability scores at build time. Bare ``Sheltering`` is a
+    different mechanism with a different expansion target (Physical + Magical
+    Sheltering, expanded at the web/dataset.js seam) and must never be added.
     """
-    return {name: list(ABILITIES) for name in sorted(_UMBRELLA)}
+    return {name: list(ABILITIES) for name in sorted(_UMBRELLA | _NAMED_UMBRELLA)}
 
 
 def _expand_affix(affix: dict) -> list:
@@ -54,7 +76,10 @@ def _expand_affix(affix: dict) -> list:
         # The engraved name, e.g. "Profane Well Rounded". Read from the same
         # renderer spell focus uses so the two families can never disagree about
         # how a bonus type is spelled ("Insightful", not "Insight").
-        label = source_label(affix.get("stat"), affix.get("bonus_type"))
+        # #367 — a named umbrella already IS the engraved name; prefixing its
+        # bonus type would invent a name no item bears.
+        label = ((affix.get("stat") or "").strip() if _is_named_umbrella(affix.get("stat"))
+                 else source_label(affix.get("stat"), affix.get("bonus_type")))
         return [{**affix, "stat": ab, PROVENANCE_KEY: label} for ab in ABILITIES]
     return [affix]
 
