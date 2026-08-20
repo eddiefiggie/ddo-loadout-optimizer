@@ -2197,7 +2197,15 @@ async function solveLexicographic(model, highs) {
     const lastStat = [...program.targetList].reverse().find((s) => s !== _UTILITY_SENTINEL);
     return lastStat != null
       ? highs.solve(encodeStage(program, { objectiveStat: lastStat, sense: "max", locks, extra: utilityExtra }))
-      : highs.solve(encodeStage(program, { objTerms: utilityObjTerms, sense: "max", locks, extra: utilityExtra }));
+      // #349 — the ONE other place the weighted utility objective is solved, and
+      // it was running at HiGHS defaults. Same reasoning as UTILITY_STAGE_OPTS
+      // above: this objective spans 2^0..2^(k-1), so a relative gap admits an
+      // error larger than the lowest-ordered weight and the solve can be wrong in
+      // exactly the effects the player ranked last. That was a precaution while
+      // the roster was 20; the gate now measures non-zero unpinned drift from
+      // k=26, which is this batch's size, so the pin is load-bearing here too.
+      : highs.solve(encodeStage(program, { objTerms: utilityObjTerms, sense: "max", locks, extra: utilityExtra }),
+                    UTILITY_STAGE_OPTS);
   };
   const tbRes = tb.Status === "Optimal" ? tb : tbFallback();
   const finalRes = preferColorlessSetAugments(

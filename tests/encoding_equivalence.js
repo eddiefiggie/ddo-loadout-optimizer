@@ -46,34 +46,17 @@ const ROOT = path.join(__dirname, "..");
 const DATASET = path.join(ROOT, "web", "data", "items.json");
 const FIXTURES = path.join(__dirname, "parity", "fixtures.json");
 
-// #348 (KTD8) — the container's DEFAULT ORDER. R9 makes the order a product
-// decision, so it is declared, never derived from the iteration order of
-// UTILITY_TIER1_PRESENCE (a Set whose order is an artifact of how the roster was
-// edited). Six worn defensive toggles first, then the fourteen inherited names.
-// U3 moves this constant to web/dataset.js beside the roster, under the existing
-// JS/Python mirror guard; it lives here only so U1 can run before U3 exists.
-const DEFAULT_ORDER = [
-  "Ghostly",
-  "True Seeing",
-  "Blurry",
-  "Freedom of Movement",
-  "Blindness Immunity",
-  "Deathblock",
-  "Feather Falling",
-  "Ghost Touch",
-  "Whelming Shockwave",
-  "Blunt Trauma",
-  "Lesser Boneshatter",
-  "Kick 'Em While They're Down",
-  "Way of the Sun Soul",
-  "Lifeblood of the Undead Prince",
-  "Path of the Fire Dragon",
-  "Path of the Guarding Stone",
-  "Brilliance of the Shattered Sun",
-  "Vile Grip of the Hidden Hand",
-  "Legendary Vile Grip of the Hidden Hand",
-  "Legendary Tet-zik, The Enlightened Change",
-];
+// #348 (KTD8) — the container's DEFAULT ORDER, read from the SHIPPED constant.
+//
+// #349 — this was a hardcoded 20-name copy, left here when U1 predated U3's move
+// of the constant into web/dataset.js. It silently stopped measuring the thing it
+// exists to measure: `DEFAULT_ORDER.slice(0, k)` on a stale 20-name list returns
+// 20 names for every k above 20, so a run at SIZES=26 reported "size 26, 17 agree"
+// while comparing 20-effect vectors. A gate that can stop checking without failing
+// is the exact shape this repo has been bitten by, so the copy is gone: the order
+// now comes from the same declaration the app and the solver use, and the run
+// header prints its length so a size above it is visible rather than silent.
+const { UTILITY_CONTAINER_DEFAULT_ORDER: DEFAULT_ORDER } = require("../web/dataset.js");
 
 // Gap pinned to zero: the whole point of the gate is an EXACT comparison, and a
 // relative gap on a weighted objective is precisely the failure mode being tested.
@@ -187,6 +170,7 @@ async function main() {
   const fixtures = (only ? bed.filter((f) => only.has(f.name)) : bed);
 
   console.log(`#348 U1 — encoding equivalence gate`);
+  console.log(`declared order: ${DEFAULT_ORDER.length} names (the shipped constant)`);
   console.log(`bed: ${fixtures.length}/${bed.length} sentinel-ranking fixtures`
     + `  control: ${control.length}  sizes: ${sizes.join(",")}  gap: pinned to 0\n`);
 
@@ -202,6 +186,11 @@ async function main() {
     const targets = ranked.concat([UTILITY_SENTINEL]);
 
     for (const k of sizes) {
+      if (k > DEFAULT_ORDER.length) {
+        throw new Error(`SIZES asked for k=${k} but the declared order holds only `
+          + `${DEFAULT_ORDER.length} names — widen UTILITY_CONTAINER_DEFAULT_ORDER first, `
+          + "or this run would silently measure the shorter list.");
+      }
       const container = DEFAULT_ORDER.slice(0, k);
       const query = Object.assign({}, resolved, { targets });
       const model = buildModel(

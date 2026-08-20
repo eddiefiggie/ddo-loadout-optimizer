@@ -2363,10 +2363,12 @@ test("#348 U6/R5: an add beyond the cap is refused with a stated reason", () => 
   const res = containerEdit(full, "add", "One More");
   assert.strictEqual(res.ok, false, "refused");
   assert.deepStrictEqual(res.list, full, "and the list is untouched");
-  assert.ok(res.message && /at most 20 effects/.test(res.message), "the cap is named");
+  assert.ok(res.message && /at most 28 effects/.test(res.message), "the cap is named");
   assert.ok(/strict order/.test(res.message), "and WHY it exists, not just that it does");
-  // The cap is the encoding gate's number, not a UI choice.
-  assert.strictEqual(UTILITY_CONTAINER_CAP, 20);
+  // The cap is the encoding gate's number, not a UI choice. #349 raised it from
+  // 20 to 28 after the gate measured exact agreement through 32 — 20 had only
+  // ever been "the largest size anyone had measured".
+  assert.strictEqual(UTILITY_CONTAINER_CAP, 28);
 });
 
 test("#348 U6/R4: reorder and remove work by position; a duplicate add is a no-op", () => {
@@ -2447,14 +2449,16 @@ test("#348 U7: a player who removed the row keeps it removed, with nothing to sa
 
 
 test("#348 U6/R5: the empty-suggestion copy answers the dead end the player is in", () => {
-  // Found by opening the panel in a browser, not by reading the code: the DEFAULT
-  // container holds 20 and the cap is 20, so an untouched panel opens already full
-  // with an empty suggestion list. The original copy ("Every default effect is
-  // already in your container") was true, useless, and left both the cap and the
-  // ~818 other addable effects unexplained.
+  // Found by opening the panel in a browser, not by reading the code: the original
+  // copy ("Every default effect is already in your container") was true, useless,
+  // and left both the cap and the other ~800 addable effects unexplained.
+  // #349 — the default roster (25) is now BELOW the cap (28), so an untouched
+  // panel no longer opens full. This test drives the at-cap state explicitly
+  // rather than relying on the two numbers coinciding, which is why it still
+  // covers the branch after the widening.
   const full = Array.from({ length: UTILITY_CONTAINER_CAP }, (_, i) => `E${i}`);
   const atCap = containerAddHint(full, "", false);
-  assert.ok(/full \(20\/20\)/.test(atCap), "names the cap");
+  assert.ok(/full \(28\/28\)/.test(atCap), "names the cap");
   assert.ok(/Remove an effect/.test(atCap), "and the action that resolves it");
   assert.ok(/order is what decides/.test(atCap), "and points at the thing that still helps them");
 

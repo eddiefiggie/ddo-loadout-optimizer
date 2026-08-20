@@ -813,7 +813,12 @@ function insertAboveTrailingSentinel(ranked, stat) {
  *  equivalence at every size through 20 across all 17 sentinel-ranking fixtures
  *  (tests/encoding_equivalence.js), covering the whole default roster. Widening the
  *  roster (#349) must re-run that gate before raising this number. */
-var UTILITY_CONTAINER_CAP = 20;
+// #349 — 28, not 20. The cap is whatever the encoding-equivalence gate has
+// PROVEN, minus a margin: `tests/encoding_equivalence.js` now measures exact
+// agreement with the sequential reference at every size through 32, so 28
+// leaves four sizes of headroom. It was 20 only because 20 was the largest
+// size anyone had measured, never a UI or product limit.
+var UTILITY_CONTAINER_CAP = 28;
 
 /** #348 (U6, KTD3) — the effective container: the player's curated list, or the
  *  dataset's declared default when they have never touched it.

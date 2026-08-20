@@ -1,6 +1,6 @@
 {
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
- "generated": "2026-08-19",
+ "generated": "2026-08-20",
  "dataset": "web/data/items.json (9110 items)",
  "fixture_count": 23,
  "solves": {
@@ -114,7 +114,7 @@
     },
     {
      "slot": "Goggles",
-     "variant": "Goggles of the Frozen Night"
+     "variant": "Agony's Eyes"
     },
     {
      "slot": "Helmet",
@@ -170,6 +170,10 @@
      "variant": "Lindal's Mighty Belt"
     },
     {
+     "slot": "Boots",
+     "variant": "Blackfeather Boots"
+    },
+    {
      "slot": "Bracers",
      "variant": "Bracers of the Battlerager"
     },
@@ -179,15 +183,15 @@
     },
     {
      "slot": "Gloves",
-     "variant": "The Cruel Hands of Fate"
+     "variant": "Legendary Grick-skin Gauntlets"
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Mining Lenses"
+     "variant": "Legendary Goggles of the Frozen Night"
     },
     {
      "slot": "Helmet",
-     "variant": "Dread Stalker's Skullcap"
+     "variant": "Crisis Helm"
     },
     {
      "slot": "Main Hand",
@@ -203,7 +207,7 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Neglected Wedding Ring"
+     "variant": "Legendary Band of Faith and Fortress"
     },
     {
      "slot": "Ring",
@@ -211,7 +215,7 @@
     },
     {
      "slot": "Trinket",
-     "variant": "Bauble of Draconic Resistance"
+     "variant": "Symbol of the Slave Lords"
     }
    ]
   },
@@ -246,7 +250,7 @@
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary Duergarcraft Cloak"
+     "variant": "Legendary Duergarcraft Shroud"
     },
     {
      "slot": "Gloves",
@@ -627,7 +631,7 @@
     },
     {
      "slot": "Goggles",
-     "variant": "Goggles of the Frozen Night"
+     "variant": "Agony's Eyes"
     },
     {
      "slot": "Helmet",
@@ -655,7 +659,7 @@
     },
     {
      "slot": "Trinket",
-     "variant": "Doctor Lifestone's Hunting Horn"
+     "variant": "Legendary Red Raptor Feather"
     }
    ]
   },
@@ -698,7 +702,7 @@
     },
     {
      "slot": "Goggles",
-     "variant": "Goggles of the Frozen Night"
+     "variant": "Agony's Eyes"
     },
     {
      "slot": "Helmet",
@@ -726,7 +730,7 @@
     },
     {
      "slot": "Trinket",
-     "variant": "Doctor Lifestone's Hunting Horn"
+     "variant": "Legendary Red Raptor Feather"
     }
    ]
   },
@@ -754,6 +758,10 @@
      "variant": "Legendary Baron Aubrecker's Monogrammed Belt"
     },
     {
+     "slot": "Boots",
+     "variant": "Blackfeather Boots"
+    },
+    {
      "slot": "Bracers",
      "variant": "Legendary Auspicious Bracers"
     },
@@ -771,7 +779,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Malicia's Crown (level 12)"
+     "variant": "Crisis Helm"
     },
     {
      "slot": "Main Hand",
@@ -821,6 +829,10 @@
      "variant": "Belt of the Sun Soul"
     },
     {
+     "slot": "Boots",
+     "variant": "Blackfeather Boots"
+    },
+    {
      "slot": "Bracers",
      "variant": "Legendary Auspicious Bracers"
     },
@@ -838,7 +850,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Malicia's Crown (level 12)"
+     "variant": "Crisis Helm"
     },
     {
      "slot": "Main Hand",
@@ -862,7 +874,7 @@
     },
     {
      "slot": "Trinket",
-     "variant": "Echo of Ravenkind"
+     "variant": "Symbol of the Slave Lords"
     }
    ]
   },
@@ -904,6 +916,10 @@
      "variant": "Gloves of Tranquility"
     },
     {
+     "slot": "Goggles",
+     "variant": "Ethereal Gaze"
+    },
+    {
      "slot": "Helmet",
      "variant": "Legendary Crown of Ioun"
     },
@@ -921,11 +937,15 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Neglected Wedding Ring"
+     "variant": "Duskbone Ring"
     },
     {
      "slot": "Ring",
-     "variant": "Nocturne Ring"
+     "variant": "Legendary Neglected Wedding Ring"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Symbol of the Slave Lords"
     }
    ]
   },
@@ -1100,11 +1120,11 @@
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Vestments of the Sun Soul"
+     "variant": "Breastplate of the Celestial Avenger"
     },
     {
-     "slot": "Boots",
-     "variant": "Legendary Bulette-Armored Boots"
+     "slot": "Belt",
+     "variant": "Belt of the Sun Soul"
     },
     {
      "slot": "Bracers",
@@ -1115,12 +1135,16 @@
      "variant": "Legendary Earthen Mantle"
     },
     {
+     "slot": "Gloves",
+     "variant": "Legendary Gauntlets of Devoured Divinity"
+    },
+    {
      "slot": "Goggles",
-     "variant": "Legendary Scientist's Sights"
+     "variant": "Legendary Drider's Vision"
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Cowl of the Drow Devotee"
+     "variant": "Crisis Helm"
     },
     {
      "slot": "Main Hand",
@@ -1136,7 +1160,7 @@
     },
     {
      "slot": "Trinket",
-     "variant": "Guidance of Shar (level 13)"
+     "variant": "Symbol of the Slave Lords"
     }
    ]
   },
@@ -1153,11 +1177,11 @@
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Vestments of the Sun Soul"
+     "variant": "Breastplate of the Celestial Avenger"
     },
     {
-     "slot": "Boots",
-     "variant": "Legendary Bulette-Armored Boots"
+     "slot": "Belt",
+     "variant": "Belt of the Sun Soul"
     },
     {
      "slot": "Bracers",
@@ -1168,12 +1192,16 @@
      "variant": "Legendary Earthen Mantle"
     },
     {
+     "slot": "Gloves",
+     "variant": "Legendary Gauntlets of Devoured Divinity"
+    },
+    {
      "slot": "Goggles",
-     "variant": "Legendary Scientist's Sights"
+     "variant": "Legendary Drider's Vision"
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Cowl of the Drow Devotee"
+     "variant": "Crisis Helm"
     },
     {
      "slot": "Main Hand",
@@ -1189,7 +1217,7 @@
     },
     {
      "slot": "Trinket",
-     "variant": "Guidance of Shar (level 13)"
+     "variant": "Symbol of the Slave Lords"
     }
    ]
   },
@@ -1217,8 +1245,12 @@
      "variant": "Bracers of the Sun Soul"
     },
     {
+     "slot": "Gloves",
+     "variant": "Blurfingered Gloves"
+    },
+    {
      "slot": "Goggles",
-     "variant": "Scientist's Sights"
+     "variant": "Agony's Eyes"
     },
     {
      "slot": "Main Hand",
@@ -1235,6 +1267,10 @@
     {
      "slot": "Ring",
      "variant": "Ring of Shadows (level 23)"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Symbol of the Slave Lords"
     }
    ]
   },
@@ -1251,7 +1287,7 @@
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Legendary Darkmoss"
+     "variant": "Legendary Medium Armor of the Eternal Flame"
     },
     {
      "slot": "Belt",
@@ -1267,7 +1303,7 @@
     },
     {
      "slot": "Cloak",
-     "variant": "Cloak of Autumn"
+     "variant": "Legendary Cloak of Autumn"
     },
     {
      "slot": "Gloves",
@@ -1279,7 +1315,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Alchemist's Crown"
+     "variant": "Legendary Flame Priest's Focus"
     },
     {
      "slot": "Main Hand",
@@ -1287,7 +1323,7 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Alchemist's Pendant"
+     "variant": "Legendary Blademark Amulet"
     },
     {
      "slot": "Off Hand",
@@ -1303,7 +1339,7 @@
     },
     {
      "slot": "Trinket",
-     "variant": "Legendary Library Card"
+     "variant": "Epic Dragon's Eye"
     }
    ]
   },
@@ -1352,16 +1388,12 @@
      "variant": "Belt of the Sun Soul"
     },
     {
-     "slot": "Boots",
-     "variant": "Legendary Windriders"
-    },
-    {
      "slot": "Bracers",
      "variant": "Legendary Jidz-Tet'ka"
     },
     {
      "slot": "Cloak",
-     "variant": "Cloak of Autumn"
+     "variant": "Legendary Cloak of Autumn"
     },
     {
      "slot": "Goggles",
@@ -1369,7 +1401,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Dread Stalker's Skullcap"
+     "variant": "Faedark Faerielights"
     },
     {
      "slot": "Main Hand",
@@ -1384,8 +1416,16 @@
      "variant": "The Heart of the Prince"
     },
     {
+     "slot": "Ring",
+     "variant": "Legendary Neglected Wedding Ring"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Ring of Shadows (level 23)"
+    },
+    {
      "slot": "Trinket",
-     "variant": "Bottled Rainstorm"
+     "variant": "Symbol of the Slave Lords"
     }
    ]
   },
@@ -1493,7 +1533,7 @@
     },
     {
      "slot": "Trinket",
-     "variant": "Doctor Lifestone's Hunting Horn"
+     "variant": "Legendary Red Raptor Feather"
     }
    ]
   }

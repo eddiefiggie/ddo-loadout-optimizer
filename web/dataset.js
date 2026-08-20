@@ -519,6 +519,16 @@ const UTILITY_TIER1_PRESENCE = new Set([
   "Vile Grip of the Hidden Hand",
   "Legendary Vile Grip of the Hidden Hand",
   "Legendary Tet-zik, The Enlightened Change",
+  // #349 (batch 1) — six more worn toggles, each admitted on a verbatim
+  // wiki reading of a PASSIVE equipped effect. Candidates were found by
+  // carrier slot, but admitted on the effect's nature: procs ("when you
+  // are hit, N% chance"), magnitudes, materials and crafting markers are
+  // refused with their reason in docs/wiki-evidence/utility-worn-toggles.md.
+  "Lesser Displacement",
+  "Ethereal",
+  "Dusk",
+  "Soundproof",
+  "Immunity to Fear",
 ]);
 
 /** #348 (U3, KTD8) — the container's DEFAULT ORDER.
@@ -564,6 +574,14 @@ const UTILITY_CONTAINER_DEFAULT_ORDER = [
   "Vile Grip of the Hidden Hand",
   "Legendary Vile Grip of the Hidden Hand",
   "Legendary Tet-zik, The Enlightened Change",
+  // #349 batch 1 — appended after the inherited names rather than
+  // interleaved: the six above them are the effects #343 established a
+  // player notices first, and re-ranking those was not part of this batch.
+  "Lesser Displacement",
+  "Ethereal",
+  "Dusk",
+  "Soundproof",
+  "Immunity to Fear",
 ];
 
 /** #348 (U3) — the default container for a given counting set: the declared order,
