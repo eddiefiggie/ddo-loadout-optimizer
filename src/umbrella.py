@@ -36,6 +36,9 @@ _UMBRELLA = {"all ability scores", "all ability score", "well rounded"}
 # Bonus", a name no item bears, on the very surface (the Sets tab's bundle card)
 # whose job is to show the player the name engraved on their gear.
 #
+# Their label rule lives in `spell_focus.SELF_NAMED`, shared with the Combat
+# arm's family (#396), so "which names take no type prefix" has one home.
+#
 # Membership requires the wiki stating the all-abilities grant outright, per
 # affix, in the template invocation or its rendered tooltip — never inferred
 # from a sibling variant's shape. Evidence: `docs/wiki-evidence/litany-of-the-dead.md`.
@@ -48,10 +51,6 @@ _NAMED_UMBRELLA = {
 def is_umbrella(stat: str) -> bool:
     key = (stat or "").strip().lower()
     return key in _UMBRELLA or key in _NAMED_UMBRELLA
-
-
-def _is_named_umbrella(stat: str) -> bool:
-    return (stat or "").strip().lower() in _NAMED_UMBRELLA
 
 
 def umbrella_expansion() -> dict:
@@ -75,11 +74,10 @@ def _expand_affix(affix: dict) -> list:
     if is_umbrella(affix.get("stat", "")):
         # The engraved name, e.g. "Profane Well Rounded". Read from the same
         # renderer spell focus uses so the two families can never disagree about
-        # how a bonus type is spelled ("Insightful", not "Insight").
-        # #367 — a named umbrella already IS the engraved name; prefixing its
-        # bonus type would invent a name no item bears.
-        label = ((affix.get("stat") or "").strip() if _is_named_umbrella(affix.get("stat"))
-                 else source_label(affix.get("stat"), affix.get("bonus_type")))
+        # how a bonus type is spelled ("Insightful", not "Insight") — and, since
+        # #396, about which names are already complete and take no type prefix
+        # (`SELF_NAMED`), so that rule has one home rather than one per family.
+        label = source_label(affix.get("stat"), affix.get("bonus_type"))
         return [{**affix, "stat": ab, PROVENANCE_KEY: label} for ab in ABILITIES]
     return [affix]
 
