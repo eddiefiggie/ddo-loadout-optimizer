@@ -531,6 +531,59 @@ const UTILITY_TIER1_PRESENCE = new Set([
   "Immunity to Fear",
 ]);
 
+/** #404 — COMPANION STATS: a second, differently-named source of the same in-game
+ *  number that a player ranking the obvious name will never find on their own.
+ *
+ *  `Spell Intensity` and the ten element Intensities are separate rankable stats,
+ *  and the wiki says they should be — `docs/wiki-evidence/universal-name-sweep.md`
+ *  upheld that on re-harvest (#402), against three independent reads. But a player
+ *  ranking `Void Intensity`, watching an augment labelled "Spell Critical Damage"
+ *  not get slotted, has no way to learn that a second name carries it. Two reports
+ *  arrived by that route before this hint existed.
+ *
+ *  Advisory ONLY. The hint never adds, reorders or substitutes anything — the
+ *  player decides. That is the difference between this and the expanded-away path,
+ *  which rewrites the list because the bare name can score nothing; here BOTH names
+ *  score, they are simply not the same stat.
+ *
+ *  Membership is DERIVED, not remembered: a universal-shaped rankable name that is
+ *  neither expanded away into a family nor a cross-add source for one is, by
+ *  definition, a stat a player can only reach by knowing its name. The guard in
+ *  `tests/dataset.test.js` recomputes that population and fails when a name in it
+ *  is undeclared here — so the next `Spell Intensity` cannot arrive silently. The
+ *  current population is exactly one: `Universal Spell Power` and `Universal Spell
+ *  Lore` cross-add into their elements, and `Potency` / `Spell Lore` expand away.
+ *
+ *  No Python counterpart, for the same reason UTILITY_CONTAINER_DEFAULT_ORDER has
+ *  none: the build derives nothing from it and only the picker reads it.
+ */
+const COMPANION_STATS = [
+  {
+    companion: "Spell Intensity",
+    members: ["Fire Intensity", "Acid Intensity", "Healing Intensity", "Ice Intensity",
+              "Kinetic Intensity", "Lightning Intensity", "Void Intensity",
+              "Radiance Intensity", "Repair Intensity", "Sonic Intensity"],
+    reason: "a separately-named enchantment that also raises spell critical damage "
+          + "(the Solar Gem of Spell Critical Damage carries it) — rank it too if you "
+          + "want items that grant it",
+  },
+];
+
+/** The advisory sentence for adding `stat`, or null when there is nothing to say.
+ *
+ *  Returns null when the companion is ALREADY ranked — the hint exists to close a
+ *  dead end, not to nag a player who has already found it. Pure, so the picker and
+ *  its tests read one implementation. */
+function companionHintFor(stat, priorities) {
+  const ranked = new Set(Array.isArray(priorities) ? priorities : []);
+  for (const entry of COMPANION_STATS) {
+    if (!entry.members.includes(stat)) continue;
+    if (ranked.has(entry.companion)) return null;
+    return `Also consider "${entry.companion}" — ${entry.reason}.`;
+  }
+  return null;
+}
+
 /** #348 (U3, KTD8) — the container's DEFAULT ORDER.
  *
  *  R9 makes the order a product decision, so it is DECLARED here rather than
@@ -1316,9 +1369,10 @@ function migrateCredits(credits, vocab) {
 // Browser: expose a global so app.js can normalize the fetched dataset without a
 // module system. Node: CommonJS export for the tests + parity harness.
 if (typeof window !== "undefined") {
-  window.DatasetNormalizer = { normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
+  window.DatasetNormalizer = { companionHintFor, COMPANION_STATS, normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
 }
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { UTILITY_CONTAINER_DEFAULT_ORDER, defaultUtilityOrder,
+    COMPANION_STATS, companionHintFor,
     normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK, UTILITY_TIER1_PRESENCE };
 }

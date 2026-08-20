@@ -2,7 +2,8 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { normalizeItem, buildPickerVocabulary, expandedAwayFor, expandedAwayMessage, normalizeDataset } = require("../web/dataset.js");
+const { normalizeItem, buildPickerVocabulary, expandedAwayFor, expandedAwayMessage, normalizeDataset,
+        COMPANION_STATS, companionHintFor } = require("../web/dataset.js");
 const P = require("../web/projection.js");
 // The built catalog, for the whole-vocabulary invariants at the bottom of this file.
 const realData = normalizeDataset(JSON.parse(
@@ -2046,4 +2047,87 @@ test("#364: the six Dinosaur Bone accessory blanks are flagged Artifacts", () =>
     if (it) assert.notStrictEqual(it.artifact, true,
       `Dinosaur Bone ${n} is not flagged upstream — flagging it would be inference`);
   }
+});
+
+
+// --- #404: companion stats -------------------------------------------------
+//
+// `Spell Intensity` and the element Intensities are separate rankable stats (the
+// wiki ruling, upheld on re-harvest in #402). Two players reported the gap by the
+// same route: rank `Void Intensity`, watch an augment labelled "Spell Critical
+// Damage" not get slotted, conclude the tool missed it. The hint closes that dead
+// end at the moment of the decision.
+
+test("#404: adding an element Intensity suggests its companion by name", () => {
+  const hint = companionHintFor("Void Intensity", ["Void Intensity"]);
+  assert.ok(hint, "a hint is produced");
+  assert.ok(/Spell Intensity/.test(hint), "it names the companion");
+  assert.ok(/spell critical damage/i.test(hint), "and says why the two are related");
+});
+
+test("#404: every declared member produces the hint, not just the reported one", () => {
+  // The reported case was Void; a fix that only covered Void would pass a
+  // single-name test and leave nine identical dead ends.
+  const entry = COMPANION_STATS.find((e) => e.companion === "Spell Intensity");
+  assert.strictEqual(entry.members.length, 10, "all ten element Intensities are declared");
+  for (const m of entry.members) {
+    assert.ok(companionHintFor(m, [m]), `no hint for ${m}`);
+  }
+});
+
+test("#404: the hint is silent once the companion is ranked, and for unrelated stats", () => {
+  assert.strictEqual(companionHintFor("Void Intensity", ["Void Intensity", "Spell Intensity"]), null,
+    "it closes a dead end; it does not nag");
+  assert.strictEqual(companionHintFor("Constitution", ["Constitution"]), null);
+  assert.strictEqual(companionHintFor("Spell Intensity", ["Spell Intensity"]), null,
+    "the companion itself is not its own companion");
+});
+
+test("#404: the hint is advisory — it never changes the priority list", () => {
+  // The whole point of the separation from the expanded-away path. Both names
+  // score, so which to rank is the player's decision.
+  const before = ["Void Intensity", "Nullification"];
+  companionHintFor("Void Intensity", before);
+  assert.deepStrictEqual(before, ["Void Intensity", "Nullification"], "input untouched");
+});
+
+test("#404: companionHintFor is on BOTH export surfaces", () => {
+  // web/*.js is dual-exported (CommonJS for tests, a window global for the app).
+  // A function added to only module.exports is invisible in the browser, so the
+  // feature would be green in CI and dead for every player. Read the source: the
+  // window branch does not execute under node.
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "dataset.js"), "utf-8");
+  const win = src.match(/window\.DatasetNormalizer = \{([^}]*)\}/);
+  assert.ok(win, "the window global assignment is still recognisable");
+  assert.ok(/\bcompanionHintFor\b/.test(win[1]),
+    "companionHintFor is missing from window.DatasetNormalizer — the app would never show the hint");
+  assert.strictEqual(typeof companionHintFor, "function", "and present on module.exports");
+});
+
+test("#404 guard: every stat a player can only reach by name is DECLARED", () => {
+  // The derivable half. A universal-shaped rankable name that is neither expanded
+  // away into a family nor a cross-add source for one is, by definition, a stat a
+  // player reaches only by knowing its name — i.e. the next `Spell Intensity`.
+  // Recomputed from the built dataset so a new one cannot arrive silently.
+  const md = realData.metadata || {};
+  const rankable = new Set(md.rankable_affixes || []);
+  const expanded = new Set(Object.keys(md.expanded_away_names || {}).map((n) => n.toLowerCase()));
+  const crossAddSources = new Set();
+  for (const v of Object.values(md.cross_add || {})) {
+    for (const src2 of (Array.isArray(v) ? v : [v])) crossAddSources.add(String(src2));
+  }
+  const declared = new Set(COMPANION_STATS.map((e) => e.companion));
+
+  const orphans = [...rankable].filter((n) =>
+    /^(Universal |Spell )/i.test(n)
+    && /(Intensity|Spell Power|Lore|Critical)/i.test(n)
+    && !expanded.has(n.toLowerCase())
+    && !crossAddSources.has(n)
+    && !declared.has(n));
+
+  assert.ok(rankable.size > 100, "the guard inspects a real vocabulary, not an empty one");
+  assert.deepStrictEqual(orphans, [],
+    `universal-shaped stat(s) reachable only by name and not declared in COMPANION_STATS: `
+    + `${orphans.join(", ")}. Either declare a companion entry (with the wiki reason) or `
+    + `establish a crediting rule — do not leave a player to guess the name.`);
 });

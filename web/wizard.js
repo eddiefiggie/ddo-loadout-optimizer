@@ -1074,7 +1074,15 @@ function resolvePriorityAdd(name, vocab, priorities) {
   }
   if (ranked.includes(v)) return { ok: false, priorities: ranked, substitutions: [] };
   // #91 (U4/R1) — a new stat lands above a bottom-seated Utility tier.
-  return { ok: true, priorities: insertAboveTrailingSentinel(ranked, v), substitutions: [] };
+  const next = insertAboveTrailingSentinel(ranked, v);
+  // #404 — ADVISORY only: a companion stat is a second, differently-named source
+  // of the same in-game number. Unlike the expanded-away branch above, this does
+  // NOT touch the list — both names score, they are simply not the same stat, so
+  // ranking the companion is the player's call. Computed against `next` so a
+  // companion the player just added is not suggested back to them.
+  const companionHint = (DN && DN.companionHintFor) ? DN.companionHintFor(v, next) : null;
+  return { ok: true, priorities: next, substitutions: [],
+           ...(companionHint ? { companionHint } : {}) };
 }
 
 // Composable affix BUNDLES — modelled on the DDO gear planner's "packages" (its
@@ -2399,7 +2407,13 @@ if (typeof window !== "undefined" && window.App) {
         return false;
       }
       state.priorities = res.priorities;
-      if (!res.substitutions.length) { if (status) status.textContent = ""; return true; }
+      if (!res.substitutions.length) {
+        // #404 — the one case where a SUCCESSFUL add still has something to say.
+        // Clearing the line here is what left two reporters hunting for a stat
+        // whose name the picker never mentioned.
+        if (status) status.textContent = res.companionHint || "";
+        return true;
+      }
 
       // A bound or a declared credit keyed to the alias is now stranded: the name has
       // left the priority list, `model.js` still unions it into the target set, and the
