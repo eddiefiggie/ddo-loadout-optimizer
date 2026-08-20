@@ -61,6 +61,17 @@ These are non-obvious and each one has cost a real defect.
 
 **A count is a claim about a population — look the population up.** Before citing "how many records are X", read the definition in the module that owns X, and check whether the built dataset already stamps the answer (`metadata.no_drop_source_coverage.triage_universe`, for one). A falsy test (`not rec.get(k)`) is not a population: empty string, null, and key-absent are three different facts, and a universe defined as one clause "plus" another has two clauses. Getting this wrong once produced a six-fold-growth claim, a correction whose own table mixed two populations, and a second correction that again read only the first clause — all against a file carrying the right number as a field. See `docs/solutions/developer-experience/browser-verify-against-real-data-not-just-unit-tests.md`.
 
+**A completeness claim needs a guard, not a date.** "Every X was examined", "all
+N cases are covered", "the sweep is complete" — each is a claim about a curated
+set matching a population, and both sides are usually readable at build time, so
+assert it. A dated claim cannot notice its own staleness, and these sentences
+cluster around the risky work precisely because someone cared enough to sweep it.
+`bonus-type-equivalence.md` said every stacking bucket had been examined; a
+refresh added one two days later; the type in that gap was crediting +24
+Universal Spell Power, permanently, for a buff that needs you to be hit — and it
+cross-added into every element spellpower. See
+`docs/solutions/conventions/a-dated-coverage-claim-cannot-notice-its-own-staleness.md`.
+
 **`web/data/items.json` is generated and gitignored.** Edit `build_dataset.py`, `src/`, or the seed data under `data/seed/` — never the JSON.
 
 **gear-planner is the single source of truth for item affixes**, read structurally. Do not re-parse its free text, and do not re-harvest set definitions into a parallel file.
