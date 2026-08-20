@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const {
   splitCsvLine, parseTroveCsv, ownedMatch, filterItemsToOwned, itemName, USED_COLUMNS,
+  ownedHasCatalogName, singularCandidates,
 } = require("../web/import.js");
 
 let passed = 0;
@@ -140,3 +141,51 @@ test("U5: owned filter retains a boolean-only-eligible variant", () => {
 });
 
 console.log(`\n${passed} passed`);
+
+
+// --- #408: stacked-item plurals -------------------------------------------
+//
+// Trove writes a STACKED item's name in the plural while the catalog stores the
+// singular, so a player who owns TWO of something had it silently dropped — in
+// the one mode whose promise is "only what I have". Every name this recovered in
+// a real export is an augment, which is what made it load-bearing once #359
+// shipped owned-augment mode.
+
+test("#408: a stacked plural matches its singular catalog name", () => {
+  const owned = new Set(["Solar Gems of Constitution (Legendary)", "Rubies of Acid (4d6)"]);
+  assert.strictEqual(ownedHasCatalogName(owned, "Solar Gem of Constitution (Legendary)"), true);
+  assert.strictEqual(ownedHasCatalogName(owned, "Ruby of Acid (4d6)"), true);
+});
+
+test("#408: an exact name still matches, and a near-miss does not", () => {
+  const owned = new Set(["Ruby of Flame (2d6)", "Bolts"]);
+  assert.strictEqual(ownedHasCatalogName(owned, "Ruby of Flame (2d6)"), true, "exact match unaffected");
+  // The guard against a blanket trailing-`s` singularizer: `Bolts` must NOT
+  // manufacture a match for `Bolt`. Each plural rule is a specific head-noun.
+  assert.strictEqual(ownedHasCatalogName(owned, "Bolt"), false);
+  assert.strictEqual(ownedHasCatalogName(owned, "Ruby of Frost (2d6)"), false);
+});
+
+test("#408: singularCandidates is conservative, never a general singularizer", () => {
+  assert.deepStrictEqual(singularCandidates("Solar Gems of Constitution (Legendary)"),
+    ["Solar Gem of Constitution (Legendary)"]);
+  assert.deepStrictEqual(singularCandidates("Bolts"), [], "no blanket trailing-s rule");
+  assert.deepStrictEqual(singularCandidates("Glorious Dawn"), []);
+});
+
+test("#408: the disclosure and the pool agree about what 'owned' means", () => {
+  // The bug class this prevents: a name counted as matched in the import
+  // disclosure while being dropped from the solver's pool, or the reverse.
+  const items = [
+    { source_item: "Solar Gem of Constitution (Legendary)", category: "augment" },
+    { source_item: "Ruby of Flame (2d6)", category: "augment" },
+    { source_item: "Not Owned", category: "item" },
+  ];
+  const owned = new Set(["Solar Gems of Constitution (Legendary)", "Ruby of Flame (2d6)"]);
+  const kept = filterItemsToOwned(items, owned).map((v) => v.source_item);
+  const m = ownedMatch(owned, items);
+  assert.deepStrictEqual(kept.sort(),
+    ["Ruby of Flame (2d6)", "Solar Gem of Constitution (Legendary)"]);
+  assert.strictEqual(m.matched, 2, "both count as matched in the disclosure too");
+  assert.strictEqual(m.matched, kept.length, "disclosure and pool cannot disagree");
+});
