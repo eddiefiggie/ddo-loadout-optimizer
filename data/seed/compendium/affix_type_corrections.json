@@ -108,6 +108,19 @@
    "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
   }
  ],
+ "Litany of the Dead": [
+  {
+   "name": "Litany of the Dead - Ability Bonus",
+   "from": null,
+   "to": "Profane",
+   "value": "1",
+   "tooltip": "Litany of the Dead - Ability Bonus: The Litany of the Dead enhances the physical and mental abilities of its owner. Grants a +1 Profane bonus to all Abilities.",
+   "template": "{{Litany of the Dead|1|Ability}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Litany_of_the_Dead",
+   "verified": "2026-08-20",
+   "note": "#367 \u2014 upstream carries this affix with NO `type` key at all (one of the ~90 key-less affixes left after the 2026-08-18 re-encoding, #374), while its own Combat sibling on the same item and both Epic-tier affixes are Profane. `from` is null because that is the faithful record of an absent key, and it is what lets apply() match a.get(\"type\") is None. Left untyped, the six ability scores this expands into (src/umbrella.py _NAMED_UMBRELLA) would land in the untyped bucket and stack with every Profane source instead of competing with them. Ruling: docs/wiki-evidence/litany-of-the-dead.md."
+  }
+ ],
  "_retired_2026_08_18": {
   "why": "#374/U4 — upstream adopted this retype in the 2026-08-18 refresh: Juiblex's Reign now carries ('Acid Absorption','Insight','15') natively, which is exactly what this shard and its paired item_value_corrections entry produced. Retired as a no-op; kept as the record. SCOPE, re-checked 2026-08-18 during the test re-ratification: ONLY the Juiblex entry was adopted. The two `Moment to Moment` augment entries were retired in the same edit WITHOUT cause — upstream still emits ('Action Boost Charges','Untyped') on both Yellow-Augment-Slot stones, so their wiki-verified retype is still live and still needed, and retiring them would have silently re-opened the #259 double-count against the 19 Enhancement-typed worn sources. They are restored above. Every entry retired here must be confirmed adopted in the refreshed raw, per-entry.",
   "verified": "2026-08-18 against upstream commit 767a7f747d0e7d211a702b8c456348e1c36ba699",
