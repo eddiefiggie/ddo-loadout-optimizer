@@ -1,11 +1,12 @@
-# Litany of the Dead — one template, four affixes, two different grants (#367)
+# Litany of the Dead — one template, four affixes, two different grants (#367, #396)
 
-**Ruled:** 2026-08-20. **Method:** same-origin harvest per `harvest-method.md`;
+**Ruled:** 2026-08-20 (Ability arm), 2026-08-20 (Combat arm, #396). **Method:** same-origin harvest per `harvest-method.md`;
 `Template:Litany of the Dead` and both item pages read via
 `action=query&prop=revisions` (POST, paced), corroborated against the rendered
 tooltip in `#mw-content-text`. **Shards:** `src/umbrella.py` `_NAMED_UMBRELLA`
-(the Ability half) and `data/seed/compendium/affix_type_corrections.json` (the
-key-less base type). **Guard:** `tests/test_umbrella.py`,
+(the Ability arm), `src/spell_focus.py` `_UNIVERSAL` + `SELF_NAMED` (the Combat
+arm, #396), and `data/seed/compendium/affix_type_corrections.json` (the key-less
+base type). **Guards:** `tests/test_umbrella.py`, `tests/test_spell_focus.py`,
 `tests/test_type_corrections.py`.
 
 ## The ruling
@@ -60,20 +61,47 @@ Profane type and the value. Their provenance label is the engraved name
 Rounded`, this name already carries its own identity, and the bundle card's job
 is to print the name on the player's gear.
 
-**The Combat arm is NOT settled here** — filed separately. The tooltip says
-"attack bonus and damage", and this project's rankable vocabulary carries
-`Accuracy` and `Deadly`. The wiki defines those two as *enchantments*:
+**The Combat arm is settled too, as of #396** — deliberately *after* the Ability
+arm rather than alongside it, because it needed a name-to-concept ruling the
+Ability arm did not. The tooltip says "attack bonus and damage"; this project's
+stat keys are `Accuracy` and `Deadly`. Three wiki facts close the gap, in order:
 
-> **Accuracy** — Passive: +x competence bonus to attack rolls.
-> **Deadly** — Passive: +x competence bonus to melee and ranged damage.
+1. **`Attack roll`** — "you roll a d20 and add your base attack bonus, relevant
+   ability score modifier and other **Attack bonuses**." So an *attack bonus* is
+   precisely what feeds an attack roll; the two are not different quantities.
 
-That is suggestive, not decisive: it establishes what the Accuracy and Deadly
-*enchantments* do, not that our `Accuracy`/`Deadly` stat keys are the canonical
-buckets for "attack bonus" and "damage" from an unrelated Profane source. That
-name↔concept correspondence is exactly the class of question #366 required to be
-settled explicitly rather than assumed, so it gets its own determination rather
-than a guess folded into this one. Both Combat affixes stay stored as-is and
-credit nothing until it is answered.
+2. **`Lunar_and_Solar_Gems`** — the hub table lists, verbatim:
+
+   ```
+   Accuracy        Profane Bonus to Attack Rolls    +1  ...  +4
+   Attack          Artifact Bonus to Attack Rolls   +2  +3  +4
+   Weapon Damage   Profane Bonus to Damage Rolls    +2  +3  +4
+   Damage          Artifact Bonus to Damage Rolls   +2  +3  +4
+   ```
+
+   Two **differently named** gems (`Accuracy`, `Attack`) share one effect, and
+   the catalog already stores both under the single key `Accuracy`; likewise
+   `Weapon Damage` and `Damage` both under `Deadly`. The correspondence is
+   therefore established by shipped data the wiki corroborates, not inferred.
+
+3. **The keys are buckets, not one enchantment.** In the built dataset
+   `Accuracy` carries six bonus types (Competence 188, Quality 27, Legendary 14,
+   Insight 14, **Profane 2**, Artifact 2) and `Deadly` six (Competence 137,
+   Quality 37, Insight 33, **Profane 2**, Legendary 3, Artifact 2). A Profane
+   entry is not a novel shape being invented for the Litany — `Lunar Gem of
+   Accuracy` is already exactly that.
+
+So both Combat affixes expand into `Accuracy` + `Deadly`, preserving the Profane
+type and the value. Registered in `spell_focus._UNIVERSAL` (a two-component
+family) rather than in `umbrella.py`, whose expansion target is the six
+abilities.
+
+**The consequence that made this worth settling first:** the Litany's Profane
+now lands in the *same* bucket as `Lunar Gem of Accuracy`'s Profane, so the two
+**compete** (highest wins) rather than summing. Guessing the mapping the other
+way — leaving it unexpanded, or inventing a separate key — would have silently
+handed players attack and damage they do not have. Measured at ML30 with the
+Epic trinket pinned: exactly one Profane entry per stat in each breakdown.
 
 ## Why the base tier also needed a type correction
 

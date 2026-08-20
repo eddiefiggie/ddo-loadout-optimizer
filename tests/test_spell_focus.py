@@ -208,7 +208,15 @@ def test_all_universal_names_map_to_their_family_targets():
                          # catalog-wording precedent)
                          "all saving throws", "saving throws", "tactical dcs",
                          # #366 — base Spell Lore joins as Potency's analogue.
-                         "spell lore"}
+                         "spell lore",
+                         # #396 — the Litany of the Dead's Combat arm, the first
+                         # SELF-NAMED members of this table: their engraved name
+                         # is the affix name itself, so `source_label` returns it
+                         # unprefixed. Two components, not a school/element set.
+                         "litany of the dead - combat bonus",
+                         "litany of the dead ii - combat bonus"}
+    assert away["litany of the dead ii - combat bonus"] == spell_focus.COMBAT_ROLLS
+    assert away["litany of the dead - combat bonus"] == spell_focus.COMBAT_ROLLS
     assert away["spell lore"] == spell_focus.LORE_TARGETS
     # ...and its stacking twin stays OUT, or the expansion would collapse a
     # source the wiki explicitly calls separate and stacking.
@@ -483,3 +491,81 @@ def test_combat_mastery_expands_to_the_three_tactics():
 def test_the_tactic_components_are_not_universal():
     for name in spell_focus.TACTICS + spell_focus.SAVES:
         assert not spell_focus.is_universal(name), name
+
+
+# --- #396: the Litany of the Dead's Combat arm ------------------------------
+#
+# "+N Profane bonus to attack bonus and damage" — wiki-settled onto the
+# `Accuracy` / `Deadly` buckets (docs/wiki-evidence/litany-of-the-dead.md), and
+# the first SELF-NAMED members of `_UNIVERSAL`: the affix name IS the engraved
+# name, so no bonus-type prefix may be added to it.
+
+COMBAT = "Litany of the Dead II - Combat Bonus"
+
+
+def test_combat_arm_expands_into_accuracy_and_deadly_preserving_type_and_value():
+    out = spell_focus.expand_affixes([_aff(COMBAT, "Profane", 4)])
+    assert sorted(a["stat"] for a in out) == ["Accuracy", "Deadly"]
+    assert all(a["bonus_type"] == "Profane" and a["value"] == 4 for a in out)
+
+
+def test_combat_arm_provenance_is_the_engraved_name_verbatim():
+    """The SELF_NAMED rule: no type prefix on an already-complete name."""
+    out = spell_focus.expand_affixes([_aff(COMBAT, "Profane", 4)])
+    assert {a[VIA] for a in out} == {COMBAT}
+    # ...while every generic family member still gets its prefix. Without this
+    # arm, dropping the prefix wholesale would pass the assertion above.
+    generic = spell_focus.expand_affixes([_aff("Combat Mastery", "Insight", 7)])
+    assert {a[VIA] for a in generic} == {"Insightful Combat Mastery"}
+
+
+def test_self_named_covers_every_named_umbrella_member():
+    """The two registries live in different modules and must not drift.
+
+    `umbrella._NAMED_UMBRELLA` decides WHICH names expand into the six
+    abilities; `spell_focus.SELF_NAMED` decides which names take no type
+    prefix. Every named umbrella is self-named by construction — if one is ever
+    added to the first without the second, its label silently regains a prefix
+    and prints a name no item bears.
+    """
+    from src import umbrella
+    assert umbrella._NAMED_UMBRELLA <= spell_focus.SELF_NAMED
+    assert umbrella._NAMED_UMBRELLA, "the guard inspects a non-empty set"
+
+
+def test_self_named_does_not_leak_onto_generic_names():
+    for name, bt, expected in [
+        ("Well Rounded", "Profane", "Profane Well Rounded"),
+        ("Spell Focus Mastery", "Insight", "Insightful Spell Focus Mastery"),
+        ("Potency", "Quality", "Quality Potency"),
+    ]:
+        assert spell_focus.source_label(name, bt) == expected, name
+
+
+def test_shipped_dataset_expands_both_combat_tiers():
+    """Behavior against the real dataset, including the value the wiki squares."""
+    import json
+    p = os.path.join(ROOT, "web", "data", "items.json")
+    if not os.path.exists(p):
+        return
+    d = json.load(open(p, encoding="utf-8"))
+    by_id = {v.get("variant_id"): v for v in d["items"]}
+    # The Combat arm grants the template's first parameter SQUARED, so the Epic
+    # tier is +4 and not +2 — pinned here so a re-read of the template that
+    # dropped the #expr would be caught.
+    expected = {
+        "Litany of the Dead": ("Litany of the Dead - Combat Bonus", "1"),
+        "Epic Litany of the Dead": ("Litany of the Dead II - Combat Bonus", "4"),
+    }
+    checked = 0
+    for variant_id, (label, value) in expected.items():
+        v = by_id.get(variant_id)
+        assert v is not None, f"{variant_id} left the roster — re-verify the ruling"
+        members = [a for a in v.get("affixes", []) or [] if a.get("via") == label]
+        assert sorted(a["name"] for a in members) == ["Accuracy", "Deadly"], \
+            f"{variant_id}: expected Accuracy + Deadly under {label!r}, got {members}"
+        for a in members:
+            assert a.get("type") == "Profane", f"{variant_id}: {a['name']} is {a.get('type')!r}"
+            assert str(a.get("value")) == value, f"{variant_id}: {a['name']} = {a.get('value')!r}"
+        checked += 1
+    assert checked == 2, "the guard inspected fewer than both tiers"

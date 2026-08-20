@@ -133,6 +133,13 @@ TACTICS = [
     "Shatter",
 ]
 
+# #396 — the two stat keys this project uses for attack rolls and damage rolls.
+# `Accuracy` and `Deadly` are the enchantment names DDO prints, but the catalog
+# uses them as the BUCKETS for those two concepts: the wiki's differently-named
+# `Solar Gem of Attack` ("Artifact Bonus to Attack Rolls") and `Solar Gem of
+# Damage` ("Artifact Bonus to Damage Rolls") are both already stored under them.
+COMBAT_ROLLS = ["Accuracy", "Deadly"]
+
 # The ability-keyed skill umbrellas (#211). Rendered tooltips, read 2026-08-13:
 # `{{Skills|Charisma|2}}`: "Passive +2 Exceptional bonus to the Charisma based
 # skills of: Bluff, Diplomacy, Haggle, Intimidate, Perform and Use Magic Device
@@ -223,6 +230,40 @@ _UNIVERSAL = {
     "constitution skills": SKILLS_CON,
     "strength skills": SKILLS_STR,
     "wisdom skills": SKILLS_WIS,
+    # #396 — the Litany of the Dead's Combat arm. `{{Litany of the Dead|N|Combat}}`
+    # renders "Grants a +N Profane bonus to attack bonus and damage" (the arm
+    # grants the parameter SQUARED, so the Epic tier is +4). Three wiki facts make
+    # `Accuracy` + `Deadly` the right components rather than a guess:
+    #
+    #   1. `Attack roll` — "you roll a d20 and add your base attack bonus,
+    #      relevant ability score modifier and other Attack bonuses", so an
+    #      attack bonus is exactly what feeds an attack roll.
+    #   2. `Lunar_and_Solar_Gems` — "Accuracy: Profane Bonus to Attack Rolls"
+    #      and "Attack: Artifact Bonus to Attack Rolls" are two DIFFERENTLY
+    #      NAMED gems with one effect, and the catalog already stores both under
+    #      `Accuracy`. Same for "Weapon Damage"/"Damage" -> `Deadly`.
+    #   3. Those keys already carry six bonus types each, Profane included, so
+    #      they are stat buckets rather than one Competence enchantment.
+    #
+    # The Litany's Profane therefore COMPETES with the Lunar gems' Profane in
+    # one bucket (highest wins) rather than stacking beside it, which is the
+    # behavior that made this worth settling before expanding.
+    # Evidence: docs/wiki-evidence/litany-of-the-dead.md.
+    "litany of the dead - combat bonus": COMBAT_ROLLS,
+    "litany of the dead ii - combat bonus": COMBAT_ROLLS,
+}
+
+# #367/#396 — engraved names that are ALREADY the complete name the item prints,
+# so `source_label` must not prefix a bonus type onto them. The generic family
+# names above are words a type completes ("Potency" + Profane -> "Profane
+# Potency"); these carry their own identity, and prefixing would invent
+# "Profane Litany of the Dead II - Combat Bonus", a name no item bears, on the
+# surface whose job is showing what is engraved on the player's gear.
+SELF_NAMED = {
+    "litany of the dead - ability bonus",
+    "litany of the dead ii - ability bonus",
+    "litany of the dead - combat bonus",
+    "litany of the dead ii - combat bonus",
 }
 
 # Field carrying the originating enchantment name on an expanded affix. Absent on
@@ -260,6 +301,9 @@ def expanded_away() -> dict:
 def source_label(stat, bonus_type) -> str:
     """The enchantment name as the wiki writes it, e.g. "Sacred Spell Focus Mastery"."""
     base = (stat or "").strip()
+    # #367/#396 — a self-named enchantment IS the engraved name already.
+    if base.lower() in SELF_NAMED:
+        return base
     if bonus_type in _UNPREFIXED_TYPES:
         return base
     prefix = _TYPE_PREFIX.get(bonus_type, bonus_type)
