@@ -188,3 +188,8 @@ Filed 2026-08-20:
   not a defect. That ruling rests on an evidence gap the sweep itself flagged as the known
   residual, so the issue is a re-harvest to settle it either way — not a defence of the
   current behavior.
+- #402 RESOLVED 2026-08-20 as already-correct: the ruling was re-harvested and UPHELD on
+  three independent reads (Intensity table has no universal row; Spell power's identical
+  table DOES have one, so the absence is meaningful; Spell critical has a Universal section
+  for crit CHANCE and none for crit DAMAGE). The gem is credited the moment `Spell Intensity`
+  is ranked. Residue is a DISCLOSURE gap, filed as #404.
