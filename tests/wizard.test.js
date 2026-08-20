@@ -2503,3 +2503,69 @@ test("#404: an ordinary add carries no hint field at all", () => {
   assert.strictEqual(out.ok, true);
   assert.ok(!("companionHint" in out), "absent, not an empty string — callers test truthiness");
 });
+
+
+// --- #359: owned-augment mode ----------------------------------------------
+//
+// The augment half of inventory mode. Base items were always restricted to the
+// export; augments came from the full catalog. Restricting them STRICTLY to the
+// export would cut 1063 augments to ~123 and delete gear nobody farms, so the
+// pool is `owned UNION acquirable` — acquirable being the wiki's
+// Common/Uncommon/Rare rarity classes, stamped at build time.
+
+const ownedState = (over) => Object.assign(baseState(), {
+  pool: "owned", ownedNames: new Set(["My Ring", "Essence of The Masque"]),
+}, over || {});
+
+// A stand-in catalog: one owned item, one unowned item, and three augments —
+// one owned, one acquirable, one neither.
+const OA_ITEMS = [
+  { variant_id: "My Ring", source_item: "My Ring", category: "item", slot: "Ring" },
+  { variant_id: "Not Mine", source_item: "Not Mine", category: "item", slot: "Ring" },
+  { variant_id: "Essence of The Masque", source_item: "Essence of The Masque", category: "augment" },
+  { variant_id: "Diamond of Constitution +12", source_item: "Diamond of Constitution +12",
+    category: "augment", acquirable: true },
+  { variant_id: "Crystallized Unicorn Tear", source_item: "Crystallized Unicorn Tear", category: "augment" },
+];
+
+/** Mirrors wizard.js candidateItems() — the filter under test is pure set logic,
+ *  and the wizard's own copy closes over `state`/`dataset` inside the IIFE. */
+function candidates(state, items) {
+  if (state.pool === "owned" && state.ownedNames) {
+    return items.filter((v) => (v.category === "augment"
+      ? (!state.ownedAugments || v.acquirable === true
+         || state.ownedNames.has(v.source_item || v.variant_id))
+      : state.ownedNames.has(v.source_item || v.variant_id)));
+  }
+  return items;
+}
+
+test("#359: with the toggle OFF, owned mode is unchanged — every augment stays", () => {
+  const out = candidates(ownedState({ ownedAugments: false }), OA_ITEMS).map((v) => v.variant_id);
+  assert.deepStrictEqual(out.sort(), [
+    "Crystallized Unicorn Tear", "Diamond of Constitution +12",
+    "Essence of The Masque", "My Ring",
+  ].sort(), "base items restricted, augment pool untouched");
+});
+
+test("#359: with the toggle ON, augments narrow to owned UNION acquirable", () => {
+  const out = candidates(ownedState({ ownedAugments: true }), OA_ITEMS).map((v) => v.variant_id);
+  assert.ok(out.includes("Essence of The Masque"), "a NAMED augment the player owns is kept");
+  assert.ok(out.includes("Diamond of Constitution +12"), "an acquirable augment is kept even unowned");
+  assert.ok(!out.includes("Crystallized Unicorn Tear"),
+    "a named augment the player does NOT own is dropped — the whole point");
+  assert.ok(!out.includes("Not Mine"), "base items stay restricted");
+});
+
+test("#359: the toggle does nothing outside owned mode", () => {
+  const all = candidates(Object.assign(baseState(), { pool: "all", ownedAugments: true }), OA_ITEMS);
+  assert.strictEqual(all.length, OA_ITEMS.length, "full-catalog mode is never filtered");
+});
+
+test("#359: acquirable is strict-true, never a truthy accident", () => {
+  // A stale build could leave the field absent; `acquirable: "yes"` or `1` must
+  // not slip an unowned named augment through.
+  const odd = [{ variant_id: "Odd", source_item: "Odd", category: "augment", acquirable: "yes" }];
+  const out = candidates(ownedState({ ownedAugments: true }), odd);
+  assert.deepStrictEqual(out, [], "only a real boolean true admits an unowned augment");
+});

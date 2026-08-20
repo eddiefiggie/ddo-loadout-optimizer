@@ -81,6 +81,10 @@
     // #339 — augCeiling is the mlFloor precedent: a plain nullable scalar, no
     // save marker, no healing. Absent on a pre-feature save -> loads unrestricted.
     "characterName", "ml", "mlFloor", "mlFloorManual", "augCeiling", "race", "alignment", "armor", "oath",
+    // #359 — the owned-augment opt-in. Absent on a pre-feature save, which
+    // reads as false: a character saved before this shipped reloads solving
+    // exactly what it solved before.
+    "ownedAugments",
     "style", "weaponTypes", "offHand", "offHandWeapons", "twoWeaponFighting",
     // #346 — the crafting/augment ladder. `excludeCraftingSystems` stays on the
     // allowlist as a READ-ONLY legacy key: saves written before the ladder carry

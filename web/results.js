@@ -382,7 +382,7 @@ function loadoutDeepDive(result, query, maps, attr) {
 function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, ownedInfo, contributors, prioCtx) {
   const c = (slotConstraints || {})[label];
   const locked = c && c.type === "empty";
-  const owned = ownedInfo || { mode: false, slotsCovered: new Set() };
+  const owned = ownedInfo || { mode: false, augments: false, slotsCovered: new Set() };
   const v = pick ? pick.variant : null;
   const canPin = v && !locked;
   // U4/F1+F2 — per-ROW identity. A Ring slot shares the label "Ring" across both
@@ -426,7 +426,7 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
   // same height via the grid stretch + the .pd-row min-height). Assignment data
   // comes from `maps` (keyed by the pick's chosen index); `augById` resolves an
   // augment's affixes by variant_id (the placed meta carries none).
-  const body = (v && !locked) ? equippedBody(v, pick ? pick.idx : -1, maps, augById, owned.mode) : "";
+  const body = (v && !locked) ? equippedBody(v, pick ? pick.idx : -1, maps, augById, owned.mode, owned.augments) : "";
   // #262 — the no-drop-source note on the gear box itself: the moment of seeing
   // the pick is where the player must learn it, not at the wiki after farming.
   // Same shared wording as the Deep Dive and every export (projection.js).
@@ -451,7 +451,7 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
 // and the item's assigned craft-upgrade slots (U2). `maps` (and the pick's `idx`)
 // are always supplied on the render path (buildViews -> equippedRow); a maps-less
 // call (only the pure test callers) simply renders no augment/craft section.
-function equippedBody(v, idx, maps, augById, ownedMode) {
+function equippedBody(v, idx, maps, augById, ownedMode, ownedAugments) {
   // U8/R8 — the Loadout block collapses each expansion to its enchantment for the
   // same reason the Deep Dive does: this is what the player compares against the
   // in-game tooltip.
@@ -491,8 +491,16 @@ function equippedBody(v, idx, maps, augById, ownedMode) {
   // R7/AE6 — in owned-inventory mode the base item is yours, but augments and
   // crafting are RECOMMENDATIONS from the full catalog, not your inventory. Mark
   // the augment/craft block so it reads as "craft/slot this", not "you own this".
+  // #359 — the note has to track which pool the augments actually came from.
+  // With the augment restriction ON they are drawn from `owned UNION acquirable`,
+  // so "not owned" would now overstate: every augment shown is either in the
+  // player's export or one anyone can buy. Crafting is still full-catalog in
+  // both cases, which is why the restricted wording still says so.
   const recNote = (ownedMode && (augs || crafts))
-    ? `<div class="pd-rec-note muted" title="Augments and crafting always come from the full catalog, not your imported inventory">Recommended (not owned)</div>` : "";
+    ? (ownedAugments
+      ? `<div class="pd-rec-note muted" title="Augments are limited to your imported inventory plus augments anyone can buy or trade for; crafting still comes from the full catalog">Owned or buyable${crafts ? " · crafting recommended" : ""}</div>`
+      : `<div class="pd-rec-note muted" title="Augments and crafting always come from the full catalog, not your imported inventory">Recommended (not owned)</div>`)
+    : "";
   return `<div class="pd-rbody">${stats}${recNote}${augs}${crafts}</div>`;
 }
 
@@ -1429,7 +1437,10 @@ function buildViews(build, model, query) {
   // U6/U7 — owned-mode signal for the empty-slot note and the recommended-augment
   // marking (view layer). Plumbed on the query at solve time; falls back to
   // non-owned when absent (loaded snapshots, pure-test callers).
-  const ownedInfo = { mode: !!query.ownedMode, slotsCovered: new Set(query.ownedSlotsCovered || []) };
+  // #359 — `augments` says whether the augment pool was restricted too, which
+  // changes what the per-row note can honestly claim.
+  const ownedInfo = { mode: !!query.ownedMode, augments: !!query.ownedAugments,
+                      slotsCovered: new Set(query.ownedSlotsCovered || []) };
   const rows = [];
   for (const slot of model.worn) {
     const picks = picksBySlot.get(slot.slot) || [];
