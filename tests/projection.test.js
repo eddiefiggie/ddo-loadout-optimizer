@@ -459,6 +459,78 @@ test("U9: the in-game order holds through project() (the exporters' path) as wel
   ], "Melancholic, then Dolorous, then Woeful — in-game order, not emission order");
 });
 
+// ---- #370 — a declared Lamordia slot the solve left empty is DISCLOSED --------
+//
+// Chips were built from PLACEMENTS, so a slot whose pool holds no option that
+// advances the ranked stats simply vanished: a 4-slot item rendered as a 3-slot
+// item, which is indistinguishable from "this tool has no data for that slot".
+// That is how #365 was reported ("it didn't put anything in the Woeful slot").
+// A Lamordia slot is part of the item's identity, so declared == placed + empty,
+// always, on every surface.
+
+const LAM4 = ["Melancholic", "Dolorous", "Miserable", "Woeful"]
+  .map((type) => ({ type, category: "Weapon" }));
+
+test("#370: declared Lamordia slots always equal placed plus disclosed-empty", () => {
+  const v = { variant_id: "Sorrowblade", lamordia_slots: LAM4 };
+  const placed = [{ item: "Sorrowblade", slot_type: "Miserable", stat: "Deadly", bonus_type: "Insight", value: 4 }];
+  const unfilled = P.unfilledVikSlots(v, placed);
+  assert.strictEqual(placed.length + unfilled.length, LAM4.length, "no slot is dropped");
+  assert.deepStrictEqual(unfilled.map((u) => u.slot_type), ["Melancholic", "Dolorous", "Woeful"],
+    "the empty three are named, in the registry's in-game order");
+  assert.strictEqual(unfilled[0].category, "Weapon", "the pool category rides along");
+});
+
+test("#370: the empty set is a MULTISET difference — one fill does not account for two same-type slots", () => {
+  // An item declaring the same slot type twice must still show one open slot
+  // after one craft lands. A plain set difference would silently show none.
+  const v = { variant_id: "Twice Woeful", lamordia_slots: [
+    { type: "Woeful", category: "Accessory" }, { type: "Woeful", category: "Accessory" },
+  ] };
+  const unfilled = P.unfilledVikSlots(v, [{ item: "Twice Woeful", slot_type: "Woeful" }]);
+  assert.strictEqual(unfilled.length, 1, "one filled, one still open");
+});
+
+test("#370: an item with no Lamordia slots discloses nothing", () => {
+  assert.deepStrictEqual(P.unfilledVikSlots({ variant_id: "Plain Ring" }, []), []);
+  assert.deepStrictEqual(P.unfilledVikSlots({ variant_id: "Plain Ring", lamordia_slots: [] }, []), []);
+});
+
+test("#370: a fully crafted item discloses nothing (the notice is not unconditional)", () => {
+  const v = { variant_id: "Sorrowblade", lamordia_slots: LAM4 };
+  const placed = LAM4.map((s) => ({ item: "Sorrowblade", slot_type: s.type }));
+  assert.deepStrictEqual(P.unfilledVikSlots(v, placed), []);
+});
+
+test("#370: the empty slots ride project() — every export states the item's real slot count", () => {
+  const rec = makeRec();
+  // makeRec's Epic Spectacles already carries a Melancholic craft; declare all
+  // four slots on it so three are left open.
+  rec.snapshot.chosen[0].variant.lamordia_slots = LAM4;
+  const v = P.project(rec);
+  const goggles = v.loadout.find((i) => i.item === "Epic Spectacles");
+  const empties = goggles.crafting.filter((c) => c.family === "vikEmpty");
+  assert.deepStrictEqual(empties.map((c) => c.slot_type), ["Dolorous", "Miserable", "Woeful"],
+    "the three unfilled slots follow the one filled Melancholic slot");
+  assert.ok(empties[0].label.includes("left empty"), "the label says the slot is empty");
+  assert.ok(empties[0].label.includes("no option adds to your ranked stats"),
+    "and WHY — so it reads as an open slot, not as missing data");
+});
+
+test("#370: the app chip renders the same sentence the exports do", () => {
+  const rec = makeRec();
+  rec.snapshot.chosen[0].variant.lamordia_slots = LAM4;
+  const maps = P.buildCraftMaps(rec.snapshot);
+  const chips = R.craftSlotChips(rec.snapshot.chosen[0].variant, 0, maps);
+  const empty = chips.filter((c) => c.includes("left empty"));
+  assert.strictEqual(empty.length, 3, "three open slots, three chips");
+  assert.ok(empty[0].includes("chip lamordia unfilled"), "styled as an open slot, not as a craft to apply");
+  // Same sentence on both surfaces — the app and the share cannot disagree about
+  // how many slots an item has.
+  const label = P.craftLabel({ slot_type: "Dolorous" }, "vikEmpty");
+  assert.ok(empty[0].includes(label));
+});
+
 // ---- U6/#249: the compound-absorption quarantine, as sentences --------------
 //
 // ONE source for the app notice and every export, the contract

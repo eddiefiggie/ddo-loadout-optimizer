@@ -270,6 +270,10 @@ button.primary:hover { filter: brightness(1.08); }
 .chip.nc { border-color: #5a3a6a; background: #171220; }
 .chip.roll { border-color: #3a5a4a; background: #121a16; }
 .chip.lamordia { border-color: #6a3a4a; background: #1a1216; }
+/* #370 — a declared Lamordia slot the solve left empty: present, clearly not
+   filled. Dashed and dimmed so it reads as an open slot at a glance, never as a
+   craft the player should go apply. */
+.chip.lamordia.unfilled { border-style: dashed; background: transparent; color: var(--faint); }
 /* #332 — the ONE Utility-tier presence marker. `counted` is the affirmative
    signal (this effect earns a point). Every other presence effect stays
    deliberately unmarked, and #380 made that the whole rule: a second glyph for

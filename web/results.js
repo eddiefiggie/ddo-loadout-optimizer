@@ -221,7 +221,15 @@ function craftSlotChips(v, idx, maps) {
   // system the placement actually came from (`pool`), not the category path's.
   const ncs = (maps.ncByItem.get(v.variant_id) || []).map((n) => `<span class="chip nc" title="${esc(n.pool ? n.pool + " — per-item upgrade slot" : "Terror of Demogorgon — Nearly Completed")}">${esc(Proj.craftLabel(n, "nc"))}</span>`);
   const rolls = (maps.rollByItem.get(v.variant_id) || []).map((r) => `<span class="chip roll" title="choice slot, best option selected">${esc(Proj.craftLabel(r, "roll"))}</span>`);
-  const viks = (maps.vikByItem.get(v.variant_id) || []).map((n) => `<span class="chip lamordia" title="The Chill of Ravenloft — Viktranium Experiment crafting">${esc(Proj.craftLabel(n, "vik"))}</span>`);
+  const vikPlaced = maps.vikByItem.get(v.variant_id) || [];
+  const viks = vikPlaced.map((n) => `<span class="chip lamordia" title="The Chill of Ravenloft — Viktranium Experiment crafting">${esc(Proj.craftLabel(n, "vik"))}</span>`);
+  // #370 — a Lamordia slot the item DECLARES but the solve left empty renders as
+  // a muted chip rather than vanishing. The slot is part of the item's identity,
+  // so an item that ships with four slots must never read as a three-slot item.
+  // The unfilled set comes from the shared projection helper, the same one every
+  // export reads.
+  viks.push(...Proj.unfilledVikSlots(v, vikPlaced).map((s) =>
+    `<span class="chip lamordia unfilled" title="The Chill of Ravenloft — this slot exists on the item; no option in its pool adds to your ranked stats">${esc(Proj.craftLabel(s, "vikEmpty"))}</span>`));
   const seals = (maps.sealByItem.get(v.variant_id) || []).map((n) => `<span class="chip seal" title="unseal one effect at the crafting table">${esc(Proj.craftLabel(n, "seal"))}</span>`);
   const tfs = ((maps.tfByItem && maps.tfByItem.get(v.variant_id)) || []).map((n) => `<span class="chip thunderforged" title="Legendary Thunder-Forged tier upgrade">${esc(Proj.craftLabel(n, "tf"))}</span>`);
   const gss = ((maps.gsByItem && maps.gsByItem.get(v.variant_id)) || []).map((n) => `<span class="chip greensteel" title="Legendary Green Steel craft">${esc(Proj.craftLabel(n, "gs"))}</span>`);
