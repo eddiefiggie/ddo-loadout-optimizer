@@ -57,6 +57,7 @@ from src import utility_procs as utility_procs_mod
 from src import dr_qualifiers as dr_qualifiers_mod
 from src import type_corrections as type_corrections_mod
 from src import augment_acquirability as acquirability_mod
+from src import conditional_quarantine as cond_quarantine_mod
 from src import legendary_fold as legendary_fold_mod
 from src import ml36_augments as ml36_augments_mod
 from src import viktranium_pool_corrections as vik_pool_mod
@@ -300,6 +301,8 @@ TYPE_CORRECTIONS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "affix_type_corrections.json")
 ACQUIRABILITY_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "augment_acquirability.json")
+COND_QUARANTINE_PATH = os.path.join(
+    HERE, "data", "seed", "compendium", "conditional_affix_quarantine.json")
 ML36_AUGMENTS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "ml36_augments.json")
 # #365 — curated wiki-sourced Viktranium pool relocations (misfiled options).
@@ -881,6 +884,14 @@ def build() -> dict:
     _type_coverage_augments = type_corrections_mod.apply(aug_pool, _type_corrections)
     type_corrections_mod.assert_all_reached(
         _type_corrections, _type_coverage_items, _type_coverage_augments)
+    # #88 — drop affixes the wiki states are conditional / ramping / temporary but
+    # gear-planner stores as a flat maximum. Runs on BOTH channels, right after the
+    # type corrections and before any expansion, so a quarantined affix never
+    # reaches the cross-add or umbrella families downstream.
+    _cond_q = cond_quarantine_mod.load(COND_QUARANTINE_PATH)
+    _condq_items = cond_quarantine_mod.apply(planner_records, _cond_q)
+    _condq_augs = cond_quarantine_mod.apply(aug_pool, _cond_q)
+    cond_quarantine_mod.assert_all_reached(_cond_q, _condq_items, _condq_augs)
     # #359 — wiki-sourced ACQUIRABILITY, stamped on the augment pool. Owned-augment
     # mode offers `owned UNION acquirable`; this is the acquirable half. Stamped
     # here, after the type corrections and before variant expansion, so the flag

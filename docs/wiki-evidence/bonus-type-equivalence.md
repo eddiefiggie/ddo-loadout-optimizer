@@ -113,7 +113,7 @@ entry can fix them.
 
 ---
 
-## Coverage — the sweep is complete
+## Coverage — the sweep, and why it is now guarded rather than dated
 
 Every stacking bucket the built dataset produces was examined, not a sample. There are **40**:
 39 named types plus the null type. Disposition:
@@ -131,6 +131,49 @@ The tell used to find §3's defects: a type carrying **exactly one stat** is a c
 "not a bonus type at all". Twenty-two types are single-stat, and most are legitimate
 (`Armor`, `Shield`, `Natural` → Armor Class; `Implement` → Universal Spell Power), so the
 test narrows the search rather than deciding it — each still needs the source read.
+
+### Re-survey 2026-08-20 (#88): the completeness claim had gone stale
+
+The table above said "every stacking bucket the built dataset produces was
+examined". That was true when written. On **2026-08-18** the gear-planner canon
+migration introduced a type the sweep had never seen, and nobody re-ran it — so
+the claim quietly stopped being true, with nothing failing.
+
+Re-surveyed against the current dataset: **30 distinct types** (down from 40 —
+nine DR bypass qualifiers were fixed by #223, and `Maximum dexterity` retired
+upstream). One is new:
+
+**`Psionic` — QUARANTINED, not classified as a bonus type.**
+
+Two augments, `Meridian Fragment` (Orange) and `Crystallized Drop of Tea`
+(Yellow), store `Universal Spell Power | Psionic | 24`. Both item pages state
+the same thing, verbatim:
+
+> once every three seconds **when you take physical damage**, you get **+8
+> Psionic Bonus** to Universal Spell Power. This **can stack up to three times**
+> and each stack **lasts for 20 seconds**.
+
+So 24 is `8 x 3` — the fully-stacked maximum of a buff that is **conditional**
+(needs you to be hit), **ramping** (three stacks) and **temporary** (20s each).
+gear-planner has no field for any of that, so it stored the maximum flat.
+
+Credited flat, the optimizer granted +24 Universal Spell Power permanently. And
+because Universal Spell Power **cross-adds** into all ten element spellpowers
+(#290/#301), the over-credit did not stay local — it landed on every spellpower
+a caster ranks. Six golden fixtures moved when it was removed: `Universal Spell
+Power 128 -> 104`, with each element spellpower down the same 24.
+
+**Dropped rather than re-valued**, per the never-infer rule: the wiki states no
+sustained figure, so any number written here would be invented. Same disposition
+`Deific Focus` received on the same shape. Shard:
+`data/seed/compendium/conditional_affix_quarantine.json`; the general problem is
+#214.
+
+**The claim is now a guard.** `data/seed/compendium/bonus_type_dispositions.json`
+records a disposition for every type the dataset produces, and
+`tests/test_bonus_type_coverage.py` fails the build when a type appears with no
+disposition. A dated completeness claim cannot notice its own staleness; this
+one now does.
 
 ## Harvest record
 

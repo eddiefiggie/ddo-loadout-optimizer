@@ -79,12 +79,12 @@
    "status": "optimal",
    "perTarget": {
     "Intelligence": 34,
-    "Universal Spell Power": 118,
+    "Universal Spell Power": 94,
     "Wisdom": 28
    },
    "effective": {
     "Intelligence": 34,
-    "Universal Spell Power": 118,
+    "Universal Spell Power": 94,
     "Wisdom": 28
    },
    "chosen": [
@@ -362,32 +362,32 @@
   "endgame-caster-ml32": {
    "status": "optimal",
    "perTarget": {
-    "Universal Spell Power": 128,
-    "Combustion": 463,
-    "Corrosion": 463,
-    "Devotion": 392,
-    "Glaciation": 271,
-    "Impulse": 271,
-    "Magnetism": 271,
-    "Nullification": 271,
-    "Radiance": 271,
-    "Reconstruction": 271,
-    "Resonance": 271,
+    "Universal Spell Power": 104,
+    "Combustion": 439,
+    "Corrosion": 439,
+    "Devotion": 368,
+    "Glaciation": 247,
+    "Impulse": 247,
+    "Magnetism": 247,
+    "Nullification": 247,
+    "Radiance": 247,
+    "Reconstruction": 247,
+    "Resonance": 247,
     "Wisdom": 25,
     "Charisma": 24
    },
    "effective": {
-    "Universal Spell Power": 128,
-    "Combustion": 463,
-    "Corrosion": 463,
-    "Devotion": 392,
-    "Glaciation": 271,
-    "Impulse": 271,
-    "Magnetism": 271,
-    "Nullification": 271,
-    "Radiance": 271,
-    "Reconstruction": 271,
-    "Resonance": 271,
+    "Universal Spell Power": 104,
+    "Combustion": 439,
+    "Corrosion": 439,
+    "Devotion": 368,
+    "Glaciation": 247,
+    "Impulse": 247,
+    "Magnetism": 247,
+    "Nullification": 247,
+    "Radiance": 247,
+    "Reconstruction": 247,
+    "Resonance": 247,
     "Wisdom": 25,
     "Charisma": 24
    },
@@ -595,14 +595,14 @@
   "trance-credit-additive-ml32": {
    "status": "optimal",
    "perTarget": {
-    "Devotion": 472,
+    "Devotion": 448,
     "Wisdom": 29,
-    "Universal Spell Power": 128
+    "Universal Spell Power": 104
    },
    "effective": {
-    "Devotion": 472,
+    "Devotion": 448,
     "Wisdom": 29,
-    "Universal Spell Power": 128
+    "Universal Spell Power": 104
    },
    "chosen": [
     {
@@ -666,14 +666,14 @@
   "trance-credit-additive-ml32-baseline": {
    "status": "optimal",
    "perTarget": {
-    "Devotion": 460,
+    "Devotion": 436,
     "Wisdom": 29,
-    "Universal Spell Power": 128
+    "Universal Spell Power": 104
    },
    "effective": {
-    "Devotion": 460,
+    "Devotion": 436,
     "Wisdom": 29,
-    "Universal Spell Power": 128
+    "Universal Spell Power": 104
    },
    "chosen": [
     {
@@ -1277,12 +1277,12 @@
   "cross-add-combustion-usp-ml32": {
    "status": "optimal",
    "perTarget": {
-    "Combustion": 464,
-    "Universal Spell Power": 125
+    "Combustion": 440,
+    "Universal Spell Power": 101
    },
    "effective": {
-    "Combustion": 464,
-    "Universal Spell Power": 125
+    "Combustion": 440,
+    "Universal Spell Power": 101
    },
    "chosen": [
     {
@@ -1471,12 +1471,12 @@
    "perTarget": {
     "Intelligence": 37,
     "Spell Penetration": 31,
-    "Universal Spell Power": 128
+    "Universal Spell Power": 104
    },
    "effective": {
     "Intelligence": 37,
     "Spell Penetration": 31,
-    "Universal Spell Power": 128
+    "Universal Spell Power": 104
    },
    "chosen": [
     {

@@ -4,7 +4,7 @@
 
 🎮 **Play it now:** https://eddiefiggie.github.io/ddo-loadout-optimizer/ · **Code:** https://github.com/eddiefiggie/ddo-loadout-optimizer
 
-**Current build:** 08202026.6 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
+**Current build:** 08202026.7 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
 
 **Category:** Personal
 
@@ -71,6 +71,8 @@ Gear tools are easy to build and hard to trust, so this one is deliberately para
 **The data checks itself on every deploy.** Derived values are compared against the wiki's own rendered text before the site ships. If our number and the wiki's number disagree, the build fails rather than publishing. That guard exists because `Topaz of Swiftness 15%` was shipped granting no attack speed at all, was ruled correct twice, and took three player reports to catch — the whole cell said `Speed +30%` while the tooltip behind it said 15% attack speed.
 
 **When a correction makes your gear worse, we say so.** `Parrying` ships in two versions under one name. The Arabic form (`Parrying 4`) grants what it says; the Roman form (`Parrying VIII`) is a *rank* that grants 4. Both were flattened to the same stored number, so four items were credited with double what they actually give. They now score correctly, which makes them weaker: **Oathblade**, **Balizarde, Protector of the King**, and **Bracers of the Sun Soul** drop from 8 to 4, and **Bladed Steel Ring** drops from 4 to 2. (**Ethereal Bracers** is `Parrying I`, which really is +1, so it did not move — a blanket "halve the Roman ones" fix would have broken it.) If any of those anchored a loadout you built here, re-solve; the answer may have changed. In the same pass the correction went the other way for far more gear: 165 items carrying `Parrying` or `Heightened Awareness` now score the Armor Class and saving throws they grant, having previously counted for nothing at all.
+
+A second case, found by re-running the bonus-type audit (#88): **`Meridian Fragment`** and **`Crystallized Drop of Tea`** were each credited **+24 Universal Spell Power**, permanently. The wiki says that bonus arrives *"once every three seconds when you take physical damage… can stack up to three times and each stack lasts for 20 seconds"* — so 24 is the fully-stacked ceiling of a buff you only hold while being hit. Because Universal Spell Power feeds every element spellpower, the over-credit landed on all of them. Both are now **excluded** rather than given a smaller number, because the wiki states no sustained value and guessing one would be the same mistake in the other direction. If you built a caster here, **re-solve**: expect Universal Spell Power and each element spellpower to drop by 24. That is the tool getting closer to the game, not a nerf.
 
 **Found a wrong value?** [Open an issue](https://github.com/eddiefiggie/ddo-loadout-optimizer/issues). Reports are checked against the wiki and, when confirmed, usually come with a new automated check so the same class of error can't come back.
 
