@@ -1310,7 +1310,7 @@ test("#88 U9: two exports of the same build compare byte-for-byte whatever the o
   assert.strictEqual(P.overridesLine(OVR_REPORT), P.overridesLine(flipped));
 });
 
-test("#88 U8 (R14): the optimality claim is qualified whenever an override was in force", () => {
+test("#88 U8 (R14/AE12): the optimality claim is qualified whenever an override was in force", () => {
   const lines = P.overrideNoticeLines({ overrideReport: OVR_REPORT });
   assert.ok(lines.length >= 1);
   assert.ok(/not proven against the catalog/.test(lines[0]), "the claim is explicitly weakened");

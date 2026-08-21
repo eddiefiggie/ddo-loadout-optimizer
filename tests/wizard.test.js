@@ -2817,3 +2817,46 @@ test("#88 U11: re-confirm needs a type to anchor to", () => {
   assert.ok(!reconfirmOverrideAt(list, 0, "t").ok,
     "anchoring the recorded type onto the player's own replacement would make it satisfied-by-construction");
 });
+
+
+// #88 U10 (AE19/R31/R32) — BOTH creation surfaces exist and reach the same
+// builder. The plan names two on purpose: the results card is where a wrong
+// total is noticed, and Browse is the only one that reaches an item the current
+// loadout does not contain. A surface that quietly stopped rendering its control
+// would leave the other still working, so neither can vouch for the other.
+test("#88 U10 (AE19): both creation surfaces are wired, to one shared builder", () => {
+  const fs = require("fs"); const path = require("path");
+  const read = (f) => fs.readFileSync(path.join(__dirname, "..", "web", f), "utf-8");
+  const results = read("results.js"), browse = read("browse.js"), wiz = read("wizard.js");
+
+  assert.ok(/data-act="override"/.test(results), "the results card offers the control (R31)");
+  assert.ok(/act\.dataset\.act === "override"/.test(wiz), "…and the wizard acts on it");
+  assert.ok(/data-correct=/.test(browse), "Browse offers the control (R32)");
+  assert.ok(/onOverride:\s*\(variantId, host\)/.test(wiz), "…and the wizard supplies its handler");
+
+  // One builder, one predicate. Neither surface may compute its own entry list:
+  // two surfaces disagreeing about what is overridable is indistinguishable, from
+  // the player's side, from the catalog being inconsistent.
+  assert.ok(/O\.pickerEntries\(/.test(wiz), "the picker renders from Overrides.pickerEntries");
+  for (const [name, src] of [["results.js", results], ["browse.js", browse]]) {
+    assert.ok(!/pickerEntries|eligibleAffixes|isEligible/.test(src),
+      `${name} must not keep its own copy of the eligibility predicate`);
+  }
+});
+
+// #88 U10 (R33/AE17) — the picker names the three causes of a wrong recorded
+// type, and says to check the wiki first. This is the only place the player
+// learns the difference between a defect worth reporting for everyone and a
+// disagreement only they can hold, and it is the difference the whole correction
+// report depends on being understood.
+test("#88 U10 (R33): the creation surface names the three causes and the wiki check", () => {
+  const fs = require("fs"); const path = require("path");
+  const wiz = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const lead = (wiz.match(/pd-override-lead[\s\S]{0,600}?<\/p>/) || [""])[0];
+  assert.ok(lead, "the picker renders a lead paragraph");
+  assert.ok(/catalog copied it wrong/i.test(lead), "cause 1: our catalog is wrong");
+  assert.ok(/wiki itself is\s*\n?\s*wrong/i.test(lead), "cause 2: the wiki is wrong");
+  assert.ok(/game changed/i.test(lead), "cause 3: the game moved and neither caught up");
+  assert.ok(/Check the wiki page first/i.test(lead),
+    "…and the step that tells the three apart");
+});
