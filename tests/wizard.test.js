@@ -2576,7 +2576,7 @@ test("#359: acquirable is strict-true, never a truthy accident", () => {
 // left over from the previous one would otherwise silently retype this build's
 // gear. The sanitization is the blocklist precedent — a hand-edited backup can
 // carry entries no reader can use, and they would re-persist on every save.
-const { restoreOverrides } = require("../web/wizard.js");
+const { restoreOverrides, OVERRIDE_LIMIT } = require("../web/wizard.js");
 
 test("#88 U5 (R21/AE10): a pre-feature save restores an empty override list", () => {
   assert.deepStrictEqual(restoreOverrides({ ml: 34 }), [], "absent reads as none");
@@ -2711,4 +2711,25 @@ test("#88 U8: with no solved build on screen there is nothing to call stale", ()
   assert.strictEqual(staleNote({ lastRun: null, overrideApplied: _applied("Enhancement") }), null);
   assert.strictEqual(staleNote({}), null);
   assert.strictEqual(staleNote(null), null);
+});
+
+
+// ---- review #9 — an imported override list is bounded at the load boundary ---
+// A backup file is user-supplied and shareable, and backup.js's size cap admits
+// tens of thousands of override rows. Both load-path consumers do work per row,
+// so an unbounded list is a synchronous main-thread block on every load of that
+// character — and it re-persists, so it happens again next time.
+test("#88 review #9: the restored override list is capped", () => {
+  const one = (i) => ({ variant_id: `Item ${i}`, name: "Armor Class", from: "Armor",
+                        value: "5", to: "Enhancement" });
+  const huge = Array.from({ length: 5000 }, (_, i) => one(i));
+  const got = restoreOverrides({ overrides: huge });
+  assert.ok(got.length < huge.length, "the list is bounded");
+  assert.strictEqual(got.length, OVERRIDE_LIMIT, "…at the declared cap");
+  assert.deepStrictEqual(got[0], one(0), "and it keeps the FIRST entries, not an arbitrary slice");
+});
+
+test("#88 review #9: an ordinary list is untouched by the cap", () => {
+  const list = [{ variant_id: "X", name: "Armor Class", from: "Armor", value: "5", to: "Enhancement" }];
+  assert.deepStrictEqual(restoreOverrides({ overrides: list }), list);
 });

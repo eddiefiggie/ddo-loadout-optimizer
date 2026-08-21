@@ -38,6 +38,22 @@
 
   var INELIGIBLE_TYPES = { Bool: 1, Penalty: 1, "-": 1 };
 
+  /** review #9 — the ceiling on how many overrides one character may carry.
+   *
+   *  A saved character is not only what this app writes: backup.js accepts an
+   *  imported file up to its own size cap, which admits tens of thousands of
+   *  override rows, and both load-path consumers do work per row against the
+   *  whole crafted pool. Unbounded, a shared backup is a multi-second synchronous
+   *  block on every load of that character — and it re-persists on the next save,
+   *  so it keeps happening.
+   *
+   *  A sanity ceiling, not a product limit: the plan assumes single digits, and a
+   *  player who has hand-corrected two hundred affixes is describing a catalog
+   *  problem rather than a personal one. It lives HERE rather than in wizard.js
+   *  because the save boundary must apply the same number as the load boundary,
+   *  and a constant copied into two files measures the copy. */
+  var OVERRIDE_LIMIT = 200;
+
   // Resolved per call, not captured at script-eval time. Capturing would bind to
   // whatever `window.DatasetNormalizer` happened to be when this file's script tag
   // ran: correct today, but a load-order change would leave it null forever, the
@@ -165,6 +181,15 @@
     if (typeof o.name !== "string" || !o.name) return false;
     if (typeof o.from !== "string" || !o.from) return false;
     if (typeof o.to !== "string" || !o.to) return false;
+    // The replacement must be a bonus TYPE. The three reserved tokens are not:
+    // `Bool` means presence, `-` is the DR bypass qualifier occupying the type
+    // field, `Penalty` is sign-preserving. They are refused as override TARGETS
+    // by `computeEligible`, and refusing them here as override REPLACEMENTS
+    // closes the other direction — otherwise an imported backup could retype a
+    // numeric affix into one, and every surface that reads presence off the type
+    // field would render a magnitude as a checkmark. Note `Untyped` is NOT
+    // reserved: it keys a real bucket that real untyped bonuses stack in (#235).
+    if (INELIGIBLE_TYPES[o.to]) return false;
     return o.value != null;
   }
 
@@ -291,13 +316,33 @@
   /** Every crafted row an override addresses. Keyed on the composed key, which
    *  already carries the recorded type — so, exactly like the item ladder, this
    *  reads THROUGH any live stamp rather than off the current value. */
-  function matchPoolAffixes(pool, override) {
-    var hits = [];
-    if (!override || !override.pool_key) return hits;
+  function matchPoolAffixes(pool, override, index) {
+    if (!override || !override.pool_key) return [];
+    var idx = index || poolIndex(pool);
+    return (idx.byCatalogKey[override.pool_key] || []).slice();
+  }
+
+  /** review #9 — one walk of the crafted pool, reused by every override in the
+   *  pass. Both consumers previously walked all ~1,100 rows PER override, so a
+   *  character's load cost scaled with the product rather than the sum; measured
+   *  at ~3ms per pool-keyed override before this.
+   *
+   *  Built with `all: true` — including rows the eligibility predicate refuses —
+   *  for a correctness reason, not just a speed one. Filtering during the walk
+   *  meant a row upstream had re-typed to a reserved token vanished before
+   *  anything could classify it, so `applyOverrides` reported it `unmatched`
+   *  ("we could not find your affix") when the truth is `ineligible` ("we found
+   *  it and it is no longer a thing you may retype"). Those carry opposite
+   *  remedies. The eligibility test now happens at the point of decision. */
+  function poolIndex(pool) {
+    var byCatalogKey = Object.create(null);
+    var byRowKey = Object.create(null);
     eachPoolAffix(pool, function (rec) {
-      if (rec.catalogKey === override.pool_key) hits.push(rec.affix);
-    });
-    return hits;
+      (byCatalogKey[rec.catalogKey] || (byCatalogKey[rec.catalogKey] = [])).push(rec.affix);
+      var rk = keyMinusType(rec.catalogKey);
+      (byRowKey[rk] || (byRowKey[rk] = [])).push(rec.affix);
+    }, true);
+    return { byCatalogKey: byCatalogKey, byRowKey: byRowKey };
   }
 
   function variantOf(pool, variantId) {
@@ -364,9 +409,12 @@
   function resolveOverrides(pool, overrides) {
     var list = overrides || [];
     var out = [];
+    // One pool walk for the whole list, and only when the list actually reaches
+    // the crafted channels.
+    var idx = list.some(function (o) { return o && o.pool_key; }) ? poolIndex(pool) : null;
     for (var i = 0; i < list.length; i++) {
       var o = list[i];
-      var m = (o && o.pool_key) ? resolvePoolMatch(pool, o) : resolveMatch(pool, o);
+      var m = (o && o.pool_key) ? resolvePoolMatch(pool, o, idx) : resolveMatch(pool, o);
       out.push({
         override: o,
         state: m.state,
@@ -382,12 +430,10 @@
    *  Same five outcomes, same rule that every rung reads the CATALOG type. Walks
    *  the ineligible rows too, so a row upstream has re-typed to a presence or
    *  penalty token reports `ineligible` rather than looking retired. */
-  function resolvePoolMatch(pool, override) {
+  function resolvePoolMatch(pool, override, index) {
     var wanted = keyMinusType(override && override.pool_key);
-    var rows = [];
-    eachPoolAffix(pool, function (rec) {
-      if (keyMinusType(rec.catalogKey) === wanted) rows.push(rec.affix);
-    }, true);
+    var idx = index || poolIndex(pool);
+    var rows = idx.byRowKey[wanted] || [];
     if (!rows.length) return { state: "suspended", reason: "retired-target", affixes: [] };
 
     var atRecorded = rows.filter(function (a) { return catalogTypeOrLive(a) === override.from; });
@@ -479,6 +525,11 @@
     withdrawOverrides(pool);
     var applied = [], unmatched = [], ineligible = [];
     var list = overrides || [];
+    // Built AFTER the withdrawal, because the index keys on the catalog type and
+    // withdrawal is what restores it. It stays valid across the loop: applying an
+    // override rewrites `type`/`bonus_type` but leaves the stamp, and the key is
+    // computed through the stamp — so a row's catalog key never moves mid-pass.
+    var idx = list.some(function (o) { return o && o.pool_key; }) ? poolIndex(pool) : null;
     for (var i = 0; i < list.length; i++) {
       var o = list[i];
       // Exclude affixes an EARLIER override in this same pass already stamped.
@@ -491,13 +542,17 @@
       // The withdraw-first call above guarantees zero stamps on entry, so this
       // filter only ever removes affixes this same pass just retyped.
       var isPool = !!(o && o.pool_key);
-      var hits = (isPool ? matchPoolAffixes(pool, o) : matchAffixes(pool, o))
+      var hits = (isPool ? matchPoolAffixes(pool, o, idx) : matchAffixes(pool, o))
         .filter(function (a) { return a[OVERRIDE_FROM] == null; });
       if (!hits.length) { unmatched.push(o); continue; }
       var v = isPool ? null : variantOf(pool, o.variant_id);
-      var ok = isPool
+      // The REPLACEMENT is checked here as well as at the load boundary, because
+      // applyOverrides is reachable directly (the creation surfaces call it) and
+      // an overlay that trusts its caller is one call site away from writing a
+      // reserved token onto the shared pool.
+      var ok = isWellFormed(o) && (isPool
         ? hits.every(function (a) { return poolAffixEligible(a); })
-        : hits.every(function (a) { return isEligible(a, v); });
+        : hits.every(function (a) { return isEligible(a, v); }));
       if (!ok) { ineligible.push(o); continue; }
       for (var j = 0; j < hits.length; j++) {
         // Non-enumerable, for the same reason as ELIGIBLE_CACHE: solver.js hands out
@@ -518,10 +573,10 @@
   }
 
   var api = {
-    OVERRIDE_FROM, ELIGIBLE_CACHE,
+    OVERRIDE_FROM, ELIGIBLE_CACHE, OVERRIDE_LIMIT,
     isEligible, classifyPool, eligibleAffixes, isCompositeComponent,
     overrideKey, isWellFormed, matchAffixes, resolveMatch, catalogTypeOrLive,
-    eachPoolAffix, poolOverrideKey, matchPoolAffixes, poolAffixEligible, readType,
+    eachPoolAffix, poolOverrideKey, matchPoolAffixes, poolAffixEligible, readType, poolIndex,
     resolveOverrides, resolvePoolMatch, keyMinusType, sameOverrideSet,
     applyOverrides, withdrawOverrides, catalogTypeOf,
   };

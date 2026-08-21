@@ -154,8 +154,17 @@ function restoreOverrides(inputs) {
   const O = _overridesModule();
   return list
     .filter((o) => (O ? O.isWellFormed(o) : (o && typeof o === "object")))
+    .slice(0, OVERRIDE_LIMIT)
     .map((o) => Object.assign({}, o));
 }
+
+// review #9 — read from overrides.js, never re-declared: the save boundary in
+// persist.js applies the same ceiling, and a constant copied into two files
+// measures the copy rather than the original.
+var OVERRIDE_LIMIT = (function () {
+  var O = _overridesModule();
+  return (O && O.OVERRIDE_LIMIT) || 200;
+})();
 
 function _overridesModule() {
   if (typeof require !== "undefined") { try { return require("./overrides.js"); } catch (e) { /* absent */ } }
@@ -1313,7 +1322,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, overrideLoadMessage, staleNote,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -2726,6 +2735,16 @@ if (typeof window !== "undefined" && window.App) {
           query.slotConstraints = { ...state.slotConstraints };
         });
         state.constraintsDirty = false;
+        // review #8 — the build on screen was just solved against the CURRENT
+        // catalog, so the catalog-age staleness is discharged by definition. It
+        // used to be cleared only by the stale banner's own Re-solve button,
+        // which was harmless while that banner rendered hidden and was revealed
+        // imperatively; once #88 U8 made it render from `staleNote(state)`, any
+        // re-solve reached another way (Adjust, a priority edit, the ordinary
+        // Solve button) re-drew "this saved build predates the current gear
+        // catalog" over a build that does not. Nothing else reads the flag —
+        // saveCurrentCharacter keys its re-stamp off `lastRun.fresh`.
+        state.loadedStale = false;
         // fresh:true — this build was solved against the current catalog, so a
         // subsequent Save stamps the current build id (see saveCurrentCharacter).
         state.lastRun = { model, result, query, fresh: true };

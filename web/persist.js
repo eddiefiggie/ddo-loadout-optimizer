@@ -133,6 +133,12 @@
     "overrides",
   ];
 
+  function _overrideLimit() {
+    var O = (typeof window !== "undefined" && window.Overrides) ? window.Overrides : null;
+    if (!O && typeof require !== "undefined") { try { O = require("./overrides.js"); } catch (e) { /* absent */ } }
+    return (O && O.OVERRIDE_LIMIT) || 200;
+  }
+
   function pickInputs(state, name) {
     const s = state || {};
     const src = Object.assign({}, s, { characterName: String(name) });
@@ -172,8 +178,12 @@
         // storing it verbatim would put a value no reader can use into the store.
         // Entries are COPIED rather than referenced, so a later edit to live state
         // cannot reach back into a record already written.
+        // review #9 — the same ceiling the load boundary applies, read from the
+        // module that declares it. Capping only on load would be undone by the
+        // next save: the over-long list would round-trip back into the store.
         inputs.overrides = Array.isArray(s.overrides)
-          ? s.overrides.filter((o) => o && typeof o === "object").map((o) => Object.assign({}, o))
+          ? s.overrides.filter((o) => o && typeof o === "object")
+              .slice(0, _overrideLimit()).map((o) => Object.assign({}, o))
           : [];
       } else if (k === "twoWeaponFighting") {
         // plan 003 U1 — always a boolean. A pre-U1 state has no field, and storing

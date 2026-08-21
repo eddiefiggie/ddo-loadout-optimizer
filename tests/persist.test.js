@@ -587,3 +587,12 @@ test("#88 U5 (KTD5/R30): overrideReport joins RESULT_KEEP", () => {
   assert.deepStrictEqual(kept.overrideReport, report,
     "a restored character discloses what applied without re-solving — `program` is dropped");
 });
+
+test("#88 review #9: the save boundary applies the same override ceiling", () => {
+  const { OVERRIDE_LIMIT } = require("../web/overrides.js");
+  const huge = Array.from({ length: OVERRIDE_LIMIT + 500 }, (_, i) => ({
+    variant_id: `Item ${i}`, name: "Armor Class", from: "Armor", value: "5", to: "Enhancement" }));
+  const kept = pickInputs(Object.assign({}, state, { overrides: huge }), "Big").overrides;
+  assert.strictEqual(kept.length, OVERRIDE_LIMIT,
+    "an over-long list cannot re-persist — otherwise the load-path cap is undone on every save");
+});

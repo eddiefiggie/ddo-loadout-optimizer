@@ -539,7 +539,12 @@
           viaSet: !!p.isSet, boolean, via: p.via || null,
           // U3 (#290/#291) — the cross-add source stat rides with the row so the
           // per-item why-this can label the credit "from <source stat>".
-          crossAdd: p.crossAdd || null });
+          crossAdd: p.crossAdd || null,
+          // #88 U8 (R13/R16) — the override marker rides here for the same reason
+          // crossAdd does: the per-item why-this renders from THIS shape, not from
+          // attributionByTarget's, so a marker named there and not here is correct
+          // in the solver and invisible in the gear box.
+          overriddenFrom: p.overriddenFrom || null });
       }
       rows.sort((a, b) => b.value - a.value);
       for (const r of rows) out.push(r);

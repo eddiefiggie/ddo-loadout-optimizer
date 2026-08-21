@@ -736,7 +736,7 @@ function buildProgram(model) {
       for (const a of onTarget) {
         const k = `${a.stat}||${_equivType(a.bonus_type)}`;
         if (!zByBucket.has(k)) zByBucket.set(k, []);
-        zByBucket.get(k).push(zOf([n], a.value, a));
+        zByBucket.get(k).push(zOf([n], a.value, a, xv.variant.variant_id));
       }
     }
     if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single choice per slot
@@ -783,7 +783,7 @@ function buildProgram(model) {
         extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
         const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
         if (!zByBucket.has(k)) zByBucket.set(k, []);
-        zByBucket.get(k).push(zOf([n], opt.value, opt));
+        zByBucket.get(k).push(zOf([n], opt.value, opt, xv.variant.variant_id));
       }
       if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single choice per slot
     }
@@ -810,7 +810,7 @@ function buildProgram(model) {
         extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
         const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
         if (!zByBucket.has(k)) zByBucket.set(k, []);
-        zByBucket.get(k).push(zOf([n], opt.value, opt));
+        zByBucket.get(k).push(zOf([n], opt.value, opt, xv.variant.variant_id));
       }
       if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single choice per group
     }
@@ -874,7 +874,7 @@ function buildProgram(model) {
         for (const a of onTarget) {
           const k = `${a.stat}||${_equivType(a.bonus_type)}`;
           if (!zByBucket.has(k)) zByBucket.set(k, []);
-          zByBucket.get(k).push(zOf([n], a.value, a));
+          zByBucket.get(k).push(zOf([n], a.value, a, xv.variant.variant_id));
         }
       }
       if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single choice per slot
@@ -911,7 +911,7 @@ function buildProgram(model) {
         extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
         const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
         if (!zByBucket.has(k)) zByBucket.set(k, []);
-        zByBucket.get(k).push(zOf([n], opt.value, opt));
+        zByBucket.get(k).push(zOf([n], opt.value, opt, xv.variant.variant_id));
       }
       if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single unseal per slot
     }
@@ -940,7 +940,7 @@ function buildProgram(model) {
         extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
         const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
         if (!zByBucket.has(k)) zByBucket.set(k, []);
-        zByBucket.get(k).push(zOf([n], opt.value, opt));
+        zByBucket.get(k).push(zOf([n], opt.value, opt, xv.variant.variant_id));
       }
       if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single pick per tier
     }
@@ -965,7 +965,7 @@ function buildProgram(model) {
       extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
       const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
       if (!zByBucket.has(k)) zByBucket.set(k, []);
-      zByBucket.get(k).push(zOf([n], opt.value, opt));
+      zByBucket.get(k).push(zOf([n], opt.value, opt, xv.variant.variant_id));
     }
     if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single craft per host
   }
@@ -2293,7 +2293,7 @@ async function solveLexicographic(model, highs) {
     // JSON by construction so persist.js can keep it under RESULT_KEEP: a restored
     // character must disclose the asserted types without re-solving, because
     // `program` is dropped on save and KTD6 forbids re-solving on load.
-    overrideReport: buildOverrideReport(program, prim, model),
+    overrideReport: buildOverrideReport(program, prim, model, visible),
     saturationReport: buildSaturationReport(program, prim),
     emptySlots: buildEmptySlotReport(model, sol),
     absorptionQuarantine: buildAbsorptionQuarantineReport(model, program),
@@ -2321,15 +2321,23 @@ async function solveLexicographic(model, highs) {
  *
  *  Returns null when no override was in force, so every consumer can treat the
  *  absent key and a pre-feature save identically. */
-function buildOverrideReport(program, prim, model) {
+function buildOverrideReport(program, prim, model, precomputedVisible) {
   const inForce = ((model && model.query && model.query.overrides) || []).slice();
   const meta = (program && program.overrideMeta) || new Map();
   const contributions = [];
   if (meta.size) {
+    // #322 — a placement the report guards deliberately omit (fired, but hidden
+    // because it was cap-clamped or credit-substituted) is not a contribution any
+    // surface names. `hiddenPlacementGateFn` is shared precisely so the reports
+    // cannot disagree about which placements they endorse; a report that fired
+    // but is invisible everywhere else would be the only place a player sees it.
+    const hiddenPlacementGate = hiddenPlacementGateFn(program,
+      precomputedVisible || visibleGateSet(program, prim));
     for (const [, zs] of program.zByBucket) {
       for (const z of zs) {
         if (!meta.has(z.name)) continue;
         if (prim(z.name) <= 0.5) continue;
+        if ((z.gates || []).some(hiddenPlacementGate)) continue;
         const m = meta.get(z.name);
         contributions.push({ stat: m.stat, from: m.from, to: m.to, host: m.host || null, value: z.value });
       }

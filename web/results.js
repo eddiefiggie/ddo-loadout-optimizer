@@ -607,9 +607,15 @@ function whyThisLine(result, item, attr, targets) {
     // U3 (#290/#291) — a cross-added credit is labeled "(from <source stat>)",
     // the same wording as the Ranked Priorities rows and every export.
     const from = c.crossAdd ? ` (from ${esc(c.crossAdd)})` : "";
+    // #88 U8 (R13/R16) — a player-asserted bonus type is labelled here too, and
+    // names both types. Without it the gear box states a bonus type as though the
+    // wiki said so, which is exactly the claim an override does not support.
+    const ovr = c.overriddenFrom
+      ? ` (your call — catalog says ${esc(c.overriddenFrom)})`
+      : "";
     const label = c.boolean
       ? `✓ ${esc(c.stat)}`                                 // U4: presence, not "+1"
-      : `${esc(c.stat)} +${esc(c.value)} ${esc(typeLabel)}${c.viaSet ? " (set)" : ""}${from}`;
+      : `${esc(c.stat)} +${esc(c.value)} ${esc(typeLabel)}${c.viaSet ? " (set)" : ""}${from}${ovr}`;
     const line = sat.has(c.stat) ? saturationLineFor(result, c.stat) : null;
     return line
       ? `<span class="pd-contrib at-ceiling" title="${esc(line)}">${label}</span>`

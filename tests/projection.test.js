@@ -1323,3 +1323,41 @@ test("#88 U8 (R14): a solve with no override in force says nothing", () => {
   assert.deepStrictEqual(P.overrideNoticeLines({ overrideReport: null }), []);
   assert.deepStrictEqual(P.overrideNoticeLines({ overrideReport: { inForce: [], contributions: [] } }), []);
 });
+
+
+// ---- review #6 (R13/R16) — the gear-box summary must label an override too ---
+// attributionByTarget threads `overriddenFrom`; itemContributions rebuilds rows
+// from the same parts with its own fixed field list, and results.js renders the
+// gear box from THAT shape. A marker named in one mapper and not the other is
+// correct in the solver and invisible where the player reads it.
+const OVR_RESULT = {
+  breakdown: {
+    Constitution: [
+      { bonus_type: "Insight", value: 6, source: "Necklace of X", sourceKind: "worn",
+        slot: "Necklace", hostIds: ["Necklace of X"], via: null, crossAdd: null,
+        overriddenFrom: "Enhancement" },
+      { bonus_type: "Enhancement", value: 10, source: "Ring of Y", sourceKind: "worn",
+        slot: "Ring", hostIds: ["Ring of Y"], via: null, crossAdd: null, overriddenFrom: null },
+    ],
+  },
+  chosen: [], augmentsPlaced: [], setsActive: [],
+};
+
+test("#88 review #6: itemContributions carries overriddenFrom to the gear box", () => {
+  const attr = P.attributionByTarget(OVR_RESULT);
+  const rows = P.itemContributions(OVR_RESULT, { variant_id: "Necklace of X" }, attr, ["Constitution"]);
+  assert.strictEqual(rows.length, 1);
+  assert.strictEqual(rows[0].overriddenFrom, "Enhancement",
+    "the row the per-item summary renders from knows the catalog's type");
+  const plain = P.itemContributions(OVR_RESULT, { variant_id: "Ring of Y" }, attr, ["Constitution"]);
+  assert.strictEqual(plain[0].overriddenFrom, null, "an ordinary contribution is unmarked");
+});
+
+test("#88 review #6: the rendered gear-box line names both types", () => {
+  const attr = P.attributionByTarget(OVR_RESULT);
+  const html = R.whyThisLine(OVR_RESULT, { variant_id: "Necklace of X" }, attr, ["Constitution"]);
+  assert.ok(/\+6 Insight/.test(html), "the type the player asserted, printed as the value's type");
+  assert.ok(/your call — catalog says Enhancement/.test(html), "and the type the catalog records");
+  const plain = R.whyThisLine(OVR_RESULT, { variant_id: "Ring of Y" }, attr, ["Constitution"]);
+  assert.ok(!/catalog says/.test(plain), "an unoverridden item's summary is unchanged");
+});

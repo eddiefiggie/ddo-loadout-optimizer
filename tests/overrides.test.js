@@ -648,4 +648,82 @@ test("#88 U8 (AE9/R30): a suspension changes the set, because it changes what ap
   assert.ok(!O.sameOverrideSet([A], []));
 });
 
+// review #2 — the replacement type is player-supplied text arriving from a saved
+// character or an imported backup, and it is written onto the SHARED pool. The
+// three reserved tokens are not bonus types at all: `Bool` means presence, `-`
+// is the DR bypass qualifier, `Penalty` is sign-preserving. Writing one of them
+// into an affix's type field makes a numeric affix read as a presence feature on
+// every surface that renders it.
+test("review #2: a reserved token is refused as a replacement type", () => {
+  const base = { variant_id: "Aberrant Robe", name: "Armor Class", from: "Armor", value: "5" };
+  for (const to of ["Bool", "Penalty", "-"]) {
+    assert.ok(!O.isWellFormed({ ...base, to }), `${to} must not pass the load boundary`);
+  }
+  assert.ok(O.isWellFormed({ ...base, to: "Enhancement" }), "an ordinary type still passes");
+  assert.ok(O.isWellFormed({ ...base, to: "Untyped" }),
+    "…and so does the explicit Untyped token, which IS a real bucket (#235)");
+});
+
+test("review #2: a reserved token cannot reach the pool through applyOverrides", () => {
+  const p = loadPool();
+  const v = p.items.find((x) => x.variant_id === "Aberrant Robe");
+  const a = v.affixes.find((x) => x.name === "Armor Class" && x.type === "Armor");
+  const rep = O.applyOverrides(p, [{ ...O.overrideKey(v, a), to: "Bool" }]);
+  assert.deepStrictEqual(rep.applied, [], "nothing applied");
+  assert.strictEqual(rep.ineligible.length, 1, "and it is reported rather than silently dropped");
+  assert.strictEqual(v.affixes.find((x) => x.name === "Armor Class").type, "Armor",
+    "the pool still carries the catalog's type");
+});
+
+// review #9 — the load path builds ONE crafted-pool index per pass. Before this,
+// both consumers walked all ~1,100 crafted rows per override, so a character's
+// load cost scaled with overrides x pool rather than overrides + pool.
+test("review #9: many crafted overrides cost one pool walk, not one each", () => {
+  const p = loadPool();
+  const targets = [];
+  O.eachPoolAffix(p, (rec) => { if (targets.length < 40) targets.push(rec); });
+  assert.strictEqual(targets.length, 40, "40 distinct crafted rows to override");
+  const list = targets.map((t) => ({ ...O.poolOverrideKey(t), to: "Quality" }));
+
+  const t0 = Date.now();
+  const rep = O.applyOverrides(p, list);
+  const resolved = O.resolveOverrides(p, list);
+  const ms = Date.now() - t0;
+
+  assert.strictEqual(rep.applied.length + rep.ineligible.length + rep.unmatched.length, 40,
+    "every override is accounted for");
+  assert.strictEqual(resolved.length, 40);
+  // Generous ceiling: the point is to catch a regression to per-override walking,
+  // which measured ~3ms x 40 x 2 consumers before the index. Not a benchmark.
+  assert.ok(ms < 400, `40 crafted overrides took ${ms}ms — a per-override pool walk is back`);
+  O.withdrawOverrides(p);
+});
+
+// review #9 (correctness half) — the index is built over ALL rows, including the
+// ineligible ones, so classification happens at the point of decision rather than
+// by silent omission during the walk.
+//
+// What that does NOT buy, and the test says so rather than implying otherwise:
+// the crafted `ineligible` rung is currently unreachable. Crafted eligibility is
+// decided purely on the type field, and the ladder only consults eligibility on
+// rows that still carry the RECORDED type — so a row whose type moved is drift by
+// definition, and a row whose type did not move is eligible by definition. The
+// rung becomes reachable only if crafted eligibility gains a non-type class, which
+// is the open question about `via`-carrying crafted rows.
+test("review #9: a crafted row upstream re-typed to a reserved token is drift, and named", () => {
+  const p = loadPool();
+  let target = null;
+  O.eachPoolAffix(p, (rec) => {
+    if (!target && rec.channel === "seal" && rec.affix.bonus_type === "Insight") target = rec;
+  });
+  const o = { ...O.poolOverrideKey(target), to: "Quality" };
+  target.affix.bonus_type = "Bool";            // a refresh reclassifies the row
+  const got = O.resolveOverrides(p, [o])[0];
+  assert.strictEqual(got.state, "suspended");
+  assert.strictEqual(got.reason, "drift", "the type moved, so the ladder says so");
+  assert.strictEqual(got.now, "Bool", "…and names what it moved to, however unusable");
+  const rep = O.applyOverrides(p, [o]);
+  assert.deepStrictEqual(rep.applied, [], "a suspended override contributes nothing (R29)");
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);
