@@ -13,6 +13,7 @@ root_cause: missing_workflow_step
 resolution_type: code_fix
 severity: high
 tags: [wizard, state-reset, closure, character-load, blocklist, load-boundary, code-review]
+last_updated: 2026-08-21
 ---
 
 # A staged block-selection Set outlives the character it was staged for, so a tick made for character A can commit into character B's blocklist
@@ -22,12 +23,12 @@ tags: [wizard, state-reset, closure, character-load, blocklist, load-boundary, c
 Issue #110 added a staged multi-select for the blocklist feature in `web/wizard.js`: the
 player ticks checkboxes across successive searches, and one "Block selected (N)" action
 commits the accumulated set into `state.blocklist`. The staging accumulator is
-`const blockStage = new Set();` (`web/wizard.js:1268`), declared once in the wizard app's
+`const blockStage = new Set();` (`web/wizard.js:2139`), declared once in the wizard app's
 closure — not a field on `state`.
 
 The repo has a standing discipline for exactly this shape of bug: every per-character
 `state.*` field must be reset unconditionally in `loadCharacter`, because `state` is a
-single long-lived object that outlives any one character (`web/wizard.js:2053-2055`
+single long-lived object that outlives any one character (`web/wizard.js:3360-3362`
 documents the rule inline, citing it from the original U1/KTD7 work: *"the state object
 outlives a character, so a field not reset on load stays live from the previous one"*).
 That discipline is also pinned by tests — the WIZARD_SRC-slice pattern in
@@ -47,13 +48,13 @@ validated findings applied as review fixes.
 
 - Tick one or more rows in the block-search results for character A (`blockStage` now holds
   A's ids; the stage bar shows "Block selected (N)" per `renderBlockStage()`,
-  `web/wizard.js:1271-1295`).
-- Load character B via `loadCharacter` (`web/wizard.js:2021`) without clicking "Clear
+  `web/wizard.js:2142-2170`).
+- Load character B via `loadCharacter` (`web/wizard.js:3312`) without clicking "Clear
   selection" first.
 - The stage bar still reads "Block selected (N)" for B's screen, because `blockStage` was
   never touched by the load.
 - Clicking "Block selected (N)" on B's screen calls the commit handler
-  (`web/wizard.js:1282-1292`), which reads `[...blockStage]` — A's staged ids — and adds
+  (`web/wizard.js:2152-2163`), which reads `[...blockStage]` — A's staged ids — and adds
   them into `state.blocklist` for character B, silently blocking gear for the wrong
   character.
 
@@ -65,22 +66,22 @@ field on `state` gets an explicit reset line in `loadCharacter`, checked by asse
 line's presence in a source slice. `blockStage` satisfies the *spirit* of the rule — it is
 per-character UI intent whose commit mutates character state — but not its *letter*, because
 it lives in the closure rather than on `state`. The feature's own load-path comment at
-`web/wizard.js:2053-2058` cites the U1/KTD7 "always assign" rule while restoring
+`web/wizard.js:3358-3365` cites the U1/KTD7 "always assign" rule while restoring
 `state.blocklist` two lines above the very closure variable that violates the rule's intent.
 Nothing in the original #110 implementation or its tests treated "is this a `state.*` field"
 as the wrong question to ask.
 
 **Assuming a `Set`-typed container was safe from stale data.** The accumulator's own comment
-(`web/wizard.js:1268`: `// UI-transient; never persisted`) is true and irrelevant — the bug
+(`web/wizard.js:2139`: `// UI-transient; never persisted`) is true and irrelevant — the bug
 is not that `blockStage` gets persisted, it's that it survives a character *swap* it was
 never scoped to.
 
 ## Solution
 
-Two fixes landed together in PR #271, both in `loadCharacter` (`web/wizard.js:2021`),
+Two fixes landed together in PR #271, both in `loadCharacter` (`web/wizard.js:3312`),
 alongside the existing `state.blocklist` restore:
 
-**1. Clear the staged selection on every load**, `web/wizard.js:2062-2065`:
+**1. Clear the staged selection on every load**, `web/wizard.js:3368-3371`:
 
 ```js
 // review fix — the STAGED selection is per-character UI state too: ticks
@@ -89,11 +90,11 @@ blockStage.clear();
 state.blockRefusedMsg = null;
 ```
 
-Placed immediately after the `state.blocklist` restore block (`web/wizard.js:2059-2061`),
+Placed immediately after the `state.blocklist` restore block (`web/wizard.js:3365-3367`),
 so the staging accumulator and the pending-refusal message reset in the same place the
 persisted list is restored, instead of being treated as a separate concern.
 
-**2. Sanitize blocklist elements at the same load boundary**, `web/wizard.js:2059-2061`:
+**2. Sanitize blocklist elements at the same load boundary**, `web/wizard.js:3365-3367`:
 
 ```js
 state.blocklist = Array.isArray(i.blocklist)
@@ -103,14 +104,14 @@ state.blocklist = Array.isArray(i.blocklist)
 
 This is a sibling load-boundary bug, not the same bug: a hand-edited backup file can carry
 non-string entries in `blocklist` (numbers, objects, empty strings). `removeBlock`
-(`web/wizard.js:518-520`) removes by strict equality — `(blocklist || []).filter((x) => x
+(`web/wizard.js:934-936`) removes by strict equality — `(blocklist || []).filter((x) => x
 !== id)` — against an `id` that always originates as a DOM `dataset` attribute, which is
 always a string. A non-string entry can never `===` a string `id`, so it becomes an
 unremovable ghost row that every subsequent save re-persists. The `typeof x === "string" &&
 x` filter (rejecting non-strings and the empty string) closes that off at the one place
 untrusted data enters `state.blocklist`.
 
-Both fixes are pinned in `tests/wizard.test.js:1762-1775` using the repo's WIZARD_SRC-slice
+Both fixes are pinned in `tests/wizard.test.js:1891-1904` using the repo's WIZARD_SRC-slice
 pattern — the tests grab the source text of `loadCharacter` from `WIZARD_SRC` and assert the
 fix lines are present in it, the same technique used for the pre-existing `state.*` reset
 checks:
@@ -137,7 +138,7 @@ runs unconditionally on every `loadCharacter` call — the same guarantee the ex
 `state.*` resets give, applied to the one accumulator that lives outside `state`.
 `state.blockRefusedMsg = null` resets alongside it because a stale refusal message is the
 same class of leak: text describing character A's mutex conflict rendered under character
-B's list (`web/wizard.js:1332-1334` reads and then clears it on next render, but only if a
+B's list (`web/wizard.js:2204-2206` reads and then clears it on next render, but only if a
 load hadn't already left a stale value sitting there to be shown once).
 
 The element-sanitization fix works because it moves validation to the boundary where
@@ -168,6 +169,49 @@ character state?" rather than "is this a `state.*` field?" — and pin the reset
 WIZARD_SRC-slice test pattern already used for `state.*` resets, since that pattern works on
 any source-level construct, not just `state` assignments.
 
+**A `state.*` field is not automatically covered either — the discipline is
+*unconditional* assignment, and a reset that exists in only one branch of the load
+path fails it just as completely.** `blockStage` fell through by living outside
+`state`; `state.lastRun` later fell through while living *on* it. It is assigned in
+`loadCharacter`'s results branch and was assigned nowhere else, so loading a build
+with no solved snapshot left the previous character's solve result live — and once a
+Save control existed on every step rather than only on results, a save could file
+that run's loadout, query and build stamp under the newly loaded character's name.
+Both are the same failure: the reset convention was satisfied *somewhere* and the
+stale value survived anyway. So the question is two questions, not one — "does
+committing this write into character state?" **and** "is the reset unconditional on
+every path out of the load?" A field assigned in one branch reads as covered in a
+diff and in a source-slice grep, which is precisely why it survives review. See
+[a removed refusal takes its unstated guards with it](../conventions/a-removed-refusal-takes-its-unstated-guards-with-it.md)
+for that case, and for why the gap was invisible until an unrelated change made it
+reachable: the reset was genuinely unnecessary while a precondition kept the stale
+value out of the UI's hands.
+
+**Bound a source-slice guard by the end of the construct it is reading, never by a
+fixed character offset.** The two tests below slice `WIZARD_SRC` from
+`function loadCharacter(` to `start + 4000`, and that window is now 86 characters
+from dropping its own assertions: `loadCharacter` has since grown by the per-character
+resets added for later features, and `blockStage.clear()` sits 3,914 characters in.
+The next reset added above it pushes all three assertions out of the window, every
+regex fails to match text that is no longer being read, and `assert.ok` on an absent
+string in an absent slice is — for a *positive* assertion — a loud red, but for the
+negative assertions this pattern is also used for elsewhere in the suite it is a
+silent green. Either way the guard stops guarding the thing it names. Slice to the
+next declaration instead and assert the end marker resolved, so a rename fails loudly:
+
+```js
+const start = WIZARD_SRC.indexOf("function loadCharacter(");
+const end = WIZARD_SRC.indexOf("\n    function ", start + 1);
+assert.ok(end > start, "the slice's end marker resolves");
+const slice = WIZARD_SRC.slice(start, end);
+```
+
+This is the same family as [a guard that keeps its own copy of a production constant
+silently measures the copy](../conventions/a-guard-that-copies-its-parameter-measures-the-copy.md)
+and [prove a guard fails before trusting it](../conventions/prove-a-guard-fails-before-trusting-it.md):
+a verification harness whose *scope* is derived independently of the thing it verifies
+will drift away from it without ever going red.
+
 **Sanitize collection *elements*, not just the container type, at any load boundary that
 accepts hand-edited or externally-produced input.** `Array.isArray(i.blocklist)` alone was
 already present before this fix and was not sufficient — a valid array can still carry
@@ -180,4 +224,7 @@ its own defensive check.
 
 - [The empty-seed convention masking consuming bugs](../conventions/exclude-until-verified-empty-seed-masks-consuming-bugs.md) — the same family of bug in a different runtime: state living outside the object a reset/restore convention explicitly walks (there a Python module-level global, here a JS closure Set) survives a boundary crossing, masked because only the default/inert path was tested.
 - [Browser-verify against real data, not just unit tests](../developer-experience/browser-verify-against-real-data-not-just-unit-tests.md) — its "reset persisted client state before each run" guidance would NOT have caught this: the closure Set is neither in `state` nor in storage, so clearing storage before a manual pass surfaces nothing. Only a load-path reset pinned at the source level covers it.
+- [A removed refusal takes its unstated guards with it](../conventions/a-removed-refusal-takes-its-unstated-guards-with-it.md)
+  — the sibling case where the field IS on `state` but its reset is conditional rather
+  than absent, and the precondition whose removal made the gap reachable.
 - Issue #110 / PR #271 — the blocklist feature this landed in; the leak was caught by PR #271's multi-agent review pass, not by the existing test discipline — which is the evidence for this doc's central claim.
