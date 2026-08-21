@@ -481,3 +481,31 @@ test("the utility A/B pair actually carries (and withholds) its sentinel", () =>
   assert.ok(on.chosen.length > off.chosen.length,
     `the tier fills slots the baseline leaves empty (${off.chosen.length} -> ${on.chosen.length} picks)`);
 });
+
+// #88 U4 — the overlay is inert when no override is in force.
+//
+// The overlay mutates affix types in place over the shared pool, which is the
+// same object every golden solve reads. This asserts the empty case is a true
+// no-op: with no overrides, classification plus apply plus withdraw must leave
+// the pool byte-identical. Any diff here is a real regression in the overlay,
+// not a golden to re-ratify — the fixtures above are the behavioural half of
+// the same proof, and they run against an unmodified pool.
+test("#88 — classify + apply([]) + withdraw leaves the pool byte-identical", () => {
+  const DN = require("../web/dataset.js");
+  const O = require("../web/overrides.js");
+  const parse = () => JSON.parse(fs.readFileSync(
+    path.join(__dirname, "..", "web", "data", "items.json"), "utf8"));
+
+  const baseline = JSON.stringify(DN.normalizeDataset(parse()).items);
+
+  const withOverlay = DN.normalizeDataset(parse());
+  O.classifyPool(withOverlay);
+  const report = O.applyOverrides(withOverlay, []);
+  O.withdrawOverrides(withOverlay);
+
+  assert.deepStrictEqual(report, { applied: [], unmatched: [], ineligible: [] },
+    "an empty override set reports nothing applied");
+  assert.strictEqual(JSON.stringify(withOverlay.items), baseline,
+    "the overlay leaves no trace when empty — including the eligibility cache, " +
+    "which is non-enumerable precisely so it cannot widen a save or an export");
+});
