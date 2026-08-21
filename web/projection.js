@@ -1223,6 +1223,54 @@
       .join("; ");
   }
 
+  /** #88 U12 (R16-R19) — the catalog-correction report.
+   *
+   *  Generated text, never a network call (KTD10): this app is client-side and
+   *  stays that way, so the route out of the browser is the player pasting this
+   *  somewhere a maintainer reads. That sets the bar — it must identify its
+   *  subject to someone who has never seen the player's screen.
+   *
+   *  It says plainly that the claim has no wiki backing. That is not a hedge, it
+   *  is the point: `affix_type_corrections.json`'s evidence rule requires a
+   *  rendered tooltip, and an override exists precisely for the case where the
+   *  wiki and the game disagree — so a report that implied a citation would be
+   *  asking a maintainer to record something the wiki cannot support.
+   *
+   *  A pool-keyed override omits the URL line ENTIRELY rather than printing an
+   *  empty one: no crafted row carries a `wiki_url` — `seal`, `nearly_complete`,
+   *  `viktranium` and `dino_inserts` all store an empty string and
+   *  `thunder_forged` / `green_steel` have no such key — so the key's own channel
+   *  and discriminators are what identify it instead. An empty "Wiki:" label
+   *  would read as a missing value rather than an absent concept. */
+  function correctionReport(override, catalogRow) {
+    const o = override || {};
+    const lines = [];
+    const isPool = !!o.pool_key;
+    lines.push("Bonus-type correction — player observation, no wiki backing");
+    lines.push("");
+    if (isPool) {
+      // channel||disc…||stat||type||value — the discriminators are everything
+      // between the channel and the trailing stat/type/value triple.
+      const parts = String(o.pool_key).split("||");
+      lines.push(`Crafting pool: ${parts[0]}`);
+      const disc = parts.slice(1, Math.max(1, parts.length - 3)).filter(Boolean);
+      if (disc.length) lines.push(`Entry: ${disc.join(" / ")}`);
+    } else {
+      lines.push(`Item: ${o.variant_id || "(unnamed)"}`);
+    }
+    lines.push(`Affix: ${o.name}${o.value != null && o.value !== "" ? ` ${o.value}` : ""}`);
+    lines.push(`Catalog records: ${o.from}`);
+    lines.push(`Observed in game: ${o.to}`);
+    const url = !isPool && catalogRow && catalogRow.wiki_url;
+    if (url) lines.push(`Wiki: ${url}`);
+    if (o.note) lines.push(`Note: ${o.note}`);
+    lines.push("");
+    lines.push("This is an in-game observation reported by a player. It is not backed by "
+      + "the wiki, which is why it was entered as a personal override rather than a "
+      + "catalog correction.");
+    return lines.join("\n");
+  }
+
   function constraintPairs(rec) {
     const i = (rec && rec.inputs) || {};
     return [
@@ -1779,6 +1827,7 @@
     // resolved-view assembler
     project, creditNoticeLines, saturationNoticeLines, emptySlotNoticeLines,
     absorptionQuarantineNoticeLines, declaredCreditsLine, overridesLine, overrideNoticeLines,
+    correctionReport,
     // #91 (U6) — the one utility sentence + the tier's display name (from
     // model.js; re-exported so exporters can recognize the sentinel row)
     utilityLine, utilityPriceLine, utilityUnsecuredLines, UTILITY_SENTINEL: UTILITY_NAME,

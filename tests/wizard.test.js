@@ -2733,3 +2733,68 @@ test("#88 review #9: an ordinary list is untouched by the cap", () => {
   const list = [{ variant_id: "X", name: "Armor Class", from: "Armor", value: "5", to: "Enhancement" }];
   assert.deepStrictEqual(restoreOverrides({ overrides: list }), list);
 });
+
+
+// ---- #88 U10/U11 — the list transformations behind the surfaces -------------
+// Kept pure and exported, like every other wizard helper, so the semantics are
+// tested directly rather than through the render path. The DOM wrappers do two
+// things only: assign the result to state, and re-apply the overlay.
+const { addOverrideTo, removeOverrideAt, reconfirmOverrideAt } = require("../web/wizard.js");
+const _k = (name, from) => ({ variant_id: "Aberrant Robe", name, from, value: "5" });
+
+test("#88 U10: adding an override appends it with its replacement and note", () => {
+  const r = addOverrideTo([], _k("Armor Class", "Armor"), "Enhancement", "seen in game");
+  assert.ok(r.ok);
+  assert.deepStrictEqual(r.list, [{ variant_id: "Aberrant Robe", name: "Armor Class",
+    from: "Armor", value: "5", to: "Enhancement", note: "seen in game" }]);
+});
+
+test("#88 U10: a second override on the same affix REPLACES the first, never duplicates", () => {
+  const first = addOverrideTo([], _k("Armor Class", "Armor"), "Enhancement", "").list;
+  const second = addOverrideTo(first, _k("Armor Class", "Armor"), "Sacred", "changed my mind");
+  assert.strictEqual(second.list.length, 1, "one affix, one correction");
+  assert.strictEqual(second.list[0].to, "Sacred");
+  assert.strictEqual(second.list[0].note, "changed my mind");
+});
+
+test("#88 U10: a malformed or reserved replacement is refused rather than stored", () => {
+  assert.ok(!addOverrideTo([], _k("Armor Class", "Armor"), "Bool", "").ok, "reserved token");
+  assert.ok(!addOverrideTo([], _k("Armor Class", "Armor"), "", "").ok, "empty replacement");
+  assert.ok(!addOverrideTo([], { variant_id: "X" }, "Sacred", "").ok, "incomplete identity");
+});
+
+test("#88 U10 (review #9): the ceiling is enforced at the creation surface too", () => {
+  const full = Array.from({ length: OVERRIDE_LIMIT }, (_, i) => ({
+    variant_id: `Item ${i}`, name: "Armor Class", from: "Armor", value: "5", to: "Enhancement" }));
+  const r = addOverrideTo(full, _k("Armor Class", "Armor"), "Sacred", "");
+  assert.ok(!r.ok, "refused rather than silently dropped later");
+  assert.strictEqual(r.error, "limit");
+  assert.strictEqual(r.list.length, OVERRIDE_LIMIT, "and the list is unchanged");
+});
+
+test("#88 U11: deleting returns a new list without that entry", () => {
+  const list = [{ variant_id: "A", name: "n", from: "f", value: "1", to: "t" },
+                { variant_id: "B", name: "n", from: "f", value: "1", to: "t" }];
+  const got = removeOverrideAt(list, 0);
+  assert.deepStrictEqual(got.map((o) => o.variant_id), ["B"]);
+  assert.strictEqual(list.length, 2, "the input list is not mutated");
+  assert.deepStrictEqual(removeOverrideAt(list, 9), list, "an out-of-range index is a no-op");
+});
+
+test("#88 U11 (KTD9/R35): re-confirm re-anchors the recorded type and keeps identity", () => {
+  const list = [{ variant_id: "Aberrant Robe", name: "Armor Class", from: "Armor",
+                  value: "5", to: "Enhancement", note: "why I said so" }];
+  const r = reconfirmOverrideAt(list, 0, "Profane");
+  assert.ok(r.ok);
+  assert.strictEqual(r.list[0].from, "Profane", "anchored to what upstream now says");
+  assert.strictEqual(r.list[0].to, "Enhancement", "the player's claim is unchanged");
+  assert.strictEqual(r.list[0].note, "why I said so", "and the note survives — this is not a replacement");
+});
+
+test("#88 U11: re-confirm needs a type to anchor to", () => {
+  const list = [{ variant_id: "A", name: "n", from: "f", value: "1", to: "t" }];
+  assert.ok(!reconfirmOverrideAt(list, 0, null).ok, "a retired target has nothing to confirm against");
+  assert.ok(!reconfirmOverrideAt(list, 9, "Profane").ok, "out of range");
+  assert.ok(!reconfirmOverrideAt(list, 0, "t").ok,
+    "anchoring the recorded type onto the player's own replacement would make it satisfied-by-construction");
+});

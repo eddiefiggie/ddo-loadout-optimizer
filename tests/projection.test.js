@@ -1361,3 +1361,58 @@ test("#88 review #6: the rendered gear-box line names both types", () => {
   const plain = R.whyThisLine(OVR_RESULT, { variant_id: "Ring of Y" }, attr, ["Constitution"]);
   assert.ok(!/catalog says/.test(plain), "an unoverridden item's summary is unchanged");
 });
+
+
+// ---- #88 U12 (R16-R19) — the catalog-correction report ----------------------
+// Generated text only (KTD10): the app is client-side and stays that way. The
+// report's job is to identify its subject unambiguously to a maintainer who has
+// never seen the player's screen, and to be honest that the claim has no wiki
+// backing — that is the whole reason the override exists.
+const ITEM_OVR = { variant_id: "Aberrant Robe", name: "Armor Class", from: "Armor",
+                   value: "5", to: "Enhancement", note: "measured on my own robe at ML 12" };
+const POOL_OVR = { pool_key: "seal||Gloom||equipment/accessories||Charisma||Insight||7",
+                   name: "Charisma", from: "Insight", value: "7", to: "Quality" };
+
+test("#88 U12 (R17/AE17): an item report names item, affix, both types, URL and the note", () => {
+  const txt = P.correctionReport(ITEM_OVR, { variant_id: "Aberrant Robe",
+    wiki_url: "https://ddowiki.com/page/Item:Aberrant_Robe" });
+  assert.ok(/Aberrant Robe/.test(txt), "the item");
+  assert.ok(/Armor Class/.test(txt), "the affix");
+  assert.ok(/Armor/.test(txt) && /Enhancement/.test(txt), "both types (R16)");
+  assert.ok(/ddowiki\.com\/page\/Item:Aberrant_Robe/.test(txt), "the wiki URL");
+  assert.ok(/measured on my own robe/.test(txt), "the note (R19)");
+  assert.ok(/no wiki backing|not backed by the wiki|in-game observation/i.test(txt),
+    "and the explicit statement that this is an observation, not a citation");
+});
+
+test("#88 U12: the note is optional and its absence leaves no empty line", () => {
+  const txt = P.correctionReport({ ...ITEM_OVR, note: "" },
+    { variant_id: "Aberrant Robe", wiki_url: "https://ddowiki.com/page/Item:Aberrant_Robe" });
+  assert.ok(!/Note:/.test(txt), "no orphan label");
+  assert.ok(!/\n\n\n/.test(txt), "and no hole where it would have been");
+});
+
+test("#88 U12: a pool-keyed report omits the URL line entirely and names the channel", () => {
+  const txt = P.correctionReport(POOL_OVR, null);
+  assert.ok(!/http/.test(txt), "no crafted pool row carries a wiki_url, so no URL line at all");
+  assert.ok(!/Wiki:/.test(txt), "…not even an empty label");
+  assert.ok(/seal/.test(txt), "the channel");
+  assert.ok(/Gloom/.test(txt) && /equipment\/accessories/.test(txt),
+    "and the entry's own discriminators, which are all that identify it");
+  assert.ok(/Charisma/.test(txt) && /Insight/.test(txt) && /Quality/.test(txt));
+});
+
+test("#88 U12: a report is reproducible from a restored character", () => {
+  // The report is a pure function of the override plus the catalog row, and the
+  // override persists — so a reload produces byte-identical text.
+  const a = P.correctionReport(ITEM_OVR, { variant_id: "Aberrant Robe", wiki_url: "https://x/y" });
+  const restored = JSON.parse(JSON.stringify(ITEM_OVR));
+  const b = P.correctionReport(restored, { variant_id: "Aberrant Robe", wiki_url: "https://x/y" });
+  assert.strictEqual(a, b);
+});
+
+test("#88 U12: an item override with no catalog row still identifies its subject", () => {
+  const txt = P.correctionReport(ITEM_OVR, null);
+  assert.ok(/Aberrant Robe/.test(txt), "the variant id is on the override itself");
+  assert.ok(!/Wiki:/.test(txt), "the URL line is omitted rather than emitted empty");
+});

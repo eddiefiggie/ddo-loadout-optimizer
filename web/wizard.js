@@ -166,6 +166,70 @@ var OVERRIDE_LIMIT = (function () {
   return (O && O.OVERRIDE_LIMIT) || 200;
 })();
 
+/** #88 U10 (R31/R32) — add a correction to the list in force.
+ *
+ *  Pure and exported like every sibling helper here: the DOM wrappers do two
+ *  things only, assign the result to state and re-apply the overlay, so the
+ *  semantics below are tested directly rather than through the render path.
+ *
+ *  A second correction on the same affix REPLACES the first rather than
+ *  appending. Two overrides on one affix are not two facts — the second is the
+ *  player changing their mind — and `applyOverrides` would apply only whichever
+ *  matched the catalog type, silently ignoring the other while it sat in the
+ *  manager looking live.
+ *
+ *  Returns `{ ok, list, error }` rather than throwing, because every caller is a
+ *  UI surface that has to say something specific when a correction is refused. */
+function addOverrideTo(list, key, to, note) {
+  const current = Array.isArray(list) ? list : [];
+  const O = _overridesModule();
+  const o = Object.assign({}, key, { to: String(to == null ? "" : to),
+                                     note: note ? String(note) : "" });
+  if (O && !O.isWellFormed(o)) return { ok: false, list: current, error: "malformed" };
+  const at = current.findIndex((x) => x && sameOverrideTarget(x, o));
+  if (at < 0 && current.length >= OVERRIDE_LIMIT) {
+    return { ok: false, list: current, error: "limit" };
+  }
+  const next = current.slice();
+  if (at >= 0) next[at] = o; else next.push(o);
+  return { ok: true, list: next, error: null };
+}
+
+function sameOverrideTarget(a, b) {
+  const target = (a.variant_id && a.variant_id === b.variant_id)
+    || (a.pool_key && a.pool_key === b.pool_key);
+  return !!target && a.name === b.name && String(a.from) === String(b.from)
+    && String(a.value) === String(b.value);
+}
+
+/** U11 (R34) — withdraw one correction. Returns a new list; the input is not
+ *  mutated, because the caller still holds it while deciding what to render. */
+function removeOverrideAt(list, i) {
+  const current = Array.isArray(list) ? list : [];
+  if (!(i >= 0 && i < current.length)) return current;
+  return current.slice(0, i).concat(current.slice(i + 1));
+}
+
+/** U11 (R35/KTD9) — re-anchor a drift-suspended correction to what upstream now
+ *  says, keeping the override's identity and its note. Replacing it instead would
+ *  discard the note and reset the creation provenance, which is the record of why
+ *  the player disagreed in the first place.
+ *
+ *  Refused when there is no type to anchor to (a retired target), and refused
+ *  when the new anchor IS the player's own replacement — that would make the
+ *  override satisfied by construction, which is a state the catalog earns rather
+ *  than something re-confirm can manufacture. */
+function reconfirmOverrideAt(list, i, now) {
+  const current = Array.isArray(list) ? list : [];
+  if (!(i >= 0 && i < current.length)) return { ok: false, list: current, error: "range" };
+  if (now == null || now === "") return { ok: false, list: current, error: "no-anchor" };
+  const o = current[i];
+  if (String(now) === String(o.to)) return { ok: false, list: current, error: "would-satisfy" };
+  const next = current.slice();
+  next[i] = Object.assign({}, o, { from: String(now) });
+  return { ok: true, list: next, error: null };
+}
+
 function _overridesModule() {
   if (typeof require !== "undefined") { try { return require("./overrides.js"); } catch (e) { /* absent */ } }
   return (typeof window !== "undefined") ? window.Overrides : null;
@@ -1322,7 +1386,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }

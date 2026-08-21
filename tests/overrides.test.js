@@ -726,4 +726,139 @@ test("review #9: a crafted row upstream re-typed to a reserved token is drift, a
   assert.deepStrictEqual(rep.applied, [], "a suspended override contributes nothing (R29)");
 });
 
+// ---- #88 U10 (R3/R6) — what the creation picker offers ----------------------
+// One predicate, shared by both creation surfaces. Indistinguishable occurrences
+// present as ONE entry (R3) because they are genuinely one decision — R2 already
+// says they retype together. Ineligible affixes are not offered at all, and an
+// item with none offers no control rather than an empty picker (AE20).
+
+test("#88 U10 (R3): indistinguishable occurrences present as one entry with a count", () => {
+  const p = loadPool();
+  // A variant carrying the same name+type+value twice: one decision, one row.
+  const v = p.items.find((x) => {
+    const seen = {};
+    return (x.affixes || []).some((a) => {
+      if (!O.isEligible(a, x)) return false;
+      const k = `${a.name}||${a.type}||${a.value}`;
+      if (seen[k]) return true;
+      seen[k] = 1; return false;
+    });
+  });
+  assert.ok(v, "the catalog has a variant with a duplicate eligible affix");
+  const entries = O.pickerEntries(v);
+  const dup = entries.find((e) => e.count > 1);
+  assert.ok(dup, "the duplicate collapsed into one entry");
+  assert.ok(entries.length < O.eligibleAffixes(v).length, "…so the picker is shorter than the affix list");
+  assert.ok(dup.key && dup.key.variant_id && dup.key.name && dup.key.from,
+    "and each entry carries a ready-to-use override identity");
+});
+
+test("#88 U10 (R6/AE11): only eligible affixes are offered", () => {
+  const p = loadPool();
+  const v = p.items.find((x) => (x.affixes || []).some((a) => O.isEligible(a, x))
+    && (x.affixes || []).some((a) => !O.isEligible(a, x)));
+  const entries = O.pickerEntries(v);
+  const offered = new Set(entries.map((e) => e.name + "||" + e.from));
+  for (const a of v.affixes) {
+    if (O.isEligible(a, v)) continue;
+    assert.ok(!offered.has(a.name + "||" + O.catalogTypeOrLive(a)),
+      `${a.name} is ineligible and must not be offered`);
+  }
+});
+
+test("#88 U10 (AE20): an item with no eligible affix yields no entries at all", () => {
+  assert.deepStrictEqual(O.pickerEntries({ variant_id: "Empty", affixes: [] }), []);
+  assert.deepStrictEqual(O.pickerEntries(null), []);
+});
+
+test("#88 U10: an entry already carrying an override says so rather than offering a duplicate", () => {
+  const p = loadPool();
+  const v = p.items.find((x) => x.variant_id === "Aberrant Robe");
+  const a = v.affixes.find((x) => x.name === "Armor Class" && x.type === "Armor");
+  const o = { ...O.overrideKey(v, a), to: "Enhancement" };
+  const before = O.pickerEntries(v, []).find((e) => e.name === "Armor Class");
+  assert.strictEqual(before.overriddenTo, null, "nothing declared yet");
+  const after = O.pickerEntries(v, [o]).find((e) => e.name === "Armor Class");
+  assert.strictEqual(after.overriddenTo, "Enhancement", "…and now the row names what it was set to");
+});
+
+test("#88 U10: the picker reads the CATALOG type, so an applied override does not shift the row", () => {
+  const p = loadPool();
+  const v = p.items.find((x) => x.variant_id === "Aberrant Robe");
+  const a = v.affixes.find((x) => x.name === "Armor Class" && x.type === "Armor");
+  const o = { ...O.overrideKey(v, a), to: "Enhancement" };
+  O.applyOverrides(p, [o]);
+  const e = O.pickerEntries(v, [o]).find((x) => x.name === "Armor Class");
+  assert.strictEqual(e.from, "Armor", "the row still names what the catalog says");
+  assert.strictEqual(e.overriddenTo, "Enhancement");
+  O.withdrawOverrides(p);
+});
+
+test("#88 U10 (R8): a crafted pool row is offered through the same shape", () => {
+  const p = loadPool();
+  const entries = O.poolPickerEntries(p, "seal");
+  assert.ok(entries.length > 0, "the seal channel offers rows");
+  const e = entries[0];
+  assert.ok(e.key.pool_key && e.key.name && e.key.from, "a ready-to-use pool identity");
+  assert.strictEqual(e.channel, "seal");
+  assert.ok(entries.every((x) => x.count >= 1));
+  // The same collapse rule: byte-identical duplicate rows are one decision.
+  const keys = entries.map((x) => x.key.pool_key);
+  assert.strictEqual(new Set(keys).size, keys.length, "one entry per key");
+});
+
+// ---- #88 U11 (R34/R35) — one action set per lifecycle state ------------------
+// The manager is the only place an override can be audited, re-confirmed, or
+// deleted, so getting the action set wrong per state is not cosmetic: offering
+// re-confirm on a retired target asks the player to confirm against an affix that
+// no longer exists, and withholding it from a drifted one leaves delete as the
+// only way out of a correction that is still true.
+const _ovr = (over) => Object.assign(
+  { variant_id: "Aberrant Robe", name: "Armor Class", from: "Armor", value: "5", to: "Enhancement" }, over || {});
+
+test("#88 U11 (R35): re-confirm is offered ONLY on a drift-suspended row", () => {
+  const rows = O.managerRows([
+    { override: _ovr(), state: "active", reason: null, now: null },
+    { override: _ovr({ name: "Dodge" }), state: "suspended", reason: "drift", now: "Profane" },
+    { override: _ovr({ name: "PRR" }), state: "suspended", reason: "retired-target", now: null },
+    { override: _ovr({ name: "MRR" }), state: "suspended", reason: "ineligible", now: null },
+    { override: _ovr({ name: "Fortification" }), state: "satisfied", reason: null, now: null },
+  ]);
+  const by = Object.fromEntries(rows.map((r) => [r.override.name, r.actions]));
+  assert.ok(!by["Armor Class"].includes("reconfirm"), "active: nothing to re-confirm against");
+  assert.ok(by.Dodge.includes("reconfirm"), "drift: the one state re-confirm is for");
+  assert.ok(!by.PRR.includes("reconfirm"), "retired target: no affix left to confirm against (AE6)");
+  assert.ok(!by.MRR.includes("reconfirm"), "ineligible: delete only");
+  assert.ok(!by.Fortification.includes("reconfirm"), "satisfied: the catalog already agrees");
+});
+
+test("#88 U11 (R34): every row can be deleted and can emit a report", () => {
+  const rows = O.managerRows([
+    { override: _ovr(), state: "active", reason: null, now: null },
+    { override: _ovr({ name: "PRR" }), state: "suspended", reason: "retired-target", now: null },
+  ]);
+  for (const r of rows) {
+    assert.ok(r.actions.includes("delete"), `${r.override.name} can always be deleted`);
+    assert.ok(r.actions.includes("report"), "…and its correction report stays available (R18)");
+  }
+});
+
+test("#88 U11: each row carries a plain-language state the player can act on", () => {
+  const rows = O.managerRows([
+    { override: _ovr(), state: "active", reason: null, now: null },
+    { override: _ovr({ name: "Dodge" }), state: "suspended", reason: "drift", now: "Profane" },
+    { override: _ovr({ name: "Fortification" }), state: "satisfied", reason: null, now: null },
+  ]);
+  const by = Object.fromEntries(rows.map((r) => [r.override.name, r.label]));
+  assert.ok(/in force/i.test(by["Armor Class"]));
+  assert.ok(/Profane/.test(by.Dodge), "drift names what upstream moved to");
+  assert.ok(/no longer doing anything|catalog agrees/i.test(by.Fortification));
+  assert.ok(rows.every((r) => r.label && !/undefined/.test(r.label)));
+});
+
+test("#88 U11: an empty list yields no rows, not a placeholder row", () => {
+  assert.deepStrictEqual(O.managerRows([]), []);
+  assert.deepStrictEqual(O.managerRows(null), []);
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);
