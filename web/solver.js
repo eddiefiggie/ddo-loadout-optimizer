@@ -15,6 +15,27 @@
 // the single highest selected value. A capped stat (dodge) gets a continuous var
 // d clamped by d <= cap and d <= raw — a clamp, not a forbidding ceiling.
 
+// #88 U8 — the override module, resolved PER CALL rather than captured at
+// script-eval time (the same rule overrides.js applies to dataset.js): capturing
+// binds to whatever the global happened to be when this file's script tag ran,
+// and a load-order change would leave it null forever with every override label
+// silently missing — in the browser only, where no Node test can see it.
+function _overridesModule() {
+  if (typeof Overrides !== "undefined") return Overrides;
+  if (typeof require !== "undefined") { try { return require("./overrides.js"); } catch (e) { /* absent */ } }
+  return null;
+}
+
+/** The catalog's own bonus type for an affix a player override is applied to, or
+ *  null when none is. Read through the module rather than the sentinel's name, so
+ *  this cannot drift from the code that writes it. */
+function _overriddenFrom(affix) {
+  const O = _overridesModule();
+  if (!O || !affix) return null;
+  const from = O.catalogTypeOf(affix);
+  return from == null ? null : from;
+}
+
 function scaleAt(s, mlCap) {
   if (mlCap <= s.ml_lo) return s.val_lo;
   if (mlCap >= s.ml_hi) return s.val_hi;
@@ -241,19 +262,20 @@ function buildProgram(model) {
     for (const a of xv.variant.affixes || []) {
       const k = `${a.name}||${_equivType(a.type)}`;
       if (targetSet.has(a.name) && a.value > 0 && (!best.has(k) || best.get(k).value < a.value)) {
-        best.set(k, { value: a.value, via: a.via || null });
+        best.set(k, { value: a.value, via: a.via || null, affix: a });
       }
     }
     for (const s of xv.variant.scaling || []) {
       const val = scaleAt(s, mlCap);
       const k = `${s.stat}||${_equivType(s.bonus_type)}`;
       if (targetSet.has(s.stat) && val > 0 && (!best.has(k) || best.get(k).value < val)) {
-        best.set(k, { value: val, via: null });
+        best.set(k, { value: val, via: null, affix: null });
       }
     }
     for (const [k, b] of best) {
       if (!buckets.has(k)) buckets.set(k, []);
-      buckets.get(k).push({ gates: [xv.name], value: b.value, via: b.via });
+      buckets.get(k).push({ gates: [xv.name], value: b.value, via: b.via, affix: b.affix,
+        host: xv.variant.variant_id || xv.variant.source_item });
     }
   }
 
@@ -271,9 +293,27 @@ function buildProgram(model) {
   let zc = 0;
   const zByBucket = new Map();
   const creditMeta = new Map();          // z name -> the credit it represents (U3 reads this)
+  // #88 U8 (R13/R16) — z name -> the player override this contribution is carrying.
+  // Same shape and the same reason as creditMeta directly above: a z entry holds a
+  // value and its gates and nothing that identifies the affix behind it, so the
+  // one place that knows is where the z is minted. `zOf` is that one place, which
+  // is why every channel goes through it rather than building z entries inline.
+  const overrideMeta = new Map();
+  function zOf(gates, value, affix, host) {
+    const z = { name: "z" + zc++, gates, value };
+    const from = _overriddenFrom(affix);
+    if (from != null) {
+      const O = _overridesModule();
+      overrideMeta.set(z.name, {
+        stat: affix.name || affix.stat, from, to: O ? O.readType(affix) : (affix.type || affix.bonus_type),
+        host: host || null,
+      });
+    }
+    return z;
+  }
   for (const [key, sources] of buckets) {
     zByBucket.set(key, sources.map((src) => {
-      const z = { name: "z" + zc++, gates: src.gates, value: src.value };
+      const z = zOf(src.gates, src.value, src.affix, src.host);
       if (src.via) z.via = src.via;
       if (src.credit) creditMeta.set(z.name, src.credit);
       return z;
@@ -375,12 +415,12 @@ function buildProgram(model) {
     const best = new Map();
     for (const a of aug.affixes || []) {
       const k = `${a.name}||${_equivType(a.type)}`;
-      if (targetSet.has(a.name) && a.value > 0 && (!best.has(k) || best.get(k) < a.value)) best.set(k, a.value);
+      if (targetSet.has(a.name) && a.value > 0 && (!best.has(k) || best.get(k).value < a.value)) best.set(k, { value: a.value, affix: a });
     }
     for (const s of aug.scaling || []) {
       const val = scaleAt(s, mlCap);
       const k = `${s.stat}||${_equivType(s.bonus_type)}`;
-      if (targetSet.has(s.stat) && val > 0 && (!best.has(k) || best.get(k) < val)) best.set(k, val);
+      if (targetSet.has(s.stat) && val > 0 && (!best.has(k) || best.get(k).value < val)) best.set(k, { value: val, affix: null });
     }
     if (best.size) augBest.set(aug, best); // only augments advancing a target
   }
@@ -427,9 +467,9 @@ function buildProgram(model) {
     placeMeta.set(place, { variant_id: aug.variant_id, color: (aug.aug_color || {}).color, wiki_url: aug.wiki_url });
     extraConstraints.push(`${colorVars.join(" + ")} - ${place} = 0`); // placed iff one color fires
     extraConstraints.push(`${place} <= 1`);                           // at most one slot consumed
-    for (const [k, val] of best) {                                    // buckets gated by the placement
+    for (const [k, ab] of best) {                                     // buckets gated by the placement
       if (!zByBucket.has(k)) zByBucket.set(k, []);
-      zByBucket.get(k).push({ name: "z" + zc++, gates: [place], value: val });
+      zByBucket.get(k).push(zOf([place], ab.value, ab.affix, aug.variant_id));
     }
     if (aug.unique_equipped) {
       const id = aug.variant_id;
@@ -635,7 +675,7 @@ function buildProgram(model) {
     for (const a of onTarget) {
       const k = `${a.stat}||${_equivType(a.bonus_type)}`;
       if (!zByBucket.has(k)) zByBucket.set(k, []);
-      zByBucket.get(k).push({ name: "z" + zc++, gates: [q], value: a.value });
+      zByBucket.get(k).push(zOf([q], a.value, a, ins.name || ins.dino_type));
     }
   }
   // capacity: sum(q of key) - sum(open_dino_slots_of_key(item) * x_item) <= 0
@@ -696,7 +736,7 @@ function buildProgram(model) {
       for (const a of onTarget) {
         const k = `${a.stat}||${_equivType(a.bonus_type)}`;
         if (!zByBucket.has(k)) zByBucket.set(k, []);
-        zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: a.value });
+        zByBucket.get(k).push(zOf([n], a.value, a));
       }
     }
     if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single choice per slot
@@ -743,7 +783,7 @@ function buildProgram(model) {
         extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
         const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
         if (!zByBucket.has(k)) zByBucket.set(k, []);
-        zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: opt.value });
+        zByBucket.get(k).push(zOf([n], opt.value, opt));
       }
       if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single choice per slot
     }
@@ -770,7 +810,7 @@ function buildProgram(model) {
         extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
         const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
         if (!zByBucket.has(k)) zByBucket.set(k, []);
-        zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: opt.value });
+        zByBucket.get(k).push(zOf([n], opt.value, opt));
       }
       if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single choice per group
     }
@@ -834,7 +874,7 @@ function buildProgram(model) {
         for (const a of onTarget) {
           const k = `${a.stat}||${_equivType(a.bonus_type)}`;
           if (!zByBucket.has(k)) zByBucket.set(k, []);
-          zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: a.value });
+          zByBucket.get(k).push(zOf([n], a.value, a));
         }
       }
       if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single choice per slot
@@ -871,7 +911,7 @@ function buildProgram(model) {
         extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
         const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
         if (!zByBucket.has(k)) zByBucket.set(k, []);
-        zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: opt.value });
+        zByBucket.get(k).push(zOf([n], opt.value, opt));
       }
       if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single unseal per slot
     }
@@ -900,7 +940,7 @@ function buildProgram(model) {
         extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
         const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
         if (!zByBucket.has(k)) zByBucket.set(k, []);
-        zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: opt.value });
+        zByBucket.get(k).push(zOf([n], opt.value, opt));
       }
       if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single pick per tier
     }
@@ -925,7 +965,7 @@ function buildProgram(model) {
       extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
       const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
       if (!zByBucket.has(k)) zByBucket.set(k, []);
-      zByBucket.get(k).push({ name: "z" + zc++, gates: [n], value: opt.value });
+      zByBucket.get(k).push(zOf([n], opt.value, opt));
     }
     if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single craft per host
   }
@@ -1091,7 +1131,10 @@ function buildProgram(model) {
       extraConstraints.push(`${lhs} <= 0`);
       for (const [k, val] of best) {
         if (!zByBucket.has(k)) zByBucket.set(k, []);
-        zByBucket.get(k).push({ name: "z" + zc++, gates: [sa], value: val });
+        // No override marker: a set tier's bonus type is a catalog-level claim
+        // shared by every member, which the plan's Scope Boundaries rule out as a
+        // per-player override — a mistyped tier is a data correction.
+        zByBucket.get(k).push(zOf([sa], val, null));
       }
     }
   }
@@ -1192,7 +1235,7 @@ function buildProgram(model) {
   return {
     // creditBuckets (bucket key -> declared-credit floor) rides out for the
     // #322 visibility guard (visibleGateSet) rather than being re-derived.
-    xVars, zByBucket, cappedStats, targetList: model.targets, model, creditMeta, creditBuckets,
+    xVars, zByBucket, cappedStats, targetList: model.targets, model, creditMeta, creditBuckets, overrideMeta,
     // #325 — floored stats (targets or not) join visibleGateSet's stat universe:
     // a contribution supporting a floored stat is load-bearing even when every
     // tracked stat it also feeds is capped and slack.
@@ -1581,6 +1624,13 @@ function breakdownByTarget(program, prim, precomputedVisible) {
             hostIds: src.hostIds || (src.kind === "worn" ? [src.label] : null),
             // #205 — the enchantment this contribution is actually printed as.
             via: z.via || null,
+            // #88 U8 (R13/R16) — the type the CATALOG recorded, when the player
+            // overrode it. Present only on an overridden contribution, so every
+            // surface can label it and name both types; null everywhere else.
+            // Threaded here rather than re-derived downstream because this is the
+            // only point where a selected z is still joined to its own source.
+            overriddenFrom: (program.overrideMeta && program.overrideMeta.get(z.name))
+              ? program.overrideMeta.get(z.name).from : null,
             // U2 (#290/#291) — the cross-add SOURCE stat this part came from,
             // or null for the target's own parts.
             crossAdd,
@@ -2239,6 +2289,11 @@ async function solveLexicographic(model, highs) {
     breakdown: breakdownByTarget(program, prim, visible), computeScale: computeScale(program),
     capped: { ...program.cappedStats }, floorReport, program,
     creditReport: buildCreditReport(program, prim, model, floorReport, visible),
+    // #88 U8 (R13/R14/R30) — what the player's bonus-type overrides did. Plain
+    // JSON by construction so persist.js can keep it under RESULT_KEEP: a restored
+    // character must disclose the asserted types without re-solving, because
+    // `program` is dropped on save and KTD6 forbids re-solving on load.
+    overrideReport: buildOverrideReport(program, prim, model),
     saturationReport: buildSaturationReport(program, prim),
     emptySlots: buildEmptySlotReport(model, sol),
     absorptionQuarantine: buildAbsorptionQuarantineReport(model, program),
@@ -2247,6 +2302,44 @@ async function solveLexicographic(model, highs) {
     // as plain JSON so a restored character discloses without re-solving.
     blockReport: model.blockReport || [],
   };
+}
+
+/** #88 U8 — the override disclosure, in two halves that answer two questions.
+ *
+ *  `inForce` is what the overlay applied for this solve, read off the query — the
+ *  REPORT the overlay returned, never the player's saved declaration (KTD6). It is
+ *  what qualifies the optimality claim (R14): the proof is about a model built
+ *  from an overridden catalog, so it is qualified whenever one was in force,
+ *  whether or not the overridden item won its slot. (#416 is open on the narrower
+ *  reading; this is the conservative one — it can only over-disclose.)
+ *
+ *  `contributions` is the subset that actually reached the loadout, resolved the
+ *  way buildCreditReport resolves credits: `overrideMeta` maps a z name back to
+ *  the override behind it, because a z entry otherwise carries a value and its
+ *  gates and nothing that identifies the affix. Those are what R13 labels and R16
+ *  makes name both types.
+ *
+ *  Returns null when no override was in force, so every consumer can treat the
+ *  absent key and a pre-feature save identically. */
+function buildOverrideReport(program, prim, model) {
+  const inForce = ((model && model.query && model.query.overrides) || []).slice();
+  const meta = (program && program.overrideMeta) || new Map();
+  const contributions = [];
+  if (meta.size) {
+    for (const [, zs] of program.zByBucket) {
+      for (const z of zs) {
+        if (!meta.has(z.name)) continue;
+        if (prim(z.name) <= 0.5) continue;
+        const m = meta.get(z.name);
+        contributions.push({ stat: m.stat, from: m.from, to: m.to, host: m.host || null, value: z.value });
+      }
+    }
+  }
+  if (!inForce.length && !contributions.length) return null;
+  // Sorted, so two exports of the same build compare byte-for-byte regardless of
+  // the order the player declared their overrides in.
+  contributions.sort((a, b) => (a.stat + a.to + (a.host || "")).localeCompare(b.stat + b.to + (b.host || "")));
+  return { inForce, contributions };
 }
 
 /** U6/#249 — compound-absorption affixes the build excluded from this pool.
@@ -2759,5 +2852,5 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
 if (typeof module !== "undefined" && module.exports) {
   // readSolution is exported for TESTS ONLY — the deterministic guard tests
   // inject a synthetic primal (#319); app code goes through the solve entry points.
-  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, bucketCountsFor, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, readSolution, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars, rawTotalOf, effectiveOf, buildCreditReport, outbidReportFor, attributeOutbid };
+  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, bucketCountsFor, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, readSolution, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars, rawTotalOf, effectiveOf, buildCreditReport, buildOverrideReport, outbidReportFor, attributeOutbid };
 }

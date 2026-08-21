@@ -2674,3 +2674,41 @@ test("#88 U7: one line per changed override, and only the changed ones", () => {
   assert.ok(!/Armor Class/.test(msg), "an active override is not news");
   assert.ok(/Fortitude Save/.test(msg) && /Dodge/.test(msg));
 });
+
+
+// ---- #88 U8 (R30) — the stale banner's reason -------------------------------
+const { staleNote } = require("../web/wizard.js");
+const _applied = (to) => [{ variant_id: "X", name: "Armor Class", from: "Armor", to, count: 1 }];
+
+test("#88 U8 (R30): a build solved under the overrides in force now is not stale", () => {
+  const run = { query: { overrides: _applied("Enhancement") } };
+  assert.strictEqual(staleNote({ lastRun: run, overrideApplied: _applied("Enhancement") }), null);
+});
+
+test("#88 U8 (AE22/R30): creating or deleting an override marks the shown result stale", () => {
+  const run = { query: { overrides: [] } };
+  const created = staleNote({ lastRun: run, overrideApplied: _applied("Enhancement") });
+  assert.ok(/different set of bonus-type corrections/.test(created));
+  const deleted = staleNote({ lastRun: { query: { overrides: _applied("Enhancement") } }, overrideApplied: [] });
+  assert.ok(/different set of bonus-type corrections/.test(deleted));
+});
+
+test("#88 U8 (AE9): a restored result whose override has since suspended is stale, not re-solved", () => {
+  // The suspended override never reaches today's APPLIED list, so the sets differ.
+  const run = { query: { overrides: _applied("Enhancement") } };
+  const note = staleNote({ lastRun: run, overrideApplied: [], loadedStale: false });
+  assert.ok(note, "the player is told");
+  assert.ok(/corrections/.test(note), "…and told which of the two causes it is");
+});
+
+test("#88 U8: the catalog-age cause still reports itself when overrides are unchanged", () => {
+  const run = { query: { overrides: [] } };
+  assert.ok(/predates the current gear catalog/.test(
+    staleNote({ lastRun: run, overrideApplied: [], loadedStale: true })));
+});
+
+test("#88 U8: with no solved build on screen there is nothing to call stale", () => {
+  assert.strictEqual(staleNote({ lastRun: null, overrideApplied: _applied("Enhancement") }), null);
+  assert.strictEqual(staleNote({}), null);
+  assert.strictEqual(staleNote(null), null);
+});

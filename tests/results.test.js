@@ -1994,3 +1994,29 @@ test("#369: no disclosure when the opt-in is ON or nothing pinned is an Artifact
   assert.deepStrictEqual(R.artifactsIncludedByPin(plainResult, plainPin), [],
     "a pinned non-Artifact triggers nothing");
 });
+
+
+// ---- #88 U8 (R13/R16) — the rendered contributor label ----------------------
+// A correct solver-side marker that no surface renders is a dead feature, and the
+// only thing that catches it is asserting on the HTML the player actually sees.
+test("#88 U8: an overridden contribution renders labelled, naming both types", () => {
+  const html = R.attributionList([
+    { bonus_type: "Insight", value: 6, source: "Necklace of X", sourceKind: "worn",
+      slots: ["Necklace"], hostIds: ["Necklace of X"], isSet: false, via: null,
+      crossAdd: null, overriddenFrom: "Enhancement" },
+  ]);
+  assert.ok(/is-overridden/.test(html), "the row is marked for styling");
+  assert.ok(/your Insight/.test(html), "the type the player asserted");
+  assert.ok(/catalog says Enhancement/.test(html), "and the type the catalog records");
+  assert.ok(/on your word, not the wiki/.test(html), "…with why it is labelled at all");
+});
+
+test("#88 U8: an ordinary contribution is not labelled", () => {
+  const html = R.attributionList([
+    { bonus_type: "Insight", value: 6, source: "Necklace of X", sourceKind: "worn",
+      slots: ["Necklace"], hostIds: ["Necklace of X"], isSet: false, via: null,
+      crossAdd: null, overriddenFrom: null },
+  ]);
+  assert.ok(!/is-overridden|your Insight|catalog says/.test(html),
+    "a build with no overrides renders exactly as it did before");
+});

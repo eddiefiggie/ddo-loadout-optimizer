@@ -5470,5 +5470,70 @@ async function withCrossAdd(map, fn) {
   });
 
 
+
+  // ---- #88 U8 — an override reaching a real solve, end to end ---------------
+  // Two Constitution sources under the SAME bonus type take the max. Assert that
+  // first, so the override test below is measured against a known baseline rather
+  // than a hoped-for one.
+  const O = require("../web/overrides.js");
+  const conModel = () => ({
+    targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+    worn: [slot("Ring", [item("R", "Ring", [["Constitution", "Enhancement", 10]])]),
+           slot("Necklace", [item("N", "Necklace", [["Constitution", "Enhancement", 6]])])],
+  });
+
+  await test("#88 U8: an applied override changes the solve, and the result says so", async () => {
+    const before = await S.solveLexicographic(conModel(), highs);
+    assert.strictEqual(before.effective.Constitution, 10, "baseline: same type, max(10,6)");
+    assert.strictEqual(before.overrideReport, null, "and no report at all when none is in force");
+
+    // The player asserts the necklace's Constitution is Insight in game.
+    const model = conModel();
+    const pool = { items: model.worn.flatMap((g) => g.variants) };
+    const neck = pool.items.find((v) => v.variant_id === "N");
+    const affix = neck.affixes.find((a) => a.name === "Constitution");
+    const o = { ...O.overrideKey(neck, affix), to: "Insight" };
+    const applied = O.applyOverrides(pool, [o]).applied;
+    assert.strictEqual(applied.length, 1, "the overlay applied it");
+    model.query = { overrides: applied };
+
+    const after = await S.solveLexicographic(model, highs);
+    assert.strictEqual(after.effective.Constitution, 16,
+      "two buckets now, so they sum — the override changed the answer");
+
+    // R14 — the claim is qualified because an override was in force…
+    assert.strictEqual(after.overrideReport.inForce.length, 1);
+    // …and R13/R16 — the contribution that reached the loadout names both types.
+    assert.deepStrictEqual(after.overrideReport.contributions, [
+      { stat: "Constitution", from: "Enhancement", to: "Insight", host: "N", value: 6 },
+    ]);
+
+    // The breakdown carries the marker on the overridden part and nothing else.
+    // The 2-arg test seam (breakdownByTarget computes the visible set itself).
+    const parts = S.breakdownByTarget(S.buildProgram(model), () => 1)["Constitution"] || [];
+    const marked = parts.filter((x) => x.overriddenFrom);
+    assert.ok(marked.length >= 1, "the overridden contribution is marked");
+    assert.ok(marked.every((x) => x.overriddenFrom === "Enhancement"),
+      "…with the type the CATALOG recorded, so both can be named");
+    assert.ok(parts.some((x) => !x.overriddenFrom), "and the untouched contribution is not marked");
+
+    O.withdrawOverrides(pool);
+  });
+
+  await test("#88 U8: an override in force qualifies the claim even when its item is not picked", async () => {
+    // R14's conservative reading (#416): the proof is about a model built from an
+    // overridden catalog, so it is qualified whether or not the overridden affix
+    // won its slot. Here the override is on an item the solve does not pick.
+    const model = conModel();
+    model.worn[1].variants[0].affixes[0].value = 1;   // the necklace is now never worth picking
+    const pool = { items: model.worn.flatMap((g) => g.variants) };
+    const neck = pool.items.find((v) => v.variant_id === "N");
+    const o = { ...O.overrideKey(neck, neck.affixes[0]), to: "Insight" };
+    model.query = { overrides: O.applyOverrides(pool, [o]).applied };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.overrideReport.inForce.length, 1, "still qualified");
+    O.withdrawOverrides(pool);
+  });
+
   console.log(`\n${passed} passed`);
 })();

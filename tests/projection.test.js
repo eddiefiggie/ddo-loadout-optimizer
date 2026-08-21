@@ -1270,3 +1270,56 @@ test("#346: the top-rung notice counts crafted options, not just augments", () =
   const singular = P.craftingExcludedLine(rec({ ncPlaced: [{}] }));
   assert.match(singular, /uses 1 crafted option\./, "singular reads correctly");
 });
+
+
+// ---- #88 U8/U9 (R14/R15/R16) — override disclosure and export carriage ------
+const OVR_REPORT = {
+  inForce: [
+    { variant_id: "Aberrant Robe", name: "Armor Class", from: "Armor", to: "Enhancement", count: 1 },
+    { pool_key: "seal||Gloom||equipment/accessories||Charisma||Insight||7",
+      name: "Charisma", from: "Insight", to: "Quality", count: 3 },
+  ],
+  contributions: [
+    { stat: "Armor Class", from: "Armor", to: "Enhancement", host: "Aberrant Robe", value: 5 },
+  ],
+};
+
+test("#88 U9 (R15/R16): the export header names every override in force, and both types", () => {
+  const line = P.overridesLine(OVR_REPORT);
+  assert.ok(/Armor Class on Aberrant Robe: Enhancement — catalog says Armor/.test(line));
+  assert.ok(!/[()]/.test(line), "no parentheses — markdown escapes them in pasted text");
+  assert.ok(/Charisma on a crafting option: Quality — catalog says Insight/.test(line),
+    "a pool-keyed override has no item name and must not print undefined");
+  assert.ok(!/undefined/.test(line));
+});
+
+test("#88 U9: the header line is empty when nothing was in force", () => {
+  assert.strictEqual(P.overridesLine(null), "");
+  assert.strictEqual(P.overridesLine({ inForce: [], contributions: [] }), "");
+});
+
+test("#88 U9 (KTD6): a declared-but-unapplied override never reaches the header", () => {
+  // The report is the SOLVER's output, so a suspended, unmatched, or ineligible
+  // override — present in the player's saved list, doing nothing — is absent here.
+  assert.strictEqual(P.overridesLine({ inForce: [], contributions: [] }), "",
+    "the saved declaration is not what this line reads");
+});
+
+test("#88 U9: two exports of the same build compare byte-for-byte whatever the order", () => {
+  const flipped = { inForce: OVR_REPORT.inForce.slice().reverse(), contributions: [] };
+  assert.strictEqual(P.overridesLine(OVR_REPORT), P.overridesLine(flipped));
+});
+
+test("#88 U8 (R14): the optimality claim is qualified whenever an override was in force", () => {
+  const lines = P.overrideNoticeLines({ overrideReport: OVR_REPORT });
+  assert.ok(lines.length >= 1);
+  assert.ok(/not proven against the catalog/.test(lines[0]), "the claim is explicitly weakened");
+  assert.ok(lines.some((l) => /Armor Class/.test(l) && /Enhancement/.test(l) && /Armor/.test(l)),
+    "R16 — a contribution that reached the loadout names both types");
+});
+
+test("#88 U8 (R14): a solve with no override in force says nothing", () => {
+  assert.deepStrictEqual(P.overrideNoticeLines({}), []);
+  assert.deepStrictEqual(P.overrideNoticeLines({ overrideReport: null }), []);
+  assert.deepStrictEqual(P.overrideNoticeLines({ overrideReport: { inForce: [], contributions: [] } }), []);
+});

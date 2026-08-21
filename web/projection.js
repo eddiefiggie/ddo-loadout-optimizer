@@ -480,6 +480,12 @@
           // collapse on the item surfaces: the source stat IS the name
           // engraved on the item. Renders as "from <source stat>".
           crossAdd: p.crossAdd || null,
+          // #88 U8 (R13/R16) — the type the CATALOG recorded, when the player
+          // overrode it. Threaded EXPLICITLY, like `via` and `crossAdd` above:
+          // this function rebuilds every contributor as a fresh object with a
+          // fixed field list, and results.js renders only from that shape — so a
+          // correct solver-side marker that is not named here renders nowhere.
+          overriddenFrom: p.overriddenFrom || null,
         };
       });
     }
@@ -1189,6 +1195,29 @@
       .join("; ");
   }
 
+  /** #88 U9 (R15) — the overrides in force, as one readable line, or "" when none
+   *  were. The sibling of `declaredCreditsLine` directly above and it reads the
+   *  same way and for the same reason: `overrideReport` is the SOLVER's own output,
+   *  so a suspended, unmatched, or ineligible override — present in the player's
+   *  saved list and doing nothing — never renders as though it applied (KTD6).
+   *
+   *  Both types are named (R16), because the point of shipping this line is that a
+   *  recipient can tell which numbers rest on the wiki and which rest on the
+   *  sender's word. Sorted, so two exports of the same build compare byte-for-byte
+   *  regardless of declaration order. */
+  function overridesLine(overrideReport) {
+    const rows = ((overrideReport && overrideReport.inForce) || []).filter(Boolean);
+    if (!rows.length) return "";
+    return rows
+      // No parentheses: markdown escapes them, so text pasted into a forum reads
+      // "Insight \(catalog: Enhancement\)". The same trap DECLARED_LABEL and the
+      // credit notice already carry — found in the browser pass, not by a test,
+      // because every suite compares the string it was given.
+      .map((o) => `${o.name} on ${o.variant_id || "a crafting option"}: ${o.to} — catalog says ${o.from}`)
+      .sort()
+      .join("; ");
+  }
+
   function constraintPairs(rec) {
     const i = (rec && rec.inputs) || {};
     return [
@@ -1211,6 +1240,11 @@
       // Weapon Fighting line above — the trailing filter drops it when nothing is
       // declared, so an undeclared build's exports are unchanged (R3).
       ["Already have", declaredCreditsLine(((rec && rec.snapshot) || {}).creditReport)],
+      // #88 U9 (R15) — the bonus-type overrides, beside the declared credits for
+      // the same reason: they are the other input a recipient cannot infer from
+      // the loadout, and without them the shared build cannot be reproduced. Same
+      // omit-when-unset idiom, so a build with no overrides exports unchanged.
+      ["Bonus types you corrected", overridesLine(((rec && rec.snapshot) || {}).overrideReport)],
       ["Gear pool", POOL[i.pool] || i.pool || "all"],
       // #110 (U9/R6) — the exclusions travel with the shared build, beside the
       // priorities and pins, so a reader re-solving reaches the same answer.
@@ -1657,6 +1691,39 @@
       + `${many ? "them" : "it"} a requirement instead.`];
   }
 
+  /** #88 U8 (R14/R16) — the optimality qualifier for a solve that ran under one or
+   *  more player bonus-type overrides. The sibling of `creditNoticeLines` below,
+   *  and the same class of statement: part of the answer rests on something the
+   *  player asserted and the tool did not verify.
+   *
+   *  It qualifies on `inForce`, not on what was picked. The proof is about a model
+   *  built from an overridden catalog, so an override that changed which item lost
+   *  its slot has shaped the result just as surely as one whose affix is in the
+   *  loadout. (#416 is open on whether the narrower reading is wanted; this one can
+   *  only over-disclose, which is the safe direction for a claim of optimality.)
+   *
+   *  Contributions are named separately when there are any, because "one of your
+   *  corrections is in this build" is a materially stronger statement than "one was
+   *  in force", and R16 says both types are named wherever a correction shows. */
+  function overrideNoticeLines(result) {
+    const report = (result && result.overrideReport) || null;
+    const inForce = (report && report.inForce) || [];
+    if (!inForce.length) return [];
+    const lines = [];
+    const many = inForce.length > 1;
+    lines.push(`You corrected the bonus type of ${inForce.length} ` +
+      `${many ? "affixes" : "affix"}. The optimizer solved with ` +
+      `${many ? "those types" : "that type"} in place on your word — the wiki records ` +
+      `${many ? "different ones" : "a different one"} — so the loadout below is optimal ` +
+      `given ${many ? "them" : "it"}, not proven against the catalog.`);
+    const contribs = (report && report.contributions) || [];
+    for (const c of contribs) {
+      lines.push(`${c.stat} on ${c.host || "a crafting option"} is counted as ${c.to} ` +
+        `because you said so; the catalog records ${c.from}.`);
+    }
+    return lines;
+  }
+
   function creditNoticeLines(result) {
     const report = (result && result.creditReport) || [];
     if (!report.length) return [];
@@ -1706,7 +1773,7 @@
   const api = {
     // resolved-view assembler
     project, creditNoticeLines, saturationNoticeLines, emptySlotNoticeLines,
-    absorptionQuarantineNoticeLines, declaredCreditsLine,
+    absorptionQuarantineNoticeLines, declaredCreditsLine, overridesLine, overrideNoticeLines,
     // #91 (U6) — the one utility sentence + the tier's display name (from
     // model.js; re-exported so exporters can recognize the sentinel row)
     utilityLine, utilityPriceLine, utilityUnsecuredLines, UTILITY_SENTINEL: UTILITY_NAME,

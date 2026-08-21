@@ -617,4 +617,35 @@ test("#88 U7 (R8): the ladder reaches a crafted override through its pool key", 
   assert.strictEqual(O.resolveOverrides(p, [o])[0].reason, "retired-target");
 });
 
+// ---- #88 U8 (R30) — the stale marker ---------------------------------------
+// A displayed result is a claim about a specific set of overrides. When that set
+// changes the claim is stale — marked, never silently re-solved.
+
+test("#88 U8 (R30): the same set in a different order is not stale", () => {
+  const A = { variant_id: "X", name: "Armor Class", from: "Armor", to: "Enhancement", count: 1 };
+  const B = { pool_key: "seal||G||d||Charisma||Insight||7", name: "Charisma", from: "Insight", to: "Quality", count: 2 };
+  assert.ok(O.sameOverrideSet([A, B], [B, A]), "declaration order is not part of the set");
+  assert.ok(O.sameOverrideSet([], []), "two empty sets");
+  assert.ok(O.sameOverrideSet(null, []), "absent and empty are the same set");
+});
+
+test("#88 U8 (R30/AE22): adding, removing, or re-aiming an override makes the set differ", () => {
+  const A = { variant_id: "X", name: "Armor Class", from: "Armor", to: "Enhancement", count: 1 };
+  const A2 = { variant_id: "X", name: "Armor Class", from: "Armor", to: "Sacred", count: 1 };
+  const B = { variant_id: "Y", name: "Dodge", from: "Armor", to: "Quality", count: 1 };
+  assert.ok(!O.sameOverrideSet([A], []), "created");
+  assert.ok(!O.sameOverrideSet([], [A]), "deleted");
+  assert.ok(!O.sameOverrideSet([A], [A2]), "re-aimed at a different replacement type");
+  assert.ok(!O.sameOverrideSet([A], [B]), "a different affix entirely");
+  assert.ok(!O.sameOverrideSet([A], [A, B]), "one added beside it");
+});
+
+test("#88 U8 (AE9/R30): a suspension changes the set, because it changes what applied", () => {
+  // The set compared is what APPLIED, so an override that suspended between the
+  // solve and now is absent from today's list — which is exactly the difference
+  // that must mark the shown result stale rather than leaving it looking current.
+  const A = { variant_id: "X", name: "Armor Class", from: "Armor", to: "Enhancement", count: 1 };
+  assert.ok(!O.sameOverrideSet([A], []));
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

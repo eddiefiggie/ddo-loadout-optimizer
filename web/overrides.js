@@ -198,6 +198,13 @@
   /** A crafted row records its type as `bonus_type`; an item affix records it as
    *  `type`. One accessor pair, so no caller has to know which it is holding. */
   function typeKeyOf(affix) {
+    // `type` wins when both are present. In the built dataset they never are —
+    // 0 of 42,088 item affixes carry `bonus_type` and 0 crafted rows carry `type`
+    // — but a test fixture writing both is not exotic, and the solver reads `.type`
+    // for a worn affix. Preferring `bonus_type` there wrote the override into a
+    // field nothing reads: the overlay reported success, the pool looked changed,
+    // and the solve was untouched.
+    if (affix && Object.prototype.hasOwnProperty.call(affix, "type")) return "type";
     return (affix && Object.prototype.hasOwnProperty.call(affix, "bonus_type")) ? "bonus_type" : "type";
   }
   function readType(affix) { return affix ? affix[typeKeyOf(affix)] : undefined; }
@@ -395,6 +402,31 @@
     return { state: "suspended", reason: "drift", affixes: rows, now: catalogTypeOrLive(rows[0]) };
   }
 
+  /** U8 (R30) — do these two APPLIED lists describe the same set of corrections?
+   *
+   *  A displayed result is a claim about one specific set, so when the set changes
+   *  the claim is stale. Order is not part of the set: the player's declaration
+   *  order is not something a solve depends on, and treating a reorder as a change
+   *  would offer a pointless re-solve.
+   *
+   *  Compared on the four fields that identify what a correction DID — the target,
+   *  the affix, the type it replaced, and the type it replaced it with. `count` is
+   *  deliberately excluded: it is a consequence of the catalog, not of the
+   *  player's assertion, so a catalog change that alters it is caught by the
+   *  lifecycle rather than by presenting the same correction as a new one. */
+  function sameOverrideSet(a, b) {
+    var sa = signatures(a), sb = signatures(b);
+    if (sa.length !== sb.length) return false;
+    for (var i = 0; i < sa.length; i++) if (sa[i] !== sb[i]) return false;
+    return true;
+  }
+
+  function signatures(list) {
+    return (list || []).filter(Boolean).map(function (o) {
+      return [o.variant_id || o.pool_key || "", o.name, o.from, o.to].join("\u0000");
+    }).sort();
+  }
+
   /** The catalog's own type for an affix an override is currently applied to,
    *  or undefined when none is. */
   function catalogTypeOf(affix) {
@@ -490,7 +522,7 @@
     isEligible, classifyPool, eligibleAffixes, isCompositeComponent,
     overrideKey, isWellFormed, matchAffixes, resolveMatch, catalogTypeOrLive,
     eachPoolAffix, poolOverrideKey, matchPoolAffixes, poolAffixEligible, readType,
-    resolveOverrides, resolvePoolMatch, keyMinusType,
+    resolveOverrides, resolvePoolMatch, keyMinusType, sameOverrideSet,
     applyOverrides, withdrawOverrides, catalogTypeOf,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;

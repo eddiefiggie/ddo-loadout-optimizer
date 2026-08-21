@@ -500,6 +500,13 @@ function buildQuery(state, vocab) {
     // is present either way, so the query object is not byte-identical to a
     // pre-feature one; nothing hashes or diffs it.
     declaredCredits: cleanCreditMap(state.declaredCredits, vocab),
+    // #88 U8 (R14/KTD6) — the overrides actually IN FORCE for this solve, which is
+    // the overlay's APPLY REPORT, never the player's saved declaration. The two
+    // differ exactly where it matters: a suspended, unmatched, or ineligible
+    // override is in the declaration and did nothing, and rendering it as applied
+    // is the defect KTD6 was written about. `state.overrideApplied` is written by
+    // applyOverrideOverlay, the single place the overlay is (re-)built.
+    overrides: Array.isArray(state.overrideApplied) ? state.overrideApplied.slice() : [],
   };
 }
 
@@ -760,6 +767,32 @@ function overrideLoadMessage(resolved) {
     }
   }
   return parts.length ? parts.join(" ") : null;
+}
+
+/** #88 U8 (R30) — why the build on screen is stale, or null when it is current.
+ *
+ *  Two causes share one banner and one Re-solve button, because they are the same
+ *  statement to the player: what you are looking at was solved under conditions
+ *  that no longer hold. Neither re-solves automatically — a displayed loadout
+ *  changing itself while the player reads it is worse than a stale one that says
+ *  so, and re-solve here is view-only until an explicit Save.
+ *
+ *  The override cause compares what the SOLVE ran under (carried on its own query)
+ *  against what is in force now. That catches all three ways the set can move: the
+ *  player created or deleted one, and — the case a restored character hits — an
+ *  override that applied when the build was solved has since suspended, so it is
+ *  absent from today's applied list. */
+function staleNote(state) {
+  const s = state || {};
+  const O = _overridesModule();
+  const then = (s.lastRun && s.lastRun.query && s.lastRun.query.overrides) || [];
+  const now = s.overrideApplied || [];
+  if (s.lastRun && O && !O.sameOverrideSet(then, now)) {
+    return "The build shown was solved with a different set of bonus-type corrections "
+      + "than you have in force now.";
+  }
+  if (s.loadedStale) return "This saved build predates the current gear catalog.";
+  return null;
 }
 
 // R12 — a pinned two-handed (both-hands) main-hand weapon and a pinned off-hand item
@@ -1280,7 +1313,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, overrideLoadMessage,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, overrideLoadMessage, staleNote,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -1935,8 +1968,9 @@ if (typeof window !== "undefined" && window.App) {
           <button class="btn primary" id="wz-savebtn">Save character</button>
           <span class="wz-savestat" id="wz-savestat" aria-live="polite"></span>
         </div>
-        <div id="wz-stale" class="wz-cbar wz-hidden">
-          This saved build predates the current gear catalog. <button class="btn primary" id="wz-staleresolve">Re-solve ⚡</button>
+        <div id="wz-stale" class="wz-cbar${staleNote(state) ? "" : " wz-hidden"}">
+          <span id="wz-stalewhy">${esc(staleNote(state) || "This saved build predates the current gear catalog.")}</span>
+          <button class="btn primary" id="wz-staleresolve">Re-solve ⚡</button>
         </div>
         <div id="wz-twfmig" class="wz-cbar${state.twfMigrated ? "" : " wz-hidden"}">
           This character had off-hand weapon types picked, which is how dual-wielding used to switch on — so
@@ -2544,8 +2578,13 @@ if (typeof window !== "undefined" && window.App) {
     // not have contributed to the loadout.
     function applyOverrideOverlay() {
       const O = _overridesModule();
-      if (!O || !dataset) return null;
-      return O.applyOverrides(dataset, state.overrides || []);
+      if (!O || !dataset) { state.overrideApplied = []; return null; }
+      const report = O.applyOverrides(dataset, state.overrides || []);
+      // KTD6 — what APPLIED, kept for buildQuery to hand the solver. Assigned on
+      // every call including the empty one, so a character switch cannot leave the
+      // previous character's applied list feeding this one's optimality claim.
+      state.overrideApplied = report.applied.slice();
+      return report;
     }
 
     function candidateItems() {
@@ -2963,7 +3002,13 @@ if (typeof window !== "undefined" && window.App) {
         // eslint-disable-next-line no-undef
         if (box) renderResults(box, { model, result: snap, query: renderQuery, dataset, highs: null, onAfterRender: afterResultsRender, onRequire: requireOutbidStat });
         const stale = document.getElementById("wz-stale");
-        if (stale) stale.classList.toggle("wz-hidden", !state.loadedStale);
+        // #88 U8 (R30/AE9) — either cause shows the banner, and the text says which.
+        if (stale) {
+          const why = staleNote(state);
+          stale.classList.toggle("wz-hidden", !why);
+          const w = document.getElementById("wz-stalewhy");
+          if (w && why) w.textContent = why;
+        }
       } else {
         // No optimal snapshot saved — land on priorities so the user can re-solve,
         // with a reason rather than a silent jump.

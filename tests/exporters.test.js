@@ -1747,3 +1747,37 @@ test("#348 U5: a snapshot predating the container asserts nothing about it", () 
   const md = toMarkdown(r);
   assert.ok(!/Not secured/.test(md), "the export stays silent rather than implying a full container");
 });
+
+
+// ---- #88 U9 (R15) — no export is solve-visible but share-invisible ----------
+// The standing invariant: a mechanic the solve used reaches every export by
+// default. An override changes which bucket a value counts in, so a recipient who
+// cannot see it cannot reproduce the build they were handed.
+test("#88 U9 (R15/R16): every export carries the overrides in force, naming both types", () => {
+  const withOverride = JSON.parse(JSON.stringify(rec));
+  withOverride.snapshot.overrideReport = {
+    inForce: [{ variant_id: "Page Regalia", name: "Dodge", from: "Armor", to: "Quality", count: 1 }],
+    contributions: [{ stat: "Dodge", from: "Armor", to: "Quality", host: "Page Regalia", value: 5 }],
+  };
+  const outputs = {
+    markdown: toMarkdown(withOverride),
+    csv: toCsv(withOverride),
+    print: toPrintHtml(withOverride),
+    bbcode: toBBCode(withOverride),
+    gearset: toGearset(withOverride),
+    portable: JSON.stringify(toPortableJSON(withOverride)),
+  };
+  for (const [name, out] of Object.entries(outputs)) {
+    assert.ok(/Dodge/.test(out), `${name} names the overridden affix`);
+    assert.ok(/Quality/.test(out) && /Armor/.test(out),
+      `${name} names both the asserted and the catalog type`);
+  }
+});
+
+test("#88 U9: a build with no overrides exports exactly as it did before", () => {
+  // R3's shape: the line is omitted entirely rather than printed empty, so an
+  // unoverridden build's exports are byte-identical to the pre-feature ones.
+  for (const out of [toMarkdown(rec), toCsv(rec), toPrintHtml(rec), toBBCode(rec)]) {
+    assert.ok(!/corrected/i.test(out), "no override line at all");
+  }
+});
