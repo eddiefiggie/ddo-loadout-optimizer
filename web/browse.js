@@ -489,9 +489,14 @@ function initBrowse(dataset, vocab, hooks) {
       const link = v.wiki_url ? `<a href="${safeUrl(v.wiki_url)}" rel="noopener" target="_blank">wiki</a>` : "";
       // #88 U10 (R32) — Browse reaches items the current loadout does not contain,
       // which is the whole reason a second creation surface exists. The control is
-      // offered only when the host supplied a handler, so browse.js keeps no
-      // knowledge of overrides beyond passing the variant id back.
-      const correct = (hooks && hooks.onOverride)
+      // offered only when the host supplied a handler AND that host says this row
+      // is one it can serve: this table also carries synthesized CRAFTED rows whose
+      // ids resolve to no item variant, and offering the control there told the
+      // player nothing could be corrected on a row that carries eligible affixes.
+      // browse.js keeps no knowledge of overrides beyond asking and passing the id.
+      const canCorrect = hooks && hooks.onOverride
+        && (!hooks.canOverride || hooks.canOverride(v));
+      const correct = canCorrect
         ? `<button type="button" class="browse-correct" data-correct="${esc(v.variant_id)}">Correct a bonus type…</button>` : "";
       return `<tr>
         <td data-label="Item">${esc(v.variant_id)}${tier}</td>

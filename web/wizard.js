@@ -195,6 +195,21 @@ function addOverrideTo(list, key, to, note) {
   return { ok: true, list: next, error: null };
 }
 
+/** The override in `list` that addresses the same affix as `key`, or null.
+ *
+ *  A named function rather than an inline predicate because the inline one was
+ *  wrong in a way that reads as correct: `o.variant_id === key.variant_id ||
+ *  o.pool_key === key.pool_key` collapses for two ITEM overrides, since neither
+ *  carries a pool_key and `undefined === undefined` satisfies the second clause.
+ *  Any override sharing the affix name and recorded type then matched, from a
+ *  different item entirely. `sameOverrideTarget`'s truthiness guard is what stops
+ *  that, so the lookup routes through it rather than restating the comparison. */
+function findOverrideFor(list, key) {
+  const current = Array.isArray(list) ? list : [];
+  if (!key) return null;
+  return current.find((o) => o && sameOverrideTarget(o, key)) || null;
+}
+
 function sameOverrideTarget(a, b) {
   const target = (a.variant_id && a.variant_id === b.variant_id)
     || (a.pool_key && a.pool_key === b.pool_key);
@@ -1386,7 +1401,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -2676,6 +2691,21 @@ if (typeof window !== "undefined" && window.App) {
       applyOverrideOverlay();
       state.constraintsDirty = true;
       renderOverrideManager();
+      refreshStaleBanner();
+    }
+
+    /** R30/AE22 — the displayed result is a claim about one set of corrections, so
+     *  changing the set makes it stale. `staleNote` decided that correctly from the
+     *  first, but nothing re-rendered the banner outside the character-load path:
+     *  creating an override from the results card left a build on screen still
+     *  presenting itself as current. Same refresh, lifted so both paths share it. */
+    function refreshStaleBanner() {
+      const bar = document.getElementById("wz-stale");
+      if (!bar) return;
+      const why = staleNote(state);
+      bar.classList.toggle("wz-hidden", !why);
+      const w = document.getElementById("wz-stalewhy");
+      if (w && why) w.textContent = why;
     }
 
     function createOverride(key, to, note) {
@@ -2685,10 +2715,7 @@ if (typeof window !== "undefined" && window.App) {
       // The created entry by identity, not by position: addOverrideTo REPLACES a
       // correction on the same affix rather than appending, so "the last one" is
       // wrong exactly when the player is changing their mind.
-      const made = r.list.find((o) => o && o.name === key.name
-        && String(o.from) === String(key.from)
-        && (o.variant_id === key.variant_id || o.pool_key === key.pool_key));
-      return { ok: true, list: r.list, override: made || null, error: null };
+      return { ok: true, list: r.list, override: findOverrideFor(r.list, key), error: null };
     }
 
     function deleteOverride(i) {
@@ -3249,14 +3276,8 @@ if (typeof window !== "undefined" && window.App) {
         const renderQuery = restoredRenderQuery(query, !!i.utility_tier_aware);
         // eslint-disable-next-line no-undef
         if (box) renderResults(box, { model, result: snap, query: renderQuery, dataset, highs: null, onAfterRender: afterResultsRender, onRequire: requireOutbidStat });
-        const stale = document.getElementById("wz-stale");
         // #88 U8 (R30/AE9) — either cause shows the banner, and the text says which.
-        if (stale) {
-          const why = staleNote(state);
-          stale.classList.toggle("wz-hidden", !why);
-          const w = document.getElementById("wz-stalewhy");
-          if (w && why) w.textContent = why;
-        }
+        refreshStaleBanner();
       } else {
         // No optimal snapshot saved — land on priorities so the user can re-solve,
         // with a reason rather than a silent jump.
@@ -3373,6 +3394,13 @@ if (typeof window !== "undefined" && window.App) {
           // copy of the predicate; it hands back a variant id and a host element.
           window.ItemBrowser.initBrowse(dataset, pickerVocabulary(dataset), {
             onOverride: (variantId, host) => openOverridePicker(host, variantId),
+            // Browse's table mixes item variants with synthesized crafted rows.
+            // The picker resolves a variant id against the item catalog, so a
+            // crafted row has nothing for it to open — 472 of 9,582 rows. Ask
+            // here rather than letting browse.js infer it: the predicate is the
+            // same lookup the picker itself performs.
+            canOverride: (v) => !!(v && (dataset.items || []).some(
+              (x) => (x.variant_id || x.source_item) === v.variant_id)),
           });
         }
       }
