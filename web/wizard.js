@@ -19,7 +19,7 @@ const FORGED = new Set(["warforged", "bladeforged"]);
  *  solver (programmatic callers may pass it), so the fix lives here in the
  *  wizard's gate, not in the solver. */
 function canAdvance(stepId, state) {
-  if (stepId === "character") return !!state.race && Number(state.ml) > 0;
+  if (stepId === "character") return missingRequired(state).length === 0;
   if (stepId === "pool") return state.pool !== "owned" || !!state.ownedNames;
   if (stepId === "priorities") return (state.priorities || []).some((p) => p !== _utilitySentinel);
   return true;
@@ -38,12 +38,179 @@ function prevStep(stepId, steps = WIZARD_STEPS) {
 }
 const wizIsForged = (race) => FORGED.has(String(race || "").toLowerCase());
 
+/** #428 U6 (R2a) — the character step's required fields, in the order they are
+ *  asked. `label` is what the message and the field marker both read from, so
+ *  the two cannot name the same field differently. */
+const CHARACTER_REQUIRED = [
+  { key: "ml", label: "Minimum level (ML) cap" },
+  { key: "race", label: "Race" },
+  { key: "armor", label: "Armor type" },
+];
+
+/** #428 U6 (R7/R12/KD6) — which required fields are unanswered, in field order.
+ *
+ *  Armor joins the required set under KD6, which makes this a GATE change: it is
+ *  what `canAdvance("character")` now asks. The Forged exemption is load-bearing
+ *  rather than a nicety — Warforged and Bladeforged wear a docent, the armor
+ *  control renders disabled, and the race handler clears `state.armor`, so
+ *  requiring it of them would be a gate no player could ever satisfy.
+ *
+ *  A build LOADED with all three answered returns [] and is therefore marked
+ *  nowhere (R12); a build saved before KD6 carries no armor and is marked here
+ *  rather than blocking silently somewhere else (AE3a). Pure; unit-tested. */
+function missingRequired(state) {
+  const s = state || {};
+  const out = [];
+  if (!(Number(s.ml) > 0)) out.push("ml");
+  if (!s.race) out.push("race");
+  if (!s.armor && !wizIsForged(s.race)) out.push("armor");
+  return out;
+}
+
+/** #428 U6 (R10) — ONE message naming every unanswered required field, or null.
+ *  Not one message per field: the plan's complaint is that the step says nothing
+ *  at all, and three separate lines would be the same problem inverted. */
+function missingRequiredMessage(state) {
+  const miss = missingRequired(state);
+  if (!miss.length) return null;
+  const labels = CHARACTER_REQUIRED.filter((f) => miss.indexOf(f.key) >= 0).map((f) => f.label);
+  const list = labels.length === 1
+    ? labels[0]
+    : `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}`;
+  return `${list} ${labels.length === 1 ? "is" : "are"} still needed before you can continue.`;
+}
+
+/** #428 U6 (R6a) — what a COLLAPSED weapon group says about itself.
+ *
+ *  A group that hides its contents must not also hide whether it has any, or an
+ *  unopened group is indistinguishable from an empty one. The style is named by
+ *  its LABEL, passed in, because the taxonomy owns that mapping and this helper
+ *  must stay pure. Unit-tested. */
+function weaponGroupSummary(state, styleLabel) {
+  const s = state || {};
+  const bits = [];
+  if (s.twoWeaponFighting) bits.push("Two Weapon Fighting");
+  if (s.style) bits.push(String(styleLabel || s.style));
+  const wt = (s.weaponTypes || []).length;
+  if (wt) bits.push(`${wt} weapon type${wt === 1 ? "" : "s"}`);
+  const oh = (s.offHand || []).length + (s.offHandWeapons || []).length;
+  if (oh) bits.push(`${oh} off-hand pick${oh === 1 ? "" : "s"}`);
+  return bits.length ? bits.join(" · ") : "nothing set";
+}
+
 /** U1 (R1) — where loading a saved character lands. A snapshot that solved
  *  optimally goes straight to "results" (no pool/priorities detour); anything
  *  else (missing snapshot, or a non-optimal status) falls back to "priorities"
  *  so the user can re-solve, never a blank results view. Pure; unit-tested. */
 function stepAfterLoad(snapshot) {
   return snapshot && snapshot.status === "optimal" ? "results" : "priorities";
+}
+
+/** #428 U4 (KTD1) — the step a record explicitly recorded, or null.
+ *
+ *  A record written before this feature carries no `step`; its ABSENCE is the
+ *  signal, which is why an unknown or non-string value reads as absent too
+ *  rather than being coerced. Pure; unit-tested. */
+function savedStep(inputs, steps = WIZARD_STEPS) {
+  const s = inputs && inputs.step;
+  return (typeof s === "string" && steps.indexOf(s) >= 0) ? s : null;
+}
+
+/** #428 U4 (R16) — where loading a saved record lands.
+ *
+ *  A record that recorded its step resumes there; a pre-feature record falls
+ *  back to `stepAfterLoad`, unchanged. The one exception is a saved "results":
+ *  every other step renders from inputs alone, but results renders from a solved
+ *  snapshot, so honouring it without one would restore the blank results view
+ *  `stepAfterLoad` exists to prevent. Pure; unit-tested. */
+function stepOnLoad(inputs, snapshot, steps = WIZARD_STEPS) {
+  const s = savedStep(inputs, steps);
+  return (s && s !== "results") ? s : stepAfterLoad(snapshot);
+}
+
+/** #429 review #2 — may this live `lastRun` be attributed to the record being
+ *  saved under `name`?
+ *
+ *  `state` is one long-lived closure object that outlives any character, and
+ *  `lastRun` is the heaviest thing on it. A run is THIS save's only when it was
+ *  just solved (`fresh`), or when the name being written is the record it was
+ *  loaded from. Without that second clause: load A (which sets `lastRun`), step
+ *  back, rename to B, save — and B is written with A's snapshot, A's query and
+ *  A's build stamp, so it also never raises the staleness banner. Pure. */
+function runBelongsTo(run, name, loadedName) {
+  if (!run) return false;
+  if (run.fresh === true) return true;
+  const nm = String(name || "").trim();
+  return !!nm && nm === String(loadedName || "").trim();
+}
+
+/** #429 review #1 — the overwrite confirm's wording.
+ *
+ *  Takes the two facts rather than looking them up, so the sentence the player
+ *  reads and the write that follows cannot disagree about what is at stake.
+ *  An in-progress save over a solved record KEEPS that loadout (see
+ *  saveCurrentCharacter); the old wording said only "Update saved build", which
+ *  read as an update while the write replaced the record wholesale. Pure. */
+function overwriteConfirmText(name, prevHasLoadout, savingSolved) {
+  const nm = String(name || "");
+  if (!prevHasLoadout) return `Update saved build \u201C${nm}\u201D?`;
+  return savingSolved
+    ? `Update saved build \u201C${nm}\u201D? Its saved loadout is replaced by the one on screen.`
+    : `Update saved build \u201C${nm}\u201D? Its saved loadout is kept \u2014 only the character and priorities you have on screen are updated.`;
+}
+
+/** #428 U5 (R19/KTD3) — the unsaved-changes guard's message, or null when there
+ *  is nothing to warn about.
+ *
+ *  Built from state rather than assembled at the call site so the WORDING is
+ *  testable without a dialog. A loaded build is named, because that name is the
+ *  thing the player recognizes; a build that was never saved is described as
+ *  such rather than quoted by its typed name — quoting it would read as "your
+ *  saved build Sook is at risk" when no such record exists. Pure; unit-tested. */
+function unsavedGuardMessage(state, kind) {
+  const s = state || {};
+  if (!s.inputsDirty) return null;
+  const nm = String(s.loadedName || "").trim();
+  const what = nm ? `You have unsaved changes to \u201C${nm}\u201D.` : `This build has never been saved.`;
+  // #429 review #3 — a step change keeps the work in memory; loading another
+  // build REPLACES it outright. Same flag, materially different cost, so the
+  // sentence says which one the player is about to pay.
+  const cost = kind === "load"
+    ? `Loading another build replaces it, and the changes are gone.`
+    : (nm ? `Leaving without saving keeps them only until you close this tab.`
+          : `Leaving without saving keeps it only until you close this tab.`);
+  return `${what} ${cost}`;
+}
+
+/** #428 U3 (R13/R14/R17/R20/R21) — the save rail's model.
+ *
+ *  The rail is the flow's ONE save surface, rendered beside every step (KTD4),
+ *  so what it shows has to be derivable rather than accumulated: `loaded` is a
+ *  function of the store still holding the loaded name, not a second flag every
+ *  delete path has to remember to clear. Deleting the build you are editing
+ *  therefore returns the rail to its empty state for free.
+ *
+ *  `saved` is filtered rather than trusted: the store is localStorage, which a
+ *  player can hand-edit, and a nameless entry would render an unloadable row.
+ *  Pure; unit-tested in tests/wizard.test.js. */
+function railModel(state, saved) {
+  const s = state || {};
+  const list = (Array.isArray(saved) ? saved : [])
+    .filter((c) => c && typeof c === "object" && typeof c.name === "string" && c.name);
+  const names = list.map((c) => c.name);
+  const typed = String(s.characterName == null ? "" : s.characterName);
+  const trimmed = typed.trim();
+  const loadedName = String(s.loadedName || "");
+  const loaded = !!loadedName && names.indexOf(loadedName) >= 0;
+  return {
+    name: typed,
+    loaded,
+    loadedName: loaded ? loadedName : "",
+    saved: names,
+    empty: names.length === 0,
+    canSave: trimmed.length > 0,
+    overwrites: !!trimmed && names.indexOf(trimmed) >= 0,
+  };
 }
 
 /** Is this stat on/off ONLY — no magnitude to floor, cap, or declare?
@@ -875,12 +1042,28 @@ function staleNote(state) {
   const O = _overridesModule();
   const then = (s.lastRun && s.lastRun.query && s.lastRun.query.overrides) || [];
   const now = s.overrideApplied || [];
+  // #429 review #4 (KTD5) — the causes ACCUMULATE rather than short-circuit. A
+  // build can predate both the catalog and the armor requirement, and reporting
+  // only the first would hide the one the player can act on.
+  const notes = [];
   if (s.lastRun && O && !O.sameOverrideSet(then, now)) {
-    return "The build shown was solved with a different set of bonus-type corrections "
-      + "than you have in force now.";
+    notes.push("The build shown was solved with a different set of bonus-type corrections "
+      + "than you have in force now.");
   }
-  if (s.loadedStale) return "This saved build predates the current gear catalog.";
-  return null;
+  if (s.loadedStale) notes.push("This saved build predates the current gear catalog.");
+  // KTD5 — a build saved before armor joined the required set carries none, and
+  // an optimal snapshot routes it straight to Results, so it never meets the
+  // character step's Continue press that would mark the field. The banner is the
+  // only surface that reaches it. Gated on a build being ON SCREEN (`lastRun`):
+  // with nothing displayed there is nothing to call stale.
+  // Gated on `s.race` as well as `s.lastRun`: a build that actually solved
+  // necessarily had a race, so requiring one keeps this off partial states that
+  // are not characters at all (the override-staleness fixtures, for one).
+  if (s.lastRun && s.race && missingRequired(s).indexOf("armor") >= 0) {
+    notes.push("Armor type is now required and this build carries none \u2014 set it on the "
+      + "character step and re-solve, or the loadout may include body armor you cannot wear.");
+  }
+  return notes.length ? notes.join(" ") : null;
 }
 
 // R12 — a pinned two-handed (both-hands) main-hand weapon and a pinned off-hand item
@@ -1401,7 +1584,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, unsavedGuardMessage, runBelongsTo, overwriteConfirmText, railModel, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -1482,6 +1665,29 @@ if (typeof window !== "undefined" && window.App) {
       // surface the backup reviver guards (a priority named `constructor` once
       // made a character permanently unloadable).
       blocklist: [],
+      // #428 U3 (R20) — the name of the saved build currently being edited, or
+      // "" for an unsaved one. Transient by design: it is NOT on INPUT_KEYS,
+      // because which record you loaded is a fact about this session, not about
+      // the build. railModel treats it as loaded only while the store still
+      // holds that name, so a delete needs no second clear.
+      loadedName: "",
+      // #428 U5 (KTD3) — raised by any write to a build input, cleared by save
+      // and by load. A single flag rather than a diff against the last save: it
+      // cannot drift from what the player actually changed the way a diff over a
+      // large state object can, and it costs nothing per keystroke.
+      inputsDirty: false,
+      // #428 U5 (R19) — the step a blocked navigation was heading for, or null.
+      // Transient: it exists only between the click and the player's answer.
+      unsavedPrompt: null,
+      // #428 U6 — the weapon fold's open state. Persisted on state because half
+      // the character step's handlers re-render the whole step, and a fold that
+      // snapped shut mid-edit would be worse than not folding at all.
+      weaponsOpen: false,
+      // #428 U6 (R8) — whether a blocked Continue has already asked. Until it
+      // has, nothing is marked as needing an answer (R12); after it has, the
+      // marks are re-applied on every render for whatever is STILL missing, so
+      // they persist until answered and clear the moment they are.
+      requiredShown: false,
       // U6 — set-augment availability. A Set of owned set-augment `set` names;
       // empty by default so the set-augment family stays inert until opted in.
       ownedSetAugments: new Set(),
@@ -1528,12 +1734,15 @@ if (typeof window !== "undefined" && window.App) {
 
     // ---- steps -------------------------------------------------------------
     function stepIntro() {
-      const n = (dataset.items || []).length;
+      // #428 U1 (R26) — the opening line describes what the tool DOES. It used to
+      // interpolate the catalog size, which reads as a boast about the repository
+      // rather than anything a player can act on; per-solve coverage still
+      // discloses what a given answer searched (R27, results.js coverageNote).
       return `<section class="wz-card">
         <p class="wz-eyebrow">What this does</p>
         <h2>Find your provably-best gear — not a guess.</h2>
         <p class="wz-lead">Tell us about your character and rank the stats you care about. We search every
-          wiki-sourced item, augment, set bonus, and crafting option (${n.toLocaleString()} indexed) and return the
+          wiki-sourced item, augment, set bonus, and crafting option and return the
           <strong>single loadout that is mathematically optimal</strong> for your priorities — slot by slot,
           with the exact crafting steps to build it.</p>
         <p class="wz-lead">Four short steps, then the answer. No account; it runs entirely in your browser.</p>
@@ -1543,105 +1752,51 @@ if (typeof window !== "undefined" && window.App) {
 
     function stepCharacter() {
       const forged = wizIsForged(state.race);
+      // #428 U6 (R6a) — the weapon group is the one that collapses, so it has to
+      // say whether it holds anything. The style's LABEL comes from the shipped
+      // taxonomy, never re-derived here.
+      const styleLabel = (WT && state.style)
+        ? ((WT.STYLES.find((x) => x.id === state.style) || {}).label || state.style) : "";
+      const weaponsSet = weaponGroupSummary(state, styleLabel);
       return `<section class="wz-card">
         <p class="wz-eyebrow">Step 1 of 4 · Your character</p>
         <h2>A few basics so we only show gear you can use</h2>
         <p class="wz-lead">These filter out anything you can't equip before we optimize — no wasted results.</p>
         <div class="wz-form">
-          <div class="wz-pair">
-            <label class="wz-field"><span class="wz-label">Minimum level (ML) cap</span>
+          <!-- #428 U6 (R1/R2/R4) — three labelled containers, required first.
+               The step used to be nine controls in one flat card with nothing on
+               screen saying which of them Continue was waiting for. -->
+          <fieldset class="wz-group" data-group="required">
+            <legend class="wz-group-legend">Required
+              <span class="wz-sub">· ${forged ? "your race wears a docent, so armor is settled" : "all three are needed to continue"}</span></legend>
+            <div class="wz-grid">
+              <label class="wz-field" data-req="ml"><span class="wz-label"><span class="wz-req-mark" aria-hidden="true">*</span> Minimum level (ML) cap</span>
               <span class="wz-help">Highest item level you can equip. Gear above this is excluded.</span>
               <input id="wz-ml" class="wz-ml" type="number" min="1" max="40" value="${esc(state.ml)}"></label>
-            <label class="wz-field"><span class="wz-label">Only items ML ≥ <span id="wz-mlfloor-auto" class="wz-sub"${state.mlFloorManual ? " hidden" : ""}>· auto (cap − 5)</span></span>
-              <span class="wz-help">Hide low-level gear — the solver ignores items below this. Defaults to your ML cap − 5 and follows the cap until you set it yourself; lower it to consider more gear.</span>
-              <input id="wz-mlfloor" class="wz-ml" type="number" min="1" max="40" value="${state.mlFloor ? esc(state.mlFloor) : ""}"></label>
-          </div>
-          <div class="wz-pair">
-            <label class="wz-field"><span class="wz-label">Race</span>
+            <label class="wz-field" data-req="race"><span class="wz-label"><span class="wz-req-mark" aria-hidden="true">*</span> Race</span>
               <span class="wz-help">Determines body-slot and race-locked gear.</span>
               <select id="wz-race"><option value="">Select a race…</option>
                 <optgroup label="Basic races">${RACES_BASIC.map((r) => `<option ${state.race === r ? "selected" : ""}>${r}</option>`).join("")}</optgroup>
                 <optgroup label="Iconic heroes">${RACES_ICONIC.map((r) => `<option ${state.race === r ? "selected" : ""}>${r}</option>`).join("")}</optgroup></select></label>
-            <label class="wz-field"><span class="wz-label">Alignment <span class="wz-sub">· optional</span></span>
+            <div class="wz-field wz-span" data-req="armor"><span class="wz-label"><span class="wz-req-mark" aria-hidden="true">*</span> Armor type ${forged ? '<span class="wz-sub">· docent (Forged race)</span>' : ""}</span>
+            <span class="wz-help">Your proficiency — sets the dodge cap and eligible body armor.</span>
+            <div class="wz-seg" id="wz-armor">${ARMOR.map(([v, l]) => `<button class="wz-chip ${state.armor === v ? "on" : ""}" data-armor="${v}" ${forged ? "disabled" : ""}>${l}</button>`).join("")}</div></div>
+            </div>
+          </fieldset>
+          <fieldset class="wz-group" data-group="restrictions">
+            <legend class="wz-group-legend">Restrictions <span class="wz-sub">· all optional — leave them alone for a full search</span></legend>
+            <div class="wz-grid">
+              <label class="wz-field"><span class="wz-label">Only items ML ≥ <span id="wz-mlfloor-auto" class="wz-sub"${state.mlFloorManual ? " hidden" : ""}>· auto (cap − 5)</span></span>
+              <span class="wz-help">Hide low-level gear — the solver ignores items below this. Defaults to your ML cap − 5 and follows the cap until you set it yourself; lower it to consider more gear.</span>
+              <input id="wz-mlfloor" class="wz-ml" type="number" min="1" max="40" value="${state.mlFloor ? esc(state.mlFloor) : ""}"></label>
+          <label class="wz-field"><span class="wz-label">Alignment</span>
               <span class="wz-help">No alignment-gated gear is in the verified dataset yet, so this won't change results.</span>
               <select id="wz-align"><option value="">Select an alignment…</option>
                 ${ALIGNMENTS.map((a) => `<option ${state.alignment === a ? "selected" : ""}>${a}</option>`).join("")}</select></label>
-          </div>
-          <div class="wz-field"><span class="wz-label">Armor type ${forged ? '<span class="wz-sub">· docent (Forged race)</span>' : ""}</span>
-            <span class="wz-help">Your proficiency — sets the dodge cap and eligible body armor.</span>
-            <div class="wz-seg" id="wz-armor">${ARMOR.map(([v, l]) => `<button class="wz-chip ${state.armor === v ? "on" : ""}" data-armor="${v}" ${forged ? "disabled" : ""}>${l}</button>`).join("")}</div></div>
-          <div class="wz-field"><span class="wz-label">Oath / anathema <span class="wz-sub">· optional</span></span>
+          <div class="wz-field wz-span"><span class="wz-label">Oath / anathema</span>
             <span class="wz-help">A class oath that forbids certain armor. Approximated by armor type — see the note when on.</span>
             <div class="wz-seg" id="wz-oath"><button class="wz-chip ${state.oath === "druid" ? "on" : ""}" data-oath="druid" ${forged ? "disabled" : ""}>Druid — no metal</button></div>
             ${state.oath === "druid" && !forged ? `<p class="wz-help wz-note">Druidic oath: no metal body armor, no metal shield, no rune arm — matched against each item's wiki-sourced material. Proficiency also limits you to light and medium armor and non-tower shields. A few items whose material the wiki doesn't state are left available rather than excluded on a guess.</p>` : ""}</div>
-          ${(() => {
-            // plan 003 U3 (R4) — three style states, and the control ACCEPTS INPUT in
-            // all three. "Inert" here means the declaration currently has no effect and
-            // says so; it is deliberately NOT `disabled`, for two reasons: a player must
-            // be able to declare before choosing a style or while on another one (AE3
-            // declares, then switches), and a disabled control reads as "your character
-            // can't have this feat" rather than "this style doesn't use it".
-            //
-            // Which styles permit a second weapon is the shipped taxonomy's call, not a
-            // new list here (KTD2) — twfWeaponAllowedForStyle is true for `one-hand` only.
-            const twfActive = !!(WT && WT.twfWeaponAllowedForStyle(state.style));
-            const styleLabel = (WT && state.style)
-              ? ((WT.STYLES.find((s) => s.id === state.style) || {}).label || state.style) : "";
-            const inert = state.twoWeaponFighting && !twfActive
-              ? (state.style
-                ? `<p class="wz-help wz-note wz-twf-inert">Declared, but it has no effect under <strong>${esc(styleLabel)}</strong> — that style doesn't wield a second weapon. Your declaration is kept; switch to One-hand / Dual-wield to use it.</p>`
-                : `<p class="wz-help wz-note wz-twf-inert">Declared. It has no effect until you pick a combat style that wields a second weapon.</p>`)
-              : "";
-            return `<div class="wz-field"><span class="wz-label">Two Weapon Fighting <span class="wz-sub">· optional</span></span>
-            <span class="wz-help">Declare the feat if your character fights with a weapon in each hand. Dual-wielding used to switch on only when you added a second weapon type below — declaring it here is the explicit way.</span>
-            <div class="wz-seg" id="wz-twf"><button class="wz-chip ${state.twoWeaponFighting ? "on" : ""}" data-twf="1" aria-pressed="${state.twoWeaponFighting ? "true" : "false"}">Two Weapon Fighting</button></div>
-            ${inert}</div>`;
-          })()}
-          ${(() => {
-            const styles = WT ? WT.STYLES : [];
-            const wtypes = (WT && state.style) ? WT.weaponTypesForStyle(state.style, weaponTypesInData) : [];
-            const ohOn = WT ? WT.offHandEnabledForStyle(state.style) : false;
-            const twfOn = WT ? WT.twfWeaponAllowedForStyle(state.style) : false;
-            const ohTypes = WT ? ((state.style && WT.offHandTypesForStyle(state.style)) || WT.OFF_HAND_TYPES) : [];
-            const offWeaponTypes = twfOn ? WT.offHandWeaponTypes(weaponTypesInData) : [];
-            // A dropdown pick-list: choose an option to add; picked options show as
-            // removable tags. The dropdown offers only the not-yet-picked ones. `o.lbl`
-            // maps a value to its display label; `o.add` is the placeholder.
-            const pickList = (id, opts, sel, o = {}) => {
-              const lbl = o.lbl || ((t) => t), add = o.add || "Add a type…";
-              const avail = opts.filter((t) => !sel.includes(t));
-              return `<div class="wz-picklist">
-              <select class="wz-pl-select" data-plsel="${id}"${avail.length ? "" : " disabled"}>
-                <option value="">${avail.length ? esc(add) : "All added"}</option>
-                ${avail.map((t) => `<option value="${esc(t)}">${esc(lbl(t))}</option>`).join("")}
-              </select>
-              <div class="wz-pl-tags" data-pltags="${id}">${sel.map((t) => `<button class="wz-tag" data-pltag="${id}" data-val="${esc(t)}">${esc(lbl(t))}<span class="wz-tag-x" aria-hidden="true">×</span></button>`).join("")}</div></div>`;
-            };
-            return `<div class="wz-field"><span class="wz-label">Combat style <span class="wz-sub">· optional</span></span>
-            <span class="wz-help">Pick a style to narrow the weapon and off-hand. Click the selected style again to switch. Each list below is optional — add types to narrow it; add nothing and any is allowed.</span>
-            <div class="wz-seg" id="wz-style">${(state.style ? styles.filter((s) => s.id === state.style) : styles).map((s) => `<button class="wz-chip ${state.style === s.id ? "on" : ""}" data-style="${s.id}">${esc(s.label)}</button>`).join("")}</div>
-            ${state.style ? `<div class="wz-subseg">
-              <span class="wz-sublabel">Weapon type <span class="wz-sub">· optional — add none for any</span></span>
-              ${pickList("weptypes", wtypes, state.weaponTypes)}
-              ${ohOn ? (() => {
-                // One "Off hand" dropdown holding both off-hand ITEMS and (dual-wield)
-                // a second WEAPON. Selections route to state.offHand vs state.offHandWeapons.
-                const ohLbl = (t) => t === "empty" ? "Empty (no off-hand)" : t;
-                const itemAvail = ["empty", ...ohTypes].filter((t) => !state.offHand.includes(t));
-                const wpnAvail = twfOn ? offWeaponTypes.filter((t) => !state.offHandWeapons.includes(t)) : [];
-                const any = itemAvail.length + wpnAvail.length;
-                return `<span class="wz-sublabel">Off hand <span class="wz-sub">· optional — add none for any${twfOn ? "; a shield, orb, rune arm, or a second weapon (dual-wield)" : ""}</span></span>
-              <div class="wz-picklist">
-                <select class="wz-pl-select" data-plsel="offhand"${any ? "" : " disabled"}>
-                  <option value="">${any ? "Add…" : "All added"}</option>
-                  ${itemAvail.length ? `<optgroup label="Off-hand item">${itemAvail.map((t) => `<option value="${esc(t)}">${esc(ohLbl(t))}</option>`).join("")}</optgroup>` : ""}
-                  ${wpnAvail.length ? `<optgroup label="Second weapon (dual-wield)">${wpnAvail.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join("")}</optgroup>` : ""}
-                </select>
-                <div class="wz-pl-tags" data-pltags="offhand">${state.offHand.map((t) => `<button class="wz-tag" data-pltag="offhand" data-arr="offHand" data-val="${esc(t)}">${esc(ohLbl(t))}<span class="wz-tag-x" aria-hidden="true">×</span></button>`).join("")}${state.offHandWeapons.map((t) => `<button class="wz-tag" data-pltag="offhand" data-arr="offHandWeapons" data-val="${esc(t)}">${esc(t)}<span class="wz-tag-x" aria-hidden="true">×</span></button>`).join("")}</div>
-              </div>`;
-              })() : `<p class="wz-help wz-note">${state.style === "ranged" ? "Bows use both hands — no off-hand item." : "Two-handed weapons use both hands — no off-hand item."}</p>`}
-            </div>` : ""}</div>`;
-          })()}
           <label class="wz-check"><input type="checkbox" id="wz-artifact"${state.includeArtifact ? " checked" : ""}>
             <span class="wz-check-body"><span class="wz-label">Include an Artifact</span>
             <span class="wz-help">Build around your one equippable Artifact — the optimizer picks the best-scoring one and tags its slot. Off by default.</span></span></label>
@@ -1676,7 +1831,7 @@ if (typeof window !== "undefined" && window.App) {
                 <span class="wz-check-body"><span class="wz-label">${esc(label)}</span>
                 <span class="wz-help">${esc(help)}</span></span></label>`).join("")}
             </fieldset>
-            <label class="wz-field" id="wz-augceiling-field"><span class="wz-label">Augments up to ML <span class="wz-sub">· optional</span></span>
+            <label class="wz-field" id="wz-augceiling-field"><span class="wz-label">Augments up to ML</span>
               <span class="wz-help" id="wz-augceiling-help">${_rungExcludesAllAugments(rung)
                 ? "Not applicable — the rung you chose solves without augments, so there is no augment tier to restrict. Your value is kept for when you move back up."
                 : "Restrict augments to tiers you can realistically obtain — items still follow the ML cap. Defaults to your cap (no restriction); lower it to exclude higher augment tiers from the solve."}</span>
@@ -1710,27 +1865,83 @@ if (typeof window !== "undefined" && window.App) {
               </div>
             </details>`;
           })()}
-          <label class="wz-field"><span class="wz-label">Character name <span class="wz-sub">· optional</span></span>
-            <span class="wz-help">Name this character to save its build and reload it later. Saved only in this browser
-              (no account, cleared if you clear browser data) — use Export &amp; Data Management to move a copy between devices.</span>
-            <input id="wz-charname" type="text" value="${esc(state.characterName)}" placeholder="e.g. Sook - Reaper"></label>
-        </div>
-        <div class="wz-saved" id="wz-saved"></div>
-        <details class="wz-data" id="wz-data">
-          <summary>Export &amp; Data Management</summary>
-          <div class="wz-data-body">
-            <p class="wz-help">Manage <strong>your own saved builds</strong> (master records). Back up every saved character to a
-              file, or restore from one — the way to move your builds to another device. Backups stay compatible across the last
-              3 data versions; a file that's older than that, or made by a newer version of the app, is declined so a bad import
-              can't corrupt your saves. To share a single loadout with others, use the <strong>Share</strong> tab on a solved build.</p>
-            <div class="wz-data-row">
-              <button class="btn ghost" id="wz-export" type="button">Export all (.json)</button>
-              <input id="wz-import-label" type="text" readonly placeholder="Import a backup (.json)…" class="wz-file">
-              <input id="wz-import" type="file" accept=".json,application/json" class="wz-hidden">
             </div>
-            <div id="wz-data-stat" class="wz-filestat"></div>
-          </div>
-        </details>
+          </fieldset>
+          <details class="wz-group wz-group-fold" data-group="weapons" id="wz-weapons"${state.weaponsOpen ? " open" : ""}>
+            <summary class="wz-group-legend">Weapon setup <span class="wz-sub">· ${esc(weaponsSet)}</span></summary>
+            <div class="wz-grid">
+              ${(() => {
+            // plan 003 U3 (R4) — three style states, and the control ACCEPTS INPUT in
+            // all three. "Inert" here means the declaration currently has no effect and
+            // says so; it is deliberately NOT `disabled`, for two reasons: a player must
+            // be able to declare before choosing a style or while on another one (AE3
+            // declares, then switches), and a disabled control reads as "your character
+            // can't have this feat" rather than "this style doesn't use it".
+            //
+            // Which styles permit a second weapon is the shipped taxonomy's call, not a
+            // new list here (KTD2) — twfWeaponAllowedForStyle is true for `one-hand` only.
+            const twfActive = !!(WT && WT.twfWeaponAllowedForStyle(state.style));
+            const styleLabel = (WT && state.style)
+              ? ((WT.STYLES.find((s) => s.id === state.style) || {}).label || state.style) : "";
+            const inert = state.twoWeaponFighting && !twfActive
+              ? (state.style
+                ? `<p class="wz-help wz-note wz-twf-inert">Declared, but it has no effect under <strong>${esc(styleLabel)}</strong> — that style doesn't wield a second weapon. Your declaration is kept; switch to One-hand / Dual-wield to use it.</p>`
+                : `<p class="wz-help wz-note wz-twf-inert">Declared. It has no effect until you pick a combat style that wields a second weapon.</p>`)
+              : "";
+            return `<div class="wz-field wz-span"><span class="wz-label">Two Weapon Fighting</span>
+            <span class="wz-help">Declare the feat if your character fights with a weapon in each hand. Dual-wielding used to switch on only when you added a second weapon type below — declaring it here is the explicit way.</span>
+            <div class="wz-seg" id="wz-twf"><button class="wz-chip ${state.twoWeaponFighting ? "on" : ""}" data-twf="1" aria-pressed="${state.twoWeaponFighting ? "true" : "false"}">Two Weapon Fighting</button></div>
+            ${inert}</div>`;
+          })()}
+          ${(() => {
+            const styles = WT ? WT.STYLES : [];
+            const wtypes = (WT && state.style) ? WT.weaponTypesForStyle(state.style, weaponTypesInData) : [];
+            const ohOn = WT ? WT.offHandEnabledForStyle(state.style) : false;
+            const twfOn = WT ? WT.twfWeaponAllowedForStyle(state.style) : false;
+            const ohTypes = WT ? ((state.style && WT.offHandTypesForStyle(state.style)) || WT.OFF_HAND_TYPES) : [];
+            const offWeaponTypes = twfOn ? WT.offHandWeaponTypes(weaponTypesInData) : [];
+            // A dropdown pick-list: choose an option to add; picked options show as
+            // removable tags. The dropdown offers only the not-yet-picked ones. `o.lbl`
+            // maps a value to its display label; `o.add` is the placeholder.
+            const pickList = (id, opts, sel, o = {}) => {
+              const lbl = o.lbl || ((t) => t), add = o.add || "Add a type…";
+              const avail = opts.filter((t) => !sel.includes(t));
+              return `<div class="wz-picklist">
+              <select class="wz-pl-select" data-plsel="${id}"${avail.length ? "" : " disabled"}>
+                <option value="">${avail.length ? esc(add) : "All added"}</option>
+                ${avail.map((t) => `<option value="${esc(t)}">${esc(lbl(t))}</option>`).join("")}
+              </select>
+              <div class="wz-pl-tags" data-pltags="${id}">${sel.map((t) => `<button class="wz-tag" data-pltag="${id}" data-val="${esc(t)}">${esc(lbl(t))}<span class="wz-tag-x" aria-hidden="true">×</span></button>`).join("")}</div></div>`;
+            };
+            return `<div class="wz-field wz-span"><span class="wz-label">Combat style</span>
+            <span class="wz-help">Pick a style to narrow the weapon and off-hand. Click the selected style again to switch. Each list below is optional — add types to narrow it; add nothing and any is allowed.</span>
+            <div class="wz-seg" id="wz-style">${(state.style ? styles.filter((s) => s.id === state.style) : styles).map((s) => `<button class="wz-chip ${state.style === s.id ? "on" : ""}" data-style="${s.id}">${esc(s.label)}</button>`).join("")}</div>
+            ${state.style ? `<div class="wz-subseg">
+              <span class="wz-sublabel">Weapon type <span class="wz-sub">· optional — add none for any</span></span>
+              ${pickList("weptypes", wtypes, state.weaponTypes)}
+              ${ohOn ? (() => {
+                // One "Off hand" dropdown holding both off-hand ITEMS and (dual-wield)
+                // a second WEAPON. Selections route to state.offHand vs state.offHandWeapons.
+                const ohLbl = (t) => t === "empty" ? "Empty (no off-hand)" : t;
+                const itemAvail = ["empty", ...ohTypes].filter((t) => !state.offHand.includes(t));
+                const wpnAvail = twfOn ? offWeaponTypes.filter((t) => !state.offHandWeapons.includes(t)) : [];
+                const any = itemAvail.length + wpnAvail.length;
+                return `<span class="wz-sublabel">Off hand <span class="wz-sub">· optional — add none for any${twfOn ? "; a shield, orb, rune arm, or a second weapon (dual-wield)" : ""}</span></span>
+              <div class="wz-picklist">
+                <select class="wz-pl-select" data-plsel="offhand"${any ? "" : " disabled"}>
+                  <option value="">${any ? "Add…" : "All added"}</option>
+                  ${itemAvail.length ? `<optgroup label="Off-hand item">${itemAvail.map((t) => `<option value="${esc(t)}">${esc(ohLbl(t))}</option>`).join("")}</optgroup>` : ""}
+                  ${wpnAvail.length ? `<optgroup label="Second weapon (dual-wield)">${wpnAvail.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join("")}</optgroup>` : ""}
+                </select>
+                <div class="wz-pl-tags" data-pltags="offhand">${state.offHand.map((t) => `<button class="wz-tag" data-pltag="offhand" data-arr="offHand" data-val="${esc(t)}">${esc(ohLbl(t))}<span class="wz-tag-x" aria-hidden="true">×</span></button>`).join("")}${state.offHandWeapons.map((t) => `<button class="wz-tag" data-pltag="offhand" data-arr="offHandWeapons" data-val="${esc(t)}">${esc(t)}<span class="wz-tag-x" aria-hidden="true">×</span></button>`).join("")}</div>
+              </div>`;
+              })() : `<p class="wz-help wz-note">${state.style === "ranged" ? "Bows use both hands — no off-hand item." : "Two-handed weapons use both hands — no off-hand item."}</p>`}
+            </div>` : ""}</div>`;
+          })()}
+            </div>
+          </details>
+        </div>
+        <p class="wz-status wz-reqmsg" id="wz-charmsg" role="status" aria-live="polite"></p>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
           <button class="btn primary" data-next>Continue →</button></div>
       </section>`;
@@ -1768,7 +1979,7 @@ if (typeof window !== "undefined" && window.App) {
         <div class="wz-pinbox">
           <span class="wz-label">Pin specific items <span class="wz-sub">· optional · force gear you've already decided on into the build</span></span>
           <div class="wz-addrow">
-            <input id="wz-pin-search" type="text" placeholder="Search an item by name — e.g. Hydra's Heart…" autocomplete="off">
+            <input id="wz-pin-search" data-nodirty type="text" placeholder="Search an item by name — e.g. Hydra's Heart…" autocomplete="off">
           </div>
           <div id="wz-pin-results" class="wz-pin-results"></div>
           <div id="wz-pin-list" class="wz-pin-list"></div>
@@ -1776,7 +1987,7 @@ if (typeof window !== "undefined" && window.App) {
         <div class="wz-pinbox wz-blockbox">
           <span class="wz-label">Block items or augments <span class="wz-sub">· optional · gear the solver must never recommend</span></span>
           <div class="wz-addrow">
-            <input id="wz-block-search" type="text" placeholder="Search anything placeable — e.g. Lunar Gem of Abjuration…" autocomplete="off">
+            <input id="wz-block-search" data-nodirty type="text" placeholder="Search anything placeable — e.g. Lunar Gem of Abjuration…" autocomplete="off">
           </div>
           <div id="wz-block-results" class="wz-pin-results"></div>
           <div id="wz-block-stage" class="wz-block-stage"></div>
@@ -1824,9 +2035,9 @@ if (typeof window !== "undefined" && window.App) {
       // #110 (U5/R4) — the symmetric refusal, enforced at the mutation path and
       // not only in the (disabled) row: a blocked variant cannot be pinned.
       if (pinBlockedConflict(state.blocklist, pinIdOf(v))) return;
-      applyPin(state.slotConstraints, v, slotCardOf, hand); state.constraintsDirty = true;
+      applyPin(state.slotConstraints, v, slotCardOf, hand); state.constraintsDirty = true; markDirty();
     }
-    function removePin(slot, id) { removePinFrom(state.slotConstraints, slot, id, slotCardOf); state.constraintsDirty = true; }
+    function removePin(slot, id) { removePinFrom(state.slotConstraints, slot, id, slotCardOf); state.constraintsDirty = true; markDirty(); }
 
     // KTD3 — name-only match (filterVariants also matches stats/ids, so post-filter
     // to a name substring), verified + pinnable only, exact/prefix first, capped
@@ -1942,7 +2153,7 @@ if (typeof window !== "undefined" && window.App) {
       if (commit) commit.onclick = () => {
         const r = addBlocks(state.blocklist, [...blockStage], state.slotConstraints);
         state.blocklist = r.list;
-        state.constraintsDirty = true;
+        state.constraintsDirty = true; markDirty();
         blockStage.clear();
         if (r.refused.length) {
           state.blockRefusedMsg = r.refused.map((x) =>
@@ -2006,7 +2217,7 @@ if (typeof window !== "undefined" && window.App) {
       }).join("");
       box.querySelectorAll(".wz-pin-x[data-unblock-id]").forEach((b) => b.onclick = () => {
         state.blocklist = removeBlock(state.blocklist, b.dataset.unblockId);
-        state.constraintsDirty = true;
+        state.constraintsDirty = true; markDirty();
         renderBlockList(); renderBlockResults(); renderPinResults();
       });
     }
@@ -2040,7 +2251,7 @@ if (typeof window !== "undefined" && window.App) {
           </div>
         </div>
         <div class="wz-addrow">
-          <input id="wz-add" list="wz-stats" placeholder="Add a stat — e.g. Constitution, Dodge, Melee Power…">
+          <input id="wz-add" data-nodirty list="wz-stats" placeholder="Add a stat — e.g. Constitution, Dodge, Melee Power…">
           <datalist id="wz-stats">${allStats.map((s) => `<option value="${esc(s)}">`).join("")}</datalist>
           <button class="btn ghost" id="wz-add-btn">Add</button>
         </div>
@@ -2056,11 +2267,6 @@ if (typeof window !== "undefined" && window.App) {
       return `<section class="wz-card wz-results">
         <div class="wz-results-head">
           <div><p class="wz-eyebrow">Your optimal loadout</p></div>
-        </div>
-        <div class="wz-save" id="wz-save">
-          <input id="wz-savename" type="text" value="${esc(state.characterName)}" placeholder="Name this character…">
-          <button class="btn primary" id="wz-savebtn">Save character</button>
-          <span class="wz-savestat" id="wz-savestat" aria-live="polite"></span>
         </div>
         <div id="wz-stale" class="wz-cbar${staleNote(state) ? "" : " wz-hidden"}">
           <span id="wz-stalewhy">${esc(staleNote(state) || "This saved build predates the current gear catalog.")}</span>
@@ -2091,7 +2297,7 @@ if (typeof window !== "undefined" && window.App) {
           <div class="wz-adjust-body">
             <p class="wz-help" style="margin:0 0 var(--sp-3)">Refine priorities, flip the gear pool, then re-solve — no need to step back.</p>
             <div class="wz-addrow">
-              <input id="wz-radd" list="wz-stats2" placeholder="Add a stat…">
+              <input id="wz-radd" data-nodirty list="wz-stats2" placeholder="Add a stat…">
               <datalist id="wz-stats2">${allStats.map((s) => `<option value="${esc(s)}">`).join("")}</datalist>
               <button class="btn ghost" id="wz-radd-btn">Add</button>
             </div>
@@ -2143,7 +2349,7 @@ if (typeof window !== "undefined" && window.App) {
             CSV of the full detail, a print-friendly page, or a <strong>portable JSON</strong> file built to be re-imported and
             compared later. Each carries the character name, constraints, the equipped items with their augments and crafting
             upgrades, the active set bonuses with the affixes they grant, and a stat-by-stat breakdown of where each point comes
-            from. (Backing up all your saved builds lives in the Character step's Export &amp; Data Management.)</p>
+            from. Backing up <em>every</em> build you own is a different job, and it is directly below.</p>
           <div class="wz-share-pick">
             <label class="wz-label" for="wz-share-sel">Loadout</label>
             <select id="wz-share-sel"></select>
@@ -2157,6 +2363,7 @@ if (typeof window !== "undefined" && window.App) {
             <button class="btn ghost" id="wz-share-gearset" type="button" title="A .gearset file DDOBuilderV2 can import directly (Gear → Import). Crafting and your solve inputs ride below the import, as notes.">DDOBuilderV2</button>
           </div>
           <div id="wz-share-stat" class="wz-filestat"></div>
+          ${dataBlockHTML("share")}
         </div>`;
     }
 
@@ -2229,6 +2436,10 @@ if (typeof window !== "undefined" && window.App) {
       if (!panel) return;
       panel.innerHTML = sharePanelHTML();
       wireShareExports();
+      // #428 U7 (KTD6) — the Your data block inherits fillSharePanel's lifecycle
+      // (re-populated and re-wired on every results render) rather than needing
+      // one of its own.
+      wireDataManagement("share");
     }
 
     // The KTD3 post-render callback: (re)populate + (re)wire every wizard-owned
@@ -2416,6 +2627,7 @@ if (typeof window !== "undefined" && window.App) {
       });
 
       ol.querySelectorAll("button").forEach((b) => b.onclick = () => {
+        markDirty();   // #428 U5 — every ranked-list button mutates the build
         let after = null;
         if (b.dataset.up != null) { const i = +b.dataset.up;[state.priorities[i - 1], state.priorities[i]] = [state.priorities[i], state.priorities[i - 1]]; }
         else if (b.dataset.down != null) { const i = +b.dataset.down;[state.priorities[i + 1], state.priorities[i]] = [state.priorities[i], state.priorities[i + 1]]; }
@@ -2606,6 +2818,7 @@ if (typeof window !== "undefined" && window.App) {
 
     /** Add a target affix; returns true if it landed (caller re-renders the list). */
     function addPriority(v) {
+      markDirty();
       const status = pickerStatusEl();
       const _dn = _datasetNormalizer();
       // U11 (R15) — the decision (canonicalize, alias-substitute, validate, dedupe)
@@ -2689,7 +2902,7 @@ if (typeof window !== "undefined" && window.App) {
     function commitOverrides(list) {
       state.overrides = list;
       applyOverrideOverlay();
-      state.constraintsDirty = true;
+      state.constraintsDirty = true; markDirty();
       renderOverrideManager();
       refreshStaleBanner();
     }
@@ -3053,20 +3266,43 @@ if (typeof window !== "undefined" && window.App) {
     function saveCurrentCharacter(name) {
       const nm = (name || "").trim();
       if (!nm) return { ok: false, error: "no-name" };
-      if (!state.lastRun || !state.lastRun.result || state.lastRun.result.status !== "optimal") {
-        return { ok: false, error: "no-build" };
-      }
+      // #428 U4 (R15) — a save is no longer gated on a solved run. What is saved
+      // is the in-progress state of every step completed so far; a record written
+      // AFTER a solve additionally carries the loadout. Without this, the rail on
+      // the character step could offer a Save that always refused.
       state.characterName = nm;
       // Stamp with the current build only for a freshly-solved run. Saving a
       // LOADED-but-not-resolved build (e.g. after a rename) must preserve its
       // original stamp, or a stale build would re-stamp itself current and the
       // staleness warning would be silenced forever.
-      const stamp = (state.lastRun.fresh === false && state.lastRun.stampedBuildId)
-        ? state.lastRun.stampedBuildId : currentBuildId();
+      // #429 review #2 — attribute the live run before writing it. `state` outlives
+      // any one character, so a run left over from the PREVIOUS build would
+      // otherwise be serialized into this record.
+      const run = runBelongsTo(state.lastRun, nm, state.loadedName) ? state.lastRun : null;
+      const stamp = (run && run.fresh === false && run.stampedBuildId)
+        ? run.stampedBuildId : currentBuildId();
       // eslint-disable-next-line no-undef
-      const rec = CharacterStore.serializeCharacter(nm, state, state.lastRun, stamp);
+      const prev = CharacterStore.loadCharacter(nm);
       // eslint-disable-next-line no-undef
-      return CharacterStore.saveCharacter(rec);
+      const rec = CharacterStore.serializeCharacter(nm, state, run, stamp);
+      // #429 review #1 — saveCharacter REPLACES by name. Without this, saving an
+      // in-progress build under the name of a solved one destroyed that record's
+      // loadout, query and build stamp with no undo — the data-loss guard the
+      // removed "solve first" refusal had been performing without saying so.
+      // Preserve rather than replace: the record keeps the loadout it was solved
+      // with, exactly as it already did when a loaded build was re-saved without
+      // re-solving. The overwrite confirm says which of the two is happening.
+      if (!run && prev) {
+        rec.snapshot = prev.snapshot;
+        rec.query = prev.query;
+        rec.stampedBuildId = prev.stampedBuildId || null;
+      }
+      // eslint-disable-next-line no-undef
+      const res = CharacterStore.saveCharacter(rec);
+      // #428 U5 (KTD3) — a save is the point of the flag. Cleared only on
+      // SUCCESS: a quota failure leaves the work unsaved and still at risk.
+      if (res && res.ok) state.inputsDirty = false;
+      return res;
     }
 
     // Load a saved character: restore inputs, rebuild the model scaffold WITHOUT
@@ -3079,6 +3315,16 @@ if (typeof window !== "undefined" && window.App) {
       if (!rec) return;
       const i = rec.inputs || {};
       state.characterName = rec.name;
+      // #428 U3 (R20) — the rail shows which saved build is being edited.
+      state.loadedName = rec.name;
+      // #428 U5 (KTD3) — a freshly loaded build is not unsaved work. Cleared at
+      // the TOP of the load, before the restore writes below can raise it again.
+      state.inputsDirty = false;
+      closeUnsavedGuard();
+      // #428 U6 (AE3) — a loaded build has not been blocked yet, so nothing is
+      // marked as needing an answer. A build saved before KD6 carries no armor
+      // and will be marked the moment Continue is pressed (AE3a).
+      state.requiredShown = false;
       state.ml = i.ml;
       // U3 — restore the ML floor + its manual/auto flag. A pre-U3 save has no
       // mlFloor: default to cap − 5 in auto mode. A saved explicit floor loads as manual.
@@ -3235,9 +3481,12 @@ if (typeof window !== "undefined" && window.App) {
       // fields; upgrade them so the native-first readers (affixLabel/itemMl) render.
       const _norm = _datasetNormalizer();
       const snap = (_norm && _norm.migrateLoadout) ? _norm.migrateLoadout(rec.snapshot) : rec.snapshot;
-      // U1/R1 — an optimal snapshot lands directly on Results; anything else
-      // routes to priorities to re-solve (never a blank results view).
-      if (stepAfterLoad(snap) === "results") {
+      // #428 U4 (R16) — a record that recorded its step resumes there; a
+      // pre-feature record keeps the original routing (an optimal snapshot lands
+      // on Results, anything else on priorities to re-solve — never a blank
+      // results view).
+      const _target = stepOnLoad(i, snap);
+      if (_target === "results") {
         const query = rec.query || buildQuery(state, vocab);
         // #91 (U3, KTD3) — same counting-set threading as the solve path above.
         // eslint-disable-next-line no-undef
@@ -3279,28 +3528,129 @@ if (typeof window !== "undefined" && window.App) {
         // #88 U8 (R30/AE9) — either cause shows the banner, and the text says which.
         refreshStaleBanner();
       } else {
-        // No optimal snapshot saved — land on priorities so the user can re-solve,
-        // with a reason rather than a silent jump.
-        go("priorities");
-        const s = document.getElementById("wz-status");
-        if (s) s.textContent = `"${rec.name}" has no solved build saved — adjust priorities and re-solve.`;
+        // #429 review #2 — this branch never SETS lastRun, so it must clear it:
+        // the previous character's run is still live on `state`, and a save from
+        // here would write that build's loadout into this record.
+        state.lastRun = null;
+        state.loadedStale = false;
+        go(_target);
+        // The "no solved build" line is an explanation for a FALLBACK, so it is
+        // shown only when one happened. A build deliberately saved mid-flow
+        // resumes where it stopped and needs no apology for not being solved.
+        //
+        // #429 review #7 — the test is whether the target DIFFERS from what the
+        // record asked for, not merely whether it recorded one. `solve()` sets
+        // step "results" on the infeasible and catch paths too, so a save there
+        // records "results" with no optimal snapshot; keying on absence alone
+        // suppressed the very message this branch exists to give.
+        if (savedStep(i) !== _target) {
+          const s = document.getElementById("wz-status");
+          if (s) s.textContent = `"${rec.name}" has no solved build saved — adjust priorities and re-solve.`;
+        }
       }
     }
 
-    function renderSavedPicker() {
-      const host = document.getElementById("wz-saved");
-      if (!host) return;
+    // #428 U3 (R13/R14/R17/R20/R21) — the save rail. It renders from render()
+    // beside every step body (KTD4), which is why it cannot be a step template:
+    // Save and Load have to be reachable wherever the player is. It replaces
+    // BOTH prior surfaces — the character step's "Character name" field with its
+    // saved-characters list, and the results step's second name input beside a
+    // "Save character" button.
+    function railHTML() {
       // eslint-disable-next-line no-undef
-      const chars = CharacterStore.listCharacters();
-      if (!chars.length) {
-        host.innerHTML = `<p class="wz-help wz-saved-empty">No saved characters yet — solve a build, name it, and Save it from the results.</p>`;
-        return;
+      const m = railModel(state, CharacterStore.listCharacters());
+      const list = m.empty
+        ? `<p class="wz-help">Nothing saved yet.</p>`
+        : `<ul class="wz-charlist">${m.saved.map((n) => `<li${n === m.loadedName ? ` class="on"` : ""}>
+            <span class="wz-charnm">${esc(n)}</span>
+            <span class="wz-ctl"><button type="button" data-railload="${esc(n)}">Load →</button>
+            <button type="button" data-raildel="${esc(n)}" aria-label="delete ${esc(n)}">✕</button></span></li>`).join("")}</ul>`;
+      return `<aside class="wz-rail" id="wz-rail" aria-label="Your build">
+        <p class="wz-rail-head">Your build</p>
+        <p class="wz-rail-loaded">${m.loaded
+          ? `Editing <strong>${esc(m.loadedName)}</strong>`
+          : `<span class="wz-sub">Unsaved build</span>`}</p>
+        <label class="wz-field"><span class="wz-label">Name this build</span>
+          <input id="wz-buildname" type="text" value="${esc(m.name)}" placeholder="e.g. Sook — Reaper"></label>
+        <button class="btn primary" id="wz-railsave" type="button">Save progress</button>
+        <span class="wz-savestat" id="wz-railstat" aria-live="polite"></span>
+        <p class="wz-help">Saved in this browser only — no account, and cleared if you clear browser data.</p>
+        <div class="wz-rail-list">
+          <p class="wz-label">Saved builds</p>
+          ${list}
+        </div>
+      </aside>`;
+    }
+
+    // Re-render the rail in place. Used after a save, a delete, or an import —
+    // anything that changes the store without changing the step.
+    function renderRail() {
+      const host = document.getElementById("wz-rail");
+      if (!host) return;
+      host.outerHTML = railHTML();
+      wireRail();
+    }
+
+    /** #428 U3/U5 — the one save transaction. Both surfaces that can save (the
+     *  rail's button and the guard's "Save and continue") go through it, so an
+     *  overwrite confirm cannot be enforced on one and skipped on the other.
+     *  Returns the store's result, or null when the player declined the
+     *  overwrite. */
+    function trySave(nm) {
+      // eslint-disable-next-line no-undef
+      const prev = nm ? CharacterStore.loadCharacter(nm) : null;
+      if (prev) {
+        const prevHasLoadout = !!(prev.snapshot && prev.snapshot.status === "optimal");
+        const savingSolved = runBelongsTo(state.lastRun, nm, state.loadedName);
+        if (!window.confirm(overwriteConfirmText(nm, prevHasLoadout, savingSolved))) return null;
       }
-      host.innerHTML = `<p class="wz-label">Saved characters</p><ul class="wz-charlist">` +
-        chars.map((c) => `<li><span class="wz-charnm">${esc(c.name)}</span>
-          <span class="wz-ctl"><button type="button" data-load="${esc(c.name)}">Load →</button>
-          <button type="button" data-del="${esc(c.name)}" aria-label="delete ${esc(c.name)}">✕</button></span></li>`).join("") +
-        `</ul>`;
+      const res = saveCurrentCharacter(nm);
+      if (res.ok) state.loadedName = nm;
+      return res;
+    }
+
+    /** The refusal, worded once. The name field lives in the rail, which is on
+     *  screen from every step, so "name it first" needs no per-surface variant. */
+    function saveErrorText(error) {
+      if (error === "no-name") return "Name this build first.";
+      if (error === "quota") return "Storage full — remove some saves.";
+      return "Could not save.";
+    }
+
+    function wireRail() {
+      const nameInput = document.getElementById("wz-buildname");
+      if (nameInput) nameInput.oninput = (e) => { state.characterName = e.target.value; };
+      const saveBtn = document.getElementById("wz-railsave");
+      if (saveBtn) saveBtn.onclick = () => {
+        const nm = ((nameInput ? nameInput.value : state.characterName) || "").trim();
+        const res = trySave(nm);
+        if (!res) return;   // overwrite declined
+        // Re-render FIRST — the status element below lives inside the rail, so a
+        // message written before this would be discarded by the re-render.
+        renderRail();
+        const stat = document.getElementById("wz-railstat");
+        if (stat) stat.textContent = res.ok ? `Saved “${nm}”.` : saveErrorText(res.error);
+      };
+      const rail = document.getElementById("wz-rail");
+      if (rail) rail.onclick = (e) => {
+        const b = e.target.closest("button"); if (!b) return;
+        if (b.dataset.railload != null) { requestLoad(b.dataset.railload); return; }
+        if (b.dataset.raildel != null) {
+          // #429 review #3 — deleting the build you are EDITING removes the only
+          // stored copy while the unsaved edits stay in memory with nothing left
+          // to save them back to. The confirm says so rather than reading like an
+          // ordinary delete.
+          const nm = b.dataset.raildel;
+          const editingThis = state.inputsDirty && nm === state.loadedName;
+          const msg = editingThis
+            ? `Delete saved build \u201C${nm}\u201D? You have unsaved changes to it, and this removes the only saved copy.`
+            : `Delete saved build \u201C${nm}\u201D?`;
+          if (!window.confirm(msg)) return;
+          // eslint-disable-next-line no-undef
+          CharacterStore.deleteCharacter(nm);
+          renderRail();
+        }
+      };
     }
 
     // Keep the share dropdown (U5) in sync with the store — called on render and
@@ -3326,10 +3676,57 @@ if (typeof window !== "undefined" && window.App) {
       else if (hasCurrent) shareSel.value = "__current__";
     }
 
-    // Export & Data Management (U6): backup export/import, reachable pre-solve
-    // from the Character step so a first-time restore works on an empty store.
-    function wireDataManagement() {
-      const exportBtn = document.getElementById("wz-export");
+    // #428 U7 (R22/R23/KD2/KTD6) — the "Your data" block: export every saved
+    // build to a file, or restore from one. This is BACKUP, a different job from
+    // the Share tab's five loadout formats directly above it, and the two are
+    // stated once side by side rather than explained twice.
+    //
+    // It left the wizard's step flow (R23) and is rendered by TWO hosts: the
+    // Share panel, and the on-demand panel below. `ns` namespaces every id
+    // because both can be in the DOM at once — the Share panel lives inside the
+    // results view while the on-demand panel is an overlay over it.
+    function dataBlockHTML(ns) {
+      // The on-demand panel already carries "Your data" as its own heading; the
+      // Share panel does not, so the block supplies one there.
+      return `<div class="wz-data-block">
+          ${ns === "share" ? `<p class="wz-label">Your data</p>` : ""}
+          <p class="wz-help">Back up <strong>every build you own</strong> to a file, or restore from one — this is how you
+            move your builds to another device, and the only way back if you clear your browser data. Backups stay compatible
+            across the last 3 data versions; a file older than that, or made by a newer version of the app, is declined so a bad
+            import can't corrupt your saves.</p>
+          <div class="wz-data-row">
+            <button class="btn ghost" id="wz-export-${ns}" type="button">Export all (.json)</button>
+            <input id="wz-import-label-${ns}" type="text" readonly placeholder="Import a backup (.json)…" class="wz-file">
+            <input id="wz-import-${ns}" type="file" accept=".json,application/json" class="wz-hidden">
+          </div>
+          <div id="wz-data-stat-${ns}" class="wz-filestat"></div>
+        </div>`;
+    }
+
+    // The on-demand host (KD2's reachability cost). The Share tab follows a
+    // solve, so on its own it strands a player who holds saves but has not
+    // solved this session — and it makes a FIRST restore, into an empty store on
+    // a fresh browser, impossible. Opened from the topbar the way the Item
+    // Browser is: a surface reached on demand, not a step.
+    function openDataPanel() {
+      let ov = document.getElementById("wz-data-overlay");
+      if (!ov) {
+        ov = document.createElement("div"); ov.id = "wz-data-overlay"; ov.className = "wz-browse-overlay";
+        document.body.appendChild(ov);
+      }
+      ov.innerHTML = `<div class="wz-browse-panel wz-data-panel">
+        <div class="wz-browse-head"><h2>Your data</h2><button class="btn ghost" id="wz-data-close">Close ✕</button></div>
+        ${dataBlockHTML("panel")}
+      </div>`;
+      ov.classList.add("on");
+      document.getElementById("wz-data-close").onclick = () => { ov.classList.remove("on"); };
+      // Restoring a backup changes which builds exist; the import handler's own
+      // renderRail() call keeps the rail behind this overlay in step.
+      wireDataManagement("panel");
+    }
+
+    function wireDataManagement(ns) {
+      const exportBtn = document.getElementById(`wz-export-${ns}`);
       if (exportBtn) exportBtn.onclick = () => {
         // eslint-disable-next-line no-undef
         const payload = BackupIO.serializeAll(CharacterStore.allCharacters(), { buildId: currentBuildId() });
@@ -3337,9 +3734,9 @@ if (typeof window !== "undefined" && window.App) {
           JSON.stringify(payload, null, 2), "application/json");
       };
 
-      const impLabel = document.getElementById("wz-import-label");
-      const impFile = document.getElementById("wz-import");
-      const stat = () => document.getElementById("wz-data-stat");
+      const impLabel = document.getElementById(`wz-import-label-${ns}`);
+      const impFile = document.getElementById(`wz-import-${ns}`);
+      const stat = () => document.getElementById(`wz-data-stat-${ns}`);
       if (impLabel && impFile) {
         impLabel.onclick = () => impFile.click();
         impFile.onchange = (e) => {
@@ -3360,7 +3757,7 @@ if (typeof window !== "undefined" && window.App) {
             s.textContent = w.ok
               ? `Imported ${n} character${n === 1 ? "" : "s"} (merged by name).`
               : (w.error === "quota" ? "Storage full — remove some saves and try again." : "Could not save the import.");
-            renderSavedPicker();
+            renderRail();
           };
           reader.readAsText(f);
         };
@@ -3445,12 +3842,129 @@ if (typeof window !== "undefined" && window.App) {
 
     function render() {
       const bodies = { intro: stepIntro, character: stepCharacter, pool: stepPool, priorities: stepPriorities, results: stepResults };
-      root.innerHTML = `<div class="wz-topbar">${renderStepper()}<button class="btn ghost wz-browse-btn" data-browse type="button">Browse items</button></div>`
+      // #428 U3 (KTD4) — the step body and the save rail sit side by side in one
+      // shell. The rail is emitted HERE rather than by any step template, which
+      // is what makes Save and Load reachable from every step (R14).
+      root.innerHTML = `<div class="wz-topbar">${renderStepper()}<button class="btn ghost wz-browse-btn" data-browse type="button">Browse items</button><button class="btn ghost wz-browse-btn" data-yourdata type="button">Your data</button></div>`
         + migrationBanner()
-        + (bodies[state.step] || stepIntro)();
+        + `<div class="wz-shell"><div class="wz-body">`
+        + (bodies[state.step] || stepIntro)()
+        + `</div>` + railHTML() + `</div>`;
       wire();
     }
     function go(step) { state.step = step; render(); }
+
+    // #428 U5 (KTD3) — one flag, raised by any write to a build input. Cleared by
+    // save and by load, and by the player choosing to leave without saving (they
+    // have been told; re-asking on the next step would be nagging, and the next
+    // edit raises it again).
+    function markDirty() {
+      state.inputsDirty = true;
+      // #428 U6 (R8) — the marks must clear the moment a field is answered, and
+      // half the required controls (the armor chips, the ML input) update in
+      // place rather than re-rendering. Hanging the refresh off the same signal
+      // that says "an input changed" is what makes that true of ALL of them
+      // rather than of whichever handlers someone remembered.
+      if (state.requiredShown && state.step === "character") applyRequiredMarks();
+    }
+
+    /** Player-initiated navigation. `go` stays raw on purpose: solving and
+     *  loading move the player deliberately, and a guard on those would fire on
+     *  the very action that is about to produce the thing worth saving. */
+    function navigate(step) {
+      if (step === state.step) return;
+      guardOr({ kind: "step", value: step });
+    }
+
+    /** #429 review #3 — the rail's Load discards MORE than a step change does:
+     *  it replaces the whole in-memory build. It went straight to loadCharacter,
+     *  whose first act is `state.inputsDirty = false`, so the edits vanished and
+     *  the flag that would have caught it was cleared in the same breath. */
+    function requestLoad(name) {
+      guardOr({ kind: "load", value: name });
+    }
+
+    /** The one gate. Runs `pending` immediately when there is nothing to lose;
+     *  otherwise stashes it and raises the guard, which resumes it verbatim. */
+    function guardOr(pending) {
+      const msg = unsavedGuardMessage(state, pending.kind);
+      if (!msg) { resumePending(pending); return; }
+      state.unsavedPrompt = pending;
+      showUnsavedGuard(msg);
+    }
+
+    function resumePending(pending) {
+      if (!pending) return;
+      if (pending.kind === "load") { loadCharacter(pending.value); return; }
+      go(pending.value);
+    }
+
+    // The guard itself (R19). A modal rather than an inline bar because it has to
+    // PRECEDE the navigation, and three answers rather than two — save, leave
+    // anyway, stay — which window.confirm cannot express.
+    //
+    // It is appended to document.body rather than emitted by render(), and that
+    // is not a style choice: `stepResults` renders an EMPTY #wz-results that only
+    // renderResults refills, so any render() on the results step blanks the
+    // loadout. Routing the guard through render() there would destroy the very
+    // build the player is being asked whether to save.
+    function showUnsavedGuard(msg) {
+      let el = document.getElementById("wz-unsaved");
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "wz-unsaved"; el.className = "wz-modal";
+        el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true");
+        el.setAttribute("aria-labelledby", "wz-unsaved-msg");
+        document.body.appendChild(el);
+      }
+      el.innerHTML = `<div class="wz-modal-panel">
+          <p class="wz-label">Unsaved changes</p>
+          <p id="wz-unsaved-msg">${esc(msg)}</p>
+          <div class="wz-modal-actions">
+            <button class="btn primary" id="wz-unsaved-save" type="button">Save and continue</button>
+            <button class="btn ghost" id="wz-unsaved-go" type="button">${state.unsavedPrompt && state.unsavedPrompt.kind === "load" ? "Load anyway" : "Continue without saving"}</button>
+            <button class="btn ghost" id="wz-unsaved-stay" type="button">${state.unsavedPrompt && state.unsavedPrompt.kind === "load" ? "Keep editing this build" : "Stay on this step"}</button>
+          </div>
+          <span class="wz-savestat" id="wz-unsaved-stat" aria-live="polite"></span>
+        </div>`;
+      wireUnsavedGuard();
+      const first = document.getElementById("wz-unsaved-save");
+      if (first && first.focus) first.focus();
+    }
+
+    function closeUnsavedGuard() {
+      state.unsavedPrompt = null;
+      const el = document.getElementById("wz-unsaved");
+      if (el) el.remove();
+    }
+
+    function wireUnsavedGuard() {
+      const to = state.unsavedPrompt;
+      if (!to) return;
+      const stay = document.getElementById("wz-unsaved-stay");
+      if (stay) stay.onclick = closeUnsavedGuard;
+      const leave = document.getElementById("wz-unsaved-go");
+      if (leave) leave.onclick = () => {
+        // Told and acknowledged: the flag drops so the next navigation does not
+        // ask again. The next edit raises it right back.
+        state.inputsDirty = false; closeUnsavedGuard(); resumePending(to);
+      };
+      const save = document.getElementById("wz-unsaved-save");
+      if (save) save.onclick = () => {
+        const nm = String(state.characterName || "").trim();
+        const res = trySave(nm);
+        if (!res) return;   // overwrite declined
+        if (res.ok) { closeUnsavedGuard(); resumePending(to); return; }
+        const stat = document.getElementById("wz-unsaved-stat");
+        if (stat) stat.textContent = saveErrorText(res.error);
+        // The name field is in the rail, which is behind this dialog — point at
+        // it rather than leaving the player to hunt for what "name it" means.
+        if (res.error === "no-name") {
+          const field = document.getElementById("wz-buildname");
+          if (field && field.focus) field.focus();
+        }
+      };
+    }
 
     function wire() {
       const awayOk = document.getElementById("wz-awaymig-ok");
@@ -3478,12 +3992,37 @@ if (typeof window !== "undefined" && window.App) {
         const bar = document.getElementById("wz-ovmig");
         if (bar) bar.remove();
       };
+      // #428 U3 — the rail is on every step, so it wires on every render.
+      wireRail();
+      // #428 U5 (KTD3) — every native control inside the step body is a build
+      // input, so one delegated pair covers text, number, select, checkbox and
+      // radio without a markDirty() call in each of their handlers. The rail is
+      // deliberately excluded: naming a build is not editing it, and typing a
+      // name is the FIRST half of saving.
+      const body = root.querySelector(".wz-body");
+      if (body) {
+        // …except surfaces that LOOK things up rather than change them: the
+        // Share panel (which picks what to export) and the search / add fields
+        // marked `data-nodirty` at their declaration. #429 review #6 — typing a
+        // query into the block search and clearing it used to arm the guard, so
+        // the next Continue warned about a build byte-identical to the one the
+        // player arrived with. Opting out at the declaration rather than by a
+        // list here means the next search box inherits the right behaviour.
+        const onEdit = (e) => {
+          const t = e.target;
+          if (t && t.closest && t.closest("[data-nodirty], .wz-share")) return;
+          markDirty();
+        };
+        body.addEventListener("input", onEdit);
+        body.addEventListener("change", onEdit);
+      }
       root.querySelectorAll("[data-browse]").forEach((b) => b.onclick = openBrowser);
-      root.querySelectorAll("[data-goto]").forEach((b) => b.onclick = () => { if (!b.disabled) go(b.dataset.goto); });
-      root.querySelectorAll("[data-back]").forEach((b) => b.onclick = () => go(prevStep(state.step)));
+      root.querySelectorAll("[data-yourdata]").forEach((b) => b.onclick = openDataPanel);
+      root.querySelectorAll("[data-goto]").forEach((b) => b.onclick = () => { if (!b.disabled) navigate(b.dataset.goto); });
+      root.querySelectorAll("[data-back]").forEach((b) => b.onclick = () => navigate(prevStep(state.step)));
       root.querySelectorAll("[data-next]").forEach((b) => b.onclick = () => {
-        if (!canAdvance(state.step, state)) { flashBlock(); return; }
-        go(nextStep(state.step));
+        if (!canAdvance(state.step, state)) { blockFeedback(); return; }
+        navigate(nextStep(state.step));
       });
       root.querySelectorAll("[data-solve]").forEach((b) => b.onclick = () => {
         if (!canAdvance("priorities", state)) { const s = document.getElementById("wz-status"); if (s) s.textContent = "Add at least one stat to optimize for."; return; }
@@ -3491,6 +4030,13 @@ if (typeof window !== "undefined" && window.App) {
       });
 
       if (state.step === "character") {
+        // #428 U6 (R8) — re-apply the marks for whatever is STILL missing, so
+        // they survive the re-renders half this step's handlers trigger and
+        // disappear the moment the field is answered. Silent until the player
+        // has actually been blocked once (R12).
+        if (state.requiredShown) applyRequiredMarks();
+        const fold = document.getElementById("wz-weapons");
+        if (fold) fold.ontoggle = () => { state.weaponsOpen = fold.open; };
         // U3/R7 — the ML floor defaults to cap − 5 and follows the cap until the
         // user edits it. Clearing the floor re-enables auto-follow. Updates are made
         // directly (no re-render) so typing keeps focus.
@@ -3551,25 +4097,33 @@ if (typeof window !== "undefined" && window.App) {
           if (sum) sum.textContent = `Set Augments I own${state.ownedSetAugments.size ? ` · ${state.ownedSetAugments.size} selected` : ""}`;
         });
         root.querySelectorAll("#wz-armor .wz-chip").forEach((c) => c.onclick = () => {
-          if (c.disabled) return; state.armor = state.armor === c.dataset.armor ? "" : c.dataset.armor;
+          if (c.disabled) return;
+          state.armor = state.armor === c.dataset.armor ? "" : c.dataset.armor;
           root.querySelectorAll("#wz-armor .wz-chip").forEach((x) => x.classList.toggle("on", x.dataset.armor === state.armor));
+          // markDirty AFTER the write: it refreshes the required marks, and armor
+          // is one of the fields those marks are about — refreshing first would
+          // read the value the player just replaced.
+          markDirty();
         });
         // plan 003 U1 — the Two Weapon Fighting declaration: a plain toggle. It is
         // character state, so nothing else resets it (R2) — in particular the style
         // handler above clears the gear picks and deliberately leaves this alone.
         root.querySelectorAll("#wz-twf .wz-chip").forEach((c) => c.onclick = () => {
+          markDirty();
           state.twoWeaponFighting = !state.twoWeaponFighting;
           render();
         });
         // U4 — oath: single-select; toggling shows/hides the approximation note.
         root.querySelectorAll("#wz-oath .wz-chip").forEach((c) => c.onclick = () => {
           if (c.disabled) return;
+          markDirty();
           state.oath = state.oath === c.dataset.oath ? "" : c.dataset.oath;
           render();
         });
         // Combat style: single-select; changing it swaps which weapon-type / off-hand
         // chips are shown and resets any prior sub-picks, so a full re-render.
         root.querySelectorAll("#wz-style .wz-chip").forEach((c) => c.onclick = () => {
+          markDirty();
           const next = state.style === c.dataset.style ? "" : c.dataset.style;
           state.style = next; state.weaponTypes = []; state.offHand = []; state.offHandWeapons = [];
           render();
@@ -3583,6 +4137,7 @@ if (typeof window !== "undefined" && window.App) {
         root.querySelectorAll(".wz-pl-select").forEach((sel) => sel.onchange = () => {
           const id = sel.dataset.plsel, val = sel.value;
           if (!val) return;
+          markDirty();
           const key = id === "offhand" ? (offWeaponSet.includes(val) ? "offHandWeapons" : "offHand") : PL[id];
           if (!key) return;
           if (!state[key].includes(val)) state[key] = [...state[key], val];
@@ -3590,26 +4145,14 @@ if (typeof window !== "undefined" && window.App) {
         });
         root.querySelectorAll(".wz-pl-tags .wz-tag").forEach((tag) => tag.onclick = () => {
           const key = tag.dataset.arr || PL[tag.dataset.pltag]; if (!key) return;
+          markDirty();
           state[key] = state[key].filter((x) => x !== tag.dataset.val);
           render();
         });
-        const cn = document.getElementById("wz-charname");
-        if (cn) cn.oninput = (e) => state.characterName = e.target.value;
-        renderSavedPicker();
-        const saved = document.getElementById("wz-saved");
-        if (saved) saved.onclick = (e) => {
-          const b = e.target.closest("button"); if (!b) return;
-          if (b.dataset.load != null) loadCharacter(b.dataset.load);
-          else if (b.dataset.del != null && window.confirm(`Delete saved character "${b.dataset.del}"?`)) {
-            // eslint-disable-next-line no-undef
-            CharacterStore.deleteCharacter(b.dataset.del);
-            renderSavedPicker();
-          }
-        };
-        wireDataManagement();
       }
       if (state.step === "pool") {
         root.querySelectorAll(".wz-chip[data-pool]").forEach((c) => c.onclick = () => {
+          markDirty();
           state.pool = c.dataset.pool;
           document.getElementById("wz-upload").classList.toggle("wz-hidden", state.pool !== "owned");
           root.querySelectorAll(".wz-chip[data-pool]").forEach((x) => x.classList.toggle("on", x.dataset.pool === state.pool));
@@ -3679,6 +4222,7 @@ if (typeof window !== "undefined" && window.App) {
         // after. Every row is on screen from the start, so nothing reveals anything.
         root.querySelectorAll(".wz-bundle").forEach((btn) => {
           btn.onclick = () => {
+            markDirty();
             state.priorities = addBundle(btn.dataset.bundle, state.priorities, vocab);
             renderRanked();
           };
@@ -3690,25 +4234,9 @@ if (typeof window !== "undefined" && window.App) {
       if (state.step === "results") {
         const box = document.getElementById("wz-results");
         const cbar = document.getElementById("wz-cbar");
-        // Save the current character (U3): inputs + solved snapshot.
-        const savename = document.getElementById("wz-savename");
-        const savebtn = document.getElementById("wz-savebtn");
-        const savestat = document.getElementById("wz-savestat");
-        if (savename) savename.oninput = (e) => state.characterName = e.target.value;
-        if (savebtn) savebtn.onclick = () => {
-          const nm = ((savename ? savename.value : state.characterName) || "").trim();
-          // Confirm before overwriting an existing character (R3/KD5), mirroring
-          // the delete confirm.
-          // eslint-disable-next-line no-undef
-          if (nm && CharacterStore.loadCharacter(nm) && !window.confirm(`Update saved character "${nm}"?`)) return;
-          const res = saveCurrentCharacter(nm);
-          if (!savestat) return;
-          if (res.ok) savestat.textContent = `Saved “${state.characterName}”.`;
-          else if (res.error === "no-name") savestat.textContent = "Enter a name to save.";
-          else if (res.error === "no-build") savestat.textContent = "Solve a build first.";
-          else if (res.error === "quota") savestat.textContent = "Storage full — export and remove old saves.";
-          else savestat.textContent = "Could not save.";
-        };
+        // #428 U3 — saving moved to the rail, which renders beside EVERY step
+        // (R14). The results step no longer carries a name input or a Save button
+        // of its own: one concept, one input (R17).
         // Staleness note (U4): re-solve is view-only — it refreshes the shown
         // build but does not overwrite the saved snapshot until an explicit Save.
         const staleBtn = document.getElementById("wz-staleresolve");
@@ -3769,7 +4297,7 @@ if (typeof window !== "undefined" && window.App) {
             }
             applyPinId(state.slotConstraints, slot, variant, slotCardOf); // append (Ring) / replace (single)
           }
-          state.constraintsDirty = true;
+          state.constraintsDirty = true; markDirty();
           // refresh the equipped-list badges in place (no re-solve yet)
           if (state.lastRun) {
             state.lastRun.query.slotConstraints = { ...state.slotConstraints };
@@ -3785,6 +4313,53 @@ if (typeof window !== "undefined" && window.App) {
         // renderResults call — not once here (it would not exist yet).
       }
     }
+    /** #428 U6 (KTD2) — the generic Continue handler became step-aware rather
+     *  than being rewritten. The character step gets the field treatment R7-R11
+     *  specify; the pool and priorities steps keep the nudge, because replacing
+     *  feedback on steps this plan does not restructure is a change nobody
+     *  asked for. */
+    function blockFeedback() {
+      if (state.step !== "character") { flashBlock(); return; }
+      state.requiredShown = true;
+      showMissingRequired();
+    }
+
+    /** #428 U6 (R8/R10/R11) — outline every unanswered required field and render
+     *  ONE message naming them all. Returns the first missing field's host.
+     *
+     *  Deliberately does NOT scroll or focus: this runs on every render and on
+     *  every input while the marks are showing, so stealing focus here would
+     *  fight the player mid-edit. R9's scroll-and-focus belongs to the blocked
+     *  Continue press alone, which is what `showMissingRequired` adds.
+     *
+     *  No motion, ever: KD4 replaced the repeating flash the requirements
+     *  originally specified because repeated flashing is bounded by WCAG 2.3.1
+     *  and is a documented trigger for photosensitive and vestibular conditions. */
+    function applyRequiredMarks() {
+      const miss = missingRequired(state);
+      const msgEl = document.getElementById("wz-charmsg");
+      if (msgEl) msgEl.textContent = missingRequiredMessage(state) || "";
+      root.querySelectorAll("[data-req]").forEach((el) => el.classList.remove("wz-invalid"));
+      let first = null;
+      for (const key of miss) {
+        const host = root.querySelector(`[data-req="${key}"]`);
+        if (!host) continue;
+        host.classList.add("wz-invalid");
+        if (!first) first = host;
+      }
+      return first;
+    }
+
+    /** #428 U6 (R9) — the blocked-Continue treatment: mark them all, then scroll
+     *  the first into view and focus it. */
+    function showMissingRequired() {
+      const first = applyRequiredMarks();
+      if (!first) return;
+      if (first.scrollIntoView) first.scrollIntoView({ behavior: "smooth", block: "center" });
+      const focusable = first.querySelector("input, select, button:not([disabled])");
+      if (focusable && focusable.focus) focusable.focus();
+    }
+
     function flashBlock() {
       const btn = root.querySelector("[data-next]"); if (!btn) return;
       btn.classList.remove("wz-nudge"); void btn.offsetWidth; btn.classList.add("wz-nudge");

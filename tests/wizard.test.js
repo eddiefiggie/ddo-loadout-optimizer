@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
+const { railModel, savedStep, stepOnLoad, unsavedGuardMessage, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -26,10 +26,17 @@ test("WIZARD_STEPS order", () => {
   assert.deepStrictEqual(WIZARD_STEPS, ["intro", "character", "pool", "priorities", "results"]);
 });
 
-test("canAdvance(character): needs a race and a positive ML", () => {
-  assert.ok(!canAdvance("character", { race: "", ml: 34 }));
-  assert.ok(!canAdvance("character", { race: "Human", ml: 0 }));
-  assert.ok(canAdvance("character", { race: "Human", ml: 34 }));
+// #428 U6 (KD6) — armor JOINED this gate. The pre-#428 expectation ("race and a
+// positive ML are enough") is superseded, not merely extended: a player who
+// advanced without armor could solve for a loadout they cannot wear, because
+// armor drives the dodge cap and filters what is equippable.
+test("canAdvance(character): needs a race, a positive ML, and an armor type", () => {
+  assert.ok(!canAdvance("character", { race: "", ml: 34, armor: "light" }));
+  assert.ok(!canAdvance("character", { race: "Human", ml: 0, armor: "light" }));
+  assert.ok(!canAdvance("character", { race: "Human", ml: 34, armor: "" }));
+  assert.ok(canAdvance("character", { race: "Human", ml: 34, armor: "light" }));
+  // …except for the Forged, who wear a docent and have no armor pick to make.
+  assert.ok(canAdvance("character", { race: "Warforged", ml: 34, armor: "" }));
 });
 
 test("canAdvance(pool): owned mode requires an uploaded inventory", () => {
@@ -2122,7 +2129,13 @@ test("U4/262: the BLOCK search row template appends the note (source wiring)", (
   test("#91 (review fix) loadCharacter routes the restored render through restoredRenderQuery, while buildModel/state.lastRun keep the unmutated query (source wiring)", () => {
     const at = WIZARD_SRC.indexOf("function loadCharacter(");
     assert.ok(at > 0, "loadCharacter exists");
-    const fn = WIZARD_SRC.slice(at, WIZARD_SRC.indexOf("\n    function renderSavedPicker", at));
+    // #429 review #5 — this used to slice to `function renderSavedPicker`, which
+    // #428 renamed to railHTML. indexOf returned -1, slice(at, -1) covered the
+    // rest of the file, and all four assertions below could match anywhere. The
+    // end marker is now asserted rather than assumed.
+    const end = WIZARD_SRC.indexOf("\n    function railHTML", at);
+    assert.ok(end > at, "the slice's end marker resolves — an unresolved one silently widens it");
+    const fn = WIZARD_SRC.slice(at, end);
     assert.ok(/restoredRenderQuery\(query, !!i\.utility_tier_aware\)/.test(fn),
       "the render-only query is derived through the shared pure helper");
     assert.ok(/buildModel\(candidateItems\(\), query,/.test(fn),
@@ -2908,4 +2921,728 @@ test("review: Browse offers the correction control only on rows the picker can s
     "…and the predicate is consulted per row, not assumed");
   const wiz = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
   assert.ok(/canOverride:\s*\(v\)/.test(wiz), "the wizard supplies that predicate");
+});
+
+// ---------------------------------------------------------------------------
+// #428 U1/U2 (R25-R31) — repository references off the UI, and the footer's
+// build stamp promoted to a labelled first position.
+//
+// These are SOURCE-TEXT guards for the same reason as the wiring guards above:
+// the step bodies are template literals inside the browser-only block, so no
+// unit test can observe what they render. A count removed from one template and
+// left in another is exactly the drift a per-template sweep catches.
+// ---------------------------------------------------------------------------
+
+// The source text of one wizard step template, sliced from its declaration to
+// the next top-level `function` at the same indent. Used by the count sweep so
+// the assertion names the offending step rather than "somewhere in wizard.js".
+function stepSource(name) {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const at = src.indexOf(`function ${name}() {`);
+  assert.ok(at >= 0, `wizard.js declares ${name}`);
+  const end = src.indexOf("\n    function ", at + 1);
+  return src.slice(at, end < 0 ? src.length : end);
+}
+
+test("#428 (AE8): no wizard step template quotes a dataset-derived count", () => {
+  for (const step of ["stepIntro", "stepCharacter", "stepPool", "stepPriorities", "stepResults"]) {
+    const body = stepSource(step);
+    assert.ok(!/dataset\.items\b[\s\S]{0,20}\.length/.test(body),
+      `${step} must not interpolate the catalog size`);
+    assert.ok(!/\bitem_count\b/.test(body),
+      `${step} must not interpolate the dataset's item_count`);
+    assert.ok(!/\.toLocaleString\(\)\s*\}\s*indexed/.test(body),
+      `${step} must not render an "N indexed" count`);
+  }
+});
+
+test("#428 (AE8): the intro's opening copy carries no digit-grouped count", () => {
+  const intro = stepSource("stepIntro");
+  // The lead paragraph is what a player reads first (R26). A count reaches it
+  // only through an interpolation or a hardcoded numeral; both are refused.
+  assert.ok(!/\d{1,3},\d{3}/.test(intro), "no literal thousands-separated number in the intro");
+  assert.ok(!/\$\{n\b/.test(intro), "the removed count variable must not survive");
+});
+
+test("#428 (AE8): the footer carries no item count, and app.js writes none", () => {
+  const fs = require("fs"); const path = require("path");
+  const html = fs.readFileSync(path.join(__dirname, "..", "web", "index.html"), "utf-8");
+  assert.ok(!/id="dataset-info"/.test(html), "the footer's count host is gone");
+  const app = fs.readFileSync(path.join(__dirname, "..", "web", "app.js"), "utf-8");
+  assert.ok(!/dataset-info/.test(app), "…and nothing writes to it");
+  assert.ok(!/item_count\s*\?\?/.test(app), "…including the item_count fallback that fed it");
+});
+
+test("#428 (AE9): per-result coverage disclosure survives — it describes the solve", () => {
+  // R27's carve-out. coverageNote is dataset-SCOPED but result-facing: it states
+  // what the solve searched, which is the one place a number is about the answer
+  // rather than about the repository.
+  const R = require("../web/results.js");
+  const note = R.coverageNote({ metadata: { color_coverage: { augments_placeable: 42 } } });
+  assert.ok(note && /Optimized:/.test(note), "the disclosure still renders");
+  assert.ok(/42 placeable/.test(note), "…with its per-solve counts intact");
+});
+
+test("#428 (AE10): the footer puts a labelled build stamp before attribution", () => {
+  const fs = require("fs"); const path = require("path");
+  const html = fs.readFileSync(path.join(__dirname, "..", "web", "index.html"), "utf-8");
+  const foot = html.slice(html.indexOf("<footer"), html.indexOf("</footer>"));
+  assert.ok(foot, "index.html has a footer");
+  const build = foot.indexOf('id="build-info"');
+  const attrib = foot.indexOf("ddowiki.com");
+  assert.ok(build >= 0 && attrib >= 0, "both the build stamp and attribution are in the footer");
+  assert.ok(build < attrib, "the build stamp comes first (R29 — a fixed, findable position)");
+  assert.ok(/class="build-label"/.test(foot), "the stamp carries a visible 'Build' label (R28)");
+  assert.ok(/>Build</.test(foot), "…and the label reads 'Build'");
+});
+
+test("#428 (R30): footer attribution keeps both credits and both links", () => {
+  const fs = require("fs"); const path = require("path");
+  const html = fs.readFileSync(path.join(__dirname, "..", "web", "index.html"), "utf-8");
+  const foot = html.slice(html.indexOf("<footer"), html.indexOf("</footer>"));
+  assert.ok(/https:\/\/ddowiki\.com/.test(foot), "the DDO Wiki link survives");
+  assert.ok(/illusionistpm\/ddo-gear-planner/.test(foot), "the Gear Planner link survives");
+  assert.ok(/illusionistpm/.test(foot), "…and its author is still credited");
+});
+
+test("#428 (R28): the build value renders monospaced so successive stamps align", () => {
+  const fs = require("fs"); const path = require("path");
+  const css = fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf-8");
+  const at = css.indexOf(".build-info");
+  assert.ok(at >= 0, "styles.css styles .build-info");
+  const rule = css.slice(at, css.indexOf("}", at));
+  assert.ok(/font-family:[^;]*mono/i.test(rule), ".build-info renders in a monospaced face");
+});
+
+test("#428 (R31): the footer reads as distinct elements, not one run-on line", () => {
+  const fs = require("fs"); const path = require("path");
+  const html = fs.readFileSync(path.join(__dirname, "..", "web", "index.html"), "utf-8");
+  const foot = html.slice(html.indexOf("<footer"), html.indexOf("</footer>"));
+  assert.ok(!/<span>\s*·/.test(foot), "no leading separator dot joining spans into a sentence");
+  const app = fs.readFileSync(path.join(__dirname, "..", "web", "app.js"), "utf-8");
+  assert.ok(!/textContent\s*=\s*`\s*·\s*Build/.test(app),
+    "app.js must not prefix the stamp with a run-on separator");
+});
+
+// ---------------------------------------------------------------------------
+// #428 U3 (R13/R14/R17/R20/R21) — the save rail. Save, Load, Delete and the
+// build's name are reachable from EVERY step, so the rail cannot live inside a
+// step template (KTD4). Its model is pure so the rail's contents are testable
+// without a DOM; the placement itself is a source-text guard.
+// ---------------------------------------------------------------------------
+
+test("#428 U3: railModel reports an empty state when nothing is saved or loaded", () => {
+  const m = railModel({ characterName: "", loadedName: "" }, []);
+  assert.strictEqual(m.loaded, false);
+  assert.strictEqual(m.loadedName, "");
+  assert.deepStrictEqual(m.saved, []);
+  assert.strictEqual(m.empty, true);
+  assert.strictEqual(m.canSave, false, "an unnamed build cannot be saved (R13)");
+});
+
+test("#428 U3 (AE7): with two builds saved, loading the second shows the second name", () => {
+  const saved = [{ name: "Sook — Reaper" }, { name: "Pagos — Fighter" }];
+  const m = railModel({ characterName: "Pagos — Fighter", loadedName: "Pagos — Fighter" }, saved);
+  assert.strictEqual(m.loaded, true);
+  assert.strictEqual(m.loadedName, "Pagos — Fighter", "R20 — the loaded name is visible while editing it");
+  assert.deepStrictEqual(m.saved, ["Sook — Reaper", "Pagos — Fighter"]);
+});
+
+test("#428 U3 (R21): deleting the loaded build returns the rail to its empty state", () => {
+  const before = railModel({ characterName: "Sook", loadedName: "Sook" }, [{ name: "Sook" }]);
+  assert.strictEqual(before.loaded, true);
+  // The store is the authority: `loaded` is DERIVED from the record still being
+  // there, so a delete cannot leave a phantom name in the rail through some
+  // second flag a delete path forgot to clear.
+  const after = railModel({ characterName: "Sook", loadedName: "Sook" }, []);
+  assert.strictEqual(after.loaded, false);
+  assert.strictEqual(after.loadedName, "");
+  assert.strictEqual(after.empty, true);
+});
+
+test("#428 U3: railModel flags a name that would overwrite an existing save", () => {
+  const saved = [{ name: "Sook" }];
+  assert.strictEqual(railModel({ characterName: " Sook " }, saved).overwrites, true,
+    "trimmed, so trailing whitespace cannot sneak past the overwrite confirm");
+  assert.strictEqual(railModel({ characterName: "Other" }, saved).overwrites, false);
+  assert.strictEqual(railModel({ characterName: "" }, saved).overwrites, false);
+});
+
+test("#428 U3: railModel tolerates a junk store without inventing entries", () => {
+  const m = railModel({}, [null, { name: "" }, { name: "Real" }, "nope"]);
+  assert.deepStrictEqual(m.saved, ["Real"]);
+});
+
+test("#428 U3 (R17): the flow carries exactly one build-name input", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  assert.ok(!/wz-charname/.test(src), "the gear-pool step's Character name field is gone");
+  assert.ok(!/wz-savename/.test(src), "the results step's second name input is gone");
+  const hits = (src.match(/id="wz-buildname"/g) || []).length;
+  assert.strictEqual(hits, 1, "exactly one name input renders anywhere in the flow");
+});
+
+test("#428 U3 (R14/KTD4): the rail renders from render(), not from any step body", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const render = src.slice(src.indexOf("function render() {"));
+  assert.ok(/railHTML\(\)/.test(render.slice(0, render.indexOf("\n    }"))),
+    "render() emits the rail beside the step body");
+  for (const step of ["stepIntro", "stepCharacter", "stepPool", "stepPriorities", "stepResults"]) {
+    assert.ok(!/railHTML\(/.test(stepSource(step)), `${step} must not render its own rail`);
+  }
+});
+
+test("#428 U3 (R24): the rail offers save, load and delete only", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const at = src.indexOf("function railHTML(");
+  assert.ok(at >= 0, "wizard.js declares railHTML");
+  const body = src.slice(at, src.indexOf("\n    function ", at + 1));
+  assert.ok(/wz-railsave/.test(body), "the rail saves");
+  assert.ok(/data-railload/.test(body), "…loads");
+  assert.ok(/data-raildel/.test(body), "…and deletes");
+  assert.ok(!/wz-export|wz-import|Export all|Import a backup/.test(body),
+    "…and offers no backup export or import (R24)");
+});
+
+// ---------------------------------------------------------------------------
+// #428 U4 (R15/R16/R18) — a saved build reopens where the player stopped.
+// `step` joins INPUT_KEYS (KTD1) rather than becoming a new top-level record
+// field, so the backup round-trip inherits it with no second allowlist edit.
+// ---------------------------------------------------------------------------
+
+test("#428 U4: savedStep reads only a step this flow actually has", () => {
+  assert.strictEqual(savedStep({ step: "character" }), "character");
+  assert.strictEqual(savedStep({ step: "results" }), "results");
+  assert.strictEqual(savedStep({}), null, "a pre-feature record records no step");
+  assert.strictEqual(savedStep({ step: "nowhere" }), null, "an unknown step is not a step");
+  assert.strictEqual(savedStep({ step: 3 }), null, "…nor is an index");
+  assert.strictEqual(savedStep(null), null);
+});
+
+test("#428 U4 (AE4): a build saved mid-flow reopens at the step it was saved on", () => {
+  assert.strictEqual(stepOnLoad({ step: "character" }, null), "character");
+  assert.strictEqual(stepOnLoad({ step: "pool" }, null), "pool");
+  assert.strictEqual(stepOnLoad({ step: "priorities" }, null), "priorities");
+});
+
+test("#428 U4: a pre-feature record with no step lands where stepAfterLoad sends it", () => {
+  // Unchanged behavior, asserted so the fallback cannot rot: this is what every
+  // record written before the feature carries.
+  assert.strictEqual(stepOnLoad({}, { status: "optimal" }), "results");
+  assert.strictEqual(stepOnLoad({}, null), "priorities");
+  assert.strictEqual(stepOnLoad({}, { status: "infeasible" }), "priorities");
+});
+
+test("#428 U4: a record claiming 'results' without an optimal snapshot is not believed", () => {
+  // Every other step renders from inputs alone. Results renders from a solved
+  // snapshot, so honouring a saved "results" without one would restore a blank
+  // results view — exactly the failure stepAfterLoad exists to prevent.
+  assert.strictEqual(stepOnLoad({ step: "results" }, null), "priorities");
+  assert.strictEqual(stepOnLoad({ step: "results" }, { status: "optimal" }), "results");
+});
+
+test("#428 U4 (KTD1): step rides the save allowlist, so the backup inherits it", () => {
+  const { INPUT_KEYS } = require("../web/persist.js");
+  assert.ok(INPUT_KEYS.includes("step"),
+    "step is a saved INPUT, not a new top-level record field");
+});
+
+test("#428 U4 (R15): pickInputs captures the in-progress step with no solve", () => {
+  const P = require("../web/persist.js");
+  const inputs = P.pickInputs({ step: "character", ml: 30, race: "Elf" }, "Sook");
+  assert.strictEqual(inputs.step, "character");
+  assert.strictEqual(inputs.characterName, "Sook");
+});
+
+test("#428 U4 (R15): serializeCharacter writes a record with no snapshot and no query", () => {
+  const P = require("../web/persist.js");
+  const r = P.serializeCharacter("Mid-flow", { step: "pool", ml: 30, race: "Elf" }, null, "b1");
+  assert.strictEqual(r.inputs.step, "pool");
+  assert.strictEqual(r.query, null, "nothing was solved, so there is no query");
+  assert.deepStrictEqual(r.snapshot, {}, "…and no snapshot");
+  // …and it still routes back to where it was saved.
+  assert.strictEqual(stepOnLoad(r.inputs, r.snapshot), "pool");
+});
+
+test("#428 U4 (R18/AE5): nothing persists unless the player saves", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  // The store is written from exactly two places: the explicit save the rail
+  // triggers, and the backup import. No autosave, no unload hook, no timer.
+  const writes = (src.match(/CharacterStore\.save(Character|Many)\(/g) || []);
+  assert.strictEqual(writes.length, 2,
+    `expected exactly the save-button and import writes; found ${writes.length}`);
+  assert.ok(!/beforeunload|visibilitychange/.test(src),
+    "no unload hook quietly persists an unsaved build");
+  assert.ok(!/setInterval\(/.test(src), "no autosave timer");
+});
+
+test("#428 U4 (R15): saving no longer requires a solved build", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const at = src.indexOf("function saveCurrentCharacter(");
+  const body = src.slice(at, src.indexOf("\n    }", at));
+  assert.ok(!/no-build/.test(body),
+    "the pre-#428 'solve first' refusal is gone — an in-progress build is savable");
+  assert.ok(/no-name/.test(body), "…but an unnamed one still is not (R13)");
+});
+
+// ---------------------------------------------------------------------------
+// #428 U5 (R19) — the unsaved-changes guard. KD5 makes saving explicit, which
+// leaves unsaved work losable, so leaving a step while dirty says so rather than
+// discarding silently. The message is built from state (KTD3) and tested here;
+// the dialog it renders is not the thing under test.
+// ---------------------------------------------------------------------------
+
+test("#428 U5 (AE6): the guard names the loaded build whose edits are unsaved", () => {
+  const m = unsavedGuardMessage({ inputsDirty: true, loadedName: "Sook — Reaper" });
+  assert.ok(m, "a dirty build raises a message");
+  assert.ok(m.includes("Sook — Reaper"), "…which names what would be lost");
+});
+
+test("#428 U5: an unsaved new build is named as never-saved, not as a build name", () => {
+  const m = unsavedGuardMessage({ inputsDirty: true, loadedName: "" });
+  assert.ok(m && /never been saved/i.test(m));
+  // The typed-but-unsaved name is not a saved build, so it must not be quoted as
+  // one — that would read as "your saved build Sook is at risk" when no such
+  // record exists.
+  assert.ok(!/“/.test(m), "no build name is quoted for a record that does not exist");
+});
+
+test("#428 U5: a clean state raises no guard", () => {
+  assert.strictEqual(unsavedGuardMessage({ inputsDirty: false, loadedName: "Sook" }), null);
+  assert.strictEqual(unsavedGuardMessage({}), null, "a step left untouched raises no guard");
+  assert.strictEqual(unsavedGuardMessage(null), null);
+});
+
+test("#428 U5 (KTD3): the flag is cleared by save and by load, and by nothing else", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const clears = (src.match(/inputsDirty = false/g) || []).length;
+  assert.ok(clears >= 2, "at least the save path and the load path clear it");
+  const save = src.slice(src.indexOf("function saveCurrentCharacter("));
+  assert.ok(/inputsDirty = false/.test(save.slice(0, save.indexOf("\n    }"))),
+    "a successful save clears the flag");
+  const load = src.slice(src.indexOf("function loadCharacter("));
+  assert.ok(/inputsDirty = false/.test(load.slice(0, load.indexOf("\n    function "))),
+    "loading a build clears it — a freshly loaded build is not unsaved work");
+});
+
+test("#428 U5 (KTD3): every write that marks constraints dirty also marks inputs dirty", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const sites = [...src.matchAll(/state\.constraintsDirty = true;/g)].map((m) => m.index);
+  assert.ok(sites.length >= 4, `expected the known constraintsDirty writes; found ${sites.length}`);
+  for (const at of sites) {
+    assert.ok(/markDirty\(\)/.test(src.slice(at, at + 200)),
+      `the constraintsDirty write at index ${at} must also raise inputsDirty (KTD3)`);
+  }
+});
+
+test("#428 U5: the guard gates player navigation, not the app's own step changes", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  // Solving and loading move the player deliberately; a guard there would fire on
+  // the one action that is ABOUT to produce the thing worth saving.
+  assert.ok(/function navigate\(/.test(src), "player navigation goes through navigate()");
+  for (const nav of ['data-next', 'data-back', 'data-goto']) {
+    const at = src.indexOf(`querySelectorAll("[${nav}]")`);
+    assert.ok(at >= 0, `${nav} is wired`);
+    assert.ok(/navigate\(/.test(src.slice(at, at + 260)),
+      `${nav} navigation is guarded`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// #428 U6 (R1-R12) — the character step reads as grouped and required-marked,
+// and an unanswered required field stops Continue and says which.
+//
+// KD6 adds armor to the required set, which is a GATE change rather than a
+// labelling one: a player who advances today without setting armor will be
+// stopped. The Forged exemption below is why that gate is satisfiable at all.
+// ---------------------------------------------------------------------------
+
+test("#428 U6 (R2a): the required set is race, ML cap and armor", () => {
+  assert.deepStrictEqual(missingRequired({ race: "", ml: 0, armor: "" }).sort(),
+    ["armor", "ml", "race"]);
+  assert.deepStrictEqual(missingRequired({ race: "Human", ml: 30, armor: "light" }), []);
+});
+
+test("#428 U6 (AE1): race blank is reported as missing", () => {
+  assert.deepStrictEqual(missingRequired({ race: "", ml: 30, armor: "light" }), ["race"]);
+});
+
+test("#428 U6 (AE2a): armor blank blocks even with race and ML cap set", () => {
+  const st = { race: "Human", ml: 30, armor: "" };
+  assert.deepStrictEqual(missingRequired(st), ["armor"]);
+  assert.ok(!canAdvance("character", st), "the gate armor newly joins is ENFORCED, not merely displayed");
+});
+
+test("#428 U6 (AE2): all three set advances regardless of optional fields", () => {
+  assert.ok(canAdvance("character", { race: "Human", ml: 30, armor: "cloth" }));
+  assert.ok(canAdvance("character", { race: "Human", ml: 30, armor: "cloth",
+    alignment: "", oath: "", style: "", weaponTypes: [] }));
+});
+
+test("#428 U6 (KD6): a Forged race is exempt from the armor requirement", () => {
+  // Warforged and Bladeforged wear a docent; the armor control is disabled and
+  // the race handler CLEARS state.armor. Requiring it of them would be a gate no
+  // player could satisfy — the step would simply never advance.
+  for (const race of ["Warforged", "Bladeforged"]) {
+    assert.deepStrictEqual(missingRequired({ race, ml: 30, armor: "" }), [],
+      `${race} needs no armor pick`);
+    assert.ok(canAdvance("character", { race, ml: 30, armor: "" }));
+  }
+});
+
+test("#428 U6 (AE3): a loaded build carrying all three marks nothing as needing an answer", () => {
+  const loaded = { race: "Elf", ml: 34, armor: "medium" };
+  assert.deepStrictEqual(missingRequired(loaded), []);
+  assert.strictEqual(missingRequiredMessage(loaded), null);
+});
+
+test("#428 U6 (AE3a): a build saved before KD6 carries no armor and is marked", () => {
+  const preKd6 = { race: "Elf", ml: 34, armor: "" };
+  assert.deepStrictEqual(missingRequired(preKd6), ["armor"]);
+  assert.ok(/[Aa]rmor/.test(missingRequiredMessage(preKd6)));
+});
+
+test("#428 U6 (R10): one message names EVERY unanswered field, not only the first", () => {
+  const msg = missingRequiredMessage({ race: "", ml: 0, armor: "" });
+  assert.ok(/Race/.test(msg), "names race");
+  assert.ok(/level/i.test(msg), "names the ML cap");
+  assert.ok(/[Aa]rmor/.test(msg), "names armor");
+  const one = missingRequiredMessage({ race: "", ml: 30, armor: "light" });
+  assert.ok(/Race/.test(one) && !/[Aa]rmor/.test(one), "and names only what is actually missing");
+});
+
+test("#428 U6: missingRequired treats a non-positive or non-numeric ML cap as unanswered", () => {
+  for (const ml of ["", null, undefined, 0, "0", "abc", -3]) {
+    assert.ok(missingRequired({ race: "Human", ml, armor: "light" }).includes("ml"),
+      `ML ${JSON.stringify(ml)} is not an answer`);
+  }
+  assert.ok(!missingRequired({ race: "Human", ml: "30", armor: "light" }).includes("ml"),
+    "a numeric string is an answer — the input is a string at runtime");
+});
+
+test("#428 U6 (R6a): a collapsed weapon group states whether it holds set values", () => {
+  const empty = weaponGroupSummary({ weaponTypes: [], offHand: [], offHandWeapons: [] }, "");
+  assert.ok(/nothing set/i.test(empty), "an unopened group is never mistaken for an empty one");
+  const set = weaponGroupSummary({ twoWeaponFighting: true, style: "one-hand",
+    weaponTypes: ["Dagger", "Rapier"], offHand: ["empty"], offHandWeapons: [] }, "One-hand / Dual-wield");
+  assert.ok(!/nothing set/i.test(set));
+  assert.ok(/Two Weapon Fighting/.test(set), "the declaration is named");
+  assert.ok(/One-hand/.test(set), "the style is named by its label, not its id");
+  assert.ok(/2 weapon types/.test(set), "the picks are counted");
+  assert.ok(/1 off-hand/.test(set));
+});
+
+test("#428 U6 (R11): the invalid treatment adds no repeating animation", () => {
+  const fs = require("fs"); const path = require("path");
+  const css = fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf-8");
+  const at = css.indexOf(".wz-invalid");
+  assert.ok(at >= 0, "styles.css defines the invalid treatment");
+  const rule = css.slice(at, css.indexOf("}", at));
+  assert.ok(!/animation/.test(rule), "no animation (WCAG 2.3.1 — KD4)");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const fn = src.slice(src.indexOf("function showMissingRequired("));
+  assert.ok(!/wz-nudge/.test(fn.slice(0, fn.indexOf("\n    }"))),
+    "the character step does not fall back to the nudge (KTD2)");
+});
+
+test("#428 U6 (KTD2): the pool and priorities steps still nudge the Continue button", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const at = src.indexOf("function blockFeedback(");
+  assert.ok(at >= 0, "the generic handler became step-aware rather than being rewritten");
+  const body = src.slice(at, src.indexOf("\n    }", at));
+  assert.ok(/flashBlock\(\)/.test(body), "other steps keep the nudge");
+  assert.ok(/"character"/.test(body), "…and only the character step gets the field treatment");
+});
+
+test("#428 U6 (R1/R2/R4): the character step renders three labelled groups in order", () => {
+  const body = stepSource("stepCharacter");
+  const req = body.indexOf('data-group="required"');
+  const restr = body.indexOf('data-group="restrictions"');
+  const weap = body.indexOf('data-group="weapons"');
+  assert.ok(req >= 0 && restr >= 0 && weap >= 0, "all three groups exist");
+  assert.ok(req < restr && restr < weap, "required first, then restrictions, then weapon setup (R4)");
+  assert.ok(/<details[^>]*data-group="weapons"/.test(body), "weapon setup is the collapsible one (R6)");
+  assert.ok(!/<details[^>]*data-group="required"/.test(body), "required fields are visible without interaction (R6)");
+  assert.ok(!/<details[^>]*data-group="restrictions"/.test(body), "…and so are restrictions (R6)");
+});
+
+test("#428 U6 (R2): each required field is marked at the field", () => {
+  const body = stepSource("stepCharacter");
+  for (const key of ["ml", "race", "armor"]) {
+    assert.ok(new RegExp(`data-req="${key}"`).test(body), `${key} is addressable as a required field`);
+  }
+  assert.strictEqual((body.match(/wz-req-mark/g) || []).length, 3,
+    "exactly the three required fields carry the marker");
+});
+
+// ---------------------------------------------------------------------------
+// #428 U7 (R22/R23/R24) — backup leaves the wizard without leaving the app.
+// KD2's known cost was that the Share tab follows a solve, so a player holding
+// saves but no current solve would have no path to their backups — and a fresh
+// browser could not import one at all, which is the whole point of import. One
+// shared renderer serves both hosts so the two can never drift.
+// ---------------------------------------------------------------------------
+
+test("#428 U7 (AE11): no wizard step template contains an export or import control", () => {
+  for (const step of ["stepIntro", "stepCharacter", "stepPool", "stepPriorities", "stepResults"]) {
+    const body = stepSource(step);
+    assert.ok(!/wz-export|wz-import|Export all|Import a backup|Export &amp; Data Management/.test(body),
+      `${step} must not carry a backup control (R23)`);
+  }
+});
+
+test("#428 U7 (AE12): export-all and import render from one shared block", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const at = src.indexOf("function dataBlockHTML(");
+  assert.ok(at >= 0, "one renderer owns the Your data block");
+  const body = src.slice(at, src.indexOf("\n    function ", at + 1));
+  assert.ok(/Export all/.test(body) && /Import a backup/.test(body),
+    "…and it carries both controls");
+  // Both hosts render it — the Share panel (KTD6) and the on-demand panel that
+  // makes it reachable before any solve.
+  const share = src.slice(src.indexOf("function sharePanelHTML("));
+  assert.ok(/dataBlockHTML\(/.test(share.slice(0, share.indexOf("\n    }"))),
+    "the Share panel renders the block below the loadout export formats (KD2)");
+  assert.ok(/function openDataPanel\(/.test(src),
+    "…and it is reachable without a solve, which the Share tab alone cannot be");
+});
+
+test("#428 U7: the two hosts cannot collide on element ids", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const at = src.indexOf("function dataBlockHTML(");
+  const body = src.slice(at, src.indexOf("\n    function ", at + 1));
+  // The Share panel lives inside the results view while the on-demand panel is an
+  // overlay; both can be in the DOM at once, so every id the block mints is
+  // namespaced by its host.
+  assert.ok(/function dataBlockHTML\(ns\)/.test(src), "the renderer takes a namespace");
+  for (const id of ["wz-export", "wz-import", "wz-import-label", "wz-data-stat"]) {
+    assert.ok(new RegExp(`id="${id}-\\$\\{ns\\}"`).test(body),
+      `${id} is namespaced by host`);
+  }
+  assert.ok(/function wireDataManagement\(ns\)/.test(src),
+    "…and the wiring reads the same namespace rather than a second list of ids");
+});
+
+test("#428 U7 (KTD7): #357's plan no longer says a record is written only at the end of a solve", () => {
+  const fs = require("fs"); const path = require("path");
+  const plan = fs.readFileSync(path.join(__dirname, "..", "docs", "plans",
+    "2026-08-09-005-feat-loadout-library-compare-manual-build-plan.md"), "utf-8");
+  assert.ok(!/written only at the end of a solve/.test(plan),
+    "the superseded sentence is gone");
+  assert.ok(/may be written at any step/.test(plan),
+    "…replaced by the save model #428 owns");
+  assert.ok(/2026-08-21-001-feat-wizard-structure-and-save-progress-plan/.test(plan),
+    "…and the plan that superseded it is named, so the edit is traceable");
+});
+
+// ---------------------------------------------------------------------------
+// #429 review fixes. Seven findings from the multi-agent review of the #428
+// branch; the two data-integrity ones share a root cause — removing the
+// "solve first" refusal removed a data-loss guard nobody had labelled as one.
+// ---------------------------------------------------------------------------
+
+// ---- #1 (P0): an in-progress save must not destroy a stored loadout ---------
+
+test("#429 review #1: overwrite wording says the saved loadout is kept", () => {
+  const kept = overwriteConfirmText("Sook", true, false);
+  assert.ok(/Sook/.test(kept), "names the build");
+  assert.ok(/kept/i.test(kept),
+    "an in-progress save over a solved record must say the loadout survives");
+  const replaced = overwriteConfirmText("Sook", true, true);
+  assert.ok(/replace/i.test(replaced),
+    "a solved save DOES replace the stored loadout, and says so");
+  const plain = overwriteConfirmText("Sook", false, false);
+  assert.ok(!/kept|replace/i.test(plain),
+    "with no stored loadout there is nothing to promise either way");
+});
+
+test("#429 review #1: overwriteConfirmText escapes nothing and needs no store", () => {
+  // Pure: it is given the two facts, never asked to look them up, so the
+  // confirm and the write cannot disagree about what is being overwritten.
+  assert.strictEqual(typeof overwriteConfirmText("A", false, false), "string");
+});
+
+// ---- #2 (P1): a run belongs to the record it was solved or loaded for ------
+
+test("#429 review #2: a freshly solved run belongs to whatever name you save under", () => {
+  assert.strictEqual(runBelongsTo({ fresh: true }, "Anything", ""), true);
+  assert.strictEqual(runBelongsTo({ fresh: true }, "Anything", "Other"), true);
+});
+
+test("#429 review #2 (AE): a LOADED run belongs only to the record it came from", () => {
+  // Load A (results, lastRun = A's run), step back, rename to B, save.
+  // Attributing A's run to B writes A's snapshot, query AND build stamp into B.
+  const loadedRun = { fresh: false, stampedBuildId: "buildA" };
+  assert.strictEqual(runBelongsTo(loadedRun, "A", "A"), true, "saving A back is still A's run");
+  assert.strictEqual(runBelongsTo(loadedRun, "B", "A"), false,
+    "saving under a different name must not inherit the loaded build's loadout");
+});
+
+test("#429 review #2: no run, or a run with no record behind it, belongs to nobody", () => {
+  assert.strictEqual(runBelongsTo(null, "A", "A"), false);
+  assert.strictEqual(runBelongsTo(undefined, "A", ""), false);
+  assert.strictEqual(runBelongsTo({ fresh: false }, "A", ""), false,
+    "a loaded run with no loadedName cannot be attributed to anything");
+});
+
+test("#429 review #1+#2: the save path attributes the run and preserves the record", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const at = src.indexOf("function saveCurrentCharacter(");
+  assert.ok(at >= 0, "wizard.js declares saveCurrentCharacter");
+  const end = src.indexOf("\n    // Load a saved character", at);
+  assert.ok(end > at, "the save function's end marker resolves");
+  const body = src.slice(at, end);
+  assert.ok(/runBelongsTo\(/.test(body),
+    "the live lastRun is attributed before it is written into a record (#2)");
+  assert.ok(/rec\.snapshot = prev\.snapshot/.test(body),
+    "an in-progress save over a solved record carries that loadout forward (#1)");
+  assert.ok(/rec\.query = prev\.query/.test(body), "…and the query it was solved with");
+  assert.ok(/rec\.stampedBuildId = prev\.stampedBuildId/.test(body),
+    "…and its build stamp, so the preserved loadout does not re-stamp itself current");
+});
+
+test("#429 review #2: loadCharacter clears lastRun on the branch that does not set it", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const at = src.indexOf("function loadCharacter(");
+  const end = src.indexOf("\n    // #428 U3 (R13/R14", at);
+  assert.ok(end > at, "the load function's end marker resolves");
+  const body = src.slice(at, end);
+  assert.ok(/state\.lastRun = null/.test(body),
+    "the non-results branch resets lastRun beside its sibling per-character fields");
+  assert.ok(/state\.loadedStale = false/.test(body), "…and the staleness flag that rides with it");
+});
+
+// ---- #3 (P1): the rail's own Load goes through the guard --------------------
+
+test("#429 review #3: the guard message names what a load would cost", () => {
+  const dirty = { inputsDirty: true, loadedName: "Sook" };
+  const step = unsavedGuardMessage(dirty, "step");
+  const load = unsavedGuardMessage(dirty, "load");
+  assert.ok(/Sook/.test(load), "names the build at risk");
+  assert.ok(/replac/i.test(load), "…and says loading another one replaces it");
+  assert.notStrictEqual(step, load, "the two consequences are worded differently");
+  assert.strictEqual(unsavedGuardMessage({ inputsDirty: false }, "load"), null,
+    "a clean build still raises nothing");
+});
+
+test("#429 review #3: the default kind is a step change, unchanged from #428", () => {
+  const m = unsavedGuardMessage({ inputsDirty: true, loadedName: "" });
+  assert.ok(/never been saved/i.test(m));
+  assert.ok(/close this tab/.test(m));
+});
+
+test("#429 review #3: the rail's Load is routed through the guard, not straight to loadCharacter", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const at = src.indexOf("function wireRail(");
+  assert.ok(at >= 0, "wizard.js declares wireRail");
+  const end = src.indexOf("\n    function ", at + 1);
+  assert.ok(end > at, "wireRail's end marker resolves");
+  const body = src.slice(at, end);
+  assert.ok(/requestLoad\(/.test(body),
+    "Load asks the guard first — it is the action that discards the most work");
+  assert.ok(!/\bloadCharacter\(b\.dataset\.railload\)/.test(body),
+    "…rather than calling loadCharacter directly");
+  assert.ok(/state\.loadedName/.test(body),
+    "deleting the build you are editing warns about the in-memory copy");
+});
+
+test("#429 review #3: the pending action carries its kind, so both paths resume", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  assert.ok(/function resumePending\(/.test(src), "one place resumes a guarded action");
+  const at = src.indexOf("function resumePending(");
+  const body = src.slice(at, src.indexOf("\n    function ", at + 1));
+  assert.ok(/kind === "load"/.test(body) && /loadCharacter\(/.test(body), "a guarded load resumes");
+  assert.ok(/go\(/.test(body), "…and a guarded step change resumes");
+});
+
+// ---- #4 (P1): KTD5 — the stale banner names armor as newly required --------
+
+test("#429 review #4 (KTD5): a displayed build missing armor says so on the banner", () => {
+  const run = { query: { overrides: [] } };
+  const note = staleNote({ lastRun: run, overrideApplied: [], race: "Elf", ml: 34, armor: "" });
+  assert.ok(note, "a pre-KD6 build that never passes the character step is still told");
+  assert.ok(/[Aa]rmor/.test(note), "…and told which field");
+});
+
+test("#429 review #4: a build carrying armor raises no armor note", () => {
+  const run = { query: { overrides: [] } };
+  assert.strictEqual(
+    staleNote({ lastRun: run, overrideApplied: [], race: "Elf", ml: 34, armor: "heavy" }), null);
+});
+
+test("#429 review #4: the Forged exemption reaches the banner too", () => {
+  const run = { query: { overrides: [] } };
+  assert.strictEqual(
+    staleNote({ lastRun: run, overrideApplied: [], race: "Warforged", ml: 34, armor: "" }), null,
+    "a docent-wearing race is not asked for an armor type it cannot pick");
+});
+
+test("#429 review #4: both causes report together rather than one hiding the other", () => {
+  const run = { query: { overrides: [] } };
+  const note = staleNote({ lastRun: run, overrideApplied: [], loadedStale: true,
+                           race: "Elf", ml: 34, armor: "" });
+  assert.ok(/predates the current gear catalog/.test(note), "the catalog cause survives");
+  assert.ok(/[Aa]rmor/.test(note), "…and the armor cause is not swallowed by it");
+});
+
+// ---- #5 (P2): the scoping guard whose marker stopped resolving --------------
+
+test("#429 review #5: every source-slice guard's end marker actually resolves", () => {
+  // The #91 wiring guard sliced to `function renderSavedPicker`, which #428
+  // renamed — indexOf returned -1 and slice(at, -1) covered the rest of the
+  // file, so four assertions could match anywhere below loadCharacter and the
+  // test stayed green. This asserts the markers themselves.
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const testSrc = fs.readFileSync(path.join(__dirname, "wizard.test.js"), "utf-8");
+  const markers = [...testSrc.matchAll(/WIZARD_SRC\.indexOf\("\\n {4}function (\w+)"/g)]
+    .map((m) => m[1]);
+  assert.ok(markers.length, "the guard finds the slice markers it is checking");
+  for (const name of markers) {
+    assert.ok(src.includes(`\n    function ${name}`),
+      `slice marker "function ${name}" must still exist in web/wizard.js — `
+      + "a marker that no longer resolves makes indexOf return -1 and the slice silently widen");
+  }
+});
+
+// ---- #6 (P2): a pure lookup is not an edit ---------------------------------
+
+test("#429 review #6: the search boxes opt out of the dirty listener at declaration", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  for (const id of ["wz-pin-search", "wz-block-search", "wz-add", "wz-radd"]) {
+    const at = src.indexOf(`id="${id}"`);
+    assert.ok(at >= 0, `${id} exists`);
+    const tag = src.slice(src.lastIndexOf("<", at), src.indexOf(">", at));
+    assert.ok(/data-nodirty/.test(tag),
+      `${id} is a lookup, not an edit — it must not arm the unsaved-changes guard`);
+  }
+  assert.ok(/closest\("\[data-nodirty\], \.wz-share"\)/.test(src),
+    "…and the listener honours the opt-out beside the Share-panel exclusion");
+});
+
+// ---- #7 (P2): a fallback that explains itself ------------------------------
+
+test("#429 review #7: the load explanation fires when the target differs from the saved step", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  assert.ok(/savedStep\(i\) !== _target/.test(src),
+    "a record saved on results with no optimal snapshot is bounced to priorities WITH a reason");
+  assert.ok(!/if \(!savedStep\(i\)\)/.test(src),
+    "the absent-step-only condition is gone — it suppressed the very message it gated");
 });

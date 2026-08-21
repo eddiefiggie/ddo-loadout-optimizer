@@ -4,7 +4,7 @@
 
 🎮 **Play it now:** https://eddiefiggie.github.io/ddo-loadout-optimizer/ · **Code:** https://github.com/eddiefiggie/ddo-loadout-optimizer
 
-**Current build:** 08212026.4 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
+**Current build:** 08212026.6 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
 
 
 ---
@@ -73,6 +73,8 @@ Gear tools are easy to build and hard to trust, so this one is deliberately para
 
 A second case, found by re-running the bonus-type audit (#88): **`Meridian Fragment`** and **`Crystallized Drop of Tea`** were each credited **+24 Universal Spell Power**, permanently. The wiki says that bonus arrives *"once every three seconds when you take physical damage… can stack up to three times and each stack lasts for 20 seconds"* — so 24 is the fully-stacked ceiling of a buff you only hold while being hit. Because Universal Spell Power feeds every element spellpower, the over-credit landed on all of them. Both are now **excluded** rather than given a smaller number, because the wiki states no sustained value and guessing one would be the same mistake in the other direction. If you built a caster here, **re-solve**: expect Universal Spell Power and each element spellpower to drop by 24. That is the tool getting closer to the game, not a nerf.
 
+**When a gate gets stricter, we say that too.** Armor type is now **required** before the character step will continue, alongside race and your ML cap. This is a behavior change, not a relabelling: until this build you could advance without it, and the solve would then hand you a loadout you may not be able to wear — armor drives the dodge cap and filters which body armor is equippable. Forged races are exempt; they wear a docent and have no armor choice to make. A build you saved earlier that carries no armor still loads, and still shows the loadout it was solved for; the character step marks armor as needing an answer rather than silently blocking you somewhere else.
+
 **Found a wrong value?** [Open an issue](https://github.com/eddiefiggie/ddo-loadout-optimizer/issues). Reports are checked against the wiki and, when confirmed, usually come with a new automated check so the same class of error can't come back.
 
 ## How to use it
@@ -80,7 +82,7 @@ A second case, found by re-running the bonus-type audit (#88): **`Meridian Fragm
 A short guided wizard walks you through it:
 
 1. Open the [live site](https://eddiefiggie.github.io/ddo-loadout-optimizer/).
-2. **Character** — set your ML cap, and optionally race, armor type, and weapon setup. Tick **Include an Artifact** to build around a Minor Artifact, or **Don’t build around niche crafting** if you won’t grind the craftable option systems — items then compete on what is actually printed on them.
+2. **Character** — three labelled groups. **Required** holds your ML cap, race and armor type; **Restrictions** holds everything optional (ML floor, alignment, oath, **Include an Artifact**, and how much crafting the solver may assume); **Weapon setup** folds away, and says whether it holds anything. Press Continue with a required field blank and the step holds, scrolls to it, and names every field still needed.
 3. **Gear pool** — everything in the game, or only what you own via a Trove import.
 4. **Priorities** — add the stats you want, in order, and drag to reorder. First is most important.
 5. **Solve.** In well under a second you get six tabs:
@@ -94,7 +96,7 @@ A short guided wizard walks you through it:
 | **Alternatives** | Near-optimal trade-offs — complete a different set, free a slot, fewer crafting steps |
 | **Share** | Forum-ready Markdown, CSV, a print-friendly page, or a DDOBuilder-importable `.gearset` |
 
-Don't like a slot? **Pin** an item you insist on wearing, **lock** a slot empty, or **free** it, then re-solve in place. Keep getting gear you've already rejected? **Block** it in the gear-pool step — search anything placeable (items *and* augments), tick a whole family across searches, and block the selection in one action; the result then reports itself as optimal *given your exclusions*. **Name and save** the character to reload later — everything stays in your browser, and **Export & Data Management** moves saved builds between devices.
+Don't like a slot? **Pin** an item you insist on wearing, **lock** a slot empty, or **free** it, then re-solve in place. Keep getting gear you've already rejected? **Block** it in the gear-pool step — search anything placeable (items *and* augments), tick a whole family across searches, and block the selection in one action; the result then reports itself as optimal *given your exclusions*. **Name and save** your build from the panel beside every step — saving works at any step, not only after a solve, and reopening a saved build returns you to the step you stopped on. Everything stays in your browser; **Your data**, in the header and on the Share tab, moves every saved build between devices.
 
 There's also a **Browse items** view for searching the whole roster when you just want to look something up.
 

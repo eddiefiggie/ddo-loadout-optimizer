@@ -200,7 +200,21 @@ main { padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--s
   border-top: 1px solid var(--border);
 }
 .app-footer a { color: var(--accent); }
-.build-info { color: var(--faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* #428 U2 (R28/R29/R31) — the footer is two stacked blocks, not one run-on line.
+   The build stamp leads: its own label above a monospaced, tabular value, so two
+   successive stamps line up digit-for-digit when a player compares them. */
+.app-footer .wrap { display: flex; flex-direction: column; gap: var(--sp-2); }
+.footer-build { margin: 0; display: flex; flex-direction: column; gap: 1px; }
+.footer-credits { margin: 0; }
+.build-label {
+  color: var(--muted); font-size: var(--fs-xs);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.build-info {
+  color: var(--text); font-size: var(--fs-sm); font-weight: 650;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
 
 /* --- controls / inputs (shared primitives) ------------------------------- */
 .controls { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
@@ -755,6 +769,48 @@ input.wz-ml { width: 120px; }
 .wz-pair > .wz-field > select,
 .wz-pair > .wz-field > input { margin-top: auto; }
 
+/* #428 U6 (R1-R6a) — the character step's three labelled containers.
+
+   R5/R5a/R5b are one idea: a control's width comes from the COLUMN, never from
+   its type or its content, so a number input, a text input and a select in the
+   same column are the same width and their outlines form a grid rather than a
+   ragged stack. `input.wz-ml { width: 120px }` above is exactly the rule that
+   made the old step ragged, so it is overridden inside a group. */
+.wz-group {
+  border: 1px solid var(--border-2); border-radius: var(--radius);
+  background: var(--panel-2); padding: var(--sp-4); margin: 0; min-width: 0;
+}
+.wz-group-legend { font-size: var(--fs-sm); font-weight: 700; padding: 0 var(--sp-2); }
+.wz-group-fold > summary { list-style: none; cursor: pointer; display: block; }
+.wz-group-fold > summary::-webkit-details-marker { display: none; }
+.wz-group-fold > summary::before { content: "▸ "; color: var(--muted); }
+.wz-group-fold[open] > summary::before { content: "▾ "; }
+.wz-group-fold[open] > summary { margin-bottom: var(--sp-3); }
+.wz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4) var(--sp-3); align-items: start; }
+.wz-grid > * { min-width: 0; }
+/* Anything that is not a plain field spans the row: a radio ladder, a fold, or
+   a checkbox row has no column partner and would otherwise be squeezed. */
+.wz-grid > .wz-check, .wz-grid > .wz-ladder, .wz-grid > details, .wz-grid > .wz-picklist,
+.wz-grid > .wz-span { grid-column: 1 / -1; }
+.wz-grid input, .wz-grid select { width: 100%; }
+/* Bottom-align the controls in a row so an uneven help block on one side does
+   not stagger it — the same rule .wz-pair carries, for the same reason. */
+.wz-grid > .wz-field { display: flex; flex-direction: column; height: 100%; }
+.wz-grid > .wz-field > select, .wz-grid > .wz-field > input { margin-top: auto; }
+.wz-grid input.wz-ml { width: 100%; }
+@media (max-width: 620px) { .wz-grid { grid-template-columns: 1fr; } }
+
+/* The required marker, at the field (R2), and the invalid treatment (R8/R11):
+   an outline, and no motion. KD4 dropped the repeating flash the requirements
+   originally specified — repeated flashing is bounded by WCAG 2.3.1 and is a
+   documented trigger for photosensitive and vestibular conditions. */
+.wz-req-mark { color: var(--accent); font-weight: 700; }
+.wz-invalid {
+  outline: 2px solid var(--quarantined); outline-offset: 6px; border-radius: var(--radius-sm);
+}
+.wz-reqmsg:empty { display: none; }
+.wz-reqmsg { color: var(--quarantined); font-size: var(--fs-sm); margin: var(--sp-3) 0 0; }
+
 /* opt-in checkbox: inline box-beside-label, deliberately NOT a .wz-field (whose
    input rule forces width:100%) so the box stays small; the whole row toggles it */
 .wz-check { display: flex; align-items: flex-start; gap: var(--sp-2); cursor: pointer; }
@@ -1070,8 +1126,54 @@ input.wz-ml { width: 120px; }
   margin-bottom: var(--sp-3); font-size: var(--fs-sm); color: var(--muted); }
 .wz-cbar .btn { padding: 7px 14px; }
 
-/* Character persistence (U3/U4): saved-character picker + save row. */
-.wz-saved { margin-top: var(--sp-3); }
+/* #428 U3 (KTD4) — the step body and the save rail, side by side. The rail is
+   rendered by render() rather than by any step template, so this shell wraps
+   EVERY step: the layout change is the plan's widest blast radius by design.
+   The rail sticks while a long step scrolls, so Save never scrolls away.
+
+   Below 900px the two stack and the rail goes FIRST (`order: -1`): a player on a
+   phone should meet "save this" before a nine-control form, not after it. */
+.wz-shell { display: grid; grid-template-columns: minmax(0, 1fr) 17rem; gap: var(--sp-4); align-items: start; }
+.wz-body { min-width: 0; }
+.wz-rail {
+  position: sticky; top: var(--sp-4);
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-2);
+}
+.wz-rail-head { margin: 0; font-weight: 700; font-size: var(--fs-sm); }
+.wz-rail-loaded { margin: 0; font-size: var(--fs-sm); color: var(--muted); overflow-wrap: anywhere; }
+.wz-rail input { width: 100%; background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: 7px 10px; }
+.wz-rail input:focus { outline: none; box-shadow: var(--ring); border-color: var(--accent); }
+.wz-rail .btn { width: 100%; padding: 7px 14px; }
+.wz-rail .wz-help { margin: 0; }
+.wz-rail-list { margin-top: var(--sp-2); border-top: 1px solid var(--border-2); padding-top: var(--sp-3); }
+.wz-rail-list .wz-label { display: block; }
+.wz-rail .wz-charlist li.on { border-color: var(--accent); }
+@media (max-width: 900px) {
+  .wz-shell { grid-template-columns: 1fr; }
+  .wz-rail { position: static; order: -1; }
+}
+
+/* #428 U5 (R19) — the unsaved-changes guard. A modal, not an inline bar: it has
+   to PRECEDE the navigation it is guarding, and it offers three answers (save,
+   leave anyway, stay) where window.confirm offers two. */
+.wz-modal {
+  position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.55); padding: var(--sp-4);
+}
+.wz-modal-panel {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: var(--sp-5); max-width: 30rem; width: 100%;
+  display: flex; flex-direction: column; gap: var(--sp-3);
+}
+.wz-modal-panel p { margin: 0; }
+.wz-modal-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.wz-modal-actions .btn { padding: 7px 14px; }
+
+/* Character persistence (U3/U4): the saved-build list, now rendered by the
+   #428 save rail. The `.wz-saved` / `.wz-save` wrappers went with the two
+   surfaces the rail replaced. */
 .wz-charlist { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-1); }
 .wz-charlist li { display: flex; align-items: center; gap: var(--sp-2); background: var(--panel-2);
   border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: var(--sp-2) var(--sp-3); }
@@ -1080,11 +1182,6 @@ input.wz-ml { width: 120px; }
 .wz-charlist .wz-ctl button { background: transparent; color: var(--muted); border: 1px solid var(--border-2);
   border-radius: var(--radius-sm); padding: 3px 9px; font-size: var(--fs-xs); cursor: pointer; }
 .wz-charlist .wz-ctl button:hover { color: var(--text); border-color: var(--accent); }
-.wz-save { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-3); flex-wrap: wrap; }
-.wz-save input { flex: 1; min-width: 180px; background: var(--panel-2); color: var(--text);
-  border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: 7px 10px; }
-.wz-save input:focus { outline: none; box-shadow: var(--ring); border-color: var(--accent); }
-.wz-save .btn { padding: 7px 14px; }
 .wz-savestat { font-size: var(--fs-sm); color: var(--muted); }
 .wz-data { margin-top: var(--sp-3); border: 1px dashed var(--border-2); border-radius: var(--radius); background: var(--panel-2); }
 .wz-data > summary { list-style: none; cursor: pointer; padding: var(--sp-2) var(--sp-3); font-weight: 600; font-size: var(--fs-sm);
@@ -1096,6 +1193,13 @@ input.wz-ml { width: 120px; }
 .wz-data-row { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
 .wz-data-row .wz-file { flex: 1; min-width: 200px; }
 .wz-data-sep { border: none; border-top: 1px dashed var(--border-2); margin: var(--sp-3) 0; }
+/* #428 U7 — the relocated "Your data" block. Rendered by two hosts: below the
+   Share tab's loadout formats (where the backup-vs-share distinction is stated
+   once, side by side), and in the on-demand panel that makes it reachable
+   before any solve. Set off by a rule so it reads as a different job. */
+.wz-data-block { margin-top: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid var(--border-2); }
+.wz-data-block .wz-label { display: block; margin-bottom: var(--sp-1); }
+.wz-data-panel { max-width: 42rem; }
 .wz-share-pick { display: flex; flex-direction: column; gap: 2px; max-width: 34rem; }
 .wz-share-pick select { width: 100%; background: var(--panel-2); color: var(--text); border: 1px solid var(--border-2);
   border-radius: var(--radius-sm); padding: 7px 10px; }

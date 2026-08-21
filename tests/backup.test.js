@@ -230,3 +230,19 @@ test("#88 U5: overrides survive export and import with no second allowlist edit"
   assert.deepStrictEqual(parsed.characters.Corrector.inputs.overrides, overrides,
     "an imported character keeps the overrides it was exported with, recorded types included");
 });
+
+// ---- #428 U4 — the saved step survives the backup round-trip (R16/KTD1) -----
+
+test("#428 U4: step survives export and import with no second allowlist edit", () => {
+  // KTD1's whole reason for making `step` a saved INPUT rather than a new
+  // top-level record field: backup.js sources persist.js's INPUT_KEYS, so the
+  // round-trip inherits the key. Proven red by removing "step" from INPUT_KEYS.
+  const { INPUT_KEYS } = require("../web/persist.js");
+  assert.ok(INPUT_KEYS.includes("step"), "step is on the save allowlist");
+  const r = rec("Resumer", 34);
+  r.inputs.step = "character";
+  const parsed = parseBackup(JSON.stringify(serializeAll({ Resumer: r }, {})));
+  assert.ok(parsed.ok, `backup must parse: ${parsed.error || ""}`);
+  assert.strictEqual(parsed.characters.Resumer.inputs.step, "character",
+    "an imported character reopens where it was exported from");
+});
