@@ -376,7 +376,6 @@ test("the generator marks composite components, so provenance is read not inferr
   assert.ok(!Object.keys(one).includes("_compositeOf"), "and the mark is non-enumerable");
 });
 
-if (!process.exitCode) console.log(`\n${passed} passed`);
 
 // #88 U5 (R23/AE8) — the pool is ONE object shared by every character, so a
 // character switch is a full rebuild of the overlay, not an increment. This is
@@ -415,3 +414,207 @@ test("switching characters leaves no trace of the previous one's overrides", () 
     if (a.type !== catalog.get(a)) assert.fail(`${v.variant_id} / ${a.name} did not return to the catalog type`);
   }
 });
+
+
+// ---- #88 U6 (R8) — crafted-pool override keying -----------------------------
+// Crafted options live outside item variants and no pool entry carries a name
+// that is both present and unique — all 48 `seal` and all 68 `nearly_complete`
+// rows carry none — so they are addressed by a composed key instead.
+
+test("#88 U6: every eligible pool row is addressable, and keys are unique across all seven channels", () => {
+  const p = loadPool();
+  const seen = new Map();
+  let rows = 0, channels = new Set();
+  O.eachPoolAffix(p, (rec) => {
+    rows++; channels.add(rec.channel);
+    const prior = seen.get(rec.key);
+    if (prior) {
+      // A collision is only legal when the two rows are indistinguishable — R2
+      // says those retype together. Anything else would silently retype an
+      // occurrence the player never selected.
+      assert.deepStrictEqual(rec.affix, prior,
+        `pool key ${rec.key} addresses two DIFFERENT rows`);
+    }
+    seen.set(rec.key, rec.affix);
+  });
+  assert.deepStrictEqual([...channels].sort(), [
+    "dino_inserts", "green_steel", "nearly_complete", "nearly_complete_per_item",
+    "seal", "thunder_forged", "viktranium",
+  ], "all seven channels are walked");
+  assert.strictEqual(rows, 976, "the eligible pool-row population");
+  assert.strictEqual(seen.size, 894, "distinct keys");
+});
+
+test("#88 U6: three same-stat seal entries at different bonus types get three distinct keys", () => {
+  const p = loadPool();
+  const keys = [];
+  O.eachPoolAffix(p, (rec) => {
+    if (rec.channel === "seal" && rec.affix.stat === "Charisma"
+        && rec.entry.seal_type === "Gloom") keys.push(rec.key);
+  });
+  // Gloom / equipment-accessories / Charisma exists at Enhancement 15, Insight 7,
+  // and Quality 3 — three distinguishable occurrences, not one.
+  assert.strictEqual(keys.length, 3, "three occurrences");
+  assert.strictEqual(new Set(keys).size, 3, "and three keys — dropping type and value would merge them");
+});
+
+test("#88 U6: a nameless seal and a nameless nearly_complete row are both addressable", () => {
+  const p = loadPool();
+  const byChannel = {};
+  O.eachPoolAffix(p, (rec) => { (byChannel[rec.channel] = byChannel[rec.channel] || []).push(rec); });
+  for (const ch of ["seal", "nearly_complete"]) {
+    const some = byChannel[ch][0];
+    assert.ok(some.key && typeof some.key === "string", `${ch} rows carry a key`);
+    assert.ok(some.key.startsWith(ch + "||"), "the key names its channel first");
+  }
+  assert.ok(byChannel.nearly_complete_per_item.every((r) => r.host),
+    "the per-item pool is host-scoped, so its key carries the host");
+});
+
+test("#88 U6 (AE15): an override on a crafted option applies wherever that option is offered", () => {
+  const p = loadPool();
+  let target = null;
+  O.eachPoolAffix(p, (rec) => {
+    if (!target && rec.channel === "seal" && rec.affix.stat === "Charisma"
+        && rec.affix.bonus_type === "Insight") target = rec;
+  });
+  assert.ok(target, "a seal Charisma Insight row exists");
+  const o = Object.assign({}, O.poolOverrideKey(target), { to: "Quality" });
+  const rep = O.applyOverrides(p, [o]);
+  assert.strictEqual(rep.applied.length, 1, "the crafted override applied");
+  assert.ok(rep.applied[0].count >= 1, "…to every occurrence sharing the key");
+  let stillInsight = 0, nowQuality = 0;
+  O.eachPoolAffix(p, (rec) => {
+    // catalogKey, not key: the live key moved when the type did, which is exactly
+    // why the declaration is keyed on the catalog's type and read through the stamp.
+    if (rec.catalogKey !== o.pool_key) return;
+    if (rec.affix.bonus_type === "Insight") stillInsight++;
+    if (rec.affix.bonus_type === "Quality") nowQuality++;
+  });
+  assert.strictEqual(stillInsight, 0, "no occurrence of the keyed option kept the catalog type");
+  assert.ok(nowQuality >= 1);
+
+  O.withdrawOverrides(p);
+  const back = [];
+  O.eachPoolAffix(p, (rec) => { if (rec.catalogKey === o.pool_key) back.push(rec.affix.bonus_type); });
+  assert.deepStrictEqual(new Set(back), new Set(["Insight"]),
+    "withdrawal restores the catalog type on the crafted row too");
+});
+
+// ---- #88 U7 (R25-R29) — the lifecycle over a whole override list ------------
+// resolveOverrides runs U1's ladder (KTD8) across the list on load, so the app
+// can disclose what happened to each one. Satisfied overrides are RETAINED, not
+// deleted, so a reverted adoption returns them to suspended rather than being
+// silently forgotten.
+
+function robeOverride(p, to) {
+  const v = p.items.find((x) => x.variant_id === "Aberrant Robe");
+  const a = v.affixes.find((x) => x.name === "Armor Class" && x.type === "Armor");
+  return { v, a, o: { ...O.overrideKey(v, a), to: to || "Enhancement" } };
+}
+
+test("#88 U7 (AE7/R24): an unchanged catalog resolves every override active", () => {
+  const p = loadPool();
+  const { o } = robeOverride(p);
+  const got = O.resolveOverrides(p, [o]);
+  assert.strictEqual(got.length, 1);
+  assert.strictEqual(got[0].state, "active");
+  assert.strictEqual(got[0].reason, null, "nothing to prompt the player about");
+  assert.strictEqual(got[0].override, o, "the entry carries its own override back");
+});
+
+test("#88 U7 (AE4/R27): a drifted type suspends and discloses what it moved to", () => {
+  const p = loadPool();
+  const { v, o } = robeOverride(p);
+  v.affixes.filter((x) => x.name === "Armor Class").forEach((x) => { x.type = "Profane"; });
+  const got = O.resolveOverrides(p, [o]);
+  assert.strictEqual(got[0].state, "suspended");
+  assert.strictEqual(got[0].reason, "drift");
+  assert.strictEqual(got[0].now, "Profane", "the disclosure names the type upstream moved to");
+});
+
+test("#88 U7 (R28): a retired target suspends and names the retirement", () => {
+  const p = loadPool();
+  const { v, o } = robeOverride(p);
+  v.affixes = v.affixes.filter((x) => x.name !== "Armor Class");
+  assert.strictEqual(O.resolveOverrides(p, [o])[0].reason, "retired-target");
+  const gone = { ...o, variant_id: "No Such Item At All" };
+  assert.strictEqual(O.resolveOverrides(p, [gone])[0].reason, "retired-target");
+});
+
+test("#88 U7 (AE5/AE21/R25/R26): satisfied is retained, and a revert returns it to suspended", () => {
+  const p = loadPool();
+  const { v, o } = robeOverride(p, "Enhancement");
+  // Upstream adopts the player's replacement type.
+  v.affixes.filter((x) => x.name === "Armor Class").forEach((x) => { x.type = "Enhancement"; });
+  let got = O.resolveOverrides(p, [o]);
+  assert.strictEqual(got[0].state, "satisfied", "the catalog now says what the player said");
+  assert.strictEqual(got[0].reason, null);
+  assert.deepStrictEqual(got.map((g) => g.override), [o],
+    "…and the override is still in the list — deleting it would lose the revert case below");
+
+  // …then a later refresh moves it somewhere else entirely.
+  v.affixes.filter((x) => x.name === "Armor Class").forEach((x) => { x.type = "Sacred"; });
+  got = O.resolveOverrides(p, [o]);
+  assert.strictEqual(got[0].state, "suspended");
+  assert.strictEqual(got[0].reason, "drift");
+
+  // …or back to the type the override was written against, which is active again.
+  v.affixes.filter((x) => x.name === "Armor Class").forEach((x) => { x.type = "Armor"; });
+  assert.strictEqual(O.resolveOverrides(p, [o])[0].state, "active");
+});
+
+test("#88 U7 (R29): a suspended override is never applied, so it cannot reach a solve", () => {
+  const p = loadPool();
+  const { v, o } = robeOverride(p);
+  v.affixes.filter((x) => x.name === "Armor Class").forEach((x) => { x.type = "Profane"; });
+  const rep = O.applyOverrides(p, [o]);
+  assert.deepStrictEqual(rep.applied, [], "nothing applied");
+  assert.strictEqual(rep.unmatched.length, 1, "and it is reported, not silently dropped");
+  assert.strictEqual(v.affixes.find((x) => x.name === "Armor Class").type, "Profane",
+    "the pool carries the catalog's drifted type, not the player's replacement");
+});
+
+test("#88 U7: an affix that became load-generated resolves ineligible-suspended", () => {
+  const p = loadPool();
+  const { v, o } = robeOverride(p);
+  // The refresh converts the affix from engraved to expansion-generated at the
+  // same name, type, and value — the exact-match test would call this active.
+  v.affixes.filter((x) => x.name === "Armor Class").forEach((x) => { x.via = "Potency"; });
+  O.classifyPool(p);
+  const got = O.resolveOverrides(p, [o]);
+  assert.strictEqual(got[0].state, "suspended");
+  assert.strictEqual(got[0].reason, "ineligible", "offer delete only — there is nothing to re-confirm onto");
+});
+
+test("#88 U7 (R8): the ladder reaches a crafted override through its pool key", () => {
+  const p = loadPool();
+  let target = null;
+  O.eachPoolAffix(p, (rec) => {
+    if (!target && rec.channel === "seal" && rec.affix.stat === "Charisma"
+        && rec.affix.bonus_type === "Insight") target = rec;
+  });
+  const o = { ...O.poolOverrideKey(target), to: "Quality" };
+  assert.strictEqual(O.resolveOverrides(p, [o])[0].state, "active");
+
+  // Applied is the steady state, so the ladder must read through the stamp here
+  // exactly as it does for items.
+  O.applyOverrides(p, [o]);
+  assert.strictEqual(O.resolveOverrides(p, [o])[0].state, "active",
+    "a LIVE crafted override must not read as satisfied");
+  O.withdrawOverrides(p);
+
+  // Upstream adopts it.
+  target.affix.bonus_type = "Quality";
+  assert.strictEqual(O.resolveOverrides(p, [o])[0].state, "satisfied");
+  // …or moves it elsewhere.
+  target.affix.bonus_type = "Sacred";
+  const drifted = O.resolveOverrides(p, [o])[0];
+  assert.strictEqual(drifted.reason, "drift");
+  assert.strictEqual(drifted.now, "Sacred");
+  // …or retires the row outright.
+  p.seal = p.seal.filter((e) => e !== target.entry);
+  assert.strictEqual(O.resolveOverrides(p, [o])[0].reason, "retired-target");
+});
+
+if (!process.exitCode) console.log(`\n${passed} passed`);

@@ -2613,3 +2613,64 @@ test("#88 U6 (R8): a pool-keyed override is well-formed without a variant_id", (
   assert.deepStrictEqual(restoreOverrides({ overrides: [crafted] }), [crafted],
     "crafted options live outside item variants and are addressed by pool key");
 });
+
+
+// ---- #88 U7 (R25/R27/R28) — the load-time lifecycle disclosure --------------
+// A refresh can move, adopt, or retire the type an override was written against.
+// Whichever happened, the player is told on the load that detects it — a saved
+// character quietly changing what it solves is the defect this prevents.
+const { overrideLoadMessage } = require("../web/wizard.js");
+const _ov = (name, extra) => Object.assign(
+  { variant_id: "Aberrant Robe", name, from: "Armor", value: "5", to: "Enhancement" }, extra || {});
+
+test("#88 U7 (AE7): an all-active list discloses nothing", () => {
+  assert.strictEqual(overrideLoadMessage([
+    { override: _ov("Armor Class"), state: "active", reason: null, now: null },
+  ]), null, "no prompt when nothing changed");
+  assert.strictEqual(overrideLoadMessage([]), null);
+  assert.strictEqual(overrideLoadMessage(null), null);
+});
+
+test("#88 U7 (AE4/R27): drift names the affix and the type it moved to", () => {
+  const msg = overrideLoadMessage([
+    { override: _ov("Armor Class"), state: "suspended", reason: "drift", now: "Profane" },
+  ]);
+  assert.ok(/Armor Class/.test(msg), "the affix is named");
+  assert.ok(/Armor/.test(msg) && /Profane/.test(msg), "both the recorded and the current type");
+  assert.ok(/suspended/i.test(msg), "and its state");
+});
+
+test("#88 U7 (AE5/R25): satisfaction is disclosed and says the override is kept", () => {
+  const msg = overrideLoadMessage([
+    { override: _ov("Armor Class"), state: "satisfied", reason: null, now: null },
+  ]);
+  assert.ok(/Enhancement/.test(msg), "the type upstream adopted");
+  assert.ok(/kept|retained/i.test(msg), "R26 — it is retained, not deleted");
+});
+
+test("#88 U7 (R28): a retired target is disclosed with its reason", () => {
+  const msg = overrideLoadMessage([
+    { override: _ov("Armor Class"), state: "suspended", reason: "retired-target", now: null },
+  ]);
+  assert.ok(/no longer/i.test(msg) && /Armor Class/.test(msg));
+});
+
+test("#88 U7: a crafted override is named by its pool key, not a missing item name", () => {
+  const msg = overrideLoadMessage([
+    { override: { pool_key: "seal||Gloom||equipment/accessories||Charisma||Insight||7",
+                  name: "Charisma", from: "Insight", to: "Quality", value: "7" },
+      state: "suspended", reason: "drift", now: "Sacred" },
+  ]);
+  assert.ok(/Charisma/.test(msg));
+  assert.ok(!/undefined/.test(msg), "a pool-keyed override has no variant_id to print");
+});
+
+test("#88 U7: one line per changed override, and only the changed ones", () => {
+  const msg = overrideLoadMessage([
+    { override: _ov("Armor Class"), state: "active", reason: null, now: null },
+    { override: _ov("Fortitude Save"), state: "suspended", reason: "drift", now: "Profane" },
+    { override: _ov("Dodge"), state: "satisfied", reason: null, now: null },
+  ]);
+  assert.ok(!/Armor Class/.test(msg), "an active override is not news");
+  assert.ok(/Fortitude Save/.test(msg) && /Dodge/.test(msg));
+});

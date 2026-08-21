@@ -168,6 +168,131 @@
     return o.value != null;
   }
 
+  // ---- U6: the crafted pools -------------------------------------------------
+  //
+  // Crafted options are not item affixes. They live in seven sibling channels on
+  // the dataset, they use `bonus_type` where an item affix uses `type`, and no
+  // pool entry carries a name that is both present and unique — all 48 `seal` and
+  // all 68 `nearly_complete` rows carry none. So an override on one is addressed
+  // by a COMPOSED key: the channel, the entry's own discriminators, and then the
+  // same stat/type/value triple an item override records.
+  //
+  // Type and value are in the key on purpose. Without them, `Gloom /
+  // equipment/accessories / Charisma` is one key naming three genuinely different
+  // offerings — Enhancement 15, Insight 7, and Quality 3 — and retyping one would
+  // retype occurrences the player never selected. With them, the remaining
+  // collisions are byte-identical duplicate rows, which R2 says retype together.
+  //
+  // Six channels are arrays. The seventh is structurally different: a dict keyed
+  // by host item name, so its rows are host-scoped and their keys carry the host.
+  var POOL_CHANNELS = [
+    { channel: "seal", multi: false, disc: function (e) { return [e.seal_type, e.domain]; } },
+    { channel: "thunder_forged", multi: false, disc: function (e) { return [e.tier]; } },
+    { channel: "green_steel", multi: false, disc: function (e) { return [e.tier_key]; } },
+    { channel: "nearly_complete", multi: true, disc: function (e) { return [e.category, e.tier]; } },
+    { channel: "viktranium", multi: true, disc: function (e) { return [e.slot_type, e.category, e.tier]; } },
+    { channel: "dino_inserts", multi: true, disc: function (e) { return [e.category, e.dino_type]; } },
+  ];
+  var PER_ITEM_CHANNEL = "nearly_complete_per_item";
+
+  /** A crafted row records its type as `bonus_type`; an item affix records it as
+   *  `type`. One accessor pair, so no caller has to know which it is holding. */
+  function typeKeyOf(affix) {
+    return (affix && Object.prototype.hasOwnProperty.call(affix, "bonus_type")) ? "bonus_type" : "type";
+  }
+  function readType(affix) { return affix ? affix[typeKeyOf(affix)] : undefined; }
+
+  /** The composed key. `type` is passed in rather than read off the row, because
+   *  every caller that identifies an override needs the CATALOG's type — which is
+   *  the stamp when one is applied, exactly as `catalogTypeOrLive` does for items.
+   *  Reading the live type here would make an applied override stop matching its
+   *  own declaration, the same defect review found in the item ladder. */
+  function keyOf(channel, parts, affix, type) {
+    var out = [channel];
+    for (var i = 0; i < parts.length; i++) out.push(part(parts[i]));
+    out.push(part(affix.stat), part(type), part(affix.value));
+    return out.join("||");
+  }
+
+  // A component carrying the separator would make the key ambiguous — and the
+  // ladder below splits on it to ask "the same row under a different type?".
+  function part(v) { return v == null ? "" : String(v).split("||").join("|"); }
+
+  /** The key with its type component removed: the identity of the ROW, independent
+   *  of what type it currently carries. The type is always second from last. */
+  function keyMinusType(key) {
+    var parts = String(key).split("||");
+    if (parts.length < 3) return String(key);
+    parts.splice(parts.length - 2, 1);
+    return parts.join("||");
+  }
+
+  /** Walk every ELIGIBLE crafted pool row, calling back with the row and its key.
+   *  Eligibility is the same five-class predicate items use, minus the two classes
+   *  that cannot occur here: a crafted row is never load-generated and never an
+   *  expansion component, so only the type-based classes can exclude it. */
+  function eachPoolAffix(pool, cb, all) {
+    if (!pool) return;
+    for (var c = 0; c < POOL_CHANNELS.length; c++) {
+      var spec = POOL_CHANNELS[c];
+      var rows = pool[spec.channel] || [];
+      for (var i = 0; i < rows.length; i++) {
+        var entry = rows[i];
+        var affixes = spec.multi ? (entry.affixes || []) : [entry];
+        for (var j = 0; j < affixes.length; j++) {
+          var a = affixes[j];
+          if (!all && !poolAffixEligible(a)) continue;
+          cb({ channel: spec.channel, host: null, entry: entry, affix: a,
+               key: keyOf(spec.channel, spec.disc(entry), a, readType(a)),
+               catalogKey: keyOf(spec.channel, spec.disc(entry), a, catalogTypeOrLive(a)) });
+        }
+      }
+    }
+    var perItem = pool[PER_ITEM_CHANNEL] || {};
+    var hosts = Object.keys(perItem);
+    for (var h = 0; h < hosts.length; h++) {
+      var list = perItem[hosts[h]] || [];
+      for (var k = 0; k < list.length; k++) {
+        var pa = list[k];
+        if (!all && !poolAffixEligible(pa)) continue;
+        cb({ channel: PER_ITEM_CHANNEL, host: hosts[h], entry: perItem[hosts[h]], affix: pa,
+             key: keyOf(PER_ITEM_CHANNEL, [hosts[h], pa.pool], pa, readType(pa)),
+             catalogKey: keyOf(PER_ITEM_CHANNEL, [hosts[h], pa.pool], pa, catalogTypeOrLive(pa)) });
+      }
+    }
+  }
+
+  function poolAffixEligible(affix) {
+    if (!affix) return false;
+    var t = readType(affix);
+    if (t == null) return false;
+    return !INELIGIBLE_TYPES[t];
+  }
+
+  /** The identity of an override on a crafted row, from a record `eachPoolAffix`
+   *  handed out. Same four fields an item override records, with `pool_key`
+   *  standing in for `variant_id`. */
+  function poolOverrideKey(rec) {
+    return {
+      pool_key: rec && rec.catalogKey,
+      name: rec && rec.affix && rec.affix.stat,
+      from: rec && catalogTypeOrLive(rec.affix),
+      value: rec && rec.affix && String(rec.affix.value),
+    };
+  }
+
+  /** Every crafted row an override addresses. Keyed on the composed key, which
+   *  already carries the recorded type — so, exactly like the item ladder, this
+   *  reads THROUGH any live stamp rather than off the current value. */
+  function matchPoolAffixes(pool, override) {
+    var hits = [];
+    if (!override || !override.pool_key) return hits;
+    eachPoolAffix(pool, function (rec) {
+      if (rec.catalogKey === override.pool_key) hits.push(rec.affix);
+    });
+    return hits;
+  }
+
   function variantOf(pool, variantId) {
     var items = (pool && pool.items) || [];
     for (var i = 0; i < items.length; i++) {
@@ -222,6 +347,54 @@
     return { state: "suspended", reason: "drift", affixes: pick, now: pick[0] && catalogTypeOrLive(pick[0]) };
   }
 
+  /** U7 (R25-R29) — the ladder over a whole list, which is what the load path and
+   *  every disclosure surface actually needs. Returns one entry per override, in
+   *  the order declared, each carrying its own override back.
+   *
+   *  A SATISFIED override is retained rather than dropped (R26): if it were
+   *  deleted the day upstream adopted it, a later refresh moving that type
+   *  elsewhere would leave the player with no record that they ever disagreed. */
+  function resolveOverrides(pool, overrides) {
+    var list = overrides || [];
+    var out = [];
+    for (var i = 0; i < list.length; i++) {
+      var o = list[i];
+      var m = (o && o.pool_key) ? resolvePoolMatch(pool, o) : resolveMatch(pool, o);
+      out.push({
+        override: o,
+        state: m.state,
+        reason: m.reason || null,
+        now: m.now != null ? m.now : null,
+        count: (m.affixes || []).length,
+      });
+    }
+    return out;
+  }
+
+  /** KTD8's ladder for a crafted row, keyed on the pool key rather than a variant.
+   *  Same five outcomes, same rule that every rung reads the CATALOG type. Walks
+   *  the ineligible rows too, so a row upstream has re-typed to a presence or
+   *  penalty token reports `ineligible` rather than looking retired. */
+  function resolvePoolMatch(pool, override) {
+    var wanted = keyMinusType(override && override.pool_key);
+    var rows = [];
+    eachPoolAffix(pool, function (rec) {
+      if (keyMinusType(rec.catalogKey) === wanted) rows.push(rec.affix);
+    }, true);
+    if (!rows.length) return { state: "suspended", reason: "retired-target", affixes: [] };
+
+    var atRecorded = rows.filter(function (a) { return catalogTypeOrLive(a) === override.from; });
+    if (atRecorded.length) {
+      if (!atRecorded.every(function (a) { return poolAffixEligible(a); })) {
+        return { state: "suspended", reason: "ineligible", affixes: atRecorded };
+      }
+      return { state: "active", reason: null, affixes: atRecorded };
+    }
+    var atReplacement = rows.filter(function (a) { return catalogTypeOrLive(a) === override.to; });
+    if (atReplacement.length) return { state: "satisfied", reason: null, affixes: atReplacement };
+    return { state: "suspended", reason: "drift", affixes: rows, now: catalogTypeOrLive(rows[0]) };
+  }
+
   /** The catalog's own type for an affix an override is currently applied to,
    *  or undefined when none is. */
   function catalogTypeOf(affix) {
@@ -232,7 +405,11 @@
    *  the ladder reads so its answer does not change with the pool's applied state. */
   function catalogTypeOrLive(affix) {
     if (!affix) return undefined;
-    return affix[OVERRIDE_FROM] != null ? affix[OVERRIDE_FROM] : affix.type;
+    // U6 — through `readType`, not `affix.type`: a crafted pool row records its
+    // type as `bonus_type`, and reading the item field here returned `undefined`
+    // for every unstamped crafted row — which composed a pool key naming the type
+    // "undefined" and matched nothing.
+    return affix[OVERRIDE_FROM] != null ? affix[OVERRIDE_FROM] : readType(affix);
   }
 
   /** Remove every applied override, restoring each affix's catalog type. */
@@ -240,14 +417,20 @@
     var items = (pool && pool.items) || [];
     for (var i = 0; i < items.length; i++) {
       var affixes = items[i].affixes || [];
-      for (var j = 0; j < affixes.length; j++) {
-        var a = affixes[j];
-        if (a[OVERRIDE_FROM] == null) continue;
-        a.type = a[OVERRIDE_FROM];
-        delete a[OVERRIDE_FROM];
-      }
+      for (var j = 0; j < affixes.length; j++) restoreOne(affixes[j]);
     }
+    // U6 — crafted rows too, walked WITHOUT the eligibility filter. Withdrawal
+    // must never be conditional on a predicate evaluated against the overridden
+    // value: a filter that agreed at apply time and disagrees now would strand a
+    // stamp on the shared pool with no route back.
+    eachPoolAffix(pool, function (rec) { restoreOne(rec.affix); }, true);
     return pool;
+  }
+
+  function restoreOne(affix) {
+    if (!affix || affix[OVERRIDE_FROM] == null) return;
+    affix[typeKeyOf(affix)] = affix[OVERRIDE_FROM];
+    delete affix[OVERRIDE_FROM];
   }
 
   /** Apply the overrides in force over the loaded pool.
@@ -275,10 +458,15 @@
       // under both Resistance and Insight; 35 variants can produce the collision.
       // The withdraw-first call above guarantees zero stamps on entry, so this
       // filter only ever removes affixes this same pass just retyped.
-      var hits = matchAffixes(pool, o).filter(function (a) { return a[OVERRIDE_FROM] == null; });
+      var isPool = !!(o && o.pool_key);
+      var hits = (isPool ? matchPoolAffixes(pool, o) : matchAffixes(pool, o))
+        .filter(function (a) { return a[OVERRIDE_FROM] == null; });
       if (!hits.length) { unmatched.push(o); continue; }
-      var v = variantOf(pool, o.variant_id);
-      if (!hits.every(function (a) { return isEligible(a, v); })) { ineligible.push(o); continue; }
+      var v = isPool ? null : variantOf(pool, o.variant_id);
+      var ok = isPool
+        ? hits.every(function (a) { return poolAffixEligible(a); })
+        : hits.every(function (a) { return isEligible(a, v); });
+      if (!ok) { ineligible.push(o); continue; }
       for (var j = 0; j < hits.length; j++) {
         // Non-enumerable, for the same reason as ELIGIBLE_CACHE: solver.js hands out
         // LIVE pool variant references, `chosen` is on persist.js's RESULT_KEEP, and
@@ -287,11 +475,12 @@
         // undeclared and with no override list to explain it. `delete` still works on
         // a configurable property, and catalogTypeOf reads it by direct access.
         Object.defineProperty(hits[j], OVERRIDE_FROM, {
-          value: hits[j].type, enumerable: false, configurable: true, writable: true,
+          value: readType(hits[j]), enumerable: false, configurable: true, writable: true,
         });
-        hits[j].type = o.to;
+        hits[j][typeKeyOf(hits[j])] = o.to;
       }
-      applied.push({ variant_id: o.variant_id, name: o.name, from: o.from, to: o.to, count: hits.length });
+      applied.push({ variant_id: o.variant_id || null, pool_key: o.pool_key || null,
+        name: o.name, from: o.from, to: o.to, count: hits.length });
     }
     return { applied: applied, unmatched: unmatched, ineligible: ineligible };
   }
@@ -300,6 +489,8 @@
     OVERRIDE_FROM, ELIGIBLE_CACHE,
     isEligible, classifyPool, eligibleAffixes, isCompositeComponent,
     overrideKey, isWellFormed, matchAffixes, resolveMatch, catalogTypeOrLive,
+    eachPoolAffix, poolOverrideKey, matchPoolAffixes, poolAffixEligible, readType,
+    resolveOverrides, resolvePoolMatch, keyMinusType,
     applyOverrides, withdrawOverrides, catalogTypeOf,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;

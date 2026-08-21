@@ -724,6 +724,44 @@ function blockLoadMessage(blocklist, slotConstraints, items) {
   return parts.length ? parts.join(" ") : null;
 }
 
+/** #88 U7 (R25/R27/R28) — what the load has to tell the player about their
+ *  overrides. Takes `Overrides.resolveOverrides`' output and returns one line per
+ *  override whose state is news, or null when every one is still active.
+ *
+ *  Active is deliberately silent: R24 says an override whose target still carries
+ *  the recorded type applies without prompting. Everything else is a change the
+ *  player did not make to a character they saved, which is exactly the class of
+ *  thing this app discloses rather than absorbing — the priority-migration and
+ *  blocklist notices beside it exist for the same reason.
+ *
+ *  Named from the override's own fields, never from a variant lookup: a crafted
+ *  override has no item name, and a retired-target override has no row left to
+ *  read one from. */
+function overrideLoadMessage(resolved) {
+  const list = Array.isArray(resolved) ? resolved : [];
+  const parts = [];
+  for (const r of list) {
+    if (!r || r.state === "active") continue;
+    const o = r.override || {};
+    const where = o.variant_id ? `${o.variant_id}` : "a crafting option";
+    const what = `${o.name} on ${where}`;
+    if (r.state === "satisfied") {
+      parts.push(`The catalog now records ${what} as ${o.to}, which is what you said — `
+        + "your override is kept in case that changes back, but it is no longer doing anything.");
+    } else if (r.reason === "drift") {
+      parts.push(`${what} is now recorded as ${r.now} rather than ${o.from}, so your `
+        + `${o.to} override is suspended. Re-confirm it against ${r.now} or delete it.`);
+    } else if (r.reason === "retired-target") {
+      parts.push(`${what} is no longer in the data (renamed or removed upstream), so your `
+        + `${o.to} override is suspended. There is nothing left to confirm it against.`);
+    } else if (r.reason === "ineligible") {
+      parts.push(`${what} is no longer an affix the item itself carries, so your `
+        + `${o.to} override is suspended and can only be deleted.`);
+    }
+  }
+  return parts.length ? parts.join(" ") : null;
+}
+
 // R12 — a pinned two-handed (both-hands) main-hand weapon and a pinned off-hand item
 // are mutually exclusive under the hand mutex: each passes its own per-item legality,
 // so the conflict is the COMBINATION and needs an aggregate check. `pins` is the
@@ -1242,7 +1280,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, overrideLoadMessage,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -1335,6 +1373,9 @@ if (typeof window !== "undefined" && window.App) {
       // #88 U5 (R20) — the player's bonus-type overrides, in declaration order.
       // Empty by default, so the overlay is inert until the player asserts one.
       overrides: [],
+      // #88 U7 — set on load when a saved override drifted, was adopted upstream,
+      // or lost its target. Dismissible, like its three sibling load notices.
+      overrideNotice: null,
       // #91 (U4/R1) — a NEW list is born with the Utility tier seeded at the
       // bottom, on by default. Seeding happens only here (list birth), never on
       // load — load-path presence is healUtilityTier's decision (KTD8).
@@ -2793,6 +2834,13 @@ if (typeof window !== "undefined" && window.App) {
       // though B declares nothing. A pre-feature save restores [] and the apply
       // becomes a no-op that still performs the withdrawal.
       state.overrides = restoreOverrides(i);
+      // U7 (R25/R27/R28) — resolve the lifecycle BEFORE applying, and disclose it.
+      // Resolution reads through the stamp so it is independent of the pool's
+      // applied state, but running it first keeps the reported states about the
+      // catalog the player is loading against rather than about our own overlay.
+      const _ovMod = _overridesModule();
+      state.overrideNotice = (_ovMod && dataset)
+        ? overrideLoadMessage(_ovMod.resolveOverrides(dataset, state.overrides)) : null;
       applyOverrideOverlay();
       // KTD1 — the whole priority list is being replaced, so any row left open
       // belongs to the build being discarded. Ephemeral state, cleared not restored.
@@ -3058,6 +3106,13 @@ if (typeof window !== "undefined" && window.App) {
         out += `<div id="wz-blockmig" class="wz-cbar">${esc(state.blockLoadNotice)}
         <button class="btn ghost" id="wz-blockmig-ok" type="button">Got it</button></div>`;
       }
+      // #88 U7 (R25/R27/R28) — the override lifecycle report rides the same
+      // channel as its three siblings above, for the same reason: a loaded
+      // character lands on either results or priorities and must be told on both.
+      if (state.overrideNotice) {
+        out += `<div id="wz-ovmig" class="wz-cbar">${esc(state.overrideNotice)}
+        <button class="btn ghost" id="wz-ovmig-ok" type="button">Got it</button></div>`;
+      }
       return out;
     }
 
@@ -3088,6 +3143,12 @@ if (typeof window !== "undefined" && window.App) {
       if (blockOk) blockOk.onclick = () => {
         state.blockLoadNotice = null;
         const bar = document.getElementById("wz-blockmig");
+        if (bar) bar.remove();
+      };
+      const ovOk = document.getElementById("wz-ovmig-ok");
+      if (ovOk) ovOk.onclick = () => {
+        state.overrideNotice = null;
+        const bar = document.getElementById("wz-ovmig");
         if (bar) bar.remove();
       };
       root.querySelectorAll("[data-browse]").forEach((b) => b.onclick = openBrowser);
