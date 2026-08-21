@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, savedStep, stepOnLoad, unsavedGuardMessage, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
+const { railModel, savedStep, stepOnLoad, unsavedGuardMessage, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -2129,7 +2129,13 @@ test("U4/262: the BLOCK search row template appends the note (source wiring)", (
   test("#91 (review fix) loadCharacter routes the restored render through restoredRenderQuery, while buildModel/state.lastRun keep the unmutated query (source wiring)", () => {
     const at = WIZARD_SRC.indexOf("function loadCharacter(");
     assert.ok(at > 0, "loadCharacter exists");
-    const fn = WIZARD_SRC.slice(at, WIZARD_SRC.indexOf("\n    function renderSavedPicker", at));
+    // #429 review #5 — this used to slice to `function renderSavedPicker`, which
+    // #428 renamed to railHTML. indexOf returned -1, slice(at, -1) covered the
+    // rest of the file, and all four assertions below could match anywhere. The
+    // end marker is now asserted rather than assumed.
+    const end = WIZARD_SRC.indexOf("\n    function railHTML", at);
+    assert.ok(end > at, "the slice's end marker resolves — an unresolved one silently widens it");
+    const fn = WIZARD_SRC.slice(at, end);
     assert.ok(/restoredRenderQuery\(query, !!i\.utility_tier_aware\)/.test(fn),
       "the render-only query is derived through the shared pure helper");
     assert.ok(/buildModel\(candidateItems\(\), query,/.test(fn),
@@ -3438,4 +3444,205 @@ test("#428 U7 (KTD7): #357's plan no longer says a record is written only at the
     "…replaced by the save model #428 owns");
   assert.ok(/2026-08-21-001-feat-wizard-structure-and-save-progress-plan/.test(plan),
     "…and the plan that superseded it is named, so the edit is traceable");
+});
+
+// ---------------------------------------------------------------------------
+// #429 review fixes. Seven findings from the multi-agent review of the #428
+// branch; the two data-integrity ones share a root cause — removing the
+// "solve first" refusal removed a data-loss guard nobody had labelled as one.
+// ---------------------------------------------------------------------------
+
+// ---- #1 (P0): an in-progress save must not destroy a stored loadout ---------
+
+test("#429 review #1: overwrite wording says the saved loadout is kept", () => {
+  const kept = overwriteConfirmText("Sook", true, false);
+  assert.ok(/Sook/.test(kept), "names the build");
+  assert.ok(/kept/i.test(kept),
+    "an in-progress save over a solved record must say the loadout survives");
+  const replaced = overwriteConfirmText("Sook", true, true);
+  assert.ok(/replace/i.test(replaced),
+    "a solved save DOES replace the stored loadout, and says so");
+  const plain = overwriteConfirmText("Sook", false, false);
+  assert.ok(!/kept|replace/i.test(plain),
+    "with no stored loadout there is nothing to promise either way");
+});
+
+test("#429 review #1: overwriteConfirmText escapes nothing and needs no store", () => {
+  // Pure: it is given the two facts, never asked to look them up, so the
+  // confirm and the write cannot disagree about what is being overwritten.
+  assert.strictEqual(typeof overwriteConfirmText("A", false, false), "string");
+});
+
+// ---- #2 (P1): a run belongs to the record it was solved or loaded for ------
+
+test("#429 review #2: a freshly solved run belongs to whatever name you save under", () => {
+  assert.strictEqual(runBelongsTo({ fresh: true }, "Anything", ""), true);
+  assert.strictEqual(runBelongsTo({ fresh: true }, "Anything", "Other"), true);
+});
+
+test("#429 review #2 (AE): a LOADED run belongs only to the record it came from", () => {
+  // Load A (results, lastRun = A's run), step back, rename to B, save.
+  // Attributing A's run to B writes A's snapshot, query AND build stamp into B.
+  const loadedRun = { fresh: false, stampedBuildId: "buildA" };
+  assert.strictEqual(runBelongsTo(loadedRun, "A", "A"), true, "saving A back is still A's run");
+  assert.strictEqual(runBelongsTo(loadedRun, "B", "A"), false,
+    "saving under a different name must not inherit the loaded build's loadout");
+});
+
+test("#429 review #2: no run, or a run with no record behind it, belongs to nobody", () => {
+  assert.strictEqual(runBelongsTo(null, "A", "A"), false);
+  assert.strictEqual(runBelongsTo(undefined, "A", ""), false);
+  assert.strictEqual(runBelongsTo({ fresh: false }, "A", ""), false,
+    "a loaded run with no loadedName cannot be attributed to anything");
+});
+
+test("#429 review #1+#2: the save path attributes the run and preserves the record", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const at = src.indexOf("function saveCurrentCharacter(");
+  assert.ok(at >= 0, "wizard.js declares saveCurrentCharacter");
+  const end = src.indexOf("\n    // Load a saved character", at);
+  assert.ok(end > at, "the save function's end marker resolves");
+  const body = src.slice(at, end);
+  assert.ok(/runBelongsTo\(/.test(body),
+    "the live lastRun is attributed before it is written into a record (#2)");
+  assert.ok(/rec\.snapshot = prev\.snapshot/.test(body),
+    "an in-progress save over a solved record carries that loadout forward (#1)");
+  assert.ok(/rec\.query = prev\.query/.test(body), "…and the query it was solved with");
+  assert.ok(/rec\.stampedBuildId = prev\.stampedBuildId/.test(body),
+    "…and its build stamp, so the preserved loadout does not re-stamp itself current");
+});
+
+test("#429 review #2: loadCharacter clears lastRun on the branch that does not set it", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const at = src.indexOf("function loadCharacter(");
+  const end = src.indexOf("\n    // #428 U3 (R13/R14", at);
+  assert.ok(end > at, "the load function's end marker resolves");
+  const body = src.slice(at, end);
+  assert.ok(/state\.lastRun = null/.test(body),
+    "the non-results branch resets lastRun beside its sibling per-character fields");
+  assert.ok(/state\.loadedStale = false/.test(body), "…and the staleness flag that rides with it");
+});
+
+// ---- #3 (P1): the rail's own Load goes through the guard --------------------
+
+test("#429 review #3: the guard message names what a load would cost", () => {
+  const dirty = { inputsDirty: true, loadedName: "Sook" };
+  const step = unsavedGuardMessage(dirty, "step");
+  const load = unsavedGuardMessage(dirty, "load");
+  assert.ok(/Sook/.test(load), "names the build at risk");
+  assert.ok(/replac/i.test(load), "…and says loading another one replaces it");
+  assert.notStrictEqual(step, load, "the two consequences are worded differently");
+  assert.strictEqual(unsavedGuardMessage({ inputsDirty: false }, "load"), null,
+    "a clean build still raises nothing");
+});
+
+test("#429 review #3: the default kind is a step change, unchanged from #428", () => {
+  const m = unsavedGuardMessage({ inputsDirty: true, loadedName: "" });
+  assert.ok(/never been saved/i.test(m));
+  assert.ok(/close this tab/.test(m));
+});
+
+test("#429 review #3: the rail's Load is routed through the guard, not straight to loadCharacter", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const at = src.indexOf("function wireRail(");
+  assert.ok(at >= 0, "wizard.js declares wireRail");
+  const end = src.indexOf("\n    function ", at + 1);
+  assert.ok(end > at, "wireRail's end marker resolves");
+  const body = src.slice(at, end);
+  assert.ok(/requestLoad\(/.test(body),
+    "Load asks the guard first — it is the action that discards the most work");
+  assert.ok(!/\bloadCharacter\(b\.dataset\.railload\)/.test(body),
+    "…rather than calling loadCharacter directly");
+  assert.ok(/state\.loadedName/.test(body),
+    "deleting the build you are editing warns about the in-memory copy");
+});
+
+test("#429 review #3: the pending action carries its kind, so both paths resume", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  assert.ok(/function resumePending\(/.test(src), "one place resumes a guarded action");
+  const at = src.indexOf("function resumePending(");
+  const body = src.slice(at, src.indexOf("\n    function ", at + 1));
+  assert.ok(/kind === "load"/.test(body) && /loadCharacter\(/.test(body), "a guarded load resumes");
+  assert.ok(/go\(/.test(body), "…and a guarded step change resumes");
+});
+
+// ---- #4 (P1): KTD5 — the stale banner names armor as newly required --------
+
+test("#429 review #4 (KTD5): a displayed build missing armor says so on the banner", () => {
+  const run = { query: { overrides: [] } };
+  const note = staleNote({ lastRun: run, overrideApplied: [], race: "Elf", ml: 34, armor: "" });
+  assert.ok(note, "a pre-KD6 build that never passes the character step is still told");
+  assert.ok(/[Aa]rmor/.test(note), "…and told which field");
+});
+
+test("#429 review #4: a build carrying armor raises no armor note", () => {
+  const run = { query: { overrides: [] } };
+  assert.strictEqual(
+    staleNote({ lastRun: run, overrideApplied: [], race: "Elf", ml: 34, armor: "heavy" }), null);
+});
+
+test("#429 review #4: the Forged exemption reaches the banner too", () => {
+  const run = { query: { overrides: [] } };
+  assert.strictEqual(
+    staleNote({ lastRun: run, overrideApplied: [], race: "Warforged", ml: 34, armor: "" }), null,
+    "a docent-wearing race is not asked for an armor type it cannot pick");
+});
+
+test("#429 review #4: both causes report together rather than one hiding the other", () => {
+  const run = { query: { overrides: [] } };
+  const note = staleNote({ lastRun: run, overrideApplied: [], loadedStale: true,
+                           race: "Elf", ml: 34, armor: "" });
+  assert.ok(/predates the current gear catalog/.test(note), "the catalog cause survives");
+  assert.ok(/[Aa]rmor/.test(note), "…and the armor cause is not swallowed by it");
+});
+
+// ---- #5 (P2): the scoping guard whose marker stopped resolving --------------
+
+test("#429 review #5: every source-slice guard's end marker actually resolves", () => {
+  // The #91 wiring guard sliced to `function renderSavedPicker`, which #428
+  // renamed — indexOf returned -1 and slice(at, -1) covered the rest of the
+  // file, so four assertions could match anywhere below loadCharacter and the
+  // test stayed green. This asserts the markers themselves.
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const testSrc = fs.readFileSync(path.join(__dirname, "wizard.test.js"), "utf-8");
+  const markers = [...testSrc.matchAll(/WIZARD_SRC\.indexOf\("\\n {4}function (\w+)"/g)]
+    .map((m) => m[1]);
+  assert.ok(markers.length, "the guard finds the slice markers it is checking");
+  for (const name of markers) {
+    assert.ok(src.includes(`\n    function ${name}`),
+      `slice marker "function ${name}" must still exist in web/wizard.js — `
+      + "a marker that no longer resolves makes indexOf return -1 and the slice silently widen");
+  }
+});
+
+// ---- #6 (P2): a pure lookup is not an edit ---------------------------------
+
+test("#429 review #6: the search boxes opt out of the dirty listener at declaration", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  for (const id of ["wz-pin-search", "wz-block-search", "wz-add", "wz-radd"]) {
+    const at = src.indexOf(`id="${id}"`);
+    assert.ok(at >= 0, `${id} exists`);
+    const tag = src.slice(src.lastIndexOf("<", at), src.indexOf(">", at));
+    assert.ok(/data-nodirty/.test(tag),
+      `${id} is a lookup, not an edit — it must not arm the unsaved-changes guard`);
+  }
+  assert.ok(/closest\("\[data-nodirty\], \.wz-share"\)/.test(src),
+    "…and the listener honours the opt-out beside the Share-panel exclusion");
+});
+
+// ---- #7 (P2): a fallback that explains itself ------------------------------
+
+test("#429 review #7: the load explanation fires when the target differs from the saved step", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  assert.ok(/savedStep\(i\) !== _target/.test(src),
+    "a record saved on results with no optimal snapshot is bounced to priorities WITH a reason");
+  assert.ok(!/if \(!savedStep\(i\)\)/.test(src),
+    "the absent-step-only condition is gone — it suppressed the very message it gated");
 });

@@ -128,6 +128,37 @@ function stepOnLoad(inputs, snapshot, steps = WIZARD_STEPS) {
   return (s && s !== "results") ? s : stepAfterLoad(snapshot);
 }
 
+/** #429 review #2 — may this live `lastRun` be attributed to the record being
+ *  saved under `name`?
+ *
+ *  `state` is one long-lived closure object that outlives any character, and
+ *  `lastRun` is the heaviest thing on it. A run is THIS save's only when it was
+ *  just solved (`fresh`), or when the name being written is the record it was
+ *  loaded from. Without that second clause: load A (which sets `lastRun`), step
+ *  back, rename to B, save — and B is written with A's snapshot, A's query and
+ *  A's build stamp, so it also never raises the staleness banner. Pure. */
+function runBelongsTo(run, name, loadedName) {
+  if (!run) return false;
+  if (run.fresh === true) return true;
+  const nm = String(name || "").trim();
+  return !!nm && nm === String(loadedName || "").trim();
+}
+
+/** #429 review #1 — the overwrite confirm's wording.
+ *
+ *  Takes the two facts rather than looking them up, so the sentence the player
+ *  reads and the write that follows cannot disagree about what is at stake.
+ *  An in-progress save over a solved record KEEPS that loadout (see
+ *  saveCurrentCharacter); the old wording said only "Update saved build", which
+ *  read as an update while the write replaced the record wholesale. Pure. */
+function overwriteConfirmText(name, prevHasLoadout, savingSolved) {
+  const nm = String(name || "");
+  if (!prevHasLoadout) return `Update saved build \u201C${nm}\u201D?`;
+  return savingSolved
+    ? `Update saved build \u201C${nm}\u201D? Its saved loadout is replaced by the one on screen.`
+    : `Update saved build \u201C${nm}\u201D? Its saved loadout is kept \u2014 only the character and priorities you have on screen are updated.`;
+}
+
 /** #428 U5 (R19/KTD3) — the unsaved-changes guard's message, or null when there
  *  is nothing to warn about.
  *
@@ -136,13 +167,19 @@ function stepOnLoad(inputs, snapshot, steps = WIZARD_STEPS) {
  *  thing the player recognizes; a build that was never saved is described as
  *  such rather than quoted by its typed name — quoting it would read as "your
  *  saved build Sook is at risk" when no such record exists. Pure; unit-tested. */
-function unsavedGuardMessage(state) {
+function unsavedGuardMessage(state, kind) {
   const s = state || {};
   if (!s.inputsDirty) return null;
   const nm = String(s.loadedName || "").trim();
-  return nm
-    ? `You have unsaved changes to \u201C${nm}\u201D. Leaving without saving keeps them only until you close this tab.`
-    : `This build has never been saved. Leaving without saving keeps it only until you close this tab.`;
+  const what = nm ? `You have unsaved changes to \u201C${nm}\u201D.` : `This build has never been saved.`;
+  // #429 review #3 — a step change keeps the work in memory; loading another
+  // build REPLACES it outright. Same flag, materially different cost, so the
+  // sentence says which one the player is about to pay.
+  const cost = kind === "load"
+    ? `Loading another build replaces it, and the changes are gone.`
+    : (nm ? `Leaving without saving keeps them only until you close this tab.`
+          : `Leaving without saving keeps it only until you close this tab.`);
+  return `${what} ${cost}`;
 }
 
 /** #428 U3 (R13/R14/R17/R20/R21) — the save rail's model.
@@ -1005,12 +1042,28 @@ function staleNote(state) {
   const O = _overridesModule();
   const then = (s.lastRun && s.lastRun.query && s.lastRun.query.overrides) || [];
   const now = s.overrideApplied || [];
+  // #429 review #4 (KTD5) — the causes ACCUMULATE rather than short-circuit. A
+  // build can predate both the catalog and the armor requirement, and reporting
+  // only the first would hide the one the player can act on.
+  const notes = [];
   if (s.lastRun && O && !O.sameOverrideSet(then, now)) {
-    return "The build shown was solved with a different set of bonus-type corrections "
-      + "than you have in force now.";
+    notes.push("The build shown was solved with a different set of bonus-type corrections "
+      + "than you have in force now.");
   }
-  if (s.loadedStale) return "This saved build predates the current gear catalog.";
-  return null;
+  if (s.loadedStale) notes.push("This saved build predates the current gear catalog.");
+  // KTD5 — a build saved before armor joined the required set carries none, and
+  // an optimal snapshot routes it straight to Results, so it never meets the
+  // character step's Continue press that would mark the field. The banner is the
+  // only surface that reaches it. Gated on a build being ON SCREEN (`lastRun`):
+  // with nothing displayed there is nothing to call stale.
+  // Gated on `s.race` as well as `s.lastRun`: a build that actually solved
+  // necessarily had a race, so requiring one keeps this off partial states that
+  // are not characters at all (the override-staleness fixtures, for one).
+  if (s.lastRun && s.race && missingRequired(s).indexOf("armor") >= 0) {
+    notes.push("Armor type is now required and this build carries none \u2014 set it on the "
+      + "character step and re-solve, or the loadout may include body armor you cannot wear.");
+  }
+  return notes.length ? notes.join(" ") : null;
 }
 
 // R12 — a pinned two-handed (both-hands) main-hand weapon and a pinned off-hand item
@@ -1531,7 +1584,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, unsavedGuardMessage, railModel, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, unsavedGuardMessage, runBelongsTo, overwriteConfirmText, railModel, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -1926,7 +1979,7 @@ if (typeof window !== "undefined" && window.App) {
         <div class="wz-pinbox">
           <span class="wz-label">Pin specific items <span class="wz-sub">· optional · force gear you've already decided on into the build</span></span>
           <div class="wz-addrow">
-            <input id="wz-pin-search" type="text" placeholder="Search an item by name — e.g. Hydra's Heart…" autocomplete="off">
+            <input id="wz-pin-search" data-nodirty type="text" placeholder="Search an item by name — e.g. Hydra's Heart…" autocomplete="off">
           </div>
           <div id="wz-pin-results" class="wz-pin-results"></div>
           <div id="wz-pin-list" class="wz-pin-list"></div>
@@ -1934,7 +1987,7 @@ if (typeof window !== "undefined" && window.App) {
         <div class="wz-pinbox wz-blockbox">
           <span class="wz-label">Block items or augments <span class="wz-sub">· optional · gear the solver must never recommend</span></span>
           <div class="wz-addrow">
-            <input id="wz-block-search" type="text" placeholder="Search anything placeable — e.g. Lunar Gem of Abjuration…" autocomplete="off">
+            <input id="wz-block-search" data-nodirty type="text" placeholder="Search anything placeable — e.g. Lunar Gem of Abjuration…" autocomplete="off">
           </div>
           <div id="wz-block-results" class="wz-pin-results"></div>
           <div id="wz-block-stage" class="wz-block-stage"></div>
@@ -2198,7 +2251,7 @@ if (typeof window !== "undefined" && window.App) {
           </div>
         </div>
         <div class="wz-addrow">
-          <input id="wz-add" list="wz-stats" placeholder="Add a stat — e.g. Constitution, Dodge, Melee Power…">
+          <input id="wz-add" data-nodirty list="wz-stats" placeholder="Add a stat — e.g. Constitution, Dodge, Melee Power…">
           <datalist id="wz-stats">${allStats.map((s) => `<option value="${esc(s)}">`).join("")}</datalist>
           <button class="btn ghost" id="wz-add-btn">Add</button>
         </div>
@@ -2244,7 +2297,7 @@ if (typeof window !== "undefined" && window.App) {
           <div class="wz-adjust-body">
             <p class="wz-help" style="margin:0 0 var(--sp-3)">Refine priorities, flip the gear pool, then re-solve — no need to step back.</p>
             <div class="wz-addrow">
-              <input id="wz-radd" list="wz-stats2" placeholder="Add a stat…">
+              <input id="wz-radd" data-nodirty list="wz-stats2" placeholder="Add a stat…">
               <datalist id="wz-stats2">${allStats.map((s) => `<option value="${esc(s)}">`).join("")}</datalist>
               <button class="btn ghost" id="wz-radd-btn">Add</button>
             </div>
@@ -3222,11 +3275,28 @@ if (typeof window !== "undefined" && window.App) {
       // LOADED-but-not-resolved build (e.g. after a rename) must preserve its
       // original stamp, or a stale build would re-stamp itself current and the
       // staleness warning would be silenced forever.
-      const run = state.lastRun || null;
+      // #429 review #2 — attribute the live run before writing it. `state` outlives
+      // any one character, so a run left over from the PREVIOUS build would
+      // otherwise be serialized into this record.
+      const run = runBelongsTo(state.lastRun, nm, state.loadedName) ? state.lastRun : null;
       const stamp = (run && run.fresh === false && run.stampedBuildId)
         ? run.stampedBuildId : currentBuildId();
       // eslint-disable-next-line no-undef
+      const prev = CharacterStore.loadCharacter(nm);
+      // eslint-disable-next-line no-undef
       const rec = CharacterStore.serializeCharacter(nm, state, run, stamp);
+      // #429 review #1 — saveCharacter REPLACES by name. Without this, saving an
+      // in-progress build under the name of a solved one destroyed that record's
+      // loadout, query and build stamp with no undo — the data-loss guard the
+      // removed "solve first" refusal had been performing without saying so.
+      // Preserve rather than replace: the record keeps the loadout it was solved
+      // with, exactly as it already did when a loaded build was re-saved without
+      // re-solving. The overwrite confirm says which of the two is happening.
+      if (!run && prev) {
+        rec.snapshot = prev.snapshot;
+        rec.query = prev.query;
+        rec.stampedBuildId = prev.stampedBuildId || null;
+      }
       // eslint-disable-next-line no-undef
       const res = CharacterStore.saveCharacter(rec);
       // #428 U5 (KTD3) — a save is the point of the flag. Cleared only on
@@ -3458,11 +3528,22 @@ if (typeof window !== "undefined" && window.App) {
         // #88 U8 (R30/AE9) — either cause shows the banner, and the text says which.
         refreshStaleBanner();
       } else {
+        // #429 review #2 — this branch never SETS lastRun, so it must clear it:
+        // the previous character's run is still live on `state`, and a save from
+        // here would write that build's loadout into this record.
+        state.lastRun = null;
+        state.loadedStale = false;
         go(_target);
         // The "no solved build" line is an explanation for a FALLBACK, so it is
         // shown only when one happened. A build deliberately saved mid-flow
         // resumes where it stopped and needs no apology for not being solved.
-        if (!savedStep(i)) {
+        //
+        // #429 review #7 — the test is whether the target DIFFERS from what the
+        // record asked for, not merely whether it recorded one. `solve()` sets
+        // step "results" on the infeasible and catch paths too, so a save there
+        // records "results" with no optimal snapshot; keying on absence alone
+        // suppressed the very message this branch exists to give.
+        if (savedStep(i) !== _target) {
           const s = document.getElementById("wz-status");
           if (s) s.textContent = `"${rec.name}" has no solved build saved — adjust priorities and re-solve.`;
         }
@@ -3517,7 +3598,12 @@ if (typeof window !== "undefined" && window.App) {
      *  overwrite. */
     function trySave(nm) {
       // eslint-disable-next-line no-undef
-      if (nm && CharacterStore.loadCharacter(nm) && !window.confirm(`Update saved build "${nm}"?`)) return null;
+      const prev = nm ? CharacterStore.loadCharacter(nm) : null;
+      if (prev) {
+        const prevHasLoadout = !!(prev.snapshot && prev.snapshot.status === "optimal");
+        const savingSolved = runBelongsTo(state.lastRun, nm, state.loadedName);
+        if (!window.confirm(overwriteConfirmText(nm, prevHasLoadout, savingSolved))) return null;
+      }
       const res = saveCurrentCharacter(nm);
       if (res.ok) state.loadedName = nm;
       return res;
@@ -3548,10 +3634,20 @@ if (typeof window !== "undefined" && window.App) {
       const rail = document.getElementById("wz-rail");
       if (rail) rail.onclick = (e) => {
         const b = e.target.closest("button"); if (!b) return;
-        if (b.dataset.railload != null) { loadCharacter(b.dataset.railload); return; }
-        if (b.dataset.raildel != null && window.confirm(`Delete saved build "${b.dataset.raildel}"?`)) {
+        if (b.dataset.railload != null) { requestLoad(b.dataset.railload); return; }
+        if (b.dataset.raildel != null) {
+          // #429 review #3 — deleting the build you are EDITING removes the only
+          // stored copy while the unsaved edits stay in memory with nothing left
+          // to save them back to. The confirm says so rather than reading like an
+          // ordinary delete.
+          const nm = b.dataset.raildel;
+          const editingThis = state.inputsDirty && nm === state.loadedName;
+          const msg = editingThis
+            ? `Delete saved build \u201C${nm}\u201D? You have unsaved changes to it, and this removes the only saved copy.`
+            : `Delete saved build \u201C${nm}\u201D?`;
+          if (!window.confirm(msg)) return;
           // eslint-disable-next-line no-undef
-          CharacterStore.deleteCharacter(b.dataset.raildel);
+          CharacterStore.deleteCharacter(nm);
           renderRail();
         }
       };
@@ -3777,10 +3873,30 @@ if (typeof window !== "undefined" && window.App) {
      *  the very action that is about to produce the thing worth saving. */
     function navigate(step) {
       if (step === state.step) return;
-      const msg = unsavedGuardMessage(state);
-      if (!msg) { go(step); return; }
-      state.unsavedPrompt = step;
+      guardOr({ kind: "step", value: step });
+    }
+
+    /** #429 review #3 — the rail's Load discards MORE than a step change does:
+     *  it replaces the whole in-memory build. It went straight to loadCharacter,
+     *  whose first act is `state.inputsDirty = false`, so the edits vanished and
+     *  the flag that would have caught it was cleared in the same breath. */
+    function requestLoad(name) {
+      guardOr({ kind: "load", value: name });
+    }
+
+    /** The one gate. Runs `pending` immediately when there is nothing to lose;
+     *  otherwise stashes it and raises the guard, which resumes it verbatim. */
+    function guardOr(pending) {
+      const msg = unsavedGuardMessage(state, pending.kind);
+      if (!msg) { resumePending(pending); return; }
+      state.unsavedPrompt = pending;
       showUnsavedGuard(msg);
+    }
+
+    function resumePending(pending) {
+      if (!pending) return;
+      if (pending.kind === "load") { loadCharacter(pending.value); return; }
+      go(pending.value);
     }
 
     // The guard itself (R19). A modal rather than an inline bar because it has to
@@ -3806,8 +3922,8 @@ if (typeof window !== "undefined" && window.App) {
           <p id="wz-unsaved-msg">${esc(msg)}</p>
           <div class="wz-modal-actions">
             <button class="btn primary" id="wz-unsaved-save" type="button">Save and continue</button>
-            <button class="btn ghost" id="wz-unsaved-go" type="button">Continue without saving</button>
-            <button class="btn ghost" id="wz-unsaved-stay" type="button">Stay on this step</button>
+            <button class="btn ghost" id="wz-unsaved-go" type="button">${state.unsavedPrompt && state.unsavedPrompt.kind === "load" ? "Load anyway" : "Continue without saving"}</button>
+            <button class="btn ghost" id="wz-unsaved-stay" type="button">${state.unsavedPrompt && state.unsavedPrompt.kind === "load" ? "Keep editing this build" : "Stay on this step"}</button>
           </div>
           <span class="wz-savestat" id="wz-unsaved-stat" aria-live="polite"></span>
         </div>`;
@@ -3829,16 +3945,16 @@ if (typeof window !== "undefined" && window.App) {
       if (stay) stay.onclick = closeUnsavedGuard;
       const leave = document.getElementById("wz-unsaved-go");
       if (leave) leave.onclick = () => {
-        // Told and acknowledged: the flag drops so the next step change does not
+        // Told and acknowledged: the flag drops so the next navigation does not
         // ask again. The next edit raises it right back.
-        state.inputsDirty = false; closeUnsavedGuard(); go(to);
+        state.inputsDirty = false; closeUnsavedGuard(); resumePending(to);
       };
       const save = document.getElementById("wz-unsaved-save");
       if (save) save.onclick = () => {
         const nm = String(state.characterName || "").trim();
         const res = trySave(nm);
         if (!res) return;   // overwrite declined
-        if (res.ok) { closeUnsavedGuard(); go(to); return; }
+        if (res.ok) { closeUnsavedGuard(); resumePending(to); return; }
         const stat = document.getElementById("wz-unsaved-stat");
         if (stat) stat.textContent = saveErrorText(res.error);
         // The name field is in the rail, which is behind this dialog — point at
@@ -3885,12 +4001,16 @@ if (typeof window !== "undefined" && window.App) {
       // name is the FIRST half of saving.
       const body = root.querySelector(".wz-body");
       if (body) {
-        // …except the Share panel, whose select and buttons choose what to
-        // EXPORT. Picking a loadout to download is not editing the build, and
-        // marking it dirty would raise the guard over nothing.
+        // …except surfaces that LOOK things up rather than change them: the
+        // Share panel (which picks what to export) and the search / add fields
+        // marked `data-nodirty` at their declaration. #429 review #6 — typing a
+        // query into the block search and clearing it used to arm the guard, so
+        // the next Continue warned about a build byte-identical to the one the
+        // player arrived with. Opting out at the declaration rather than by a
+        // list here means the next search box inherits the right behaviour.
         const onEdit = (e) => {
           const t = e.target;
-          if (t && t.closest && t.closest(".wz-share")) return;
+          if (t && t.closest && t.closest("[data-nodirty], .wz-share")) return;
           markDirty();
         };
         body.addEventListener("input", onEdit);
