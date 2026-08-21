@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, savedStep, stepOnLoad, unsavedGuardMessage, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
+const { railModel, savedStep, stepOnLoad, unsavedGuardMessage, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -26,10 +26,17 @@ test("WIZARD_STEPS order", () => {
   assert.deepStrictEqual(WIZARD_STEPS, ["intro", "character", "pool", "priorities", "results"]);
 });
 
-test("canAdvance(character): needs a race and a positive ML", () => {
-  assert.ok(!canAdvance("character", { race: "", ml: 34 }));
-  assert.ok(!canAdvance("character", { race: "Human", ml: 0 }));
-  assert.ok(canAdvance("character", { race: "Human", ml: 34 }));
+// #428 U6 (KD6) — armor JOINED this gate. The pre-#428 expectation ("race and a
+// positive ML are enough") is superseded, not merely extended: a player who
+// advanced without armor could solve for a loadout they cannot wear, because
+// armor drives the dodge cap and filters what is equippable.
+test("canAdvance(character): needs a race, a positive ML, and an armor type", () => {
+  assert.ok(!canAdvance("character", { race: "", ml: 34, armor: "light" }));
+  assert.ok(!canAdvance("character", { race: "Human", ml: 0, armor: "light" }));
+  assert.ok(!canAdvance("character", { race: "Human", ml: 34, armor: "" }));
+  assert.ok(canAdvance("character", { race: "Human", ml: 34, armor: "light" }));
+  // …except for the Forged, who wear a docent and have no armor pick to make.
+  assert.ok(canAdvance("character", { race: "Warforged", ml: 34, armor: "" }));
 });
 
 test("canAdvance(pool): owned mode requires an uploaded inventory", () => {
@@ -3241,4 +3248,132 @@ test("#428 U5: the guard gates player navigation, not the app's own step changes
     assert.ok(/navigate\(/.test(src.slice(at, at + 260)),
       `${nav} navigation is guarded`);
   }
+});
+
+// ---------------------------------------------------------------------------
+// #428 U6 (R1-R12) — the character step reads as grouped and required-marked,
+// and an unanswered required field stops Continue and says which.
+//
+// KD6 adds armor to the required set, which is a GATE change rather than a
+// labelling one: a player who advances today without setting armor will be
+// stopped. The Forged exemption below is why that gate is satisfiable at all.
+// ---------------------------------------------------------------------------
+
+test("#428 U6 (R2a): the required set is race, ML cap and armor", () => {
+  assert.deepStrictEqual(missingRequired({ race: "", ml: 0, armor: "" }).sort(),
+    ["armor", "ml", "race"]);
+  assert.deepStrictEqual(missingRequired({ race: "Human", ml: 30, armor: "light" }), []);
+});
+
+test("#428 U6 (AE1): race blank is reported as missing", () => {
+  assert.deepStrictEqual(missingRequired({ race: "", ml: 30, armor: "light" }), ["race"]);
+});
+
+test("#428 U6 (AE2a): armor blank blocks even with race and ML cap set", () => {
+  const st = { race: "Human", ml: 30, armor: "" };
+  assert.deepStrictEqual(missingRequired(st), ["armor"]);
+  assert.ok(!canAdvance("character", st), "the gate armor newly joins is ENFORCED, not merely displayed");
+});
+
+test("#428 U6 (AE2): all three set advances regardless of optional fields", () => {
+  assert.ok(canAdvance("character", { race: "Human", ml: 30, armor: "cloth" }));
+  assert.ok(canAdvance("character", { race: "Human", ml: 30, armor: "cloth",
+    alignment: "", oath: "", style: "", weaponTypes: [] }));
+});
+
+test("#428 U6 (KD6): a Forged race is exempt from the armor requirement", () => {
+  // Warforged and Bladeforged wear a docent; the armor control is disabled and
+  // the race handler CLEARS state.armor. Requiring it of them would be a gate no
+  // player could satisfy — the step would simply never advance.
+  for (const race of ["Warforged", "Bladeforged"]) {
+    assert.deepStrictEqual(missingRequired({ race, ml: 30, armor: "" }), [],
+      `${race} needs no armor pick`);
+    assert.ok(canAdvance("character", { race, ml: 30, armor: "" }));
+  }
+});
+
+test("#428 U6 (AE3): a loaded build carrying all three marks nothing as needing an answer", () => {
+  const loaded = { race: "Elf", ml: 34, armor: "medium" };
+  assert.deepStrictEqual(missingRequired(loaded), []);
+  assert.strictEqual(missingRequiredMessage(loaded), null);
+});
+
+test("#428 U6 (AE3a): a build saved before KD6 carries no armor and is marked", () => {
+  const preKd6 = { race: "Elf", ml: 34, armor: "" };
+  assert.deepStrictEqual(missingRequired(preKd6), ["armor"]);
+  assert.ok(/[Aa]rmor/.test(missingRequiredMessage(preKd6)));
+});
+
+test("#428 U6 (R10): one message names EVERY unanswered field, not only the first", () => {
+  const msg = missingRequiredMessage({ race: "", ml: 0, armor: "" });
+  assert.ok(/Race/.test(msg), "names race");
+  assert.ok(/level/i.test(msg), "names the ML cap");
+  assert.ok(/[Aa]rmor/.test(msg), "names armor");
+  const one = missingRequiredMessage({ race: "", ml: 30, armor: "light" });
+  assert.ok(/Race/.test(one) && !/[Aa]rmor/.test(one), "and names only what is actually missing");
+});
+
+test("#428 U6: missingRequired treats a non-positive or non-numeric ML cap as unanswered", () => {
+  for (const ml of ["", null, undefined, 0, "0", "abc", -3]) {
+    assert.ok(missingRequired({ race: "Human", ml, armor: "light" }).includes("ml"),
+      `ML ${JSON.stringify(ml)} is not an answer`);
+  }
+  assert.ok(!missingRequired({ race: "Human", ml: "30", armor: "light" }).includes("ml"),
+    "a numeric string is an answer — the input is a string at runtime");
+});
+
+test("#428 U6 (R6a): a collapsed weapon group states whether it holds set values", () => {
+  const empty = weaponGroupSummary({ weaponTypes: [], offHand: [], offHandWeapons: [] }, "");
+  assert.ok(/nothing set/i.test(empty), "an unopened group is never mistaken for an empty one");
+  const set = weaponGroupSummary({ twoWeaponFighting: true, style: "one-hand",
+    weaponTypes: ["Dagger", "Rapier"], offHand: ["empty"], offHandWeapons: [] }, "One-hand / Dual-wield");
+  assert.ok(!/nothing set/i.test(set));
+  assert.ok(/Two Weapon Fighting/.test(set), "the declaration is named");
+  assert.ok(/One-hand/.test(set), "the style is named by its label, not its id");
+  assert.ok(/2 weapon types/.test(set), "the picks are counted");
+  assert.ok(/1 off-hand/.test(set));
+});
+
+test("#428 U6 (R11): the invalid treatment adds no repeating animation", () => {
+  const fs = require("fs"); const path = require("path");
+  const css = fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf-8");
+  const at = css.indexOf(".wz-invalid");
+  assert.ok(at >= 0, "styles.css defines the invalid treatment");
+  const rule = css.slice(at, css.indexOf("}", at));
+  assert.ok(!/animation/.test(rule), "no animation (WCAG 2.3.1 — KD4)");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const fn = src.slice(src.indexOf("function showMissingRequired("));
+  assert.ok(!/wz-nudge/.test(fn.slice(0, fn.indexOf("\n    }"))),
+    "the character step does not fall back to the nudge (KTD2)");
+});
+
+test("#428 U6 (KTD2): the pool and priorities steps still nudge the Continue button", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const at = src.indexOf("function blockFeedback(");
+  assert.ok(at >= 0, "the generic handler became step-aware rather than being rewritten");
+  const body = src.slice(at, src.indexOf("\n    }", at));
+  assert.ok(/flashBlock\(\)/.test(body), "other steps keep the nudge");
+  assert.ok(/"character"/.test(body), "…and only the character step gets the field treatment");
+});
+
+test("#428 U6 (R1/R2/R4): the character step renders three labelled groups in order", () => {
+  const body = stepSource("stepCharacter");
+  const req = body.indexOf('data-group="required"');
+  const restr = body.indexOf('data-group="restrictions"');
+  const weap = body.indexOf('data-group="weapons"');
+  assert.ok(req >= 0 && restr >= 0 && weap >= 0, "all three groups exist");
+  assert.ok(req < restr && restr < weap, "required first, then restrictions, then weapon setup (R4)");
+  assert.ok(/<details[^>]*data-group="weapons"/.test(body), "weapon setup is the collapsible one (R6)");
+  assert.ok(!/<details[^>]*data-group="required"/.test(body), "required fields are visible without interaction (R6)");
+  assert.ok(!/<details[^>]*data-group="restrictions"/.test(body), "…and so are restrictions (R6)");
+});
+
+test("#428 U6 (R2): each required field is marked at the field", () => {
+  const body = stepSource("stepCharacter");
+  for (const key of ["ml", "race", "armor"]) {
+    assert.ok(new RegExp(`data-req="${key}"`).test(body), `${key} is addressable as a required field`);
+  }
+  assert.strictEqual((body.match(/wz-req-mark/g) || []).length, 3,
+    "exactly the three required fields carry the marker");
 });

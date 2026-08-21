@@ -19,7 +19,7 @@ const FORGED = new Set(["warforged", "bladeforged"]);
  *  solver (programmatic callers may pass it), so the fix lives here in the
  *  wizard's gate, not in the solver. */
 function canAdvance(stepId, state) {
-  if (stepId === "character") return !!state.race && Number(state.ml) > 0;
+  if (stepId === "character") return missingRequired(state).length === 0;
   if (stepId === "pool") return state.pool !== "owned" || !!state.ownedNames;
   if (stepId === "priorities") return (state.priorities || []).some((p) => p !== _utilitySentinel);
   return true;
@@ -37,6 +37,66 @@ function prevStep(stepId, steps = WIZARD_STEPS) {
   return steps[i - 1];
 }
 const wizIsForged = (race) => FORGED.has(String(race || "").toLowerCase());
+
+/** #428 U6 (R2a) — the character step's required fields, in the order they are
+ *  asked. `label` is what the message and the field marker both read from, so
+ *  the two cannot name the same field differently. */
+const CHARACTER_REQUIRED = [
+  { key: "ml", label: "Minimum level (ML) cap" },
+  { key: "race", label: "Race" },
+  { key: "armor", label: "Armor type" },
+];
+
+/** #428 U6 (R7/R12/KD6) — which required fields are unanswered, in field order.
+ *
+ *  Armor joins the required set under KD6, which makes this a GATE change: it is
+ *  what `canAdvance("character")` now asks. The Forged exemption is load-bearing
+ *  rather than a nicety — Warforged and Bladeforged wear a docent, the armor
+ *  control renders disabled, and the race handler clears `state.armor`, so
+ *  requiring it of them would be a gate no player could ever satisfy.
+ *
+ *  A build LOADED with all three answered returns [] and is therefore marked
+ *  nowhere (R12); a build saved before KD6 carries no armor and is marked here
+ *  rather than blocking silently somewhere else (AE3a). Pure; unit-tested. */
+function missingRequired(state) {
+  const s = state || {};
+  const out = [];
+  if (!(Number(s.ml) > 0)) out.push("ml");
+  if (!s.race) out.push("race");
+  if (!s.armor && !wizIsForged(s.race)) out.push("armor");
+  return out;
+}
+
+/** #428 U6 (R10) — ONE message naming every unanswered required field, or null.
+ *  Not one message per field: the plan's complaint is that the step says nothing
+ *  at all, and three separate lines would be the same problem inverted. */
+function missingRequiredMessage(state) {
+  const miss = missingRequired(state);
+  if (!miss.length) return null;
+  const labels = CHARACTER_REQUIRED.filter((f) => miss.indexOf(f.key) >= 0).map((f) => f.label);
+  const list = labels.length === 1
+    ? labels[0]
+    : `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}`;
+  return `${list} ${labels.length === 1 ? "is" : "are"} still needed before you can continue.`;
+}
+
+/** #428 U6 (R6a) — what a COLLAPSED weapon group says about itself.
+ *
+ *  A group that hides its contents must not also hide whether it has any, or an
+ *  unopened group is indistinguishable from an empty one. The style is named by
+ *  its LABEL, passed in, because the taxonomy owns that mapping and this helper
+ *  must stay pure. Unit-tested. */
+function weaponGroupSummary(state, styleLabel) {
+  const s = state || {};
+  const bits = [];
+  if (s.twoWeaponFighting) bits.push("Two Weapon Fighting");
+  if (s.style) bits.push(String(styleLabel || s.style));
+  const wt = (s.weaponTypes || []).length;
+  if (wt) bits.push(`${wt} weapon type${wt === 1 ? "" : "s"}`);
+  const oh = (s.offHand || []).length + (s.offHandWeapons || []).length;
+  if (oh) bits.push(`${oh} off-hand pick${oh === 1 ? "" : "s"}`);
+  return bits.length ? bits.join(" · ") : "nothing set";
+}
 
 /** U1 (R1) — where loading a saved character lands. A snapshot that solved
  *  optimally goes straight to "results" (no pool/priorities detour); anything
@@ -1471,7 +1531,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, unsavedGuardMessage, railModel, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, unsavedGuardMessage, railModel, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -1566,6 +1626,15 @@ if (typeof window !== "undefined" && window.App) {
       // #428 U5 (R19) — the step a blocked navigation was heading for, or null.
       // Transient: it exists only between the click and the player's answer.
       unsavedPrompt: null,
+      // #428 U6 — the weapon fold's open state. Persisted on state because half
+      // the character step's handlers re-render the whole step, and a fold that
+      // snapped shut mid-edit would be worse than not folding at all.
+      weaponsOpen: false,
+      // #428 U6 (R8) — whether a blocked Continue has already asked. Until it
+      // has, nothing is marked as needing an answer (R12); after it has, the
+      // marks are re-applied on every render for whatever is STILL missing, so
+      // they persist until answered and clear the moment they are.
+      requiredShown: false,
       // U6 — set-augment availability. A Set of owned set-augment `set` names;
       // empty by default so the set-augment family stays inert until opted in.
       ownedSetAugments: new Set(),
@@ -1630,105 +1699,51 @@ if (typeof window !== "undefined" && window.App) {
 
     function stepCharacter() {
       const forged = wizIsForged(state.race);
+      // #428 U6 (R6a) — the weapon group is the one that collapses, so it has to
+      // say whether it holds anything. The style's LABEL comes from the shipped
+      // taxonomy, never re-derived here.
+      const styleLabel = (WT && state.style)
+        ? ((WT.STYLES.find((x) => x.id === state.style) || {}).label || state.style) : "";
+      const weaponsSet = weaponGroupSummary(state, styleLabel);
       return `<section class="wz-card">
         <p class="wz-eyebrow">Step 1 of 4 · Your character</p>
         <h2>A few basics so we only show gear you can use</h2>
         <p class="wz-lead">These filter out anything you can't equip before we optimize — no wasted results.</p>
         <div class="wz-form">
-          <div class="wz-pair">
-            <label class="wz-field"><span class="wz-label">Minimum level (ML) cap</span>
+          <!-- #428 U6 (R1/R2/R4) — three labelled containers, required first.
+               The step used to be nine controls in one flat card with nothing on
+               screen saying which of them Continue was waiting for. -->
+          <fieldset class="wz-group" data-group="required">
+            <legend class="wz-group-legend">Required
+              <span class="wz-sub">· ${forged ? "your race wears a docent, so armor is settled" : "all three are needed to continue"}</span></legend>
+            <div class="wz-grid">
+              <label class="wz-field" data-req="ml"><span class="wz-label"><span class="wz-req-mark" aria-hidden="true">*</span> Minimum level (ML) cap</span>
               <span class="wz-help">Highest item level you can equip. Gear above this is excluded.</span>
               <input id="wz-ml" class="wz-ml" type="number" min="1" max="40" value="${esc(state.ml)}"></label>
-            <label class="wz-field"><span class="wz-label">Only items ML ≥ <span id="wz-mlfloor-auto" class="wz-sub"${state.mlFloorManual ? " hidden" : ""}>· auto (cap − 5)</span></span>
-              <span class="wz-help">Hide low-level gear — the solver ignores items below this. Defaults to your ML cap − 5 and follows the cap until you set it yourself; lower it to consider more gear.</span>
-              <input id="wz-mlfloor" class="wz-ml" type="number" min="1" max="40" value="${state.mlFloor ? esc(state.mlFloor) : ""}"></label>
-          </div>
-          <div class="wz-pair">
-            <label class="wz-field"><span class="wz-label">Race</span>
+            <label class="wz-field" data-req="race"><span class="wz-label"><span class="wz-req-mark" aria-hidden="true">*</span> Race</span>
               <span class="wz-help">Determines body-slot and race-locked gear.</span>
               <select id="wz-race"><option value="">Select a race…</option>
                 <optgroup label="Basic races">${RACES_BASIC.map((r) => `<option ${state.race === r ? "selected" : ""}>${r}</option>`).join("")}</optgroup>
                 <optgroup label="Iconic heroes">${RACES_ICONIC.map((r) => `<option ${state.race === r ? "selected" : ""}>${r}</option>`).join("")}</optgroup></select></label>
-            <label class="wz-field"><span class="wz-label">Alignment <span class="wz-sub">· optional</span></span>
+            <div class="wz-field wz-span" data-req="armor"><span class="wz-label"><span class="wz-req-mark" aria-hidden="true">*</span> Armor type ${forged ? '<span class="wz-sub">· docent (Forged race)</span>' : ""}</span>
+            <span class="wz-help">Your proficiency — sets the dodge cap and eligible body armor.</span>
+            <div class="wz-seg" id="wz-armor">${ARMOR.map(([v, l]) => `<button class="wz-chip ${state.armor === v ? "on" : ""}" data-armor="${v}" ${forged ? "disabled" : ""}>${l}</button>`).join("")}</div></div>
+            </div>
+          </fieldset>
+          <fieldset class="wz-group" data-group="restrictions">
+            <legend class="wz-group-legend">Restrictions <span class="wz-sub">· all optional — leave them alone for a full search</span></legend>
+            <div class="wz-grid">
+              <label class="wz-field"><span class="wz-label">Only items ML ≥ <span id="wz-mlfloor-auto" class="wz-sub"${state.mlFloorManual ? " hidden" : ""}>· auto (cap − 5)</span></span>
+              <span class="wz-help">Hide low-level gear — the solver ignores items below this. Defaults to your ML cap − 5 and follows the cap until you set it yourself; lower it to consider more gear.</span>
+              <input id="wz-mlfloor" class="wz-ml" type="number" min="1" max="40" value="${state.mlFloor ? esc(state.mlFloor) : ""}"></label>
+          <label class="wz-field"><span class="wz-label">Alignment</span>
               <span class="wz-help">No alignment-gated gear is in the verified dataset yet, so this won't change results.</span>
               <select id="wz-align"><option value="">Select an alignment…</option>
                 ${ALIGNMENTS.map((a) => `<option ${state.alignment === a ? "selected" : ""}>${a}</option>`).join("")}</select></label>
-          </div>
-          <div class="wz-field"><span class="wz-label">Armor type ${forged ? '<span class="wz-sub">· docent (Forged race)</span>' : ""}</span>
-            <span class="wz-help">Your proficiency — sets the dodge cap and eligible body armor.</span>
-            <div class="wz-seg" id="wz-armor">${ARMOR.map(([v, l]) => `<button class="wz-chip ${state.armor === v ? "on" : ""}" data-armor="${v}" ${forged ? "disabled" : ""}>${l}</button>`).join("")}</div></div>
-          <div class="wz-field"><span class="wz-label">Oath / anathema <span class="wz-sub">· optional</span></span>
+          <div class="wz-field wz-span"><span class="wz-label">Oath / anathema</span>
             <span class="wz-help">A class oath that forbids certain armor. Approximated by armor type — see the note when on.</span>
             <div class="wz-seg" id="wz-oath"><button class="wz-chip ${state.oath === "druid" ? "on" : ""}" data-oath="druid" ${forged ? "disabled" : ""}>Druid — no metal</button></div>
             ${state.oath === "druid" && !forged ? `<p class="wz-help wz-note">Druidic oath: no metal body armor, no metal shield, no rune arm — matched against each item's wiki-sourced material. Proficiency also limits you to light and medium armor and non-tower shields. A few items whose material the wiki doesn't state are left available rather than excluded on a guess.</p>` : ""}</div>
-          ${(() => {
-            // plan 003 U3 (R4) — three style states, and the control ACCEPTS INPUT in
-            // all three. "Inert" here means the declaration currently has no effect and
-            // says so; it is deliberately NOT `disabled`, for two reasons: a player must
-            // be able to declare before choosing a style or while on another one (AE3
-            // declares, then switches), and a disabled control reads as "your character
-            // can't have this feat" rather than "this style doesn't use it".
-            //
-            // Which styles permit a second weapon is the shipped taxonomy's call, not a
-            // new list here (KTD2) — twfWeaponAllowedForStyle is true for `one-hand` only.
-            const twfActive = !!(WT && WT.twfWeaponAllowedForStyle(state.style));
-            const styleLabel = (WT && state.style)
-              ? ((WT.STYLES.find((s) => s.id === state.style) || {}).label || state.style) : "";
-            const inert = state.twoWeaponFighting && !twfActive
-              ? (state.style
-                ? `<p class="wz-help wz-note wz-twf-inert">Declared, but it has no effect under <strong>${esc(styleLabel)}</strong> — that style doesn't wield a second weapon. Your declaration is kept; switch to One-hand / Dual-wield to use it.</p>`
-                : `<p class="wz-help wz-note wz-twf-inert">Declared. It has no effect until you pick a combat style that wields a second weapon.</p>`)
-              : "";
-            return `<div class="wz-field"><span class="wz-label">Two Weapon Fighting <span class="wz-sub">· optional</span></span>
-            <span class="wz-help">Declare the feat if your character fights with a weapon in each hand. Dual-wielding used to switch on only when you added a second weapon type below — declaring it here is the explicit way.</span>
-            <div class="wz-seg" id="wz-twf"><button class="wz-chip ${state.twoWeaponFighting ? "on" : ""}" data-twf="1" aria-pressed="${state.twoWeaponFighting ? "true" : "false"}">Two Weapon Fighting</button></div>
-            ${inert}</div>`;
-          })()}
-          ${(() => {
-            const styles = WT ? WT.STYLES : [];
-            const wtypes = (WT && state.style) ? WT.weaponTypesForStyle(state.style, weaponTypesInData) : [];
-            const ohOn = WT ? WT.offHandEnabledForStyle(state.style) : false;
-            const twfOn = WT ? WT.twfWeaponAllowedForStyle(state.style) : false;
-            const ohTypes = WT ? ((state.style && WT.offHandTypesForStyle(state.style)) || WT.OFF_HAND_TYPES) : [];
-            const offWeaponTypes = twfOn ? WT.offHandWeaponTypes(weaponTypesInData) : [];
-            // A dropdown pick-list: choose an option to add; picked options show as
-            // removable tags. The dropdown offers only the not-yet-picked ones. `o.lbl`
-            // maps a value to its display label; `o.add` is the placeholder.
-            const pickList = (id, opts, sel, o = {}) => {
-              const lbl = o.lbl || ((t) => t), add = o.add || "Add a type…";
-              const avail = opts.filter((t) => !sel.includes(t));
-              return `<div class="wz-picklist">
-              <select class="wz-pl-select" data-plsel="${id}"${avail.length ? "" : " disabled"}>
-                <option value="">${avail.length ? esc(add) : "All added"}</option>
-                ${avail.map((t) => `<option value="${esc(t)}">${esc(lbl(t))}</option>`).join("")}
-              </select>
-              <div class="wz-pl-tags" data-pltags="${id}">${sel.map((t) => `<button class="wz-tag" data-pltag="${id}" data-val="${esc(t)}">${esc(lbl(t))}<span class="wz-tag-x" aria-hidden="true">×</span></button>`).join("")}</div></div>`;
-            };
-            return `<div class="wz-field"><span class="wz-label">Combat style <span class="wz-sub">· optional</span></span>
-            <span class="wz-help">Pick a style to narrow the weapon and off-hand. Click the selected style again to switch. Each list below is optional — add types to narrow it; add nothing and any is allowed.</span>
-            <div class="wz-seg" id="wz-style">${(state.style ? styles.filter((s) => s.id === state.style) : styles).map((s) => `<button class="wz-chip ${state.style === s.id ? "on" : ""}" data-style="${s.id}">${esc(s.label)}</button>`).join("")}</div>
-            ${state.style ? `<div class="wz-subseg">
-              <span class="wz-sublabel">Weapon type <span class="wz-sub">· optional — add none for any</span></span>
-              ${pickList("weptypes", wtypes, state.weaponTypes)}
-              ${ohOn ? (() => {
-                // One "Off hand" dropdown holding both off-hand ITEMS and (dual-wield)
-                // a second WEAPON. Selections route to state.offHand vs state.offHandWeapons.
-                const ohLbl = (t) => t === "empty" ? "Empty (no off-hand)" : t;
-                const itemAvail = ["empty", ...ohTypes].filter((t) => !state.offHand.includes(t));
-                const wpnAvail = twfOn ? offWeaponTypes.filter((t) => !state.offHandWeapons.includes(t)) : [];
-                const any = itemAvail.length + wpnAvail.length;
-                return `<span class="wz-sublabel">Off hand <span class="wz-sub">· optional — add none for any${twfOn ? "; a shield, orb, rune arm, or a second weapon (dual-wield)" : ""}</span></span>
-              <div class="wz-picklist">
-                <select class="wz-pl-select" data-plsel="offhand"${any ? "" : " disabled"}>
-                  <option value="">${any ? "Add…" : "All added"}</option>
-                  ${itemAvail.length ? `<optgroup label="Off-hand item">${itemAvail.map((t) => `<option value="${esc(t)}">${esc(ohLbl(t))}</option>`).join("")}</optgroup>` : ""}
-                  ${wpnAvail.length ? `<optgroup label="Second weapon (dual-wield)">${wpnAvail.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join("")}</optgroup>` : ""}
-                </select>
-                <div class="wz-pl-tags" data-pltags="offhand">${state.offHand.map((t) => `<button class="wz-tag" data-pltag="offhand" data-arr="offHand" data-val="${esc(t)}">${esc(ohLbl(t))}<span class="wz-tag-x" aria-hidden="true">×</span></button>`).join("")}${state.offHandWeapons.map((t) => `<button class="wz-tag" data-pltag="offhand" data-arr="offHandWeapons" data-val="${esc(t)}">${esc(t)}<span class="wz-tag-x" aria-hidden="true">×</span></button>`).join("")}</div>
-              </div>`;
-              })() : `<p class="wz-help wz-note">${state.style === "ranged" ? "Bows use both hands — no off-hand item." : "Two-handed weapons use both hands — no off-hand item."}</p>`}
-            </div>` : ""}</div>`;
-          })()}
           <label class="wz-check"><input type="checkbox" id="wz-artifact"${state.includeArtifact ? " checked" : ""}>
             <span class="wz-check-body"><span class="wz-label">Include an Artifact</span>
             <span class="wz-help">Build around your one equippable Artifact — the optimizer picks the best-scoring one and tags its slot. Off by default.</span></span></label>
@@ -1763,7 +1778,7 @@ if (typeof window !== "undefined" && window.App) {
                 <span class="wz-check-body"><span class="wz-label">${esc(label)}</span>
                 <span class="wz-help">${esc(help)}</span></span></label>`).join("")}
             </fieldset>
-            <label class="wz-field" id="wz-augceiling-field"><span class="wz-label">Augments up to ML <span class="wz-sub">· optional</span></span>
+            <label class="wz-field" id="wz-augceiling-field"><span class="wz-label">Augments up to ML</span>
               <span class="wz-help" id="wz-augceiling-help">${_rungExcludesAllAugments(rung)
                 ? "Not applicable — the rung you chose solves without augments, so there is no augment tier to restrict. Your value is kept for when you move back up."
                 : "Restrict augments to tiers you can realistically obtain — items still follow the ML cap. Defaults to your cap (no restriction); lower it to exclude higher augment tiers from the solve."}</span>
@@ -1797,7 +1812,83 @@ if (typeof window !== "undefined" && window.App) {
               </div>
             </details>`;
           })()}
+            </div>
+          </fieldset>
+          <details class="wz-group wz-group-fold" data-group="weapons" id="wz-weapons"${state.weaponsOpen ? " open" : ""}>
+            <summary class="wz-group-legend">Weapon setup <span class="wz-sub">· ${esc(weaponsSet)}</span></summary>
+            <div class="wz-grid">
+              ${(() => {
+            // plan 003 U3 (R4) — three style states, and the control ACCEPTS INPUT in
+            // all three. "Inert" here means the declaration currently has no effect and
+            // says so; it is deliberately NOT `disabled`, for two reasons: a player must
+            // be able to declare before choosing a style or while on another one (AE3
+            // declares, then switches), and a disabled control reads as "your character
+            // can't have this feat" rather than "this style doesn't use it".
+            //
+            // Which styles permit a second weapon is the shipped taxonomy's call, not a
+            // new list here (KTD2) — twfWeaponAllowedForStyle is true for `one-hand` only.
+            const twfActive = !!(WT && WT.twfWeaponAllowedForStyle(state.style));
+            const styleLabel = (WT && state.style)
+              ? ((WT.STYLES.find((s) => s.id === state.style) || {}).label || state.style) : "";
+            const inert = state.twoWeaponFighting && !twfActive
+              ? (state.style
+                ? `<p class="wz-help wz-note wz-twf-inert">Declared, but it has no effect under <strong>${esc(styleLabel)}</strong> — that style doesn't wield a second weapon. Your declaration is kept; switch to One-hand / Dual-wield to use it.</p>`
+                : `<p class="wz-help wz-note wz-twf-inert">Declared. It has no effect until you pick a combat style that wields a second weapon.</p>`)
+              : "";
+            return `<div class="wz-field wz-span"><span class="wz-label">Two Weapon Fighting</span>
+            <span class="wz-help">Declare the feat if your character fights with a weapon in each hand. Dual-wielding used to switch on only when you added a second weapon type below — declaring it here is the explicit way.</span>
+            <div class="wz-seg" id="wz-twf"><button class="wz-chip ${state.twoWeaponFighting ? "on" : ""}" data-twf="1" aria-pressed="${state.twoWeaponFighting ? "true" : "false"}">Two Weapon Fighting</button></div>
+            ${inert}</div>`;
+          })()}
+          ${(() => {
+            const styles = WT ? WT.STYLES : [];
+            const wtypes = (WT && state.style) ? WT.weaponTypesForStyle(state.style, weaponTypesInData) : [];
+            const ohOn = WT ? WT.offHandEnabledForStyle(state.style) : false;
+            const twfOn = WT ? WT.twfWeaponAllowedForStyle(state.style) : false;
+            const ohTypes = WT ? ((state.style && WT.offHandTypesForStyle(state.style)) || WT.OFF_HAND_TYPES) : [];
+            const offWeaponTypes = twfOn ? WT.offHandWeaponTypes(weaponTypesInData) : [];
+            // A dropdown pick-list: choose an option to add; picked options show as
+            // removable tags. The dropdown offers only the not-yet-picked ones. `o.lbl`
+            // maps a value to its display label; `o.add` is the placeholder.
+            const pickList = (id, opts, sel, o = {}) => {
+              const lbl = o.lbl || ((t) => t), add = o.add || "Add a type…";
+              const avail = opts.filter((t) => !sel.includes(t));
+              return `<div class="wz-picklist">
+              <select class="wz-pl-select" data-plsel="${id}"${avail.length ? "" : " disabled"}>
+                <option value="">${avail.length ? esc(add) : "All added"}</option>
+                ${avail.map((t) => `<option value="${esc(t)}">${esc(lbl(t))}</option>`).join("")}
+              </select>
+              <div class="wz-pl-tags" data-pltags="${id}">${sel.map((t) => `<button class="wz-tag" data-pltag="${id}" data-val="${esc(t)}">${esc(lbl(t))}<span class="wz-tag-x" aria-hidden="true">×</span></button>`).join("")}</div></div>`;
+            };
+            return `<div class="wz-field wz-span"><span class="wz-label">Combat style</span>
+            <span class="wz-help">Pick a style to narrow the weapon and off-hand. Click the selected style again to switch. Each list below is optional — add types to narrow it; add nothing and any is allowed.</span>
+            <div class="wz-seg" id="wz-style">${(state.style ? styles.filter((s) => s.id === state.style) : styles).map((s) => `<button class="wz-chip ${state.style === s.id ? "on" : ""}" data-style="${s.id}">${esc(s.label)}</button>`).join("")}</div>
+            ${state.style ? `<div class="wz-subseg">
+              <span class="wz-sublabel">Weapon type <span class="wz-sub">· optional — add none for any</span></span>
+              ${pickList("weptypes", wtypes, state.weaponTypes)}
+              ${ohOn ? (() => {
+                // One "Off hand" dropdown holding both off-hand ITEMS and (dual-wield)
+                // a second WEAPON. Selections route to state.offHand vs state.offHandWeapons.
+                const ohLbl = (t) => t === "empty" ? "Empty (no off-hand)" : t;
+                const itemAvail = ["empty", ...ohTypes].filter((t) => !state.offHand.includes(t));
+                const wpnAvail = twfOn ? offWeaponTypes.filter((t) => !state.offHandWeapons.includes(t)) : [];
+                const any = itemAvail.length + wpnAvail.length;
+                return `<span class="wz-sublabel">Off hand <span class="wz-sub">· optional — add none for any${twfOn ? "; a shield, orb, rune arm, or a second weapon (dual-wield)" : ""}</span></span>
+              <div class="wz-picklist">
+                <select class="wz-pl-select" data-plsel="offhand"${any ? "" : " disabled"}>
+                  <option value="">${any ? "Add…" : "All added"}</option>
+                  ${itemAvail.length ? `<optgroup label="Off-hand item">${itemAvail.map((t) => `<option value="${esc(t)}">${esc(ohLbl(t))}</option>`).join("")}</optgroup>` : ""}
+                  ${wpnAvail.length ? `<optgroup label="Second weapon (dual-wield)">${wpnAvail.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join("")}</optgroup>` : ""}
+                </select>
+                <div class="wz-pl-tags" data-pltags="offhand">${state.offHand.map((t) => `<button class="wz-tag" data-pltag="offhand" data-arr="offHand" data-val="${esc(t)}">${esc(ohLbl(t))}<span class="wz-tag-x" aria-hidden="true">×</span></button>`).join("")}${state.offHandWeapons.map((t) => `<button class="wz-tag" data-pltag="offhand" data-arr="offHandWeapons" data-val="${esc(t)}">${esc(t)}<span class="wz-tag-x" aria-hidden="true">×</span></button>`).join("")}</div>
+              </div>`;
+              })() : `<p class="wz-help wz-note">${state.style === "ranged" ? "Bows use both hands — no off-hand item." : "Two-handed weapons use both hands — no off-hand item."}</p>`}
+            </div>` : ""}</div>`;
+          })()}
+            </div>
+          </details>
         </div>
+        <p class="wz-status wz-reqmsg" id="wz-charmsg" role="status" aria-live="polite"></p>
         <details class="wz-data" id="wz-data">
           <summary>Export &amp; Data Management</summary>
           <div class="wz-data-body">
@@ -3170,6 +3261,10 @@ if (typeof window !== "undefined" && window.App) {
       // the TOP of the load, before the restore writes below can raise it again.
       state.inputsDirty = false;
       state.unsavedPrompt = null;
+      // #428 U6 (AE3) — a loaded build has not been blocked yet, so nothing is
+      // marked as needing an answer. A build saved before KD6 carries no armor
+      // and will be marked the moment Continue is pressed (AE3a).
+      state.requiredShown = false;
       state.ml = i.ml;
       // U3 — restore the ML floor + its manual/auto flag. A pre-U3 save has no
       // mlFloor: default to cap − 5 in auto mode. A saved explicit floor loads as manual.
@@ -3617,7 +3712,15 @@ if (typeof window !== "undefined" && window.App) {
     // save and by load, and by the player choosing to leave without saving (they
     // have been told; re-asking on the next step would be nagging, and the next
     // edit raises it again).
-    function markDirty() { state.inputsDirty = true; }
+    function markDirty() {
+      state.inputsDirty = true;
+      // #428 U6 (R8) — the marks must clear the moment a field is answered, and
+      // half the required controls (the armor chips, the ML input) update in
+      // place rather than re-rendering. Hanging the refresh off the same signal
+      // that says "an input changed" is what makes that true of ALL of them
+      // rather than of whichever handlers someone remembered.
+      if (state.requiredShown && state.step === "character") applyRequiredMarks();
+    }
 
     /** Player-initiated navigation. `go` stays raw on purpose: solving and
      *  loading move the player deliberately, and a guard on those would fire on
@@ -3717,7 +3820,7 @@ if (typeof window !== "undefined" && window.App) {
       root.querySelectorAll("[data-goto]").forEach((b) => b.onclick = () => { if (!b.disabled) navigate(b.dataset.goto); });
       root.querySelectorAll("[data-back]").forEach((b) => b.onclick = () => navigate(prevStep(state.step)));
       root.querySelectorAll("[data-next]").forEach((b) => b.onclick = () => {
-        if (!canAdvance(state.step, state)) { flashBlock(); return; }
+        if (!canAdvance(state.step, state)) { blockFeedback(); return; }
         navigate(nextStep(state.step));
       });
       root.querySelectorAll("[data-solve]").forEach((b) => b.onclick = () => {
@@ -3726,6 +3829,13 @@ if (typeof window !== "undefined" && window.App) {
       });
 
       if (state.step === "character") {
+        // #428 U6 (R8) — re-apply the marks for whatever is STILL missing, so
+        // they survive the re-renders half this step's handlers trigger and
+        // disappear the moment the field is answered. Silent until the player
+        // has actually been blocked once (R12).
+        if (state.requiredShown) applyRequiredMarks();
+        const fold = document.getElementById("wz-weapons");
+        if (fold) fold.ontoggle = () => { state.weaponsOpen = fold.open; };
         // U3/R7 — the ML floor defaults to cap − 5 and follows the cap until the
         // user edits it. Clearing the floor re-enables auto-follow. Updates are made
         // directly (no re-render) so typing keeps focus.
@@ -3786,9 +3896,13 @@ if (typeof window !== "undefined" && window.App) {
           if (sum) sum.textContent = `Set Augments I own${state.ownedSetAugments.size ? ` · ${state.ownedSetAugments.size} selected` : ""}`;
         });
         root.querySelectorAll("#wz-armor .wz-chip").forEach((c) => c.onclick = () => {
-          if (c.disabled) return; markDirty();
+          if (c.disabled) return;
           state.armor = state.armor === c.dataset.armor ? "" : c.dataset.armor;
           root.querySelectorAll("#wz-armor .wz-chip").forEach((x) => x.classList.toggle("on", x.dataset.armor === state.armor));
+          // markDirty AFTER the write: it refreshes the required marks, and armor
+          // is one of the fields those marks are about — refreshing first would
+          // read the value the player just replaced.
+          markDirty();
         });
         // plan 003 U1 — the Two Weapon Fighting declaration: a plain toggle. It is
         // character state, so nothing else resets it (R2) — in particular the style
@@ -3999,6 +4113,53 @@ if (typeof window !== "undefined" && window.App) {
         // renderResults call — not once here (it would not exist yet).
       }
     }
+    /** #428 U6 (KTD2) — the generic Continue handler became step-aware rather
+     *  than being rewritten. The character step gets the field treatment R7-R11
+     *  specify; the pool and priorities steps keep the nudge, because replacing
+     *  feedback on steps this plan does not restructure is a change nobody
+     *  asked for. */
+    function blockFeedback() {
+      if (state.step !== "character") { flashBlock(); return; }
+      state.requiredShown = true;
+      showMissingRequired();
+    }
+
+    /** #428 U6 (R8/R10/R11) — outline every unanswered required field and render
+     *  ONE message naming them all. Returns the first missing field's host.
+     *
+     *  Deliberately does NOT scroll or focus: this runs on every render and on
+     *  every input while the marks are showing, so stealing focus here would
+     *  fight the player mid-edit. R9's scroll-and-focus belongs to the blocked
+     *  Continue press alone, which is what `showMissingRequired` adds.
+     *
+     *  No motion, ever: KD4 replaced the repeating flash the requirements
+     *  originally specified because repeated flashing is bounded by WCAG 2.3.1
+     *  and is a documented trigger for photosensitive and vestibular conditions. */
+    function applyRequiredMarks() {
+      const miss = missingRequired(state);
+      const msgEl = document.getElementById("wz-charmsg");
+      if (msgEl) msgEl.textContent = missingRequiredMessage(state) || "";
+      root.querySelectorAll("[data-req]").forEach((el) => el.classList.remove("wz-invalid"));
+      let first = null;
+      for (const key of miss) {
+        const host = root.querySelector(`[data-req="${key}"]`);
+        if (!host) continue;
+        host.classList.add("wz-invalid");
+        if (!first) first = host;
+      }
+      return first;
+    }
+
+    /** #428 U6 (R9) — the blocked-Continue treatment: mark them all, then scroll
+     *  the first into view and focus it. */
+    function showMissingRequired() {
+      const first = applyRequiredMarks();
+      if (!first) return;
+      if (first.scrollIntoView) first.scrollIntoView({ behavior: "smooth", block: "center" });
+      const focusable = first.querySelector("input, select, button:not([disabled])");
+      if (focusable && focusable.focus) focusable.focus();
+    }
+
     function flashBlock() {
       const btn = root.querySelector("[data-next]"); if (!btn) return;
       btn.classList.remove("wz-nudge"); void btn.offsetWidth; btn.classList.add("wz-nudge");

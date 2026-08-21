@@ -769,6 +769,48 @@ input.wz-ml { width: 120px; }
 .wz-pair > .wz-field > select,
 .wz-pair > .wz-field > input { margin-top: auto; }
 
+/* #428 U6 (R1-R6a) — the character step's three labelled containers.
+
+   R5/R5a/R5b are one idea: a control's width comes from the COLUMN, never from
+   its type or its content, so a number input, a text input and a select in the
+   same column are the same width and their outlines form a grid rather than a
+   ragged stack. `input.wz-ml { width: 120px }` above is exactly the rule that
+   made the old step ragged, so it is overridden inside a group. */
+.wz-group {
+  border: 1px solid var(--border-2); border-radius: var(--radius);
+  background: var(--panel-2); padding: var(--sp-4); margin: 0; min-width: 0;
+}
+.wz-group-legend { font-size: var(--fs-sm); font-weight: 700; padding: 0 var(--sp-2); }
+.wz-group-fold > summary { list-style: none; cursor: pointer; display: block; }
+.wz-group-fold > summary::-webkit-details-marker { display: none; }
+.wz-group-fold > summary::before { content: "▸ "; color: var(--muted); }
+.wz-group-fold[open] > summary::before { content: "▾ "; }
+.wz-group-fold[open] > summary { margin-bottom: var(--sp-3); }
+.wz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4) var(--sp-3); align-items: start; }
+.wz-grid > * { min-width: 0; }
+/* Anything that is not a plain field spans the row: a radio ladder, a fold, or
+   a checkbox row has no column partner and would otherwise be squeezed. */
+.wz-grid > .wz-check, .wz-grid > .wz-ladder, .wz-grid > details, .wz-grid > .wz-picklist,
+.wz-grid > .wz-span { grid-column: 1 / -1; }
+.wz-grid input, .wz-grid select { width: 100%; }
+/* Bottom-align the controls in a row so an uneven help block on one side does
+   not stagger it — the same rule .wz-pair carries, for the same reason. */
+.wz-grid > .wz-field { display: flex; flex-direction: column; height: 100%; }
+.wz-grid > .wz-field > select, .wz-grid > .wz-field > input { margin-top: auto; }
+.wz-grid input.wz-ml { width: 100%; }
+@media (max-width: 620px) { .wz-grid { grid-template-columns: 1fr; } }
+
+/* The required marker, at the field (R2), and the invalid treatment (R8/R11):
+   an outline, and no motion. KD4 dropped the repeating flash the requirements
+   originally specified — repeated flashing is bounded by WCAG 2.3.1 and is a
+   documented trigger for photosensitive and vestibular conditions. */
+.wz-req-mark { color: var(--accent); font-weight: 700; }
+.wz-invalid {
+  outline: 2px solid var(--quarantined); outline-offset: 6px; border-radius: var(--radius-sm);
+}
+.wz-reqmsg:empty { display: none; }
+.wz-reqmsg { color: var(--quarantined); font-size: var(--fs-sm); margin: var(--sp-3) 0 0; }
+
 /* opt-in checkbox: inline box-beside-label, deliberately NOT a .wz-field (whose
    input rule forces width:100%) so the box stays small; the whole row toggles it */
 .wz-check { display: flex; align-items: flex-start; gap: var(--sp-2); cursor: pointer; }
