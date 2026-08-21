@@ -377,3 +377,41 @@ test("the generator marks composite components, so provenance is read not inferr
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);
+
+// #88 U5 (R23/AE8) — the pool is ONE object shared by every character, so a
+// character switch is a full rebuild of the overlay, not an increment. This is
+// the mechanism the wizard's load path drives: assign the new list, re-apply.
+test("switching characters leaves no trace of the previous one's overrides", () => {
+  const p = loadPool();
+  const catalog = new Map();
+  for (const v of p.items) for (const a of v.affixes || []) catalog.set(a, a.type);
+
+  const robe = p.items.find((x) => x.variant_id === "Aberrant Robe");
+  const ac = robe.affixes.find((x) => x.name === "Armor Class" && x.type === "Armor");
+  const aegis = p.items.find((x) => x.variant_id === "Artemist's Aegis (level 5)");
+  const fort = aegis.affixes.find((x) => x.name === "Fortitude Save" && x.type === "Resistance");
+
+  const A = [{ ...O.overrideKey(robe, ac), to: "Enhancement" }];
+  const B = [{ ...O.overrideKey(aegis, fort), to: "Quality" }];
+
+  O.applyOverrides(p, A);
+  assert.strictEqual(robe.affixes.find((x) => x.name === "Armor Class").type, "Enhancement",
+    "A is in force");
+
+  // Character switch: B's list replaces A's.
+  const rep = O.applyOverrides(p, B);
+  assert.deepStrictEqual(rep.applied.map((x) => x.variant_id), ["Artemist's Aegis (level 5)"]);
+  let leaked = 0;
+  for (const v of p.items) for (const a of v.affixes || []) {
+    const expected = (v === aegis && a === fort) ? "Quality" : catalog.get(a);
+    if (a.type !== expected) leaked++;
+    if (O.catalogTypeOf(a) !== undefined && !(v === aegis && a === fort)) leaked++;
+  }
+  assert.strictEqual(leaked, 0, "no affix carries A's type or A's stamp once B is loaded");
+
+  // …and a character with none restores the catalog outright.
+  O.applyOverrides(p, []);
+  for (const v of p.items) for (const a of v.affixes || []) {
+    if (a.type !== catalog.get(a)) assert.fail(`${v.variant_id} / ${a.name} did not return to the catalog type`);
+  }
+});

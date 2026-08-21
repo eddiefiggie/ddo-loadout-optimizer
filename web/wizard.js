@@ -135,6 +135,33 @@ function rungFromInputs(inputs) {
   return _craftingRung(inputs);
 }
 
+/** #88 U5 (R20/R21/R23) — the saved override list, restored at the load boundary.
+ *
+ *  Pure, and exported, for the same reason `rungFromInputs` is: it is a function of
+ *  the saved inputs, so it is tested directly rather than through the render path.
+ *
+ *  Two rules, each of which has cost a defect elsewhere in this file. The caller
+ *  ALWAYS assigns the result — `state` outlives a character, so an override left
+ *  live from the previous one would silently retype this build's gear (the
+ *  `augCeiling` and `declaredCredits` precedents). And entries are sanitized here
+ *  rather than trusted: a hand-edited backup can carry rows no reader could act
+ *  on, which would render as ghosts and re-persist on every save (the `blocklist`
+ *  precedent). Copies, never references — an edit to live state must not reach
+ *  back into the saved record. */
+function restoreOverrides(inputs) {
+  const list = inputs && inputs.overrides;
+  if (!Array.isArray(list)) return [];
+  const O = _overridesModule();
+  return list
+    .filter((o) => (O ? O.isWellFormed(o) : (o && typeof o === "object")))
+    .map((o) => Object.assign({}, o));
+}
+
+function _overridesModule() {
+  if (typeof require !== "undefined") { try { return require("./overrides.js"); } catch (e) { /* absent */ } }
+  return (typeof window !== "undefined") ? window.Overrides : null;
+}
+
 /** Clean a stat->value bound map (caps/floors): keep only entries whose value is a
  *  finite number >= 0. Blank, null, negative, or non-numeric entries are dropped so
  *  a stray input never reaches the solver as a cap/floor.
@@ -1215,7 +1242,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -1305,6 +1332,9 @@ if (typeof window !== "undefined" && window.App) {
       // U2 — declared stat credits, keyed `stat||bonusType` so a stat can carry
       // more than one and reordering priorities cannot mis-associate them.
       declaredCredits: {},
+      // #88 U5 (R20) — the player's bonus-type overrides, in declaration order.
+      // Empty by default, so the overlay is inert until the player asserts one.
+      overrides: [],
       // #91 (U4/R1) — a NEW list is born with the Utility tier seeded at the
       // bottom, on by default. Seeding happens only here (list birth), never on
       // load — load-path presence is healUtilityTier's decision (KTD8).
@@ -2456,6 +2486,27 @@ if (typeof window !== "undefined" && window.App) {
     }
 
     // ---- solve (real engine) ----------------------------------------------
+    // #88 U5 (R23/KTD1) — rebuild the override overlay over the loaded pool.
+    //
+    // The single place the overlay is (re-)applied, so every caller inherits the
+    // same guarantee. `applyOverrides` withdraws every stamp before matching, so
+    // this is a full rebuild rather than an increment: calling it with an empty
+    // list is how the previous character's overrides come OFF the shared pool.
+    // R23 lists the moments the set in force changes — character load and switch
+    // (wired here), and override create, delete, and re-confirm (the creation
+    // surfaces, which call this same function).
+    //
+    // Returns the apply report (applied / unmatched / ineligible) so a caller can
+    // disclose what actually took effect. It is deliberately NOT stashed on
+    // `state` as the disclosure source: KTD6 says every rendered disclosure reads
+    // the SOLVE's report, because an override that applied to the pool still may
+    // not have contributed to the loadout.
+    function applyOverrideOverlay() {
+      const O = _overridesModule();
+      if (!O || !dataset) return null;
+      return O.applyOverrides(dataset, state.overrides || []);
+    }
+
     function candidateItems() {
       if (state.pool === "owned" && state.ownedNames) {
         // Base items: always restricted to the export (KTD4/R13).
@@ -2734,6 +2785,15 @@ if (typeof window !== "undefined" && window.App) {
       // (U5 will populate this from the save; the RESET is what makes it safe, and
       // is correct now because nothing writes declaredCredits into `inputs` yet.)
       state.declaredCredits = (i.declaredCredits && typeof i.declaredCredits === "object") ? { ...i.declaredCredits } : {};
+      // #88 U5 (R20/R21/R23) — the saved overrides, then the overlay rebuilt over
+      // the shared pool. ALWAYS assigned and ALWAYS re-applied, in that order: the
+      // pool is one object shared by every character, so the previous character's
+      // stamps have to come off it before this one's go on. applyOverrideOverlay
+      // withdraws first, so switching A -> B leaves nothing of A behind even
+      // though B declares nothing. A pre-feature save restores [] and the apply
+      // becomes a no-op that still performs the withdrawal.
+      state.overrides = restoreOverrides(i);
+      applyOverrideOverlay();
       // KTD1 — the whole priority list is being replaced, so any row left open
       // belongs to the build being discarded. Ephemeral state, cleared not restored.
       openPanelClear();

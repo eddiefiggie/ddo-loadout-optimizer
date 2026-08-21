@@ -2569,3 +2569,47 @@ test("#359: acquirable is strict-true, never a truthy accident", () => {
   const out = candidates(ownedState({ ownedAugments: true }), odd);
   assert.deepStrictEqual(out, [], "only a real boolean true admits an unowned augment");
 });
+
+
+// ---- #88 U5 — restoring overrides at the load boundary (R20/R21/R23) --------
+// The load path ALWAYS assigns, because `state` outlives a character: an override
+// left over from the previous one would otherwise silently retype this build's
+// gear. The sanitization is the blocklist precedent — a hand-edited backup can
+// carry entries no reader can use, and they would re-persist on every save.
+const { restoreOverrides } = require("../web/wizard.js");
+
+test("#88 U5 (R21/AE10): a pre-feature save restores an empty override list", () => {
+  assert.deepStrictEqual(restoreOverrides({ ml: 34 }), [], "absent reads as none");
+  assert.deepStrictEqual(restoreOverrides({ overrides: null }), []);
+  assert.deepStrictEqual(restoreOverrides({}), []);
+  assert.deepStrictEqual(restoreOverrides(null), [], "a record with no inputs at all");
+});
+
+test("#88 U5 (R20/R22): a saved override restores with its recorded type intact", () => {
+  const o = { variant_id: "Aberrant Robe", name: "Armor Class", from: "Armor",
+              value: "5", to: "Enhancement", note: "seen in game" };
+  const got = restoreOverrides({ overrides: [o] });
+  assert.deepStrictEqual(got, [o]);
+  assert.notStrictEqual(got[0], o, "restored entries are copies — the record is not aliased into state");
+});
+
+test("#88 U5: malformed entries are dropped at the load boundary, not re-persisted", () => {
+  const good = { variant_id: "Aberrant Robe", name: "Armor Class", from: "Armor",
+                 value: "5", to: "Enhancement" };
+  const got = restoreOverrides({ overrides: [
+    good,
+    null, "a string", 7,
+    { name: "Armor Class", from: "Armor", to: "Enhancement", value: "5" },   // no target
+    { variant_id: "X", from: "Armor", to: "Enhancement", value: "5" },       // no affix name
+    { variant_id: "X", name: "Armor Class", to: "Enhancement", value: "5" }, // no recorded type
+    { variant_id: "X", name: "Armor Class", from: "Armor", value: "5" },     // no replacement
+  ] });
+  assert.deepStrictEqual(got, [good], "only the well-formed entry survives");
+});
+
+test("#88 U6 (R8): a pool-keyed override is well-formed without a variant_id", () => {
+  const crafted = { pool_key: "seal||heroic||Constitution||Enhancement||6",
+                    name: "Constitution", from: "Enhancement", value: "6", to: "Quality" };
+  assert.deepStrictEqual(restoreOverrides({ overrides: [crafted] }), [crafted],
+    "crafted options live outside item variants and are addressed by pool key");
+});

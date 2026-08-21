@@ -147,6 +147,27 @@
     };
   }
 
+  /** Is this a complete override declaration? Four things must be present: a
+   *  target (an item variant, or a crafted pool entry addressed by its pool key —
+   *  U6), the affix name, the type it was written against, and the replacement.
+   *  The value may be any scalar, including 0, so it is tested for presence
+   *  rather than truthiness — a required-field guard written as a truthiness test
+   *  cannot express a legitimately-falsy value.
+   *
+   *  Used at the load boundary, where a hand-edited backup can carry entries no
+   *  reader could act on: dropped there they are gone, kept they would render as
+   *  ghost rows and re-persist on every save. */
+  function isWellFormed(o) {
+    if (!o || typeof o !== "object") return false;
+    var target = (typeof o.variant_id === "string" && o.variant_id)
+      || (typeof o.pool_key === "string" && o.pool_key);
+    if (!target) return false;
+    if (typeof o.name !== "string" || !o.name) return false;
+    if (typeof o.from !== "string" || !o.from) return false;
+    if (typeof o.to !== "string" || !o.to) return false;
+    return o.value != null;
+  }
+
   function variantOf(pool, variantId) {
     var items = (pool && pool.items) || [];
     for (var i = 0; i < items.length; i++) {
@@ -278,7 +299,7 @@
   var api = {
     OVERRIDE_FROM, ELIGIBLE_CACHE,
     isEligible, classifyPool, eligibleAffixes, isCompositeComponent,
-    overrideKey, matchAffixes, resolveMatch, catalogTypeOrLive,
+    overrideKey, isWellFormed, matchAffixes, resolveMatch, catalogTypeOrLive,
     applyOverrides, withdrawOverrides, catalogTypeOf,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;

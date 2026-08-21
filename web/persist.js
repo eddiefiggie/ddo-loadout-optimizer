@@ -53,6 +53,14 @@
     // #110 (U7) — the blocklist attribution, computed off the pre-dominance pool
     // at model-build time. Same restore-without-re-solve contract as the rest.
     "blockReport",
+    // #88 U8 (KTD5/R13/R30) — what the OVERRIDES did, on the same two-allowlist
+    // split declared credits established: `overrides` on the INPUT list below
+    // carries the declaration, this one carries what applied and contributed.
+    // Without it a restored character solves correctly and goes silent about the
+    // player-asserted types it used, because `program` is dropped by omission and
+    // KTD6 forbids re-solving on load. It is also what R30 compares against to
+    // decide a displayed result is stale.
+    "overrideReport",
     // #91 (U5, KTD6/R14) — the Utility tier's receipts (count + per-effect
     // credited carrier) and the stage-locked count. Computed from `program`
     // (dropped by omission) at solve time; without these a restored character
@@ -115,6 +123,14 @@
     // every untouched container at today's roster, and collapsing [] to null would
     // silently refill a container the player deliberately emptied.
     "utilityContainer", "utility_container_aware",
+    // #88 U5 (R20/R22/KTD5) — the player's bonus-type overrides. Each entry
+    // records the type its target affix carried when it was written, which is
+    // what makes drift detectable rather than silently absorbed. Absent on a
+    // pre-feature save and on any save by a player who declared none, which the
+    // wizard's load path reads as an empty list — the augCeiling precedent.
+    // backup.js sources this list, so the export/import round-trip inherits the
+    // key with no second edit.
+    "overrides",
   ];
 
   function pickInputs(state, name) {
@@ -150,6 +166,15 @@
         // key, and every save would masquerade as pre-feature — re-appending a
         // tier the player deliberately removed, on every single load.
         inputs.utility_tier_aware = true;
+      } else if (k === "overrides") {
+        // #88 U5 — sanitized at the save boundary, like blocklist's elements are
+        // at the load boundary: a hand-edited backup can carry a non-array, and
+        // storing it verbatim would put a value no reader can use into the store.
+        // Entries are COPIED rather than referenced, so a later edit to live state
+        // cannot reach back into a record already written.
+        inputs.overrides = Array.isArray(s.overrides)
+          ? s.overrides.filter((o) => o && typeof o === "object").map((o) => Object.assign({}, o))
+          : [];
       } else if (k === "twoWeaponFighting") {
         // plan 003 U1 — always a boolean. A pre-U1 state has no field, and storing
         // `undefined` would drop the key from the JSON entirely, leaving the loader
