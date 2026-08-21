@@ -1113,6 +1113,22 @@ input.wz-ml { width: 120px; }
   .wz-rail { position: static; order: -1; }
 }
 
+/* #428 U5 (R19) — the unsaved-changes guard. A modal, not an inline bar: it has
+   to PRECEDE the navigation it is guarding, and it offers three answers (save,
+   leave anyway, stay) where window.confirm offers two. */
+.wz-modal {
+  position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.55); padding: var(--sp-4);
+}
+.wz-modal-panel {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: var(--sp-5); max-width: 30rem; width: 100%;
+  display: flex; flex-direction: column; gap: var(--sp-3);
+}
+.wz-modal-panel p { margin: 0; }
+.wz-modal-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.wz-modal-actions .btn { padding: 7px 14px; }
+
 /* Character persistence (U3/U4): saved-character picker + save row. */
 .wz-saved { margin-top: var(--sp-3); }
 .wz-charlist { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-1); }

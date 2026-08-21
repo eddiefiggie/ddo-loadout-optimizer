@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, savedStep, stepOnLoad, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
+const { railModel, savedStep, stepOnLoad, unsavedGuardMessage, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -3175,4 +3175,70 @@ test("#428 U4 (R15): saving no longer requires a solved build", () => {
   assert.ok(!/no-build/.test(body),
     "the pre-#428 'solve first' refusal is gone — an in-progress build is savable");
   assert.ok(/no-name/.test(body), "…but an unnamed one still is not (R13)");
+});
+
+// ---------------------------------------------------------------------------
+// #428 U5 (R19) — the unsaved-changes guard. KD5 makes saving explicit, which
+// leaves unsaved work losable, so leaving a step while dirty says so rather than
+// discarding silently. The message is built from state (KTD3) and tested here;
+// the dialog it renders is not the thing under test.
+// ---------------------------------------------------------------------------
+
+test("#428 U5 (AE6): the guard names the loaded build whose edits are unsaved", () => {
+  const m = unsavedGuardMessage({ inputsDirty: true, loadedName: "Sook — Reaper" });
+  assert.ok(m, "a dirty build raises a message");
+  assert.ok(m.includes("Sook — Reaper"), "…which names what would be lost");
+});
+
+test("#428 U5: an unsaved new build is named as never-saved, not as a build name", () => {
+  const m = unsavedGuardMessage({ inputsDirty: true, loadedName: "" });
+  assert.ok(m && /never been saved/i.test(m));
+  // The typed-but-unsaved name is not a saved build, so it must not be quoted as
+  // one — that would read as "your saved build Sook is at risk" when no such
+  // record exists.
+  assert.ok(!/“/.test(m), "no build name is quoted for a record that does not exist");
+});
+
+test("#428 U5: a clean state raises no guard", () => {
+  assert.strictEqual(unsavedGuardMessage({ inputsDirty: false, loadedName: "Sook" }), null);
+  assert.strictEqual(unsavedGuardMessage({}), null, "a step left untouched raises no guard");
+  assert.strictEqual(unsavedGuardMessage(null), null);
+});
+
+test("#428 U5 (KTD3): the flag is cleared by save and by load, and by nothing else", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const clears = (src.match(/inputsDirty = false/g) || []).length;
+  assert.ok(clears >= 2, "at least the save path and the load path clear it");
+  const save = src.slice(src.indexOf("function saveCurrentCharacter("));
+  assert.ok(/inputsDirty = false/.test(save.slice(0, save.indexOf("\n    }"))),
+    "a successful save clears the flag");
+  const load = src.slice(src.indexOf("function loadCharacter("));
+  assert.ok(/inputsDirty = false/.test(load.slice(0, load.indexOf("\n    function "))),
+    "loading a build clears it — a freshly loaded build is not unsaved work");
+});
+
+test("#428 U5 (KTD3): every write that marks constraints dirty also marks inputs dirty", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const sites = [...src.matchAll(/state\.constraintsDirty = true;/g)].map((m) => m.index);
+  assert.ok(sites.length >= 4, `expected the known constraintsDirty writes; found ${sites.length}`);
+  for (const at of sites) {
+    assert.ok(/markDirty\(\)/.test(src.slice(at, at + 200)),
+      `the constraintsDirty write at index ${at} must also raise inputsDirty (KTD3)`);
+  }
+});
+
+test("#428 U5: the guard gates player navigation, not the app's own step changes", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  // Solving and loading move the player deliberately; a guard there would fire on
+  // the one action that is ABOUT to produce the thing worth saving.
+  assert.ok(/function navigate\(/.test(src), "player navigation goes through navigate()");
+  for (const nav of ['data-next', 'data-back', 'data-goto']) {
+    const at = src.indexOf(`querySelectorAll("[${nav}]")`);
+    assert.ok(at >= 0, `${nav} is wired`);
+    assert.ok(/navigate\(/.test(src.slice(at, at + 260)),
+      `${nav} navigation is guarded`);
+  }
 });

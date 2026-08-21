@@ -68,6 +68,23 @@ function stepOnLoad(inputs, snapshot, steps = WIZARD_STEPS) {
   return (s && s !== "results") ? s : stepAfterLoad(snapshot);
 }
 
+/** #428 U5 (R19/KTD3) — the unsaved-changes guard's message, or null when there
+ *  is nothing to warn about.
+ *
+ *  Built from state rather than assembled at the call site so the WORDING is
+ *  testable without a dialog. A loaded build is named, because that name is the
+ *  thing the player recognizes; a build that was never saved is described as
+ *  such rather than quoted by its typed name — quoting it would read as "your
+ *  saved build Sook is at risk" when no such record exists. Pure; unit-tested. */
+function unsavedGuardMessage(state) {
+  const s = state || {};
+  if (!s.inputsDirty) return null;
+  const nm = String(s.loadedName || "").trim();
+  return nm
+    ? `You have unsaved changes to \u201C${nm}\u201D. Leaving without saving keeps them only until you close this tab.`
+    : `This build has never been saved. Leaving without saving keeps it only until you close this tab.`;
+}
+
 /** #428 U3 (R13/R14/R17/R20/R21) — the save rail's model.
  *
  *  The rail is the flow's ONE save surface, rendered beside every step (KTD4),
@@ -1454,7 +1471,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, railModel, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, unsavedGuardMessage, railModel, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -1541,6 +1558,14 @@ if (typeof window !== "undefined" && window.App) {
       // the build. railModel treats it as loaded only while the store still
       // holds that name, so a delete needs no second clear.
       loadedName: "",
+      // #428 U5 (KTD3) — raised by any write to a build input, cleared by save
+      // and by load. A single flag rather than a diff against the last save: it
+      // cannot drift from what the player actually changed the way a diff over a
+      // large state object can, and it costs nothing per keystroke.
+      inputsDirty: false,
+      // #428 U5 (R19) — the step a blocked navigation was heading for, or null.
+      // Transient: it exists only between the click and the player's answer.
+      unsavedPrompt: null,
       // U6 — set-augment availability. A Set of owned set-augment `set` names;
       // empty by default so the set-augment family stays inert until opted in.
       ownedSetAugments: new Set(),
@@ -1881,9 +1906,9 @@ if (typeof window !== "undefined" && window.App) {
       // #110 (U5/R4) — the symmetric refusal, enforced at the mutation path and
       // not only in the (disabled) row: a blocked variant cannot be pinned.
       if (pinBlockedConflict(state.blocklist, pinIdOf(v))) return;
-      applyPin(state.slotConstraints, v, slotCardOf, hand); state.constraintsDirty = true;
+      applyPin(state.slotConstraints, v, slotCardOf, hand); state.constraintsDirty = true; markDirty();
     }
-    function removePin(slot, id) { removePinFrom(state.slotConstraints, slot, id, slotCardOf); state.constraintsDirty = true; }
+    function removePin(slot, id) { removePinFrom(state.slotConstraints, slot, id, slotCardOf); state.constraintsDirty = true; markDirty(); }
 
     // KTD3 — name-only match (filterVariants also matches stats/ids, so post-filter
     // to a name substring), verified + pinnable only, exact/prefix first, capped
@@ -1999,7 +2024,7 @@ if (typeof window !== "undefined" && window.App) {
       if (commit) commit.onclick = () => {
         const r = addBlocks(state.blocklist, [...blockStage], state.slotConstraints);
         state.blocklist = r.list;
-        state.constraintsDirty = true;
+        state.constraintsDirty = true; markDirty();
         blockStage.clear();
         if (r.refused.length) {
           state.blockRefusedMsg = r.refused.map((x) =>
@@ -2063,7 +2088,7 @@ if (typeof window !== "undefined" && window.App) {
       }).join("");
       box.querySelectorAll(".wz-pin-x[data-unblock-id]").forEach((b) => b.onclick = () => {
         state.blocklist = removeBlock(state.blocklist, b.dataset.unblockId);
-        state.constraintsDirty = true;
+        state.constraintsDirty = true; markDirty();
         renderBlockList(); renderBlockResults(); renderPinResults();
       });
     }
@@ -2468,6 +2493,7 @@ if (typeof window !== "undefined" && window.App) {
       });
 
       ol.querySelectorAll("button").forEach((b) => b.onclick = () => {
+        markDirty();   // #428 U5 — every ranked-list button mutates the build
         let after = null;
         if (b.dataset.up != null) { const i = +b.dataset.up;[state.priorities[i - 1], state.priorities[i]] = [state.priorities[i], state.priorities[i - 1]]; }
         else if (b.dataset.down != null) { const i = +b.dataset.down;[state.priorities[i + 1], state.priorities[i]] = [state.priorities[i], state.priorities[i + 1]]; }
@@ -2658,6 +2684,7 @@ if (typeof window !== "undefined" && window.App) {
 
     /** Add a target affix; returns true if it landed (caller re-renders the list). */
     function addPriority(v) {
+      markDirty();
       const status = pickerStatusEl();
       const _dn = _datasetNormalizer();
       // U11 (R15) — the decision (canonicalize, alias-substitute, validate, dedupe)
@@ -2741,7 +2768,7 @@ if (typeof window !== "undefined" && window.App) {
     function commitOverrides(list) {
       state.overrides = list;
       applyOverrideOverlay();
-      state.constraintsDirty = true;
+      state.constraintsDirty = true; markDirty();
       renderOverrideManager();
       refreshStaleBanner();
     }
@@ -3120,7 +3147,11 @@ if (typeof window !== "undefined" && window.App) {
       // eslint-disable-next-line no-undef
       const rec = CharacterStore.serializeCharacter(nm, state, run, stamp);
       // eslint-disable-next-line no-undef
-      return CharacterStore.saveCharacter(rec);
+      const res = CharacterStore.saveCharacter(rec);
+      // #428 U5 (KTD3) — a save is the point of the flag. Cleared only on
+      // SUCCESS: a quota failure leaves the work unsaved and still at risk.
+      if (res && res.ok) state.inputsDirty = false;
+      return res;
     }
 
     // Load a saved character: restore inputs, rebuild the model scaffold WITHOUT
@@ -3135,6 +3166,10 @@ if (typeof window !== "undefined" && window.App) {
       state.characterName = rec.name;
       // #428 U3 (R20) — the rail shows which saved build is being edited.
       state.loadedName = rec.name;
+      // #428 U5 (KTD3) — a freshly loaded build is not unsaved work. Cleared at
+      // the TOP of the load, before the restore writes below can raise it again.
+      state.inputsDirty = false;
+      state.unsavedPrompt = null;
       state.ml = i.ml;
       // U3 — restore the ML floor + its manual/auto flag. A pre-U3 save has no
       // mlFloor: default to cap − 5 in auto mode. A saved explicit floor loads as manual.
@@ -3572,10 +3607,72 @@ if (typeof window !== "undefined" && window.App) {
         + migrationBanner()
         + `<div class="wz-shell"><div class="wz-body">`
         + (bodies[state.step] || stepIntro)()
-        + `</div>` + railHTML() + `</div>`;
+        + `</div>` + railHTML() + `</div>`
+        + unsavedGuardHTML();
       wire();
     }
     function go(step) { state.step = step; render(); }
+
+    // #428 U5 (KTD3) — one flag, raised by any write to a build input. Cleared by
+    // save and by load, and by the player choosing to leave without saving (they
+    // have been told; re-asking on the next step would be nagging, and the next
+    // edit raises it again).
+    function markDirty() { state.inputsDirty = true; }
+
+    /** Player-initiated navigation. `go` stays raw on purpose: solving and
+     *  loading move the player deliberately, and a guard on those would fire on
+     *  the very action that is about to produce the thing worth saving. */
+    function navigate(step) {
+      if (step === state.step) return;
+      if (unsavedGuardMessage(state)) { state.unsavedPrompt = step; render(); return; }
+      go(step);
+    }
+
+    // The guard itself (R19). A modal rather than an inline bar because it has to
+    // PRECEDE the navigation, and three answers rather than two — save, leave
+    // anyway, stay — which window.confirm cannot express.
+    function unsavedGuardHTML() {
+      const msg = state.unsavedPrompt ? unsavedGuardMessage(state) : null;
+      if (!msg) return "";
+      return `<div class="wz-modal" id="wz-unsaved" role="dialog" aria-modal="true" aria-labelledby="wz-unsaved-msg">
+        <div class="wz-modal-panel">
+          <p class="wz-label">Unsaved changes</p>
+          <p id="wz-unsaved-msg">${esc(msg)}</p>
+          <div class="wz-modal-actions">
+            <button class="btn primary" id="wz-unsaved-save" type="button">Save and continue</button>
+            <button class="btn ghost" id="wz-unsaved-go" type="button">Continue without saving</button>
+            <button class="btn ghost" id="wz-unsaved-stay" type="button">Stay on this step</button>
+          </div>
+          <span class="wz-savestat" id="wz-unsaved-stat" aria-live="polite"></span>
+        </div>
+      </div>`;
+    }
+
+    function wireUnsavedGuard() {
+      const to = state.unsavedPrompt;
+      if (!to) return;
+      const stay = document.getElementById("wz-unsaved-stay");
+      if (stay) stay.onclick = () => { state.unsavedPrompt = null; render(); };
+      const leave = document.getElementById("wz-unsaved-go");
+      if (leave) leave.onclick = () => {
+        // Told and acknowledged: the flag drops so the next step change does not
+        // ask again. The next edit raises it right back.
+        state.inputsDirty = false; state.unsavedPrompt = null; go(to);
+      };
+      const save = document.getElementById("wz-unsaved-save");
+      if (save) save.onclick = () => {
+        const nm = String(state.characterName || "").trim();
+        const stat = document.getElementById("wz-unsaved-stat");
+        // eslint-disable-next-line no-undef
+        if (nm && CharacterStore.loadCharacter(nm) && !window.confirm(`Update saved build "${nm}"?`)) return;
+        const res = saveCurrentCharacter(nm);
+        if (res.ok) { state.loadedName = nm; state.unsavedPrompt = null; go(to); return; }
+        if (!stat) return;
+        stat.textContent = res.error === "no-name"
+          ? "Name this build in the panel beside the step, then save."
+          : (res.error === "quota" ? "Storage full — remove some saves." : "Could not save.");
+      };
+    }
 
     function wire() {
       const awayOk = document.getElementById("wz-awaymig-ok");
@@ -3605,12 +3702,23 @@ if (typeof window !== "undefined" && window.App) {
       };
       // #428 U3 — the rail is on every step, so it wires on every render.
       wireRail();
+      wireUnsavedGuard();
+      // #428 U5 (KTD3) — every native control inside the step body is a build
+      // input, so one delegated pair covers text, number, select, checkbox and
+      // radio without a markDirty() call in each of their handlers. The rail is
+      // deliberately excluded: naming a build is not editing it, and typing a
+      // name is the FIRST half of saving.
+      const body = root.querySelector(".wz-body");
+      if (body) {
+        body.addEventListener("input", markDirty);
+        body.addEventListener("change", markDirty);
+      }
       root.querySelectorAll("[data-browse]").forEach((b) => b.onclick = openBrowser);
-      root.querySelectorAll("[data-goto]").forEach((b) => b.onclick = () => { if (!b.disabled) go(b.dataset.goto); });
-      root.querySelectorAll("[data-back]").forEach((b) => b.onclick = () => go(prevStep(state.step)));
+      root.querySelectorAll("[data-goto]").forEach((b) => b.onclick = () => { if (!b.disabled) navigate(b.dataset.goto); });
+      root.querySelectorAll("[data-back]").forEach((b) => b.onclick = () => navigate(prevStep(state.step)));
       root.querySelectorAll("[data-next]").forEach((b) => b.onclick = () => {
         if (!canAdvance(state.step, state)) { flashBlock(); return; }
-        go(nextStep(state.step));
+        navigate(nextStep(state.step));
       });
       root.querySelectorAll("[data-solve]").forEach((b) => b.onclick = () => {
         if (!canAdvance("priorities", state)) { const s = document.getElementById("wz-status"); if (s) s.textContent = "Add at least one stat to optimize for."; return; }
@@ -3678,25 +3786,29 @@ if (typeof window !== "undefined" && window.App) {
           if (sum) sum.textContent = `Set Augments I own${state.ownedSetAugments.size ? ` · ${state.ownedSetAugments.size} selected` : ""}`;
         });
         root.querySelectorAll("#wz-armor .wz-chip").forEach((c) => c.onclick = () => {
-          if (c.disabled) return; state.armor = state.armor === c.dataset.armor ? "" : c.dataset.armor;
+          if (c.disabled) return; markDirty();
+          state.armor = state.armor === c.dataset.armor ? "" : c.dataset.armor;
           root.querySelectorAll("#wz-armor .wz-chip").forEach((x) => x.classList.toggle("on", x.dataset.armor === state.armor));
         });
         // plan 003 U1 — the Two Weapon Fighting declaration: a plain toggle. It is
         // character state, so nothing else resets it (R2) — in particular the style
         // handler above clears the gear picks and deliberately leaves this alone.
         root.querySelectorAll("#wz-twf .wz-chip").forEach((c) => c.onclick = () => {
+          markDirty();
           state.twoWeaponFighting = !state.twoWeaponFighting;
           render();
         });
         // U4 — oath: single-select; toggling shows/hides the approximation note.
         root.querySelectorAll("#wz-oath .wz-chip").forEach((c) => c.onclick = () => {
           if (c.disabled) return;
+          markDirty();
           state.oath = state.oath === c.dataset.oath ? "" : c.dataset.oath;
           render();
         });
         // Combat style: single-select; changing it swaps which weapon-type / off-hand
         // chips are shown and resets any prior sub-picks, so a full re-render.
         root.querySelectorAll("#wz-style .wz-chip").forEach((c) => c.onclick = () => {
+          markDirty();
           const next = state.style === c.dataset.style ? "" : c.dataset.style;
           state.style = next; state.weaponTypes = []; state.offHand = []; state.offHandWeapons = [];
           render();
@@ -3710,6 +3822,7 @@ if (typeof window !== "undefined" && window.App) {
         root.querySelectorAll(".wz-pl-select").forEach((sel) => sel.onchange = () => {
           const id = sel.dataset.plsel, val = sel.value;
           if (!val) return;
+          markDirty();
           const key = id === "offhand" ? (offWeaponSet.includes(val) ? "offHandWeapons" : "offHand") : PL[id];
           if (!key) return;
           if (!state[key].includes(val)) state[key] = [...state[key], val];
@@ -3717,6 +3830,7 @@ if (typeof window !== "undefined" && window.App) {
         });
         root.querySelectorAll(".wz-pl-tags .wz-tag").forEach((tag) => tag.onclick = () => {
           const key = tag.dataset.arr || PL[tag.dataset.pltag]; if (!key) return;
+          markDirty();
           state[key] = state[key].filter((x) => x !== tag.dataset.val);
           render();
         });
@@ -3724,6 +3838,7 @@ if (typeof window !== "undefined" && window.App) {
       }
       if (state.step === "pool") {
         root.querySelectorAll(".wz-chip[data-pool]").forEach((c) => c.onclick = () => {
+          markDirty();
           state.pool = c.dataset.pool;
           document.getElementById("wz-upload").classList.toggle("wz-hidden", state.pool !== "owned");
           root.querySelectorAll(".wz-chip[data-pool]").forEach((x) => x.classList.toggle("on", x.dataset.pool === state.pool));
@@ -3793,6 +3908,7 @@ if (typeof window !== "undefined" && window.App) {
         // after. Every row is on screen from the start, so nothing reveals anything.
         root.querySelectorAll(".wz-bundle").forEach((btn) => {
           btn.onclick = () => {
+            markDirty();
             state.priorities = addBundle(btn.dataset.bundle, state.priorities, vocab);
             renderRanked();
           };
@@ -3867,7 +3983,7 @@ if (typeof window !== "undefined" && window.App) {
             }
             applyPinId(state.slotConstraints, slot, variant, slotCardOf); // append (Ring) / replace (single)
           }
-          state.constraintsDirty = true;
+          state.constraintsDirty = true; markDirty();
           // refresh the equipped-list badges in place (no re-solve yet)
           if (state.lastRun) {
             state.lastRun.query.slotConstraints = { ...state.slotConstraints };
