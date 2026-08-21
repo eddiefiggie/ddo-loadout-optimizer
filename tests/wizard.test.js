@@ -2860,3 +2860,52 @@ test("#88 U10 (R33): the creation surface names the three causes and the wiki ch
   assert.ok(/Check the wiki page first/i.test(lead),
     "…and the step that tells the three apart");
 });
+
+
+// ---- review fixes: the override creation surfaces ---------------------------
+
+// findOverrideFor is the lookup createOverride uses to hand the freshly-made
+// override to the report. It was written inline as
+//   o.variant_id === key.variant_id || o.pool_key === key.pool_key
+// which collapses on two ITEM overrides: neither carries a pool_key, so
+// `undefined === undefined` satisfies the second clause and any override
+// sharing the affix name and recorded type matches — from a different item.
+const { findOverrideFor } = require("../web/wizard.js");
+
+test("review: findOverrideFor does not match a different item on undefined pool_key", () => {
+  const a = { variant_id: "Aberrant Robe", name: "Armor Class", from: "Armor", value: "5", to: "Enhancement" };
+  const b = { variant_id: "Cloak of Night", name: "Armor Class", from: "Armor", value: "5", to: "Sacred" };
+  const list = [a, b];
+  assert.strictEqual(findOverrideFor(list, b), b, "the second item's override, not the first");
+  assert.strictEqual(findOverrideFor(list, a), a);
+});
+
+test("review: findOverrideFor matches a pool-keyed override on its key", () => {
+  const p = { pool_key: "seal||Gloom||equipment/accessories||Charisma||Insight||7",
+              name: "Charisma", from: "Insight", value: "7", to: "Quality" };
+  const q = { pool_key: "seal||Gloom||equipment/accessories||Charisma||Quality||3",
+              name: "Charisma", from: "Quality", value: "3", to: "Insight" };
+  assert.strictEqual(findOverrideFor([p, q], q), q);
+});
+
+test("review: findOverrideFor returns null when nothing matches", () => {
+  assert.strictEqual(findOverrideFor([], { variant_id: "X", name: "n", from: "f", value: "1" }), null);
+  assert.strictEqual(findOverrideFor(null, { variant_id: "X", name: "n", from: "f", value: "1" }), null);
+});
+
+// The picker resolves a variant id against dataset.items. Browse's table also
+// carries 472 CRAFTED rows whose synthetic ids resolve to nothing there, and the
+// control was rendered on every row — so pressing it on a crafted row said
+// "nothing here can be corrected", which is false: those rows carry eligible
+// affixes, addressed by pool key rather than variant id.
+test("review: Browse offers the correction control only on rows the picker can serve", () => {
+  const fs = require("fs"); const path = require("path");
+  const browse = fs.readFileSync(path.join(__dirname, "..", "web", "browse.js"), "utf-8");
+  assert.ok(/hooks\.canOverride/.test(browse),
+    "browse.js gates the control on a host-supplied predicate");
+  assert.ok(!/data-correct="\$\{esc\(v\.variant_id\)\}"[^`]*`;\s*$/m.test(browse)
+    || /canOverride\(v\)/.test(browse),
+    "…and the predicate is consulted per row, not assumed");
+  const wiz = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  assert.ok(/canOverride:\s*\(v\)/.test(wiz), "the wizard supplies that predicate");
+});
