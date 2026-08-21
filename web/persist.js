@@ -89,6 +89,14 @@
     // #339 — augCeiling is the mlFloor precedent: a plain nullable scalar, no
     // save marker, no healing. Absent on a pre-feature save -> loads unrestricted.
     "characterName", "ml", "mlFloor", "mlFloorManual", "augCeiling", "race", "alignment", "armor", "oath",
+    // #428 U4 (KTD1) — the step the player was on when they saved, so a build
+    // saved mid-flow reopens mid-flow. It is a saved INPUT rather than a new
+    // top-level record field precisely so backup.js — which sources THIS list —
+    // inherits it with no second edit; `overrides` set that precedent in #421.
+    // Written verbatim and validated on READ (wizard.js savedStep): a record
+    // from a future build may name a step this one does not have, and the reader
+    // is the only place that knows the current step list.
+    "step",
     // #359 — the owned-augment opt-in. Absent on a pre-feature save, which
     // reads as false: a character saved before this shipped reloads solving
     // exactly what it solved before.

@@ -46,6 +46,28 @@ function stepAfterLoad(snapshot) {
   return snapshot && snapshot.status === "optimal" ? "results" : "priorities";
 }
 
+/** #428 U4 (KTD1) — the step a record explicitly recorded, or null.
+ *
+ *  A record written before this feature carries no `step`; its ABSENCE is the
+ *  signal, which is why an unknown or non-string value reads as absent too
+ *  rather than being coerced. Pure; unit-tested. */
+function savedStep(inputs, steps = WIZARD_STEPS) {
+  const s = inputs && inputs.step;
+  return (typeof s === "string" && steps.indexOf(s) >= 0) ? s : null;
+}
+
+/** #428 U4 (R16) — where loading a saved record lands.
+ *
+ *  A record that recorded its step resumes there; a pre-feature record falls
+ *  back to `stepAfterLoad`, unchanged. The one exception is a saved "results":
+ *  every other step renders from inputs alone, but results renders from a solved
+ *  snapshot, so honouring it without one would restore the blank results view
+ *  `stepAfterLoad` exists to prevent. Pure; unit-tested. */
+function stepOnLoad(inputs, snapshot, steps = WIZARD_STEPS) {
+  const s = savedStep(inputs, steps);
+  return (s && s !== "results") ? s : stepAfterLoad(snapshot);
+}
+
 /** #428 U3 (R13/R14/R17/R20/R21) — the save rail's model.
  *
  *  The rail is the flow's ONE save surface, rendered beside every step (KTD4),
@@ -1432,7 +1454,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, railModel, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, railModel, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -3083,18 +3105,20 @@ if (typeof window !== "undefined" && window.App) {
     function saveCurrentCharacter(name) {
       const nm = (name || "").trim();
       if (!nm) return { ok: false, error: "no-name" };
-      if (!state.lastRun || !state.lastRun.result || state.lastRun.result.status !== "optimal") {
-        return { ok: false, error: "no-build" };
-      }
+      // #428 U4 (R15) — a save is no longer gated on a solved run. What is saved
+      // is the in-progress state of every step completed so far; a record written
+      // AFTER a solve additionally carries the loadout. Without this, the rail on
+      // the character step could offer a Save that always refused.
       state.characterName = nm;
       // Stamp with the current build only for a freshly-solved run. Saving a
       // LOADED-but-not-resolved build (e.g. after a rename) must preserve its
       // original stamp, or a stale build would re-stamp itself current and the
       // staleness warning would be silenced forever.
-      const stamp = (state.lastRun.fresh === false && state.lastRun.stampedBuildId)
-        ? state.lastRun.stampedBuildId : currentBuildId();
+      const run = state.lastRun || null;
+      const stamp = (run && run.fresh === false && run.stampedBuildId)
+        ? run.stampedBuildId : currentBuildId();
       // eslint-disable-next-line no-undef
-      const rec = CharacterStore.serializeCharacter(nm, state, state.lastRun, stamp);
+      const rec = CharacterStore.serializeCharacter(nm, state, run, stamp);
       // eslint-disable-next-line no-undef
       return CharacterStore.saveCharacter(rec);
     }
@@ -3267,9 +3291,12 @@ if (typeof window !== "undefined" && window.App) {
       // fields; upgrade them so the native-first readers (affixLabel/itemMl) render.
       const _norm = _datasetNormalizer();
       const snap = (_norm && _norm.migrateLoadout) ? _norm.migrateLoadout(rec.snapshot) : rec.snapshot;
-      // U1/R1 — an optimal snapshot lands directly on Results; anything else
-      // routes to priorities to re-solve (never a blank results view).
-      if (stepAfterLoad(snap) === "results") {
+      // #428 U4 (R16) — a record that recorded its step resumes there; a
+      // pre-feature record keeps the original routing (an optimal snapshot lands
+      // on Results, anything else on priorities to re-solve — never a blank
+      // results view).
+      const _target = stepOnLoad(i, snap);
+      if (_target === "results") {
         const query = rec.query || buildQuery(state, vocab);
         // #91 (U3, KTD3) — same counting-set threading as the solve path above.
         // eslint-disable-next-line no-undef
@@ -3311,11 +3338,14 @@ if (typeof window !== "undefined" && window.App) {
         // #88 U8 (R30/AE9) — either cause shows the banner, and the text says which.
         refreshStaleBanner();
       } else {
-        // No optimal snapshot saved — land on priorities so the user can re-solve,
-        // with a reason rather than a silent jump.
-        go("priorities");
-        const s = document.getElementById("wz-status");
-        if (s) s.textContent = `"${rec.name}" has no solved build saved — adjust priorities and re-solve.`;
+        go(_target);
+        // The "no solved build" line is an explanation for a FALLBACK, so it is
+        // shown only when one happened. A build deliberately saved mid-flow
+        // resumes where it stopped and needs no apology for not being solved.
+        if (!savedStep(i)) {
+          const s = document.getElementById("wz-status");
+          if (s) s.textContent = `"${rec.name}" has no solved build saved — adjust priorities and re-solve.`;
+        }
       }
     }
 
@@ -3378,7 +3408,6 @@ if (typeof window !== "undefined" && window.App) {
         if (!stat) return;
         if (res.ok) stat.textContent = `Saved “${nm}”.`;
         else if (res.error === "no-name") stat.textContent = "Name it first.";
-        else if (res.error === "no-build") stat.textContent = "Solve a build first.";
         else if (res.error === "quota") stat.textContent = "Storage full — remove some saves.";
         else stat.textContent = "Could not save.";
       };

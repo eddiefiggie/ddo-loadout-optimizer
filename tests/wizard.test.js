@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
+const { railModel, savedStep, stepOnLoad, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -3092,4 +3092,87 @@ test("#428 U3 (R24): the rail offers save, load and delete only", () => {
   assert.ok(/data-raildel/.test(body), "…and deletes");
   assert.ok(!/wz-export|wz-import|Export all|Import a backup/.test(body),
     "…and offers no backup export or import (R24)");
+});
+
+// ---------------------------------------------------------------------------
+// #428 U4 (R15/R16/R18) — a saved build reopens where the player stopped.
+// `step` joins INPUT_KEYS (KTD1) rather than becoming a new top-level record
+// field, so the backup round-trip inherits it with no second allowlist edit.
+// ---------------------------------------------------------------------------
+
+test("#428 U4: savedStep reads only a step this flow actually has", () => {
+  assert.strictEqual(savedStep({ step: "character" }), "character");
+  assert.strictEqual(savedStep({ step: "results" }), "results");
+  assert.strictEqual(savedStep({}), null, "a pre-feature record records no step");
+  assert.strictEqual(savedStep({ step: "nowhere" }), null, "an unknown step is not a step");
+  assert.strictEqual(savedStep({ step: 3 }), null, "…nor is an index");
+  assert.strictEqual(savedStep(null), null);
+});
+
+test("#428 U4 (AE4): a build saved mid-flow reopens at the step it was saved on", () => {
+  assert.strictEqual(stepOnLoad({ step: "character" }, null), "character");
+  assert.strictEqual(stepOnLoad({ step: "pool" }, null), "pool");
+  assert.strictEqual(stepOnLoad({ step: "priorities" }, null), "priorities");
+});
+
+test("#428 U4: a pre-feature record with no step lands where stepAfterLoad sends it", () => {
+  // Unchanged behavior, asserted so the fallback cannot rot: this is what every
+  // record written before the feature carries.
+  assert.strictEqual(stepOnLoad({}, { status: "optimal" }), "results");
+  assert.strictEqual(stepOnLoad({}, null), "priorities");
+  assert.strictEqual(stepOnLoad({}, { status: "infeasible" }), "priorities");
+});
+
+test("#428 U4: a record claiming 'results' without an optimal snapshot is not believed", () => {
+  // Every other step renders from inputs alone. Results renders from a solved
+  // snapshot, so honouring a saved "results" without one would restore a blank
+  // results view — exactly the failure stepAfterLoad exists to prevent.
+  assert.strictEqual(stepOnLoad({ step: "results" }, null), "priorities");
+  assert.strictEqual(stepOnLoad({ step: "results" }, { status: "optimal" }), "results");
+});
+
+test("#428 U4 (KTD1): step rides the save allowlist, so the backup inherits it", () => {
+  const { INPUT_KEYS } = require("../web/persist.js");
+  assert.ok(INPUT_KEYS.includes("step"),
+    "step is a saved INPUT, not a new top-level record field");
+});
+
+test("#428 U4 (R15): pickInputs captures the in-progress step with no solve", () => {
+  const P = require("../web/persist.js");
+  const inputs = P.pickInputs({ step: "character", ml: 30, race: "Elf" }, "Sook");
+  assert.strictEqual(inputs.step, "character");
+  assert.strictEqual(inputs.characterName, "Sook");
+});
+
+test("#428 U4 (R15): serializeCharacter writes a record with no snapshot and no query", () => {
+  const P = require("../web/persist.js");
+  const r = P.serializeCharacter("Mid-flow", { step: "pool", ml: 30, race: "Elf" }, null, "b1");
+  assert.strictEqual(r.inputs.step, "pool");
+  assert.strictEqual(r.query, null, "nothing was solved, so there is no query");
+  assert.deepStrictEqual(r.snapshot, {}, "…and no snapshot");
+  // …and it still routes back to where it was saved.
+  assert.strictEqual(stepOnLoad(r.inputs, r.snapshot), "pool");
+});
+
+test("#428 U4 (R18/AE5): nothing persists unless the player saves", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  // The store is written from exactly two places: the explicit save the rail
+  // triggers, and the backup import. No autosave, no unload hook, no timer.
+  const writes = (src.match(/CharacterStore\.save(Character|Many)\(/g) || []);
+  assert.strictEqual(writes.length, 2,
+    `expected exactly the save-button and import writes; found ${writes.length}`);
+  assert.ok(!/beforeunload|visibilitychange/.test(src),
+    "no unload hook quietly persists an unsaved build");
+  assert.ok(!/setInterval\(/.test(src), "no autosave timer");
+});
+
+test("#428 U4 (R15): saving no longer requires a solved build", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const at = src.indexOf("function saveCurrentCharacter(");
+  const body = src.slice(at, src.indexOf("\n    }", at));
+  assert.ok(!/no-build/.test(body),
+    "the pre-#428 'solve first' refusal is gone — an in-progress build is savable");
+  assert.ok(/no-name/.test(body), "…but an unnamed one still is not (R13)");
 });
