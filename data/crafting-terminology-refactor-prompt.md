@@ -1,6 +1,5 @@
 Refactor the crafting and upgrade terminology throughout the DDO Loadout
-Optimizer repository:
-~/ClaudeGarage/personal/ddo-loadout-optimizer/
+Optimizer repository.
 PROBLEM
 The application currently uses “awaken,” “awakened,” and “awakening” as
 umbrella terms for several unrelated DDO crafting and customization systems.
