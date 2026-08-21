@@ -255,7 +255,11 @@ test("AE14 — the replacement vocabulary is closed and carries the three additi
 
 test("every eligible affix's recorded type is expressible or equivalence-mapped", () => {
   const vocab = new Set(Model.CREDIT_BONUS_TYPES);
-  const equiv = new Set(["Insight Natural", "Primal Natural", "Profane Natural"]);
+  // Read the curated map normalizeDataset installed on this very pool, never a
+  // hand-copied set: a guard that keeps its own copy of a production constant
+  // measures the copy, and cannot fail when the original moves.
+  const equiv = new Set(Object.keys(pool._stackEquiv || {}));
+  assert.ok(equiv.size > 0, "the pool carries the live stacking-equivalence map");
   const stray = new Map();
   for (const v of pool.items) for (const a of v.affixes || []) {
     if (!O.isEligible(a)) continue;
@@ -289,6 +293,87 @@ test("the classified population is 20,613 eligible of 42,088", () => {
   // five classes through the real predicate is what produces this number.
   assert.strictEqual(eligible, 20613, "engraved, eligible affixes");
   assert.deepStrictEqual(byCat, { item: 13573, weapon: 6121, augment: 919 });
+});
+
+test("chained overrides do not clobber the catalog type", () => {
+  // Two individually-legal overrides where one's `to` is the other's `from`.
+  // Artemist's Aegis carries Fortitude Save 4 under both Resistance and Insight.
+  const run = (order) => {
+    const p = loadPool();
+    const v = p.items.find((x) => x.variant_id === "Artemist's Aegis (level 5)");
+    const at = (t) => v.affixes.find((x) => x.name === "Fortitude Save" && x.type === t);
+    const A = { ...O.overrideKey(v, at("Resistance")), to: "Insight" };
+    const B = { ...O.overrideKey(v, at("Insight")), to: "Quality" };
+    const rep = O.applyOverrides(p, order === "fwd" ? [A, B] : [B, A]);
+    const after = v.affixes.filter((x) => x.name === "Fortitude Save").map((x) => x.type);
+    O.withdrawOverrides(p);
+    const restored = v.affixes.filter((x) => x.name === "Fortitude Save").map((x) => x.type);
+    return { counts: rep.applied.map((x) => x.count), after, restored };
+  };
+  const fwd = run("fwd"), rev = run("rev");
+  assert.deepStrictEqual(fwd.counts, [1, 1], "neither override captures the other's affix");
+  assert.deepStrictEqual(fwd.restored, ["Resistance", "Insight"],
+    "withdraw restores the CATALOG types, not an intermediate override's");
+  assert.deepStrictEqual(fwd, rev, "and the result is independent of the order added");
+});
+
+test("resolveMatch is independent of whether the pool is currently applied", () => {
+  const p = loadPool();
+  const v = p.items.find((x) => x.variant_id === "Aberrant Robe");
+  const a = v.affixes.find((x) => x.name === "Armor Class" && x.type === "Armor");
+  const o = { ...O.overrideKey(v, a), to: "Enhancement" };
+  assert.strictEqual(O.resolveMatch(p, o).state, "active", "before apply");
+  O.applyOverrides(p, [o]);
+  assert.strictEqual(O.resolveMatch(p, o).state, "active",
+    "a LIVE override must not read as `satisfied` — that would tell the player to " +
+    "discard the override that is doing the work");
+});
+
+test("the override stamp never widens what an affix serializes", () => {
+  const p = loadPool();
+  const v = p.items.find((x) => x.variant_id === "Aberrant Robe");
+  const a = v.affixes.find((x) => x.name === "Armor Class" && x.type === "Armor");
+  const keysBefore = Object.keys(a).join(",");
+  O.applyOverrides(p, [{ ...O.overrideKey(v, a), to: "Enhancement" }]);
+  const stamped = v.affixes.find((x) => x.name === "Armor Class");
+  assert.strictEqual(Object.keys(stamped).join(","), keysBefore,
+    "solver.js hands out live pool references and `chosen` is persisted, so a " +
+    "stamped affix must not carry the stamp into a saved character");
+  assert.ok(!JSON.stringify(stamped).includes(O.OVERRIDE_FROM));
+  assert.strictEqual(O.catalogTypeOf(stamped), "Armor", "still readable by direct access");
+});
+
+test("applyOverrides refuses an override whose target became ineligible", () => {
+  const p = loadPool();
+  const v = p.items.find((x) => x.variant_id === "Aberrant Robe");
+  const a = v.affixes.find((x) => x.name === "Armor Class" && x.type === "Armor");
+  const o = { ...O.overrideKey(v, a), to: "Enhancement" };
+  v.affixes.filter((x) => x.name === "Armor Class").forEach((x) => { x.via = "Potency"; });
+  O.classifyPool(p);
+  const rep = O.applyOverrides(p, [o]);
+  assert.deepStrictEqual(rep.applied, [], "nothing applied");
+  assert.strictEqual(rep.ineligible.length, 1, "and it is reported as ineligible");
+  assert.strictEqual(v.affixes.find((x) => x.name === "Armor Class").type, "Armor",
+    "the pool is untouched");
+});
+
+test("eligibleAffixes returns the correct non-empty subset", () => {
+  const v = pool.items.find((x) => (x.affixes || []).some((a) => O.isEligible(a))
+    && (x.affixes || []).some((a) => !O.isEligible(a)));
+  assert.ok(v, "an item mixing eligible and ineligible affixes exists");
+  const got = O.eligibleAffixes(v);
+  assert.ok(got.length > 0 && got.length < v.affixes.length, "a proper subset");
+  assert.ok(got.every((a) => O.isEligible(a)));
+});
+
+test("the generator marks composite components, so provenance is read not inferred", () => {
+  let marked = 0;
+  for (const v of pool.items) for (const a of v.affixes || []) {
+    if (a._compositeOf) { marked++; assert.strictEqual(O.isEligible(a), false); }
+  }
+  assert.strictEqual(marked, 161, "every generated composite component carries the mark");
+  const one = pool.items.flatMap((v) => v.affixes || []).find((a) => a._compositeOf);
+  assert.ok(!Object.keys(one).includes("_compositeOf"), "and the mark is non-enumerable");
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);

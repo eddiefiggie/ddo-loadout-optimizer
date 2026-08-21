@@ -33,16 +33,26 @@
   // Non-enumerable so classification never widens what gets serialized into a
   // saved character or an export.
   var ELIGIBLE_CACHE = "_overrideEligible";
+  // Written by dataset.js's composite expansion onto each affix it generates.
+  var COMPOSITE_MARK = "_compositeOf";
 
   var INELIGIBLE_TYPES = { Bool: 1, Penalty: 1, "-": 1 };
 
-  var _dataset = (typeof window !== "undefined" && window.DatasetNormalizer)
-    ? window.DatasetNormalizer
+  // Resolved per call, not captured at script-eval time. Capturing would bind to
+  // whatever `window.DatasetNormalizer` happened to be when this file's script tag
+  // ran: correct today, but a load-order change would leave it null forever, the
+  // spec table empty, and all 161 composite components silently ELIGIBLE — in the
+  // browser only, where no Node test can see it. Mirrors model.js's `_taxonomy()`.
+  function _datasetModule() {
+    if (typeof window !== "undefined" && window.DatasetNormalizer) return window.DatasetNormalizer;
     // eslint-disable-next-line global-require
-    : (typeof require !== "undefined" ? require("./dataset.js") : null);
+    if (typeof require !== "undefined") { try { return require("./dataset.js"); } catch (e) { /* absent */ } }
+    return null;
+  }
 
   function compositeComponents() {
-    return (_dataset && _dataset.COMPOSITE_COMPONENTS) || {};
+    var d = _datasetModule();
+    return (d && d.COMPOSITE_COMPONENTS) || {};
   }
 
   function sameValue(a, b) {
@@ -55,7 +65,16 @@
    *  unstamped on purpose (the expansion is additive, not replacing), so a
    *  provenance test cannot see them. */
   function isCompositeComponent(affix, variant) {
-    if (!affix || !variant) return false;
+    if (!affix) return false;
+    // The generator marks what it generated (dataset.js), so provenance is RECORDED
+    // rather than inferred. The spec match below stays as a fallback for a pool
+    // normalized by older code, but it is inference: an item that ENGRAVES a
+    // component at exactly the spec's type and value is skipped by the generator
+    // (`if (stated.has(c.name)) continue;`) yet still matches the spec. Zero such
+    // collisions today, but Cloak of Sunlight already engraves Healing Amplification
+    // beside a Crown of Summer carrier — only its type and value keep it eligible.
+    if (affix[COMPOSITE_MARK] != null) return true;
+    if (!variant) return false;
     var specs = compositeComponents();
     var affixes = variant.affixes || [];
     for (var i = 0; i < affixes.length; i++) {
@@ -161,12 +180,14 @@
     });
     if (!byName.length) return { state: "suspended", reason: "retired-target", affixes: [] };
 
-    // Prefer an occurrence not already carrying a stamp, so two occurrences that
-    // differ only by an applied override resolve to the untouched one.
-    var unstamped = byName.filter(function (a) { return a[OVERRIDE_FROM] == null; });
-    var pick = unstamped.length ? unstamped : byName;
-
-    var atRecorded = pick.filter(function (a) { return a.type === override.from; });
+    // Read the CATALOG type, never the live one. applyOverrides deliberately leaves
+    // the pool stamped — that is the steady state every solve, browse, and export
+    // reads — so keying the ladder on `a.type` made a live override resolve
+    // `satisfied`, i.e. "the catalog adopted this, drop it", about an override that
+    // was actively doing the work. Reading through the stamp makes the ladder
+    // independent of whether the pool is currently applied.
+    var pick = byName;
+    var atRecorded = pick.filter(function (a) { return catalogTypeOrLive(a) === override.from; });
     if (atRecorded.length) {
       if (!atRecorded.every(function (a) { return isEligible(a, v); })) {
         return { state: "suspended", reason: "ineligible", affixes: atRecorded };
@@ -174,15 +195,23 @@
       return { state: "active", reason: null, affixes: atRecorded };
     }
 
-    var atReplacement = pick.filter(function (a) { return a.type === override.to; });
+    var atReplacement = pick.filter(function (a) { return catalogTypeOrLive(a) === override.to; });
     if (atReplacement.length) return { state: "satisfied", reason: null, affixes: atReplacement };
 
-    return { state: "suspended", reason: "drift", affixes: pick, now: pick[0] && pick[0].type };
+    return { state: "suspended", reason: "drift", affixes: pick, now: pick[0] && catalogTypeOrLive(pick[0]) };
   }
 
-  /** The catalog's own type for an affix an override is currently applied to. */
+  /** The catalog's own type for an affix an override is currently applied to,
+   *  or undefined when none is. */
   function catalogTypeOf(affix) {
     return affix ? affix[OVERRIDE_FROM] : undefined;
+  }
+
+  /** The catalog's type, falling back to the live type when unstamped. This is what
+   *  the ladder reads so its answer does not change with the pool's applied state. */
+  function catalogTypeOrLive(affix) {
+    if (!affix) return undefined;
+    return affix[OVERRIDE_FROM] != null ? affix[OVERRIDE_FROM] : affix.type;
   }
 
   /** Remove every applied override, restoring each affix's catalog type. */
@@ -216,12 +245,29 @@
     var list = overrides || [];
     for (var i = 0; i < list.length; i++) {
       var o = list[i];
-      var hits = matchAffixes(pool, o);
+      // Exclude affixes an EARLIER override in this same pass already stamped.
+      // Without this, two individually-legal overrides chain: A retypes X->Y, then
+      // B (from: Y) matches the affix A just changed, captures it, and overwrites
+      // the stamp with A's replacement instead of the catalog's type. Withdraw then
+      // restores the wrong type permanently, since nothing keeps a pristine copy.
+      // Reproduced on `Artemist's Aegis (level 5)`, whose Fortitude Save 4 exists
+      // under both Resistance and Insight; 35 variants can produce the collision.
+      // The withdraw-first call above guarantees zero stamps on entry, so this
+      // filter only ever removes affixes this same pass just retyped.
+      var hits = matchAffixes(pool, o).filter(function (a) { return a[OVERRIDE_FROM] == null; });
       if (!hits.length) { unmatched.push(o); continue; }
       var v = variantOf(pool, o.variant_id);
       if (!hits.every(function (a) { return isEligible(a, v); })) { ineligible.push(o); continue; }
       for (var j = 0; j < hits.length; j++) {
-        hits[j][OVERRIDE_FROM] = hits[j].type;
+        // Non-enumerable, for the same reason as ELIGIBLE_CACHE: solver.js hands out
+        // LIVE pool variant references, `chosen` is on persist.js's RESULT_KEEP, and
+        // saveCharacter JSON.stringifies the record — so a plain assignment would
+        // persist this stamp into every character saved while an override is applied,
+        // undeclared and with no override list to explain it. `delete` still works on
+        // a configurable property, and catalogTypeOf reads it by direct access.
+        Object.defineProperty(hits[j], OVERRIDE_FROM, {
+          value: hits[j].type, enumerable: false, configurable: true, writable: true,
+        });
         hits[j].type = o.to;
       }
       applied.push({ variant_id: o.variant_id, name: o.name, from: o.from, to: o.to, count: hits.length });
@@ -232,7 +278,7 @@
   var api = {
     OVERRIDE_FROM, ELIGIBLE_CACHE,
     isEligible, classifyPool, eligibleAffixes, isCompositeComponent,
-    overrideKey, matchAffixes, resolveMatch,
+    overrideKey, matchAffixes, resolveMatch, catalogTypeOrLive,
     applyOverrides, withdrawOverrides, catalogTypeOf,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;

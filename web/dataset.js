@@ -306,7 +306,19 @@ function normalizeItem(it) {
       // Idempotent: a second pass sees the derived names in `stated` and adds nothing.
       if (derived.size) {
         var added = [];
-        derived.forEach(function (c) { added.push(Object.assign({}, c)); });
+        derived.forEach(function (c) {
+          var copy = Object.assign({}, c);
+          // #88 — record that the pipeline generated this, so the override
+          // eligibility predicate reads provenance instead of re-deriving it by
+          // matching the spec (which cannot tell a generated copy from an item
+          // that engraves the same name/type/value). NON-ENUMERABLE, so the
+          // deliberate "additive, unstamped" contract above is intact: the export
+          // layer's `via` grouping is untouched and nothing new serializes.
+          Object.defineProperty(copy, "_compositeOf", {
+            value: true, enumerable: false, configurable: true, writable: true,
+          });
+          added.push(copy);
+        });
         it.affixes = affixes.concat(added);
       }
     }
