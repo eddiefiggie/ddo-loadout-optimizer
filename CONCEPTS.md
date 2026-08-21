@@ -191,6 +191,11 @@ One enchantment name carrying two formats whose magnitudes differ — an Arabic 
 
 The consequence is the part that matters: **the stored number cannot tell you which version produced it.** Upstream flattens the Roman numeral to an integer, so a legacy item and a current item can arrive carrying the identical value while granting different amounts — and reading that number as the bonus over-grants on every legacy item. Version is therefore per-item evidence, harvested and recorded with [[Harvest provenance]] like any other wiki-sourced value, never derived from the magnitude. Roman magnitudes resolve through a confirmed per-numeral lookup rather than a formula; the observed mappings are not a uniform ratio, so a numeral nobody has checked is quarantined rather than computed.
 
+### Bonus-type override
+A player's assertion that one affix on one item carries a different bonus type in game than the catalog recorded. It re-keys which [[Bonus-type bucket]] the affix contributes to and never changes its magnitude, so all it can do is change how that affix stacks against its siblings — which is routinely enough to change the whole loadout.
+
+This is the one place a player's word outranks harvested data, so it is bounded rather than free: only an affix the item itself engraves may be overridden, never one the load pipeline generated, one whose type field carries presence or penalty semantics instead of a stacking type, or one with no recorded type at all. An override is a standing assertion applied as a reversible overlay over the loaded catalog rather than an edit to it, and its identity names the affix **and the type it was written against** — which is what lets a later catalog correction be detected instead of silently absorbed. An assertion is therefore *active* while the recorded type still stands, *satisfied* once the catalog has adopted the claimed type on its own, and *suspended with a stated reason* when the affix has drifted to some third type, become ineligible, or left the catalog entirely. Applying the standing set is order-independent and repeatable, and a [[Saved character]] carries the assertions, never the overlay they produce.
+
 ## Candidate pool & constraints
 
 ### Inventory mode ("What I own")
