@@ -1227,6 +1227,13 @@ const CREDIT_BONUS_TYPES = [
   "Sacred", "Morale", "Luck", "Resistance", "Deflection", "Armor", "Shield",
   "Natural", "Artifact", "Vitality", "Equipment", "Untyped", "Implement",
   "Legendary", "Alchemical", "Primal", "Festive",
+  // #88 U3 — the three real bonus types the dataset carries that this list
+  // lacked. Overrides and declared credits share one list so the vocabulary and
+  // `_STACK_EQUIV` stay maintained together; these three cover 131 affixes that
+  // otherwise had no expressible replacement type. The `X Natural` family is
+  // deliberately still absent: equivType collapses those to their plain type, so
+  // offering both names would put two names on one bucket.
+  "Orb", "Sneak Attack", "Determination",
 ];
 const _CREDIT_TYPE_SET = new Set(CREDIT_BONUS_TYPES);
 

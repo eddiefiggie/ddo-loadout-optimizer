@@ -306,7 +306,19 @@ function normalizeItem(it) {
       // Idempotent: a second pass sees the derived names in `stated` and adds nothing.
       if (derived.size) {
         var added = [];
-        derived.forEach(function (c) { added.push(Object.assign({}, c)); });
+        derived.forEach(function (c) {
+          var copy = Object.assign({}, c);
+          // #88 — record that the pipeline generated this, so the override
+          // eligibility predicate reads provenance instead of re-deriving it by
+          // matching the spec (which cannot tell a generated copy from an item
+          // that engraves the same name/type/value). NON-ENUMERABLE, so the
+          // deliberate "additive, unstamped" contract above is intact: the export
+          // layer's `via` grouping is untouched and nothing new serializes.
+          Object.defineProperty(copy, "_compositeOf", {
+            value: true, enumerable: false, configurable: true, writable: true,
+          });
+          added.push(copy);
+        });
         it.affixes = affixes.concat(added);
       }
     }
@@ -1369,10 +1381,10 @@ function migrateCredits(credits, vocab) {
 // Browser: expose a global so app.js can normalize the fetched dataset without a
 // module system. Node: CommonJS export for the tests + parity harness.
 if (typeof window !== "undefined") {
-  window.DatasetNormalizer = { companionHintFor, COMPANION_STATS, normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
+  window.DatasetNormalizer = { COMPOSITE_COMPONENTS, companionHintFor, COMPANION_STATS, normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
 }
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { UTILITY_CONTAINER_DEFAULT_ORDER, defaultUtilityOrder,
     COMPANION_STATS, companionHintFor,
-    normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK, UTILITY_TIER1_PRESENCE };
+    COMPOSITE_COMPONENTS, normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK, UTILITY_TIER1_PRESENCE };
 }
