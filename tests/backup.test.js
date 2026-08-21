@@ -212,3 +212,21 @@ test("#348 U7/R11: the export/import round-trip carries the container and its ma
   assert.ok(INPUT_KEYS.includes("utility_container_aware"),
     "the marker must survive too, or an imported record heals forever");
 });
+
+
+// ---- #88 U5 — overrides survive the backup round-trip (R20) -----------------
+
+test("#88 U5: overrides survive export and import with no second allowlist edit", () => {
+  // The whole point of backup.js sourcing persist.js's INPUT_KEYS: adding a saved
+  // input there must ride along here automatically. This asserts that it did.
+  const overrides = [
+    { variant_id: "Aberrant Robe", name: "Armor Class", from: "Armor", value: "5",
+      to: "Enhancement", note: "measured in game" },
+  ];
+  const r = rec("Corrector", 34);
+  r.inputs.overrides = overrides;
+  const parsed = parseBackup(JSON.stringify(serializeAll({ Corrector: r }, {})));
+  assert.ok(parsed.ok, `backup must parse: ${parsed.error || ""}`);
+  assert.deepStrictEqual(parsed.characters.Corrector.inputs.overrides, overrides,
+    "an imported character keeps the overrides it was exported with, recorded types included");
+});

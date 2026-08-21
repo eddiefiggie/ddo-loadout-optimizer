@@ -135,6 +135,42 @@ function rungFromInputs(inputs) {
   return _craftingRung(inputs);
 }
 
+/** #88 U5 (R20/R21/R23) — the saved override list, restored at the load boundary.
+ *
+ *  Pure, and exported, for the same reason `rungFromInputs` is: it is a function of
+ *  the saved inputs, so it is tested directly rather than through the render path.
+ *
+ *  Two rules, each of which has cost a defect elsewhere in this file. The caller
+ *  ALWAYS assigns the result — `state` outlives a character, so an override left
+ *  live from the previous one would silently retype this build's gear (the
+ *  `augCeiling` and `declaredCredits` precedents). And entries are sanitized here
+ *  rather than trusted: a hand-edited backup can carry rows no reader could act
+ *  on, which would render as ghosts and re-persist on every save (the `blocklist`
+ *  precedent). Copies, never references — an edit to live state must not reach
+ *  back into the saved record. */
+function restoreOverrides(inputs) {
+  const list = inputs && inputs.overrides;
+  if (!Array.isArray(list)) return [];
+  const O = _overridesModule();
+  return list
+    .filter((o) => (O ? O.isWellFormed(o) : (o && typeof o === "object")))
+    .slice(0, OVERRIDE_LIMIT)
+    .map((o) => Object.assign({}, o));
+}
+
+// review #9 — read from overrides.js, never re-declared: the save boundary in
+// persist.js applies the same ceiling, and a constant copied into two files
+// measures the copy rather than the original.
+var OVERRIDE_LIMIT = (function () {
+  var O = _overridesModule();
+  return (O && O.OVERRIDE_LIMIT) || 200;
+})();
+
+function _overridesModule() {
+  if (typeof require !== "undefined") { try { return require("./overrides.js"); } catch (e) { /* absent */ } }
+  return (typeof window !== "undefined") ? window.Overrides : null;
+}
+
 /** Clean a stat->value bound map (caps/floors): keep only entries whose value is a
  *  finite number >= 0. Blank, null, negative, or non-numeric entries are dropped so
  *  a stray input never reaches the solver as a cap/floor.
@@ -473,6 +509,13 @@ function buildQuery(state, vocab) {
     // is present either way, so the query object is not byte-identical to a
     // pre-feature one; nothing hashes or diffs it.
     declaredCredits: cleanCreditMap(state.declaredCredits, vocab),
+    // #88 U8 (R14/KTD6) — the overrides actually IN FORCE for this solve, which is
+    // the overlay's APPLY REPORT, never the player's saved declaration. The two
+    // differ exactly where it matters: a suspended, unmatched, or ineligible
+    // override is in the declaration and did nothing, and rendering it as applied
+    // is the defect KTD6 was written about. `state.overrideApplied` is written by
+    // applyOverrideOverlay, the single place the overlay is (re-)built.
+    overrides: Array.isArray(state.overrideApplied) ? state.overrideApplied.slice() : [],
   };
 }
 
@@ -695,6 +738,70 @@ function blockLoadMessage(blocklist, slotConstraints, items) {
       + "They stay blocked and can be removed in the gear-pool step.");
   }
   return parts.length ? parts.join(" ") : null;
+}
+
+/** #88 U7 (R25/R27/R28) — what the load has to tell the player about their
+ *  overrides. Takes `Overrides.resolveOverrides`' output and returns one line per
+ *  override whose state is news, or null when every one is still active.
+ *
+ *  Active is deliberately silent: R24 says an override whose target still carries
+ *  the recorded type applies without prompting. Everything else is a change the
+ *  player did not make to a character they saved, which is exactly the class of
+ *  thing this app discloses rather than absorbing — the priority-migration and
+ *  blocklist notices beside it exist for the same reason.
+ *
+ *  Named from the override's own fields, never from a variant lookup: a crafted
+ *  override has no item name, and a retired-target override has no row left to
+ *  read one from. */
+function overrideLoadMessage(resolved) {
+  const list = Array.isArray(resolved) ? resolved : [];
+  const parts = [];
+  for (const r of list) {
+    if (!r || r.state === "active") continue;
+    const o = r.override || {};
+    const where = o.variant_id ? `${o.variant_id}` : "a crafting option";
+    const what = `${o.name} on ${where}`;
+    if (r.state === "satisfied") {
+      parts.push(`The catalog now records ${what} as ${o.to}, which is what you said — `
+        + "your override is kept in case that changes back, but it is no longer doing anything.");
+    } else if (r.reason === "drift") {
+      parts.push(`${what} is now recorded as ${r.now} rather than ${o.from}, so your `
+        + `${o.to} override is suspended. Re-confirm it against ${r.now} or delete it.`);
+    } else if (r.reason === "retired-target") {
+      parts.push(`${what} is no longer in the data (renamed or removed upstream), so your `
+        + `${o.to} override is suspended. There is nothing left to confirm it against.`);
+    } else if (r.reason === "ineligible") {
+      parts.push(`${what} is no longer an affix the item itself carries, so your `
+        + `${o.to} override is suspended and can only be deleted.`);
+    }
+  }
+  return parts.length ? parts.join(" ") : null;
+}
+
+/** #88 U8 (R30) — why the build on screen is stale, or null when it is current.
+ *
+ *  Two causes share one banner and one Re-solve button, because they are the same
+ *  statement to the player: what you are looking at was solved under conditions
+ *  that no longer hold. Neither re-solves automatically — a displayed loadout
+ *  changing itself while the player reads it is worse than a stale one that says
+ *  so, and re-solve here is view-only until an explicit Save.
+ *
+ *  The override cause compares what the SOLVE ran under (carried on its own query)
+ *  against what is in force now. That catches all three ways the set can move: the
+ *  player created or deleted one, and — the case a restored character hits — an
+ *  override that applied when the build was solved has since suspended, so it is
+ *  absent from today's applied list. */
+function staleNote(state) {
+  const s = state || {};
+  const O = _overridesModule();
+  const then = (s.lastRun && s.lastRun.query && s.lastRun.query.overrides) || [];
+  const now = s.overrideApplied || [];
+  if (s.lastRun && O && !O.sameOverrideSet(then, now)) {
+    return "The build shown was solved with a different set of bonus-type corrections "
+      + "than you have in force now.";
+  }
+  if (s.loadedStale) return "This saved build predates the current gear catalog.";
+  return null;
 }
 
 // R12 — a pinned two-handed (both-hands) main-hand weapon and a pinned off-hand item
@@ -1215,7 +1322,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -1305,6 +1412,12 @@ if (typeof window !== "undefined" && window.App) {
       // U2 — declared stat credits, keyed `stat||bonusType` so a stat can carry
       // more than one and reordering priorities cannot mis-associate them.
       declaredCredits: {},
+      // #88 U5 (R20) — the player's bonus-type overrides, in declaration order.
+      // Empty by default, so the overlay is inert until the player asserts one.
+      overrides: [],
+      // #88 U7 — set on load when a saved override drifted, was adopted upstream,
+      // or lost its target. Dismissible, like its three sibling load notices.
+      overrideNotice: null,
       // #91 (U4/R1) — a NEW list is born with the Utility tier seeded at the
       // bottom, on by default. Seeding happens only here (list birth), never on
       // load — load-path presence is healUtilityTier's decision (KTD8).
@@ -1864,8 +1977,9 @@ if (typeof window !== "undefined" && window.App) {
           <button class="btn primary" id="wz-savebtn">Save character</button>
           <span class="wz-savestat" id="wz-savestat" aria-live="polite"></span>
         </div>
-        <div id="wz-stale" class="wz-cbar wz-hidden">
-          This saved build predates the current gear catalog. <button class="btn primary" id="wz-staleresolve">Re-solve ⚡</button>
+        <div id="wz-stale" class="wz-cbar${staleNote(state) ? "" : " wz-hidden"}">
+          <span id="wz-stalewhy">${esc(staleNote(state) || "This saved build predates the current gear catalog.")}</span>
+          <button class="btn primary" id="wz-staleresolve">Re-solve ⚡</button>
         </div>
         <div id="wz-twfmig" class="wz-cbar${state.twfMigrated ? "" : " wz-hidden"}">
           This character had off-hand weapon types picked, which is how dual-wielding used to switch on — so
@@ -2456,6 +2570,32 @@ if (typeof window !== "undefined" && window.App) {
     }
 
     // ---- solve (real engine) ----------------------------------------------
+    // #88 U5 (R23/KTD1) — rebuild the override overlay over the loaded pool.
+    //
+    // The single place the overlay is (re-)applied, so every caller inherits the
+    // same guarantee. `applyOverrides` withdraws every stamp before matching, so
+    // this is a full rebuild rather than an increment: calling it with an empty
+    // list is how the previous character's overrides come OFF the shared pool.
+    // R23 lists the moments the set in force changes — character load and switch
+    // (wired here), and override create, delete, and re-confirm (the creation
+    // surfaces, which call this same function).
+    //
+    // Returns the apply report (applied / unmatched / ineligible) so a caller can
+    // disclose what actually took effect. It is deliberately NOT stashed on
+    // `state` as the disclosure source: KTD6 says every rendered disclosure reads
+    // the SOLVE's report, because an override that applied to the pool still may
+    // not have contributed to the loadout.
+    function applyOverrideOverlay() {
+      const O = _overridesModule();
+      if (!O || !dataset) { state.overrideApplied = []; return null; }
+      const report = O.applyOverrides(dataset, state.overrides || []);
+      // KTD6 — what APPLIED, kept for buildQuery to hand the solver. Assigned on
+      // every call including the empty one, so a character switch cannot leave the
+      // previous character's applied list feeding this one's optimality claim.
+      state.overrideApplied = report.applied.slice();
+      return report;
+    }
+
     function candidateItems() {
       if (state.pool === "owned" && state.ownedNames) {
         // Base items: always restricted to the export (KTD4/R13).
@@ -2595,6 +2735,16 @@ if (typeof window !== "undefined" && window.App) {
           query.slotConstraints = { ...state.slotConstraints };
         });
         state.constraintsDirty = false;
+        // review #8 — the build on screen was just solved against the CURRENT
+        // catalog, so the catalog-age staleness is discharged by definition. It
+        // used to be cleared only by the stale banner's own Re-solve button,
+        // which was harmless while that banner rendered hidden and was revealed
+        // imperatively; once #88 U8 made it render from `staleNote(state)`, any
+        // re-solve reached another way (Adjust, a priority edit, the ordinary
+        // Solve button) re-drew "this saved build predates the current gear
+        // catalog" over a build that does not. Nothing else reads the flag —
+        // saveCurrentCharacter keys its re-stamp off `lastRun.fresh`.
+        state.loadedStale = false;
         // fresh:true — this build was solved against the current catalog, so a
         // subsequent Save stamps the current build id (see saveCurrentCharacter).
         state.lastRun = { model, result, query, fresh: true };
@@ -2734,6 +2884,22 @@ if (typeof window !== "undefined" && window.App) {
       // (U5 will populate this from the save; the RESET is what makes it safe, and
       // is correct now because nothing writes declaredCredits into `inputs` yet.)
       state.declaredCredits = (i.declaredCredits && typeof i.declaredCredits === "object") ? { ...i.declaredCredits } : {};
+      // #88 U5 (R20/R21/R23) — the saved overrides, then the overlay rebuilt over
+      // the shared pool. ALWAYS assigned and ALWAYS re-applied, in that order: the
+      // pool is one object shared by every character, so the previous character's
+      // stamps have to come off it before this one's go on. applyOverrideOverlay
+      // withdraws first, so switching A -> B leaves nothing of A behind even
+      // though B declares nothing. A pre-feature save restores [] and the apply
+      // becomes a no-op that still performs the withdrawal.
+      state.overrides = restoreOverrides(i);
+      // U7 (R25/R27/R28) — resolve the lifecycle BEFORE applying, and disclose it.
+      // Resolution reads through the stamp so it is independent of the pool's
+      // applied state, but running it first keeps the reported states about the
+      // catalog the player is loading against rather than about our own overlay.
+      const _ovMod = _overridesModule();
+      state.overrideNotice = (_ovMod && dataset)
+        ? overrideLoadMessage(_ovMod.resolveOverrides(dataset, state.overrides)) : null;
+      applyOverrideOverlay();
       // KTD1 — the whole priority list is being replaced, so any row left open
       // belongs to the build being discarded. Ephemeral state, cleared not restored.
       openPanelClear();
@@ -2855,7 +3021,13 @@ if (typeof window !== "undefined" && window.App) {
         // eslint-disable-next-line no-undef
         if (box) renderResults(box, { model, result: snap, query: renderQuery, dataset, highs: null, onAfterRender: afterResultsRender, onRequire: requireOutbidStat });
         const stale = document.getElementById("wz-stale");
-        if (stale) stale.classList.toggle("wz-hidden", !state.loadedStale);
+        // #88 U8 (R30/AE9) — either cause shows the banner, and the text says which.
+        if (stale) {
+          const why = staleNote(state);
+          stale.classList.toggle("wz-hidden", !why);
+          const w = document.getElementById("wz-stalewhy");
+          if (w && why) w.textContent = why;
+        }
       } else {
         // No optimal snapshot saved — land on priorities so the user can re-solve,
         // with a reason rather than a silent jump.
@@ -2998,6 +3170,13 @@ if (typeof window !== "undefined" && window.App) {
         out += `<div id="wz-blockmig" class="wz-cbar">${esc(state.blockLoadNotice)}
         <button class="btn ghost" id="wz-blockmig-ok" type="button">Got it</button></div>`;
       }
+      // #88 U7 (R25/R27/R28) — the override lifecycle report rides the same
+      // channel as its three siblings above, for the same reason: a loaded
+      // character lands on either results or priorities and must be told on both.
+      if (state.overrideNotice) {
+        out += `<div id="wz-ovmig" class="wz-cbar">${esc(state.overrideNotice)}
+        <button class="btn ghost" id="wz-ovmig-ok" type="button">Got it</button></div>`;
+      }
       return out;
     }
 
@@ -3028,6 +3207,12 @@ if (typeof window !== "undefined" && window.App) {
       if (blockOk) blockOk.onclick = () => {
         state.blockLoadNotice = null;
         const bar = document.getElementById("wz-blockmig");
+        if (bar) bar.remove();
+      };
+      const ovOk = document.getElementById("wz-ovmig-ok");
+      if (ovOk) ovOk.onclick = () => {
+        state.overrideNotice = null;
+        const bar = document.getElementById("wz-ovmig");
         if (bar) bar.remove();
       };
       root.querySelectorAll("[data-browse]").forEach((b) => b.onclick = openBrowser);

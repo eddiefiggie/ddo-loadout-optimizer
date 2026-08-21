@@ -5470,5 +5470,182 @@ async function withCrossAdd(map, fn) {
   });
 
 
+
+  // ---- #88 U8 — an override reaching a real solve, end to end ---------------
+  // Two Constitution sources under the SAME bonus type take the max. Assert that
+  // first, so the override test below is measured against a known baseline rather
+  // than a hoped-for one.
+  const O = require("../web/overrides.js");
+  const conModel = () => ({
+    targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+    worn: [slot("Ring", [item("R", "Ring", [["Constitution", "Enhancement", 10]])]),
+           slot("Necklace", [item("N", "Necklace", [["Constitution", "Enhancement", 6]])])],
+  });
+
+  await test("#88 U8: an applied override changes the solve, and the result says so", async () => {
+    const before = await S.solveLexicographic(conModel(), highs);
+    assert.strictEqual(before.effective.Constitution, 10, "baseline: same type, max(10,6)");
+    assert.strictEqual(before.overrideReport, null, "and no report at all when none is in force");
+
+    // The player asserts the necklace's Constitution is Insight in game.
+    const model = conModel();
+    const pool = { items: model.worn.flatMap((g) => g.variants) };
+    const neck = pool.items.find((v) => v.variant_id === "N");
+    const affix = neck.affixes.find((a) => a.name === "Constitution");
+    const o = { ...O.overrideKey(neck, affix), to: "Insight" };
+    const applied = O.applyOverrides(pool, [o]).applied;
+    assert.strictEqual(applied.length, 1, "the overlay applied it");
+    model.query = { overrides: applied };
+
+    const after = await S.solveLexicographic(model, highs);
+    assert.strictEqual(after.effective.Constitution, 16,
+      "two buckets now, so they sum — the override changed the answer");
+
+    // R14 — the claim is qualified because an override was in force…
+    assert.strictEqual(after.overrideReport.inForce.length, 1);
+    // …and R13/R16 — the contribution that reached the loadout names both types.
+    assert.deepStrictEqual(after.overrideReport.contributions, [
+      { stat: "Constitution", from: "Enhancement", to: "Insight", host: "N", value: 6 },
+    ]);
+
+    // The breakdown carries the marker on the overridden part and nothing else.
+    // The 2-arg test seam (breakdownByTarget computes the visible set itself).
+    const parts = S.breakdownByTarget(S.buildProgram(model), () => 1)["Constitution"] || [];
+    const marked = parts.filter((x) => x.overriddenFrom);
+    assert.ok(marked.length >= 1, "the overridden contribution is marked");
+    assert.ok(marked.every((x) => x.overriddenFrom === "Enhancement"),
+      "…with the type the CATALOG recorded, so both can be named");
+    assert.ok(parts.some((x) => !x.overriddenFrom), "and the untouched contribution is not marked");
+
+    O.withdrawOverrides(pool);
+  });
+
+  await test("#88 U8: an override in force qualifies the claim even when its item is not picked", async () => {
+    // R14's conservative reading (#416): the proof is about a model built from an
+    // overridden catalog, so it is qualified whether or not the overridden affix
+    // won its slot. Here the override is on an item the solve does not pick.
+    const model = conModel();
+    model.worn[1].variants[0].affixes[0].value = 1;   // the necklace is now never worth picking
+    const pool = { items: model.worn.flatMap((g) => g.variants) };
+    const neck = pool.items.find((v) => v.variant_id === "N");
+    const o = { ...O.overrideKey(neck, neck.affixes[0]), to: "Insight" };
+    model.query = { overrides: O.applyOverrides(pool, [o]).applied };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.overrideReport.inForce.length, 1, "still qualified");
+    O.withdrawOverrides(pool);
+  });
+
+
+  // ---- review #1 / #4 — a CRAFTED override, end to end through a real solve --
+  // The whole crafted half of #88 U6 depends on the override stamp surviving
+  // from dataset.<channel>[i] through model.js into solver.js's zOf by OBJECT
+  // IDENTITY. Nothing but this test asserts that contract, and a model.js change
+  // that copied a pool row instead of filtering it would leave every crafted
+  // override silently uncredited with the whole suite green.
+  await test("#88 U6: a crafted (pool_key) override reaches a real solve and names its host", async () => {
+    const craftedModel = () => ({
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [sealHost("Sealed Trinket", "Trinket",
+        [{ seal_type: "Undeath", category: "Trinket" }],
+        [["Constitution", "Enhancement", 10]])])],
+      seal: [sealOpt("Undeath", "Constitution", "Enhancement", 15)],
+    });
+
+    const before = await S.solveLexicographic(craftedModel(), highs);
+    assert.strictEqual(before.effective.Constitution, 15,
+      "baseline: the trinket's 10 and the seal's 15 share one Enhancement bucket");
+
+    const model = craftedModel();
+    const pool = { seal: model.seal };
+    let target = null;
+    O.eachPoolAffix(pool, (rec) => { if (!target && rec.channel === "seal") target = rec; });
+    assert.ok(target, "the seal option is addressable by pool key");
+    const o = { ...O.poolOverrideKey(target), to: "Quality" };
+    model.query = { overrides: O.applyOverrides(pool, [o]).applied };
+
+    const after = await S.solveLexicographic(model, highs);
+    assert.strictEqual(after.effective.Constitution, 25,
+      "two buckets now — the crafted override survived model.js into the solve");
+    assert.deepStrictEqual(after.overrideReport.contributions, [
+      { stat: "Constitution", from: "Enhancement", to: "Quality", host: "Sealed Trinket", value: 15 },
+    ], "…and the contribution names the host item, not a bare 'crafting option'");
+    O.withdrawOverrides(pool);
+  });
+
+  // The per-item Nearly Complete channel is structurally different — a dict keyed
+  // by host name rather than an array — so it gets its own pass.
+  await test("#88 U6: the host-keyed per-item channel carries an override too", async () => {
+    const host = item("Black Satin Waist", "Belt", [["Constitution", "Enhancement", 10]]);
+    host.nc_per_item_slots = [{ category: "Ability Score" }];
+    const model = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Belt", [host])],
+      nearlyCompletePerItem: { "Black Satin Waist": [
+        { stat: "Constitution", bonus_type: "Enhancement", value: 6, unit: "flat", pool: "Nearly Finished" },
+      ] },
+    };
+    const pool = { nearly_complete_per_item: model.nearlyCompletePerItem };
+    let target = null;
+    O.eachPoolAffix(pool, (rec) => { if (!target) target = rec; });
+    assert.ok(target && target.host === "Black Satin Waist", "host-scoped rows carry their host");
+    const o = { ...O.poolOverrideKey(target), to: "Quality" };
+    const applied = O.applyOverrides(pool, [o]).applied;
+    assert.strictEqual(applied.length, 1, "the per-item row took the override");
+    assert.strictEqual(target.affix.bonus_type, "Quality", "…by object identity, in place");
+    O.withdrawOverrides(pool);
+    assert.strictEqual(target.affix.bonus_type, "Enhancement", "and withdrawal restores it");
+  });
+
+  // review #7 — a placement that fired but is HIDDEN (cap-clamped or credit-
+  // substituted) is omitted from breakdown and from every sibling report, on a
+  // shared predicate. The override report must consult the same one, or it
+  // becomes the single surface naming a contribution nothing else endorses.
+  await test("review #7: a hidden placement's override is not reported as a contribution", async () => {
+    const model = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Trinket", [sealHost("Sealed Trinket", "Trinket",
+        [{ seal_type: "Undeath", category: "Trinket" }], [["Constitution", "Enhancement", 10]])])],
+      seal: [sealOpt("Undeath", "Constitution", "Enhancement", 15)],
+    };
+    const pool = { seal: model.seal };
+    let target = null;
+    O.eachPoolAffix(pool, (rec) => { if (!target) target = rec; });
+    model.query = { overrides: O.applyOverrides(pool,
+      [{ ...O.poolOverrideKey(target), to: "Quality" }]).applied };
+
+    const program = S.buildProgram(model);
+    const fireAll = () => 1;                       // every z and placement selected
+    const sealVar = [...program.sealMeta.keys()][0];
+    assert.ok(sealVar, "the seal placement exists in the program");
+
+    const seen = S.buildOverrideReport(program, fireAll, model, new Set([sealVar]));
+    assert.strictEqual(seen.contributions.length, 1, "visible: the override is a contribution");
+
+    // Same program, same firing — the placement is simply not in the visible set.
+    const hidden = S.buildOverrideReport(program, fireAll, model, new Set());
+    assert.deepStrictEqual(hidden.contributions, [],
+      "hidden: no contribution, matching what breakdown and the sibling reports show");
+    assert.strictEqual(hidden.inForce.length, 1,
+      "…but the override is still IN FORCE, so R14 still qualifies the claim");
+    O.withdrawOverrides(pool);
+  });
+
+  // review #4 — `zOf` is the ONE place a z variable is minted, and that is the
+  // only reason an override marker can be attached to every contribution family.
+  // A thirteenth family added later by someone who has not read this seam would
+  // build its z inline, lose the marker, and take nothing red with it. Guard the
+  // placement rather than the intent.
+  await test("review #4: every z variable is minted through zOf", async () => {
+    const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "solver.js"), "utf-8");
+    const inline = src.split("\n")
+      .map((line, i) => ({ line, n: i + 1 }))
+      .filter((x) => /name:\s*"z"\s*\+\s*zc\+\+/.test(x.line));
+    assert.strictEqual(inline.length, 1,
+      `a z variable is built outside zOf at line(s) ${inline.map((x) => x.n).join(", ")} — `
+      + "route it through zOf or the override marker is silently lost for that family");
+    assert.ok(/function zOf\(/.test(src.slice(0, src.indexOf(inline[0].line) + 200)),
+      "…and the one remaining occurrence is zOf's own body");
+  });
+
   console.log(`\n${passed} passed`);
 })();

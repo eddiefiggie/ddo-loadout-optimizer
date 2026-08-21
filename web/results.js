@@ -563,10 +563,18 @@ function attributionList(contribs) {
     const from = c.crossAdd
       ? `<span class="attrib-from" title="${esc(c.crossAdd)} fully stacks with this stat — its value adds on top of the stat's own bonuses, so it is counted here.">from ${esc(c.crossAdd)}</span>`
       : "";
-    return `<li class="attrib-row ${kind}">
+    // #88 U8 (R13/R16) — a contribution whose bonus type the PLAYER asserted is
+    // labelled wherever contributors are shown, and names both types: the one the
+    // catalog recorded and the one they chose. Same obligation as a declared
+    // credit, for the same reason — this is the other value in the receipts that
+    // does not trace to the wiki.
+    const overridden = c.overriddenFrom
+      ? `<span class="attrib-declared attrib-override" title="You told the optimizer this carries ${esc(c.bonus_type)} in game; the catalog records ${esc(c.overriddenFrom)}. It is counted in the ${esc(c.bonus_type)} bucket on your word, not the wiki's.">your ${esc(c.bonus_type)}, catalog says ${esc(c.overriddenFrom)}</span>`
+      : "";
+    return `<li class="attrib-row ${kind}${c.overriddenFrom ? " is-overridden" : ""}">
       <span class="attrib-type">${esc(typeLabel)}</span>
       <span class="attrib-val">${isBool ? "✓" : "+" + esc(c.value)}</span>
-      <span class="attrib-where">${where}${via}${from}</span>
+      <span class="attrib-where">${where}${via}${from}${overridden}</span>
     </li>`;
   }).join("")}</ul>`;
 }
@@ -599,9 +607,15 @@ function whyThisLine(result, item, attr, targets) {
     // U3 (#290/#291) — a cross-added credit is labeled "(from <source stat>)",
     // the same wording as the Ranked Priorities rows and every export.
     const from = c.crossAdd ? ` (from ${esc(c.crossAdd)})` : "";
+    // #88 U8 (R13/R16) — a player-asserted bonus type is labelled here too, and
+    // names both types. Without it the gear box states a bonus type as though the
+    // wiki said so, which is exactly the claim an override does not support.
+    const ovr = c.overriddenFrom
+      ? ` (your call — catalog says ${esc(c.overriddenFrom)})`
+      : "";
     const label = c.boolean
       ? `✓ ${esc(c.stat)}`                                 // U4: presence, not "+1"
-      : `${esc(c.stat)} +${esc(c.value)} ${esc(typeLabel)}${c.viaSet ? " (set)" : ""}${from}`;
+      : `${esc(c.stat)} +${esc(c.value)} ${esc(typeLabel)}${c.viaSet ? " (set)" : ""}${from}${ovr}`;
     const line = sat.has(c.stat) ? saturationLineFor(result, c.stat) : null;
     return line
       ? `<span class="pd-contrib at-ceiling" title="${esc(line)}">${label}</span>`
@@ -721,6 +735,11 @@ function boundNotice(query, result) {
   // the live program, so a restored character discloses identically without
   // re-solving (KTD6).
   for (const line of (Proj && Proj.creditNoticeLines ? Proj.creditNoticeLines(result) : [])) parts.push(esc(line));
+  // #88 U8 (R14) — the same class of qualifier as the declared credit directly
+  // above: part of the answer rests on a bonus type the player asserted and the
+  // tool did not verify. Read from `overrideReport` (plain JSON on the result) so
+  // a restored character qualifies identically without re-solving (KTD6).
+  for (const line of (Proj && Proj.overrideNoticeLines ? Proj.overrideNoticeLines(result) : [])) parts.push(esc(line));
   if (_offHandItemsExcluded(query || {})) {
     // Is there an off-hand ITEM in a build that excluded off-hand items? Two very
     // different causes, and the notice must not conflate them:

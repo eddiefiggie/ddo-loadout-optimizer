@@ -2569,3 +2569,167 @@ test("#359: acquirable is strict-true, never a truthy accident", () => {
   const out = candidates(ownedState({ ownedAugments: true }), odd);
   assert.deepStrictEqual(out, [], "only a real boolean true admits an unowned augment");
 });
+
+
+// ---- #88 U5 — restoring overrides at the load boundary (R20/R21/R23) --------
+// The load path ALWAYS assigns, because `state` outlives a character: an override
+// left over from the previous one would otherwise silently retype this build's
+// gear. The sanitization is the blocklist precedent — a hand-edited backup can
+// carry entries no reader can use, and they would re-persist on every save.
+const { restoreOverrides, OVERRIDE_LIMIT } = require("../web/wizard.js");
+
+test("#88 U5 (R21/AE10): a pre-feature save restores an empty override list", () => {
+  assert.deepStrictEqual(restoreOverrides({ ml: 34 }), [], "absent reads as none");
+  assert.deepStrictEqual(restoreOverrides({ overrides: null }), []);
+  assert.deepStrictEqual(restoreOverrides({}), []);
+  assert.deepStrictEqual(restoreOverrides(null), [], "a record with no inputs at all");
+});
+
+test("#88 U5 (R20/R22): a saved override restores with its recorded type intact", () => {
+  const o = { variant_id: "Aberrant Robe", name: "Armor Class", from: "Armor",
+              value: "5", to: "Enhancement", note: "seen in game" };
+  const got = restoreOverrides({ overrides: [o] });
+  assert.deepStrictEqual(got, [o]);
+  assert.notStrictEqual(got[0], o, "restored entries are copies — the record is not aliased into state");
+});
+
+test("#88 U5: malformed entries are dropped at the load boundary, not re-persisted", () => {
+  const good = { variant_id: "Aberrant Robe", name: "Armor Class", from: "Armor",
+                 value: "5", to: "Enhancement" };
+  const got = restoreOverrides({ overrides: [
+    good,
+    null, "a string", 7,
+    { name: "Armor Class", from: "Armor", to: "Enhancement", value: "5" },   // no target
+    { variant_id: "X", from: "Armor", to: "Enhancement", value: "5" },       // no affix name
+    { variant_id: "X", name: "Armor Class", to: "Enhancement", value: "5" }, // no recorded type
+    { variant_id: "X", name: "Armor Class", from: "Armor", value: "5" },     // no replacement
+  ] });
+  assert.deepStrictEqual(got, [good], "only the well-formed entry survives");
+});
+
+test("#88 U6 (R8): a pool-keyed override is well-formed without a variant_id", () => {
+  const crafted = { pool_key: "seal||heroic||Constitution||Enhancement||6",
+                    name: "Constitution", from: "Enhancement", value: "6", to: "Quality" };
+  assert.deepStrictEqual(restoreOverrides({ overrides: [crafted] }), [crafted],
+    "crafted options live outside item variants and are addressed by pool key");
+});
+
+
+// ---- #88 U7 (R25/R27/R28) — the load-time lifecycle disclosure --------------
+// A refresh can move, adopt, or retire the type an override was written against.
+// Whichever happened, the player is told on the load that detects it — a saved
+// character quietly changing what it solves is the defect this prevents.
+const { overrideLoadMessage } = require("../web/wizard.js");
+const _ov = (name, extra) => Object.assign(
+  { variant_id: "Aberrant Robe", name, from: "Armor", value: "5", to: "Enhancement" }, extra || {});
+
+test("#88 U7 (AE7): an all-active list discloses nothing", () => {
+  assert.strictEqual(overrideLoadMessage([
+    { override: _ov("Armor Class"), state: "active", reason: null, now: null },
+  ]), null, "no prompt when nothing changed");
+  assert.strictEqual(overrideLoadMessage([]), null);
+  assert.strictEqual(overrideLoadMessage(null), null);
+});
+
+test("#88 U7 (AE4/R27): drift names the affix and the type it moved to", () => {
+  const msg = overrideLoadMessage([
+    { override: _ov("Armor Class"), state: "suspended", reason: "drift", now: "Profane" },
+  ]);
+  assert.ok(/Armor Class/.test(msg), "the affix is named");
+  assert.ok(/Armor/.test(msg) && /Profane/.test(msg), "both the recorded and the current type");
+  assert.ok(/suspended/i.test(msg), "and its state");
+});
+
+test("#88 U7 (AE5/R25): satisfaction is disclosed and says the override is kept", () => {
+  const msg = overrideLoadMessage([
+    { override: _ov("Armor Class"), state: "satisfied", reason: null, now: null },
+  ]);
+  assert.ok(/Enhancement/.test(msg), "the type upstream adopted");
+  assert.ok(/kept|retained/i.test(msg), "R26 — it is retained, not deleted");
+});
+
+test("#88 U7 (R28): a retired target is disclosed with its reason", () => {
+  const msg = overrideLoadMessage([
+    { override: _ov("Armor Class"), state: "suspended", reason: "retired-target", now: null },
+  ]);
+  assert.ok(/no longer/i.test(msg) && /Armor Class/.test(msg));
+});
+
+test("#88 U7: a crafted override is named by its pool key, not a missing item name", () => {
+  const msg = overrideLoadMessage([
+    { override: { pool_key: "seal||Gloom||equipment/accessories||Charisma||Insight||7",
+                  name: "Charisma", from: "Insight", to: "Quality", value: "7" },
+      state: "suspended", reason: "drift", now: "Sacred" },
+  ]);
+  assert.ok(/Charisma/.test(msg));
+  assert.ok(!/undefined/.test(msg), "a pool-keyed override has no variant_id to print");
+});
+
+test("#88 U7: one line per changed override, and only the changed ones", () => {
+  const msg = overrideLoadMessage([
+    { override: _ov("Armor Class"), state: "active", reason: null, now: null },
+    { override: _ov("Fortitude Save"), state: "suspended", reason: "drift", now: "Profane" },
+    { override: _ov("Dodge"), state: "satisfied", reason: null, now: null },
+  ]);
+  assert.ok(!/Armor Class/.test(msg), "an active override is not news");
+  assert.ok(/Fortitude Save/.test(msg) && /Dodge/.test(msg));
+});
+
+
+// ---- #88 U8 (R30) — the stale banner's reason -------------------------------
+const { staleNote } = require("../web/wizard.js");
+const _applied = (to) => [{ variant_id: "X", name: "Armor Class", from: "Armor", to, count: 1 }];
+
+test("#88 U8 (R30): a build solved under the overrides in force now is not stale", () => {
+  const run = { query: { overrides: _applied("Enhancement") } };
+  assert.strictEqual(staleNote({ lastRun: run, overrideApplied: _applied("Enhancement") }), null);
+});
+
+test("#88 U8 (AE22/R30): creating or deleting an override marks the shown result stale", () => {
+  const run = { query: { overrides: [] } };
+  const created = staleNote({ lastRun: run, overrideApplied: _applied("Enhancement") });
+  assert.ok(/different set of bonus-type corrections/.test(created));
+  const deleted = staleNote({ lastRun: { query: { overrides: _applied("Enhancement") } }, overrideApplied: [] });
+  assert.ok(/different set of bonus-type corrections/.test(deleted));
+});
+
+test("#88 U8 (AE9): a restored result whose override has since suspended is stale, not re-solved", () => {
+  // The suspended override never reaches today's APPLIED list, so the sets differ.
+  const run = { query: { overrides: _applied("Enhancement") } };
+  const note = staleNote({ lastRun: run, overrideApplied: [], loadedStale: false });
+  assert.ok(note, "the player is told");
+  assert.ok(/corrections/.test(note), "…and told which of the two causes it is");
+});
+
+test("#88 U8: the catalog-age cause still reports itself when overrides are unchanged", () => {
+  const run = { query: { overrides: [] } };
+  assert.ok(/predates the current gear catalog/.test(
+    staleNote({ lastRun: run, overrideApplied: [], loadedStale: true })));
+});
+
+test("#88 U8: with no solved build on screen there is nothing to call stale", () => {
+  assert.strictEqual(staleNote({ lastRun: null, overrideApplied: _applied("Enhancement") }), null);
+  assert.strictEqual(staleNote({}), null);
+  assert.strictEqual(staleNote(null), null);
+});
+
+
+// ---- review #9 — an imported override list is bounded at the load boundary ---
+// A backup file is user-supplied and shareable, and backup.js's size cap admits
+// tens of thousands of override rows. Both load-path consumers do work per row,
+// so an unbounded list is a synchronous main-thread block on every load of that
+// character — and it re-persists, so it happens again next time.
+test("#88 review #9: the restored override list is capped", () => {
+  const one = (i) => ({ variant_id: `Item ${i}`, name: "Armor Class", from: "Armor",
+                        value: "5", to: "Enhancement" });
+  const huge = Array.from({ length: 5000 }, (_, i) => one(i));
+  const got = restoreOverrides({ overrides: huge });
+  assert.ok(got.length < huge.length, "the list is bounded");
+  assert.strictEqual(got.length, OVERRIDE_LIMIT, "…at the declared cap");
+  assert.deepStrictEqual(got[0], one(0), "and it keeps the FIRST entries, not an arbitrary slice");
+});
+
+test("#88 review #9: an ordinary list is untouched by the cap", () => {
+  const list = [{ variant_id: "X", name: "Armor Class", from: "Armor", value: "5", to: "Enhancement" }];
+  assert.deepStrictEqual(restoreOverrides({ overrides: list }), list);
+});

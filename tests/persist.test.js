@@ -542,3 +542,57 @@ test("#359: ownedAugments round-trips, and a pre-feature save reads as off", () 
   assert.strictEqual(!!legacy.ownedAugments, false,
     "absent reads as off — a saved character does not silently change what it solves");
 });
+
+
+// ---- #88 U5 — overrides are a saved input ------------------------------------
+// R20/R22: the override travels with the character and carries the type its
+// target affix held when it was written. R21/AE10: a character saved before the
+// feature loads with none and solves exactly as it did before.
+const OVERRIDES = [
+  { variant_id: "Aberrant Robe", name: "Armor Class", from: "Armor", value: "5",
+    to: "Enhancement", note: "measured on my own robe" },
+  { variant_id: "Artemist's Aegis (level 5)", name: "Fortitude Save", from: "Resistance",
+    value: "4", to: "Insight", note: "" },
+];
+
+test("#88 U5 (R20/R22/AE18): overrides join the input allowlist and round-trip", () => {
+  assert.ok(INPUT_KEYS.includes("overrides"), "the key is on the save-path allowlist");
+  const st = Object.assign({}, state, { overrides: OVERRIDES });
+  const rec = serializeCharacter("Overrider", st, lastRun, "b1");
+  // Through real JSON, because that is the only form the store ever holds.
+  const back = JSON.parse(JSON.stringify(rec));
+  assert.deepStrictEqual(back.inputs.overrides, OVERRIDES,
+    "both overrides return with their recorded types, values, and notes");
+  saveCharacter(rec, fakeStorage());
+});
+
+test("#88 U5 (R21/AE10): a pre-feature save carries no overrides key", () => {
+  const rec = serializeCharacter("Plain", state, lastRun, "b1");
+  assert.deepStrictEqual(rec.inputs.overrides, [],
+    "a character with none saves an empty list rather than undefined");
+  const legacy = { characterName: "Old", ml: 34, priorities: ["Constitution"] };
+  assert.ok(!("overrides" in legacy), "absence is the pre-feature signal");
+});
+
+test("#88 U5 (KTD5): a non-array in state is sanitized at the save boundary", () => {
+  const st = Object.assign({}, state, { overrides: "not-a-list" });
+  assert.deepStrictEqual(pickInputs(st, "Bad").overrides, [],
+    "a hand-edited or corrupted value never reaches the store as-is");
+});
+
+test("#88 U5 (KTD5/R30): overrideReport joins RESULT_KEEP", () => {
+  const report = { applied: [{ variant_id: "Aberrant Robe", name: "Armor Class",
+    from: "Armor", to: "Enhancement", count: 1 }], unmatched: [], ineligible: [] };
+  const kept = stripResult(Object.assign({}, lastRun.result, { overrideReport: report }));
+  assert.deepStrictEqual(kept.overrideReport, report,
+    "a restored character discloses what applied without re-solving — `program` is dropped");
+});
+
+test("#88 review #9: the save boundary applies the same override ceiling", () => {
+  const { OVERRIDE_LIMIT } = require("../web/overrides.js");
+  const huge = Array.from({ length: OVERRIDE_LIMIT + 500 }, (_, i) => ({
+    variant_id: `Item ${i}`, name: "Armor Class", from: "Armor", value: "5", to: "Enhancement" }));
+  const kept = pickInputs(Object.assign({}, state, { overrides: huge }), "Big").overrides;
+  assert.strictEqual(kept.length, OVERRIDE_LIMIT,
+    "an over-long list cannot re-persist — otherwise the load-path cap is undone on every save");
+});
