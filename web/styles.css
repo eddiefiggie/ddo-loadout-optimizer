@@ -1197,6 +1197,13 @@ input.wz-ml { width: 120px; }
 .wz-data-row { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
 .wz-data-row .wz-file { flex: 1; min-width: 200px; }
 .wz-data-sep { border: none; border-top: 1px dashed var(--border-2); margin: var(--sp-3) 0; }
+/* #428 U7 — the relocated "Your data" block. Rendered by two hosts: below the
+   Share tab's loadout formats (where the backup-vs-share distinction is stated
+   once, side by side), and in the on-demand panel that makes it reachable
+   before any solve. Set off by a rule so it reads as a different job. */
+.wz-data-block { margin-top: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid var(--border-2); }
+.wz-data-block .wz-label { display: block; margin-bottom: var(--sp-1); }
+.wz-data-panel { max-width: 42rem; }
 .wz-share-pick { display: flex; flex-direction: column; gap: 2px; max-width: 34rem; }
 .wz-share-pick select { width: 100%; background: var(--panel-2); color: var(--text); border: 1px solid var(--border-2);
   border-radius: var(--radius-sm); padding: 7px 10px; }

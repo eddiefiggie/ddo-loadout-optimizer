@@ -29,7 +29,7 @@ execution: code
 
 ### Summary
 
-One saved-build record that is both the character and the loadout, written only at the end of a solve and holding everything needed to reload, export, or compare it. Loadouts become shareable and re-importable, with a Compare tab — reachable by importing a file or picking from saved builds — that scores those against whatever build is currently loaded, judged on that build's priorities. Pinning grows teeth: a pinned item expands to its augment slots and craft options, so pinning everything is a hand-built loadout.
+One saved-build record that is both the character and the loadout. It may be written at any step; a record written after a solve additionally carries the loadout. It holds everything needed to reload, export, or compare it. Loadouts become shareable and re-importable, with a Compare tab — reachable by importing a file or picking from saved builds — that scores those against whatever build is currently loaded, judged on that build's priorities. Pinning grows teeth: a pinned item expands to its augment slots and craft options, so pinning everything is a hand-built loadout.
 
 ### Problem Frame
 
@@ -45,7 +45,7 @@ Three things block the library the app is one step away from being.
 
 ### Key Decisions
 
-- KD1. **One record is both the character and the loadout.** There is no separate character entity; the record's name is the only identity, and a player who wants several builds names them separately. (session-settled: user-approved — chosen over grouping several loadouts under a character: two name inputs already confuse the entry flow, and a single record lets reload, export, and compare read one shape.)
+- KD1. **One record is both the character and the loadout.** *(Amended 2026-08-21 by `docs/plans/2026-08-21-001-feat-wizard-structure-and-save-progress-plan.md` KTD7, which supersedes this decision's write timing: that plan owns the save model — a record may be written at any step, and one written after a solve additionally carries the loadout — and this effort builds its loadout record on top of it rather than defining a second one.)* There is no separate character entity; the record's name is the only identity, and a player who wants several builds names them separately. (session-settled: user-approved — chosen over grouping several loadouts under a character: two name inputs already confuse the entry flow, and a single record lets reload, export, and compare read one shape.)
 
 - KD2. **The compare verdict is strictly on the benchmark's ranked priorities, with a separate labelled section for everything else.** (session-settled: user-directed — chosen over a ranked-only view: strict priority scoping is structurally blind to an unexpected strength, which is one of the three things the comparison exists to surface.)
 

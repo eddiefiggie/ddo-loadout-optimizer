@@ -1889,21 +1889,6 @@ if (typeof window !== "undefined" && window.App) {
           </details>
         </div>
         <p class="wz-status wz-reqmsg" id="wz-charmsg" role="status" aria-live="polite"></p>
-        <details class="wz-data" id="wz-data">
-          <summary>Export &amp; Data Management</summary>
-          <div class="wz-data-body">
-            <p class="wz-help">Manage <strong>your own saved builds</strong> (master records). Back up every saved character to a
-              file, or restore from one — the way to move your builds to another device. Backups stay compatible across the last
-              3 data versions; a file that's older than that, or made by a newer version of the app, is declined so a bad import
-              can't corrupt your saves. To share a single loadout with others, use the <strong>Share</strong> tab on a solved build.</p>
-            <div class="wz-data-row">
-              <button class="btn ghost" id="wz-export" type="button">Export all (.json)</button>
-              <input id="wz-import-label" type="text" readonly placeholder="Import a backup (.json)…" class="wz-file">
-              <input id="wz-import" type="file" accept=".json,application/json" class="wz-hidden">
-            </div>
-            <div id="wz-data-stat" class="wz-filestat"></div>
-          </div>
-        </details>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
           <button class="btn primary" data-next>Continue →</button></div>
       </section>`;
@@ -2311,7 +2296,7 @@ if (typeof window !== "undefined" && window.App) {
             CSV of the full detail, a print-friendly page, or a <strong>portable JSON</strong> file built to be re-imported and
             compared later. Each carries the character name, constraints, the equipped items with their augments and crafting
             upgrades, the active set bonuses with the affixes they grant, and a stat-by-stat breakdown of where each point comes
-            from. (Backing up all your saved builds lives in the Character step's Export &amp; Data Management.)</p>
+            from. Backing up <em>every</em> build you own is a different job, and it is directly below.</p>
           <div class="wz-share-pick">
             <label class="wz-label" for="wz-share-sel">Loadout</label>
             <select id="wz-share-sel"></select>
@@ -2325,6 +2310,7 @@ if (typeof window !== "undefined" && window.App) {
             <button class="btn ghost" id="wz-share-gearset" type="button" title="A .gearset file DDOBuilderV2 can import directly (Gear → Import). Crafting and your solve inputs ride below the import, as notes.">DDOBuilderV2</button>
           </div>
           <div id="wz-share-stat" class="wz-filestat"></div>
+          ${dataBlockHTML("share")}
         </div>`;
     }
 
@@ -2397,6 +2383,10 @@ if (typeof window !== "undefined" && window.App) {
       if (!panel) return;
       panel.innerHTML = sharePanelHTML();
       wireShareExports();
+      // #428 U7 (KTD6) — the Your data block inherits fillSharePanel's lifecycle
+      // (re-populated and re-wired on every results render) rather than needing
+      // one of its own.
+      wireDataManagement("share");
     }
 
     // The KTD3 post-render callback: (re)populate + (re)wire every wizard-owned
@@ -3576,10 +3566,57 @@ if (typeof window !== "undefined" && window.App) {
       else if (hasCurrent) shareSel.value = "__current__";
     }
 
-    // Export & Data Management (U6): backup export/import, reachable pre-solve
-    // from the Character step so a first-time restore works on an empty store.
-    function wireDataManagement() {
-      const exportBtn = document.getElementById("wz-export");
+    // #428 U7 (R22/R23/KD2/KTD6) — the "Your data" block: export every saved
+    // build to a file, or restore from one. This is BACKUP, a different job from
+    // the Share tab's five loadout formats directly above it, and the two are
+    // stated once side by side rather than explained twice.
+    //
+    // It left the wizard's step flow (R23) and is rendered by TWO hosts: the
+    // Share panel, and the on-demand panel below. `ns` namespaces every id
+    // because both can be in the DOM at once — the Share panel lives inside the
+    // results view while the on-demand panel is an overlay over it.
+    function dataBlockHTML(ns) {
+      // The on-demand panel already carries "Your data" as its own heading; the
+      // Share panel does not, so the block supplies one there.
+      return `<div class="wz-data-block">
+          ${ns === "share" ? `<p class="wz-label">Your data</p>` : ""}
+          <p class="wz-help">Back up <strong>every build you own</strong> to a file, or restore from one — this is how you
+            move your builds to another device, and the only way back if you clear your browser data. Backups stay compatible
+            across the last 3 data versions; a file older than that, or made by a newer version of the app, is declined so a bad
+            import can't corrupt your saves.</p>
+          <div class="wz-data-row">
+            <button class="btn ghost" id="wz-export-${ns}" type="button">Export all (.json)</button>
+            <input id="wz-import-label-${ns}" type="text" readonly placeholder="Import a backup (.json)…" class="wz-file">
+            <input id="wz-import-${ns}" type="file" accept=".json,application/json" class="wz-hidden">
+          </div>
+          <div id="wz-data-stat-${ns}" class="wz-filestat"></div>
+        </div>`;
+    }
+
+    // The on-demand host (KD2's reachability cost). The Share tab follows a
+    // solve, so on its own it strands a player who holds saves but has not
+    // solved this session — and it makes a FIRST restore, into an empty store on
+    // a fresh browser, impossible. Opened from the topbar the way the Item
+    // Browser is: a surface reached on demand, not a step.
+    function openDataPanel() {
+      let ov = document.getElementById("wz-data-overlay");
+      if (!ov) {
+        ov = document.createElement("div"); ov.id = "wz-data-overlay"; ov.className = "wz-browse-overlay";
+        document.body.appendChild(ov);
+      }
+      ov.innerHTML = `<div class="wz-browse-panel wz-data-panel">
+        <div class="wz-browse-head"><h2>Your data</h2><button class="btn ghost" id="wz-data-close">Close ✕</button></div>
+        ${dataBlockHTML("panel")}
+      </div>`;
+      ov.classList.add("on");
+      document.getElementById("wz-data-close").onclick = () => { ov.classList.remove("on"); };
+      // Restoring a backup changes which builds exist; the import handler's own
+      // renderRail() call keeps the rail behind this overlay in step.
+      wireDataManagement("panel");
+    }
+
+    function wireDataManagement(ns) {
+      const exportBtn = document.getElementById(`wz-export-${ns}`);
       if (exportBtn) exportBtn.onclick = () => {
         // eslint-disable-next-line no-undef
         const payload = BackupIO.serializeAll(CharacterStore.allCharacters(), { buildId: currentBuildId() });
@@ -3587,9 +3624,9 @@ if (typeof window !== "undefined" && window.App) {
           JSON.stringify(payload, null, 2), "application/json");
       };
 
-      const impLabel = document.getElementById("wz-import-label");
-      const impFile = document.getElementById("wz-import");
-      const stat = () => document.getElementById("wz-data-stat");
+      const impLabel = document.getElementById(`wz-import-label-${ns}`);
+      const impFile = document.getElementById(`wz-import-${ns}`);
+      const stat = () => document.getElementById(`wz-data-stat-${ns}`);
       if (impLabel && impFile) {
         impLabel.onclick = () => impFile.click();
         impFile.onchange = (e) => {
@@ -3698,7 +3735,7 @@ if (typeof window !== "undefined" && window.App) {
       // #428 U3 (KTD4) — the step body and the save rail sit side by side in one
       // shell. The rail is emitted HERE rather than by any step template, which
       // is what makes Save and Load reachable from every step (R14).
-      root.innerHTML = `<div class="wz-topbar">${renderStepper()}<button class="btn ghost wz-browse-btn" data-browse type="button">Browse items</button></div>`
+      root.innerHTML = `<div class="wz-topbar">${renderStepper()}<button class="btn ghost wz-browse-btn" data-browse type="button">Browse items</button><button class="btn ghost wz-browse-btn" data-yourdata type="button">Your data</button></div>`
         + migrationBanner()
         + `<div class="wz-shell"><div class="wz-body">`
         + (bodies[state.step] || stepIntro)()
@@ -3817,6 +3854,7 @@ if (typeof window !== "undefined" && window.App) {
         body.addEventListener("change", markDirty);
       }
       root.querySelectorAll("[data-browse]").forEach((b) => b.onclick = openBrowser);
+      root.querySelectorAll("[data-yourdata]").forEach((b) => b.onclick = openDataPanel);
       root.querySelectorAll("[data-goto]").forEach((b) => b.onclick = () => { if (!b.disabled) navigate(b.dataset.goto); });
       root.querySelectorAll("[data-back]").forEach((b) => b.onclick = () => navigate(prevStep(state.step)));
       root.querySelectorAll("[data-next]").forEach((b) => b.onclick = () => {
@@ -3948,7 +3986,6 @@ if (typeof window !== "undefined" && window.App) {
           state[key] = state[key].filter((x) => x !== tag.dataset.val);
           render();
         });
-        wireDataManagement();
       }
       if (state.step === "pool") {
         root.querySelectorAll(".wz-chip[data-pool]").forEach((c) => c.onclick = () => {

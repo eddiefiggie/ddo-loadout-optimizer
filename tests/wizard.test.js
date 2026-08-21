@@ -3377,3 +3377,65 @@ test("#428 U6 (R2): each required field is marked at the field", () => {
   assert.strictEqual((body.match(/wz-req-mark/g) || []).length, 3,
     "exactly the three required fields carry the marker");
 });
+
+// ---------------------------------------------------------------------------
+// #428 U7 (R22/R23/R24) — backup leaves the wizard without leaving the app.
+// KD2's known cost was that the Share tab follows a solve, so a player holding
+// saves but no current solve would have no path to their backups — and a fresh
+// browser could not import one at all, which is the whole point of import. One
+// shared renderer serves both hosts so the two can never drift.
+// ---------------------------------------------------------------------------
+
+test("#428 U7 (AE11): no wizard step template contains an export or import control", () => {
+  for (const step of ["stepIntro", "stepCharacter", "stepPool", "stepPriorities", "stepResults"]) {
+    const body = stepSource(step);
+    assert.ok(!/wz-export|wz-import|Export all|Import a backup|Export &amp; Data Management/.test(body),
+      `${step} must not carry a backup control (R23)`);
+  }
+});
+
+test("#428 U7 (AE12): export-all and import render from one shared block", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const at = src.indexOf("function dataBlockHTML(");
+  assert.ok(at >= 0, "one renderer owns the Your data block");
+  const body = src.slice(at, src.indexOf("\n    function ", at + 1));
+  assert.ok(/Export all/.test(body) && /Import a backup/.test(body),
+    "…and it carries both controls");
+  // Both hosts render it — the Share panel (KTD6) and the on-demand panel that
+  // makes it reachable before any solve.
+  const share = src.slice(src.indexOf("function sharePanelHTML("));
+  assert.ok(/dataBlockHTML\(/.test(share.slice(0, share.indexOf("\n    }"))),
+    "the Share panel renders the block below the loadout export formats (KD2)");
+  assert.ok(/function openDataPanel\(/.test(src),
+    "…and it is reachable without a solve, which the Share tab alone cannot be");
+});
+
+test("#428 U7: the two hosts cannot collide on element ids", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const at = src.indexOf("function dataBlockHTML(");
+  const body = src.slice(at, src.indexOf("\n    function ", at + 1));
+  // The Share panel lives inside the results view while the on-demand panel is an
+  // overlay; both can be in the DOM at once, so every id the block mints is
+  // namespaced by its host.
+  assert.ok(/function dataBlockHTML\(ns\)/.test(src), "the renderer takes a namespace");
+  for (const id of ["wz-export", "wz-import", "wz-import-label", "wz-data-stat"]) {
+    assert.ok(new RegExp(`id="${id}-\\$\\{ns\\}"`).test(body),
+      `${id} is namespaced by host`);
+  }
+  assert.ok(/function wireDataManagement\(ns\)/.test(src),
+    "…and the wiring reads the same namespace rather than a second list of ids");
+});
+
+test("#428 U7 (KTD7): #357's plan no longer says a record is written only at the end of a solve", () => {
+  const fs = require("fs"); const path = require("path");
+  const plan = fs.readFileSync(path.join(__dirname, "..", "docs", "plans",
+    "2026-08-09-005-feat-loadout-library-compare-manual-build-plan.md"), "utf-8");
+  assert.ok(!/written only at the end of a solve/.test(plan),
+    "the superseded sentence is gone");
+  assert.ok(/may be written at any step/.test(plan),
+    "…replaced by the save model #428 owns");
+  assert.ok(/2026-08-21-001-feat-wizard-structure-and-save-progress-plan/.test(plan),
+    "…and the plan that superseded it is named, so the edit is traceable");
+});
