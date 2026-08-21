@@ -41,12 +41,20 @@
 
   <footer class="app-footer">
     <div class="wrap">
-      <span id="dataset-info"></span>
-      <span> · Item data built on the shoulders of two community projects — the
+      <!-- #428 U2 (R28/R29/R31) — the build stamp is the only version signal a
+           player has, so it leads the footer in a fixed position, under its own
+           label and in a monospaced face so two stamps line up when compared.
+           Attribution follows as its own paragraph; the two used to run together
+           as one sentence with the stamp last and smallest. The item count that
+           opened this line is gone (U1/R25). -->
+      <p class="footer-build">
+        <span class="build-label">Build</span>
+        <span id="build-info" class="build-info"></span>
+      </p>
+      <p class="footer-credits">Item data built on the shoulders of two community projects — the
         <a href="https://ddowiki.com" rel="noopener">DDO Wiki</a> (the source of truth for every item)
         and the <a href="https://github.com/illusionistpm/ddo-gear-planner" rel="noopener">DDO Gear Planner</a>
-        by illusionistpm (the canonical catalog + crafting data). Huge thanks to both and their contributors.</span>
-      <span id="build-info" class="build-info"></span>
+        by illusionistpm (the canonical catalog + crafting data). Huge thanks to both and their contributors.</p>
     </div>
   </footer>
 

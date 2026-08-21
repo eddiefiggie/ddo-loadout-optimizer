@@ -1528,12 +1528,15 @@ if (typeof window !== "undefined" && window.App) {
 
     // ---- steps -------------------------------------------------------------
     function stepIntro() {
-      const n = (dataset.items || []).length;
+      // #428 U1 (R26) — the opening line describes what the tool DOES. It used to
+      // interpolate the catalog size, which reads as a boast about the repository
+      // rather than anything a player can act on; per-solve coverage still
+      // discloses what a given answer searched (R27, results.js coverageNote).
       return `<section class="wz-card">
         <p class="wz-eyebrow">What this does</p>
         <h2>Find your provably-best gear — not a guess.</h2>
         <p class="wz-lead">Tell us about your character and rank the stats you care about. We search every
-          wiki-sourced item, augment, set bonus, and crafting option (${n.toLocaleString()} indexed) and return the
+          wiki-sourced item, augment, set bonus, and crafting option and return the
           <strong>single loadout that is mathematically optimal</strong> for your priorities — slot by slot,
           with the exact crafting steps to build it.</p>
         <p class="wz-lead">Four short steps, then the answer. No account; it runs entirely in your browser.</p>

@@ -200,7 +200,21 @@ main { padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--s
   border-top: 1px solid var(--border);
 }
 .app-footer a { color: var(--accent); }
-.build-info { color: var(--faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* #428 U2 (R28/R29/R31) — the footer is two stacked blocks, not one run-on line.
+   The build stamp leads: its own label above a monospaced, tabular value, so two
+   successive stamps line up digit-for-digit when a player compares them. */
+.app-footer .wrap { display: flex; flex-direction: column; gap: var(--sp-2); }
+.footer-build { margin: 0; display: flex; flex-direction: column; gap: 1px; }
+.footer-credits { margin: 0; }
+.build-label {
+  color: var(--muted); font-size: var(--fs-xs);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.build-info {
+  color: var(--text); font-size: var(--fs-sm); font-weight: 650;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
 
 /* --- controls / inputs (shared primitives) ------------------------------- */
 .controls { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }

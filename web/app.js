@@ -128,13 +128,14 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
       // components only exist after that function has generated them, and the
       // classification must see them to refuse them.
       if (window.Overrides) window.Overrides.classifyPool(dataset);
-      const info = document.getElementById("dataset-info");
-      if (info) {
-        const m = dataset.metadata || {};
-        info.textContent = `${m.item_count ?? dataset.items.length} items`;
-      }
+      // #428 U1 (R25) — the footer's item count is gone. A catalog size is a fact
+      // about this repository, not about the player's build; the per-result
+      // coverage disclosure (results.js coverageNote) is where a number that
+      // describes the SOLVE still belongs.
+      // #428 U2 (R28) — the stamp is a bare value beside its own label element,
+      // not a run-on " · Build X" fragment appended to a sentence.
       const build = document.getElementById("build-info");
-      if (build) build.textContent = ` · Build ${BUILD}`;
+      if (build) build.textContent = BUILD;
       App._resolve(dataset);
     })
     .catch((err) => {

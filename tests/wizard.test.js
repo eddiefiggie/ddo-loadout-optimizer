@@ -2909,3 +2909,105 @@ test("review: Browse offers the correction control only on rows the picker can s
   const wiz = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
   assert.ok(/canOverride:\s*\(v\)/.test(wiz), "the wizard supplies that predicate");
 });
+
+// ---------------------------------------------------------------------------
+// #428 U1/U2 (R25-R31) — repository references off the UI, and the footer's
+// build stamp promoted to a labelled first position.
+//
+// These are SOURCE-TEXT guards for the same reason as the wiring guards above:
+// the step bodies are template literals inside the browser-only block, so no
+// unit test can observe what they render. A count removed from one template and
+// left in another is exactly the drift a per-template sweep catches.
+// ---------------------------------------------------------------------------
+
+// The source text of one wizard step template, sliced from its declaration to
+// the next top-level `function` at the same indent. Used by the count sweep so
+// the assertion names the offending step rather than "somewhere in wizard.js".
+function stepSource(name) {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const at = src.indexOf(`function ${name}() {`);
+  assert.ok(at >= 0, `wizard.js declares ${name}`);
+  const end = src.indexOf("\n    function ", at + 1);
+  return src.slice(at, end < 0 ? src.length : end);
+}
+
+test("#428 (AE8): no wizard step template quotes a dataset-derived count", () => {
+  for (const step of ["stepIntro", "stepCharacter", "stepPool", "stepPriorities", "stepResults"]) {
+    const body = stepSource(step);
+    assert.ok(!/dataset\.items\b[\s\S]{0,20}\.length/.test(body),
+      `${step} must not interpolate the catalog size`);
+    assert.ok(!/\bitem_count\b/.test(body),
+      `${step} must not interpolate the dataset's item_count`);
+    assert.ok(!/\.toLocaleString\(\)\s*\}\s*indexed/.test(body),
+      `${step} must not render an "N indexed" count`);
+  }
+});
+
+test("#428 (AE8): the intro's opening copy carries no digit-grouped count", () => {
+  const intro = stepSource("stepIntro");
+  // The lead paragraph is what a player reads first (R26). A count reaches it
+  // only through an interpolation or a hardcoded numeral; both are refused.
+  assert.ok(!/\d{1,3},\d{3}/.test(intro), "no literal thousands-separated number in the intro");
+  assert.ok(!/\$\{n\b/.test(intro), "the removed count variable must not survive");
+});
+
+test("#428 (AE8): the footer carries no item count, and app.js writes none", () => {
+  const fs = require("fs"); const path = require("path");
+  const html = fs.readFileSync(path.join(__dirname, "..", "web", "index.html"), "utf-8");
+  assert.ok(!/id="dataset-info"/.test(html), "the footer's count host is gone");
+  const app = fs.readFileSync(path.join(__dirname, "..", "web", "app.js"), "utf-8");
+  assert.ok(!/dataset-info/.test(app), "…and nothing writes to it");
+  assert.ok(!/item_count\s*\?\?/.test(app), "…including the item_count fallback that fed it");
+});
+
+test("#428 (AE9): per-result coverage disclosure survives — it describes the solve", () => {
+  // R27's carve-out. coverageNote is dataset-SCOPED but result-facing: it states
+  // what the solve searched, which is the one place a number is about the answer
+  // rather than about the repository.
+  const R = require("../web/results.js");
+  const note = R.coverageNote({ metadata: { color_coverage: { augments_placeable: 42 } } });
+  assert.ok(note && /Optimized:/.test(note), "the disclosure still renders");
+  assert.ok(/42 placeable/.test(note), "…with its per-solve counts intact");
+});
+
+test("#428 (AE10): the footer puts a labelled build stamp before attribution", () => {
+  const fs = require("fs"); const path = require("path");
+  const html = fs.readFileSync(path.join(__dirname, "..", "web", "index.html"), "utf-8");
+  const foot = html.slice(html.indexOf("<footer"), html.indexOf("</footer>"));
+  assert.ok(foot, "index.html has a footer");
+  const build = foot.indexOf('id="build-info"');
+  const attrib = foot.indexOf("ddowiki.com");
+  assert.ok(build >= 0 && attrib >= 0, "both the build stamp and attribution are in the footer");
+  assert.ok(build < attrib, "the build stamp comes first (R29 — a fixed, findable position)");
+  assert.ok(/class="build-label"/.test(foot), "the stamp carries a visible 'Build' label (R28)");
+  assert.ok(/>Build</.test(foot), "…and the label reads 'Build'");
+});
+
+test("#428 (R30): footer attribution keeps both credits and both links", () => {
+  const fs = require("fs"); const path = require("path");
+  const html = fs.readFileSync(path.join(__dirname, "..", "web", "index.html"), "utf-8");
+  const foot = html.slice(html.indexOf("<footer"), html.indexOf("</footer>"));
+  assert.ok(/https:\/\/ddowiki\.com/.test(foot), "the DDO Wiki link survives");
+  assert.ok(/illusionistpm\/ddo-gear-planner/.test(foot), "the Gear Planner link survives");
+  assert.ok(/illusionistpm/.test(foot), "…and its author is still credited");
+});
+
+test("#428 (R28): the build value renders monospaced so successive stamps align", () => {
+  const fs = require("fs"); const path = require("path");
+  const css = fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf-8");
+  const at = css.indexOf(".build-info");
+  assert.ok(at >= 0, "styles.css styles .build-info");
+  const rule = css.slice(at, css.indexOf("}", at));
+  assert.ok(/font-family:[^;]*mono/i.test(rule), ".build-info renders in a monospaced face");
+});
+
+test("#428 (R31): the footer reads as distinct elements, not one run-on line", () => {
+  const fs = require("fs"); const path = require("path");
+  const html = fs.readFileSync(path.join(__dirname, "..", "web", "index.html"), "utf-8");
+  const foot = html.slice(html.indexOf("<footer"), html.indexOf("</footer>"));
+  assert.ok(!/<span>\s*·/.test(foot), "no leading separator dot joining spans into a sentence");
+  const app = fs.readFileSync(path.join(__dirname, "..", "web", "app.js"), "utf-8");
+  assert.ok(!/textContent\s*=\s*`\s*·\s*Build/.test(app),
+    "app.js must not prefix the stamp with a run-on separator");
+});
