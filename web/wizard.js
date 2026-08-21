@@ -166,6 +166,70 @@ var OVERRIDE_LIMIT = (function () {
   return (O && O.OVERRIDE_LIMIT) || 200;
 })();
 
+/** #88 U10 (R31/R32) — add a correction to the list in force.
+ *
+ *  Pure and exported like every sibling helper here: the DOM wrappers do two
+ *  things only, assign the result to state and re-apply the overlay, so the
+ *  semantics below are tested directly rather than through the render path.
+ *
+ *  A second correction on the same affix REPLACES the first rather than
+ *  appending. Two overrides on one affix are not two facts — the second is the
+ *  player changing their mind — and `applyOverrides` would apply only whichever
+ *  matched the catalog type, silently ignoring the other while it sat in the
+ *  manager looking live.
+ *
+ *  Returns `{ ok, list, error }` rather than throwing, because every caller is a
+ *  UI surface that has to say something specific when a correction is refused. */
+function addOverrideTo(list, key, to, note) {
+  const current = Array.isArray(list) ? list : [];
+  const O = _overridesModule();
+  const o = Object.assign({}, key, { to: String(to == null ? "" : to),
+                                     note: note ? String(note) : "" });
+  if (O && !O.isWellFormed(o)) return { ok: false, list: current, error: "malformed" };
+  const at = current.findIndex((x) => x && sameOverrideTarget(x, o));
+  if (at < 0 && current.length >= OVERRIDE_LIMIT) {
+    return { ok: false, list: current, error: "limit" };
+  }
+  const next = current.slice();
+  if (at >= 0) next[at] = o; else next.push(o);
+  return { ok: true, list: next, error: null };
+}
+
+function sameOverrideTarget(a, b) {
+  const target = (a.variant_id && a.variant_id === b.variant_id)
+    || (a.pool_key && a.pool_key === b.pool_key);
+  return !!target && a.name === b.name && String(a.from) === String(b.from)
+    && String(a.value) === String(b.value);
+}
+
+/** U11 (R34) — withdraw one correction. Returns a new list; the input is not
+ *  mutated, because the caller still holds it while deciding what to render. */
+function removeOverrideAt(list, i) {
+  const current = Array.isArray(list) ? list : [];
+  if (!(i >= 0 && i < current.length)) return current;
+  return current.slice(0, i).concat(current.slice(i + 1));
+}
+
+/** U11 (R35/KTD9) — re-anchor a drift-suspended correction to what upstream now
+ *  says, keeping the override's identity and its note. Replacing it instead would
+ *  discard the note and reset the creation provenance, which is the record of why
+ *  the player disagreed in the first place.
+ *
+ *  Refused when there is no type to anchor to (a retired target), and refused
+ *  when the new anchor IS the player's own replacement — that would make the
+ *  override satisfied by construction, which is a state the catalog earns rather
+ *  than something re-confirm can manufacture. */
+function reconfirmOverrideAt(list, i, now) {
+  const current = Array.isArray(list) ? list : [];
+  if (!(i >= 0 && i < current.length)) return { ok: false, list: current, error: "range" };
+  if (now == null || now === "") return { ok: false, list: current, error: "no-anchor" };
+  const o = current[i];
+  if (String(now) === String(o.to)) return { ok: false, list: current, error: "would-satisfy" };
+  const next = current.slice();
+  next[i] = Object.assign({}, o, { from: String(now) });
+  return { ok: true, list: next, error: null };
+}
+
 function _overridesModule() {
   if (typeof require !== "undefined") { try { return require("./overrides.js"); } catch (e) { /* absent */ } }
   return (typeof window !== "undefined") ? window.Overrides : null;
@@ -1322,7 +1386,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -1702,6 +1766,12 @@ if (typeof window !== "undefined" && window.App) {
           <div id="wz-block-results" class="wz-pin-results"></div>
           <div id="wz-block-stage" class="wz-block-stage"></div>
           <div id="wz-block-list" class="wz-pin-list"></div>
+        </div>
+        <div class="wz-pinbox wz-overridebox">
+          <span class="wz-label">Bonus types you have corrected <span class="wz-sub">· optional · when the game disagrees with the wiki</span></span>
+          <p class="wz-adv-note">Add these from an item's card in the results, or from Browse. They are your
+            observations, not wiki-sourced — a solve that uses one says so, and so does every export.</p>
+          <div id="wz-override-list" class="wz-pin-list"></div>
         </div>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
           <button class="btn primary" data-next>Continue →</button></div>
@@ -2596,6 +2666,165 @@ if (typeof window !== "undefined" && window.App) {
       return report;
     }
 
+    // #88 U10/U11 — the three ways the set in force can change. Every one of them
+    // routes through applyOverrideOverlay rather than reimplementing the withdraw-
+    // then-apply sequence: R23 names create, delete and re-confirm alongside
+    // character load, and the overlay is what keeps `state.overrideApplied` (and
+    // therefore the R14 qualifier and R30 staleness) in step with the pool.
+    function commitOverrides(list) {
+      state.overrides = list;
+      applyOverrideOverlay();
+      state.constraintsDirty = true;
+      renderOverrideManager();
+    }
+
+    function createOverride(key, to, note) {
+      const r = addOverrideTo(state.overrides || [], key, to, note);
+      if (!r.ok) return r;
+      commitOverrides(r.list);
+      // The created entry by identity, not by position: addOverrideTo REPLACES a
+      // correction on the same affix rather than appending, so "the last one" is
+      // wrong exactly when the player is changing their mind.
+      const made = r.list.find((o) => o && o.name === key.name
+        && String(o.from) === String(key.from)
+        && (o.variant_id === key.variant_id || o.pool_key === key.pool_key));
+      return { ok: true, list: r.list, override: made || null, error: null };
+    }
+
+    function deleteOverride(i) {
+      commitOverrides(removeOverrideAt(state.overrides || [], i));
+    }
+
+    function reconfirmOverride(i, now) {
+      const r = reconfirmOverrideAt(state.overrides || [], i, now);
+      if (r.ok) commitOverrides(r.list);
+      return r;
+    }
+
+    /** U11 (R34/R35) — the manager. Rows and their action sets come from
+     *  `Overrides.managerRows`, so the view never decides what a state allows. */
+    function renderOverrideManager() {
+      const box = document.getElementById("wz-override-list");
+      if (!box) return;
+      const O = _overridesModule();
+      const list = state.overrides || [];
+      if (!list.length) {
+        box.innerHTML = `<p class="wz-pin-empty">Nothing corrected — the solve uses the catalog's bonus types.</p>`;
+        return;
+      }
+      const rows = (O && dataset) ? O.managerRows(O.resolveOverrides(dataset, list)) : [];
+      box.innerHTML = rows.map((r, i) => {
+        const o = r.override;
+        const where = o.variant_id || "a crafting option";
+        const act = (name, label, cls) => r.actions.includes(name)
+          ? `<button type="button" class="btn ghost wz-ov-${name}" data-ov${name}="${i}">${label}</button>` : "";
+        return `<div class="wz-pin-row wz-ov-row is-${esc(r.state)}">
+          <span class="wz-pin-name">${esc(o.name)} on ${esc(where)}</span>
+          <span class="wz-ov-state">${esc(r.label)}</span>
+          ${act("reconfirm", "Re-confirm")}${act("report", "Report")}${act("delete", "Remove")}
+          <div class="wz-ov-report wz-hidden" id="wz-ov-report-${i}"></div>
+        </div>`;
+      }).join("");
+      box.querySelectorAll("[data-ovdelete]").forEach((b) => b.onclick = () => {
+        deleteOverride(Number(b.dataset.ovdelete));
+      });
+      box.querySelectorAll("[data-ovreconfirm]").forEach((b) => b.onclick = () => {
+        const i = Number(b.dataset.ovreconfirm);
+        const r = reconfirmOverride(i, rows[i] && rows[i].now);
+        if (!r.ok) renderOverrideManager();
+      });
+      box.querySelectorAll("[data-ovreport]").forEach((b) => b.onclick = () => {
+        const i = Number(b.dataset.ovreport);
+        showCorrectionReport(document.getElementById(`wz-ov-report-${i}`), rows[i].override);
+      });
+    }
+
+    /** U12 (R17/R18) — the report, rendered as selectable text rather than pushed
+     *  anywhere. KTD10: generated text, never a network call. */
+    function showCorrectionReport(host, override) {
+      if (!host) return;
+      // eslint-disable-next-line no-undef
+      const P = (typeof Projection !== "undefined") ? Projection : null;
+      if (!P || !P.correctionReport) return;
+      const row = override.variant_id
+        ? (dataset.items || []).find((v) => (v.variant_id || v.source_item) === override.variant_id)
+        : null;
+      host.classList.remove("wz-hidden");
+      host.innerHTML = `<textarea class="wz-ov-reporttext" rows="10" readonly>${esc(P.correctionReport(override, row))}</textarea>`;
+      const ta = host.querySelector("textarea");
+      if (ta) { ta.focus(); ta.select(); }
+    }
+
+    /** #88 U10 (R3/R4/R33) — the creation picker, rendered in place under the row
+     *  or Browse entry the player is questioning.
+     *
+     *  Rows come from `Overrides.pickerEntries`, the SAME builder Browse renders
+     *  from: two surfaces disagreeing about which affixes are overridable would be
+     *  indistinguishable, from the player's side, from the catalog being
+     *  inconsistent. The replacement is a closed vocabulary (R4) — the shared list
+     *  declared credits already renders — because free text would let a player
+     *  invent a bonus type nothing in the game supplies.
+     *
+     *  R33: the three causes are named here rather than in a help page, because
+     *  checking the wiki first is what separates a maintainer-side data defect
+     *  (which a correction report can fix for everyone) from a genuine
+     *  wiki-versus-game disagreement (which only an override can hold). */
+    function openOverridePicker(host, variantId) {
+      if (!host) return;
+      const O = _overridesModule();
+      const existing = host.querySelector(".pd-override");
+      if (existing) { existing.remove(); return; }          // toggle
+      const v = (dataset.items || []).find((x) => (x.variant_id || x.source_item) === variantId);
+      const entries = (O && v) ? O.pickerEntries(v, state.overrides || []) : [];
+      const box = document.createElement("div");
+      box.className = "pd-override";
+      if (!entries.length) {
+        // AE20 — no control at all, rather than an empty picker inviting a
+        // decision the player cannot make on this item.
+        box.innerHTML = `<p class="pd-override-empty">Nothing on this item carries a bonus type you can correct —
+          its effects are either presence-only, penalties, or granted by the catalog rather than engraved on the item.</p>`;
+        host.appendChild(box);
+        return;
+      }
+      const opts = _creditBonusTypes.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join("");
+      box.innerHTML = `
+        <p class="pd-override-lead">Correct a bonus type on <strong>${esc(variantId)}</strong>.
+          Three things cause a wrong one: the wiki is right and our catalog copied it wrong, the wiki itself is
+          wrong, or the game changed and neither caught up. <strong>Check the wiki page first</strong> — that is
+          what tells you whether this is worth reporting for everyone or is yours to hold.</p>
+        ${entries.map((e, i) => `<div class="pd-override-row">
+          <span class="pd-override-affix">${esc(e.name)} +${esc(e.value)} ${esc(e.from)}${e.count > 1 ? ` <span class="pd-override-count">×${esc(e.count)}</span>` : ""}</span>
+          ${e.overriddenTo
+            ? `<span class="pd-override-set">already corrected to ${esc(e.overriddenTo)}</span>`
+            : `<select class="pd-override-type" data-ovtype="${i}" aria-label="corrected bonus type for ${esc(e.name)}">${opts}</select>
+               <input class="pd-override-note" data-ovnote="${i}" type="text" placeholder="note — optional" aria-label="note for ${esc(e.name)}">
+               <button type="button" class="btn ghost" data-ovadd="${i}">Correct it</button>`}
+        </div>`).join("")}
+        <p class="pd-override-status" role="status"></p>`;
+      host.appendChild(box);
+      box.querySelectorAll("[data-ovadd]").forEach((b) => b.onclick = () => {
+        const i = Number(b.dataset.ovadd);
+        const to = box.querySelector(`[data-ovtype="${i}"]`).value;
+        const note = box.querySelector(`[data-ovnote="${i}"]`).value;
+        const r = createOverride(entries[i].key, to, note);
+        const status = box.querySelector(".pd-override-status");
+        if (!r.ok) {
+          status.textContent = r.error === "limit"
+            ? `You already have ${OVERRIDE_LIMIT} corrections — remove one first.`
+            : "That correction could not be applied.";
+          return;
+        }
+        // U12/R18 — the report is offered AT CREATION, not only from the manager,
+        // because creation is the moment the player still has the evidence in
+        // front of them and knows what they observed.
+        status.textContent = "Corrected. Re-solve to use it.";
+        const rep = box.querySelector(".pd-override-report")
+          || box.appendChild(Object.assign(document.createElement("div"), { className: "pd-override-report" }));
+        showCorrectionReport(rep, r.override);
+        b.disabled = true;
+      });
+    }
+
     function candidateItems() {
       if (state.pool === "owned" && state.ownedNames) {
         // Base items: always restricted to the export (KTD4/R13).
@@ -3139,7 +3368,13 @@ if (typeof window !== "undefined" && window.App) {
         // #332 — pass the picker vocabulary so Browse can mark which presence
         // effects the Utility tier counts. Same builder the priorities picker
         // uses, so the two surfaces cannot disagree about membership.
-        if (window.ItemBrowser) window.ItemBrowser.initBrowse(dataset, pickerVocabulary(dataset));
+        if (window.ItemBrowser) {
+          // #88 U10 (R32) — the SAME picker the results card opens. Browse owns no
+          // copy of the predicate; it hands back a variant id and a host element.
+          window.ItemBrowser.initBrowse(dataset, pickerVocabulary(dataset), {
+            onOverride: (variantId, host) => openOverridePicker(host, variantId),
+          });
+        }
       }
       ov.classList.add("on");
     }
@@ -3404,6 +3639,10 @@ if (typeof window !== "undefined" && window.App) {
           renderBlockResults();
           renderBlockList();
         }
+        // #88 U11 — the override manager renders from state alone; there is no
+        // search box, because corrections are created where the player notices
+        // the problem (the results card and Browse), not hunted for here.
+        renderOverrideManager();
       }
       if (state.step === "priorities") {
         const add = document.getElementById("wz-add");
@@ -3484,6 +3723,14 @@ if (typeof window !== "undefined" && window.App) {
             else delete state.slotConstraints[slot];
           } else if (act.dataset.act === "empty") {
             state.slotConstraints[slot] = { type: "empty" };   // slot-level lock clears any pins
+          } else if (act.dataset.act === "override" && variant) {
+            // #88 U10 (R31) — corrections are created where the player NOTICES the
+            // wrong total, which is this row. The picker renders in place rather
+            // than navigating away, so the loadout they are questioning stays on
+            // screen beside it.
+            act.closest(".pd-menu").hidden = true;
+            openOverridePicker(act.closest(".pd-row"), variant);
+            return;
           } else if (act.dataset.act === "pin" && variant) {
             // #110 (U5/R4) — the deep-dive pin surface refuses a blocked variant
             // too, with the reason inline (no browser dialog: those block the tab).

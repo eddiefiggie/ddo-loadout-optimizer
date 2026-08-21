@@ -395,6 +395,7 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
     <button data-act="pin" data-slot="${esc(label)}" data-variant="${canPin ? esc(rowId) : ""}"${canPin ? "" : " disabled"}>Pin this item</button>
     <button data-act="empty" data-slot="${esc(label)}">Lock empty</button>
     <button data-act="free" data-slot="${esc(label)}" data-variant="${v ? esc(rowId) : ""}">Free (optimize)</button>
+    <button data-act="override" data-slot="${esc(label)}" data-variant="${v ? esc(rowId) : ""}"${v && !locked ? "" : " disabled"}>Correct a bonus type…</button>
   </div>`;
   const badge = rowPinned ? `<span class="pd-badge pin">pinned</span>`
     : locked ? `<span class="pd-badge empty">locked empty</span>` : "";

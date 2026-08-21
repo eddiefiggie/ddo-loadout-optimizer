@@ -2221,10 +2221,29 @@ test("#332: initBrowse receives the picker vocabulary", () => {
   // test can see, which is the same shape as the buildModel wiring defect above.
   const fs = require("fs"); const path = require("path");
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
-  assert.ok(/ItemBrowser\.initBrowse\(\s*dataset\s*,\s*pickerVocabulary\(dataset\)\s*\)/.test(src),
-    "initBrowse must be passed pickerVocabulary(dataset), not dataset alone");
+  // The guard's claim is about the VOCABULARY ARGUMENT, not about the arity: #88
+  // U10 added a third `hooks` argument, and a guard that pins the closing paren
+  // would fail on every future argument while proving nothing more about the one
+  // it exists to protect. `[,)]` keeps the position assertion and drops the arity.
+  assert.ok(/ItemBrowser\.initBrowse\(\s*dataset\s*,\s*pickerVocabulary\(dataset\)\s*[,)]/.test(src),
+    "initBrowse must be passed pickerVocabulary(dataset) as its second argument, not dataset alone");
   assert.ok(!/ItemBrowser\.initBrowse\(\s*dataset\s*\)/.test(src),
     "the pre-#332 single-argument form must not survive");
+});
+
+// #88 U10 (R32) — the same shape of guard for the same shape of risk. Browse is
+// one of the two creation surfaces R32 names, and it renders its control ONLY
+// when a host supplies the hook. Dropping the hook at the call site removes the
+// surface silently: no error, no failing unit test, just a feature that quietly
+// is not there — which is precisely why #332 needed a guard of its own.
+test("#88 U10: Browse is handed the override hook that renders its creation control", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  assert.ok(/initBrowse\([\s\S]{0,200}?onOverride\s*:/.test(src),
+    "the initBrowse call must pass an onOverride hook");
+  const browse = fs.readFileSync(path.join(__dirname, "..", "web", "browse.js"), "utf-8");
+  assert.ok(/hooks\s*&&\s*hooks\.onOverride/.test(browse),
+    "…and browse.js must gate its control on that hook rather than assuming it");
 });
 
 test("#332: web/query.js is NOT a live solve path — index.html must not load it", () => {
@@ -2732,4 +2751,112 @@ test("#88 review #9: the restored override list is capped", () => {
 test("#88 review #9: an ordinary list is untouched by the cap", () => {
   const list = [{ variant_id: "X", name: "Armor Class", from: "Armor", value: "5", to: "Enhancement" }];
   assert.deepStrictEqual(restoreOverrides({ overrides: list }), list);
+});
+
+
+// ---- #88 U10/U11 — the list transformations behind the surfaces -------------
+// Kept pure and exported, like every other wizard helper, so the semantics are
+// tested directly rather than through the render path. The DOM wrappers do two
+// things only: assign the result to state, and re-apply the overlay.
+const { addOverrideTo, removeOverrideAt, reconfirmOverrideAt } = require("../web/wizard.js");
+const _k = (name, from) => ({ variant_id: "Aberrant Robe", name, from, value: "5" });
+
+test("#88 U10: adding an override appends it with its replacement and note", () => {
+  const r = addOverrideTo([], _k("Armor Class", "Armor"), "Enhancement", "seen in game");
+  assert.ok(r.ok);
+  assert.deepStrictEqual(r.list, [{ variant_id: "Aberrant Robe", name: "Armor Class",
+    from: "Armor", value: "5", to: "Enhancement", note: "seen in game" }]);
+});
+
+test("#88 U10: a second override on the same affix REPLACES the first, never duplicates", () => {
+  const first = addOverrideTo([], _k("Armor Class", "Armor"), "Enhancement", "").list;
+  const second = addOverrideTo(first, _k("Armor Class", "Armor"), "Sacred", "changed my mind");
+  assert.strictEqual(second.list.length, 1, "one affix, one correction");
+  assert.strictEqual(second.list[0].to, "Sacred");
+  assert.strictEqual(second.list[0].note, "changed my mind");
+});
+
+test("#88 U10: a malformed or reserved replacement is refused rather than stored", () => {
+  assert.ok(!addOverrideTo([], _k("Armor Class", "Armor"), "Bool", "").ok, "reserved token");
+  assert.ok(!addOverrideTo([], _k("Armor Class", "Armor"), "", "").ok, "empty replacement");
+  assert.ok(!addOverrideTo([], { variant_id: "X" }, "Sacred", "").ok, "incomplete identity");
+});
+
+test("#88 U10 (review #9): the ceiling is enforced at the creation surface too", () => {
+  const full = Array.from({ length: OVERRIDE_LIMIT }, (_, i) => ({
+    variant_id: `Item ${i}`, name: "Armor Class", from: "Armor", value: "5", to: "Enhancement" }));
+  const r = addOverrideTo(full, _k("Armor Class", "Armor"), "Sacred", "");
+  assert.ok(!r.ok, "refused rather than silently dropped later");
+  assert.strictEqual(r.error, "limit");
+  assert.strictEqual(r.list.length, OVERRIDE_LIMIT, "and the list is unchanged");
+});
+
+test("#88 U11: deleting returns a new list without that entry", () => {
+  const list = [{ variant_id: "A", name: "n", from: "f", value: "1", to: "t" },
+                { variant_id: "B", name: "n", from: "f", value: "1", to: "t" }];
+  const got = removeOverrideAt(list, 0);
+  assert.deepStrictEqual(got.map((o) => o.variant_id), ["B"]);
+  assert.strictEqual(list.length, 2, "the input list is not mutated");
+  assert.deepStrictEqual(removeOverrideAt(list, 9), list, "an out-of-range index is a no-op");
+});
+
+test("#88 U11 (KTD9/R35): re-confirm re-anchors the recorded type and keeps identity", () => {
+  const list = [{ variant_id: "Aberrant Robe", name: "Armor Class", from: "Armor",
+                  value: "5", to: "Enhancement", note: "why I said so" }];
+  const r = reconfirmOverrideAt(list, 0, "Profane");
+  assert.ok(r.ok);
+  assert.strictEqual(r.list[0].from, "Profane", "anchored to what upstream now says");
+  assert.strictEqual(r.list[0].to, "Enhancement", "the player's claim is unchanged");
+  assert.strictEqual(r.list[0].note, "why I said so", "and the note survives — this is not a replacement");
+});
+
+test("#88 U11: re-confirm needs a type to anchor to", () => {
+  const list = [{ variant_id: "A", name: "n", from: "f", value: "1", to: "t" }];
+  assert.ok(!reconfirmOverrideAt(list, 0, null).ok, "a retired target has nothing to confirm against");
+  assert.ok(!reconfirmOverrideAt(list, 9, "Profane").ok, "out of range");
+  assert.ok(!reconfirmOverrideAt(list, 0, "t").ok,
+    "anchoring the recorded type onto the player's own replacement would make it satisfied-by-construction");
+});
+
+
+// #88 U10 (AE19/R31/R32) — BOTH creation surfaces exist and reach the same
+// builder. The plan names two on purpose: the results card is where a wrong
+// total is noticed, and Browse is the only one that reaches an item the current
+// loadout does not contain. A surface that quietly stopped rendering its control
+// would leave the other still working, so neither can vouch for the other.
+test("#88 U10 (AE19): both creation surfaces are wired, to one shared builder", () => {
+  const fs = require("fs"); const path = require("path");
+  const read = (f) => fs.readFileSync(path.join(__dirname, "..", "web", f), "utf-8");
+  const results = read("results.js"), browse = read("browse.js"), wiz = read("wizard.js");
+
+  assert.ok(/data-act="override"/.test(results), "the results card offers the control (R31)");
+  assert.ok(/act\.dataset\.act === "override"/.test(wiz), "…and the wizard acts on it");
+  assert.ok(/data-correct=/.test(browse), "Browse offers the control (R32)");
+  assert.ok(/onOverride:\s*\(variantId, host\)/.test(wiz), "…and the wizard supplies its handler");
+
+  // One builder, one predicate. Neither surface may compute its own entry list:
+  // two surfaces disagreeing about what is overridable is indistinguishable, from
+  // the player's side, from the catalog being inconsistent.
+  assert.ok(/O\.pickerEntries\(/.test(wiz), "the picker renders from Overrides.pickerEntries");
+  for (const [name, src] of [["results.js", results], ["browse.js", browse]]) {
+    assert.ok(!/pickerEntries|eligibleAffixes|isEligible/.test(src),
+      `${name} must not keep its own copy of the eligibility predicate`);
+  }
+});
+
+// #88 U10 (R33/AE17) — the picker names the three causes of a wrong recorded
+// type, and says to check the wiki first. This is the only place the player
+// learns the difference between a defect worth reporting for everyone and a
+// disagreement only they can hold, and it is the difference the whole correction
+// report depends on being understood.
+test("#88 U10 (R33): the creation surface names the three causes and the wiki check", () => {
+  const fs = require("fs"); const path = require("path");
+  const wiz = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const lead = (wiz.match(/pd-override-lead[\s\S]{0,600}?<\/p>/) || [""])[0];
+  assert.ok(lead, "the picker renders a lead paragraph");
+  assert.ok(/catalog copied it wrong/i.test(lead), "cause 1: our catalog is wrong");
+  assert.ok(/wiki itself is\s*\n?\s*wrong/i.test(lead), "cause 2: the wiki is wrong");
+  assert.ok(/game changed/i.test(lead), "cause 3: the game moved and neither caught up");
+  assert.ok(/Check the wiki page first/i.test(lead),
+    "…and the step that tells the three apart");
 });

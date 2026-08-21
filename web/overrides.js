@@ -448,6 +448,125 @@
     return { state: "suspended", reason: "drift", affixes: rows, now: catalogTypeOrLive(rows[0]) };
   }
 
+  // ---- U10: what a creation surface offers -----------------------------------
+  //
+  // ONE builder, rendered by both the results panel and Browse. The requirement
+  // that neither surface keeps its own copy of the predicate is not stylistic:
+  // the two disagreeing about which affixes are overridable is indistinguishable,
+  // from the player's side, from the catalog being inconsistent.
+
+  /** Collapse a list of {key, name, from, value} candidates so that
+   *  indistinguishable occurrences present as ONE entry carrying a count.
+   *  R2 already says they retype together, so they are one decision, and showing
+   *  two identical rows invites the player to make it twice. */
+  function collapseEntries(cands, overrides) {
+    var byKey = {}, order = [];
+    for (var i = 0; i < cands.length; i++) {
+      var c = cands[i];
+      var id = [c.key.variant_id || c.key.pool_key, c.name, c.from, c.value].join("\u0000");
+      if (byKey[id]) { byKey[id].count++; continue; }
+      byKey[id] = c; c.count = 1; order.push(c);
+    }
+    // Which of these does the player already have an override on? Read from the
+    // DECLARATION, not the pool: an override that is suspended or unmatched is
+    // still theirs and must not read as an untouched row inviting a second one.
+    var live = overrides || [];
+    for (var j = 0; j < order.length; j++) {
+      var e = order[j], hit = null;
+      for (var k = 0; k < live.length; k++) {
+        var o = live[k];
+        if (!o) continue;
+        var sameTarget = (o.variant_id && o.variant_id === e.key.variant_id)
+          || (o.pool_key && o.pool_key === e.key.pool_key);
+        if (sameTarget && o.name === e.name && o.from === e.from
+            && sameValue(o.value, e.value)) { hit = o; break; }
+      }
+      e.overriddenTo = hit ? hit.to : null;
+    }
+    return order;
+  }
+
+  /** The rows a creation surface offers for one item variant (R3, R6, AE20).
+   *  Empty for an item whose every affix is ineligible — the surface renders no
+   *  control at all rather than an empty picker. */
+  function pickerEntries(variant, overrides) {
+    if (!variant) return [];
+    var elig = eligibleAffixes(variant);
+    var cands = [];
+    for (var i = 0; i < elig.length; i++) {
+      var a = elig[i];
+      // The CATALOG's type, so an already-applied override does not move the row
+      // it was created from out from under the player.
+      var from = catalogTypeOrLive(a);
+      cands.push({
+        key: { variant_id: variant.variant_id || variant.source_item, name: a.name,
+               from: from, value: String(a.value) },
+        name: a.name, from: from, value: String(a.value), channel: null, host: null,
+      });
+    }
+    return collapseEntries(cands, overrides);
+  }
+
+  /** The same, for the crafted channels Browse renders. `channel` narrows to one
+   *  pool; omit it for all seven. */
+  function poolPickerEntries(pool, channel, overrides) {
+    var cands = [];
+    eachPoolAffix(pool, function (rec) {
+      if (channel && rec.channel !== channel) return;
+      var k = poolOverrideKey(rec);
+      cands.push({ key: k, name: k.name, from: k.from, value: k.value,
+                   channel: rec.channel, host: rec.host || null });
+    });
+    return collapseEntries(cands, overrides);
+  }
+
+  // ---- U11: the manager's rows ------------------------------------------------
+
+  /** One row per override, carrying the action set its state allows (R34/R35).
+   *
+   *  The action set is derived from the state rather than decided by the view,
+   *  because the states differ in what a player CAN do, not in how it looks:
+   *  re-confirm re-anchors the recorded type to what upstream now says (KTD9), so
+   *  it needs an affix that still exists at a type we can read. Drift is the only
+   *  state where that holds. A retired target has nothing to confirm against; an
+   *  ineligible one has an affix the player may no longer retype at all; and an
+   *  active or satisfied override has nothing to re-anchor to.
+   *
+   *  Delete and report are always available: an override is the player's and they
+   *  may withdraw it in any state, and the correction report stays reachable
+   *  afterwards rather than only at creation (R18). */
+  function managerRows(resolved) {
+    var list = Array.isArray(resolved) ? resolved : [];
+    var out = [];
+    for (var i = 0; i < list.length; i++) {
+      var r = list[i];
+      if (!r || !r.override) continue;
+      var o = r.override;
+      var where = o.variant_id || "a crafting option";
+      var actions = ["delete", "report"];
+      var label;
+      if (r.state === "active") {
+        label = "In force: counted as " + o.to + ", catalog says " + o.from + ".";
+      } else if (r.state === "satisfied") {
+        label = "The catalog agrees now — it records " + o.to + " itself, so this is "
+          + "no longer doing anything. Kept in case that changes back.";
+      } else if (r.reason === "drift") {
+        label = "Suspended: " + o.name + " on " + where + " is now recorded as " + r.now
+          + " rather than " + o.from + ".";
+        actions.splice(1, 0, "reconfirm");
+      } else if (r.reason === "retired-target") {
+        label = "Suspended: " + o.name + " on " + where + " is no longer in the data, "
+          + "so there is nothing left to confirm against.";
+      } else {
+        label = "Suspended: " + o.name + " on " + where + " is no longer an affix the "
+          + "item itself carries, so it can only be deleted.";
+      }
+      out.push({ override: o, state: r.state, reason: r.reason || null,
+                 now: r.now != null ? r.now : null, actions: actions, label: label });
+    }
+    return out;
+  }
+
   /** U8 (R30) — do these two APPLIED lists describe the same set of corrections?
    *
    *  A displayed result is a claim about one specific set, so when the set changes
@@ -578,6 +697,7 @@
     overrideKey, isWellFormed, matchAffixes, resolveMatch, catalogTypeOrLive,
     eachPoolAffix, poolOverrideKey, matchPoolAffixes, poolAffixEligible, readType, poolIndex,
     resolveOverrides, resolvePoolMatch, keyMinusType, sameOverrideSet,
+    pickerEntries, poolPickerEntries, managerRows,
     applyOverrides, withdrawOverrides, catalogTypeOf,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;

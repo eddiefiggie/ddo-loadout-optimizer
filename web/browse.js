@@ -365,7 +365,7 @@ function browsableItems(dataset) {
 
 // ---- DOM rendering (browser only) ----
 
-function initBrowse(dataset, vocab) {
+function initBrowse(dataset, vocab, hooks) {
   // #332 — the counted set comes from the picker vocabulary the host already
   // built (canonicalized through the shared alias table there, so a chip matches
   // by the ONE name the solver uses). Optional: without it, chips render exactly
@@ -487,13 +487,19 @@ function initBrowse(dataset, vocab) {
         || `<span class="muted">${esc((v.verification_reasons || []).join("; ")) || "—"}</span>`;
       const tier = v.tier_values_incomplete ? ` <span class="muted">(tiers ${esc((v.tier_ml_list || []).join("/"))}; upper-tier stats)</span>` : "";
       const link = v.wiki_url ? `<a href="${safeUrl(v.wiki_url)}" rel="noopener" target="_blank">wiki</a>` : "";
+      // #88 U10 (R32) — Browse reaches items the current loadout does not contain,
+      // which is the whole reason a second creation surface exists. The control is
+      // offered only when the host supplied a handler, so browse.js keeps no
+      // knowledge of overrides beyond passing the variant id back.
+      const correct = (hooks && hooks.onOverride)
+        ? `<button type="button" class="browse-correct" data-correct="${esc(v.variant_id)}">Correct a bonus type…</button>` : "";
       return `<tr>
         <td data-label="Item">${esc(v.variant_id)}${tier}</td>
         <td data-label="Slot">${esc(v.slot)}</td>
         <td class="num" data-label="ML">${esc(itemMl(v) ?? "—")}</td>
         <td data-label="Status">${badge}</td>
         <td data-label="Affixes &amp; set bonuses">${affixes}</td>
-        <td data-label="Source">${link}</td>
+        <td data-label="Source">${link}${correct}</td>
       </tr>`;
     }).join("");
     // .items.cards turns rows into stacked cards under the phone breakpoint (R11);
@@ -501,6 +507,13 @@ function initBrowse(dataset, vocab) {
     results.innerHTML = `<div class="table-wrap"><table class="items cards">
       <thead><tr><th>Item</th><th>Slot</th><th class="num">ML</th><th>Status</th><th>Affixes &amp; set bonuses</th><th>Source</th></tr></thead>
       <tbody>${body}</tbody></table></div>`;
+    if (hooks && hooks.onOverride) {
+      results.querySelectorAll("[data-correct]").forEach((b) => b.addEventListener("click", () => {
+        // The row's own cell is the host, so the picker opens under the item the
+        // player is looking at rather than in a panel elsewhere.
+        hooks.onOverride(b.dataset.correct, b.closest("td"));
+      }));
+    }
   }
 
   function clearAll() {

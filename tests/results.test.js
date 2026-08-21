@@ -1999,7 +1999,7 @@ test("#369: no disclosure when the opt-in is ON or nothing pinned is an Artifact
 // ---- #88 U8 (R13/R16) — the rendered contributor label ----------------------
 // A correct solver-side marker that no surface renders is a dead feature, and the
 // only thing that catches it is asserting on the HTML the player actually sees.
-test("#88 U8: an overridden contribution renders labelled, naming both types", () => {
+test("#88 U8 (R13/AE16): an overridden contribution renders labelled, naming both types", () => {
   const html = R.attributionList([
     { bonus_type: "Insight", value: 6, source: "Necklace of X", sourceKind: "worn",
       slots: ["Necklace"], hostIds: ["Necklace of X"], isSet: false, via: null,

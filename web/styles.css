@@ -1187,3 +1187,26 @@ input.wz-ml { width: 120px; }
    here that explains why an action did nothing. */
 .wz-util-status:empty { display: none; }
 .wz-util-status { margin-top: 6px; color: var(--warn, #d9a441); font-size: 0.9em; }
+
+/* #88 U10/U11/U12 — the override creation picker, the manager rows, and the
+   correction report. Deliberately borrows the pin/blocklist row shapes: a
+   correction is the same kind of thing to the player, a standing choice they
+   made about their own build. */
+.wz-overridebox .wz-adv-note { margin: .25rem 0 .5rem; }
+.wz-ov-row { flex-wrap: wrap; align-items: baseline; gap: .4rem .6rem; }
+.wz-ov-state { flex: 1 1 100%; font-size: .85em; opacity: .8; }
+.wz-ov-row.is-suspended .wz-ov-state { opacity: 1; }
+.wz-ov-report, .pd-override-report { flex: 1 1 100%; }
+.wz-ov-reporttext {
+  width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .8em; line-height: 1.45; resize: vertical;
+}
+.pd-override { margin: .5rem 0 .25rem; padding: .6rem .7rem; border-radius: 6px; }
+.pd-override-lead, .pd-override-empty { font-size: .85em; margin: 0 0 .5rem; opacity: .9; }
+.pd-override-row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: .3rem 0; }
+.pd-override-affix { flex: 1 1 14rem; }
+.pd-override-count { opacity: .7; }
+.pd-override-note { flex: 1 1 10rem; min-width: 0; }
+.pd-override-set { font-size: .85em; opacity: .8; }
+.pd-override-status:empty { display: none; }
+.pd-override-status { font-size: .85em; margin: .4rem 0 0; }
