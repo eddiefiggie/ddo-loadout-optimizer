@@ -3510,26 +3510,40 @@ if (typeof window !== "undefined" && window.App) {
       wireRail();
     }
 
+    /** #428 U3/U5 — the one save transaction. Both surfaces that can save (the
+     *  rail's button and the guard's "Save and continue") go through it, so an
+     *  overwrite confirm cannot be enforced on one and skipped on the other.
+     *  Returns the store's result, or null when the player declined the
+     *  overwrite. */
+    function trySave(nm) {
+      // eslint-disable-next-line no-undef
+      if (nm && CharacterStore.loadCharacter(nm) && !window.confirm(`Update saved build "${nm}"?`)) return null;
+      const res = saveCurrentCharacter(nm);
+      if (res.ok) state.loadedName = nm;
+      return res;
+    }
+
+    /** The refusal, worded once. The name field lives in the rail, which is on
+     *  screen from every step, so "name it first" needs no per-surface variant. */
+    function saveErrorText(error) {
+      if (error === "no-name") return "Name this build first.";
+      if (error === "quota") return "Storage full — remove some saves.";
+      return "Could not save.";
+    }
+
     function wireRail() {
       const nameInput = document.getElementById("wz-buildname");
       if (nameInput) nameInput.oninput = (e) => { state.characterName = e.target.value; };
       const saveBtn = document.getElementById("wz-railsave");
       if (saveBtn) saveBtn.onclick = () => {
         const nm = ((nameInput ? nameInput.value : state.characterName) || "").trim();
-        // Confirm before overwriting an existing build, mirroring the delete confirm.
-        // eslint-disable-next-line no-undef
-        if (nm && CharacterStore.loadCharacter(nm) && !window.confirm(`Update saved build "${nm}"?`)) return;
-        const res = saveCurrentCharacter(nm);
-        if (res.ok) state.loadedName = nm;
+        const res = trySave(nm);
+        if (!res) return;   // overwrite declined
         // Re-render FIRST — the status element below lives inside the rail, so a
         // message written before this would be discarded by the re-render.
         renderRail();
         const stat = document.getElementById("wz-railstat");
-        if (!stat) return;
-        if (res.ok) stat.textContent = `Saved “${nm}”.`;
-        else if (res.error === "no-name") stat.textContent = "Name it first.";
-        else if (res.error === "quota") stat.textContent = "Storage full — remove some saves.";
-        else stat.textContent = "Could not save.";
+        if (stat) stat.textContent = res.ok ? `Saved “${nm}”.` : saveErrorText(res.error);
       };
       const rail = document.getElementById("wz-rail");
       if (rail) rail.onclick = (e) => {
@@ -3802,15 +3816,17 @@ if (typeof window !== "undefined" && window.App) {
       const save = document.getElementById("wz-unsaved-save");
       if (save) save.onclick = () => {
         const nm = String(state.characterName || "").trim();
+        const res = trySave(nm);
+        if (!res) return;   // overwrite declined
+        if (res.ok) { state.unsavedPrompt = null; go(to); return; }
         const stat = document.getElementById("wz-unsaved-stat");
-        // eslint-disable-next-line no-undef
-        if (nm && CharacterStore.loadCharacter(nm) && !window.confirm(`Update saved build "${nm}"?`)) return;
-        const res = saveCurrentCharacter(nm);
-        if (res.ok) { state.loadedName = nm; state.unsavedPrompt = null; go(to); return; }
-        if (!stat) return;
-        stat.textContent = res.error === "no-name"
-          ? "Name this build in the panel beside the step, then save."
-          : (res.error === "quota" ? "Storage full — remove some saves." : "Could not save.");
+        if (stat) stat.textContent = saveErrorText(res.error);
+        // The name field is in the rail, which is behind this dialog — point at
+        // it rather than leaving the player to hunt for what "name it" means.
+        if (res.error === "no-name") {
+          const field = document.getElementById("wz-buildname");
+          if (field && field.focus) field.focus();
+        }
       };
     }
 
