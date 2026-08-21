@@ -347,3 +347,272 @@ flowchart LR
 - `data/seed/compendium/type_stacking_equivalence.json` and `docs/wiki-evidence/bonus-type-equivalence.md` — the verified map and rulings a player override must not be able to reach.
 - `tests/test_bonus_type_coverage.py` — the guard that replaced workstream 1's dated completeness claim.
 - [#88 comment recording workstream 1 complete](https://github.com/eddiefiggie/ddo-loadout-optimizer/issues/88#issuecomment-5363330604).
+
+## Planning Contract
+
+### Key Technical Decisions
+
+KTD1. **The overlay is its own module, applied after `normalizeDataset` and re-appliable.** `web/overrides.js` owns the apply/withdraw cycle over the loaded pool. It cannot live inside `normalizeDataset`, which runs once on the startup fetch (`web/app.js:124`) while overrides arrive later and per character. (Instantiates the Key Decision "The override installs as a re-appliable overlay"; session-settled: user-directed — chosen over installing at dataset load.)
+
+KTD2. **Withdrawal restores from the affix's own provenance stamp, not from a pristine copy.** `normalizeDataset` mutates the fetched dataset in place and nothing retains a pre-normalization copy, so the stamp carrying the catalog's original type is the only route back. This makes the stamp load-bearing rather than decorative, exactly as the Key Decision states.
+
+KTD3. **A new provenance key, never `via`.** `via` has two producers — `web/dataset.js:174` for expansion receipts and `src/dr_qualifiers.py:66` for DR retype receipts — and `web/projection.js:122` groups exports by it, so reusing it would fold overridden affixes into expansion groups. (Instantiates the R7 and R8 eligibility rules.)
+
+KTD4. **Eligibility is a positive classification, not a `via` presence test.** The predicate must exclude the boolean-composite components, which `web/dataset.js` deliberately leaves unstamped, and must not exclude single-member rename receipts. It is computed once per pool load and cached on the affix under an explicitly override-scoped field name. It must **not** be cached as `eligible`: `src/verify.py:17` already writes `a["eligible"] = True` on every affix in the dataset — all 41,789 — as the solver-eligibility gate, so reusing that name would either overwrite the gate or read `true` for every affix including the five ineligible classes. (Instantiates the Key Decision "Five classes of affix are ineligible"; session-settled: user-directed.)
+
+KTD5. **Two allowlists, mirroring declared credits exactly.** `overrides` joins `INPUT_KEYS` in `web/persist.js:80` (carrying the declaration); a new `overrideReport` joins `RESULT_KEEP` (carrying what applied). `web/backup.js` sources `INPUT_KEYS` from `persist.js`, so the round-trip inherits the new key with no second edit. Without the report on the result, disclosure goes silent on a restored character — `program` is dropped and KTD6 of the persistence plan forbids re-solving.
+
+KTD6. **Every rendered disclosure and the shared constraint header read the report, never the saved map.** `web/projection.js:1183` records why: the wizard keeps half-typed rows in state on purpose, `pickInputs` saves them verbatim, and the query seam drops anything invalid — so rendering the input map published a credit the solve refused. An override that was suspended, ineligible, or unmatched must not appear as though it applied. One export is a deliberate exception: `toPortableJSON` emits `core: rec`, the whole character record, so `inputs.overrides` ships verbatim as record data — that is the envelope's job. The assertion is absence from the header and the rendered disclosures, not from the whole document.
+
+KTD7. **A maintainer type-correction needs no collision rule.** `src/type_corrections.py` rewrites the catalog type at build time. The override's recorded type then no longer matches, and the existing lifecycle resolves it — **satisfied** when the correction adopted the player's replacement type, suspended when it moved the type elsewhere. Satisfaction is the expected case, because U12 exists to route the player's report to the maintainer who makes that very correction. The two mechanisms compose through the sentinel rather than needing to know about each other.
+
+KTD8. **Resolution is a match ladder, not a single exact match.** An exact four-field match cannot express the lifecycle, because every non-active branch is defined by one of those fields having changed — drift moves the type, satisfaction moves it to the replacement, a retired target removes the row. All three would otherwise collapse into "no match", and R35 gives them opposite action sets. The ladder: all four fields match → **active**; variant, affix name, and value match under the override's own replacement type → **satisfied**; they match under any other type → **drift-suspended**; the affix still carries the recorded type but no longer passes the eligibility predicate → **ineligible-suspended**; no variant-and-name match at all → **retired-target suspended**. Where a variant carries the same name and value under two types and one is retyped to the other's, the ladder resolves to the occurrence not already stamped.
+
+KTD9. **Re-confirm rewrites the recorded type in place.** The override keeps its identity and its note; only the sentinel is re-anchored to what upstream now says. Replacing the override would discard the note and reset creation provenance.
+
+KTD10. **The correction report is generated text, never a network call.** The app is client-side and stays that way. The report renders as a copyable block naming the item or pool entry, the affix, both types, the wiki URL, and the no-wiki-backing statement.
+
+### System-Wide Impact
+
+The overlay sits on the solve path, so goldens must be re-ratified even though the default state is empty. The shared vocabulary constant is rendered by the declared-credit selector as well, so extending it adds three entries to that control as a side effect — intended, but it must be stated so a golden failure there is not mistaken for a regression.
+
+### Risks
+
+| Risk | Mitigation |
+|---|---|
+| Withdrawal leaks a previous character's stamp onto the shared pool | U5's test asserts pool identity across a character switch, not just the solve total |
+| The eligibility predicate drifts from the five classes as upstream changes | U3 ships a build guard asserting the classified population against the seed, in the shape `tests/test_bonus_type_coverage.py` already uses |
+| Goldens re-ratified carelessly, masking a real solve change | U4 requires the empty-override run to be byte-identical, not merely close |
+| A pool key collides across channels | U6's key includes the channel, and its test asserts uniqueness across all seven |
+
+---
+
+## Implementation Units
+
+### U1. Override identity and the eligibility predicate
+
+**Goal:** Establish what an override points at and which affixes may be pointed at, with no application yet.
+**Requirements:** R1, R2, R6, R7.
+**Dependencies:** none.
+**Files:** `web/overrides.js` (new), `tests/overrides.test.js` (new).
+**Approach:** One module exporting `overrideKey(variant, affix)`, `matchAffixes(pool, override)`, `resolveMatch(pool, override)`, and `isEligible(affix)`. The key is variant plus affix name plus recorded type plus value. `matchAffixes` returns every affix matching all four, which is what makes byte-identical occurrences move together per R2. `resolveMatch` implements KTD8's ladder and is what U7 consumes. Eligibility is the positive classification of KTD4 — not a `via` test — cached under an override-scoped field, never `eligible`.
+
+R6's "untyped" class means an **absent type key only**. The explicit `Untyped` token (801 affixes) stays eligible, because `equivType` (#235) deliberately keeps absent-type and `Untyped` in separate buckets — real untyped bonuses stack, and folding them once turned a legitimate sum into a max.
+**Patterns to follow:** the pure-function, no-DOM shape of `web/weapon-taxonomy.js`.
+**Test scenarios:**
+- `Covers AE13.` Aberrant Robe's two `Armor Class | Armor | 5` rows match one key and `matchAffixes` returns both.
+- `Covers AE2.` A variant carrying one stat under two types returns exactly one affix per key, so overriding one leaves the other at its recorded type.
+- A `Bool`, `Penalty`, dash-typed `DR`, and untyped affix each return ineligible.
+- All 161 boolean-composite components are ineligible despite carrying no `via` stamp.
+- A single-member rename receipt (`Speed`) is *not* excluded merely for carrying `via`.
+- `Covers AE20.` An item whose every affix is ineligible yields an empty eligible list.
+- An affix with an absent type key is ineligible; one typed `Untyped` is eligible.
+- The ladder returns active, satisfied, drift-suspended, ineligible-suspended, and retired-target for the five corresponding pool states.
+- A variant carrying the same name and value under two types, one of them already stamped, resolves to the unstamped occurrence.
+**Verification:** the predicate classifies the loaded pool into 20,613 eligible and the remainder ineligible, with the five classes accounted for; every ladder branch is reachable.
+
+### U2. The re-appliable overlay
+
+**Goal:** Apply and withdraw overrides over the loaded candidate pool.
+**Requirements:** R9, R10, R11, R12.
+**Dependencies:** U1.
+**Files:** `web/overrides.js`, `web/app.js`, `web/index.html`, `tests/overrides.test.js`.
+**Approach:** `applyOverrides(pool, overrides)` **withdraws every existing stamp first, then matches**, so matching always runs against catalog types. This is not optional: the key includes the recorded type and apply overwrites that type, so matching a stamped pool would find nothing and report a live override as unmatched — which KTD6 then strips from every disclosure while the pool stays correct, so a pool-state assertion cannot catch it. Withdraw-then-match also makes multi-override application order-independent. `withdrawOverrides(pool)` restores from the stamp (KTD2).
+
+`web/index.html` hand-lists a `<script src="...?v=NNN">` tag for each of the sixteen `web/*.js` modules, so `overrides.js` needs its own, at the same `?v` as every other tag. Load order is load-bearing here the way `cross-add.js` before `model.js` already is: place it after `dataset.js` and before `app.js`. Without the tag the module passes every Node test and is dead in the browser — the failure the Verification Contract names.
+**Execution note:** write the withdrawal test first — it is the failure mode the P0 was about, and it is easy to write an apply that cannot be undone.
+**Test scenarios:**
+- Apply then withdraw returns the pool to a state byte-identical to pre-apply.
+- Applying twice is indistinguishable from applying once, **and the second apply still reports both overrides as applied** — asserted on the report, not on pool state.
+- Adding a second override re-applies both and yields a pool independent of the order they were added in.
+- An override matching nothing is inert and reported unmatched.
+- A stamped affix keeps the catalog type retrievable for labelling.
+- An override to a type the equivalence map remaps buckets under the canonicalized result. `Covers AE3.`
+- `Covers AE1.` With a Quality-typed Fortification retyped to Enhancement beside an Enhancement Fortification, the two compete in one bucket instead of summing, and the freed slot becomes available to the solver.
+**Verification:** a solve with an override placed changes the bucket, and withdrawing restores the original solve exactly.
+
+### U3. Vocabulary extension and the eligibility guard
+
+**Goal:** Extend the shared replacement vocabulary and guard the classified population.
+**Requirements:** R4, R5.
+**Dependencies:** U1.
+**Files:** `web/model.js`, `tests/overrides.test.js`, `tests/model.test.js`.
+**Approach:** Add `Orb`, `Sneak Attack`, and `Determination` to the shared constant at `web/model.js:1225`. The population guard lives in **JS, not Python**: the classification counts the pool *after* `normalizeDataset`, which runs in the browser and generates the 161 boolean-composite components, so a Python test reading only the pre-normalize build artifact can never observe the class it exists to guard — nor call `isEligible` itself, which would leave two hand-kept implementations of the five classes free to drift. The guard runs `normalizeDataset` over the artifact and asserts the classified counts through the real predicate.
+**Test scenarios:**
+- `Covers AE14.` A type outside the list is refused; the three added types are offered.
+- Every eligible affix's **recorded** type is either in the shared vocabulary or is an `X Natural` name the equivalence map collapses — 50 affixes today (Primal Natural 46, Insight Natural 2, Profane Natural 2). Recorded types and offered replacement types are different sets; only the second is the vocabulary's job.
+- An `X Natural`-typed affix is still offered an override, whose replacement list excludes the `X Natural` names.
+- The classified population is 20,613 eligible of 42,088, including the 161 composite components as ineligible.
+- Corrupting the seed makes the guard go red (prove it fails before trusting it).
+**Verification:** `node tests/overrides.test.js` green with the population guard; the declared-credit selector renders the three added entries.
+
+### U4. Golden re-ratification
+
+**Goal:** Prove the overlay changes nothing when no override is in force.
+**Requirements:** R9, R10.
+**Dependencies:** U2, U3.
+**Files:** `tests/solver_golden.test.js`.
+**Approach:** Run the golden fixtures through the overlay path with an empty override set and require byte-identical output. Any diff here is a real regression, not a re-ratification.
+**Test scenarios:**
+- All golden fixtures produce byte-identical `perTarget` with the overlay present and empty.
+**Verification:** goldens green with no accepted diff.
+
+---
+
+### U5. Persistence and withdrawal on character switch
+
+**Goal:** Overrides travel with the character, and never leak between characters.
+**Requirements:** R20, R21, R22, R23, R24.
+**Dependencies:** U2.
+**Files:** `web/persist.js`, `web/wizard.js`, `tests/persist.test.js`, `tests/backup.test.js`.
+**Approach:** `overrides` joins `INPUT_KEYS`; the wizard's load path always assigns it, following the `augCeiling` precedent comment that the state object outlives a character. `web/backup.js` inherits it by importing the list.
+**Execution note:** the always-assign discipline is the whole point here; a conditional assign reproduces the defect.
+**Test scenarios:**
+- `Covers AE10.` A pre-feature save loads with no overrides and solves identically.
+- `Covers AE8.` Loading character A then B leaves no A stamp on the pool, and B solves unaffected.
+- `Covers AE18.` Save, reload, and both overrides return with their recorded types.
+- A backup export/import round-trip preserves overrides without a second allowlist edit.
+**Verification:** character switching is clean under repeated alternation.
+
+### U6. Crafted-pool override keying
+
+**Goal:** Reach crafted options, which live outside item variants.
+**Requirements:** R8.
+**Dependencies:** U1, U2.
+**Files:** `web/overrides.js`, `tests/overrides.test.js`.
+**Approach:** A pool key composed of channel, the entry's own discriminators, the affix stat, **and the affix's recorded type and value** — the same four-part shape U1 uses for variants. Dropping type and value collides 56 of 755 keys, retyping affixes the player never selected: `Gloom / equipment-accessories / Charisma` exists three times at Enhancement 15, Insight 7, and Quality 3, which are distinguishable occurrences. Adding them yields 779 keys with 44 collisions, all byte-identical duplicates that R2 already says move together.
+
+Seven channels: `seal`, `nearly_complete`, `viktranium`, `dino_inserts`, `thunder_forged`, `green_steel`, and `nearly_complete_per_item`. The seventh is structurally different — a dict keyed by host name, so its entries are host-scoped and its key carries the host. No pool entry has a usable name (all 48 `seal` and all 68 `nearly_complete` rows carry none), so a name-based key is not available.
+**Test scenarios:**
+- `Covers AE15.` An override on a crafted option applies wherever that option is offered.
+- Keys are unique across all seven channels; three same-stat `seal` entries at different bonus types get three distinct keys.
+- A `seal` and a `nearly_complete` entry are both addressable despite carrying no name.
+- Two entries sharing a name in different tiers get distinct keys.
+**Verification:** every typed pool row is addressable by exactly one key.
+
+### U7. Lifecycle: drift, satisfaction, and suspension
+
+**Goal:** Resolve each override's state against the current catalog on load.
+**Requirements:** R25, R26, R27, R28, R29.
+**Dependencies:** U2, U5.
+**Files:** `web/overrides.js`, `tests/overrides.test.js`.
+**Approach:** `resolveOverrides(pool, overrides)` runs U1's ladder (KTD8) over each override and returns active, satisfied, or suspended-with-reason, where the reasons are drift, ineligible, and retired target. Satisfied overrides are retained, not deleted (R26), so a reverted adoption returns them to suspended. The ineligible branch exists because eligibility is recomputed per pool load: a refresh can convert an affix from engraved to expansion-generated at the same name, type, and value, which the exact-match test would resolve active while the override then applies to an expansion member — the `collapseExpansions` parts-list defect the eligibility ruling exists to prevent.
+**Test scenarios:**
+- `Covers AE7.` Unchanged upstream resolves active with no prompt.
+- `Covers AE4.` A changed type resolves suspended with the from/to disclosed.
+- A retired item or affix resolves suspended with the retirement named.
+- `Covers AE5.` Upstream carrying the replacement resolves satisfied rather than suspended, and is disclosed once.
+- `Covers AE21.` A satisfied override whose type later reverts resolves suspended again.
+- An override whose affix still carries the recorded type but has become expansion-generated resolves ineligible-suspended and offers delete only.
+- A satisfied override whose type later reverts to the *recorded* type resolves active with no prompt, distinctly from a revert to some third type.
+- A suspended override contributes nothing to a solve.
+**Verification:** each of the four lifecycle branches is reachable and distinguishable in the returned state.
+
+### U8. Disclosure, qualification, and the stale marker
+
+**Goal:** Make an overridden solve honest on every surface.
+**Requirements:** R13, R14, R15, R30.
+**Dependencies:** U2, U7.
+**Files:** `web/solver.js`, `web/projection.js`, `web/results.js`, `web/persist.js`, `tests/results.test.js`, `tests/solver.test.js`, `tests/projection.test.js`.
+**Approach:** The report cannot be built from `buildCreditReport`'s shape alone — that function works because `creditMeta` (`web/solver.js:273`) maps each z-variable back to the credit it represents, and z entries otherwise carry no affix name, type, or host. The override marker is therefore stamped where the affix is read into its bucket, beside the existing `via` capture, and carried onto the z entry; `buildOverrideReport` then reads that map the way `buildCreditReport` reads `creditMeta`, and is plain JSON so it can live on `RESULT_KEEP`.
+
+Labelling also has a seam: `attributionByTarget` (`web/projection.js:426`) rebuilds every contributor as a fresh object with a fixed field list, and `web/results.js:535` renders only from that shape — so the marker must be threaded through it explicitly, exactly as `via` and `crossAdd` were. Without that, a correct solver-side marker renders nowhere. The stale marker generalizes the existing off-hand precedent: a displayed result whose solve ran under a different override set is marked stale with re-solve offered.
+**Test scenarios:**
+- `Covers AE16.` An overridden contribution renders labelled, naming both types.
+- `Covers AE12.` A solve with at least one applied override qualifies its optimality claim, and each overridden contribution names both types.
+- A restored character discloses identically without re-solving.
+- `Covers AE9.` A restored result whose override has since suspended is marked stale with re-solve offered, and is not re-solved automatically.
+- `Covers AE22.` Creating an override marks the on-screen result stale.
+- Deleting an override marks it stale in the same way.
+- A suspended override does not qualify the claim.
+**Verification:** the notice appears on a fresh solve and survives save/restore unchanged.
+
+---
+
+### U9. Export carriage
+
+**Goal:** Overrides reach all six exports, labelled.
+**Requirements:** R15.
+**Dependencies:** U8.
+**Files:** `web/projection.js`, `tests/projection.test.js`, `tests/exporters.test.js`.
+**Approach:** An overrides line in the shared constraint header, following `declaredCreditsLine` at `web/projection.js:1183` — reading the report, sorted so two exports of the same build compare byte-for-byte. `Projection.project(rec)` is loadout-scoped, so the header is the carrier that also covers an override on an item the solve did not pick.
+**Test scenarios:**
+- All six exports name the overrides in force.
+- A suspended or unmatched override does not appear as applied.
+- Two exports of the same build are byte-identical regardless of declaration order.
+- An override on an unpicked item still appears in the header.
+**Verification:** no export is solve-visible but share-invisible.
+
+### U10. Creation surfaces
+
+**Goal:** Let a player create an override where they notice the problem and where they can reach the item.
+**Requirements:** R3, R31, R32, R33.
+**Dependencies:** U1, U3, U5.
+**Files:** `web/results.js`, `web/browse.js`, `web/wizard.js`, `tests/results.test.js`, `tests/browse.test.js`.
+**Approach:** One shared picker component rendered from both surfaces. Indistinguishable occurrences present as one entry (R3). Ineligible affixes are not offered, and an item with none offers no control at all.
+**Test scenarios:**
+- `Covers AE19.` An override created from results and one from Browse both reach the manager.
+- `Covers AE20.` An all-ineligible item offers no control rather than an empty picker.
+- `Covers AE11.` On an item mixing a presence affix and a typed magnitude affix, only the typed one is offered.
+- The picker distinguishes two same-named affixes at different types.
+- The three causes are named at the creation surface. `Covers AE17.`
+**Verification:** both surfaces write through the same predicate; neither has its own copy.
+
+### U11. The manager view
+
+**Goal:** One place to audit, re-confirm, and delete.
+**Requirements:** R34, R35.
+**Dependencies:** U7, U10.
+**Files:** `web/wizard.js`, `tests/wizard.test.js`.
+**Approach:** A wizard panel, following declared credits, blocklist, and pinning rather than a results tab. Each row shows state and reason. Re-confirm appears only on a drift-suspended row and rewrites the recorded type in place (KTD9); a retired-target row offers delete only.
+**Test scenarios:**
+- `Covers AE6.` A retired-target row offers delete and no re-confirm.
+- A drift-suspended row offers re-confirm, and re-confirming re-anchors the recorded type and returns the override to active.
+- A satisfied row is shown as inert and offers delete.
+- Deleting the last override returns the app to the no-override state.
+**Verification:** every lifecycle state has exactly one correct action set.
+
+### U12. The catalog-correction report
+
+**Goal:** Give a correction a route out of the browser.
+**Requirements:** R16, R17, R18, R19.
+**Dependencies:** U10, U11.
+**Files:** `web/projection.js`, `web/wizard.js`, `web/results.js`, `tests/projection.test.js`.
+**Approach:** Generated text only (KTD10), offered at creation and available afterwards in the manager. It carries the item or pool entry, the affix, both types, the optional note, and the explicit statement that the claim is an in-game observation with no wiki backing. The wiki URL comes from the seed data for an item override — all 9,110 item rows carry one — but **no crafted-pool row does**: `seal`, `nearly_complete`, `viktranium`, and `dino_inserts` all carry an empty `wiki_url`, and `thunder_forged` and `green_steel` have no such key. A pool-keyed report therefore omits the URL line rather than printing an empty one, and names the channel and entry discriminators in its place — because `affix_type_corrections.json`'s evidence rule requires a rendered tooltip that cannot exist for the cause the override serves.
+**Test scenarios:**
+- `Covers AE17.` The report is offered at creation and carries the wiki URL and the no-backing statement.
+- The note is optional, persists with the override, and appears in the report.
+- A pool-keyed override's report names the channel and entry discriminators, and omits the URL line entirely rather than emitting an empty one.
+- A report is reproducible from a restored character.
+**Verification:** the report identifies its subject unambiguously to someone who has never seen the player's screen.
+
+---
+
+## Assumptions
+
+- **R6's "untyped" ineligible class means an absent type key only.** The explicit `Untyped` token stays eligible as an override target and stays an offered replacement type, keying the explicit `Untyped` bucket. Recorded rather than asked because `equivType` (#235) already rules the two apart — real untyped bonuses stack, and folding them once turned a legitimate sum into a max — so the conservative reading follows the existing rule rather than widening it. 801 affixes carry the explicit token; 53 carry no type key.
+
+## Verification Contract
+
+Run all three, in this order:
+
+1. `python3 tests/run_tests.py` — the Python suite, including the new eligibility guard.
+2. `for t in tests/*.test.js; do node "$t"; done` — the JS suite, one file per invocation. `node a.js b.js` runs only the first and has silently skipped the golden check before.
+3. Browser pass on a real solve: create an override, confirm the pick changes and the label appears, switch characters and confirm no leak, save and reload and confirm the disclosure survives.
+
+The browser pass is not optional. A symbol exported on `module.exports` but not on the browser global is green in CI and dead in the app — that failure has shipped in this repo before.
+
+Before **each of the three merges**: bump the `?v=` cache-busts in `web/index.html`, `BUILD` in `web/app.js:5`, and the `**Current build:**` line in `README.md` together. All three PRs change player-facing behavior — PR 1 already alters the declared-credit selector — and `main` deploys on every push, so a stale `?v` keeps returning visitors on cached code. `tests/test_build_stamp.py` fails when the three disagree, but it deliberately does not prove the bump happened *this* commit, so it will not catch a skipped PR.
+
+## Definition of Done
+
+- All 35 requirements implemented, each traceable to a unit above.
+- All 22 acceptance examples exercised by a named test.
+- Python and JS suites green, run per the Verification Contract.
+- Goldens re-ratified with an empty override set producing byte-identical output.
+- New guards proven to fail against corrupted input before being trusted.
+- New tests proven to fail against the pre-change tree.
+- Browser pass completed on a real solve.
+- Build stamp bumped in all three places, on each of the three PRs.
+- Deferrals from Outstanding Questions filed as GitHub issues before the final PR merges.
+- #88 closed by the final PR with a `Closes #88` keyword.
