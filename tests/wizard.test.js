@@ -2221,10 +2221,29 @@ test("#332: initBrowse receives the picker vocabulary", () => {
   // test can see, which is the same shape as the buildModel wiring defect above.
   const fs = require("fs"); const path = require("path");
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
-  assert.ok(/ItemBrowser\.initBrowse\(\s*dataset\s*,\s*pickerVocabulary\(dataset\)\s*\)/.test(src),
-    "initBrowse must be passed pickerVocabulary(dataset), not dataset alone");
+  // The guard's claim is about the VOCABULARY ARGUMENT, not about the arity: #88
+  // U10 added a third `hooks` argument, and a guard that pins the closing paren
+  // would fail on every future argument while proving nothing more about the one
+  // it exists to protect. `[,)]` keeps the position assertion and drops the arity.
+  assert.ok(/ItemBrowser\.initBrowse\(\s*dataset\s*,\s*pickerVocabulary\(dataset\)\s*[,)]/.test(src),
+    "initBrowse must be passed pickerVocabulary(dataset) as its second argument, not dataset alone");
   assert.ok(!/ItemBrowser\.initBrowse\(\s*dataset\s*\)/.test(src),
     "the pre-#332 single-argument form must not survive");
+});
+
+// #88 U10 (R32) — the same shape of guard for the same shape of risk. Browse is
+// one of the two creation surfaces R32 names, and it renders its control ONLY
+// when a host supplies the hook. Dropping the hook at the call site removes the
+// surface silently: no error, no failing unit test, just a feature that quietly
+// is not there — which is precisely why #332 needed a guard of its own.
+test("#88 U10: Browse is handed the override hook that renders its creation control", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  assert.ok(/initBrowse\([\s\S]{0,200}?onOverride\s*:/.test(src),
+    "the initBrowse call must pass an onOverride hook");
+  const browse = fs.readFileSync(path.join(__dirname, "..", "web", "browse.js"), "utf-8");
+  assert.ok(/hooks\s*&&\s*hooks\.onOverride/.test(browse),
+    "…and browse.js must gate its control on that hook rather than assuming it");
 });
 
 test("#332: web/query.js is NOT a live solve path — index.html must not load it", () => {
