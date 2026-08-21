@@ -3250,7 +3250,7 @@ if (typeof window !== "undefined" && window.App) {
       // #428 U5 (KTD3) — a freshly loaded build is not unsaved work. Cleared at
       // the TOP of the load, before the restore writes below can raise it again.
       state.inputsDirty = false;
-      state.unsavedPrompt = null;
+      closeUnsavedGuard();
       // #428 U6 (AE3) — a loaded build has not been blocked yet, so nothing is
       // marked as needing an answer. A build saved before KD6 carries no armor
       // and will be marked the moment Continue is pressed (AE3a).
@@ -3753,8 +3753,7 @@ if (typeof window !== "undefined" && window.App) {
         + migrationBanner()
         + `<div class="wz-shell"><div class="wz-body">`
         + (bodies[state.step] || stepIntro)()
-        + `</div>` + railHTML() + `</div>`
-        + unsavedGuardHTML();
+        + `</div>` + railHTML() + `</div>`;
       wire();
     }
     function go(step) { state.step = step; render(); }
@@ -3778,18 +3777,31 @@ if (typeof window !== "undefined" && window.App) {
      *  the very action that is about to produce the thing worth saving. */
     function navigate(step) {
       if (step === state.step) return;
-      if (unsavedGuardMessage(state)) { state.unsavedPrompt = step; render(); return; }
-      go(step);
+      const msg = unsavedGuardMessage(state);
+      if (!msg) { go(step); return; }
+      state.unsavedPrompt = step;
+      showUnsavedGuard(msg);
     }
 
     // The guard itself (R19). A modal rather than an inline bar because it has to
     // PRECEDE the navigation, and three answers rather than two — save, leave
     // anyway, stay — which window.confirm cannot express.
-    function unsavedGuardHTML() {
-      const msg = state.unsavedPrompt ? unsavedGuardMessage(state) : null;
-      if (!msg) return "";
-      return `<div class="wz-modal" id="wz-unsaved" role="dialog" aria-modal="true" aria-labelledby="wz-unsaved-msg">
-        <div class="wz-modal-panel">
+    //
+    // It is appended to document.body rather than emitted by render(), and that
+    // is not a style choice: `stepResults` renders an EMPTY #wz-results that only
+    // renderResults refills, so any render() on the results step blanks the
+    // loadout. Routing the guard through render() there would destroy the very
+    // build the player is being asked whether to save.
+    function showUnsavedGuard(msg) {
+      let el = document.getElementById("wz-unsaved");
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "wz-unsaved"; el.className = "wz-modal";
+        el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true");
+        el.setAttribute("aria-labelledby", "wz-unsaved-msg");
+        document.body.appendChild(el);
+      }
+      el.innerHTML = `<div class="wz-modal-panel">
           <p class="wz-label">Unsaved changes</p>
           <p id="wz-unsaved-msg">${esc(msg)}</p>
           <div class="wz-modal-actions">
@@ -3798,27 +3810,35 @@ if (typeof window !== "undefined" && window.App) {
             <button class="btn ghost" id="wz-unsaved-stay" type="button">Stay on this step</button>
           </div>
           <span class="wz-savestat" id="wz-unsaved-stat" aria-live="polite"></span>
-        </div>
-      </div>`;
+        </div>`;
+      wireUnsavedGuard();
+      const first = document.getElementById("wz-unsaved-save");
+      if (first && first.focus) first.focus();
+    }
+
+    function closeUnsavedGuard() {
+      state.unsavedPrompt = null;
+      const el = document.getElementById("wz-unsaved");
+      if (el) el.remove();
     }
 
     function wireUnsavedGuard() {
       const to = state.unsavedPrompt;
       if (!to) return;
       const stay = document.getElementById("wz-unsaved-stay");
-      if (stay) stay.onclick = () => { state.unsavedPrompt = null; render(); };
+      if (stay) stay.onclick = closeUnsavedGuard;
       const leave = document.getElementById("wz-unsaved-go");
       if (leave) leave.onclick = () => {
         // Told and acknowledged: the flag drops so the next step change does not
         // ask again. The next edit raises it right back.
-        state.inputsDirty = false; state.unsavedPrompt = null; go(to);
+        state.inputsDirty = false; closeUnsavedGuard(); go(to);
       };
       const save = document.getElementById("wz-unsaved-save");
       if (save) save.onclick = () => {
         const nm = String(state.characterName || "").trim();
         const res = trySave(nm);
         if (!res) return;   // overwrite declined
-        if (res.ok) { state.unsavedPrompt = null; go(to); return; }
+        if (res.ok) { closeUnsavedGuard(); go(to); return; }
         const stat = document.getElementById("wz-unsaved-stat");
         if (stat) stat.textContent = saveErrorText(res.error);
         // The name field is in the rail, which is behind this dialog — point at
@@ -3858,7 +3878,6 @@ if (typeof window !== "undefined" && window.App) {
       };
       // #428 U3 — the rail is on every step, so it wires on every render.
       wireRail();
-      wireUnsavedGuard();
       // #428 U5 (KTD3) — every native control inside the step body is a build
       // input, so one delegated pair covers text, number, select, checkbox and
       // radio without a markDirty() call in each of their handlers. The rail is
@@ -3866,8 +3885,16 @@ if (typeof window !== "undefined" && window.App) {
       // name is the FIRST half of saving.
       const body = root.querySelector(".wz-body");
       if (body) {
-        body.addEventListener("input", markDirty);
-        body.addEventListener("change", markDirty);
+        // …except the Share panel, whose select and buttons choose what to
+        // EXPORT. Picking a loadout to download is not editing the build, and
+        // marking it dirty would raise the guard over nothing.
+        const onEdit = (e) => {
+          const t = e.target;
+          if (t && t.closest && t.closest(".wz-share")) return;
+          markDirty();
+        };
+        body.addEventListener("input", onEdit);
+        body.addEventListener("change", onEdit);
       }
       root.querySelectorAll("[data-browse]").forEach((b) => b.onclick = openBrowser);
       root.querySelectorAll("[data-yourdata]").forEach((b) => b.onclick = openDataPanel);
