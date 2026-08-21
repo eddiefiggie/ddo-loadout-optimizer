@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
+const { railModel, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -3010,4 +3010,86 @@ test("#428 (R31): the footer reads as distinct elements, not one run-on line", (
   const app = fs.readFileSync(path.join(__dirname, "..", "web", "app.js"), "utf-8");
   assert.ok(!/textContent\s*=\s*`\s*·\s*Build/.test(app),
     "app.js must not prefix the stamp with a run-on separator");
+});
+
+// ---------------------------------------------------------------------------
+// #428 U3 (R13/R14/R17/R20/R21) — the save rail. Save, Load, Delete and the
+// build's name are reachable from EVERY step, so the rail cannot live inside a
+// step template (KTD4). Its model is pure so the rail's contents are testable
+// without a DOM; the placement itself is a source-text guard.
+// ---------------------------------------------------------------------------
+
+test("#428 U3: railModel reports an empty state when nothing is saved or loaded", () => {
+  const m = railModel({ characterName: "", loadedName: "" }, []);
+  assert.strictEqual(m.loaded, false);
+  assert.strictEqual(m.loadedName, "");
+  assert.deepStrictEqual(m.saved, []);
+  assert.strictEqual(m.empty, true);
+  assert.strictEqual(m.canSave, false, "an unnamed build cannot be saved (R13)");
+});
+
+test("#428 U3 (AE7): with two builds saved, loading the second shows the second name", () => {
+  const saved = [{ name: "Sook — Reaper" }, { name: "Pagos — Fighter" }];
+  const m = railModel({ characterName: "Pagos — Fighter", loadedName: "Pagos — Fighter" }, saved);
+  assert.strictEqual(m.loaded, true);
+  assert.strictEqual(m.loadedName, "Pagos — Fighter", "R20 — the loaded name is visible while editing it");
+  assert.deepStrictEqual(m.saved, ["Sook — Reaper", "Pagos — Fighter"]);
+});
+
+test("#428 U3 (R21): deleting the loaded build returns the rail to its empty state", () => {
+  const before = railModel({ characterName: "Sook", loadedName: "Sook" }, [{ name: "Sook" }]);
+  assert.strictEqual(before.loaded, true);
+  // The store is the authority: `loaded` is DERIVED from the record still being
+  // there, so a delete cannot leave a phantom name in the rail through some
+  // second flag a delete path forgot to clear.
+  const after = railModel({ characterName: "Sook", loadedName: "Sook" }, []);
+  assert.strictEqual(after.loaded, false);
+  assert.strictEqual(after.loadedName, "");
+  assert.strictEqual(after.empty, true);
+});
+
+test("#428 U3: railModel flags a name that would overwrite an existing save", () => {
+  const saved = [{ name: "Sook" }];
+  assert.strictEqual(railModel({ characterName: " Sook " }, saved).overwrites, true,
+    "trimmed, so trailing whitespace cannot sneak past the overwrite confirm");
+  assert.strictEqual(railModel({ characterName: "Other" }, saved).overwrites, false);
+  assert.strictEqual(railModel({ characterName: "" }, saved).overwrites, false);
+});
+
+test("#428 U3: railModel tolerates a junk store without inventing entries", () => {
+  const m = railModel({}, [null, { name: "" }, { name: "Real" }, "nope"]);
+  assert.deepStrictEqual(m.saved, ["Real"]);
+});
+
+test("#428 U3 (R17): the flow carries exactly one build-name input", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  assert.ok(!/wz-charname/.test(src), "the gear-pool step's Character name field is gone");
+  assert.ok(!/wz-savename/.test(src), "the results step's second name input is gone");
+  const hits = (src.match(/id="wz-buildname"/g) || []).length;
+  assert.strictEqual(hits, 1, "exactly one name input renders anywhere in the flow");
+});
+
+test("#428 U3 (R14/KTD4): the rail renders from render(), not from any step body", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const render = src.slice(src.indexOf("function render() {"));
+  assert.ok(/railHTML\(\)/.test(render.slice(0, render.indexOf("\n    }"))),
+    "render() emits the rail beside the step body");
+  for (const step of ["stepIntro", "stepCharacter", "stepPool", "stepPriorities", "stepResults"]) {
+    assert.ok(!/railHTML\(/.test(stepSource(step)), `${step} must not render its own rail`);
+  }
+});
+
+test("#428 U3 (R24): the rail offers save, load and delete only", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const at = src.indexOf("function railHTML(");
+  assert.ok(at >= 0, "wizard.js declares railHTML");
+  const body = src.slice(at, src.indexOf("\n    function ", at + 1));
+  assert.ok(/wz-railsave/.test(body), "the rail saves");
+  assert.ok(/data-railload/.test(body), "…loads");
+  assert.ok(/data-raildel/.test(body), "…and deletes");
+  assert.ok(!/wz-export|wz-import|Export all|Import a backup/.test(body),
+    "…and offers no backup export or import (R24)");
 });

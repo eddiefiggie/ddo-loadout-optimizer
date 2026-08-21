@@ -1084,6 +1084,35 @@ input.wz-ml { width: 120px; }
   margin-bottom: var(--sp-3); font-size: var(--fs-sm); color: var(--muted); }
 .wz-cbar .btn { padding: 7px 14px; }
 
+/* #428 U3 (KTD4) — the step body and the save rail, side by side. The rail is
+   rendered by render() rather than by any step template, so this shell wraps
+   EVERY step: the layout change is the plan's widest blast radius by design.
+   The rail sticks while a long step scrolls, so Save never scrolls away.
+
+   Below 900px the two stack and the rail goes FIRST (`order: -1`): a player on a
+   phone should meet "save this" before a nine-control form, not after it. */
+.wz-shell { display: grid; grid-template-columns: minmax(0, 1fr) 17rem; gap: var(--sp-4); align-items: start; }
+.wz-body { min-width: 0; }
+.wz-rail {
+  position: sticky; top: var(--sp-4);
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-2);
+}
+.wz-rail-head { margin: 0; font-weight: 700; font-size: var(--fs-sm); }
+.wz-rail-loaded { margin: 0; font-size: var(--fs-sm); color: var(--muted); overflow-wrap: anywhere; }
+.wz-rail input { width: 100%; background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: 7px 10px; }
+.wz-rail input:focus { outline: none; box-shadow: var(--ring); border-color: var(--accent); }
+.wz-rail .btn { width: 100%; padding: 7px 14px; }
+.wz-rail .wz-help { margin: 0; }
+.wz-rail-list { margin-top: var(--sp-2); border-top: 1px solid var(--border-2); padding-top: var(--sp-3); }
+.wz-rail-list .wz-label { display: block; }
+.wz-rail .wz-charlist li.on { border-color: var(--accent); }
+@media (max-width: 900px) {
+  .wz-shell { grid-template-columns: 1fr; }
+  .wz-rail { position: static; order: -1; }
+}
+
 /* Character persistence (U3/U4): saved-character picker + save row. */
 .wz-saved { margin-top: var(--sp-3); }
 .wz-charlist { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-1); }

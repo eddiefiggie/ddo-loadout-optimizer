@@ -46,6 +46,37 @@ function stepAfterLoad(snapshot) {
   return snapshot && snapshot.status === "optimal" ? "results" : "priorities";
 }
 
+/** #428 U3 (R13/R14/R17/R20/R21) — the save rail's model.
+ *
+ *  The rail is the flow's ONE save surface, rendered beside every step (KTD4),
+ *  so what it shows has to be derivable rather than accumulated: `loaded` is a
+ *  function of the store still holding the loaded name, not a second flag every
+ *  delete path has to remember to clear. Deleting the build you are editing
+ *  therefore returns the rail to its empty state for free.
+ *
+ *  `saved` is filtered rather than trusted: the store is localStorage, which a
+ *  player can hand-edit, and a nameless entry would render an unloadable row.
+ *  Pure; unit-tested in tests/wizard.test.js. */
+function railModel(state, saved) {
+  const s = state || {};
+  const list = (Array.isArray(saved) ? saved : [])
+    .filter((c) => c && typeof c === "object" && typeof c.name === "string" && c.name);
+  const names = list.map((c) => c.name);
+  const typed = String(s.characterName == null ? "" : s.characterName);
+  const trimmed = typed.trim();
+  const loadedName = String(s.loadedName || "");
+  const loaded = !!loadedName && names.indexOf(loadedName) >= 0;
+  return {
+    name: typed,
+    loaded,
+    loadedName: loaded ? loadedName : "",
+    saved: names,
+    empty: names.length === 0,
+    canSave: trimmed.length > 0,
+    overwrites: !!trimmed && names.indexOf(trimmed) >= 0,
+  };
+}
+
 /** Is this stat on/off ONLY — no magnitude to floor, cap, or declare?
  *
  *  `vocab.presence` alone is the wrong test. It means "appears as Bool on at
@@ -1401,7 +1432,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, railModel, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -1482,6 +1513,12 @@ if (typeof window !== "undefined" && window.App) {
       // surface the backup reviver guards (a priority named `constructor` once
       // made a character permanently unloadable).
       blocklist: [],
+      // #428 U3 (R20) — the name of the saved build currently being edited, or
+      // "" for an unsaved one. Transient by design: it is NOT on INPUT_KEYS,
+      // because which record you loaded is a fact about this session, not about
+      // the build. railModel treats it as loaded only while the store still
+      // holds that name, so a delete needs no second clear.
+      loadedName: "",
       // U6 — set-augment availability. A Set of owned set-augment `set` names;
       // empty by default so the set-augment family stays inert until opted in.
       ownedSetAugments: new Set(),
@@ -1713,12 +1750,7 @@ if (typeof window !== "undefined" && window.App) {
               </div>
             </details>`;
           })()}
-          <label class="wz-field"><span class="wz-label">Character name <span class="wz-sub">· optional</span></span>
-            <span class="wz-help">Name this character to save its build and reload it later. Saved only in this browser
-              (no account, cleared if you clear browser data) — use Export &amp; Data Management to move a copy between devices.</span>
-            <input id="wz-charname" type="text" value="${esc(state.characterName)}" placeholder="e.g. Sook - Reaper"></label>
         </div>
-        <div class="wz-saved" id="wz-saved"></div>
         <details class="wz-data" id="wz-data">
           <summary>Export &amp; Data Management</summary>
           <div class="wz-data-body">
@@ -2059,11 +2091,6 @@ if (typeof window !== "undefined" && window.App) {
       return `<section class="wz-card wz-results">
         <div class="wz-results-head">
           <div><p class="wz-eyebrow">Your optimal loadout</p></div>
-        </div>
-        <div class="wz-save" id="wz-save">
-          <input id="wz-savename" type="text" value="${esc(state.characterName)}" placeholder="Name this character…">
-          <button class="btn primary" id="wz-savebtn">Save character</button>
-          <span class="wz-savestat" id="wz-savestat" aria-live="polite"></span>
         </div>
         <div id="wz-stale" class="wz-cbar${staleNote(state) ? "" : " wz-hidden"}">
           <span id="wz-stalewhy">${esc(staleNote(state) || "This saved build predates the current gear catalog.")}</span>
@@ -3082,6 +3109,8 @@ if (typeof window !== "undefined" && window.App) {
       if (!rec) return;
       const i = rec.inputs || {};
       state.characterName = rec.name;
+      // #428 U3 (R20) — the rail shows which saved build is being edited.
+      state.loadedName = rec.name;
       state.ml = i.ml;
       // U3 — restore the ML floor + its manual/auto flag. A pre-U3 save has no
       // mlFloor: default to cap − 5 in auto mode. A saved explicit floor loads as manual.
@@ -3290,20 +3319,79 @@ if (typeof window !== "undefined" && window.App) {
       }
     }
 
-    function renderSavedPicker() {
-      const host = document.getElementById("wz-saved");
-      if (!host) return;
+    // #428 U3 (R13/R14/R17/R20/R21) — the save rail. It renders from render()
+    // beside every step body (KTD4), which is why it cannot be a step template:
+    // Save and Load have to be reachable wherever the player is. It replaces
+    // BOTH prior surfaces — the character step's "Character name" field with its
+    // saved-characters list, and the results step's second name input beside a
+    // "Save character" button.
+    function railHTML() {
       // eslint-disable-next-line no-undef
-      const chars = CharacterStore.listCharacters();
-      if (!chars.length) {
-        host.innerHTML = `<p class="wz-help wz-saved-empty">No saved characters yet — solve a build, name it, and Save it from the results.</p>`;
-        return;
-      }
-      host.innerHTML = `<p class="wz-label">Saved characters</p><ul class="wz-charlist">` +
-        chars.map((c) => `<li><span class="wz-charnm">${esc(c.name)}</span>
-          <span class="wz-ctl"><button type="button" data-load="${esc(c.name)}">Load →</button>
-          <button type="button" data-del="${esc(c.name)}" aria-label="delete ${esc(c.name)}">✕</button></span></li>`).join("") +
-        `</ul>`;
+      const m = railModel(state, CharacterStore.listCharacters());
+      const list = m.empty
+        ? `<p class="wz-help">Nothing saved yet.</p>`
+        : `<ul class="wz-charlist">${m.saved.map((n) => `<li${n === m.loadedName ? ` class="on"` : ""}>
+            <span class="wz-charnm">${esc(n)}</span>
+            <span class="wz-ctl"><button type="button" data-railload="${esc(n)}">Load →</button>
+            <button type="button" data-raildel="${esc(n)}" aria-label="delete ${esc(n)}">✕</button></span></li>`).join("")}</ul>`;
+      return `<aside class="wz-rail" id="wz-rail" aria-label="Your build">
+        <p class="wz-rail-head">Your build</p>
+        <p class="wz-rail-loaded">${m.loaded
+          ? `Editing <strong>${esc(m.loadedName)}</strong>`
+          : `<span class="wz-sub">Unsaved build</span>`}</p>
+        <label class="wz-field"><span class="wz-label">Name this build</span>
+          <input id="wz-buildname" type="text" value="${esc(m.name)}" placeholder="e.g. Sook — Reaper"></label>
+        <button class="btn primary" id="wz-railsave" type="button">Save progress</button>
+        <span class="wz-savestat" id="wz-railstat" aria-live="polite"></span>
+        <p class="wz-help">Saved in this browser only — no account, and cleared if you clear browser data.</p>
+        <div class="wz-rail-list">
+          <p class="wz-label">Saved builds</p>
+          ${list}
+        </div>
+      </aside>`;
+    }
+
+    // Re-render the rail in place. Used after a save, a delete, or an import —
+    // anything that changes the store without changing the step.
+    function renderRail() {
+      const host = document.getElementById("wz-rail");
+      if (!host) return;
+      host.outerHTML = railHTML();
+      wireRail();
+    }
+
+    function wireRail() {
+      const nameInput = document.getElementById("wz-buildname");
+      if (nameInput) nameInput.oninput = (e) => { state.characterName = e.target.value; };
+      const saveBtn = document.getElementById("wz-railsave");
+      if (saveBtn) saveBtn.onclick = () => {
+        const nm = ((nameInput ? nameInput.value : state.characterName) || "").trim();
+        // Confirm before overwriting an existing build, mirroring the delete confirm.
+        // eslint-disable-next-line no-undef
+        if (nm && CharacterStore.loadCharacter(nm) && !window.confirm(`Update saved build "${nm}"?`)) return;
+        const res = saveCurrentCharacter(nm);
+        if (res.ok) state.loadedName = nm;
+        // Re-render FIRST — the status element below lives inside the rail, so a
+        // message written before this would be discarded by the re-render.
+        renderRail();
+        const stat = document.getElementById("wz-railstat");
+        if (!stat) return;
+        if (res.ok) stat.textContent = `Saved “${nm}”.`;
+        else if (res.error === "no-name") stat.textContent = "Name it first.";
+        else if (res.error === "no-build") stat.textContent = "Solve a build first.";
+        else if (res.error === "quota") stat.textContent = "Storage full — remove some saves.";
+        else stat.textContent = "Could not save.";
+      };
+      const rail = document.getElementById("wz-rail");
+      if (rail) rail.onclick = (e) => {
+        const b = e.target.closest("button"); if (!b) return;
+        if (b.dataset.railload != null) { loadCharacter(b.dataset.railload); return; }
+        if (b.dataset.raildel != null && window.confirm(`Delete saved build "${b.dataset.raildel}"?`)) {
+          // eslint-disable-next-line no-undef
+          CharacterStore.deleteCharacter(b.dataset.raildel);
+          renderRail();
+        }
+      };
     }
 
     // Keep the share dropdown (U5) in sync with the store — called on render and
@@ -3363,7 +3451,7 @@ if (typeof window !== "undefined" && window.App) {
             s.textContent = w.ok
               ? `Imported ${n} character${n === 1 ? "" : "s"} (merged by name).`
               : (w.error === "quota" ? "Storage full — remove some saves and try again." : "Could not save the import.");
-            renderSavedPicker();
+            renderRail();
           };
           reader.readAsText(f);
         };
@@ -3448,9 +3536,14 @@ if (typeof window !== "undefined" && window.App) {
 
     function render() {
       const bodies = { intro: stepIntro, character: stepCharacter, pool: stepPool, priorities: stepPriorities, results: stepResults };
+      // #428 U3 (KTD4) — the step body and the save rail sit side by side in one
+      // shell. The rail is emitted HERE rather than by any step template, which
+      // is what makes Save and Load reachable from every step (R14).
       root.innerHTML = `<div class="wz-topbar">${renderStepper()}<button class="btn ghost wz-browse-btn" data-browse type="button">Browse items</button></div>`
         + migrationBanner()
-        + (bodies[state.step] || stepIntro)();
+        + `<div class="wz-shell"><div class="wz-body">`
+        + (bodies[state.step] || stepIntro)()
+        + `</div>` + railHTML() + `</div>`;
       wire();
     }
     function go(step) { state.step = step; render(); }
@@ -3481,6 +3574,8 @@ if (typeof window !== "undefined" && window.App) {
         const bar = document.getElementById("wz-ovmig");
         if (bar) bar.remove();
       };
+      // #428 U3 — the rail is on every step, so it wires on every render.
+      wireRail();
       root.querySelectorAll("[data-browse]").forEach((b) => b.onclick = openBrowser);
       root.querySelectorAll("[data-goto]").forEach((b) => b.onclick = () => { if (!b.disabled) go(b.dataset.goto); });
       root.querySelectorAll("[data-back]").forEach((b) => b.onclick = () => go(prevStep(state.step)));
@@ -3596,19 +3691,6 @@ if (typeof window !== "undefined" && window.App) {
           state[key] = state[key].filter((x) => x !== tag.dataset.val);
           render();
         });
-        const cn = document.getElementById("wz-charname");
-        if (cn) cn.oninput = (e) => state.characterName = e.target.value;
-        renderSavedPicker();
-        const saved = document.getElementById("wz-saved");
-        if (saved) saved.onclick = (e) => {
-          const b = e.target.closest("button"); if (!b) return;
-          if (b.dataset.load != null) loadCharacter(b.dataset.load);
-          else if (b.dataset.del != null && window.confirm(`Delete saved character "${b.dataset.del}"?`)) {
-            // eslint-disable-next-line no-undef
-            CharacterStore.deleteCharacter(b.dataset.del);
-            renderSavedPicker();
-          }
-        };
         wireDataManagement();
       }
       if (state.step === "pool") {
@@ -3693,25 +3775,9 @@ if (typeof window !== "undefined" && window.App) {
       if (state.step === "results") {
         const box = document.getElementById("wz-results");
         const cbar = document.getElementById("wz-cbar");
-        // Save the current character (U3): inputs + solved snapshot.
-        const savename = document.getElementById("wz-savename");
-        const savebtn = document.getElementById("wz-savebtn");
-        const savestat = document.getElementById("wz-savestat");
-        if (savename) savename.oninput = (e) => state.characterName = e.target.value;
-        if (savebtn) savebtn.onclick = () => {
-          const nm = ((savename ? savename.value : state.characterName) || "").trim();
-          // Confirm before overwriting an existing character (R3/KD5), mirroring
-          // the delete confirm.
-          // eslint-disable-next-line no-undef
-          if (nm && CharacterStore.loadCharacter(nm) && !window.confirm(`Update saved character "${nm}"?`)) return;
-          const res = saveCurrentCharacter(nm);
-          if (!savestat) return;
-          if (res.ok) savestat.textContent = `Saved “${state.characterName}”.`;
-          else if (res.error === "no-name") savestat.textContent = "Enter a name to save.";
-          else if (res.error === "no-build") savestat.textContent = "Solve a build first.";
-          else if (res.error === "quota") savestat.textContent = "Storage full — export and remove old saves.";
-          else savestat.textContent = "Could not save.";
-        };
+        // #428 U3 — saving moved to the rail, which renders beside EVERY step
+        // (R14). The results step no longer carries a name input or a Save button
+        // of its own: one concept, one input (R17).
         // Staleness note (U4): re-solve is view-only — it refreshes the shown
         // build but does not overwrite the saved snapshot until an explicit Save.
         const staleBtn = document.getElementById("wz-staleresolve");
