@@ -98,11 +98,16 @@ opening marker's index rather than from 0.
 
 **How much of this suite is exposed.** Measured 2026-08-22: **23** slices whose closing
 `indexOf` searches from position 0 — 17 in `tests/wizard.test.js`, 6 in
-`tests/results.test.js` — against **2** that pass a `fromIndex`, one of which is the fix
+`tests/results.test.js` — against **3** that pass a `fromIndex`, one of which is the fix
 above. The advice below is not hypothetical hygiene; it describes the minority case in
-this repo today. Each of those 23 is one earlier insertion away from inverting, and which
-half of the failure it lands in — loud red or silent green — depends only on whether its
-assertion is a positive regex.
+this repo today.
+
+Each of those 23 is one earlier insertion away from inverting, and which half of the
+failure it lands in depends entirely on whether anything **positive** is asserted over
+the slice. Hand-checked, **four** assert only negatives and would therefore pass on an
+empty slice — `tests/wizard.test.js` lines 624, 1122, 1445 and 3074. The rest carry at
+least one positive regex, presence check, or length assertion that an inverted slice
+would redden, which is the loud half the case above describes. Tracked as #450.
 
 ## Why This Matters
 
