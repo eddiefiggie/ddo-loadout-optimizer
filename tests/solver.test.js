@@ -126,6 +126,72 @@ async function withCrossAdd(map, fn) {
     assert.deepStrictEqual(prog.xVars.map((xv) => xv.name), ["x0", "x1"]);
   });
 
+  // -------------------------------------------------------------------------
+  // #335 U2 — the twin gets the same two protections jokers, membership picks and
+  // set-augment copies already have: it is minimized on the optimum path AND
+  // load-bearing-checked in readSolution. The second is what matters: every
+  // alternatives generator re-solves with tieBreak:false, which returns from
+  // phase 1 with no minimizing solve, so a var carrying no objective coefficient
+  // can float to 1 for free.
+  // -------------------------------------------------------------------------
+
+  function twinModel(piecesRequired) {
+    const M = require("../web/model.js");
+    const allow = [...M.DUPLICABLE_RINGS][0];
+    const dup = item(allow, "Ring", [["Intelligence", "Enhancement", 10]]);
+    dup.set_bonus = [{ set: "Perfected Wrath", pieces_required: piecesRequired,
+                       pieces_label: piecesRequired + " pieces", affixes: [] }];
+    return {
+      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [dup, item("R2", "Ring", [["Intelligence", "Enhancement", 4]])], 2),
+             slot("Necklace", [item("N", "Necklace", [["Intelligence", "Enhancement", 6]])])],
+    };
+  }
+
+  await test("#335 U2 (KTD3): one symmetry constraint per pair, twin - original <= 0", async () => {
+    const prog = S.buildProgram(twinModel(2));
+    const lp = S.encodeStage(prog, { objectiveStat: "Intelligence", sense: "max", locks: [], tieBreak: false });
+    const twin = prog.xVars.find((xv) => xv.twinOf);
+    assert.ok(twin, "the model has a twin");
+    assert.ok(lp.includes(`${twin.name} - ${twin.twinOf} <= 0`),
+      "the twin can only be taken alongside its original");
+    const count = (lp.match(/x\d+ - x\d+ <= 0/g) || []).length;
+    assert.strictEqual(count, 1, "exactly one symmetry constraint for the one pair");
+  });
+
+  await test("#335 U2 (KTD6): the twin is minimized on the optimum path", async () => {
+    const prog = S.buildProgram(twinModel(2));
+    const lp = S.encodeStage(prog, { objectiveStat: "Intelligence", sense: "max", locks: [], tieBreak: true });
+    const twin = prog.xVars.find((xv) => xv.twinOf);
+    const obj = lp.split("\n").find((l) => l.trim().startsWith("obj:"));
+    assert.ok(obj.includes(twin.name), "the twin carries a tie-break coefficient like jokers and members do");
+  });
+
+  await test("#335 U2 (AE8): a tieBreak:false re-solve never reports a twin whose set is inactive", async () => {
+    // pieces_required 3 with only one set piece available — the set can never
+    // activate, so a twin buys nothing and must not be reported.
+    const prog = S.buildProgram(twinModel(3));
+    const r = S.solveConstrained(prog, highs, { objectiveStat: "Intelligence", sense: "max", tieBreak: false });
+    assert.strictEqual(r.status, "optimal");
+    const M = require("../web/model.js");
+    const twins = (r.chosen || []).filter((c) => M.isTwinId(c.variant.variant_id));
+    assert.deepStrictEqual(twins, [],
+      "a floated twin on the alternatives path would prescribe a second ring that buys nothing");
+  });
+
+  await test("#335 U2: a twin never appears without its original", async () => {
+    const prog = S.buildProgram(twinModel(2));
+    const r = S.solveConstrained(prog, highs, { objectiveStat: "Intelligence", sense: "max", tieBreak: false });
+    const M = require("../web/model.js");
+    const ids = (r.chosen || []).map((c) => c.variant.variant_id);
+    for (const id of ids) {
+      if (!M.isTwinId(id)) continue;
+      assert.ok(ids.includes(M.originalIdOf(id)), "the twin implies its original");
+    }
+    const rings = (r.chosen || []).filter((c) => c.slot === "Ring");
+    assert.ok(rings.length <= 2, "the Ring slot still holds at most two picks");
+  });
+
   await test("AE2: same bonus-type does NOT stack (only highest counts)", async () => {
     const model = {
       targets: ["Intelligence"], mlCap: 34, dodgeCap: null,

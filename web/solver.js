@@ -1383,6 +1383,16 @@ function encodeStage(program, { objectiveStat, objTerms, sense, locks, tieBreak,
   });
   for (const [, g] of bySlot) L.push(` c${c++}: ${g.names.join(" + ")} <= ${g.card}`);
 
+  // #335 U2 (KTD3) — a duplicate-ring twin is takeable only alongside its
+  // original. The slot capacity constraint above already bounds the pair (the
+  // twin shares its original's slot and cardinality), so this adds only the
+  // ordering. Without it the program has two identical solutions for every
+  // doubled pick, and the solver could return the twin with its original absent —
+  // a state no display path expects.
+  for (const xv of program.xVars) {
+    if (xv.twinOf) L.push(` c${c++}: ${xv.name} - ${xv.twinOf} <= 0`);
+  }
+
   for (const [, zs] of program.zByBucket) {
     if (zs.length) L.push(` c${c++}: ${zs.map((z) => z.name).join(" + ")} <= 1`);
     // A contribution is available only when ALL of its gates are 1: emit one
@@ -1823,7 +1833,7 @@ function visibleGateSet(program, prim) {
 
 function readSolution(res, program, precomputedVisible) {
   const prim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
-  const chosen = program.xVars.filter((xv) => prim(xv.name) > 0.5).map((xv) => ({ slot: xv.slot, variant: xv.variant }));
+  let chosen = program.xVars.filter((xv) => prim(xv.name) > 0.5).map((xv) => ({ slot: xv.slot, variant: xv.variant, _twinOf: xv.twinOf || null }));
   const effective = {};
   for (const stat of program.targetList) {
     if (stat === _UTILITY_SENTINEL) continue; // #91 (KTD1) — not a stat; the count rides result.utilityCount
@@ -1895,6 +1905,17 @@ function readSolution(res, program, precomputedVisible) {
   for (const [m, meta] of program.memberMeta || []) {
     if (prim(m) > 0.5 && activeSetNames.has(meta.set)) membershipPlaced.push(meta);
   }
+  // #335 U2 (KTD6) — duplicate-ring twins get the same load-bearing guard, for the
+  // same reason. A twin carries a tie-break coefficient by virtue of being an
+  // x-var, so the OPTIMUM path already minimizes it — but every alternatives
+  // generator re-solves with tieBreak:false, which returns from phase 1 with no
+  // minimizing solve, and a twin can then float to 1 for free while consuming the
+  // second Ring slot. Report a doubled pick only when one of its ring's sets is
+  // actually active; otherwise the second copy buys nothing.
+  chosen = chosen.filter((c) => {
+    if (!c._twinOf) return true;
+    return ((c.variant.set_bonus || []).some((sb) => sb && activeSetNames.has(sb.set)));
+  }).map((c) => ({ slot: c.slot, variant: c.variant }));
   // U3 — placed Set Augment copies (each {set, host, slot_color, wiki_url}).
   // Load-bearing guard (mirrors jokers/memberships): the tie-break minimizes y
   // vars on the optimum path, but ALTERNATIVES re-solve with tieBreak:false, so
