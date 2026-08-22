@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, savedStep, stepOnLoad, unsavedGuardMessage, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
+const { railModel, saveControl, resolveBannerShowing, savedStep, stepOnLoad, unsavedGuardMessage, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -584,7 +584,10 @@ const NAV = {
   stepCharacter: { advance: "data-next", back: "data-back" },
   stepPool: { advance: "data-next", back: "data-back" },
   stepPriorities: { advance: "data-solve", back: "data-back" },
-  stepResults: { advance: 'data-goto="character"', back: 'data-goto="priorities"' },
+  // #431 U3 (KTD8) — save takes the results bar's terminal slot and Edit
+  // character moves before the spacer. The token is the RENDERER'S CALL, not the
+  // button id: the bar's source holds an interpolation, not the rendered markup.
+  stepResults: { advance: "saveControl(", back: 'data-goto="priorities"' },
 };
 
 test("U4/#105: every step exposes its advance control bottom-right (after the spacer)", () => {
@@ -3131,14 +3134,16 @@ test("#428 U3 (R14/KTD4): the rail renders from render(), not from any step body
   }
 });
 
-test("#428 U3 (R24): the rail offers save, load and delete only", () => {
+test("#428 U3 (R24) / #431 U3 (R9): the rail offers load and delete only", () => {
   const fs = require("fs"); const path = require("path");
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
   const at = src.indexOf("function railHTML(");
   assert.ok(at >= 0, "wizard.js declares railHTML");
   const body = src.slice(at, endAfter(src, "\n    function ", at));
-  assert.ok(/wz-railsave/.test(body), "the rail saves");
-  assert.ok(/data-railload/.test(body), "…loads");
+  // #431 U3 (R9) supersedes R24's save clause: saving moved to the action bars,
+  // so the rail is no longer an action surface at all.
+  assert.ok(!/wz-railsave/.test(body), "the rail no longer saves — that moved to the bars");
+  assert.ok(/data-railload/.test(body), "it loads");
   assert.ok(/data-raildel/.test(body), "…and deletes");
   assert.ok(!/wz-export|wz-import|Export all|Import a backup/.test(body),
     "…and offers no backup export or import (R24)");
@@ -3453,6 +3458,56 @@ test("#428 U6 (R1/R2/R4): the character step renders three labelled groups in or
   assert.ok(/<details[^>]*data-group="weapons"/.test(body), "weapon setup is the collapsible one (R6)");
   assert.ok(!/<details[^>]*data-group="required"/.test(body), "required fields are visible without interaction (R6)");
   assert.ok(!/<details[^>]*data-group="restrictions"/.test(body), "…and so are restrictions (R6)");
+});
+
+test("#431 U3 (AE3/KTD5/KTD6): one renderer puts save on four bars, and not on intro", () => {
+  for (const step of ["stepCharacter", "stepPool", "stepPriorities", "stepResults"]) {
+    assert.ok(/saveControl\(/.test(actionRow(step)), `${step} carries the save control`);
+  }
+  assert.ok(!/saveControl\(/.test(actionRow("stepIntro")),
+    "intro runs before the character step, so there is no name and nothing to save");
+  const calls = (WIZARD_SRC.match(/\$\{saveControl\(/g) || []).length;
+  assert.strictEqual(calls, 4, "exactly four call sites — a sixth step cannot ship without one");
+});
+
+test("#431 U3 (AE6/KTD7): save is ghost beside a forward action, and conditional on results", () => {
+  for (const step of ["stepCharacter", "stepPool", "stepPriorities"]) {
+    assert.ok(/saveControl\("ghost"\)/.test(actionRow(step)),
+      `${step} already has a primary forward action, so save is ghost there`);
+  }
+  const results = actionRow("stepResults");
+  assert.ok(/saveControl\(resolveBannerShowing\(state\) \? "ghost" : "primary"\)/.test(results),
+    "on results save is the bar's primary, except while a re-solve banner holds it");
+});
+
+test("#431 U3 (KTD7): resolveBannerShowing counts the three re-solve banners only", () => {
+  assert.strictEqual(resolveBannerShowing({}), false);
+  assert.strictEqual(resolveBannerShowing({ loadedStale: true }), true, "the stale banner");
+  assert.strictEqual(resolveBannerShowing({ twfMigrated: true }), true, "the TWF migration banner");
+  assert.strictEqual(resolveBannerShowing({ constraintsDirty: true }), true, "the constraints banner");
+  // The four migrationBanner notices share the wz-cbar class but their buttons
+  // are ghosts, so they do not contend for primacy and must not ghost save.
+  for (const notice of ["expandedAwayMigrated", "utilityHealNotice", "blockLoadNotice", "overrideNotice"]) {
+    assert.strictEqual(resolveBannerShowing({ [notice]: "something happened" }), false,
+      `${notice} is a ghost-button notice, not a re-solve banner`);
+  }
+});
+
+test("#431 U3 (KTD7): every site that mutates a re-solve banner refreshes save's emphasis", () => {
+  // Banner visibility is changed imperatively, without a re-render, so a class
+  // assigned at render time would never flip. A fifth banner path cannot ship
+  // without a refresh call.
+  assert.ok(/refreshSaveEmphasis\(\)/.test(fnBody(WIZARD_SRC, "function refreshStaleBanner() {", 4)),
+    "the in-place stale toggle refreshes save");
+  const calls = (WIZARD_SRC.match(/[^n] refreshSaveEmphasis\(\)|;\s*refreshSaveEmphasis\(\)|\n\s+refreshSaveEmphasis\(\)/g) || []).length;
+  assert.ok(calls >= 4, `expected the four banner-mutation sites to refresh save, saw ${calls}`);
+});
+
+test("#431 U3 (R9): the rail hosts neither the save control nor its status line", () => {
+  const rail = fnBody(WIZARD_SRC, "function railHTML() {", 4);
+  assert.ok(!/wz-railsave/.test(rail), "the rail's save button is gone");
+  assert.ok(!/wz-railstat/.test(rail), "and its status span with it");
+  assert.ok(!/wz-railsave|wz-railstat/.test(WIZARD_SRC), "no orphaned references remain");
 });
 
 test("#428 U6 (R2): each required field is marked at the field", () => {

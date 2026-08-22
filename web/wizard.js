@@ -72,6 +72,30 @@ function missingRequired(state) {
   return out;
 }
 
+/** #431 U3 (KTD5) — ONE renderer owns the save control everywhere it appears.
+ *  Hand-writing the button into each bar invites drift, so each bar interpolates
+ *  this instead and a guard pins the call-site count. The status line is part of
+ *  the control: a save reports beside the button that was pressed, not in a panel
+ *  the player is no longer looking at. */
+function saveControl(cls) {
+  return `<button class="btn ${cls}" id="wz-save" type="button">Save progress</button>`
+    + `<span class="wz-savestat" id="wz-savestat" aria-live="polite"></span>`;
+}
+
+/** #431 U3 (KTD7) — is a RE-SOLVE banner on screen? Each of the three carries its
+ *  own primary button, so while one is up the results bar's save yields to it.
+ *
+ *  The four `migrationBanner` notices share the `wz-cbar` class but their buttons
+ *  are ghosts, so they do not contend and must NOT be counted here — keying this
+ *  on the class instead of the three flags would ghost save behind a "Got it".
+ *
+ *  Ranking the three against EACH OTHER is a separate, pre-existing defect: they
+ *  raise independently and can co-show with up to three primaries. See #432. */
+function resolveBannerShowing(state) {
+  const s = state || {};
+  return !!(staleNote(s) || s.twfMigrated || s.constraintsDirty);
+}
+
 /** #428 U6 (R10) — ONE message naming every unanswered required field, or null.
  *  Not one message per field: the plan's complaint is that the step says nothing
  *  at all, and three separate lines would be the same problem inverted. */
@@ -1587,7 +1611,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, unsavedGuardMessage, runBelongsTo, overwriteConfirmText, railModel, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, unsavedGuardMessage, runBelongsTo, overwriteConfirmText, railModel, saveControl, resolveBannerShowing, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -1953,7 +1977,7 @@ if (typeof window !== "undefined" && window.App) {
         </div>
         <p class="wz-status wz-reqmsg" id="wz-charmsg" role="status" aria-live="polite"></p>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
-          <button class="btn primary" data-next>Continue →</button></div>
+          ${saveControl("ghost")}<button class="btn primary" data-next>Continue →</button></div>
       </section>`;
     }
 
@@ -2010,7 +2034,7 @@ if (typeof window !== "undefined" && window.App) {
           <div id="wz-override-list" class="wz-pin-list"></div>
         </div>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
-          <button class="btn primary" data-next>Continue →</button></div>
+          ${saveControl("ghost")}<button class="btn primary" data-next>Continue →</button></div>
       </section>`;
     }
 
@@ -2269,7 +2293,7 @@ if (typeof window !== "undefined" && window.App) {
         <p class="wz-draghelp">Drag the ⋮⋮ handle to reorder, or use the ↑ ↓ buttons (they work on touch and keyboard).</p>
         <p id="wz-status" class="wz-status"></p>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
-          <button class="btn primary" data-solve>Solve ⚡</button></div>
+          ${saveControl("ghost")}<button class="btn primary" data-solve>Solve ⚡</button></div>
       </section>`;
     }
 
@@ -2292,8 +2316,9 @@ if (typeof window !== "undefined" && window.App) {
           Slot constraints changed. <button class="btn primary" id="wz-cresolve">Re-solve ⚡</button>
         </div>
         <div id="wz-results"></div>
-        <div class="wz-actions"><button class="btn ghost" data-goto="priorities">← Adjust priorities</button><span class="wz-spacer"></span>
-          <button class="btn ghost" data-goto="character">Edit character</button></div>
+        <div class="wz-actions"><button class="btn ghost" data-goto="priorities">← Adjust priorities</button>
+          <button class="btn ghost" data-goto="character">Edit character</button><span class="wz-spacer"></span>
+          ${saveControl(resolveBannerShowing(state) ? "ghost" : "primary")}</div>
       </section>`;
     }
 
@@ -2929,6 +2954,7 @@ if (typeof window !== "undefined" && window.App) {
       bar.classList.toggle("wz-hidden", !why);
       const w = document.getElementById("wz-stalewhy");
       if (w && why) w.textContent = why;
+      refreshSaveEmphasis();
     }
 
     function createOverride(key, to, note) {
@@ -3580,8 +3606,6 @@ if (typeof window !== "undefined" && window.App) {
         <p class="wz-rail-loaded">${m.loaded
           ? `Editing <strong>${esc(m.loadedName)}</strong>`
           : `<span class="wz-sub">Unsaved build</span>`}</p>
-        <button class="btn primary" id="wz-railsave" type="button">Save progress</button>
-        <span class="wz-savestat" id="wz-railstat" aria-live="polite"></span>
         <p class="wz-help">Saved in this browser only — no account, and cleared if you clear browser data.</p>
         <div class="wz-rail-list">
           <p class="wz-label">Saved builds</p>
@@ -3625,20 +3649,37 @@ if (typeof window !== "undefined" && window.App) {
       return "Could not save.";
     }
 
-    function wireRail() {
-      const saveBtn = document.getElementById("wz-railsave");
-      if (saveBtn) saveBtn.onclick = () => {
-        // #431 U2 — the name input moved to the character step, so the state
-        // field is the one source here rather than a rail-owned element.
+    /** #431 U3 (R5/R7) — the one save handler, for the one rendered button. Only
+     *  one step body renders at a time, so `#wz-save` is unique per render. */
+    function wireSave() {
+      const btn = document.getElementById("wz-save");
+      if (!btn) return;
+      btn.onclick = () => {
         const nm = (state.characterName || "").trim();
         const res = trySave(nm);
         if (!res) return;   // overwrite declined
-        // Re-render FIRST — the status element below lives inside the rail, so a
-        // message written before this would be discarded by the re-render.
+        // renderRail() refreshes the saved-builds list. It replaces #wz-rail only,
+        // and the status span now lives in the step body, so it survives — but
+        // render() must NOT be used here: on results it would blank #wz-results.
         renderRail();
-        const stat = document.getElementById("wz-railstat");
+        const stat = document.getElementById("wz-savestat");
         if (stat) stat.textContent = res.ok ? `Saved “${nm}”.` : saveErrorText(res.error);
       };
+    }
+
+    /** #431 U3 (KTD7) — banner visibility is mutated imperatively, with no
+     *  re-render, so a class assigned at render time would never flip. Every site
+     *  that shows or hides a re-solve banner calls this. */
+    function refreshSaveEmphasis() {
+      if (state.step !== "results") return;   // save is ghost on every other bar
+      const btn = document.getElementById("wz-save");
+      if (!btn) return;
+      const primary = !resolveBannerShowing(state);
+      btn.classList.toggle("primary", primary);
+      btn.classList.toggle("ghost", !primary);
+    }
+
+    function wireRail() {
       const rail = document.getElementById("wz-rail");
       if (rail) rail.onclick = (e) => {
         const b = e.target.closest("button"); if (!b) return;
@@ -4002,6 +4043,8 @@ if (typeof window !== "undefined" && window.App) {
       };
       // #428 U3 — the rail is on every step, so it wires on every render.
       wireRail();
+      // #431 U3 — and so is the save control, on every step but intro.
+      wireSave();
       // #428 U5 (KTD3) — every native control inside the step body is a build
       // input, so one delegated pair covers text, number, select, checkbox and
       // radio without a markDirty() call in each of their handlers. #431 U2
@@ -4257,6 +4300,7 @@ if (typeof window !== "undefined" && window.App) {
           state.loadedStale = false;
           const stale = document.getElementById("wz-stale");
           if (stale) stale.classList.add("wz-hidden");
+          refreshSaveEmphasis();
           solve(false);
         };
         // plan 003 U4 — same view-only re-solve for the TWF migration notice. The
@@ -4268,6 +4312,7 @@ if (typeof window !== "undefined" && window.App) {
           state.twfMigrated = false;
           const bar = document.getElementById("wz-twfmig");
           if (bar) bar.classList.add("wz-hidden");
+          refreshSaveEmphasis();
           solve(false);
         };
         // Per-slot constraint controls (U6), wired by delegation so they survive
@@ -4318,6 +4363,7 @@ if (typeof window !== "undefined" && window.App) {
             renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: afterResultsRender, onRequire: requireOutbidStat });
           }
           if (cbar) cbar.classList.remove("wz-hidden");
+          refreshSaveEmphasis();
         });
         const cres = document.getElementById("wz-cresolve");
         if (cres) cres.onclick = () => { if (canAdvance("priorities", state)) solve(false); };
