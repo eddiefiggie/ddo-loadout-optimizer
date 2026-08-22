@@ -39,7 +39,7 @@ related_components:
 
 ## Context
 
-The results-phase UI clarity work (plan `docs/plans/2026-08-22-001-feat-results-phase-ui-clarity-plan.md`; no tracking issue — the plan's filed deferrals are #447 and #448) removed a per-item marker, contained eleven flat solve notices in one classified panel, and gave that panel a summary pill. Across three commits — `c614bfb` (U4), `51e37e7` (U5), `b6f3f86` (U6), all on the unmerged `feat/results-phase-ui-clarity` branch as of this writing, with no PR opened yet, so these SHAs are pre-merge and will be rewritten if the branch is squashed — locate them by their subject lines, quoted under **Examples** — **four newly-written guards passed when run against the pre-change tree**. Each was asserting nothing, and each was asserting nothing in exactly the state it existed to rule out.
+The results-phase UI clarity work (plan `docs/plans/2026-08-22-001-feat-results-phase-ui-clarity-plan.md`; no tracking issue — the plan's filed deferrals are #447 and #448) removed a per-item marker, contained eleven flat solve notices in one classified panel, and gave that panel a summary pill. Across three commits — `cf2cb12` (U4), `6f66e30` (U5), `157cb52` (U6), all on the unmerged `feat/results-phase-ui-clarity` branch as of this writing, with no PR opened yet, so these SHAs are pre-merge and will be rewritten if the branch is squashed — locate them by their subject lines, quoted under **Examples** — **four newly-written guards passed when run against the pre-change tree**. Each was asserting nothing, and each was asserting nothing in exactly the state it existed to rule out.
 
 None was caught by review, by a failing run, or by reading the assertion. All four were caught by the same standing ritual: this repo requires each new test to be run against the pre-change tree and observed red (`docs/solutions/conventions/prove-a-test-fails-against-the-pre-change-tree.md`). The gate did its job four times in three commits. Each commit message records the catch in its own words.
 
@@ -69,7 +69,7 @@ the result. The gate is what caught them; their shape is what would have prevent
 
 `web/results.js` captures every shared primitive from projection at load (`web/results.js:31-48`). Patching the module export after the fact leaves the captured reference untouched, so a call-count spy on `Proj.saturatedStats` reads zero on every tree.
 
-Reconstructed from `c614bfb`'s message — the vacuous form was fixed in-branch and never landed, so this is the shape, not the exact committed text:
+Reconstructed from `cf2cb12`'s message — the vacuous form was fixed in-branch and never landed, so this is the shape, not the exact committed text:
 
 ```js
 // BEFORE (never committed): passes on the pre-change tree.
@@ -116,7 +116,7 @@ assert.ok(panelAt < barAt,
   "the live Return-to-optimum control is a sibling of the panel, never folded inside it");
 ```
 
-This one paid for itself one commit later, inside the same branch. `b6f3f86` gave `noticePanel` a second argument — the call site now reads `${noticePanel(notices, { latched: !!notesSeen })}` (`web/results.js:1498`) — which invalidated the guard's marker. The diff shows the marker being loosened from `"noticePanel(notices)"` to `"noticePanel(notices"` in the same commit. With the `>= 0` assertion in place a stale marker fails at the presence check; without it, `panelAt` silently returns to −1 and the ordering comparison starts passing again for the original bad reason.
+This one paid for itself one commit later, inside the same branch. `157cb52` gave `noticePanel` a second argument — the call site now reads `${noticePanel(notices, { latched: !!notesSeen })}` (`web/results.js:1498`) — which invalidated the guard's marker. The diff shows the marker being loosened from `"noticePanel(notices)"` to `"noticePanel(notices"` in the same commit. With the `>= 0` assertion in place a stale marker fails at the presence check; without it, `panelAt` silently returns to −1 and the ordering comparison starts passing again for the original bad reason.
 
 **Any comparison that consumes a sentinel — `indexOf`, `findIndex`, `search`, a `.get()` returning `undefined`, a null-yielding regex `exec` — needs the sentinel excluded before the comparison, not after.** A sentinel that sorts below every real value is a passing value in a `<` test.
 
@@ -188,7 +188,7 @@ Finally, the count assertion in shape 4 is worth its own line in a checklist. It
 - `web/results.js:42` (with the explanatory block at `:37-41`) — `var saturatedStats = Proj.saturatedStats;`, the load-time capture that makes a post-`require` spy inert; `web/results.js:2000` — the re-export surface `tests/projection.test.js` pins, which is why the binding stays.
 - `web/results.js:1498` — `${noticePanel(notices, { latched: !!notesSeen })}`, the call site whose new second argument stale-dated the U5 marker one commit after the guard was written.
 - `web/projection.js:1336` (`function constraintPairs(rec)`) versus `web/projection.js:2181` (`constraintPairs, constraintLines,` in the export list) — the two occurrences whose collision emptied the U6 slice; the enumerated entry functions live at `:2029`, `:2050`, `:2094`.
-- Commits `c614bfb` (`feat(results): remove the per-item ceiling marker`), `51e37e7` (`feat(results): contain and classify the eleven solve notices`) and `b6f3f86` (`feat(results): the attention pill and the qualifying marker`) on `feat/results-phase-ui-clarity` (unmerged, no PR as of this writing; branch head `d562015`, `chore(build): stamp 08222026.3`). **The SHAs are pre-merge and volatile** — a squash rewrites them, so the subject lines above are the durable handles. Each message names its own catch — `c614bfb`: "One new guard was written as a call-count spy and PASSED on the pre-change tree, which made it inert"; `51e37e7`: "written as `panelAt < barAt` and PASSED on the pre-change tree"; `b6f3f86`: "two more guards were caught passing on the pre-change tree."
+- Commits `cf2cb12` (`feat(results): remove the per-item ceiling marker`), `6f66e30` (`feat(results): contain and classify the eleven solve notices`) and `157cb52` (`feat(results): the attention pill and the qualifying marker`) on `feat/results-phase-ui-clarity` (unmerged, no PR as of this writing; at build `08222026.3`). **The SHAs are pre-merge and volatile** — a squash rewrites them, so the subject lines above are the durable handles. Each message names its own catch — `cf2cb12`: "One new guard was written as a call-count spy and PASSED on the pre-change tree, which made it inert"; `6f66e30`: "written as `panelAt < barAt` and PASSED on the pre-change tree"; `157cb52`: "two more guards were caught passing on the pre-change tree."
 - `tests/results.test.js` runs green in full at the current tree (`node tests/results.test.js`, exit 0), so every citation above is to a live, passing guard.
 
 ## Related
