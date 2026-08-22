@@ -27,6 +27,14 @@
   --optimal: #43c59e;
   --verified: #43c59e;
   --quarantined: #f0b360;
+  /* #446 U5 (R32) — the two notice-class tokens, used by name rather than as
+     inline literals. --warn is the value the .wz-util-status site below already
+     carried as its own fallback; defining it here is what makes that site (and
+     .pd-why.pd-carried, whose fallback was a slightly different amber) resolve
+     to ONE ramp. --qualify is deliberately OFF that ramp: the tree already
+     carries four near-identical ambers, so a fifth would not read as distinct. */
+  --warn: #d9a441;            /* actionable: card edge, class tag, attention pill */
+  --qualify: #8fa2c4;         /* qualifying: card edge, class tag, summary marker */
   --set: #f0b45a;             /* set-bonus attribution */
   --artifact: #b98cff;        /* the one equipped Artifact (violet) — distinct from set gold + blue accent */
 
@@ -1371,3 +1379,66 @@ input.wz-ml { width: 120px; }
 .pd-override-set { font-size: .85em; opacity: .8; }
 .pd-override-status:empty { display: none; }
 .pd-override-status { font-size: .85em; margin: .4rem 0 0; }
+
+/* ---- #446 U5 -- the notices panel ---------------------------------------- */
+/* R1 -- the banner's own gradient and border, so the panel reads as part of the
+   optimization rather than as loose prose stacked beneath it. Separate element
+   with a gap: it states what qualifies the verdict, it is not the verdict. */
+.notes-panel {
+  margin: 0 0 var(--sp-4);
+  border: 1px solid rgba(67,197,158,0.35); border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(67,197,158,0.10), rgba(91,140,255,0.06));
+}
+/* R2/R37 -- the panel's only tap target. Wraps as a row of whole units at 375px;
+   min-height holds the tap target in every wrap state. */
+.notes-summary {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2);
+  min-height: var(--tap); padding: var(--sp-2) var(--sp-4);
+  cursor: pointer; font-weight: 600; list-style: none;
+}
+.notes-summary::-webkit-details-marker { display: none; }
+.notes-chevron { display: inline-block; transition: transform 120ms ease; color: var(--faint); }
+.notes-panel[open] > .notes-summary .notes-chevron { transform: rotate(90deg); }
+/* R3 -- the count is visible without opening, so the player can see there is
+   something here without paying to find out. */
+.notes-count { color: var(--faint); font-size: var(--fs-xs); font-weight: 500; }
+.notes-body { padding: 0 var(--sp-4) var(--sp-3); display: grid; gap: var(--sp-2); }
+
+/* R4 -- every notice is a bordered sub-card with a title; none renders as bare
+   prose. R5 -- the left edge carries the class. */
+.notice-card {
+  border: 1px solid var(--border); border-left: 3px solid var(--border);
+  border-radius: var(--radius-sm); padding: var(--sp-2) var(--sp-3);
+  background: var(--elev);
+}
+.notice-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2); }
+.notice-title { font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.04em; }
+/* R28 -- the non-colour carrier. Its own element, so class survives a greyscale
+   render or red-green colour-vision deficiency without the title absorbing it. */
+.notice-tag {
+  font-size: var(--fs-xs); font-weight: 600; padding: 1px 6px;
+  border: 1px solid currentColor; border-radius: 999px; opacity: 0.85;
+}
+.notice-body { margin-top: var(--sp-1); font-size: var(--fs-xs); color: var(--muted); }
+.notice-body .notice-sentence { margin: 0; }
+.notice-body > p + p { margin-top: var(--sp-1); }
+
+.notice-card.is-actionable { border-left-color: var(--warn); }
+.notice-card.is-actionable .notice-title, .notice-card.is-actionable .notice-tag { color: var(--warn); }
+.notice-card.is-qualifying { border-left-color: var(--qualify); }
+.notice-card.is-qualifying .notice-title, .notice-card.is-qualifying .notice-tag { color: var(--qualify); }
+.notice-card.is-informational { border-left-color: var(--optimal); }
+.notice-card.is-informational .notice-title, .notice-card.is-informational .notice-tag { color: var(--optimal); }
+/* A notice with no table entry renders VISIBLY rather than throwing: the results
+   screen survives, and the gap is impossible to miss on the next look. */
+.notice-card.is-unclassified { border-left-color: var(--danger, #e2564d); border-style: dashed; }
+
+/* R6 -- the resolution control. A button, not a link: it changes wizard state
+   rather than navigating a URL. */
+.notice-jump {
+  margin-top: var(--sp-2); min-height: var(--tap);
+  padding: var(--sp-1) var(--sp-3); font-size: var(--fs-xs); font-weight: 600;
+  color: var(--warn); background: transparent;
+  border: 1px solid var(--warn); border-radius: var(--radius-sm); cursor: pointer;
+}
+.notice-jump:hover { background: rgba(217,164,65,0.12); }

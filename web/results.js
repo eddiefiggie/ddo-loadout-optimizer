@@ -913,6 +913,162 @@ function blockNotice(result) {
     : "";
 }
 
+// ---- #446 U5 — the notices panel -------------------------------------------
+//
+// Eleven notices rendered as flat siblings under the OPTIMAL banner, some as
+// `<details>` and some as bare `<p>`, so the ones that fold gave no sign they
+// could be opened. They are now one collapsed panel of classified sub-cards.
+
+const NOTICE_ACTIONABLE = Proj.NOTICE_ACTIONABLE;
+const NOTICE_QUALIFYING = Proj.NOTICE_QUALIFYING;
+const NOTICE_INFORMATIONAL = Proj.NOTICE_INFORMATIONAL;
+
+// R28 — the non-colour carrier. Its own element beside the title, never
+// concatenated into it: a title prefix produced ~40-character uppercase strings
+// that wrapped at phone width and buried the distinguishing word at the far
+// right. (KTD5's closing line still describes the prefix form it replaced.)
+const NOTICE_CLASS_TAG = {
+  [NOTICE_ACTIONABLE]: "Needs attention",
+  [NOTICE_QUALIFYING]: "Qualifies",
+  [NOTICE_INFORMATIONAL]: "Note",
+};
+// R5 — actionable, then qualifying, then informational.
+const NOTICE_CLASS_ORDER = [NOTICE_ACTIONABLE, NOTICE_QUALIFYING, NOTICE_INFORMATIONAL];
+
+/** #446 U5 (KTD5) — the settled classification of the eight single-fact notices.
+ *
+ *  Keyed by the notice's function name, which is also what the render array
+ *  carries, so the completeness assertion can compare the two directly. The
+ *  notice functions keep owning their sentences; this table owns only the card
+ *  chrome around them — title, class, and where an actionable one is resolved.
+ *
+ *  `jump: null` on an actionable notice means it already carries its OWN
+ *  in-card resolution control (R6's amendment). `outbidNotice` renders Require
+ *  and price buttons; adding a jump beside them would offer a second, worse
+ *  route to the fix the player is already looking at.
+ *
+ *  A `jumpTarget` is a wizard step id plus an optional anchor selector, handed
+ *  to the caller's `onJump` seam. results.js never reaches into wizard state:
+ *  `step: null` means "this screen", where the wizard scrolls the anchor into
+ *  view and focuses it instead of changing step. */
+const NOTICE_TABLE = {
+  staleSnapshotNotice: { id: "stale-snapshot", title: "STALE SNAPSHOT", cls: NOTICE_ACTIONABLE,
+    jump: { label: "Re-solve now", step: null, anchor: "#wz-adjust-slot" } },
+  emptySlotNotice: { id: "empty-slot", title: "EMPTY SLOT", cls: NOTICE_ACTIONABLE,
+    jump: { label: "Adjust & re-solve →", step: null, anchor: "#wz-adjust-slot" } },
+  craftingExcludedNotice: { id: "crafting-opt-out", title: "EXCLUDED BY CRAFTING OPT-OUT", cls: NOTICE_ACTIONABLE,
+    jump: { label: "Change crafting opt-out →", step: "character", anchor: 'input[name="wz-crafting-rung"]' } },
+  blockNotice: { id: "blocked-gear", title: "BLOCKED GEAR", cls: NOTICE_ACTIONABLE,
+    jump: { label: "Review block list →", step: "pool", anchor: null } },
+  augCeilingNotice: { id: "augment-ceiling", title: "AUGMENT POOL NARROWED", cls: NOTICE_ACTIONABLE,
+    jump: { label: "Change augment ceiling →", step: "character", anchor: "#wz-augceiling" } },
+  // Fires only when the player set the ceiling themselves — the same shape as
+  // the crafting opt-out, which is why both are actionable rather than
+  // qualifying.
+  outbidNotice: { id: "priority-scored-0", title: "PRIORITY SCORED 0", cls: NOTICE_ACTIONABLE, jump: null },
+  absorptionQuarantineNotice: { id: "affix-withheld", title: "AFFIX WITHHELD", cls: NOTICE_QUALIFYING, jump: null },
+  // R35 — already returns its own `<details>`. Unwrapped inside the panel so the
+  // panel stays the only fold.
+  saturationNotice: { id: "at-ceiling", title: "AT CEILING", cls: NOTICE_INFORMATIONAL, jump: null, unwrap: true },
+};
+
+/** #446 U5 (KTD5, second table) — resolution routes for the cards U10 split out
+ *  of the three multi-fact notices. Keyed by the entry `id` projection.js mints,
+ *  because those entries carry their own title and class already; only the route
+ *  is a render-side concern. An actionable entry with no row here renders
+ *  without a control, which the U5 test catches. */
+const NOTICE_ENTRY_JUMPS = {
+  "artifact-pinned-in": { label: "Review pins →", step: "pool", anchor: null },
+  "stat-filtered-out": { label: "Change character filters →", step: "character", anchor: null },
+  "floor-not-reached": { label: "Edit priorities →", step: "priorities", anchor: null },
+  "re-solve-to-apply": { label: "Re-solve now", step: null, anchor: "#wz-adjust-slot" },
+};
+
+/** Strip one wrapping `<details>` down to the parts a card needs (R35): the
+ *  summary text becomes the card's sentence body, and the inner content renders
+ *  open beneath it. A fold inside a fold, under a card title that already
+ *  restates the fact, is three statements of one thing. */
+function _unwrapDetails(html) {
+  const sm = html.match(/<summary\b[^>]*>([\s\S]*?)<\/summary>/i);
+  if (!sm) return html;
+  const inner = html.replace(/^[\s\S]*?<\/summary>/i, "").replace(/<\/details>\s*$/i, "");
+  return `<p class="notice-sentence">${sm[1]}</p>${inner}`;
+}
+
+/** #446 U5 — the render array as descriptors: one per CARD, not one per notice
+ *  function. The three multi-fact notices contribute one descriptor per fired
+ *  branch (U10); the other eight contribute at most one each, and none when the
+ *  notice returns empty.
+ *
+ *  `name` is the notice function's name for the eight, and the source function's
+ *  name for a split entry — so the completeness assertion covers both tables
+ *  from one array. */
+function noticeDescriptors(ctx) {
+  const { result, query, model, dataset, canPrice, canRequire } = ctx;
+  const out = [];
+  const push = (name, html, over) => {
+    if (!html) return;                       // R4/R27 — an empty return is not a card
+    const t = NOTICE_TABLE[name];
+    out.push(Object.assign({ name, html, unclassified: !t },
+      t || { id: `unclassified-${name}`, title: name.toUpperCase(), cls: NOTICE_QUALIFYING, jump: null },
+      over || {}));
+  };
+  // The split notices first: each fired branch becomes its own card, carrying the
+  // title and class projection.js minted for it and the route from the second table.
+  const split = (name, entries) => {
+    for (const e of entries) {
+      out.push({ name, id: e.id, title: e.title, cls: e.class, unclassified: false,
+        jump: NOTICE_ENTRY_JUMPS[e.id] || null,
+        html: `<p class="notice-sentence">${e.sentence}</p>` });
+    }
+  };
+  split("artifactNotice", artifactNoticeEntries(result, query));
+  split("boundNotice", boundNoticeEntries(query, result));
+  split("zeroSourceNotice", zeroSourceNoticeEntries(query, result, model, dataset));
+
+  push("staleSnapshotNotice", staleSnapshotNotice(result));
+  push("outbidNotice", outbidNotice(query, result, model, canPrice, canRequire));
+  push("saturationNotice", saturationNotice(result));
+  push("emptySlotNotice", emptySlotNotice(query, result));
+  push("absorptionQuarantineNotice", absorptionQuarantineNotice(result));
+  push("craftingExcludedNotice", craftingExcludedNotice(query, result));
+  push("augCeilingNotice", augCeilingNotice(query, result));
+  push("blockNotice", blockNotice(result));
+
+  const rank = (d) => {
+    const i = NOTICE_CLASS_ORDER.indexOf(d.cls);
+    return i < 0 ? NOTICE_CLASS_ORDER.length : i;      // an unmapped class sorts last, visibly
+  };
+  return out.map((d, i) => ({ d, i })).sort((a, b) => rank(a.d) - rank(b.d) || a.i - b.i).map((x) => x.d);
+}
+
+/** #446 U5 (R1-R4, R27, R28, R35) — the panel. Returns "" when nothing fired:
+ *  R27 wants no empty fold, no zero count and no chevron on a clean solve. */
+function noticePanel(descriptors) {
+  if (!descriptors.length) return "";
+  const cards = descriptors.map((d) => {
+    const body = d.unwrap ? _unwrapDetails(d.html) : d.html;
+    // A jump control changes wizard state, so it is a button rather than a link.
+    // The step and anchor ride as data so the click handler stays one listener
+    // over the panel instead of one closure per card.
+    const ctl = d.jump
+      ? `<button class="notice-jump" type="button" data-step="${esc(d.jump.step || "")}"`
+        + ` data-anchor="${esc(d.jump.anchor || "")}">${esc(d.jump.label)}</button>`
+      : "";
+    return `<div class="notice-card is-${esc(d.cls)}${d.unclassified ? " is-unclassified" : ""}" data-notice="${esc(d.id)}">`
+      + `<div class="notice-head"><span class="notice-title">${esc(d.title)}</span>`
+      + `<span class="notice-tag">${esc(NOTICE_CLASS_TAG[d.cls] || "Unclassified")}</span></div>`
+      + `<div class="notice-body">${body}</div>${ctl}</div>`;
+  }).join("");
+  const n = descriptors.length;
+  return `<details class="notes-panel"><summary class="notes-summary">`
+    + `<span class="notes-chevron" aria-hidden="true">▸</span>`
+    + `<span class="notes-label">Notes on this solve</span>`
+    + `<span class="notes-count">${esc(n)} ${n === 1 ? "note" : "notes"}</span>`
+    + `</summary><div class="notes-body">${cards}</div></details>`;
+}
+
+
 /** #245 — the niche-crafting opt-out disclosure. Reads the SHARED sentence from
  *  projection (one wording for the app and every export), keyed off the solved
  *  query so a restored snapshot discloses identically. */
@@ -1192,7 +1348,7 @@ function outbidNotice(query, result, model, canPrice, canRequire) {
     + (ask ? `<span class="outbid-ask">${ask}</span>` : "") + `</p>`;
 }
 
-function renderResults(container, { model, result, query, dataset, highs, onAfterRender, onRequire }) {
+function renderResults(container, { model, result, query, dataset, highs, onAfterRender, onRequire, onJump }) {
   if (result.status !== "optimal") {
     // Keep the Adjust & re-solve control available on a non-optimal result — this
     // is exactly when the user needs to loosen priorities/constraints in place.
@@ -1233,19 +1389,14 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
       </div>
     </div>`;
 
+  // #446 U5 — the eleven notices, contained. Built once so the panel, the
+  // summary counts (U6) and the live announcement all read the same array
+  // rather than three independent recomputations of "what fired".
+  const notices = noticeDescriptors({ result, query, model, dataset,
+    canPrice: canPriceOutbid(), canRequire: typeof onRequire === "function" });
   container.innerHTML = `
     ${banner}
-    ${artifactNotice(result, query)}
-    ${staleSnapshotNotice(result)}
-    ${boundNotice(query, result)}
-    ${zeroSourceNotice(query, result, model, dataset)}
-    ${outbidNotice(query, result, model, canPriceOutbid(), typeof onRequire === "function")}
-    ${saturationNotice(result)}
-    ${emptySlotNotice(query, result)}
-    ${absorptionQuarantineNotice(result)}
-    ${craftingExcludedNotice(query, result)}
-    ${augCeilingNotice(query, result)}
-    ${blockNotice(result)}
+    ${noticePanel(notices)}
     <div class="active-build-bar" hidden>
       <span class="active-build-msg"></span>
       <button class="return-optimum" type="button">Return to optimum</button>
@@ -1303,6 +1454,18 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   // #345 (U4, R8/R9) — accepting the trade writes a floor and re-solves. The
   // handler is the wizard's, so the floor goes through the same sanitizer and
   // persisted field the Advanced min input writes; one writer, one clear path.
+  // #446 U5 (KTD5) — the jump seam. One listener over the panel rather than one
+  // closure per card, and results.js hands the caller a target instead of
+  // reaching into wizard state: a step id (null meaning "this screen") plus an
+  // optional anchor selector. The panel stays open on return because nothing
+  // here closes it.
+  for (const btn of container.querySelectorAll(".notice-jump")) {
+    btn.addEventListener("click", () => {
+      if (typeof onJump !== "function") return;
+      onJump({ step: btn.dataset.step || null, anchor: btn.dataset.anchor || null });
+    });
+  }
+
   for (const btn of container.querySelectorAll(".outbid-require")) {
     btn.addEventListener("click", () => {
       btn.disabled = true;
@@ -1721,5 +1884,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, incidentalStats, poolStatNames: _resultsPoolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, noticeDescriptors, noticePanel, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }

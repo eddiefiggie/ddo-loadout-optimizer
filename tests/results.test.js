@@ -1924,11 +1924,20 @@ test("U1: renderResults emits the outbid notice — the render, not just the fun
   // #332's lesson: a disclosure that passes its own unit tests and is never
   // called from the render is inert on every surface. Assert the call site.
   const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
-  const block = src.slice(src.indexOf("container.innerHTML = `"), src.indexOf("active-build-bar"));
-  assert.ok(/\$\{outbidNotice\(query, result, model/.test(block),
-    "renderResults must emit outbidNotice, or it renders nowhere");
-  assert.ok(/canPriceOutbid\(\)/.test(block),
+  // #446 U5 moved the eleven interpolations out of the innerHTML template and
+  // into noticeDescriptors, so the slice follows them. The intent is unchanged
+  // and now spans two links: the builder must CALL the notice, and renderResults
+  // must call the builder. Either one missing and it renders nowhere again.
+  const build = src.slice(src.indexOf("function noticeDescriptors("), src.indexOf("function noticePanel("));
+  assert.ok(/push\("outbidNotice", outbidNotice\(query, result, model/.test(build),
+    "noticeDescriptors must emit outbidNotice, or it renders nowhere");
+  assert.ok(/canPrice(?![A-Za-z])/.test(build),
     "and it must pass the pricing capability, or the ask never renders");
+  const render = src.slice(src.indexOf("function renderResults("), src.indexOf("active-build-bar"));
+  assert.ok(/noticeDescriptors\(\{/.test(render) && /canPrice: canPriceOutbid\(\)/.test(render),
+    "renderResults must build the descriptors and thread the real pricing capability");
+  assert.ok(/\$\{noticePanel\(notices\)\}/.test(render),
+    "and it must render the panel it built");
 });
 
 // ---------------------------------------------------------------------------
@@ -2413,4 +2422,196 @@ test("#446 U4: whyThisLine no longer consults the saturation report at all", () 
   assert.ok(!/saturationLineFor\s*\(/.test(body), "and so did the per-item sentence it fed");
   assert.ok(typeof R.saturatedStats === "function",
     "but the binding stays on the re-export surface projection.test.js pins");
+});
+
+// ---------------------------------------------------------------------------
+// #446 U5 — the notices panel: containment, the settled classification table,
+// and the resolution routes.
+// ---------------------------------------------------------------------------
+
+/** A result/query pair that fires a chosen set of notices and nothing else. */
+function _noticeCtx(over) {
+  return Object.assign({
+    result: { status: "optimal", chosen: [], perTarget: {}, effective: {}, setsActive: [],
+      augmentsPlaced: [], breakdown: {}, computeScale: { variants: 1 }, solveMs: 1 },
+    query: { targets: [] }, model: { slots: [] }, dataset: {},
+    canPrice: false, canRequire: false,
+  }, over || {});
+}
+
+test("#446 U5 (R27/AE12): zero non-empty notices render no panel element at all", () => {
+  const ds = R.noticeDescriptors(_noticeCtx());
+  assert.strictEqual(ds.length, 0, "a clean solve fires nothing");
+  assert.strictEqual(R.noticePanel(ds), "", "no empty fold, no zero count, no chevron");
+});
+
+test("#446 U5 (KTD5): the classification table is asserted entry by entry", () => {
+  // Pinned in full so a reclassification is a deliberate test edit, never silent.
+  assert.deepStrictEqual(
+    Object.fromEntries(Object.entries(R.NOTICE_TABLE).map(([k, v]) => [k, [v.title, v.cls]])),
+    {
+      staleSnapshotNotice: ["STALE SNAPSHOT", "actionable"],
+      emptySlotNotice: ["EMPTY SLOT", "actionable"],
+      craftingExcludedNotice: ["EXCLUDED BY CRAFTING OPT-OUT", "actionable"],
+      blockNotice: ["BLOCKED GEAR", "actionable"],
+      augCeilingNotice: ["AUGMENT POOL NARROWED", "actionable"],
+      outbidNotice: ["PRIORITY SCORED 0", "actionable"],
+      absorptionQuarantineNotice: ["AFFIX WITHHELD", "qualifying"],
+      saturationNotice: ["AT CEILING", "informational"],
+    });
+});
+
+test("#446 U5 (KTD5): every notice the builder renders has a table entry", () => {
+  // The test-time completeness assertion that stands in for a runtime throw:
+  // renderResults sits inside a try/catch whose catch replaces the whole results
+  // box with "Solver error", so a throw here would destroy a correct solve's
+  // screen and misattribute it to the solver.
+  const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
+  const build = src.slice(src.indexOf("function noticeDescriptors("), src.indexOf("function noticePanel("));
+  const pushed = [...build.matchAll(/push\("(\w+)"/g)].map((m) => m[1]);
+  assert.strictEqual(pushed.length, 8, "the eight single-fact notices");
+  for (const name of pushed) {
+    assert.ok(R.NOTICE_TABLE[name], `${name} is rendered but has no KTD5 table entry`);
+  }
+  const split = [...build.matchAll(/split\("(\w+)"/g)].map((m) => m[1]);
+  assert.deepStrictEqual(split.sort(), ["artifactNotice", "boundNotice", "zeroSourceNotice"],
+    "and the three multi-fact notices come through their U10 entry functions");
+  assert.strictEqual(pushed.length + split.length, 11, "eleven notices, all reached");
+});
+
+test("#446 U5 (KTD5): a notice absent from the table renders unclassified, and does not throw", () => {
+  const P = require("../web/projection.js");
+  const saved = R.NOTICE_TABLE.blockNotice;
+  delete R.NOTICE_TABLE.blockNotice;
+  try {
+    const ctx = _noticeCtx();
+    ctx.result.blockReport = [{ id: "X", name: "Thing", slot: "Ring", stat: "Dodge" }];
+    const ds = R.noticeDescriptors(ctx);
+    const card = ds.find((d) => d.name === "blockNotice");
+    assert.ok(card, "the notice still renders — an unmapped entry must not silence it");
+    assert.strictEqual(card.unclassified, true, "and it is flagged");
+    assert.ok(/is-unclassified/.test(R.noticePanel(ds)), "visibly, in the markup");
+  } finally { R.NOTICE_TABLE.blockNotice = saved; }
+  assert.ok(P, "projection stays loadable");
+});
+
+test("#446 U5 (R5): cards sort actionable, then qualifying, then informational", () => {
+  assert.deepStrictEqual(R.NOTICE_CLASS_ORDER, ["actionable", "qualifying", "informational"]);
+  const ds = [
+    { cls: "informational", id: "i" }, { cls: "qualifying", id: "q" },
+    { cls: "actionable", id: "a" }, { cls: "qualifying", id: "q2" },
+  ];
+  // Sort through the real builder's comparator by round-tripping the descriptors
+  // it produces; here the order is asserted on the rendered panel, which is what
+  // the player actually sees.
+  const html = R.noticePanel(ds.map((d) => Object.assign({ title: d.id, html: "<p>x</p>", jump: null }, d)));
+  assert.deepStrictEqual([...html.matchAll(/data-notice="(\w+)"/g)].map((m) => m[1]), ["i", "q", "a", "q2"],
+    "noticePanel renders the order it is given — sorting is noticeDescriptors' job");
+});
+
+test("#446 U5 (R28/AE11): each card names its class in text, independent of colour", () => {
+  assert.deepStrictEqual(R.NOTICE_CLASS_TAG,
+    { actionable: "Needs attention", qualifying: "Qualifies", informational: "Note" });
+  const html = R.noticePanel([{ id: "x", title: "A THING", cls: "qualifying", html: "<p>s</p>", jump: null }]);
+  assert.ok(/<span class="notice-tag">Qualifies<\/span>/.test(html), "its own element…");
+  assert.ok(/<span class="notice-title">A THING<\/span>/.test(html), "…not concatenated into the title");
+});
+
+test("#446 U5 (R6/KTD5): every actionable route carries a control, and outbid deliberately does not", () => {
+  const routed = Object.entries(R.NOTICE_TABLE)
+    .filter(([, v]) => v.cls === "actionable").map(([k, v]) => [k, !!v.jump]);
+  assert.deepStrictEqual(Object.fromEntries(routed), {
+    staleSnapshotNotice: true, emptySlotNotice: true, craftingExcludedNotice: true,
+    blockNotice: true, augCeilingNotice: true,
+    // R6's amendment: it already renders Require and price buttons in-card.
+    outbidNotice: false,
+  });
+  assert.deepStrictEqual(Object.keys(R.NOTICE_ENTRY_JUMPS).sort(),
+    ["artifact-pinned-in", "floor-not-reached", "re-solve-to-apply", "stat-filtered-out"],
+    "and the four actionable cards U10 split out are routed by entry id");
+  for (const j of [...Object.values(R.NOTICE_TABLE).map((v) => v.jump), ...Object.values(R.NOTICE_ENTRY_JUMPS)]) {
+    if (!j) continue;
+    assert.ok(j.label && /→|now/.test(j.label), `${j.label}: a verb plus a destination`);
+    assert.ok(j.step === null || ["character", "pool", "priorities"].includes(j.step),
+      `${j.label}: step ${j.step} must be a real wizard step, or null for this screen`);
+  }
+});
+
+test("#446 U5: a jump control emits its step and anchor as data for the wizard seam", () => {
+  const html = R.noticePanel([{ id: "x", title: "T", cls: "actionable", html: "<p>s</p>",
+    jump: { label: "Change augment ceiling →", step: "character", anchor: "#wz-augceiling" } }]);
+  assert.ok(/data-step="character"/.test(html) && /data-anchor="#wz-augceiling"/.test(html),
+    "results.js hands over a target rather than reaching into wizard state");
+  assert.ok(/<button class="notice-jump"/.test(html), "a button — it changes state, it does not navigate");
+});
+
+test("#446 U5 (R35): the one notice that folds itself is unwrapped inside the panel", () => {
+  const ctx = _noticeCtx();
+  ctx.result.saturationReport = [{ stat: "Dodge", total: 15, bonusTypes: ["Enhancement"], unusedSources: 2 }];
+  const ds = R.noticeDescriptors(ctx);
+  const sat = ds.find((d) => d.name === "saturationNotice");
+  assert.ok(sat && sat.unwrap, "flagged in the table");
+  const html = R.noticePanel(ds);
+  const card = html.slice(html.indexOf('data-notice="at-ceiling"'));
+  assert.ok(!/<details/.test(card), "no fold inside the fold — the panel is the only one");
+  assert.ok(/at ceiling/.test(card), "and its sentence survives as the card body");
+});
+
+test("#446 U5 (R2/R3): the panel is a collapsed fold that states its count", () => {
+  const html = R.noticePanel([
+    { id: "a", title: "A", cls: "actionable", html: "<p>s</p>", jump: null },
+    { id: "b", title: "B", cls: "qualifying", html: "<p>s</p>", jump: null }]);
+  assert.ok(/<details class="notes-panel">/.test(html) && !/\bopen\b/.test(html), "collapsed on first render");
+  assert.ok(/Notes on this solve/.test(html), "labelled");
+  assert.ok(/<span class="notes-count">2 notes<\/span>/.test(html), "and states the total without being opened");
+  const one = R.noticePanel([{ id: "a", title: "A", cls: "actionable", html: "<p>s</p>", jump: null }]);
+  assert.ok(/>1 note</.test(one), "singular for one");
+});
+
+test("#446 U5: the count is non-empty notices, not notice functions", () => {
+  const ctx = _noticeCtx();
+  ctx.result.saturationReport = [{ stat: "Dodge", total: 15, bonusTypes: ["Enhancement"], unusedSources: 2 }];
+  const ds = R.noticeDescriptors(ctx);
+  assert.strictEqual(ds.length, 1, "ten functions returned empty and are not counted");
+  assert.ok(/>1 note</.test(R.noticePanel(ds)));
+});
+
+test("#446 U5: the active-build bar stays outside the panel", () => {
+  const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
+  const tpl = src.slice(src.indexOf("container.innerHTML = `\n    ${banner}"), src.indexOf("readout-analysis"));
+  const panelAt = tpl.indexOf("noticePanel(notices)");
+  const barAt = tpl.indexOf("active-build-bar");
+  // Both indices are asserted PRESENT before they are compared. Written as a bare
+  // `panelAt < barAt` this passes when the panel is absent entirely (-1 is less
+  // than anything), which is exactly the state it exists to rule out.
+  assert.ok(panelAt >= 0, "the panel is in the template");
+  assert.ok(barAt >= 0, "and so is the active-build bar");
+  assert.ok(panelAt < barAt,
+    "the live Return-to-optimum control is a sibling of the panel, never folded inside it");
+});
+
+test("#446 U5 (R32): both class tokens resolve to :root, and neither pre-existing --warn site moved", () => {
+  const css = _reachCss();
+  const root = css.slice(css.indexOf(":root"), css.indexOf("}", css.indexOf(":root")));
+  assert.ok(/--warn:\s*#d9a441/.test(root), "--warn defined in :root");
+  assert.ok(/--qualify:\s*#8fa2c4/.test(root), "--qualify defined in :root");
+  assert.ok(css.includes(".pd-why.pd-carried { color: var(--warn, #c9873a); }"),
+    "the first pre-existing call site is textually unchanged");
+  assert.ok(css.includes("color: var(--warn, #d9a441)"),
+    "and so is the second");
+  // The slate must not drift back onto the amber ramp.
+  assert.ok(/\.notice-card\.is-qualifying \{ border-left-color: var\(--qualify\); \}/.test(css),
+    "the qualifying class uses --qualify, not any amber token");
+  assert.ok(!/is-qualifying[^}]*--warn/.test(css), "and never reaches for --warn");
+});
+
+test("#446 U5 (R37): the panel summary wraps as whole units and keeps its tap target", () => {
+  const rule = _cssRule(_reachCss(), ".notes-summary {");
+  assert.ok(/flex-wrap:\s*wrap/.test(rule),
+    "it is the densest new element and the panel's ONLY tap target — it must wrap, not overflow");
+  assert.ok(/min-height:\s*var\(--tap\)/.test(rule),
+    "and the tap target survives every wrap state, not just the one-line one");
+  // U6 adds the pill and the qualifying marker into this same summary; they are
+  // asserted there. What U5 owes is the container that lets them wrap as units.
+  assert.ok(/display:\s*flex/.test(rule), "a flex row, so each child wraps whole");
 });

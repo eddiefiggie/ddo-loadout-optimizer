@@ -3176,6 +3176,28 @@ if (typeof window !== "undefined" && window.App) {
       if (canAdvance("priorities", state)) solve(false);
     }
 
+    // #446 U5 (KTD5) — the notice-panel jump seam. results.js hands over a target
+    // and nothing more; the step change and the scroll live here, where wizard
+    // state actually is. `step: null` means "this screen": scroll the anchor into
+    // view and focus it rather than re-rendering, which would collapse the panel
+    // the player just opened.
+    //
+    // The anchor is looked up AFTER any step change, and a miss scrolls nothing
+    // rather than throwing — a route whose anchor was renamed must not take the
+    // results screen down with it.
+    function jumpFromNotice(target) {
+      if (!target) return;
+      const land = () => {
+        if (!target.anchor) return;
+        const el = document.querySelector(target.anchor);
+        if (!el) return;
+        el.scrollIntoView({ block: "center" });
+        if (typeof el.focus === "function") el.focus({ preventScroll: true });
+      };
+      if (target.step && target.step !== state.step) { go(target.step); requestAnimationFrame(land); }
+      else land();
+    }
+
     async function solve(firstRun) {
       if (solving) return;
       if (!canAdvance("priorities", state)) return;
@@ -3282,7 +3304,7 @@ if (typeof window !== "undefined" && window.App) {
         render();
         const box = document.getElementById("wz-results");
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result, query, dataset, highs: h, onAfterRender: afterResultsRender, onRequire: requireOutbidStat });
+        if (box) renderResults(box, { model, result, query, dataset, highs: h, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice });
       } catch (err) {
         state.step = "results"; render();
         const box = document.getElementById("wz-results");
@@ -3585,7 +3607,7 @@ if (typeof window !== "undefined" && window.App) {
         // report-absent utility card is reachable without touching the solved record.
         const renderQuery = restoredRenderQuery(query, !!i.utility_tier_aware);
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result: snap, query: renderQuery, dataset, highs: null, onAfterRender: afterResultsRender, onRequire: requireOutbidStat });
+        if (box) renderResults(box, { model, result: snap, query: renderQuery, dataset, highs: null, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice });
         // #88 U8 (R30/AE9) — either cause shows the banner, and the text says which.
         refreshStaleBanner();
       } else {
@@ -4431,7 +4453,7 @@ if (typeof window !== "undefined" && window.App) {
           if (state.lastRun) {
             state.lastRun.query.slotConstraints = { ...state.slotConstraints };
             // eslint-disable-next-line no-undef
-            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: afterResultsRender, onRequire: requireOutbidStat });
+            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice });
           }
           if (cbar) cbar.classList.remove("wz-hidden");
           refreshResultsEmphasis();

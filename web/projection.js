@@ -2014,6 +2014,11 @@
    */
   const NOTICE_ACTIONABLE = "actionable";
   const NOTICE_QUALIFYING = "qualifying";
+  // #446 U5 (KTD6) — the third class. No entry function mints it today (every
+  // split branch is actionable or qualifying), but the name lives beside its two
+  // siblings so results.js has ONE place to read the vocabulary from rather than
+  // two constants here and a bare string there.
+  const NOTICE_INFORMATIONAL = "informational";
   function _asText(s) { return String(s == null ? "" : s); }
 
   /** #369 + U5/R6 — the two Artifact facts. They are mutually exclusive by
@@ -2171,7 +2176,7 @@
     blockNoticeLines,
     // U10 — the three multi-fact notices, one addressable entry per fired branch
     artifactNoticeEntries, zeroSourceNoticeEntries, boundNoticeEntries,
-    NOTICE_ACTIONABLE, NOTICE_QUALIFYING,
+    NOTICE_ACTIONABLE, NOTICE_QUALIFYING, NOTICE_INFORMATIONAL,
     // constraint header helpers (exporters delegates to these)
     constraintPairs, constraintLines,
   };
