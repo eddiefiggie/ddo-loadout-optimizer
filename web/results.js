@@ -975,7 +975,15 @@ const NOTICE_CLASS_ORDER = [NOTICE_ACTIONABLE, NOTICE_QUALIFYING, NOTICE_INFORMA
  *  A `jumpTarget` is a wizard step id plus an optional anchor selector, handed
  *  to the caller's `onJump` seam. results.js never reaches into wizard state:
  *  `step: null` means "this screen", where the wizard scrolls the anchor into
- *  view and focuses it instead of changing step. */
+ *  view and focuses it instead of changing step.
+ *
+ *  DEFERRED — this table is a second place that must be edited whenever a notice
+ *  is added, and the two can drift: a new notice with no row here renders
+ *  "unclassified" until someone looks. The fix is to give each notice function
+ *  its own descriptor and a uniform signature, so classification lives beside
+ *  the notice rather than in a parallel lookup. Tracked as **#448**; the
+ *  completeness assertion in `tests/results.test.js` is what holds the seam
+ *  until then. */
 const NOTICE_TABLE = {
   staleSnapshotNotice: { id: "stale-snapshot", title: "STALE SNAPSHOT", subject: "stale snapshot", cls: NOTICE_ACTIONABLE,
     jump: { label: "Re-solve now", step: null, anchor: "#wz-adjust-slot" } },
