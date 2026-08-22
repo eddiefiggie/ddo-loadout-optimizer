@@ -3643,6 +3643,9 @@ if (typeof window !== "undefined" && window.App) {
 
     /** The refusal, worded once. The name field lives in the rail, which is on
      *  screen from every step, so "name it first" needs no per-surface variant. */
+    /** #431 U4 — "no-name" is reachable from the character step's own save
+     *  button, where the field it names is on screen beside it. The guard no
+     *  longer produces this error at all: it omits Save instead. */
     function saveErrorText(error) {
       if (error === "no-name") return "Name this build first.";
       if (error === "quota") return "Storage full — remove some saves.";
@@ -3966,19 +3969,31 @@ if (typeof window !== "undefined" && window.App) {
         el.setAttribute("aria-labelledby", "wz-unsaved-msg");
         document.body.appendChild(el);
       }
+      // #431 U4 (KTD3) — the option set is a function of whether saving can
+      // SUCCEED. `data-back` navigates without consulting canAdvance, so Back
+      // from the character step reaches this dialog with an empty name. Rather
+      // than offer a Save that can only fail — and then point at a field behind
+      // the overlay — the option is omitted and the dialog says why.
+      const named = !!String(state.characterName || "").trim();
+      const isLoad = state.unsavedPrompt && state.unsavedPrompt.kind === "load";
       el.innerHTML = `<div class="wz-modal-panel">
           <p class="wz-label">Unsaved changes</p>
           <p id="wz-unsaved-msg">${esc(msg)}</p>
+          ${named ? "" : `<p class="wz-help" id="wz-unsaved-why">This build has no name yet, so it cannot be saved. Stay here and name it on the character step.</p>`}
           <div class="wz-modal-actions">
-            <button class="btn primary" id="wz-unsaved-save" type="button">Save and continue</button>
-            <button class="btn ghost" id="wz-unsaved-go" type="button">${state.unsavedPrompt && state.unsavedPrompt.kind === "load" ? "Load anyway" : "Continue without saving"}</button>
-            <button class="btn ghost" id="wz-unsaved-stay" type="button">${state.unsavedPrompt && state.unsavedPrompt.kind === "load" ? "Keep editing this build" : "Stay on this step"}</button>
+            ${named ? `<button class="btn primary" id="wz-unsaved-save" type="button">Save and continue</button>` : ""}
+            <button class="btn ghost" id="wz-unsaved-go" type="button">${isLoad ? "Load anyway" : "Continue without saving"}</button>
+            <button class="btn ghost" id="wz-unsaved-stay" type="button">${isLoad ? "Keep editing this build" : "Stay on this step"}</button>
           </div>
           <span class="wz-savestat" id="wz-unsaved-stat" aria-live="polite"></span>
         </div>`;
       wireUnsavedGuard();
-      const first = document.getElementById("wz-unsaved-save");
-      if (first && first.focus) first.focus();
+      // Focus Save when it is offered, and STAY when it is not — never "the first
+      // control rendered". DOM order is save, discard, stay, so with save omitted
+      // that idiom would make the discard option the keyboard default and a
+      // reflexive Enter would throw the unsaved build away.
+      const focusEl = document.getElementById(named ? "wz-unsaved-save" : "wz-unsaved-stay");
+      if (focusEl && focusEl.focus) focusEl.focus();
     }
 
     function closeUnsavedGuard() {
@@ -3998,6 +4013,8 @@ if (typeof window !== "undefined" && window.App) {
         // ask again. The next edit raises it right back.
         state.inputsDirty = false; closeUnsavedGuard(); resumePending(to);
       };
+      // #431 U4 — rendered only when a name exists, so the no-name branch that
+      // used to focus the rail's field from behind this dialog is gone with it.
       const save = document.getElementById("wz-unsaved-save");
       if (save) save.onclick = () => {
         const nm = String(state.characterName || "").trim();
@@ -4006,12 +4023,6 @@ if (typeof window !== "undefined" && window.App) {
         if (res.ok) { closeUnsavedGuard(); resumePending(to); return; }
         const stat = document.getElementById("wz-unsaved-stat");
         if (stat) stat.textContent = saveErrorText(res.error);
-        // The name field is in the rail, which is behind this dialog — point at
-        // it rather than leaving the player to hunt for what "name it" means.
-        if (res.error === "no-name") {
-          const field = document.getElementById("wz-buildname");
-          if (field && field.focus) field.focus();
-        }
       };
     }
 

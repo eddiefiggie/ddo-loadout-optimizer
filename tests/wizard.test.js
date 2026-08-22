@@ -3460,6 +3460,45 @@ test("#428 U6 (R1/R2/R4): the character step renders three labelled groups in or
   assert.ok(!/<details[^>]*data-group="restrictions"/.test(body), "…and so are restrictions (R6)");
 });
 
+test("#431 U4 (KTD3/AE4): the guard offers Save only when saving can succeed", () => {
+  const g = fnBody(WIZARD_SRC, "function showUnsavedGuard(msg) {", 4);
+  assert.ok(/characterName/.test(g), "the option set is a function of whether a name exists");
+  assert.ok(/wz-unsaved-save/.test(g), "with a name it still offers Save and continue");
+  assert.ok(/needs a name|name it|name this build/i.test(g),
+    "without one it says why Save is absent rather than silently dropping it");
+});
+
+test("#431 U4 (R10/KTD3): no path through the guard asks for the name behind the dialog", () => {
+  const g = fnBody(WIZARD_SRC, "function showUnsavedGuard(msg) {", 4)
+    + fnBody(WIZARD_SRC, "function wireUnsavedGuard() {", 4);
+  assert.ok(!/wz-buildname/.test(g),
+    "the guard never touches the name field — that is the defect this plan exists to fix");
+  // The wiring focuses nothing at all now: the only focus call left in the guard
+  // is the open-time one in showUnsavedGuard, which chooses between save and stay.
+  assert.ok(!/\.focus\(\)/.test(fnBody(WIZARD_SRC, "function wireUnsavedGuard() {", 4)),
+    "no handler in the guard's wiring moves focus behind the dialog");
+});
+
+test("#431 U4: with no name the guard's open-time focus is Stay, never the discard option", () => {
+  const g = fnBody(WIZARD_SRC, "function showUnsavedGuard(msg) {", 4);
+  // DOM order is save, discard, stay. "Focus the first control rendered" would
+  // put the keyboard default on discard once save is omitted, and a reflexive
+  // Enter would throw the build away.
+  const pick = g.match(/getElementById\(([^)]*wz-unsaved-stay[^)]*)\)/);
+  assert.ok(pick, "the open-time focus resolves the stay control by id");
+  assert.ok(/wz-unsaved-save/.test(pick[1]),
+    "…as one arm of a conditional whose other arm is Save — not an unconditional target");
+  assert.ok(!/wz-unsaved-go/.test(pick[1]),
+    "the discard option is never a focus target");
+});
+
+test("#431 U4 (KTD4): saveCurrentCharacter's store-integrity refusal is untouched", () => {
+  const f = fnBody(WIZARD_SRC, "function saveCurrentCharacter(", 4);
+  assert.ok(/no-name/.test(f),
+    "the refusal stays: CharacterStore keys records by name, so an empty one would "
+    + "mint a \"\"-keyed record");
+});
+
 test("#431 U3 (AE3/KTD5/KTD6): one renderer puts save on four bars, and not on intro", () => {
   for (const step of ["stepCharacter", "stepPool", "stepPriorities", "stepResults"]) {
     assert.ok(/saveControl\(/.test(actionRow(step)), `${step} carries the save control`);
