@@ -3164,6 +3164,14 @@ if (typeof window !== "undefined" && window.App) {
     }
 
     let solving = false;
+    // #446 U6 (KTD3) — the notices-panel latch: pulse the attention pill until
+    // the player first opens the panel, then never again this session. Session-
+    // scoped on purpose, and deliberately NOT on `state`: it is a presentation
+    // fact about this sitting, not part of the build, so it must not reach the
+    // save record. renderResults destroys and rebuilds the panel on every solve,
+    // load and per-slot constraint change, which is why the flag lives out here
+    // and is stamped back in at build time rather than read off `[open]`.
+    let notesSeen = false;
     // #345 (U4, R9/R10) — accept an outbid trade: require the effect, then
     // re-solve. Writes through the SAME state field and sanitizer the Advanced
     // min input writes (cleanBoundMap on the way to the query, targetFloors in
@@ -3304,7 +3312,7 @@ if (typeof window !== "undefined" && window.App) {
         render();
         const box = document.getElementById("wz-results");
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result, query, dataset, highs: h, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice });
+        if (box) renderResults(box, { model, result, query, dataset, highs: h, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; } });
       } catch (err) {
         state.step = "results"; render();
         const box = document.getElementById("wz-results");
@@ -3607,7 +3615,7 @@ if (typeof window !== "undefined" && window.App) {
         // report-absent utility card is reachable without touching the solved record.
         const renderQuery = restoredRenderQuery(query, !!i.utility_tier_aware);
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result: snap, query: renderQuery, dataset, highs: null, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice });
+        if (box) renderResults(box, { model, result: snap, query: renderQuery, dataset, highs: null, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; } });
         // #88 U8 (R30/AE9) — either cause shows the banner, and the text says which.
         refreshStaleBanner();
       } else {
@@ -4453,7 +4461,7 @@ if (typeof window !== "undefined" && window.App) {
           if (state.lastRun) {
             state.lastRun.query.slotConstraints = { ...state.slotConstraints };
             // eslint-disable-next-line no-undef
-            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice });
+            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; } });
           }
           if (cbar) cbar.classList.remove("wz-hidden");
           refreshResultsEmphasis();

@@ -952,24 +952,48 @@ const NOTICE_CLASS_ORDER = [NOTICE_ACTIONABLE, NOTICE_QUALIFYING, NOTICE_INFORMA
  *  `step: null` means "this screen", where the wizard scrolls the anchor into
  *  view and focuses it instead of changing step. */
 const NOTICE_TABLE = {
-  staleSnapshotNotice: { id: "stale-snapshot", title: "STALE SNAPSHOT", cls: NOTICE_ACTIONABLE,
+  staleSnapshotNotice: { id: "stale-snapshot", title: "STALE SNAPSHOT", subject: "stale snapshot", cls: NOTICE_ACTIONABLE,
     jump: { label: "Re-solve now", step: null, anchor: "#wz-adjust-slot" } },
-  emptySlotNotice: { id: "empty-slot", title: "EMPTY SLOT", cls: NOTICE_ACTIONABLE,
+  emptySlotNotice: { id: "empty-slot", title: "EMPTY SLOT", subject: "empty slot", cls: NOTICE_ACTIONABLE,
     jump: { label: "Adjust & re-solve →", step: null, anchor: "#wz-adjust-slot" } },
-  craftingExcludedNotice: { id: "crafting-opt-out", title: "EXCLUDED BY CRAFTING OPT-OUT", cls: NOTICE_ACTIONABLE,
+  craftingExcludedNotice: { id: "crafting-opt-out", title: "EXCLUDED BY CRAFTING OPT-OUT", subject: "crafting opt-out", cls: NOTICE_ACTIONABLE,
     jump: { label: "Change crafting opt-out →", step: "character", anchor: 'input[name="wz-crafting-rung"]' } },
-  blockNotice: { id: "blocked-gear", title: "BLOCKED GEAR", cls: NOTICE_ACTIONABLE,
+  blockNotice: { id: "blocked-gear", title: "BLOCKED GEAR", subject: "blocked gear", cls: NOTICE_ACTIONABLE,
     jump: { label: "Review block list →", step: "pool", anchor: null } },
-  augCeilingNotice: { id: "augment-ceiling", title: "AUGMENT POOL NARROWED", cls: NOTICE_ACTIONABLE,
+  augCeilingNotice: { id: "augment-ceiling", title: "AUGMENT POOL NARROWED", subject: "augment ceiling", cls: NOTICE_ACTIONABLE,
     jump: { label: "Change augment ceiling →", step: "character", anchor: "#wz-augceiling" } },
   // Fires only when the player set the ceiling themselves — the same shape as
   // the crafting opt-out, which is why both are actionable rather than
   // qualifying.
-  outbidNotice: { id: "priority-scored-0", title: "PRIORITY SCORED 0", cls: NOTICE_ACTIONABLE, jump: null },
-  absorptionQuarantineNotice: { id: "affix-withheld", title: "AFFIX WITHHELD", cls: NOTICE_QUALIFYING, jump: null },
+  outbidNotice: { id: "priority-scored-0", title: "PRIORITY SCORED 0", subject: "priority scored 0", cls: NOTICE_ACTIONABLE, jump: null },
+  absorptionQuarantineNotice: { id: "affix-withheld", title: "AFFIX WITHHELD", subject: "affix withheld", cls: NOTICE_QUALIFYING, jump: null },
   // R35 — already returns its own `<details>`. Unwrapped inside the panel so the
   // panel stays the only fold.
-  saturationNotice: { id: "at-ceiling", title: "AT CEILING", cls: NOTICE_INFORMATIONAL, jump: null, unwrap: true },
+  saturationNotice: { id: "at-ceiling", title: "AT CEILING", subject: "at ceiling", cls: NOTICE_INFORMATIONAL, jump: null, unwrap: true },
+};
+
+/** #446 U6 (R26) — the short subject each card contributes to the qualifying
+ *  marker, for the cards U10 split out. The marker NAMES what qualifies rather
+ *  than counting it: a bare count says something exists, it does not say the
+ *  headline totals rest on unverified input, which is the fact being disclosed.
+ *
+ *  Curated rather than derived from the title, because lowercasing produces
+ *  "gear ml floor" and "declared credit applied" where the settled copy is
+ *  "gear ML floor" and "declared credit". A U6 test asserts every entry a
+ *  notice can mint has a subject, so the curation cannot silently fall behind
+ *  projection.js the way an uncovered map would. */
+const NOTICE_ENTRY_SUBJECTS = {
+  "artifact-unavailable": "artifact unavailable",
+  "artifact-pinned-in": "artifact pinned in",
+  "stat-not-in-data": "stat not in data",
+  "stat-filtered-out": "stat filtered out",
+  "gear-ml-floor": "gear ML floor",
+  "floor-not-reached": "floor not reached",
+  "held-at-your-cap": "held at your cap",
+  "declared-credit": "declared credit",
+  "bonus-type-override": "bonus type overridden",
+  "re-solve-to-apply": "re-solve to apply",
+  "off-hand-excluded": "off-hand excluded",
 };
 
 /** #446 U5 (KTD5, second table) — resolution routes for the cards U10 split out
@@ -1019,6 +1043,9 @@ function noticeDescriptors(ctx) {
     for (const e of entries) {
       out.push({ name, id: e.id, title: e.title, cls: e.class, unclassified: false,
         jump: NOTICE_ENTRY_JUMPS[e.id] || null,
+        // A missing subject falls back to the lowercased title rather than to
+        // nothing: the marker must never name fewer subjects than it counts.
+        subject: NOTICE_ENTRY_SUBJECTS[e.id] || String(e.title || "").toLowerCase(),
         html: `<p class="notice-sentence">${e.sentence}</p>` });
     }
   };
@@ -1042,10 +1069,48 @@ function noticeDescriptors(ctx) {
   return out.map((d, i) => ({ d, i })).sort((a, b) => rank(a.d) - rank(b.d) || a.i - b.i).map((x) => x.d);
 }
 
-/** #446 U5 (R1-R4, R27, R28, R35) — the panel. Returns "" when nothing fired:
- *  R27 wants no empty fold, no zero count and no chevron on a clean solve. */
-function noticePanel(descriptors) {
+/** #446 U6 (R7, R26) — the two summary markers, both read off the SAME
+ *  descriptor array the cards render from, so a count can never disagree with
+ *  what is inside the fold.
+ *
+ *  The pill counts actionable cards that ACTUALLY RENDERED — a notice returning
+ *  empty contributes no descriptor, so it cannot be counted. The qualifying
+ *  marker names its subjects up to two and falls back to a bare count past
+ *  that, which is where naming stops being an aid and becomes a wall of text. */
+function noticeSummaryMarkers(descriptors, latched) {
+  const act = descriptors.filter((d) => d.cls === NOTICE_ACTIONABLE);
+  const qual = descriptors.filter((d) => d.cls === NOTICE_QUALIFYING);
+  let out = "";
+  if (act.length) {
+    // R9 — the pulse is a decoration over a static amber fill, never the sole
+    // carrier: the repo kills all animation under prefers-reduced-motion, so a
+    // motion-only signal would be invisible to exactly the players who opted out.
+    // R8/KTD3 — the latch is stamped at BUILD time. Keying the pulse on [open]
+    // would re-arm it on every collapse and on every renderResults call.
+    out += `<span class="notes-pill">${esc(act.length)} need${act.length === 1 ? "s" : ""} attention</span>`;
+  }
+  if (qual.length) {
+    const named = qual.length <= 2
+      ? `: ${qual.map((d) => esc(d.subject)).join(", ")}`
+      : "";
+    out += `<span class="notes-qualify">${esc(qual.length)} qualif${qual.length === 1 ? "ies" : "y"}${named}</span>`;
+  }
+  return out;
+}
+
+/** #446 U5 (R1-R4, R27, R28, R35) + U6 (R7-R10, R26) — the panel. Returns ""
+ *  when nothing fired: R27 wants no empty fold, no zero count and no chevron on
+ *  a clean solve.
+ *
+ *  `latched` is the session flag from KTD3, stamped onto the freshly built panel
+ *  as an attribute so the one-way latch survives the rebuild. This is not the
+ *  anti-pattern in `a-state-derived-predicate-cannot-rank-a-dom-its-handlers-mutate.md`:
+ *  that forbids a state-derived predicate RANKING an element its own handlers
+ *  mutate. This flag is write-once, read only by CSS, and is the render-time
+ *  input — which is exactly the moment that learning assigns to state. */
+function noticePanel(descriptors, opts) {
   if (!descriptors.length) return "";
+  const latched = !!(opts && opts.latched);
   const cards = descriptors.map((d) => {
     const body = d.unwrap ? _unwrapDetails(d.html) : d.html;
     // A jump control changes wizard state, so it is a button rather than a link.
@@ -1061,10 +1126,11 @@ function noticePanel(descriptors) {
       + `<div class="notice-body">${body}</div>${ctl}</div>`;
   }).join("");
   const n = descriptors.length;
-  return `<details class="notes-panel"><summary class="notes-summary">`
+  return `<details class="notes-panel"${latched ? " data-notes-seen" : ""}><summary class="notes-summary">`
     + `<span class="notes-chevron" aria-hidden="true">▸</span>`
     + `<span class="notes-label">Notes on this solve</span>`
     + `<span class="notes-count">${esc(n)} ${n === 1 ? "note" : "notes"}</span>`
+    + noticeSummaryMarkers(descriptors, latched)
     + `</summary><div class="notes-body">${cards}</div></details>`;
 }
 
@@ -1348,7 +1414,7 @@ function outbidNotice(query, result, model, canPrice, canRequire) {
     + (ask ? `<span class="outbid-ask">${ask}</span>` : "") + `</p>`;
 }
 
-function renderResults(container, { model, result, query, dataset, highs, onAfterRender, onRequire, onJump }) {
+function renderResults(container, { model, result, query, dataset, highs, onAfterRender, onRequire, onJump, notesSeen, onNotesOpen }) {
   if (result.status !== "optimal") {
     // Keep the Adjust & re-solve control available on a non-optimal result — this
     // is exactly when the user needs to loosen priorities/constraints in place.
@@ -1396,7 +1462,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     canPrice: canPriceOutbid(), canRequire: typeof onRequire === "function" });
   container.innerHTML = `
     ${banner}
-    ${noticePanel(notices)}
+    ${noticePanel(notices, { latched: !!notesSeen })}
     <div class="active-build-bar" hidden>
       <span class="active-build-msg"></span>
       <button class="return-optimum" type="button">Return to optimum</button>
@@ -1454,6 +1520,20 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   // #345 (U4, R8/R9) — accepting the trade writes a floor and re-solves. The
   // handler is the wizard's, so the floor goes through the same sanitizer and
   // persisted field the Advanced min input writes; one writer, one clear path.
+  // #446 U6 (R8/KTD3) — the one-way latch. Stamped on the live element the
+  // moment it opens, so the pulse stops now rather than at the next render, and
+  // reported to the caller so the flag outlives this panel: renderResults
+  // destroys and rebuilds the whole container on every solve, load and per-slot
+  // constraint change. Never cleared — a collapse does not re-arm it.
+  const panelEl = container.querySelector(".notes-panel");
+  if (panelEl) {
+    panelEl.addEventListener("toggle", () => {
+      if (!panelEl.open || panelEl.hasAttribute("data-notes-seen")) return;
+      panelEl.setAttribute("data-notes-seen", "");
+      if (typeof onNotesOpen === "function") onNotesOpen();
+    });
+  }
+
   // #446 U5 (KTD5) — the jump seam. One listener over the panel rather than one
   // closure per card, and results.js hands the caller a target instead of
   // reaching into wizard state: a step id (null meaning "this screen") plus an
@@ -1884,5 +1964,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, noticeDescriptors, noticePanel, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }

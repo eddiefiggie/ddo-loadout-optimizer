@@ -1936,7 +1936,7 @@ test("U1: renderResults emits the outbid notice — the render, not just the fun
   const render = src.slice(src.indexOf("function renderResults("), src.indexOf("active-build-bar"));
   assert.ok(/noticeDescriptors\(\{/.test(render) && /canPrice: canPriceOutbid\(\)/.test(render),
     "renderResults must build the descriptors and thread the real pricing capability");
-  assert.ok(/\$\{noticePanel\(notices\)\}/.test(render),
+  assert.ok(/\$\{noticePanel\(notices\b/.test(render),
     "and it must render the panel it built");
 });
 
@@ -2579,7 +2579,7 @@ test("#446 U5: the count is non-empty notices, not notice functions", () => {
 test("#446 U5: the active-build bar stays outside the panel", () => {
   const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
   const tpl = src.slice(src.indexOf("container.innerHTML = `\n    ${banner}"), src.indexOf("readout-analysis"));
-  const panelAt = tpl.indexOf("noticePanel(notices)");
+  const panelAt = tpl.indexOf("noticePanel(notices");
   const barAt = tpl.indexOf("active-build-bar");
   // Both indices are asserted PRESENT before they are compared. Written as a bare
   // `panelAt < barAt` this passes when the panel is absent entirely (-1 is less
@@ -2614,4 +2614,159 @@ test("#446 U5 (R37): the panel summary wraps as whole units and keeps its tap ta
   // U6 adds the pill and the qualifying marker into this same summary; they are
   // asserted there. What U5 owes is the container that lets them wrap as units.
   assert.ok(/display:\s*flex/.test(rule), "a flex row, so each child wraps whole");
+});
+
+// ---------------------------------------------------------------------------
+// #446 U6 — the attention pill and the qualifying marker.
+// ---------------------------------------------------------------------------
+
+/** Descriptors of a given shape, as noticeDescriptors would hand them over. */
+function _marks(spec) {
+  return spec.map((cls, i) => ({ id: `n${i}`, title: `N${i}`, cls,
+    subject: `subject ${i}`, html: "<p>s</p>", jump: null }));
+}
+
+test("#446 U6 (R7/AE1): three actionable notices render a pill reading '3 need attention'", () => {
+  const html = R.noticePanel(_marks(["actionable", "actionable", "actionable"]));
+  assert.ok(/<span class="notes-pill">3 need attention<\/span>/.test(html));
+  assert.ok(/>3 notes</.test(html), "and the total count still speaks for the whole panel");
+});
+
+test("#446 U6 (R7): the pill counts cards that RENDERED, not notice functions that could fire", () => {
+  // Four notices classified actionable, one of which returns empty: an empty
+  // return contributes no descriptor, so it cannot reach the count.
+  const ctx = _noticeCtx();
+  ctx.result.blockReport = [{ id: "X", name: "Thing", slot: "Ring", stat: "Dodge" }];
+  ctx.result.saturationReport = [{ stat: "Dodge", total: 15, bonusTypes: ["Enhancement"], unusedSources: 2 }];
+  const ds = R.noticeDescriptors(ctx);
+  const actual = ds.filter((d) => d.cls === "actionable").length;
+  const html = R.noticePanel(ds);
+  if (actual) assert.ok(new RegExp(`>${actual} need`).test(html), "the pill agrees with the cards inside");
+  else assert.ok(!/notes-pill/.test(html), "no actionable card, no pill");
+  assert.strictEqual(ds.length, (html.match(/class="notice-card/g) || []).length,
+    "and the total counts exactly the cards rendered");
+});
+
+test("#446 U6 (R10/AE2): zero actionable notices render no pill element", () => {
+  const none = R.noticePanel(_marks(["qualifying", "informational"]));
+  assert.ok(!/notes-pill/.test(none), "nothing to act on, nothing to pulse");
+  // The positive control is what makes the line above mean anything: without it
+  // the assertion also passes on a tree that has no pill at all, which is the
+  // state it exists to distinguish from.
+  const some = R.noticePanel(_marks(["qualifying", "informational", "actionable"]));
+  assert.ok(/notes-pill/.test(some), "and adding one actionable card does produce a pill");
+});
+
+test("#446 U6 (R26/AE11): qualifying with no actionable renders the marker and no pill", () => {
+  const ds = _marks(["qualifying", "qualifying"]);
+  ds[0].subject = "affix withheld"; ds[1].subject = "declared credit";
+  const html = R.noticePanel(ds);
+  assert.ok(!/notes-pill/.test(html), "no pill");
+  assert.ok(/<span class="notes-qualify">2 qualify: affix withheld, declared credit<\/span>/.test(html),
+    "the marker NAMES its subjects — a bare count would not say the totals rest on unverified input");
+});
+
+test("#446 U6 (R26): the marker names up to two subjects, then falls back to a count", () => {
+  assert.ok(/1 qualifies: subject 0/.test(R.noticePanel(_marks(["qualifying"]))), "one, named");
+  assert.ok(/2 qualify: subject 0, subject 1/.test(R.noticePanel(_marks(["qualifying", "qualifying"]))), "two, named");
+  const three = R.noticePanel(_marks(["qualifying", "qualifying", "qualifying"]));
+  assert.ok(/>3 qualify</.test(three) && !/subject 0/.test(three),
+    "past two, naming stops being an aid and becomes a wall of text");
+});
+
+test("#446 U6 (R26): every entry a notice can mint carries a subject", () => {
+  // The curation cannot silently fall behind projection.js: every id the three
+  // entry functions emit must have a row here, and so must all eight table rows.
+  const src = require("fs").readFileSync(
+    require("path").join(__dirname, "..", "web", "projection.js"), "utf8");
+  // The end marker is searched FROM the start index: `constraintPairs` is also
+  // defined ~700 lines earlier, and a bare indexOf returned that one, producing
+  // an empty slice and a loop over nothing. The `>= 11` assertion below is what
+  // makes such a slice fail loudly instead of passing vacuously.
+  const from = src.indexOf("function artifactNoticeEntries");
+  const region = src.slice(from, src.indexOf("constraintPairs,", from));
+  const ids = [...new Set([...region.matchAll(/\{\s*id:\s*"([a-z0-9-]+)"/g)].map((m) => m[1]))];
+  assert.ok(ids.length >= 11, `expected the eleven split branches, saw ${ids.length}`);
+  for (const id of ids) {
+    assert.ok(R.NOTICE_ENTRY_SUBJECTS[id], `${id} can be minted but has no U6 subject`);
+  }
+  for (const [name, row] of Object.entries(R.NOTICE_TABLE)) {
+    assert.ok(row.subject, `${name} has no subject`);
+    assert.strictEqual(row.subject, row.subject.toLowerCase().replace("ml", "ML"),
+      `${name}: a subject is lower-case prose, not a shouted title`);
+  }
+});
+
+test("#446 U6 (R8/KTD3/AE13): the latch is stamped at build time and survives a re-render", () => {
+  const ds = _marks(["actionable"]);
+  const before = R.noticePanel(ds, { latched: false });
+  assert.ok(!/data-notes-seen/.test(before), "unlatched on the first render — the pulse is armed");
+  const after = R.noticePanel(ds, { latched: true });
+  assert.ok(/<details class="notes-panel" data-notes-seen>/.test(after),
+    "a rebuilt panel carries the latch, so the pulse does not re-arm on the next solve");
+  // The panel is COLLAPSED in both, which is the whole point: a latch keyed on
+  // [open] would be indistinguishable from the unlatched state here.
+  assert.ok(!/<details class="notes-panel"[^>]*\bopen\b/.test(after),
+    "and collapsing after opening does not restore the pulse");
+});
+
+test("#446 U6 (R8/KTD3): the pulse reads the latch attribute, never [open]", () => {
+  const css = _reachCss();
+  assert.ok(css.includes(".notes-panel:not([data-notes-seen]) .notes-pill { animation:"),
+    "the pulse is armed by the ABSENCE of the stamp");
+  assert.ok(!/\.notes-panel\[open\][^{]*\{[^}]*animation/.test(css),
+    "[open] is a live toggle, not a latch: it re-arms on every collapse and every rebuild");
+});
+
+test("#446 U6 (R9/AE3): the pill is legible with no animation at all", () => {
+  const base = _cssRule(_reachCss(), ".notes-pill {");
+  assert.ok(/background:\s*var\(--warn\)/.test(base), "a static amber FILL carries the signal…");
+  assert.ok(/border:\s*1px solid var\(--warn\)/.test(base), "…with a border of its own…");
+  assert.ok(!/animation/.test(base), "…and the base rule reaches for no motion");
+  // The repo disables every animation under prefers-reduced-motion, so a
+  // motion-only signal would vanish for exactly the players who opted out.
+  assert.ok(/@media \(prefers-reduced-motion: reduce\) \{\s*\* \{ animation: none !important/.test(_reachCss()),
+    "which the global kill switch makes load-bearing, not theoretical");
+});
+
+test("#446 U6 (R9): the pill's ink is the dark ground, not white on amber", () => {
+  const base = _cssRule(_reachCss(), ".notes-pill {");
+  assert.ok(/color:\s*var\(--bg\)/.test(base),
+    "white on #d9a441 measures 2.25:1, below the 4.5:1 floor; --bg measures 8.18:1");
+  // Pinned as values, not as a claim: a later palette edit that breaks the pair
+  // must fail here rather than ship a pill nobody can read.
+  const root = _reachCss().slice(_reachCss().indexOf(":root"));
+  assert.ok(/--warn:\s*#d9a441/.test(root) && /--bg:\s*#0f1420/.test(root),
+    "the measured pair is the pair actually in the stylesheet");
+});
+
+test("#446 U6 (R26): the qualifying marker carries no animation under any state", () => {
+  const css = _reachCss();
+  assert.ok(!/notes-qualify[^{]*\{[^}]*animation/.test(css), "no rule animates it directly");
+  assert.ok(!/animation[^;]*;\s*\}[^{]*\.notes-qualify/.test(css), "and none reaches it sideways");
+  const base = _cssRule(css, ".notes-qualify {");
+  assert.ok(/var\(--qualify\)/.test(base) && !/--warn/.test(base),
+    "slate, deliberately off the amber ramp — it reports a condition, not a task");
+});
+
+test("#446 U6 (R37): the pill and the marker each wrap as a unit", () => {
+  for (const sel of [".notes-pill {", ".notes-qualify {"]) {
+    assert.ok(/white-space:\s*nowrap/.test(_cssRule(_reachCss(), sel)),
+      `${sel} must wrap whole rather than breaking internally at 375px`);
+  }
+});
+
+test("#446 U6: renderResults threads the latch both ways", () => {
+  const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
+  const fn = src.slice(src.indexOf("function renderResults("), src.indexOf("function renderAltCards"));
+  assert.ok(/notesSeen, onNotesOpen/.test(fn), "it takes the flag and the way to set it");
+  assert.ok(/latched: !!notesSeen/.test(fn), "stamps the panel from it at build time");
+  assert.ok(/addEventListener\("toggle"/.test(fn), "and latches on first open");
+  assert.ok(/panelEl\.setAttribute\("data-notes-seen", ""\)/.test(fn),
+    "stamping the LIVE element too, so the pulse stops now rather than at the next render");
+  const wiz = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "wizard.js"), "utf8");
+  assert.ok(/let notesSeen = false;/.test(wiz), "the flag is session-scoped…");
+  assert.ok(!/state\.notesSeen/.test(wiz), "…and never on `state`, which would carry it into the save record");
+  assert.strictEqual((wiz.match(/onNotesOpen: \(\) => \{ notesSeen = true; \}/g) || []).length, 3,
+    "wired at all three renderResults call sites, or the latch is arrived-at-dependent");
 });

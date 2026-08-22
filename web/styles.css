@@ -1404,6 +1404,37 @@ input.wz-ml { width: 120px; }
 .notes-count { color: var(--faint); font-size: var(--fs-xs); font-weight: 500; }
 .notes-body { padding: 0 var(--sp-4) var(--sp-3); display: grid; gap: var(--sp-2); }
 
+/* R7/R9 -- the attention pill. The amber FILL and border are the signal; the
+   pulse below only decorates them. The repo kills every animation under
+   prefers-reduced-motion (see the `* { animation: none !important }` rule), so
+   a motion-carried signal would be invisible to exactly the players who asked
+   for less motion. Ink is the near-black page ground rather than white: measured
+   against this amber, white is 2.25:1 (below the 4.5:1 floor) and --bg is 8.18:1.
+   R37 -- wraps as a unit, never breaking internally. */
+.notes-pill {
+  white-space: nowrap; padding: 2px var(--sp-2); border-radius: 999px;
+  font-size: var(--fs-xs); font-weight: 700;
+  color: var(--bg); background: var(--warn); border: 1px solid var(--warn);
+}
+/* R8/KTD3 -- the one-way latch. The pulse reads the ABSENCE of the stamp, which
+   renderResults writes at build time from a session flag, so it survives the
+   rebuild. Keyed on [open] instead it would re-arm on every collapse AND on
+   every solve, load and per-slot constraint change. */
+.notes-panel:not([data-notes-seen]) .notes-pill { animation: notes-pulse 1.6s ease-in-out infinite; }
+@keyframes notes-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(217,164,65,0.55); }
+  50%      { box-shadow: 0 0 0 5px rgba(217,164,65,0); }
+}
+/* R26 -- the qualifying marker names its subjects rather than counting them: a
+   bare count says something exists, it does not say the headline totals rest on
+   unverified input. Slate, off the amber ramp, and NEVER animated -- it reports
+   a standing condition, not something to go and fix. */
+.notes-qualify {
+  white-space: nowrap; padding: 2px var(--sp-2); border-radius: 999px;
+  font-size: var(--fs-xs); font-weight: 600;
+  color: var(--qualify); border: 1px solid var(--qualify); background: transparent;
+}
+
 /* R4 -- every notice is a bordered sub-card with a title; none renders as bare
    prose. R5 -- the left edge carries the class. */
 .notice-card {
