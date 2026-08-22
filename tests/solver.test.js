@@ -4544,6 +4544,231 @@ async function withCrossAdd(map, fn) {
     assert.ok(!JSON.stringify(r.saturationReport).includes("zByBucket"));
   });
 
+  // ---- U1 (#449): the ceiling census --------------------------------------
+  //
+  // `ceilingReport` is the SAME single pass over `program.zByBucket` the
+  // saturation notice already ran, kept whole instead of filtered: one row per
+  // target stat carrying what the build achieved and what its buckets could have
+  // supplied. `saturationReport` is now the subset of that census satisfying the
+  // notice's KTD3 gate, projected back to its own field shape — the notice's
+  // firing condition does NOT move, and the byte-identity test below is what
+  // holds it. The two reports deliberately overlap; the census is the fraction's
+  // source, the notice's set is the alarm's.
+  const ceil = (r, stat) => (r.ceilingReport || []).find((e) => e.stat === stat);
+
+  await test("U1/#449: a stat whose every bucket is filled reads achieved === ceiling, allFilled true", async () => {
+    const model = {
+      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Goggles", [item("best-equip", "Goggles", [["KL", "Equipment", 24]]),
+                         item("lesser-equip", "Goggles", [["KL", "Equipment", 20]])]),
+        slot("Ring", [item("art", "Ring", [["KL", "Artifact", 6]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.ok(Array.isArray(r.ceilingReport), "the census exists on the optimum result");
+    const e = ceil(r, "KL");
+    assert.ok(e, "the ranked stat has a census row");
+    assert.strictEqual(e.achieved, 30, "24 Equipment + 6 Artifact");
+    assert.strictEqual(e.ceiling, 30, "each bucket's best is what the build took");
+    assert.strictEqual(e.allFilled, true, "nothing in the pool could raise it");
+    assert.strictEqual(e.unusedSources, 1, "the beaten 20 Equipment source is still counted as unused");
+    assert.deepStrictEqual(e.bonusTypes.slice().sort(), ["Artifact", "Equipment"]);
+  });
+
+  await test("U1/#449: a stat forced onto a lesser source reads achieved < ceiling = Σ per-bucket maxima", async () => {
+    // Priority 1 takes the ring, so B's Equipment bucket is left empty even
+    // though a live 20 sits in it. The census must show the whole bucket sum as
+    // the ceiling — this is the state the fraction exists to make visible.
+    const model = {
+      targets: ["A", "B"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Equipment", 10]]),
+                      item("rB", "Ring", [["B", "Equipment", 20]])]),
+        slot("Belt", [item("bB", "Belt", [["B", "Insight", 4]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.A, 10, "premise: priority 1 takes the ring");
+    assert.strictEqual(r.effective.B, 4, "premise: B keeps only the belt");
+    const e = ceil(r, "B");
+    assert.ok(e, "the under-filled stat still has a row");
+    assert.strictEqual(e.achieved, 4, "what the build actually holds");
+    assert.strictEqual(e.ceiling, 24, "20 (the empty Equipment bucket's best) + 4 (Insight)");
+    assert.ok(e.achieved < e.ceiling, "the gap is the point of the census");
+    assert.strictEqual(e.allFilled, false, "a bucket took less than its best");
+  });
+
+  await test("U1/#449: an unsaturated stat is in ceilingReport and NOT in saturationReport", async () => {
+    const model = {
+      targets: ["A", "B"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Equipment", 10]]),
+                      item("rB", "Ring", [["B", "Equipment", 20]])]),
+        slot("Belt", [item("bB", "Belt", [["B", "Insight", 4]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.ok(Array.isArray(r.saturationReport), "the notice's set exists, so its emptiness cannot pass for absence");
+    assert.ok(ceil(r, "B"), "the census reports it");
+    assert.ok(!sat(r, "B"),
+      "the notice does not — the display is ungated, the alarm is not (KTD1)");
+    assert.ok(ceil(r, "A"), "and every OTHER target stat has a row too, saturated or not");
+  });
+
+  await test("U1/#449: saturationReport is byte-identical to the pre-change tree's output", async () => {
+    // Captured by running these exact fixtures against the tree at 1a30951, the
+    // commit before the census landed. Serialized, not deep-compared: the notice
+    // and its consumers read a fixed field shape, and field ORDER is part of what
+    // this holds. A projection that reorders or renames is a silent break.
+    const saturated = {
+      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Goggles", [item("best-equip", "Goggles", [["KL", "Equipment", 24]]),
+                         item("lesser-equip", "Goggles", [["KL", "Equipment", 20]])]),
+        slot("Ring", [item("art", "Ring", [["KL", "Artifact", 6]])]),
+      ],
+    };
+    const untyped = {
+      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Goggles", [item("native", "Goggles", [["KL", null, 6]]),
+                         item("native-lo", "Goggles", [["KL", null, 4]])]),
+        slot("Ring", [item("aug", "Ring", [["KL", "Untyped", 4]])]),
+      ],
+    };
+    const rs = await S.solveLexicographic(saturated, highs);
+    assert.strictEqual(JSON.stringify(rs.saturationReport),
+      '[{"stat":"KL","total":30,"bonusTypes":["Equipment","Artifact"],"unusedSources":1}]');
+    const ru = await S.solveLexicographic(untyped, highs);
+    assert.strictEqual(JSON.stringify(ru.saturationReport),
+      '[{"stat":"KL","total":10,"bonusTypes":["untyped","Untyped"],"unusedSources":1}]');
+  });
+
+  await test("U1/#449: one live source per bucket reads achieved === ceiling with no unused sources", async () => {
+    const model = {
+      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Goggles", [item("equip", "Goggles", [["KL", "Equipment", 24]])]),
+        slot("Ring", [item("art-lo", "Ring", [["KL", "Artifact", 6]]),
+                      item("other", "Ring", [["Unranked", "Equipment", 99]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    const e = ceil(r, "KL");
+    assert.ok(e, "a maxed stat with nothing spare still has a row");
+    assert.strictEqual(e.achieved, 30);
+    assert.strictEqual(e.ceiling, 30);
+    assert.strictEqual(e.unusedSources, 0, "the unused ring carries no KL, so it is not an unused KL source");
+    assert.ok(!sat(r, "KL"), "and with nothing spare the notice stays quiet (KTD3)");
+  });
+
+  await test("U1/#449: a ranked stat with no live source reads 0 / 0 rather than vanishing", async () => {
+    const model = {
+      targets: ["Absent"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [item("r", "Ring", [["Other", "Equipment", 5]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    const e = ceil(r, "Absent");
+    assert.ok(e, "a stat nothing carries is still a ranked priority and still gets a row");
+    assert.strictEqual(e.achieved, 0);
+    assert.strictEqual(e.ceiling, 0);
+    assert.deepStrictEqual(e.bonusTypes, [], "no bucket contributed a label");
+  });
+
+  await test("U1/#449: a capped stat has BOTH sides clamped, and achieved never exceeds the card's headline", async () => {
+    // KTD7 — the card's headline is effectiveOf = min(cap, raw). An unclamped
+    // numerator would state a third total for one stat, inches from the capNote.
+    const model = {
+      targets: ["KL"], mlCap: 34, dodgeCap: null, userCaps: { KL: 20 },
+      worn: [
+        slot("Goggles", [item("best-equip", "Goggles", [["KL", "Equipment", 24]]),
+                         item("lesser-equip", "Goggles", [["KL", "Equipment", 20]])]),
+        slot("Ring", [item("art", "Ring", [["KL", "Artifact", 6]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.capped.KL, 20, "premise: the cap is in force");
+    const e = ceil(r, "KL");
+    assert.ok(e, "the capped stat has a row");
+    assert.strictEqual(e.ceiling, 20, "the raw pool ceiling of 30 is clamped to the cap");
+    assert.ok(e.achieved <= 20, `achieved ${e.achieved} must be clamped too`);
+    assert.ok(e.achieved <= r.effective.KL,
+      `achieved ${e.achieved} must never exceed the headline ${r.effective.KL} rendered directly above it`);
+  });
+
+  await test("U1/#449: the Utility sentinel gets no census row (KTD8)", async () => {
+    const SENTINEL = require("../web/model.js").UTILITY_SENTINEL;
+    const model = {
+      targets: ["KL", SENTINEL], mlCap: 34, dodgeCap: null,
+      utilityCountingSet: new Set(["Ghost Touch"]),
+      worn: [slot("Goggles", [item("g", "Goggles", [["KL", "Equipment", 24], ["Ghost Touch", "Bool", 1]]),
+                              item("g2", "Goggles", [["KL", "Equipment", 20]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.ok(r.program.targetList.includes(SENTINEL), "premise: the sentinel IS a member of targetList");
+    assert.ok(Array.isArray(r.ceilingReport) && r.ceilingReport.length >= 1, "the census ran");
+    assert.ok(!ceil(r, SENTINEL),
+      "it is a count of distinct effects, not a summable stat — a row would render 0 / 0 and a NaN meter");
+    assert.ok(ceil(r, "KL"), "the real stat beside it still has one");
+  });
+
+  await test("U1/#449: an empty stat is distinguishable from a missing one (synthetic primal)", async () => {
+    // The #319 idiom, straight into readSolution: the item var is on but no
+    // contribution fired. `achieved` must read 0 WITH a row, not no row at all —
+    // a renderer cannot tell "nothing yet" from "not a target" otherwise.
+    const model = {
+      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Goggles", [item("g", "Goggles", [["KL", "Equipment", 24]])])],
+    };
+    const program = S.buildProgram(model);
+    const primalOf = (names) => ({ Columns: Object.fromEntries(names.map((n) => [n, { Primal: 1 }])) });
+    const sol = S.readSolution(primalOf([program.xVars[0].name]), program);
+    const e = (sol.ceilingReport || []).find((x) => x.stat === "KL");
+    assert.ok(e, "the row exists even with nothing fired");
+    assert.strictEqual(e.achieved, 0, "no contribution fired");
+    assert.strictEqual(e.ceiling, 24, "but the pool's ceiling is unchanged by the primal");
+    assert.strictEqual(e.allFilled, false, "and the bucket is visibly unfilled");
+  });
+
+  await test("U1/#449: every solve path carries its OWN census, alternatives included (KTD9)", async () => {
+    // renderBuild is generic over the optimum and any selected alternative and
+    // must never close over the optimum. Emitting from readSolution is what
+    // stops an inspected alternative from blanking — or borrowing the
+    // optimum's numerator beside its own headline.
+    const model = {
+      targets: ["A", "B"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Ring", [item("rA", "Ring", [["A", "Equipment", 10]]),
+                      item("rB", "Ring", [["B", "Equipment", 20]])]),
+        slot("Belt", [item("bB", "Belt", [["B", "Insight", 4]])]),
+      ],
+    };
+    const opt = await S.solveLexicographic(model, highs);
+    const alt = S.solveConstrained(opt.program, highs, {
+      objectiveStat: "B", locks: [{ stat: "A", value: 10, give: 10 }],
+    });
+    assert.strictEqual(alt.status, "optimal");
+    assert.ok(Array.isArray(alt.ceilingReport), "the alternative carries a census of its own");
+    const a = (alt.ceilingReport || []).find((x) => x.stat === "B");
+    assert.ok(a, "including a row for the traded stat");
+    assert.strictEqual(a.achieved, alt.effective.B,
+      "and it reports the ALTERNATIVE's own achieved value, not the optimum's");
+    assert.notStrictEqual(alt.effective.B, opt.effective.B, "premise: the two builds differ on B");
+  });
+
+  await test("U1/#449: ceilingReport is plain JSON with no reference to the program", async () => {
+    const model = {
+      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Goggles", [item("a", "Goggles", [["KL", "Equipment", 24]]),
+                              item("b", "Goggles", [["KL", "Equipment", 20]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    const round = JSON.parse(JSON.stringify(r.ceilingReport));
+    assert.deepStrictEqual(round, r.ceilingReport, "survives a stringify round-trip unchanged");
+    assert.ok(!JSON.stringify(r.ceilingReport).includes("zByBucket"));
+  });
+
   // ---- #239: the empty-slot report ----------------------------------------
   //
   // These drive a REAL solve. The first version of this feature counted

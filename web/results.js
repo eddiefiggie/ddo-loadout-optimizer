@@ -34,6 +34,11 @@ const assignDinoInserts = Proj.assignDinoInserts;
 const attributionByTarget = Proj.attributionByTarget;
 const whyThis = Proj.whyThis;
 var itemContributions = Proj.itemContributions;
+// #449 U4 — `saturatedStats` has no caller left in this file: its only one was
+// the per-item ceiling marker. The binding stays because it is re-exported
+// below, and `tests/projection.test.js` pins that surface against projection's.
+// `saturationLineFor` still has a live caller in `ceilingChip`, the old-save
+// fallback. Delete either and the parity test turns red, not the renderer.
 var saturatedStats = Proj.saturatedStats;
 var saturationLineFor = Proj.saturationLineFor;
 const satisfiedSets = Proj.satisfiedSets;
@@ -399,7 +404,7 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
   // "pinned" badge must fire only when THIS row's item is one of the slot's pins.
   const rowId = v ? (v.variant_id || v.source_item) : "";
   const rowPinned = !!(c && c.type === "pin" && rowId && _pinnedVariantIds(c).includes(rowId));
-  const ctl = `<button class="pd-ctl" data-slot="${esc(label)}" title="constrain this slot" aria-label="constrain ${esc(label)}">&#8943;</button>`;
+  const ctl = `<button class="pd-ctl" data-slot="${esc(label)}" title="constrain this slot" aria-label="constrain ${esc(label)}">&#9881;</button>`;
   const menu = `<div class="pd-menu" hidden>
     <button data-act="pin" data-slot="${esc(label)}" data-variant="${canPin ? esc(rowId) : ""}"${canPin ? "" : " disabled"}>Pin this item</button>
     <button data-act="empty" data-slot="${esc(label)}">Lock empty</button>
@@ -610,8 +615,19 @@ function whyThisLine(result, item, attr, targets) {
       `${esc(p.stat)} +${esc(p.value)} (${esc(p.family)})`).join(", ");
     return `<div class="pd-why pd-carried" title="Nothing printed on this item advances your priorities — its value here depends entirely on crafting it. Un-craftable alternatives are on the Alternatives tab.">⚒ here only for its crafts: ${txt}</div>`;
   }
-  const sat = saturatedStats(result);
-  const spans = contribs.slice(0, 3).map((c) => {
+  // #449 U7 (R20) — one chip per contribution, replacing the comma-run of inline
+  // spans. The run carried FIVE qualifiers, not one label, and every one of them
+  // survives: the value, the stat, the bonus type, `(set)`, `(from <stat>)` and
+  // the override disclosure. That last one shipped under #88 precisely because a
+  // gear box stating a bonus type without it "states a bonus type as though the
+  // wiki said so" — dropping it here would re-open the claim it was written to
+  // close. The primary line is the value and the stat; the qualifiers move to a
+  // sub-label rather than off the surface.
+  //
+  // R31 — the three-contribution cap is retained. It governs the row's height at
+  // phone width, which is what R22 is about.
+  const rank1 = (targets && targets.length) ? targets[0] : null;
+  const chips = contribs.slice(0, 3).map((c) => {
     // #227 — untyped is a real bucket; never print a raw null.
     const typeLabel = (c.bonus_type == null || c.bonus_type === "") ? "untyped" : c.bonus_type;
     // U3 (#290/#291) — a cross-added credit is labeled "(from <source stat>)",
@@ -623,15 +639,29 @@ function whyThisLine(result, item, attr, targets) {
     const ovr = c.overriddenFrom
       ? ` (your call — catalog says ${esc(c.overriddenFrom)})`
       : "";
-    const label = c.boolean
-      ? `✓ ${esc(c.stat)}`                                 // U4: presence, not "+1"
-      : `${esc(c.stat)} +${esc(c.value)} ${esc(typeLabel)}${c.viaSet ? " (set)" : ""}${from}${ovr}`;
-    const line = sat.has(c.stat) ? saturationLineFor(result, c.stat) : null;
-    return line
-      ? `<span class="pd-contrib at-ceiling" title="${esc(line)}">${label}</span>`
-      : `<span class="pd-contrib">${label}</span>`;
+    // A boolean contribution has no magnitude and no bonus type to state, so its
+    // sub-label carries only what actually applies to it (U4: presence, not "+1").
+    const sub = c.boolean
+      ? `${c.viaSet ? "(set)" : ""}${from}${ovr}`.trim()
+      : `${esc(typeLabel)}${c.viaSet ? " (set)" : ""}${from}${ovr}`;
+    const head = c.boolean
+      ? `<span class="pd-chip-check" aria-hidden="true">✓</span><span class="pd-chip-stat">${esc(c.stat)}</span>`
+      : `<span class="pd-chip-value">+${esc(c.value)}</span><span class="pd-chip-stat">${esc(c.stat)}</span>`;
+    // #449 U4 (R17a) — no at-ceiling marker here. An item is not the whole
+    // contribution to a stat, so a green marker on one of its spans read as a
+    // claim about that item rather than about the summed total. The fact now
+    // renders once, on the ranked card that actually describes it (`statReach`).
+    //
+    // `pd-contrib` is kept alongside `pd-chip`: it is the class every existing
+    // guard names, and the chip is what that span became rather than a new thing
+    // beside it.
+    const isTop = rank1 != null && c.stat === rank1;
+    return `<span class="pd-contrib pd-chip${isTop ? " is-rank1" : ""}">`
+      + `<span class="pd-chip-head">${head}</span>`
+      + (sub ? `<span class="pd-chip-sub">${sub}</span>` : "")
+      + `</span>`;
   });
-  return `<div class="pd-prio" title="this item's contributions to your ranked priorities">${spans.join(", ")}</div>`;
+  return `<div class="pd-prio" title="this item's contributions to your ranked priorities">${chips.join("")}</div>`;
 }
 
 // Count-up motion (KTD4), robust to motion NOT running (AE4). The final value is
@@ -664,27 +694,32 @@ function animateCounters(container) {
   });
 }
 
-// U5/R6 — the box was checked but no eligible Artifact could be placed (empty
-// seed, or the only Artifact's slot locked/pinned away). A distinct callout by
-// the loadout — NOT buried in the coverage scope-note — because with the seed
-// shipping empty every opt-in hits this path. Pure (query + chosen), exported.
+// U5/R6 + #369 — the two Artifact facts, as one addressable entry each (U10).
+//
+//  - the box was checked but no eligible Artifact could be placed (empty seed, or
+//    the only Artifact's slot locked/pinned away). A distinct callout by the
+//    loadout — NOT buried in the coverage scope-note — because with the seed
+//    shipping empty every opt-in hits this path;
+//  - a pin overrode the opt-in (a pin is the more specific instruction), so the
+//    player MUST be told: they left the box unchecked and an Artifact is in the
+//    build anyway. Naming the items is the point — a bare "an Artifact was
+//    included" would leave them hunting for which one.
+//
+// The two never share a card: "none is flagged" over a named, included Artifact
+// would be a flat contradiction. This function derives the facts and renders;
+// projection.js owns the sentences. Pure (query + chosen), exported.
 function artifactNotice(result, query) {
+  return artifactNoticeEntries(result, query)
+    .map((e) => `<div class="artifact-notice" role="status">${e.sentence}</div>`).join("");
+}
+
+/** U10 — the Artifact facts this solve fired, each carrying its title and class.
+ *  The render above is these entries and nothing else. */
+function artifactNoticeEntries(result, query) {
   const missing = !!(query && query.includeArtifact && result && result.chosen
     && !result.chosen.some((c) => c.variant && c.variant.artifact));
-  if (missing) {
-    return `<div class="artifact-notice" role="status">No Artifact could be included — none is flagged in the current data.</div>`;
-  }
-  // #369 — a pin overrides the opt-in (a pin is the more specific instruction),
-  // so when that happened the player MUST be told: they left the box unchecked
-  // and an Artifact is in the build anyway. Naming the items is the point — a
-  // bare "an Artifact was included" would leave them hunting for which one.
-  const pinnedArtifacts = artifactsIncludedByPin(result, query);
-  return pinnedArtifacts.length
-    ? `<div class="artifact-notice" role="status">${esc(pinnedArtifacts.join(", "))} ${
-        pinnedArtifacts.length === 1 ? "is an Artifact and was" : "are Artifacts and were"
-      } included because you pinned ${pinnedArtifacts.length === 1 ? "it" : "them"}, even though "Include an Artifact" is off. Unpin to exclude ${
-        pinnedArtifacts.length === 1 ? "it" : "them"}.</div>`
-    : "";
+  return Proj.artifactNoticeEntries(
+    { missing, pinnedArtifacts: artifactsIncludedByPin(result, query) }, esc);
 }
 
 /** #369 — Artifacts in the loadout that are there ONLY because they were pinned:
@@ -728,28 +763,25 @@ var _offHandItemsExcluded = (typeof offHandItemsExcluded !== "undefined") ? offH
 // scores neither the TWF penalty nor a shield's defensive worth — so a player is
 // owed both facts rather than an unexplained off-hand pick.
 function boundNotice(query, result) {
-  const parts = [];
-  const floor = query && Number(query.mlFloor);
-  if (floor) parts.push(`Considered gear ML ≥ ${esc(floor)} (your floor).`);
+  const entries = boundNoticeEntries(query, result);
+  return entries.length
+    ? `<p class="scope-note bound-note" role="status">${entries.map((e) => e.sentence).join(" ")}</p>`
+    : "";
+}
+
+/** U10 — the bounds this solve actually hit, one addressable entry per fired
+ *  branch, each carrying its title and class. They classify differently — an
+ *  unmet floor is something the player can act on, a declared credit is not — so
+ *  a single title over the bundle would assert a fact the solve never
+ *  established. This function DERIVES the facts (it owns the pin and off-hand
+ *  readers); projection.js owns every sentence. */
+function boundNoticeEntries(query, result) {
   const per = (result && result.perTarget) || {};
-  for (const f of (result && result.floorReport) || []) {
-    parts.push(`Couldn't reach your floor of ${esc(f.floor)} ${esc(f.stat)} — best achievable was ${esc(f.achieved)}.`);
-  }
   const caps = (query && query.targetCaps) || {};
-  const held = Object.keys(caps).filter((s) => per[s] != null && per[s] >= caps[s]);
-  if (held.length) parts.push(`Held at your cap: ${held.map((s) => `${esc(s)} ${esc(caps[s])}`).join(", ")}.`);
-  // U4 (R9, R10) — this notice exists to keep "provably optimal" truthful, and a
-  // declared credit is the same class of qualifier as the ML band and a held cap:
-  // part of the answer rests on a number the player supplied, which the tool did
-  // not verify. Read from `creditReport` (plain JSON on the result) rather than
-  // the live program, so a restored character discloses identically without
-  // re-solving (KTD6).
-  for (const line of (Proj && Proj.creditNoticeLines ? Proj.creditNoticeLines(result) : [])) parts.push(esc(line));
-  // #88 U8 (R14) — the same class of qualifier as the declared credit directly
-  // above: part of the answer rests on a bonus type the player asserted and the
-  // tool did not verify. Read from `overrideReport` (plain JSON on the result) so
-  // a restored character qualifies identically without re-solving (KTD6).
-  for (const line of (Proj && Proj.overrideNoticeLines ? Proj.overrideNoticeLines(result) : [])) parts.push(esc(line));
+  const heldCaps = Object.keys(caps)
+    .filter((s) => per[s] != null && per[s] >= caps[s])
+    .map((s) => ({ stat: s, cap: caps[s] }));
+  let offHand = null;
   if (_offHandItemsExcluded(query || {})) {
     // Is there an off-hand ITEM in a build that excluded off-hand items? Two very
     // different causes, and the notice must not conflate them:
@@ -760,20 +792,33 @@ function boundNotice(query, result) {
     //    snapshot is not re-solved on load, and plan 003 U4 migrates pre-U1 saves to
     //    declared, so this is reachable, not theoretical. Inferring a pin here would
     //    put a flatly false "your pinned X" in front of a player who pinned nothing.
-    const offHand = ((result && result.chosen) || []).find((c) => c.slot === "Off Hand");
-    const offItem = offHand && offHand.variant && offHand.variant.category !== "weapon"
-      ? offHand.variant : null;
+    const worn = ((result && result.chosen) || []).find((c) => c.slot === "Off Hand");
+    const offItem = worn && worn.variant && worn.variant.category !== "weapon" ? worn.variant : null;
     const offPins = _pinnedVariantIds(((query && query.slotConstraints) || {})["Off Hand"]);
-    const offName = offItem ? (offItem.source_item || offItem.variant_id) : "";
     const pinned = !!offItem && offPins.includes(offItem.variant_id || offItem.source_item);
-    parts.push(pinned
-      ? `You declared Two Weapon Fighting, so shields, orbs, and rune arms left off-hand candidacy — your pinned ${esc(offName)} overrode that and is equipped.`
-      : offItem
-        ? `You declared Two Weapon Fighting, so shields, orbs, and rune arms leave off-hand candidacy — but this build still shows ${esc(offName)} in the off hand, so it was solved before the declaration. Re-solve to apply it.`
-        : `You declared Two Weapon Fighting, so shields, orbs, and rune arms left off-hand candidacy — pin one to bring it back.`);
-    parts.push(`The optimizer doesn't score the Two Weapon Fighting penalty (or a shield's defense), so the off-hand pick was compared on ranked-stat value alone.`);
+    offHand = {
+      mode: pinned ? "pinned" : offItem ? "stale" : "none",
+      name: offItem ? (offItem.source_item || offItem.variant_id) : "",
+    };
   }
-  return parts.length ? `<p class="scope-note bound-note" role="status">${parts.join(" ")}</p>` : "";
+  return Proj.boundNoticeEntries({
+    mlFloor: query && query.mlFloor,
+    floorReport: (result && result.floorReport) || [],
+    heldCaps,
+    // U4 (R9, R10) — this notice exists to keep "provably optimal" truthful, and a
+    // declared credit is the same class of qualifier as the ML band and a held cap:
+    // part of the answer rests on a number the player supplied, which the tool did
+    // not verify. Read from `creditReport` (plain JSON on the result) rather than
+    // the live program, so a restored character discloses identically without
+    // re-solving (KTD6).
+    creditLines: (Proj && Proj.creditNoticeLines) ? Proj.creditNoticeLines(result) : [],
+    // #88 U8 (R14) — the same class of qualifier as the declared credit directly
+    // above: part of the answer rests on a bonus type the player asserted and the
+    // tool did not verify. Read from `overrideReport` (plain JSON on the result) so
+    // a restored character qualifies identically without re-solving (KTD6).
+    overrideLines: (Proj && Proj.overrideNoticeLines) ? Proj.overrideNoticeLines(result) : [],
+    offHand,
+  }, esc);
 }
 
 // #239 — the two disclosures, rendered with the loadout rather than buried in the
@@ -817,10 +862,71 @@ function staleSnapshotNotice(result) {
 
 /** #276 — the receipt-card ceiling marker, in the .stat-cap chip idiom: the
  *  same stat-level fact the gear boxes color green, with the same shared
- *  sentence as its tooltip. Empty when the stat is not saturated. */
+ *  sentence as its tooltip. Empty when the stat is not saturated.
+ *
+ *  #449 U3 (R17b) — RETAINED ONLY AS THE FALLBACK. A result carrying
+ *  `ceilingReport` renders `statReach` instead and never this chip; a build
+ *  saved before #449 shipped has no such report, and deleting the chip would
+ *  leave it with no ceiling signal at all from data its save still contains.
+ *  The card picks one or the other on `statReach` being empty, so the two are
+ *  mutually exclusive by construction rather than by two agreeing predicates. */
 function ceilingChip(result, stat) {
   const line = (Proj && Proj.saturationLineFor) ? Proj.saturationLineFor(result, stat) : null;
   return line ? `<span class="stat-ceiling at-ceiling" title="${esc(line)}">at ceiling</span>` : "";
+}
+
+/** #449 U3 (R11-R16, R29, R30, R33) — the ranked card's achieved/ceiling box.
+ *
+ *  Every number and every sentence comes from `Proj.ceilingFor`, which owns the
+ *  four short forms so the card and the five exports cannot drift. This function
+ *  owns only the markup and which treatment each state takes.
+ *
+ *  Takes the build BEING RENDERED (KTD9). `renderBuild` is generic over the
+ *  optimum and any selected alternative, and an alternative carries its own
+ *  `ceilingReport` — `readSolution` emits it and `solveConstrained` spreads that
+ *  in. Closing over the optimum would state its numerator beside an
+ *  alternative's headline: a confidently-stated wrong number.
+ *
+ *  Empty string when `ceilingFor` returns null (no row for the stat — a pre-#449
+ *  restore). That is the sole mechanism behind R19: nothing is rendered, no
+ *  denominator is invented, and no re-solve is triggered to obtain one.
+ *
+ *  The four treatments, and why they differ:
+ *   - `maxed`     green box, tint and fill. Reserved for achieved === pool ceiling.
+ *   - `shortfall` the neutral accent. A shortfall is not a fault, so no warning
+ *                 colour, and the sentence asserts nothing about a solve that was
+ *                 never run (KTD2).
+ *   - `capBound`  the amber cap idiom `.stat-cap` already uses, agreeing with the
+ *                 capNote inches away. NOT green: the pool could raise the stat,
+ *                 the cap won't let it land (KTD7).
+ *   - `zeroCeiling` no meter at all. `0 / 0` satisfies achieved === ceiling, so
+ *                 an ungated green would claim "at ceiling" on a stat the solve
+ *                 found nothing for (R30).
+ *
+ *  R29 — the meter's WHOLE TRACK carries the hatch (`.reach-meter` background),
+ *  with the translucent fill drawn over it. Hatching only the remainder puts the
+ *  strongest bound signal where the risk is lowest: at 96% filled there is 4% of
+ *  track left to render it in, and that near-full bar is exactly the one that
+ *  misreads as "almost attainable". There is deliberately no remainder element. */
+function statReach(build, stat) {
+  const c = (Proj && Proj.ceilingFor) ? Proj.ceilingFor(build, stat) : null;
+  if (!c) return "";
+  const state = c.capBound ? "is-cap-bound"
+    : c.zeroCeiling ? "is-zero-ceiling"
+      : c.maxed ? "is-maxed" : "is-shortfall";
+  // Width from the CLAMPED pair, so a capped stat's meter agrees with its own
+  // fraction. Never divides by a zero denominator — that state renders no meter.
+  const pct = c.ceilingUpperBound > 0
+    ? Math.max(0, Math.min(100, Math.round((c.achieved / c.ceilingUpperBound) * 100))) : 0;
+  // aria-hidden: the fraction and the sentence beside it already carry the whole
+  // fact in text, so the bar would only repeat it as noise.
+  const meter = c.zeroCeiling ? ""
+    : `<div class="reach-meter" aria-hidden="true"><span class="reach-fill" style="width:${pct}%"></span></div>`;
+  return `<div class="stat-reach ${state}">`
+    + `<span class="reach-fraction">${esc(c.fraction)}</span>`
+    + meter
+    + `<p class="reach-note">${esc(c.short)}</p>`
+    + `</div>`;
 }
 
 /** #110 (U7) — the blocklist disclosure. Reads the SHARED sentences from
@@ -831,6 +937,236 @@ function blockNotice(result) {
     ? `<p class="scope-note block-note" role="status">${lines.map(esc).join(" ")}</p>`
     : "";
 }
+
+// ---- #449 U5 — the notices panel -------------------------------------------
+//
+// Eleven notices rendered as flat siblings under the OPTIMAL banner, some as
+// `<details>` and some as bare `<p>`, so the ones that fold gave no sign they
+// could be opened. They are now one collapsed panel of classified sub-cards.
+
+const NOTICE_ACTIONABLE = Proj.NOTICE_ACTIONABLE;
+const NOTICE_QUALIFYING = Proj.NOTICE_QUALIFYING;
+const NOTICE_INFORMATIONAL = Proj.NOTICE_INFORMATIONAL;
+
+// R28 — the non-colour carrier. Its own element beside the title, never
+// concatenated into it: a title prefix produced ~40-character uppercase strings
+// that wrapped at phone width and buried the distinguishing word at the far
+// right. (KTD5's closing line still describes the prefix form it replaced.)
+const NOTICE_CLASS_TAG = {
+  [NOTICE_ACTIONABLE]: "Needs attention",
+  [NOTICE_QUALIFYING]: "Qualifies",
+  [NOTICE_INFORMATIONAL]: "Note",
+};
+// R5 — actionable, then qualifying, then informational.
+const NOTICE_CLASS_ORDER = [NOTICE_ACTIONABLE, NOTICE_QUALIFYING, NOTICE_INFORMATIONAL];
+
+/** #449 U5 (KTD5) — the settled classification of the eight single-fact notices.
+ *
+ *  Keyed by the notice's function name, which is also what the render array
+ *  carries, so the completeness assertion can compare the two directly. The
+ *  notice functions keep owning their sentences; this table owns only the card
+ *  chrome around them — title, class, and where an actionable one is resolved.
+ *
+ *  `jump: null` on an actionable notice means it already carries its OWN
+ *  in-card resolution control (R6's amendment). `outbidNotice` renders Require
+ *  and price buttons; adding a jump beside them would offer a second, worse
+ *  route to the fix the player is already looking at.
+ *
+ *  A `jumpTarget` is a wizard step id plus an optional anchor selector, handed
+ *  to the caller's `onJump` seam. results.js never reaches into wizard state:
+ *  `step: null` means "this screen", where the wizard scrolls the anchor into
+ *  view and focuses it instead of changing step.
+ *
+ *  DEFERRED — this table is a second place that must be edited whenever a notice
+ *  is added, and the two can drift: a new notice with no row here renders
+ *  "unclassified" until someone looks. The fix is to give each notice function
+ *  its own descriptor and a uniform signature, so classification lives beside
+ *  the notice rather than in a parallel lookup. Tracked as **#448**; the
+ *  completeness assertion in `tests/results.test.js` is what holds the seam
+ *  until then. */
+const NOTICE_TABLE = {
+  staleSnapshotNotice: { id: "stale-snapshot", title: "STALE SNAPSHOT", subject: "stale snapshot", cls: NOTICE_ACTIONABLE,
+    jump: { label: "Re-solve now", step: null, anchor: "#wz-adjust-slot" } },
+  emptySlotNotice: { id: "empty-slot", title: "EMPTY SLOT", subject: "empty slot", cls: NOTICE_ACTIONABLE,
+    jump: { label: "Adjust & re-solve →", step: null, anchor: "#wz-adjust-slot" } },
+  craftingExcludedNotice: { id: "crafting-opt-out", title: "EXCLUDED BY CRAFTING OPT-OUT", subject: "crafting opt-out", cls: NOTICE_ACTIONABLE,
+    jump: { label: "Change crafting opt-out →", step: "character", anchor: 'input[name="wz-crafting-rung"]' } },
+  blockNotice: { id: "blocked-gear", title: "BLOCKED GEAR", subject: "blocked gear", cls: NOTICE_ACTIONABLE,
+    jump: { label: "Review block list →", step: "pool", anchor: null } },
+  augCeilingNotice: { id: "augment-ceiling", title: "AUGMENT POOL NARROWED", subject: "augment ceiling", cls: NOTICE_ACTIONABLE,
+    jump: { label: "Change augment ceiling →", step: "character", anchor: "#wz-augceiling" } },
+  // Fires only when the player set the ceiling themselves — the same shape as
+  // the crafting opt-out, which is why both are actionable rather than
+  // qualifying.
+  outbidNotice: { id: "priority-scored-0", title: "PRIORITY SCORED 0", subject: "priority scored 0", cls: NOTICE_ACTIONABLE, jump: null },
+  absorptionQuarantineNotice: { id: "affix-withheld", title: "AFFIX WITHHELD", subject: "affix withheld", cls: NOTICE_QUALIFYING, jump: null },
+  // R35 — already returns its own `<details>`. Unwrapped inside the panel so the
+  // panel stays the only fold.
+  saturationNotice: { id: "at-ceiling", title: "AT CEILING", subject: "at ceiling", cls: NOTICE_INFORMATIONAL, jump: null, unwrap: true },
+};
+
+/** #449 U6 (R26) — the short subject each card contributes to the qualifying
+ *  marker, for the cards U10 split out. The marker NAMES what qualifies rather
+ *  than counting it: a bare count says something exists, it does not say the
+ *  headline totals rest on unverified input, which is the fact being disclosed.
+ *
+ *  Curated rather than derived from the title, because lowercasing produces
+ *  "gear ml floor" and "declared credit applied" where the settled copy is
+ *  "gear ML floor" and "declared credit". A U6 test asserts every entry a
+ *  notice can mint has a subject, so the curation cannot silently fall behind
+ *  projection.js the way an uncovered map would. */
+const NOTICE_ENTRY_SUBJECTS = {
+  "artifact-unavailable": "artifact unavailable",
+  "artifact-pinned-in": "artifact pinned in",
+  "stat-not-in-data": "stat not in data",
+  "stat-filtered-out": "stat filtered out",
+  "gear-ml-floor": "gear ML floor",
+  "floor-not-reached": "floor not reached",
+  "held-at-your-cap": "held at your cap",
+  "declared-credit": "declared credit",
+  "bonus-type-override": "bonus type overridden",
+  "re-solve-to-apply": "re-solve to apply",
+  "off-hand-excluded": "off-hand excluded",
+};
+
+/** #449 U5 (KTD5, second table) — resolution routes for the cards U10 split out
+ *  of the three multi-fact notices. Keyed by the entry `id` projection.js mints,
+ *  because those entries carry their own title and class already; only the route
+ *  is a render-side concern. An actionable entry with no row here renders
+ *  without a control, which the U5 test catches. */
+const NOTICE_ENTRY_JUMPS = {
+  "artifact-pinned-in": { label: "Review pins →", step: "pool", anchor: null },
+  "stat-filtered-out": { label: "Change character filters →", step: "character", anchor: null },
+  "floor-not-reached": { label: "Edit priorities →", step: "priorities", anchor: null },
+  "re-solve-to-apply": { label: "Re-solve now", step: null, anchor: "#wz-adjust-slot" },
+};
+
+/** Strip one wrapping `<details>` down to the parts a card needs (R35): the
+ *  summary text becomes the card's sentence body, and the inner content renders
+ *  open beneath it. A fold inside a fold, under a card title that already
+ *  restates the fact, is three statements of one thing. */
+function _unwrapDetails(html) {
+  const sm = html.match(/<summary\b[^>]*>([\s\S]*?)<\/summary>/i);
+  if (!sm) return html;
+  const inner = html.replace(/^[\s\S]*?<\/summary>/i, "").replace(/<\/details>\s*$/i, "");
+  return `<p class="notice-sentence">${sm[1]}</p>${inner}`;
+}
+
+/** #449 U5 — the render array as descriptors: one per CARD, not one per notice
+ *  function. The three multi-fact notices contribute one descriptor per fired
+ *  branch (U10); the other eight contribute at most one each, and none when the
+ *  notice returns empty.
+ *
+ *  `name` is the notice function's name for the eight, and the source function's
+ *  name for a split entry — so the completeness assertion covers both tables
+ *  from one array. */
+function noticeDescriptors(ctx) {
+  const { result, query, model, dataset, canPrice, canRequire } = ctx;
+  const out = [];
+  const push = (name, html, over) => {
+    if (!html) return;                       // R4/R27 — an empty return is not a card
+    const t = NOTICE_TABLE[name];
+    out.push(Object.assign({ name, html, unclassified: !t },
+      t || { id: `unclassified-${name}`, title: name.toUpperCase(), cls: NOTICE_QUALIFYING, jump: null },
+      over || {}));
+  };
+  // The split notices first: each fired branch becomes its own card, carrying the
+  // title and class projection.js minted for it and the route from the second table.
+  const split = (name, entries) => {
+    for (const e of entries) {
+      out.push({ name, id: e.id, title: e.title, cls: e.class, unclassified: false,
+        jump: NOTICE_ENTRY_JUMPS[e.id] || null,
+        // A missing subject falls back to the lowercased title rather than to
+        // nothing: the marker must never name fewer subjects than it counts.
+        subject: NOTICE_ENTRY_SUBJECTS[e.id] || String(e.title || "").toLowerCase(),
+        html: `<p class="notice-sentence">${e.sentence}</p>` });
+    }
+  };
+  split("artifactNotice", artifactNoticeEntries(result, query));
+  split("boundNotice", boundNoticeEntries(query, result));
+  split("zeroSourceNotice", zeroSourceNoticeEntries(query, result, model, dataset));
+
+  push("staleSnapshotNotice", staleSnapshotNotice(result));
+  push("outbidNotice", outbidNotice(query, result, model, canPrice, canRequire));
+  push("saturationNotice", saturationNotice(result));
+  push("emptySlotNotice", emptySlotNotice(query, result));
+  push("absorptionQuarantineNotice", absorptionQuarantineNotice(result));
+  push("craftingExcludedNotice", craftingExcludedNotice(query, result));
+  push("augCeilingNotice", augCeilingNotice(query, result));
+  push("blockNotice", blockNotice(result));
+
+  const rank = (d) => {
+    const i = NOTICE_CLASS_ORDER.indexOf(d.cls);
+    return i < 0 ? NOTICE_CLASS_ORDER.length : i;      // an unmapped class sorts last, visibly
+  };
+  return out.map((d, i) => ({ d, i })).sort((a, b) => rank(a.d) - rank(b.d) || a.i - b.i).map((x) => x.d);
+}
+
+/** #449 U6 (R7, R26) — the two summary markers, both read off the SAME
+ *  descriptor array the cards render from, so a count can never disagree with
+ *  what is inside the fold.
+ *
+ *  The pill counts actionable cards that ACTUALLY RENDERED — a notice returning
+ *  empty contributes no descriptor, so it cannot be counted. The qualifying
+ *  marker names its subjects up to two and falls back to a bare count past
+ *  that, which is where naming stops being an aid and becomes a wall of text. */
+function noticeSummaryMarkers(descriptors, latched) {
+  const act = descriptors.filter((d) => d.cls === NOTICE_ACTIONABLE);
+  const qual = descriptors.filter((d) => d.cls === NOTICE_QUALIFYING);
+  let out = "";
+  if (act.length) {
+    // R9 — the pulse is a decoration over a static amber fill, never the sole
+    // carrier: the repo kills all animation under prefers-reduced-motion, so a
+    // motion-only signal would be invisible to exactly the players who opted out.
+    // R8/KTD3 — the latch is stamped at BUILD time. Keying the pulse on [open]
+    // would re-arm it on every collapse and on every renderResults call.
+    out += `<span class="notes-pill">${esc(act.length)} need${act.length === 1 ? "s" : ""} attention</span>`;
+  }
+  if (qual.length) {
+    const named = qual.length <= 2
+      ? `: ${qual.map((d) => esc(d.subject)).join(", ")}`
+      : "";
+    out += `<span class="notes-qualify">${esc(qual.length)} qualif${qual.length === 1 ? "ies" : "y"}${named}</span>`;
+  }
+  return out;
+}
+
+/** #449 U5 (R1-R4, R27, R28, R35) + U6 (R7-R10, R26) — the panel. Returns ""
+ *  when nothing fired: R27 wants no empty fold, no zero count and no chevron on
+ *  a clean solve.
+ *
+ *  `latched` is the session flag from KTD3, stamped onto the freshly built panel
+ *  as an attribute so the one-way latch survives the rebuild. This is not the
+ *  anti-pattern in `a-state-derived-predicate-cannot-rank-a-dom-its-handlers-mutate.md`:
+ *  that forbids a state-derived predicate RANKING an element its own handlers
+ *  mutate. This flag is write-once, read only by CSS, and is the render-time
+ *  input — which is exactly the moment that learning assigns to state. */
+function noticePanel(descriptors, opts) {
+  if (!descriptors.length) return "";
+  const latched = !!(opts && opts.latched);
+  const cards = descriptors.map((d) => {
+    const body = d.unwrap ? _unwrapDetails(d.html) : d.html;
+    // A jump control changes wizard state, so it is a button rather than a link.
+    // The step and anchor ride as data so the click handler stays one listener
+    // over the panel instead of one closure per card.
+    const ctl = d.jump
+      ? `<button class="notice-jump" type="button" data-step="${esc(d.jump.step || "")}"`
+        + ` data-anchor="${esc(d.jump.anchor || "")}">${esc(d.jump.label)}</button>`
+      : "";
+    return `<div class="notice-card is-${esc(d.cls)}${d.unclassified ? " is-unclassified" : ""}" data-notice="${esc(d.id)}">`
+      + `<div class="notice-head"><span class="notice-title">${esc(d.title)}</span>`
+      + `<span class="notice-tag">${esc(NOTICE_CLASS_TAG[d.cls] || "Unclassified")}</span></div>`
+      + `<div class="notice-body">${body}</div>${ctl}</div>`;
+  }).join("");
+  const n = descriptors.length;
+  return `<details class="notes-panel"${latched ? " data-notes-seen" : ""}><summary class="notes-summary">`
+    + `<span class="notes-chevron" aria-hidden="true">▸</span>`
+    + `<span class="notes-label">Notes on this solve</span>`
+    + `<span class="notes-count">${esc(n)} ${n === 1 ? "note" : "notes"}</span>`
+    + noticeSummaryMarkers(descriptors, latched)
+    + `</summary><div class="notes-body">${cards}</div></details>`;
+}
+
 
 /** #245 — the niche-crafting opt-out disclosure. Reads the SHARED sentence from
  *  projection (one wording for the app and every export), keyed off the solved
@@ -993,9 +1329,20 @@ function _rungRemovedStats(dataset, rung) {
 }
 
 function zeroSourceNotice(query, result, model, dataset) {
-  if (!result || result.status !== "optimal") return "";
+  const entries = zeroSourceNoticeEntries(query, result, model, dataset);
+  return entries.length
+    ? `<p class="scope-note zero-source-note" role="status">${entries.map((e) => e.sentence).join(" ")}</p>`
+    : "";
+}
+
+/** U10 — the zero-source facts this solve fired, each carrying its title and
+ *  class. The two causes call for two different player actions — one of them for
+ *  no action at all — so they are separate entries, never one card. This function
+ *  derives them from the pool and the dataset; projection.js owns the sentences. */
+function zeroSourceNoticeEntries(query, result, model, dataset) {
+  if (!result || result.status !== "optimal") return [];
   const targets = (query && query.targets) || (model && model.targets) || [];
-  if (!targets.length || !model) return "";
+  if (!targets.length || !model) return [];
   const reachable = _resultsPoolStatNames(model);
   // #91 — the Utility sentinel is never a pool stat (poolStatNames only ever
   // collects real affix/scaling names), so without this exclusion every solve
@@ -1003,48 +1350,40 @@ function zeroSourceNotice(query, result, model, dataset) {
   // reading the generic stat-card loop already guards against at its own call
   // site (mirrors the `stat === _UTILITY_SENTINEL` exclusion above).
   const unsourced = targets.filter((t) => t !== _UTILITY_SENTINEL && !reachable.has(t));
-  if (!unsourced.length) return "";
+  if (!unsourced.length) return [];
   // Two causes, two different player actions.
   const absent = [], filtered = [];
   for (const t of unsourced) (datasetHasStat(dataset, t) ? filtered : absent).push(t);
-  const parts = [];
-  if (absent.length) {
-    parts.push(`Nothing in the current data carries ${absent.map(esc).join(", ")} — ranking it can't change your build.`);
-  }
-  if (filtered.length) {
-    // Deliberately does NOT name a single cause. The pool the solver sees is the
-    // product of the ML band, the gear pool, the character gates AND the dominance
-    // pre-filter, and this function cannot tell which one removed the last source.
-    // Naming "your ML band" was wrong for a verified ML-29 item well inside a cap of
-    // 34 that the dominance filter had pruned. Only the owned-pool case is named,
-    // because opting into it is an explicit, single, reversible choice.
-    const owned = query && query.pool === "owned";
-    // #346 (U5, R12) — the ladder joins the owned-pool carve-out for the same
-    // reason that one exists: it is an explicit, single, reversible choice the
-    // player made, not one of the many filters this function deliberately
-    // refuses to guess between. Twenty targetable stats are augment-only
-    // (Strikethrough, Sneak Attack Dice, Imbue Dice, ...), so a lowered rung is
-    // the likeliest cause of a zero here — and telling that player to widen
-    // their ML band is advice that cannot work.
-    const rung = _resultsRung(query || {});
-    // Blame the rung only on EVIDENCE that it removed a source of one of these
-    // stats. Keying on the rung value alone told a player whose stat is missing
-    // for ML-band reasons to raise the ladder — wrong advice, and it discarded
-    // the correct advice to make room. That is worse than the generic sentence
-    // this function deliberately falls back to, which is why the fallback stays.
-    const removedByRung = _rungRemovedStats(dataset, rung);
-    const rungRestricts = filtered.some((s) => removedByRung.has(s));
-    const removed = _resultsRungExcludesAllAugments(rung) ? "augments"
-      : _resultsRungExcludesSolarLunar(rung) ? "Solar/Lunar Gems" : "niche crafting";
-    const where = owned ? "your owned-gear pool"
-      : rungRestricts ? `your current filters, which exclude ${removed}` : "your current filters";
-    const fix = owned ? "the full catalog may have one"
-      : rungRestricts ? `raising "What may the solver assume beyond the printed item?" may reach `
-        + (filtered.length > 1 ? "them" : "it")
-      : "widening the ML band or character filters may reach " + (filtered.length > 1 ? "them" : "it");
-    parts.push(`No source of ${filtered.map(esc).join(", ")} is available in ${where} — ${fix}.`);
-  }
-  return `<p class="scope-note zero-source-note" role="status">${parts.join(" ")}</p>`;
+  // The filtered branch deliberately does NOT name a single cause. The pool the
+  // solver sees is the product of the ML band, the gear pool, the character gates
+  // AND the dominance pre-filter, and this function cannot tell which one removed
+  // the last source. Naming "your ML band" was wrong for a verified ML-29 item
+  // well inside a cap of 34 that the dominance filter had pruned. Only the
+  // owned-pool case is named, because opting into it is an explicit, single,
+  // reversible choice.
+  const owned = !!(query && query.pool === "owned");
+  // #346 (U5, R12) — the ladder joins the owned-pool carve-out for the same
+  // reason that one exists: it is an explicit, single, reversible choice the
+  // player made, not one of the many filters this function deliberately
+  // refuses to guess between. Twenty targetable stats are augment-only
+  // (Strikethrough, Sneak Attack Dice, Imbue Dice, ...), so a lowered rung is
+  // the likeliest cause of a zero here — and telling that player to widen
+  // their ML band is advice that cannot work.
+  const rung = _resultsRung(query || {});
+  // Blame the rung only on EVIDENCE that it removed a source of one of these
+  // stats. Keying on the rung value alone told a player whose stat is missing
+  // for ML-band reasons to raise the ladder — wrong advice, and it discarded
+  // the correct advice to make room. That is worse than the generic sentence
+  // projection.js deliberately falls back to, which is why the fallback stays.
+  const removedByRung = _rungRemovedStats(dataset, rung);
+  return Proj.zeroSourceNoticeEntries({
+    absent,
+    filtered,
+    owned,
+    rungRestricts: filtered.some((s) => removedByRung.has(s)),
+    removed: _resultsRungExcludesAllAugments(rung) ? "augments"
+      : _resultsRungExcludesSolarLunar(rung) ? "Solar/Lunar Gems" : "niche crafting",
+  }, esc);
 }
 
 /** #345 (U1, R1/R3/R4) — the targets that were OUTBID: reachable in the active
@@ -1108,7 +1447,7 @@ function outbidNotice(query, result, model, canPrice, canRequire) {
     + (ask ? `<span class="outbid-ask">${ask}</span>` : "") + `</p>`;
 }
 
-function renderResults(container, { model, result, query, dataset, highs, onAfterRender, onRequire }) {
+function renderResults(container, { model, result, query, dataset, highs, onAfterRender, onRequire, onJump, notesSeen, onNotesOpen }) {
   if (result.status !== "optimal") {
     // Keep the Adjust & re-solve control available on a non-optimal result — this
     // is exactly when the user needs to loosen priorities/constraints in place.
@@ -1149,19 +1488,14 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
       </div>
     </div>`;
 
+  // #449 U5 — the eleven notices, contained. Built once so the panel, the
+  // summary counts (U6) and the live announcement all read the same array
+  // rather than three independent recomputations of "what fired".
+  const notices = noticeDescriptors({ result, query, model, dataset,
+    canPrice: canPriceOutbid(), canRequire: typeof onRequire === "function" });
   container.innerHTML = `
     ${banner}
-    ${artifactNotice(result, query)}
-    ${staleSnapshotNotice(result)}
-    ${boundNotice(query, result)}
-    ${zeroSourceNotice(query, result, model, dataset)}
-    ${outbidNotice(query, result, model, canPriceOutbid(), typeof onRequire === "function")}
-    ${saturationNotice(result)}
-    ${emptySlotNotice(query, result)}
-    ${absorptionQuarantineNotice(result)}
-    ${craftingExcludedNotice(query, result)}
-    ${augCeilingNotice(query, result)}
-    ${blockNotice(result)}
+    ${noticePanel(notices, { latched: !!notesSeen })}
     <div class="active-build-bar" hidden>
       <span class="active-build-msg"></span>
       <button class="return-optimum" type="button">Return to optimum</button>
@@ -1219,6 +1553,32 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   // #345 (U4, R8/R9) — accepting the trade writes a floor and re-solves. The
   // handler is the wizard's, so the floor goes through the same sanitizer and
   // persisted field the Advanced min input writes; one writer, one clear path.
+  // #449 U6 (R8/KTD3) — the one-way latch. Stamped on the live element the
+  // moment it opens, so the pulse stops now rather than at the next render, and
+  // reported to the caller so the flag outlives this panel: renderResults
+  // destroys and rebuilds the whole container on every solve, load and per-slot
+  // constraint change. Never cleared — a collapse does not re-arm it.
+  const panelEl = container.querySelector(".notes-panel");
+  if (panelEl) {
+    panelEl.addEventListener("toggle", () => {
+      if (!panelEl.open || panelEl.hasAttribute("data-notes-seen")) return;
+      panelEl.setAttribute("data-notes-seen", "");
+      if (typeof onNotesOpen === "function") onNotesOpen();
+    });
+  }
+
+  // #449 U5 (KTD5) — the jump seam. One listener over the panel rather than one
+  // closure per card, and results.js hands the caller a target instead of
+  // reaching into wizard state: a step id (null meaning "this screen") plus an
+  // optional anchor selector. The panel stays open on return because nothing
+  // here closes it.
+  for (const btn of container.querySelectorAll(".notice-jump")) {
+    btn.addEventListener("click", () => {
+      if (typeof onJump !== "function") return;
+      onJump({ step: btn.dataset.step || null, anchor: btn.dataset.anchor || null });
+    });
+  }
+
   for (const btn of container.querySelectorAll(".outbid-require")) {
     btn.addEventListener("click", () => {
       btn.disabled = true;
@@ -1445,13 +1805,26 @@ function buildViews(build, model, query) {
     const rawSum = contribs.reduce((s, p) => s + p.value, 0);
     const capNote = (cap != null && rawSum > total)
       ? `<span class="stat-cap" title="raw ${esc(rawSum)} exceeds the cap for this stat">capped at ${esc(total)} · raw ${esc(rawSum)}</span>` : "";
+    // #449 U3 (R17b) — one ceiling signal per card, chosen by which data the
+    // build actually carries: the fraction when `ceilingReport` has a row for
+    // this stat, the legacy chip only when it does not.
+    const reach = statReach(build, stat);
     return `<div class="stat-card">
       <div class="stat-head"><span class="stat-rank">${i + 1}</span><span class="stat-name">${esc(stat)}</span></div>
       <div class="stat-value" data-final="${esc(total)}">${esc(total)}</div>
-      ${capNote}${build.effective ? ceilingChip(build, stat) : ""}
+      ${capNote}${(!reach && build.effective) ? ceilingChip(build, stat) : ""}
       ${attributionList(contribs)}
+      ${reach}
     </div>`;
   }).join("");
+  // #449 U3 (R15) — the FULL statement, once per readout at section level. It
+  // carries the qualification the per-card short forms omit: repeated under every
+  // card down an eight-priority build it reads as boilerplate and stops being
+  // read, which defeats the premise that the sentence is the mitigation. It sits
+  // above the cards rather than behind a fold so it is in the same view, not
+  // merely reachable. Null (and silent) on a pre-#449 restore.
+  const ceilingStatement = (Proj && Proj.ceilingStatement) ? Proj.ceilingStatement(build) : null;
+  const cardsHtml = (ceilingStatement ? `<p class="ceiling-statement">${esc(ceilingStatement)}</p>` : "") + cards;
 
   // Equipped list (prototype layout): a plain stacked list of every slot the
   // model considered, occupied or empty — no humanoid figure, full item names
@@ -1537,7 +1910,7 @@ function buildViews(build, model, query) {
   // on the equipped loadout, named once with its members and carrier.
   setsPanel += bundlesBlock(build, augById);
 
-  return { paperdoll: `<div class="pd-list">${rows.join("")}</div>`, weapons, cards, setsPanel, deepDive: loadoutDeepDive(build, query, maps, attr) };
+  return { paperdoll: `<div class="pd-list">${rows.join("")}</div>`, weapons, cards: cardsHtml, setsPanel, deepDive: loadoutDeepDive(build, query, maps, attr) };
 }
 
 // Alternative cards (U4): compact trade-off summary + gain tags, as a single-select
@@ -1624,5 +1997,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactsIncludedByPin, boundNotice, zeroSourceNotice, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, incidentalStats, poolStatNames: _resultsPoolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }

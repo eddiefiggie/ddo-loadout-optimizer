@@ -1503,7 +1503,12 @@
         // standing failure this repo forbids.
         crossAdd: p.crossAdd || null,
       }));
-      attribution[stat] = { total, cap, sources };
+      // #449 (U2, R15/R18) — the achieved/ceiling fraction rides the shared
+      // content model beside the total it qualifies, so every export renders the
+      // same numbers and the same wording the card does. Null on a pre-#449
+      // restore; each renderer must still print it — carrying it here is
+      // necessary, not sufficient.
+      attribution[stat] = { total, cap, sources, ceiling: ceilingFor(snap, stat) };
     }
 
     // #91 (U6/R10) — the Utility tier's content block, read from the snapshot's
@@ -1567,7 +1572,12 @@
         // #110 (U7/U9) — the blocklist disclosure: empty array when no block
         // touched the solve. A shared build asserting optimality with silent
         // exclusions is the solve-visible-but-share-invisible failure.
-        blockNotice: blockNoticeLines(snap) },
+        blockNotice: blockNoticeLines(snap),
+        // #449 (U2, R15) — the ONE full statement that qualifies every fraction
+        // in the document. Rendered once per export, never per stat: repeated
+        // under each of eight priorities it reads as boilerplate and stops being
+        // read. Null when no stat carries a ceiling row.
+        ceilingStatement: ceilingStatement(snap) },
       loadout, sets, bundles, attribution,
     };
   }
@@ -1626,6 +1636,95 @@
   function saturationLineFor(result, stat) {
     const e = ((result && result.saturationReport) || []).find((r) => r && r.stat === stat);
     return e ? saturationSentence(e) : null;
+  }
+
+  /** #449 U2 — the achieved/ceiling fraction as SHARED CONTENT: the numbers, the
+   *  state, and the wording, in one place, so the ranked-priority card and all
+   *  five exports cannot drift. Keyed by stat, never by array index, for the same
+   *  reason `saturationLineFor` is: a future filtered report cannot misalign a
+   *  sentence to a stat.
+   *
+   *  Reads `ceilingReport` (plain JSON on the result, kept by RESULT_KEEP) and
+   *  `capped`, never the live program, so a restored character reads identically
+   *  without re-solving. Returns null when the stat has no row — the pre-#449
+   *  restore path — and every surface must render nothing rather than a zero
+   *  nobody computed.
+   *
+   *  KTD2 — `ceilingUpperBound` is an UPPER BOUND, not a target. Σ best sums each
+   *  bonus-type bucket's best source independently, and those sources may be one
+   *  item, may compete for one slot, or may contradict a chosen set, so a stat can
+   *  read 30 / 50 where no legal loadout reaches 50. The field is NAMED for that
+   *  scope — the portable `ddo-loadout/v1` envelope inherits `project()` verbatim,
+   *  so a third-party consumer reads the same name the app does, and a plain
+   *  `ceiling` would invite exactly the attainable-target reading. No sentence
+   *  below asserts what a different solve would have produced, and none attributes
+   *  the shortfall to a cause: no such solve is run
+   *  (`docs/solutions/conventions/never-infer-a-claim-about-your-own-results.md`).
+   *
+   *  KTD7 — `capBound` is its own state and forces `maxed` false. Both sides of
+   *  the fraction are clamped to the stat's cap by `buildCeilingReport`, so a
+   *  cap-bound stat would otherwise satisfy `achieved === ceiling` and inherit the
+   *  maxed sentence — which claims no other item in the pool can raise the stat.
+   *  When the cap is what holds the number, that claim is false and contradicts
+   *  the `capNote` ("capped at N · raw M") rendered inches away. It also collapses
+   *  at-cap-with-headroom (the player has slack) into at-pool-maximum (none).
+   */
+  const CEILING_FULL_STATEMENT =
+    "Each priority below shows what this loadout holds against a ceiling — the sum of the best "
+    + "source in each bonus type that carries the stat. Those sources may compete for one slot, "
+    + "so the ceiling is an upper bound and no loadout is claimed to reach it.";
+
+  function ceilingShortForm(s) {
+    if (s.capBound) {
+      return `clamped to your cap of ${s.cap}: the cap, not the gear pool, is what this fraction measures against.`;
+    }
+    if (s.zeroCeiling) {
+      return "this solve found nothing reachable that carries this stat.";
+    }
+    if (s.maxed) {
+      return "at the ceiling: every bonus type carrying this stat holds its best available source, "
+        + "so no other item in your pool raises it.";
+    }
+    // A capped stat still SHORT of its cap. `ceilingUpperBound === cap` means
+    // min(cap, Σ best) picked the cap, i.e. Σ best >= cap — so the denominator on
+    // screen is the cap, NOT the summed per-bucket best. The plain shortfall
+    // wording below would name the wrong source for its own number. We say only
+    // that the ceiling IS the cap: the clamped report cannot distinguish
+    // "Σ best exceeded the cap" from "Σ best landed exactly on it", so claiming
+    // the pool could go higher would be an inference the data does not carry.
+    if (s.cap != null && s.ceilingUpperBound === s.cap) {
+      return `the ceiling here is your cap of ${s.cap}.`;
+    }
+    return "the ceiling sums the best source in each bonus type that carries this stat.";
+  }
+
+  function ceilingFor(result, stat) {
+    const row = ((result && result.ceilingReport) || []).find((r) => r && r.stat === stat);
+    if (!row) return null;
+    const achieved = row.achieved || 0;
+    const ceilingUpperBound = row.ceiling || 0;
+    const capped = (result && result.capped) || {};
+    const cap = capped[stat] != null ? capped[stat] : null;
+    // Both sides are already clamped, so `achieved === cap` IS "the cap is the
+    // denominator". Tested BEFORE `maxed` — see KTD7 above.
+    const capBound = cap != null && achieved >= cap;
+    const zeroCeiling = !capBound && ceilingUpperBound === 0;
+    const maxed = !capBound && !zeroCeiling && achieved === ceilingUpperBound;
+    const s = { stat, achieved, ceilingUpperBound, cap, capBound, zeroCeiling, maxed };
+    s.fraction = `${achieved} / ${ceilingUpperBound}`;
+    s.short = ceilingShortForm(s);
+    s.line = `${s.fraction} — ${s.short}`;
+    return s;
+  }
+
+  /** The ONE full statement, rendered once per readout and once per export
+   *  document (R15). It carries the qualification the short forms deliberately
+   *  omit: repeated under every card down an eight-priority build it reads as
+   *  boilerplate and stops being read. Null when no stat has a row, so a
+   *  pre-#449 restore prints no orphan sentence.
+   */
+  function ceilingStatement(result) {
+    return ((result && result.ceilingReport) || []).length ? CEILING_FULL_STATEMENT : null;
   }
 
   /** #239 — the empty-slot disclosure as plain sentences.
@@ -1885,6 +1984,167 @@
     return lines;
   }
 
+  /* ---- U10 (plan 2026-08-22-001) — the three multi-fact notices, one entry per
+   *  FIRED branch -------------------------------------------------------------
+   *
+   *  `artifactNotice`, `boundNotice` and `zeroSourceNotice` each bundled several
+   *  independent facts into one paragraph. Those facts classify differently, so a
+   *  single title over the bundle would assert something the solve did not
+   *  establish: "DECLARED CREDIT APPLIED" over a `boundNotice` that fired for its
+   *  ML-floor branch claims a declared credit on a solve that declared none. That
+   *  is instance 3 in
+   *  `docs/solutions/conventions/never-infer-a-claim-about-your-own-results.md` —
+   *  a disclosure channel is itself a claim.
+   *
+   *  So each branch gets its own addressable entry: `{ id, title, class, sentence }`.
+   *  `class` is `"actionable"` (the player has a control that resolves it) or
+   *  `"qualifying"` (it changes how the numbers should be read, with no resolution
+   *  path). The titles and classes are KTD5's settled table, not a local choice.
+   *
+   *  The WORDING lives here, with every other notice's, so the app and all five
+   *  share exports cannot drift. The FACTS are derived by the caller: these three
+   *  read the model, the dataset and the slot pins, which live on the results
+   *  side, and re-deriving them here would be a second source for the same fact.
+   *
+   *  `esc` is the caller's escaper, applied at exactly the interpolation points
+   *  the pre-split render escaped — so an HTML surface passes `esc` and gets
+   *  byte-identical markup, and a text surface passes nothing and gets the plain
+   *  sentence. The literal template text is never escaped, which is why this stays
+   *  a wording source rather than an HTML producer.
+   */
+  const NOTICE_ACTIONABLE = "actionable";
+  const NOTICE_QUALIFYING = "qualifying";
+  // #449 U5 (KTD6) — the third class. No entry function mints it today (every
+  // split branch is actionable or qualifying), but the name lives beside its two
+  // siblings so results.js has ONE place to read the vocabulary from rather than
+  // two constants here and a bare string there.
+  const NOTICE_INFORMATIONAL = "informational";
+  function _asText(s) { return String(s == null ? "" : s); }
+
+  /** #369 + U5/R6 — the two Artifact facts. They are mutually exclusive by
+   *  construction (the none-flagged branch needs the opt-in ON, the pin branch
+   *  needs it OFF), and must never share a card: "no Artifact could be included"
+   *  printed over a named, included Artifact is a flat contradiction.
+   *  `facts`: `{ missing, pinnedArtifacts }`. */
+  function artifactNoticeEntries(facts, esc) {
+    const e = esc || _asText;
+    const f = facts || {};
+    if (f.missing) {
+      return [{ id: "artifact-unavailable", title: "ARTIFACT UNAVAILABLE", class: NOTICE_QUALIFYING,
+        sentence: "No Artifact could be included — none is flagged in the current data." }];
+    }
+    const names = (f.pinnedArtifacts || []).filter(Boolean);
+    if (!names.length) return [];
+    const one = names.length === 1;
+    return [{ id: "artifact-pinned-in", title: "ARTIFACT PINNED IN", class: NOTICE_ACTIONABLE,
+      sentence: `${e(names.join(", "))} ${one ? "is an Artifact and was" : "are Artifacts and were"}`
+        + ` included because you pinned ${one ? "it" : "them"}, even though "Include an Artifact" is off.`
+        + ` Unpin to exclude ${one ? "it" : "them"}.` }];
+  }
+
+  /** U3 (plan 2026-08-05-001) — the two zero-source causes. Two different player
+   *  actions, so two entries: a stat no data carries has no resolution path, and a
+   *  stat the filters removed does. `facts`: `{ absent, filtered, owned,
+   *  rungRestricts, removed }`, where the last three are the filtered branch's
+   *  evidence-based cause attribution (results.js derives it from the dataset). */
+  function zeroSourceNoticeEntries(facts, esc) {
+    const e = esc || _asText;
+    const f = facts || {};
+    const absent = f.absent || [];
+    const filtered = f.filtered || [];
+    const entries = [];
+    if (absent.length) {
+      entries.push({ id: "stat-not-in-data", title: "STAT NOT IN DATA", class: NOTICE_QUALIFYING,
+        sentence: `Nothing in the current data carries ${absent.map((s) => e(s)).join(", ")}`
+          + " — ranking it can't change your build." });
+    }
+    if (filtered.length) {
+      // Deliberately does NOT name a single cause unless there is evidence for
+      // one: the pool the solver sees is the product of the ML band, the gear
+      // pool, the character gates AND the dominance pre-filter. Only the
+      // owned-pool and the crafting-rung cases are named, because each is an
+      // explicit, single, reversible choice the player made.
+      const where = f.owned ? "your owned-gear pool"
+        : f.rungRestricts ? `your current filters, which exclude ${f.removed}` : "your current filters";
+      const fix = f.owned ? "the full catalog may have one"
+        : f.rungRestricts ? `raising "What may the solver assume beyond the printed item?" may reach `
+          + (filtered.length > 1 ? "them" : "it")
+          : "widening the ML band or character filters may reach " + (filtered.length > 1 ? "them" : "it");
+      entries.push({ id: "stat-filtered-out", title: "STAT FILTERED OUT", class: NOTICE_ACTIONABLE,
+        sentence: `No source of ${filtered.map((s) => e(s)).join(", ")} is available in ${where} — ${fix}.` });
+    }
+    return entries;
+  }
+
+  /** U5/U4/#88 U8/plan-003 U6 — how the solve was bounded, as one entry per fired
+   *  branch. `facts`: `{ mlFloor, floorReport, heldCaps, creditLines,
+   *  overrideLines, offHand }`. `heldCaps` is `[{ stat, cap }]`; `offHand` is
+   *  null unless the Two Weapon Fighting exclusion actually fired, and otherwise
+   *  `{ mode: "none" | "pinned" | "stale", name }` — the caller reads the same
+   *  authority the off-hand pool used and the actual pin, never inferring either.
+   *
+   *  `creditLines` and `overrideLines` come from `creditNoticeLines` /
+   *  `overrideNoticeLines` above: each is several sentences about ONE fact, so
+   *  each stays one entry rather than becoming N cards under a repeated title.
+   *
+   *  The off-hand entry carries two sentences — the exclusion (in whichever of its
+   *  three forms applies) and the unscored-penalty caveat that always accompanies
+   *  it. KTD5's table has no row for the caveat; it is kept with the sentence it
+   *  qualifies rather than given an invented title of its own. */
+  function boundNoticeEntries(facts, esc) {
+    const e = esc || _asText;
+    const f = facts || {};
+    const entries = [];
+    const floor = Number(f.mlFloor);
+    if (floor) {
+      entries.push({ id: "gear-ml-floor", title: "GEAR ML FLOOR", class: NOTICE_QUALIFYING,
+        sentence: `Considered gear ML ≥ ${e(floor)} (your floor).` });
+    }
+    const misses = f.floorReport || [];
+    if (misses.length) {
+      entries.push({ id: "floor-not-reached", title: "FLOOR NOT REACHED", class: NOTICE_ACTIONABLE,
+        sentence: misses.map((m) => `Couldn't reach your floor of ${e(m.floor)} ${e(m.stat)}`
+          + ` — best achievable was ${e(m.achieved)}.`).join(" ") });
+    }
+    const held = f.heldCaps || [];
+    if (held.length) {
+      entries.push({ id: "held-at-your-cap", title: "HELD AT YOUR CAP", class: NOTICE_QUALIFYING,
+        sentence: `Held at your cap: ${held.map((h) => `${e(h.stat)} ${e(h.cap)}`).join(", ")}.` });
+    }
+    const credits = f.creditLines || [];
+    if (credits.length) {
+      entries.push({ id: "declared-credit", title: "DECLARED CREDIT APPLIED", class: NOTICE_QUALIFYING,
+        sentence: credits.map((l) => e(l)).join(" ") });
+    }
+    const overrides = f.overrideLines || [];
+    if (overrides.length) {
+      entries.push({ id: "bonus-type-override", title: "BONUS TYPE OVERRIDDEN", class: NOTICE_QUALIFYING,
+        sentence: overrides.map((l) => e(l)).join(" ") });
+    }
+    const off = f.offHand;
+    if (off) {
+      const caveat = "The optimizer doesn't score the Two Weapon Fighting penalty (or a shield's"
+        + " defense), so the off-hand pick was compared on ranked-stat value alone.";
+      const name = e(off.name);
+      if (off.mode === "stale") {
+        // The one off-hand case with a resolution path: the shown build predates
+        // the declaration, and re-solving applies it.
+        entries.push({ id: "re-solve-to-apply", title: "RE-SOLVE TO APPLY", class: NOTICE_ACTIONABLE,
+          sentence: "You declared Two Weapon Fighting, so shields, orbs, and rune arms leave off-hand"
+            + ` candidacy — but this build still shows ${name} in the off hand, so it was solved`
+            + ` before the declaration. Re-solve to apply it. ${caveat}` });
+      } else {
+        entries.push({ id: "off-hand-excluded", title: "OFF-HAND EXCLUDED", class: NOTICE_QUALIFYING,
+          sentence: (off.mode === "pinned"
+            ? "You declared Two Weapon Fighting, so shields, orbs, and rune arms left off-hand"
+              + ` candidacy — your pinned ${name} overrode that and is equipped.`
+            : "You declared Two Weapon Fighting, so shields, orbs, and rune arms left off-hand"
+              + " candidacy — pin one to bring it back.") + ` ${caveat}` });
+      }
+    }
+    return entries;
+  }
+
   const api = {
     // #335 U4 — the render-layer ×2 collapse and its derived receipt line.
     collapseTwins, secondCopyContribution,
@@ -1898,6 +2158,9 @@
     // pure primitives (results.js binds these; single definition, no drift)
     affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, bundleGroups, itemMl, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,
+    // #449 (U2) — the achieved/ceiling fraction: numbers, state and wording from
+    // one place, plus the once-per-document full statement.
+    ceilingFor, ceilingStatement, CEILING_FULL_STATEMENT,
     satisfiedSets, suppressedHostIds, slotSetNames,
     setContributors, contributorsFor, setMemberLabel, activeSetDetail, satisfiedSetDetail,
     // craft + cue helpers
@@ -1911,6 +2174,9 @@
     NO_DROP_SOURCE_WORDING,
     // #110 — the blocklist disclosure sentences
     blockNoticeLines,
+    // U10 — the three multi-fact notices, one addressable entry per fired branch
+    artifactNoticeEntries, zeroSourceNoticeEntries, boundNoticeEntries,
+    NOTICE_ACTIONABLE, NOTICE_QUALIFYING, NOTICE_INFORMATIONAL,
     // constraint header helpers (exporters delegates to these)
     constraintPairs, constraintLines,
   };

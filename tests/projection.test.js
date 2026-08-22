@@ -1356,8 +1356,13 @@ test("#88 review #6: itemContributions carries overriddenFrom to the gear box", 
 test("#88 review #6: the rendered gear-box line names both types", () => {
   const attr = P.attributionByTarget(OVR_RESULT);
   const html = R.whyThisLine(OVR_RESULT, { variant_id: "Necklace of X" }, attr, ["Constitution"]);
-  assert.ok(/\+6 Insight/.test(html), "the type the player asserted, printed as the value's type");
-  assert.ok(/your call — catalog says Enhancement/.test(html), "and the type the catalog records");
+  // #449 U7 moved the bonus type off the value's line and onto the chip's
+  // sub-label, so the two are no longer adjacent in the string. Both are still
+  // asserted, and asserted as belonging to ONE chip — which is the fact that
+  // matters here: the asserted type must read as this value's type.
+  assert.ok(/<span class="pd-chip-value">\+6<\/span>/.test(html), "the value");
+  assert.ok(/<span class="pd-chip-sub">Insight \(your call — catalog says Enhancement\)<\/span>/.test(html),
+    "the type the player asserted, beside the type the catalog records, on the same chip");
   const plain = R.whyThisLine(OVR_RESULT, { variant_id: "Ring of Y" }, attr, ["Constitution"]);
   assert.ok(!/catalog says/.test(plain), "an unoverridden item's summary is unchanged");
 });
@@ -1481,4 +1486,414 @@ test("#335 U4 (R6): the second-copy receipt is derived, not a fixed sentence", (
 test("#335 U4: a single copy gets no second-copy receipt at all", () => {
   const g = P.collapseTwins([{ slot: "Ring", variant: _ring335() }]);
   assert.strictEqual(P.secondCopyContribution(g[0]), null);
+});
+
+// ---------------------------------------------------------------------------
+// U10 (plan 2026-08-22-001) — the three multi-fact notices expose ONE addressable
+// entry per FIRED branch, each carrying its KTD5 title and class.
+//
+// The point of the split is a claim, not a layout: a single title such as
+// "DECLARED CREDIT APPLIED" over a notice that fired for its ML-floor branch
+// would assert a declared credit was applied on a solve that declared none —
+// instance 3 in docs/solutions/conventions/never-infer-a-claim-about-your-own-results.md.
+//
+// The sentences are the product; only their addressing changed. Every sentence
+// below is byte-identical to what the pre-change tree emitted for the same input,
+// which is why they are pinned as literals rather than matched by regex.
+// ---------------------------------------------------------------------------
+
+const _escHtml = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const _CLASSES = ["actionable", "qualifying"];
+function _wellFormed(entries, where) {
+  for (const e of entries) {
+    assert.ok(e && typeof e.id === "string" && e.id, `${where}: every entry has an id`);
+    assert.ok(typeof e.title === "string" && e.title, `${where}: every entry has a title`);
+    assert.ok(_CLASSES.indexOf(e.class) !== -1, `${where}: ${e.id} has a known class, got ${e.class}`);
+    assert.ok(typeof e.sentence === "string" && e.sentence.trim(), `${where}: ${e.id} carries a sentence`);
+  }
+}
+
+test("U10: artifactNoticeEntries never bundles the pinned branch with the none-flagged one", () => {
+  const none = P.artifactNoticeEntries({ missing: true, pinnedArtifacts: [] });
+  assert.strictEqual(none.length, 1);
+  assert.strictEqual(none[0].id, "artifact-unavailable");
+  assert.strictEqual(none[0].title, "ARTIFACT UNAVAILABLE");
+  assert.strictEqual(none[0].class, "qualifying");
+  assert.strictEqual(none[0].sentence,
+    "No Artifact could be included — none is flagged in the current data.");
+
+  const pinned = P.artifactNoticeEntries({ missing: false, pinnedArtifacts: ["Baphomet's Reign"] });
+  assert.strictEqual(pinned.length, 1);
+  assert.strictEqual(pinned[0].id, "artifact-pinned-in");
+  assert.strictEqual(pinned[0].title, "ARTIFACT PINNED IN");
+  assert.strictEqual(pinned[0].class, "actionable");
+
+  // The two ids can never appear in one array — they classify differently, and a
+  // shared card would put "no Artifact could be included" over a named Artifact.
+  const ids = none.map((e) => e.id).concat(pinned.map((e) => e.id));
+  assert.strictEqual(new Set(ids).size, ids.length, "distinct entries, never one");
+  assert.strictEqual(P.artifactNoticeEntries({ missing: false, pinnedArtifacts: [] }).length, 0);
+  _wellFormed(none.concat(pinned), "artifact");
+});
+
+test("U10: the pinned-Artifact sentence is byte-identical, escaped by the caller's escaper", () => {
+  const two = P.artifactNoticeEntries(
+    { pinnedArtifacts: ["Baphomet's Reign", "<Sook> & \"Co\""] }, _escHtml);
+  assert.strictEqual(two[0].sentence,
+    "Baphomet&#39;s Reign, &lt;Sook&gt; &amp; &quot;Co&quot; are Artifacts and were included because "
+    + "you pinned them, even though \"Include an Artifact\" is off. Unpin to exclude them.");
+  // No escaper -> plain text, so an export can print the same wording unescaped.
+  const plain = P.artifactNoticeEntries({ pinnedArtifacts: ["Baphomet's Reign"] });
+  assert.strictEqual(plain[0].sentence,
+    "Baphomet's Reign is an Artifact and was included because you pinned it, even though "
+    + "\"Include an Artifact\" is off. Unpin to exclude it.");
+});
+
+test("U10: zeroSourceNoticeEntries splits absent from filtered, with different classes", () => {
+  const both = P.zeroSourceNoticeEntries({ absent: ["Ice Lore"], filtered: ["Sonic Lore"] });
+  assert.strictEqual(both.length, 2, "two facts, two entries");
+  assert.deepStrictEqual(both.map((e) => e.id), ["stat-not-in-data", "stat-filtered-out"]);
+  assert.deepStrictEqual(both.map((e) => e.title), ["STAT NOT IN DATA", "STAT FILTERED OUT"]);
+  assert.deepStrictEqual(both.map((e) => e.class), ["qualifying", "actionable"],
+    "one has a control that resolves it and one does not — they cannot share a class");
+  assert.strictEqual(both[0].sentence,
+    "Nothing in the current data carries Ice Lore — ranking it can't change your build.");
+  assert.strictEqual(both[1].sentence,
+    "No source of Sonic Lore is available in your current filters — "
+    + "widening the ML band or character filters may reach it.");
+  _wellFormed(both, "zero-source");
+
+  assert.strictEqual(P.zeroSourceNoticeEntries({ absent: ["Ice Lore"], filtered: [] }).length, 1);
+  assert.strictEqual(P.zeroSourceNoticeEntries({ absent: [], filtered: ["Sonic Lore"] }).length, 1);
+  assert.strictEqual(P.zeroSourceNoticeEntries({}).length, 0);
+});
+
+test("U10: the filtered sentence keeps all three of its cause wordings verbatim", () => {
+  const owned = P.zeroSourceNoticeEntries({ filtered: ["Sonic Lore"], owned: true });
+  assert.strictEqual(owned[0].sentence,
+    "No source of Sonic Lore is available in your owned-gear pool — the full catalog may have one.");
+  const rung = P.zeroSourceNoticeEntries(
+    { filtered: ["X"], rungRestricts: true, removed: "augments" });
+  assert.strictEqual(rung[0].sentence,
+    "No source of X is available in your current filters, which exclude augments — "
+    + "raising \"What may the solver assume beyond the printed item?\" may reach it.");
+  const many = P.zeroSourceNoticeEntries({ filtered: ["X", "Y"] });
+  assert.strictEqual(many[0].sentence,
+    "No source of X, Y is available in your current filters — "
+    + "widening the ML band or character filters may reach them.");
+});
+
+// --- boundNotice: the large one. Six branches, seven ids (the off-hand branch
+// resolves to a different id when the declaration post-dates the solve). ---
+
+const _boundAll = {
+  mlFloor: 30,
+  floorReport: [{ stat: "Combat Mastery", floor: 10, achieved: 7 }],
+  heldCaps: [{ stat: "Dodge", cap: 4 }],
+  creditLines: ["credit line one.", "credit line two."],
+  overrideLines: ["override line."],
+  offHand: { mode: "none", name: "" },
+};
+
+test("U10: boundNoticeEntries emits one entry per fired branch, each with its KTD5 title and class", () => {
+  const all = P.boundNoticeEntries(_boundAll);
+  assert.deepStrictEqual(all.map((e) => e.id),
+    ["gear-ml-floor", "floor-not-reached", "held-at-your-cap",
+      "declared-credit", "bonus-type-override", "off-hand-excluded"]);
+  assert.deepStrictEqual(all.map((e) => e.title),
+    ["GEAR ML FLOOR", "FLOOR NOT REACHED", "HELD AT YOUR CAP",
+      "DECLARED CREDIT APPLIED", "BONUS TYPE OVERRIDDEN", "OFF-HAND EXCLUDED"]);
+  assert.deepStrictEqual(all.map((e) => e.class),
+    ["qualifying", "actionable", "qualifying", "qualifying", "qualifying", "qualifying"]);
+  _wellFormed(all, "bound");
+});
+
+test("U10: a solve bounded only by the ML floor claims no declared credit", () => {
+  const only = P.boundNoticeEntries({ mlFloor: 32 });
+  assert.strictEqual(only.length, 1, "one fired branch, one entry");
+  assert.strictEqual(only[0].id, "gear-ml-floor");
+  assert.strictEqual(only[0].title, "GEAR ML FLOOR");
+  assert.strictEqual(only[0].sentence, "Considered gear ML ≥ 32 (your floor).");
+  assert.ok(!only.some((e) => /DECLARED CREDIT/.test(e.title)),
+    "no entry may claim a declared credit was applied on a solve that declared none");
+  assert.ok(!only.some((e) => /declared/i.test(e.sentence)));
+});
+
+test("U10: the floor-miss branch is actionable and keeps its sentence verbatim", () => {
+  const miss = P.boundNoticeEntries({
+    floorReport: [{ stat: "Combat Mastery", floor: 10, achieved: 7 },
+      { stat: "Dodge", floor: 5, achieved: 3 }] });
+  assert.strictEqual(miss.length, 1);
+  assert.strictEqual(miss[0].class, "actionable", "the player has priorities to change");
+  assert.strictEqual(miss[0].sentence,
+    "Couldn't reach your floor of 10 Combat Mastery — best achievable was 7. "
+    + "Couldn't reach your floor of 5 Dodge — best achievable was 3.");
+});
+
+test("U10: the held-cap, credit and override branches keep their sentences verbatim", () => {
+  assert.strictEqual(
+    P.boundNoticeEntries({ heldCaps: [{ stat: "Dodge", cap: 4 }, { stat: "A&B", cap: 9 }] }, _escHtml)[0].sentence,
+    "Held at your cap: Dodge 4, A&amp;B 9.");
+  assert.strictEqual(
+    P.boundNoticeEntries({ creditLines: ["one.", "two."] })[0].sentence, "one. two.");
+  assert.strictEqual(
+    P.boundNoticeEntries({ overrideLines: ["one.", "two."] })[0].sentence, "one. two.");
+});
+
+test("U10: the off-hand branch resolves to three sentences under two titles", () => {
+  const caveat = " The optimizer doesn't score the Two Weapon Fighting penalty "
+    + "(or a shield's defense), so the off-hand pick was compared on ranked-stat value alone.";
+  const none = P.boundNoticeEntries({ offHand: { mode: "none" } })[0];
+  assert.strictEqual(none.id, "off-hand-excluded");
+  assert.strictEqual(none.class, "qualifying");
+  assert.strictEqual(none.sentence, "You declared Two Weapon Fighting, so shields, orbs, and rune "
+    + "arms left off-hand candidacy — pin one to bring it back." + caveat);
+
+  const pinned = P.boundNoticeEntries({ offHand: { mode: "pinned", name: "Tower Shield" } })[0];
+  assert.strictEqual(pinned.id, "off-hand-excluded", "a pin override is still the exclusion fact");
+  assert.strictEqual(pinned.class, "qualifying");
+  assert.strictEqual(pinned.sentence, "You declared Two Weapon Fighting, so shields, orbs, and rune "
+    + "arms left off-hand candidacy — your pinned Tower Shield overrode that and is equipped." + caveat);
+
+  // A build solved before the declaration is the one off-hand case the player can
+  // actually resolve, so it is the one that classifies actionable.
+  const stale = P.boundNoticeEntries({ offHand: { mode: "stale", name: "Tower Shield" } })[0];
+  assert.strictEqual(stale.id, "re-solve-to-apply");
+  assert.strictEqual(stale.title, "RE-SOLVE TO APPLY");
+  assert.strictEqual(stale.class, "actionable");
+  assert.strictEqual(stale.sentence, "You declared Two Weapon Fighting, so shields, orbs, and rune "
+    + "arms leave off-hand candidacy — but this build still shows Tower Shield in the off hand, so "
+    + "it was solved before the declaration. Re-solve to apply it." + caveat);
+});
+
+test("U10: the entry count is the number of FIRED branches, not the number of notice functions", () => {
+  assert.strictEqual(P.boundNoticeEntries({}).length, 0, "nothing bounded the solve");
+  assert.strictEqual(P.boundNoticeEntries({ mlFloor: 0, floorReport: [], heldCaps: [] }).length, 0);
+  assert.strictEqual(P.boundNoticeEntries({ mlFloor: 30 }).length, 1);
+  assert.strictEqual(P.boundNoticeEntries({ mlFloor: 30, heldCaps: [{ stat: "Dodge", cap: 4 }] }).length, 2);
+  assert.strictEqual(P.boundNoticeEntries(_boundAll).length, 6);
+  // Three notice FUNCTIONS, but a solve that fires every branch of all three
+  // yields one entry per fact — that is the whole point of the split.
+  const total = P.artifactNoticeEntries({ missing: true }).length
+    + P.zeroSourceNoticeEntries({ absent: ["A"], filtered: ["B"] }).length
+    + P.boundNoticeEntries(_boundAll).length;
+  assert.strictEqual(total, 9);
+});
+
+test("U10: no branch of any of the three notices falls through unclassified", () => {
+  const every = []
+    .concat(P.artifactNoticeEntries({ missing: true }))
+    .concat(P.artifactNoticeEntries({ pinnedArtifacts: ["A"] }))
+    .concat(P.zeroSourceNoticeEntries({ absent: ["A"], filtered: ["B"] }))
+    .concat(P.zeroSourceNoticeEntries({ filtered: ["B"], owned: true }))
+    .concat(P.zeroSourceNoticeEntries({ filtered: ["B"], rungRestricts: true, removed: "augments" }))
+    .concat(P.boundNoticeEntries(_boundAll))
+    .concat(P.boundNoticeEntries({ offHand: { mode: "pinned", name: "S" } }))
+    .concat(P.boundNoticeEntries({ offHand: { mode: "stale", name: "S" } }));
+  _wellFormed(every, "all branches");
+  assert.strictEqual(new Set(every.map((e) => e.id)).size, 11,
+    "eleven distinct branch identities across the three notices");
+  // One title per id, one class per id — a reclassification must be a deliberate edit.
+  const byId = new Map();
+  for (const e of every) {
+    if (byId.has(e.id)) assert.deepStrictEqual([e.title, e.class], byId.get(e.id), `${e.id} is stable`);
+    else byId.set(e.id, [e.title, e.class]);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// #449 U2 — the achieved/ceiling fraction as shared content.
+//
+// The wording assertions here are the mechanical half of the review question
+// docs/solutions/conventions/never-infer-a-claim-about-your-own-results.md
+// prescribes. They cannot prove a sentence honest; they can only prove that the
+// specific counterfactual constructions that produced five prior instances are
+// absent. The review question stays the real guard.
+// ---------------------------------------------------------------------------
+
+// Trip-words from that convention, plus KTD2's own list. `\b` on both ends so
+// "canned"/"alonely" style substrings cannot false-positive, and the whole
+// sentence is lowercased first.
+const _COUNTERFACTUAL = /\b(would|could|otherwise|alone|instead|without)\b/;
+
+function _ceilRec(rows, capped) {
+  return { ceilingReport: rows, capped: capped || {} };
+}
+
+test("#449 U2: a maxed stat returns maxed:true and the maxed sentence", () => {
+  const r = _ceilRec([{ stat: "Dodge", achieved: 12, ceiling: 12, bonusTypes: ["Enhancement"], allFilled: true }]);
+  const c = P.ceilingFor(r, "Dodge");
+  assert.strictEqual(c.maxed, true, "achieved === ceiling, uncapped");
+  assert.strictEqual(c.capBound, false);
+  assert.strictEqual(c.zeroCeiling, false);
+  assert.strictEqual(c.achieved, 12);
+  assert.strictEqual(c.ceilingUpperBound, 12);
+  assert.strictEqual(c.fraction, "12 / 12");
+  assert.ok(/no other item in your pool raises it/.test(c.short), `maxed sentence: ${c.short}`);
+  assert.ok(c.line.startsWith("12 / 12 — "), "the line pairs the fraction with the short form");
+});
+
+test("#449 U2: a shortfall stat returns maxed:false and the shortfall sentence", () => {
+  const r = _ceilRec([{ stat: "Dodge", achieved: 30, ceiling: 50, bonusTypes: ["Enhancement", "Insightful"], allFilled: false }]);
+  const c = P.ceilingFor(r, "Dodge");
+  assert.strictEqual(c.maxed, false);
+  assert.strictEqual(c.capBound, false);
+  assert.strictEqual(c.zeroCeiling, false);
+  assert.strictEqual(c.fraction, "30 / 50");
+  assert.ok(/sums the best source in each bonus type/.test(c.short), `shortfall sentence: ${c.short}`);
+});
+
+test("#449 U2 (KTD2): no ceiling sentence carries a counterfactual construction", () => {
+  // Every state, not just the shortfall one — a counterfactual is as wrong on a
+  // capped stat as on a short one.
+  const cases = [
+    P.ceilingFor(_ceilRec([{ stat: "A", achieved: 30, ceiling: 50 }]), "A"),
+    P.ceilingFor(_ceilRec([{ stat: "A", achieved: 12, ceiling: 12 }]), "A"),
+    P.ceilingFor(_ceilRec([{ stat: "A", achieved: 0, ceiling: 0 }]), "A"),
+    P.ceilingFor(_ceilRec([{ stat: "A", achieved: 4, ceiling: 4 }], { A: 4 }), "A"),
+  ];
+  for (const c of cases) {
+    assert.ok(!_COUNTERFACTUAL.test(c.short.toLowerCase()),
+      `short form asserts a solve nobody ran: ${c.short}`);
+    assert.ok(!_COUNTERFACTUAL.test(c.line.toLowerCase()), `line: ${c.line}`);
+  }
+  assert.ok(!_COUNTERFACTUAL.test(P.CEILING_FULL_STATEMENT.toLowerCase()),
+    `full statement: ${P.CEILING_FULL_STATEMENT}`);
+});
+
+test("#449 U2 (KTD2): the shortfall sentence never asserts the ceiling was reachable", () => {
+  const c = P.ceilingFor(_ceilRec([{ stat: "A", achieved: 30, ceiling: 50 }]), "A");
+  const s = c.line.toLowerCase();
+  // Attainability phrasings, and cause-attribution for the shortfall. No solve
+  // establishes either; the second is the exact "higher priorities took the
+  // slots" shape KTD2 rules out.
+  for (const bad of ["reachable target", "you can reach", "attainable", "still available",
+    "room to grow", "headroom", "took the slot", "higher priorit", "remaining", "short by"]) {
+    assert.ok(!s.includes(bad), `shortfall line implies attainability or a cause: "${bad}" in ${c.line}`);
+  }
+  // The upper-bound qualification lives in the full statement, once per document.
+  assert.ok(/upper bound/.test(P.CEILING_FULL_STATEMENT),
+    "the full statement names the ceiling as an upper bound");
+  assert.ok(/no loadout is claimed to reach it/.test(P.CEILING_FULL_STATEMENT),
+    "and refuses the reachability claim outright");
+});
+
+test("#449 U2: a result with no ceilingReport returns null for every stat and throws nothing", () => {
+  // The restored-pre-#449-save path. Three shapes of absence, all silent.
+  for (const r of [undefined, {}, { ceilingReport: [] }, { ceilingReport: null }]) {
+    assert.strictEqual(P.ceilingFor(r, "Dodge"), null, "no row, no fraction");
+    assert.strictEqual(P.ceilingStatement(r), null, "and no orphan full statement");
+  }
+  // A report that simply lacks THIS stat is the same case.
+  assert.strictEqual(P.ceilingFor(_ceilRec([{ stat: "Dodge", achieved: 1, ceiling: 2 }]), "Wisdom"), null);
+});
+
+test("#449 U2: a zero ceiling reports itself without claiming the pool lacks the stat", () => {
+  const c = P.ceilingFor(_ceilRec([{ stat: "Doubleshot", achieved: 0, ceiling: 0, bonusTypes: [], allFilled: true }]), "Doubleshot");
+  assert.strictEqual(c.zeroCeiling, true);
+  assert.notStrictEqual(c.maxed, true, "0 / 0 is not a maxed stat");
+  const s = c.short.toLowerCase();
+  // It may say what THIS solve found. It may not assert a property of the pool,
+  // and it must not defer to zeroSourceNotice — that notice tests a pre-gating
+  // population and can be absent exactly when the ceiling reads zero.
+  for (const bad of ["your pool", "the pool", "no item", "nothing in your", "does not exist", "no source exists"]) {
+    assert.ok(!s.includes(bad), `zero-ceiling sentence claims a pool property: "${bad}" in ${c.short}`);
+  }
+  assert.ok(/this solve/.test(s), `it must scope the claim to this solve: ${c.short}`);
+});
+
+test("#449 U2 (KTD7): a stat pinned at its cap is capBound, never maxed", () => {
+  const c = P.ceilingFor(_ceilRec([{ stat: "Dodge", achieved: 4, ceiling: 4, allFilled: true }], { Dodge: 4 }), "Dodge");
+  assert.strictEqual(c.capBound, true);
+  assert.strictEqual(c.maxed, false, "green is reserved for achieved === pool ceiling");
+  assert.strictEqual(c.cap, 4);
+  const s = c.short.toLowerCase();
+  assert.ok(s.includes("cap of 4"), `the sentence names the cap: ${c.short}`);
+  // It must NOT carry the maxed claim, which would be false (the pool can raise
+  // the stat; the cap will not let it land) and would contradict the capNote
+  // rendered inches away on the same card.
+  assert.ok(!/no other item in your pool raises it/.test(c.short),
+    `cap-bound stat inherited the maxed claim: ${c.short}`);
+});
+
+test("#449 U2 (KTD7): a capped stat BELOW its cap does not misname its denominator", () => {
+  // min(cap, Σ best) === cap means Σ best >= cap, so the number on screen is the
+  // CAP, not the summed per-bucket best. The plain shortfall wording would name
+  // the wrong source for its own denominator.
+  const c = P.ceilingFor(_ceilRec([{ stat: "Dodge", achieved: 30, ceiling: 100 }], { Dodge: 100 }), "Dodge");
+  assert.strictEqual(c.capBound, false, "still short of the cap");
+  assert.strictEqual(c.maxed, false);
+  assert.strictEqual(c.fraction, "30 / 100");
+  assert.ok(/cap of 100/.test(c.short), `the sentence names the cap: ${c.short}`);
+  assert.ok(!/sums the best source/.test(c.short),
+    `denominator is the cap, but the sentence calls it the summed best: ${c.short}`);
+  // And it must not claim the pool could go higher — the clamped report cannot
+  // tell "Σ best exceeded the cap" from "Σ best landed exactly on it".
+  assert.ok(!/gear pool/.test(c.short), `unprovable claim about the pool: ${c.short}`);
+});
+
+test("#449 U2 (KTD7): the maxed sentence is emitted only when capBound is false", () => {
+  const MAXED = "at the ceiling: every bonus type carrying this stat holds its best available source, "
+    + "so no other item in your pool raises it.";
+  assert.strictEqual(P.ceilingFor(_ceilRec([{ stat: "A", achieved: 9, ceiling: 9 }]), "A").short, MAXED);
+  // Same numbers, plus a cap that binds them: the maxed sentence must disappear.
+  for (const capped of [{ A: 9 }, { A: 5 }]) {
+    const c = P.ceilingFor(_ceilRec([{ stat: "A", achieved: 9, ceiling: 9 }], capped), "A");
+    assert.strictEqual(c.capBound, true, `cap ${capped.A} binds an achieved of 9`);
+    assert.notStrictEqual(c.short, MAXED, `cap ${capped.A} still emitted the maxed sentence`);
+  }
+  // A cap the stat has not reached leaves the ordinary states intact.
+  const under = P.ceilingFor(_ceilRec([{ stat: "A", achieved: 3, ceiling: 9 }], { A: 20 }), "A");
+  assert.strictEqual(under.capBound, false);
+  assert.strictEqual(under.maxed, false);
+});
+
+test("#449 U2: ceilingFor is keyed by stat, never by report order", () => {
+  const rows = [
+    { stat: "Dodge", achieved: 1, ceiling: 9 },
+    { stat: "Wisdom", achieved: 7, ceiling: 7 },
+  ];
+  assert.strictEqual(P.ceilingFor(_ceilRec(rows), "Wisdom").fraction, "7 / 7");
+  assert.strictEqual(P.ceilingFor(_ceilRec(rows.slice().reverse()), "Wisdom").fraction, "7 / 7",
+    "a reordered (or filtered) report cannot misalign a sentence to a stat");
+});
+
+test("#449 U2 (R18): the denominator field is named for its scope", () => {
+  const c = P.ceilingFor(_ceilRec([{ stat: "A", achieved: 30, ceiling: 50 }]), "A");
+  assert.ok("ceilingUpperBound" in c, "the number a consumer reads states that it is a bound");
+  assert.strictEqual(c.ceilingUpperBound, 50);
+  assert.ok(!("ceiling" in c),
+    "one name only — a second `ceiling` key is the drift this unit exists to prevent");
+});
+
+test("#449 U2 (R15): the full statement is one shared constant, not per-stat text", () => {
+  const r = _ceilRec([{ stat: "A", achieved: 1, ceiling: 2 }, { stat: "B", achieved: 2, ceiling: 2 }]);
+  assert.strictEqual(P.ceilingStatement(r), P.CEILING_FULL_STATEMENT);
+  // The qualification lives ONLY there: repeating it under every card down an
+  // eight-priority build turns it into boilerplate nobody reads.
+  for (const stat of ["A", "B"]) {
+    assert.ok(!P.ceilingFor(r, stat).short.includes("upper bound"),
+      `${stat}'s short form duplicated the full statement`);
+  }
+});
+
+test("#449 U2: project() carries the fraction and the once-per-document statement", () => {
+  const rec = {
+    name: "C", inputs: { ml: 34, priorities: ["Dodge", "Wisdom"] },
+    snapshot: { status: "optimal", chosen: [], setsActive: [],
+      effective: { Dodge: 30, Wisdom: 7 }, capped: {},
+      ceilingReport: [{ stat: "Dodge", achieved: 30, ceiling: 50 },
+        { stat: "Wisdom", achieved: 7, ceiling: 7 }] },
+  };
+  const v = P.project(rec);
+  assert.strictEqual(v.attribution.Dodge.ceiling.fraction, "30 / 50");
+  assert.strictEqual(v.attribution.Wisdom.ceiling.maxed, true);
+  assert.strictEqual(v.character.ceilingStatement, P.CEILING_FULL_STATEMENT);
+  // Pre-#449 restore: no rows, no fraction, no statement — never a zero nobody computed.
+  const old = P.project({ name: "C", inputs: { priorities: ["Dodge"] },
+    snapshot: { chosen: [], effective: { Dodge: 30 } } });
+  assert.strictEqual(old.attribution.Dodge.ceiling, null);
+  assert.strictEqual(old.character.ceilingStatement, null);
 });

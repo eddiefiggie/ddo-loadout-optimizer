@@ -43,6 +43,16 @@
     // dropped by omission, and a restored character is never re-solved. Without
     // it the notice would render on a fresh solve and vanish on load.
     "saturationReport",
+    // #449 U1 — the achieved/ceiling census behind each ranked card's fraction,
+    // for the same reason as `saturationReport` directly above: it is computed in
+    // one pass over `program.zByBucket`, `program` is dropped by omission, and a
+    // restored character is never re-solved. Without it every priority card loses
+    // its fraction on load while still showing its headline number.
+    // It deliberately OVERLAPS `saturationReport` — same pass, two projections
+    // (raw + gated for the notice, cap-clamped + ungated for the display) — and
+    // `saturationReport` is kept because saves written before this field exist.
+    // Do not dedupe them.
+    "ceilingReport",
     // #239 — same reason: computed from `model.worn`, and `model` is dropped.
     "emptySlots",
     // U6/#249 — the compound-absorption quarantine, read off `model.worn` for the

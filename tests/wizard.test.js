@@ -7,6 +7,36 @@ const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js")
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
 
+/** #450 — slice a source region between two markers, with the closing search
+ *  ANCHORED to the opening index.
+ *
+ *  The unanchored form — `src.slice(src.indexOf(A), src.indexOf(B))` — searches
+ *  for B from position 0, so any earlier occurrence of B captures the closing
+ *  bound, the range inverts, and `slice` returns "" rather than throwing. That
+ *  has already cost this repo a confusing red (#348, where an unrelated feature
+ *  inverted a guard about focus) and, in four cases, a silent green (#450).
+ *
+ *  Both markers are asserted present, so a renamed marker fails here naming the
+ *  marker, instead of somewhere downstream naming a behaviour that is fine.
+ */
+function srcBetween(src, open, close, label) {
+  const a = src.indexOf(open);
+  assert.ok(a >= 0, `${label || "srcBetween"}: opening marker not found — ${open}`);
+  const b = src.indexOf(close, a);
+  assert.ok(b >= a, `${label || "srcBetween"}: closing marker not found after the opening — ${close}`);
+  return src.slice(a, b);
+}
+
+/** #450 — the fixed-window variant: from a marker, forward N characters. Locates
+ *  the marker ONCE (the two-call form can disagree with itself) and refuses a
+ *  missing marker, which would otherwise make the start negative — and `slice`
+ *  reads a negative start as an offset from the END of the string. */
+function srcFrom(src, open, len, label) {
+  const a = src.indexOf(open);
+  assert.ok(a >= 0, `${label || "srcFrom"}: marker not found — ${open}`);
+  return src.slice(a, a + len);
+}
+
 const baseState = () => ({ ml: 34, race: "Human", armor: "", oath: "", alignment: "",
   style: "", weaponTypes: [], offHand: [], offHandWeapons: [],
   priorities: ["Constitution"], slotConstraints: {} });
@@ -621,7 +651,13 @@ test("U4/#105: step 1 (intro) aligns like the others — action row + spacer, no
 test("U4/#105: step 5 (results) nav is in the bottom action bar, not the header", () => {
   const tpl = stepTemplate("stepResults");
   // The results header must no longer host the nav buttons…
-  const head = tpl.slice(tpl.indexOf("wz-results-head"), tpl.indexOf('class="wz-actions"'));
+  // #450 — anchored end marker, and a positive assertion over the slice. The
+  // negative below is satisfied by an empty string, so without both of these an
+  // inverted slice reports the header clean while reading nothing at all.
+  const headAt = tpl.indexOf("wz-results-head");
+  assert.ok(headAt >= 0, "the results header is in the template");
+  const head = tpl.slice(headAt, tpl.indexOf('class="wz-actions"', headAt));
+  assert.ok(/wz-eyebrow/.test(head), "and the slice really spans it");
   assert.ok(!head.includes("data-goto"), "results header no longer carries the goto nav");
   // …they now live in the bottom .wz-actions row, both preserved.
   const row = actionRow("stepResults");
@@ -1119,9 +1155,13 @@ test("U2: the credit control is not offered on a presence row", () => {
   assert.deepStrictEqual(advancedRowModel("Blurry", {
     declaredCredits: { [creditKey("Blurry", "Insight")]: { stat: "Blurry", bonus_type: "Insight", value: 3 } },
   }, presenceVocab).credits, [], "a presence row is offered no credit, panel or not");
-  const rows = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function rankedHTML"), WIZARD_SRC.indexOf("function advancedHTML"));
+  // #450 — anchored, and proven non-empty before the negative runs.
+  const rowsAt = WIZARD_SRC.indexOf("function rankedHTML");
+  assert.ok(rowsAt >= 0, "rankedHTML is in the source");
+  const rows = WIZARD_SRC.slice(rowsAt, WIZARD_SRC.indexOf("function advancedHTML", rowsAt));
+  assert.ok(/state\.priorities\.map/.test(rows), "and the slice really spans its body");
   assert.ok(!/creditsHTML/.test(rows), "the row body never renders credits directly");
-  const panel = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function advancedHTML"), WIZARD_SRC.indexOf("function creditsHTML"));
+  const panel = srcBetween(WIZARD_SRC, "function advancedHTML", "function creditsHTML", "advancedHTML");
   assert.ok(/creditsHTML\(stat/.test(panel), "credits render inside the panel, nowhere else");
 });
 
@@ -1221,10 +1261,10 @@ test("U1: an on/off row keeps min/max but is offered no credit", () => {
   assert.strictEqual(advancedRowModel("Constitution", {}, presenceVocab).canCredit, true);
   // The button must be gated too, not just the rows: rendering it while the model
   // refuses the result gave a control that wrote invisible state on every click.
-  const panel = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function advancedHTML"), WIZARD_SRC.indexOf("function creditsHTML"));
+  const panel = srcBetween(WIZARD_SRC, "function advancedHTML", "function creditsHTML", "advancedHTML");
   assert.ok(/adv\.canCredit \? /.test(panel), "the credit block renders only when the stat can carry one");
   // and the row still reads as on/off in the markup
-  const rows = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function rankedHTML"), WIZARD_SRC.indexOf("function advancedHTML"));
+  const rows = srcBetween(WIZARD_SRC, "function rankedHTML", "function advancedHTML", "rankedHTML");
   assert.ok(/isPresenceOnly\(p, vocab\) \? ` <span class="rank-tag"/.test(rows),
     "the on/off badge keys on the presence test, not on a field that is always true");
   assert.ok(!/hasAdvanced/.test(rows), "no dead always-true branch left in the row markup");
@@ -1366,7 +1406,7 @@ test("KTD1: the markup READS the open set — the seam, not just the Set", () =>
   assert.strictEqual(panelOpenAttr("Dodge"), "", "only the opened stat");
   openPanelClear();
   assert.strictEqual(panelOpenAttr("Constitution"), "");
-  const panel = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function advancedHTML"), WIZARD_SRC.indexOf("function creditsHTML"));
+  const panel = srcBetween(WIZARD_SRC, "function advancedHTML", "function creditsHTML", "advancedHTML");
   assert.ok(/\$\{panelOpenAttr\(stat\)\}/.test(panel), "the markup renders that attribute");
 });
 
@@ -1382,7 +1422,7 @@ test("R5: refreshBadge writes the shared summary, not just anything", () => {
   // Asserting the call sites is not enough — a refreshBadge whose body does
   // nothing leaves the badge one render stale, which is the original bug.
   const wire = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderRankedList"));
-  const body = wire.slice(wire.indexOf("const refreshBadge"), wire.indexOf("const refreshBadge") + 400);
+  const body = srcFrom(wire, "const refreshBadge", 400, "refreshBadge");
   assert.ok(/innerHTML\s*=\s*advSummaryHTML\(advancedRowModel\(/.test(body),
     "the patched summary comes from the same model the full render uses");
 });
@@ -1425,9 +1465,9 @@ test("D1: adding or removing a credit restores focus after the rebuild", () => {
   // player who clicks "+ already have" gets the panel they expect and a caret
   // nowhere — focus falls to <body>.
   const wire = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderRankedList"));
-  const cadd = wire.slice(wire.indexOf("b.dataset.cadd != null"), wire.indexOf("b.dataset.crem != null"));
+  const cadd = srcBetween(wire, "b.dataset.cadd != null", "b.dataset.crem != null", "credit-add branch");
   assert.ok(/after = \(\) => focusCreditValue\(key\)/.test(cadd), "add lands the caret in the new field");
-  const crem = wire.slice(wire.indexOf("b.dataset.crem != null"), wire.indexOf("rerender();"));
+  const crem = srcBetween(wire, "b.dataset.crem != null", "rerender();", "credit-remove branch");
   assert.ok(/after = \(\) => focusSummary\(stat\)/.test(crem), "remove goes up a level");
   assert.ok(/rerender\(\);\s*\n\s*if \(after\) after\(\);/.test(wire), "and it runs AFTER the rebuild");
 });
@@ -1442,7 +1482,15 @@ test("bundles: a hidden sub-row is actually hidden", () => {
     "an explicit [hidden] rule overrides the class display");
   // The Attributes row is the one sub-row that must NOT carry hidden.
   const step = stepTemplate("stepPriorities");
-  const attrRow = step.slice(step.indexOf('data-group="attributes"') - 120, step.indexOf('data-group="attributes"') + 40);
+  // #450 — the marker was located twice and the lower bound could go NEGATIVE,
+  // which `slice` reads as an offset from the END of the string: a marker within
+  // 120 chars of the start would have sliced an unrelated tail, and the negative
+  // assertion below would most likely have passed over it. Located once, clamped,
+  // and proven to contain the marker before anything is asserted about it.
+  const attrAt = step.indexOf('data-group="attributes"');
+  assert.ok(attrAt >= 0, "the Attributes row is in the template");
+  const attrRow = step.slice(Math.max(0, attrAt - 120), attrAt + 40);
+  assert.ok(attrRow.includes('data-group="attributes"'), "and the window really contains it");
   assert.ok(!/hidden/.test(attrRow), "the Attributes row is always visible");
 });
 
@@ -1452,7 +1500,7 @@ test("R1/R2: the Advanced panel is ordered after the reorder controls", () => {
   // magnitude row while presence rows stayed on one — the exact misalignment
   // this change exists to remove.
   const css = fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf-8");
-  const rule = css.slice(css.indexOf(".wz-adv {"), css.indexOf(".wz-adv >"));
+  const rule = srcBetween(css, ".wz-adv {", ".wz-adv >", ".wz-adv rule");
   assert.ok(/order:\s*1/.test(rule), ".wz-adv carries an explicit order so it lays out last");
   assert.ok(/flex-basis:\s*100%/.test(rule), "and still takes its own line");
 });
@@ -1568,7 +1616,7 @@ test("U3: the explainer is DEFINED once, even though it renders per row", () => 
 });
 
 test("U3: the panel leads with the no-min-no-max default (R4)", () => {
-  const panel = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function advancedHTML"), WIZARD_SRC.indexOf("function creditsHTML"));
+  const panel = srcBetween(WIZARD_SRC, "function advancedHTML", "function creditsHTML", "advancedHTML");
   const leadAt = panel.indexOf("ADVANCED_PANEL_HELP.lead");
   assert.ok(leadAt > 0, "the default line is in the panel");
   assert.ok(leadAt < panel.indexOf("wz-bounds"), "and it comes before the inputs it describes");
@@ -1636,7 +1684,7 @@ test("U4: Warlock sits on the packages row; ability scores are above Tactics", (
 });
 
 function ADVANCED_HELP_SRC() {
-  return WIZARD_SRC.slice(WIZARD_SRC.indexOf("const ADVANCED_PANEL_HELP"), WIZARD_SRC.indexOf("// U2/KTD1"));
+  return srcBetween(WIZARD_SRC, "const ADVANCED_PANEL_HELP", "// U2/KTD1", "ADVANCED_PANEL_HELP");
 }
 
 // ---------------------------------------------------------------------------
@@ -2242,7 +2290,7 @@ test("#346: every reader of the ladder agrees on the same precedence", () => {
 // ladder's own rule exists to prevent. Same treatment as the augment ML ceiling.
 test("#346: the Set Augments picker is disabled on rungs that clear set-bonus crafting", () => {
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
-  const block = src.slice(src.indexOf('id="wz-setaug"'), src.indexOf('id="wz-setaug"') + 1800);
+  const block = srcFrom(src, 'id="wz-setaug"', 1800, "wz-setaug block");
   assert.match(block, /setAugInert \? " disabled" : ""/,
     "the checkboxes carry a disabled branch keyed on the rung");
   assert.match(block, /Not applicable — the rung you chose excludes set-bonus crafting/,
@@ -3040,7 +3088,7 @@ test("#428 (AE9): per-result coverage disclosure survives — it describes the s
 test("#428 (AE10): the footer puts a labelled build stamp before attribution", () => {
   const fs = require("fs"); const path = require("path");
   const html = fs.readFileSync(path.join(__dirname, "..", "web", "index.html"), "utf-8");
-  const foot = html.slice(html.indexOf("<footer"), html.indexOf("</footer>"));
+  const foot = srcBetween(html, "<footer", "</footer>", "footer");
   assert.ok(foot, "index.html has a footer");
   const build = foot.indexOf('id="build-info"');
   const attrib = foot.indexOf("ddowiki.com");
@@ -3053,7 +3101,7 @@ test("#428 (AE10): the footer puts a labelled build stamp before attribution", (
 test("#428 (R30): footer attribution keeps both credits and both links", () => {
   const fs = require("fs"); const path = require("path");
   const html = fs.readFileSync(path.join(__dirname, "..", "web", "index.html"), "utf-8");
-  const foot = html.slice(html.indexOf("<footer"), html.indexOf("</footer>"));
+  const foot = srcBetween(html, "<footer", "</footer>", "footer");
   assert.ok(/https:\/\/ddowiki\.com/.test(foot), "the DDO Wiki link survives");
   assert.ok(/illusionistpm\/ddo-gear-planner/.test(foot), "the Gear Planner link survives");
   assert.ok(/illusionistpm/.test(foot), "…and its author is still credited");
@@ -3071,7 +3119,11 @@ test("#428 (R28): the build value renders monospaced so successive stamps align"
 test("#428 (R31): the footer reads as distinct elements, not one run-on line", () => {
   const fs = require("fs"); const path = require("path");
   const html = fs.readFileSync(path.join(__dirname, "..", "web", "index.html"), "utf-8");
-  const foot = html.slice(html.indexOf("<footer"), html.indexOf("</footer>"));
+  // #450 — anchored, and proven to span the real footer before the negative runs.
+  const footAt = html.indexOf("<footer");
+  assert.ok(footAt >= 0, "index.html has a footer");
+  const foot = html.slice(footAt, html.indexOf("</footer>", footAt));
+  assert.ok(/class="footer-build"/.test(foot), "and the slice really spans it");
   assert.ok(!/<span>\s*·/.test(foot), "no leading separator dot joining spans into a sentence");
   const app = fs.readFileSync(path.join(__dirname, "..", "web", "app.js"), "utf-8");
   assert.ok(!/textContent\s*=\s*`\s*·\s*Build/.test(app),
@@ -3546,7 +3598,7 @@ test("#432 review: the live re-rank reads what is ON SCREEN, not the state flags
   // from state there would award `primary` to the button just hidden and ghost
   // every visible control, leaving the step with no primary at all.
   const f = fnBody(WIZARD_SRC, "function refreshResultsEmphasis() {", 4);
-  const loop = f.slice(f.indexOf("for ("), f.indexOf("wz-save"));
+  const loop = srcBetween(f, "for (", "wz-save", "re-rank loop");
   assert.ok(/wz-hidden/.test(loop),
     "the re-rank decides `showing` from the element's own wz-hidden class");
   assert.ok(!/resolveBannerPrimary/.test(loop),

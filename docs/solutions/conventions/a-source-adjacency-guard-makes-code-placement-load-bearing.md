@@ -2,6 +2,7 @@
 title: "A guard that slices source text makes the PLACEMENT of unrelated code load-bearing"
 module: tests
 date: 2026-08-18
+last_updated: 2026-08-22
 problem_type: convention
 component: tooling
 severity: medium
@@ -11,11 +12,14 @@ tags:
   - wizard
   - source-inspection
   - maintenance
+  - vacuity
 applies_when:
   - Adding code to a function that an existing test inspects as TEXT rather than by behavior
   - A test failure names something with no apparent relationship to the change you made
   - Writing a new guard that asserts two things appear near each other in a source file
   - Working anywhere in web/wizard.js's renderRankedList wiring block
+  - "Reviewing a source-slicing guard whose assertion is a loop or a negative rather than a positive regex"
+  - "A source-derived enumeration reports success without saying how much it examined"
 related_components:
   - tests/wizard.test.js
   - web/wizard.js
@@ -52,6 +56,33 @@ source text before assuming you broke its behavior.** Grep the failing test for
 tells you what broke; a source-adjacency test tells you that *the shape of the file*
 changed, which is a different question and usually has a different fix.
 
+**The same construction also fails silently, and that half is not a diagnosis problem
+at all.** The case above inverted a slice and the regex over it went red — loud, confusing,
+but visible. Swap the assertion for a **loop or a negative** and the identical inversion
+produces no failure: `String.prototype.slice` saturates rather than throwing on inverted
+bounds, so it returns `""`, a `for` loop over nothing runs green, and a `!/x/.test("")`
+passes. The guard reports success on a file it has stopped reading.
+
+This happened here on 2026-08-22, four days after the case above. A completeness guard
+enumerated the notice-entry ids `web/projection.js` can mint by slicing from
+`indexOf("function artifactNoticeEntries")` to `indexOf("constraintPairs")` — and
+`constraintPairs` is also defined roughly seven hundred lines *earlier* (`web/projection.js:1336`,
+against the entry functions at `:2029`). End before start, empty slice, zero iterations,
+green. Neither the pre-change-tree run nor a mutation check can see it: a mutation on a
+curated entry cannot redden a loop that never reaches it.
+
+**So the countermeasure is not only anchoring — it is asserting how much the slice yielded.**
+Anchoring prevents the inversion; a floor on the yield detects it when anchoring is
+forgotten. The 2026-08-22 case was caught by exactly one line, written for an unrelated
+purpose:
+
+```js
+const from = src.indexOf("function artifactNoticeEntries");
+const region = src.slice(from, src.indexOf("constraintPairs,", from));   // anchored
+const ids = [...new Set([...region.matchAll(/\{\s*id:\s*"([a-z0-9-]+)"/g)].map((m) => m[1]))];
+assert.ok(ids.length >= 11, `expected the eleven split branches, saw ${ids.length}`);  // and floored
+```
+
 **Prefer moving your code over loosening the guard.** These guards exist because the
 property they protect is real and otherwise untestable. In the #348 case the fix was
 to place the new wiring *after* the generic button sweep instead of before it, which
@@ -64,6 +95,26 @@ specific marker to the *first* occurrence of a common token is fragile by
 construction: the token is common, so anything inserted earlier captures the bound.
 Prefer a distinctive closing marker, or search for the closing token starting from the
 opening marker's index rather than from 0.
+
+**How much of this suite is exposed.** Measured 2026-08-22: **23** slices whose closing
+`indexOf` searches from position 0 — 17 in `tests/wizard.test.js`, 6 in
+`tests/results.test.js` — against **3** that pass a `fromIndex`, one of which is the fix
+above. The advice below is not hypothetical hygiene; it describes the minority case in
+this repo today.
+
+Each of those 23 was one earlier insertion away from inverting, and which half of the
+failure it landed in depended entirely on whether anything **positive** was asserted over
+the slice. Hand-checked, **four** asserted only negatives and would therefore have passed
+on an empty slice — `tests/wizard.test.js` lines 624, 1122, 1445 and 3074; the rest carried
+a positive assertion an inverted slice would redden, which is the loud half described above.
+
+**All 23 are now anchored (#450, closed).** The two files route every source slice through
+a shared `srcBetween(src, open, close, label)` / `srcFrom(src, open, len, label)`, which
+searches the closing marker *from the opening index* and asserts both markers present. The
+advice below is therefore the current state of this repo rather than an aspiration — and
+the reason it is a helper rather than 19 careful edits is that anchoring survives better as
+a structural property than as a rule each future author has to remember. A renamed marker
+now fails naming the marker, instead of naming a behaviour that is fine.
 
 ## Why This Matters
 
@@ -78,10 +129,15 @@ it is worth knowing that is what it is.
 
 ## When to Apply
 
-Reading: any time a test fails that has no behavioral relationship to your diff.
+Reading: any time a test fails that has no behavioral relationship to your diff — **and
+also when nothing fails at all.** The silent half has no trigger of its own, which is why
+it needs a standing one: when you insert code into a function any guard slices, check the
+guards over that function rather than waiting to be told.
 
-Writing: any time you reach for `indexOf` on source text inside an assertion. Anchor
-both bounds, and prefer distinctive markers to common ones.
+Writing: any time you reach for `indexOf` on source text inside an assertion. Anchor both
+bounds, prefer distinctive markers to common ones, and **assert a floor on what the slice
+yielded** whenever the assertion over it is a loop or a negative — those cannot fail on an
+empty slice, so nothing else will tell you.
 
 ## Examples
 
@@ -109,3 +165,12 @@ will be standing:
 // finds. Defining this above the sweep inverts that slice and fails a guard about
 // focus that has nothing to do with the container.
 ```
+
+## Related
+
+- `docs/solutions/conventions/a-vacuous-guard-is-recognizable-before-you-run-it.md` — the
+  silent half above is its shape 4, alongside three other guard shapes that are green by
+  construction. Where this doc is a *diagnosis* aid (a test failed; why does it name
+  something unrelated?), that one is a *write-time* recognizer: the shapes are visible in
+  the assertion's own text before any run. Its reading of this doc's tell is the one to
+  carry forward — grep the failing test for `indexOf`, and grep the passing ones too.

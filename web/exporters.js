@@ -274,9 +274,17 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     const stats = Object.keys(view.attribution);
     if (stats.length) {
       out += `\n## Stat breakdown\n\n`;
+      // #449 (U2, R15/R18) — the achieved/ceiling fraction, in every format.
+      // The full statement prints ONCE per document; each stat carries only the
+      // short form naming what its denominator is. Carrying the fields on the
+      // projection puts them in ZERO exports — the bundle is content, not a
+      // renderer — so this site, and the three below it, are what make the
+      // fraction shared rather than app-only.
+      if (view.character.ceilingStatement) out += `_${mdEsc(view.character.ceilingStatement)}_\n\n`;
       for (const stat of stats) {
         const a = view.attribution[stat];
         out += `- **${mdEsc(stat)}** → +${mdEsc(a.total)}${capNote(a, mdEsc)}\n`;
+        if (a.ceiling) out += `  - Ceiling: ${mdEsc(a.ceiling.line)}\n`;
         for (const p of a.sources) out += `  - ${sourceStr(p, mdEsc)}\n`;
       }
     }
@@ -355,10 +363,15 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     }
     const stats = Object.keys(view.attribution);
     if (stats.length) {
-      out += `\n[b]Stat breakdown[/b]\n[list]\n`;
+      out += `\n[b]Stat breakdown[/b]\n`;
+      // #449 (U2) — same two writes as the Markdown site: statement once, short
+      // form per stat.
+      if (view.character.ceilingStatement) out += `[i]${bbEsc(view.character.ceilingStatement)}[/i]\n`;
+      out += `[list]\n`;
       for (const stat of stats) {
         const a = view.attribution[stat];
         out += `[*][b]${bbEsc(stat)}[/b] → +${bbEsc(a.total)}${capNote(a, bbEsc)}`;
+        if (a.ceiling) out += `\n  [*]Ceiling: ${bbEsc(a.ceiling.line)}`;
         for (const p of a.sources) out += `\n  [*]${sourceStr(p, bbEsc)}`;
         out += `\n`;
       }
@@ -449,6 +462,22 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
         rows.push(csvRow([stat, a.total, capped, a.sources.map((p) => sourceStr(p, (s) => s)).join(" | ")]));
       }
     }
+    // #449 (U2, R15/R18) — the achieved/ceiling fraction. Its OWN section, in the
+    // Utility section's shape (banner row, header row, one row per entry), rather
+    // than two more columns on the stat table: the same reason #245/#262 folded
+    // their per-item notes into an existing cell — a new column breaks every
+    // consumer pinned to the four-column stat header. Emitted only for stats that
+    // carry a row, so a pre-#449 restore prints no section at all.
+    const withCeiling = Object.keys(view.attribution).filter((s) => view.attribution[s].ceiling);
+    if (withCeiling.length) {
+      rows.push("");
+      rows.push(csvRow(["Ceiling basis", view.character.ceilingStatement]));
+      rows.push(csvRow(["Stat", "Achieved / ceiling", "Ceiling note"]));
+      for (const stat of withCeiling) {
+        const c = view.attribution[stat].ceiling;
+        rows.push(csvRow([stat, c.fraction, c.short]));
+      }
+    }
     // #91 (U6/R10) — the Utility section: the canonical line, then one row per
     // receipt. ABSENT report emits nothing; zero-count emits the line alone.
     if (view.utility) {
@@ -518,10 +547,15 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     }
     const stats = Object.keys(view.attribution);
     if (stats.length) {
-      h += `<h2>Stat breakdown</h2><ul>`;
+      h += `<h2>Stat breakdown</h2>`;
+      // #449 (U2) — same two writes as the Markdown site: statement once, short
+      // form per stat.
+      if (view.character.ceilingStatement) h += `<p class="declared-note"><em>${htmlEsc(view.character.ceilingStatement)}</em></p>`;
+      h += `<ul>`;
       for (const stat of stats) {
         const a = view.attribution[stat];
         h += `<li><strong>${htmlEsc(stat)}</strong> → +${htmlEsc(a.total)}${capNote(a, htmlEsc)}<ul>`;
+        if (a.ceiling) h += `<li>Ceiling: ${htmlEsc(a.ceiling.line)}</li>`;
         for (const p of a.sources) h += `<li>${sourceStr(p, htmlEsc)}</li>`;
         h += `</ul></li>`;
       }
@@ -564,6 +598,16 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
   // priced top miss — all inherited from Proj.project, so the envelope needs no
   // per-field wiring) and verbatim in `core`'s snapshot
   // (`utilityReport`); a report-less snapshot carries neither, never a zero.
+  // #449 (U2, R18) — the achieved/ceiling fraction rides as
+  // `resolved.attribution[stat].ceiling`, inherited from Proj.project so the
+  // envelope needs no per-field wiring. The denominator is named
+  // `ceilingUpperBound`, not `ceiling`: Σ best sums each bonus-type bucket's best
+  // source independently, those sources may compete for one slot, and a
+  // third-party consumer of `ddo-loadout/v1` must not read the number as an
+  // attainable target (KTD2). `format`/`schema_version` are UNCHANGED — the
+  // envelope's contract is additive-optional (`utility`, `ordered`, `noDropSource`
+  // all arrived the same way), and a reader written against v1 keeps parsing every
+  // field it knew. A bump would falsely signal that the old shape no longer holds.
   // WRITE-ONCE: `core` aliases the live record and `resolved` shares its affix arrays
   // by reference. The only caller stringifies immediately (safe). The future
   // import/compare effort MUST deep-clone (or treat the envelope as read-only) before

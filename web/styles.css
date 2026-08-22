@@ -27,6 +27,14 @@
   --optimal: #43c59e;
   --verified: #43c59e;
   --quarantined: #f0b360;
+  /* #449 U5 (R32) — the two notice-class tokens, used by name rather than as
+     inline literals. --warn is the value the .wz-util-status site below already
+     carried as its own fallback; defining it here is what makes that site (and
+     .pd-why.pd-carried, whose fallback was a slightly different amber) resolve
+     to ONE ramp. --qualify is deliberately OFF that ramp: the tree already
+     carries four near-identical ambers, so a fifth would not read as distinct. */
+  --warn: #d9a441;            /* actionable: card edge, class tag, attention pill */
+  --qualify: #8fa2c4;         /* qualifying: card edge, class tag, summary marker */
   --set: #f0b45a;             /* set-bonus attribution */
   --artifact: #b98cff;        /* the one equipped Artifact (violet) — distinct from set gold + blue accent */
 
@@ -395,11 +403,43 @@ input.bumped { background: rgba(91,140,255,0.16); border-color: var(--accent); }
 .pd-why.muted { color: var(--faint); }
 /* #245 — an item picked only for its craftable options reads as a caution, not a win */
 .pd-why.pd-carried { color: var(--warn, #c9873a); }
-/* plan 2026-08-12-001 U3 — the per-item priority summary: base line muted so the
-   at-ceiling green carries exactly one meaning (stat at its ceiling) */
-.pd-prio { font-size: var(--fs-xs); color: var(--muted); margin-top: 4px; }
-.pd-prio .pd-contrib { white-space: nowrap; }
-.pd-prio .at-ceiling { color: var(--optimal); font-weight: 600; }
+/* plan 2026-08-12-001 U3 — the per-item priority summary. #449 U4 removed the
+   at-ceiling green it once carried: one item is not the whole contribution to a
+   stat, so the marker asserted at the wrong level. The line is uniformly muted
+   now, and the ceiling fact lives on the ranked card (.stat-reach). */
+/* #449 U7 (R20/R22) -- a wrapping row of chips, not a comma-run of inline spans.
+   The row wraps BETWEEN chips; a chip caps at the row width and wraps its own
+   sub-label internally, so a long override disclosure ("your call -- catalog
+   says Insightful") cannot push the page into horizontal scroll at 375px. */
+.pd-prio {
+  display: flex; flex-wrap: wrap; gap: var(--sp-1);
+  font-size: var(--fs-xs); color: var(--muted); margin-top: 4px;
+}
+.pd-chip {
+  display: inline-flex; flex-direction: column; gap: 1px; max-width: 100%;
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--elev);
+}
+.pd-chip-head { display: flex; align-items: baseline; gap: 4px; }
+/* R20 -- tabular numerals so a column of chips reads as a column of numbers
+   rather than as ragged text. */
+.pd-chip-value {
+  font-size: var(--fs-sm); font-weight: 700; font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.pd-chip-check { font-weight: 700; color: var(--optimal); }
+.pd-chip-stat { color: var(--text); }
+.pd-chip-sub { color: var(--faint); line-height: 1.25; }
+/* R21 -- the rank-1 chip is distinguished by a named accent token AND by border
+   WEIGHT, which is the non-colour carrier: colour alone would fail greyscale and
+   red-green colour-vision deficiency on a surface denser than the notice cards.
+   The extra 1px is absorbed by a matching padding trim so the chip does not
+   change size and shift the row. */
+.pd-chip.is-rank1 {
+  border-width: 2px; border-color: var(--accent);
+  padding: 1px calc(var(--sp-2) - 1px);
+}
 
 /* readout layout: the paperdoll is the hero (front and centre), the ranked-target
    analysis sits below it. */
@@ -455,6 +495,45 @@ input.bumped { background: rgba(91,140,255,0.16); border-color: var(--accent); }
 .stat-cap { display: inline-block; margin-top: var(--sp-1); font-size: var(--fs-xs); color: var(--quarantined); }
 /* #276 -- the same at-ceiling fact the gear boxes carry, on the receipt card */
 .stat-ceiling { display: inline-block; margin-top: var(--sp-1); margin-left: var(--sp-2); font-size: var(--fs-xs); color: var(--optimal); font-weight: 600; }
+/* #449 U3 -- the achieved/ceiling box at the bottom of each ranked card.
+   Four states, four treatments. Green is reserved for achieved === pool ceiling;
+   a shortfall takes the neutral accent (it is not a fault, so no warning colour);
+   a cap-bound stat takes the amber .stat-cap idiom so it agrees with the capNote
+   inches above it rather than contradicting it with green. */
+.stat-reach {
+  margin: var(--sp-3) 0 0; padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--elev);
+}
+.reach-fraction {
+  display: block; font-size: var(--fs-md); font-weight: 700;
+  font-variant-numeric: tabular-nums; color: var(--text);
+}
+.reach-note { margin: var(--sp-1) 0 0; font-size: var(--fs-xs); color: var(--faint); }
+/* R29 -- the HATCH IS ON THE WHOLE TRACK, not on the unfilled remainder. There is
+   no remainder element: the fill is translucent and drawn over the hatch, so the
+   bound signal stays legible at every fill level, including a near-full bar --
+   which is exactly the one that otherwise reads as attainable headroom. */
+.reach-meter {
+  position: relative; height: 8px; margin-top: var(--sp-2);
+  border-radius: 999px; overflow: hidden;
+  background-color: var(--border-2);
+  background-image: repeating-linear-gradient(135deg,
+    rgba(255,255,255,0.18) 0 2px, rgba(255,255,255,0) 2px 6px);
+}
+.reach-fill { display: block; height: 100%; border-radius: 999px; background: rgba(91,140,255,0.62); }
+.stat-reach.is-maxed { border-color: var(--optimal); background: rgba(67,197,158,0.10); }
+.stat-reach.is-maxed .reach-fraction { color: var(--optimal); }
+.stat-reach.is-maxed .reach-fill { background: rgba(67,197,158,0.62); }
+.stat-reach.is-shortfall .reach-fraction { color: var(--accent); }
+.stat-reach.is-cap-bound { border-color: rgba(240,179,96,0.45); background: rgba(240,179,96,0.08); }
+.stat-reach.is-cap-bound .reach-fraction { color: var(--quarantined); }
+.stat-reach.is-cap-bound .reach-fill { background: rgba(240,179,96,0.55); }
+.stat-reach.is-zero-ceiling .reach-fraction { color: var(--muted); }
+/* #449 U3 (R15) -- the one full statement, above the ranked cards. */
+.ceiling-statement {
+  margin: 0 0 var(--sp-3); font-size: var(--fs-xs); color: var(--faint);
+}
 /* #277 -- the ceiling notice opens by tap/keyboard; sentences become visible text */
 details.saturation-note summary { cursor: pointer; }
 details.saturation-note .sat-sentences p { margin: var(--sp-1) 0 0; }
@@ -1103,11 +1182,31 @@ input.wz-ml { width: 120px; }
 /* Per-slot constraint controls (U6) on the equipped-list rows. */
 .pd-row { position: relative; }
 .pd-rtop { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
-.pd-ctl { min-height: 0; padding: 0; flex: none; width: 22px; height: 22px; display: flex; align-items: center;
-  justify-content: center; background: none; border: 1px solid transparent; border-radius: var(--radius-sm);
-  color: var(--faint); font-size: var(--fs-md); line-height: 1; cursor: pointer; opacity: 0; transition: opacity 0.12s; }
-.pd-row:hover .pd-ctl, .pd-row.constrained .pd-ctl { opacity: 1; }
+/* #447 / #449 U8 (R23/R25) -- visible at rest. It was `opacity: 0` until
+   `.pd-row:hover`, which made it undiscoverable by accident on desktop and
+   permanently absent on touch, and put keyboard focus on a fully transparent
+   element -- a WCAG 2.4.11 failure, since the focus ring the global rule already
+   draws was landing on something invisible. No opacity, no hover gate. */
+.pd-ctl { position: relative; min-height: 0; padding: 0; flex: none; width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--faint); font-size: var(--fs-md); line-height: 1; cursor: pointer; }
+/* R24 -- the touch target reaches var(--tap) through an overlay that contributes
+   NO layout. Padding would reach 44px too and is wrong: .pd-ctl is the tallest
+   child of .pd-rtop, a flex row whose height follows it, so padding would raise
+   every gear row -- 15 of them on a full paperdoll, measured. The overlay costs
+   nothing and stays inside the row's existing padding.
+
+   The 22px -> 34px visual change DOES raise the row, by 12px each (+180px on a
+   full paperdoll). That is R24's settled visual size, not a side effect: the
+   requirement's "must not change .pd-rtop's rendered height" is about the
+   hit-area mechanism, which is why the overlay exists. */
+.pd-ctl::after { content: ""; position: absolute; inset: -5px; }
 .pd-ctl:hover { color: var(--text); border-color: var(--border-2); }
+/* A constrained slot used to be legible from the control being visible AT ALL
+   while its neighbours were transparent. Now every control shows, so that signal
+   would be lost -- the accent carries it, agreeing with the row border below. */
+.pd-row.constrained .pd-ctl { color: var(--text); border-color: var(--accent); }
 .pd-row.constrained { border-color: var(--accent); }
 .pd-badge { display: inline-block; margin-top: 4px; font-size: 0.68rem; border-radius: 5px; padding: 1px 6px; border: 1px solid var(--border-2); }
 .pd-badge.pin { color: var(--accent); border-color: var(--accent); }
@@ -1331,3 +1430,97 @@ input.wz-ml { width: 120px; }
 .pd-override-set { font-size: .85em; opacity: .8; }
 .pd-override-status:empty { display: none; }
 .pd-override-status { font-size: .85em; margin: .4rem 0 0; }
+
+/* ---- #449 U5 -- the notices panel ---------------------------------------- */
+/* R1 -- the banner's own gradient and border, so the panel reads as part of the
+   optimization rather than as loose prose stacked beneath it. Separate element
+   with a gap: it states what qualifies the verdict, it is not the verdict. */
+.notes-panel {
+  margin: 0 0 var(--sp-4);
+  border: 1px solid rgba(67,197,158,0.35); border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(67,197,158,0.10), rgba(91,140,255,0.06));
+}
+/* R2/R37 -- the panel's only tap target. Wraps as a row of whole units at 375px;
+   min-height holds the tap target in every wrap state. */
+.notes-summary {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2);
+  min-height: var(--tap); padding: var(--sp-2) var(--sp-4);
+  cursor: pointer; font-weight: 600; list-style: none;
+}
+.notes-summary::-webkit-details-marker { display: none; }
+.notes-chevron { display: inline-block; transition: transform 120ms ease; color: var(--faint); }
+.notes-panel[open] > .notes-summary .notes-chevron { transform: rotate(90deg); }
+/* R3 -- the count is visible without opening, so the player can see there is
+   something here without paying to find out. */
+.notes-count { color: var(--faint); font-size: var(--fs-xs); font-weight: 500; }
+.notes-body { padding: 0 var(--sp-4) var(--sp-3); display: grid; gap: var(--sp-2); }
+
+/* R7/R9 -- the attention pill. The amber FILL and border are the signal; the
+   pulse below only decorates them. The repo kills every animation under
+   prefers-reduced-motion (see the `* { animation: none !important }` rule), so
+   a motion-carried signal would be invisible to exactly the players who asked
+   for less motion. Ink is the near-black page ground rather than white: measured
+   against this amber, white is 2.25:1 (below the 4.5:1 floor) and --bg is 8.18:1.
+   R37 -- wraps as a unit, never breaking internally. */
+.notes-pill {
+  white-space: nowrap; padding: 2px var(--sp-2); border-radius: 999px;
+  font-size: var(--fs-xs); font-weight: 700;
+  color: var(--bg); background: var(--warn); border: 1px solid var(--warn);
+}
+/* R8/KTD3 -- the one-way latch. The pulse reads the ABSENCE of the stamp, which
+   renderResults writes at build time from a session flag, so it survives the
+   rebuild. Keyed on [open] instead it would re-arm on every collapse AND on
+   every solve, load and per-slot constraint change. */
+.notes-panel:not([data-notes-seen]) .notes-pill { animation: notes-pulse 1.6s ease-in-out infinite; }
+@keyframes notes-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(217,164,65,0.55); }
+  50%      { box-shadow: 0 0 0 5px rgba(217,164,65,0); }
+}
+/* R26 -- the qualifying marker names its subjects rather than counting them: a
+   bare count says something exists, it does not say the headline totals rest on
+   unverified input. Slate, off the amber ramp, and NEVER animated -- it reports
+   a standing condition, not something to go and fix. */
+.notes-qualify {
+  white-space: nowrap; padding: 2px var(--sp-2); border-radius: 999px;
+  font-size: var(--fs-xs); font-weight: 600;
+  color: var(--qualify); border: 1px solid var(--qualify); background: transparent;
+}
+
+/* R4 -- every notice is a bordered sub-card with a title; none renders as bare
+   prose. R5 -- the left edge carries the class. */
+.notice-card {
+  border: 1px solid var(--border); border-left: 3px solid var(--border);
+  border-radius: var(--radius-sm); padding: var(--sp-2) var(--sp-3);
+  background: var(--elev);
+}
+.notice-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2); }
+.notice-title { font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.04em; }
+/* R28 -- the non-colour carrier. Its own element, so class survives a greyscale
+   render or red-green colour-vision deficiency without the title absorbing it. */
+.notice-tag {
+  font-size: var(--fs-xs); font-weight: 600; padding: 1px 6px;
+  border: 1px solid currentColor; border-radius: 999px; opacity: 0.85;
+}
+.notice-body { margin-top: var(--sp-1); font-size: var(--fs-xs); color: var(--muted); }
+.notice-body .notice-sentence { margin: 0; }
+.notice-body > p + p { margin-top: var(--sp-1); }
+
+.notice-card.is-actionable { border-left-color: var(--warn); }
+.notice-card.is-actionable .notice-title, .notice-card.is-actionable .notice-tag { color: var(--warn); }
+.notice-card.is-qualifying { border-left-color: var(--qualify); }
+.notice-card.is-qualifying .notice-title, .notice-card.is-qualifying .notice-tag { color: var(--qualify); }
+.notice-card.is-informational { border-left-color: var(--optimal); }
+.notice-card.is-informational .notice-title, .notice-card.is-informational .notice-tag { color: var(--optimal); }
+/* A notice with no table entry renders VISIBLY rather than throwing: the results
+   screen survives, and the gap is impossible to miss on the next look. */
+.notice-card.is-unclassified { border-left-color: var(--danger, #e2564d); border-style: dashed; }
+
+/* R6 -- the resolution control. A button, not a link: it changes wizard state
+   rather than navigating a URL. */
+.notice-jump {
+  margin-top: var(--sp-2); min-height: var(--tap);
+  padding: var(--sp-1) var(--sp-3); font-size: var(--fs-xs); font-weight: 600;
+  color: var(--warn); background: transparent;
+  border: 1px solid var(--warn); border-radius: var(--radius-sm); cursor: pointer;
+}
+.notice-jump:hover { background: rgba(217,164,65,0.12); }
