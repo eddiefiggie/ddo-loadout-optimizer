@@ -2894,7 +2894,11 @@ test("#88 U10 (AE19): both creation surfaces are wired, to one shared builder", 
   assert.ok(/data-act="override"/.test(results), "the results card offers the control (R31)");
   assert.ok(/act\.dataset\.act === "override"/.test(wiz), "…and the wizard acts on it");
   assert.ok(/data-correct=/.test(browse), "Browse offers the control (R32)");
-  assert.ok(/onOverride:\s*\(variantId, host\)/.test(wiz), "…and the wizard supplies its handler");
+  // #426 — the handler gained a third parameter. An item row is resolvable from
+  // its id against the catalog; a synthesized crafted row is not, so Browse hands
+  // back the row itself and the provenance stamped on it is what reaches the pool.
+  assert.ok(/onOverride:\s*\(variantId, host, row\)/.test(wiz), "…and the wizard supplies its handler");
+  assert.ok(/poolPickerEntriesFor\(/.test(wiz), "…which routes a crafted row to the pool picker");
 
   // One builder, one predicate. Neither surface may compute its own entry list:
   // two surfaces disagreeing about what is overridable is indistinguishable, from
