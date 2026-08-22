@@ -102,7 +102,13 @@ UTILITY_TIER1_PRESENCE = frozenset({
     "Dusk",
     "Soundproof",
     "Immunity to Fear",
-}) | PRESENCE_ALLOW
+})
+# #443 — NOT unioned with PRESENCE_ALLOW. That list means "named effects the
+# four-word cap wrongly hides" (picker visibility); `is_presence_targetable`
+# already consults it directly, so the union only ever affected COUNTING. It was
+# inert while those effects were untyped, went live when the 2026-08-18
+# re-encoding typed them Bool, and carried the roster past the measured budget
+# without anyone choosing to widen it. Counting admission stays curated.
 
 
 def is_presence_targetable(name) -> bool:

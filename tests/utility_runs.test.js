@@ -80,6 +80,20 @@ function check(name, fn) {
     assert.strictEqual(mainHand(r1), "Nightforge Hammer",
       "the report's Calamitous Warhammer (EB 4) never wins — see the header note");
   });
+  // #443 — the `unreachable` half of the unsecured receipt, at a band where the
+  // trimmed roster still produces it: at ML2 the counted toggles whose lowest
+  // carrier sits at ML3+ (Ghostly, Blurry, Deathblock, Ethereal) have no carrier
+  // at all, which is what `unreachable` means.
+  const q1u = { mlCap: 2, targets: [EB, "Charisma", UTILITY_SENTINEL],
+    weaponTypes: ["War Hammers"], armorType: null, classRace: null };
+  const { r: r1u } = await solve(q1u);
+  check("#443: the unreachable reason is still exercised, at a band that has it", () => {
+    const uns = (r1u.utilityOrdered && r1u.utilityOrdered.unsecured) || [];
+    assert.ok(uns.length, "the container names what it could not secure at ML2");
+    assert.ok(uns.some((u) => u.reason === "unreachable"),
+      "nothing at ML2 carries the higher-ML toggles, so the receipt must say unreachable");
+  });
+
   const alts1 = S.generateAlternatives(r1, m1, highs);
   // #348 (U4, KTD7) — the Alternatives utility family is RETIRED. It used to
   // surface Echo of Whelm here as a gain ("+2 utility effects"). With the container
@@ -110,7 +124,13 @@ function check(name, fn) {
     assert.ok(unsecured.every((u) => u.reason === "outbid" || u.reason === "unreachable"),
       "every unsecured effect says why");
     assert.ok(unsecured.some((u) => u.reason === "outbid"), "the outbid case is exercised");
-    assert.ok(unsecured.some((u) => u.reason === "unreachable"), "the unreachable case is exercised");
+    // #443 — `unreachable` is no longer exercised AT ML9. The names that produced
+    // it were the nine endgame PRESENCE_ALLOW effects, and the counting roster was
+    // trimmed back to the sixteen curated worn toggles to bring the measured perf
+    // ratio under budget. Every one of those sixteen has a carrier at ML<=9, so
+    // nothing here is unreachable any more. The branch is still covered — moved to
+    // its own check below at a band where it genuinely applies — because the point
+    // of asserting both reasons is that this must not pass on a single-reason list.
     // Echo of Whelm's procs are the reported case: in band, carried, and outbid.
     const outbid = unsecured.filter((u) => u.reason === "outbid").map((u) => u.name);
     assert.ok(outbid.includes("Whelming Shockwave"),

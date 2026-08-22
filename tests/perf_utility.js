@@ -1,6 +1,10 @@
-// #91 (U3, KTD10) — the Utility tier's measured perf gate. NOT part of the test
-// suite (the suite glob is tests/*.test.js): run it by hand and record the
-// numbers in the PR.
+// #91 (U3, KTD10) — the Utility tier's measured perf gate. Outside the
+// tests/*.test.js glob because it is a wall-clock measurement rather than a unit
+// test — but #443 wired CI to invoke it BY PATH, so it is no longer "run it by
+// hand". It went unrun for four days while the counting roster widened from 20
+// names to 25 and the ratio drifted from 1.80x to 2.35x; a guard nobody runs is
+// not a guard. Still worth running locally and recording the numbers in the PR,
+// since the ratio is machine- and load-sensitive.
 //
 // Widening targetSet by the counting set (~800 presence names) materializes
 // buckets and indicator vars in every sentinel-present solve. This measures the

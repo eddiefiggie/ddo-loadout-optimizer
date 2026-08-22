@@ -51,3 +51,13 @@ jobs:
         run: |
           set -e
           for t in tests/*.test.js; do echo "== $t =="; node "$t"; done
+
+      # #443 — the Utility perf gate, run BY PATH because it is deliberately
+      # outside the tests/*.test.js glob (it is a wall-clock measurement, not a
+      # unit test). Left to "run it by hand" it went unrun for four days while the
+      # counting roster widened from 20 names to 25 and the ratio drifted from
+      # 1.80x to 2.35x against a 2.00x budget. A guard nobody runs is not a guard:
+      # docs/solutions/conventions/a-guard-outside-the-ci-glob-is-not-a-guard.md.
+      # It exits 1 over budget, so this step blocks the build.
+      - name: Run the Utility perf gate (outside the glob — invoked by path)
+        run: node tests/perf_utility.js
