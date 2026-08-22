@@ -27,7 +27,7 @@
   --optimal: #43c59e;
   --verified: #43c59e;
   --quarantined: #f0b360;
-  /* #446 U5 (R32) — the two notice-class tokens, used by name rather than as
+  /* #449 U5 (R32) — the two notice-class tokens, used by name rather than as
      inline literals. --warn is the value the .wz-util-status site below already
      carried as its own fallback; defining it here is what makes that site (and
      .pd-why.pd-carried, whose fallback was a slightly different amber) resolve
@@ -403,11 +403,11 @@ input.bumped { background: rgba(91,140,255,0.16); border-color: var(--accent); }
 .pd-why.muted { color: var(--faint); }
 /* #245 — an item picked only for its craftable options reads as a caution, not a win */
 .pd-why.pd-carried { color: var(--warn, #c9873a); }
-/* plan 2026-08-12-001 U3 — the per-item priority summary. #446 U4 removed the
+/* plan 2026-08-12-001 U3 — the per-item priority summary. #449 U4 removed the
    at-ceiling green it once carried: one item is not the whole contribution to a
    stat, so the marker asserted at the wrong level. The line is uniformly muted
    now, and the ceiling fact lives on the ranked card (.stat-reach). */
-/* #446 U7 (R20/R22) -- a wrapping row of chips, not a comma-run of inline spans.
+/* #449 U7 (R20/R22) -- a wrapping row of chips, not a comma-run of inline spans.
    The row wraps BETWEEN chips; a chip caps at the row width and wraps its own
    sub-label internally, so a long override disclosure ("your call -- catalog
    says Insightful") cannot push the page into horizontal scroll at 375px. */
@@ -495,7 +495,7 @@ input.bumped { background: rgba(91,140,255,0.16); border-color: var(--accent); }
 .stat-cap { display: inline-block; margin-top: var(--sp-1); font-size: var(--fs-xs); color: var(--quarantined); }
 /* #276 -- the same at-ceiling fact the gear boxes carry, on the receipt card */
 .stat-ceiling { display: inline-block; margin-top: var(--sp-1); margin-left: var(--sp-2); font-size: var(--fs-xs); color: var(--optimal); font-weight: 600; }
-/* #446 U3 -- the achieved/ceiling box at the bottom of each ranked card.
+/* #449 U3 -- the achieved/ceiling box at the bottom of each ranked card.
    Four states, four treatments. Green is reserved for achieved === pool ceiling;
    a shortfall takes the neutral accent (it is not a fault, so no warning colour);
    a cap-bound stat takes the amber .stat-cap idiom so it agrees with the capNote
@@ -530,7 +530,7 @@ input.bumped { background: rgba(91,140,255,0.16); border-color: var(--accent); }
 .stat-reach.is-cap-bound .reach-fraction { color: var(--quarantined); }
 .stat-reach.is-cap-bound .reach-fill { background: rgba(240,179,96,0.55); }
 .stat-reach.is-zero-ceiling .reach-fraction { color: var(--muted); }
-/* #446 U3 (R15) -- the one full statement, above the ranked cards. */
+/* #449 U3 (R15) -- the one full statement, above the ranked cards. */
 .ceiling-statement {
   margin: 0 0 var(--sp-3); font-size: var(--fs-xs); color: var(--faint);
 }
@@ -1182,7 +1182,7 @@ input.wz-ml { width: 120px; }
 /* Per-slot constraint controls (U6) on the equipped-list rows. */
 .pd-row { position: relative; }
 .pd-rtop { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
-/* #447 / #446 U8 (R23/R25) -- visible at rest. It was `opacity: 0` until
+/* #447 / #449 U8 (R23/R25) -- visible at rest. It was `opacity: 0` until
    `.pd-row:hover`, which made it undiscoverable by accident on desktop and
    permanently absent on touch, and put keyboard focus on a fully transparent
    element -- a WCAG 2.4.11 failure, since the focus ring the global rule already
@@ -1431,7 +1431,7 @@ input.wz-ml { width: 120px; }
 .pd-override-status:empty { display: none; }
 .pd-override-status { font-size: .85em; margin: .4rem 0 0; }
 
-/* ---- #446 U5 -- the notices panel ---------------------------------------- */
+/* ---- #449 U5 -- the notices panel ---------------------------------------- */
 /* R1 -- the banner's own gradient and border, so the panel reads as part of the
    optimization rather than as loose prose stacked beneath it. Separate element
    with a gap: it states what qualifies the verdict, it is not the verdict. */

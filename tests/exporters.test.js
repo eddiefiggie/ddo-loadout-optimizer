@@ -1783,7 +1783,7 @@ test("#88 U9: a build with no overrides exports exactly as it did before", () =>
 });
 
 // ---------------------------------------------------------------------------
-// #446 U2 — the achieved/ceiling fraction in all five exports.
+// #449 U2 — the achieved/ceiling fraction in all five exports.
 //
 // Adding the field to the projection bundle alone puts it in ZERO exports: the
 // bundle is content, not a renderer, and a missing field produces no golden
@@ -1823,7 +1823,7 @@ function _countOf(hay, needle) {
 
 // One test per format. Each names only its own renderer, so missing a single
 // render site fails exactly one test rather than hiding behind the other four.
-test("#446 U2: Markdown renders the fraction, the short form and one full statement", () => {
+test("#449 U2: Markdown renders the fraction, the short form and one full statement", () => {
   const out = toMarkdown(ceilRec);
   assert.ok(out.includes("30 / 50"), "markdown carries the shortfall fraction");
   assert.ok(out.includes("7 / 7"), "markdown carries the maxed fraction");
@@ -1832,14 +1832,14 @@ test("#446 U2: Markdown renders the fraction, the short form and one full statem
   assert.strictEqual(_countOf(out, fullStatement()), 1, "full statement once per document");
 });
 
-test("#446 U2: BBCode renders the fraction, the short form and one full statement", () => {
+test("#449 U2: BBCode renders the fraction, the short form and one full statement", () => {
   const out = toBBCode(ceilRec);
   assert.ok(out.includes("30 / 50") && out.includes("7 / 7"), "bbcode carries both fractions");
   assert.ok(out.includes(shortOf("Dodge")) && out.includes(shortOf("Wisdom")), "both short forms");
   assert.strictEqual(_countOf(out, fullStatement()), 1, "full statement once per document");
 });
 
-test("#446 U2: CSV renders the fraction, the short form and one full statement", () => {
+test("#449 U2: CSV renders the fraction, the short form and one full statement", () => {
   const out = toCsv(ceilRec);
   assert.ok(out.includes("30 / 50") && out.includes("7 / 7"), "csv carries both fractions");
   assert.ok(out.includes(shortOf("Dodge")) && out.includes(shortOf("Wisdom")), "both short forms");
@@ -1849,14 +1849,14 @@ test("#446 U2: CSV renders the fraction, the short form and one full statement",
     "and the four-column stat header is untouched — a new column would break every pinned consumer");
 });
 
-test("#446 U2: print HTML renders the fraction, the short form and one full statement", () => {
+test("#449 U2: print HTML renders the fraction, the short form and one full statement", () => {
   const out = toPrintHtml(ceilRec);
   assert.ok(out.includes("30 / 50") && out.includes("7 / 7"), "html carries both fractions");
   assert.ok(out.includes(shortOf("Dodge")) && out.includes(shortOf("Wisdom")), "both short forms");
   assert.strictEqual(_countOf(out, fullStatement()), 1, "full statement once per document");
 });
 
-test("#446 U2 (R18): the portable JSON carries the fraction under a scope-stating name", () => {
+test("#449 U2 (R18): the portable JSON carries the fraction under a scope-stating name", () => {
   const env = toPortableJSON(ceilRec, "2026-08-22T00:00:00.000Z");
   const d = env.resolved.attribution.Dodge.ceiling;
   assert.strictEqual(d.achieved, 30);
@@ -1870,7 +1870,7 @@ test("#446 U2 (R18): the portable JSON carries the fraction under a scope-statin
   assert.strictEqual(_countOf(text, fullStatement()), 1, "one statement per document");
 });
 
-test("#446 U2: a pre-#446 restore exports exactly as it did before", () => {
+test("#449 U2: a pre-#449 restore exports exactly as it did before", () => {
   // No ceilingReport on the snapshot: no fraction, no statement, no orphan
   // label — never a zero nobody computed.
   const old = { name: "Old", inputs: { ml: 34, priorities: ["Dodge"] },
