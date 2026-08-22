@@ -76,6 +76,56 @@ async function withCrossAdd(map, fn) {
 (async () => {
   const highs = await Highs({ locateFile: (f) => vendor + f });
 
+  // -------------------------------------------------------------------------
+  // #335 U1 (KTD4) — twin x-vars are minted AFTER every worn group is flattened.
+  // The deterministic tie-break is Σ(i+1)·x_i over the flattened index, so
+  // inserting twins INTO the Ring group would shift the coefficient of every
+  // candidate in every later slot and move results in builds involving no ring
+  // and no set. Appending keeps every existing coefficient fixed — which is what
+  // makes the golden re-ratification rule in U6 sound.
+  // -------------------------------------------------------------------------
+
+  await test("#335 U1 (KTD4): twins are appended, leaving every existing x-var index fixed", async () => {
+    const M = require("../web/model.js");
+    const allow = [...M.DUPLICABLE_RINGS][0];
+    const dup = item(allow, "Ring", [["Intelligence", "Enhancement", 10]]);
+    dup.set_bonus = [{ set: "Perfected Wrath", pieces_required: 3, pieces_label: "3 pieces", affixes: [] }];
+    const model = {
+      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [dup, item("R2", "Ring", [["Intelligence", "Enhancement", 4]])], 2),
+             slot("Necklace", [item("N", "Necklace", [["Intelligence", "Enhancement", 6]])])],
+    };
+    const prog = S.buildProgram(model);
+    const twins = prog.xVars.filter((xv) => M.isTwinId(xv.variant.variant_id));
+    assert.strictEqual(twins.length, 1, "exactly one twin for the one allowlisted set-member ring");
+
+    // The invariant: every ORIGINAL keeps the index it would have had without twins.
+    const originals = prog.xVars.filter((xv) => !M.isTwinId(xv.variant.variant_id));
+    originals.forEach((xv, i) => {
+      assert.strictEqual(xv.name, "x" + i,
+        `original ${xv.variant.variant_id} must keep index ${i} — a shifted index moves the tie-break coefficient`);
+    });
+    const lastOriginal = Number(originals[originals.length - 1].name.slice(1));
+    assert.ok(Number(twins[0].name.slice(1)) > lastOriginal, "the twin is appended after every original");
+    // The Necklace — a slot ordered AFTER Ring — must be untouched.
+    const neck = prog.xVars.find((xv) => xv.slot === "Necklace");
+    assert.strictEqual(neck.name, "x2", "a later slot's index does not move when a twin exists");
+  });
+
+  await test("#335 U1: no allowlisted ring means no twin and no index change at all", async () => {
+    const M = require("../web/model.js");
+    const plain = item("Ordinary Ring", "Ring", [["Intelligence", "Enhancement", 10]]);
+    plain.set_bonus = [{ set: "Perfected Wrath", pieces_required: 3, pieces_label: "3 pieces", affixes: [] }];
+    const model = {
+      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [plain], 2), slot("Necklace", [item("N", "Necklace", [["Intelligence", "Enhancement", 6]])])],
+    };
+    const prog = S.buildProgram(model);
+    assert.strictEqual(prog.xVars.filter((xv) => M.isTwinId(xv.variant.variant_id)).length, 0,
+      "a set member off the allowlist is not twinned (R9)");
+    assert.deepStrictEqual(prog.xVars.map((xv) => xv.name), ["x0", "x1"]);
+  });
+
   await test("AE2: same bonus-type does NOT stack (only highest counts)", async () => {
     const model = {
       targets: ["Intelligence"], mlCap: 34, dodgeCap: null,

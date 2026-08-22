@@ -11,6 +11,50 @@ const WORN_SLOTS = [
 ];
 const SLOT_CARDINALITY = { Ring: 2 }; // one of every other worn slot
 
+/** #335 (KD2) — rings a player may WEAR TWO OF, each confirmed on the item's own
+ *  wiki page. This is an allowlist and not a set-membership test on purpose.
+ *
+ *  Duplicate-wearability is DDO's per-item Unique Equipped property, and the
+ *  dataset carries nothing about it: `restrictions` is the literal string
+ *  "unknown" on 426 of 427 rings, no ring carries a `unique_equipped` field, and
+ *  the only such flag in the tree is on augments. The wiki line that motivated
+ *  this feature — "2 rings, identical or not, can be used for the set bonus" —
+ *  says how set bonuses COUNT when two rings are worn; it presupposes wearability
+ *  rather than establishing it, and it is one item's page. Gating on set
+ *  membership would infer a legality claim from a counting rule and trade an
+ *  under-reporting bug for an over-reporting one.
+ *
+ *  Widening this to the whole set-member population needs the Unique Equipped
+ *  harvest in #442, fail-closed where the wiki is silent. */
+const DUPLICABLE_RINGS = new Set([
+  // https://ddowiki.com/page/Item:Legendary_Katra%27s_Razor_Wit — Tips section:
+  // "2 rings, identical or not, can be used for the set bonus."
+  "Legendary Katra's Razor Wit",
+]);
+
+/** #335 (KTD2) — the twin's model-side identity. Distinct so the solver can give
+ *  it its own binary, recoverable so display and pins can name the real item.
+ *  Physical-host paths keep the twin id verbatim; only display labels and pin
+ *  resolution map back. */
+const TWIN_SUFFIX = "::twin";
+function twinIdOf(id) { return String(id == null ? "" : id) + TWIN_SUFFIX; }
+function isTwinId(id) { return String(id == null ? "" : id).endsWith(TWIN_SUFFIX); }
+function originalIdOf(id) {
+  const s = String(id == null ? "" : id);
+  return s.endsWith(TWIN_SUFFIX) ? s.slice(0, -TWIN_SUFFIX.length) : s;
+}
+
+/** #335 U1 — may this candidate carry a second copy? Three conditions, all
+ *  required: the Ring slot (the only worn slot with cardinality 2 where identical
+ *  named items can coexist), a set membership (without one a second copy adds
+ *  nothing, since same-name/same-type affixes collapse to max), and the
+ *  wiki-confirmed allowlist above. */
+function isTwinEligible(variant) {
+  if (!variant || variant.slot !== "Ring") return false;
+  if (!((variant.set_bonus || []).length)) return false;
+  return DUPLICABLE_RINGS.has(variantKey(variant));
+}
+
 // Approximate DDO max-dodge by armor type (configurable; the mechanism is what
 // matters, not the exact cap). null = uncapped for this query.
 const ARMOR_DODGE_CAP = { cloth: 25, light: 25, medium: 11, heavy: 4 };
@@ -1319,7 +1363,7 @@ function poolStatNames(model) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { poolStatNames,
+  module.exports = { poolStatNames, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
     buildModel, normalizeCredits, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
     offHandItemsExcluded, allowedOffHandWeaponTypes, pinSlotConflict,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,

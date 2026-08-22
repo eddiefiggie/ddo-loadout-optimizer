@@ -47,6 +47,18 @@ function scaleAt(s, mlCap) {
 // guard's slot key (the documented fragmented-key trap). In the browser model.js
 // loads first and lamordiaTier is a global; under Node/CommonJS (tests) it is not
 // in scope, so pull it from the module.
+// #335 U1 — the duplicate-ring allowlist and id helpers live with the model's
+// other slot policy. Same idiom as the lamordia lookups below: the global when
+// loaded as a classic script, the module when required under node.
+const _isTwinEligible = (typeof isTwinEligible !== "undefined")
+  ? isTwinEligible
+  // eslint-disable-next-line global-require
+  : require("./model.js").isTwinEligible;
+const _twinIdOf = (typeof twinIdOf !== "undefined")
+  ? twinIdOf
+  // eslint-disable-next-line global-require
+  : require("./model.js").twinIdOf;
+
 const _lamordiaTier = (typeof lamordiaTier !== "undefined")
   ? lamordiaTier
   // eslint-disable-next-line global-require
@@ -246,6 +258,31 @@ function buildProgram(model) {
       xVars.push({ name: "x" + xVars.length, variant, slot: group.slot, cardinality: group.cardinality });
     });
   });
+
+  // #335 U1 (KTD4) — duplicate-ring twins are minted HERE, after every worn group
+  // is flattened, and never inside a group's candidate list.
+  //
+  // The deterministic tie-break is Σ(i+1)·x_i over this flattened index
+  // (`encodeStage`), so inserting a twin into the Ring group would shift the
+  // coefficient of every candidate in every slot ordered after Ring, and ties
+  // would resolve differently in builds involving no ring and no set. Appending
+  // leaves every existing coefficient fixed, which is what lets a golden diff be
+  // read as behavioral rather than as index drift.
+  //
+  // The twin is a shallow copy carrying `set_bonus`, so it registers as a set
+  // piece (setPieces reads set_bonus per x-var) and survives dominanceFilter's
+  // cardinality>1 set-contributor exemption, while its own affixes cost nothing:
+  // bucket keys are `stat||equivType(type)` with no host component, so a
+  // duplicate affix can never be co-selected.
+  const twinOf = new Map();          // twin x-var name -> original x-var name
+  for (const xv of xVars.slice()) {
+    if (!_isTwinEligible(xv.variant)) continue;
+    const copy = Object.assign({}, xv.variant,
+      { variant_id: _twinIdOf(xv.variant.variant_id || xv.variant.source_item) });
+    const tw = { name: "x" + xVars.length, variant: copy, slot: xv.slot, cardinality: xv.cardinality, twinOf: xv.name };
+    xVars.push(tw);
+    twinOf.set(tw.name, xv.name);
+  }
 
   // "stat||type" -> [{gates, value}]. A worn affix is a contribution gated by
   // exactly one binary: its item's pick var. Later units push additional
