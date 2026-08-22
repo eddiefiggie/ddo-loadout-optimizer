@@ -42,6 +42,7 @@ const wizIsForged = (race) => FORGED.has(String(race || "").toLowerCase());
  *  asked. `label` is what the message and the field marker both read from, so
  *  the two cannot name the same field differently. */
 const CHARACTER_REQUIRED = [
+  { key: "name", label: "Build name" },
   { key: "ml", label: "Minimum level (ML) cap" },
   { key: "race", label: "Race" },
   { key: "armor", label: "Armor type" },
@@ -61,10 +62,38 @@ const CHARACTER_REQUIRED = [
 function missingRequired(state) {
   const s = state || {};
   const out = [];
+  // #431 U1 (KTD1) — pushed FIRST so the name leads both the message and the
+  // scroll-to-first-missing order, matching its position in the group. Trimmed:
+  // a name of spaces is not a name, and CharacterStore keys records by it.
+  if (!String(s.characterName || "").trim()) out.push("name");
   if (!(Number(s.ml) > 0)) out.push("ml");
   if (!s.race) out.push("race");
   if (!s.armor && !wizIsForged(s.race)) out.push("armor");
   return out;
+}
+
+/** #431 U3 (KTD5) — ONE renderer owns the save control everywhere it appears.
+ *  Hand-writing the button into each bar invites drift, so each bar interpolates
+ *  this instead and a guard pins the call-site count. The status line is part of
+ *  the control: a save reports beside the button that was pressed, not in a panel
+ *  the player is no longer looking at. */
+function saveControl(cls) {
+  return `<button class="btn ${cls}" id="wz-save" type="button">Save progress</button>`
+    + `<span class="wz-savestat" id="wz-savestat" aria-live="polite"></span>`;
+}
+
+/** #431 U3 (KTD7) — is a RE-SOLVE banner on screen? Each of the three carries its
+ *  own primary button, so while one is up the results bar's save yields to it.
+ *
+ *  The four `migrationBanner` notices share the `wz-cbar` class but their buttons
+ *  are ghosts, so they do not contend and must NOT be counted here — keying this
+ *  on the class instead of the three flags would ghost save behind a "Got it".
+ *
+ *  Ranking the three against EACH OTHER is a separate, pre-existing defect: they
+ *  raise independently and can co-show with up to three primaries. See #432. */
+function resolveBannerShowing(state) {
+  const s = state || {};
+  return !!(staleNote(s) || s.twfMigrated || s.constraintsDirty);
 }
 
 /** #428 U6 (R10) — ONE message naming every unanswered required field, or null.
@@ -198,18 +227,16 @@ function railModel(state, saved) {
   const list = (Array.isArray(saved) ? saved : [])
     .filter((c) => c && typeof c === "object" && typeof c.name === "string" && c.name);
   const names = list.map((c) => c.name);
-  const typed = String(s.characterName == null ? "" : s.characterName);
-  const trimmed = typed.trim();
   const loadedName = String(s.loadedName || "");
   const loaded = !!loadedName && names.indexOf(loadedName) >= 0;
+  // #431 U2 (KTD10) — `name`, `canSave` and `overwrites` existed only to drive
+  // the rail's input and button, both of which have moved. The overwrite confirm
+  // keeps deriving its own answer in trySave.
   return {
-    name: typed,
     loaded,
     loadedName: loaded ? loadedName : "",
     saved: names,
     empty: names.length === 0,
-    canSave: trimmed.length > 0,
-    overwrites: !!trimmed && names.indexOf(trimmed) >= 0,
   };
 }
 
@@ -1584,7 +1611,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, unsavedGuardMessage, runBelongsTo, overwriteConfirmText, railModel, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, unsavedGuardMessage, runBelongsTo, overwriteConfirmText, railModel, saveControl, resolveBannerShowing, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -1768,8 +1795,15 @@ if (typeof window !== "undefined" && window.App) {
                screen saying which of them Continue was waiting for. -->
           <fieldset class="wz-group" data-group="required">
             <legend class="wz-group-legend">Required
-              <span class="wz-sub">· ${forged ? "your race wears a docent, so armor is settled" : "all three are needed to continue"}</span></legend>
+              <span class="wz-sub">· ${forged ? "your race wears a docent, so armor is settled" : "all four are needed to continue"}</span></legend>
             <div class="wz-grid">
+              <!-- #431 U2 (R1/R2/KTD2) — the build name is a required build input,
+                   asked here rather than in the rail. BOUND to state.characterName:
+                   render() runs on every navigation, so an unbound field would blank
+                   the name each time and block the player on their own gate. -->
+              <label class="wz-field wz-span" data-req="name"><span class="wz-label"><span class="wz-req-mark" aria-hidden="true">*</span> Build name</span>
+              <span class="wz-help">Names this build so you can save it and come back to it.</span>
+              <input id="wz-buildname" type="text" value="${esc(state.characterName)}" placeholder="e.g. Sook — Reaper"></label>
               <label class="wz-field" data-req="ml"><span class="wz-label"><span class="wz-req-mark" aria-hidden="true">*</span> Minimum level (ML) cap</span>
               <span class="wz-help">Highest item level you can equip. Gear above this is excluded.</span>
               <input id="wz-ml" class="wz-ml" type="number" min="1" max="40" value="${esc(state.ml)}"></label>
@@ -1943,7 +1977,7 @@ if (typeof window !== "undefined" && window.App) {
         </div>
         <p class="wz-status wz-reqmsg" id="wz-charmsg" role="status" aria-live="polite"></p>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
-          <button class="btn primary" data-next>Continue →</button></div>
+          ${saveControl("ghost")}<button class="btn primary" data-next>Continue →</button></div>
       </section>`;
     }
 
@@ -2000,7 +2034,7 @@ if (typeof window !== "undefined" && window.App) {
           <div id="wz-override-list" class="wz-pin-list"></div>
         </div>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
-          <button class="btn primary" data-next>Continue →</button></div>
+          ${saveControl("ghost")}<button class="btn primary" data-next>Continue →</button></div>
       </section>`;
     }
 
@@ -2259,7 +2293,7 @@ if (typeof window !== "undefined" && window.App) {
         <p class="wz-draghelp">Drag the ⋮⋮ handle to reorder, or use the ↑ ↓ buttons (they work on touch and keyboard).</p>
         <p id="wz-status" class="wz-status"></p>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
-          <button class="btn primary" data-solve>Solve ⚡</button></div>
+          ${saveControl("ghost")}<button class="btn primary" data-solve>Solve ⚡</button></div>
       </section>`;
     }
 
@@ -2282,8 +2316,9 @@ if (typeof window !== "undefined" && window.App) {
           Slot constraints changed. <button class="btn primary" id="wz-cresolve">Re-solve ⚡</button>
         </div>
         <div id="wz-results"></div>
-        <div class="wz-actions"><button class="btn ghost" data-goto="priorities">← Adjust priorities</button><span class="wz-spacer"></span>
-          <button class="btn ghost" data-goto="character">Edit character</button></div>
+        <div class="wz-actions"><button class="btn ghost" data-goto="priorities">← Adjust priorities</button>
+          <button class="btn ghost" data-goto="character">Edit character</button><span class="wz-spacer"></span>
+          ${saveControl(resolveBannerShowing(state) ? "ghost" : "primary")}</div>
       </section>`;
     }
 
@@ -2336,6 +2371,10 @@ if (typeof window !== "undefined" && window.App) {
       });
       const rsolve = document.getElementById("wz-radjust-solve");
       if (rsolve) rsolve.onclick = () => { if (canAdvance("priorities", state)) solve(false); };
+      // #431 U3 (KTD7/R6) — opening the fold puts a second primary on screen, so
+      // save yields while it is open and takes primacy back when it closes.
+      const fold = document.getElementById("wz-adjust");
+      if (fold) fold.ontoggle = refreshSaveEmphasis;
     }
 
     // U5/R9-R11 — the Share tab's content: pick a saved loadout, export it as a
@@ -2919,6 +2958,7 @@ if (typeof window !== "undefined" && window.App) {
       bar.classList.toggle("wz-hidden", !why);
       const w = document.getElementById("wz-stalewhy");
       if (w && why) w.textContent = why;
+      refreshSaveEmphasis();
     }
 
     function createOverride(key, to, note) {
@@ -3570,10 +3610,6 @@ if (typeof window !== "undefined" && window.App) {
         <p class="wz-rail-loaded">${m.loaded
           ? `Editing <strong>${esc(m.loadedName)}</strong>`
           : `<span class="wz-sub">Unsaved build</span>`}</p>
-        <label class="wz-field"><span class="wz-label">Name this build</span>
-          <input id="wz-buildname" type="text" value="${esc(m.name)}" placeholder="e.g. Sook — Reaper"></label>
-        <button class="btn primary" id="wz-railsave" type="button">Save progress</button>
-        <span class="wz-savestat" id="wz-railstat" aria-live="polite"></span>
         <p class="wz-help">Saved in this browser only — no account, and cleared if you clear browser data.</p>
         <div class="wz-rail-list">
           <p class="wz-label">Saved builds</p>
@@ -3609,28 +3645,52 @@ if (typeof window !== "undefined" && window.App) {
       return res;
     }
 
-    /** The refusal, worded once. The name field lives in the rail, which is on
-     *  screen from every step, so "name it first" needs no per-surface variant. */
+    /** #431 U4 — "no-name" is reachable from the character step's own save
+     *  button, where the field it names is on screen beside it. The guard no
+     *  longer produces this error at all: it omits Save instead. */
     function saveErrorText(error) {
       if (error === "no-name") return "Name this build first.";
       if (error === "quota") return "Storage full — remove some saves.";
       return "Could not save.";
     }
 
-    function wireRail() {
-      const nameInput = document.getElementById("wz-buildname");
-      if (nameInput) nameInput.oninput = (e) => { state.characterName = e.target.value; };
-      const saveBtn = document.getElementById("wz-railsave");
-      if (saveBtn) saveBtn.onclick = () => {
-        const nm = ((nameInput ? nameInput.value : state.characterName) || "").trim();
+    /** #431 U3 (R5/R7) — the one save handler, for the one rendered button. Only
+     *  one step body renders at a time, so `#wz-save` is unique per render. */
+    function wireSave() {
+      const btn = document.getElementById("wz-save");
+      if (!btn) return;
+      btn.onclick = () => {
+        const nm = (state.characterName || "").trim();
         const res = trySave(nm);
         if (!res) return;   // overwrite declined
-        // Re-render FIRST — the status element below lives inside the rail, so a
-        // message written before this would be discarded by the re-render.
+        // renderRail() refreshes the saved-builds list. It replaces #wz-rail only,
+        // and the status span now lives in the step body, so it survives — but
+        // render() must NOT be used here: on results it would blank #wz-results.
         renderRail();
-        const stat = document.getElementById("wz-railstat");
+        const stat = document.getElementById("wz-savestat");
         if (stat) stat.textContent = res.ok ? `Saved “${nm}”.` : saveErrorText(res.error);
       };
+    }
+
+    /** #431 U3 (KTD7) — banner visibility is mutated imperatively, with no
+     *  re-render, so a class assigned at render time would never flip. Every site
+     *  that shows or hides a re-solve banner calls this. */
+    function refreshSaveEmphasis() {
+      if (state.step !== "results") return;   // save is ghost on every other bar
+      const btn = document.getElementById("wz-save");
+      if (!btn) return;
+      // The Adjust & re-solve fold-up carries a fourth `Re-solve ⚡` primary
+      // (`web/wizard.js:2347`). It is collapsed on every render, so the initial
+      // class needs only the banner check — but once the player opens it, its
+      // button is on screen and save must yield to it exactly as it does to a
+      // banner. Read from the DOM: the fold has no state field, by design.
+      const fold = document.getElementById("wz-adjust");
+      const primary = !resolveBannerShowing(state) && !(fold && fold.open);
+      btn.classList.toggle("primary", primary);
+      btn.classList.toggle("ghost", !primary);
+    }
+
+    function wireRail() {
       const rail = document.getElementById("wz-rail");
       if (rail) rail.onclick = (e) => {
         const b = e.target.closest("button"); if (!b) return;
@@ -3917,19 +3977,31 @@ if (typeof window !== "undefined" && window.App) {
         el.setAttribute("aria-labelledby", "wz-unsaved-msg");
         document.body.appendChild(el);
       }
+      // #431 U4 (KTD3) — the option set is a function of whether saving can
+      // SUCCEED. `data-back` navigates without consulting canAdvance, so Back
+      // from the character step reaches this dialog with an empty name. Rather
+      // than offer a Save that can only fail — and then point at a field behind
+      // the overlay — the option is omitted and the dialog says why.
+      const named = !!String(state.characterName || "").trim();
+      const isLoad = state.unsavedPrompt && state.unsavedPrompt.kind === "load";
       el.innerHTML = `<div class="wz-modal-panel">
           <p class="wz-label">Unsaved changes</p>
           <p id="wz-unsaved-msg">${esc(msg)}</p>
+          ${named ? "" : `<p class="wz-help" id="wz-unsaved-why">This build has no name yet, so it cannot be saved. Stay here and name it on the character step.</p>`}
           <div class="wz-modal-actions">
-            <button class="btn primary" id="wz-unsaved-save" type="button">Save and continue</button>
-            <button class="btn ghost" id="wz-unsaved-go" type="button">${state.unsavedPrompt && state.unsavedPrompt.kind === "load" ? "Load anyway" : "Continue without saving"}</button>
-            <button class="btn ghost" id="wz-unsaved-stay" type="button">${state.unsavedPrompt && state.unsavedPrompt.kind === "load" ? "Keep editing this build" : "Stay on this step"}</button>
+            ${named ? `<button class="btn primary" id="wz-unsaved-save" type="button">Save and continue</button>` : ""}
+            <button class="btn ghost" id="wz-unsaved-go" type="button">${isLoad ? "Load anyway" : "Continue without saving"}</button>
+            <button class="btn ghost" id="wz-unsaved-stay" type="button">${isLoad ? "Keep editing this build" : "Stay on this step"}</button>
           </div>
           <span class="wz-savestat" id="wz-unsaved-stat" aria-live="polite"></span>
         </div>`;
       wireUnsavedGuard();
-      const first = document.getElementById("wz-unsaved-save");
-      if (first && first.focus) first.focus();
+      // Focus Save when it is offered, and STAY when it is not — never "the first
+      // control rendered". DOM order is save, discard, stay, so with save omitted
+      // that idiom would make the discard option the keyboard default and a
+      // reflexive Enter would throw the unsaved build away.
+      const focusEl = document.getElementById(named ? "wz-unsaved-save" : "wz-unsaved-stay");
+      if (focusEl && focusEl.focus) focusEl.focus();
     }
 
     function closeUnsavedGuard() {
@@ -3949,6 +4021,8 @@ if (typeof window !== "undefined" && window.App) {
         // ask again. The next edit raises it right back.
         state.inputsDirty = false; closeUnsavedGuard(); resumePending(to);
       };
+      // #431 U4 — rendered only when a name exists, so the no-name branch that
+      // used to focus the rail's field from behind this dialog is gone with it.
       const save = document.getElementById("wz-unsaved-save");
       if (save) save.onclick = () => {
         const nm = String(state.characterName || "").trim();
@@ -3957,12 +4031,6 @@ if (typeof window !== "undefined" && window.App) {
         if (res.ok) { closeUnsavedGuard(); resumePending(to); return; }
         const stat = document.getElementById("wz-unsaved-stat");
         if (stat) stat.textContent = saveErrorText(res.error);
-        // The name field is in the rail, which is behind this dialog — point at
-        // it rather than leaving the player to hunt for what "name it" means.
-        if (res.error === "no-name") {
-          const field = document.getElementById("wz-buildname");
-          if (field && field.focus) field.focus();
-        }
       };
     }
 
@@ -3994,11 +4062,13 @@ if (typeof window !== "undefined" && window.App) {
       };
       // #428 U3 — the rail is on every step, so it wires on every render.
       wireRail();
+      // #431 U3 — and so is the save control, on every step but intro.
+      wireSave();
       // #428 U5 (KTD3) — every native control inside the step body is a build
       // input, so one delegated pair covers text, number, select, checkbox and
-      // radio without a markDirty() call in each of their handlers. The rail is
-      // deliberately excluded: naming a build is not editing it, and typing a
-      // name is the FIRST half of saving.
+      // radio without a markDirty() call in each of their handlers. #431 U2
+      // (KTD9) — this now covers the build name too: it is a required build
+      // input like race, so typing one arms the guard.
       const body = root.querySelector(".wz-body");
       if (body) {
         // …except surfaces that LOOK things up rather than change them: the
@@ -4040,6 +4110,11 @@ if (typeof window !== "undefined" && window.App) {
         // U3/R7 — the ML floor defaults to cap − 5 and follows the cap until the
         // user edits it. Clearing the floor re-enables auto-follow. Updates are made
         // directly (no re-render) so typing keeps focus.
+        // #431 U2 (KTD9) — updated in place, no re-render, so typing keeps focus.
+        // The delegated .wz-body listener marks the build dirty on the same event,
+        // after this handler has written the value.
+        const nameInput = document.getElementById("wz-buildname");
+        if (nameInput) nameInput.oninput = (e) => { state.characterName = e.target.value; };
         var floorAutoHint = () => { var h = document.getElementById("wz-mlfloor-auto"); if (h) h.hidden = !!state.mlFloorManual; };
         document.getElementById("wz-ml").oninput = (e) => {
           state.ml = e.target.value;
@@ -4244,6 +4319,7 @@ if (typeof window !== "undefined" && window.App) {
           state.loadedStale = false;
           const stale = document.getElementById("wz-stale");
           if (stale) stale.classList.add("wz-hidden");
+          refreshSaveEmphasis();
           solve(false);
         };
         // plan 003 U4 — same view-only re-solve for the TWF migration notice. The
@@ -4255,6 +4331,7 @@ if (typeof window !== "undefined" && window.App) {
           state.twfMigrated = false;
           const bar = document.getElementById("wz-twfmig");
           if (bar) bar.classList.add("wz-hidden");
+          refreshSaveEmphasis();
           solve(false);
         };
         // Per-slot constraint controls (U6), wired by delegation so they survive
@@ -4305,6 +4382,7 @@ if (typeof window !== "undefined" && window.App) {
             renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: afterResultsRender, onRequire: requireOutbidStat });
           }
           if (cbar) cbar.classList.remove("wz-hidden");
+          refreshSaveEmphasis();
         });
         const cres = document.getElementById("wz-cresolve");
         if (cres) cres.onclick = () => { if (canAdvance("priorities", state)) solve(false); };

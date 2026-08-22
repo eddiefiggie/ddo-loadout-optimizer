@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, savedStep, stepOnLoad, unsavedGuardMessage, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
+const { railModel, saveControl, resolveBannerShowing, savedStep, stepOnLoad, unsavedGuardMessage, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -31,12 +31,12 @@ test("WIZARD_STEPS order", () => {
 // advanced without armor could solve for a loadout they cannot wear, because
 // armor drives the dodge cap and filters what is equippable.
 test("canAdvance(character): needs a race, a positive ML, and an armor type", () => {
-  assert.ok(!canAdvance("character", { race: "", ml: 34, armor: "light" }));
-  assert.ok(!canAdvance("character", { race: "Human", ml: 0, armor: "light" }));
-  assert.ok(!canAdvance("character", { race: "Human", ml: 34, armor: "" }));
-  assert.ok(canAdvance("character", { race: "Human", ml: 34, armor: "light" }));
+  assert.ok(!canAdvance("character", { characterName: "Sook", race: "", ml: 34, armor: "light" }));
+  assert.ok(!canAdvance("character", { characterName: "Sook", race: "Human", ml: 0, armor: "light" }));
+  assert.ok(!canAdvance("character", { characterName: "Sook", race: "Human", ml: 34, armor: "" }));
+  assert.ok(canAdvance("character", { characterName: "Sook", race: "Human", ml: 34, armor: "light" }));
   // …except for the Forged, who wear a docent and have no armor pick to make.
-  assert.ok(canAdvance("character", { race: "Warforged", ml: 34, armor: "" }));
+  assert.ok(canAdvance("character", { characterName: "Sook", race: "Warforged", ml: 34, armor: "" }));
 });
 
 test("canAdvance(pool): owned mode requires an uploaded inventory", () => {
@@ -584,7 +584,10 @@ const NAV = {
   stepCharacter: { advance: "data-next", back: "data-back" },
   stepPool: { advance: "data-next", back: "data-back" },
   stepPriorities: { advance: "data-solve", back: "data-back" },
-  stepResults: { advance: 'data-goto="character"', back: 'data-goto="priorities"' },
+  // #431 U3 (KTD8) — save takes the results bar's terminal slot and Edit
+  // character moves before the spacer. The token is the RENDERER'S CALL, not the
+  // button id: the bar's source holds an interpolation, not the rendered markup.
+  stepResults: { advance: "saveControl(", back: 'data-goto="priorities"' },
 };
 
 test("U4/#105: every step exposes its advance control bottom-right (after the spacer)", () => {
@@ -3084,7 +3087,6 @@ test("#428 U3: railModel reports an empty state when nothing is saved or loaded"
   assert.strictEqual(m.loadedName, "");
   assert.deepStrictEqual(m.saved, []);
   assert.strictEqual(m.empty, true);
-  assert.strictEqual(m.canSave, false, "an unnamed build cannot be saved (R13)");
 });
 
 test("#428 U3 (AE7): with two builds saved, loading the second shows the second name", () => {
@@ -3105,14 +3107,6 @@ test("#428 U3 (R21): deleting the loaded build returns the rail to its empty sta
   assert.strictEqual(after.loaded, false);
   assert.strictEqual(after.loadedName, "");
   assert.strictEqual(after.empty, true);
-});
-
-test("#428 U3: railModel flags a name that would overwrite an existing save", () => {
-  const saved = [{ name: "Sook" }];
-  assert.strictEqual(railModel({ characterName: " Sook " }, saved).overwrites, true,
-    "trimmed, so trailing whitespace cannot sneak past the overwrite confirm");
-  assert.strictEqual(railModel({ characterName: "Other" }, saved).overwrites, false);
-  assert.strictEqual(railModel({ characterName: "" }, saved).overwrites, false);
 });
 
 test("#428 U3: railModel tolerates a junk store without inventing entries", () => {
@@ -3140,14 +3134,16 @@ test("#428 U3 (R14/KTD4): the rail renders from render(), not from any step body
   }
 });
 
-test("#428 U3 (R24): the rail offers save, load and delete only", () => {
+test("#428 U3 (R24) / #431 U3 (R9): the rail offers load and delete only", () => {
   const fs = require("fs"); const path = require("path");
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
   const at = src.indexOf("function railHTML(");
   assert.ok(at >= 0, "wizard.js declares railHTML");
   const body = src.slice(at, endAfter(src, "\n    function ", at));
-  assert.ok(/wz-railsave/.test(body), "the rail saves");
-  assert.ok(/data-railload/.test(body), "…loads");
+  // #431 U3 (R9) supersedes R24's save clause: saving moved to the action bars,
+  // so the rail is no longer an action surface at all.
+  assert.ok(!/wz-railsave/.test(body), "the rail no longer saves — that moved to the bars");
+  assert.ok(/data-railload/.test(body), "it loads");
   assert.ok(/data-raildel/.test(body), "…and deletes");
   assert.ok(!/wz-export|wz-import|Export all|Import a backup/.test(body),
     "…and offers no backup export or import (R24)");
@@ -3312,24 +3308,24 @@ test("#428 U5: the guard gates player navigation, not the app's own step changes
 // ---------------------------------------------------------------------------
 
 test("#428 U6 (R2a): the required set is race, ML cap and armor", () => {
-  assert.deepStrictEqual(missingRequired({ race: "", ml: 0, armor: "" }).sort(),
+  assert.deepStrictEqual(missingRequired({ characterName: "Sook", race: "", ml: 0, armor: "" }).sort(),
     ["armor", "ml", "race"]);
-  assert.deepStrictEqual(missingRequired({ race: "Human", ml: 30, armor: "light" }), []);
+  assert.deepStrictEqual(missingRequired({ characterName: "Sook", race: "Human", ml: 30, armor: "light" }), []);
 });
 
 test("#428 U6 (AE1): race blank is reported as missing", () => {
-  assert.deepStrictEqual(missingRequired({ race: "", ml: 30, armor: "light" }), ["race"]);
+  assert.deepStrictEqual(missingRequired({ characterName: "Sook", race: "", ml: 30, armor: "light" }), ["race"]);
 });
 
 test("#428 U6 (AE2a): armor blank blocks even with race and ML cap set", () => {
-  const st = { race: "Human", ml: 30, armor: "" };
+  const st = { characterName: "Sook", race: "Human", ml: 30, armor: "" };
   assert.deepStrictEqual(missingRequired(st), ["armor"]);
   assert.ok(!canAdvance("character", st), "the gate armor newly joins is ENFORCED, not merely displayed");
 });
 
 test("#428 U6 (AE2): all three set advances regardless of optional fields", () => {
-  assert.ok(canAdvance("character", { race: "Human", ml: 30, armor: "cloth" }));
-  assert.ok(canAdvance("character", { race: "Human", ml: 30, armor: "cloth",
+  assert.ok(canAdvance("character", { characterName: "Sook", race: "Human", ml: 30, armor: "cloth" }));
+  assert.ok(canAdvance("character", { characterName: "Sook", race: "Human", ml: 30, armor: "cloth",
     alignment: "", oath: "", style: "", weaponTypes: [] }));
 });
 
@@ -3338,20 +3334,63 @@ test("#428 U6 (KD6): a Forged race is exempt from the armor requirement", () => 
   // the race handler CLEARS state.armor. Requiring it of them would be a gate no
   // player could satisfy — the step would simply never advance.
   for (const race of ["Warforged", "Bladeforged"]) {
-    assert.deepStrictEqual(missingRequired({ race, ml: 30, armor: "" }), [],
+    assert.deepStrictEqual(missingRequired({ characterName: "Sook", race, ml: 30, armor: "" }), [],
       `${race} needs no armor pick`);
-    assert.ok(canAdvance("character", { race, ml: 30, armor: "" }));
+    assert.ok(canAdvance("character", { characterName: "Sook", race, ml: 30, armor: "" }));
+  }
+});
+
+// ---------------------------------------------------------------------------
+// #431 U1 (KTD12) — the build name joins the same gate. Isolated coverage, on
+// purpose: every assertion in this file's gate cluster fails on some OTHER
+// blank field, so a name check that never ran would still pass them all for
+// the wrong reason. These pin the `name` key on its own.
+// ---------------------------------------------------------------------------
+
+test("#431 U1 (AE2): all four required fields set advances", () => {
+  assert.ok(canAdvance("character", { characterName: "Sook", race: "Human", ml: 30, armor: "cloth" }));
+});
+
+test("#431 U1 (AE1): a blank name blocks, on the name key alone", () => {
+  const st = { characterName: "", race: "Human", ml: 30, armor: "cloth" };
+  assert.deepStrictEqual(missingRequired(st), ["name"]);
+  assert.ok(!canAdvance("character", st), "the name gate is ENFORCED, not merely displayed");
+});
+
+test("#431 U1: a name that is only whitespace counts as absent", () => {
+  assert.deepStrictEqual(
+    missingRequired({ characterName: "   ", race: "Human", ml: 30, armor: "cloth" }), ["name"]);
+});
+
+test("#431 U1 (KTD1): the name leads the missing list, so it leads the message and the scroll", () => {
+  assert.deepStrictEqual(
+    missingRequired({ characterName: "", race: "", ml: 30, armor: "cloth" }), ["name", "race"]);
+});
+
+test("#431 U1 (AE1): the message names the build name, and names it alongside a second field", () => {
+  const one = missingRequiredMessage({ characterName: "", race: "Human", ml: 30, armor: "cloth" });
+  assert.ok(/[Bb]uild name/.test(one), one);
+  const both = missingRequiredMessage({ characterName: "", race: "", ml: 30, armor: "cloth" });
+  assert.ok(/[Bb]uild name/.test(both), both);
+  assert.ok(/[Rr]ace/.test(both), both);
+});
+
+test("#431 U1: the Forged armor exemption still holds once a name is present", () => {
+  for (const race of ["Warforged", "Bladeforged"]) {
+    assert.deepStrictEqual(
+      missingRequired({ characterName: "Sook", race, ml: 30, armor: "" }), [], race);
+    assert.ok(canAdvance("character", { characterName: "Sook", race, ml: 30, armor: "" }));
   }
 });
 
 test("#428 U6 (AE3): a loaded build carrying all three marks nothing as needing an answer", () => {
-  const loaded = { race: "Elf", ml: 34, armor: "medium" };
+  const loaded = { characterName: "Sook", race: "Elf", ml: 34, armor: "medium" };
   assert.deepStrictEqual(missingRequired(loaded), []);
   assert.strictEqual(missingRequiredMessage(loaded), null);
 });
 
 test("#428 U6 (AE3a): a build saved before KD6 carries no armor and is marked", () => {
-  const preKd6 = { race: "Elf", ml: 34, armor: "" };
+  const preKd6 = { characterName: "Sook", race: "Elf", ml: 34, armor: "" };
   assert.deepStrictEqual(missingRequired(preKd6), ["armor"]);
   assert.ok(/[Aa]rmor/.test(missingRequiredMessage(preKd6)));
 });
@@ -3421,13 +3460,159 @@ test("#428 U6 (R1/R2/R4): the character step renders three labelled groups in or
   assert.ok(!/<details[^>]*data-group="restrictions"/.test(body), "…and so are restrictions (R6)");
 });
 
+test("#431 U4 (KTD3/AE4): the guard offers Save only when saving can succeed", () => {
+  const g = fnBody(WIZARD_SRC, "function showUnsavedGuard(msg) {", 4);
+  assert.ok(/characterName/.test(g), "the option set is a function of whether a name exists");
+  assert.ok(/wz-unsaved-save/.test(g), "with a name it still offers Save and continue");
+  assert.ok(/needs a name|name it|name this build/i.test(g),
+    "without one it says why Save is absent rather than silently dropping it");
+});
+
+test("#431 U4 (R10/KTD3): no path through the guard asks for the name behind the dialog", () => {
+  const g = fnBody(WIZARD_SRC, "function showUnsavedGuard(msg) {", 4)
+    + fnBody(WIZARD_SRC, "function wireUnsavedGuard() {", 4);
+  assert.ok(!/wz-buildname/.test(g),
+    "the guard never touches the name field — that is the defect this plan exists to fix");
+  // The wiring focuses nothing at all now: the only focus call left in the guard
+  // is the open-time one in showUnsavedGuard, which chooses between save and stay.
+  assert.ok(!/\.focus\(\)/.test(fnBody(WIZARD_SRC, "function wireUnsavedGuard() {", 4)),
+    "no handler in the guard's wiring moves focus behind the dialog");
+});
+
+test("#431 U4: with no name the guard's open-time focus is Stay, never the discard option", () => {
+  const g = fnBody(WIZARD_SRC, "function showUnsavedGuard(msg) {", 4);
+  // DOM order is save, discard, stay. "Focus the first control rendered" would
+  // put the keyboard default on discard once save is omitted, and a reflexive
+  // Enter would throw the build away.
+  const pick = g.match(/getElementById\(([^)]*wz-unsaved-stay[^)]*)\)/);
+  assert.ok(pick, "the open-time focus resolves the stay control by id");
+  assert.ok(/wz-unsaved-save/.test(pick[1]),
+    "…as one arm of a conditional whose other arm is Save — not an unconditional target");
+  assert.ok(!/wz-unsaved-go/.test(pick[1]),
+    "the discard option is never a focus target");
+});
+
+test("#431 U4 (KTD4): saveCurrentCharacter's store-integrity refusal is untouched", () => {
+  const f = fnBody(WIZARD_SRC, "function saveCurrentCharacter(", 4);
+  assert.ok(/no-name/.test(f),
+    "the refusal stays: CharacterStore keys records by name, so an empty one would "
+    + "mint a \"\"-keyed record");
+});
+
+test("#431 U3 (AE3/KTD5/KTD6): one renderer puts save on four bars, and not on intro", () => {
+  for (const step of ["stepCharacter", "stepPool", "stepPriorities", "stepResults"]) {
+    assert.ok(/saveControl\(/.test(actionRow(step)), `${step} carries the save control`);
+  }
+  assert.ok(!/saveControl\(/.test(actionRow("stepIntro")),
+    "intro runs before the character step, so there is no name and nothing to save");
+  const calls = (WIZARD_SRC.match(/\$\{saveControl\(/g) || []).length;
+  assert.strictEqual(calls, 4, "exactly four call sites — a sixth step cannot ship without one");
+});
+
+test("#431 U3 (AE6/KTD7): save is ghost beside a forward action, and conditional on results", () => {
+  for (const step of ["stepCharacter", "stepPool", "stepPriorities"]) {
+    assert.ok(/saveControl\("ghost"\)/.test(actionRow(step)),
+      `${step} already has a primary forward action, so save is ghost there`);
+  }
+  const results = actionRow("stepResults");
+  assert.ok(/saveControl\(resolveBannerShowing\(state\) \? "ghost" : "primary"\)/.test(results),
+    "on results save is the bar's primary, except while a re-solve banner holds it");
+});
+
+test("#431 U3 (KTD7): resolveBannerShowing counts the three re-solve banners only", () => {
+  assert.strictEqual(resolveBannerShowing({}), false);
+  assert.strictEqual(resolveBannerShowing({ loadedStale: true }), true, "the stale banner");
+  assert.strictEqual(resolveBannerShowing({ twfMigrated: true }), true, "the TWF migration banner");
+  assert.strictEqual(resolveBannerShowing({ constraintsDirty: true }), true, "the constraints banner");
+  // The four migrationBanner notices share the wz-cbar class but their buttons
+  // are ghosts, so they do not contend for primacy and must not ghost save.
+  for (const notice of ["expandedAwayMigrated", "utilityHealNotice", "blockLoadNotice", "overrideNotice"]) {
+    assert.strictEqual(resolveBannerShowing({ [notice]: "something happened" }), false,
+      `${notice} is a ghost-button notice, not a re-solve banner`);
+  }
+});
+
+test("#431 U3 (KTD7): every site that mutates a re-solve banner refreshes save's emphasis", () => {
+  // Banner visibility is changed imperatively, without a re-render, so a class
+  // assigned at render time would never flip. A fifth banner path cannot ship
+  // without a refresh call.
+  assert.ok(/refreshSaveEmphasis\(\)/.test(fnBody(WIZARD_SRC, "function refreshStaleBanner() {", 4)),
+    "the in-place stale toggle refreshes save");
+  const calls = (WIZARD_SRC.match(/[^n] refreshSaveEmphasis\(\)|;\s*refreshSaveEmphasis\(\)|\n\s+refreshSaveEmphasis\(\)/g) || []).length;
+  assert.ok(calls >= 4, `expected the four banner-mutation sites to refresh save, saw ${calls}`);
+});
+
+test("#431 U3 (R6/KTD7): save also yields to the Adjust & re-solve fold-up", () => {
+  // A FOURTH primary lives inside that fold (web/wizard.js: wz-radjust-solve).
+  // It is collapsed on every render, so the render-time class needs only the
+  // banner check — but opening it puts two primaries on screen.
+  const f = fnBody(WIZARD_SRC, "function refreshSaveEmphasis() {", 4);
+  assert.ok(/wz-adjust/.test(f) && /\.open/.test(f),
+    "the emphasis check reads whether the fold is open");
+  const fill = fnBody(WIZARD_SRC, "function fillAdjustSlot() {", 4);
+  assert.ok(/ontoggle\s*=\s*refreshSaveEmphasis/.test(fill),
+    "and opening or closing the fold re-applies it");
+});
+
+test("#431 U3 (R9): the rail hosts neither the save control nor its status line", () => {
+  const rail = fnBody(WIZARD_SRC, "function railHTML() {", 4);
+  assert.ok(!/wz-railsave/.test(rail), "the rail's save button is gone");
+  assert.ok(!/wz-railstat/.test(rail), "and its status span with it");
+  assert.ok(!/wz-railsave|wz-railstat/.test(WIZARD_SRC), "no orphaned references remain");
+});
+
 test("#428 U6 (R2): each required field is marked at the field", () => {
   const body = stepSource("stepCharacter");
-  for (const key of ["ml", "race", "armor"]) {
+  for (const key of ["name", "ml", "race", "armor"]) {
     assert.ok(new RegExp(`data-req="${key}"`).test(body), `${key} is addressable as a required field`);
   }
-  assert.strictEqual((body.match(/wz-req-mark/g) || []).length, 3,
-    "exactly the three required fields carry the marker");
+  assert.strictEqual((body.match(/wz-req-mark/g) || []).length, 4,
+    "exactly the four required fields carry the marker");
+});
+
+test("#431 U2 (R1/R4): the legend's stated count matches the markers it describes", () => {
+  const body = stepSource("stepCharacter");
+  const marks = (body.match(/wz-req-mark/g) || []).length;
+  // The Forged branch states no count ("armor is settled"), so only the other
+  // one carries a number to drift.
+  const stated = body.match(/all (\w+) are needed to continue/);
+  assert.ok(stated, "the non-Forged legend still states a count");
+  const words = { two: 2, three: 3, four: 4, five: 5 };
+  assert.strictEqual(words[stated[1]], marks,
+    `the legend says ${stated[1]} but ${marks} fields are marked`);
+});
+
+test("#431 U2 (KTD2/AE5): the name field lives in the required group and binds its value", () => {
+  const body = stepSource("stepCharacter");
+  assert.ok(/data-req="name"/.test(body), "the name field is addressable as required");
+  assert.ok(/id="wz-buildname"/.test(body), "the name input renders in the character step");
+  assert.ok(/value="\$\{esc\(state\.characterName[^}]*\)\}"/.test(body),
+    "the input is BOUND — an unbound field blanks the name on every render() and "
+    + "would block the player on their own gate");
+  assert.ok(!/data-nodirty/.test(body.slice(body.indexOf('data-req="name"') - 400,
+    body.indexOf('data-req="name"') + 400)),
+    "the field is not opted out of dirty-tracking (KTD9)");
+});
+
+test("#431 U2 (R9/KTD10): the rail hosts no name input and railModel sheds its save-shaped fields", () => {
+  const rail = fnBody(WIZARD_SRC, "function railHTML() {", 4);
+  assert.ok(!/wz-buildname/.test(rail), "the rail no longer renders the name input");
+  assert.ok(!/Name this build/.test(rail), "and not its label either");
+  const m = railModel({ characterName: "Sook", loadedName: "Sook" }, [{ name: "Sook" }]);
+  for (const gone of ["name", "canSave", "overwrites"]) {
+    assert.ok(!(gone in m), `railModel no longer returns ${gone}`);
+  }
+  assert.deepStrictEqual(Object.keys(m).sort(), ["empty", "loaded", "loadedName", "saved"]);
+});
+
+test("#431 U2 (R12): renaming stays reachable from every later step without a rail control", () => {
+  // R12 is a guarantee, not a new control: the step dots and the results bar's
+  // Edit character already reach the character step. Neither may be removed
+  // without this failing.
+  assert.ok(/data-goto="\$\{id\}"/.test(WIZARD_SRC),
+    "the step dots are still data-goto targets");
+  assert.ok(/data-goto="character"/.test(stepSource("stepResults")),
+    "the results bar still reaches the character step directly");
 });
 
 // ---------------------------------------------------------------------------
