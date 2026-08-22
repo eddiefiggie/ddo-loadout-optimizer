@@ -2053,3 +2053,42 @@ test("#369: the exemption is per-variant — an UNPINNED Artifact stays excluded
   assert.ok(!neck || !neck.variants.some((x) => x.source_item === "OtherArt"),
     "the unpinned Artifact is still excluded — a pin exempts itself, not the gate");
 });
+
+// ---------------------------------------------------------------------------
+// #335 U1 — duplicate-ring twinning, gated to a WIKI-CONFIRMED allowlist.
+//
+// Duplicate-wearability is a per-item property (DDO's Unique Equipped) and the
+// dataset does not carry it: `restrictions` is the literal string "unknown" on
+// 426 of 427 rings and no ring carries the flag. Gating on set membership would
+// infer a legality claim from a set-bonus counting rule — see #442 for the
+// harvest that would widen this.
+// ---------------------------------------------------------------------------
+
+test("#335 U1: twin eligibility is allowlist-gated, not membership-gated", () => {
+  const allow = [...M.DUPLICABLE_RINGS][0];
+  assert.ok(allow, "the allowlist names at least the reported ring");
+  const onList = { variant_id: allow, slot: "Ring", set_bonus: [{ set: "S" }] };
+  const offList = { variant_id: "Some Other Ring", slot: "Ring", set_bonus: [{ set: "S" }] };
+  assert.strictEqual(M.isTwinEligible(onList), true, "allowlisted set-member ring is eligible");
+  assert.strictEqual(M.isTwinEligible(offList), false,
+    "a set member NOT on the allowlist is refused — membership is not evidence of duplicability");
+});
+
+test("#335 U1: an allowlisted ring still needs a set membership and the Ring slot", () => {
+  const allow = [...M.DUPLICABLE_RINGS][0];
+  assert.strictEqual(M.isTwinEligible({ variant_id: allow, slot: "Ring", set_bonus: [] }), false,
+    "no set membership, nothing for a second copy to contribute");
+  assert.strictEqual(M.isTwinEligible({ variant_id: allow, slot: "Neck", set_bonus: [{ set: "S" }] }), false,
+    "non-Ring slots are untouched (R9)");
+  assert.strictEqual(M.isTwinEligible(null), false);
+});
+
+test("#335 U1 (KTD2): the twin id round-trips back to its original", () => {
+  const id = "Legendary Katra's Razor Wit";
+  const twin = M.twinIdOf(id);
+  assert.notStrictEqual(twin, id, "the twin is addressable separately in the model");
+  assert.strictEqual(M.originalIdOf(twin), id, "and maps back for display and pins");
+  assert.strictEqual(M.originalIdOf(id), id, "an ordinary id is returned unchanged");
+  assert.strictEqual(M.isTwinId(twin), true);
+  assert.strictEqual(M.isTwinId(id), false);
+});

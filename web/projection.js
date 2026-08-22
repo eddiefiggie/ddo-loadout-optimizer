@@ -19,6 +19,14 @@
   const UTILITY_NAME = (typeof UTILITY_SENTINEL !== "undefined") ? UTILITY_SENTINEL
     : (typeof require !== "undefined" ? require("./model.js").UTILITY_SENTINEL : "Utility effects");
 
+  // #335 U4 — the duplicate-ring id helpers, same bridge as above: browser global
+  // when model.js is loaded ahead of this file, require()'d under node.
+  function _modelModule() {
+    if (typeof isTwinId !== "undefined") return { isTwinId, originalIdOf };
+    if (typeof require !== "undefined") { try { return require("./model.js"); } catch (e) { /* absent */ } }
+    return null;
+  }
+
   // #346 (U4) — the ladder's normalizer, over the same bridge. Fails open to the
   // top rung so a hand-edited backup produces a wrong-but-harmless notice rather
   // than throwing inside the projection every surface reads from.
@@ -272,6 +280,60 @@
    *  consumed. Returns { byIndex, unplaced, freeByIndex }. */
   /** Per-item open-slot counts by color — shared by assignAugments and the
    *  canonicalization feasibility check, so the two can never drift. */
+  /** #335 U4 (KTD7) — the ×2 collapse, as a RENDER-layer pass over already-assigned
+   *  data. It deliberately does not touch the chosen list the data path uses.
+   *
+   *  Augment and insert assignment fills by chosen INDEX (`slotCountsByItem`,
+   *  `assignAugments`, `assignDinoInserts`) and set-augment reservation matches on
+   *  `host === variant_id`. The twin's distinct id is exactly what gives it its own
+   *  index and its own physical slot supply, so collapsing before assignment would
+   *  halve the ring's slots and orphan every twin-keyed record. Renderers call this
+   *  last, and look per-copy records up by the indices it carries.
+   *
+   *  Returns one entry per DISPLAYED item: `{ slot, variant, count, indices }`,
+   *  where `variant` is always the original (never the suffixed twin) and
+   *  `indices` lists every chosen index the entry covers, in order, so a caller
+   *  can still reach each copy's own augments. */
+  function collapseTwins(chosen) {
+    const M = _modelModule();
+    const out = [];
+    const byOriginal = new Map();      // original id -> entry in `out`
+    (chosen || []).forEach((c, i) => {
+      const id = (c.variant && (c.variant.variant_id || c.variant.source_item)) || "";
+      const isTwin = M && M.isTwinId ? M.isTwinId(id) : false;
+      const originalId = (M && M.originalIdOf) ? M.originalIdOf(id) : id;
+      const key = c.slot + "||" + originalId;
+      if (isTwin && byOriginal.has(key)) {
+        const e = byOriginal.get(key);
+        e.count += 1;
+        e.indices.push(i);
+        return;
+      }
+      const entry = { slot: c.slot, variant: c.variant, count: 1, indices: [i] };
+      out.push(entry);
+      if (!isTwin) byOriginal.set(key, entry);
+      return;
+    });
+    return out;
+  }
+
+  /** #335 U4 (R6) — what a second copy actually contributes, derived rather than
+   *  fixed. Stating "set membership and its own augments" as a constant sentence
+   *  happens to be true only because no allowlisted ring currently carries a craft
+   *  slot; deriving it keeps the receipt honest if one ever does. */
+  function secondCopyContribution(entry, build) {
+    if (!entry || entry.count < 2) return null;
+    const parts = [];
+    const id = (entry.variant && (entry.variant.variant_id || entry.variant.source_item)) || "";
+    const sets = (entry.variant.set_bonus || []).map((sb) => sb && sb.set).filter(Boolean);
+    if (sets.length) parts.push("counts as a second piece toward " + sets.join(" / "));
+    const colors = ((entry.variant.augment_slots_norm || {}).colors) || [];
+    if (colors.length) parts.push("carries its own augment slots");
+    if (!parts.length) parts.push("counts as a second equipped copy");
+    return "The second copy " + parts.join(" and ")
+      + " — it does not apply this item's own affixes a second time.";
+  }
+
   function slotCountsByItem(chosen) {
     return chosen.map((c) => {
       const m = new Map();
@@ -1824,6 +1886,8 @@
   }
 
   const api = {
+    // #335 U4 — the render-layer ×2 collapse and its derived receipt line.
+    collapseTwins, secondCopyContribution,
     // resolved-view assembler
     project, creditNoticeLines, saturationNoticeLines, emptySlotNoticeLines,
     absorptionQuarantineNoticeLines, declaredCreditsLine, overridesLine, overrideNoticeLines,

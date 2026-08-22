@@ -47,6 +47,18 @@ function scaleAt(s, mlCap) {
 // guard's slot key (the documented fragmented-key trap). In the browser model.js
 // loads first and lamordiaTier is a global; under Node/CommonJS (tests) it is not
 // in scope, so pull it from the module.
+// #335 U1 — the duplicate-ring allowlist and id helpers live with the model's
+// other slot policy. Same idiom as the lamordia lookups below: the global when
+// loaded as a classic script, the module when required under node.
+const _isTwinEligible = (typeof isTwinEligible !== "undefined")
+  ? isTwinEligible
+  // eslint-disable-next-line global-require
+  : require("./model.js").isTwinEligible;
+const _twinIdOf = (typeof twinIdOf !== "undefined")
+  ? twinIdOf
+  // eslint-disable-next-line global-require
+  : require("./model.js").twinIdOf;
+
 const _lamordiaTier = (typeof lamordiaTier !== "undefined")
   ? lamordiaTier
   // eslint-disable-next-line global-require
@@ -246,6 +258,31 @@ function buildProgram(model) {
       xVars.push({ name: "x" + xVars.length, variant, slot: group.slot, cardinality: group.cardinality });
     });
   });
+
+  // #335 U1 (KTD4) — duplicate-ring twins are minted HERE, after every worn group
+  // is flattened, and never inside a group's candidate list.
+  //
+  // The deterministic tie-break is Σ(i+1)·x_i over this flattened index
+  // (`encodeStage`), so inserting a twin into the Ring group would shift the
+  // coefficient of every candidate in every slot ordered after Ring, and ties
+  // would resolve differently in builds involving no ring and no set. Appending
+  // leaves every existing coefficient fixed, which is what lets a golden diff be
+  // read as behavioral rather than as index drift.
+  //
+  // The twin is a shallow copy carrying `set_bonus`, so it registers as a set
+  // piece (setPieces reads set_bonus per x-var) and survives dominanceFilter's
+  // cardinality>1 set-contributor exemption, while its own affixes cost nothing:
+  // bucket keys are `stat||equivType(type)` with no host component, so a
+  // duplicate affix can never be co-selected.
+  const twinOf = new Map();          // twin x-var name -> original x-var name
+  for (const xv of xVars.slice()) {
+    if (!_isTwinEligible(xv.variant)) continue;
+    const copy = Object.assign({}, xv.variant,
+      { variant_id: _twinIdOf(xv.variant.variant_id || xv.variant.source_item) });
+    const tw = { name: "x" + xVars.length, variant: copy, slot: xv.slot, cardinality: xv.cardinality, twinOf: xv.name };
+    xVars.push(tw);
+    twinOf.set(tw.name, xv.name);
+  }
 
   // "stat||type" -> [{gates, value}]. A worn affix is a contribution gated by
   // exactly one binary: its item's pick var. Later units push additional
@@ -1346,6 +1383,16 @@ function encodeStage(program, { objectiveStat, objTerms, sense, locks, tieBreak,
   });
   for (const [, g] of bySlot) L.push(` c${c++}: ${g.names.join(" + ")} <= ${g.card}`);
 
+  // #335 U2 (KTD3) — a duplicate-ring twin is takeable only alongside its
+  // original. The slot capacity constraint above already bounds the pair (the
+  // twin shares its original's slot and cardinality), so this adds only the
+  // ordering. Without it the program has two identical solutions for every
+  // doubled pick, and the solver could return the twin with its original absent —
+  // a state no display path expects.
+  for (const xv of program.xVars) {
+    if (xv.twinOf) L.push(` c${c++}: ${xv.name} - ${xv.twinOf} <= 0`);
+  }
+
   for (const [, zs] of program.zByBucket) {
     if (zs.length) L.push(` c${c++}: ${zs.map((z) => z.name).join(" + ")} <= 1`);
     // A contribution is available only when ALL of its gates are 1: emit one
@@ -1786,7 +1833,7 @@ function visibleGateSet(program, prim) {
 
 function readSolution(res, program, precomputedVisible) {
   const prim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
-  const chosen = program.xVars.filter((xv) => prim(xv.name) > 0.5).map((xv) => ({ slot: xv.slot, variant: xv.variant }));
+  let chosen = program.xVars.filter((xv) => prim(xv.name) > 0.5).map((xv) => ({ slot: xv.slot, variant: xv.variant, _twinOf: xv.twinOf || null }));
   const effective = {};
   for (const stat of program.targetList) {
     if (stat === _UTILITY_SENTINEL) continue; // #91 (KTD1) — not a stat; the count rides result.utilityCount
@@ -1858,6 +1905,17 @@ function readSolution(res, program, precomputedVisible) {
   for (const [m, meta] of program.memberMeta || []) {
     if (prim(m) > 0.5 && activeSetNames.has(meta.set)) membershipPlaced.push(meta);
   }
+  // #335 U2 (KTD6) — duplicate-ring twins get the same load-bearing guard, for the
+  // same reason. A twin carries a tie-break coefficient by virtue of being an
+  // x-var, so the OPTIMUM path already minimizes it — but every alternatives
+  // generator re-solves with tieBreak:false, which returns from phase 1 with no
+  // minimizing solve, and a twin can then float to 1 for free while consuming the
+  // second Ring slot. Report a doubled pick only when one of its ring's sets is
+  // actually active; otherwise the second copy buys nothing.
+  chosen = chosen.filter((c) => {
+    if (!c._twinOf) return true;
+    return ((c.variant.set_bonus || []).some((sb) => sb && activeSetNames.has(sb.set)));
+  }).map((c) => ({ slot: c.slot, variant: c.variant }));
   // U3 — placed Set Augment copies (each {set, host, slot_color, wiki_url}).
   // Load-bearing guard (mirrors jokers/memberships): the tie-break minimizes y
   // vars on the optimum path, but ALTERNATIVES re-solve with tieBreak:false, so

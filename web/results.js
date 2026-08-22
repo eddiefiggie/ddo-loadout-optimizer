@@ -329,10 +329,19 @@ function loadoutDeepDive(result, query, maps, attr) {
   const satisfied = satisfiedSets(result.chosen, result.setsActive, suppressed);   // U6/U7: glow on completion, honoring suppression
   const contributors = Proj.setContributors(result);                   // U4/R7: wildcard + membership pieces, not just static set_bonus
   const freeByIndex = (maps && maps.augAssign && maps.augAssign.freeByIndex) || new Map();
-  return `<div class="deepdive">${result.chosen.map((c, idx) => {
+  // #335 U4 (KD3) — one block per DISPLAYED item, not per chosen index. This tab is
+  // the only surface that shows an item's augments and crafts, so a twin rendering
+  // its own second block here is the worst place for the "affixes apply twice"
+  // misreading. The pair merges into one block; both copies' open slots are unioned
+  // so the upgrade note still speaks for the whole ×2 entry.
+  return `<div class="deepdive">${Proj.collapseTwins(result.chosen).map((_g) => {
+    const idx = _g.indices[0];
+    const c = result.chosen[idx];
+    const copies = _g.count;
     const v = c.variant;
     // U10: flag open standard-color augment slots as a concrete unrealized upgrade.
-    const openAug = (freeByIndex.get(idx) || []).filter((col) => STD_AUG_COLORS.has(String(col).toLowerCase()));
+    const openAug = _g.indices.reduce((acc, i) => acc.concat(freeByIndex.get(i) || []), [])
+      .filter((col) => STD_AUG_COLORS.has(String(col).toLowerCase()));
     const upgradeNote = openAug.length
       ? `<div class="dd-upgrade"><span class="dd-upgrade-tag">Unrealized upgrade</span> ${openAug.length} open augment slot${openAug.length === 1 ? "" : "s"} (${esc(openAug.join(", "))}) — slot an augment here for more stats.</div>`
       : "";
@@ -1465,8 +1474,20 @@ function buildViews(build, model, query) {
   for (const slot of model.worn) {
     const picks = picksBySlot.get(slot.slot) || [];
     const cardinality = slot.cardinality || 1;
-    for (let r = 0; r < cardinality; r++) {
-      rows.push(equippedRow(slot.slot, picks[r] || null, query.slotConstraints, satisfied, maps, augById, ownedInfo, contributors,
+    // #335 U4 (KD3) — a duplicate-ring pair is ONE row marked ×2, not two rows.
+    // This loop was position-bound (`r < cardinality`) and would otherwise emit a
+    // second row for the twin, which reads as the affixes applying twice — the
+    // exact misreading the single-row decision exists to prevent. Collapse first,
+    // then pad only the positions that are genuinely empty.
+    const groups = Proj.collapseTwins(picks.map((p) => ({ slot: slot.slot, variant: p.variant, _pick: p })));
+    for (const g of groups) {
+      const pick = g.indices.map((i) => picks[i]).filter(Boolean)[0] || null;
+      rows.push(equippedRow(slot.slot, pick, query.slotConstraints, satisfied, maps, augById, ownedInfo, contributors,
+        { result: build, attr, targets: query.targets, copies: g.count,
+          copyPicks: g.indices.map((i) => picks[i]).filter(Boolean) }));
+    }
+    for (let r = picks.length; r < cardinality; r++) {
+      rows.push(equippedRow(slot.slot, null, query.slotConstraints, satisfied, maps, augById, ownedInfo, contributors,
         { result: build, attr, targets: query.targets }));
     }
   }

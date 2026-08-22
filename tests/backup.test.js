@@ -314,3 +314,44 @@ test("#428 U4: step survives export and import with no second allowlist edit", (
   assert.strictEqual(parsed.characters.Resumer.inputs.step, "character",
     "an imported character reopens where it was exported from");
 });
+
+// ---------------------------------------------------------------------------
+// #335 U5 — a doubled loadout survives save, load and backup import. Confirmed
+// rather than designed: serializeCharacter already denormalizes full item objects
+// into the snapshot so a restored character renders without the live catalog and
+// is never re-solved, and sanitizeCharacter scrubs the snapshot without reshaping
+// it. Both halves come free — these tests are what keep them free.
+// ---------------------------------------------------------------------------
+
+const _M5 = require("../web/model.js");
+const _P5 = require("../web/projection.js");
+
+function _dupSnapshot() {
+  const id = [...(_M5.DUPLICABLE_RINGS)][0];
+  const mk = (vid) => ({ slot: "Ring", variant: { variant_id: vid, source_item: id, slot: "Ring",
+    set_bonus: [{ set: "Perfected Wrath" }] } });
+  return { status: "optimal", chosen: [mk(id), mk(_M5.twinIdOf(id))] };
+}
+
+test("#335 U5 (AE5): a doubled loadout survives sanitize and still collapses to x2", () => {
+  const rec = { name: "Dup", savedAt: "2026-08-22T00:00:00Z", inputs: { characterName: "Dup", ml: 34 },
+                query: { targets: ["Intelligence"] }, snapshot: _dupSnapshot(), stampedBuildId: "b1" };
+  const clean = require("../web/backup.js").sanitizeCharacter(rec);
+  const chosen = (clean && clean.snapshot && clean.snapshot.chosen) || [];
+  assert.strictEqual(chosen.length, 2, "both copies survive the field scrub — neither split nor collapsed");
+  const groups = _P5.collapseTwins(chosen);
+  assert.strictEqual(groups.length, 1);
+  assert.strictEqual(groups[0].count, 2, "and it still renders as one entry marked x2 after the round-trip");
+  assert.strictEqual(_M5.isTwinId(groups[0].variant.variant_id), false,
+    "the displayed id is the real item, not the suffixed twin");
+});
+
+test("#335 U5: a backup file carrying a doubled loadout imports intact", () => {
+  const rec = { name: "Dup", savedAt: "2026-08-22T00:00:00Z", inputs: { characterName: "Dup", ml: 34 },
+                snapshot: _dupSnapshot() };
+  const file = JSON.stringify({ schema_version: 1, characters: { Dup: rec } });
+  const r = require("../web/backup.js").parseBackup(file, {});
+  assert.strictEqual(r.ok, true, "the #420 refuse-rather-than-reduce reader accepts it");
+  assert.strictEqual(r.characters.Dup.snapshot.chosen.length, 2,
+    "the twin entry is not quietly stripped by the allowlist");
+});

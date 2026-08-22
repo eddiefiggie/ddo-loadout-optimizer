@@ -1416,3 +1416,69 @@ test("#88 U12: an item override with no catalog row still identifies its subject
   assert.ok(/Aberrant Robe/.test(txt), "the variant id is on the override itself");
   assert.ok(!/Wiki:/.test(txt), "the URL line is omitted rather than emitted empty");
 });
+
+// ---------------------------------------------------------------------------
+// #335 U4 (KTD7) — the ×2 collapse is a RENDER-layer pass over already-assigned
+// data. Augment and insert assignment fills by chosen INDEX and set-augment
+// reservation matches on host === variant_id, so the twin's distinct id is what
+// gives it its own index and its own slot supply. Collapsing before assignment
+// would halve the ring's slots and orphan every twin-keyed record.
+// ---------------------------------------------------------------------------
+
+const _M335 = require("../web/model.js");
+function _ring335(extra) {
+  const id = [...(_M335.DUPLICABLE_RINGS)][0];
+  return Object.assign({ variant_id: id, source_item: id, slot: "Ring",
+    set_bonus: [{ set: "Perfected Wrath" }], augment_slots_norm: { colors: ["Blue"] } }, extra || {});
+}
+
+test("#335 U4: a twin pair collapses to one entry marked x2, keeping both indices", () => {
+  const ring = _ring335();
+  const twin = Object.assign({}, ring, { variant_id: _M335.twinIdOf(ring.variant_id) });
+  const chosen = [{ slot: "Ring", variant: ring }, { slot: "Ring", variant: twin },
+                  { slot: "Neck", variant: { variant_id: "N", slot: "Neck" } }];
+  const g = P.collapseTwins(chosen);
+  assert.strictEqual(g.length, 2, "three chosen entries render as two items");
+  assert.strictEqual(g[0].count, 2, "the ring is marked x2");
+  assert.deepStrictEqual(g[0].indices, [0, 1],
+    "both chosen indices are carried, so each copy's own augments stay reachable");
+  assert.strictEqual(g[1].count, 1, "an ordinary item is unaffected");
+});
+
+test("#335 U4 (KTD2): the collapsed entry never carries a suffixed twin id", () => {
+  const ring = _ring335();
+  const twin = Object.assign({}, ring, { variant_id: _M335.twinIdOf(ring.variant_id) });
+  const g = P.collapseTwins([{ slot: "Ring", variant: ring }, { slot: "Ring", variant: twin }]);
+  assert.strictEqual(_M335.isTwinId(g[0].variant.variant_id), false,
+    "a suffixed id must never reach a receipt or an export");
+  assert.strictEqual(g[0].variant.variant_id, ring.variant_id);
+});
+
+test("#335 U4: an uncollapsed list is returned unchanged, one entry per item", () => {
+  const chosen = [{ slot: "Ring", variant: { variant_id: "A" } }, { slot: "Ring", variant: { variant_id: "B" } }];
+  const g = P.collapseTwins(chosen);
+  assert.strictEqual(g.length, 2, "two DIFFERENT rings stay two entries");
+  assert.ok(g.every((e) => e.count === 1));
+});
+
+test("#335 U4 (R6): the second-copy receipt is derived, not a fixed sentence", () => {
+  const withAug = P.collapseTwins([{ slot: "Ring", variant: _ring335() },
+    { slot: "Ring", variant: Object.assign({}, _ring335(), { variant_id: _M335.twinIdOf(_ring335().variant_id) }) }]);
+  const line = P.secondCopyContribution(withAug[0]);
+  assert.ok(/second piece toward Perfected Wrath/.test(line), "names the set it counts toward");
+  assert.ok(/own augment slots/.test(line), "names the capacity it carries");
+  assert.ok(/does not apply this item's own affixes a second time/.test(line),
+    "and states plainly what it does NOT do — the misreading this wording exists to prevent");
+
+  // A ring with no augment slots must not claim to carry any.
+  const noAug = _ring335({ augment_slots_norm: { colors: [] } });
+  const g2 = P.collapseTwins([{ slot: "Ring", variant: noAug },
+    { slot: "Ring", variant: Object.assign({}, noAug, { variant_id: _M335.twinIdOf(noAug.variant_id) }) }]);
+  assert.ok(!/augment slots/.test(P.secondCopyContribution(g2[0])),
+    "derived means it stops claiming what the item does not have");
+});
+
+test("#335 U4: a single copy gets no second-copy receipt at all", () => {
+  const g = P.collapseTwins([{ slot: "Ring", variant: _ring335() }]);
+  assert.strictEqual(P.secondCopyContribution(g[0]), null);
+});

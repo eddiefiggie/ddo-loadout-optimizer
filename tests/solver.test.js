@@ -76,6 +76,187 @@ async function withCrossAdd(map, fn) {
 (async () => {
   const highs = await Highs({ locateFile: (f) => vendor + f });
 
+  // -------------------------------------------------------------------------
+  // #335 U1 (KTD4) — twin x-vars are minted AFTER every worn group is flattened.
+  // The deterministic tie-break is Σ(i+1)·x_i over the flattened index, so
+  // inserting twins INTO the Ring group would shift the coefficient of every
+  // candidate in every later slot and move results in builds involving no ring
+  // and no set. Appending keeps every existing coefficient fixed — which is what
+  // makes the golden re-ratification rule in U6 sound.
+  // -------------------------------------------------------------------------
+
+  await test("#335 U1 (KTD4): twins are appended, leaving every existing x-var index fixed", async () => {
+    const M = require("../web/model.js");
+    const allow = [...M.DUPLICABLE_RINGS][0];
+    const dup = item(allow, "Ring", [["Intelligence", "Enhancement", 10]]);
+    dup.set_bonus = [{ set: "Perfected Wrath", pieces_required: 3, pieces_label: "3 pieces", affixes: [] }];
+    const model = {
+      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [dup, item("R2", "Ring", [["Intelligence", "Enhancement", 4]])], 2),
+             slot("Necklace", [item("N", "Necklace", [["Intelligence", "Enhancement", 6]])])],
+    };
+    const prog = S.buildProgram(model);
+    const twins = prog.xVars.filter((xv) => M.isTwinId(xv.variant.variant_id));
+    assert.strictEqual(twins.length, 1, "exactly one twin for the one allowlisted set-member ring");
+
+    // The invariant: every ORIGINAL keeps the index it would have had without twins.
+    const originals = prog.xVars.filter((xv) => !M.isTwinId(xv.variant.variant_id));
+    originals.forEach((xv, i) => {
+      assert.strictEqual(xv.name, "x" + i,
+        `original ${xv.variant.variant_id} must keep index ${i} — a shifted index moves the tie-break coefficient`);
+    });
+    const lastOriginal = Number(originals[originals.length - 1].name.slice(1));
+    assert.ok(Number(twins[0].name.slice(1)) > lastOriginal, "the twin is appended after every original");
+    // The Necklace — a slot ordered AFTER Ring — must be untouched.
+    const neck = prog.xVars.find((xv) => xv.slot === "Necklace");
+    assert.strictEqual(neck.name, "x2", "a later slot's index does not move when a twin exists");
+  });
+
+  await test("#335 U1: no allowlisted ring means no twin and no index change at all", async () => {
+    const M = require("../web/model.js");
+    const plain = item("Ordinary Ring", "Ring", [["Intelligence", "Enhancement", 10]]);
+    plain.set_bonus = [{ set: "Perfected Wrath", pieces_required: 3, pieces_label: "3 pieces", affixes: [] }];
+    const model = {
+      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [plain], 2), slot("Necklace", [item("N", "Necklace", [["Intelligence", "Enhancement", 6]])])],
+    };
+    const prog = S.buildProgram(model);
+    assert.strictEqual(prog.xVars.filter((xv) => M.isTwinId(xv.variant.variant_id)).length, 0,
+      "a set member off the allowlist is not twinned (R9)");
+    assert.deepStrictEqual(prog.xVars.map((xv) => xv.name), ["x0", "x1"]);
+  });
+
+  // -------------------------------------------------------------------------
+  // #335 U2 — the twin gets the same two protections jokers, membership picks and
+  // set-augment copies already have: it is minimized on the optimum path AND
+  // load-bearing-checked in readSolution. The second is what matters: every
+  // alternatives generator re-solves with tieBreak:false, which returns from
+  // phase 1 with no minimizing solve, so a var carrying no objective coefficient
+  // can float to 1 for free.
+  // -------------------------------------------------------------------------
+
+  function twinModel(piecesRequired) {
+    const M = require("../web/model.js");
+    const allow = [...M.DUPLICABLE_RINGS][0];
+    const dup = item(allow, "Ring", [["Intelligence", "Enhancement", 10]]);
+    dup.set_bonus = [{ set: "Perfected Wrath", pieces_required: piecesRequired,
+                       pieces_label: piecesRequired + " pieces", affixes: [] }];
+    return {
+      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [dup, item("R2", "Ring", [["Intelligence", "Enhancement", 4]])], 2),
+             slot("Necklace", [item("N", "Necklace", [["Intelligence", "Enhancement", 6]])])],
+    };
+  }
+
+  await test("#335 U2 (KTD3): one symmetry constraint per pair, twin - original <= 0", async () => {
+    const prog = S.buildProgram(twinModel(2));
+    const lp = S.encodeStage(prog, { objectiveStat: "Intelligence", sense: "max", locks: [], tieBreak: false });
+    const twin = prog.xVars.find((xv) => xv.twinOf);
+    assert.ok(twin, "the model has a twin");
+    assert.ok(lp.includes(`${twin.name} - ${twin.twinOf} <= 0`),
+      "the twin can only be taken alongside its original");
+    const count = (lp.match(/x\d+ - x\d+ <= 0/g) || []).length;
+    assert.strictEqual(count, 1, "exactly one symmetry constraint for the one pair");
+  });
+
+  await test("#335 U2 (KTD6): the twin is minimized on the optimum path", async () => {
+    const prog = S.buildProgram(twinModel(2));
+    const lp = S.encodeStage(prog, { objectiveStat: "Intelligence", sense: "max", locks: [], tieBreak: true });
+    const twin = prog.xVars.find((xv) => xv.twinOf);
+    const obj = lp.split("\n").find((l) => l.trim().startsWith("obj:"));
+    assert.ok(obj.includes(twin.name), "the twin carries a tie-break coefficient like jokers and members do");
+  });
+
+  await test("#335 U2 (AE8): a tieBreak:false re-solve never reports a twin whose set is inactive", async () => {
+    // pieces_required 3 with only one set piece available — the set can never
+    // activate, so a twin buys nothing and must not be reported.
+    const prog = S.buildProgram(twinModel(3));
+    const r = S.solveConstrained(prog, highs, { objectiveStat: "Intelligence", sense: "max", tieBreak: false });
+    assert.strictEqual(r.status, "optimal");
+    const M = require("../web/model.js");
+    const twins = (r.chosen || []).filter((c) => M.isTwinId(c.variant.variant_id));
+    assert.deepStrictEqual(twins, [],
+      "a floated twin on the alternatives path would prescribe a second ring that buys nothing");
+  });
+
+  await test("#335 U2: a twin never appears without its original", async () => {
+    const prog = S.buildProgram(twinModel(2));
+    const r = S.solveConstrained(prog, highs, { objectiveStat: "Intelligence", sense: "max", tieBreak: false });
+    const M = require("../web/model.js");
+    const ids = (r.chosen || []).map((c) => c.variant.variant_id);
+    for (const id of ids) {
+      if (!M.isTwinId(id)) continue;
+      assert.ok(ids.includes(M.originalIdOf(id)), "the twin implies its original");
+    }
+    const rings = (r.chosen || []).filter((c) => c.slot === "Ring");
+    assert.ok(rings.length <= 2, "the Ring slot still holds at most two picks");
+  });
+
+  // -------------------------------------------------------------------------
+  // #335 U3 — three questions with three different answers. The twin must be a
+  // FULL item to the set-piece and capacity machinery and a NO-OP to the affix
+  // buckets, simultaneously. Proven separately: a change that fixes one and
+  // silently breaks another is the failure mode, and a twin contributing its
+  // affixes twice is a wrong total.
+  // -------------------------------------------------------------------------
+
+  await test("#335 U3 (R2/AE1): two copies of one ring complete a set that needs two pieces", async () => {
+    const M = require("../web/model.js");
+    const allow = [...M.DUPLICABLE_RINGS][0];
+    const dup = item(allow, "Ring", [["Intelligence", "Enhancement", 10]]);
+    dup.set_bonus = [{ set: "Perfected Wrath", pieces_required: 2, pieces_label: "2 pieces", affixes: [] }];
+    dup.parsed_set_bonuses = [{ set: "Perfected Wrath", pieces_required: 2, pieces_label: "2 pieces",
+                                affixes: [{ stat: "Intelligence", bonus_type: "Profane", value: 7, unit: "flat" }] }];
+    const model = {
+      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [dup], 2)],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    const active = (r.setsActive || []).map((m) => m.set);
+    assert.ok(active.includes("Perfected Wrath"),
+      "the set the player could legally wear is now reachable — this is the reported defect");
+    const rings = (r.chosen || []).filter((c) => c.slot === "Ring");
+    assert.strictEqual(rings.length, 2, "both copies are equipped");
+  });
+
+  await test("#335 U3 (R4/AE2): the second copy contributes no second instance of its affixes", async () => {
+    const M = require("../web/model.js");
+    const allow = [...M.DUPLICABLE_RINGS][0];
+    const dup = item(allow, "Ring", [["Intelligence", "Enhancement", 10]]);
+    dup.set_bonus = [{ set: "Perfected Wrath", pieces_required: 2, pieces_label: "2 pieces", affixes: [] }];
+    dup.parsed_set_bonuses = [{ set: "Perfected Wrath", pieces_required: 2, pieces_label: "2 pieces",
+                                affixes: [{ stat: "Intelligence", bonus_type: "Profane", value: 7, unit: "flat" }] }];
+    const model = { targets: ["Intelligence"], mlCap: 34, dodgeCap: null, worn: [slot("Ring", [dup], 2)] };
+    const r = await S.solveLexicographic(model, highs);
+    // 10 Enhancement counted ONCE (same name+type collapses to max), plus the
+    // 7 Profane set tier the second copy unlocked. 27 would mean the affix
+    // applied twice — the stacking error this tool exists to get right.
+    assert.strictEqual(r.effective.Intelligence, 17,
+      "affixes once (10) + the set tier the doubling earned (7)");
+  });
+
+  await test("#335 U3 (R3/AE4): the second copy carries its own augment capacity", async () => {
+    const M = require("../web/model.js");
+    const allow = [...M.DUPLICABLE_RINGS][0];
+    const dup = host(allow, "Ring", [["Intelligence", "Enhancement", 10]], ["Blue"]);
+    dup.set_bonus = [{ set: "Perfected Wrath", pieces_required: 2, pieces_label: "2 pieces", affixes: [] }];
+    const prog = S.buildProgram({
+      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [dup], 2)],
+      augments: [{ name: "Sapphire", color: "Blue", fits_slots: AUG_FITS_SLOTS.Blue,
+                   affixes: [{ stat: "Intelligence", bonus_type: "Insight", value: 3, unit: "flat" }] }],
+    });
+    // Two physical rings mean two Blue slots. Colour supply is per x-var, so the
+    // twin's slot is its own — this is what an integer pick var would have had to
+    // multiply by hand.
+    const twin = prog.xVars.find((xv) => xv.twinOf);
+    assert.ok(twin, "the twin exists");
+    const lp = S.encodeStage(prog, { objectiveStat: "Intelligence", sense: "max", locks: [], tieBreak: false });
+    assert.ok(lp.includes(twin.name),
+      "the twin appears in the program's colour-supply terms, not only its pick constraint");
+  });
+
   await test("AE2: same bonus-type does NOT stack (only highest counts)", async () => {
     const model = {
       targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
