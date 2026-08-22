@@ -621,7 +621,13 @@ test("U4/#105: step 1 (intro) aligns like the others — action row + spacer, no
 test("U4/#105: step 5 (results) nav is in the bottom action bar, not the header", () => {
   const tpl = stepTemplate("stepResults");
   // The results header must no longer host the nav buttons…
-  const head = tpl.slice(tpl.indexOf("wz-results-head"), tpl.indexOf('class="wz-actions"'));
+  // #450 — anchored end marker, and a positive assertion over the slice. The
+  // negative below is satisfied by an empty string, so without both of these an
+  // inverted slice reports the header clean while reading nothing at all.
+  const headAt = tpl.indexOf("wz-results-head");
+  assert.ok(headAt >= 0, "the results header is in the template");
+  const head = tpl.slice(headAt, tpl.indexOf('class="wz-actions"', headAt));
+  assert.ok(/wz-eyebrow/.test(head), "and the slice really spans it");
   assert.ok(!head.includes("data-goto"), "results header no longer carries the goto nav");
   // …they now live in the bottom .wz-actions row, both preserved.
   const row = actionRow("stepResults");
@@ -1119,7 +1125,11 @@ test("U2: the credit control is not offered on a presence row", () => {
   assert.deepStrictEqual(advancedRowModel("Blurry", {
     declaredCredits: { [creditKey("Blurry", "Insight")]: { stat: "Blurry", bonus_type: "Insight", value: 3 } },
   }, presenceVocab).credits, [], "a presence row is offered no credit, panel or not");
-  const rows = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function rankedHTML"), WIZARD_SRC.indexOf("function advancedHTML"));
+  // #450 — anchored, and proven non-empty before the negative runs.
+  const rowsAt = WIZARD_SRC.indexOf("function rankedHTML");
+  assert.ok(rowsAt >= 0, "rankedHTML is in the source");
+  const rows = WIZARD_SRC.slice(rowsAt, WIZARD_SRC.indexOf("function advancedHTML", rowsAt));
+  assert.ok(/state\.priorities\.map/.test(rows), "and the slice really spans its body");
   assert.ok(!/creditsHTML/.test(rows), "the row body never renders credits directly");
   const panel = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function advancedHTML"), WIZARD_SRC.indexOf("function creditsHTML"));
   assert.ok(/creditsHTML\(stat/.test(panel), "credits render inside the panel, nowhere else");
@@ -1442,7 +1452,15 @@ test("bundles: a hidden sub-row is actually hidden", () => {
     "an explicit [hidden] rule overrides the class display");
   // The Attributes row is the one sub-row that must NOT carry hidden.
   const step = stepTemplate("stepPriorities");
-  const attrRow = step.slice(step.indexOf('data-group="attributes"') - 120, step.indexOf('data-group="attributes"') + 40);
+  // #450 — the marker was located twice and the lower bound could go NEGATIVE,
+  // which `slice` reads as an offset from the END of the string: a marker within
+  // 120 chars of the start would have sliced an unrelated tail, and the negative
+  // assertion below would most likely have passed over it. Located once, clamped,
+  // and proven to contain the marker before anything is asserted about it.
+  const attrAt = step.indexOf('data-group="attributes"');
+  assert.ok(attrAt >= 0, "the Attributes row is in the template");
+  const attrRow = step.slice(Math.max(0, attrAt - 120), attrAt + 40);
+  assert.ok(attrRow.includes('data-group="attributes"'), "and the window really contains it");
   assert.ok(!/hidden/.test(attrRow), "the Attributes row is always visible");
 });
 
@@ -3071,7 +3089,11 @@ test("#428 (R28): the build value renders monospaced so successive stamps align"
 test("#428 (R31): the footer reads as distinct elements, not one run-on line", () => {
   const fs = require("fs"); const path = require("path");
   const html = fs.readFileSync(path.join(__dirname, "..", "web", "index.html"), "utf-8");
-  const foot = html.slice(html.indexOf("<footer"), html.indexOf("</footer>"));
+  // #450 — anchored, and proven to span the real footer before the negative runs.
+  const footAt = html.indexOf("<footer");
+  assert.ok(footAt >= 0, "index.html has a footer");
+  const foot = html.slice(footAt, html.indexOf("</footer>", footAt));
+  assert.ok(/class="footer-build"/.test(foot), "and the slice really spans it");
   assert.ok(!/<span>\s*·/.test(foot), "no leading separator dot joining spans into a sentence");
   const app = fs.readFileSync(path.join(__dirname, "..", "web", "app.js"), "utf-8");
   assert.ok(!/textContent\s*=\s*`\s*·\s*Build/.test(app),
