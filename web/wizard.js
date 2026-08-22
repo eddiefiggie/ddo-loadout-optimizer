@@ -91,9 +91,22 @@ function saveControl(cls) {
  *
  *  Ranking the three against EACH OTHER is a separate, pre-existing defect: they
  *  raise independently and can co-show with up to three primaries. See #432. */
-function resolveBannerShowing(state) {
+/** #432 — WHICH re-solve banner holds primacy, or null when none is showing.
+ *  The three raise from independent flags and can co-show: a loaded build that
+ *  both predates the catalog and migrated its TWF declaration raises the first
+ *  two on the same paint, and a later pin adds the third. Returning the earliest
+ *  SHOWING one in document order is what keeps "exactly one primary" true — the
+ *  rest render ghost. Pure; unit-tested. */
+function resolveBannerPrimary(state) {
   const s = state || {};
-  return !!(staleNote(s) || s.twfMigrated || s.constraintsDirty);
+  if (staleNote(s)) return "wz-stale";
+  if (s.twfMigrated) return "wz-twfmig";
+  if (s.constraintsDirty) return "wz-cbar";
+  return null;
+}
+
+function resolveBannerShowing(state) {
+  return resolveBannerPrimary(state) !== null;
 }
 
 /** #428 U6 (R10) — ONE message naming every unanswered required field, or null.
@@ -1611,7 +1624,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, unsavedGuardMessage, runBelongsTo, overwriteConfirmText, railModel, saveControl, resolveBannerShowing, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, unsavedGuardMessage, runBelongsTo, overwriteConfirmText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -2304,16 +2317,16 @@ if (typeof window !== "undefined" && window.App) {
         </div>
         <div id="wz-stale" class="wz-cbar${staleNote(state) ? "" : " wz-hidden"}">
           <span id="wz-stalewhy">${esc(staleNote(state) || "This saved build predates the current gear catalog.")}</span>
-          <button class="btn primary" id="wz-staleresolve">Re-solve ⚡</button>
+          <button class="btn ${resolveBannerPrimary(state) === "wz-stale" ? "primary" : "ghost"}" id="wz-staleresolve">Re-solve ⚡</button>
         </div>
         <div id="wz-twfmig" class="wz-cbar${state.twfMigrated ? "" : " wz-hidden"}">
           This character had off-hand weapon types picked, which is how dual-wielding used to switch on — so
           <strong>Two Weapon Fighting</strong> is now declared on the character step. The build below was solved
           under the old rules; re-solve to apply it, or turn the declaration off.
-          <button class="btn primary" id="wz-twfmigresolve">Re-solve ⚡</button>
+          <button class="btn ${resolveBannerPrimary(state) === "wz-twfmig" ? "primary" : "ghost"}" id="wz-twfmigresolve">Re-solve ⚡</button>
         </div>
         <div id="wz-cbar" class="wz-cbar${state.constraintsDirty ? "" : " wz-hidden"}">
-          Slot constraints changed. <button class="btn primary" id="wz-cresolve">Re-solve ⚡</button>
+          Slot constraints changed. <button class="btn ${resolveBannerPrimary(state) === "wz-cbar" ? "primary" : "ghost"}" id="wz-cresolve">Re-solve ⚡</button>
         </div>
         <div id="wz-results"></div>
         <div class="wz-actions"><button class="btn ghost" data-goto="priorities">← Adjust priorities</button>
@@ -2374,7 +2387,7 @@ if (typeof window !== "undefined" && window.App) {
       // #431 U3 (KTD7/R6) — opening the fold puts a second primary on screen, so
       // save yields while it is open and takes primacy back when it closes.
       const fold = document.getElementById("wz-adjust");
-      if (fold) fold.ontoggle = refreshSaveEmphasis;
+      if (fold) fold.ontoggle = refreshResultsEmphasis;
     }
 
     // U5/R9-R11 — the Share tab's content: pick a saved loadout, export it as a
@@ -2958,7 +2971,7 @@ if (typeof window !== "undefined" && window.App) {
       bar.classList.toggle("wz-hidden", !why);
       const w = document.getElementById("wz-stalewhy");
       if (w && why) w.textContent = why;
-      refreshSaveEmphasis();
+      refreshResultsEmphasis();
     }
 
     function createOverride(key, to, note) {
@@ -3672,20 +3685,33 @@ if (typeof window !== "undefined" && window.App) {
       };
     }
 
-    /** #431 U3 (KTD7) — banner visibility is mutated imperatively, with no
-     *  re-render, so a class assigned at render time would never flip. Every site
-     *  that shows or hides a re-solve banner calls this. */
-    function refreshSaveEmphasis() {
+    /** #431 U3 (KTD7) / #432 — ONE owner for every primary on the results step.
+     *  Banner visibility is mutated imperatively, with no re-render, so classes
+     *  assigned at render time would never flip; every site that shows or hides a
+     *  re-solve banner calls this. */
+    function refreshResultsEmphasis() {
       if (state.step !== "results") return;   // save is ghost on every other bar
+      // #432 — rank the banners first: the earliest showing one in document order
+      // keeps `primary`, the rest go ghost. They raise independently and can
+      // co-show, so without this the step can carry three primaries at once.
+      const claimant = resolveBannerPrimary(state);
+      for (const [id, btnId] of [["wz-stale", "wz-staleresolve"],
+                                 ["wz-twfmig", "wz-twfmigresolve"],
+                                 ["wz-cbar", "wz-cresolve"]]) {
+        const b = document.getElementById(btnId);
+        if (!b) continue;
+        b.classList.toggle("primary", id === claimant);
+        b.classList.toggle("ghost", id !== claimant);
+      }
       const btn = document.getElementById("wz-save");
       if (!btn) return;
-      // The Adjust & re-solve fold-up carries a fourth `Re-solve ⚡` primary
-      // (`web/wizard.js:2347`). It is collapsed on every render, so the initial
-      // class needs only the banner check — but once the player opens it, its
-      // button is on screen and save must yield to it exactly as it does to a
-      // banner. Read from the DOM: the fold has no state field, by design.
+      // The Adjust & re-solve fold-up carries a fourth `Re-solve ⚡` primary. It is
+      // collapsed on every render, so the initial class needs only the banner
+      // check — but once the player opens it, its button is on screen and save
+      // must yield to it exactly as it does to a banner. Read from the DOM: the
+      // fold has no state field, by design.
       const fold = document.getElementById("wz-adjust");
-      const primary = !resolveBannerShowing(state) && !(fold && fold.open);
+      const primary = !claimant && !(fold && fold.open);
       btn.classList.toggle("primary", primary);
       btn.classList.toggle("ghost", !primary);
     }
@@ -4319,7 +4345,7 @@ if (typeof window !== "undefined" && window.App) {
           state.loadedStale = false;
           const stale = document.getElementById("wz-stale");
           if (stale) stale.classList.add("wz-hidden");
-          refreshSaveEmphasis();
+          refreshResultsEmphasis();
           solve(false);
         };
         // plan 003 U4 — same view-only re-solve for the TWF migration notice. The
@@ -4331,7 +4357,7 @@ if (typeof window !== "undefined" && window.App) {
           state.twfMigrated = false;
           const bar = document.getElementById("wz-twfmig");
           if (bar) bar.classList.add("wz-hidden");
-          refreshSaveEmphasis();
+          refreshResultsEmphasis();
           solve(false);
         };
         // Per-slot constraint controls (U6), wired by delegation so they survive
@@ -4382,7 +4408,7 @@ if (typeof window !== "undefined" && window.App) {
             renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: afterResultsRender, onRequire: requireOutbidStat });
           }
           if (cbar) cbar.classList.remove("wz-hidden");
-          refreshSaveEmphasis();
+          refreshResultsEmphasis();
         });
         const cres = document.getElementById("wz-cresolve");
         if (cres) cres.onclick = () => { if (canAdvance("priorities", state)) solve(false); };
