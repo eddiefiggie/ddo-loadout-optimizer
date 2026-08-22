@@ -192,6 +192,71 @@ async function withCrossAdd(map, fn) {
     assert.ok(rings.length <= 2, "the Ring slot still holds at most two picks");
   });
 
+  // -------------------------------------------------------------------------
+  // #335 U3 — three questions with three different answers. The twin must be a
+  // FULL item to the set-piece and capacity machinery and a NO-OP to the affix
+  // buckets, simultaneously. Proven separately: a change that fixes one and
+  // silently breaks another is the failure mode, and a twin contributing its
+  // affixes twice is a wrong total.
+  // -------------------------------------------------------------------------
+
+  await test("#335 U3 (R2/AE1): two copies of one ring complete a set that needs two pieces", async () => {
+    const M = require("../web/model.js");
+    const allow = [...M.DUPLICABLE_RINGS][0];
+    const dup = item(allow, "Ring", [["Intelligence", "Enhancement", 10]]);
+    dup.set_bonus = [{ set: "Perfected Wrath", pieces_required: 2, pieces_label: "2 pieces", affixes: [] }];
+    dup.parsed_set_bonuses = [{ set: "Perfected Wrath", pieces_required: 2, pieces_label: "2 pieces",
+                                affixes: [{ stat: "Intelligence", bonus_type: "Profane", value: 7, unit: "flat" }] }];
+    const model = {
+      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [dup], 2)],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    const active = (r.setsActive || []).map((m) => m.set);
+    assert.ok(active.includes("Perfected Wrath"),
+      "the set the player could legally wear is now reachable — this is the reported defect");
+    const rings = (r.chosen || []).filter((c) => c.slot === "Ring");
+    assert.strictEqual(rings.length, 2, "both copies are equipped");
+  });
+
+  await test("#335 U3 (R4/AE2): the second copy contributes no second instance of its affixes", async () => {
+    const M = require("../web/model.js");
+    const allow = [...M.DUPLICABLE_RINGS][0];
+    const dup = item(allow, "Ring", [["Intelligence", "Enhancement", 10]]);
+    dup.set_bonus = [{ set: "Perfected Wrath", pieces_required: 2, pieces_label: "2 pieces", affixes: [] }];
+    dup.parsed_set_bonuses = [{ set: "Perfected Wrath", pieces_required: 2, pieces_label: "2 pieces",
+                                affixes: [{ stat: "Intelligence", bonus_type: "Profane", value: 7, unit: "flat" }] }];
+    const model = { targets: ["Intelligence"], mlCap: 34, dodgeCap: null, worn: [slot("Ring", [dup], 2)] };
+    const r = await S.solveLexicographic(model, highs);
+    // 10 Enhancement counted ONCE (same name+type collapses to max), plus the
+    // 7 Profane set tier the second copy unlocked. 27 would mean the affix
+    // applied twice — the stacking error this tool exists to get right.
+    assert.strictEqual(r.effective.Intelligence, 17,
+      "affixes once (10) + the set tier the doubling earned (7)");
+  });
+
+  await test("#335 U3 (R3/AE4): the second copy carries its own augment capacity", async () => {
+    const M = require("../web/model.js");
+    const allow = [...M.DUPLICABLE_RINGS][0];
+    const dup = host(allow, "Ring", [["Intelligence", "Enhancement", 10]], ["Blue"]);
+    dup.set_bonus = [{ set: "Perfected Wrath", pieces_required: 2, pieces_label: "2 pieces", affixes: [] }];
+    const prog = S.buildProgram({
+      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [dup], 2)],
+      augments: [{ name: "Sapphire", color: "Blue", fits_slots: AUG_FITS_SLOTS.Blue,
+                   affixes: [{ stat: "Intelligence", bonus_type: "Insight", value: 3, unit: "flat" }] }],
+    });
+    // Two physical rings mean two Blue slots. Colour supply is per x-var, so the
+    // twin's slot is its own — this is what an integer pick var would have had to
+    // multiply by hand.
+    const twin = prog.xVars.find((xv) => xv.twinOf);
+    assert.ok(twin, "the twin exists");
+    const lp = S.encodeStage(prog, { objectiveStat: "Intelligence", sense: "max", locks: [], tieBreak: false });
+    assert.ok(lp.includes(twin.name),
+      "the twin appears in the program's colour-supply terms, not only its pick constraint");
+  });
+
   await test("AE2: same bonus-type does NOT stack (only highest counts)", async () => {
     const model = {
       targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
