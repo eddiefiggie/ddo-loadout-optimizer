@@ -188,6 +188,74 @@ test("#346: craftingRung round-trips through export and re-import", () => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// #420 — the allowlist must be RESOLVED, never COPIED. backup.js used to capture
+// it once at script-eval time behind a hardcoded fallback list; the fallback had
+// drifted to 11 keys against persist.js's 32 and still named a retired one, so a
+// failed capture would have silently returned a reduced character on import.
+// Same shape as docs/solutions/conventions/a-guard-that-copies-its-parameter-measures-the-copy.md.
+// ---------------------------------------------------------------------------
+
+test("#420: backup.js keeps no second copy of the input allowlist", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "backup.js"), "utf-8");
+  const { INPUT_KEYS } = require("../web/persist.js");
+  // No literal key list: a copy cannot fail loudly when the original moves.
+  assert.ok(!/"characterName",\s*"ml"/.test(src),
+    "no hardcoded fallback allowlist — resolve from persist.js or refuse the import");
+  // And nothing names the retired key the old fallback still carried.
+  assert.ok(!/"weapon"/.test(src), "the retired `weapon` key is gone with the fallback");
+  assert.ok(!INPUT_KEYS.includes("weapon"), "…and persist.js does not carry it either");
+});
+
+test("#420: the allowlist is resolved per call, not captured at script-eval time", () => {
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "backup.js"), "utf-8");
+  // The browser branch reads window.CharacterStore, which exists only because
+  // persist.js sits above backup.js in web/index.html. Capturing at eval time
+  // made that load order load-bearing and silent; resolving per call does not.
+  assert.ok(/function inputKeys\(\)/.test(src), "a resolver function owns the lookup");
+  const top = src.slice(0, src.indexOf("function inputKeys()"));
+  assert.ok(!/const INPUT_KEYS\s*=/.test(top),
+    "the allowlist is not bound to a module-scope const before that resolver");
+});
+
+test("#420: an import that cannot resolve the allowlist refuses the whole file", () => {
+  const backup = require("../web/backup.js");
+  const persistPath = require.resolve("../web/persist.js");
+  const real = require.cache[persistPath].exports;
+  try {
+    // Simulate the capture coming back empty — the case the old fallback list
+    // was hiding. Before this fix it returned a character carrying 11 of its 32
+    // saved inputs, with no error shown to the player.
+    require.cache[persistPath].exports = { INPUT_KEYS: undefined };
+    assert.strictEqual(backup.sanitizeCharacter({ name: "X", inputs: { ml: 30 } }), null,
+      "a character that cannot be rebuilt safely is refused, not reduced");
+    const file = JSON.stringify({ schema_version: 1, characters: { X: { name: "X", inputs: { ml: 30 } } } });
+    const res = backup.parseBackup(file, {});
+    assert.strictEqual(res.ok, false, "the whole file is refused");
+    assert.strictEqual(res.error, "no-allowlist", "…and the refusal names the real reason");
+  } finally {
+    require.cache[persistPath].exports = real;
+  }
+  // Restored: the normal path still rebuilds, including keys added after the
+  // old fallback list was written.
+  const ok = backup.sanitizeCharacter({ name: "X", inputs: { characterName: "X", overrides: [1] } });
+  assert.ok(ok && ok.inputs.overrides, "late-added keys survive once the allowlist resolves");
+});
+
+test("#420: every saved input key survives a sanitize round-trip", () => {
+  const { sanitizeCharacter } = require("../web/backup.js");
+  const { INPUT_KEYS } = require("../web/persist.js");
+  // A truncated allowlist is silent on import — the character just comes back
+  // simpler. Assert the whole population rather than a sampled key.
+  const inputs = {};
+  for (const k of INPUT_KEYS) inputs[k] = "sentinel-" + k;
+  const out = sanitizeCharacter({ name: "Round Trip", inputs });
+  const dropped = INPUT_KEYS.filter((k) => out.inputs[k] !== "sentinel-" + k);
+  assert.deepStrictEqual(dropped, [], `these saved inputs were dropped on import: ${dropped.join(", ")}`);
+});
+
 // The allowlist is shared with persist.js precisely so a field cannot persist on
 // one path and be stripped on the other. If craftingRung ever falls off it, the
 // round-trip test above would still pass on a fresh save while silently losing
