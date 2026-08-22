@@ -17,7 +17,7 @@ execution: code
 - **Product authority:** The user, via two browser mockup probes on 2026-08-22. The eight original Key Decisions were chosen against rendered variants in the first probe. R5's qualifying colour, R26, R28, R29 and R32 were authored in prose during document review and then taken back to a second probe, where each was chosen against renders. **Every shape decision in this plan has now been seen rendered.** KTD7 remains the one call settled from argument rather than a render, and it is labelled as such.
 - **Open blockers:** None. All three review blockers resolved 2026-08-22: OQ1 splits the multi-fact notices (U10), OQ2 adds a fourth `capBound` state (KTD7), OQ3 emits `ceilingReport` from `readSolution` so alternatives carry it (KTD9).
 
-**Product Contract preservation:** Changed — R5, R8, R11, R14, R17, R20, R24, R25 revised, R26–R36 added, AE1 and AE5 revised, AE11–AE13 added. All arose from the 2026-08-22 document review, which found the original text under-specified or contradicted the tree in ways that would have shipped regressions. **No settled decision was reopened** — every revision serves a decision the product authority already made. Details in each requirement.
+**Product Contract preservation:** Changed — R5, R8, R11, R14, R15, R17, R18, R20, R21, R24, R25, R30 revised, R26–R37 added, AE1 and AE5 revised, AE11–AE13 added. All arose from the 2026-08-22 document review, which found the original text under-specified or contradicted the tree in ways that would have shipped regressions. **No settled decision was reopened** — every revision serves a decision the product authority already made. Details in each requirement.
 
 ---
 
@@ -64,27 +64,30 @@ This work contains the notices, relocates the ceiling fact to the level it actua
 - **R12** — The sub-container includes a proportional meter reflecting the same fraction.
 - **R13** — When achieved equals the ceiling **and the ceiling is non-zero**, the fraction and meter render green and the sub-container takes a green border and tint.
 - **R14** — When achieved is below the ceiling, the fraction and meter render in the neutral accent, with no red or warning colour. *(Revised — the original carried a causal rationale asserting the shortfall was caused by priority order. That is a claim about a solve nobody runs. See KTD2.)*
-- **R15** — The sub-container carries a sentence explaining what the denominator means, and that sentence differs between the maxed and unmaxed cases.
+- **R15** — The denominator is explained in two forms. Each sub-container carries a SHORT form — one clause naming what the denominator is — differing across the maxed, shortfall, zero-ceiling and cap-bound cases. The FULL statement, which also says those sources may compete for one slot so no loadout is claimed to reach the ceiling, renders ONCE per readout at section level, and must be present in the same view rather than merely reachable. *(Revised — a full sentence repeated on every unmaxed card down a five- or eight-priority build reads as boilerplate and stops being read, which defeats the premise that the sentence is the mitigation.)*
 - **R16** — Neither the wording nor the visual may imply the ceiling was a reachable build. The denominator is the sum of the best source available in each bonus type, which can exceed what any single loadout could hold. No sentence may assert what a different solve would have produced. See KTD2.
 - **R29** — The meter's **whole track** carries the bound treatment — a hatch — with the fill drawn over it, so the track reads as an upper bound rather than attainable headroom. *(session-settled: user-directed, chosen against renders 2026-08-22 over hatching only the remainder and over a marked terminus. Hatching the remainder alone puts the strongest signal where the risk is lowest and leaves a 96%-filled bar with 4% of track to render it in — exactly the case that reads as "almost attainable".)*
 - **R17** — The stat-level ceiling fact renders once **in the loadout and stat-card surfaces**, and nowhere else in them. Concretely: **(a)** the per-item `at-ceiling` span inside `whyThisLine` (`web/results.js:613-631`) is removed; **(b)** `ceilingChip` (`web/results.js:821`, rendered on the stat card at `web/results.js:1451`) is retained **only** as the fallback render for a restored build carrying the old `saturationReport` shape and no `ceilingReport`; a result carrying `ceilingReport` renders the fraction and never the chip. The `saturationNotice` inside the notes panel is unchanged and keeps its own sentence. *(Revised — "nowhere else" collided with the scope boundary preserving the notices, and deleting `ceilingChip` outright would leave restored builds with no ceiling signal at all from data their save still contains.)*
-- **R18** — The fraction reaches **all five** share exports. In every export the fraction appears together with its qualifying sentence; a bare fraction never travels alone. In the structured `ddo-loadout/v1` JSON the denominator field is named for its scope (e.g. `ceilingUpperBound`) so a third-party consumer cannot read it as an attainable target.
+- **R18** — The fraction reaches **all five** share exports. In every export the fraction appears together with its short form, and the full statement appears once per export document; a bare fraction never travels alone. In the structured `ddo-loadout/v1` JSON the denominator field is named for its scope (e.g. `ceilingUpperBound`) so a third-party consumer cannot read it as an attainable target.
 - **R19** — A restored build saved before this ships has no `ceilingReport`. Its cards render no fraction sub-container, fall back to `ceilingChip` per R17(b), invent no denominator, and trigger no re-solve.
-- **R30** — When a stat's ceiling is zero, the card renders neither the green maxed treatment nor a meter. It states that no source in the pool feeds this stat and defers to `zeroSourceNotice`. *(Added — `0 / 0` satisfies `achieved === ceiling`, so the original R13 would render green "at ceiling" on a stat the solve found nothing for.)*
+- **R30** — When a stat's ceiling is zero, the card renders neither the green maxed treatment nor a meter. It states only what the data supports — that this solve found nothing reachable for the stat — and does NOT defer to `zeroSourceNotice`. That notice tests `poolStatNames(model)` BEFORE gating, while `ceiling === 0` is computed after gating, dominance and slot locks: a player who locks every slot that could carry a stat gets `ceiling === 0` with no `zeroSourceNotice` on screen, so a card deferring to it would point at an explanation that is not there and assert something the pool contradicts. *(Added — `0 / 0` satisfies `achieved === ceiling`, so the original R13 would render green "at ceiling" on a stat the solve found nothing for.)*
 - **R33** — For a stat carrying a cap, **both** numerator and denominator are clamped to the cap, so the fraction never disagrees with the card's headline number. A cap-bound stat renders the `capBound` state — its own sentence naming the cap as the binding limit, and a treatment distinct from R13 green. Green is reserved for `achieved === pool ceiling`. See KTD7. *(Added — the headline is `effectiveOf` = `Math.min(cap, raw)`, and the card already renders a `capNote` reading "capped at N · raw M". An unclamped fraction would make a capped stat's card state three different totals for one stat, and would present raw headroom the player cannot hold. See KTD7.)*
 - **R34** — The Utility tier is exempt from the fraction. It is a count of distinct effects, not a summable stat, and its card renders through a separate path. *(Added — `_UTILITY_SENTINEL` is a member of `targetList`; emitting "a row for every target stat" would give it `0 / 0` and a NaN meter width. See KTD8.)*
 
 **Loadout stat contributions**
 
-- **R20** — Each gear box in the Loadout tab renders its contributing stats as discrete chips. A chip's primary line is a large tabular-numeral value and its stat name. A chip **must also carry**, when present on that contribution: the bonus type, a `(set)` marker, a `(from <stat>)` cross-add source, and the player-override disclosure `(your call — catalog says X)`. A boolean contribution renders a distinct presence variant (`✓ <stat>`) with no numeric value. *(Revised — the original spec named only value and stat name, which would have deleted five existing disclosures including the #88 override label that exists precisely so a gear box does not state a bonus type as though the wiki said so.)*
-- **R21** — A chip for the player's rank-1 priority is visually distinguished from the others.
+- **R20** — Each gear box in the Loadout tab renders its contributing stats as discrete chips. A chip's primary line is a large tabular-numeral value and its stat name. A chip **must also carry**, when present on that contribution: the bonus type, a `(set)` marker, a `(from <stat>)` cross-add source, and the player-override disclosure `(your call — catalog says X)`. A boolean contribution renders a distinct presence variant (`✓ <stat>`) with no numeric value.
+
+  **`whyThisLine` has two early-return forms that are NOT chip rows and are preserved verbatim:** the #245 craft-carried line (`⚒ here only for its crafts: …`, with its explanatory title) and the filler line (`included to complete the loadout`). Both return before the contribution spans are built. Neither becomes chips; both keep their current markup and wording. *(Revised — the original spec named only value and stat name, which would have deleted five existing disclosures including the #88 override label that exists precisely so a gear box does not state a bonus type as though the wiki said so.)*
+- **R21** — A chip for the player's rank-1 priority is distinguished by a named accent token AND a non-colour carrier — heavier border weight or a rank pip reusing the existing `.stat-rank` idiom — so the distinction survives greyscale and red-green colour-vision deficiency. *(Revised — colour alone contradicts R28's own principle, on a denser surface than the notice cards.)*
 - **R22** — The chip row wraps without horizontal overflow at phone width.
+- **R37** — The panel summary wraps without horizontal overflow at 375px. It carries the label, chevron, total count, the actionable pill and the qualifying marker; the pill and marker each wrap as a unit rather than breaking internally, and the summary's tap target stays at least `var(--tap)` in every wrap state. *(Added — R22 covered the gear chips only, while the summary became the densest new element in this work and is also the panel's only tap target.)*
 - **R31** — The existing three-contribution cap (`contribs.slice(0, 3)`) is retained. *(Added — left unstated, and it governs chip-row height on the 375px pass R22 covers.)*
 
 **The slot control**
 
 - **R23** — The per-slot constraint control is visible at rest, with no dependence on `:hover`. It must be discoverable on touch.
-- **R24** — The control's gear glyph and resting border render at 34px. Its **touch target** reaches `var(--tap)` (44px) via padding or an overlay. *(Revised — 34px is the settled visual size; sizing the hit area to it would make the one new touch affordance in this work the only control in the app below the app's own tap floor.)*
+- **R24** — The control's gear glyph and resting border render at 34px. Its **touch target** reaches `var(--tap)` (44px) via a negative-inset overlay pseudo-element, NOT via padding. *(Padding and overlay are not equivalent: `.pd-ctl` sits in `.pd-rtop`, a flex row whose height follows its tallest child, so padding the control to 44px raises every gear row — ~18 rows in the single-column layout below 560px — adding hundreds of pixels of scroll to the phone Loadout view this work is meant to make scannable. An overlay costs nothing and stays inside the row's existing padding. The control must not change `.pd-rtop`'s rendered height.)* *(Revised — 34px is the settled visual size; sizing the hit area to it would make the one new touch affordance in this work the only control in the app below the app's own tap floor.)*
 - **R25** — The control's focus indicator is actually visible — the control is never focusable while transparent. *(Revised — the original asked for an `aria-label` and a `:focus-visible` rule, both of which already ship: `web/results.js:402` and the global rule at `web/styles.css:245`. The real defect is that focus currently lands on an `opacity: 0` element, a WCAG 2.4.11 failure. The existing label and inherited ring are preserved, not added.)*
 
 **Design tokens**
@@ -234,7 +237,13 @@ The rendered title is the class word from R28 followed by this card title.
 
 **A missing table entry is a test-time failure, not a runtime throw.** `renderResults` is called inside a try/catch at `web/wizard.js:3286` whose catch replaces the entire results box with `Solver error: <message>`. A throw there would destroy a correct solve's whole results screen and misattribute it to the solver — and other call sites (`web/wizard.js:3588` restore, `:4434` re-render) sit outside that try, so the same throw would break differently depending on how the player arrived. Instead: a U5 test asserts every notice in the render array has a table entry, and at runtime an unmapped notice renders in a visible "unclassified" state. The table is asserted in full, so a reclassification is a deliberate test edit rather than a silent one.
 
+**Jump control label copy.** Each actionable card's control is a button (not a link — it changes wizard state rather than navigating a URL) carrying a verb plus destination: "Re-solve now", "Edit priorities →", "Change crafting opt-out →", "Review block list →", "Change augment ceiling →", and for the pinned-artifact card "Review pins →". `outbidNotice` adds no control; its existing Require / price buttons stand. The two same-screen routes scroll their target into view and focus it rather than dispatching a step change, and the panel stays open on return.
+
 **The jump-target contract.** A `jumpTarget` is a wizard step id plus an optional anchor, dispatched through the existing `onAfterRender` / `onRequire` callback seam rather than by `results.js` reaching into wizard state. This puts `web/wizard.js` in U5's file list.
+
+**KTD6 — Why a third class exists.**
+
+The actionable/informational split was chosen on "does this have a resolution path". That is a different question from "does this change how the numbers should be read", and four notices answer yes to the second and no to the first: a declared-credit bound folded into the totals, an affix dropped because its wiki record is unconfirmed, a narrowed augment pool, an outbid candidate. Under a two-way split those collapse silently behind a fold with nothing moving — a reduction in disclosure prominence shipped in the same change as a new headline number, in a product whose stated identity is that a visible gap beats a confident wrong number. R26 gives them an at-rest signal without touching the settled rule that only actionable notices feed the pill.
 
 **KTD7 — A capped stat is clamped, and gets its own state rather than the green one.**
 
@@ -252,6 +261,10 @@ Three reasons, all of which the green reading violates:
 
 **The clamp also desynchronises the two reports.** `ceilingReport` is clamped; `saturationReport` is held byte-identical and therefore is not. A stat could read `100 / 100` on the card and be absent from the AT CEILING notice in the same panel. The `capBound` state resolves this — a cap-bound card is not claiming saturation, so its absence from the notice is correct rather than contradictory. U2 asserts the pairing.
 
+**KTD8 — The Utility sentinel is skipped, not reported.**
+
+`program.targetList` is `model.targets`, which includes `_UTILITY_SENTINEL` when the tier is ranked. Every other per-stat loop in `web/solver.js` guards it explicitly (`:1624`, `:1839`, `:2083` — "not a stat; no per-stat parts"); `buildSaturationReport` does not, and is safe today only because the sentinel never sets `sawBucket` so no row is pushed. KTD1's "a row for every target stat" removes that protection. Add the same explicit skip, matching the existing guards. Separately, `web/results.js:1441` returns `utilityCard(build, i)` before the stat-card template, so the Utility card could not carry the sub-container anyway — R34 makes that exemption explicit rather than incidental.
+
 **KTD9 — `ceilingReport` is emitted from `readSolution`, so every solve path carries it.**
 
 `saturationReport` is built in `solveLexicographic` (`web/solver.js:2355`); `readSolution` ends at `:2029`. The two emitters are not equivalent:
@@ -264,14 +277,6 @@ Three reasons, all of which the green reading violates:
 The wrong answer would have been to close over the optimum and render its numerator beside an alternative's headline — a confidently-stated wrong number, and precisely the failure `never-infer-a-claim-about-your-own-results.md` governs. U3 asserts it never happens.
 
 This also restores the synthetic-primal test seam the report-guard discipline asks for: `readSolution` is already exported for tests, and the primal is `{ Columns: { <var>: { Primal: 1 } } }`.
-
-**KTD8 — The Utility sentinel is skipped, not reported.**
-
-`program.targetList` is `model.targets`, which includes `_UTILITY_SENTINEL` when the tier is ranked. Every other per-stat loop in `web/solver.js` guards it explicitly (`:1624`, `:1839`, `:2083` — "not a stat; no per-stat parts"); `buildSaturationReport` does not, and is safe today only because the sentinel never sets `sawBucket` so no row is pushed. KTD1's "a row for every target stat" removes that protection. Add the same explicit skip, matching the existing guards. Separately, `web/results.js:1441` returns `utilityCard(build, i)` before the stat-card template, so the Utility card could not carry the sub-container anyway — R34 makes that exemption explicit rather than incidental.
-
-**KTD6 — Why a third class exists.**
-
-The actionable/informational split was chosen on "does this have a resolution path". That is a different question from "does this change how the numbers should be read", and four notices answer yes to the second and no to the first: a declared-credit bound folded into the totals, an affix dropped because its wiki record is unconfirmed, a narrowed augment pool, an outbid candidate. Under a two-way split those collapse silently behind a fold with nothing moving — a reduction in disclosure prominence shipped in the same change as a new headline number, in a product whose stated identity is that a visible gap beats a confident wrong number. R26 gives them an at-rest signal without touching the settled rule that only actionable notices feed the pill.
 
 ### Patterns to Follow
 
@@ -372,7 +377,7 @@ flowchart TD
   - Modify: `web/projection.js` (new `ceilingFor`, export bundle at ~`:1550`, module exports at ~`:1892`)
   - Modify: `web/exporters.js` — **all four per-format render sites** (markdown `:231`, BBCode `:312`, CSV `:394`, HTML/print `:477`) plus the structured `ddo-loadout/v1` JSON
   - Test: `tests/projection.test.js`, `tests/exporters.test.js`
-- **Approach:** Add `ceilingFor(result, stat)` returning `{ achieved, ceiling, maxed, zeroCeiling }` or `null` when the stat has no row — `null` is the restored-old-save path and the sole mechanism behind R19. Own all four sentences here (maxed, shortfall, zero-ceiling, cap-bound) so card and exports cannot drift. The bundle is content only; each export format must render the fields explicitly, following the `saturationNotice` precedent. Name the JSON denominator field for its scope per R18.
+- **Approach:** Add `ceilingFor(result, stat)` returning `{ achieved, ceiling, maxed, zeroCeiling }` or `null` when the stat has no row — `null` is the restored-old-save path and the sole mechanism behind R19. Own all four SHORT forms and the single FULL statement here (maxed, shortfall, zero-ceiling, cap-bound; R15) so card and exports cannot drift. The bundle is content only; each export format must render the fields explicitly, following the `saturationNotice` precedent. Name the JSON denominator field for its scope per R18.
 - **Execution note:** Adding a field to the projection bundle alone puts it in **zero** exports — the bundle is not a renderer. A missing field also produces no golden diff, so the per-format assertions below are what prove R18, not the goldens.
 - **Patterns to follow:** `saturationLineFor` immediately above — keyed by stat, never by array index. The four `saturationNotice` render sites in `web/exporters.js` for the per-format idiom.
 - **Test scenarios:**
@@ -407,7 +412,8 @@ flowchart TD
   - Covers AE5. Shortfall stat renders `30 / 50`, a 60% meter, no maxed class, the shortfall sentence, and the bound treatment on the remainder.
   - Covers AE10. A result with no ceiling datum renders no `.stat-reach` element, renders `ceilingChip` where the old data supports it, and throws no error.
   - Covers AE10. The restore path invokes no solve entry point (call-count assertion), so R19's no-re-solve clause is load-bearing rather than vacuous.
-  - A stat with `ceiling === 0` renders no meter and no green treatment, and states no source feeds it.
+  - A stat with `ceiling === 0` renders no meter and no green treatment, and its sentence claims only that this solve found nothing reachable — it does not assert the pool lacks the stat, and does not defer to `zeroSourceNotice` (R30).
+  - A stat whose sources exist but are all excluded by slot locks yields `ceiling === 0` and renders that card WITHOUT a `zeroSourceNotice` on screen, and the card still reads truthfully.
   - A capped stat's fraction numerator equals the card's headline number — the card never states two different totals (R33).
   - A cap-bound card renders neither the R13 green treatment nor the maxed sentence, and does not contradict the `capNote` beside it.
   - The Utility card renders no fraction sub-container (R34).
@@ -438,7 +444,7 @@ flowchart TD
 ### U5. Contain and classify the notices
 
 - **Goal:** The eleven notices render inside one folded, banner-coloured panel as three-way classified sub-cards.
-- **Requirements:** R1, R2, R3, R4, R5, R6, R27, R28, R32; KTD5, KTD6
+- **Requirements:** R1, R2, R3, R4, R5, R6, R27, R28, R32, R37; KTD5, KTD6
 - **Dependencies:** U10
 - **Files:**
   - Modify: `web/results.js` (notice block at `:1154-1164`)
@@ -453,6 +459,7 @@ flowchart TD
   - The panel summary count equals the number of non-empty notices, not the number of notice functions.
   - A notice returning empty renders no card and is not counted.
   - Every notice in the render array has a table entry — the test-time completeness assertion that replaces a runtime throw.
+  - Mutation check: remove one row from the KTD5 table and confirm the completeness assertion — and only it — goes red.
   - A notice name absent from the table renders in the visible "unclassified" state and does **not** throw, so a correct solve's results screen survives.
   - Each card's title comes from the KTD5 table, not from the notice function's own markup.
   - Covers AE12. Zero non-empty notices render no panel element at all.
@@ -467,7 +474,7 @@ flowchart TD
 ### U6. The attention pill and the qualifying marker
 
 - **Goal:** An amber count pill that pulses until first open and never again, plus a static qualifying marker — both legible without motion.
-- **Requirements:** R7, R8, R9, R10, R26, R32; KTD3, KTD4
+- **Requirements:** R7, R8, R9, R10, R26, R32, R37; KTD3, KTD4
 - **Dependencies:** U5
 - **Files:**
   - Modify: `web/results.js` (panel summary, latch stamping)
@@ -507,7 +514,9 @@ flowchart TD
   - Covers AE8. A boolean contribution renders `✓ <stat>` and no numeric value.
   - A cross-added contribution renders `(from <stat>)`; a set-sourced one renders `(set)`; every NUMERIC chip renders its bonus type, and a boolean chip renders none.
   - An item with more than three contributions renders exactly three chips.
-  - An item contributing to no ranked stat renders no chip row rather than an empty container.
+  - A craft-carried item renders the #245 `⚒ here only for its crafts` line verbatim, NOT chips.
+  - An item with no ranked contribution renders `included to complete the loadout` verbatim, NOT an empty chip row.
+  - The rank-1 chip carries its non-colour carrier (border weight or rank pip), asserted independently of any colour class (R21).
   - Chip values render with tabular numerals.
 - **Verification:** `tests/results.test.js` green; a browser pass at 375px confirming the row wraps with no horizontal page scroll, on an item carrying an override and one carrying a boolean contribution.
 
@@ -520,11 +529,11 @@ flowchart TD
   - Modify: `web/styles.css` (`.pd-ctl`, `:1106-1110`)
   - Modify: `web/results.js` (`:402` — glyph only)
   - Test: `tests/results.test.js`
-- **Approach:** Drop `opacity: 0` and the `:hover`-gated reveal, keeping `.pd-row.constrained`'s own styling. Render the glyph and resting border at 34px with the touch target extended to `var(--tap)`. Swap the ellipsis for a gear glyph.
+- **Approach:** Drop `opacity: 0` and the `:hover`-gated reveal, keeping `.pd-row.constrained`'s own styling. Render the glyph and resting border at 34px, extending the touch target to `var(--tap)` with a negative-inset overlay pseudo-element — NOT padding, which would raise every `.pd-rtop` row (R24). Swap the ellipsis for a gear glyph.
 - **Execution note:** The `aria-label` at `:402` and the global `button:focus-visible` rule at `web/styles.css:245` **already exist** — they are preserved, not added, and asserting them would produce tests that pass against the pre-change tree in violation of the red-proof gate. The behaviour that actually changes is that focus no longer lands on a transparent element.
 - **Test scenarios:**
   - Covers AE7. The `.pd-ctl` rule set contains no `opacity: 0` and no `:hover`-gated visibility.
-  - Covers AE7. The control's effective touch target measures at least `var(--tap)`.
+  - Covers AE7. The control's rule set extends the hit area to `var(--tap)` via an overlay, and `.pd-rtop`'s rendered height is unchanged from the pre-change tree (R24).
   - The constrained-row styling still applies after the hover rule is removed.
   - Regression guard, exempt from the red-proof gate: the `aria-label` survives the glyph swap.
 - **Verification:** `tests/results.test.js` green; a browser pass at mobile viewport confirming the control is visible and tappable with no hover, and a keyboard tab pass confirming a visible focus ring on a rendered control.
@@ -586,7 +595,7 @@ flowchart TD
 
 ## Definition of Done
 
-- All thirty-six requirements met; all thirteen acceptance examples demonstrated.
+- All thirty-seven requirements met; all thirteen acceptance examples demonstrated.
 - Full Python and JS suites green, verified by exit code.
 - Every new test proven red against the pre-change tree, except the one U8 regression guard explicitly exempted; all three named guard mutation checks performed.
 - Solver and export goldens either unchanged or deliberately re-ratified with the diff reviewed.
