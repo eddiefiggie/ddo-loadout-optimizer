@@ -260,9 +260,13 @@
   }
 
   /** Walk every ELIGIBLE crafted pool row, calling back with the row and its key.
-   *  Eligibility is the same five-class predicate items use, minus the two classes
-   *  that cannot occur here: a crafted row is never load-generated and never an
-   *  expansion component, so only the type-based classes can exclude it. */
+   *  Eligibility is the same predicate items use. An earlier comment here claimed
+   *  a crafted row is "never load-generated and never an expansion component", so
+   *  only the type-based classes could exclude it. Measured against the built pool
+   *  that was false — 278 eligible crafted rows carried a `via` expansion receipt
+   *  (184 Viktranium, 54 dino inserts, 40 Nearly Complete), so the identical affix
+   *  was refused on an item and offered in the pool. #423 ruled that R7 reaches
+   *  these channels too. */
   function eachPoolAffix(pool, cb, all) {
     if (!pool) return;
     for (var c = 0; c < POOL_CHANNELS.length; c++) {
@@ -296,6 +300,13 @@
 
   function poolAffixEligible(affix) {
     if (!affix) return false;
+    // #423 — R7 applies here as it does on items. A universal expansion source
+    // produces every sibling, so its type is ONE catalog-level claim: a wrong one
+    // is a ruling to fix once, not a correction each player re-makes. This is also
+    // what gives the crafted `ineligible` rung a job — until eligibility gained a
+    // non-type class it was unreachable, because the ladder consults eligibility
+    // only on rows still carrying the recorded type.
+    if (affix.via != null) return false;
     var t = readType(affix);
     if (t == null) return false;
     return !INELIGIBLE_TYPES[t];
@@ -393,8 +404,16 @@
       return { state: "active", reason: null, affixes: atRecorded };
     }
 
+    // #422 — the WHOLE occurrence set must have moved. A name+value pair can exist
+    // under two types (21 crafted key groups, 52 item variants on the shipped
+    // dataset), and firing on any single sibling told the player "the catalog
+    // adopted this, you can drop it" about an override still doing nothing. A
+    // partial move falls through to drift, which carries `now` and offers
+    // re-confirm.
     var atReplacement = pick.filter(function (a) { return catalogTypeOrLive(a) === override.to; });
-    if (atReplacement.length) return { state: "satisfied", reason: null, affixes: atReplacement };
+    if (atReplacement.length && atReplacement.length === pick.length) {
+      return { state: "satisfied", reason: null, affixes: atReplacement };
+    }
 
     return { state: "suspended", reason: "drift", affixes: pick, now: pick[0] && catalogTypeOrLive(pick[0]) };
   }
@@ -443,8 +462,11 @@
       }
       return { state: "active", reason: null, affixes: atRecorded };
     }
+    // #422 — same rule as the item ladder: satisfaction is the whole set moving.
     var atReplacement = rows.filter(function (a) { return catalogTypeOrLive(a) === override.to; });
-    if (atReplacement.length) return { state: "satisfied", reason: null, affixes: atReplacement };
+    if (atReplacement.length && atReplacement.length === rows.length) {
+      return { state: "satisfied", reason: null, affixes: atReplacement };
+    }
     return { state: "suspended", reason: "drift", affixes: rows, now: catalogTypeOrLive(rows[0]) };
   }
 
