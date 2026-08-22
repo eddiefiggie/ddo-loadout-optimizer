@@ -798,7 +798,14 @@ input.wz-ml { width: 120px; }
 .wz-grid > .wz-field { display: flex; flex-direction: column; height: 100%; }
 .wz-grid > .wz-field > select, .wz-grid > .wz-field > input { margin-top: auto; }
 .wz-grid input.wz-ml { width: 100%; }
-@media (max-width: 620px) { .wz-grid { grid-template-columns: 1fr; } }
+@media (max-width: 620px) {
+  .wz-grid { grid-template-columns: 1fr; }
+  /* #431 U5 — `flex: 1` still absorbs the first line's slack once .wz-actions
+     wraps, which would strand the terminal save control bottom-LEFT and invert
+     the placement KTD8 protects. With the spacer suppressed the wrapped bar
+     simply reads in document order. */
+  .wz-spacer { display: none; }
+}
 
 /* The required marker, at the field (R2), and the invalid treatment (R8/R11):
    an outline, and no motion. KD4 dropped the repeating flash the requirements
@@ -901,7 +908,10 @@ input.wz-ml { width: 120px; }
 .wz-pin-warn + .wz-pin-x { margin-left: var(--sp-2); }
 .wz-pin-x:hover { color: var(--text); }
 
-.wz-actions { display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-4); }
+/* #431 U5 (R5) — the bars gained a save control and its status line, so the
+   results bar now holds four children. Wrap rather than overflow; .wz-modal-actions
+   already wraps for the same reason. */
+.wz-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin-top: var(--sp-4); }
 .wz-spacer { flex: 1; }
 .btn { border: none; border-radius: var(--radius-sm); padding: 11px 20px; min-height: var(--tap);
   font-size: var(--fs-md); font-weight: 650; cursor: pointer; font-family: inherit; }
@@ -1131,8 +1141,13 @@ input.wz-ml { width: 120px; }
    EVERY step: the layout change is the plan's widest blast radius by design.
    The rail sticks while a long step scrolls, so Save never scrolls away.
 
-   Below 900px the two stack and the rail goes FIRST (`order: -1`): a player on a
-   phone should meet "save this" before a nine-control form, not after it. */
+   #431 U5 (R9) — the rail no longer holds the name input or the save button, so
+   it is reference material (which build is loaded, which are saved) rather than
+   an action surface. Two consequences: its sticky positioning no longer keeps
+   Save on screen, it keeps the saved list on screen; and the `order: -1` that
+   put it FIRST below 900px is dropped. That rule existed so a phone player met
+   "save this" before a long form — with saving now in the form's own action bar,
+   hoisting the rail would only push the actual work down the page. */
 .wz-shell { display: grid; grid-template-columns: minmax(0, 1fr) 17rem; gap: var(--sp-4); align-items: start; }
 .wz-body { min-width: 0; }
 .wz-rail {
@@ -1142,17 +1157,13 @@ input.wz-ml { width: 120px; }
 }
 .wz-rail-head { margin: 0; font-weight: 700; font-size: var(--fs-sm); }
 .wz-rail-loaded { margin: 0; font-size: var(--fs-sm); color: var(--muted); overflow-wrap: anywhere; }
-.wz-rail input { width: 100%; background: var(--panel-2); color: var(--text);
-  border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: 7px 10px; }
-.wz-rail input:focus { outline: none; box-shadow: var(--ring); border-color: var(--accent); }
-.wz-rail .btn { width: 100%; padding: 7px 14px; }
 .wz-rail .wz-help { margin: 0; }
 .wz-rail-list { margin-top: var(--sp-2); border-top: 1px solid var(--border-2); padding-top: var(--sp-3); }
 .wz-rail-list .wz-label { display: block; }
 .wz-rail .wz-charlist li.on { border-color: var(--accent); }
 @media (max-width: 900px) {
   .wz-shell { grid-template-columns: 1fr; }
-  .wz-rail { position: static; order: -1; }
+  .wz-rail { position: static; }
 }
 
 /* #428 U5 (R19) — the unsaved-changes guard. A modal, not an inline bar: it has

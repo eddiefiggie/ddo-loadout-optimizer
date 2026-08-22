@@ -3542,6 +3542,18 @@ test("#431 U3 (KTD7): every site that mutates a re-solve banner refreshes save's
   assert.ok(calls >= 4, `expected the four banner-mutation sites to refresh save, saw ${calls}`);
 });
 
+test("#431 U3 (R6/KTD7): save also yields to the Adjust & re-solve fold-up", () => {
+  // A FOURTH primary lives inside that fold (web/wizard.js: wz-radjust-solve).
+  // It is collapsed on every render, so the render-time class needs only the
+  // banner check — but opening it puts two primaries on screen.
+  const f = fnBody(WIZARD_SRC, "function refreshSaveEmphasis() {", 4);
+  assert.ok(/wz-adjust/.test(f) && /\.open/.test(f),
+    "the emphasis check reads whether the fold is open");
+  const fill = fnBody(WIZARD_SRC, "function fillAdjustSlot() {", 4);
+  assert.ok(/ontoggle\s*=\s*refreshSaveEmphasis/.test(fill),
+    "and opening or closing the fold re-applies it");
+});
+
 test("#431 U3 (R9): the rail hosts neither the save control nor its status line", () => {
   const rail = fnBody(WIZARD_SRC, "function railHTML() {", 4);
   assert.ok(!/wz-railsave/.test(rail), "the rail's save button is gone");

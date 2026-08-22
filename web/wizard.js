@@ -2371,6 +2371,10 @@ if (typeof window !== "undefined" && window.App) {
       });
       const rsolve = document.getElementById("wz-radjust-solve");
       if (rsolve) rsolve.onclick = () => { if (canAdvance("priorities", state)) solve(false); };
+      // #431 U3 (KTD7/R6) — opening the fold puts a second primary on screen, so
+      // save yields while it is open and takes primacy back when it closes.
+      const fold = document.getElementById("wz-adjust");
+      if (fold) fold.ontoggle = refreshSaveEmphasis;
     }
 
     // U5/R9-R11 — the Share tab's content: pick a saved loadout, export it as a
@@ -3677,7 +3681,13 @@ if (typeof window !== "undefined" && window.App) {
       if (state.step !== "results") return;   // save is ghost on every other bar
       const btn = document.getElementById("wz-save");
       if (!btn) return;
-      const primary = !resolveBannerShowing(state);
+      // The Adjust & re-solve fold-up carries a fourth `Re-solve ⚡` primary
+      // (`web/wizard.js:2347`). It is collapsed on every render, so the initial
+      // class needs only the banner check — but once the player opens it, its
+      // button is on screen and save must yield to it exactly as it does to a
+      // banner. Read from the DOM: the fold has no state field, by design.
+      const fold = document.getElementById("wz-adjust");
+      const primary = !resolveBannerShowing(state) && !(fold && fold.open);
       btn.classList.toggle("primary", primary);
       btn.classList.toggle("ghost", !primary);
     }
