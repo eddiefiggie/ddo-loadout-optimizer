@@ -82,21 +82,20 @@ function saveControl(cls) {
     + `<span class="wz-savestat" id="wz-savestat" aria-live="polite"></span>`;
 }
 
-/** #431 U3 (KTD7) — is a RE-SOLVE banner on screen? Each of the three carries its
- *  own primary button, so while one is up the results bar's save yields to it.
+/** #432 — WHICH re-solve banner holds primacy at RENDER time, or null when none
+ *  is showing. The three raise from independent flags and can co-show: a loaded
+ *  build that both predates the catalog and migrated its TWF declaration raises
+ *  the first two on the same paint, and a later pin adds the third. Returning the
+ *  earliest one in document order is what keeps "exactly one primary" true — the
+ *  rest render ghost.
  *
  *  The four `migrationBanner` notices share the `wz-cbar` class but their buttons
  *  are ghosts, so they do not contend and must NOT be counted here — keying this
  *  on the class instead of the three flags would ghost save behind a "Got it".
  *
- *  Ranking the three against EACH OTHER is a separate, pre-existing defect: they
- *  raise independently and can co-show with up to three primaries. See #432. */
-/** #432 — WHICH re-solve banner holds primacy, or null when none is showing.
- *  The three raise from independent flags and can co-show: a loaded build that
- *  both predates the catalog and migrated its TWF declaration raises the first
- *  two on the same paint, and a later pin adds the third. Returning the earliest
- *  SHOWING one in document order is what keeps "exactly one primary" true — the
- *  rest render ghost. Pure; unit-tested. */
+ *  State-derived, so it is right only while state and DOM agree — which is true at
+ *  render time and not after. Once handlers start hiding banners in place,
+ *  `refreshResultsEmphasis` re-ranks on actual visibility instead. Pure; unit-tested. */
 function resolveBannerPrimary(state) {
   const s = state || {};
   if (staleNote(s)) return "wz-stale";
@@ -3691,17 +3690,29 @@ if (typeof window !== "undefined" && window.App) {
      *  re-solve banner calls this. */
     function refreshResultsEmphasis() {
       if (state.step !== "results") return;   // save is ghost on every other bar
-      // #432 — rank the banners first: the earliest showing one in document order
-      // keeps `primary`, the rest go ghost. They raise independently and can
-      // co-show, so without this the step can carry three primaries at once.
-      const claimant = resolveBannerPrimary(state);
-      for (const [id, btnId] of [["wz-stale", "wz-staleresolve"],
-                                 ["wz-twfmig", "wz-twfmigresolve"],
-                                 ["wz-cbar", "wz-cresolve"]]) {
+      // #432 — rank the banners first: the earliest one ACTUALLY ON SCREEN keeps
+      // `primary`, the rest go ghost. They raise independently and can co-show, so
+      // without this the step can carry three primaries at once.
+      //
+      // Ranked on `wz-hidden`, not on `resolveBannerPrimary(state)`. The two agree
+      // at render time and part company afterwards: the stale banner's dismissal
+      // clears `state.loadedStale` and hides the element, but `staleNote` also
+      // accumulates an override-set cause and a missing-armor cause, so a build
+      // loaded without armor keeps it truthy. Ranking from state there would hand
+      // `primary` to the button just hidden and ghost everything visible, leaving
+      // the step with no primary at all.
+      let claimed = false;
+      for (const [barId, btnId] of [["wz-stale", "wz-staleresolve"],
+                                    ["wz-twfmig", "wz-twfmigresolve"],
+                                    ["wz-cbar", "wz-cresolve"]]) {
+        const bar = document.getElementById(barId);
         const b = document.getElementById(btnId);
         if (!b) continue;
-        b.classList.toggle("primary", id === claimant);
-        b.classList.toggle("ghost", id !== claimant);
+        const showing = !!bar && !bar.classList.contains("wz-hidden");
+        const primary = showing && !claimed;
+        b.classList.toggle("primary", primary);
+        b.classList.toggle("ghost", !primary);
+        if (showing) claimed = true;
       }
       const btn = document.getElementById("wz-save");
       if (!btn) return;
@@ -3711,7 +3722,7 @@ if (typeof window !== "undefined" && window.App) {
       // must yield to it exactly as it does to a banner. Read from the DOM: the
       // fold has no state field, by design.
       const fold = document.getElementById("wz-adjust");
-      const primary = !claimant && !(fold && fold.open);
+      const primary = !claimed && !(fold && fold.open);
       btn.classList.toggle("primary", primary);
       btn.classList.toggle("ghost", !primary);
     }

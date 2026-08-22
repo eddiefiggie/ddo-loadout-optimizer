@@ -3536,6 +3536,19 @@ test("#432: only the first SHOWING re-solve banner in document order holds prima
     "all three up — still exactly one primary");
 });
 
+test("#432 review: the live re-rank reads what is ON SCREEN, not the state flags", () => {
+  // `staleNote` accumulates three causes and its dismissal clears only one of
+  // them, hiding the element while the flag behind it can stay truthy. Ranking
+  // from state there would award `primary` to the button just hidden and ghost
+  // every visible control, leaving the step with no primary at all.
+  const f = fnBody(WIZARD_SRC, "function refreshResultsEmphasis() {", 4);
+  const loop = f.slice(f.indexOf("for ("), f.indexOf("wz-save"));
+  assert.ok(/wz-hidden/.test(loop),
+    "the re-rank decides `showing` from the element's own wz-hidden class");
+  assert.ok(!/resolveBannerPrimary/.test(loop),
+    "…and NOT by re-deriving the claimant from state, which can disagree with the DOM");
+});
+
 test("#432: the banner buttons take their class from the ranking, not a hardcoded primary", () => {
   const body = stepSource("stepResults");
   const hardcoded = (body.match(/class="btn primary" id="wz-(stale|twfmig|c)resolve"/g) || []);
