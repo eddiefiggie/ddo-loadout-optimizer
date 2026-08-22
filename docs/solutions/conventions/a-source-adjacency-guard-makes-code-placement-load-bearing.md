@@ -102,12 +102,19 @@ opening marker's index rather than from 0.
 above. The advice below is not hypothetical hygiene; it describes the minority case in
 this repo today.
 
-Each of those 23 is one earlier insertion away from inverting, and which half of the
-failure it lands in depends entirely on whether anything **positive** is asserted over
-the slice. Hand-checked, **four** assert only negatives and would therefore pass on an
-empty slice — `tests/wizard.test.js` lines 624, 1122, 1445 and 3074. The rest carry at
-least one positive regex, presence check, or length assertion that an inverted slice
-would redden, which is the loud half the case above describes. Tracked as #450.
+Each of those 23 was one earlier insertion away from inverting, and which half of the
+failure it landed in depended entirely on whether anything **positive** was asserted over
+the slice. Hand-checked, **four** asserted only negatives and would therefore have passed
+on an empty slice — `tests/wizard.test.js` lines 624, 1122, 1445 and 3074; the rest carried
+a positive assertion an inverted slice would redden, which is the loud half described above.
+
+**All 23 are now anchored (#450, closed).** The two files route every source slice through
+a shared `srcBetween(src, open, close, label)` / `srcFrom(src, open, len, label)`, which
+searches the closing marker *from the opening index* and asserts both markers present. The
+advice below is therefore the current state of this repo rather than an aspiration — and
+the reason it is a helper rather than 19 careful edits is that anchoring survives better as
+a structural property than as a rule each future author has to remember. A renamed marker
+now fails naming the marker, instead of naming a behaviour that is fine.
 
 ## Why This Matters
 
