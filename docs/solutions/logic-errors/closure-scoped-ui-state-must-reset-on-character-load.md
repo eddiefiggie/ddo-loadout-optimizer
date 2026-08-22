@@ -188,13 +188,13 @@ reachable: the reset was genuinely unnecessary while a precondition kept the sta
 value out of the UI's hands.
 
 **Bound a source-slice guard by the end of the construct it is reading, never by a
-fixed character offset.** The two tests below slice `WIZARD_SRC` from
-`function loadCharacter(` to `start + 4000`, and that window is now 86 characters
-from dropping its own assertions: `loadCharacter` has since grown by the per-character
+fixed character offset.** The two tests below used to slice `WIZARD_SRC` from
+`function loadCharacter(` to `start + 4000`, and that window had drifted to 86
+characters from dropping its own assertions: `loadCharacter` grew by the per-character
 resets added for later features, and `blockStage.clear()` sits 3,914 characters in.
-The next reset added above it pushes all three assertions out of the window, every
-regex fails to match text that is no longer being read, and `assert.ok` on an absent
-string in an absent slice is — for a *positive* assertion — a loud red, but for the
+The next reset added above it would have pushed all three assertions out of the window,
+every regex failing to match text that is no longer being read — and `assert.ok` on an
+absent string in an absent slice is, for a *positive* assertion, a loud red, but for the
 negative assertions this pattern is also used for elsewhere in the suite it is a
 silent green. Either way the guard stops guarding the thing it names. Slice to the
 next declaration instead and assert the end marker resolved, so a rename fails loudly:
@@ -205,6 +205,16 @@ const end = WIZARD_SRC.indexOf("\n    function ", start + 1);
 assert.ok(end > start, "the slice's end marker resolves");
 const slice = WIZARD_SRC.slice(start, end);
 ```
+
+Landed for the whole file, not just these two tests: the construct-anchored windows
+(`loadCharacter`, `addPriority`, `migrationBanner`, `pickerStatusEl`, the load path's
+migration block, and the two `results.js` probes) are now bounded by their construct
+through the `fnBody` / `migrationBlock` / `endAfter` helpers in `tests/wizard.test.js`.
+Fixed-width windows anchored on a *statement* are proximity assertions ("this is set
+near that") and remain legitimate — the rule is about constructs. Two meta-guards hold
+the line: `#429 review #5` asserts every marker this suite hands to `indexOf` (or to
+those helpers) still resolves in some `web/` source, and `#430` fails the suite if any
+guard bounds a function-anchored slice by a fixed offset again.
 
 This is the same family as [a guard that keeps its own copy of a production constant
 silently measures the copy](../conventions/a-guard-that-copies-its-parameter-measures-the-copy.md)

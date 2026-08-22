@@ -852,23 +852,60 @@ test("U4/003: the migration notice is a distinct message, not the catalog-stalen
 // source text. Without this, the player-facing half of #169 -- the part that stops
 // a saved `Parrying` priority from silently scoring zero -- had no coverage at all.
 
-// The window is sized to hold the whole migration block, not tuned to it: #381
-// added the retired-label arm inside it and pushed the last assertion past a
-// 1200-char slice, which reads as "the wizard stopped recording the disclosure"
-// when the wizard does exactly what it did before.
-const MIGRATION_BLOCK = 2200;
-
-test("#169: the load path migrates expanded-away priorities and flags the disclosure", () => {
+// The load path's migration block, sliced from the helper call to the close of
+// the `if (_dnMig && _dnMig.migratePriorities)` arm that holds it. Bounded by the
+// construct, never by a character count: #381 added the retired-label arm inside
+// this block and pushed the last assertion past a fixed 1200-char slice, which
+// reads as "the wizard stopped recording the disclosure" when the wizard does
+// exactly what it did before. A construct bound grows with the block.
+function migrationBlock() {
   const at = WIZARD_SRC.indexOf("migratePriorities(state.priorities");
   assert.ok(at > 0, "loadCharacter consults the migration helper");
-  const near = WIZARD_SRC.slice(at, at + MIGRATION_BLOCK);
+  const end = WIZARD_SRC.indexOf("\n      }\n", at);
+  assert.ok(end > at, "the migration block's closing brace resolves");
+  return WIZARD_SRC.slice(at, end);
+}
+
+// The source text of addPriority, from its declaration to the next declaration
+// at the same indent — same rule as migrationBlock above.
+function addPriorityEnd(at) {
+  const end = WIZARD_SRC.indexOf("\n    function ", at + 1);
+  assert.ok(end > at, "the slice's end marker resolves");
+  return end;
+}
+
+// One function body out of any web source, bounded by the construct: from the
+// declaration to the next `function` at the same indent. Both markers are
+// asserted, so a rename fails loudly instead of widening the slice to the rest
+// of the file or collapsing it to nothing.
+// The offset of `marker` AFTER `at`, asserted. A positional end marker is the
+// one case a global marker-resolves sweep cannot cover: the marker may exist in
+// the file yet not after this anchor, and indexOf's -1 would then widen the
+// slice to the whole remaining file instead of collapsing it.
+function endAfter(src, marker, at) {
+  const end = src.indexOf(marker, at + 1);
+  assert.ok(end > at,
+    `the end marker ${JSON.stringify(marker)} must resolve after the anchor — `
+    + "a -1 here silently widens the slice to the rest of the file");
+  return end;
+}
+
+function fnBody(src, decl, indent) {
+  const at = src.indexOf(decl);
+  assert.ok(at >= 0, `the source declares ${decl}`);
+  const end = src.indexOf(`\n${" ".repeat(indent)}function `, at + 1);
+  assert.ok(end > at, `the slice's end marker after ${decl} resolves`);
+  return src.slice(at, end);
+}
+
+test("#169: the load path migrates expanded-away priorities and flags the disclosure", () => {
+  const near = migrationBlock();
   assert.ok(/state\.priorities = migrated\.priorities/.test(near), "it adopts the substitution");
   assert.ok(/state\.expandedAwayMigrated = /.test(near), "and records it so the notice can render");
 });
 
 test("#169: the migration drops bounds stranded on the old name, and discloses it", () => {
-  const at = WIZARD_SRC.indexOf("migratePriorities(state.priorities");
-  const near = WIZARD_SRC.slice(at, at + MIGRATION_BLOCK);
+  const near = migrationBlock();
   assert.ok(/delete map\[sub\.from\]/.test(near), "a cap/floor keyed to the old name is removed");
   assert.ok(/droppedBounds/.test(near), "and passed to the disclosure rather than dropped silently");
 });
@@ -877,8 +914,7 @@ test("#381: the load path sweeps RETIRED substitutions through the same cleanup"
   // A retired label's stranded cap/floor/credit is the same orphan #169 closed for
   // expanded-away names: model.js still unions the old name into the target set and
   // the solver reports a floor it can never satisfy, with no UI row to delete it.
-  const at = WIZARD_SRC.indexOf("migratePriorities(state.priorities");
-  const near = WIZARD_SRC.slice(at, at + MIGRATION_BLOCK);
+  const near = migrationBlock();
   assert.ok(/migrated\.retired/.test(near), "the retired arm is read");
   assert.ok(/migrated\.substitutions\.concat\(_retiredSubs\)/.test(near),
     "and it walks the SAME bound/credit sweep, not a parallel one that can drift");
@@ -898,7 +934,9 @@ test("#169: bounds are restored BEFORE the migration runs, or it cannot clean th
 test("#169: the disclosure banner escapes its message", () => {
   const at = WIZARD_SRC.indexOf("function migrationBanner");
   assert.ok(at > 0, "the banner helper exists");
-  const fn = WIZARD_SRC.slice(at, at + 500);
+  const end = WIZARD_SRC.indexOf("\n    function ", at + 1);
+  assert.ok(end > at, "the slice's end marker resolves");
+  const fn = WIZARD_SRC.slice(at, end);
   assert.ok(/esc\(state\.expandedAwayMigrated\)/.test(fn),
     "the message carries user-typed stat names into innerHTML and must be escaped");
 });
@@ -1022,7 +1060,7 @@ test("#169: the disclosure banner escapes its message", () => {
   test("U2: the selector renders from the curated vocabulary and marks used types", () => {
     const at = WIZARD_SRC.indexOf("function creditsHTML");
     assert.ok(at > 0, "the sub-row renderer exists");
-    const fn = WIZARD_SRC.slice(at, WIZARD_SRC.indexOf("\n    }", at));
+    const fn = WIZARD_SRC.slice(at, endAfter(WIZARD_SRC, "\n    }", at));
     assert.ok(/_creditBonusTypes\.map/.test(fn), "options come from the shared list");
     assert.ok(/usedTypes\.has\(t\)/.test(fn), "already-declared types are disabled");
     assert.ok(/esc\(/.test(fn), "stat and type names reach innerHTML and must be escaped");
@@ -1030,7 +1068,7 @@ test("#169: the disclosure banner escapes its message", () => {
 
   test("U2: the credit controls are labelled for screen readers", () => {
     const at = WIZARD_SRC.indexOf("function creditsHTML");
-    const fn = WIZARD_SRC.slice(at, WIZARD_SRC.indexOf("\n    }", at));
+    const fn = WIZARD_SRC.slice(at, endAfter(WIZARD_SRC, "\n    }", at));
     for (const needle of ["wz-credit-val", "wz-credit-type", "data-crem", "data-cadd"]) {
       assert.ok(fn.includes(needle), `${needle} is rendered`);
     }
@@ -1098,7 +1136,7 @@ test("U2: loading a character resets declared credits", () => {
 
 test("U2: an unusable credit row neither reads as declared nor reserves its type", () => {
   const at = WIZARD_SRC.indexOf("function creditsHTML");
-  const fn = WIZARD_SRC.slice(at, WIZARD_SRC.indexOf("\n    }", at));
+  const fn = WIZARD_SRC.slice(at, endAfter(WIZARD_SRC, "\n    }", at));
   assert.ok(/is-incomplete/.test(fn), "an unusable row is visually marked");
   assert.ok(/filter\(\(c\) => c\.usable\)/.test(fn),
     "usedTypes counts only rows the solver would keep");
@@ -1731,14 +1769,15 @@ test("#235: the real vocabulary marks Enhanced Ki untyped-only and nothing else"
   test("U11: addPriority routes the add through the shared resolver", () => {
     const at = WIZARD_SRC.indexOf("function addPriority(");
     assert.ok(at > 0, "addPriority exists");
-    const fn = WIZARD_SRC.slice(at, at + 2600);
+    const fn = WIZARD_SRC.slice(at, addPriorityEnd(at));
     assert.ok(/resolvePriorityAdd\(/.test(fn), "it delegates to the shared resolver");
     assert.ok(/state\.priorities = res\.priorities/.test(fn), "and adopts the substituted list");
   });
 
   test("U11: a bound attached to the alias is DROPPED and reported, not remapped", () => {
     const at = WIZARD_SRC.indexOf("function addPriority(");
-    const fn = WIZARD_SRC.slice(at, at + 2600);
+    assert.ok(at > 0, "addPriority exists");
+    const fn = WIZARD_SRC.slice(at, addPriorityEnd(at));
     assert.ok(/targetCaps, state\.targetFloors/.test(fn), "both bound maps are swept");
     assert.ok(/delete map\[sub\.from\]/.test(fn), "the bound keyed to the alias is removed");
     assert.ok(/droppedBounds/.test(fn), "and disclosed rather than dropped silently");
@@ -1748,7 +1787,8 @@ test("#235: the real vocabulary marks Enhanced Ki untyped-only and nothing else"
 
   test("U11: a declared credit keyed to the alias is cleared and reported", () => {
     const at = WIZARD_SRC.indexOf("function addPriority(");
-    const fn = WIZARD_SRC.slice(at, at + 2600);
+    assert.ok(at > 0, "addPriority exists");
+    const fn = WIZARD_SRC.slice(at, addPriorityEnd(at));
     assert.ok(/declaredCredits/.test(fn), "credits are swept too");
     assert.ok(/c\.stat === sub\.from/.test(fn),
       "credits key on stat PLUS bonus type, so they need their own matcher");
@@ -1757,7 +1797,8 @@ test("#235: the real vocabulary marks Enhanced Ki untyped-only and nothing else"
 
   test("U11: the substitution is disclosed inline at the picker", () => {
     const at = WIZARD_SRC.indexOf("function addPriority(");
-    const fn = WIZARD_SRC.slice(at, at + 2600);
+    assert.ok(at > 0, "addPriority exists");
+    const fn = WIZARD_SRC.slice(at, addPriorityEnd(at));
     assert.ok(/migrationMessage\(/.test(fn), "it reuses the shared disclosure builder");
     assert.ok(/lead: "picker"/.test(fn), "with the picker wording, not the saved-character one");
     assert.ok(/status\.textContent/.test(fn), "written to the inline picker status line");
@@ -1770,7 +1811,9 @@ test("#235: the real vocabulary marks Enhanced Ki untyped-only and nothing else"
     assert.ok(/id="wz-radd-status"/.test(WIZARD_SRC), "the Adjust panel has its own status line");
     const at = WIZARD_SRC.indexOf("function pickerStatusEl(");
     assert.ok(at > 0, "and a resolver that finds whichever picker is on screen");
-    const fn = WIZARD_SRC.slice(at, at + 300);
+    const pEnd = WIZARD_SRC.indexOf("\n    function ", at + 1);
+    assert.ok(pEnd > at, "the slice's end marker resolves");
+    const fn = WIZARD_SRC.slice(at, pEnd);
     assert.ok(/wz-status/.test(fn) && /wz-radd-status/.test(fn), fn);
   });
 }
@@ -1890,7 +1933,9 @@ test("U5+U6/#110: blockLoadMessage names both facts, and is null when clean", ()
 
 test("review/#110: the load path clears the staged block selection", () => {
   const start = WIZARD_SRC.indexOf("function loadCharacter(");
-  const slice = WIZARD_SRC.slice(start, start + 4000);
+  const end = WIZARD_SRC.indexOf("\n    function ", start + 1);
+  assert.ok(end > start, "the slice's end marker resolves");
+  const slice = WIZARD_SRC.slice(start, end);
   assert.ok(/blockStage\.clear\(\);/.test(slice),
     "ticks staged on the previous character must not commit into this one");
   assert.ok(/state\.blockRefusedMsg = null;/.test(slice), "the refusal message resets too");
@@ -1898,7 +1943,9 @@ test("review/#110: the load path clears the staged block selection", () => {
 
 test("review/#110: the load path sanitizes blocklist elements to non-empty strings", () => {
   const start = WIZARD_SRC.indexOf("function loadCharacter(");
-  const slice = WIZARD_SRC.slice(start, start + 4000);
+  const end = WIZARD_SRC.indexOf("\n    function ", start + 1);
+  assert.ok(end > start, "the slice's end marker resolves");
+  const slice = WIZARD_SRC.slice(start, end);
   assert.ok(/i\.blocklist\.filter\(\(x\) => typeof x === "string" && x\)/.test(slice),
     "a hand-edited backup's non-string entries would become unremovable ghost rows");
 });
@@ -2296,7 +2343,7 @@ test("#345: every live renderResults call site is accounted for", () => {
 test("#345: the pricing gate is a capability probe, not an assumption", () => {
   const fs = require("fs"); const path = require("path");
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "results.js"), "utf-8");
-  const fn = src.slice(src.indexOf("function canPriceOutbid()"), src.indexOf("function canPriceOutbid()") + 400);
+  const fn = fnBody(src, "function canPriceOutbid()", 2);
   assert.ok(/typeof attributeOutbid === "function"/.test(fn), "probes the solver function");
   assert.ok(/!!highs/.test(fn), "and the solver instance — a restored render has none");
   assert.ok(/optimum && optimum\.program/.test(fn), "and the program the probe needs");
@@ -2320,8 +2367,7 @@ test("#345 U4: every live render site can accept a trade, not just the fresh one
 test("#345 U4: the accept handler writes the same field the Advanced input writes", () => {
   const fs = require("fs"); const path = require("path");
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
-  const fn = src.slice(src.indexOf("function requireOutbidStat(stat)"),
-    src.indexOf("function requireOutbidStat(stat)") + 600);
+  const fn = fnBody(src, "function requireOutbidStat(stat)", 4);
   assert.ok(/state\.targetFloors/.test(fn),
     "writes targetFloors — the field cleanBoundMap sanitizes and persist.js stores");
   assert.ok(/solve\(false\)/.test(fn), "and re-solves so the player sees the result");
@@ -3011,7 +3057,7 @@ test("#428 (R28): the build value renders monospaced so successive stamps align"
   const css = fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf-8");
   const at = css.indexOf(".build-info");
   assert.ok(at >= 0, "styles.css styles .build-info");
-  const rule = css.slice(at, css.indexOf("}", at));
+  const rule = css.slice(at, endAfter(css, "}", at));
   assert.ok(/font-family:[^;]*mono/i.test(rule), ".build-info renders in a monospaced face");
 });
 
@@ -3099,7 +3145,7 @@ test("#428 U3 (R24): the rail offers save, load and delete only", () => {
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
   const at = src.indexOf("function railHTML(");
   assert.ok(at >= 0, "wizard.js declares railHTML");
-  const body = src.slice(at, src.indexOf("\n    function ", at + 1));
+  const body = src.slice(at, endAfter(src, "\n    function ", at));
   assert.ok(/wz-railsave/.test(body), "the rail saves");
   assert.ok(/data-railload/.test(body), "…loads");
   assert.ok(/data-raildel/.test(body), "…and deletes");
@@ -3184,7 +3230,7 @@ test("#428 U4 (R15): saving no longer requires a solved build", () => {
   const fs = require("fs"); const path = require("path");
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
   const at = src.indexOf("function saveCurrentCharacter(");
-  const body = src.slice(at, src.indexOf("\n    }", at));
+  const body = src.slice(at, endAfter(src, "\n    }", at));
   assert.ok(!/no-build/.test(body),
     "the pre-#428 'solve first' refusal is gone — an in-progress build is savable");
   assert.ok(/no-name/.test(body), "…but an unnamed one still is not (R13)");
@@ -3345,7 +3391,7 @@ test("#428 U6 (R11): the invalid treatment adds no repeating animation", () => {
   const css = fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf-8");
   const at = css.indexOf(".wz-invalid");
   assert.ok(at >= 0, "styles.css defines the invalid treatment");
-  const rule = css.slice(at, css.indexOf("}", at));
+  const rule = css.slice(at, endAfter(css, "}", at));
   assert.ok(!/animation/.test(rule), "no animation (WCAG 2.3.1 — KD4)");
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
   const fn = src.slice(src.indexOf("function showMissingRequired("));
@@ -3358,7 +3404,7 @@ test("#428 U6 (KTD2): the pool and priorities steps still nudge the Continue but
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
   const at = src.indexOf("function blockFeedback(");
   assert.ok(at >= 0, "the generic handler became step-aware rather than being rewritten");
-  const body = src.slice(at, src.indexOf("\n    }", at));
+  const body = src.slice(at, endAfter(src, "\n    }", at));
   assert.ok(/flashBlock\(\)/.test(body), "other steps keep the nudge");
   assert.ok(/"character"/.test(body), "…and only the character step gets the field treatment");
 });
@@ -3405,7 +3451,7 @@ test("#428 U7 (AE12): export-all and import render from one shared block", () =>
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
   const at = src.indexOf("function dataBlockHTML(");
   assert.ok(at >= 0, "one renderer owns the Your data block");
-  const body = src.slice(at, src.indexOf("\n    function ", at + 1));
+  const body = src.slice(at, endAfter(src, "\n    function ", at));
   assert.ok(/Export all/.test(body) && /Import a backup/.test(body),
     "…and it carries both controls");
   // Both hosts render it — the Share panel (KTD6) and the on-demand panel that
@@ -3421,7 +3467,7 @@ test("#428 U7: the two hosts cannot collide on element ids", () => {
   const fs = require("fs"); const path = require("path");
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
   const at = src.indexOf("function dataBlockHTML(");
-  const body = src.slice(at, src.indexOf("\n    function ", at + 1));
+  const body = src.slice(at, endAfter(src, "\n    function ", at));
   // The Share panel lives inside the results view while the on-demand panel is an
   // overlay; both can be in the DOM at once, so every id the block mints is
   // namespaced by its host.
@@ -3565,7 +3611,7 @@ test("#429 review #3: the pending action carries its kind, so both paths resume"
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
   assert.ok(/function resumePending\(/.test(src), "one place resumes a guarded action");
   const at = src.indexOf("function resumePending(");
-  const body = src.slice(at, src.indexOf("\n    function ", at + 1));
+  const body = src.slice(at, endAfter(src, "\n    function ", at));
   assert.ok(/kind === "load"/.test(body) && /loadCharacter\(/.test(body), "a guarded load resumes");
   assert.ok(/go\(/.test(body), "…and a guarded step change resumes");
 });
@@ -3602,22 +3648,78 @@ test("#429 review #4: both causes report together rather than one hiding the oth
 
 // ---- #5 (P2): the scoping guard whose marker stopped resolving --------------
 
+// A comment can quote a marker it does not use; only code hands strings to
+// indexOf, so the meta-guards below read this file with its full-line comments
+// stripped. Without this they flag their own explanatory prose.
+function testFileCode() {
+  const fs = require("fs"); const path = require("path");
+  return fs.readFileSync(path.join(__dirname, "wizard.test.js"), "utf-8")
+    .replace(/^[ \t]*\/\/.*$/gm, "");
+}
+
 test("#429 review #5: every source-slice guard's end marker actually resolves", () => {
   // The #91 wiring guard sliced to `function renderSavedPicker`, which #428
   // renamed — indexOf returned -1 and slice(at, -1) covered the rest of the
   // file, so four assertions could match anywhere below loadCharacter and the
-  // test stayed green. This asserts the markers themselves.
+  // test stayed green. This asserts the markers themselves: EVERY string this
+  // file hands to indexOf must still resolve in some web/ source, whichever
+  // source and whatever shape the marker takes, not just the one spelling
+  // against WIZARD_SRC that the original guard knew how to look for.
   const fs = require("fs"); const path = require("path");
-  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
-  const testSrc = fs.readFileSync(path.join(__dirname, "wizard.test.js"), "utf-8");
-  const markers = [...testSrc.matchAll(/WIZARD_SRC\.indexOf\("\\n {4}function (\w+)"/g)]
-    .map((m) => m[1]);
-  assert.ok(markers.length, "the guard finds the slice markers it is checking");
-  for (const name of markers) {
-    assert.ok(src.includes(`\n    function ${name}`),
-      `slice marker "function ${name}" must still exist in web/wizard.js — `
-      + "a marker that no longer resolves makes indexOf return -1 and the slice silently widen");
+  const web = path.join(__dirname, "..", "web");
+  const haystack = fs.readdirSync(web)
+    .filter((f) => /\.(js|css|html)$/.test(f))
+    .map((f) => fs.readFileSync(path.join(web, f), "utf-8"))
+    .join("\n \n");
+  const code = testFileCode();
+  const unescape = (s) => s.replace(/\\n/g, "\n").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+  const markers = [
+    // markers handed straight to indexOf…
+    ...[...code.matchAll(/\.indexOf\("((?:[^"\\]|\\.)*)"/g)].map((m) => unescape(m[1])),
+    // …and markers handed to the construct-bounding helpers, which is where the
+    // renameable ones increasingly live.
+    ...[...code.matchAll(/(?:fnBody|endAfter)\(\s*[\w$.]+\s*,\s*"((?:[^"\\]|\\.)*)"/g)].map((m) => unescape(m[1])),
+  ]
+    // Punctuation-only anchors ("});", "}") are structural and always present;
+    // the renameable markers are the ones carrying a name.
+    .filter((s) => s.length >= 6 && /[A-Za-z]/.test(s));
+  assert.ok(markers.length > 40, `the guard finds the slice markers it is checking (${markers.length})`);
+  for (const m of new Set(markers)) {
+    assert.ok(haystack.includes(m),
+      `slice marker ${JSON.stringify(m)} must still exist in a web/ source — a marker `
+      + "that no longer resolves makes indexOf return -1 and the slice silently widen");
   }
+});
+
+test("#430: no source-slice guard bounds a construct by a fixed character offset", () => {
+  // The companion failure to a stale marker, and the quieter one. A guard that
+  // reads a whole function through a fixed-width window keeps passing while the
+  // function grows underneath it, until one added line pushes the last assertion
+  // out of the window and the guard stops checking what it names — silently,
+  // because the shortened slice still matches whatever assertions remain inside
+  // it. #110's loadCharacter guard sat 86 characters from that edge. Bound a
+  // construct by the construct's own end (see fnBody / migrationBlock / endAfter).
+  // Fixed-width windows anchored on a STATEMENT are proximity assertions ("this
+  // is set near that") and stay legitimate — this rule is about constructs.
+  const code = testFileCode();
+  const blocks = code.split(/\n(?=[ \t]*test\()/);
+  const offenders = [];
+  for (const block of blocks) {
+    const name = (block.match(/test\("([^"]*)"/) || [])[1] || "(file scope)";
+    // slice(v, v + N), where v was anchored on a function declaration.
+    for (const m of block.matchAll(/\.slice\(\s*(\w+)\s*,\s*(\w+)\s*\+\s*(\d+|[A-Z][A-Z_0-9]{3,})\s*\)/g)) {
+      if (m[1] !== m[2]) continue;
+      const decl = new RegExp(`(?:const|let)\\s+${m[1]}\\s*=\\s*[\\w$.]*\\.indexOf\\(\\s*["\`]function `);
+      if (decl.test(block)) offenders.push(`${name}: slice(${m[1]}, ${m[1]} + ${m[3]})`);
+    }
+    // The same shape written inline, with no intermediate variable.
+    for (const m of block.matchAll(/\.slice\(\s*[\w$.]*\.indexOf\(\s*["`](function [^"`]+)["`]\s*\)\s*,[^;]{0,90}?\+\s*\d+\s*\)/g)) {
+      offenders.push(`${name}: inline fixed window on ${m[1]}`);
+    }
+  }
+  assert.deepStrictEqual(offenders, [],
+    "these guards read a construct through a fixed-width window; bound them by the "
+    + "construct's own end instead:\n  " + offenders.join("\n  "));
 });
 
 // ---- #6 (P2): a pure lookup is not an edit ---------------------------------
