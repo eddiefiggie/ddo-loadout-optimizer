@@ -3645,8 +3645,6 @@ if (typeof window !== "undefined" && window.App) {
       return res;
     }
 
-    /** The refusal, worded once. The name field lives in the rail, which is on
-     *  screen from every step, so "name it first" needs no per-surface variant. */
     /** #431 U4 — "no-name" is reachable from the character step's own save
      *  button, where the field it names is on screen beside it. The guard no
      *  longer produces this error at all: it omits Save instead. */

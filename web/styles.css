@@ -803,8 +803,14 @@ input.wz-ml { width: 120px; }
   /* #431 U5 — `flex: 1` still absorbs the first line's slack once .wz-actions
      wraps, which would strand the terminal save control bottom-LEFT and invert
      the placement KTD8 protects. With the spacer suppressed the wrapped bar
-     simply reads in document order. */
-  .wz-spacer { display: none; }
+     simply reads in document order.
+
+     Scoped to the RESULTS bar, which is the one that wraps: it carries four
+     children (two ghosts, save, and save's status line). The other bars fit,
+     and suppressing their spacer would strip the right-alignment of an advance
+     control that has room — most visibly on intro, whose single "Get started →"
+     would render flush left on a phone and bottom-right everywhere else. */
+  .wz-results .wz-actions .wz-spacer { display: none; }
 }
 
 /* The required marker, at the field (R2), and the invalid treatment (R8/R11):
