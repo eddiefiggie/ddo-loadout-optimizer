@@ -1942,7 +1942,15 @@ function readSolution(res, program, precomputedVisible) {
       setAugmentsPlaced.push({ ...meta, slot_color: setAugColorByY.get(y) || "Colorless" });
     }
   }
-  const out = { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, tfPlaced, gsPlaced, jokerPlaced, membershipPlaced, setAugmentsPlaced };
+  const out = { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, tfPlaced, gsPlaced, jokerPlaced, membershipPlaced, setAugmentsPlaced,
+    // #446 U1 (KTD9) — the achieved/ceiling census, built HERE rather than in
+    // solveLexicographic so the tieBreak:false alternatives path (solveConstrained,
+    // which spreads this object) carries its OWN numbers. renderBuild is generic
+    // over the optimum and any selected alternative; emitting only on the optimum
+    // path would make the fraction vanish the moment a player inspects an
+    // alternative — or, worse, invite rendering the optimum's numerator beside
+    // the alternative's headline.
+    ceilingReport: buildCeilingReport(program, prim) };
   // #91 (U3) — utility effects present in THIS primal, only when the tier is
   // ranked (a tier-removed solve returns the exact pre-feature shape). Load-
   // bearing check (review fix): an effect is present iff ANY backing z in its
@@ -2353,6 +2361,11 @@ async function solveLexicographic(model, highs) {
     // `program` is dropped on save and KTD6 forbids re-solving on load.
     overrideReport: buildOverrideReport(program, prim, model, visible),
     saturationReport: buildSaturationReport(program, prim),
+    // #446 U1 (KTD9) — built in readSolution so alternatives carry it too; this
+    // return picks fields off `sol` by name rather than spreading it, so the
+    // optimum needs the explicit hand-off or the census would reach only the
+    // Alternatives tab.
+    ceilingReport: sol.ceilingReport,
     emptySlots: buildEmptySlotReport(model, sol),
     absorptionQuarantine: buildAbsorptionQuarantineReport(model, program),
     // #110 (U7) — the blocklist attribution, computed at model-build time (the
@@ -2499,13 +2512,72 @@ function buildEmptySlotReport(model, sol) {
   return { count: slots.length, slots, blockedSlots };
 }
 
-/** #239 U1 — which ranked stats are at their ceiling with sources left over.
+/** #239 U1 / #446 U1 — the per-target-stat census, in ONE pass: what the build
+ *  holds in each ranked stat, and what its bonus-type buckets could have supplied.
  *
  *  Reads `program.zByBucket`, which already IS the census: the solver builds it
  *  only for target stats, keyed `${stat}||${equivType(type)}`, holding every
  *  candidate contribution in the LIVE pool with its gates and value. There is no
  *  second traversal of the pool here and there must not be — a parallel notion of
- *  "the pool" is free to drift from the one the solve actually used.
+ *  "the pool" is free to drift from the one the solve actually used. Two reports
+ *  are projected off this one pass rather than walking it twice.
+ *
+ *  Rows are internal: `total` (Σ taken) and `ceiling` (Σ best) are both RAW, so
+ *  the notice's projection can stay byte-identical while the display's clamps to
+ *  the stat's cap (KTD7). `sawBucket` is not carried — `bonusTypes.length > 0` is
+ *  it, since a label is pushed exactly once per counted bucket.
+ *
+ *  KTD8 — `_UTILITY_SENTINEL` is a member of `targetList` but is not a stat, and
+ *  a census row for it would render 0 / 0 with a NaN meter. Skipped explicitly,
+ *  matching every other per-stat loop in this file.
+ */
+function buildCeilingCensus(program, prim) {
+  const zByBucket = (program && program.zByBucket) || new Map();
+  const forcedOff = (program && program.forcedOffVars) || new Set();
+  const reachable = (z) => !(z.gates || []).some((g) => forcedOff.has(g));
+  const out = [];
+
+  for (const stat of (program && program.targetList) || []) {
+    if (stat === _UTILITY_SENTINEL) continue; // #91 (KTD1) — not a stat; no per-stat parts
+    const bonusTypes = [];
+    let unusedSources = 0, total = 0, ceiling = 0, allFilled = true;
+
+    // U2 (#290/#291) — a target's census spans its own buckets plus its
+    // cross-add source stats' (bucketCountsFor), the same reach every other
+    // prefix site has: an unused USP source is an unused source FOR the element.
+    for (const [key, zs] of zByBucket) {
+      if (!bucketCountsFor(key, stat)) continue;
+      const live = zs.filter(reachable);
+      if (!live.length) continue;
+
+      let best = -Infinity, taken = 0;
+      for (const z of live) {
+        if (z.value > best) best = z.value;
+        // A bucket caps at one contributor, so at most one z is on.
+        if (prim(z.name) > 0.5) taken = z.value;
+      }
+      if (taken < best) allFilled = false;
+      total += taken;
+      ceiling += best;  // finite: the bucket was skipped above unless it holds a live z
+      unusedSources += live.filter((z) => prim(z.name) <= 0.5).length;
+
+      // The absent-bonus-type bucket keys as the string "null" (equivType returns
+      // the type unchanged, and it is null). Render it as a word — a player must
+      // never be shown the literal "null" as a bonus type.
+      const type = key.split("||")[1];
+      bonusTypes.push(type === "null" || type === "undefined" ? "untyped" : type);
+    }
+
+    out.push({ stat, total, ceiling, bonusTypes, unusedSources, allFilled });
+  }
+  return out;
+}
+
+/** #239 U1 — which ranked stats are at their ceiling with sources left over.
+ *
+ *  The projection the saturation NOTICE reads: the census subset satisfying the
+ *  KTD3 gate, in the exact field shape and order every existing consumer already
+ *  parses. Its firing condition has not moved and must not — see KTD3 below.
  *
  *  Plain JSON, built here rather than at render time for the same reason
  *  `creditReport` is: `program` is dropped from the saved snapshot, and a
@@ -2516,7 +2588,8 @@ function buildEmptySlotReport(model, sol) {
  *  it. Priority 1 is at its global maximum on every solve, so an ungated report
  *  would fire constantly; the informative case is the one that generates the
  *  complaint, where other gear carrying the stat went unused because it would
- *  have shared a filled bucket.
+ *  have shared a filled bucket. `buildCeilingReport` is deliberately ungated
+ *  because it reports a fact rather than raising an alarm; this one is not.
  *
  *  KTD6 — facts only. No cause is attributed: the pool is the product of the ML
  *  band, the gear pool, the character gates AND the dominance pre-filter, and
@@ -2524,46 +2597,43 @@ function buildEmptySlotReport(model, sol) {
  *  wrong once for an ML-29 item well inside a cap of 34.
  */
 function buildSaturationReport(program, prim) {
-  const zByBucket = (program && program.zByBucket) || new Map();
-  const forcedOff = (program && program.forcedOffVars) || new Set();
-  const reachable = (z) => !(z.gates || []).some((g) => forcedOff.has(g));
-  const out = [];
+  return buildCeilingCensus(program, prim)
+    // `bonusTypes.length > 0` IS the old `sawBucket`: no bucket counted, no label.
+    .filter((r) => r.bonusTypes.length > 0 && r.allFilled && r.unusedSources > 0)
+    .map((r) => ({ stat: r.stat, total: r.total, bonusTypes: r.bonusTypes.slice(),
+      unusedSources: r.unusedSources }));
+}
 
-  for (const stat of (program && program.targetList) || []) {
-    const bonusTypes = [];
-    let unusedSources = 0, total = 0, sawBucket = false, allFilled = true;
-
-    // U2 (#290/#291) — a target's census spans its own buckets plus its
-    // cross-add source stats' (bucketCountsFor), the same reach every other
-    // prefix site has: an unused USP source is an unused source FOR the element.
-    for (const [key, zs] of zByBucket) {
-      if (!bucketCountsFor(key, stat)) continue;
-      const live = zs.filter(reachable);
-      if (!live.length) continue;
-      sawBucket = true;
-
-      let best = -Infinity, taken = 0;
-      for (const z of live) {
-        if (z.value > best) best = z.value;
-        // A bucket caps at one contributor, so at most one z is on.
-        if (prim(z.name) > 0.5) taken = z.value;
-      }
-      if (taken < best) allFilled = false;
-      total += taken;
-      unusedSources += live.filter((z) => prim(z.name) <= 0.5).length;
-
-      // The absent-bonus-type bucket keys as the string "null" (equivType returns
-      // the type unchanged, and it is null). Render it as a word — a player must
-      // never be shown the literal "null" as a bonus type.
-      const type = key.split("||")[1];
-      bonusTypes.push(type === "null" || type === "undefined" ? "untyped" : type);
-    }
-
-    if (sawBucket && allFilled && unusedSources > 0) {
-      out.push({ stat, total, bonusTypes, unusedSources });
-    }
-  }
-  return out;
+/** #446 U1 — the achieved/ceiling fraction's source: one row per target stat,
+ *  saturated or not, so a ranked-priority card can state what it holds against
+ *  what its buckets could supply.
+ *
+ *  Plain JSON at solve time for the same reason `saturationReport` is (see above),
+ *  and emitted from `readSolution` so every solve path — the optimum AND each
+ *  alternatives re-solve — carries its OWN numbers. A card rendered for a selected
+ *  alternative must never show the optimum's numerator beside the alternative's
+ *  headline.
+ *
+ *  KTD7 — both sides are clamped to the stat's cap. The card's headline is
+ *  `effectiveOf` = min(cap, raw), and the card already carries a capNote reading
+ *  "capped at N · raw M"; an unclamped fraction would state a third total for one
+ *  stat and advertise headroom the player cannot hold. The clamp is why this
+ *  report and `saturationReport` can legitimately disagree on a capped stat —
+ *  the latter is held byte-identical and stays raw.
+ *
+ *  `ceiling` is an UPPER BOUND, not a reachable target (KTD2): Σ best sums each
+ *  bucket's best source independently, and those sources may be one item, may
+ *  compete for one slot, or may contradict a chosen set. Nothing downstream may
+ *  assert that the remainder is attainable.
+ */
+function buildCeilingReport(program, prim) {
+  const capped = (program && program.cappedStats) || {};
+  return buildCeilingCensus(program, prim).map((r) => {
+    const cap = capped[r.stat];
+    const clamp = (v) => (cap != null ? Math.min(cap, v) : v);
+    return { stat: r.stat, achieved: clamp(r.total), ceiling: clamp(r.ceiling),
+      bonusTypes: r.bonusTypes.slice(), unusedSources: r.unusedSources, allFilled: r.allFilled };
+  });
 }
 
 /** U4 (R9, R10) — what each declared credit did, as plain JSON on the result.
