@@ -31,12 +31,12 @@ test("WIZARD_STEPS order", () => {
 // advanced without armor could solve for a loadout they cannot wear, because
 // armor drives the dodge cap and filters what is equippable.
 test("canAdvance(character): needs a race, a positive ML, and an armor type", () => {
-  assert.ok(!canAdvance("character", { race: "", ml: 34, armor: "light" }));
-  assert.ok(!canAdvance("character", { race: "Human", ml: 0, armor: "light" }));
-  assert.ok(!canAdvance("character", { race: "Human", ml: 34, armor: "" }));
-  assert.ok(canAdvance("character", { race: "Human", ml: 34, armor: "light" }));
+  assert.ok(!canAdvance("character", { characterName: "Sook", race: "", ml: 34, armor: "light" }));
+  assert.ok(!canAdvance("character", { characterName: "Sook", race: "Human", ml: 0, armor: "light" }));
+  assert.ok(!canAdvance("character", { characterName: "Sook", race: "Human", ml: 34, armor: "" }));
+  assert.ok(canAdvance("character", { characterName: "Sook", race: "Human", ml: 34, armor: "light" }));
   // …except for the Forged, who wear a docent and have no armor pick to make.
-  assert.ok(canAdvance("character", { race: "Warforged", ml: 34, armor: "" }));
+  assert.ok(canAdvance("character", { characterName: "Sook", race: "Warforged", ml: 34, armor: "" }));
 });
 
 test("canAdvance(pool): owned mode requires an uploaded inventory", () => {
@@ -3312,24 +3312,24 @@ test("#428 U5: the guard gates player navigation, not the app's own step changes
 // ---------------------------------------------------------------------------
 
 test("#428 U6 (R2a): the required set is race, ML cap and armor", () => {
-  assert.deepStrictEqual(missingRequired({ race: "", ml: 0, armor: "" }).sort(),
+  assert.deepStrictEqual(missingRequired({ characterName: "Sook", race: "", ml: 0, armor: "" }).sort(),
     ["armor", "ml", "race"]);
-  assert.deepStrictEqual(missingRequired({ race: "Human", ml: 30, armor: "light" }), []);
+  assert.deepStrictEqual(missingRequired({ characterName: "Sook", race: "Human", ml: 30, armor: "light" }), []);
 });
 
 test("#428 U6 (AE1): race blank is reported as missing", () => {
-  assert.deepStrictEqual(missingRequired({ race: "", ml: 30, armor: "light" }), ["race"]);
+  assert.deepStrictEqual(missingRequired({ characterName: "Sook", race: "", ml: 30, armor: "light" }), ["race"]);
 });
 
 test("#428 U6 (AE2a): armor blank blocks even with race and ML cap set", () => {
-  const st = { race: "Human", ml: 30, armor: "" };
+  const st = { characterName: "Sook", race: "Human", ml: 30, armor: "" };
   assert.deepStrictEqual(missingRequired(st), ["armor"]);
   assert.ok(!canAdvance("character", st), "the gate armor newly joins is ENFORCED, not merely displayed");
 });
 
 test("#428 U6 (AE2): all three set advances regardless of optional fields", () => {
-  assert.ok(canAdvance("character", { race: "Human", ml: 30, armor: "cloth" }));
-  assert.ok(canAdvance("character", { race: "Human", ml: 30, armor: "cloth",
+  assert.ok(canAdvance("character", { characterName: "Sook", race: "Human", ml: 30, armor: "cloth" }));
+  assert.ok(canAdvance("character", { characterName: "Sook", race: "Human", ml: 30, armor: "cloth",
     alignment: "", oath: "", style: "", weaponTypes: [] }));
 });
 
@@ -3338,20 +3338,63 @@ test("#428 U6 (KD6): a Forged race is exempt from the armor requirement", () => 
   // the race handler CLEARS state.armor. Requiring it of them would be a gate no
   // player could satisfy — the step would simply never advance.
   for (const race of ["Warforged", "Bladeforged"]) {
-    assert.deepStrictEqual(missingRequired({ race, ml: 30, armor: "" }), [],
+    assert.deepStrictEqual(missingRequired({ characterName: "Sook", race, ml: 30, armor: "" }), [],
       `${race} needs no armor pick`);
-    assert.ok(canAdvance("character", { race, ml: 30, armor: "" }));
+    assert.ok(canAdvance("character", { characterName: "Sook", race, ml: 30, armor: "" }));
+  }
+});
+
+// ---------------------------------------------------------------------------
+// #431 U1 (KTD12) — the build name joins the same gate. Isolated coverage, on
+// purpose: every assertion in this file's gate cluster fails on some OTHER
+// blank field, so a name check that never ran would still pass them all for
+// the wrong reason. These pin the `name` key on its own.
+// ---------------------------------------------------------------------------
+
+test("#431 U1 (AE2): all four required fields set advances", () => {
+  assert.ok(canAdvance("character", { characterName: "Sook", race: "Human", ml: 30, armor: "cloth" }));
+});
+
+test("#431 U1 (AE1): a blank name blocks, on the name key alone", () => {
+  const st = { characterName: "", race: "Human", ml: 30, armor: "cloth" };
+  assert.deepStrictEqual(missingRequired(st), ["name"]);
+  assert.ok(!canAdvance("character", st), "the name gate is ENFORCED, not merely displayed");
+});
+
+test("#431 U1: a name that is only whitespace counts as absent", () => {
+  assert.deepStrictEqual(
+    missingRequired({ characterName: "   ", race: "Human", ml: 30, armor: "cloth" }), ["name"]);
+});
+
+test("#431 U1 (KTD1): the name leads the missing list, so it leads the message and the scroll", () => {
+  assert.deepStrictEqual(
+    missingRequired({ characterName: "", race: "", ml: 30, armor: "cloth" }), ["name", "race"]);
+});
+
+test("#431 U1 (AE1): the message names the build name, and names it alongside a second field", () => {
+  const one = missingRequiredMessage({ characterName: "", race: "Human", ml: 30, armor: "cloth" });
+  assert.ok(/[Bb]uild name/.test(one), one);
+  const both = missingRequiredMessage({ characterName: "", race: "", ml: 30, armor: "cloth" });
+  assert.ok(/[Bb]uild name/.test(both), both);
+  assert.ok(/[Rr]ace/.test(both), both);
+});
+
+test("#431 U1: the Forged armor exemption still holds once a name is present", () => {
+  for (const race of ["Warforged", "Bladeforged"]) {
+    assert.deepStrictEqual(
+      missingRequired({ characterName: "Sook", race, ml: 30, armor: "" }), [], race);
+    assert.ok(canAdvance("character", { characterName: "Sook", race, ml: 30, armor: "" }));
   }
 });
 
 test("#428 U6 (AE3): a loaded build carrying all three marks nothing as needing an answer", () => {
-  const loaded = { race: "Elf", ml: 34, armor: "medium" };
+  const loaded = { characterName: "Sook", race: "Elf", ml: 34, armor: "medium" };
   assert.deepStrictEqual(missingRequired(loaded), []);
   assert.strictEqual(missingRequiredMessage(loaded), null);
 });
 
 test("#428 U6 (AE3a): a build saved before KD6 carries no armor and is marked", () => {
-  const preKd6 = { race: "Elf", ml: 34, armor: "" };
+  const preKd6 = { characterName: "Sook", race: "Elf", ml: 34, armor: "" };
   assert.deepStrictEqual(missingRequired(preKd6), ["armor"]);
   assert.ok(/[Aa]rmor/.test(missingRequiredMessage(preKd6)));
 });

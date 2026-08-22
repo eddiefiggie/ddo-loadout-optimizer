@@ -42,6 +42,7 @@ const wizIsForged = (race) => FORGED.has(String(race || "").toLowerCase());
  *  asked. `label` is what the message and the field marker both read from, so
  *  the two cannot name the same field differently. */
 const CHARACTER_REQUIRED = [
+  { key: "name", label: "Build name" },
   { key: "ml", label: "Minimum level (ML) cap" },
   { key: "race", label: "Race" },
   { key: "armor", label: "Armor type" },
@@ -61,6 +62,10 @@ const CHARACTER_REQUIRED = [
 function missingRequired(state) {
   const s = state || {};
   const out = [];
+  // #431 U1 (KTD1) — pushed FIRST so the name leads both the message and the
+  // scroll-to-first-missing order, matching its position in the group. Trimmed:
+  // a name of spaces is not a name, and CharacterStore keys records by it.
+  if (!String(s.characterName || "").trim()) out.push("name");
   if (!(Number(s.ml) > 0)) out.push("ml");
   if (!s.race) out.push("race");
   if (!s.armor && !wizIsForged(s.race)) out.push("armor");
