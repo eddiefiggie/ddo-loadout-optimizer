@@ -1182,11 +1182,31 @@ input.wz-ml { width: 120px; }
 /* Per-slot constraint controls (U6) on the equipped-list rows. */
 .pd-row { position: relative; }
 .pd-rtop { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
-.pd-ctl { min-height: 0; padding: 0; flex: none; width: 22px; height: 22px; display: flex; align-items: center;
-  justify-content: center; background: none; border: 1px solid transparent; border-radius: var(--radius-sm);
-  color: var(--faint); font-size: var(--fs-md); line-height: 1; cursor: pointer; opacity: 0; transition: opacity 0.12s; }
-.pd-row:hover .pd-ctl, .pd-row.constrained .pd-ctl { opacity: 1; }
+/* #447 / #446 U8 (R23/R25) -- visible at rest. It was `opacity: 0` until
+   `.pd-row:hover`, which made it undiscoverable by accident on desktop and
+   permanently absent on touch, and put keyboard focus on a fully transparent
+   element -- a WCAG 2.4.11 failure, since the focus ring the global rule already
+   draws was landing on something invisible. No opacity, no hover gate. */
+.pd-ctl { position: relative; min-height: 0; padding: 0; flex: none; width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--faint); font-size: var(--fs-md); line-height: 1; cursor: pointer; }
+/* R24 -- the touch target reaches var(--tap) through an overlay that contributes
+   NO layout. Padding would reach 44px too and is wrong: .pd-ctl is the tallest
+   child of .pd-rtop, a flex row whose height follows it, so padding would raise
+   every gear row -- 15 of them on a full paperdoll, measured. The overlay costs
+   nothing and stays inside the row's existing padding.
+
+   The 22px -> 34px visual change DOES raise the row, by 12px each (+180px on a
+   full paperdoll). That is R24's settled visual size, not a side effect: the
+   requirement's "must not change .pd-rtop's rendered height" is about the
+   hit-area mechanism, which is why the overlay exists. */
+.pd-ctl::after { content: ""; position: absolute; inset: -5px; }
 .pd-ctl:hover { color: var(--text); border-color: var(--border-2); }
+/* A constrained slot used to be legible from the control being visible AT ALL
+   while its neighbours were transparent. Now every control shows, so that signal
+   would be lost -- the accent carries it, agreeing with the row border below. */
+.pd-row.constrained .pd-ctl { color: var(--text); border-color: var(--accent); }
 .pd-row.constrained { border-color: var(--accent); }
 .pd-badge { display: inline-block; margin-top: 4px; font-size: 0.68rem; border-radius: 5px; padding: 1px 6px; border: 1px solid var(--border-2); }
 .pd-badge.pin { color: var(--accent); border-color: var(--accent); }

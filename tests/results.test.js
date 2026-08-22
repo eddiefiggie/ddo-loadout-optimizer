@@ -2970,3 +2970,66 @@ test("#446 U7 (R21): two contributions to the rank-1 stat both carry the mark", 
   assert.deepStrictEqual(chips.map((c) => `${c.stat}/${c.sub}:${c.rank1}`),
     ["Intelligence/Enhancement:true", "Intelligence/Insight:true", "Dodge/Enhancement:false"]);
 });
+
+// ---------------------------------------------------------------------------
+// #446 U8 / #447 — the per-slot constraint control, visible at rest.
+// ---------------------------------------------------------------------------
+
+test("#446 U8 (R23/AE7): the slot control has no opacity gate and no hover-gated reveal", () => {
+  const css = _reachCss();
+  const rule = _cssRule(css, ".pd-ctl {");
+  assert.ok(!/opacity/.test(rule), "it was opacity:0 until hover — undiscoverable on desktop, absent on touch");
+  assert.ok(!/\.pd-row:hover \.pd-ctl/.test(css), "and the hover-gated reveal is gone with it");
+  assert.ok(!/transition:\s*opacity/.test(rule), "including the transition that animated the reveal");
+});
+
+test("#446 U8 (R23): it has a resting border, so there is something to see at rest", () => {
+  const rule = _cssRule(_reachCss(), ".pd-ctl {");
+  assert.ok(/border:\s*1px solid var\(--border\)/.test(rule),
+    "a transparent border on a transparent control was two ways of being invisible");
+  assert.ok(!/border:\s*1px solid transparent/.test(rule));
+});
+
+test("#446 U8 (R24/AE7): the hit area reaches var(--tap) via an overlay that contributes no layout", () => {
+  const css = _reachCss();
+  const rule = _cssRule(css, ".pd-ctl {");
+  assert.ok(/width:\s*34px/.test(rule) && /height:\s*34px/.test(rule), "34px is the settled visual size");
+  assert.ok(/position:\s*relative/.test(rule), "which anchors the overlay");
+  assert.ok(/padding:\s*0/.test(rule),
+    "padding is NOT the mechanism: .pd-ctl is the tallest child of the .pd-rtop flex row, "
+    + "so padding to 44px would raise every gear row");
+  const over = _cssRule(css, ".pd-ctl::after {");
+  assert.ok(/position:\s*absolute/.test(over), "the overlay is out of flow…");
+  assert.ok(/inset:\s*-5px/.test(over), "…and negative-inset: 34 + 5 + 5 = 44, the app's own tap floor");
+  // Arithmetic, not a guess: var(--tap) is what the rest of the app uses.
+  assert.ok(/--tap:\s*44px/.test(css), "and 44px is that floor");
+});
+
+test("#446 U8: the constrained-slot signal survives the always-visible control", () => {
+  const css = _reachCss();
+  // A constrained slot used to be legible from its control being the only
+  // visible one in the list. Every control shows now, so that reading is gone
+  // and the signal has to be carried explicitly or it is lost.
+  assert.ok(/\.pd-row\.constrained \.pd-ctl \{[^}]*var\(--accent\)/.test(css),
+    "the control accents on a constrained row");
+  assert.ok(/\.pd-row\.constrained \{ border-color: var\(--accent\); \}/.test(css),
+    "and the row border rule is untouched by this work");
+});
+
+test("#446 U8 (R25): focus can no longer land on a transparent control", () => {
+  const css = _reachCss();
+  // The focus ring itself is NOT new — the global button:focus-visible rule
+  // already shipped. What changes is that it now lands on something rendered.
+  assert.ok(/button:focus-visible/.test(css), "the inherited ring is preserved, not added");
+  assert.ok(!/opacity/.test(_cssRule(css, ".pd-ctl {")),
+    "and the control it draws on is never transparent — WCAG 2.4.11");
+});
+
+test("#446 U8: the control is a gear, and keeps its label (regression guard)", () => {
+  // Exempt from the red-proof gate BY DESIGN: the aria-label already shipped.
+  // This guard exists so the glyph swap cannot quietly take it along.
+  const html = R.equippedRow("Ring", null, {}, new Set(), null, null, null, null);
+  assert.ok(/aria-label="constrain Ring"/.test(html), "the label survives the glyph swap");
+  assert.ok(/&#9881;<\/button>/.test(html), "a gear, not an ellipsis");
+  assert.ok(/title="constrain this slot"/.test(html), "and the pointer title is unchanged");
+});

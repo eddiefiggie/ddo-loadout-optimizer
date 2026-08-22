@@ -404,7 +404,7 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
   // "pinned" badge must fire only when THIS row's item is one of the slot's pins.
   const rowId = v ? (v.variant_id || v.source_item) : "";
   const rowPinned = !!(c && c.type === "pin" && rowId && _pinnedVariantIds(c).includes(rowId));
-  const ctl = `<button class="pd-ctl" data-slot="${esc(label)}" title="constrain this slot" aria-label="constrain ${esc(label)}">&#8943;</button>`;
+  const ctl = `<button class="pd-ctl" data-slot="${esc(label)}" title="constrain this slot" aria-label="constrain ${esc(label)}">&#9881;</button>`;
   const menu = `<div class="pd-menu" hidden>
     <button data-act="pin" data-slot="${esc(label)}" data-variant="${canPin ? esc(rowId) : ""}"${canPin ? "" : " disabled"}>Pin this item</button>
     <button data-act="empty" data-slot="${esc(label)}">Lock empty</button>
