@@ -1503,9 +1503,9 @@
         // standing failure this repo forbids.
         crossAdd: p.crossAdd || null,
       }));
-      // #446 (U2, R15/R18) — the achieved/ceiling fraction rides the shared
+      // #449 (U2, R15/R18) — the achieved/ceiling fraction rides the shared
       // content model beside the total it qualifies, so every export renders the
-      // same numbers and the same wording the card does. Null on a pre-#446
+      // same numbers and the same wording the card does. Null on a pre-#449
       // restore; each renderer must still print it — carrying it here is
       // necessary, not sufficient.
       attribution[stat] = { total, cap, sources, ceiling: ceilingFor(snap, stat) };
@@ -1573,7 +1573,7 @@
         // touched the solve. A shared build asserting optimality with silent
         // exclusions is the solve-visible-but-share-invisible failure.
         blockNotice: blockNoticeLines(snap),
-        // #446 (U2, R15) — the ONE full statement that qualifies every fraction
+        // #449 (U2, R15) — the ONE full statement that qualifies every fraction
         // in the document. Rendered once per export, never per stat: repeated
         // under each of eight priorities it reads as boilerplate and stops being
         // read. Null when no stat carries a ceiling row.
@@ -1638,7 +1638,7 @@
     return e ? saturationSentence(e) : null;
   }
 
-  /** #446 U2 — the achieved/ceiling fraction as SHARED CONTENT: the numbers, the
+  /** #449 U2 — the achieved/ceiling fraction as SHARED CONTENT: the numbers, the
    *  state, and the wording, in one place, so the ranked-priority card and all
    *  five exports cannot drift. Keyed by stat, never by array index, for the same
    *  reason `saturationLineFor` is: a future filtered report cannot misalign a
@@ -1646,7 +1646,7 @@
    *
    *  Reads `ceilingReport` (plain JSON on the result, kept by RESULT_KEEP) and
    *  `capped`, never the live program, so a restored character reads identically
-   *  without re-solving. Returns null when the stat has no row — the pre-#446
+   *  without re-solving. Returns null when the stat has no row — the pre-#449
    *  restore path — and every surface must render nothing rather than a zero
    *  nobody computed.
    *
@@ -1721,7 +1721,7 @@
    *  document (R15). It carries the qualification the short forms deliberately
    *  omit: repeated under every card down an eight-priority build it reads as
    *  boilerplate and stops being read. Null when no stat has a row, so a
-   *  pre-#446 restore prints no orphan sentence.
+   *  pre-#449 restore prints no orphan sentence.
    */
   function ceilingStatement(result) {
     return ((result && result.ceilingReport) || []).length ? CEILING_FULL_STATEMENT : null;
@@ -2014,7 +2014,7 @@
    */
   const NOTICE_ACTIONABLE = "actionable";
   const NOTICE_QUALIFYING = "qualifying";
-  // #446 U5 (KTD6) — the third class. No entry function mints it today (every
+  // #449 U5 (KTD6) — the third class. No entry function mints it today (every
   // split branch is actionable or qualifying), but the name lives beside its two
   // siblings so results.js has ONE place to read the vocabulary from rather than
   // two constants here and a bare string there.
@@ -2158,7 +2158,7 @@
     // pure primitives (results.js binds these; single definition, no drift)
     affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, bundleGroups, itemMl, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,
-    // #446 (U2) — the achieved/ceiling fraction: numbers, state and wording from
+    // #449 (U2) — the achieved/ceiling fraction: numbers, state and wording from
     // one place, plus the once-per-document full statement.
     ceilingFor, ceilingStatement, CEILING_FULL_STATEMENT,
     satisfiedSets, suppressedHostIds, slotSetNames,

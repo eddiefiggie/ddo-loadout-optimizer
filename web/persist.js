@@ -43,7 +43,7 @@
     // dropped by omission, and a restored character is never re-solved. Without
     // it the notice would render on a fresh solve and vanish on load.
     "saturationReport",
-    // #446 U1 — the achieved/ceiling census behind each ranked card's fraction,
+    // #449 U1 — the achieved/ceiling census behind each ranked card's fraction,
     // for the same reason as `saturationReport` directly above: it is computed in
     // one pass over `program.zByBucket`, `program` is dropped by omission, and a
     // restored character is never re-solved. Without it every priority card loses

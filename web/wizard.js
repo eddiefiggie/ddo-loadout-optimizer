@@ -3164,7 +3164,7 @@ if (typeof window !== "undefined" && window.App) {
     }
 
     let solving = false;
-    // #446 U6 (KTD3) — the notices-panel latch: pulse the attention pill until
+    // #449 U6 (KTD3) — the notices-panel latch: pulse the attention pill until
     // the player first opens the panel, then never again this session. Session-
     // scoped on purpose, and deliberately NOT on `state`: it is a presentation
     // fact about this sitting, not part of the build, so it must not reach the
@@ -3184,7 +3184,7 @@ if (typeof window !== "undefined" && window.App) {
       if (canAdvance("priorities", state)) solve(false);
     }
 
-    // #446 U5 (KTD5) — the notice-panel jump seam. results.js hands over a target
+    // #449 U5 (KTD5) — the notice-panel jump seam. results.js hands over a target
     // and nothing more; the step change and the scroll live here, where wizard
     // state actually is. `step: null` means "this screen": scroll the anchor into
     // view and focus it rather than re-rendering, which would collapse the panel

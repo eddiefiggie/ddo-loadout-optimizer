@@ -1943,7 +1943,7 @@ function readSolution(res, program, precomputedVisible) {
     }
   }
   const out = { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, tfPlaced, gsPlaced, jokerPlaced, membershipPlaced, setAugmentsPlaced,
-    // #446 U1 (KTD9) — the achieved/ceiling census, built HERE rather than in
+    // #449 U1 (KTD9) — the achieved/ceiling census, built HERE rather than in
     // solveLexicographic so the tieBreak:false alternatives path (solveConstrained,
     // which spreads this object) carries its OWN numbers. renderBuild is generic
     // over the optimum and any selected alternative; emitting only on the optimum
@@ -2361,7 +2361,7 @@ async function solveLexicographic(model, highs) {
     // `program` is dropped on save and KTD6 forbids re-solving on load.
     overrideReport: buildOverrideReport(program, prim, model, visible),
     saturationReport: buildSaturationReport(program, prim),
-    // #446 U1 (KTD9) — built in readSolution so alternatives carry it too; this
+    // #449 U1 (KTD9) — built in readSolution so alternatives carry it too; this
     // return picks fields off `sol` by name rather than spreading it, so the
     // optimum needs the explicit hand-off or the census would reach only the
     // Alternatives tab.
@@ -2512,7 +2512,7 @@ function buildEmptySlotReport(model, sol) {
   return { count: slots.length, slots, blockedSlots };
 }
 
-/** #239 U1 / #446 U1 — the per-target-stat census, in ONE pass: what the build
+/** #239 U1 / #449 U1 — the per-target-stat census, in ONE pass: what the build
  *  holds in each ranked stat, and what its bonus-type buckets could have supplied.
  *
  *  Reads `program.zByBucket`, which already IS the census: the solver builds it
@@ -2604,7 +2604,7 @@ function buildSaturationReport(program, prim) {
       unusedSources: r.unusedSources }));
 }
 
-/** #446 U1 — the achieved/ceiling fraction's source: one row per target stat,
+/** #449 U1 — the achieved/ceiling fraction's source: one row per target stat,
  *  saturated or not, so a ranked-priority card can state what it holds against
  *  what its buckets could supply.
  *

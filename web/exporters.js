@@ -274,7 +274,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     const stats = Object.keys(view.attribution);
     if (stats.length) {
       out += `\n## Stat breakdown\n\n`;
-      // #446 (U2, R15/R18) — the achieved/ceiling fraction, in every format.
+      // #449 (U2, R15/R18) — the achieved/ceiling fraction, in every format.
       // The full statement prints ONCE per document; each stat carries only the
       // short form naming what its denominator is. Carrying the fields on the
       // projection puts them in ZERO exports — the bundle is content, not a
@@ -364,7 +364,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     const stats = Object.keys(view.attribution);
     if (stats.length) {
       out += `\n[b]Stat breakdown[/b]\n`;
-      // #446 (U2) — same two writes as the Markdown site: statement once, short
+      // #449 (U2) — same two writes as the Markdown site: statement once, short
       // form per stat.
       if (view.character.ceilingStatement) out += `[i]${bbEsc(view.character.ceilingStatement)}[/i]\n`;
       out += `[list]\n`;
@@ -462,12 +462,12 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
         rows.push(csvRow([stat, a.total, capped, a.sources.map((p) => sourceStr(p, (s) => s)).join(" | ")]));
       }
     }
-    // #446 (U2, R15/R18) — the achieved/ceiling fraction. Its OWN section, in the
+    // #449 (U2, R15/R18) — the achieved/ceiling fraction. Its OWN section, in the
     // Utility section's shape (banner row, header row, one row per entry), rather
     // than two more columns on the stat table: the same reason #245/#262 folded
     // their per-item notes into an existing cell — a new column breaks every
     // consumer pinned to the four-column stat header. Emitted only for stats that
-    // carry a row, so a pre-#446 restore prints no section at all.
+    // carry a row, so a pre-#449 restore prints no section at all.
     const withCeiling = Object.keys(view.attribution).filter((s) => view.attribution[s].ceiling);
     if (withCeiling.length) {
       rows.push("");
@@ -548,7 +548,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     const stats = Object.keys(view.attribution);
     if (stats.length) {
       h += `<h2>Stat breakdown</h2>`;
-      // #446 (U2) — same two writes as the Markdown site: statement once, short
+      // #449 (U2) — same two writes as the Markdown site: statement once, short
       // form per stat.
       if (view.character.ceilingStatement) h += `<p class="declared-note"><em>${htmlEsc(view.character.ceilingStatement)}</em></p>`;
       h += `<ul>`;
@@ -598,7 +598,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
   // priced top miss — all inherited from Proj.project, so the envelope needs no
   // per-field wiring) and verbatim in `core`'s snapshot
   // (`utilityReport`); a report-less snapshot carries neither, never a zero.
-  // #446 (U2, R18) — the achieved/ceiling fraction rides as
+  // #449 (U2, R18) — the achieved/ceiling fraction rides as
   // `resolved.attribution[stat].ceiling`, inherited from Proj.project so the
   // envelope needs no per-field wiring. The denominator is named
   // `ceilingUpperBound`, not `ceiling`: Σ best sums each bonus-type bucket's best

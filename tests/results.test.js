@@ -499,7 +499,7 @@ function whyResult() {
   };
 }
 
-/** #446 U7 — parse a `.pd-prio` chip row back into its content model.
+/** #449 U7 — parse a `.pd-prio` chip row back into its content model.
  *
  *  The guards below were written against the flat comma-run whyThisLine used to
  *  emit ("Constitution +15 Enhancement"). The chip splits that string across
@@ -543,7 +543,7 @@ test("whyThisLine names the ranked contribution with its bonus type (R8, R9 + pl
   assert.ok(!/at-ceiling/.test(html), "no saturation report, no green");
 });
 
-test("#446 U4 (R17a/AE6): a saturated stat's gear-box span carries no ceiling marker, and keeps its label", () => {
+test("#449 U4 (R17a/AE6): a saturated stat's gear-box span carries no ceiling marker, and keeps its label", () => {
   const res = whyResult();
   res.saturationReport = [{ stat: "Constitution", total: 15, bonusTypes: ["Enhancement"], unusedSources: 2 }];
   const html = R.whyThisLine(res, { slot: "Ring", variant_id: "R" });
@@ -622,7 +622,7 @@ test("#276: no per-stat ceiling claim on a degenerate save whose totals are unav
   assert.ok(!/stat-ceiling/.test(v.cards), "a zeroed card never wears an at-ceiling chip");
 });
 
-test("plan 2026-08-12-001 U3/R4 + #446 U4: the Deep Dive block carries the same summary, now without green", () => {
+test("plan 2026-08-12-001 U3/R4 + #449 U4: the Deep Dive block carries the same summary, now without green", () => {
   const res = whyResult();
   res.saturationReport = [{ stat: "Constitution", total: 15, bonusTypes: ["Enhancement"], unusedSources: 2 }];
   const maps = { augAssign: { byIndex: new Map(), freeByIndex: new Map() }, dinoAssign: { byIndex: new Map() },
@@ -631,7 +631,7 @@ test("plan 2026-08-12-001 U3/R4 + #446 U4: the Deep Dive block carries the same 
   assert.ok(/pd-prio/.test(html), "the Deep Dive block renders the priority summary");
   assert.strictEqual(_chipLine(_chips(html)[0]), "+15 Constitution Enhancement",
     "same contribution content as the Loadout row");
-  // #446 U4 — this surface reached the marker independently of the Loadout row,
+  // #449 U4 — this surface reached the marker independently of the Loadout row,
   // so it needs its own guard that the removal covered it too.
   assert.ok(!/at-ceiling/.test(html), "the Deep Dive reaches the same spans, and they are unmarked here too");
 });
@@ -662,7 +662,7 @@ test("plan 2026-08-12-001 U3: equippedRow renders the summary only when the cont
     { result: res, attr: R.attributionByTarget(res), targets: ["Constitution"] });
   assert.ok(/pd-prio/.test(withCtx), "summary at the bottom of the box");
   assert.strictEqual(_chipLine(_chips(withCtx)[0]), "+15 Constitution Enhancement", "with its full content");
-  // #446 U4 — the third surface that reached the marker. Guarded separately for
+  // #449 U4 — the third surface that reached the marker. Guarded separately for
   // the same reason: each threads its own context into whyThisLine.
   assert.ok(!/at-ceiling/.test(withCtx), "and the row path renders no marker either");
   const withoutCtx = R.equippedRow("Ring", pick, {}, new Set(), null, null, null, null);
@@ -1970,7 +1970,7 @@ test("U1: renderResults emits the outbid notice — the render, not just the fun
   // #332's lesson: a disclosure that passes its own unit tests and is never
   // called from the render is inert on every surface. Assert the call site.
   const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
-  // #446 U5 moved the eleven interpolations out of the innerHTML template and
+  // #449 U5 moved the eleven interpolations out of the innerHTML template and
   // into noticeDescriptors, so the slice follows them. The intent is unchanged
   // and now spans two links: the builder must CALL the notice, and renderResults
   // must call the builder. Either one missing and it renders nowhere again.
@@ -2239,7 +2239,7 @@ test("U10: zeroSourceNotice's absent and filtered branches are separate entries 
     _modelWith(["Constitution"]), _datasetWith(["Constitution"])).length, 0);
 });
 
-// ---- #446 U3: the ranked-priority card's achieved/ceiling fraction ----------
+// ---- #449 U3: the ranked-priority card's achieved/ceiling fraction ----------
 // No DOM in this suite (see the file header), so the box is asserted on the HTML
 // string `buildViews` returns and on the CSS rule text that gives each state its
 // treatment. Every assertion pins a specific string so it cannot pass vacuously.
@@ -2263,7 +2263,7 @@ function _cssRule(css, sel) {
   return css.slice(at, css.indexOf("}", at) + 1);
 }
 
-test("#446 U3 (R11/R12/R13): a maxed stat renders the fraction, a full green meter and the shared maxed sentence", () => {
+test("#449 U3 (R11/R12/R13): a maxed stat renders the fraction, a full green meter and the shared maxed sentence", () => {
   const b = _reachBuild([{ stat: "Dodge", achieved: 12, ceiling: 12 }], { effective: { Dodge: 12 } });
   const v = R.buildViews(b, _reachModel, { targets: ["Dodge"] });
   assert.ok(/class="stat-reach is-maxed"/.test(v.cards), "the box carries the maxed state class");
@@ -2278,7 +2278,7 @@ test("#446 U3 (R11/R12/R13): a maxed stat renders the fraction, a full green met
     "and the fraction is green with it");
 });
 
-test("#446 U3 (R14/R29): a shortfall renders its fraction, a proportional meter and the whole-track bound treatment", () => {
+test("#449 U3 (R14/R29): a shortfall renders its fraction, a proportional meter and the whole-track bound treatment", () => {
   const b = _reachBuild([{ stat: "Dodge", achieved: 30, ceiling: 50 }], { effective: { Dodge: 30 } });
   const v = R.buildViews(b, _reachModel, { targets: ["Dodge"] });
   assert.ok(/class="stat-reach is-shortfall"/.test(v.cards), "the shortfall state class");
@@ -2300,7 +2300,7 @@ test("#446 U3 (R14/R29): a shortfall renders its fraction, a proportional meter 
     "the fill is drawn over the hatch translucently, not as an opaque cover");
 });
 
-test("#446 U3 (R14): a shortfall card carries no red or warning colour class", () => {
+test("#449 U3 (R14): a shortfall card carries no red or warning colour class", () => {
   const b = _reachBuild([{ stat: "Dodge", achieved: 30, ceiling: 50 }], { effective: { Dodge: 30 } });
   const box = R.buildViews(b, _reachModel, { targets: ["Dodge"] }).cards;
   const reach = box.slice(box.indexOf('class="stat-reach'));
@@ -2311,8 +2311,8 @@ test("#446 U3 (R14): a shortfall card carries no red or warning colour class", (
   assert.ok(!/--quarantined|#f0b360|red/.test(shortfall), "and nothing warning-coloured");
 });
 
-test("#446 U3 (R19/R17b): a build with no ceilingReport renders no .stat-reach and falls back to ceilingChip", () => {
-  const b = satBuild();                       // pre-#446 shape: saturationReport, no ceilingReport
+test("#449 U3 (R19/R17b): a build with no ceilingReport renders no .stat-reach and falls back to ceilingChip", () => {
+  const b = satBuild();                       // pre-#449 shape: saturationReport, no ceilingReport
   b.effective = { "Kinetic Lore": 30 };
   let v;
   assert.doesNotThrow(() => { v = R.buildViews(b, _reachModel, { targets: ["Kinetic Lore"] }); });
@@ -2326,7 +2326,7 @@ test("#446 U3 (R19/R17b): a build with no ceilingReport renders no .stat-reach a
   "the identical build WITH a report does render the box");
 });
 
-test("#446 U3/R19: rendering a restored build invokes no solve entry point", () => {
+test("#449 U3/R19: rendering a restored build invokes no solve entry point", () => {
   const solverPath = require.resolve("../web/solver.js");
   const resultsPath = require.resolve("../web/results.js");
   const solver = require(solverPath);
@@ -2355,7 +2355,7 @@ test("#446 U3/R19: rendering a restored build invokes no solve entry point", () 
   }
 });
 
-test("#446 U3 (R30): a zero ceiling renders no meter, no green, and claims only what this solve found", () => {
+test("#449 U3 (R30): a zero ceiling renders no meter, no green, and claims only what this solve found", () => {
   const b = _reachBuild([{ stat: "Doubleshot", achieved: 0, ceiling: 0 }], { effective: { Doubleshot: 0 } });
   const v = R.buildViews(b, _reachModel, { targets: ["Doubleshot"] });
   assert.ok(/class="stat-reach is-zero-ceiling"/.test(v.cards), "its own state class");
@@ -2367,7 +2367,7 @@ test("#446 U3 (R30): a zero ceiling renders no meter, no green, and claims only 
     "and does NOT defer to zeroSourceNotice, which may not be on screen at all");
 });
 
-test("#446 U3 (R33): a capped stat's fraction numerator equals the card's headline number", () => {
+test("#449 U3 (R33): a capped stat's fraction numerator equals the card's headline number", () => {
   const b = _reachBuild([{ stat: "Dodge", achieved: 20, ceiling: 20 }],
     { effective: { Dodge: 20 }, capped: { Dodge: 20 } });
   const cards = R.buildViews(b, _reachModel, { targets: ["Dodge"] }).cards;
@@ -2377,7 +2377,7 @@ test("#446 U3 (R33): a capped stat's fraction numerator equals the card's headli
   assert.strictEqual(numerator, headline, "the card never states two different totals for one stat");
 });
 
-test("#446 U3 (R33/KTD7): a cap-bound card renders neither the green treatment nor the maxed sentence", () => {
+test("#449 U3 (R33/KTD7): a cap-bound card renders neither the green treatment nor the maxed sentence", () => {
   const b = _reachBuild([{ stat: "Dodge", achieved: 20, ceiling: 20 }],
     { effective: { Dodge: 20 }, capped: { Dodge: 20 } });
   const cards = R.buildViews(b, _reachModel, { targets: ["Dodge"] }).cards;
@@ -2390,7 +2390,7 @@ test("#446 U3 (R33/KTD7): a cap-bound card renders neither the green treatment n
   assert.ok(!/var\(--optimal\)/.test(rule), "and takes no part of the green treatment");
 });
 
-test("#446 U3 (R34): the Utility card renders no fraction sub-container", () => {
+test("#449 U3 (R34): the Utility card renders no fraction sub-container", () => {
   const b = utilityBuild({ count: 2, effects: [{ name: "Ghost Touch", item: "rGT" }] });
   // Even if a sentinel row leaked into the report. The exemption is STRUCTURAL —
   // `buildViews` returns utilityCard before reaching the stat-card template — so a
@@ -2406,7 +2406,7 @@ test("#446 U3 (R34): the Utility card renders no fraction sub-container", () => 
   assert.ok(/<span class="reach-fraction">4 \/ 9<\/span>/.test(v.cards), "…while the ranked stat beside it has one");
 });
 
-test("#446 U3 (AE6): no stat card carries both a ceilingChip and a .stat-reach box", () => {
+test("#449 U3 (AE6): no stat card carries both a ceilingChip and a .stat-reach box", () => {
   const b = satBuild();                       // carries a saturationReport…
   b.effective = { "Kinetic Lore": 30 };
   b.ceilingReport = [{ stat: "Kinetic Lore", achieved: 30, ceiling: 30 }];   // …and the new one
@@ -2415,7 +2415,7 @@ test("#446 U3 (AE6): no stat card carries both a ceilingChip and a .stat-reach b
   assert.ok(!/stat-ceiling/.test(v.cards), "and the chip stands down — the two are mutually exclusive");
 });
 
-test("#446 U3 (KTD9): a selected alternative renders the fraction from its OWN ceilingReport", () => {
+test("#449 U3 (KTD9): a selected alternative renders the fraction from its OWN ceilingReport", () => {
   const optimum = _reachBuild([{ stat: "Dodge", achieved: 41, ceiling: 60 }], { effective: { Dodge: 41 } });
   const alt = _reachBuild([{ stat: "Dodge", achieved: 23, ceiling: 60 }], { effective: { Dodge: 23 } });
   const vOpt = R.buildViews(optimum, _reachModel, { targets: ["Dodge"] });
@@ -2429,7 +2429,7 @@ test("#446 U3 (KTD9): a selected alternative renders the fraction from its OWN c
     "renderBuild is generic over optimum/alternative — it must never close over the optimum");
 });
 
-test("#446 U3 (R15): the full statement renders ONCE per readout, above the cards, not once per card", () => {
+test("#449 U3 (R15): the full statement renders ONCE per readout, above the cards, not once per card", () => {
   const P = require("../web/projection.js");
   const b = _reachBuild([{ stat: "A", achieved: 1, ceiling: 2 }, { stat: "B", achieved: 1, ceiling: 2 }],
     { effective: { A: 1, B: 1 } });
@@ -2441,10 +2441,10 @@ test("#446 U3 (R15): the full statement renders ONCE per readout, above the card
   assert.strictEqual(v.cards.split('class="reach-fraction"').length - 1, 2, "both cards still carry their own fraction");
   const noReport = _reachBuild(null, { effective: { A: 1 } });
   assert.ok(!/ceiling-statement/.test(R.buildViews(noReport, _reachModel, { targets: ["A"] }).cards),
-    "a pre-#446 restore prints no orphan sentence");
+    "a pre-#449 restore prints no orphan sentence");
 });
 
-test("#446 U4 (R17a): no stylesheet rule styles a per-item ceiling marker", () => {
+test("#449 U4 (R17a): no stylesheet rule styles a per-item ceiling marker", () => {
   const css = _reachCss();
   // Asserted against the stylesheet directly, not through `_cssRule`: that helper
   // asserts the selector EXISTS and slices its body, so it cannot express absence.
@@ -2455,12 +2455,12 @@ test("#446 U4 (R17a): no stylesheet rule styles a per-item ceiling marker", () =
   // wrap its own sub-label and would overflow at 375px. The chip is what that
   // span became, so THAT is what must still be styled.
   assert.ok(/\.pd-chip \{/.test(css), "the chip the span became is still styled");
-  // The stat-card fallback keeps the class for a pre-#446 restore (R17b), so the
+  // The stat-card fallback keeps the class for a pre-#449 restore (R17b), so the
   // name survives in exactly one place. Pin that, or a future sweep deletes it.
   assert.ok(/\.stat-ceiling/.test(css), "the old-save chip keeps its rule");
 });
 
-test("#446 U4: whyThisLine no longer consults the saturation report at all", () => {
+test("#449 U4: whyThisLine no longer consults the saturation report at all", () => {
   // Asserted against the function's own source, in the wizard.test.js idiom.
   // A call-count spy CANNOT measure this: results.js captures `Proj.saturatedStats`
   // into a module-scope binding at load, so patching projection afterwards leaves
@@ -2475,7 +2475,7 @@ test("#446 U4: whyThisLine no longer consults the saturation report at all", () 
 });
 
 // ---------------------------------------------------------------------------
-// #446 U5 — the notices panel: containment, the settled classification table,
+// #449 U5 — the notices panel: containment, the settled classification table,
 // and the resolution routes.
 // ---------------------------------------------------------------------------
 
@@ -2489,13 +2489,13 @@ function _noticeCtx(over) {
   }, over || {});
 }
 
-test("#446 U5 (R27/AE12): zero non-empty notices render no panel element at all", () => {
+test("#449 U5 (R27/AE12): zero non-empty notices render no panel element at all", () => {
   const ds = R.noticeDescriptors(_noticeCtx());
   assert.strictEqual(ds.length, 0, "a clean solve fires nothing");
   assert.strictEqual(R.noticePanel(ds), "", "no empty fold, no zero count, no chevron");
 });
 
-test("#446 U5 (KTD5): the classification table is asserted entry by entry", () => {
+test("#449 U5 (KTD5): the classification table is asserted entry by entry", () => {
   // Pinned in full so a reclassification is a deliberate test edit, never silent.
   assert.deepStrictEqual(
     Object.fromEntries(Object.entries(R.NOTICE_TABLE).map(([k, v]) => [k, [v.title, v.cls]])),
@@ -2511,7 +2511,7 @@ test("#446 U5 (KTD5): the classification table is asserted entry by entry", () =
     });
 });
 
-test("#446 U5 (KTD5): every notice the builder renders has a table entry", () => {
+test("#449 U5 (KTD5): every notice the builder renders has a table entry", () => {
   // The test-time completeness assertion that stands in for a runtime throw:
   // renderResults sits inside a try/catch whose catch replaces the whole results
   // box with "Solver error", so a throw here would destroy a correct solve's
@@ -2529,7 +2529,7 @@ test("#446 U5 (KTD5): every notice the builder renders has a table entry", () =>
   assert.strictEqual(pushed.length + split.length, 11, "eleven notices, all reached");
 });
 
-test("#446 U5 (KTD5): a notice absent from the table renders unclassified, and does not throw", () => {
+test("#449 U5 (KTD5): a notice absent from the table renders unclassified, and does not throw", () => {
   const P = require("../web/projection.js");
   const saved = R.NOTICE_TABLE.blockNotice;
   delete R.NOTICE_TABLE.blockNotice;
@@ -2545,7 +2545,7 @@ test("#446 U5 (KTD5): a notice absent from the table renders unclassified, and d
   assert.ok(P, "projection stays loadable");
 });
 
-test("#446 U5 (R5): cards sort actionable, then qualifying, then informational", () => {
+test("#449 U5 (R5): cards sort actionable, then qualifying, then informational", () => {
   assert.deepStrictEqual(R.NOTICE_CLASS_ORDER, ["actionable", "qualifying", "informational"]);
   const ds = [
     { cls: "informational", id: "i" }, { cls: "qualifying", id: "q" },
@@ -2559,7 +2559,7 @@ test("#446 U5 (R5): cards sort actionable, then qualifying, then informational",
     "noticePanel renders the order it is given — sorting is noticeDescriptors' job");
 });
 
-test("#446 U5 (R28/AE11): each card names its class in text, independent of colour", () => {
+test("#449 U5 (R28/AE11): each card names its class in text, independent of colour", () => {
   assert.deepStrictEqual(R.NOTICE_CLASS_TAG,
     { actionable: "Needs attention", qualifying: "Qualifies", informational: "Note" });
   const html = R.noticePanel([{ id: "x", title: "A THING", cls: "qualifying", html: "<p>s</p>", jump: null }]);
@@ -2567,7 +2567,7 @@ test("#446 U5 (R28/AE11): each card names its class in text, independent of colo
   assert.ok(/<span class="notice-title">A THING<\/span>/.test(html), "…not concatenated into the title");
 });
 
-test("#446 U5 (R6/KTD5): every actionable route carries a control, and outbid deliberately does not", () => {
+test("#449 U5 (R6/KTD5): every actionable route carries a control, and outbid deliberately does not", () => {
   const routed = Object.entries(R.NOTICE_TABLE)
     .filter(([, v]) => v.cls === "actionable").map(([k, v]) => [k, !!v.jump]);
   assert.deepStrictEqual(Object.fromEntries(routed), {
@@ -2587,7 +2587,7 @@ test("#446 U5 (R6/KTD5): every actionable route carries a control, and outbid de
   }
 });
 
-test("#446 U5: a jump control emits its step and anchor as data for the wizard seam", () => {
+test("#449 U5: a jump control emits its step and anchor as data for the wizard seam", () => {
   const html = R.noticePanel([{ id: "x", title: "T", cls: "actionable", html: "<p>s</p>",
     jump: { label: "Change augment ceiling →", step: "character", anchor: "#wz-augceiling" } }]);
   assert.ok(/data-step="character"/.test(html) && /data-anchor="#wz-augceiling"/.test(html),
@@ -2595,7 +2595,7 @@ test("#446 U5: a jump control emits its step and anchor as data for the wizard s
   assert.ok(/<button class="notice-jump"/.test(html), "a button — it changes state, it does not navigate");
 });
 
-test("#446 U5 (R35): the one notice that folds itself is unwrapped inside the panel", () => {
+test("#449 U5 (R35): the one notice that folds itself is unwrapped inside the panel", () => {
   const ctx = _noticeCtx();
   ctx.result.saturationReport = [{ stat: "Dodge", total: 15, bonusTypes: ["Enhancement"], unusedSources: 2 }];
   const ds = R.noticeDescriptors(ctx);
@@ -2607,7 +2607,7 @@ test("#446 U5 (R35): the one notice that folds itself is unwrapped inside the pa
   assert.ok(/at ceiling/.test(card), "and its sentence survives as the card body");
 });
 
-test("#446 U5 (R2/R3): the panel is a collapsed fold that states its count", () => {
+test("#449 U5 (R2/R3): the panel is a collapsed fold that states its count", () => {
   const html = R.noticePanel([
     { id: "a", title: "A", cls: "actionable", html: "<p>s</p>", jump: null },
     { id: "b", title: "B", cls: "qualifying", html: "<p>s</p>", jump: null }]);
@@ -2618,7 +2618,7 @@ test("#446 U5 (R2/R3): the panel is a collapsed fold that states its count", () 
   assert.ok(/>1 note</.test(one), "singular for one");
 });
 
-test("#446 U5: the count is non-empty notices, not notice functions", () => {
+test("#449 U5: the count is non-empty notices, not notice functions", () => {
   const ctx = _noticeCtx();
   ctx.result.saturationReport = [{ stat: "Dodge", total: 15, bonusTypes: ["Enhancement"], unusedSources: 2 }];
   const ds = R.noticeDescriptors(ctx);
@@ -2626,7 +2626,7 @@ test("#446 U5: the count is non-empty notices, not notice functions", () => {
   assert.ok(/>1 note</.test(R.noticePanel(ds)));
 });
 
-test("#446 U5: the active-build bar stays outside the panel", () => {
+test("#449 U5: the active-build bar stays outside the panel", () => {
   const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
   const tpl = src.slice(src.indexOf("container.innerHTML = `\n    ${banner}"), src.indexOf("readout-analysis"));
   const panelAt = tpl.indexOf("noticePanel(notices");
@@ -2640,7 +2640,7 @@ test("#446 U5: the active-build bar stays outside the panel", () => {
     "the live Return-to-optimum control is a sibling of the panel, never folded inside it");
 });
 
-test("#446 U5 (R32): both class tokens resolve to :root, and neither pre-existing --warn site moved", () => {
+test("#449 U5 (R32): both class tokens resolve to :root, and neither pre-existing --warn site moved", () => {
   const css = _reachCss();
   const root = css.slice(css.indexOf(":root"), css.indexOf("}", css.indexOf(":root")));
   assert.ok(/--warn:\s*#d9a441/.test(root), "--warn defined in :root");
@@ -2655,7 +2655,7 @@ test("#446 U5 (R32): both class tokens resolve to :root, and neither pre-existin
   assert.ok(!/is-qualifying[^}]*--warn/.test(css), "and never reaches for --warn");
 });
 
-test("#446 U5 (R37): the panel summary wraps as whole units and keeps its tap target", () => {
+test("#449 U5 (R37): the panel summary wraps as whole units and keeps its tap target", () => {
   const rule = _cssRule(_reachCss(), ".notes-summary {");
   assert.ok(/flex-wrap:\s*wrap/.test(rule),
     "it is the densest new element and the panel's ONLY tap target — it must wrap, not overflow");
@@ -2667,7 +2667,7 @@ test("#446 U5 (R37): the panel summary wraps as whole units and keeps its tap ta
 });
 
 // ---------------------------------------------------------------------------
-// #446 U6 — the attention pill and the qualifying marker.
+// #449 U6 — the attention pill and the qualifying marker.
 // ---------------------------------------------------------------------------
 
 /** Descriptors of a given shape, as noticeDescriptors would hand them over. */
@@ -2676,13 +2676,13 @@ function _marks(spec) {
     subject: `subject ${i}`, html: "<p>s</p>", jump: null }));
 }
 
-test("#446 U6 (R7/AE1): three actionable notices render a pill reading '3 need attention'", () => {
+test("#449 U6 (R7/AE1): three actionable notices render a pill reading '3 need attention'", () => {
   const html = R.noticePanel(_marks(["actionable", "actionable", "actionable"]));
   assert.ok(/<span class="notes-pill">3 need attention<\/span>/.test(html));
   assert.ok(/>3 notes</.test(html), "and the total count still speaks for the whole panel");
 });
 
-test("#446 U6 (R7): the pill counts cards that RENDERED, not notice functions that could fire", () => {
+test("#449 U6 (R7): the pill counts cards that RENDERED, not notice functions that could fire", () => {
   // Four notices classified actionable, one of which returns empty: an empty
   // return contributes no descriptor, so it cannot reach the count.
   const ctx = _noticeCtx();
@@ -2697,7 +2697,7 @@ test("#446 U6 (R7): the pill counts cards that RENDERED, not notice functions th
     "and the total counts exactly the cards rendered");
 });
 
-test("#446 U6 (R10/AE2): zero actionable notices render no pill element", () => {
+test("#449 U6 (R10/AE2): zero actionable notices render no pill element", () => {
   const none = R.noticePanel(_marks(["qualifying", "informational"]));
   assert.ok(!/notes-pill/.test(none), "nothing to act on, nothing to pulse");
   // The positive control is what makes the line above mean anything: without it
@@ -2707,7 +2707,7 @@ test("#446 U6 (R10/AE2): zero actionable notices render no pill element", () => 
   assert.ok(/notes-pill/.test(some), "and adding one actionable card does produce a pill");
 });
 
-test("#446 U6 (R26/AE11): qualifying with no actionable renders the marker and no pill", () => {
+test("#449 U6 (R26/AE11): qualifying with no actionable renders the marker and no pill", () => {
   const ds = _marks(["qualifying", "qualifying"]);
   ds[0].subject = "affix withheld"; ds[1].subject = "declared credit";
   const html = R.noticePanel(ds);
@@ -2716,7 +2716,7 @@ test("#446 U6 (R26/AE11): qualifying with no actionable renders the marker and n
     "the marker NAMES its subjects — a bare count would not say the totals rest on unverified input");
 });
 
-test("#446 U6 (R26): the marker names up to two subjects, then falls back to a count", () => {
+test("#449 U6 (R26): the marker names up to two subjects, then falls back to a count", () => {
   assert.ok(/1 qualifies: subject 0/.test(R.noticePanel(_marks(["qualifying"]))), "one, named");
   assert.ok(/2 qualify: subject 0, subject 1/.test(R.noticePanel(_marks(["qualifying", "qualifying"]))), "two, named");
   const three = R.noticePanel(_marks(["qualifying", "qualifying", "qualifying"]));
@@ -2724,7 +2724,7 @@ test("#446 U6 (R26): the marker names up to two subjects, then falls back to a c
     "past two, naming stops being an aid and becomes a wall of text");
 });
 
-test("#446 U6 (R26): every entry a notice can mint carries a subject", () => {
+test("#449 U6 (R26): every entry a notice can mint carries a subject", () => {
   // The curation cannot silently fall behind projection.js: every id the three
   // entry functions emit must have a row here, and so must all eight table rows.
   const src = require("fs").readFileSync(
@@ -2747,7 +2747,7 @@ test("#446 U6 (R26): every entry a notice can mint carries a subject", () => {
   }
 });
 
-test("#446 U6 (R8/KTD3/AE13): the latch is stamped at build time and survives a re-render", () => {
+test("#449 U6 (R8/KTD3/AE13): the latch is stamped at build time and survives a re-render", () => {
   const ds = _marks(["actionable"]);
   const before = R.noticePanel(ds, { latched: false });
   assert.ok(!/data-notes-seen/.test(before), "unlatched on the first render — the pulse is armed");
@@ -2760,7 +2760,7 @@ test("#446 U6 (R8/KTD3/AE13): the latch is stamped at build time and survives a 
     "and collapsing after opening does not restore the pulse");
 });
 
-test("#446 U6 (R8/KTD3): the pulse reads the latch attribute, never [open]", () => {
+test("#449 U6 (R8/KTD3): the pulse reads the latch attribute, never [open]", () => {
   const css = _reachCss();
   assert.ok(css.includes(".notes-panel:not([data-notes-seen]) .notes-pill { animation:"),
     "the pulse is armed by the ABSENCE of the stamp");
@@ -2768,7 +2768,7 @@ test("#446 U6 (R8/KTD3): the pulse reads the latch attribute, never [open]", () 
     "[open] is a live toggle, not a latch: it re-arms on every collapse and every rebuild");
 });
 
-test("#446 U6 (R9/AE3): the pill is legible with no animation at all", () => {
+test("#449 U6 (R9/AE3): the pill is legible with no animation at all", () => {
   const base = _cssRule(_reachCss(), ".notes-pill {");
   assert.ok(/background:\s*var\(--warn\)/.test(base), "a static amber FILL carries the signal…");
   assert.ok(/border:\s*1px solid var\(--warn\)/.test(base), "…with a border of its own…");
@@ -2779,7 +2779,7 @@ test("#446 U6 (R9/AE3): the pill is legible with no animation at all", () => {
     "which the global kill switch makes load-bearing, not theoretical");
 });
 
-test("#446 U6 (R9): the pill's ink is the dark ground, not white on amber", () => {
+test("#449 U6 (R9): the pill's ink is the dark ground, not white on amber", () => {
   const base = _cssRule(_reachCss(), ".notes-pill {");
   assert.ok(/color:\s*var\(--bg\)/.test(base),
     "white on #d9a441 measures 2.25:1, below the 4.5:1 floor; --bg measures 8.18:1");
@@ -2790,7 +2790,7 @@ test("#446 U6 (R9): the pill's ink is the dark ground, not white on amber", () =
     "the measured pair is the pair actually in the stylesheet");
 });
 
-test("#446 U6 (R26): the qualifying marker carries no animation under any state", () => {
+test("#449 U6 (R26): the qualifying marker carries no animation under any state", () => {
   const css = _reachCss();
   assert.ok(!/notes-qualify[^{]*\{[^}]*animation/.test(css), "no rule animates it directly");
   assert.ok(!/animation[^;]*;\s*\}[^{]*\.notes-qualify/.test(css), "and none reaches it sideways");
@@ -2799,14 +2799,14 @@ test("#446 U6 (R26): the qualifying marker carries no animation under any state"
     "slate, deliberately off the amber ramp — it reports a condition, not a task");
 });
 
-test("#446 U6 (R37): the pill and the marker each wrap as a unit", () => {
+test("#449 U6 (R37): the pill and the marker each wrap as a unit", () => {
   for (const sel of [".notes-pill {", ".notes-qualify {"]) {
     assert.ok(/white-space:\s*nowrap/.test(_cssRule(_reachCss(), sel)),
       `${sel} must wrap whole rather than breaking internally at 375px`);
   }
 });
 
-test("#446 U6: renderResults threads the latch both ways", () => {
+test("#449 U6: renderResults threads the latch both ways", () => {
   const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
   const fn = src.slice(src.indexOf("function renderResults("), src.indexOf("function renderAltCards"));
   assert.ok(/notesSeen, onNotesOpen/.test(fn), "it takes the flag and the way to set it");
@@ -2822,7 +2822,7 @@ test("#446 U6: renderResults threads the latch both ways", () => {
 });
 
 // ---------------------------------------------------------------------------
-// #446 U7 — the loadout stat chips. Every disclosure the comma-run carried
+// #449 U7 — the loadout stat chips. Every disclosure the comma-run carried
 // survives; the primary line is the value and the stat, the rest is a sub-label.
 // ---------------------------------------------------------------------------
 
@@ -2839,7 +2839,7 @@ function _chipResult(rows) {
     breakdown, computeScale: { variants: 1 }, solveMs: 1 };
 }
 
-test("#446 U7 (R20/AE8): an item contributing to three stats renders three chips", () => {
+test("#449 U7 (R20/AE8): an item contributing to three stats renders three chips", () => {
   const res = _chipResult([{ stat: "Constitution", value: 15 },
     { stat: "Dodge", value: 5 }, { stat: "Deadly", value: 4 }]);
   const chips = _chips(R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null,
@@ -2847,7 +2847,7 @@ test("#446 U7 (R20/AE8): an item contributing to three stats renders three chips
   assert.deepStrictEqual(chips.map((c) => `${c.stat} ${c.value}`), ["Constitution 15", "Dodge 5", "Deadly 4"]);
 });
 
-test("#446 U7 (R31): more than three contributions still render exactly three chips", () => {
+test("#449 U7 (R31): more than three contributions still render exactly three chips", () => {
   const res = _chipResult([{ stat: "Constitution", value: 15 }, { stat: "Dodge", value: 5 },
     { stat: "Deadly", value: 4 }, { stat: "Doubleshot", value: 3 }, { stat: "PRR", value: 2 }]);
   const chips = _chips(R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null,
@@ -2855,7 +2855,7 @@ test("#446 U7 (R31): more than three contributions still render exactly three ch
   assert.strictEqual(chips.length, 3, "the cap governs the row's height at phone width");
 });
 
-test("#446 U7 (R21): only the rank-1 priority's chip is distinguished", () => {
+test("#449 U7 (R21): only the rank-1 priority's chip is distinguished", () => {
   const res = _chipResult([{ stat: "Constitution", value: 15 }, { stat: "Dodge", value: 5 }]);
   const chips = _chips(R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null, ["Constitution", "Dodge"]));
   assert.deepStrictEqual(chips.map((c) => c.rank1), [true, false]);
@@ -2865,14 +2865,14 @@ test("#446 U7 (R21): only the rank-1 priority's chip is distinguished", () => {
   assert.deepStrictEqual(flipped.map((c) => `${c.stat}:${c.rank1}`), ["Dodge:true", "Constitution:false"]);
 });
 
-test("#446 U7 (R21): with no ranked targets, no chip claims rank 1", () => {
+test("#449 U7 (R21): with no ranked targets, no chip claims rank 1", () => {
   const res = _chipResult([{ stat: "Constitution", value: 15 }]);
   const chips = _chips(R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null, []));
   assert.ok(chips.length && chips.every((c) => !c.rank1),
     "there is no player rank-1 to mark, so marking the first stat found would invent one");
 });
 
-test("#446 U7 (R21): the rank-1 carrier is not colour alone", () => {
+test("#449 U7 (R21): the rank-1 carrier is not colour alone", () => {
   const rule = _cssRule(_reachCss(), ".pd-chip.is-rank1 {");
   assert.ok(/border-width:\s*2px/.test(rule),
     "border WEIGHT carries it too — colour alone fails greyscale and red-green CVD");
@@ -2881,7 +2881,7 @@ test("#446 U7 (R21): the rank-1 carrier is not colour alone", () => {
   assert.ok(/border:\s*1px solid/.test(base), "against a 1px base, so the weight difference is real");
 });
 
-test("#446 U7 (R20/AE8): a player override still names both types on the chip", () => {
+test("#449 U7 (R20/AE8): a player override still names both types on the chip", () => {
   const res = _chipResult([{ stat: "Constitution", value: 15, bonus_type: "Quality",
     overriddenFrom: "Insightful" }]);
   const [c] = _chips(R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null, ["Constitution"]));
@@ -2889,7 +2889,7 @@ test("#446 U7 (R20/AE8): a player override still names both types on the chip", 
     "#88 shipped this precisely so a gear box does not state a bonus type as though the wiki said so");
 });
 
-test("#446 U7 (R20/AE8): a boolean chip carries a tick, no value and no bonus type", () => {
+test("#449 U7 (R20/AE8): a boolean chip carries a tick, no value and no bonus type", () => {
   const res = _chipResult([{ stat: "Ghost Touch", bonus_type: "Bool", value: 1 }]);
   const [c] = _chips(R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null, ["Ghost Touch"]));
   assert.ok(c.check, "presence reads as a tick");
@@ -2897,7 +2897,7 @@ test("#446 U7 (R20/AE8): a boolean chip carries a tick, no value and no bonus ty
   assert.strictEqual(c.sub, null, "and no bonus type, which a presence flag does not have");
 });
 
-test("#446 U7 (R20): a boolean chip still carries (set) and the override when they apply", () => {
+test("#449 U7 (R20): a boolean chip still carries (set) and the override when they apply", () => {
   const res = _chipResult([{ stat: "Ghost Touch", bonus_type: "Bool", value: 1,
     sourceKind: "set", setYieldingSlots: ["Ring"], source: "Alpha" }]);
   const [c] = _chips(R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null, ["Ghost Touch"]));
@@ -2905,7 +2905,7 @@ test("#446 U7 (R20): a boolean chip still carries (set) and the override when th
   assert.strictEqual(c.sub, "(set)", "dropping the bonus type must not drop the provenance with it");
 });
 
-test("#446 U7 (R20): every numeric chip states a bonus type; a boolean states none", () => {
+test("#449 U7 (R20): every numeric chip states a bonus type; a boolean states none", () => {
   const res = _chipResult([{ stat: "Constitution", value: 15, bonus_type: null },
     { stat: "Ghost Touch", bonus_type: "Bool", value: 1 }]);
   const chips = _chips(R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null,
@@ -2917,7 +2917,7 @@ test("#446 U7 (R20): every numeric chip states a bonus type; a boolean states no
   assert.strictEqual(chips[0].sub, "untyped", "#227 — untyped is a real bucket, never a raw null");
 });
 
-test("#446 U7 (R20): the two early-return forms are preserved verbatim, not turned into chips", () => {
+test("#449 U7 (R20): the two early-return forms are preserved verbatim, not turned into chips", () => {
   // A PRESERVATION guard: both forms return before the contribution list is
   // built, so U7 does not touch them and this cannot go red on the pre-change
   // tree. It is here to fail on a future change that folds them into the chip
@@ -2940,12 +2940,12 @@ test("#446 U7 (R20): the two early-return forms are preserved verbatim, not turn
     "with its explanatory title intact");
 });
 
-test("#446 U7 (R20): chip values render with tabular numerals", () => {
+test("#449 U7 (R20): chip values render with tabular numerals", () => {
   assert.ok(/font-variant-numeric:\s*tabular-nums/.test(_cssRule(_reachCss(), ".pd-chip-value {")),
     "so a column of chips reads as a column of numbers rather than ragged text");
 });
 
-test("#446 U7 (R22): the row wraps, and a chip cannot force horizontal page scroll", () => {
+test("#449 U7 (R22): the row wraps, and a chip cannot force horizontal page scroll", () => {
   const row = _cssRule(_reachCss(), ".pd-prio {");
   assert.ok(/flex-wrap:\s*wrap/.test(row), "the row wraps between chips");
   const chip = _cssRule(_reachCss(), ".pd-chip {");
@@ -2954,7 +2954,7 @@ test("#446 U7 (R22): the row wraps, and a chip cannot force horizontal page scro
     "…wrapping its sub-label internally rather than overflowing the page at 375px");
 });
 
-test("#446 U7 (R21): two contributions to the rank-1 stat both carry the mark", () => {
+test("#449 U7 (R21): two contributions to the rank-1 stat both carry the mark", () => {
   // Found on real data, not in a fixture: itemContributions emits one row per
   // (stat, bonus_type), so an item serving the top priority through two buckets
   // produces two chips that are BOTH chips for the rank-1 priority. Marking only
@@ -2972,10 +2972,10 @@ test("#446 U7 (R21): two contributions to the rank-1 stat both carry the mark", 
 });
 
 // ---------------------------------------------------------------------------
-// #446 U8 / #447 — the per-slot constraint control, visible at rest.
+// #449 U8 / #447 — the per-slot constraint control, visible at rest.
 // ---------------------------------------------------------------------------
 
-test("#446 U8 (R23/AE7): the slot control has no opacity gate and no hover-gated reveal", () => {
+test("#449 U8 (R23/AE7): the slot control has no opacity gate and no hover-gated reveal", () => {
   const css = _reachCss();
   const rule = _cssRule(css, ".pd-ctl {");
   assert.ok(!/opacity/.test(rule), "it was opacity:0 until hover — undiscoverable on desktop, absent on touch");
@@ -2983,14 +2983,14 @@ test("#446 U8 (R23/AE7): the slot control has no opacity gate and no hover-gated
   assert.ok(!/transition:\s*opacity/.test(rule), "including the transition that animated the reveal");
 });
 
-test("#446 U8 (R23): it has a resting border, so there is something to see at rest", () => {
+test("#449 U8 (R23): it has a resting border, so there is something to see at rest", () => {
   const rule = _cssRule(_reachCss(), ".pd-ctl {");
   assert.ok(/border:\s*1px solid var\(--border\)/.test(rule),
     "a transparent border on a transparent control was two ways of being invisible");
   assert.ok(!/border:\s*1px solid transparent/.test(rule));
 });
 
-test("#446 U8 (R24/AE7): the hit area reaches var(--tap) via an overlay that contributes no layout", () => {
+test("#449 U8 (R24/AE7): the hit area reaches var(--tap) via an overlay that contributes no layout", () => {
   const css = _reachCss();
   const rule = _cssRule(css, ".pd-ctl {");
   assert.ok(/width:\s*34px/.test(rule) && /height:\s*34px/.test(rule), "34px is the settled visual size");
@@ -3005,7 +3005,7 @@ test("#446 U8 (R24/AE7): the hit area reaches var(--tap) via an overlay that con
   assert.ok(/--tap:\s*44px/.test(css), "and 44px is that floor");
 });
 
-test("#446 U8: the constrained-slot signal survives the always-visible control", () => {
+test("#449 U8: the constrained-slot signal survives the always-visible control", () => {
   const css = _reachCss();
   // A constrained slot used to be legible from its control being the only
   // visible one in the list. Every control shows now, so that reading is gone
@@ -3016,7 +3016,7 @@ test("#446 U8: the constrained-slot signal survives the always-visible control",
     "and the row border rule is untouched by this work");
 });
 
-test("#446 U8 (R25): focus can no longer land on a transparent control", () => {
+test("#449 U8 (R25): focus can no longer land on a transparent control", () => {
   const css = _reachCss();
   // The focus ring itself is NOT new — the global button:focus-visible rule
   // already shipped. What changes is that it now lands on something rendered.
@@ -3025,7 +3025,7 @@ test("#446 U8 (R25): focus can no longer land on a transparent control", () => {
     "and the control it draws on is never transparent — WCAG 2.4.11");
 });
 
-test("#446 U8: the control is a gear, and keeps its label (regression guard)", () => {
+test("#449 U8: the control is a gear, and keeps its label (regression guard)", () => {
   // Exempt from the red-proof gate BY DESIGN: the aria-label already shipped.
   // This guard exists so the glyph swap cannot quietly take it along.
   const html = R.equippedRow("Ring", null, {}, new Set(), null, null, null, null);

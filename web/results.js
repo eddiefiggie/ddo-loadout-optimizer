@@ -34,7 +34,7 @@ const assignDinoInserts = Proj.assignDinoInserts;
 const attributionByTarget = Proj.attributionByTarget;
 const whyThis = Proj.whyThis;
 var itemContributions = Proj.itemContributions;
-// #446 U4 — `saturatedStats` has no caller left in this file: its only one was
+// #449 U4 — `saturatedStats` has no caller left in this file: its only one was
 // the per-item ceiling marker. The binding stays because it is re-exported
 // below, and `tests/projection.test.js` pins that surface against projection's.
 // `saturationLineFor` still has a live caller in `ceilingChip`, the old-save
@@ -615,7 +615,7 @@ function whyThisLine(result, item, attr, targets) {
       `${esc(p.stat)} +${esc(p.value)} (${esc(p.family)})`).join(", ");
     return `<div class="pd-why pd-carried" title="Nothing printed on this item advances your priorities — its value here depends entirely on crafting it. Un-craftable alternatives are on the Alternatives tab.">⚒ here only for its crafts: ${txt}</div>`;
   }
-  // #446 U7 (R20) — one chip per contribution, replacing the comma-run of inline
+  // #449 U7 (R20) — one chip per contribution, replacing the comma-run of inline
   // spans. The run carried FIVE qualifiers, not one label, and every one of them
   // survives: the value, the stat, the bonus type, `(set)`, `(from <stat>)` and
   // the override disclosure. That last one shipped under #88 precisely because a
@@ -647,7 +647,7 @@ function whyThisLine(result, item, attr, targets) {
     const head = c.boolean
       ? `<span class="pd-chip-check" aria-hidden="true">✓</span><span class="pd-chip-stat">${esc(c.stat)}</span>`
       : `<span class="pd-chip-value">+${esc(c.value)}</span><span class="pd-chip-stat">${esc(c.stat)}</span>`;
-    // #446 U4 (R17a) — no at-ceiling marker here. An item is not the whole
+    // #449 U4 (R17a) — no at-ceiling marker here. An item is not the whole
     // contribution to a stat, so a green marker on one of its spans read as a
     // claim about that item rather than about the summed total. The fact now
     // renders once, on the ranked card that actually describes it (`statReach`).
@@ -864,9 +864,9 @@ function staleSnapshotNotice(result) {
  *  same stat-level fact the gear boxes color green, with the same shared
  *  sentence as its tooltip. Empty when the stat is not saturated.
  *
- *  #446 U3 (R17b) — RETAINED ONLY AS THE FALLBACK. A result carrying
+ *  #449 U3 (R17b) — RETAINED ONLY AS THE FALLBACK. A result carrying
  *  `ceilingReport` renders `statReach` instead and never this chip; a build
- *  saved before #446 shipped has no such report, and deleting the chip would
+ *  saved before #449 shipped has no such report, and deleting the chip would
  *  leave it with no ceiling signal at all from data its save still contains.
  *  The card picks one or the other on `statReach` being empty, so the two are
  *  mutually exclusive by construction rather than by two agreeing predicates. */
@@ -875,7 +875,7 @@ function ceilingChip(result, stat) {
   return line ? `<span class="stat-ceiling at-ceiling" title="${esc(line)}">at ceiling</span>` : "";
 }
 
-/** #446 U3 (R11-R16, R29, R30, R33) — the ranked card's achieved/ceiling box.
+/** #449 U3 (R11-R16, R29, R30, R33) — the ranked card's achieved/ceiling box.
  *
  *  Every number and every sentence comes from `Proj.ceilingFor`, which owns the
  *  four short forms so the card and the five exports cannot drift. This function
@@ -887,7 +887,7 @@ function ceilingChip(result, stat) {
  *  in. Closing over the optimum would state its numerator beside an
  *  alternative's headline: a confidently-stated wrong number.
  *
- *  Empty string when `ceilingFor` returns null (no row for the stat — a pre-#446
+ *  Empty string when `ceilingFor` returns null (no row for the stat — a pre-#449
  *  restore). That is the sole mechanism behind R19: nothing is rendered, no
  *  denominator is invented, and no re-solve is triggered to obtain one.
  *
@@ -938,7 +938,7 @@ function blockNotice(result) {
     : "";
 }
 
-// ---- #446 U5 — the notices panel -------------------------------------------
+// ---- #449 U5 — the notices panel -------------------------------------------
 //
 // Eleven notices rendered as flat siblings under the OPTIMAL banner, some as
 // `<details>` and some as bare `<p>`, so the ones that fold gave no sign they
@@ -960,7 +960,7 @@ const NOTICE_CLASS_TAG = {
 // R5 — actionable, then qualifying, then informational.
 const NOTICE_CLASS_ORDER = [NOTICE_ACTIONABLE, NOTICE_QUALIFYING, NOTICE_INFORMATIONAL];
 
-/** #446 U5 (KTD5) — the settled classification of the eight single-fact notices.
+/** #449 U5 (KTD5) — the settled classification of the eight single-fact notices.
  *
  *  Keyed by the notice's function name, which is also what the render array
  *  carries, so the completeness assertion can compare the two directly. The
@@ -1005,7 +1005,7 @@ const NOTICE_TABLE = {
   saturationNotice: { id: "at-ceiling", title: "AT CEILING", subject: "at ceiling", cls: NOTICE_INFORMATIONAL, jump: null, unwrap: true },
 };
 
-/** #446 U6 (R26) — the short subject each card contributes to the qualifying
+/** #449 U6 (R26) — the short subject each card contributes to the qualifying
  *  marker, for the cards U10 split out. The marker NAMES what qualifies rather
  *  than counting it: a bare count says something exists, it does not say the
  *  headline totals rest on unverified input, which is the fact being disclosed.
@@ -1029,7 +1029,7 @@ const NOTICE_ENTRY_SUBJECTS = {
   "off-hand-excluded": "off-hand excluded",
 };
 
-/** #446 U5 (KTD5, second table) — resolution routes for the cards U10 split out
+/** #449 U5 (KTD5, second table) — resolution routes for the cards U10 split out
  *  of the three multi-fact notices. Keyed by the entry `id` projection.js mints,
  *  because those entries carry their own title and class already; only the route
  *  is a render-side concern. An actionable entry with no row here renders
@@ -1052,7 +1052,7 @@ function _unwrapDetails(html) {
   return `<p class="notice-sentence">${sm[1]}</p>${inner}`;
 }
 
-/** #446 U5 — the render array as descriptors: one per CARD, not one per notice
+/** #449 U5 — the render array as descriptors: one per CARD, not one per notice
  *  function. The three multi-fact notices contribute one descriptor per fired
  *  branch (U10); the other eight contribute at most one each, and none when the
  *  notice returns empty.
@@ -1102,7 +1102,7 @@ function noticeDescriptors(ctx) {
   return out.map((d, i) => ({ d, i })).sort((a, b) => rank(a.d) - rank(b.d) || a.i - b.i).map((x) => x.d);
 }
 
-/** #446 U6 (R7, R26) — the two summary markers, both read off the SAME
+/** #449 U6 (R7, R26) — the two summary markers, both read off the SAME
  *  descriptor array the cards render from, so a count can never disagree with
  *  what is inside the fold.
  *
@@ -1131,7 +1131,7 @@ function noticeSummaryMarkers(descriptors, latched) {
   return out;
 }
 
-/** #446 U5 (R1-R4, R27, R28, R35) + U6 (R7-R10, R26) — the panel. Returns ""
+/** #449 U5 (R1-R4, R27, R28, R35) + U6 (R7-R10, R26) — the panel. Returns ""
  *  when nothing fired: R27 wants no empty fold, no zero count and no chevron on
  *  a clean solve.
  *
@@ -1488,7 +1488,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
       </div>
     </div>`;
 
-  // #446 U5 — the eleven notices, contained. Built once so the panel, the
+  // #449 U5 — the eleven notices, contained. Built once so the panel, the
   // summary counts (U6) and the live announcement all read the same array
   // rather than three independent recomputations of "what fired".
   const notices = noticeDescriptors({ result, query, model, dataset,
@@ -1553,7 +1553,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   // #345 (U4, R8/R9) — accepting the trade writes a floor and re-solves. The
   // handler is the wizard's, so the floor goes through the same sanitizer and
   // persisted field the Advanced min input writes; one writer, one clear path.
-  // #446 U6 (R8/KTD3) — the one-way latch. Stamped on the live element the
+  // #449 U6 (R8/KTD3) — the one-way latch. Stamped on the live element the
   // moment it opens, so the pulse stops now rather than at the next render, and
   // reported to the caller so the flag outlives this panel: renderResults
   // destroys and rebuilds the whole container on every solve, load and per-slot
@@ -1567,7 +1567,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     });
   }
 
-  // #446 U5 (KTD5) — the jump seam. One listener over the panel rather than one
+  // #449 U5 (KTD5) — the jump seam. One listener over the panel rather than one
   // closure per card, and results.js hands the caller a target instead of
   // reaching into wizard state: a step id (null meaning "this screen") plus an
   // optional anchor selector. The panel stays open on return because nothing
@@ -1805,7 +1805,7 @@ function buildViews(build, model, query) {
     const rawSum = contribs.reduce((s, p) => s + p.value, 0);
     const capNote = (cap != null && rawSum > total)
       ? `<span class="stat-cap" title="raw ${esc(rawSum)} exceeds the cap for this stat">capped at ${esc(total)} · raw ${esc(rawSum)}</span>` : "";
-    // #446 U3 (R17b) — one ceiling signal per card, chosen by which data the
+    // #449 U3 (R17b) — one ceiling signal per card, chosen by which data the
     // build actually carries: the fraction when `ceilingReport` has a row for
     // this stat, the legacy chip only when it does not.
     const reach = statReach(build, stat);
@@ -1817,12 +1817,12 @@ function buildViews(build, model, query) {
       ${reach}
     </div>`;
   }).join("");
-  // #446 U3 (R15) — the FULL statement, once per readout at section level. It
+  // #449 U3 (R15) — the FULL statement, once per readout at section level. It
   // carries the qualification the per-card short forms omit: repeated under every
   // card down an eight-priority build it reads as boilerplate and stops being
   // read, which defeats the premise that the sentence is the mitigation. It sits
   // above the cards rather than behind a fold so it is in the same view, not
-  // merely reachable. Null (and silent) on a pre-#446 restore.
+  // merely reachable. Null (and silent) on a pre-#449 restore.
   const ceilingStatement = (Proj && Proj.ceilingStatement) ? Proj.ceilingStatement(build) : null;
   const cardsHtml = (ceilingStatement ? `<p class="ceiling-statement">${esc(ceilingStatement)}</p>` : "") + cards;
 

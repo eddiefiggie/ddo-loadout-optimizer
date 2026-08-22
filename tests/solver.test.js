@@ -4544,7 +4544,7 @@ async function withCrossAdd(map, fn) {
     assert.ok(!JSON.stringify(r.saturationReport).includes("zByBucket"));
   });
 
-  // ---- U1 (#446): the ceiling census --------------------------------------
+  // ---- U1 (#449): the ceiling census --------------------------------------
   //
   // `ceilingReport` is the SAME single pass over `program.zByBucket` the
   // saturation notice already ran, kept whole instead of filtered: one row per
@@ -4556,7 +4556,7 @@ async function withCrossAdd(map, fn) {
   // source, the notice's set is the alarm's.
   const ceil = (r, stat) => (r.ceilingReport || []).find((e) => e.stat === stat);
 
-  await test("U1/#446: a stat whose every bucket is filled reads achieved === ceiling, allFilled true", async () => {
+  await test("U1/#449: a stat whose every bucket is filled reads achieved === ceiling, allFilled true", async () => {
     const model = {
       targets: ["KL"], mlCap: 34, dodgeCap: null,
       worn: [
@@ -4576,7 +4576,7 @@ async function withCrossAdd(map, fn) {
     assert.deepStrictEqual(e.bonusTypes.slice().sort(), ["Artifact", "Equipment"]);
   });
 
-  await test("U1/#446: a stat forced onto a lesser source reads achieved < ceiling = Σ per-bucket maxima", async () => {
+  await test("U1/#449: a stat forced onto a lesser source reads achieved < ceiling = Σ per-bucket maxima", async () => {
     // Priority 1 takes the ring, so B's Equipment bucket is left empty even
     // though a live 20 sits in it. The census must show the whole bucket sum as
     // the ceiling — this is the state the fraction exists to make visible.
@@ -4599,7 +4599,7 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(e.allFilled, false, "a bucket took less than its best");
   });
 
-  await test("U1/#446: an unsaturated stat is in ceilingReport and NOT in saturationReport", async () => {
+  await test("U1/#449: an unsaturated stat is in ceilingReport and NOT in saturationReport", async () => {
     const model = {
       targets: ["A", "B"], mlCap: 34, dodgeCap: null,
       worn: [
@@ -4616,7 +4616,7 @@ async function withCrossAdd(map, fn) {
     assert.ok(ceil(r, "A"), "and every OTHER target stat has a row too, saturated or not");
   });
 
-  await test("U1/#446: saturationReport is byte-identical to the pre-change tree's output", async () => {
+  await test("U1/#449: saturationReport is byte-identical to the pre-change tree's output", async () => {
     // Captured by running these exact fixtures against the tree at 1a30951, the
     // commit before the census landed. Serialized, not deep-compared: the notice
     // and its consumers read a fixed field shape, and field ORDER is part of what
@@ -4645,7 +4645,7 @@ async function withCrossAdd(map, fn) {
       '[{"stat":"KL","total":10,"bonusTypes":["untyped","Untyped"],"unusedSources":1}]');
   });
 
-  await test("U1/#446: one live source per bucket reads achieved === ceiling with no unused sources", async () => {
+  await test("U1/#449: one live source per bucket reads achieved === ceiling with no unused sources", async () => {
     const model = {
       targets: ["KL"], mlCap: 34, dodgeCap: null,
       worn: [
@@ -4663,7 +4663,7 @@ async function withCrossAdd(map, fn) {
     assert.ok(!sat(r, "KL"), "and with nothing spare the notice stays quiet (KTD3)");
   });
 
-  await test("U1/#446: a ranked stat with no live source reads 0 / 0 rather than vanishing", async () => {
+  await test("U1/#449: a ranked stat with no live source reads 0 / 0 rather than vanishing", async () => {
     const model = {
       targets: ["Absent"], mlCap: 34, dodgeCap: null,
       worn: [slot("Ring", [item("r", "Ring", [["Other", "Equipment", 5]])])],
@@ -4676,7 +4676,7 @@ async function withCrossAdd(map, fn) {
     assert.deepStrictEqual(e.bonusTypes, [], "no bucket contributed a label");
   });
 
-  await test("U1/#446: a capped stat has BOTH sides clamped, and achieved never exceeds the card's headline", async () => {
+  await test("U1/#449: a capped stat has BOTH sides clamped, and achieved never exceeds the card's headline", async () => {
     // KTD7 — the card's headline is effectiveOf = min(cap, raw). An unclamped
     // numerator would state a third total for one stat, inches from the capNote.
     const model = {
@@ -4697,7 +4697,7 @@ async function withCrossAdd(map, fn) {
       `achieved ${e.achieved} must never exceed the headline ${r.effective.KL} rendered directly above it`);
   });
 
-  await test("U1/#446: the Utility sentinel gets no census row (KTD8)", async () => {
+  await test("U1/#449: the Utility sentinel gets no census row (KTD8)", async () => {
     const SENTINEL = require("../web/model.js").UTILITY_SENTINEL;
     const model = {
       targets: ["KL", SENTINEL], mlCap: 34, dodgeCap: null,
@@ -4713,7 +4713,7 @@ async function withCrossAdd(map, fn) {
     assert.ok(ceil(r, "KL"), "the real stat beside it still has one");
   });
 
-  await test("U1/#446: an empty stat is distinguishable from a missing one (synthetic primal)", async () => {
+  await test("U1/#449: an empty stat is distinguishable from a missing one (synthetic primal)", async () => {
     // The #319 idiom, straight into readSolution: the item var is on but no
     // contribution fired. `achieved` must read 0 WITH a row, not no row at all —
     // a renderer cannot tell "nothing yet" from "not a target" otherwise.
@@ -4731,7 +4731,7 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(e.allFilled, false, "and the bucket is visibly unfilled");
   });
 
-  await test("U1/#446: every solve path carries its OWN census, alternatives included (KTD9)", async () => {
+  await test("U1/#449: every solve path carries its OWN census, alternatives included (KTD9)", async () => {
     // renderBuild is generic over the optimum and any selected alternative and
     // must never close over the optimum. Emitting from readSolution is what
     // stops an inspected alternative from blanking — or borrowing the
@@ -4757,7 +4757,7 @@ async function withCrossAdd(map, fn) {
     assert.notStrictEqual(alt.effective.B, opt.effective.B, "premise: the two builds differ on B");
   });
 
-  await test("U1/#446: ceilingReport is plain JSON with no reference to the program", async () => {
+  await test("U1/#449: ceilingReport is plain JSON with no reference to the program", async () => {
     const model = {
       targets: ["KL"], mlCap: 34, dodgeCap: null,
       worn: [slot("Goggles", [item("a", "Goggles", [["KL", "Equipment", 24]]),

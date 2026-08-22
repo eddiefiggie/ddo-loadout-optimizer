@@ -134,7 +134,7 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
     assert.strictEqual(wins[0].stat, "Salt");
     assert.strictEqual(wins[0].boolean, true, "the win is flagged boolean");
     const line = R.whyThisLine(r, { slot: "Trinket", variant_id: "T" });
-    // #446 U7 split the contribution across a chip's elements, so the tick and
+    // #449 U7 split the contribution across a chip's elements, so the tick and
     // the stat name are no longer adjacent in the string. Both facts are still
     // asserted — and the chip structure is asserted with them, so this cannot
     // pass on markup that renders the tick outside a chip.
