@@ -3978,3 +3978,24 @@ test("#429 review #7: the load explanation fires when the target differs from th
   assert.ok(!/if \(!savedStep\(i\)\)/.test(src),
     "the absent-step-only condition is gone — it suppressed the very message it gated");
 });
+
+// ---------------------------------------------------------------------------
+// #335 U5 (R8) — pinning is unaffected, and the documented limitation holds: a
+// player cannot pin the same ring to BOTH Ring slots, because applyPinId ignores
+// a duplicate id for a multi-cardinality slot. A doubled pick is therefore
+// solver-discretionary — the player can see one but cannot request one. That is
+// recorded in the plan's Scope Boundaries rather than left to be discovered.
+// ---------------------------------------------------------------------------
+
+test("#335 U5 (R8): a duplicate ring pin is still ignored, so x2 cannot be pinned", () => {
+  const M = require("../web/model.js");
+  const id = [...(M.DUPLICABLE_RINGS)][0];
+  const cardOf = (slot) => (slot === "Ring" ? 2 : 1);   // the real Ring cardinality
+  const cons = {};
+  applyPinId(cons, "Ring", id, cardOf);
+  applyPinId(cons, "Ring", id, cardOf);        // the same ring a second time
+  const ids = [].concat((cons.Ring && cons.Ring.variant_ids) || []).filter(Boolean);
+  assert.strictEqual(ids.length, 1,
+    "the repeat selection is discarded — pinning a doubled pick is deferred, not supported");
+  assert.strictEqual(ids[0], id, "and the single pin is the ring the player picked");
+});
