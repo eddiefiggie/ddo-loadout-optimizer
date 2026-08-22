@@ -2020,3 +2020,50 @@ test("#88 U8: an ordinary contribution is not labelled", () => {
   assert.ok(!/is-overridden|your Insight|catalog says/.test(html),
     "a build with no overrides renders exactly as it did before");
 });
+
+// ---------------------------------------------------------------------------
+// #335 U4 — the two RENDER loops. Both were index- or position-bound and both
+// would otherwise emit a second entry for the twin, which reads as the affixes
+// applying twice. These exercise the loops themselves rather than the collapse
+// helper they call, because the helper being right is not the same as the loops
+// using it.
+// ---------------------------------------------------------------------------
+
+const _M4 = require("../web/model.js");
+
+function _dupBuild() {
+  const id = [...(_M4.DUPLICABLE_RINGS)][0];
+  const mk = (vid) => ({ variant_id: vid, source_item: id, slot: "Ring", ml: 31,
+    affixes: [{ name: "Charisma", type: "Enhancement", value: 14, unit: "flat" }],
+    set_bonus: [{ set: "Legendary Perfected Wrath" }], scaling: [], augment_slots: [] });
+  return {
+    status: "optimal",
+    chosen: [{ slot: "Ring", variant: mk(id) }, { slot: "Ring", variant: mk(_M4.twinIdOf(id)) }],
+    effective: { Charisma: 14 }, augmentsPlaced: [], setsActive: [], dinoPlaced: [],
+    ncPlaced: [], rollPlaced: [], vikPlaced: [], sealPlaced: [], tfPlaced: [], gsPlaced: [],
+    jokerPlaced: [], membershipPlaced: [], setAugmentsPlaced: [],
+  };
+}
+
+test("#335 U4: the paperdoll renders a doubled ring as ONE row, not two", () => {
+  const build = _dupBuild();
+  const model = { worn: [{ slot: "Ring", cardinality: 2, variants: [] }], augments: [] };
+  const v = R.buildViews(build, model, { targets: ["Charisma"] });
+  const html = String(v.paperdoll || "");
+  assert.ok(/Katra/.test(html), "the ring is rendered at all");
+  // Measured against the pre-U4 tree this emits 2 rows and leaks the suffixed id
+  // into markup the player reads. Both are asserted exactly, not with a bound.
+  assert.strictEqual((html.match(/class="pd-rname"/g) || []).length, 1,
+    "the position-bound loop must not emit a second Ring row for the twin");
+  assert.ok(!/::twin/.test(html), "and no suffixed twin id reaches the rendered row");
+});
+
+test("#335 U4: the Deep Dive merges the pair into one block", () => {
+  const build = _dupBuild();
+  const P4 = require("../web/projection.js");
+  const html = String(R.loadoutDeepDive(build, { targets: ["Charisma"] }, P4.buildCraftMaps(build), null) || "");
+  assert.ok(!/::twin/.test(html), "no suffixed twin id reaches the Deep Dive");
+  const blocks = (html.match(/class="dd-item/g) || []).length;
+  assert.strictEqual(blocks, 1,
+    "one block for the pair — this tab is the only surface showing augments, so a split here is the worst place for the 'affixes apply twice' reading");
+});
