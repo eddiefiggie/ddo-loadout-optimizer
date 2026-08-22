@@ -395,11 +395,12 @@ input.bumped { background: rgba(91,140,255,0.16); border-color: var(--accent); }
 .pd-why.muted { color: var(--faint); }
 /* #245 — an item picked only for its craftable options reads as a caution, not a win */
 .pd-why.pd-carried { color: var(--warn, #c9873a); }
-/* plan 2026-08-12-001 U3 — the per-item priority summary: base line muted so the
-   at-ceiling green carries exactly one meaning (stat at its ceiling) */
+/* plan 2026-08-12-001 U3 — the per-item priority summary. #446 U4 removed the
+   at-ceiling green it once carried: one item is not the whole contribution to a
+   stat, so the marker asserted at the wrong level. The line is uniformly muted
+   now, and the ceiling fact lives on the ranked card (.stat-reach). */
 .pd-prio { font-size: var(--fs-xs); color: var(--muted); margin-top: 4px; }
 .pd-prio .pd-contrib { white-space: nowrap; }
-.pd-prio .at-ceiling { color: var(--optimal); font-weight: 600; }
 
 /* readout layout: the paperdoll is the hero (front and centre), the ranked-target
    analysis sits below it. */

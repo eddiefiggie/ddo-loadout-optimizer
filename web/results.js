@@ -34,6 +34,11 @@ const assignDinoInserts = Proj.assignDinoInserts;
 const attributionByTarget = Proj.attributionByTarget;
 const whyThis = Proj.whyThis;
 var itemContributions = Proj.itemContributions;
+// #446 U4 — `saturatedStats` has no caller left in this file: its only one was
+// the per-item ceiling marker. The binding stays because it is re-exported
+// below, and `tests/projection.test.js` pins that surface against projection's.
+// `saturationLineFor` still has a live caller in `ceilingChip`, the old-save
+// fallback. Delete either and the parity test turns red, not the renderer.
 var saturatedStats = Proj.saturatedStats;
 var saturationLineFor = Proj.saturationLineFor;
 const satisfiedSets = Proj.satisfiedSets;
@@ -610,7 +615,6 @@ function whyThisLine(result, item, attr, targets) {
       `${esc(p.stat)} +${esc(p.value)} (${esc(p.family)})`).join(", ");
     return `<div class="pd-why pd-carried" title="Nothing printed on this item advances your priorities — its value here depends entirely on crafting it. Un-craftable alternatives are on the Alternatives tab.">⚒ here only for its crafts: ${txt}</div>`;
   }
-  const sat = saturatedStats(result);
   const spans = contribs.slice(0, 3).map((c) => {
     // #227 — untyped is a real bucket; never print a raw null.
     const typeLabel = (c.bonus_type == null || c.bonus_type === "") ? "untyped" : c.bonus_type;
@@ -626,10 +630,11 @@ function whyThisLine(result, item, attr, targets) {
     const label = c.boolean
       ? `✓ ${esc(c.stat)}`                                 // U4: presence, not "+1"
       : `${esc(c.stat)} +${esc(c.value)} ${esc(typeLabel)}${c.viaSet ? " (set)" : ""}${from}${ovr}`;
-    const line = sat.has(c.stat) ? saturationLineFor(result, c.stat) : null;
-    return line
-      ? `<span class="pd-contrib at-ceiling" title="${esc(line)}">${label}</span>`
-      : `<span class="pd-contrib">${label}</span>`;
+    // #446 U4 (R17a) — no at-ceiling marker here. An item is not the whole
+    // contribution to a stat, so a green marker on one of its spans read as a
+    // claim about that item rather than about the summed total. The fact now
+    // renders once, on the ranked card that actually describes it (`statReach`).
+    return `<span class="pd-contrib">${label}</span>`;
   });
   return `<div class="pd-prio" title="this item's contributions to your ranked priorities">${spans.join(", ")}</div>`;
 }

@@ -506,13 +506,14 @@ test("whyThisLine names the ranked contribution with its bonus type (R8, R9 + pl
   assert.ok(!/at-ceiling/.test(html), "no saturation report, no green");
 });
 
-test("plan 2026-08-12-001 U3: an at-ceiling contribution goes green with the shared sentence as tooltip", () => {
+test("#446 U4 (R17a/AE6): a saturated stat's gear-box span carries no ceiling marker, and keeps its label", () => {
   const res = whyResult();
   res.saturationReport = [{ stat: "Constitution", total: 15, bonusTypes: ["Enhancement"], unusedSources: 2 }];
   const html = R.whyThisLine(res, { slot: "Ring", variant_id: "R" });
-  assert.ok(/at-ceiling/.test(html), "the saturated stat's span is marked");
-  assert.ok(/at its ceiling of 15/.test(html), "the shared sentence rides the span title");
-  assert.ok(!/56|unused/i.test(html), "the unused-source count stays unspoken");
+  assert.ok(!/at-ceiling/.test(html), "one item is not the whole stat, so it makes no claim about one");
+  assert.ok(!/at its ceiling of 15/.test(html), "and the stat-level sentence does not ride an item span");
+  assert.ok(/Constitution \+15 Enhancement/.test(html), "the contribution itself still renders in full");
+  assert.ok(/class="pd-contrib"/.test(html), "as a plain span — the marker went, the span did not");
 });
 
 test("plan 2026-08-12-001 U3: same-stat contributions list separately and the cap is three", () => {
@@ -579,7 +580,7 @@ test("#276: no per-stat ceiling claim on a degenerate save whose totals are unav
   assert.ok(!/stat-ceiling/.test(v.cards), "a zeroed card never wears an at-ceiling chip");
 });
 
-test("plan 2026-08-12-001 U3/R4: the Deep Dive block carries the same summary with green", () => {
+test("plan 2026-08-12-001 U3/R4 + #446 U4: the Deep Dive block carries the same summary, now without green", () => {
   const res = whyResult();
   res.saturationReport = [{ stat: "Constitution", total: 15, bonusTypes: ["Enhancement"], unusedSources: 2 }];
   const maps = { augAssign: { byIndex: new Map(), freeByIndex: new Map() }, dinoAssign: { byIndex: new Map() },
@@ -587,7 +588,9 @@ test("plan 2026-08-12-001 U3/R4: the Deep Dive block carries the same summary wi
   const html = R.loadoutDeepDive(res, { targets: ["Constitution"] }, maps, R.attributionByTarget(res));
   assert.ok(/pd-prio/.test(html), "the Deep Dive block renders the priority summary");
   assert.ok(/Constitution \+15 Enhancement/.test(html), "same contribution content as the Loadout row");
-  assert.ok(/at-ceiling/.test(html) && /at its ceiling of 15/.test(html), "green + shared-sentence tooltip survive this surface");
+  // #446 U4 — this surface reached the marker independently of the Loadout row,
+  // so it needs its own guard that the removal covered it too.
+  assert.ok(!/at-ceiling/.test(html), "the Deep Dive reaches the same spans, and they are unmarked here too");
 });
 
 test("plan 2026-08-12-001 U3: an untyped contribution reads \"untyped\", never the literal null", () => {
@@ -614,7 +617,9 @@ test("plan 2026-08-12-001 U3: equippedRow renders the summary only when the cont
   const withCtx = R.equippedRow("Ring", pick, {}, new Set(), null, null, null, null,
     { result: res, attr: R.attributionByTarget(res), targets: ["Constitution"] });
   assert.ok(/pd-prio/.test(withCtx) && /Constitution \+15 Enhancement/.test(withCtx), "summary at the bottom of the box");
-  assert.ok(/at-ceiling/.test(withCtx), "green survives the row path");
+  // #446 U4 — the third surface that reached the marker. Guarded separately for
+  // the same reason: each threads its own context into whyThisLine.
+  assert.ok(!/at-ceiling/.test(withCtx), "and the row path renders no marker either");
   const withoutCtx = R.equippedRow("Ring", pick, {}, new Set(), null, null, null, null);
   assert.ok(!/pd-prio/.test(withoutCtx), "pure-test callers render no summary and no crash");
 });
@@ -2382,4 +2387,30 @@ test("#446 U3 (R15): the full statement renders ONCE per readout, above the card
   const noReport = _reachBuild(null, { effective: { A: 1 } });
   assert.ok(!/ceiling-statement/.test(R.buildViews(noReport, _reachModel, { targets: ["A"] }).cards),
     "a pre-#446 restore prints no orphan sentence");
+});
+
+test("#446 U4 (R17a): no stylesheet rule styles a per-item ceiling marker", () => {
+  const css = _reachCss();
+  // Asserted against the stylesheet directly, not through `_cssRule`: that helper
+  // asserts the selector EXISTS and slices its body, so it cannot express absence.
+  assert.ok(!css.includes(".pd-prio .at-ceiling"),
+    "the rule is removed, not merely unreferenced — a live rule invites the span back");
+  assert.ok(/\.pd-prio \.pd-contrib/.test(css), "the span it styled is still styled");
+  // The stat-card fallback keeps the class for a pre-#446 restore (R17b), so the
+  // name survives in exactly one place. Pin that, or a future sweep deletes it.
+  assert.ok(/\.stat-ceiling/.test(css), "the old-save chip keeps its rule");
+});
+
+test("#446 U4: whyThisLine no longer consults the saturation report at all", () => {
+  // Asserted against the function's own source, in the wizard.test.js idiom.
+  // A call-count spy CANNOT measure this: results.js captures `Proj.saturatedStats`
+  // into a module-scope binding at load, so patching projection afterwards leaves
+  // the captured reference untouched and the spy reads zero either way — a guard
+  // that passes on the pre-change tree and therefore checks nothing.
+  const src = R.whyThisLine.toString();
+  const body = src.slice(0, src.indexOf("pd-prio"));
+  assert.ok(!/saturatedStats\s*\(/.test(body), "the lookup went with the marker, not just its output");
+  assert.ok(!/saturationLineFor\s*\(/.test(body), "and so did the per-item sentence it fed");
+  assert.ok(typeof R.saturatedStats === "function",
+    "but the binding stays on the re-export surface projection.test.js pins");
 });
