@@ -2178,3 +2178,208 @@ test("U10: zeroSourceNotice's absent and filtered branches are separate entries 
   assert.strictEqual(R.zeroSourceNoticeEntries({ targets: ["Constitution"] }, _okResult,
     _modelWith(["Constitution"]), _datasetWith(["Constitution"])).length, 0);
 });
+
+// ---- #446 U3: the ranked-priority card's achieved/ceiling fraction ----------
+// No DOM in this suite (see the file header), so the box is asserted on the HTML
+// string `buildViews` returns and on the CSS rule text that gives each state its
+// treatment. Every assertion pins a specific string so it cannot pass vacuously.
+
+function _reachBuild(rows, opts) {
+  const o = opts || {};
+  const b = { status: "optimal", chosen: [], setsActive: [], augmentsPlaced: [],
+    breakdown: o.breakdown || {}, effective: o.effective || {} };
+  if (rows) b.ceilingReport = rows;
+  if (o.capped) b.capped = o.capped;
+  return b;
+}
+const _reachModel = { worn: [], augments: [] };
+function _reachCss() {
+  const fs = require("fs"); const path = require("path");
+  return fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf-8");
+}
+function _cssRule(css, sel) {
+  const at = css.indexOf(sel);
+  assert.ok(at >= 0, `styles.css defines ${sel}`);
+  return css.slice(at, css.indexOf("}", at) + 1);
+}
+
+test("#446 U3 (R11/R12/R13): a maxed stat renders the fraction, a full green meter and the shared maxed sentence", () => {
+  const b = _reachBuild([{ stat: "Dodge", achieved: 12, ceiling: 12 }], { effective: { Dodge: 12 } });
+  const v = R.buildViews(b, _reachModel, { targets: ["Dodge"] });
+  assert.ok(/class="stat-reach is-maxed"/.test(v.cards), "the box carries the maxed state class");
+  assert.ok(/<span class="reach-fraction">12 \/ 12<\/span>/.test(v.cards), "the fraction renders verbatim");
+  assert.ok(/<span class="reach-fill" style="width:100%"><\/span>/.test(v.cards), "the meter is full");
+  assert.ok(/no other item in your pool raises it/.test(v.cards),
+    "the SHARED maxed short form, not a card-local rewording");
+  const css = _reachCss();
+  assert.ok(/var\(--optimal\)/.test(_cssRule(css, ".stat-reach.is-maxed {")),
+    "the maxed box takes the green border/tint");
+  assert.ok(/var\(--optimal\)/.test(_cssRule(css, ".stat-reach.is-maxed .reach-fraction")),
+    "and the fraction is green with it");
+});
+
+test("#446 U3 (R14/R29): a shortfall renders its fraction, a proportional meter and the whole-track bound treatment", () => {
+  const b = _reachBuild([{ stat: "Dodge", achieved: 30, ceiling: 50 }], { effective: { Dodge: 30 } });
+  const v = R.buildViews(b, _reachModel, { targets: ["Dodge"] });
+  assert.ok(/class="stat-reach is-shortfall"/.test(v.cards), "the shortfall state class");
+  assert.ok(/<span class="reach-fraction">30 \/ 50<\/span>/.test(v.cards), "30 / 50");
+  assert.ok(/<span class="reach-fill" style="width:60%"><\/span>/.test(v.cards), "a 60% meter");
+  assert.ok(!/is-maxed/.test(v.cards), "no maxed class");
+  assert.ok(/the ceiling sums the best source in each bonus type that carries this stat/.test(v.cards),
+    "the shared shortfall short form");
+  // R29 — the HATCH IS ON THE TRACK, not on a remainder element. There is no
+  // remainder element to hatch: the meter's only child is the fill.
+  assert.ok(!/reach-(rest|remainder|unfilled|empty)/.test(v.cards),
+    "no remainder-only element exists, so the hatch cannot have been scoped to one");
+  const css = _reachCss();
+  const track = _cssRule(css, ".reach-meter {");
+  assert.ok(/repeating-linear-gradient/.test(track), "the whole track carries the hatch");
+  // …and the fill is translucent, so the hatch stays visible THROUGH it at every
+  // fill level — a 96%-filled bar must still read as a bound.
+  assert.ok(/rgba\(/.test(_cssRule(css, ".reach-fill {")),
+    "the fill is drawn over the hatch translucently, not as an opaque cover");
+});
+
+test("#446 U3 (R14): a shortfall card carries no red or warning colour class", () => {
+  const b = _reachBuild([{ stat: "Dodge", achieved: 30, ceiling: 50 }], { effective: { Dodge: 30 } });
+  const box = R.buildViews(b, _reachModel, { targets: ["Dodge"] }).cards;
+  const reach = box.slice(box.indexOf('class="stat-reach'));
+  assert.ok(!/(is-cap-bound|quarantined|warn|danger|error|invalid)/.test(reach),
+    "a shortfall is not a fault");
+  const shortfall = _cssRule(_reachCss(), ".stat-reach.is-shortfall .reach-fraction");
+  assert.ok(/var\(--accent\)/.test(shortfall), "the neutral accent");
+  assert.ok(!/--quarantined|#f0b360|red/.test(shortfall), "and nothing warning-coloured");
+});
+
+test("#446 U3 (R19/R17b): a build with no ceilingReport renders no .stat-reach and falls back to ceilingChip", () => {
+  const b = satBuild();                       // pre-#446 shape: saturationReport, no ceilingReport
+  b.effective = { "Kinetic Lore": 30 };
+  let v;
+  assert.doesNotThrow(() => { v = R.buildViews(b, _reachModel, { targets: ["Kinetic Lore"] }); });
+  assert.ok(!/stat-reach/.test(v.cards), "no box, and no denominator nobody computed");
+  assert.ok(/class="stat-ceiling at-ceiling"/.test(v.cards), "the old chip still carries the old data");
+  // Positive control, same call shape — the absence above is the missing report,
+  // not a box that never renders.
+  b.ceilingReport = [{ stat: "Kinetic Lore", achieved: 30, ceiling: 44 }];
+  assert.ok(/class="stat-reach is-shortfall"/.test(
+    R.buildViews(b, _reachModel, { targets: ["Kinetic Lore"] }).cards),
+  "the identical build WITH a report does render the box");
+});
+
+test("#446 U3/R19: rendering a restored build invokes no solve entry point", () => {
+  const solverPath = require.resolve("../web/solver.js");
+  const resultsPath = require.resolve("../web/results.js");
+  const solver = require(solverPath);
+  const ENTRIES = ["solveLexicographic", "solveConstrained", "readSolution", "generateAlternatives"];
+  const calls = {}; const orig = {};
+  for (const k of ENTRIES) {
+    calls[k] = 0; orig[k] = solver[k];
+    // Both bridges results.js could reach the solver through: the module object
+    // and the shared browser global. Reloading results.js AFTER installing them
+    // is what makes the count load-bearing rather than vacuous.
+    solver[k] = function () { calls[k]++; return orig[k].apply(this, arguments); };
+    globalThis[k] = solver[k];
+  }
+  delete require.cache[resultsPath];
+  try {
+    const R2 = require(resultsPath);
+    const b = _reachBuild([{ stat: "Dodge", achieved: 3, ceiling: 9 }], { effective: { Dodge: 3 } });
+    const v = R2.buildViews(b, _reachModel, { targets: ["Dodge"] });
+    assert.ok(/<span class="reach-fraction">3 \/ 9<\/span>/.test(v.cards),
+      "the saved report alone produced the fraction");
+    for (const k of ENTRIES) assert.strictEqual(calls[k], 0, `${k} must not run to render a saved build`);
+  } finally {
+    for (const k of ENTRIES) { solver[k] = orig[k]; delete globalThis[k]; }
+    delete require.cache[resultsPath];
+    require(resultsPath);
+  }
+});
+
+test("#446 U3 (R30): a zero ceiling renders no meter, no green, and claims only what this solve found", () => {
+  const b = _reachBuild([{ stat: "Doubleshot", achieved: 0, ceiling: 0 }], { effective: { Doubleshot: 0 } });
+  const v = R.buildViews(b, _reachModel, { targets: ["Doubleshot"] });
+  assert.ok(/class="stat-reach is-zero-ceiling"/.test(v.cards), "its own state class");
+  assert.ok(!/reach-meter/.test(v.cards), "no meter for a 0 / 0");
+  assert.ok(!/is-maxed/.test(v.cards), "0 === 0 must not read as at-ceiling green");
+  assert.ok(/this solve found nothing reachable that carries this stat/.test(v.cards),
+    "it claims only what the solve found");
+  assert.ok(!/(current data|filters|ranking it)/.test(v.cards),
+    "and does NOT defer to zeroSourceNotice, which may not be on screen at all");
+});
+
+test("#446 U3 (R33): a capped stat's fraction numerator equals the card's headline number", () => {
+  const b = _reachBuild([{ stat: "Dodge", achieved: 20, ceiling: 20 }],
+    { effective: { Dodge: 20 }, capped: { Dodge: 20 } });
+  const cards = R.buildViews(b, _reachModel, { targets: ["Dodge"] }).cards;
+  const headline = (cards.match(/data-final="(\d+)"/) || [])[1];
+  const numerator = (cards.match(/class="reach-fraction">(\d+) \//) || [])[1];
+  assert.strictEqual(headline, "20", "the headline is effectiveOf = min(cap, raw)");
+  assert.strictEqual(numerator, headline, "the card never states two different totals for one stat");
+});
+
+test("#446 U3 (R33/KTD7): a cap-bound card renders neither the green treatment nor the maxed sentence", () => {
+  const b = _reachBuild([{ stat: "Dodge", achieved: 20, ceiling: 20 }],
+    { effective: { Dodge: 20 }, capped: { Dodge: 20 } });
+  const cards = R.buildViews(b, _reachModel, { targets: ["Dodge"] }).cards;
+  assert.ok(/class="stat-reach is-cap-bound"/.test(cards), "its own state, not the maxed one");
+  assert.ok(!/is-maxed/.test(cards), "green is reserved for achieved === pool ceiling");
+  assert.ok(!/no other item in your pool raises it/.test(cards),
+    "the maxed sentence would be false when the cap is the binding limit");
+  assert.ok(/clamped to your cap of 20/.test(cards), "it names the cap, agreeing with the capNote idiom");
+  const rule = _cssRule(_reachCss(), ".stat-reach.is-cap-bound {");
+  assert.ok(!/var\(--optimal\)/.test(rule), "and takes no part of the green treatment");
+});
+
+test("#446 U3 (R34): the Utility card renders no fraction sub-container", () => {
+  const b = utilityBuild({ count: 2, effects: [{ name: "Ghost Touch", item: "rGT" }] });
+  // Even if a sentinel row leaked into the report. The exemption is STRUCTURAL —
+  // `buildViews` returns utilityCard before reaching the stat-card template — so a
+  // real stat is ranked alongside it as a positive control: the box renders on
+  // that card in the same call, and still not on the Utility one.
+  b.ceilingReport = [{ stat: U_SENT, achieved: 0, ceiling: 0 }, { stat: "A", achieved: 4, ceiling: 9 }];
+  b.effective = { A: 4 };
+  const v = R.buildViews(b, _reachModel, { targets: [U_SENT, "A"] });
+  assert.ok(/utility-card/.test(v.cards), "the dedicated card still renders");
+  assert.strictEqual(v.cards.split("stat-reach").length - 1, 1, "exactly one box across the two cards");
+  const utilCard = v.cards.slice(v.cards.indexOf("utility-card"), v.cards.indexOf('class="stat-card"'));
+  assert.ok(!/stat-reach/.test(utilCard), "a count of distinct effects is not a summable stat");
+  assert.ok(/<span class="reach-fraction">4 \/ 9<\/span>/.test(v.cards), "…while the ranked stat beside it has one");
+});
+
+test("#446 U3 (AE6): no stat card carries both a ceilingChip and a .stat-reach box", () => {
+  const b = satBuild();                       // carries a saturationReport…
+  b.effective = { "Kinetic Lore": 30 };
+  b.ceilingReport = [{ stat: "Kinetic Lore", achieved: 30, ceiling: 30 }];   // …and the new one
+  const v = R.buildViews(b, _reachModel, { targets: ["Kinetic Lore"] });
+  assert.ok(/stat-reach/.test(v.cards), "the fraction wins");
+  assert.ok(!/stat-ceiling/.test(v.cards), "and the chip stands down — the two are mutually exclusive");
+});
+
+test("#446 U3 (KTD9): a selected alternative renders the fraction from its OWN ceilingReport", () => {
+  const optimum = _reachBuild([{ stat: "Dodge", achieved: 41, ceiling: 60 }], { effective: { Dodge: 41 } });
+  const alt = _reachBuild([{ stat: "Dodge", achieved: 23, ceiling: 60 }], { effective: { Dodge: 23 } });
+  const vOpt = R.buildViews(optimum, _reachModel, { targets: ["Dodge"] });
+  const vAlt = R.buildViews(alt, _reachModel, { targets: ["Dodge"] });
+  assert.ok(/<span class="reach-fraction">41 \/ 60<\/span>/.test(vOpt.cards), "the optimum states its own");
+  assert.ok(/<span class="reach-fraction">23 \/ 60<\/span>/.test(vAlt.cards), "the alternative states its own");
+  assert.ok(!/41/.test(vAlt.cards), "the optimum's numerator never appears on an alternative's card");
+  // …and structurally: the card loop hands ceilingFor the build being rendered.
+  const src = require("fs").readFileSync(require.resolve("../web/results.js"), "utf-8");
+  assert.ok(/statReach\(build, stat\)/.test(src),
+    "renderBuild is generic over optimum/alternative — it must never close over the optimum");
+});
+
+test("#446 U3 (R15): the full statement renders ONCE per readout, above the cards, not once per card", () => {
+  const P = require("../web/projection.js");
+  const b = _reachBuild([{ stat: "A", achieved: 1, ceiling: 2 }, { stat: "B", achieved: 1, ceiling: 2 }],
+    { effective: { A: 1, B: 1 } });
+  const v = R.buildViews(b, _reachModel, { targets: ["A", "B"] });
+  assert.strictEqual(v.cards.split(P.CEILING_FULL_STATEMENT).length - 1, 1,
+    "repeated under every card it reads as boilerplate and stops being read");
+  assert.ok(v.cards.indexOf(P.CEILING_FULL_STATEMENT) < v.cards.indexOf("stat-card"),
+    "it sits at section level, before the first card, so it is in the same view");
+  assert.strictEqual(v.cards.split('class="reach-fraction"').length - 1, 2, "both cards still carry their own fraction");
+  const noReport = _reachBuild(null, { effective: { A: 1 } });
+  assert.ok(!/ceiling-statement/.test(R.buildViews(noReport, _reachModel, { targets: ["A"] }).cards),
+    "a pre-#446 restore prints no orphan sentence");
+});

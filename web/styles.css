@@ -455,6 +455,45 @@ input.bumped { background: rgba(91,140,255,0.16); border-color: var(--accent); }
 .stat-cap { display: inline-block; margin-top: var(--sp-1); font-size: var(--fs-xs); color: var(--quarantined); }
 /* #276 -- the same at-ceiling fact the gear boxes carry, on the receipt card */
 .stat-ceiling { display: inline-block; margin-top: var(--sp-1); margin-left: var(--sp-2); font-size: var(--fs-xs); color: var(--optimal); font-weight: 600; }
+/* #446 U3 -- the achieved/ceiling box at the bottom of each ranked card.
+   Four states, four treatments. Green is reserved for achieved === pool ceiling;
+   a shortfall takes the neutral accent (it is not a fault, so no warning colour);
+   a cap-bound stat takes the amber .stat-cap idiom so it agrees with the capNote
+   inches above it rather than contradicting it with green. */
+.stat-reach {
+  margin: var(--sp-3) 0 0; padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--elev);
+}
+.reach-fraction {
+  display: block; font-size: var(--fs-md); font-weight: 700;
+  font-variant-numeric: tabular-nums; color: var(--text);
+}
+.reach-note { margin: var(--sp-1) 0 0; font-size: var(--fs-xs); color: var(--faint); }
+/* R29 -- the HATCH IS ON THE WHOLE TRACK, not on the unfilled remainder. There is
+   no remainder element: the fill is translucent and drawn over the hatch, so the
+   bound signal stays legible at every fill level, including a near-full bar --
+   which is exactly the one that otherwise reads as attainable headroom. */
+.reach-meter {
+  position: relative; height: 8px; margin-top: var(--sp-2);
+  border-radius: 999px; overflow: hidden;
+  background-color: var(--border-2);
+  background-image: repeating-linear-gradient(135deg,
+    rgba(255,255,255,0.18) 0 2px, rgba(255,255,255,0) 2px 6px);
+}
+.reach-fill { display: block; height: 100%; border-radius: 999px; background: rgba(91,140,255,0.62); }
+.stat-reach.is-maxed { border-color: var(--optimal); background: rgba(67,197,158,0.10); }
+.stat-reach.is-maxed .reach-fraction { color: var(--optimal); }
+.stat-reach.is-maxed .reach-fill { background: rgba(67,197,158,0.62); }
+.stat-reach.is-shortfall .reach-fraction { color: var(--accent); }
+.stat-reach.is-cap-bound { border-color: rgba(240,179,96,0.45); background: rgba(240,179,96,0.08); }
+.stat-reach.is-cap-bound .reach-fraction { color: var(--quarantined); }
+.stat-reach.is-cap-bound .reach-fill { background: rgba(240,179,96,0.55); }
+.stat-reach.is-zero-ceiling .reach-fraction { color: var(--muted); }
+/* #446 U3 (R15) -- the one full statement, above the ranked cards. */
+.ceiling-statement {
+  margin: 0 0 var(--sp-3); font-size: var(--fs-xs); color: var(--faint);
+}
 /* #277 -- the ceiling notice opens by tap/keyboard; sentences become visible text */
 details.saturation-note summary { cursor: pointer; }
 details.saturation-note .sat-sentences p { margin: var(--sp-1) 0 0; }

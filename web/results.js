@@ -832,10 +832,71 @@ function staleSnapshotNotice(result) {
 
 /** #276 — the receipt-card ceiling marker, in the .stat-cap chip idiom: the
  *  same stat-level fact the gear boxes color green, with the same shared
- *  sentence as its tooltip. Empty when the stat is not saturated. */
+ *  sentence as its tooltip. Empty when the stat is not saturated.
+ *
+ *  #446 U3 (R17b) — RETAINED ONLY AS THE FALLBACK. A result carrying
+ *  `ceilingReport` renders `statReach` instead and never this chip; a build
+ *  saved before #446 shipped has no such report, and deleting the chip would
+ *  leave it with no ceiling signal at all from data its save still contains.
+ *  The card picks one or the other on `statReach` being empty, so the two are
+ *  mutually exclusive by construction rather than by two agreeing predicates. */
 function ceilingChip(result, stat) {
   const line = (Proj && Proj.saturationLineFor) ? Proj.saturationLineFor(result, stat) : null;
   return line ? `<span class="stat-ceiling at-ceiling" title="${esc(line)}">at ceiling</span>` : "";
+}
+
+/** #446 U3 (R11-R16, R29, R30, R33) — the ranked card's achieved/ceiling box.
+ *
+ *  Every number and every sentence comes from `Proj.ceilingFor`, which owns the
+ *  four short forms so the card and the five exports cannot drift. This function
+ *  owns only the markup and which treatment each state takes.
+ *
+ *  Takes the build BEING RENDERED (KTD9). `renderBuild` is generic over the
+ *  optimum and any selected alternative, and an alternative carries its own
+ *  `ceilingReport` — `readSolution` emits it and `solveConstrained` spreads that
+ *  in. Closing over the optimum would state its numerator beside an
+ *  alternative's headline: a confidently-stated wrong number.
+ *
+ *  Empty string when `ceilingFor` returns null (no row for the stat — a pre-#446
+ *  restore). That is the sole mechanism behind R19: nothing is rendered, no
+ *  denominator is invented, and no re-solve is triggered to obtain one.
+ *
+ *  The four treatments, and why they differ:
+ *   - `maxed`     green box, tint and fill. Reserved for achieved === pool ceiling.
+ *   - `shortfall` the neutral accent. A shortfall is not a fault, so no warning
+ *                 colour, and the sentence asserts nothing about a solve that was
+ *                 never run (KTD2).
+ *   - `capBound`  the amber cap idiom `.stat-cap` already uses, agreeing with the
+ *                 capNote inches away. NOT green: the pool could raise the stat,
+ *                 the cap won't let it land (KTD7).
+ *   - `zeroCeiling` no meter at all. `0 / 0` satisfies achieved === ceiling, so
+ *                 an ungated green would claim "at ceiling" on a stat the solve
+ *                 found nothing for (R30).
+ *
+ *  R29 — the meter's WHOLE TRACK carries the hatch (`.reach-meter` background),
+ *  with the translucent fill drawn over it. Hatching only the remainder puts the
+ *  strongest bound signal where the risk is lowest: at 96% filled there is 4% of
+ *  track left to render it in, and that near-full bar is exactly the one that
+ *  misreads as "almost attainable". There is deliberately no remainder element. */
+function statReach(build, stat) {
+  const c = (Proj && Proj.ceilingFor) ? Proj.ceilingFor(build, stat) : null;
+  if (!c) return "";
+  const state = c.capBound ? "is-cap-bound"
+    : c.zeroCeiling ? "is-zero-ceiling"
+      : c.maxed ? "is-maxed" : "is-shortfall";
+  // Width from the CLAMPED pair, so a capped stat's meter agrees with its own
+  // fraction. Never divides by a zero denominator — that state renders no meter.
+  const pct = c.ceilingUpperBound > 0
+    ? Math.max(0, Math.min(100, Math.round((c.achieved / c.ceilingUpperBound) * 100))) : 0;
+  // aria-hidden: the fraction and the sentence beside it already carry the whole
+  // fact in text, so the bar would only repeat it as noise.
+  const meter = c.zeroCeiling ? ""
+    : `<div class="reach-meter" aria-hidden="true"><span class="reach-fill" style="width:${pct}%"></span></div>`;
+  return `<div class="stat-reach ${state}">`
+    + `<span class="reach-fraction">${esc(c.fraction)}</span>`
+    + meter
+    + `<p class="reach-note">${esc(c.short)}</p>`
+    + `</div>`;
 }
 
 /** #110 (U7) — the blocklist disclosure. Reads the SHARED sentences from
@@ -1463,13 +1524,26 @@ function buildViews(build, model, query) {
     const rawSum = contribs.reduce((s, p) => s + p.value, 0);
     const capNote = (cap != null && rawSum > total)
       ? `<span class="stat-cap" title="raw ${esc(rawSum)} exceeds the cap for this stat">capped at ${esc(total)} · raw ${esc(rawSum)}</span>` : "";
+    // #446 U3 (R17b) — one ceiling signal per card, chosen by which data the
+    // build actually carries: the fraction when `ceilingReport` has a row for
+    // this stat, the legacy chip only when it does not.
+    const reach = statReach(build, stat);
     return `<div class="stat-card">
       <div class="stat-head"><span class="stat-rank">${i + 1}</span><span class="stat-name">${esc(stat)}</span></div>
       <div class="stat-value" data-final="${esc(total)}">${esc(total)}</div>
-      ${capNote}${build.effective ? ceilingChip(build, stat) : ""}
+      ${capNote}${(!reach && build.effective) ? ceilingChip(build, stat) : ""}
       ${attributionList(contribs)}
+      ${reach}
     </div>`;
   }).join("");
+  // #446 U3 (R15) — the FULL statement, once per readout at section level. It
+  // carries the qualification the per-card short forms omit: repeated under every
+  // card down an eight-priority build it reads as boilerplate and stops being
+  // read, which defeats the premise that the sentence is the mitigation. It sits
+  // above the cards rather than behind a fold so it is in the same view, not
+  // merely reachable. Null (and silent) on a pre-#446 restore.
+  const ceilingStatement = (Proj && Proj.ceilingStatement) ? Proj.ceilingStatement(build) : null;
+  const cardsHtml = (ceilingStatement ? `<p class="ceiling-statement">${esc(ceilingStatement)}</p>` : "") + cards;
 
   // Equipped list (prototype layout): a plain stacked list of every slot the
   // model considered, occupied or empty — no humanoid figure, full item names
@@ -1555,7 +1629,7 @@ function buildViews(build, model, query) {
   // on the equipped loadout, named once with its members and carrier.
   setsPanel += bundlesBlock(build, augById);
 
-  return { paperdoll: `<div class="pd-list">${rows.join("")}</div>`, weapons, cards, setsPanel, deepDive: loadoutDeepDive(build, query, maps, attr) };
+  return { paperdoll: `<div class="pd-list">${rows.join("")}</div>`, weapons, cards: cardsHtml, setsPanel, deepDive: loadoutDeepDive(build, query, maps, attr) };
 }
 
 // Alternative cards (U4): compact trade-off summary + gain tags, as a single-select
