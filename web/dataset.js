@@ -521,26 +521,23 @@ const UTILITY_TIER1_PRESENCE = new Set([
   "Freedom of Movement",
   "Blindness Immunity",
   "Deathblock",
-  // The PRESENCE_ALLOW wiki-adjudicated named effects:
-  "Kick 'Em While They're Down",
-  "Way of the Sun Soul",
-  "Lifeblood of the Undead Prince",
-  "Path of the Fire Dragon",
-  "Path of the Guarding Stone",
-  "Brilliance of the Shattered Sun",
-  "Vile Grip of the Hidden Hand",
-  "Legendary Vile Grip of the Hidden Hand",
-  "Legendary Tet-zik, The Enlightened Change",
-  // #349 (batch 1) — six more worn toggles, each admitted on a verbatim
-  // wiki reading of a PASSIVE equipped effect. Candidates were found by
-  // carrier slot, but admitted on the effect's nature: procs ("when you
-  // are hit, N% chance"), magnitudes, materials and crafting markers are
-  // refused with their reason in docs/wiki-evidence/utility-worn-toggles.md.
+  // #349 (batch 1) — six more worn toggles, each admitted on a verbatim wiki
+  // reading of a PASSIVE equipped effect (see
+  // docs/wiki-evidence/utility-worn-toggles.md for every admission AND every
+  // refusal with its reason). Keep in lockstep with src/utility_procs.py.
   "Lesser Displacement",
   "Ethereal",
   "Dusk",
   "Soundproof",
   "Immunity to Fear",
+  // #443 — the nine PRESENCE_ALLOW named effects were REMOVED from the count.
+  // They stay picker-visible (PRESENCE_ALLOW is consulted directly by the
+  // presence predicate) and individually rankable; they simply stopped being
+  // counted, the same distinction #343 drew for the Bane family. They were inert
+  // here while untyped and went live when the 2026-08-18 re-encoding typed them
+  // Bool, taking the roster from 20 to 25 counted names and the measured ratio
+  // from 1.80x to 2.35x against a 2.00x budget — a widening the MEASURED-BATCHES
+  // rule exists to prevent. Two of them were the same effect at two tiers.
 ]);
 
 /** #404 — COMPANION STATS: a second, differently-named source of the same in-game
@@ -629,16 +626,11 @@ const UTILITY_CONTAINER_DEFAULT_ORDER = [
   "Whelming Shockwave",
   "Blunt Trauma",
   "Lesser Boneshatter",
-  // The PRESENCE_ALLOW wiki-adjudicated named effects.
-  "Kick 'Em While They're Down",
-  "Way of the Sun Soul",
-  "Lifeblood of the Undead Prince",
-  "Path of the Fire Dragon",
-  "Path of the Guarding Stone",
-  "Brilliance of the Shattered Sun",
-  "Vile Grip of the Hidden Hand",
-  "Legendary Vile Grip of the Hidden Hand",
-  "Legendary Tet-zik, The Enlightened Change",
+  // #443 — the nine PRESENCE_ALLOW named effects were removed here in lockstep
+  // with UTILITY_TIER1_PRESENCE. This order must cover the stamped counting set
+  // exactly (tests/dataset.test.js asserts both directions), so a name that
+  // stopped being counted would otherwise occupy a container position pursuing an
+  // effect the solver has no indicator for.
   // #349 batch 1 — appended after the inherited names rather than
   // interleaved: the six above them are the effects #343 established a
   // player notices first, and re-ranking those was not part of this batch.

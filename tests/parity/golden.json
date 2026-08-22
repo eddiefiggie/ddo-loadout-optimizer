@@ -1,6 +1,6 @@
 {
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
- "generated": "2026-08-20",
+ "generated": "2026-08-22",
  "dataset": "web/data/items.json (9110 items)",
  "fixture_count": 23,
  "solves": {
@@ -170,10 +170,6 @@
      "variant": "Lindal's Mighty Belt"
     },
     {
-     "slot": "Boots",
-     "variant": "Blackfeather Boots"
-    },
-    {
      "slot": "Bracers",
      "variant": "Bracers of the Battlerager"
     },
@@ -187,7 +183,7 @@
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Goggles of the Frozen Night"
+     "variant": "Legendary Mining Lenses"
     },
     {
      "slot": "Helmet",
@@ -199,7 +195,7 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Pendant of Crippling Strikes"
+     "variant": "Legendary Climber's Remembrance"
     },
     {
      "slot": "Off Hand",
@@ -207,7 +203,7 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Band of Faith and Fortress"
+     "variant": "Legendary Neglected Wedding Ring"
     },
     {
      "slot": "Ring",
@@ -238,31 +234,23 @@
     },
     {
      "slot": "Belt",
-     "variant": "Belt of the Sun Soul"
+     "variant": "Legendary Braided Cutcord"
     },
     {
      "slot": "Boots",
-     "variant": "Legendary Demonic Rush"
-    },
-    {
-     "slot": "Bracers",
-     "variant": "Legendary Jidz-Tet'ka"
+     "variant": "Death's Deferral"
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary Duergarcraft Shroud"
-    },
-    {
-     "slot": "Gloves",
-     "variant": "Epic Fanged Gloves"
+     "variant": "Cloak of Night (level 12)"
     },
     {
      "slot": "Goggles",
-     "variant": "Discerning Gaze"
+     "variant": "Legendary Doctor Gustav's Warped Lenses"
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Duergarcraft Cowl"
+     "variant": "Legendary Cowl of the Drow Devotee"
     },
     {
      "slot": "Main Hand",
@@ -270,15 +258,11 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Pendant of Crippling Strikes"
+     "variant": "Legendary Memento of Flame"
     },
     {
      "slot": "Off Hand",
      "variant": "Legendary Cataclysmic Buckler"
-    },
-    {
-     "slot": "Ring",
-     "variant": "Legendary Neglected Wedding Ring"
     },
     {
      "slot": "Ring",
@@ -751,15 +735,11 @@
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Vestments of the Sun Soul"
+     "variant": "Docent of the Artblade's Reflection"
     },
     {
      "slot": "Belt",
      "variant": "Legendary Baron Aubrecker's Monogrammed Belt"
-    },
-    {
-     "slot": "Boots",
-     "variant": "Blackfeather Boots"
     },
     {
      "slot": "Bracers",
@@ -771,7 +751,7 @@
     },
     {
      "slot": "Gloves",
-     "variant": "Legendary Darstil's Gloves"
+     "variant": "Baron Aubrecker's Monogrammed Gloves"
     },
     {
      "slot": "Goggles",
@@ -779,7 +759,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Crisis Helm"
+     "variant": "Malicia's Crown (level 12)"
     },
     {
      "slot": "Main Hand",
@@ -787,7 +767,7 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Pendant of Crippling Strikes"
+     "variant": "Legendary Memento of Flame"
     },
     {
      "slot": "Off Hand",
@@ -798,12 +778,8 @@
      "variant": "Legendary Argonnessen Eye Band"
     },
     {
-     "slot": "Ring",
-     "variant": "Legendary Nocturne Ring"
-    },
-    {
      "slot": "Trinket",
-     "variant": "Bauble of Draconic Resistance"
+     "variant": "Symbol of the Slave Lords"
     }
    ]
   },
@@ -822,15 +798,11 @@
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Chain Shirt of Toppling (level 12)"
+     "variant": "Docent of the Artblade's Reflection"
     },
     {
      "slot": "Belt",
-     "variant": "Belt of the Sun Soul"
-    },
-    {
-     "slot": "Boots",
-     "variant": "Blackfeather Boots"
+     "variant": "The Unbreakable Cord"
     },
     {
      "slot": "Bracers",
@@ -841,16 +813,12 @@
      "variant": "Dread Pirate's Cloak (level 12)"
     },
     {
-     "slot": "Gloves",
-     "variant": "Legendary Darstil's Gloves"
-    },
-    {
      "slot": "Goggles",
-     "variant": "Legendary Goggles of Dusk"
+     "variant": "Ethereal Gaze"
     },
     {
      "slot": "Helmet",
-     "variant": "Crisis Helm"
+     "variant": "Malicia's Crown (level 12)"
     },
     {
      "slot": "Main Hand",
@@ -893,7 +861,7 @@
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Chain Shirt of Toppling (level 12)"
+     "variant": "Epic Docent of Grace"
     },
     {
      "slot": "Belt",
@@ -902,10 +870,6 @@
     {
      "slot": "Boots",
      "variant": "Legendary Doctor Gustav's Rubber Boots"
-    },
-    {
-     "slot": "Bracers",
-     "variant": "Bracers of the Sun Soul"
     },
     {
      "slot": "Cloak",
@@ -938,10 +902,6 @@
     {
      "slot": "Ring",
      "variant": "Duskbone Ring"
-    },
-    {
-     "slot": "Ring",
-     "variant": "Legendary Neglected Wedding Ring"
     },
     {
      "slot": "Trinket",
@@ -1124,7 +1084,7 @@
     },
     {
      "slot": "Belt",
-     "variant": "Belt of the Sun Soul"
+     "variant": "Belt of the Burrower"
     },
     {
      "slot": "Bracers",
@@ -1135,16 +1095,12 @@
      "variant": "Legendary Earthen Mantle"
     },
     {
-     "slot": "Gloves",
-     "variant": "Legendary Gauntlets of Devoured Divinity"
-    },
-    {
      "slot": "Goggles",
      "variant": "Legendary Drider's Vision"
     },
     {
      "slot": "Helmet",
-     "variant": "Crisis Helm"
+     "variant": "Legendary Cowl of the Drow Devotee"
     },
     {
      "slot": "Main Hand",
@@ -1152,11 +1108,7 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Pendant of Crippling Strikes"
-    },
-    {
-     "slot": "Off Hand",
-     "variant": "The Heart of the Prince"
+     "variant": "Legendary Memento of Flame"
     },
     {
      "slot": "Trinket",
@@ -1181,7 +1133,7 @@
     },
     {
      "slot": "Belt",
-     "variant": "Belt of the Sun Soul"
+     "variant": "Belt of the Burrower"
     },
     {
      "slot": "Bracers",
@@ -1192,16 +1144,12 @@
      "variant": "Legendary Earthen Mantle"
     },
     {
-     "slot": "Gloves",
-     "variant": "Legendary Gauntlets of Devoured Divinity"
-    },
-    {
      "slot": "Goggles",
      "variant": "Legendary Drider's Vision"
     },
     {
      "slot": "Helmet",
-     "variant": "Crisis Helm"
+     "variant": "Legendary Cowl of the Drow Devotee"
     },
     {
      "slot": "Main Hand",
@@ -1209,11 +1157,7 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Pendant of Crippling Strikes"
-    },
-    {
-     "slot": "Off Hand",
-     "variant": "The Heart of the Prince"
+     "variant": "Legendary Memento of Flame"
     },
     {
      "slot": "Trinket",
@@ -1239,10 +1183,6 @@
     {
      "slot": "Belt",
      "variant": "Epic Purging the Pantheon"
-    },
-    {
-     "slot": "Bracers",
-     "variant": "Bracers of the Sun Soul"
     },
     {
      "slot": "Gloves",
@@ -1385,11 +1325,7 @@
     },
     {
      "slot": "Belt",
-     "variant": "Belt of the Sun Soul"
-    },
-    {
-     "slot": "Bracers",
-     "variant": "Legendary Jidz-Tet'ka"
+     "variant": "Braided Cutcord"
     },
     {
      "slot": "Cloak",
@@ -1401,7 +1337,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Faedark Faerielights"
+     "variant": "Malicia's Crown (level 12)"
     },
     {
      "slot": "Main Hand",
@@ -1409,19 +1345,7 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Pendant of Crippling Strikes"
-    },
-    {
-     "slot": "Off Hand",
-     "variant": "The Heart of the Prince"
-    },
-    {
-     "slot": "Ring",
-     "variant": "Legendary Neglected Wedding Ring"
-    },
-    {
-     "slot": "Ring",
-     "variant": "Ring of Shadows (level 23)"
+     "variant": "Celestial Insignia"
     },
     {
      "slot": "Trinket",

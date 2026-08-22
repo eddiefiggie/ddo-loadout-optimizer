@@ -397,7 +397,33 @@ def test_the_built_dataset_stamps_the_counting_vocabulary():
     # #343 — admitted untyped procs are no longer counted. They stay ADMITTED
     # (the stamp is unchanged) because the picker reads it to make them
     # individually rankable; only the counting union went away.
+    #
+    # #443 — this assertion is VACUOUS on the current data: the 2026-08-18
+    # re-encoding typed every untyped proc `Bool`, so `admitted` is empty and an
+    # empty intersection proves nothing. Kept because the channel stays armed for
+    # its own population, but it can no longer be the guard, so the real one
+    # follows below. See
+    # docs/solutions/conventions/assert-non-vacuity-for-every-surface-in-a-loop-test.md
     assert not (set(admitted) & set(counting))
+
+    # #443 — the guard that is NOT vacuous: counting admission is curated, and
+    # PRESENCE_ALLOW is picker visibility. Entangling them is exactly how the
+    # roster widened from 20 to 25 names unreviewed and carried the measured perf
+    # ratio from 1.80x to 2.35x against a 2.00x budget — a widening the
+    # MEASURED-BATCHES rule exists to prevent. Non-vacuity is asserted first: an
+    # empty PRESENCE_ALLOW would make the exclusion prove nothing, which is the
+    # trap the assertion above fell into.
+    assert utility_procs.PRESENCE_ALLOW, "VACUITY: PRESENCE_ALLOW is empty; the exclusion below would prove nothing"
+    leaked = sorted(set(utility_procs.PRESENCE_ALLOW) & set(counting))
+    assert not leaked, (
+        f"picker-visibility names entered the COUNTING set unreviewed: {leaked}. "
+        "Widen UTILITY_TIER1_PRESENCE deliberately, in a measured batch, or not at all."
+    )
+    # And the count is bounded by the curated list itself, so a data refresh
+    # cannot grow it by typing more names Bool.
+    assert set(counting) <= set(utility_procs.UTILITY_TIER1_PRESENCE), (
+        sorted(set(counting) - set(utility_procs.UTILITY_TIER1_PRESENCE))
+    )
     assert not set(admitted) & set(meta["rankable_affixes"])
     allow, quarantined = utility_procs.load(SHARD)
     assert sorted(allow) == admitted
