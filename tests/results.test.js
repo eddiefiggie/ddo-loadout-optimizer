@@ -8,6 +8,36 @@ function test(name, fn) {
   catch (e) { console.log("  FAIL", name, "\n   ", e.message); process.exitCode = 1; }
 }
 
+/** #450 — slice a source region between two markers, with the closing search
+ *  ANCHORED to the opening index.
+ *
+ *  The unanchored form — `src.slice(src.indexOf(A), src.indexOf(B))` — searches
+ *  for B from position 0, so any earlier occurrence of B captures the closing
+ *  bound, the range inverts, and `slice` returns "" rather than throwing. That
+ *  has already cost this repo a confusing red (#348, where an unrelated feature
+ *  inverted a guard about focus) and, in four cases, a silent green (#450).
+ *
+ *  Both markers are asserted present, so a renamed marker fails here naming the
+ *  marker, instead of somewhere downstream naming a behaviour that is fine.
+ */
+function srcBetween(src, open, close, label) {
+  const a = src.indexOf(open);
+  assert.ok(a >= 0, `${label || "srcBetween"}: opening marker not found — ${open}`);
+  const b = src.indexOf(close, a);
+  assert.ok(b >= a, `${label || "srcBetween"}: closing marker not found after the opening — ${close}`);
+  return src.slice(a, b);
+}
+
+/** #450 — the fixed-window variant: from a marker, forward N characters. Locates
+ *  the marker ONCE (the two-call form can disagree with itself) and refuses a
+ *  missing marker, which would otherwise make the start negative — and `slice`
+ *  reads a negative start as an offset from the END of the string. */
+function srcFrom(src, open, len, label) {
+  const a = src.indexOf(open);
+  assert.ok(a >= 0, `${label || "srcFrom"}: marker not found — ${open}`);
+  return src.slice(a, a + len);
+}
+
 function chosenItem(id, slot, colors, sets, tiers) {
   return {
     slot,
@@ -1974,12 +2004,12 @@ test("U1: renderResults emits the outbid notice — the render, not just the fun
   // into noticeDescriptors, so the slice follows them. The intent is unchanged
   // and now spans two links: the builder must CALL the notice, and renderResults
   // must call the builder. Either one missing and it renders nowhere again.
-  const build = src.slice(src.indexOf("function noticeDescriptors("), src.indexOf("function noticePanel("));
+  const build = srcBetween(src, "function noticeDescriptors(", "function noticePanel(", "noticeDescriptors");
   assert.ok(/push\("outbidNotice", outbidNotice\(query, result, model/.test(build),
     "noticeDescriptors must emit outbidNotice, or it renders nowhere");
   assert.ok(/canPrice(?![A-Za-z])/.test(build),
     "and it must pass the pricing capability, or the ask never renders");
-  const render = src.slice(src.indexOf("function renderResults("), src.indexOf("active-build-bar"));
+  const render = srcBetween(src, "function renderResults(", "active-build-bar", "renderResults head");
   assert.ok(/noticeDescriptors\(\{/.test(render) && /canPrice: canPriceOutbid\(\)/.test(render),
     "renderResults must build the descriptors and thread the real pricing capability");
   assert.ok(/\$\{noticePanel\(notices\b/.test(render),
@@ -2517,7 +2547,7 @@ test("#449 U5 (KTD5): every notice the builder renders has a table entry", () =>
   // box with "Solver error", so a throw here would destroy a correct solve's
   // screen and misattribute it to the solver.
   const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
-  const build = src.slice(src.indexOf("function noticeDescriptors("), src.indexOf("function noticePanel("));
+  const build = srcBetween(src, "function noticeDescriptors(", "function noticePanel(", "noticeDescriptors");
   const pushed = [...build.matchAll(/push\("(\w+)"/g)].map((m) => m[1]);
   assert.strictEqual(pushed.length, 8, "the eight single-fact notices");
   for (const name of pushed) {
@@ -2628,7 +2658,7 @@ test("#449 U5: the count is non-empty notices, not notice functions", () => {
 
 test("#449 U5: the active-build bar stays outside the panel", () => {
   const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
-  const tpl = src.slice(src.indexOf("container.innerHTML = `\n    ${banner}"), src.indexOf("readout-analysis"));
+  const tpl = srcBetween(src, "container.innerHTML = `\n    ${banner}", "readout-analysis", "results template");
   const panelAt = tpl.indexOf("noticePanel(notices");
   const barAt = tpl.indexOf("active-build-bar");
   // Both indices are asserted PRESENT before they are compared. Written as a bare
@@ -2808,7 +2838,7 @@ test("#449 U6 (R37): the pill and the marker each wrap as a unit", () => {
 
 test("#449 U6: renderResults threads the latch both ways", () => {
   const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
-  const fn = src.slice(src.indexOf("function renderResults("), src.indexOf("function renderAltCards"));
+  const fn = srcBetween(src, "function renderResults(", "function renderAltCards", "renderResults body");
   assert.ok(/notesSeen, onNotesOpen/.test(fn), "it takes the flag and the way to set it");
   assert.ok(/latched: !!notesSeen/.test(fn), "stamps the panel from it at build time");
   assert.ok(/addEventListener\("toggle"/.test(fn), "and latches on first open");
