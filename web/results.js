@@ -615,7 +615,19 @@ function whyThisLine(result, item, attr, targets) {
       `${esc(p.stat)} +${esc(p.value)} (${esc(p.family)})`).join(", ");
     return `<div class="pd-why pd-carried" title="Nothing printed on this item advances your priorities — its value here depends entirely on crafting it. Un-craftable alternatives are on the Alternatives tab.">⚒ here only for its crafts: ${txt}</div>`;
   }
-  const spans = contribs.slice(0, 3).map((c) => {
+  // #446 U7 (R20) — one chip per contribution, replacing the comma-run of inline
+  // spans. The run carried FIVE qualifiers, not one label, and every one of them
+  // survives: the value, the stat, the bonus type, `(set)`, `(from <stat>)` and
+  // the override disclosure. That last one shipped under #88 precisely because a
+  // gear box stating a bonus type without it "states a bonus type as though the
+  // wiki said so" — dropping it here would re-open the claim it was written to
+  // close. The primary line is the value and the stat; the qualifiers move to a
+  // sub-label rather than off the surface.
+  //
+  // R31 — the three-contribution cap is retained. It governs the row's height at
+  // phone width, which is what R22 is about.
+  const rank1 = (targets && targets.length) ? targets[0] : null;
+  const chips = contribs.slice(0, 3).map((c) => {
     // #227 — untyped is a real bucket; never print a raw null.
     const typeLabel = (c.bonus_type == null || c.bonus_type === "") ? "untyped" : c.bonus_type;
     // U3 (#290/#291) — a cross-added credit is labeled "(from <source stat>)",
@@ -627,16 +639,29 @@ function whyThisLine(result, item, attr, targets) {
     const ovr = c.overriddenFrom
       ? ` (your call — catalog says ${esc(c.overriddenFrom)})`
       : "";
-    const label = c.boolean
-      ? `✓ ${esc(c.stat)}`                                 // U4: presence, not "+1"
-      : `${esc(c.stat)} +${esc(c.value)} ${esc(typeLabel)}${c.viaSet ? " (set)" : ""}${from}${ovr}`;
+    // A boolean contribution has no magnitude and no bonus type to state, so its
+    // sub-label carries only what actually applies to it (U4: presence, not "+1").
+    const sub = c.boolean
+      ? `${c.viaSet ? "(set)" : ""}${from}${ovr}`.trim()
+      : `${esc(typeLabel)}${c.viaSet ? " (set)" : ""}${from}${ovr}`;
+    const head = c.boolean
+      ? `<span class="pd-chip-check" aria-hidden="true">✓</span><span class="pd-chip-stat">${esc(c.stat)}</span>`
+      : `<span class="pd-chip-value">+${esc(c.value)}</span><span class="pd-chip-stat">${esc(c.stat)}</span>`;
     // #446 U4 (R17a) — no at-ceiling marker here. An item is not the whole
     // contribution to a stat, so a green marker on one of its spans read as a
     // claim about that item rather than about the summed total. The fact now
     // renders once, on the ranked card that actually describes it (`statReach`).
-    return `<span class="pd-contrib">${label}</span>`;
+    //
+    // `pd-contrib` is kept alongside `pd-chip`: it is the class every existing
+    // guard names, and the chip is what that span became rather than a new thing
+    // beside it.
+    const isTop = rank1 != null && c.stat === rank1;
+    return `<span class="pd-contrib pd-chip${isTop ? " is-rank1" : ""}">`
+      + `<span class="pd-chip-head">${head}</span>`
+      + (sub ? `<span class="pd-chip-sub">${sub}</span>` : "")
+      + `</span>`;
   });
-  return `<div class="pd-prio" title="this item's contributions to your ranked priorities">${spans.join(", ")}</div>`;
+  return `<div class="pd-prio" title="this item's contributions to your ranked priorities">${chips.join("")}</div>`;
 }
 
 // Count-up motion (KTD4), robust to motion NOT running (AE4). The final value is

@@ -134,7 +134,14 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
     assert.strictEqual(wins[0].stat, "Salt");
     assert.strictEqual(wins[0].boolean, true, "the win is flagged boolean");
     const line = R.whyThisLine(r, { slot: "Trinket", variant_id: "T" });
-    assert.ok(line.includes("✓ Salt"), "presence marker in the why-this line");
+    // #446 U7 split the contribution across a chip's elements, so the tick and
+    // the stat name are no longer adjacent in the string. Both facts are still
+    // asserted — and the chip structure is asserted with them, so this cannot
+    // pass on markup that renders the tick outside a chip.
+    assert.ok(/<span class="pd-contrib pd-chip/.test(line), "rendered as a chip");
+    assert.ok(/<span class="pd-chip-check"[^>]*>✓<\/span>/.test(line), "presence marker in the why-this line");
+    assert.ok(/<span class="pd-chip-stat">Salt<\/span>/.test(line), "naming the stat it is present for");
+    assert.ok(!/pd-chip-value/.test(line), "and no value element at all for a boolean win");
     assert.ok(!line.includes("+1"), "no magnitude for a boolean win");
   });
 

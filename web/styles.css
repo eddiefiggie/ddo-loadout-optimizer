@@ -407,8 +407,39 @@ input.bumped { background: rgba(91,140,255,0.16); border-color: var(--accent); }
    at-ceiling green it once carried: one item is not the whole contribution to a
    stat, so the marker asserted at the wrong level. The line is uniformly muted
    now, and the ceiling fact lives on the ranked card (.stat-reach). */
-.pd-prio { font-size: var(--fs-xs); color: var(--muted); margin-top: 4px; }
-.pd-prio .pd-contrib { white-space: nowrap; }
+/* #446 U7 (R20/R22) -- a wrapping row of chips, not a comma-run of inline spans.
+   The row wraps BETWEEN chips; a chip caps at the row width and wraps its own
+   sub-label internally, so a long override disclosure ("your call -- catalog
+   says Insightful") cannot push the page into horizontal scroll at 375px. */
+.pd-prio {
+  display: flex; flex-wrap: wrap; gap: var(--sp-1);
+  font-size: var(--fs-xs); color: var(--muted); margin-top: 4px;
+}
+.pd-chip {
+  display: inline-flex; flex-direction: column; gap: 1px; max-width: 100%;
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--elev);
+}
+.pd-chip-head { display: flex; align-items: baseline; gap: 4px; }
+/* R20 -- tabular numerals so a column of chips reads as a column of numbers
+   rather than as ragged text. */
+.pd-chip-value {
+  font-size: var(--fs-sm); font-weight: 700; font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.pd-chip-check { font-weight: 700; color: var(--optimal); }
+.pd-chip-stat { color: var(--text); }
+.pd-chip-sub { color: var(--faint); line-height: 1.25; }
+/* R21 -- the rank-1 chip is distinguished by a named accent token AND by border
+   WEIGHT, which is the non-colour carrier: colour alone would fail greyscale and
+   red-green colour-vision deficiency on a surface denser than the notice cards.
+   The extra 1px is absorbed by a matching padding trim so the chip does not
+   change size and shift the row. */
+.pd-chip.is-rank1 {
+  border-width: 2px; border-color: var(--accent);
+  padding: 1px calc(var(--sp-2) - 1px);
+}
 
 /* readout layout: the paperdoll is the hero (front and centre), the ranked-target
    analysis sits below it. */

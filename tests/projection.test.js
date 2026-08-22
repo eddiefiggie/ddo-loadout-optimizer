@@ -1356,8 +1356,13 @@ test("#88 review #6: itemContributions carries overriddenFrom to the gear box", 
 test("#88 review #6: the rendered gear-box line names both types", () => {
   const attr = P.attributionByTarget(OVR_RESULT);
   const html = R.whyThisLine(OVR_RESULT, { variant_id: "Necklace of X" }, attr, ["Constitution"]);
-  assert.ok(/\+6 Insight/.test(html), "the type the player asserted, printed as the value's type");
-  assert.ok(/your call — catalog says Enhancement/.test(html), "and the type the catalog records");
+  // #446 U7 moved the bonus type off the value's line and onto the chip's
+  // sub-label, so the two are no longer adjacent in the string. Both are still
+  // asserted, and asserted as belonging to ONE chip — which is the fact that
+  // matters here: the asserted type must read as this value's type.
+  assert.ok(/<span class="pd-chip-value">\+6<\/span>/.test(html), "the value");
+  assert.ok(/<span class="pd-chip-sub">Insight \(your call — catalog says Enhancement\)<\/span>/.test(html),
+    "the type the player asserted, beside the type the catalog records, on the same chip");
   const plain = R.whyThisLine(OVR_RESULT, { variant_id: "Ring of Y" }, attr, ["Constitution"]);
   assert.ok(!/catalog says/.test(plain), "an unoverridden item's summary is unchanged");
 });
