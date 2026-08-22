@@ -28,13 +28,32 @@
 
   // Input allowlist — sourced from persist.js so it can never drift from the
   // save path (adding a saved input there automatically survives an import here).
-  const _persist = (typeof require !== "undefined" && typeof module !== "undefined")
-    ? require("./persist.js")
-    : (typeof window !== "undefined" ? window.CharacterStore : null);
-  const INPUT_KEYS = (_persist && _persist.INPUT_KEYS) || [
-    "characterName", "ml", "race", "alignment", "armor", "weapon",
-    "includeArtifact", "pool", "ownedNames", "priorities", "slotConstraints",
-  ];
+  //
+  // #420 — RESOLVED PER CALL, and with no fallback list. Two reasons, neither
+  // visible while the lookup happens to succeed:
+  //
+  //   * The browser branch reads `window.CharacterStore`, which exists only
+  //     because persist.js sits above this file in web/index.html. Capturing at
+  //     script-eval time made that ordering load-bearing and silent; resolving
+  //     at call time does not care when this file was evaluated.
+  //   * The old fallback was a second copy of a production constant, and it had
+  //     drifted — 11 keys against persist.js's 32, still naming the retired
+  //     `weapon`. A failed capture would have kept those 11 and silently dropped
+  //     every other saved input on import: the blocklist, declared credits, the
+  //     Utility container, target caps and floors, and the player's bonus-type
+  //     overrides. No error, no warning — the character just comes back simpler
+  //     than it was exported. See
+  //     docs/solutions/conventions/a-guard-that-copies-its-parameter-measures-the-copy.md.
+  //
+  // An import that cannot resolve the allowlist refuses the file rather than
+  // returning a reduced character.
+  function inputKeys() {
+    const p = (typeof require !== "undefined" && typeof module !== "undefined")
+      ? require("./persist.js")
+      : (typeof window !== "undefined" ? window.CharacterStore : null);
+    const keys = p && p.INPUT_KEYS;
+    return (Array.isArray(keys) && keys.length) ? keys : null;
+  }
 
   // Recursively strip pollution keys from app-produced data (snapshot/query)
   // that the allowlist passes through by reference, so no inert own "__proto__"
@@ -58,9 +77,13 @@
   function sanitizeCharacter(raw) {
     if (!raw || typeof raw !== "object") return null;
     if (typeof raw.name !== "string" || raw.name === "") return null;
+    // #420 — no allowlist, no rebuild. Returning a partial character here is the
+    // silent-data-loss path this guard exists to close.
+    const keys = inputKeys();
+    if (!keys) return null;
     const inputs = {};
     const rawInputs = (raw.inputs && typeof raw.inputs === "object") ? raw.inputs : {};
-    for (const k of INPUT_KEYS) {
+    for (const k of keys) {
       if (!isPollutionKey(k) && rawInputs[k] !== undefined) inputs[k] = scrub(rawInputs[k]);
     }
     return {
@@ -126,6 +149,13 @@
     }
     if (v < oldest) {
       return { ok: false, error: "too-old", message: "This backup is too old to import; export again from a newer build." };
+    }
+
+    // #420 — check once, up front, so the refusal names the real reason rather
+    // than reporting every character as malformed.
+    if (!inputKeys()) {
+      return { ok: false, error: "no-allowlist",
+        message: "The app could not read its saved-input list, so nothing was imported." };
     }
 
     const migrated = migrate(data, v, current, o.migrations);
