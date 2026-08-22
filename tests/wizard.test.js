@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, saveControl, resolveBannerShowing, savedStep, stepOnLoad, unsavedGuardMessage, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
+const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, unsavedGuardMessage, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -3519,6 +3519,47 @@ test("#431 U3 (AE6/KTD7): save is ghost beside a forward action, and conditional
     "on results save is the bar's primary, except while a re-solve banner holds it");
 });
 
+test("#432: only the first SHOWING re-solve banner in document order holds primacy", () => {
+  // The three raise from independent flags and can co-show. Document order is
+  // wz-stale, wz-twfmig, wz-cbar.
+  assert.strictEqual(resolveBannerPrimary({}), null, "none showing, no claim");
+  assert.strictEqual(resolveBannerPrimary({ loadedStale: true }), "wz-stale");
+  assert.strictEqual(resolveBannerPrimary({ twfMigrated: true }), "wz-twfmig");
+  assert.strictEqual(resolveBannerPrimary({ constraintsDirty: true }), "wz-cbar");
+  // Co-showing pairs and the full set: the earliest in document order wins.
+  assert.strictEqual(resolveBannerPrimary({ loadedStale: true, twfMigrated: true }), "wz-stale",
+    "a loaded stale build that also migrated TWF raises both on first paint");
+  assert.strictEqual(resolveBannerPrimary({ twfMigrated: true, constraintsDirty: true }), "wz-twfmig");
+  assert.strictEqual(resolveBannerPrimary({ loadedStale: true, constraintsDirty: true }), "wz-stale");
+  assert.strictEqual(
+    resolveBannerPrimary({ loadedStale: true, twfMigrated: true, constraintsDirty: true }), "wz-stale",
+    "all three up — still exactly one primary");
+});
+
+test("#432 review: the live re-rank reads what is ON SCREEN, not the state flags", () => {
+  // `staleNote` accumulates three causes and its dismissal clears only one of
+  // them, hiding the element while the flag behind it can stay truthy. Ranking
+  // from state there would award `primary` to the button just hidden and ghost
+  // every visible control, leaving the step with no primary at all.
+  const f = fnBody(WIZARD_SRC, "function refreshResultsEmphasis() {", 4);
+  const loop = f.slice(f.indexOf("for ("), f.indexOf("wz-save"));
+  assert.ok(/wz-hidden/.test(loop),
+    "the re-rank decides `showing` from the element's own wz-hidden class");
+  assert.ok(!/resolveBannerPrimary/.test(loop),
+    "…and NOT by re-deriving the claimant from state, which can disagree with the DOM");
+});
+
+test("#432: the banner buttons take their class from the ranking, not a hardcoded primary", () => {
+  const body = stepSource("stepResults");
+  const hardcoded = (body.match(/class="btn primary" id="wz-(stale|twfmig|c)resolve"/g) || []);
+  assert.deepStrictEqual(hardcoded, [],
+    "no re-solve banner may hardcode `btn primary` — two co-showing would both claim it");
+  for (const id of ["wz-stale", "wz-twfmig", "wz-cbar"]) {
+    assert.ok(new RegExp(`resolveBannerPrimary\\(state\\) === "${id}"`).test(body),
+      `${id}'s button asks the ranking whether it holds primacy`);
+  }
+});
+
 test("#431 U3 (KTD7): resolveBannerShowing counts the three re-solve banners only", () => {
   assert.strictEqual(resolveBannerShowing({}), false);
   assert.strictEqual(resolveBannerShowing({ loadedStale: true }), true, "the stale banner");
@@ -3536,21 +3577,21 @@ test("#431 U3 (KTD7): every site that mutates a re-solve banner refreshes save's
   // Banner visibility is changed imperatively, without a re-render, so a class
   // assigned at render time would never flip. A fifth banner path cannot ship
   // without a refresh call.
-  assert.ok(/refreshSaveEmphasis\(\)/.test(fnBody(WIZARD_SRC, "function refreshStaleBanner() {", 4)),
-    "the in-place stale toggle refreshes save");
-  const calls = (WIZARD_SRC.match(/[^n] refreshSaveEmphasis\(\)|;\s*refreshSaveEmphasis\(\)|\n\s+refreshSaveEmphasis\(\)/g) || []).length;
-  assert.ok(calls >= 4, `expected the four banner-mutation sites to refresh save, saw ${calls}`);
+  assert.ok(/refreshResultsEmphasis\(\)/.test(fnBody(WIZARD_SRC, "function refreshStaleBanner() {", 4)),
+    "the in-place stale toggle re-ranks");
+  const calls = (WIZARD_SRC.match(/\n\s+refreshResultsEmphasis\(\)/g) || []).length;
+  assert.ok(calls >= 4, `expected the four banner-mutation sites to re-rank, saw ${calls}`);
 });
 
 test("#431 U3 (R6/KTD7): save also yields to the Adjust & re-solve fold-up", () => {
   // A FOURTH primary lives inside that fold (web/wizard.js: wz-radjust-solve).
   // It is collapsed on every render, so the render-time class needs only the
   // banner check — but opening it puts two primaries on screen.
-  const f = fnBody(WIZARD_SRC, "function refreshSaveEmphasis() {", 4);
+  const f = fnBody(WIZARD_SRC, "function refreshResultsEmphasis() {", 4);
   assert.ok(/wz-adjust/.test(f) && /\.open/.test(f),
     "the emphasis check reads whether the fold is open");
   const fill = fnBody(WIZARD_SRC, "function fillAdjustSlot() {", 4);
-  assert.ok(/ontoggle\s*=\s*refreshSaveEmphasis/.test(fill),
+  assert.ok(/ontoggle\s*=\s*refreshResultsEmphasis/.test(fill),
     "and opening or closing the fold re-applies it");
 });
 
