@@ -441,8 +441,13 @@ test("#88 U6: every eligible pool row is addressable, and keys are unique across
     "dino_inserts", "green_steel", "nearly_complete", "nearly_complete_per_item",
     "seal", "thunder_forged", "viktranium",
   ], "all seven channels are walked");
-  assert.strictEqual(rows, 976, "the eligible pool-row population");
-  assert.strictEqual(seen.size, 894, "distinct keys");
+  // #423 re-ratification — was 976 / 894. The ruling that R7's load-generated
+  // exclusion reaches the crafted channels removed exactly the 278 rows carrying
+  // a `via` expansion receipt: 184 viktranium, 54 dino_inserts, 40 nearly_complete.
+  // 976 - 278 = 698. Re-ratified deliberately against the built pool, not accepted
+  // as an incidental diff.
+  assert.strictEqual(rows, 698, "the eligible pool-row population");
+  assert.strictEqual(seen.size, 678, "distinct keys");
 });
 
 test("#88 U6: three same-stat seal entries at different bonus types get three distinct keys", () => {
@@ -699,17 +704,60 @@ test("review #9: many crafted overrides cost one pool walk, not one each", () =>
   O.withdrawOverrides(p);
 });
 
+// ---------------------------------------------------------------------------
+// #422 / #423 — two rulings from the review of #421, settled and now enforced.
+// ---------------------------------------------------------------------------
+
+test("#422: a sibling at the replacement type does not make an override satisfied", () => {
+  // Two occurrences of one name+value under different types are reachable: 21
+  // crafted key groups and 52 item variants carry that shape on the shipped
+  // dataset. When the override's OWN occurrence has drifted and only a sibling
+  // sits at the replacement, "the catalog adopted this, you can drop it" is a
+  // false report about a correction that is still doing nothing.
+  const pool = { items: [{ variant_id: "V", affixes: [
+    { name: "Abjuration Focus", value: 1, bonus_type: "Enhancement" },
+    { name: "Abjuration Focus", value: 1, bonus_type: "Sacred" },
+  ] }] };
+  const o = { variant_id: "V", name: "Abjuration Focus", value: 1, from: "Profane", to: "Enhancement" };
+  const got = O.resolveMatch(pool, o);
+  assert.strictEqual(got.state, "suspended", "a partial move is not satisfaction");
+  assert.strictEqual(got.reason, "drift", "…it falls through to drift, which offers re-confirm");
+  assert.ok(got.now, "and drift names what the occurrence moved to");
+});
+
+test("#422: satisfied still fires when the WHOLE occurrence set has moved", () => {
+  const pool = { items: [{ variant_id: "V", affixes: [
+    { name: "Abjuration Focus", value: 1, bonus_type: "Enhancement" },
+    { name: "Abjuration Focus", value: 1, bonus_type: "Enhancement" },
+  ] }] };
+  const o = { variant_id: "V", name: "Abjuration Focus", value: 1, from: "Profane", to: "Enhancement" };
+  const got = O.resolveMatch(pool, o);
+  assert.strictEqual(got.state, "satisfied",
+    "every occurrence adopted the replacement, so the override has nothing left to do");
+});
+
+test("#423: R7's load-generated exclusion reaches the crafted channels", () => {
+  // 278 eligible crafted rows carried a `via` expansion receipt — 184 Viktranium,
+  // 54 dino inserts, 40 Nearly Complete — so the identical affix was refused on an
+  // item and offered in the pool. A universal expansion source produces every
+  // sibling, which makes its type one catalog-level claim rather than a per-player
+  // correction.
+  assert.strictEqual(O.poolAffixEligible({ bonus_type: "Enhancement" }), true,
+    "an ordinary crafted row is still overridable");
+  assert.strictEqual(O.poolAffixEligible({ bonus_type: "Enhancement", via: "Viktranium" }), false,
+    "an expansion-generated crafted row is not — same rule the item predicate applies");
+});
+
 // review #9 (correctness half) — the index is built over ALL rows, including the
 // ineligible ones, so classification happens at the point of decision rather than
 // by silent omission during the walk.
 //
-// What that does NOT buy, and the test says so rather than implying otherwise:
-// the crafted `ineligible` rung is currently unreachable. Crafted eligibility is
-// decided purely on the type field, and the ladder only consults eligibility on
-// rows that still carry the RECORDED type — so a row whose type moved is drift by
-// definition, and a row whose type did not move is eligible by definition. The
-// rung becomes reachable only if crafted eligibility gains a non-type class, which
-// is the open question about `via`-carrying crafted rows.
+// The crafted `ineligible` rung used to be unreachable: crafted eligibility was
+// decided purely on the type field, and the ladder consults eligibility only on
+// rows still carrying the RECORDED type — so a moved type was drift by definition
+// and an unmoved one eligible by definition. #423 settled the open question about
+// `via`-carrying crafted rows in favour of excluding them, which is the non-type
+// class that gives the rung a job.
 test("review #9: a crafted row upstream re-typed to a reserved token is drift, and named", () => {
   const p = loadPool();
   let target = null;
