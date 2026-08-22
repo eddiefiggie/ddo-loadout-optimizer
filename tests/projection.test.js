@@ -1697,3 +1697,198 @@ test("U10: no branch of any of the three notices falls through unclassified", ()
     else byId.set(e.id, [e.title, e.class]);
   }
 });
+
+// ---------------------------------------------------------------------------
+// #446 U2 — the achieved/ceiling fraction as shared content.
+//
+// The wording assertions here are the mechanical half of the review question
+// docs/solutions/conventions/never-infer-a-claim-about-your-own-results.md
+// prescribes. They cannot prove a sentence honest; they can only prove that the
+// specific counterfactual constructions that produced five prior instances are
+// absent. The review question stays the real guard.
+// ---------------------------------------------------------------------------
+
+// Trip-words from that convention, plus KTD2's own list. `\b` on both ends so
+// "canned"/"alonely" style substrings cannot false-positive, and the whole
+// sentence is lowercased first.
+const _COUNTERFACTUAL = /\b(would|could|otherwise|alone|instead|without)\b/;
+
+function _ceilRec(rows, capped) {
+  return { ceilingReport: rows, capped: capped || {} };
+}
+
+test("#446 U2: a maxed stat returns maxed:true and the maxed sentence", () => {
+  const r = _ceilRec([{ stat: "Dodge", achieved: 12, ceiling: 12, bonusTypes: ["Enhancement"], allFilled: true }]);
+  const c = P.ceilingFor(r, "Dodge");
+  assert.strictEqual(c.maxed, true, "achieved === ceiling, uncapped");
+  assert.strictEqual(c.capBound, false);
+  assert.strictEqual(c.zeroCeiling, false);
+  assert.strictEqual(c.achieved, 12);
+  assert.strictEqual(c.ceilingUpperBound, 12);
+  assert.strictEqual(c.fraction, "12 / 12");
+  assert.ok(/no other item in your pool raises it/.test(c.short), `maxed sentence: ${c.short}`);
+  assert.ok(c.line.startsWith("12 / 12 — "), "the line pairs the fraction with the short form");
+});
+
+test("#446 U2: a shortfall stat returns maxed:false and the shortfall sentence", () => {
+  const r = _ceilRec([{ stat: "Dodge", achieved: 30, ceiling: 50, bonusTypes: ["Enhancement", "Insightful"], allFilled: false }]);
+  const c = P.ceilingFor(r, "Dodge");
+  assert.strictEqual(c.maxed, false);
+  assert.strictEqual(c.capBound, false);
+  assert.strictEqual(c.zeroCeiling, false);
+  assert.strictEqual(c.fraction, "30 / 50");
+  assert.ok(/sums the best source in each bonus type/.test(c.short), `shortfall sentence: ${c.short}`);
+});
+
+test("#446 U2 (KTD2): no ceiling sentence carries a counterfactual construction", () => {
+  // Every state, not just the shortfall one — a counterfactual is as wrong on a
+  // capped stat as on a short one.
+  const cases = [
+    P.ceilingFor(_ceilRec([{ stat: "A", achieved: 30, ceiling: 50 }]), "A"),
+    P.ceilingFor(_ceilRec([{ stat: "A", achieved: 12, ceiling: 12 }]), "A"),
+    P.ceilingFor(_ceilRec([{ stat: "A", achieved: 0, ceiling: 0 }]), "A"),
+    P.ceilingFor(_ceilRec([{ stat: "A", achieved: 4, ceiling: 4 }], { A: 4 }), "A"),
+  ];
+  for (const c of cases) {
+    assert.ok(!_COUNTERFACTUAL.test(c.short.toLowerCase()),
+      `short form asserts a solve nobody ran: ${c.short}`);
+    assert.ok(!_COUNTERFACTUAL.test(c.line.toLowerCase()), `line: ${c.line}`);
+  }
+  assert.ok(!_COUNTERFACTUAL.test(P.CEILING_FULL_STATEMENT.toLowerCase()),
+    `full statement: ${P.CEILING_FULL_STATEMENT}`);
+});
+
+test("#446 U2 (KTD2): the shortfall sentence never asserts the ceiling was reachable", () => {
+  const c = P.ceilingFor(_ceilRec([{ stat: "A", achieved: 30, ceiling: 50 }]), "A");
+  const s = c.line.toLowerCase();
+  // Attainability phrasings, and cause-attribution for the shortfall. No solve
+  // establishes either; the second is the exact "higher priorities took the
+  // slots" shape KTD2 rules out.
+  for (const bad of ["reachable target", "you can reach", "attainable", "still available",
+    "room to grow", "headroom", "took the slot", "higher priorit", "remaining", "short by"]) {
+    assert.ok(!s.includes(bad), `shortfall line implies attainability or a cause: "${bad}" in ${c.line}`);
+  }
+  // The upper-bound qualification lives in the full statement, once per document.
+  assert.ok(/upper bound/.test(P.CEILING_FULL_STATEMENT),
+    "the full statement names the ceiling as an upper bound");
+  assert.ok(/no loadout is claimed to reach it/.test(P.CEILING_FULL_STATEMENT),
+    "and refuses the reachability claim outright");
+});
+
+test("#446 U2: a result with no ceilingReport returns null for every stat and throws nothing", () => {
+  // The restored-pre-#446-save path. Three shapes of absence, all silent.
+  for (const r of [undefined, {}, { ceilingReport: [] }, { ceilingReport: null }]) {
+    assert.strictEqual(P.ceilingFor(r, "Dodge"), null, "no row, no fraction");
+    assert.strictEqual(P.ceilingStatement(r), null, "and no orphan full statement");
+  }
+  // A report that simply lacks THIS stat is the same case.
+  assert.strictEqual(P.ceilingFor(_ceilRec([{ stat: "Dodge", achieved: 1, ceiling: 2 }]), "Wisdom"), null);
+});
+
+test("#446 U2: a zero ceiling reports itself without claiming the pool lacks the stat", () => {
+  const c = P.ceilingFor(_ceilRec([{ stat: "Doubleshot", achieved: 0, ceiling: 0, bonusTypes: [], allFilled: true }]), "Doubleshot");
+  assert.strictEqual(c.zeroCeiling, true);
+  assert.notStrictEqual(c.maxed, true, "0 / 0 is not a maxed stat");
+  const s = c.short.toLowerCase();
+  // It may say what THIS solve found. It may not assert a property of the pool,
+  // and it must not defer to zeroSourceNotice — that notice tests a pre-gating
+  // population and can be absent exactly when the ceiling reads zero.
+  for (const bad of ["your pool", "the pool", "no item", "nothing in your", "does not exist", "no source exists"]) {
+    assert.ok(!s.includes(bad), `zero-ceiling sentence claims a pool property: "${bad}" in ${c.short}`);
+  }
+  assert.ok(/this solve/.test(s), `it must scope the claim to this solve: ${c.short}`);
+});
+
+test("#446 U2 (KTD7): a stat pinned at its cap is capBound, never maxed", () => {
+  const c = P.ceilingFor(_ceilRec([{ stat: "Dodge", achieved: 4, ceiling: 4, allFilled: true }], { Dodge: 4 }), "Dodge");
+  assert.strictEqual(c.capBound, true);
+  assert.strictEqual(c.maxed, false, "green is reserved for achieved === pool ceiling");
+  assert.strictEqual(c.cap, 4);
+  const s = c.short.toLowerCase();
+  assert.ok(s.includes("cap of 4"), `the sentence names the cap: ${c.short}`);
+  // It must NOT carry the maxed claim, which would be false (the pool can raise
+  // the stat; the cap will not let it land) and would contradict the capNote
+  // rendered inches away on the same card.
+  assert.ok(!/no other item in your pool raises it/.test(c.short),
+    `cap-bound stat inherited the maxed claim: ${c.short}`);
+});
+
+test("#446 U2 (KTD7): a capped stat BELOW its cap does not misname its denominator", () => {
+  // min(cap, Σ best) === cap means Σ best >= cap, so the number on screen is the
+  // CAP, not the summed per-bucket best. The plain shortfall wording would name
+  // the wrong source for its own denominator.
+  const c = P.ceilingFor(_ceilRec([{ stat: "Dodge", achieved: 30, ceiling: 100 }], { Dodge: 100 }), "Dodge");
+  assert.strictEqual(c.capBound, false, "still short of the cap");
+  assert.strictEqual(c.maxed, false);
+  assert.strictEqual(c.fraction, "30 / 100");
+  assert.ok(/cap of 100/.test(c.short), `the sentence names the cap: ${c.short}`);
+  assert.ok(!/sums the best source/.test(c.short),
+    `denominator is the cap, but the sentence calls it the summed best: ${c.short}`);
+  // And it must not claim the pool could go higher — the clamped report cannot
+  // tell "Σ best exceeded the cap" from "Σ best landed exactly on it".
+  assert.ok(!/gear pool/.test(c.short), `unprovable claim about the pool: ${c.short}`);
+});
+
+test("#446 U2 (KTD7): the maxed sentence is emitted only when capBound is false", () => {
+  const MAXED = "at the ceiling: every bonus type carrying this stat holds its best available source, "
+    + "so no other item in your pool raises it.";
+  assert.strictEqual(P.ceilingFor(_ceilRec([{ stat: "A", achieved: 9, ceiling: 9 }]), "A").short, MAXED);
+  // Same numbers, plus a cap that binds them: the maxed sentence must disappear.
+  for (const capped of [{ A: 9 }, { A: 5 }]) {
+    const c = P.ceilingFor(_ceilRec([{ stat: "A", achieved: 9, ceiling: 9 }], capped), "A");
+    assert.strictEqual(c.capBound, true, `cap ${capped.A} binds an achieved of 9`);
+    assert.notStrictEqual(c.short, MAXED, `cap ${capped.A} still emitted the maxed sentence`);
+  }
+  // A cap the stat has not reached leaves the ordinary states intact.
+  const under = P.ceilingFor(_ceilRec([{ stat: "A", achieved: 3, ceiling: 9 }], { A: 20 }), "A");
+  assert.strictEqual(under.capBound, false);
+  assert.strictEqual(under.maxed, false);
+});
+
+test("#446 U2: ceilingFor is keyed by stat, never by report order", () => {
+  const rows = [
+    { stat: "Dodge", achieved: 1, ceiling: 9 },
+    { stat: "Wisdom", achieved: 7, ceiling: 7 },
+  ];
+  assert.strictEqual(P.ceilingFor(_ceilRec(rows), "Wisdom").fraction, "7 / 7");
+  assert.strictEqual(P.ceilingFor(_ceilRec(rows.slice().reverse()), "Wisdom").fraction, "7 / 7",
+    "a reordered (or filtered) report cannot misalign a sentence to a stat");
+});
+
+test("#446 U2 (R18): the denominator field is named for its scope", () => {
+  const c = P.ceilingFor(_ceilRec([{ stat: "A", achieved: 30, ceiling: 50 }]), "A");
+  assert.ok("ceilingUpperBound" in c, "the number a consumer reads states that it is a bound");
+  assert.strictEqual(c.ceilingUpperBound, 50);
+  assert.ok(!("ceiling" in c),
+    "one name only — a second `ceiling` key is the drift this unit exists to prevent");
+});
+
+test("#446 U2 (R15): the full statement is one shared constant, not per-stat text", () => {
+  const r = _ceilRec([{ stat: "A", achieved: 1, ceiling: 2 }, { stat: "B", achieved: 2, ceiling: 2 }]);
+  assert.strictEqual(P.ceilingStatement(r), P.CEILING_FULL_STATEMENT);
+  // The qualification lives ONLY there: repeating it under every card down an
+  // eight-priority build turns it into boilerplate nobody reads.
+  for (const stat of ["A", "B"]) {
+    assert.ok(!P.ceilingFor(r, stat).short.includes("upper bound"),
+      `${stat}'s short form duplicated the full statement`);
+  }
+});
+
+test("#446 U2: project() carries the fraction and the once-per-document statement", () => {
+  const rec = {
+    name: "C", inputs: { ml: 34, priorities: ["Dodge", "Wisdom"] },
+    snapshot: { status: "optimal", chosen: [], setsActive: [],
+      effective: { Dodge: 30, Wisdom: 7 }, capped: {},
+      ceilingReport: [{ stat: "Dodge", achieved: 30, ceiling: 50 },
+        { stat: "Wisdom", achieved: 7, ceiling: 7 }] },
+  };
+  const v = P.project(rec);
+  assert.strictEqual(v.attribution.Dodge.ceiling.fraction, "30 / 50");
+  assert.strictEqual(v.attribution.Wisdom.ceiling.maxed, true);
+  assert.strictEqual(v.character.ceilingStatement, P.CEILING_FULL_STATEMENT);
+  // Pre-#446 restore: no rows, no fraction, no statement — never a zero nobody computed.
+  const old = P.project({ name: "C", inputs: { priorities: ["Dodge"] },
+    snapshot: { chosen: [], effective: { Dodge: 30 } } });
+  assert.strictEqual(old.attribution.Dodge.ceiling, null);
+  assert.strictEqual(old.character.ceilingStatement, null);
+});

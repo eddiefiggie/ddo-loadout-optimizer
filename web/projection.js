@@ -1503,7 +1503,12 @@
         // standing failure this repo forbids.
         crossAdd: p.crossAdd || null,
       }));
-      attribution[stat] = { total, cap, sources };
+      // #446 (U2, R15/R18) — the achieved/ceiling fraction rides the shared
+      // content model beside the total it qualifies, so every export renders the
+      // same numbers and the same wording the card does. Null on a pre-#446
+      // restore; each renderer must still print it — carrying it here is
+      // necessary, not sufficient.
+      attribution[stat] = { total, cap, sources, ceiling: ceilingFor(snap, stat) };
     }
 
     // #91 (U6/R10) — the Utility tier's content block, read from the snapshot's
@@ -1567,7 +1572,12 @@
         // #110 (U7/U9) — the blocklist disclosure: empty array when no block
         // touched the solve. A shared build asserting optimality with silent
         // exclusions is the solve-visible-but-share-invisible failure.
-        blockNotice: blockNoticeLines(snap) },
+        blockNotice: blockNoticeLines(snap),
+        // #446 (U2, R15) — the ONE full statement that qualifies every fraction
+        // in the document. Rendered once per export, never per stat: repeated
+        // under each of eight priorities it reads as boilerplate and stops being
+        // read. Null when no stat carries a ceiling row.
+        ceilingStatement: ceilingStatement(snap) },
       loadout, sets, bundles, attribution,
     };
   }
@@ -1626,6 +1636,95 @@
   function saturationLineFor(result, stat) {
     const e = ((result && result.saturationReport) || []).find((r) => r && r.stat === stat);
     return e ? saturationSentence(e) : null;
+  }
+
+  /** #446 U2 — the achieved/ceiling fraction as SHARED CONTENT: the numbers, the
+   *  state, and the wording, in one place, so the ranked-priority card and all
+   *  five exports cannot drift. Keyed by stat, never by array index, for the same
+   *  reason `saturationLineFor` is: a future filtered report cannot misalign a
+   *  sentence to a stat.
+   *
+   *  Reads `ceilingReport` (plain JSON on the result, kept by RESULT_KEEP) and
+   *  `capped`, never the live program, so a restored character reads identically
+   *  without re-solving. Returns null when the stat has no row — the pre-#446
+   *  restore path — and every surface must render nothing rather than a zero
+   *  nobody computed.
+   *
+   *  KTD2 — `ceilingUpperBound` is an UPPER BOUND, not a target. Σ best sums each
+   *  bonus-type bucket's best source independently, and those sources may be one
+   *  item, may compete for one slot, or may contradict a chosen set, so a stat can
+   *  read 30 / 50 where no legal loadout reaches 50. The field is NAMED for that
+   *  scope — the portable `ddo-loadout/v1` envelope inherits `project()` verbatim,
+   *  so a third-party consumer reads the same name the app does, and a plain
+   *  `ceiling` would invite exactly the attainable-target reading. No sentence
+   *  below asserts what a different solve would have produced, and none attributes
+   *  the shortfall to a cause: no such solve is run
+   *  (`docs/solutions/conventions/never-infer-a-claim-about-your-own-results.md`).
+   *
+   *  KTD7 — `capBound` is its own state and forces `maxed` false. Both sides of
+   *  the fraction are clamped to the stat's cap by `buildCeilingReport`, so a
+   *  cap-bound stat would otherwise satisfy `achieved === ceiling` and inherit the
+   *  maxed sentence — which claims no other item in the pool can raise the stat.
+   *  When the cap is what holds the number, that claim is false and contradicts
+   *  the `capNote` ("capped at N · raw M") rendered inches away. It also collapses
+   *  at-cap-with-headroom (the player has slack) into at-pool-maximum (none).
+   */
+  const CEILING_FULL_STATEMENT =
+    "Each priority below shows what this loadout holds against a ceiling — the sum of the best "
+    + "source in each bonus type that carries the stat. Those sources may compete for one slot, "
+    + "so the ceiling is an upper bound and no loadout is claimed to reach it.";
+
+  function ceilingShortForm(s) {
+    if (s.capBound) {
+      return `clamped to your cap of ${s.cap}: the cap, not the gear pool, is what this fraction measures against.`;
+    }
+    if (s.zeroCeiling) {
+      return "this solve found nothing reachable that carries this stat.";
+    }
+    if (s.maxed) {
+      return "at the ceiling: every bonus type carrying this stat holds its best available source, "
+        + "so no other item in your pool raises it.";
+    }
+    // A capped stat still SHORT of its cap. `ceilingUpperBound === cap` means
+    // min(cap, Σ best) picked the cap, i.e. Σ best >= cap — so the denominator on
+    // screen is the cap, NOT the summed per-bucket best. The plain shortfall
+    // wording below would name the wrong source for its own number. We say only
+    // that the ceiling IS the cap: the clamped report cannot distinguish
+    // "Σ best exceeded the cap" from "Σ best landed exactly on it", so claiming
+    // the pool could go higher would be an inference the data does not carry.
+    if (s.cap != null && s.ceilingUpperBound === s.cap) {
+      return `the ceiling here is your cap of ${s.cap}.`;
+    }
+    return "the ceiling sums the best source in each bonus type that carries this stat.";
+  }
+
+  function ceilingFor(result, stat) {
+    const row = ((result && result.ceilingReport) || []).find((r) => r && r.stat === stat);
+    if (!row) return null;
+    const achieved = row.achieved || 0;
+    const ceilingUpperBound = row.ceiling || 0;
+    const capped = (result && result.capped) || {};
+    const cap = capped[stat] != null ? capped[stat] : null;
+    // Both sides are already clamped, so `achieved === cap` IS "the cap is the
+    // denominator". Tested BEFORE `maxed` — see KTD7 above.
+    const capBound = cap != null && achieved >= cap;
+    const zeroCeiling = !capBound && ceilingUpperBound === 0;
+    const maxed = !capBound && !zeroCeiling && achieved === ceilingUpperBound;
+    const s = { stat, achieved, ceilingUpperBound, cap, capBound, zeroCeiling, maxed };
+    s.fraction = `${achieved} / ${ceilingUpperBound}`;
+    s.short = ceilingShortForm(s);
+    s.line = `${s.fraction} — ${s.short}`;
+    return s;
+  }
+
+  /** The ONE full statement, rendered once per readout and once per export
+   *  document (R15). It carries the qualification the short forms deliberately
+   *  omit: repeated under every card down an eight-priority build it reads as
+   *  boilerplate and stops being read. Null when no stat has a row, so a
+   *  pre-#446 restore prints no orphan sentence.
+   */
+  function ceilingStatement(result) {
+    return ((result && result.ceilingReport) || []).length ? CEILING_FULL_STATEMENT : null;
   }
 
   /** #239 — the empty-slot disclosure as plain sentences.
@@ -2054,6 +2153,9 @@
     // pure primitives (results.js binds these; single definition, no drift)
     affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, bundleGroups, itemMl, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,
+    // #446 (U2) — the achieved/ceiling fraction: numbers, state and wording from
+    // one place, plus the once-per-document full statement.
+    ceilingFor, ceilingStatement, CEILING_FULL_STATEMENT,
     satisfiedSets, suppressedHostIds, slotSetNames,
     setContributors, contributorsFor, setMemberLabel, activeSetDetail, satisfiedSetDetail,
     // craft + cue helpers
