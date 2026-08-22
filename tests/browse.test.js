@@ -531,3 +531,41 @@ test("#380: every counted chip is marked, and no not-counted chip is", () => {
 });
 
 console.log(`\n${passed} passed`);
+
+// ---------------------------------------------------------------------------
+// #426 — a synthesized crafted row carries the provenance the override picker
+// needs. The row is a DISPLAY projection, so without this it cannot be mapped
+// back to the pool entry it was built from; the synthetic title is lossy and is
+// not a usable matching rule. Every discriminator the pool key needs is already
+// a field on the object each builder receives, so stamping is exact.
+// ---------------------------------------------------------------------------
+
+test("#426: dinoInsertRow stamps its channel and discriminators", () => {
+  const row = dinoInsertRow({ dino_type: "Claw", category: "Accessory",
+    affixes: [{ stat: "Strength", bonus_type: "Profane", value: 4 }] });
+  assert.deepStrictEqual(row.pool_provenance, { channel: "dino_inserts", disc: ["Accessory", "Claw"] },
+    "channel + [category, dino_type], the discriminators eachPoolAffix keys on");
+});
+
+test("#426: ncRow stamps its channel and discriminators", () => {
+  const row = ncRow({ category: "Weapon", tier: "legendary",
+    affixes: [{ stat: "Doublestrike", bonus_type: "Quality", value: 3 }] });
+  assert.deepStrictEqual(row.pool_provenance, { channel: "nearly_complete", disc: ["Weapon", "legendary"] });
+});
+
+test("#426: vikRow stamps its channel and discriminators", () => {
+  const row = vikRow({ slot_type: "Melancholic", category: "Accessory", tier: "legendary",
+    affixes: [{ stat: "Abjuration Focus", bonus_type: "Profane", value: 1 }] });
+  assert.deepStrictEqual(row.pool_provenance,
+    { channel: "viktranium", disc: ["Melancholic", "Accessory", "legendary"] },
+    "slot_type first — the key's discriminator order, not the row's field order");
+});
+
+test("#426: the stamp is additive — existing row readers are untouched", () => {
+  const row = vikRow({ slot_type: "Woeful", category: "Accessory", tier: "heroic",
+    affixes: [{ stat: "Strength", bonus_type: "Sacred", value: 2 }] });
+  // The four call sites that already read these rows key on these fields.
+  for (const k of ["variant_id", "source_item", "slot", "ml", "affixes", "verification"]) {
+    assert.ok(k in row, `${k} still present`);
+  }
+});

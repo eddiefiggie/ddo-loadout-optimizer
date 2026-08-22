@@ -910,3 +910,91 @@ test("#88 U11: an empty list yields no rows, not a placeholder row", () => {
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);
+
+// ---------------------------------------------------------------------------
+// #426 — the crafted creation surface. poolPickerEntries collapses a whole
+// channel; a picker opens on ONE row and must offer only that row's affixes.
+// ---------------------------------------------------------------------------
+
+test("#426: a crafted row's picker offers that row's affixes, keyed to the pool", () => {
+  const B = require("../web/browse.js");
+  const p = loadPool();
+  const opt = (p.viktranium || [])[0];
+  assert.ok(opt, "the built pool carries viktranium options");
+  const row = B.vikRow(opt);
+  const entries = O.poolPickerEntriesFor(p, row, []);
+  assert.ok(entries.length, "the row is servable");
+  assert.ok(entries.length <= (row.affixes || []).length,
+    "…and offers no more than the row displays — the disc addresses a GROUP, the row is one option");
+  for (const e of entries) {
+    assert.ok(typeof e.key.pool_key === "string" && e.key.pool_key,
+      "entries are pool_key-shaped, which createOverride already accepts");
+    assert.ok(e.key.pool_key.startsWith("viktranium||"), "keyed to the right channel");
+  }
+});
+
+test("#426: matching is on discriminators, never on the synthesized title", () => {
+  const B = require("../web/browse.js");
+  const p = loadPool();
+  const row = B.vikRow((p.viktranium || [])[0]);
+  const before = O.poolPickerEntriesFor(p, row, []).length;
+  // The title is lossy — it embeds a quarterstaff tag and falls back through
+  // several sources. Rewriting it must not change what the picker can serve.
+  row.variant_id = "something else entirely";
+  assert.strictEqual(O.poolPickerEntriesFor(p, row, []).length, before,
+    "the title is display text, not identity");
+  // Removing the provenance, however, makes the row unaddressable.
+  delete row.pool_provenance;
+  assert.deepStrictEqual(O.poolPickerEntriesFor(p, row, []), [],
+    "without provenance there is nothing to resolve against");
+});
+
+test("#426: the gate offers the control on exactly the rows the picker can serve", () => {
+  // The invariant that keeps #424's fix intact in both directions. A group's
+  // discriminators address many options while a row is one of them, so a
+  // group-level gate answered "yes" for 80 of 445 rows whose own affixes were all
+  // excluded — the control appeared and opened an empty picker, which is the false
+  // offer #424 removed. The other direction matters too: a servable row with no
+  // control is a capability silently withheld.
+  const B = require("../web/browse.js");
+  const p = loadPool();
+  const idx = O.poolAddressable(p);
+  const offeredButEmpty = [];
+  const hiddenButServable = [];
+  const sweep = (rows, build) => {
+    for (const e of rows || []) {
+      const row = build(e);
+      const gated = O.isPoolAddressable(idx, row);
+      const n = O.poolPickerEntriesFor(p, row, []).length;
+      if (gated && n === 0) offeredButEmpty.push(row.variant_id);
+      if (!gated && n > 0) hiddenButServable.push(row.variant_id);
+    }
+  };
+  sweep(p.viktranium, B.vikRow);
+  sweep(p.dino_inserts, B.dinoInsertRow);
+  sweep(p.nearly_complete, B.ncRow);
+  assert.deepStrictEqual(offeredButEmpty, [],
+    "a row offered the control must have something to correct");
+  assert.deepStrictEqual(hiddenButServable, [],
+    "…and a row with something to correct must be offered it");
+});
+
+test("#426: the addressability index answers per row in O(1), and excludes the ineligible", () => {
+  const p = loadPool();
+  const idx = O.poolAddressable(p);
+  assert.ok(Object.keys(idx).length > 0, "the index is populated");
+  assert.strictEqual(O.isPoolAddressable(idx, null), false, "no row, not addressable");
+  assert.strictEqual(O.isPoolAddressable(idx, { pool_provenance: null, affixes: [] }), false,
+    "no provenance, not addressable");
+  assert.strictEqual(O.isPoolAddressable(idx, {
+    pool_provenance: { channel: "viktranium", disc: ["nope", "nope", "nope"] },
+    affixes: [{ name: "Accuracy", type: "Competence", value: 8 }],
+  }), false, "an unknown discriminator tuple is not addressable");
+  // #423 excluded via-carrying rows from eligibility; the index is built from the
+  // same walk, so a group whose affixes are all excluded is absent — which the
+  // display row could not determine itself, since the projection drops `via`.
+  let eligible = 0;
+  O.eachPoolAffix(p, () => { eligible++; });
+  assert.ok(eligible > 0 && Object.keys(idx).length <= eligible,
+    "one token per addressable group, never more than the eligible population");
+});

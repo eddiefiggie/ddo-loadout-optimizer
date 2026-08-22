@@ -175,6 +175,11 @@ function dinoInsertRow(ins) {
     scaling: [],
     wiki_url: ins.wiki_url,
     dino_insert: true,
+    // #426 — provenance for the override picker. These rows are DISPLAY
+    // projections; without a back-reference they cannot be mapped to the pool
+    // entry they were built from, and the synthetic title above is lossy. The
+    // discriminators are exactly the ones `eachPoolAffix` keys on, in its order.
+    pool_provenance: { channel: "dino_inserts", disc: [category, ins.dino_type] },
   };
 }
 
@@ -201,6 +206,11 @@ function ncRow(opt) {
     scaling: [],
     wiki_url: opt.wiki_url,
     nc_option: true,
+    // #426 — provenance for the override picker. These rows are DISPLAY
+    // projections; without a back-reference they cannot be mapped to the pool
+    // entry they were built from, and the synthetic title above is lossy. The
+    // discriminators are exactly the ones `eachPoolAffix` keys on, in its order.
+    pool_provenance: { channel: "nearly_complete", disc: [opt.category, opt.tier] },
   };
 }
 
@@ -234,6 +244,11 @@ function vikRow(opt) {
     scaling: [],
     wiki_url: opt.wiki_url,
     vik_option: true,
+    // #426 — provenance for the override picker. These rows are DISPLAY
+    // projections; without a back-reference they cannot be mapped to the pool
+    // entry they were built from, and the synthetic title above is lossy. The
+    // discriminators are exactly the ones `eachPoolAffix` keys on, in its order.
+    pool_provenance: { channel: "viktranium", disc: [opt.slot_type, opt.category, opt.tier] },
   };
 }
 
@@ -513,10 +528,16 @@ function initBrowse(dataset, vocab, hooks) {
       <thead><tr><th>Item</th><th>Slot</th><th class="num">ML</th><th>Status</th><th>Affixes &amp; set bonuses</th><th>Source</th></tr></thead>
       <tbody>${body}</tbody></table></div>`;
     if (hooks && hooks.onOverride) {
+      // #426 — the ROW goes with the id. An item row is resolvable from its id
+      // against the catalog, but a synthesized crafted row is not: it exists only
+      // here, and the provenance the host needs to reach its pool entry rides on
+      // the row object. browse.js still keeps no knowledge of overrides — it hands
+      // back what it has and lets the host decide.
+      const byId = new Map(rows.map((v) => [v.variant_id, v]));
       results.querySelectorAll("[data-correct]").forEach((b) => b.addEventListener("click", () => {
         // The row's own cell is the host, so the picker opens under the item the
         // player is looking at rather than in a panel elsewhere.
-        hooks.onOverride(b.dataset.correct, b.closest("td"));
+        hooks.onOverride(b.dataset.correct, b.closest("td"), byId.get(b.dataset.correct) || null);
       }));
     }
   }

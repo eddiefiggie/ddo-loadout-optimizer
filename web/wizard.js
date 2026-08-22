@@ -3061,13 +3061,22 @@ if (typeof window !== "undefined" && window.App) {
      *  checking the wiki first is what separates a maintainer-side data defect
      *  (which a correction report can fix for everyone) from a genuine
      *  wiki-versus-game disagreement (which only an override can hold). */
-    function openOverridePicker(host, variantId) {
+    function openOverridePicker(host, variantId, row) {
       if (!host) return;
       const O = _overridesModule();
       const existing = host.querySelector(".pd-override");
       if (existing) { existing.remove(); return; }          // toggle
-      const v = (dataset.items || []).find((x) => (x.variant_id || x.source_item) === variantId);
-      const entries = (O && v) ? O.pickerEntries(v, state.overrides || []) : [];
+      // #426 — two ways to reach the affixes, one picker. A crafted row is a
+      // display projection that resolves against no item, so it is addressed by
+      // the provenance it carries; the entries it yields are pool_key-shaped and
+      // flow through createOverride unchanged, because isWellFormed has always
+      // accepted both target shapes.
+      const crafted = row && row.pool_provenance;
+      const v = crafted ? null
+        : (dataset.items || []).find((x) => (x.variant_id || x.source_item) === variantId);
+      const entries = !O ? []
+        : crafted ? O.poolPickerEntriesFor(dataset, row, state.overrides || [])
+        : (v ? O.pickerEntries(v, state.overrides || []) : []);
       const box = document.createElement("div");
       box.className = "pd-override";
       if (!entries.length) {
@@ -3886,15 +3895,21 @@ if (typeof window !== "undefined" && window.App) {
         if (window.ItemBrowser) {
           // #88 U10 (R32) — the SAME picker the results card opens. Browse owns no
           // copy of the predicate; it hands back a variant id and a host element.
+          // #426 — every provenance token with at least one ELIGIBLE crafted affix
+          // behind it, built once. The alternative is walking the pool for each of
+          // the 472 synthesized rows Browse renders.
+          const _OV = _overridesModule();
+          const _craftedIndex = _OV ? _OV.poolAddressable(dataset) : null;
           window.ItemBrowser.initBrowse(dataset, pickerVocabulary(dataset), {
-            onOverride: (variantId, host) => openOverridePicker(host, variantId),
-            // Browse's table mixes item variants with synthesized crafted rows.
-            // The picker resolves a variant id against the item catalog, so a
-            // crafted row has nothing for it to open — 472 of 9,582 rows. Ask
-            // here rather than letting browse.js infer it: the predicate is the
-            // same lookup the picker itself performs.
-            canOverride: (v) => !!(v && (dataset.items || []).some(
-              (x) => (x.variant_id || x.source_item) === v.variant_id)),
+            onOverride: (variantId, host, row) => openOverridePicker(host, variantId, row),
+            // Browse's table mixes item variants with synthesized crafted rows, and
+            // the two are addressed differently: an item by its id against the
+            // catalog, a crafted row by the provenance it carries. #426 gave the
+            // crafted half a creation surface; before that the control was hidden
+            // on those 472 rows because nothing could open for them.
+            canOverride: (v) => !!(v && ((dataset.items || []).some(
+              (x) => (x.variant_id || x.source_item) === v.variant_id)
+              || (_OV && _OV.isPoolAddressable(_craftedIndex, v)))),
           });
         }
       }

@@ -278,9 +278,10 @@
         for (var j = 0; j < affixes.length; j++) {
           var a = affixes[j];
           if (!all && !poolAffixEligible(a)) continue;
-          cb({ channel: spec.channel, host: null, entry: entry, affix: a,
-               key: keyOf(spec.channel, spec.disc(entry), a, readType(a)),
-               catalogKey: keyOf(spec.channel, spec.disc(entry), a, catalogTypeOrLive(a)) });
+          var disc = spec.disc(entry);
+          cb({ channel: spec.channel, host: null, entry: entry, affix: a, disc: disc,
+               key: keyOf(spec.channel, disc, a, readType(a)),
+               catalogKey: keyOf(spec.channel, disc, a, catalogTypeOrLive(a)) });
         }
       }
     }
@@ -291,9 +292,10 @@
       for (var k = 0; k < list.length; k++) {
         var pa = list[k];
         if (!all && !poolAffixEligible(pa)) continue;
-        cb({ channel: PER_ITEM_CHANNEL, host: hosts[h], entry: perItem[hosts[h]], affix: pa,
-             key: keyOf(PER_ITEM_CHANNEL, [hosts[h], pa.pool], pa, readType(pa)),
-             catalogKey: keyOf(PER_ITEM_CHANNEL, [hosts[h], pa.pool], pa, catalogTypeOrLive(pa)) });
+        var pdisc = [hosts[h], pa.pool];
+        cb({ channel: PER_ITEM_CHANNEL, host: hosts[h], entry: perItem[hosts[h]], affix: pa, disc: pdisc,
+             key: keyOf(PER_ITEM_CHANNEL, pdisc, pa, readType(pa)),
+             catalogKey: keyOf(PER_ITEM_CHANNEL, pdisc, pa, catalogTypeOrLive(pa)) });
       }
     }
   }
@@ -542,6 +544,87 @@
     return collapseEntries(cands, overrides);
   }
 
+  /** #426 — the discriminator tuple as one comparable token, so a display row's
+   *  stamped provenance and a walked pool record can be matched exactly. */
+  function discToken(channel, disc) {
+    var out = [String(channel)];
+    var d = disc || [];
+    for (var i = 0; i < d.length; i++) out.push(part(d[i]));
+    return out.join("||");
+  }
+
+  /** #426 — picker entries for ONE crafted row, addressed by the provenance its
+   *  display projection carries. `poolPickerEntries` collapses a whole channel; a
+   *  creation surface opens on a single row and must offer only that row's affixes.
+   *
+   *  Matched on the channel's own discriminators — the same tuple the key is built
+   *  from — never on the synthesized title, which is lossy: a Viktranium title
+   *  embeds a quarterstaff tag and a Nearly Complete label falls back through three
+   *  sources before settling. */
+  function poolPickerEntriesFor(pool, row, overrides) {
+    var prov = row && row.pool_provenance;
+    if (!prov || !prov.channel) return [];
+    var want = discToken(prov.channel, prov.disc);
+    // The discriminator tuple addresses a GROUP — a Viktranium (slot_type,
+    // category, tier) holds many options — while the row displays one option.
+    // Narrow to the affixes the row actually shows, or the picker offers a player
+    // corrections for effects that are not on the row in front of them. Two
+    // options in one group carrying the same name+type+value compose the same key
+    // by design, so they are indistinguishable here and collapse.
+    var mine = Object.create(null);
+    var ra = (row.affixes || []);
+    for (var i = 0; i < ra.length; i++) {
+      mine[part(ra[i].name) + "||" + part(ra[i].type) + "||" + part(ra[i].value)] = true;
+    }
+    var cands = [];
+    eachPoolAffix(pool, function (rec) {
+      if (discToken(rec.channel, rec.disc) !== want) return;
+      var k = poolOverrideKey(rec);
+      if (ra.length && !mine[part(k.name) + "||" + part(k.from) + "||" + part(k.value)]) return;
+      cands.push({ key: k, name: k.name, from: k.from, value: k.value,
+                   channel: rec.channel, host: rec.host || null });
+    });
+    return collapseEntries(cands, overrides);
+  }
+
+  /** #426 — for each provenance token, the set of ELIGIBLE affix identities behind
+   *  it. Built once so a creation surface can gate per row without walking the pool
+   *  for each of the 472 synthesized rows Browse renders.
+   *
+   *  Keyed to the AFFIX, not just the group. A group's discriminators address many
+   *  options while a row is one of them, so a group-level answer says "yes" for
+   *  rows whose own affixes are all excluded — measured at 80 of 445 — and the
+   *  control then opens an empty picker. That is exactly the false offer #424
+   *  removed; gating on what the picker will actually serve is what keeps it gone.
+   *
+   *  Eligibility is the walk's own, so an affix excluded under #423 for carrying an
+   *  expansion receipt is absent here — which the display row could not determine
+   *  itself, since the projection drops `via`. */
+  function poolAddressable(pool) {
+    var index = Object.create(null);
+    eachPoolAffix(pool, function (rec) {
+      var t = discToken(rec.channel, rec.disc);
+      var bucket = index[t] || (index[t] = Object.create(null));
+      var k = poolOverrideKey(rec);
+      bucket[part(k.name) + "||" + part(k.from) + "||" + part(k.value)] = true;
+    });
+    return index;
+  }
+
+  /** True when the picker would offer this row at least one entry. */
+  function isPoolAddressable(index, row) {
+    var prov = row && row.pool_provenance;
+    if (!index || !prov || !prov.channel) return false;
+    var bucket = index[discToken(prov.channel, prov.disc)];
+    if (!bucket) return false;
+    var ra = row.affixes || [];
+    if (!ra.length) return false;
+    for (var i = 0; i < ra.length; i++) {
+      if (bucket[part(ra[i].name) + "||" + part(ra[i].type) + "||" + part(ra[i].value)]) return true;
+    }
+    return false;
+  }
+
   // ---- U11: the manager's rows ------------------------------------------------
 
   /** One row per override, carrying the action set its state allows (R34/R35).
@@ -719,7 +802,7 @@
     overrideKey, isWellFormed, matchAffixes, resolveMatch, catalogTypeOrLive,
     eachPoolAffix, poolOverrideKey, matchPoolAffixes, poolAffixEligible, readType, poolIndex,
     resolveOverrides, resolvePoolMatch, keyMinusType, sameOverrideSet,
-    pickerEntries, poolPickerEntries, managerRows,
+    pickerEntries, poolPickerEntries, poolPickerEntriesFor, poolAddressable, isPoolAddressable, managerRows,
     applyOverrides, withdrawOverrides, catalogTypeOf,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
