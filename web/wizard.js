@@ -203,18 +203,16 @@ function railModel(state, saved) {
   const list = (Array.isArray(saved) ? saved : [])
     .filter((c) => c && typeof c === "object" && typeof c.name === "string" && c.name);
   const names = list.map((c) => c.name);
-  const typed = String(s.characterName == null ? "" : s.characterName);
-  const trimmed = typed.trim();
   const loadedName = String(s.loadedName || "");
   const loaded = !!loadedName && names.indexOf(loadedName) >= 0;
+  // #431 U2 (KTD10) — `name`, `canSave` and `overwrites` existed only to drive
+  // the rail's input and button, both of which have moved. The overwrite confirm
+  // keeps deriving its own answer in trySave.
   return {
-    name: typed,
     loaded,
     loadedName: loaded ? loadedName : "",
     saved: names,
     empty: names.length === 0,
-    canSave: trimmed.length > 0,
-    overwrites: !!trimmed && names.indexOf(trimmed) >= 0,
   };
 }
 
@@ -1773,8 +1771,15 @@ if (typeof window !== "undefined" && window.App) {
                screen saying which of them Continue was waiting for. -->
           <fieldset class="wz-group" data-group="required">
             <legend class="wz-group-legend">Required
-              <span class="wz-sub">· ${forged ? "your race wears a docent, so armor is settled" : "all three are needed to continue"}</span></legend>
+              <span class="wz-sub">· ${forged ? "your race wears a docent, so armor is settled" : "all four are needed to continue"}</span></legend>
             <div class="wz-grid">
+              <!-- #431 U2 (R1/R2/KTD2) — the build name is a required build input,
+                   asked here rather than in the rail. BOUND to state.characterName:
+                   render() runs on every navigation, so an unbound field would blank
+                   the name each time and block the player on their own gate. -->
+              <label class="wz-field wz-span" data-req="name"><span class="wz-label"><span class="wz-req-mark" aria-hidden="true">*</span> Build name</span>
+              <span class="wz-help">Names this build so you can save it and come back to it.</span>
+              <input id="wz-buildname" type="text" value="${esc(state.characterName)}" placeholder="e.g. Sook — Reaper"></label>
               <label class="wz-field" data-req="ml"><span class="wz-label"><span class="wz-req-mark" aria-hidden="true">*</span> Minimum level (ML) cap</span>
               <span class="wz-help">Highest item level you can equip. Gear above this is excluded.</span>
               <input id="wz-ml" class="wz-ml" type="number" min="1" max="40" value="${esc(state.ml)}"></label>
@@ -3575,8 +3580,6 @@ if (typeof window !== "undefined" && window.App) {
         <p class="wz-rail-loaded">${m.loaded
           ? `Editing <strong>${esc(m.loadedName)}</strong>`
           : `<span class="wz-sub">Unsaved build</span>`}</p>
-        <label class="wz-field"><span class="wz-label">Name this build</span>
-          <input id="wz-buildname" type="text" value="${esc(m.name)}" placeholder="e.g. Sook — Reaper"></label>
         <button class="btn primary" id="wz-railsave" type="button">Save progress</button>
         <span class="wz-savestat" id="wz-railstat" aria-live="polite"></span>
         <p class="wz-help">Saved in this browser only — no account, and cleared if you clear browser data.</p>
@@ -3623,11 +3626,11 @@ if (typeof window !== "undefined" && window.App) {
     }
 
     function wireRail() {
-      const nameInput = document.getElementById("wz-buildname");
-      if (nameInput) nameInput.oninput = (e) => { state.characterName = e.target.value; };
       const saveBtn = document.getElementById("wz-railsave");
       if (saveBtn) saveBtn.onclick = () => {
-        const nm = ((nameInput ? nameInput.value : state.characterName) || "").trim();
+        // #431 U2 — the name input moved to the character step, so the state
+        // field is the one source here rather than a rail-owned element.
+        const nm = (state.characterName || "").trim();
         const res = trySave(nm);
         if (!res) return;   // overwrite declined
         // Re-render FIRST — the status element below lives inside the rail, so a
@@ -4001,9 +4004,9 @@ if (typeof window !== "undefined" && window.App) {
       wireRail();
       // #428 U5 (KTD3) — every native control inside the step body is a build
       // input, so one delegated pair covers text, number, select, checkbox and
-      // radio without a markDirty() call in each of their handlers. The rail is
-      // deliberately excluded: naming a build is not editing it, and typing a
-      // name is the FIRST half of saving.
+      // radio without a markDirty() call in each of their handlers. #431 U2
+      // (KTD9) — this now covers the build name too: it is a required build
+      // input like race, so typing one arms the guard.
       const body = root.querySelector(".wz-body");
       if (body) {
         // …except surfaces that LOOK things up rather than change them: the
@@ -4045,6 +4048,11 @@ if (typeof window !== "undefined" && window.App) {
         // U3/R7 — the ML floor defaults to cap − 5 and follows the cap until the
         // user edits it. Clearing the floor re-enables auto-follow. Updates are made
         // directly (no re-render) so typing keeps focus.
+        // #431 U2 (KTD9) — updated in place, no re-render, so typing keeps focus.
+        // The delegated .wz-body listener marks the build dirty on the same event,
+        // after this handler has written the value.
+        const nameInput = document.getElementById("wz-buildname");
+        if (nameInput) nameInput.oninput = (e) => { state.characterName = e.target.value; };
         var floorAutoHint = () => { var h = document.getElementById("wz-mlfloor-auto"); if (h) h.hidden = !!state.mlFloorManual; };
         document.getElementById("wz-ml").oninput = (e) => {
           state.ml = e.target.value;

@@ -3084,7 +3084,6 @@ test("#428 U3: railModel reports an empty state when nothing is saved or loaded"
   assert.strictEqual(m.loadedName, "");
   assert.deepStrictEqual(m.saved, []);
   assert.strictEqual(m.empty, true);
-  assert.strictEqual(m.canSave, false, "an unnamed build cannot be saved (R13)");
 });
 
 test("#428 U3 (AE7): with two builds saved, loading the second shows the second name", () => {
@@ -3105,14 +3104,6 @@ test("#428 U3 (R21): deleting the loaded build returns the rail to its empty sta
   assert.strictEqual(after.loaded, false);
   assert.strictEqual(after.loadedName, "");
   assert.strictEqual(after.empty, true);
-});
-
-test("#428 U3: railModel flags a name that would overwrite an existing save", () => {
-  const saved = [{ name: "Sook" }];
-  assert.strictEqual(railModel({ characterName: " Sook " }, saved).overwrites, true,
-    "trimmed, so trailing whitespace cannot sneak past the overwrite confirm");
-  assert.strictEqual(railModel({ characterName: "Other" }, saved).overwrites, false);
-  assert.strictEqual(railModel({ characterName: "" }, saved).overwrites, false);
 });
 
 test("#428 U3: railModel tolerates a junk store without inventing entries", () => {
@@ -3466,11 +3457,56 @@ test("#428 U6 (R1/R2/R4): the character step renders three labelled groups in or
 
 test("#428 U6 (R2): each required field is marked at the field", () => {
   const body = stepSource("stepCharacter");
-  for (const key of ["ml", "race", "armor"]) {
+  for (const key of ["name", "ml", "race", "armor"]) {
     assert.ok(new RegExp(`data-req="${key}"`).test(body), `${key} is addressable as a required field`);
   }
-  assert.strictEqual((body.match(/wz-req-mark/g) || []).length, 3,
-    "exactly the three required fields carry the marker");
+  assert.strictEqual((body.match(/wz-req-mark/g) || []).length, 4,
+    "exactly the four required fields carry the marker");
+});
+
+test("#431 U2 (R1/R4): the legend's stated count matches the markers it describes", () => {
+  const body = stepSource("stepCharacter");
+  const marks = (body.match(/wz-req-mark/g) || []).length;
+  // The Forged branch states no count ("armor is settled"), so only the other
+  // one carries a number to drift.
+  const stated = body.match(/all (\w+) are needed to continue/);
+  assert.ok(stated, "the non-Forged legend still states a count");
+  const words = { two: 2, three: 3, four: 4, five: 5 };
+  assert.strictEqual(words[stated[1]], marks,
+    `the legend says ${stated[1]} but ${marks} fields are marked`);
+});
+
+test("#431 U2 (KTD2/AE5): the name field lives in the required group and binds its value", () => {
+  const body = stepSource("stepCharacter");
+  assert.ok(/data-req="name"/.test(body), "the name field is addressable as required");
+  assert.ok(/id="wz-buildname"/.test(body), "the name input renders in the character step");
+  assert.ok(/value="\$\{esc\(state\.characterName[^}]*\)\}"/.test(body),
+    "the input is BOUND — an unbound field blanks the name on every render() and "
+    + "would block the player on their own gate");
+  assert.ok(!/data-nodirty/.test(body.slice(body.indexOf('data-req="name"') - 400,
+    body.indexOf('data-req="name"') + 400)),
+    "the field is not opted out of dirty-tracking (KTD9)");
+});
+
+test("#431 U2 (R9/KTD10): the rail hosts no name input and railModel sheds its save-shaped fields", () => {
+  const rail = fnBody(WIZARD_SRC, "function railHTML() {", 4);
+  assert.ok(!/wz-buildname/.test(rail), "the rail no longer renders the name input");
+  assert.ok(!/Name this build/.test(rail), "and not its label either");
+  const m = railModel({ characterName: "Sook", loadedName: "Sook" }, [{ name: "Sook" }]);
+  for (const gone of ["name", "canSave", "overwrites"]) {
+    assert.ok(!(gone in m), `railModel no longer returns ${gone}`);
+  }
+  assert.deepStrictEqual(Object.keys(m).sort(), ["empty", "loaded", "loadedName", "saved"]);
+});
+
+test("#431 U2 (R12): renaming stays reachable from every later step without a rail control", () => {
+  // R12 is a guarantee, not a new control: the step dots and the results bar's
+  // Edit character already reach the character step. Neither may be removed
+  // without this failing.
+  assert.ok(/data-goto="\$\{id\}"/.test(WIZARD_SRC),
+    "the step dots are still data-goto targets");
+  assert.ok(/data-goto="character"/.test(stepSource("stepResults")),
+    "the results bar still reaches the character step directly");
 });
 
 // ---------------------------------------------------------------------------
