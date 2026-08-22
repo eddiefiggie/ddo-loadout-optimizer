@@ -1885,6 +1885,162 @@
     return lines;
   }
 
+  /* ---- U10 (plan 2026-08-22-001) — the three multi-fact notices, one entry per
+   *  FIRED branch -------------------------------------------------------------
+   *
+   *  `artifactNotice`, `boundNotice` and `zeroSourceNotice` each bundled several
+   *  independent facts into one paragraph. Those facts classify differently, so a
+   *  single title over the bundle would assert something the solve did not
+   *  establish: "DECLARED CREDIT APPLIED" over a `boundNotice` that fired for its
+   *  ML-floor branch claims a declared credit on a solve that declared none. That
+   *  is instance 3 in
+   *  `docs/solutions/conventions/never-infer-a-claim-about-your-own-results.md` —
+   *  a disclosure channel is itself a claim.
+   *
+   *  So each branch gets its own addressable entry: `{ id, title, class, sentence }`.
+   *  `class` is `"actionable"` (the player has a control that resolves it) or
+   *  `"qualifying"` (it changes how the numbers should be read, with no resolution
+   *  path). The titles and classes are KTD5's settled table, not a local choice.
+   *
+   *  The WORDING lives here, with every other notice's, so the app and all five
+   *  share exports cannot drift. The FACTS are derived by the caller: these three
+   *  read the model, the dataset and the slot pins, which live on the results
+   *  side, and re-deriving them here would be a second source for the same fact.
+   *
+   *  `esc` is the caller's escaper, applied at exactly the interpolation points
+   *  the pre-split render escaped — so an HTML surface passes `esc` and gets
+   *  byte-identical markup, and a text surface passes nothing and gets the plain
+   *  sentence. The literal template text is never escaped, which is why this stays
+   *  a wording source rather than an HTML producer.
+   */
+  const NOTICE_ACTIONABLE = "actionable";
+  const NOTICE_QUALIFYING = "qualifying";
+  function _asText(s) { return String(s == null ? "" : s); }
+
+  /** #369 + U5/R6 — the two Artifact facts. They are mutually exclusive by
+   *  construction (the none-flagged branch needs the opt-in ON, the pin branch
+   *  needs it OFF), and must never share a card: "no Artifact could be included"
+   *  printed over a named, included Artifact is a flat contradiction.
+   *  `facts`: `{ missing, pinnedArtifacts }`. */
+  function artifactNoticeEntries(facts, esc) {
+    const e = esc || _asText;
+    const f = facts || {};
+    if (f.missing) {
+      return [{ id: "artifact-unavailable", title: "ARTIFACT UNAVAILABLE", class: NOTICE_QUALIFYING,
+        sentence: "No Artifact could be included — none is flagged in the current data." }];
+    }
+    const names = (f.pinnedArtifacts || []).filter(Boolean);
+    if (!names.length) return [];
+    const one = names.length === 1;
+    return [{ id: "artifact-pinned-in", title: "ARTIFACT PINNED IN", class: NOTICE_ACTIONABLE,
+      sentence: `${e(names.join(", "))} ${one ? "is an Artifact and was" : "are Artifacts and were"}`
+        + ` included because you pinned ${one ? "it" : "them"}, even though "Include an Artifact" is off.`
+        + ` Unpin to exclude ${one ? "it" : "them"}.` }];
+  }
+
+  /** U3 (plan 2026-08-05-001) — the two zero-source causes. Two different player
+   *  actions, so two entries: a stat no data carries has no resolution path, and a
+   *  stat the filters removed does. `facts`: `{ absent, filtered, owned,
+   *  rungRestricts, removed }`, where the last three are the filtered branch's
+   *  evidence-based cause attribution (results.js derives it from the dataset). */
+  function zeroSourceNoticeEntries(facts, esc) {
+    const e = esc || _asText;
+    const f = facts || {};
+    const absent = f.absent || [];
+    const filtered = f.filtered || [];
+    const entries = [];
+    if (absent.length) {
+      entries.push({ id: "stat-not-in-data", title: "STAT NOT IN DATA", class: NOTICE_QUALIFYING,
+        sentence: `Nothing in the current data carries ${absent.map((s) => e(s)).join(", ")}`
+          + " — ranking it can't change your build." });
+    }
+    if (filtered.length) {
+      // Deliberately does NOT name a single cause unless there is evidence for
+      // one: the pool the solver sees is the product of the ML band, the gear
+      // pool, the character gates AND the dominance pre-filter. Only the
+      // owned-pool and the crafting-rung cases are named, because each is an
+      // explicit, single, reversible choice the player made.
+      const where = f.owned ? "your owned-gear pool"
+        : f.rungRestricts ? `your current filters, which exclude ${f.removed}` : "your current filters";
+      const fix = f.owned ? "the full catalog may have one"
+        : f.rungRestricts ? `raising "What may the solver assume beyond the printed item?" may reach `
+          + (filtered.length > 1 ? "them" : "it")
+          : "widening the ML band or character filters may reach " + (filtered.length > 1 ? "them" : "it");
+      entries.push({ id: "stat-filtered-out", title: "STAT FILTERED OUT", class: NOTICE_ACTIONABLE,
+        sentence: `No source of ${filtered.map((s) => e(s)).join(", ")} is available in ${where} — ${fix}.` });
+    }
+    return entries;
+  }
+
+  /** U5/U4/#88 U8/plan-003 U6 — how the solve was bounded, as one entry per fired
+   *  branch. `facts`: `{ mlFloor, floorReport, heldCaps, creditLines,
+   *  overrideLines, offHand }`. `heldCaps` is `[{ stat, cap }]`; `offHand` is
+   *  null unless the Two Weapon Fighting exclusion actually fired, and otherwise
+   *  `{ mode: "none" | "pinned" | "stale", name }` — the caller reads the same
+   *  authority the off-hand pool used and the actual pin, never inferring either.
+   *
+   *  `creditLines` and `overrideLines` come from `creditNoticeLines` /
+   *  `overrideNoticeLines` above: each is several sentences about ONE fact, so
+   *  each stays one entry rather than becoming N cards under a repeated title.
+   *
+   *  The off-hand entry carries two sentences — the exclusion (in whichever of its
+   *  three forms applies) and the unscored-penalty caveat that always accompanies
+   *  it. KTD5's table has no row for the caveat; it is kept with the sentence it
+   *  qualifies rather than given an invented title of its own. */
+  function boundNoticeEntries(facts, esc) {
+    const e = esc || _asText;
+    const f = facts || {};
+    const entries = [];
+    const floor = Number(f.mlFloor);
+    if (floor) {
+      entries.push({ id: "gear-ml-floor", title: "GEAR ML FLOOR", class: NOTICE_QUALIFYING,
+        sentence: `Considered gear ML ≥ ${e(floor)} (your floor).` });
+    }
+    const misses = f.floorReport || [];
+    if (misses.length) {
+      entries.push({ id: "floor-not-reached", title: "FLOOR NOT REACHED", class: NOTICE_ACTIONABLE,
+        sentence: misses.map((m) => `Couldn't reach your floor of ${e(m.floor)} ${e(m.stat)}`
+          + ` — best achievable was ${e(m.achieved)}.`).join(" ") });
+    }
+    const held = f.heldCaps || [];
+    if (held.length) {
+      entries.push({ id: "held-at-your-cap", title: "HELD AT YOUR CAP", class: NOTICE_QUALIFYING,
+        sentence: `Held at your cap: ${held.map((h) => `${e(h.stat)} ${e(h.cap)}`).join(", ")}.` });
+    }
+    const credits = f.creditLines || [];
+    if (credits.length) {
+      entries.push({ id: "declared-credit", title: "DECLARED CREDIT APPLIED", class: NOTICE_QUALIFYING,
+        sentence: credits.map((l) => e(l)).join(" ") });
+    }
+    const overrides = f.overrideLines || [];
+    if (overrides.length) {
+      entries.push({ id: "bonus-type-override", title: "BONUS TYPE OVERRIDDEN", class: NOTICE_QUALIFYING,
+        sentence: overrides.map((l) => e(l)).join(" ") });
+    }
+    const off = f.offHand;
+    if (off) {
+      const caveat = "The optimizer doesn't score the Two Weapon Fighting penalty (or a shield's"
+        + " defense), so the off-hand pick was compared on ranked-stat value alone.";
+      const name = e(off.name);
+      if (off.mode === "stale") {
+        // The one off-hand case with a resolution path: the shown build predates
+        // the declaration, and re-solving applies it.
+        entries.push({ id: "re-solve-to-apply", title: "RE-SOLVE TO APPLY", class: NOTICE_ACTIONABLE,
+          sentence: "You declared Two Weapon Fighting, so shields, orbs, and rune arms leave off-hand"
+            + ` candidacy — but this build still shows ${name} in the off hand, so it was solved`
+            + ` before the declaration. Re-solve to apply it. ${caveat}` });
+      } else {
+        entries.push({ id: "off-hand-excluded", title: "OFF-HAND EXCLUDED", class: NOTICE_QUALIFYING,
+          sentence: (off.mode === "pinned"
+            ? "You declared Two Weapon Fighting, so shields, orbs, and rune arms left off-hand"
+              + ` candidacy — your pinned ${name} overrode that and is equipped.`
+            : "You declared Two Weapon Fighting, so shields, orbs, and rune arms left off-hand"
+              + " candidacy — pin one to bring it back.") + ` ${caveat}` });
+      }
+    }
+    return entries;
+  }
+
   const api = {
     // #335 U4 — the render-layer ×2 collapse and its derived receipt line.
     collapseTwins, secondCopyContribution,
@@ -1911,6 +2067,9 @@
     NO_DROP_SOURCE_WORDING,
     // #110 — the blocklist disclosure sentences
     blockNoticeLines,
+    // U10 — the three multi-fact notices, one addressable entry per fired branch
+    artifactNoticeEntries, zeroSourceNoticeEntries, boundNoticeEntries,
+    NOTICE_ACTIONABLE, NOTICE_QUALIFYING,
     // constraint header helpers (exporters delegates to these)
     constraintPairs, constraintLines,
   };

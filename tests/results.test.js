@@ -2067,3 +2067,114 @@ test("#335 U4: the Deep Dive merges the pair into one block", () => {
   assert.strictEqual(blocks, 1,
     "one block for the pair — this tab is the only surface showing augments, so a split here is the worst place for the 'affixes apply twice' reading");
 });
+
+// ---------------------------------------------------------------------------
+// U10 (plan 2026-08-22-001) — the three multi-fact notices are addressable per
+// FIRED branch, and render byte-identically to the pre-change tree while doing it.
+//
+// results.js derives the facts (it owns the model/dataset/pin readers); the
+// wording lives in projection.js, the single content source. These tests pin the
+// rendered bytes as literals: the sentences are the product, only the addressing
+// changed, so any diff here is a player-facing text change.
+// ---------------------------------------------------------------------------
+
+const _u10Declared = { mlFloor: 0, targetCaps: {}, style: "one-hand", twoWeaponFighting: true };
+const _u10Shield = { source_item: "Tower Shield", variant_id: "Tower Shield", type: "Tower shields" };
+const _u10OffHandResult = { perTarget: {}, floorReport: [], chosen: [{ slot: "Off Hand", variant: _u10Shield }] };
+
+test("U10: boundNotice renders exactly its entries' sentences, in order", () => {
+  const q = { mlFloor: 32, targetCaps: { Dodge: 4 } };
+  const r = { perTarget: { Dodge: 4 }, floorReport: [{ stat: "Combat Mastery", floor: 10, achieved: 7 }] };
+  const entries = R.boundNoticeEntries(q, r);
+  assert.deepStrictEqual(entries.map((e) => e.id), ["gear-ml-floor", "floor-not-reached", "held-at-your-cap"]);
+  assert.strictEqual(R.boundNotice(q, r),
+    `<p class="scope-note bound-note" role="status">${entries.map((e) => e.sentence).join(" ")}</p>`,
+    "the render is the entries and nothing else");
+  // Byte-identical to the pre-change tree for the same input.
+  assert.strictEqual(R.boundNotice(q, r),
+    '<p class="scope-note bound-note" role="status">Considered gear ML ≥ 32 (your floor). '
+    + "Couldn't reach your floor of 10 Combat Mastery — best achievable was 7. "
+    + "Held at your cap: Dodge 4.</p>");
+});
+
+test("U10: the entry count is the number of fired branches, not the notice function count", () => {
+  assert.strictEqual(R.boundNoticeEntries({ mlFloor: 0, targetCaps: {} }, { perTarget: {}, floorReport: [] }).length, 0);
+  assert.strictEqual(R.boundNotice({ mlFloor: 0, targetCaps: {} }, { perTarget: {}, floorReport: [] }), "",
+    "no fired branch renders nothing at all");
+  assert.strictEqual(R.boundNoticeEntries({ mlFloor: 32, targetCaps: {} }, { perTarget: {}, floorReport: [] }).length, 1);
+  assert.strictEqual(R.boundNoticeEntries(_u10Declared, _u10OffHandResult).length, 1,
+    "the whole off-hand disclosure is one fact, however many branches of it were evaluated");
+});
+
+test("U10: an ML-floor-only solve produces GEAR ML FLOOR and claims no declared credit", () => {
+  const entries = R.boundNoticeEntries({ mlFloor: 32, targetCaps: {} }, { perTarget: {}, floorReport: [] });
+  assert.strictEqual(entries.length, 1);
+  assert.strictEqual(entries[0].title, "GEAR ML FLOOR");
+  assert.strictEqual(entries[0].class, "qualifying");
+  assert.ok(!entries.some((e) => /DECLARED CREDIT/.test(e.title) || /BONUS TYPE/.test(e.title)),
+    "a bundled title would assert a credit on a solve that declared none");
+});
+
+test("U10: a floor the solve could not reach is classed actionable", () => {
+  const entries = R.boundNoticeEntries({ mlFloor: 0, targetCaps: {} },
+    { perTarget: {}, floorReport: [{ stat: "Combat Mastery", floor: 10, achieved: 7 }] });
+  assert.strictEqual(entries.length, 1);
+  assert.strictEqual(entries[0].id, "floor-not-reached");
+  assert.strictEqual(entries[0].class, "actionable");
+});
+
+test("U10: a build solved before the TWF declaration is actionable; the other two off-hand cases are not", () => {
+  const stale = R.boundNoticeEntries(Object.assign({}, _u10Declared, { slotConstraints: {} }), _u10OffHandResult);
+  assert.strictEqual(stale[0].id, "re-solve-to-apply");
+  assert.strictEqual(stale[0].class, "actionable");
+  const pinned = R.boundNoticeEntries(
+    Object.assign({}, _u10Declared, { slotConstraints: { "Off Hand": { type: "pin", variant_id: "Tower Shield" } } }),
+    _u10OffHandResult);
+  assert.strictEqual(pinned[0].id, "off-hand-excluded");
+  assert.strictEqual(pinned[0].class, "qualifying");
+  const plain = R.boundNoticeEntries(_u10Declared, { perTarget: {}, floorReport: [], chosen: [] });
+  assert.strictEqual(plain[0].id, "off-hand-excluded");
+  assert.strictEqual(plain[0].class, "qualifying");
+  // Same rendered bytes as before the split, in all three cases.
+  assert.ok(/solved before the declaration/.test(R.boundNotice(
+    Object.assign({}, _u10Declared, { slotConstraints: {} }), _u10OffHandResult)));
+});
+
+test("U10: artifactNotice's two branches are never one entry, and render unchanged", () => {
+  const plainRing = { chosen: [{ slot: "Ring", variant: { variant_id: "Plain Ring", source_item: "Plain Ring" } }] };
+  const missing = R.artifactNoticeEntries(plainRing, { includeArtifact: true });
+  assert.deepStrictEqual(missing.map((e) => e.id), ["artifact-unavailable"]);
+  assert.strictEqual(missing[0].class, "qualifying");
+  assert.strictEqual(R.artifactNotice(plainRing, { includeArtifact: true }),
+    '<div class="artifact-notice" role="status">No Artifact could be included — none is flagged in the current data.</div>');
+
+  const arti = { variant_id: "Baphomet's Reign", source_item: "Baphomet's Reign", artifact: true };
+  const pinnedResult = { chosen: [{ slot: "Ring", variant: arti }] };
+  const pinnedQuery = { includeArtifact: false,
+    slotConstraints: { Ring: { type: "pin", variant_id: "Baphomet's Reign" } } };
+  const pinned = R.artifactNoticeEntries(pinnedResult, pinnedQuery);
+  assert.deepStrictEqual(pinned.map((e) => e.id), ["artifact-pinned-in"]);
+  assert.strictEqual(pinned[0].class, "actionable");
+  assert.ok(!pinned.some((e) => e.id === "artifact-unavailable"),
+    "the none-flagged claim must never ride along with a named, included Artifact");
+  assert.strictEqual(R.artifactNotice(pinnedResult, pinnedQuery),
+    '<div class="artifact-notice" role="status">Baphomet&#39;s Reign is an Artifact and was included '
+    + 'because you pinned it, even though "Include an Artifact" is off. Unpin to exclude it.</div>');
+  assert.strictEqual(R.artifactNoticeEntries(plainRing, { includeArtifact: false }).length, 0);
+});
+
+test("U10: zeroSourceNotice's absent and filtered branches are separate entries with different classes", () => {
+  const q = { targets: ["Sonic Lore", "Ice Lore"] };
+  const model = _modelWith(["Constitution"]);
+  const dataset = _datasetWith(["Sonic Lore"]);   // Sonic Lore exists but is filtered out
+  const entries = R.zeroSourceNoticeEntries(q, _okResult, model, dataset);
+  assert.deepStrictEqual(entries.map((e) => e.id), ["stat-not-in-data", "stat-filtered-out"]);
+  assert.deepStrictEqual(entries.map((e) => e.class), ["qualifying", "actionable"]);
+  assert.strictEqual(R.zeroSourceNotice(q, _okResult, model, dataset),
+    '<p class="scope-note zero-source-note" role="status">'
+    + "Nothing in the current data carries Ice Lore — ranking it can't change your build. "
+    + "No source of Sonic Lore is available in your current filters — "
+    + "widening the ML band or character filters may reach it.</p>");
+  assert.strictEqual(R.zeroSourceNoticeEntries({ targets: ["Constitution"] }, _okResult,
+    _modelWith(["Constitution"]), _datasetWith(["Constitution"])).length, 0);
+});

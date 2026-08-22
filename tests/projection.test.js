@@ -1482,3 +1482,218 @@ test("#335 U4: a single copy gets no second-copy receipt at all", () => {
   const g = P.collapseTwins([{ slot: "Ring", variant: _ring335() }]);
   assert.strictEqual(P.secondCopyContribution(g[0]), null);
 });
+
+// ---------------------------------------------------------------------------
+// U10 (plan 2026-08-22-001) — the three multi-fact notices expose ONE addressable
+// entry per FIRED branch, each carrying its KTD5 title and class.
+//
+// The point of the split is a claim, not a layout: a single title such as
+// "DECLARED CREDIT APPLIED" over a notice that fired for its ML-floor branch
+// would assert a declared credit was applied on a solve that declared none —
+// instance 3 in docs/solutions/conventions/never-infer-a-claim-about-your-own-results.md.
+//
+// The sentences are the product; only their addressing changed. Every sentence
+// below is byte-identical to what the pre-change tree emitted for the same input,
+// which is why they are pinned as literals rather than matched by regex.
+// ---------------------------------------------------------------------------
+
+const _escHtml = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const _CLASSES = ["actionable", "qualifying"];
+function _wellFormed(entries, where) {
+  for (const e of entries) {
+    assert.ok(e && typeof e.id === "string" && e.id, `${where}: every entry has an id`);
+    assert.ok(typeof e.title === "string" && e.title, `${where}: every entry has a title`);
+    assert.ok(_CLASSES.indexOf(e.class) !== -1, `${where}: ${e.id} has a known class, got ${e.class}`);
+    assert.ok(typeof e.sentence === "string" && e.sentence.trim(), `${where}: ${e.id} carries a sentence`);
+  }
+}
+
+test("U10: artifactNoticeEntries never bundles the pinned branch with the none-flagged one", () => {
+  const none = P.artifactNoticeEntries({ missing: true, pinnedArtifacts: [] });
+  assert.strictEqual(none.length, 1);
+  assert.strictEqual(none[0].id, "artifact-unavailable");
+  assert.strictEqual(none[0].title, "ARTIFACT UNAVAILABLE");
+  assert.strictEqual(none[0].class, "qualifying");
+  assert.strictEqual(none[0].sentence,
+    "No Artifact could be included — none is flagged in the current data.");
+
+  const pinned = P.artifactNoticeEntries({ missing: false, pinnedArtifacts: ["Baphomet's Reign"] });
+  assert.strictEqual(pinned.length, 1);
+  assert.strictEqual(pinned[0].id, "artifact-pinned-in");
+  assert.strictEqual(pinned[0].title, "ARTIFACT PINNED IN");
+  assert.strictEqual(pinned[0].class, "actionable");
+
+  // The two ids can never appear in one array — they classify differently, and a
+  // shared card would put "no Artifact could be included" over a named Artifact.
+  const ids = none.map((e) => e.id).concat(pinned.map((e) => e.id));
+  assert.strictEqual(new Set(ids).size, ids.length, "distinct entries, never one");
+  assert.strictEqual(P.artifactNoticeEntries({ missing: false, pinnedArtifacts: [] }).length, 0);
+  _wellFormed(none.concat(pinned), "artifact");
+});
+
+test("U10: the pinned-Artifact sentence is byte-identical, escaped by the caller's escaper", () => {
+  const two = P.artifactNoticeEntries(
+    { pinnedArtifacts: ["Baphomet's Reign", "<Sook> & \"Co\""] }, _escHtml);
+  assert.strictEqual(two[0].sentence,
+    "Baphomet&#39;s Reign, &lt;Sook&gt; &amp; &quot;Co&quot; are Artifacts and were included because "
+    + "you pinned them, even though \"Include an Artifact\" is off. Unpin to exclude them.");
+  // No escaper -> plain text, so an export can print the same wording unescaped.
+  const plain = P.artifactNoticeEntries({ pinnedArtifacts: ["Baphomet's Reign"] });
+  assert.strictEqual(plain[0].sentence,
+    "Baphomet's Reign is an Artifact and was included because you pinned it, even though "
+    + "\"Include an Artifact\" is off. Unpin to exclude it.");
+});
+
+test("U10: zeroSourceNoticeEntries splits absent from filtered, with different classes", () => {
+  const both = P.zeroSourceNoticeEntries({ absent: ["Ice Lore"], filtered: ["Sonic Lore"] });
+  assert.strictEqual(both.length, 2, "two facts, two entries");
+  assert.deepStrictEqual(both.map((e) => e.id), ["stat-not-in-data", "stat-filtered-out"]);
+  assert.deepStrictEqual(both.map((e) => e.title), ["STAT NOT IN DATA", "STAT FILTERED OUT"]);
+  assert.deepStrictEqual(both.map((e) => e.class), ["qualifying", "actionable"],
+    "one has a control that resolves it and one does not — they cannot share a class");
+  assert.strictEqual(both[0].sentence,
+    "Nothing in the current data carries Ice Lore — ranking it can't change your build.");
+  assert.strictEqual(both[1].sentence,
+    "No source of Sonic Lore is available in your current filters — "
+    + "widening the ML band or character filters may reach it.");
+  _wellFormed(both, "zero-source");
+
+  assert.strictEqual(P.zeroSourceNoticeEntries({ absent: ["Ice Lore"], filtered: [] }).length, 1);
+  assert.strictEqual(P.zeroSourceNoticeEntries({ absent: [], filtered: ["Sonic Lore"] }).length, 1);
+  assert.strictEqual(P.zeroSourceNoticeEntries({}).length, 0);
+});
+
+test("U10: the filtered sentence keeps all three of its cause wordings verbatim", () => {
+  const owned = P.zeroSourceNoticeEntries({ filtered: ["Sonic Lore"], owned: true });
+  assert.strictEqual(owned[0].sentence,
+    "No source of Sonic Lore is available in your owned-gear pool — the full catalog may have one.");
+  const rung = P.zeroSourceNoticeEntries(
+    { filtered: ["X"], rungRestricts: true, removed: "augments" });
+  assert.strictEqual(rung[0].sentence,
+    "No source of X is available in your current filters, which exclude augments — "
+    + "raising \"What may the solver assume beyond the printed item?\" may reach it.");
+  const many = P.zeroSourceNoticeEntries({ filtered: ["X", "Y"] });
+  assert.strictEqual(many[0].sentence,
+    "No source of X, Y is available in your current filters — "
+    + "widening the ML band or character filters may reach them.");
+});
+
+// --- boundNotice: the large one. Six branches, seven ids (the off-hand branch
+// resolves to a different id when the declaration post-dates the solve). ---
+
+const _boundAll = {
+  mlFloor: 30,
+  floorReport: [{ stat: "Combat Mastery", floor: 10, achieved: 7 }],
+  heldCaps: [{ stat: "Dodge", cap: 4 }],
+  creditLines: ["credit line one.", "credit line two."],
+  overrideLines: ["override line."],
+  offHand: { mode: "none", name: "" },
+};
+
+test("U10: boundNoticeEntries emits one entry per fired branch, each with its KTD5 title and class", () => {
+  const all = P.boundNoticeEntries(_boundAll);
+  assert.deepStrictEqual(all.map((e) => e.id),
+    ["gear-ml-floor", "floor-not-reached", "held-at-your-cap",
+      "declared-credit", "bonus-type-override", "off-hand-excluded"]);
+  assert.deepStrictEqual(all.map((e) => e.title),
+    ["GEAR ML FLOOR", "FLOOR NOT REACHED", "HELD AT YOUR CAP",
+      "DECLARED CREDIT APPLIED", "BONUS TYPE OVERRIDDEN", "OFF-HAND EXCLUDED"]);
+  assert.deepStrictEqual(all.map((e) => e.class),
+    ["qualifying", "actionable", "qualifying", "qualifying", "qualifying", "qualifying"]);
+  _wellFormed(all, "bound");
+});
+
+test("U10: a solve bounded only by the ML floor claims no declared credit", () => {
+  const only = P.boundNoticeEntries({ mlFloor: 32 });
+  assert.strictEqual(only.length, 1, "one fired branch, one entry");
+  assert.strictEqual(only[0].id, "gear-ml-floor");
+  assert.strictEqual(only[0].title, "GEAR ML FLOOR");
+  assert.strictEqual(only[0].sentence, "Considered gear ML ≥ 32 (your floor).");
+  assert.ok(!only.some((e) => /DECLARED CREDIT/.test(e.title)),
+    "no entry may claim a declared credit was applied on a solve that declared none");
+  assert.ok(!only.some((e) => /declared/i.test(e.sentence)));
+});
+
+test("U10: the floor-miss branch is actionable and keeps its sentence verbatim", () => {
+  const miss = P.boundNoticeEntries({
+    floorReport: [{ stat: "Combat Mastery", floor: 10, achieved: 7 },
+      { stat: "Dodge", floor: 5, achieved: 3 }] });
+  assert.strictEqual(miss.length, 1);
+  assert.strictEqual(miss[0].class, "actionable", "the player has priorities to change");
+  assert.strictEqual(miss[0].sentence,
+    "Couldn't reach your floor of 10 Combat Mastery — best achievable was 7. "
+    + "Couldn't reach your floor of 5 Dodge — best achievable was 3.");
+});
+
+test("U10: the held-cap, credit and override branches keep their sentences verbatim", () => {
+  assert.strictEqual(
+    P.boundNoticeEntries({ heldCaps: [{ stat: "Dodge", cap: 4 }, { stat: "A&B", cap: 9 }] }, _escHtml)[0].sentence,
+    "Held at your cap: Dodge 4, A&amp;B 9.");
+  assert.strictEqual(
+    P.boundNoticeEntries({ creditLines: ["one.", "two."] })[0].sentence, "one. two.");
+  assert.strictEqual(
+    P.boundNoticeEntries({ overrideLines: ["one.", "two."] })[0].sentence, "one. two.");
+});
+
+test("U10: the off-hand branch resolves to three sentences under two titles", () => {
+  const caveat = " The optimizer doesn't score the Two Weapon Fighting penalty "
+    + "(or a shield's defense), so the off-hand pick was compared on ranked-stat value alone.";
+  const none = P.boundNoticeEntries({ offHand: { mode: "none" } })[0];
+  assert.strictEqual(none.id, "off-hand-excluded");
+  assert.strictEqual(none.class, "qualifying");
+  assert.strictEqual(none.sentence, "You declared Two Weapon Fighting, so shields, orbs, and rune "
+    + "arms left off-hand candidacy — pin one to bring it back." + caveat);
+
+  const pinned = P.boundNoticeEntries({ offHand: { mode: "pinned", name: "Tower Shield" } })[0];
+  assert.strictEqual(pinned.id, "off-hand-excluded", "a pin override is still the exclusion fact");
+  assert.strictEqual(pinned.class, "qualifying");
+  assert.strictEqual(pinned.sentence, "You declared Two Weapon Fighting, so shields, orbs, and rune "
+    + "arms left off-hand candidacy — your pinned Tower Shield overrode that and is equipped." + caveat);
+
+  // A build solved before the declaration is the one off-hand case the player can
+  // actually resolve, so it is the one that classifies actionable.
+  const stale = P.boundNoticeEntries({ offHand: { mode: "stale", name: "Tower Shield" } })[0];
+  assert.strictEqual(stale.id, "re-solve-to-apply");
+  assert.strictEqual(stale.title, "RE-SOLVE TO APPLY");
+  assert.strictEqual(stale.class, "actionable");
+  assert.strictEqual(stale.sentence, "You declared Two Weapon Fighting, so shields, orbs, and rune "
+    + "arms leave off-hand candidacy — but this build still shows Tower Shield in the off hand, so "
+    + "it was solved before the declaration. Re-solve to apply it." + caveat);
+});
+
+test("U10: the entry count is the number of FIRED branches, not the number of notice functions", () => {
+  assert.strictEqual(P.boundNoticeEntries({}).length, 0, "nothing bounded the solve");
+  assert.strictEqual(P.boundNoticeEntries({ mlFloor: 0, floorReport: [], heldCaps: [] }).length, 0);
+  assert.strictEqual(P.boundNoticeEntries({ mlFloor: 30 }).length, 1);
+  assert.strictEqual(P.boundNoticeEntries({ mlFloor: 30, heldCaps: [{ stat: "Dodge", cap: 4 }] }).length, 2);
+  assert.strictEqual(P.boundNoticeEntries(_boundAll).length, 6);
+  // Three notice FUNCTIONS, but a solve that fires every branch of all three
+  // yields one entry per fact — that is the whole point of the split.
+  const total = P.artifactNoticeEntries({ missing: true }).length
+    + P.zeroSourceNoticeEntries({ absent: ["A"], filtered: ["B"] }).length
+    + P.boundNoticeEntries(_boundAll).length;
+  assert.strictEqual(total, 9);
+});
+
+test("U10: no branch of any of the three notices falls through unclassified", () => {
+  const every = []
+    .concat(P.artifactNoticeEntries({ missing: true }))
+    .concat(P.artifactNoticeEntries({ pinnedArtifacts: ["A"] }))
+    .concat(P.zeroSourceNoticeEntries({ absent: ["A"], filtered: ["B"] }))
+    .concat(P.zeroSourceNoticeEntries({ filtered: ["B"], owned: true }))
+    .concat(P.zeroSourceNoticeEntries({ filtered: ["B"], rungRestricts: true, removed: "augments" }))
+    .concat(P.boundNoticeEntries(_boundAll))
+    .concat(P.boundNoticeEntries({ offHand: { mode: "pinned", name: "S" } }))
+    .concat(P.boundNoticeEntries({ offHand: { mode: "stale", name: "S" } }));
+  _wellFormed(every, "all branches");
+  assert.strictEqual(new Set(every.map((e) => e.id)).size, 11,
+    "eleven distinct branch identities across the three notices");
+  // One title per id, one class per id — a reclassification must be a deliberate edit.
+  const byId = new Map();
+  for (const e of every) {
+    if (byId.has(e.id)) assert.deepStrictEqual([e.title, e.class], byId.get(e.id), `${e.id} is stable`);
+    else byId.set(e.id, [e.title, e.class]);
+  }
+});

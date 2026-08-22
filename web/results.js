@@ -664,27 +664,32 @@ function animateCounters(container) {
   });
 }
 
-// U5/R6 — the box was checked but no eligible Artifact could be placed (empty
-// seed, or the only Artifact's slot locked/pinned away). A distinct callout by
-// the loadout — NOT buried in the coverage scope-note — because with the seed
-// shipping empty every opt-in hits this path. Pure (query + chosen), exported.
+// U5/R6 + #369 — the two Artifact facts, as one addressable entry each (U10).
+//
+//  - the box was checked but no eligible Artifact could be placed (empty seed, or
+//    the only Artifact's slot locked/pinned away). A distinct callout by the
+//    loadout — NOT buried in the coverage scope-note — because with the seed
+//    shipping empty every opt-in hits this path;
+//  - a pin overrode the opt-in (a pin is the more specific instruction), so the
+//    player MUST be told: they left the box unchecked and an Artifact is in the
+//    build anyway. Naming the items is the point — a bare "an Artifact was
+//    included" would leave them hunting for which one.
+//
+// The two never share a card: "none is flagged" over a named, included Artifact
+// would be a flat contradiction. This function derives the facts and renders;
+// projection.js owns the sentences. Pure (query + chosen), exported.
 function artifactNotice(result, query) {
+  return artifactNoticeEntries(result, query)
+    .map((e) => `<div class="artifact-notice" role="status">${e.sentence}</div>`).join("");
+}
+
+/** U10 — the Artifact facts this solve fired, each carrying its title and class.
+ *  The render above is these entries and nothing else. */
+function artifactNoticeEntries(result, query) {
   const missing = !!(query && query.includeArtifact && result && result.chosen
     && !result.chosen.some((c) => c.variant && c.variant.artifact));
-  if (missing) {
-    return `<div class="artifact-notice" role="status">No Artifact could be included — none is flagged in the current data.</div>`;
-  }
-  // #369 — a pin overrides the opt-in (a pin is the more specific instruction),
-  // so when that happened the player MUST be told: they left the box unchecked
-  // and an Artifact is in the build anyway. Naming the items is the point — a
-  // bare "an Artifact was included" would leave them hunting for which one.
-  const pinnedArtifacts = artifactsIncludedByPin(result, query);
-  return pinnedArtifacts.length
-    ? `<div class="artifact-notice" role="status">${esc(pinnedArtifacts.join(", "))} ${
-        pinnedArtifacts.length === 1 ? "is an Artifact and was" : "are Artifacts and were"
-      } included because you pinned ${pinnedArtifacts.length === 1 ? "it" : "them"}, even though "Include an Artifact" is off. Unpin to exclude ${
-        pinnedArtifacts.length === 1 ? "it" : "them"}.</div>`
-    : "";
+  return Proj.artifactNoticeEntries(
+    { missing, pinnedArtifacts: artifactsIncludedByPin(result, query) }, esc);
 }
 
 /** #369 — Artifacts in the loadout that are there ONLY because they were pinned:
@@ -728,28 +733,25 @@ var _offHandItemsExcluded = (typeof offHandItemsExcluded !== "undefined") ? offH
 // scores neither the TWF penalty nor a shield's defensive worth — so a player is
 // owed both facts rather than an unexplained off-hand pick.
 function boundNotice(query, result) {
-  const parts = [];
-  const floor = query && Number(query.mlFloor);
-  if (floor) parts.push(`Considered gear ML ≥ ${esc(floor)} (your floor).`);
+  const entries = boundNoticeEntries(query, result);
+  return entries.length
+    ? `<p class="scope-note bound-note" role="status">${entries.map((e) => e.sentence).join(" ")}</p>`
+    : "";
+}
+
+/** U10 — the bounds this solve actually hit, one addressable entry per fired
+ *  branch, each carrying its title and class. They classify differently — an
+ *  unmet floor is something the player can act on, a declared credit is not — so
+ *  a single title over the bundle would assert a fact the solve never
+ *  established. This function DERIVES the facts (it owns the pin and off-hand
+ *  readers); projection.js owns every sentence. */
+function boundNoticeEntries(query, result) {
   const per = (result && result.perTarget) || {};
-  for (const f of (result && result.floorReport) || []) {
-    parts.push(`Couldn't reach your floor of ${esc(f.floor)} ${esc(f.stat)} — best achievable was ${esc(f.achieved)}.`);
-  }
   const caps = (query && query.targetCaps) || {};
-  const held = Object.keys(caps).filter((s) => per[s] != null && per[s] >= caps[s]);
-  if (held.length) parts.push(`Held at your cap: ${held.map((s) => `${esc(s)} ${esc(caps[s])}`).join(", ")}.`);
-  // U4 (R9, R10) — this notice exists to keep "provably optimal" truthful, and a
-  // declared credit is the same class of qualifier as the ML band and a held cap:
-  // part of the answer rests on a number the player supplied, which the tool did
-  // not verify. Read from `creditReport` (plain JSON on the result) rather than
-  // the live program, so a restored character discloses identically without
-  // re-solving (KTD6).
-  for (const line of (Proj && Proj.creditNoticeLines ? Proj.creditNoticeLines(result) : [])) parts.push(esc(line));
-  // #88 U8 (R14) — the same class of qualifier as the declared credit directly
-  // above: part of the answer rests on a bonus type the player asserted and the
-  // tool did not verify. Read from `overrideReport` (plain JSON on the result) so
-  // a restored character qualifies identically without re-solving (KTD6).
-  for (const line of (Proj && Proj.overrideNoticeLines ? Proj.overrideNoticeLines(result) : [])) parts.push(esc(line));
+  const heldCaps = Object.keys(caps)
+    .filter((s) => per[s] != null && per[s] >= caps[s])
+    .map((s) => ({ stat: s, cap: caps[s] }));
+  let offHand = null;
   if (_offHandItemsExcluded(query || {})) {
     // Is there an off-hand ITEM in a build that excluded off-hand items? Two very
     // different causes, and the notice must not conflate them:
@@ -760,20 +762,33 @@ function boundNotice(query, result) {
     //    snapshot is not re-solved on load, and plan 003 U4 migrates pre-U1 saves to
     //    declared, so this is reachable, not theoretical. Inferring a pin here would
     //    put a flatly false "your pinned X" in front of a player who pinned nothing.
-    const offHand = ((result && result.chosen) || []).find((c) => c.slot === "Off Hand");
-    const offItem = offHand && offHand.variant && offHand.variant.category !== "weapon"
-      ? offHand.variant : null;
+    const worn = ((result && result.chosen) || []).find((c) => c.slot === "Off Hand");
+    const offItem = worn && worn.variant && worn.variant.category !== "weapon" ? worn.variant : null;
     const offPins = _pinnedVariantIds(((query && query.slotConstraints) || {})["Off Hand"]);
-    const offName = offItem ? (offItem.source_item || offItem.variant_id) : "";
     const pinned = !!offItem && offPins.includes(offItem.variant_id || offItem.source_item);
-    parts.push(pinned
-      ? `You declared Two Weapon Fighting, so shields, orbs, and rune arms left off-hand candidacy — your pinned ${esc(offName)} overrode that and is equipped.`
-      : offItem
-        ? `You declared Two Weapon Fighting, so shields, orbs, and rune arms leave off-hand candidacy — but this build still shows ${esc(offName)} in the off hand, so it was solved before the declaration. Re-solve to apply it.`
-        : `You declared Two Weapon Fighting, so shields, orbs, and rune arms left off-hand candidacy — pin one to bring it back.`);
-    parts.push(`The optimizer doesn't score the Two Weapon Fighting penalty (or a shield's defense), so the off-hand pick was compared on ranked-stat value alone.`);
+    offHand = {
+      mode: pinned ? "pinned" : offItem ? "stale" : "none",
+      name: offItem ? (offItem.source_item || offItem.variant_id) : "",
+    };
   }
-  return parts.length ? `<p class="scope-note bound-note" role="status">${parts.join(" ")}</p>` : "";
+  return Proj.boundNoticeEntries({
+    mlFloor: query && query.mlFloor,
+    floorReport: (result && result.floorReport) || [],
+    heldCaps,
+    // U4 (R9, R10) — this notice exists to keep "provably optimal" truthful, and a
+    // declared credit is the same class of qualifier as the ML band and a held cap:
+    // part of the answer rests on a number the player supplied, which the tool did
+    // not verify. Read from `creditReport` (plain JSON on the result) rather than
+    // the live program, so a restored character discloses identically without
+    // re-solving (KTD6).
+    creditLines: (Proj && Proj.creditNoticeLines) ? Proj.creditNoticeLines(result) : [],
+    // #88 U8 (R14) — the same class of qualifier as the declared credit directly
+    // above: part of the answer rests on a bonus type the player asserted and the
+    // tool did not verify. Read from `overrideReport` (plain JSON on the result) so
+    // a restored character qualifies identically without re-solving (KTD6).
+    overrideLines: (Proj && Proj.overrideNoticeLines) ? Proj.overrideNoticeLines(result) : [],
+    offHand,
+  }, esc);
 }
 
 // #239 — the two disclosures, rendered with the loadout rather than buried in the
@@ -993,9 +1008,20 @@ function _rungRemovedStats(dataset, rung) {
 }
 
 function zeroSourceNotice(query, result, model, dataset) {
-  if (!result || result.status !== "optimal") return "";
+  const entries = zeroSourceNoticeEntries(query, result, model, dataset);
+  return entries.length
+    ? `<p class="scope-note zero-source-note" role="status">${entries.map((e) => e.sentence).join(" ")}</p>`
+    : "";
+}
+
+/** U10 — the zero-source facts this solve fired, each carrying its title and
+ *  class. The two causes call for two different player actions — one of them for
+ *  no action at all — so they are separate entries, never one card. This function
+ *  derives them from the pool and the dataset; projection.js owns the sentences. */
+function zeroSourceNoticeEntries(query, result, model, dataset) {
+  if (!result || result.status !== "optimal") return [];
   const targets = (query && query.targets) || (model && model.targets) || [];
-  if (!targets.length || !model) return "";
+  if (!targets.length || !model) return [];
   const reachable = _resultsPoolStatNames(model);
   // #91 — the Utility sentinel is never a pool stat (poolStatNames only ever
   // collects real affix/scaling names), so without this exclusion every solve
@@ -1003,48 +1029,40 @@ function zeroSourceNotice(query, result, model, dataset) {
   // reading the generic stat-card loop already guards against at its own call
   // site (mirrors the `stat === _UTILITY_SENTINEL` exclusion above).
   const unsourced = targets.filter((t) => t !== _UTILITY_SENTINEL && !reachable.has(t));
-  if (!unsourced.length) return "";
+  if (!unsourced.length) return [];
   // Two causes, two different player actions.
   const absent = [], filtered = [];
   for (const t of unsourced) (datasetHasStat(dataset, t) ? filtered : absent).push(t);
-  const parts = [];
-  if (absent.length) {
-    parts.push(`Nothing in the current data carries ${absent.map(esc).join(", ")} — ranking it can't change your build.`);
-  }
-  if (filtered.length) {
-    // Deliberately does NOT name a single cause. The pool the solver sees is the
-    // product of the ML band, the gear pool, the character gates AND the dominance
-    // pre-filter, and this function cannot tell which one removed the last source.
-    // Naming "your ML band" was wrong for a verified ML-29 item well inside a cap of
-    // 34 that the dominance filter had pruned. Only the owned-pool case is named,
-    // because opting into it is an explicit, single, reversible choice.
-    const owned = query && query.pool === "owned";
-    // #346 (U5, R12) — the ladder joins the owned-pool carve-out for the same
-    // reason that one exists: it is an explicit, single, reversible choice the
-    // player made, not one of the many filters this function deliberately
-    // refuses to guess between. Twenty targetable stats are augment-only
-    // (Strikethrough, Sneak Attack Dice, Imbue Dice, ...), so a lowered rung is
-    // the likeliest cause of a zero here — and telling that player to widen
-    // their ML band is advice that cannot work.
-    const rung = _resultsRung(query || {});
-    // Blame the rung only on EVIDENCE that it removed a source of one of these
-    // stats. Keying on the rung value alone told a player whose stat is missing
-    // for ML-band reasons to raise the ladder — wrong advice, and it discarded
-    // the correct advice to make room. That is worse than the generic sentence
-    // this function deliberately falls back to, which is why the fallback stays.
-    const removedByRung = _rungRemovedStats(dataset, rung);
-    const rungRestricts = filtered.some((s) => removedByRung.has(s));
-    const removed = _resultsRungExcludesAllAugments(rung) ? "augments"
-      : _resultsRungExcludesSolarLunar(rung) ? "Solar/Lunar Gems" : "niche crafting";
-    const where = owned ? "your owned-gear pool"
-      : rungRestricts ? `your current filters, which exclude ${removed}` : "your current filters";
-    const fix = owned ? "the full catalog may have one"
-      : rungRestricts ? `raising "What may the solver assume beyond the printed item?" may reach `
-        + (filtered.length > 1 ? "them" : "it")
-      : "widening the ML band or character filters may reach " + (filtered.length > 1 ? "them" : "it");
-    parts.push(`No source of ${filtered.map(esc).join(", ")} is available in ${where} — ${fix}.`);
-  }
-  return `<p class="scope-note zero-source-note" role="status">${parts.join(" ")}</p>`;
+  // The filtered branch deliberately does NOT name a single cause. The pool the
+  // solver sees is the product of the ML band, the gear pool, the character gates
+  // AND the dominance pre-filter, and this function cannot tell which one removed
+  // the last source. Naming "your ML band" was wrong for a verified ML-29 item
+  // well inside a cap of 34 that the dominance filter had pruned. Only the
+  // owned-pool case is named, because opting into it is an explicit, single,
+  // reversible choice.
+  const owned = !!(query && query.pool === "owned");
+  // #346 (U5, R12) — the ladder joins the owned-pool carve-out for the same
+  // reason that one exists: it is an explicit, single, reversible choice the
+  // player made, not one of the many filters this function deliberately
+  // refuses to guess between. Twenty targetable stats are augment-only
+  // (Strikethrough, Sneak Attack Dice, Imbue Dice, ...), so a lowered rung is
+  // the likeliest cause of a zero here — and telling that player to widen
+  // their ML band is advice that cannot work.
+  const rung = _resultsRung(query || {});
+  // Blame the rung only on EVIDENCE that it removed a source of one of these
+  // stats. Keying on the rung value alone told a player whose stat is missing
+  // for ML-band reasons to raise the ladder — wrong advice, and it discarded
+  // the correct advice to make room. That is worse than the generic sentence
+  // projection.js deliberately falls back to, which is why the fallback stays.
+  const removedByRung = _rungRemovedStats(dataset, rung);
+  return Proj.zeroSourceNoticeEntries({
+    absent,
+    filtered,
+    owned,
+    rungRestricts: filtered.some((s) => removedByRung.has(s)),
+    removed: _resultsRungExcludesAllAugments(rung) ? "augments"
+      : _resultsRungExcludesSolarLunar(rung) ? "Solar/Lunar Gems" : "niche crafting",
+  }, esc);
 }
 
 /** #345 (U1, R1/R3/R4) — the targets that were OUTBID: reachable in the active
@@ -1624,5 +1642,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactsIncludedByPin, boundNotice, zeroSourceNotice, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, incidentalStats, poolStatNames: _resultsPoolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, incidentalStats, poolStatNames: _resultsPoolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }
