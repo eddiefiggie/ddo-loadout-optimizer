@@ -82,10 +82,10 @@ cross-added into every element spellpower. See
 
 ```
 python3 tests/run_tests.py                     # Python suite, stdlib-only runner
-for t in tests/*.test.js; do node "$t"; done   # JS suite — one file per invocation
+./scripts/run_js_tests.sh                      # JS suite — one file per invocation
 ```
 
-**Run the JS tests file by file.** `node a.js b.js` executes only the first, which has silently skipped the golden solver check before. CI does this correctly; local sweeps are where it slips.
+**Run the JS suite through `scripts/run_js_tests.sh`, not a bare loop.** It runs one file per invocation (`node a.js b.js` executes only the first, which has silently skipped the golden solver check before), it stops on the first red file instead of scrolling it past a wall of PASS lines, and it builds `web/data/items.json` when that gitignored artifact is absent. Without those last two, a missing dataset makes `dataset.test.js` and `browse.test.js` throw on require while the loop discards the exit code — the crash reads as a pass. CI does this correctly; local sweeps are where it slips.
 
 A golden or parity diff after a data change is sometimes expected rather than a regression — re-ratify it deliberately, never blanket-accept.
 
