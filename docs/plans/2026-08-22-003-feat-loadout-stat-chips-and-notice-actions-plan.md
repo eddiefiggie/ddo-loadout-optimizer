@@ -344,6 +344,25 @@ Two honesty notes that must survive into the test:
   high-affix tail preferentially, so the real equipped distribution skews higher
   than this table. The cap is therefore a *display* decision validated against the
   candidate pool, and the browser pass on a real solve is what confirms R9.
+
+  > **CORRECTED BY IMPLEMENTATION, 2026-08-23.** The prediction above is wrong,
+  > and in the safe direction. Measured over three live solves (Melee ML34 Dwarf
+  > Heavy; Caster ML36 Sun Elf Cloth; Ranged ML32 Elf Light), the heaviest
+  > equipped card carried **5** incidental chips, and the per-solve maxima were
+  > 5, 4 and 4 across 14 cards each. The equipped set skews **lower** than the
+  > candidate band, not higher.
+  >
+  > The reason is R10 itself: the solver equips an item *for* its tracked
+  > contributions, and tracked chips are exempt from the cap, so the incidental
+  > remainder on a chosen card runs well below that card's total affix count.
+  > Measuring the candidate pool answered a different question than the one the
+  > cap is about.
+  >
+  > Consequence: **the cap of 6 did not engage in any observed solve.** It is
+  > retained as a bound on the tail the dataset proves exists (post-collapse max
+  > 11 in the ML 29-36 band), not as something a player will routinely meet, and
+  > R9's overflow path is covered by unit test rather than by the browser pass.
+  > That gap is stated in the Definition of Done rather than papered over.
 - R10 constrains what may be hidden, not how many. Tracked and utility chips are
   never counted against the cap; the cap applies to incidental chips only. An item
   with 8 tracked contributions shows 8.
@@ -628,6 +647,12 @@ reports clean on a failing run.
   control expanding in place; a two-stat `AT CEILING` card with both names bold and
   green; **all three notices** that route to `#wz-adjust-slot` opening the panel
   with focus landing inside it.
+- **NOT DEMONSTRATED IN THE BROWSER: the overflow control.** No equipped card in
+  any of three live solves reached the cap (max 5 incidental chips against a cap
+  of 6 — see KTD4's correction), so the `+N more` expander could not be exercised
+  against real data. It is covered by unit test at the 9-affix and 6-affix
+  boundaries, and its delegation wiring by source-text assertion. Recorded as a
+  gap rather than reported as a pass.
 - The `pd-prio` and affix-chip families visually reconciled on one card (R-e),
   with the decision recorded in the PR body.
 - Comments invalidated by U2 and U3 edited in place, not supplemented.

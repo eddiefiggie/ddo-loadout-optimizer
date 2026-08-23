@@ -3212,6 +3212,20 @@ if (typeof window !== "undefined" && window.App) {
         const el = document.querySelector(target.anchor);
         if (!el) return;
         el.scrollIntoView({ block: "center" });
+        // #453 U6 (R15/R16/KTD5) — scrolling to a COLLAPSED panel and stopping
+        // there is indistinguishable from a control that failed, which is what
+        // was reported. Two faults compounded: nothing opened the fold, and
+        // `#wz-adjust-slot` is the wrapper div, so the `.focus()` below was a
+        // no-op on it even though the code guarded for the method.
+        //
+        // Set `open` as a PROPERTY so `ontoggle` fires and refreshResultsEmphasis
+        // runs — opening the panel puts a second primary on screen and Save must
+        // yield to it exactly as it does when the player opens the fold by hand
+        // (#431 U3 KTD7/R6). Assigning the attribute would skip that.
+        const fold = el.matches && el.matches("details") ? el : el.querySelector("details");
+        if (fold && !fold.open) fold.open = true;
+        const first = (fold || el).querySelector("input, select, button, textarea, [tabindex]");
+        if (first && typeof first.focus === "function") { first.focus({ preventScroll: true }); return; }
         if (typeof el.focus === "function") el.focus({ preventScroll: true });
       };
       if (target.step && target.step !== state.step) { go(target.step); requestAnimationFrame(land); }
@@ -4400,6 +4414,18 @@ if (typeof window !== "undefined" && window.App) {
         // Per-slot constraint controls (U6), wired by delegation so they survive
         // renderResults re-rendering the box contents.
         if (box) box.addEventListener("click", (e) => {
+          // #453 U4 (R9) — the affix-chip overflow expands IN PLACE. Delegated
+          // here with the slot controls, and for the same reason: renderResults
+          // re-renders the box contents, so a per-element handler would not
+          // survive a re-solve.
+          const more = e.target.closest("[data-statmore]");
+          if (more) {
+            const list = more.closest(".pd-stats");
+            const open = list && list.classList.toggle("is-expanded");
+            more.setAttribute("aria-expanded", open ? "true" : "false");
+            if (open) more.textContent = "show less";
+            return;
+          }
           const ctl = e.target.closest(".pd-ctl");
           if (ctl) {
             const menu = ctl.closest(".pd-row").querySelector(".pd-menu");

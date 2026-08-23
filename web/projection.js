@@ -206,6 +206,59 @@
     return "crafted";
   }
 
+  /** #453 U1 (R7/R8/KTD1) — which stat names does each displayed affix cover?
+   *
+   *  `collapseExpansions` folds an expansion back to the ENCHANTMENT it came
+   *  from, and its entries deliberately carry no member list: reducing
+   *  non-uniform members to one magnitude "would publish a value the data never
+   *  stated". That is right, and it is also exactly why a collapsed entry cannot
+   *  be classified. Its `stat` is an enchantment name; the ranked targets are
+   *  solver stat names. Matching them directly would file every collapsed bundle
+   *  as incidental — including one carrying the player's rank-1 stat, silently,
+   *  on a card that looks fine.
+   *
+   *  So this emits its OWN shape rather than widening the collapse, exactly as
+   *  `bundleGroups` above does and for the same stated reason. A Map from the
+   *  key `collapseExpansions` uses (`via`, else the affix's own name) to the set
+   *  of stat names underneath it. Callers ask "does this entry cover a ranked
+   *  stat" instead of comparing labels.
+   *
+   *  Unlike `bundleGroups` this keeps groups of ONE: a single-stat rename still
+   *  needs its real stat name to classify, and there is no "a one-line bundle
+   *  would be a lie" hazard here because nothing is displayed from it.
+   *
+   *  `presence` rides along for the same reason `stats` does. A collapsed entry
+   *  carries no bonus type at all — `collapseExpansions` drops it deliberately,
+   *  since names like "Sacred Spell Focus Mastery" already speak it — so
+   *  `isPresence` reads false on the ENTRY however presence-typed its members
+   *  are. Boolean composites do collapse (they are the non-uniform `parts`
+   *  case), so without this a collapsed Ghostly-style bundle would classify as
+   *  incidental rather than utility.
+   *
+   *  Pure; unit-tested in tests/projection.test.js. */
+  function affixStatCoverage(affixes) {
+    const cover = new Map();
+    for (const a of affixes || []) {
+      if (!a) continue;
+      const own = a.name != null ? a.name : a.stat;
+      const key = a[PROVENANCE_KEY] || own;
+      if (key == null) continue;
+      if (!cover.has(key)) cover.set(key, { stats: [], presence: false });
+      const e = cover.get(key);
+      if (own != null && e.stats.indexOf(own) === -1) e.stats.push(own);
+      if (isPresence(a)) e.presence = true;
+    }
+    return cover;
+  }
+
+  /** #453 U1 — the key `affixStatCoverage` filed a DISPLAYED entry under.
+   *  One helper so the producer and every consumer cannot disagree about it. */
+  function affixCoverageKey(entry) {
+    if (!entry) return null;
+    const own = entry.name != null ? entry.name : entry.stat;
+    return entry[PROVENANCE_KEY] || own;
+  }
+
   function bundleGroups(result, augLookup) {
     const out = [];
     const collect = (carrier, kind, affixes, extra) => {
@@ -2156,7 +2209,7 @@
     // model.js; re-exported so exporters can recognize the sentinel row)
     utilityLine, utilityPriceLine, utilityUnsecuredLines, UTILITY_SENTINEL: UTILITY_NAME,
     // pure primitives (results.js binds these; single definition, no drift)
-    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, bundleGroups, itemMl, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
+    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, bundleGroups, affixStatCoverage, affixCoverageKey, itemMl, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,
     // #449 (U2) — the achieved/ceiling fraction: numbers, state and wording from
     // one place, plus the once-per-document full statement.

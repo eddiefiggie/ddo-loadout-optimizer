@@ -4092,3 +4092,35 @@ test("#452: overwriteConfirmText is unchanged — regression guard", () => {
   assert.ok(/Its saved loadout is replaced/.test(overwriteConfirmText("Sook", true, true)));
   assert.ok(/Its saved loadout is kept/.test(overwriteConfirmText("Sook", true, false)));
 });
+
+test("#453 U6 (R15/R16/KTD5): the notice jump OPENS the panel it scrolls to", () => {
+  const body = fnBody(WIZARD_SRC, "function jumpFromNotice(target) {", 4);
+  assert.ok(/scrollIntoView/.test(body), "it still scrolls the anchor into view");
+  assert.ok(/\.open = true/.test(body),
+    "…and opens the fold, which is what it never did — a control that moves the "
+    + "viewport and changes nothing else is indistinguishable from one that failed");
+  assert.ok(/querySelector\("input, select, button/.test(body),
+    "focus lands on the panel's first control, not the wrapper div it used to target");
+  assert.ok(/if \(!el\) return;/.test(body),
+    "a missing anchor still no-ops rather than throwing (R17, unchanged)");
+});
+
+test("#453 U6 (KTD5): `open` is set as a property so ontoggle fires", () => {
+  const body = fnBody(WIZARD_SRC, "function jumpFromNotice(target) {", 4);
+  // The positive assertion first: without it this test is only a ban on a
+  // spelling, which the pre-change tree satisfies by never opening the fold at
+  // all — passing while the defect it describes is fully present.
+  assert.ok(/fold\.open = true/.test(body), "the fold is opened by property assignment");
+  assert.ok(!/setAttribute\("open"/.test(body),
+    "the attribute form would skip ontoggle, leaving Save wrongly primary while a "
+    + "second primary (Re-solve) is on screen (#431 U3 KTD7/R6)");
+});
+
+test("#453 U4 (R9): the chip overflow expands in place, by delegation", () => {
+  assert.ok(/data-statmore/.test(WIZARD_SRC), "the expander is wired");
+  const at = WIZARD_SRC.indexOf('e.target.closest("[data-statmore]")');
+  assert.ok(at > 0, "…through the results box's click delegation");
+  const near = WIZARD_SRC.slice(at, at + 400);
+  assert.ok(/classList\.toggle\("is-expanded"\)/.test(near), "it toggles the row open");
+  assert.ok(/aria-expanded/.test(near), "…and says so to assistive tech");
+});
