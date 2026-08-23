@@ -1422,9 +1422,17 @@ function satBuild(opts) {
 }
 const satQuery = { targets: ["Kinetic Lore"] };
 
+// #453 U5 wraps each stat NAME in `.sat-stat` for the green/bold emphasis, so
+// these read the rendered TEXT rather than the markup. The wording is what these
+// tests were always about; pinning the tag soup around it made them fragile to a
+// presentation change that does not touch a single word.
+const satText = (html) => String(html).replace(/<[^>]*>/g, "");
+
 test("U4/#239 + plan 2026-08-12-001 U2: the saturation notice is a compact count/list", () => {
   const html = R.saturationNotice(satBuild());
-  assert.ok(/1 priority at ceiling: Kinetic Lore 30\./.test(html), "count + stat + total, singular form");
+  assert.ok(/1 priority at ceiling: Kinetic Lore 30\./.test(satText(html)), "count + stat + total, singular form");
+  assert.ok(/<span class="sat-stat">Kinetic Lore<\/span>/.test(html),
+    "…and the stat name carries the emphasis hook (#453 R11)");
   assert.ok(!/ML|level|cap/i.test(html), "attributes no cause — the dominance filter makes that unknowable");
   assert.strictEqual(R.saturationNotice(satBuild({ saturation: false })), "", "silent when nothing saturated");
 });
@@ -1433,7 +1441,7 @@ test("#277: the notice is a tap/keyboard-openable disclosure carrying the full s
   const html = R.saturationNotice(satBuild());
   assert.ok(/<details/.test(html) && /<summary/.test(html), "solve-banner details pattern, not hover-only");
   const summary = (html.match(/<summary[^>]*>([\s\S]*?)<\/summary>/) || [])[1] || "";
-  assert.ok(/1 priority at ceiling: Kinetic Lore 30\./.test(summary), "collapsed line keeps the compact wording");
+  assert.ok(/1 priority at ceiling: Kinetic Lore 30\./.test(satText(summary)), "collapsed line keeps the compact wording");
   assert.ok(!/reaches you as/.test(summary), "the prose stays out of the collapsed line");
   const body = html.replace(/<summary[\s\S]*?<\/summary>/, "").replace(/title="[^"]*"/g, "");
   assert.ok(/at its ceiling of 30/.test(body) && /reaches you as/.test(body),
@@ -1446,7 +1454,10 @@ test("plan 2026-08-12-001 U2: two saturated stats pluralize and both are listed"
   const b = satBuild();
   b.saturationReport.push({ stat: "Physical Sheltering", total: 62, bonusTypes: ["Enhancement"], unusedSources: 2 });
   const html = R.saturationNotice(b);
-  assert.ok(/2 priorities at ceiling: Kinetic Lore 30, Physical Sheltering 62\./.test(html), "plural + full list");
+  assert.ok(/2 priorities at ceiling: Kinetic Lore 30, Physical Sheltering 62\./.test(satText(html)), "plural + full list");
+  // #453 U5 (R11) — BOTH names are emphasized, and neither total is.
+  assert.strictEqual((html.match(/class="sat-stat"/g) || []).length, 2, "both stat names carry the emphasis");
+  assert.ok(!/<span class="sat-stat">30</.test(html), "the total stays in body treatment");
 });
 
 test("U4/#239: the empty-slot notice invites and names an incidentally-supplied stat", () => {
@@ -1523,7 +1534,7 @@ test("U8/R8/AE3: equippedBody shows ONE line naming the enchantment, not seven s
   const html = R.equippedBody(v, 0, blockMaps(), new Map());
   assert.ok(/Sacred Spell Focus Mastery \+3/.test(html), "names the enchantment engraved on the item");
   assert.ok(!/Necromancy Focus/.test(html), "the model's expanded shape does not leak into the UI");
-  assert.strictEqual((html.match(/<li>/g) || []).length, 1, "exactly one affix line, not seven");
+  assert.strictEqual((html.match(/pd-stat-chip/g) || []).length, 1, "exactly one affix line, not seven");
 });
 
 test("U8/R8/AE3: loadoutDeepDive collapses the same expansion the same way", () => {
@@ -1553,7 +1564,7 @@ test("U8/R8: a heterogeneous family renders its members inline on the Loadout bl
   // Anchored to the start of the line: "Movement Speed +30" legitimately contains
   // the substring "Speed +", so a bare /Speed \+/ would reject a correct render.
   assert.ok(!/<li>Speed \+/.test(html), "the line never asserts a single invented magnitude");
-  assert.strictEqual((html.match(/<li>/g) || []).length, 1, "still one line");
+  assert.strictEqual((html.match(/pd-stat-chip/g) || []).length, 1, "still one line");
 });
 
 test("U8/R8: an item with no expanded affix renders exactly as before", () => {
@@ -1563,7 +1574,7 @@ test("U8/R8: an item with no expanded affix renders exactly as before", () => {
   ] };
   const html = R.equippedBody(v, 0, blockMaps(), new Map());
   assert.ok(/Constitution \+10/.test(html) && /Dodge \+5% Quality/.test(html));
-  assert.strictEqual((html.match(/<li>/g) || []).length, 2, "both native affixes still listed");
+  assert.strictEqual((html.match(/pd-stat-chip/g) || []).length, 2, "both native affixes still listed");
 });
 
 // The provenance tooltip is user-facing correctness, not decoration. It once
@@ -3062,4 +3073,164 @@ test("#449 U8: the control is a gear, and keeps its label (regression guard)", (
   assert.ok(/aria-label="constrain Ring"/.test(html), "the label survives the glyph swap");
   assert.ok(/&#9881;<\/button>/.test(html), "a gear, not an ellipsis");
   assert.ok(/title="constrain this slot"/.test(html), "and the pointer title is unchanged");
+});
+
+// ---------------------------------------------------------------------------
+// #453 U2-U6 — the loadout card speaks ONE visual language, and the notices
+// panel's jump opens what it scrolls to. Pure-function and source-text
+// assertions; this file has no DOM, so the behavioural proof is the browser pass
+// named in the plan's Definition of Done.
+// ---------------------------------------------------------------------------
+
+// `craftSlotChips` reads six maps unconditionally, so an augment fixture has to
+// carry the empty ones too — supplying only `augAssign` throws inside the craft
+// section rather than in anything #453 touched.
+function chipMaps(augAssign) {
+  const empty = new Map();
+  return { augAssign, dinoAssign: { byIndex: empty }, ncByItem: empty, rollByItem: empty,
+           vikByItem: empty, sealByItem: empty, tfByItem: empty, gsByItem: empty,
+           jokerByHost: empty };
+}
+
+// A prioCtx whose attribution credits `stat` to `variantId`, in the shape
+// itemContributions reads. Built by hand so the classification is exercised
+// without standing up a solve.
+function chipCtx(variantId, byStat) {
+  const attr = {};
+  for (const [stat, part] of Object.entries(byStat || {})) {
+    attr[stat] = [{ hostIds: [variantId], value: part.value, bonus_type: part.type || "Enhancement",
+                    isSet: false, via: part.via || null }];
+  }
+  return { result: { chosen: [] }, attr, targets: Object.keys(byStat || {}) };
+}
+
+test("#453 U2 (R1/R2/R3): one card, three chip classes", () => {
+  const v = { variant_id: "Test Helm", affixes: [
+    { name: "Melee Power", value: 10, type: "Enhancement" },   // ranked -> tracked
+    { name: "Armor Class", value: 15, type: "Natural" },       // real, unranked -> incidental
+    { name: "Ghostly", value: 1, type: "Bool" },               // presence -> utility
+  ] };
+  const html = R.equippedBody(v, -1, null, null, false, false, chipCtx("Test Helm", { "Melee Power": { value: 10 } }));
+  assert.ok(/pd-stat-chip is-tracked[^"]*"[^<]*>Melee Power/.test(html), "the credited stat is tracked");
+  assert.ok(/is-incidental[^>]*>Armor Class/.test(html), "an uncredited affix is incidental");
+  assert.ok(/is-utility[^>]*>✓ Ghostly/.test(html), "a presence affix is utility");
+  assert.ok(!/<li>/.test(html), "no bare plain-text affix line survives (R1)");
+});
+
+test("#453 U2 (R-a/KTD1): a COLLAPSED bundle with one ranked member is tracked", () => {
+  // The silent failure mode. The card looks fine either way; getting this wrong
+  // just under-credits the player's own priority. A single-member fixture cannot
+  // discriminate, so this one is deliberately multi-member.
+  const v = { variant_id: "Focus Ring", affixes: focusMasteryAffixes("Sacred Spell Focus Mastery", "Sacred", 3) };
+  const ctx = chipCtx("Focus Ring", { "Evocation Focus": { value: 3, via: "Sacred Spell Focus Mastery" } });
+  const html = R.equippedBody(v, -1, null, null, false, false, ctx);
+  assert.strictEqual((html.match(/pd-stat-chip/g) || []).length, 1, "still one collapsed entry");
+  assert.ok(/is-tracked/.test(html),
+    "the bundle is tracked because a MEMBER is ranked — matching the enchantment name alone would miss it");
+});
+
+test("#453 U2 (KTD3): a ranked presence affix is tracked, not utility", () => {
+  const v = { variant_id: "Ghost Cloak", affixes: [{ name: "Ghostly", value: 1, type: "Bool" }] };
+  const plain = R.equippedBody(v, -1, null, null, false, false, chipCtx("Ghost Cloak", {}));
+  assert.ok(/is-utility/.test(plain), "unranked, it is a bonus that came along");
+  const ranked = R.equippedBody(v, -1, null, null, false, false, chipCtx("Ghost Cloak", { Ghostly: { value: 1 } }));
+  assert.ok(/is-tracked/.test(ranked) && !/is-utility/.test(ranked),
+    "ranked, it is a REASON the item was picked — order of the three tests is load-bearing");
+});
+
+test("#453 U2: with no prioCtx nothing is tracked, and nothing throws", () => {
+  const v = { variant_id: "X", affixes: [{ name: "Melee Power", value: 10, type: "Enhancement" }] };
+  const html = R.equippedBody(v, -1, null, null, false, false, undefined);
+  assert.ok(/is-incidental/.test(html), "the pure/test call path still renders");
+  assert.ok(!/is-tracked/.test(html), "…and claims nothing about a solve it was not given");
+});
+
+test("#453 U2: an item with no affixes renders no chip row — regression guard", () => {
+  // Deliberately NOT proven red: it passed before #453 and must keep passing.
+  // An empty chip row would be a new kind of visual noise on exactly the cards
+  // that have least to say.
+  assert.strictEqual(R.equippedBody({ variant_id: "Bare", affixes: [] }, -1, null, null, false, false, null), "");
+});
+
+test("#453 U4 (R9/R10/KTD4): incidental chips cap at 6; tracked and utility never hide", () => {
+  const many = Array.from({ length: 9 }, (_, i) => ({ name: `Filler ${i}`, value: i + 1, type: "Enhancement" }));
+  const v = { variant_id: "Heavy", affixes: many };
+  const html = R.equippedBody(v, -1, null, null, false, false, chipCtx("Heavy", {}));
+  assert.strictEqual((html.match(/is-overflow/g) || []).length, 3, "9 incidental, 6 shown, 3 hidden");
+  assert.ok(/\+3 more/.test(html), "…behind an in-place expander");
+  assert.strictEqual((html.match(/pd-stat-chip/g) || []).length, 9,
+    "the hidden chips are in the DOM, not dropped — the fact stays on the card (R9)");
+
+  // R10 — the cap bounds INCIDENTAL chips only. Capping the total would hide
+  // tracked chips on exactly the items where they matter most.
+  const ranked = {};
+  many.forEach((a) => { ranked[a.name] = { value: a.value }; });
+  const all = R.equippedBody(v, -1, null, null, false, false, chipCtx("Heavy", ranked));
+  assert.strictEqual((all.match(/is-tracked/g) || []).length, 9, "nine tracked contributions all show");
+  assert.strictEqual((all.match(/is-overflow/g) || []).length, 0, "…with no overflow control at all");
+});
+
+test("#453 U4: exactly at the cap there is no expander", () => {
+  const six = Array.from({ length: 6 }, (_, i) => ({ name: `Filler ${i}`, value: 1, type: "Enhancement" }));
+  const html = R.equippedBody({ variant_id: "Six", affixes: six }, -1, null, null, false, false, null);
+  // Assert the chips are actually THERE before asserting nothing is hidden —
+  // "no overflow control" is trivially true of a tree that has no overflow
+  // control at all, and a boundary test that cannot fail is not a boundary test.
+  assert.strictEqual((html.match(/pd-stat-chip/g) || []).length, 6, "six chips render");
+  assert.ok(!/is-overflow/.test(html) && !/more</.test(html), "six shows six and says nothing more");
+});
+
+test("#453 U3 (R6): an augment's stats are chips NESTED under that augment", () => {
+  const v = { variant_id: "Host", affixes: [{ name: "Armor Class", value: 5, type: "Natural" }] };
+  const maps = chipMaps({ byIndex: new Map([[0, [{ variant_id: "Solar Gem of Attack", color: "Colorless" }]]]),
+                          freeByIndex: new Map() });
+  const augById = new Map([["Solar Gem of Attack", { affixes: [{ name: "Accuracy", value: 4, type: "Artifact" }] }]]);
+  const html = R.equippedBody(v, 0, maps, augById, false, false, chipCtx("Host", { Accuracy: { value: 4 } }));
+  const li = html.match(/<li class="aug-filled">[\s\S]*?<\/li>/);
+  assert.ok(li, "the augment renders its own list item");
+  assert.ok(/pd-stat-chip/.test(li[0]), "…carrying its granted stat as a chip inside it (KD3)");
+  assert.ok(/Solar Gem of Attack/.test(li[0]) && /Accuracy/.test(li[0]),
+    "which gem grants what survives — the loadout is a shopping list");
+});
+
+test("#453 U3: an augment-granted stat is classified like any other", () => {
+  const v = { variant_id: "Host", affixes: [] };
+  const maps = chipMaps({ byIndex: new Map([[0, [{ variant_id: "Gem", color: "Colorless" }]]]),
+                          freeByIndex: new Map() });
+  const augById = new Map([["Gem", { affixes: [
+    { name: "Accuracy", value: 4, type: "Artifact" },
+    { name: "True Seeing", value: 1, type: "Bool" },
+  ] }]]);
+  const html = R.equippedBody(v, 0, maps, augById, false, false, chipCtx("Host", { Accuracy: { value: 4 } }));
+  assert.ok(/is-tracked[^>]*>Accuracy/.test(html), "a credited augment stat is tracked");
+  assert.ok(/is-utility[^>]*>✓ True Seeing/.test(html), "a presence augment stat is utility");
+});
+
+test("#453 U6 (R18): the stale-snapshot control is labelled for what it does", () => {
+  assert.ok(!/Re-solve now/.test(R.NOTICE_TABLE.staleSnapshotNotice.jump.label),
+    "it opens the panel; it does not itself solve (KD6)");
+  assert.strictEqual(R.NOTICE_TABLE.staleSnapshotNotice.jump.anchor, "#wz-adjust-slot");
+});
+
+test("#453 U4 (R9): a stat chip caps at the row width and wraps its own text", () => {
+  // CSS-text assertion — this file has no DOM. The behavioural proof is the
+  // 375px browser pass, which measured document.scrollWidth 518 -> 375 and
+  // offenders 214 -> 0 on an ML36 caster solve.
+  //
+  // The run this replaced was `white-space: nowrap` with no width cap, and the
+  // BASE tree scrolls to 516px on the same solve — so this is a pre-existing
+  // defect the new family had to avoid inheriting, not one #453 introduced.
+  const fs = require("fs"); const path = require("path");
+  const css = fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf-8");
+  const rule = css.slice(css.indexOf(".pd-stat-chip {"));
+  const body = rule.slice(0, rule.indexOf("}"));
+  assert.ok(/max-width:\s*100%/.test(body), "a chip caps at the row width, as #449 R22 does for .pd-chip");
+  assert.ok(!/white-space:\s*nowrap/.test(body), "…and does not inherit the run's unbreakable nowrap");
+  // `.pd-row {` appears three times (base, layout, position). Slicing the first
+  // match is the #450 hazard — indexOf from 0 finds a rule that was never the
+  // subject. Check every block that opens that selector instead.
+  const rowBlocks = [...css.matchAll(/\.pd-row \{([^}]*)\}/g)].map((m) => m[1]);
+  assert.ok(rowBlocks.length >= 2, `the selector's blocks resolve (${rowBlocks.length})`);
+  assert.ok(rowBlocks.some((blk) => /min-width:\s*0/.test(blk)),
+    "the row may shrink below its longest child, or the chip's max-width never binds");
 });

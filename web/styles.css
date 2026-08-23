@@ -493,6 +493,11 @@ input.bumped { background: rgba(91,140,255,0.16); border-color: var(--accent); }
 }
 .stat-value .plus { font-size: 0.5em; color: var(--muted); -webkit-text-fill-color: var(--muted); }
 .stat-cap { display: inline-block; margin-top: var(--sp-1); font-size: var(--fs-xs); color: var(--quarantined); }
+/* #453 U5 (R11/R12/R13) -- the AT CEILING notice names its stats in the same
+   green the ceiling fact already carries everywhere else, with weight alongside
+   the colour so the emphasis is not colour-only. No new token. */
+.sat-stat { color: var(--optimal); font-weight: 700; }
+
 /* #276 -- the same at-ceiling fact the gear boxes carry, on the receipt card */
 .stat-ceiling { display: inline-block; margin-top: var(--sp-1); margin-left: var(--sp-2); font-size: var(--fs-xs); color: var(--optimal); font-weight: 600; }
 /* #449 U3 -- the achieved/ceiling box at the bottom of each ranked card.
@@ -1149,12 +1154,43 @@ input.wz-ml { width: 120px; }
 
 /* U9: uniform equipment blocks — same floor height whether or not the item
    carries stats/augment/craft info; grid stretch keeps paired blocks equal. */
-.pd-row { min-height: 92px; display: flex; flex-direction: column; }
+/* #453 U4 — `min-width: 0` lets the row shrink below its longest child inside
+   the paperdoll grid. Without it a flex/grid item floors at max-content and the
+   chip's own max-width never binds, so the wrap above would be inert. */
+.pd-row { min-height: 92px; display: flex; flex-direction: column; min-width: 0; }
 .pd-rbody { margin-top: var(--sp-2); display: flex; flex-direction: column; gap: 5px; }
-.pd-stats { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 3px 6px;
+/* #453 U2 (R1/R2/R3) -- every affix is a chip, so the card speaks one visual
+   language instead of three (a chip row for ranked contributions, a text run for
+   everything else, a third inline style for augment-granted stats). The dot
+   separator goes with the run it separated. */
+.pd-stats { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 3px 4px;
   font-size: var(--fs-xs); color: var(--muted); }
-.pd-stats li { white-space: nowrap; }
-.pd-stats li:not(:last-child)::after { content: "·"; margin-left: 6px; color: var(--faint); }
+/* Follows #449 R22's rule for the .pd-chip family, for the same reason: the row
+   wraps BETWEEN chips and a chip caps at the row width and wraps its own text,
+   so a long label ("Universal Spell Power +15 Exceptional") cannot push the page
+   into horizontal scroll at 375px. The plain-text run this replaced was
+   `white-space: nowrap` with no cap and did exactly that — measured at 375px on
+   an ML36 caster solve, the base tree scrolls to 516px. Inheriting nowrap would
+   have carried a live defect into the new family unchanged. */
+.pd-stat-chip { max-width: 100%; overflow-wrap: anywhere; border: 1px solid transparent;
+  border-radius: 5px; padding: 1px 5px; line-height: 1.35; }
+/* R2/R3 -- each class carries a NON-COLOUR carrier as well as its colour, so the
+   three stay distinguishable to a colour-vision difference and in a monochrome
+   print export: tracked is bordered and bold, utility is dashed, incidental is
+   borderless. Colour alone would make the distinction decorative. */
+.pd-stat-chip.is-tracked { border-color: var(--optimal); background: rgba(67,197,158,0.10);
+  color: var(--text); font-weight: 600; }
+.pd-stat-chip.is-utility { border-style: dashed; border-color: var(--accent-2);
+  color: var(--muted); }
+.pd-stat-chip.is-incidental { border-color: transparent; background: transparent; color: var(--muted); }
+/* R9 -- overflow is HIDDEN, never dropped: the chips stay in the DOM so the fact
+   stays on the card, which is the whole point. */
+.pd-stat-chip.is-overflow { display: none; }
+.pd-stats.is-expanded .pd-stat-chip.is-overflow { display: inline-block; }
+.pd-stat-more { display: inline-block; }
+.pd-more-btn { background: none; border: 1px dashed var(--line); border-radius: 5px;
+  color: var(--muted); font: inherit; padding: 1px 5px; cursor: pointer; }
+.pd-more-btn:hover { color: var(--text); border-color: var(--muted); }
 .pd-slots { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: var(--fs-xs); }
 .pd-slabel { text-transform: uppercase; letter-spacing: 0.04em; color: var(--faint); font-size: 0.62rem; margin-right: 2px; }
 .aug-pip { display: inline-flex; align-items: center; padding: 1px 6px; border-radius: 999px; font-size: 0.62rem;
@@ -1176,7 +1212,9 @@ input.wz-ml { width: 120px; }
 .pd-auglist .aug-pip { width: 8px; height: 8px; min-width: 8px; padding: 0; border-radius: 999px; }
 .pd-auglist .aug-open .aug-pip { background: repeating-linear-gradient(45deg, transparent, transparent 2px, var(--border-2) 2px, var(--border-2) 3px); }
 .aug-name { color: var(--text); font-size: var(--fs-xs); }
-.aug-affx { color: var(--muted); font-size: 0.62rem; }
+/* #453 U3 (R6) -- the augment's granted stats are a nested chip row, kept under
+   the augment that grants them so "which gem do I go slot" survives. */
+.aug-affx { color: var(--muted); font-size: 0.62rem; margin-top: 2px; }
 .aug-open .muted { font-size: 0.62rem; font-style: italic; }
 
 /* Per-slot constraint controls (U6) on the equipped-list rows. */

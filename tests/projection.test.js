@@ -1897,3 +1897,93 @@ test("#449 U2: project() carries the fraction and the once-per-document statemen
   assert.strictEqual(old.attribution.Dodge.ceiling, null);
   assert.strictEqual(old.character.ceilingStatement, null);
 });
+
+// ---------------------------------------------------------------------------
+// #453 U1 — affixStatCoverage. collapseExpansions folds an expansion back to the
+// enchantment and deliberately drops the member stat names; this carries them in
+// a parallel shape so a collapsed entry can be classified. Same precedent as
+// bundleGroups, which exists for the same reason and says so.
+// ---------------------------------------------------------------------------
+
+test("#453 U1 (R7/KTD1): a uniform collapsed entry reports every member stat", () => {
+  const affixes = [
+    { name: "Abjuration", value: 3, type: "Sacred", via: "Sacred Spell Focus Mastery" },
+    { name: "Conjuration", value: 3, type: "Sacred", via: "Sacred Spell Focus Mastery" },
+    { name: "Evocation", value: 3, type: "Sacred", via: "Sacred Spell Focus Mastery" },
+  ];
+  const cover = P.affixStatCoverage(affixes);
+  const e = cover.get("Sacred Spell Focus Mastery");
+  assert.ok(e, "the entry is filed under the key collapseExpansions uses");
+  assert.deepStrictEqual(e.stats, ["Abjuration", "Conjuration", "Evocation"]);
+  // The collapsed ENTRY carries only the enchantment name, which is exactly why
+  // this map has to exist: matching that name against ranked solver stats would
+  // file the whole bundle as incidental.
+  const collapsed = P.collapseExpansions(affixes);
+  assert.strictEqual(collapsed.length, 1);
+  assert.strictEqual(collapsed[0].name, "Sacred Spell Focus Mastery");
+  assert.ok(!("stats" in collapsed[0]) || collapsed[0].stats === "Sacred Spell Focus Mastery",
+    "the collapsed entry still does not carry its members");
+});
+
+test("#453 U1: a NON-uniform collapsed entry reports member stats, not its parts strings", () => {
+  const affixes = [
+    { name: "Armor Class", value: 4, type: "Untyped", via: "Parrying" },
+    { name: "Fortitude", value: 2, type: "Untyped", via: "Parrying" },
+  ];
+  const e = P.affixStatCoverage(affixes).get("Parrying");
+  assert.deepStrictEqual(e.stats, ["Armor Class", "Fortitude"]);
+  const collapsed = P.collapseExpansions(affixes);
+  assert.ok(Array.isArray(collapsed[0].parts), "this is the parts-shaped collapse");
+  // parts are pre-rendered LABELS ("Armor Class +4"), not stat names — unusable
+  // for classification, which is the other half of why this map exists.
+  assert.ok(collapsed[0].parts.some((p) => /\+/.test(p)), "parts carry magnitudes, not bare names");
+});
+
+test("#453 U1: a native affix with no via covers its own stat", () => {
+  const e = P.affixStatCoverage([{ name: "Constitution", value: 7, type: "Insight" }]).get("Constitution");
+  assert.deepStrictEqual(e.stats, ["Constitution"]);
+  assert.strictEqual(e.presence, false);
+});
+
+test("#453 U1: presence rides along, because a collapsed entry has no bonus type", () => {
+  const affixes = [
+    { name: "Ghostly", value: 1, type: "Bool", via: "Ghostly Bundle" },
+    { name: "Blurry", value: 1, type: "Bool", via: "Ghostly Bundle" },
+  ];
+  const e = P.affixStatCoverage(affixes).get("Ghostly Bundle");
+  assert.strictEqual(e.presence, true, "the group is presence-typed");
+  // Proven necessary: the collapsed entry itself reads as NOT presence, so a
+  // classifier asking the entry would file a utility bundle as incidental.
+  const collapsed = P.collapseExpansions(affixes)[0];
+  assert.strictEqual(P.isPresence(collapsed), false,
+    "the collapsed entry drops the bonus type, so presence is unreadable from it");
+});
+
+test("#453 U1: the coverage key matches what a displayed entry is filed under", () => {
+  const affixes = [
+    { name: "Abjuration", value: 3, type: "Sacred", via: "Sacred Spell Focus Mastery" },
+    { name: "Constitution", value: 7, type: "Insight" },
+  ];
+  const cover = P.affixStatCoverage(affixes);
+  for (const entry of P.collapseExpansions(affixes)) {
+    assert.ok(cover.has(P.affixCoverageKey(entry)),
+      `the displayed entry ${JSON.stringify(P.affixCoverageKey(entry))} resolves in the coverage map`);
+  }
+});
+
+test("#453 U1: collapseExpansions is untouched — regression guard", () => {
+  // Deliberately NOT proven red. KTD1 forbids widening the collapse: its output
+  // feeds affixLabel, the exports and the goldens. This pins that #453 added a
+  // parallel shape rather than changing this one.
+  const affixes = [
+    { name: "Abjuration", value: 3, type: "Sacred", via: "Sacred Spell Focus Mastery" },
+    { name: "Conjuration", value: 3, type: "Sacred", via: "Sacred Spell Focus Mastery" },
+  ];
+  const out = P.collapseExpansions(affixes);
+  assert.strictEqual(out.length, 1);
+  // No bonus type: the collapse deliberately drops it, because a name like
+  // "Sacred Spell Focus Mastery" already speaks it and appending would render
+  // the type twice. That omission is also why presence has to ride on the
+  // coverage map instead of being read off the entry.
+  assert.strictEqual(P.affixLabel(out[0]), "Sacred Spell Focus Mastery +3");
+});

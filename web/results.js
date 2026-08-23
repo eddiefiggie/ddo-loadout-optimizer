@@ -441,7 +441,9 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
   // same height via the grid stretch + the .pd-row min-height). Assignment data
   // comes from `maps` (keyed by the pick's chosen index); `augById` resolves an
   // augment's affixes by variant_id (the placed meta carries none).
-  const body = (v && !locked) ? equippedBody(v, pick ? pick.idx : -1, maps, augById, owned.mode, owned.augments) : "";
+  // #453 U2 (KTD2) — `prioCtx` was already here for whyThisLine two lines down;
+  // the chips derive "tracked" from the same source rather than a second one.
+  const body = (v && !locked) ? equippedBody(v, pick ? pick.idx : -1, maps, augById, owned.mode, owned.augments, prioCtx) : "";
   // #262 — the no-drop-source note on the gear box itself: the moment of seeing
   // the pick is where the player must learn it, not at the wiki after farming.
   // Same shared wording as the Deep Dive and every export (projection.js).
@@ -460,19 +462,103 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
   </div>`;
 }
 
+/** #453 U2 (R7/KTD2/KTD3) — the stat names this solve actually CREDITED to this
+ *  item, as both solver stat names and the enchantment names they came through.
+ *
+ *  Derived from `itemContributions`, which is the same function `whyThisLine`
+ *  reads. That is the point: deriving "tracked" twice from two sources is how
+ *  the card's two surfaces come to disagree about what the solver was steering
+ *  toward. `prioCtx` is already threaded to `equippedRow` for `whyThisLine`, so
+ *  this costs one parameter rather than a new data path.
+ *
+ *  Deliberately NOT "the stat appears in `targets`". A ranked stat whose bucket
+ *  lost to a larger contributor was not credited and is not why this item is
+ *  here; claiming otherwise on the chip would make the vivid treatment a lie.
+ *  That fact is a solve-level one and `outbidNotice` already names it. */
+function trackedStatNames(prioCtx, variantId) {
+  const set = new Set();
+  if (!prioCtx || !prioCtx.result || !variantId) return set;
+  const contribs = itemContributions(
+    prioCtx.result, { variant_id: variantId }, prioCtx.attr, prioCtx.targets);
+  for (const c of contribs) {
+    if (c.stat != null) set.add(c.stat);
+    // The collapsed entry is keyed by `via`, so the enchantment name has to be
+    // in the set too or a collapsed bundle never matches (KTD1's failure mode).
+    if (c.via != null) set.add(c.via);
+  }
+  return set;
+}
+
+/** #453 U2 (KTD3) — one of three classes, tested in this order.
+ *
+ *  tracked -> utility -> incidental, and the order is load-bearing: a presence
+ *  affix the player explicitly ranked is a reason the item was picked, not a
+ *  bonus that came along with it, so it must not fall into the utility bucket. */
+function affixChipClass(entry, cover, tracked) {
+  const key = Proj.affixCoverageKey(entry);
+  const e = (cover && cover.get(key)) || null;
+  if (key != null && tracked.has(key)) return "tracked";
+  for (const n of (e ? e.stats : [])) if (tracked.has(n)) return "tracked";
+  // Read presence off the COVERAGE, not the entry: a collapsed entry carries no
+  // bonus type, so `_isPresence` on it is false however presence-typed its
+  // members are.
+  if ((e && e.presence) || _isPresence(entry)) return "utility";
+  return "incidental";
+}
+
+/** #453 U4 (R9/R10/KTD4) — how many INCIDENTAL chips show at rest.
+ *
+ *  Measured, not chosen. Grouping the built dataset by `via` exactly as
+ *  `collapseExpansions` does, the ML 29-36 band (2,668 records) post-collapse
+ *  runs median 4, mean 4.19, max 11 — the collapse is what takes the worst case
+ *  from 43 down to 11. A cap of 6 leaves 92.1% of that band showing everything
+ *  at rest; 5 leaves 76.1%, 7 leaves 97.8%. Six is the knee.
+ *
+ *  It bounds INCIDENTAL chips only. Capping the total would hide tracked chips
+ *  on exactly the items where they matter most, which R10 forbids. */
+const INCIDENTAL_CHIP_CAP = 6;
+
+/** #453 U2/U4 (R1/R9/R10) — the affix chip row.
+ *
+ *  Replaces the plain-text comma-run. Every affix is a chip so the card speaks
+ *  one visual language; the class says which kind of fact it is. Overflow is
+ *  present in the DOM and reachable rather than dropped — the fact stays on the
+ *  card, which is the whole point of R9. */
+function statChipRow(affixes, cover, tracked) {
+  const rows = affixes.map((a) => ({ a, cls: affixChipClass(a, cover, tracked) }));
+  let seen = 0;
+  return rows.map(({ a, cls }) => {
+    const over = cls === "incidental" && ++seen > INCIDENTAL_CHIP_CAP;
+    return `<li class="pd-stat-chip is-${cls}${over ? " is-overflow" : ""}">${esc(affixLabel(a))}</li>`;
+  }).join("") + overflowToggle(rows);
+}
+
+/** #453 U4 (R9) — the in-place expander, emitted only when something is hidden. */
+function overflowToggle(rows) {
+  const hidden = rows.filter((r) => r.cls === "incidental").length - INCIDENTAL_CHIP_CAP;
+  return hidden > 0
+    ? `<li class="pd-stat-more"><button type="button" class="pd-more-btn" data-statmore
+        aria-expanded="false">+${hidden} more</button></li>` : "";
+}
+
 // The stats / augment / craft body of an equipped block. Projects the variant's
 // own affixes, then the augments actually slotted (with the affixes they add,
 // resolved by variant_id via `augById`) alongside any still-open augment slots,
 // and the item's assigned craft-upgrade slots (U2). `maps` (and the pick's `idx`)
 // are always supplied on the render path (buildViews -> equippedRow); a maps-less
 // call (only the pure test callers) simply renders no augment/craft section.
-function equippedBody(v, idx, maps, augById, ownedMode, ownedAugments) {
+function equippedBody(v, idx, maps, augById, ownedMode, ownedAugments, prioCtx) {
   // U8/R8 — the Loadout block collapses each expansion to its enchantment for the
   // same reason the Deep Dive does: this is what the player compares against the
   // in-game tooltip.
   const affixes = collapseExpansions(v.affixes || []);
+  // #453 U2 — classify against the RAW affixes, render from the collapsed ones.
+  // The collapse is what makes the card readable and is also what destroys the
+  // stat names classification needs, so the two run side by side (KTD1).
+  const cover = Proj.affixStatCoverage(v.affixes || []);
+  const tracked = trackedStatNames(prioCtx, v.variant_id);
   const stats = affixes.length
-    ? `<ul class="pd-stats">${affixes.map((a) => `<li>${esc(affixLabel(a))}</li>`).join("")}</ul>` : "";
+    ? `<ul class="pd-stats">${statChipRow(affixes, cover, tracked)}</ul>` : "";
 
   let augs = "";
   if (maps && maps.augAssign && idx != null && idx >= 0) {
@@ -482,8 +568,20 @@ function equippedBody(v, idx, maps, augById, ownedMode, ownedAugments) {
     const open = maps.augAssign.freeByIndex.get(idx) || [];
     const filled = placed.map((p) => {
       const meta = augById && augById.get(p.variant_id);
-      const affx = (meta && meta.affixes && meta.affixes.length)
-        ? `<span class="aug-affx">${esc(meta.affixes.map(affixLabel).join(", "))}</span>` : "";
+      // #453 U3 (R6/KD3) — the augment's granted stats become chips in the same
+      // three classes, but stay NESTED under the augment rather than merging
+      // into a card-level row. The loadout is a shopping list: "which gem do I
+      // actually go slot" has to survive, and a hover-only source marker is
+      // unavailable on touch.
+      //
+      // No collapse here, and that is deliberate — augment affixes are never
+      // collapsed anywhere in the app (see `bundleGroups`' doc-comment), so
+      // classification reads them directly. Collapsing them "for consistency"
+      // would change what the player compares against the in-game tooltip.
+      const augAffixes = (meta && meta.affixes) || [];
+      const affx = augAffixes.length
+        ? `<ul class="aug-affx pd-stats">${statChipRow(
+            augAffixes, Proj.affixStatCoverage(augAffixes), tracked)}</ul>` : "";
       const col = String(p.color || "").toLowerCase();
       const where = p.slot_color && p.slot_color !== p.color ? `${p.color} in ${p.slot_color} slot` : `${p.color || ""} slot`;
       return `<li class="aug-filled"><span class="aug-pip aug-${esc(col)}" title="${esc(where)}"></span><span class="aug-name">${esc(p.variant_id)}</span>${affx}</li>`;
@@ -839,7 +937,15 @@ function saturationNotice(result) {
   const report = (result && result.saturationReport) || [];
   if (!report.length) return "";
   const lines = (Proj && Proj.saturationNoticeLines) ? Proj.saturationNoticeLines(result) : [];
-  const list = report.map((e) => `${esc(e.stat)} ${esc(e.total)}`).join(", ");
+  // #453 U5 (R11/R12/R13) — the stat NAME is what the player is scanning for, so
+  // it carries the emphasis and the total stays in body treatment. The green is
+  // `--optimal`, reused rather than minted: `.stat-ceiling` and
+  // `.stat-reach.is-maxed` already are that colour and `.pd-chip-check` already
+  // uses it to mean "achieved" inside the chip family. Weight rides alongside
+  // the colour so the distinction survives a colour-vision difference or a
+  // monochrome print export (R13).
+  const list = report.map((e) =>
+    `<span class="sat-stat">${esc(e.stat)}</span> ${esc(e.total)}`).join(", ");
   const word = report.length === 1 ? "priority" : "priorities";
   // #277 — the solve-banner's tap/keyboard-openable pattern: the full sentences
   // are VISIBLE text in the open state, so a touch or keyboard user is not
@@ -985,8 +1091,12 @@ const NOTICE_CLASS_ORDER = [NOTICE_ACTIONABLE, NOTICE_QUALIFYING, NOTICE_INFORMA
  *  completeness assertion in `tests/results.test.js` is what holds the seam
  *  until then. */
 const NOTICE_TABLE = {
+  // #453 U6 (R18/KD6) — labelled for what it does. The control opens the adjust
+  // panel; the player presses `Re-solve ⚡` inside it. "Re-solve now" promised an
+  // action the jump never performed, which is half of why the inert jump read as
+  // broken rather than as a mis-scoped label.
   staleSnapshotNotice: { id: "stale-snapshot", title: "STALE SNAPSHOT", subject: "stale snapshot", cls: NOTICE_ACTIONABLE,
-    jump: { label: "Re-solve now", step: null, anchor: "#wz-adjust-slot" } },
+    jump: { label: "Adjust & re-solve →", step: null, anchor: "#wz-adjust-slot" } },
   emptySlotNotice: { id: "empty-slot", title: "EMPTY SLOT", subject: "empty slot", cls: NOTICE_ACTIONABLE,
     jump: { label: "Adjust & re-solve →", step: null, anchor: "#wz-adjust-slot" } },
   craftingExcludedNotice: { id: "crafting-opt-out", title: "EXCLUDED BY CRAFTING OPT-OUT", subject: "crafting opt-out", cls: NOTICE_ACTIONABLE,
