@@ -4420,7 +4420,9 @@ if (typeof window !== "undefined" && window.App) {
           // survive a re-solve.
           const more = e.target.closest("[data-statmore]");
           if (more) {
-            const list = more.closest(".pd-stats");
+            // #471 — the stat row is `pd-lines` now (the chip family it replaced
+            // was `pd-stats`); the expander is otherwise unchanged.
+            const list = more.closest(".pd-lines");
             const open = list && list.classList.toggle("is-expanded");
             more.setAttribute("aria-expanded", open ? "true" : "false");
             if (open) more.textContent = "show less";

@@ -404,6 +404,24 @@ function blockMaps(o) {
   };
 }
 
+// #471 — the card body is one row language: every fact is `<li class="pd-line">`
+// with three spans (marker / where it comes from / what it gives). A stat is no
+// longer a substring of its own element's text, so these two helpers stand in
+// for the substring tests the chip family allowed.
+function hasLine(html, cls, text) {
+  const re = new RegExp(`<li class="pd-line[^"]*\\b${cls}\\b[^"]*"[^>]*>`
+    + `<span class="pd-ln-mark[^"]*"[^>]*>[^<]*</span>`
+    + `<span class="pd-ln-where">[^<]*</span>`
+    + `<span class="pd-ln-what">${text}`);
+  return re.test(html);
+}
+function countLines(html) { return (html.match(/<li class="pd-line/g) || []).length; }
+function countStatLines(html) {
+  const sec = html.match(/<div class="pd-sec pd-sec-stats">[\s\S]*?<\/ul>/);
+  // The "+N more" expander is a row too; it is not an affix, so it is not counted.
+  return sec ? countLines(sec[0]) - (/pd-stat-more/.test(sec[0]) ? 1 : 0) : 0;
+}
+
 test("U2/AE2: a filled augment slot shows the augment name and the affixes it adds", () => {
   const v = { variant_id: "Ring1", affixes: [{ stat: "Constitution", bonus_type: "Enhancement", value: 10, unit: "flat" }] };
   const maps = blockMaps({ byIndex: new Map([[0, [{ variant_id: "Sapphire of Con", color: "Blue" }]]]) });
@@ -417,7 +435,15 @@ test("U2/AE2: an empty augment slot is shown as open", () => {
   const v = { variant_id: "Ring1", affixes: [] };
   const maps = blockMaps({ freeByIndex: new Map([[0, ["Red"]]]) });
   const html = R.equippedBody(v, 0, maps, new Map());
-  assert.ok(/open Red slot/.test(html), "an unfilled augment slot reads as open");
+  // #471 — an open slot is a ROW like every other, stating its colour and that
+  // it is empty. The wording is short on purpose: an item with four open colours
+  // spent eight wrapped lines at 375px saying nothing happened four times. The
+  // full reason rides the row's title.
+  assert.ok(/<li class="pd-line is-empty aug-open aug-red"/.test(html), "an unfilled augment slot is its own row");
+  assert.ok(/<span class="pd-ln-where">Red<\/span><span class="pd-ln-what">empty<\/span>/.test(html),
+    "…naming the colour and saying it is empty, briefly");
+  assert.ok(/title="open Red augment slot — no augment in this colour adds to your ranked stats"/.test(html),
+    "…with the full reason on the row, not spent on the card");
 });
 
 test("U2/AE3: an assigned craft slot is declared with its applied value", () => {
@@ -427,10 +453,15 @@ test("U2/AE3: an assigned craft slot is declared with its applied value", () => 
   // #455 — the instruction and the value are now two chips with two jobs: the
   // craft chip says what to go do, the stat chip says what you get. Both facts
   // are still on the card, which is what this test was always about.
-  assert.ok(/Craft/.test(html), "declares the craft slot");
-  assert.ok(/Nearly Completed(?!:)/.test(html), "…as the instruction alone, no inline value");
-  assert.ok(/pd-stat-chip[^>]*>Constitution \+15/.test(html), "and the applied value is a stat chip");
-  assert.ok(/pd-src-craft/.test(html), "tagged as craft-granted, not printed on the item (#455)");
+  // #471 — the instruction and the value are ONE row now, in the Craft section:
+  // the slot on the left, what it applies on the right. The Stats section no
+  // longer restates it — that duplication is what this change removes.
+  assert.ok(/pd-slabel">Craft · Nearly Completed</.test(html), "the section names the crafting system");
+  assert.ok(/<li class="pd-line[^"]*craft-nc"/.test(html), "the craft slot is a row of its own");
+  assert.ok(/<span class="pd-ln-what">Constitution \+15<\/span>/.test(html),
+    "…carrying the value it applies, in place");
+  assert.strictEqual((html.match(/Constitution \+15/g) || []).length, 1,
+    "stated exactly once on the card, not in Stats as well (#471)");
 });
 
 test("U2/AE3: an item with no craft assignment renders nothing extra for crafts", () => {
@@ -444,7 +475,7 @@ test("U2/KTD2: an augment whose affixes can't be resolved renders its name witho
   const maps = blockMaps({ byIndex: new Map([[0, [{ variant_id: "Mystery Aug", color: "Green" }]]]) });
   const html = R.equippedBody(v, 0, maps, new Map());   // empty augById -> no affix lookup
   assert.ok(/Mystery Aug/.test(html), "still names the augment");
-  assert.ok(!/aug-affx/.test(html), "no affix span when affixes are unresolvable");
+  assert.ok(!/pd-sub/.test(html), "no grants list when affixes are unresolvable");
 });
 
 test("U2/AE4: filled and bare occupied blocks share the same container (uniform size)", () => {
@@ -668,7 +699,7 @@ test("plan 2026-08-12-001 U3/R4 + #449 U4 + #457: the Deep Dive carries the same
   // gear card got: one classified chip row rather than a plain list plus a second
   // chip family restating it. Same signal, same content, one language.
   assert.ok(!/pd-prio/.test(html), "the second chip family is gone from this surface too");
-  assert.ok(/pd-stat-chip is-tracked[^>]*>Constitution \+15/.test(html),
+  assert.ok(hasLine(html, "is-tracked", "Constitution \\+15"),
     "same contribution content as the Loadout row, classified the same way");
   // #449 U4 — this surface reached the marker independently of the Loadout row,
   // so it needs its own guard that the removal covered it too.
@@ -703,7 +734,7 @@ test("plan 2026-08-12-001 U3: equippedRow renders the summary only when the cont
   // context-threaded signal is now that the stat chips are CLASSIFIED — a
   // credited stat reads tracked only when the solve's attribution is in hand.
   assert.ok(!/pd-prio/.test(withCtx), "the second chip family is gone");
-  assert.ok(/pd-stat-chip is-tracked[^>]*>Constitution \+15/.test(withCtx),
+  assert.ok(hasLine(withCtx, "is-tracked", "Constitution \\+15"),
     "the credited stat is chipped and classified");
   // #449 U4 — the third surface that reached the marker. Guarded separately for
   // the same reason: each threads its own context in.
@@ -982,16 +1013,25 @@ test("U6/AE5a: owned mode with owned items that don't help says so distinctly", 
 });
 
 test("U7/AE6: owned mode marks augment/craft lines as recommended (not owned)", () => {
+  // #471 — the note moved from inside `pd-rbody` to the card's foot, where the
+  // other three notes already were, so it is asserted on `equippedRow` now. It
+  // is still gated on there being an augment or craft recommendation to qualify.
   const v = { variant_id: "Owned Belt", affixes: [{ stat: "Constitution", bonus_type: "Enhancement", name: "Constitution", type: "Enhancement", value: 20, unit: "flat" }] };
   const maps = {
     augAssign: { byIndex: new Map([[0, [{ variant_id: "Topaz of Con", color: "Yellow", slot_color: "Yellow" }]]]), freeByIndex: new Map() },
     dinoAssign: { byIndex: new Map() },
     ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(),
   };
-  const owned = R.equippedBody(v, 0, maps, new Map(), true);
-  assert.ok(/Recommended \(not owned\)/.test(owned), "owned mode marks the augment block");
-  const notOwned = R.equippedBody(v, 0, maps, new Map(), false);
+  const pick = { variant: v, idx: 0 };
+  const ownedRow = R.equippedRow("Belt", pick, {}, null, maps, new Map(), { mode: true, augments: false, slotsCovered: new Set() });
+  assert.ok(/Recommended \(not owned\)/.test(ownedRow), "owned mode marks the augment block");
+  assert.ok(/pd-note is-owned/.test(ownedRow), "…as one of the card's uniform foot notes");
+  const notOwned = R.equippedRow("Belt", pick, {}, null, maps, new Map(), { mode: false, augments: false, slotsCovered: new Set() });
   assert.ok(!/Recommended \(not owned\)/.test(notOwned), "non-owned mode has no marker");
+  // The note is a statement about the augment/craft recommendations; with no
+  // augment and no craft on the item there is nothing for it to qualify.
+  const bare = R.equippedRow("Belt", pick, {}, null, blockMaps(), new Map(), { mode: true, augments: false, slotsCovered: new Set() });
+  assert.ok(!/Recommended \(not owned\)/.test(bare), "…and nothing to qualify means no note");
 });
 
 // ---------------------------------------------------------------------------
@@ -1549,7 +1589,7 @@ test("U8/R8/AE3: equippedBody shows ONE line naming the enchantment, not seven s
   const html = R.equippedBody(v, 0, blockMaps(), new Map());
   assert.ok(/Sacred Spell Focus Mastery \+3/.test(html), "names the enchantment engraved on the item");
   assert.ok(!/Necromancy Focus/.test(html), "the model's expanded shape does not leak into the UI");
-  assert.strictEqual((html.match(/pd-stat-chip/g) || []).length, 1, "exactly one affix line, not seven");
+  assert.strictEqual(countStatLines(html), 1, "exactly one affix line, not seven");
 });
 
 test("U8/R8/AE3: loadoutDeepDive collapses the same expansion the same way", () => {
@@ -1564,7 +1604,7 @@ test("U8/R8/AE3: loadoutDeepDive collapses the same expansion the same way", () 
   assert.ok(/Sacred Spell Focus Mastery \+3/.test(html));
   assert.ok(!/Abjuration Focus/.test(html) && !/Necromancy Focus/.test(html),
     "no school line survives the collapse");
-  assert.strictEqual((html.match(/pd-stat-chip/g) || []).length, 1, "one affix line in the Deep Dive too");
+  assert.strictEqual(countLines(html), 1, "one affix line in the Deep Dive too");
 });
 
 test("U8/R8: a heterogeneous family renders its members inline on the Loadout block", () => {
@@ -1579,7 +1619,7 @@ test("U8/R8: a heterogeneous family renders its members inline on the Loadout bl
   // Anchored to the start of the line: "Movement Speed +30" legitimately contains
   // the substring "Speed +", so a bare /Speed \+/ would reject a correct render.
   assert.ok(!/<li>Speed \+/.test(html), "the line never asserts a single invented magnitude");
-  assert.strictEqual((html.match(/pd-stat-chip/g) || []).length, 1, "still one line");
+  assert.strictEqual(countStatLines(html), 1, "still one line");
 });
 
 test("U8/R8: an item with no expanded affix renders exactly as before", () => {
@@ -1589,7 +1629,7 @@ test("U8/R8: an item with no expanded affix renders exactly as before", () => {
   ] };
   const html = R.equippedBody(v, 0, blockMaps(), new Map());
   assert.ok(/Constitution \+10/.test(html) && /Dodge \+5% Quality/.test(html));
-  assert.strictEqual((html.match(/pd-stat-chip/g) || []).length, 2, "both native affixes still listed");
+  assert.strictEqual(countStatLines(html), 2, "both native affixes still listed");
 });
 
 // The provenance tooltip is user-facing correctness, not decoration. It once
@@ -3114,7 +3154,11 @@ function chipCtx(variantId, byStat) {
   const attr = {};
   for (const [stat, part] of Object.entries(byStat || {})) {
     attr[stat] = [{ hostIds: [variantId], value: part.value, bonus_type: part.type || "Enhancement",
-                    isSet: false, via: part.via || null }];
+                    isSet: false, via: part.via || null,
+                    // #471 — the channel that credited the point. The solver stamps
+                    // it on every breakdown row; the card's residual sweep reads it
+                    // to tell "nothing rendered this" from "the Craft section did".
+                    sourceKind: part.sourceKind || "worn" }];
   }
   return { result: { chosen: [] }, attr, targets: Object.keys(byStat || {}) };
 }
@@ -3126,9 +3170,9 @@ test("#453 U2 (R1/R2/R3): one card, three chip classes", () => {
     { name: "Ghostly", value: 1, type: "Bool" },               // presence -> utility
   ] };
   const html = R.equippedBody(v, -1, null, null, false, false, chipCtx("Test Helm", { "Melee Power": { value: 10 } }));
-  assert.ok(/pd-stat-chip is-tracked[^"]*"[^<]*>Melee Power/.test(html), "the credited stat is tracked");
-  assert.ok(/is-incidental[^>]*>Armor Class/.test(html), "an uncredited affix is incidental");
-  assert.ok(/is-utility[^>]*>✓ Ghostly/.test(html), "a presence affix is utility");
+  assert.ok(hasLine(html, "is-tracked", "Melee Power"), "the credited stat is tracked");
+  assert.ok(hasLine(html, "is-incidental", "Armor Class"), "an uncredited affix is incidental");
+  assert.ok(hasLine(html, "is-utility", "✓ Ghostly"), "a presence affix is utility");
   assert.ok(!/<li>/.test(html), "no bare plain-text affix line survives (R1)");
 });
 
@@ -3139,7 +3183,7 @@ test("#453 U2 (R-a/KTD1): a COLLAPSED bundle with one ranked member is tracked",
   const v = { variant_id: "Focus Ring", affixes: focusMasteryAffixes("Sacred Spell Focus Mastery", "Sacred", 3) };
   const ctx = chipCtx("Focus Ring", { "Evocation Focus": { value: 3, via: "Sacred Spell Focus Mastery" } });
   const html = R.equippedBody(v, -1, null, null, false, false, ctx);
-  assert.strictEqual((html.match(/pd-stat-chip/g) || []).length, 1, "still one collapsed entry");
+  assert.strictEqual(countStatLines(html), 1, "still one collapsed entry");
   assert.ok(/is-tracked/.test(html),
     "the bundle is tracked because a MEMBER is ranked — matching the enchantment name alone would miss it");
 });
@@ -3173,7 +3217,7 @@ test("#453 U4 (R9/R10/KTD4): incidental chips cap at 6; tracked and utility neve
   const html = R.equippedBody(v, -1, null, null, false, false, chipCtx("Heavy", {}));
   assert.strictEqual((html.match(/is-overflow/g) || []).length, 3, "9 incidental, 6 shown, 3 hidden");
   assert.ok(/\+3 more/.test(html), "…behind an in-place expander");
-  assert.strictEqual((html.match(/pd-stat-chip/g) || []).length, 9,
+  assert.strictEqual(countStatLines(html), 9,
     "the hidden chips are in the DOM, not dropped — the fact stays on the card (R9)");
 
   // R10 — the cap bounds INCIDENTAL chips only. Capping the total would hide
@@ -3191,7 +3235,7 @@ test("#453 U4: exactly at the cap there is no expander", () => {
   // Assert the chips are actually THERE before asserting nothing is hidden —
   // "no overflow control" is trivially true of a tree that has no overflow
   // control at all, and a boundary test that cannot fail is not a boundary test.
-  assert.strictEqual((html.match(/pd-stat-chip/g) || []).length, 6, "six chips render");
+  assert.strictEqual(countStatLines(html), 6, "six rows render");
   assert.ok(!/is-overflow/.test(html) && !/more</.test(html), "six shows six and says nothing more");
 });
 
@@ -3203,9 +3247,11 @@ test("#453 U3 (R6): an augment's stats are chips NESTED under that augment", () 
   const html = R.equippedBody(v, 0, maps, augById, false, false, chipCtx("Host", { Accuracy: { value: 4 } }));
   // #469 — the class list is open-ended now: the row inherits the priority link
   // of whatever it grants. The nesting this test is about is unchanged.
-  const li = html.match(/<li class="aug-filled[^"]*">[\s\S]*?<\/li>/);
-  assert.ok(li, "the augment renders its own list item");
-  assert.ok(/pd-stat-chip/.test(li[0]), "…carrying its granted stat as a chip inside it (KD3)");
+  // #471 — the gem is a row in the shared language now, and its grants are the
+  // indented `pd-sub` list under it. The nesting this test is about is unchanged.
+  const li = html.match(/<li class="pd-line[^"]*aug-filled[^"]*"[\s\S]*?<\/ul><\/span><\/li>/);
+  assert.ok(li, "the augment renders its own row");
+  assert.ok(/<ul class="pd-sub">/.test(li[0]), "…carrying its granted stat nested inside it (KD3)");
   assert.ok(/Solar Gem of Attack/.test(li[0]) && /Accuracy/.test(li[0]),
     "which gem grants what survives — the loadout is a shopping list");
 });
@@ -3219,8 +3265,8 @@ test("#453 U3: an augment-granted stat is classified like any other", () => {
     { name: "True Seeing", value: 1, type: "Bool" },
   ] }]]);
   const html = R.equippedBody(v, 0, maps, augById, false, false, chipCtx("Host", { Accuracy: { value: 4 } }));
-  assert.ok(/is-tracked[^>]*>Accuracy/.test(html), "a credited augment stat is tracked");
-  assert.ok(/is-utility[^>]*>✓ True Seeing/.test(html), "a presence augment stat is utility");
+  assert.ok(/<li class="is-tracked[^"]*">Accuracy/.test(html), "a credited augment stat is tracked");
+  assert.ok(/<li class="is-utility[^"]*">✓ True Seeing/.test(html), "a presence augment stat is utility");
 });
 
 test("#453 U6 (R18): the stale-snapshot control is labelled for what it does", () => {
@@ -3239,9 +3285,14 @@ test("#453 U4 (R9): a stat chip caps at the row width and wraps its own text", (
   // defect the new family had to avoid inheriting, not one #453 introduced.
   const fs = require("fs"); const path = require("path");
   const css = fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf-8");
-  const rule = css.slice(css.indexOf(".pd-stat-chip {"));
+  // #471 — the value now lives in the row's third column, and the cap is on that
+  // column: `min-width: 0` lets a grid track shrink below its content, which is
+  // what makes `overflow-wrap` reachable at all. Without it the track floors at
+  // max-content and the page scrolls sideways exactly as the old run did.
+  const rule = css.slice(css.indexOf(".pd-ln-what {"));
   const body = rule.slice(0, rule.indexOf("}"));
-  assert.ok(/max-width:\s*100%/.test(body), "a chip caps at the row width, as #449 R22 does for .pd-chip");
+  assert.ok(/min-width:\s*0/.test(body), "the value column may shrink below its content");
+  assert.ok(/overflow-wrap:\s*anywhere/.test(body), "…and a long label wraps inside it");
   assert.ok(!/white-space:\s*nowrap/.test(body), "…and does not inherit the run's unbreakable nowrap");
   // `.pd-row {` appears three times (base, layout, position). Slicing the first
   // match is the #450 hazard — indexOf from 0 finds a rule that was never the
@@ -3269,19 +3320,23 @@ test("#455: the loadout card renders no second chip family", () => {
     { result: res, attr: R.attributionByTarget(res), targets: ["Melee Power"] });
   assert.ok(!/pd-prio|pd-chip-head|pd-chip-value/.test(html),
     "the pd-prio row and its internals are gone from the gear box");
-  assert.ok(/pd-stat-chip is-tracked/.test(html), "the stat row carries the credited fact instead");
+  assert.ok(/class="pd-line is-tracked/.test(html), "the stat row carries the credited fact instead");
 });
 
-test("#455: a craft-granted point is chipped, tagged, and classified", () => {
+test("#455/#471: a craft-granted point is stated in place, once, and classified", () => {
   const v = { variant_id: "Cloak", affixes: [] };
   const maps = chipMaps(new Map() && { byIndex: new Map(), freeByIndex: new Map() });
   maps.vikByItem = new Map([["Cloak", [{ slot_type: "Dolorous", stat: "Seeker", bonus_type: "Enhancement", value: 15, unit: "flat" }]]]);
-  const html = R.equippedBody(v, 0, maps, new Map(), false, false, chipCtx("Cloak", { Seeker: { value: 15 } }));
-  assert.ok(/pd-stat-chip is-tracked[^>]*>Seeker \+15/.test(html), "the crafted point is a stat chip");
-  assert.ok(/pd-src-craft/.test(html), "…tagged as craft-granted rather than printed on the drop");
-  // The instruction survives as its own chip, without restating the value.
-  assert.ok(/chip lamordia[^>]*>Slot Dolorous Viktranium augment</.test(html),
-    "the craft step says what to go do, and only that");
+  const html = R.equippedBody(v, 0, maps, new Map(), false, false,
+    chipCtx("Cloak", { Seeker: { value: 15, sourceKind: "vik" } }));
+  // #471 — the instruction and the value are ONE row in the Craft section: the
+  // slot it goes in on the left, what it applies on the right, credited-to-your
+  // -priorities on the row itself. Stats no longer restates it.
+  assert.ok(/pd-slabel">Craft · Viktranium</.test(html), "the section names the crafting system");
+  assert.ok(hasLine(html, "is-tracked", "Seeker \\+15"), "the crafted point is credited on its own row");
+  assert.ok(/<span class="pd-ln-where">Dolorous</.test(html), "…beside the slot it goes in");
+  assert.strictEqual(countStatLines(html), 0, "and Stats does not restate it (#471)");
+  assert.strictEqual((html.match(/Seeker \+15/g) || []).length, 1, "stated exactly once on the card");
 });
 
 test("#455: a set-sourced point is chipped even with no affix record on the item", () => {
@@ -3290,9 +3345,12 @@ test("#455: a set-sourced point is chipped even with no affix record on the item
     attr: { "Melee Power": [{ hostIds: ["Piece"], value: 15, bonus_type: "Artifact", isSet: true }] },
     targets: ["Melee Power"] };
   const html = R.equippedBody(v, -1, null, null, false, false, ctx);
-  assert.ok(/pd-stat-chip is-tracked[^>]*>Melee Power \+15/.test(html), "the set point is a stat chip");
-  assert.ok(/pd-src-set/.test(html), "…tagged as set-granted");
-  assert.ok(/pd-q-set/.test(html), "and keeps the (set) qualifier pd-prio used to carry");
+  assert.ok(hasLine(html, "is-tracked", "Melee Power \\+15"), "the set point gets a row of its own");
+  // #471 — the provenance is the row's WHERE column. It was a coloured `pd-src`
+  // pill at the end of the chip AND a `(set)` qualifier under it; the column
+  // that exists for exactly this fact now carries it, once.
+  assert.ok(/<span class="pd-ln-where">set<\/span>/.test(html), "…named as set-granted in the where column");
+  assert.strictEqual((html.match(/>set</g) || []).length, 1, "stated once, not three times over");
 });
 
 test("#455: the #88 override disclosure survives the move onto the chip", () => {
@@ -3324,7 +3382,7 @@ test("#455: the rank-1 accent survives the move off pd-prio", () => {
   ] };
   const ctx = chipCtx("Top", { "Melee Power": { value: 10 }, Doublestrike: { value: 5 } });
   const html = R.equippedBody(v, -1, null, null, false, false, ctx);
-  assert.ok(/pd-stat-chip is-tracked is-rank1[^>]*>Melee Power/.test(html), "the top priority is accented");
+  assert.ok(hasLine(html, "is-rank1", "Melee Power"), "the top priority is accented");
   assert.strictEqual((html.match(/is-rank1/g) || []).length, 1, "and only the top one");
 });
 
@@ -3339,7 +3397,7 @@ test("#455: a credited point with no affix record still reaches a chip", () => {
     attr: { Constitution: [{ hostIds: ["Legacy"], value: 15, bonus_type: "Enhancement" }] },
     targets: ["Constitution"] };
   const html = R.equippedBody(v, -1, null, null, false, false, ctx);
-  assert.ok(/pd-stat-chip is-tracked[^>]*>Constitution \+15/.test(html),
+  assert.ok(hasLine(html, "is-tracked", "Constitution \\+15"),
     "the point is chipped rather than silently dropped");
 });
 
@@ -3352,7 +3410,7 @@ test("#455: the sweep does not double-chip a collapsed bundle — regression gua
   const v = { variant_id: "Focus", affixes: focusMasteryAffixes("Sacred Spell Focus Mastery", "Sacred", 3) };
   const ctx = chipCtx("Focus", { "Evocation Focus": { value: 3, via: "Sacred Spell Focus Mastery" } });
   const html = R.equippedBody(v, -1, null, null, false, false, ctx);
-  assert.strictEqual((html.match(/pd-stat-chip/g) || []).length, 1, "exactly one chip for the bundle");
+  assert.strictEqual(countStatLines(html), 1, "exactly one row for the bundle");
 });
 
 test("#455: craftLabel is unchanged, and the step label is separate", () => {
@@ -3394,10 +3452,14 @@ test("#457: the Deep Dive chips craft-granted points its affix list never had", 
   const maps = ddMaps({ vikByItem: new Map([["Shield", [{ slot_type: "Miserable",
     stat: "Armor-Piercing", bonus_type: "Enhancement", value: 23, unit: "flat" }]]]) });
   const html = R.loadoutDeepDive(res, { targets: ["Armor-Piercing"] }, maps, R.attributionByTarget(res));
-  assert.ok(/pd-stat-chip[^>]*>Armor Class \+41/.test(html), "the printed affix is a chip");
-  assert.ok(/pd-stat-chip is-tracked[^>]*>Armor-Piercing \+23/.test(html),
+  assert.ok(hasLine(html, "is-incidental", "Armor Class \\+41"), "the printed affix is a row");
+  assert.ok(hasLine(html, "is-tracked", "Armor-Piercing \\+23"),
     "and the craft-granted point is one too — it was only in pd-prio and the craft label before");
-  assert.ok(/pd-src-craft/.test(html), "tagged as craft-granted");
+  // #471 — the Deep Dive KEEPS its craft-granted stats in this list, unlike the
+  // gear card. Its craft block shows instructions only (`stepOnly`), so dropping
+  // them here would leave the values with nowhere to be read — which is the
+  // exact failure #457 exists to prevent.
+  assert.ok(/<span class="pd-ln-where">craft<\/span>/.test(html), "named as craft-granted in the where column");
 });
 
 test("#457: the Deep Dive's craft chip trims to the instruction", () => {
@@ -3519,7 +3581,7 @@ test("#469: an empty slot still emits all three regions, so the grid stays align
   assert.ok(/<div class="pd-rmeta"><\/div>/.test(html),
     "the meta line is emitted even with no ML to put in it (CSS reserves its height)");
   assert.ok(/<div class="pd-rbody"><\/div>/.test(html), "and an empty body still spaces the foot to the bottom");
-  assert.ok(/<div class="pd-card-foot"><div class="pd-rnote muted">/.test(html),
+  assert.ok(/<div class="pd-card-foot"><div class="pd-note pd-rnote is-empty">/.test(html),
     "the reason note is in the foot, not interleaved above the body");
 });
 
@@ -3538,11 +3600,11 @@ test("#469: a stat on the priority list but NOT credited is ranked, not incident
   const ctx = chipCtx("Helm", { Doublestrike: { value: 8, type: "Insight" } });
   ctx.targets = ["Melee Power", "Doublestrike"];                 // the priority list, not the attribution
   const html = R.equippedBody(v, -1, null, null, false, false, ctx);
-  assert.ok(/is-ranked[^>]*>Melee Power/.test(html),
+  assert.ok(hasLine(html, "is-ranked", "Melee Power"),
     "an outbid priority reads as linked to the list, not as an unrelated affix");
-  assert.ok(/is-tracked[^>]*>Doublestrike/.test(html),
+  assert.ok(hasLine(html, "is-tracked", "Doublestrike"),
     "…and a credited one keeps the stronger class, which still means 'why this item is here'");
-  assert.ok(/is-incidental[^>]*>Armor Class/.test(html), "a stat nobody ranked is still incidental");
+  assert.ok(hasLine(html, "is-incidental", "Armor Class"), "a stat nobody ranked is still incidental");
 });
 
 // Deliberately NOT proven red — it passes against the pre-change tree, where
@@ -3562,16 +3624,16 @@ test("#469: the Utility sentinel never becomes a ranked stat name", () => {
   assert.ok(!set.has(M.UTILITY_SENTINEL), "the sentinel is not a stat and nothing on an item is named after it");
 });
 
-test("#469: a craft chip carries the priority link of what the craft grants", () => {
+test("#469/#471: a craft row carries the priority link of what the craft grants", () => {
   const v = { variant_id: "Cloak1", affixes: [] };
   const maps = blockMaps({ ncByItem: new Map([["Cloak1",
     [{ stat: "Constitution", bonus_type: "Enhancement", value: 15, unit: "flat" }]]]) });
-  const ctx = chipCtx("Cloak1", { Constitution: { value: 15 } });
+  const ctx = chipCtx("Cloak1", { Constitution: { value: 15, sourceKind: "nc" } });
   const html = R.equippedBody(v, 0, maps, new Map(), false, false, ctx);
-  assert.ok(/<span class="chip nc is-tracked"/.test(html),
-    "the instruction says which crafting trip actually serves the ranked list");
+  assert.ok(/<li class="pd-line is-tracked[^"]*craft-nc"/.test(html),
+    "the row says which crafting trip actually serves the ranked list");
   const bare = R.equippedBody(v, 0, maps, new Map(), false, false, null);
-  assert.ok(/<span class="chip nc"/.test(bare) && !/is-tracked/.test(bare),
+  assert.ok(/<li class="pd-line is-incidental craft-nc"/.test(bare) && !/is-tracked/.test(bare),
     "…and with no context it is an unmarked instruction, claiming nothing");
 });
 
@@ -3581,29 +3643,33 @@ test("#469: an augment row carries the priority link of what the gem grants", ()
                           freeByIndex: new Map() });
   const augById = new Map([["Gem", { affixes: [{ name: "Doublestrike", value: 4, type: "Quality" }] }]]);
   const ctx = chipCtx("Host", { Doublestrike: { value: 4, type: "Quality" } });
-  assert.ok(/<li class="aug-filled is-tracked">/.test(
+  assert.ok(/<li class="pd-line is-tracked aug-filled /.test(
     R.equippedBody(v, 0, maps, augById, false, false, ctx)),
     "eighteen gems down a loadout, the ones that matter are findable without opening each");
   const onlyRanked = chipCtx("Host", {});
   onlyRanked.targets = ["Doublestrike"];
-  assert.ok(/<li class="aug-filled is-ranked">/.test(
+  assert.ok(/<li class="pd-line is-ranked aug-filled /.test(
     R.equippedBody(v, 0, maps, augById, false, false, onlyRanked)),
     "a gem granting a listed-but-outbid stat gets the weaker link, not none");
 });
 
-test("#469: the chip ramp is four steps, and only the credited one is filled", () => {
+test("#469/#471: the ramp is four steps, and only the credited one is bold white", () => {
+  // #471 — the ramp moved off the chip's border onto the row's WEIGHT and its
+  // MARKER. The guarantee is unchanged and is the reason this test exists:
+  // colour is never the only thing separating the four classes.
   const css = _reachCss();
-  const tracked = _cssRule(css, ".pd-stat-chip.is-tracked {");
-  const ranked = _cssRule(css, ".pd-stat-chip.is-ranked {");
-  assert.ok(/background: rgba/.test(tracked), "tracked is filled");
-  assert.ok(/background: transparent/.test(ranked),
-    "ranked is framed but NOT filled — the fill is what claims 'this is why the item is here'");
-  assert.ok(/color: var\(--text\)/.test(ranked), "…while its text is at full strength, not muted");
-  assert.ok(!/font-weight/.test(ranked), "and it does not borrow tracked's weight");
-  // The four classes must stay distinguishable without colour (#453 R2/R3).
-  assert.ok(/border-style: dashed/.test(_cssRule(css, ".pd-stat-chip.is-utility {")), "utility is dashed");
-  assert.ok(/border-color: transparent/.test(_cssRule(css, ".pd-stat-chip.is-incidental {")),
-    "incidental is borderless");
+  const tracked = _cssRule(css, ".pd-line.is-tracked .pd-ln-what {");
+  const ranked = _cssRule(css, ".pd-line.is-ranked .pd-ln-what {");
+  assert.ok(/font-weight: 700/.test(tracked), "credited is bold");
+  assert.ok(/#fff/.test(tracked) && /#fff/.test(ranked), "both are white — they are both on your list");
+  assert.ok(!/font-weight/.test(ranked),
+    "outbid does NOT borrow the weight — the weight is what claims 'this is why the item is here'");
+  // The four classes stay apart without colour: the marker is a SHAPE ramp.
+  const R471 = require("../web/results.js");
+  const marks = new Set(Object.values(R471.LINE_MARK));
+  assert.strictEqual(marks.size, 4, "four classes, four distinct marker glyphs");
+  assert.strictEqual(R471.LINE_MARK.tracked, "◆", "credited is the filled shape");
+  assert.strictEqual(R471.LINE_MARK.ranked, "◇", "outbid is the hollow one");
 });
 
 test("#469: a craft chip's link is a ring, so the crafting-system colour survives", () => {
@@ -3623,4 +3689,119 @@ test("#469: the card regions are sized to line up, not merely stacked", () => {
   assert.ok(/\.pd-rbody \{[^}]*flex: 1 1 auto/.test(css), "the body absorbs the difference in content");
   assert.ok(/\.pd-card-foot:empty \{ display: none; \}/.test(css),
     "and a card with no note carries no divider under nothing");
+});
+
+// ---------------------------------------------------------------------------
+// #471 — the card's three chip families become ONE row language, every augment
+// and craft slot is stated in place whether or not the solve filled it, and the
+// foot's four note shapes become one. Reported directly: the chips read as
+// clutter, a slot with no affix beside it says nothing actionable, and the two
+// footer notes looked like neither each other nor anything else on the card.
+// ---------------------------------------------------------------------------
+
+test("#471: a craft-granted point is stated once — in place, not also in Stats", () => {
+  // The de-duplication, at the level that matters: the SAME point, counted.
+  // Before this the Craft section said "Slot Dolorous Viktranium augment" with
+  // no value and the Stats section said "Seeker +15" with no slot, so the card
+  // printed one fact in two halves and the player had to join them.
+  const v = { variant_id: "Cloak", affixes: [{ name: "Armor Class", value: 41, type: "Shield" }] };
+  const maps = blockMaps({ vikByItem: new Map([["Cloak",
+    [{ slot_type: "Dolorous", stat: "Seeker", bonus_type: "Enhancement", value: 15, unit: "flat" }]]]) });
+  const html = R.equippedBody(v, 0, maps, new Map(), false, false,
+    chipCtx("Cloak", { Seeker: { value: 15, sourceKind: "vik" } }));
+  assert.strictEqual((html.match(/Seeker \+15/g) || []).length, 1, "the crafted point appears exactly once");
+  assert.ok(hasLine(html, "is-tracked", "Seeker \\+15"), "…on the craft row, credited to the priority list");
+  assert.strictEqual(countStatLines(html), 1, "Stats keeps only what the item itself prints");
+  assert.ok(hasLine(html, "is-incidental", "Armor Class \\+41"), "…which is the printed affix");
+});
+
+test("#471: a declared craft slot the solve left empty keeps its row, stated briefly", () => {
+  // #370's guarantee, in the new language: an item that ships with three slots
+  // must never read as a one-slot item. What changed is the WORDING — the full
+  // sentence wrapped to two lines per slot at 375px, so the row says "left
+  // empty" and the sentence rides its title. The exports keep the full sentence.
+  const P = require("../web/projection.js");
+  const v = { variant_id: "Eyes", affixes: [],
+    lamordia_slots: [{ type: "Dolorous" }, { type: "Melancholic" }, { type: "Miserable" }] };
+  const maps = blockMaps({ vikByItem: new Map([["Eyes",
+    [{ slot_type: "Dolorous", stat: "Seeker", bonus_type: "Enhancement", value: 15, unit: "flat" }]]]) });
+  const html = R.equippedBody(v, 0, maps, new Map(), false, false, null);
+  assert.strictEqual((html.match(/<li class="pd-line[^"]*craft-vik/g) || []).length, 3,
+    "all three declared slots are rows — one filled, two not");
+  assert.ok(/<span class="pd-ln-where">Melancholic<\/span><span class="pd-ln-what">left empty<\/span>/.test(html),
+    "the unfilled slot says so briefly, beside the slot it is");
+  const full = P.craftLabel({ slot_type: "Melancholic" }, "vikEmpty");
+  assert.ok(/left empty — no option adds to your ranked stats/.test(full),
+    "the exports' wording is unchanged — craftLabel is what the goldens pin");
+  assert.ok(html.includes(`title="${full}"`), "…and the card carries that full sentence on the row");
+});
+
+test("#471: every declared augment colour is a row, filled or not", () => {
+  const v = { variant_id: "Host", affixes: [] };
+  const maps = blockMaps({
+    byIndex: new Map([[0, [{ variant_id: "Gem", color: "Green" }]]]),
+    freeByIndex: new Map([[0, ["Blue", "Colorless"]]]),
+  });
+  const augById = new Map([["Gem", { affixes: [{ name: "Constitution", value: 2, type: "Insight" }] }]]);
+  const html = R.equippedBody(v, 0, maps, augById, false, false, null);
+  const rows = html.match(/<li class="pd-line[^"]*aug-(filled|open)[^"]*"/g) || [];
+  assert.strictEqual(rows.length, 3, "one filled and two open slots, all three on the card");
+  assert.ok(/aug-filled aug-green/.test(html) && /aug-open aug-blue/.test(html) && /aug-open aug-colorless/.test(html),
+    "each row carries its own slot colour");
+});
+
+test("#471: Sun and Moon slots use the SAME glyphs as the Set Bonuses tab", () => {
+  // The user asked for exactly this. It is enforced by there being one constant
+  // rather than by two literals that happen to match today — the Set Bonuses
+  // tab's set-like listing reads `SUN_MOON_GLYPH` too.
+  const v = { variant_id: "Host", affixes: [] };
+  const maps = blockMaps({
+    byIndex: new Map([[0, [{ variant_id: "Solar Gem", color: "Sun" }]]]),
+    freeByIndex: new Map([[0, ["Moon"]]]),
+  });
+  const html = R.equippedBody(v, 0, maps, new Map(), false, false, null);
+  assert.ok(html.includes(R.SUN_MOON_GLYPH.sun), "a Sun slot is marked with the shared solar glyph");
+  assert.ok(html.includes(R.SUN_MOON_GLYPH.moon), "a Moon slot with the shared lunar one");
+  const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf-8");
+  const setLike = src.slice(src.indexOf("const setLike"), src.indexOf("let setsPanel"));
+  assert.ok(/SUN_MOON_GLYPH\.moon/.test(setLike) && /SUN_MOON_GLYPH\.sun/.test(setLike),
+    "the Set Bonuses tab reads the same constant, so the two cannot drift apart again");
+});
+
+test("#471: the card's foot is ONE note family, whatever it is saying", () => {
+  // Four shapes lived here: an amber craft-carried line, a muted filler line,
+  // the no-drop-source disclosure, and the owned-mode note — which was not even
+  // in the foot, it was in the body between two sections.
+  const carriedRes = { chosen: [{ slot: "Ring", variant: { variant_id: "Solo" } }],
+    breakdown: { Seeker: [{ bonus_type: "Enhancement", value: 15, source: "Solo",
+      sourceKind: "vik", hostIds: ["Solo"] }] } };
+  const v = { variant_id: "Solo", affixes: [], no_drop_source: true };
+  const maps = blockMaps({ vikByItem: new Map([["Solo",
+    [{ slot_type: "Dolorous", stat: "Seeker", bonus_type: "Enhancement", value: 15, unit: "flat" }]]]) });
+  const html = R.equippedRow("Ring", { variant: v, idx: 0 }, {}, new Set(), maps, new Map(),
+    { mode: true, augments: false, slotsCovered: new Set() }, null,
+    { result: carriedRes, attr: R.attributionByTarget(carriedRes), targets: ["Seeker"] });
+  const foot = html.slice(html.indexOf('<div class="pd-card-foot">'));
+  const notes = foot.match(/<div class="pd-note[^"]*"/g) || [];
+  assert.strictEqual(notes.length, 3, "no-drop-source, owned-mode and craft-carried, all three in the foot");
+  assert.ok(notes.every((n) => /class="pd-note/.test(n)), "every one of them is the same family");
+  assert.ok(/pd-note[^"]*is-source/.test(foot) && /pd-note[^"]*is-owned/.test(foot)
+    && /pd-note[^"]*is-craft/.test(foot), "…differing only by the role that colours its edge");
+  assert.ok(!/pd-rec-note/.test(html), "the owned-mode note is no longer a shape of its own in the body");
+});
+
+test("#471: head, body and foot are separated without a rule across the card", () => {
+  // The user's report: the bars do not look good. Three devices replace them —
+  // a tint that fades out, a spine the rows hang off, and a recessed plate.
+  const css = _reachCss();
+  const head = _cssRule(css, ".pd-card-head { display: flex");
+  assert.ok(/border-bottom: 0/.test(head), "the head's hard rule is gone");
+  assert.ok(/linear-gradient/.test(head), "…replaced by a tint that fades into the body");
+  assert.ok(/\.pd-card-head::after/.test(css), "with a tapered seam rather than a full-width bar");
+  const foot = _cssRule(css, ".pd-card-foot { margin: 0");
+  assert.ok(/border-top: 0/.test(foot), "the foot's dashed rule is gone");
+  assert.ok(/background: rgba\(0,0,0/.test(foot), "…replaced by a recessed plate");
+  assert.ok(/\.pd-rbody::before/.test(css), "and the body's sections hang off a spine");
+  const secs = _cssRule(css, ".pd-sec ~ .pd-sec {");
+  assert.ok(/border-top: 0/.test(secs), "the between-section hairlines are gone too");
 });
