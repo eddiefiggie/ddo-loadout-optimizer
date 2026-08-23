@@ -321,6 +321,31 @@
   // Item-level ML read native-first (`ml`), legacy `minimum_level` fallback.
   function itemMl(v) { return (v && v.ml != null) ? v.ml : (v && v.minimum_level); }
 
+  /** #469 — the name a gear card SHOWS, which is not the item's identity.
+   *
+   *  `variant_id` is the identity: the pin/block key, the export column, and the
+   *  string a player pastes into the wiki. It keeps its `(level N)`
+   *  disambiguator, because that is what separates the six catalog rows a
+   *  multi-level item mints. The card is a different surface — it already
+   *  carries an ML field two lines down, so repeating the same number inside the
+   *  name is the card stating one fact twice in two formats.
+   *
+   *  Stripped ONLY when the parenthetical equals the item's own ML. Measured
+   *  against the built dataset: all 1,326 `(level N)` / `(Level N)` variant ids
+   *  match their own `ml` exactly and all sit at the end (optionally before a
+   *  `[Crafted]` tag), so the equality test drops every one of them today — and
+   *  a future id whose parenthetical means something else survives untouched
+   *  rather than being silently rewritten. Every OTHER parenthetical the catalog
+   *  carries is meaningful (`(Heroic)`, `(Legendary)`, `(legacy)`, `(2d6)`,
+   *  `(round)`) and is left alone; this is not a general suffix stripper. */
+  function displayItemName(v) {
+    const id = String((v && (v.variant_id || v.source_item)) || "");
+    const ml = itemMl(v);
+    if (ml == null || !id) return id;
+    return id.replace(/\s*\([Ll]evel\s+(\d+)\)/g,
+      (whole, n) => (Number(n) === Number(ml) ? "" : whole)).trim();
+  }
+
   /** Which of a variant's affixes hit the query targets (for the "why" column). */
   function contributingAffixes(variant, targets) {
     const t = new Set(targets);
@@ -2251,7 +2276,7 @@
     // model.js; re-exported so exporters can recognize the sentinel row)
     utilityLine, utilityPriceLine, utilityUnsecuredLines, UTILITY_SENTINEL: UTILITY_NAME,
     // pure primitives (results.js binds these; single definition, no drift)
-    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, bundleGroups, affixStatCoverage, affixCoverageKey, craftStepLabel, craftAffixRecords, itemMl, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
+    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, bundleGroups, affixStatCoverage, affixCoverageKey, craftStepLabel, craftAffixRecords, itemMl, displayItemName, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,
     // #449 (U2) — the achieved/ceiling fraction: numbers, state and wording from
     // one place, plus the once-per-document full statement.

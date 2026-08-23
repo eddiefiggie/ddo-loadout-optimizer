@@ -3201,7 +3201,9 @@ test("#453 U3 (R6): an augment's stats are chips NESTED under that augment", () 
                           freeByIndex: new Map() });
   const augById = new Map([["Solar Gem of Attack", { affixes: [{ name: "Accuracy", value: 4, type: "Artifact" }] }]]);
   const html = R.equippedBody(v, 0, maps, augById, false, false, chipCtx("Host", { Accuracy: { value: 4 } }));
-  const li = html.match(/<li class="aug-filled">[\s\S]*?<\/li>/);
+  // #469 — the class list is open-ended now: the row inherits the priority link
+  // of whatever it grants. The nesting this test is about is unchanged.
+  const li = html.match(/<li class="aug-filled[^"]*">[\s\S]*?<\/li>/);
   assert.ok(li, "the augment renders its own list item");
   assert.ok(/pd-stat-chip/.test(li[0]), "…carrying its granted stat as a chip inside it (KD3)");
   assert.ok(/Solar Gem of Attack/.test(li[0]) && /Accuracy/.test(li[0]),
@@ -3452,4 +3454,173 @@ test("#457: buildViews hands the Deep Dive the augment catalog", () => {
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "results.js"), "utf-8");
   assert.ok(/loadoutDeepDive\(build, query, maps, attr, augById\)/.test(src),
     "the real render path passes augById through");
+});
+
+// ---------------------------------------------------------------------------
+// #469 — card structure (head / body / foot), the display name, and the
+// priority link on the affix chips, the augment rows and the craft chips.
+// ---------------------------------------------------------------------------
+
+const P469 = require("../web/projection.js");
+
+test("#469: the displayed name drops a (level N) that only restates the item's ML", () => {
+  assert.strictEqual(
+    P469.displayItemName({ variant_id: "Legendary Ship-Chaplain's Sidearm (level 32)", ml: 32 }),
+    "Legendary Ship-Chaplain's Sidearm",
+    "the parenthetical says exactly what the ML field says");
+  assert.strictEqual(
+    P469.displayItemName({ variant_id: "Arcing Sky (level 13) [Crafted]", ml: 13 }),
+    "Arcing Sky [Crafted]",
+    "…and a trailing tag after it survives the strip");
+});
+
+test("#469: it is an equality test, not a suffix stripper", () => {
+  assert.strictEqual(
+    P469.displayItemName({ variant_id: "Odd Thing (level 20)", ml: 34 }),
+    "Odd Thing (level 20)",
+    "a parenthetical that does NOT restate the ML means something else and stays");
+  for (const id of ["Sword of Shadow (Legendary)", "Nightforge Gorget (Heroic)",
+                    "Blade (2d6)", "Bauble (legacy)", "Shield (round)"]) {
+    assert.strictEqual(P469.displayItemName({ variant_id: id, ml: 30 }), id,
+      `every other parenthetical is meaningful and is left alone — ${id}`);
+  }
+  assert.strictEqual(
+    P469.displayItemName({ variant_id: "Mystery (level 20)" }), "Mystery (level 20)",
+    "with no ML there is nothing to compare against, so nothing is dropped");
+});
+
+test("#469: the card shows the display name but keeps variant_id as its identity", () => {
+  const pick = { slot: "Main Hand", idx: 0, variant: { variant_id: "Sidearm (level 32)", ml: 32, affixes: [] } };
+  const html = R.equippedRow("Main Hand", pick, {});
+  assert.ok(/class="pd-rname" title="Sidearm \(level 32\)">Sidearm<\/div>/.test(html),
+    "the rendered name is stripped while the title keeps the full id");
+  assert.ok(/data-variant="Sidearm \(level 32\)"/.test(html),
+    "and pin/free/override still address the item by its real variant_id");
+});
+
+test("#469: the card is three named regions in head/body/foot order", () => {
+  const pick = { slot: "Ring", idx: 0, variant: { variant_id: "R1", ml: 34,
+    affixes: [{ name: "Melee Power", value: 10, type: "Enhancement" }] } };
+  const html = R.equippedRow("Ring", pick, {});
+  const order = ["pd-card-head", "pd-rbody", "pd-card-foot"].map((c) => html.indexOf(c));
+  assert.ok(order.every((i) => i >= 0), "all three regions are emitted");
+  assert.ok(order[0] < order[1] && order[1] < order[2], "…in head -> body -> foot order");
+  // The slot, the name and the ML are ONE block: this is what lets the CSS give
+  // every card a head of the same height, which is what makes a grid row line up.
+  const head = srcBetween(html, `<div class="pd-card-head">`, `<div class="pd-rbody`, "card head");
+  for (const part of ["pd-rlabel", "pd-rname", "pd-rmeta"]) {
+    assert.ok(head.includes(part), `the head carries ${part}`);
+  }
+  assert.ok(head.includes("ML 34"), "the ML is in the head, not loose in the body");
+});
+
+test("#469: an empty slot still emits all three regions, so the grid stays aligned", () => {
+  const html = R.equippedRow("Goggles", null, {});
+  assert.ok(/<div class="pd-rmeta"><\/div>/.test(html),
+    "the meta line is emitted even with no ML to put in it (CSS reserves its height)");
+  assert.ok(/<div class="pd-rbody"><\/div>/.test(html), "and an empty body still spaces the foot to the bottom");
+  assert.ok(/<div class="pd-card-foot"><div class="pd-rnote muted">/.test(html),
+    "the reason note is in the foot, not interleaved above the body");
+});
+
+test("#469: an empty foot is truly empty, so :empty can collapse it", () => {
+  const pick = { slot: "Ring", idx: 0, variant: { variant_id: "R1", ml: 34, affixes: [] } };
+  assert.ok(/<div class="pd-card-foot"><\/div>/.test(R.equippedRow("Ring", pick, {})),
+    "no stray whitespace — a text node would defeat .pd-card-foot:empty");
+});
+
+test("#469: a stat on the priority list but NOT credited is ranked, not incidental", () => {
+  const v = { variant_id: "Helm", affixes: [
+    { name: "Melee Power", value: 10, type: "Enhancement" },     // ranked, credited elsewhere
+    { name: "Doublestrike", value: 8, type: "Insight" },         // ranked AND credited here
+    { name: "Armor Class", value: 15, type: "Natural" },         // never asked for
+  ] };
+  const ctx = chipCtx("Helm", { Doublestrike: { value: 8, type: "Insight" } });
+  ctx.targets = ["Melee Power", "Doublestrike"];                 // the priority list, not the attribution
+  const html = R.equippedBody(v, -1, null, null, false, false, ctx);
+  assert.ok(/is-ranked[^>]*>Melee Power/.test(html),
+    "an outbid priority reads as linked to the list, not as an unrelated affix");
+  assert.ok(/is-tracked[^>]*>Doublestrike/.test(html),
+    "…and a credited one keeps the stronger class, which still means 'why this item is here'");
+  assert.ok(/is-incidental[^>]*>Armor Class/.test(html), "a stat nobody ranked is still incidental");
+});
+
+// Deliberately NOT proven red — it passes against the pre-change tree, where
+// `is-ranked` did not exist at all. That is the point: it pins that adding the
+// class did not make an uncontextualised render start claiming things, which is
+// the same guarantee #453's "with no prioCtx nothing is tracked" test holds.
+test("#469: with no priority list in hand, nothing is marked ranked", () => {
+  const v = { variant_id: "Helm", affixes: [{ name: "Melee Power", value: 10, type: "Enhancement" }] };
+  assert.ok(!/is-ranked/.test(R.equippedBody(v, -1, null, null, false, false, null)),
+    "a caller that was not told what the player ranked claims nothing");
+});
+
+test("#469: the Utility sentinel never becomes a ranked stat name", () => {
+  const M = require("../web/model.js");
+  const set = R.rankedStatSet({ targets: ["Melee Power", M.UTILITY_SENTINEL] });
+  assert.ok(set.has("Melee Power"), "real priorities are in the set");
+  assert.ok(!set.has(M.UTILITY_SENTINEL), "the sentinel is not a stat and nothing on an item is named after it");
+});
+
+test("#469: a craft chip carries the priority link of what the craft grants", () => {
+  const v = { variant_id: "Cloak1", affixes: [] };
+  const maps = blockMaps({ ncByItem: new Map([["Cloak1",
+    [{ stat: "Constitution", bonus_type: "Enhancement", value: 15, unit: "flat" }]]]) });
+  const ctx = chipCtx("Cloak1", { Constitution: { value: 15 } });
+  const html = R.equippedBody(v, 0, maps, new Map(), false, false, ctx);
+  assert.ok(/<span class="chip nc is-tracked"/.test(html),
+    "the instruction says which crafting trip actually serves the ranked list");
+  const bare = R.equippedBody(v, 0, maps, new Map(), false, false, null);
+  assert.ok(/<span class="chip nc"/.test(bare) && !/is-tracked/.test(bare),
+    "…and with no context it is an unmarked instruction, claiming nothing");
+});
+
+test("#469: an augment row carries the priority link of what the gem grants", () => {
+  const v = { variant_id: "Host", affixes: [] };
+  const maps = chipMaps({ byIndex: new Map([[0, [{ variant_id: "Gem", color: "Colorless" }]]]),
+                          freeByIndex: new Map() });
+  const augById = new Map([["Gem", { affixes: [{ name: "Doublestrike", value: 4, type: "Quality" }] }]]);
+  const ctx = chipCtx("Host", { Doublestrike: { value: 4, type: "Quality" } });
+  assert.ok(/<li class="aug-filled is-tracked">/.test(
+    R.equippedBody(v, 0, maps, augById, false, false, ctx)),
+    "eighteen gems down a loadout, the ones that matter are findable without opening each");
+  const onlyRanked = chipCtx("Host", {});
+  onlyRanked.targets = ["Doublestrike"];
+  assert.ok(/<li class="aug-filled is-ranked">/.test(
+    R.equippedBody(v, 0, maps, augById, false, false, onlyRanked)),
+    "a gem granting a listed-but-outbid stat gets the weaker link, not none");
+});
+
+test("#469: the chip ramp is four steps, and only the credited one is filled", () => {
+  const css = _reachCss();
+  const tracked = _cssRule(css, ".pd-stat-chip.is-tracked {");
+  const ranked = _cssRule(css, ".pd-stat-chip.is-ranked {");
+  assert.ok(/background: rgba/.test(tracked), "tracked is filled");
+  assert.ok(/background: transparent/.test(ranked),
+    "ranked is framed but NOT filled — the fill is what claims 'this is why the item is here'");
+  assert.ok(/color: var\(--text\)/.test(ranked), "…while its text is at full strength, not muted");
+  assert.ok(!/font-weight/.test(ranked), "and it does not borrow tracked's weight");
+  // The four classes must stay distinguishable without colour (#453 R2/R3).
+  assert.ok(/border-style: dashed/.test(_cssRule(css, ".pd-stat-chip.is-utility {")), "utility is dashed");
+  assert.ok(/border-color: transparent/.test(_cssRule(css, ".pd-stat-chip.is-incidental {")),
+    "incidental is borderless");
+});
+
+test("#469: a craft chip's link is a ring, so the crafting-system colour survives", () => {
+  const css = _reachCss();
+  const rule = _cssRule(css, ".chip.is-tracked {");
+  assert.ok(/box-shadow/.test(rule), "drawn outside the border");
+  assert.ok(!/border-color/.test(rule),
+    "the chip's own border still says WHICH crafting system, which is how the player finds the station");
+});
+
+test("#469: the card regions are sized to line up, not merely stacked", () => {
+  const css = _reachCss();
+  assert.ok(/\.pd-card-head \.pd-rname \{[^}]*min-height/.test(css),
+    "the name reserves its second line so a wrapping name does not shift the ML off its neighbour's baseline");
+  assert.ok(!/\.pd-card-head \.pd-rname \{[^}]*line-clamp/.test(css),
+    "…and reserves rather than truncates: this list has shown full item names since it replaced the figure");
+  assert.ok(/\.pd-rbody \{[^}]*flex: 1 1 auto/.test(css), "the body absorbs the difference in content");
+  assert.ok(/\.pd-card-foot:empty \{ display: none; \}/.test(css),
+    "and a card with no note carries no divider under nothing");
 });

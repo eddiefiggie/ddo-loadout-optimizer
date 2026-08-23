@@ -1149,8 +1149,22 @@ input.wz-ml { width: 120px; }
 .pd-rlabel { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.05em; color: var(--faint); }
 .pd-rname { font-size: var(--fs-sm); font-weight: 600; color: var(--text); line-height: 1.3; }
 .pd-row.is-set .pd-rname { color: var(--set); }
-.pd-rfoot { display: flex; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--fs-xs); color: var(--faint); margin-top: 2px; }
-.pd-rset { color: var(--set); }
+/* #469 — ONE line, always. `flex-wrap: wrap` is wrong here: a wrapping flex
+   container moves an item to a new line rather than shrinking it below its
+   content, so the set name below never got to ellipsise and the header grew
+   instead. Nowrap plus a shrinkable set name is what holds the line; the ML and
+   the status badges are `flex: none` so the truncation lands on the one child
+   that has somewhere else to be read in full. */
+.pd-rmeta { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: nowrap;
+  font-size: var(--fs-xs); color: var(--faint); }
+.pd-rmeta > .pd-rml, .pd-rmeta > .pd-badge { flex: none; }
+/* #469 — one line, ellipsised. A slot that feeds TWO sets renders both names
+   here, which took its header from 97px to 141px and pushed that card's Stats
+   section 44px below its neighbour's — the exact raggedness the head is fixed
+   for. The names are not lost: the full list is this element's `title`, and the
+   Set Bonuses tab names every active set with its contributing pieces. */
+.pd-rset { color: var(--set); flex: 0 1 auto; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* U9: uniform equipment blocks — same floor height whether or not the item
    carries stats/augment/craft info; grid stretch keeps paired blocks equal. */
@@ -1158,7 +1172,44 @@ input.wz-ml { width: 120px; }
    the paperdoll grid. Without it a flex/grid item floors at max-content and the
    chip's own max-width never binds, so the wrap above would be inert. */
 .pd-row { min-height: 92px; display: flex; flex-direction: column; min-width: 0; }
-.pd-rbody { margin-top: var(--sp-2); display: flex; flex-direction: column; gap: 5px; }
+
+/* #469 — the three card regions. The card is HEAD / BODY / FOOT and the rule
+   that makes a grid of them read as a grid rather than as fourteen unrelated
+   boxes is that each region occupies the same band on every card:
+
+   - the head is a fixed three-line block (slot, name, meta), so an item whose
+     name wraps to two lines does not push its ML onto a different baseline from
+     the card beside it. The name RESERVES two lines and is not clamped — the
+     equipped list has shown full names since it replaced the paperdoll figure,
+     and truncating an item name on a shopping list is the wrong trade;
+   - the body grows, so it absorbs the difference between a five-chip item and a
+     twelve-chip one instead of pushing the notes around;
+   - the foot is pinned to the bottom edge by that growth, so a note sits in the
+     same place on every card that has one and leaves no gap on the cards that
+     do not. */
+.pd-card-head { display: flex; flex-direction: column; gap: 1px;
+  padding-bottom: 6px; border-bottom: 1px solid var(--border-2); }
+.pd-card-head .pd-rname { min-height: 2.6em; display: flex; align-items: flex-start; }
+.pd-rmeta { min-height: 1.4em; }
+.pd-rbody { margin-top: 6px; display: flex; flex-direction: column; gap: 6px;
+  flex: 1 1 auto; }
+/* An empty foot must take NO space — the alternative is fourteen cards each
+   carrying a divider under nothing. */
+.pd-card-foot:empty { display: none; }
+.pd-card-foot { margin-top: 6px; padding-top: 6px;
+  border-top: 1px dashed var(--border-2); display: flex; flex-direction: column; gap: 3px; }
+
+/* #469 — the body's three sub-sections: Stats, Augments, Craft, always in that
+   order. Each is labelled, and the hairline between them is what makes the
+   "which of these did I have to go craft" boundary visible without reading the
+   provenance tag on every chip. */
+.pd-sec { display: flex; flex-direction: column; gap: 3px; }
+/* General sibling, not adjacent: in owned-inventory mode the "Recommended (not
+   owned)" note sits between the Stats section and the Augments one, and an
+   adjacent-sibling rule would silently drop the divider on exactly those
+   cards. */
+.pd-sec ~ .pd-sec { padding-top: 6px; border-top: 1px solid var(--border); }
+.pd-sec .pd-slabel { margin-right: 0; }
 /* #453 U2 (R1/R2/R3) -- every affix is a chip, so the card speaks one visual
    language instead of three (a chip row for ranked contributions, a text run for
    everything else, a third inline style for augment-granted stats). The dot
@@ -1175,11 +1226,19 @@ input.wz-ml { width: 120px; }
 .pd-stat-chip { max-width: 100%; overflow-wrap: anywhere; border: 1px solid transparent;
   border-radius: 5px; padding: 1px 5px; line-height: 1.35; }
 /* R2/R3 -- each class carries a NON-COLOUR carrier as well as its colour, so the
-   three stay distinguishable to a colour-vision difference and in a monochrome
-   print export: tracked is bordered and bold, utility is dashed, incidental is
-   borderless. Colour alone would make the distinction decorative. */
+   four stay distinguishable to a colour-vision difference and in a monochrome
+   print export: tracked is filled, bordered and bold; ranked is bordered only;
+   utility is dashed; incidental is borderless. Colour alone would make the
+   distinction decorative.
+
+   #469 -- `is-ranked` is the new middle step, and it is a step DOWN from tracked,
+   not a second shade of it: solid frame and full-strength text, but no fill and
+   no bold. It says "this is on your list"; only the filled chip says "this is
+   what the solver credited". Reading the ramp: filled > framed > dashed > bare. */
 .pd-stat-chip.is-tracked { border-color: var(--optimal); background: rgba(67,197,158,0.10);
   color: var(--text); font-weight: 600; }
+.pd-stat-chip.is-ranked { border-color: rgba(67,197,158,0.55); background: transparent;
+  color: var(--text); }
 .pd-stat-chip.is-utility { border-style: dashed; border-color: var(--accent-2);
   color: var(--muted); }
 .pd-stat-chip.is-incidental { border-color: transparent; background: transparent; color: var(--muted); }
@@ -1230,6 +1289,25 @@ input.wz-ml { width: 120px; }
 .pd-auglist .aug-pip { width: 8px; height: 8px; min-width: 8px; padding: 0; border-radius: 999px; }
 .pd-auglist .aug-open .aug-pip { background: repeating-linear-gradient(45deg, transparent, transparent 2px, var(--border-2) 2px, var(--border-2) 3px); }
 .aug-name { color: var(--text); font-size: var(--fs-xs); }
+/* #469 -- the priority link on the two surfaces the player is sent to ACT on.
+   The stats a gem or a craft grants are chipped and classified already; these
+   mark the INSTRUCTION, so a run of eighteen augment names can be scanned for
+   the ones that serve the ranked list without opening each one. Same ramp as the
+   stat chips (filled = credited, framed = on the list), so the card teaches one
+   vocabulary rather than two. */
+.pd-auglist .aug-filled.is-tracked, .pd-auglist .aug-filled.is-ranked {
+  padding-left: 6px; border-left: 2px solid var(--optimal); }
+.pd-auglist .aug-filled.is-ranked { border-left-color: rgba(67,197,158,0.55); }
+.pd-auglist .aug-filled.is-tracked .aug-name { font-weight: 600; }
+.pd-auglist .aug-filled.is-ranked .aug-name { color: var(--text); }
+/* A craft chip's own border already encodes WHICH crafting system it belongs to
+   (dino amber, Nearly Completed violet, Lamordia rose, …), and that is a fact
+   the player needs to find the right station. So the priority link is drawn as a
+   ring OUTSIDE that border rather than by repainting it — both facts survive,
+   and the ring is a second visible line, not a hue change, so it carries in
+   monochrome too. */
+.chip.is-tracked { box-shadow: 0 0 0 1px var(--optimal); color: var(--text); font-weight: 600; }
+.chip.is-ranked { box-shadow: 0 0 0 1px rgba(67,197,158,0.55); color: var(--text); }
 /* #453 U3 (R6) -- the augment's granted stats are a nested chip row, kept under
    the augment that grants them so "which gem do I go slot" survives. */
 .aug-affx { color: var(--muted); font-size: 0.62rem; margin-top: 2px; }
