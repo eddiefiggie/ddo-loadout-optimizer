@@ -134,7 +134,7 @@ Run the JS suite through **`scripts/run_js_tests.sh`** rather than a bare loop. 
 - `CONCEPTS.md` — shared domain vocabulary. Relevant when orienting to the codebase or discussing domain concepts.
 - `AGENTS.md` — operating context for coding agents: where the knowledge stores are and the standing rules that have each cost a real defect. `CLAUDE.md` is a symlink to it.
 
-## Resume prompt
+## Project state
 
 > Resuming **ddo-loadout-optimizer**. Public DDO best-in-slot optimizer, live at eddiefiggie.github.io/ddo-loadout-optimizer. Input = ML cap + race + armor + weapon setup + a ranked affix list (optionally restricted to an imported Trove owned-inventory); output = the provably-optimal fully-upgraded loadout (item + tier + augment-in-slot + crafted options + chosen set-membership bonuses), every value wiki-sourced. **Client-side static app on GitHub Pages**; exact MILP in-browser via **HiGHS-WASM**, staged lexicographic solve, deterministic tie-break; Python generator builds `web/data/items.json` (gitignored). Core rules: strict lexicographic priority; theoretical BiS by default with an optional owned-inventory pool; strict exclude-until-verified data with per-result coverage disclosure; **never infer a value**.
 >
