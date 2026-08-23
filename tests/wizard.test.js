@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, unsavedGuardMessage, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
+const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -3295,27 +3295,6 @@ test("#428 U4 (R15): saving no longer requires a solved build", () => {
 // the dialog it renders is not the thing under test.
 // ---------------------------------------------------------------------------
 
-test("#428 U5 (AE6): the guard names the loaded build whose edits are unsaved", () => {
-  const m = unsavedGuardMessage({ inputsDirty: true, loadedName: "Sook — Reaper" });
-  assert.ok(m, "a dirty build raises a message");
-  assert.ok(m.includes("Sook — Reaper"), "…which names what would be lost");
-});
-
-test("#428 U5: an unsaved new build is named as never-saved, not as a build name", () => {
-  const m = unsavedGuardMessage({ inputsDirty: true, loadedName: "" });
-  assert.ok(m && /never been saved/i.test(m));
-  // The typed-but-unsaved name is not a saved build, so it must not be quoted as
-  // one — that would read as "your saved build Sook is at risk" when no such
-  // record exists.
-  assert.ok(!/“/.test(m), "no build name is quoted for a record that does not exist");
-});
-
-test("#428 U5: a clean state raises no guard", () => {
-  assert.strictEqual(unsavedGuardMessage({ inputsDirty: false, loadedName: "Sook" }), null);
-  assert.strictEqual(unsavedGuardMessage({}), null, "a step left untouched raises no guard");
-  assert.strictEqual(unsavedGuardMessage(null), null);
-});
-
 test("#428 U5 (KTD3): the flag is cleared by save and by load, and by nothing else", () => {
   const fs = require("fs"); const path = require("path");
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
@@ -3514,38 +3493,6 @@ test("#428 U6 (R1/R2/R4): the character step renders three labelled groups in or
   assert.ok(/<details[^>]*data-group="weapons"/.test(body), "weapon setup is the collapsible one (R6)");
   assert.ok(!/<details[^>]*data-group="required"/.test(body), "required fields are visible without interaction (R6)");
   assert.ok(!/<details[^>]*data-group="restrictions"/.test(body), "…and so are restrictions (R6)");
-});
-
-test("#431 U4 (KTD3/AE4): the guard offers Save only when saving can succeed", () => {
-  const g = fnBody(WIZARD_SRC, "function showUnsavedGuard(msg) {", 4);
-  assert.ok(/characterName/.test(g), "the option set is a function of whether a name exists");
-  assert.ok(/wz-unsaved-save/.test(g), "with a name it still offers Save and continue");
-  assert.ok(/needs a name|name it|name this build/i.test(g),
-    "without one it says why Save is absent rather than silently dropping it");
-});
-
-test("#431 U4 (R10/KTD3): no path through the guard asks for the name behind the dialog", () => {
-  const g = fnBody(WIZARD_SRC, "function showUnsavedGuard(msg) {", 4)
-    + fnBody(WIZARD_SRC, "function wireUnsavedGuard() {", 4);
-  assert.ok(!/wz-buildname/.test(g),
-    "the guard never touches the name field — that is the defect this plan exists to fix");
-  // The wiring focuses nothing at all now: the only focus call left in the guard
-  // is the open-time one in showUnsavedGuard, which chooses between save and stay.
-  assert.ok(!/\.focus\(\)/.test(fnBody(WIZARD_SRC, "function wireUnsavedGuard() {", 4)),
-    "no handler in the guard's wiring moves focus behind the dialog");
-});
-
-test("#431 U4: with no name the guard's open-time focus is Stay, never the discard option", () => {
-  const g = fnBody(WIZARD_SRC, "function showUnsavedGuard(msg) {", 4);
-  // DOM order is save, discard, stay. "Focus the first control rendered" would
-  // put the keyboard default on discard once save is omitted, and a reflexive
-  // Enter would throw the build away.
-  const pick = g.match(/getElementById\(([^)]*wz-unsaved-stay[^)]*)\)/);
-  assert.ok(pick, "the open-time focus resolves the stay control by id");
-  assert.ok(/wz-unsaved-save/.test(pick[1]),
-    "…as one arm of a conditional whose other arm is Save — not an unconditional target");
-  assert.ok(!/wz-unsaved-go/.test(pick[1]),
-    "the discard option is never a focus target");
 });
 
 test("#431 U4 (KTD4): saveCurrentCharacter's store-integrity refusal is untouched", () => {
@@ -3855,23 +3802,6 @@ test("#429 review #2: loadCharacter clears lastRun on the branch that does not s
 
 // ---- #3 (P1): the rail's own Load goes through the guard --------------------
 
-test("#429 review #3: the guard message names what a load would cost", () => {
-  const dirty = { inputsDirty: true, loadedName: "Sook" };
-  const step = unsavedGuardMessage(dirty, "step");
-  const load = unsavedGuardMessage(dirty, "load");
-  assert.ok(/Sook/.test(load), "names the build at risk");
-  assert.ok(/replac/i.test(load), "…and says loading another one replaces it");
-  assert.notStrictEqual(step, load, "the two consequences are worded differently");
-  assert.strictEqual(unsavedGuardMessage({ inputsDirty: false }, "load"), null,
-    "a clean build still raises nothing");
-});
-
-test("#429 review #3: the default kind is a step change, unchanged from #428", () => {
-  const m = unsavedGuardMessage({ inputsDirty: true, loadedName: "" });
-  assert.ok(/never been saved/i.test(m));
-  assert.ok(/close this tab/.test(m));
-});
-
 test("#429 review #3: the rail's Load is routed through the guard, not straight to loadCharacter", () => {
   const fs = require("fs"); const path = require("path");
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
@@ -3881,21 +3811,11 @@ test("#429 review #3: the rail's Load is routed through the guard, not straight 
   assert.ok(end > at, "wireRail's end marker resolves");
   const body = src.slice(at, end);
   assert.ok(/requestLoad\(/.test(body),
-    "Load asks the guard first — it is the action that discards the most work");
+    "Load routes through the one seam, so its policy lives in one place (#452 U3)");
   assert.ok(!/\bloadCharacter\(b\.dataset\.railload\)/.test(body),
-    "…rather than calling loadCharacter directly");
+    "…rather than reaching past it into loadCharacter directly");
   assert.ok(/state\.loadedName/.test(body),
     "deleting the build you are editing warns about the in-memory copy");
-});
-
-test("#429 review #3: the pending action carries its kind, so both paths resume", () => {
-  const fs = require("fs"); const path = require("path");
-  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
-  assert.ok(/function resumePending\(/.test(src), "one place resumes a guarded action");
-  const at = src.indexOf("function resumePending(");
-  const body = src.slice(at, endAfter(src, "\n    function ", at));
-  assert.ok(/kind === "load"/.test(body) && /loadCharacter\(/.test(body), "a guarded load resumes");
-  assert.ok(/go\(/.test(body), "…and a guarded step change resumes");
 });
 
 // ---- #4 (P1): KTD5 — the stale banner names armor as newly required --------
@@ -4050,4 +3970,125 @@ test("#335 U5 (R8): a duplicate ring pin is still ignored, so x2 cannot be pinne
   assert.strictEqual(ids.length, 1,
     "the repeat selection is discarded — pinning a doubled pick is deferred, not supported");
   assert.strictEqual(ids[0], id, "and the single pin is the ring the player picked");
+});
+
+// ---------------------------------------------------------------------------
+// #452 — autosave on Continue. The unsaved-changes guard is gone; the forward
+// path saves. `nameCollides` is the gate that makes that viable and is pure, so
+// it is tested directly rather than through a dialog. Everything else here is a
+// source-text assertion in this file's established idiom (no DOM).
+// ---------------------------------------------------------------------------
+
+test("#452 U2 (R5/KTD1): a name matching a DIFFERENT saved build collides", () => {
+  const prev = { name: "Barbarian", snapshot: { status: "optimal" } };
+  assert.strictEqual(nameCollides({ loadedName: "Sorc", nameReconciled: null }, "Barbarian", prev), true);
+});
+
+test("#452 U2 (KTD1/R-a): re-saving the build you are editing NEVER collides", () => {
+  const prev = { name: "Barbarian", snapshot: { status: "optimal" } };
+  const st = { loadedName: "Barbarian", nameReconciled: null };
+  // The whole plan turns on this. `prev` is truthy for the loaded build, so a
+  // gate keyed on `prev` alone would fire a native confirm on EVERY Continue of
+  // a build saved even once — worse than the dialog #452 removes.
+  for (let i = 0; i < 5; i++) {
+    assert.strictEqual(nameCollides(st, "Barbarian", prev), false,
+      "however many times the forward path saves, it is not an overwrite");
+  }
+});
+
+test("#452 U2 (R6): a reconciled name does not collide again", () => {
+  const prev = { name: "Barbarian", snapshot: null };
+  const st = { loadedName: "Sorc", nameReconciled: "Barbarian" };
+  assert.strictEqual(nameCollides(st, "Barbarian", prev), false);
+  // …but only that name. Reconciling one build must not silently license
+  // overwriting a different record.
+  assert.strictEqual(nameCollides(st, "Ranger", { name: "Ranger" }), true);
+});
+
+test("#452 U2: a name matching no record never collides", () => {
+  assert.strictEqual(nameCollides({ loadedName: "Sorc" }, "Brand New", null), false);
+  assert.strictEqual(nameCollides({ loadedName: "Sorc" }, "", { name: "" }), false,
+    "an empty name has nothing to overwrite");
+  assert.strictEqual(nameCollides(null, "Barbarian", { name: "Barbarian" }), true,
+    "a missing state is not a licence to skip the confirm");
+});
+
+test("#452 U2: the collision gate is what trySave consults, not `prev` alone", () => {
+  const body = fnBody(WIZARD_SRC, "function trySave(nm) {", 4);
+  assert.ok(/nameCollides\(state, nm, prev\)/.test(body),
+    "trySave gates on the narrowed predicate");
+  assert.ok(!/if \(prev\) \{/.test(body),
+    "…and not on `prev` alone, which is true for the build being edited (KTD1)");
+  assert.ok(/state\.nameReconciled = nm/.test(body),
+    "an accepted overwrite is remembered so the next Continue is silent (R6)");
+  assert.ok(/if \(res\.ok\) state\.loadedName = nm/.test(body),
+    "a successful save adopts the name — without it the next Continue re-collides (R-d)");
+});
+
+test("#452 U2 (R7): loading a build clears the reconciliation", () => {
+  const load = fnBody(WIZARD_SRC, "function loadCharacter(name) {", 4);
+  assert.ok(/state\.nameReconciled = null/.test(load),
+    "a freshly loaded build has reconciled nothing");
+});
+
+test("#452 U1 (R1): navigation saves before it moves, in both directions", () => {
+  const nav = fnBody(WIZARD_SRC, "function navigate(step) {", 4);
+  assert.ok(/autosaveThen\(step\)/.test(nav), "the one navigation seam autosaves");
+  assert.ok(!/guardOr/.test(nav), "…rather than raising a guard");
+  const body = fnBody(WIZARD_SRC, "function autosaveThen(step) {", 4);
+  assert.ok(/trySave\(nm\)/.test(body),
+    "it reuses the one save transaction, so an autosaved record is not a second shape (R3)");
+  assert.ok(/go\(step\)/.test(body), "…and then moves");
+});
+
+test("#452 U1: a declined overwrite is the only path that does not advance", () => {
+  const body = fnBody(WIZARD_SRC, "function autosaveThen(step) {", 4);
+  assert.ok(/res === null/.test(body),
+    "a declined overwrite is distinguished from a failed save");
+  const declined = body.slice(body.indexOf("res === null"));
+  assert.ok(/return/.test(declined.slice(0, 40)), "…and returns without advancing");
+});
+
+test("#452 U4 (R11/R12): a failed save reports and still advances", () => {
+  const body = fnBody(WIZARD_SRC, "function autosaveThen(step) {", 4);
+  const bad = body.slice(body.indexOf("if (!res.ok)"));
+  assert.ok(body.indexOf("go(step)") < body.indexOf("if (!res.ok)"),
+    "the step change happens before the report, so a failed save never blocks (R12)");
+  assert.ok(/wz-savestat/.test(bad), "the outcome lands in the polite status span");
+  assert.ok(/saveErrorText\(res\.error\)/.test(bad), "…using the existing strings, not new ones");
+  assert.ok(!/confirm\(|wz-modal|showUnsavedGuard/.test(bad),
+    "no path through the failure branch constructs a dialog (R12)");
+});
+
+test("#452 U3 (R10): no path can render the unsaved-changes guard", () => {
+  assert.ok(!/wz-unsaved/.test(WIZARD_SRC),
+    "the guard's element, handlers and every id are gone — deleted, not disabled");
+  assert.ok(!/unsavedPrompt/.test(WIZARD_SRC), "…and so is the state it stashed");
+  assert.ok(!/function guardOr\(|function resumePending\(/.test(WIZARD_SRC),
+    "…and the gate that raised it");
+  assert.strictEqual(typeof nameCollides, "function", "the collision gate replaces it");
+});
+
+test("#452 U3 (R9): loading a saved build goes straight there", () => {
+  const body = fnBody(WIZARD_SRC, "function requestLoad(name) {", 4);
+  assert.ok(/loadCharacter\(name\)/.test(body), "no guard stands between Load and the load");
+});
+
+test("#452 U5 (R13): the rail says builds save automatically, and stay local", () => {
+  const rail = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function railHTML("));
+  const copy = rail.slice(0, rail.indexOf("\n    function "));
+  assert.ok(/[Ss]aves automatically/.test(copy),
+    "the storage sentence states that saving is not something the player opts into");
+  assert.ok(/this browser only/.test(copy) && /no account/.test(copy),
+    "…without weakening the privacy promise it already carried");
+});
+
+test("#452: overwriteConfirmText is unchanged — regression guard", () => {
+  // Deliberately NOT proven red: this pins behaviour #452 must not disturb. Its
+  // three branches are what R5's "states which of the two records carries a
+  // solved loadout" is satisfied by, and rewording them would drift from the
+  // Save progress path that shares them.
+  assert.strictEqual(overwriteConfirmText("Sook", false, false), "Update saved build “Sook”?");
+  assert.ok(/Its saved loadout is replaced/.test(overwriteConfirmText("Sook", true, true)));
+  assert.ok(/Its saved loadout is kept/.test(overwriteConfirmText("Sook", true, false)));
 });

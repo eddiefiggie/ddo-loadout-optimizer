@@ -200,27 +200,34 @@ function overwriteConfirmText(name, prevHasLoadout, savingSolved) {
     : `Update saved build \u201C${nm}\u201D? Its saved loadout is kept \u2014 only the character and priorities you have on screen are updated.`;
 }
 
-/** #428 U5 (R19/KTD3) — the unsaved-changes guard's message, or null when there
- *  is nothing to warn about.
+/** #452 U2 (R5/R6/KTD1) — does saving under `nm` overwrite a DIFFERENT build?
  *
- *  Built from state rather than assembled at the call site so the WORDING is
- *  testable without a dialog. A loaded build is named, because that name is the
- *  thing the player recognizes; a build that was never saved is described as
- *  such rather than quoted by its typed name — quoting it would read as "your
- *  saved build Sook is at risk" when no such record exists. Pure; unit-tested. */
-function unsavedGuardMessage(state, kind) {
+ *  This is the gate that makes autosave-on-Continue viable. `trySave` used to
+ *  confirm whenever ANY record carried the name, the build being edited
+ *  included. That was harmless while saving was a deliberate press: you pressed
+ *  Save, you got one question. Under #452 the forward path saves, so the same
+ *  predicate would fire a native window.confirm on every step change of every
+ *  build saved even once — strictly worse than the dialog #452 removes, and it
+ *  would read as the feature failing rather than as the gate being mis-scoped.
+ *
+ *  Three clauses, each load-bearing:
+ *
+ *    prev                    there is something to overwrite at all
+ *    nm !== loadedName       re-saving the build you are editing is not an
+ *                            overwrite of anyone's work, however many times
+ *    nameReconciled !== nm   R6's warn-once, set when the player accepts
+ *
+ *  Pure, so the gate is testable without a dialog — the same reason
+ *  `overwriteConfirmText` beside it is pure. A predicate living inside
+ *  `trySave` would only be reachable by source-text assertion, and this one is
+ *  too important to test that way. Unit-tested in tests/wizard.test.js. */
+function nameCollides(state, nm, prev) {
   const s = state || {};
-  if (!s.inputsDirty) return null;
-  const nm = String(s.loadedName || "").trim();
-  const what = nm ? `You have unsaved changes to \u201C${nm}\u201D.` : `This build has never been saved.`;
-  // #429 review #3 — a step change keeps the work in memory; loading another
-  // build REPLACES it outright. Same flag, materially different cost, so the
-  // sentence says which one the player is about to pay.
-  const cost = kind === "load"
-    ? `Loading another build replaces it, and the changes are gone.`
-    : (nm ? `Leaving without saving keeps them only until you close this tab.`
-          : `Leaving without saving keeps it only until you close this tab.`);
-  return `${what} ${cost}`;
+  const name = String(nm || "").trim();
+  if (!name || !prev) return false;
+  if (name === String(s.loadedName || "").trim()) return false;
+  if (String(s.nameReconciled || "") === name) return false;
+  return true;
 }
 
 /** #428 U3 (R13/R14/R17/R20/R21) — the save rail's model.
@@ -1623,7 +1630,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, unsavedGuardMessage, runBelongsTo, overwriteConfirmText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -1715,9 +1722,14 @@ if (typeof window !== "undefined" && window.App) {
       // cannot drift from what the player actually changed the way a diff over a
       // large state object can, and it costs nothing per keystroke.
       inputsDirty: false,
-      // #428 U5 (R19) — the step a blocked navigation was heading for, or null.
-      // Transient: it exists only between the click and the player's answer.
-      unsavedPrompt: null,
+      // #452 U2 (R6/R7) — the name whose overwrite the player has already
+      // accepted, or null. Lives in `state`, never in the record: it is a UI
+      // acknowledgement, and persisting it would carry a meaningless field into
+      // every shared and exported build — and past `sanitizeCharacter`'s
+      // allowlist, which #420 hardened to refuse rather than silently reduce.
+      // Deliberately does not survive a reload; a reload re-establishes the same
+      // facts and asking once more is correct rather than annoying (R7).
+      nameReconciled: null,
       // #428 U6 — the weapon fold's open state. Persisted on state because half
       // the character step's handlers re-render the whole step, and a fold that
       // snapped shut mid-edit would be worse than not folding at all.
@@ -3411,7 +3423,11 @@ if (typeof window !== "undefined" && window.App) {
       // #428 U5 (KTD3) — a freshly loaded build is not unsaved work. Cleared at
       // the TOP of the load, before the restore writes below can raise it again.
       state.inputsDirty = false;
-      closeUnsavedGuard();
+      // #452 U2 (R7) — a freshly loaded build has reconciled nothing. Cleared
+      // here for the same reason and in the same breath: carrying the previous
+      // build's accepted overwrite forward would let the next Continue silently
+      // replace a record this player never agreed to replace.
+      state.nameReconciled = null;
       // #428 U6 (AE3) — a loaded build has not been blocked yet, so nothing is
       // marked as needing an answer. A build saved before KD6 carries no armor
       // and will be marked the moment Continue is pressed (AE3a).
@@ -3661,7 +3677,7 @@ if (typeof window !== "undefined" && window.App) {
         <p class="wz-rail-loaded">${m.loaded
           ? `Editing <strong>${esc(m.loadedName)}</strong>`
           : `<span class="wz-sub">Unsaved build</span>`}</p>
-        <p class="wz-help">Saved in this browser only — no account, and cleared if you clear browser data.</p>
+        <p class="wz-help">Saves automatically as you go — in this browser only, with no account, and cleared if you clear browser data.</p>
         <div class="wz-rail-list">
           <p class="wz-label">Saved builds</p>
           ${list}
@@ -3686,12 +3702,21 @@ if (typeof window !== "undefined" && window.App) {
     function trySave(nm) {
       // eslint-disable-next-line no-undef
       const prev = nm ? CharacterStore.loadCharacter(nm) : null;
-      if (prev) {
+      // #452 U2 (KTD1) — `prev` alone is NOT the gate. It is true for the build
+      // being edited, and under autosave that means a native confirm on every
+      // step change. `nameCollides` narrows it to a genuine overwrite of someone
+      // else's record, once.
+      if (nameCollides(state, nm, prev)) {
         const prevHasLoadout = !!(prev.snapshot && prev.snapshot.status === "optimal");
         const savingSolved = runBelongsTo(state.lastRun, nm, state.loadedName);
         if (!window.confirm(overwriteConfirmText(nm, prevHasLoadout, savingSolved))) return null;
+        // R6 — remembered for this build, so a second Continue is silent.
+        state.nameReconciled = nm;
       }
       const res = saveCurrentCharacter(nm);
+      // #452 R-d — autosave depends on this. Without it the next Continue sees a
+      // name that is not `loadedName`, `nameCollides` returns true again, and the
+      // confirm comes back on the build we just wrote.
       if (res.ok) state.loadedName = nm;
       return res;
     }
@@ -3996,10 +4021,15 @@ if (typeof window !== "undefined" && window.App) {
     }
     function go(step) { state.step = step; render(); }
 
-    // #428 U5 (KTD3) — one flag, raised by any write to a build input. Cleared by
-    // save and by load, and by the player choosing to leave without saving (they
-    // have been told; re-asking on the next step would be nagging, and the next
-    // edit raises it again).
+    // #428 U5 (KTD3) — one flag, raised by any write to a build input. Cleared
+    // by save and by load.
+    //
+    // #452 U3 — it used to be cleared by a third path, the player choosing to
+    // leave without saving. That dialog is gone: navigation saves now, so the
+    // only way the flag survives a navigation is a save that FAILED, which is
+    // exactly what it should mean. Do not repurpose it into an "autosave
+    // needed" skip — a clear flag means the last write succeeded, not that the
+    // record matches the current step, and the step itself is saved state.
     function markDirty() {
       state.inputsDirty = true;
       // #428 U6 (R8) — the marks must clear the moment a field is answered, and
@@ -4015,105 +4045,56 @@ if (typeof window !== "undefined" && window.App) {
      *  the very action that is about to produce the thing worth saving. */
     function navigate(step) {
       if (step === state.step) return;
-      guardOr({ kind: "step", value: step });
+      autosaveThen(step);
     }
 
-    /** #429 review #3 — the rail's Load discards MORE than a step change does:
-     *  it replaces the whole in-memory build. It went straight to loadCharacter,
-     *  whose first act is `state.inputsDirty = false`, so the edits vanished and
-     *  the flag that would have caught it was cleared in the same breath. */
-    function requestLoad(name) {
-      guardOr({ kind: "load", value: name });
-    }
-
-    /** The one gate. Runs `pending` immediately when there is nothing to lose;
-     *  otherwise stashes it and raises the guard, which resumes it verbatim. */
-    function guardOr(pending) {
-      const msg = unsavedGuardMessage(state, pending.kind);
-      if (!msg) { resumePending(pending); return; }
-      state.unsavedPrompt = pending;
-      showUnsavedGuard(msg);
-    }
-
-    function resumePending(pending) {
-      if (!pending) return;
-      if (pending.kind === "load") { loadCharacter(pending.value); return; }
-      go(pending.value);
-    }
-
-    // The guard itself (R19). A modal rather than an inline bar because it has to
-    // PRECEDE the navigation, and three answers rather than two — save, leave
-    // anyway, stay — which window.confirm cannot express.
-    //
-    // It is appended to document.body rather than emitted by render(), and that
-    // is not a style choice: `stepResults` renders an EMPTY #wz-results that only
-    // renderResults refills, so any render() on the results step blanks the
-    // loadout. Routing the guard through render() there would destroy the very
-    // build the player is being asked whether to save.
-    function showUnsavedGuard(msg) {
-      let el = document.getElementById("wz-unsaved");
-      if (!el) {
-        el = document.createElement("div");
-        el.id = "wz-unsaved"; el.className = "wz-modal";
-        el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true");
-        el.setAttribute("aria-labelledby", "wz-unsaved-msg");
-        document.body.appendChild(el);
-      }
-      // #431 U4 (KTD3) — the option set is a function of whether saving can
-      // SUCCEED. `data-back` navigates without consulting canAdvance, so Back
-      // from the character step reaches this dialog with an empty name. Rather
-      // than offer a Save that can only fail — and then point at a field behind
-      // the overlay — the option is omitted and the dialog says why.
-      const named = !!String(state.characterName || "").trim();
-      const isLoad = state.unsavedPrompt && state.unsavedPrompt.kind === "load";
-      el.innerHTML = `<div class="wz-modal-panel">
-          <p class="wz-label">Unsaved changes</p>
-          <p id="wz-unsaved-msg">${esc(msg)}</p>
-          ${named ? "" : `<p class="wz-help" id="wz-unsaved-why">This build has no name yet, so it cannot be saved. Stay here and name it on the character step.</p>`}
-          <div class="wz-modal-actions">
-            ${named ? `<button class="btn primary" id="wz-unsaved-save" type="button">Save and continue</button>` : ""}
-            <button class="btn ghost" id="wz-unsaved-go" type="button">${isLoad ? "Load anyway" : "Continue without saving"}</button>
-            <button class="btn ghost" id="wz-unsaved-stay" type="button">${isLoad ? "Keep editing this build" : "Stay on this step"}</button>
-          </div>
-          <span class="wz-savestat" id="wz-unsaved-stat" aria-live="polite"></span>
-        </div>`;
-      wireUnsavedGuard();
-      // Focus Save when it is offered, and STAY when it is not — never "the first
-      // control rendered". DOM order is save, discard, stay, so with save omitted
-      // that idiom would make the discard option the keyboard default and a
-      // reflexive Enter would throw the unsaved build away.
-      const focusEl = document.getElementById(named ? "wz-unsaved-save" : "wz-unsaved-stay");
-      if (focusEl && focusEl.focus) focusEl.focus();
-    }
-
-    function closeUnsavedGuard() {
-      state.unsavedPrompt = null;
-      const el = document.getElementById("wz-unsaved");
-      if (el) el.remove();
-    }
-
-    function wireUnsavedGuard() {
-      const to = state.unsavedPrompt;
-      if (!to) return;
-      const stay = document.getElementById("wz-unsaved-stay");
-      if (stay) stay.onclick = closeUnsavedGuard;
-      const leave = document.getElementById("wz-unsaved-go");
-      if (leave) leave.onclick = () => {
-        // Told and acknowledged: the flag drops so the next navigation does not
-        // ask again. The next edit raises it right back.
-        state.inputsDirty = false; closeUnsavedGuard(); resumePending(to);
-      };
-      // #431 U4 — rendered only when a name exists, so the no-name branch that
-      // used to focus the rail's field from behind this dialog is gone with it.
-      const save = document.getElementById("wz-unsaved-save");
-      if (save) save.onclick = () => {
-        const nm = String(state.characterName || "").trim();
-        const res = trySave(nm);
-        if (!res) return;   // overwrite declined
-        if (res.ok) { closeUnsavedGuard(); resumePending(to); return; }
-        const stat = document.getElementById("wz-unsaved-stat");
+    /** #452 U1/U4 (R1/R11/R12) — the forward path saves, then moves.
+     *
+     *  This replaces the unsaved-changes guard rather than reusing it. #431 made
+     *  the build name a required field that `canAdvance` blocks on, so by the
+     *  time a player can leave the character step the name exists — which is
+     *  what makes an unprompted save well-defined and left the guard with
+     *  nothing to ask.
+     *
+     *  Direction-agnostic on purpose: `navigate` serves Continue, Back and the
+     *  stepper rail alike, so all three save. Excluding Back would cost a branch
+     *  and leave one forward-path reflex behaving differently from the other.
+     *
+     *  Exactly one path does not advance — a DECLINED overwrite. That is not the
+     *  guard returning under another name: it is the player choosing to go
+     *  rename the build, which is the only answer that still has work to do. */
+    function autosaveThen(step) {
+      const nm = String(state.characterName || "").trim();
+      // `data-back` navigates without consulting canAdvance, so Back from the
+      // character step can still arrive unnamed. Nothing to save then — move,
+      // rather than manufacturing a "Name this build first" the player did not
+      // ask for by pressing Back.
+      if (!nm) { go(step); return; }
+      const res = trySave(nm);
+      if (res === null) return;   // R5 — overwrite declined; stay and rename
+      go(step);
+      if (!res.ok) {
+        // R11/R12 — reported where the press happened, never as a modal, and
+        // never blocking. `saveCurrentCharacter` leaves `inputsDirty` raised on
+        // failure, so the next navigation retries rather than assuming the work
+        // is safe. Written AFTER `go`, which re-renders the step body the status
+        // span lives in.
+        const stat = document.getElementById("wz-savestat");
         if (stat) stat.textContent = saveErrorText(res.error);
-      };
+      }
+    }
+
+    /** #452 U3 (R9) — loading a saved build goes straight there.
+     *
+     *  #429 review #3 routed this through the unsaved-changes guard because a
+     *  load "discards MORE than a step change does: it replaces the whole
+     *  in-memory build". That hazard is gone: every navigation now saves
+     *  (`autosaveThen`), so the build being replaced is already on disk under
+     *  its own name and loading another costs nothing. A guard whose
+     *  precondition can no longer occur is dead UI, and dead UI is worse than
+     *  dead logic — it can still be reached by a state nobody predicted. */
+    function requestLoad(name) {
+      loadCharacter(name);
     }
 
     function wire() {
