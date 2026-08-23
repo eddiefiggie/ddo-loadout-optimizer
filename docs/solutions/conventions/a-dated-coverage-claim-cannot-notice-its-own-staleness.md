@@ -2,6 +2,7 @@
 title: "A coverage claim with a date is not a guard — convert it into a check against the population"
 module: docs
 date: 2026-08-20
+last_updated: 2026-08-23
 problem_type: convention
 component: tooling
 related_components:
@@ -18,6 +19,7 @@ applies_when:
   - "An evidence or plan document records a status checked on a date"
   - "A curated list is asserted to cover a population that upstream can grow"
   - "Reading a completeness claim that is older than the last upstream data refresh"
+  - "A hand-maintained number in prose restates a figure the build already stamps"
 ---
 
 ## Context
@@ -138,10 +140,41 @@ disposition. A dated completeness claim cannot notice its own staleness; this on
 now does.
 ```
 
+## A second instance: the README's own headline counts (#460)
+
+The same shape, in the most-read file in the repo. `README.md` stated the catalog
+size in **three** places — the opening pitch, the capability table, and the
+`**State (…):**` line — and two of them had drifted. The pitch and the table said
+9,108 variants from 8,034 records; the State line 119 lines below said 9,110 from
+8,036. The build agreed with the State line. A reader who checked the product's
+opening claim against its own resume prompt found two answers and no way to tell
+which was live.
+
+Nothing about this was hard to check. `metadata.variant_count` and
+`metadata.seed_count` were stamped in the dataset the whole time. The numbers were
+not wrong because they were unknowable — they were wrong because a human had to
+retype them and, twice, no one did.
+
+`tests/test_readme_counts.py` converts all ten of those claims into checks against
+the built figures. It carries one wrinkle worth reusing: **the guard guards its own
+completeness too.** A count guard that only covers the claims someone remembered to
+declare drifts exactly the way the README did, so
+`test_every_counted_capability_row_is_a_guarded_claim` asserts that every numeric
+row in the capability table falls inside a span some declared claim matched. Adding
+a counted row without guarding it fails the build. That is the rule applied to the
+guard itself: the guard makes a completeness claim, so the guard asserts it.
+
+Two scoping notes that made it tractable. Each claim is anchored to the **region**
+it lives in rather than searched file-wide — the "Latest work" narrative quotes
+counts as they stood at the time (`675 of 1,063`, an older `7 Dino inserts`), and
+history is allowed to be stale. And the guard builds the dataset in-process rather
+than reading the gitignored `web/data/items.json`, so it compares the README to what
+the pipeline *currently produces*, not to whatever artifact happens to be on disk.
+
 Related: `a-guard-that-copies-its-parameter-measures-the-copy.md` (the same
 staleness in a harness rather than a doc),
 `a-test-that-defines-the-rule-it-asserts-proves-nothing.md` (why the curated set
 belongs in data), and `prove-a-guard-fails-before-trusting-it.md` (having built
 the guard, disarm it once and watch it go red).
 
-Found and fixed in [#413](https://github.com/eddiefiggie/ddo-loadout-optimizer/pull/413).
+Found and fixed in [#413](https://github.com/eddiefiggie/ddo-loadout-optimizer/pull/413); applied again to the README's headline counts in [#460](https://github.com/eddiefiggie/ddo-loadout-optimizer/issues/460).
