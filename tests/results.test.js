@@ -424,7 +424,13 @@ test("U2/AE3: an assigned craft slot is declared with its applied value", () => 
   const v = { variant_id: "Cloak1", affixes: [] };
   const maps = blockMaps({ ncByItem: new Map([["Cloak1", [{ stat: "Constitution", bonus_type: "Enhancement", value: 15, unit: "flat" }]]]) });
   const html = R.equippedBody(v, 0, maps, new Map());
-  assert.ok(/Craft/.test(html) && /Nearly Completed: Constitution \+15/.test(html), "declares the craft slot + shows the assignment");
+  // #455 — the instruction and the value are now two chips with two jobs: the
+  // craft chip says what to go do, the stat chip says what you get. Both facts
+  // are still on the card, which is what this test was always about.
+  assert.ok(/Craft/.test(html), "declares the craft slot");
+  assert.ok(/Nearly Completed(?!:)/.test(html), "…as the instruction alone, no inline value");
+  assert.ok(/pd-stat-chip[^>]*>Constitution \+15/.test(html), "and the applied value is a stat chip");
+  assert.ok(/pd-src-craft/.test(html), "tagged as craft-granted, not printed on the item (#455)");
 });
 
 test("U2/AE3: an item with no craft assignment renders nothing extra for crafts", () => {
@@ -690,13 +696,19 @@ test("plan 2026-08-12-001 U3: equippedRow renders the summary only when the cont
   const pick = { variant: res.chosen[0].variant, idx: 0 };
   const withCtx = R.equippedRow("Ring", pick, {}, new Set(), null, null, null, null,
     { result: res, attr: R.attributionByTarget(res), targets: ["Constitution"] });
-  assert.ok(/pd-prio/.test(withCtx), "summary at the bottom of the box");
-  assert.strictEqual(_chipLine(_chips(withCtx)[0]), "+15 Constitution Enhancement", "with its full content");
+  // #455 — `pd-prio` is retired: it restated 62% of the stat row. The
+  // context-threaded signal is now that the stat chips are CLASSIFIED — a
+  // credited stat reads tracked only when the solve's attribution is in hand.
+  assert.ok(!/pd-prio/.test(withCtx), "the second chip family is gone");
+  assert.ok(/pd-stat-chip is-tracked[^>]*>Constitution \+15/.test(withCtx),
+    "the credited stat is chipped and classified");
   // #449 U4 — the third surface that reached the marker. Guarded separately for
-  // the same reason: each threads its own context into whyThisLine.
+  // the same reason: each threads its own context in.
   assert.ok(!/at-ceiling/.test(withCtx), "and the row path renders no marker either");
   const withoutCtx = R.equippedRow("Ring", pick, {}, new Set(), null, null, null, null);
   assert.ok(!/pd-prio/.test(withoutCtx), "pure-test callers render no summary and no crash");
+  assert.ok(!/is-tracked/.test(withoutCtx),
+    "…and claim nothing about a solve they were not given");
 });
 
 test("whyThisLine has an explicit empty state for a filler pick", () => {
@@ -3233,4 +3245,123 @@ test("#453 U4 (R9): a stat chip caps at the row width and wraps its own text", (
   assert.ok(rowBlocks.length >= 2, `the selector's blocks resolve (${rowBlocks.length})`);
   assert.ok(rowBlocks.some((blk) => /min-width:\s*0/.test(blk)),
     "the row may shrink below its longest child, or the chip's max-width never binds");
+});
+
+// ---------------------------------------------------------------------------
+// #455 — one stat surface. `pd-prio` restated 62% of the chip row (measured, 21
+// of 34 chips on an ML34 solve) and its only unique content was the set- and
+// craft-sourced contributions. Those are chips now and that row is retired.
+// ---------------------------------------------------------------------------
+
+test("#455: the loadout card renders no second chip family", () => {
+  // Through `equippedRow`, NOT `equippedBody`: pd-prio was emitted by the ROW,
+  // so an equippedBody-only assertion passes against the pre-change tree and
+  // proves nothing. (It did, on the first draft of this test.)
+  const v = { variant_id: "Solo", affixes: [{ name: "Melee Power", value: 10, type: "Enhancement" }] };
+  const res = { chosen: [{ slot: "Ring", variant: v }],
+    breakdown: { "Melee Power": [{ bonus_type: "Enhancement", value: 10, source: "Solo", sourceKind: "worn", hostIds: ["Solo"] }] } };
+  const html = R.equippedRow("Ring", { variant: v, idx: 0 }, {}, new Set(), null, null, null, null,
+    { result: res, attr: R.attributionByTarget(res), targets: ["Melee Power"] });
+  assert.ok(!/pd-prio|pd-chip-head|pd-chip-value/.test(html),
+    "the pd-prio row and its internals are gone from the gear box");
+  assert.ok(/pd-stat-chip is-tracked/.test(html), "the stat row carries the credited fact instead");
+});
+
+test("#455: a craft-granted point is chipped, tagged, and classified", () => {
+  const v = { variant_id: "Cloak", affixes: [] };
+  const maps = chipMaps(new Map() && { byIndex: new Map(), freeByIndex: new Map() });
+  maps.vikByItem = new Map([["Cloak", [{ slot_type: "Dolorous", stat: "Seeker", bonus_type: "Enhancement", value: 15, unit: "flat" }]]]);
+  const html = R.equippedBody(v, 0, maps, new Map(), false, false, chipCtx("Cloak", { Seeker: { value: 15 } }));
+  assert.ok(/pd-stat-chip is-tracked[^>]*>Seeker \+15/.test(html), "the crafted point is a stat chip");
+  assert.ok(/pd-src-craft/.test(html), "…tagged as craft-granted rather than printed on the drop");
+  // The instruction survives as its own chip, without restating the value.
+  assert.ok(/chip lamordia[^>]*>Slot Dolorous Viktranium augment</.test(html),
+    "the craft step says what to go do, and only that");
+});
+
+test("#455: a set-sourced point is chipped even with no affix record on the item", () => {
+  const v = { variant_id: "Piece", affixes: [] };
+  const ctx = { result: { chosen: [] },
+    attr: { "Melee Power": [{ hostIds: ["Piece"], value: 15, bonus_type: "Artifact", isSet: true }] },
+    targets: ["Melee Power"] };
+  const html = R.equippedBody(v, -1, null, null, false, false, ctx);
+  assert.ok(/pd-stat-chip is-tracked[^>]*>Melee Power \+15/.test(html), "the set point is a stat chip");
+  assert.ok(/pd-src-set/.test(html), "…tagged as set-granted");
+  assert.ok(/pd-q-set/.test(html), "and keeps the (set) qualifier pd-prio used to carry");
+});
+
+test("#455: the #88 override disclosure survives the move onto the chip", () => {
+  // Non-negotiable. It shipped because a gear box stating a bonus type without
+  // it "states a bonus type as though the wiki said so"; that is exactly as
+  // false on a chip as it was on the retired row.
+  const v = { variant_id: "Ovr", affixes: [{ name: "Accuracy", value: 4, type: "Quality" }] };
+  const ctx = { result: { chosen: [] },
+    attr: { Accuracy: [{ hostIds: ["Ovr"], value: 4, bonus_type: "Quality", overriddenFrom: "Insightful" }] },
+    targets: ["Accuracy"] };
+  const html = R.equippedBody(v, -1, null, null, false, false, ctx);
+  assert.ok(/your call — catalog says Insightful/.test(html), "the disclosure is on the card");
+  assert.ok(/pd-q-override/.test(html), "…in its own marked span");
+});
+
+test("#455: a cross-added credit keeps its (from <stat>) label", () => {
+  const v = { variant_id: "Cross", affixes: [{ name: "Fire Spell Power", value: 20, type: "Enhancement" }] };
+  const ctx = { result: { chosen: [] },
+    attr: { "Fire Spell Power": [{ hostIds: ["Cross"], value: 20, bonus_type: "Enhancement", crossAdd: "Universal Spell Power" }] },
+    targets: ["Fire Spell Power"] };
+  const html = R.equippedBody(v, -1, null, null, false, false, ctx);
+  assert.ok(/from Universal Spell Power/.test(html), "the cross-add source is named (#290/#291)");
+});
+
+test("#455: the rank-1 accent survives the move off pd-prio", () => {
+  const v = { variant_id: "Top", affixes: [
+    { name: "Melee Power", value: 10, type: "Enhancement" },
+    { name: "Doublestrike", value: 5, type: "Quality" },
+  ] };
+  const ctx = chipCtx("Top", { "Melee Power": { value: 10 }, Doublestrike: { value: 5 } });
+  const html = R.equippedBody(v, -1, null, null, false, false, ctx);
+  assert.ok(/pd-stat-chip is-tracked is-rank1[^>]*>Melee Power/.test(html), "the top priority is accented");
+  assert.strictEqual((html.match(/is-rank1/g) || []).length, 1, "and only the top one");
+});
+
+test("#455: a credited point with no affix record still reaches a chip", () => {
+  // The residual sweep, proven non-vacuous. On real data the four source kinds
+  // are all covered (worn by printed affixes, the six craft families and set by
+  // their own branches, augments never credited to the host) so this fires zero
+  // times — but a credited point that renders NOWHERE is an invisible gap, and
+  // this is the arm that makes that impossible.
+  const v = { variant_id: "Legacy", set_bonus: [], parsed_set_bonuses: [] };  // no affixes at all
+  const ctx = { result: { chosen: [] },
+    attr: { Constitution: [{ hostIds: ["Legacy"], value: 15, bonus_type: "Enhancement" }] },
+    targets: ["Constitution"] };
+  const html = R.equippedBody(v, -1, null, null, false, false, ctx);
+  assert.ok(/pd-stat-chip is-tracked[^>]*>Constitution \+15/.test(html),
+    "the point is chipped rather than silently dropped");
+});
+
+test("#455: the sweep does not double-chip a collapsed bundle — regression guard", () => {
+  // Deliberately NOT proven red: the pre-change tree renders one chip here too,
+  // having no sweep to double it. This pins that the sweep added in #455 does
+  // not regress it — the bundle is filed under its enchantment while the
+  // contribution names a member stat, so a sweep keyed on the entry alone would
+  // chip it twice. It caught exactly that during implementation.
+  const v = { variant_id: "Focus", affixes: focusMasteryAffixes("Sacred Spell Focus Mastery", "Sacred", 3) };
+  const ctx = chipCtx("Focus", { "Evocation Focus": { value: 3, via: "Sacred Spell Focus Mastery" } });
+  const html = R.equippedBody(v, -1, null, null, false, false, ctx);
+  assert.strictEqual((html.match(/pd-stat-chip/g) || []).length, 1, "exactly one chip for the bundle");
+});
+
+test("#455: craftLabel is unchanged, and the step label is separate", () => {
+  // Mixed: the craftLabel assertions are a regression guard (they pass before
+  // and after), the craftStepLabel ones are new API and go red on the pre-change
+  // tree. Kept in one test because the POINT is the relationship between them —
+  // the exporters render from craftLabel and the goldens pin it, so the trimmed
+  // instruction had to be a separate function rather than a flag that could
+  // move five formats at once.
+  const P = require("../web/projection.js");
+  const o = { slot_type: "Dolorous", stat: "Seeker", bonus_type: "Enhancement", value: 15, unit: "flat" };
+  assert.strictEqual(P.craftLabel(o, "vik"), "Slot Dolorous Viktranium augment: Seeker +15");
+  assert.strictEqual(P.craftStepLabel(o, "vik"), "Slot Dolorous Viktranium augment");
+  // vikEmpty is a disclosure that a declared slot went unfilled, not a craft to
+  // go apply — shortening it would turn "no option helps you" into an instruction.
+  assert.strictEqual(P.craftStepLabel({ slot_type: "X" }, "vikEmpty"), P.craftLabel({ slot_type: "X" }, "vikEmpty"));
 });

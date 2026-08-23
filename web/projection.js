@@ -1194,6 +1194,48 @@
   // results.js craftSlotChips so results.js stays byte-identical when it wraps this in
   // a single esc(). `results.js` re-applies esc(); each text exporter applies its own
   // escaper — this function never escapes.
+  /** #455 — the crafting STEP alone, with no affix list.
+   *
+   *  `craftLabel` answers two questions at once: "what do I go do" and "what do
+   *  I get for it". On the Loadout card the second half is now a stat chip in
+   *  the shared chip language, so restating it inside the instruction is the
+   *  redundancy #455 reports, in smaller form. This is the instruction half.
+   *
+   *  A SEPARATE function rather than a flag on `craftLabel`, because that one is
+   *  what every text exporter renders from and what the export goldens pin — a
+   *  parameter there is one defaulted argument away from moving five formats at
+   *  once. The Deep Dive keeps the full label too: it is the exhaustive
+   *  per-item surface, and trimming it there would lose the value entirely.
+   *
+   *  Families with no affix list to trim (`joker`, `augmentset`, `vikEmpty`)
+   *  fall through to `craftLabel` unchanged — `vikEmpty` in particular is not an
+   *  instruction at all but a disclosure that a declared slot went unfilled, and
+   *  shortening it would turn "no option helps you" into a craft to go apply. */
+  function craftStepLabel(o, family) {
+    switch (family) {
+      case "dino": return `${o.dino_type}${o.name ? ": " + o.name : ""}`;
+      case "nc": return `${o.pool || "Nearly Completed"}${o.name ? ": " + o.name : ""}`;
+      case "roll": return "Choice slot";
+      case "vik": return `Slot ${o.slot_type} Viktranium augment`;
+      case "seal": return `Sealed in ${o.seal_type}`;
+      case "tf": return `Thunder-Forged T${o.tier}`;
+      case "gs": return "Green Steel";
+      default: return craftLabel(o, family);
+    }
+  }
+
+  /** #455 — the affixes a placed craft actually grants, as affix records.
+   *
+   *  `craftAffixes` renders them to a string; this returns the records so the
+   *  Loadout card can chip them in the same language as a printed affix. Same
+   *  `o.affixes || [o]` resolution, so the atomic multi-affix shape and the flat
+   *  single-affix record both work, and NOT collapsed — the caller collapses
+   *  alongside the item's own affixes so one enchantment split across a printed
+   *  affix and a craft does not collapse twice under two different keys. */
+  function craftAffixRecords(o) {
+    return (o && o.affixes && o.affixes.length) ? o.affixes : (o ? [o] : []);
+  }
+
   function craftLabel(o, family) {
     switch (family) {
       case "dino": return `${o.dino_type}: ${o.name ? o.name + ", " : ""}${craftAffixes(o)}`;
@@ -2209,7 +2251,7 @@
     // model.js; re-exported so exporters can recognize the sentinel row)
     utilityLine, utilityPriceLine, utilityUnsecuredLines, UTILITY_SENTINEL: UTILITY_NAME,
     // pure primitives (results.js binds these; single definition, no drift)
-    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, bundleGroups, affixStatCoverage, affixCoverageKey, itemMl, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
+    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, bundleGroups, affixStatCoverage, affixCoverageKey, craftStepLabel, craftAffixRecords, itemMl, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,
     // #449 (U2) — the achieved/ceiling fraction: numbers, state and wording from
     // one place, plus the once-per-document full statement.
