@@ -1233,6 +1233,12 @@ input.wz-ml { width: 120px; }
 /* #453 U3 (R6) -- the augment's granted stats are a nested chip row, kept under
    the augment that grants them so "which gem do I go slot" survives. */
 .aug-affx { color: var(--muted); font-size: 0.62rem; margin-top: 2px; }
+/* #457 -- a Deep Dive augment chip carrying its granted stats becomes a small
+   block: name on top, classified chips beneath, matching the gear box's nesting
+   so "which gem grants what" reads the same on both surfaces. */
+.chip.aug.has-affx { display: inline-flex; flex-direction: column; align-items: flex-start;
+  gap: 2px; max-width: 100%; }
+.chip.aug.has-affx .aug-head { white-space: normal; }
 .aug-open .muted { font-size: 0.62rem; font-style: italic; }
 
 /* Per-slot constraint controls (U6) on the equipped-list rows. */

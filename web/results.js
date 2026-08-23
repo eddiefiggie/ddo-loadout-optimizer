@@ -247,10 +247,32 @@ function craftSlotChips(v, idx, maps, stepOnly) {
   return [...dinos, ...ncs, ...rolls, ...viks, ...seals, ...tfs, ...gss];
 }
 
-function craftChips(v, idx, maps) {
+function craftChips(v, idx, maps, augById, stepOnly, contribIdx, rank1) {
+  // #457 — the classification context, optional. Without it an augment's stats
+  // still chip, they just cannot read as tracked — which is correct, since
+  // nothing has told this call what the player ranked.
+  contribIdx = contribIdx || { keys: new Set(), byStat: new Map(), list: [] };
   const augs = (maps.augAssign.byIndex.get(idx) || []).map((a) => {
     const where = a.slot_color && a.slot_color !== a.color ? `${a.color} in ${a.slot_color} slot` : (a.color || "");
-    return `<span class="chip aug" title="augment slotted">${esc(a.variant_id)} <span class="muted">(${esc(where)})</span></span>`;
+    // #457 — say what the augment GRANTS, not just its name. The gear box has
+    // nested these since #453; the Deep Dive named 18 augments across a loadout
+    // and showed nothing any of them gave, which left the exhaustive surface
+    // less informative than the summary. `augById` is optional so the pure-test
+    // callers and any caller without the catalog still render the name alone.
+    //
+    // Chips, not a text run — the same three classes as everywhere else. Showing
+    // them as plain text inside a chip would rebuild the two-languages problem
+    // #455 removed, on the surface #457 exists to make consistent. Augment
+    // affixes are never collapsed anywhere (see `bundleGroups`), so they are
+    // classified directly.
+    const meta = augById && augById.get(a.variant_id);
+    const augAffixes = (meta && meta.affixes) || [];
+    const affx = augAffixes.length
+      ? `<ul class="aug-affx pd-stats">${statChipRow(
+          augAffixes.map((x) => ({ affix: x, source: null })),
+          Proj.affixStatCoverage(augAffixes), contribIdx, rank1)}</ul>` : "";
+    return `<span class="chip aug${affx ? " has-affx" : ""}" title="augment slotted">`
+      + `<span class="aug-head">${esc(a.variant_id)} <span class="muted">(${esc(where)})</span></span>${affx}</span>`;
   });
   const jokers = ((maps.jokerByHost && maps.jokerByHost.get(v.variant_id)) || []).map((j) => `<span class="chip joker" title="wildcard set piece">Wildcard set: ${esc(j.set)}</span>`);
   // Membership chip (R3/R4): Vecna Lost Purpose and Isle-of-Dread Set Bonus flow
@@ -283,7 +305,7 @@ function craftChips(v, idx, maps) {
       : "solver-placed Set Augment";
     return `<span class="chip setaug" title="${title}">${esc(Proj.craftLabel({ set: s.set, slot_color: s.slot_color, suppresses }, "augmentset"))}</span>`;
   });
-  return [...augs, ...craftSlotChips(v, idx, maps), ...jokers, ...memberships, ...setAugs];
+  return [...augs, ...craftSlotChips(v, idx, maps, stepOnly), ...jokers, ...memberships, ...setAugs];
 }
 
 // U4 (R7) — the sets one equipped slot CONTRIBUTES to, as [{set, kind}], from the
@@ -334,7 +356,7 @@ function paperdollSlot(label, pos, pick, satisfied, contributors) {
 // Loadout Deep Dive: one block per equipped item showing where it is worn, its
 // affixes, its set membership, and every applied craft/augment (R5 detail moved
 // off the paperdoll cell into this tab).
-function loadoutDeepDive(result, query, maps, attr) {
+function loadoutDeepDive(result, query, maps, attr, augById) {
   if (!result.chosen.length) return `<p class="dd-none muted">No items equipped for this build.</p>`;
   const suppressed = suppressedHostIds(result);                        // U7: a Set-Augment host suppresses its own set
   const satisfied = satisfiedSets(result.chosen, result.setsActive, suppressed);   // U6/U7: glow on completion, honoring suppression
@@ -366,13 +388,26 @@ function loadoutDeepDive(result, query, maps, attr) {
       ? ` <span class="dd-suppressed" title="a Set Augment slotted here overrides this item's own set bonus">(suppressed by Set Augment${contribs.length ? `: ${esc(gaveUp.join(", "))}` : ""})</span>` : "";
     const setLine = (contribs.length || gaveUp.length)
       ? `<div class="dd-set"><span class="setpip"></span>Part of set: ${esc(contribs.length ? contribSetLabel(contribs) : gaveUp.join(", "))}${suppressNote}</div>` : "";
-    // U8/R8 — collapsed before render, so an expanded enchantment reads as the one
-    // name engraved on the item rather than as seven school lines.
-    const shownAffixes = collapseExpansions(v.affixes || []);
-    const affixes = shownAffixes.length
-      ? `<ul class="dd-list">${shownAffixes.map((a) => `<li>${esc(affixLabel(a))}</li>`).join("")}</ul>`
+    // #457 — the SAME one stat surface the gear card uses. This tab was strictly
+    // LESS informative than the summary card it details: measured on an ML34
+    // solve, the Legendary Cataclysmic Tower Shield listed 2 affixes here while
+    // its gear card showed 13 stats, because craft- and set-granted points lived
+    // only in `pd-prio` and in the craft labels. An exhaustive surface that shows
+    // less than the summary is the wrong way round.
+    //
+    // U8/R8 still holds: `statChipEntries` collapses, so an expanded enchantment
+    // reads as the one name engraved on the item rather than as seven school lines.
+    const ddContribIdx = itemContribIndex(
+      (attr || query) ? { result, attr, targets: query && query.targets } : null, v.variant_id);
+    const ddEntries = statChipEntries(v, idx, maps, ddContribIdx);
+    const ddRank1 = (query && query.targets && query.targets.length) ? query.targets[0] : null;
+    const affixes = ddEntries.entries.length
+      ? `<ul class="dd-list pd-stats">${statChipRow(
+          ddEntries.entries, Proj.affixStatCoverage(ddEntries.raw), ddContribIdx, ddRank1)}</ul>`
       : `<p class="dd-none muted">No parsed affixes on this item.</p>`;
-    const crafts = craftChips(v, idx, maps);
+    // #457 — the instruction alone, for the reason #455 gave: the value it used to
+    // restate is now a stat chip above.
+    const crafts = craftChips(v, idx, maps, augById, true, ddContribIdx, ddRank1);
     const craftBlock = crafts.length
       ? `<div class="dd-crafts"><h5>Applied crafting &amp; augments</h5><div class="dd-chips">${crafts.join(" ")}</div></div>` : "";
     const wiki = v.wiki_url ? `<a class="dd-wiki" href="${safeUrl(v.wiki_url)}" target="_blank" rel="noopener">wiki</a>` : "";
@@ -384,7 +419,7 @@ function loadoutDeepDive(result, query, maps, attr) {
       ? `<span class="dd-nodrop" title="the DDO wiki records no current in-game source for this item — it stays a solver candidate; block it to exclude it">${Proj.NO_DROP_SOURCE_WORDING}</span>` : "";
     return `<div class="dd-item${glow ? " is-set" : ""}${v.artifact ? " is-artifact" : ""}">
       <div class="dd-head"><span class="dd-slot">${esc(c.slot)}</span><span class="dd-name">${esc(v.variant_id)}</span>${artifactTag}${noDropTag}<span class="dd-ml">ML ${esc(itemMl(v) ?? "?")}</span>${wiki}</div>
-      ${whyThisLine(result, { slot: c.slot, variant_id: v.variant_id }, attr, query && query.targets)}
+      ${whyThisNote(result, { slot: c.slot, variant_id: v.variant_id }, attr, query && query.targets)}
       ${setLine}
       ${upgradeNote}
       <div class="dd-affixes"><h5>Affixes</h5>${affixes}</div>
@@ -2187,7 +2222,7 @@ function buildViews(build, model, query) {
   // on the equipped loadout, named once with its members and carrier.
   setsPanel += bundlesBlock(build, augById);
 
-  return { paperdoll: `<div class="pd-list">${rows.join("")}</div>`, weapons, cards: cardsHtml, setsPanel, deepDive: loadoutDeepDive(build, query, maps, attr) };
+  return { paperdoll: `<div class="pd-list">${rows.join("")}</div>`, weapons, cards: cardsHtml, setsPanel, deepDive: loadoutDeepDive(build, query, maps, attr, augById) };
 }
 
 // Alternative cards (U4): compact trade-off summary + gain tags, as a single-select

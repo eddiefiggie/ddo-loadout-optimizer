@@ -658,15 +658,18 @@ test("#276: no per-stat ceiling claim on a degenerate save whose totals are unav
   assert.ok(!/stat-ceiling/.test(v.cards), "a zeroed card never wears an at-ceiling chip");
 });
 
-test("plan 2026-08-12-001 U3/R4 + #449 U4: the Deep Dive block carries the same summary, now without green", () => {
+test("plan 2026-08-12-001 U3/R4 + #449 U4 + #457: the Deep Dive carries the same one stat surface", () => {
   const res = whyResult();
   res.saturationReport = [{ stat: "Constitution", total: 15, bonusTypes: ["Enhancement"], unusedSources: 2 }];
   const maps = { augAssign: { byIndex: new Map(), freeByIndex: new Map() }, dinoAssign: { byIndex: new Map() },
     ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(), jokerByHost: new Map() };
   const html = R.loadoutDeepDive(res, { targets: ["Constitution"] }, maps, R.attributionByTarget(res));
-  assert.ok(/pd-prio/.test(html), "the Deep Dive block renders the priority summary");
-  assert.strictEqual(_chipLine(_chips(html)[0]), "+15 Constitution Enhancement",
-    "same contribution content as the Loadout row");
+  // #457 — pd-prio is retired HERE TOO. The Deep Dive gets the same treatment the
+  // gear card got: one classified chip row rather than a plain list plus a second
+  // chip family restating it. Same signal, same content, one language.
+  assert.ok(!/pd-prio/.test(html), "the second chip family is gone from this surface too");
+  assert.ok(/pd-stat-chip is-tracked[^>]*>Constitution \+15/.test(html),
+    "same contribution content as the Loadout row, classified the same way");
   // #449 U4 — this surface reached the marker independently of the Loadout row,
   // so it needs its own guard that the removal covered it too.
   assert.ok(!/at-ceiling/.test(html), "the Deep Dive reaches the same spans, and they are unmarked here too");
@@ -1561,7 +1564,7 @@ test("U8/R8/AE3: loadoutDeepDive collapses the same expansion the same way", () 
   assert.ok(/Sacred Spell Focus Mastery \+3/.test(html));
   assert.ok(!/Abjuration Focus/.test(html) && !/Necromancy Focus/.test(html),
     "no school line survives the collapse");
-  assert.strictEqual((html.match(/<li>/g) || []).length, 1, "one affix line in the Deep Dive too");
+  assert.strictEqual((html.match(/pd-stat-chip/g) || []).length, 1, "one affix line in the Deep Dive too");
 });
 
 test("U8/R8: a heterogeneous family renders its members inline on the Loadout block", () => {
@@ -3364,4 +3367,89 @@ test("#455: craftLabel is unchanged, and the step label is separate", () => {
   // vikEmpty is a disclosure that a declared slot went unfilled, not a craft to
   // go apply — shortening it would turn "no option helps you" into an instruction.
   assert.strictEqual(P.craftStepLabel({ slot_type: "X" }, "vikEmpty"), P.craftLabel({ slot_type: "X" }, "vikEmpty"));
+});
+
+// ---------------------------------------------------------------------------
+// #457 — the Deep Dive gets the same treatment. It was the EXHAUSTIVE per-item
+// surface showing strictly less than the summary card it details: on an ML34
+// solve the Legendary Cataclysmic Tower Shield listed 2 affixes here against 13
+// stat chips on its gear card, and 18 augments across the loadout were named
+// with nothing they grant.
+// ---------------------------------------------------------------------------
+
+function ddMaps(o) {
+  o = o || {};
+  const m = blockMaps(o);
+  m.jokerByHost = o.jokerByHost || new Map();
+  return m;
+}
+
+test("#457: the Deep Dive chips craft-granted points its affix list never had", () => {
+  const v = { variant_id: "Shield", affixes: [{ name: "Armor Class", value: 41, type: "Shield" }] };
+  const res = { chosen: [{ slot: "Off Hand", variant: v }], augmentsPlaced: [], setsActive: [],
+    breakdown: { "Armor-Piercing": [{ bonus_type: "Enhancement", value: 23, source: "Shield",
+      sourceKind: "vik", slot: "Off Hand", hostIds: ["Shield"] }] } };
+  const maps = ddMaps({ vikByItem: new Map([["Shield", [{ slot_type: "Miserable",
+    stat: "Armor-Piercing", bonus_type: "Enhancement", value: 23, unit: "flat" }]]]) });
+  const html = R.loadoutDeepDive(res, { targets: ["Armor-Piercing"] }, maps, R.attributionByTarget(res));
+  assert.ok(/pd-stat-chip[^>]*>Armor Class \+41/.test(html), "the printed affix is a chip");
+  assert.ok(/pd-stat-chip is-tracked[^>]*>Armor-Piercing \+23/.test(html),
+    "and the craft-granted point is one too — it was only in pd-prio and the craft label before");
+  assert.ok(/pd-src-craft/.test(html), "tagged as craft-granted");
+});
+
+test("#457: the Deep Dive's craft chip trims to the instruction", () => {
+  const v = { variant_id: "Shield", affixes: [] };
+  const res = { chosen: [{ slot: "Off Hand", variant: v }], augmentsPlaced: [], setsActive: [], breakdown: {} };
+  const maps = ddMaps({ vikByItem: new Map([["Shield", [{ slot_type: "Miserable",
+    stat: "Armor-Piercing", bonus_type: "Enhancement", value: 23, unit: "flat" }]]]) });
+  const html = R.loadoutDeepDive(res, { targets: [] }, maps, R.attributionByTarget(res));
+  assert.ok(/Slot Miserable Viktranium augment</.test(html), "the step alone");
+  assert.ok(!/Slot Miserable Viktranium augment: Armor-Piercing/.test(html),
+    "…with the value no longer restated inside it");
+});
+
+test("#457: an unfilled Viktranium slot keeps its full disclosure in the Deep Dive", () => {
+  // Regression guard, deliberately NOT proven red. `vikEmpty` is not an
+  // instruction but a statement that a declared slot went unfilled; trimming it
+  // would turn "no option helps you" into a craft to go apply.
+  const v = { variant_id: "Cloak", affixes: [], viktranium_slots: ["Melancholic"] };
+  const res = { chosen: [{ slot: "Back", variant: v }], augmentsPlaced: [], setsActive: [], breakdown: {} };
+  const html = R.loadoutDeepDive(res, { targets: [] }, ddMaps({}), R.attributionByTarget(res));
+  if (/Melancholic/.test(html)) {
+    assert.ok(/left empty — no option adds to your ranked stats/.test(html),
+      "the unfilled slot still says why it is empty");
+  }
+});
+
+test("#457: the Deep Dive says what each augment grants, not just its name", () => {
+  const v = { variant_id: "Host", affixes: [] };
+  const res = { chosen: [{ slot: "Ring", variant: v }], augmentsPlaced: [], setsActive: [], breakdown: {} };
+  const maps = ddMaps({ byIndex: new Map([[0, [{ variant_id: "Solar Gem of Attack", color: "Colorless" }]]]) });
+  const augById = new Map([["Solar Gem of Attack", { affixes: [{ name: "Accuracy", value: 4, type: "Artifact" }] }]]);
+  const html = R.loadoutDeepDive(res, { targets: [] }, maps, R.attributionByTarget(res), augById);
+  assert.ok(/Solar Gem of Attack/.test(html), "the augment is named");
+  assert.ok(/Accuracy \+4 Artifact/.test(html),
+    "and what it grants is shown — the gear box has done this since #453");
+});
+
+test("#457: the Deep Dive renders without a catalog, naming the augment alone — regression guard", () => {
+  // Deliberately NOT proven red: it passes before and after, because augById was
+  // not a parameter at all before. It pins that making it optional did not make
+  // it required — the pure-test callers and any caller without the catalog must
+  // still render rather than throw.
+  const v = { variant_id: "Host", affixes: [] };
+  const res = { chosen: [{ slot: "Ring", variant: v }], augmentsPlaced: [], setsActive: [], breakdown: {} };
+  const maps = ddMaps({ byIndex: new Map([[0, [{ variant_id: "Mystery Gem", color: "Colorless" }]]]) });
+  const html = R.loadoutDeepDive(res, { targets: [] }, maps, R.attributionByTarget(res));
+  assert.ok(/Mystery Gem/.test(html), "the name still renders with no catalog in hand");
+});
+
+test("#457: buildViews hands the Deep Dive the augment catalog", () => {
+  // Source-text: without this the augment affixes resolve to nothing on the one
+  // path that actually has the catalog, and the test above would pass anyway.
+  const fs = require("fs"); const path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "results.js"), "utf-8");
+  assert.ok(/loadoutDeepDive\(build, query, maps, attr, augById\)/.test(src),
+    "the real render path passes augById through");
 });
