@@ -220,14 +220,20 @@ var _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined") ? pinnedVarian
 // NOT included: the augment chips and the joker/membership (wildcard/set) chips —
 // craftChips keeps those, and the equipped block surfaces set state via its row
 // glow/setLine instead, so a joker/membership rendering change only hits the Deep Dive.
-function craftSlotChips(v, idx, maps) {
-  const dinos = (maps.dinoAssign.byIndex.get(idx) || []).map((d) => `<span class="chip dino" title="Isle of Dread insert">${esc(Proj.craftLabel(d, "dino"))}</span>`);
+function craftSlotChips(v, idx, maps, stepOnly) {
+  // #455 — on the Loadout card the affix half of each label is now a stat chip,
+  // so the instruction stands alone; the Deep Dive (via craftChips) keeps the
+  // full label, being the exhaustive per-item surface. `vikEmpty` is exempt by
+  // construction — craftStepLabel falls it through, because it is a disclosure
+  // that a declared slot went unfilled, not a craft to go apply.
+  const L = stepOnly ? Proj.craftStepLabel : Proj.craftLabel;
+  const dinos = (maps.dinoAssign.byIndex.get(idx) || []).map((d) => `<span class="chip dino" title="Isle of Dread insert">${esc(L(d, "dino"))}</span>`);
   // #371 — the per-item pools share this chip family; the tooltip names the
   // system the placement actually came from (`pool`), not the category path's.
-  const ncs = (maps.ncByItem.get(v.variant_id) || []).map((n) => `<span class="chip nc" title="${esc(n.pool ? n.pool + " — per-item upgrade slot" : "Terror of Demogorgon — Nearly Completed")}">${esc(Proj.craftLabel(n, "nc"))}</span>`);
-  const rolls = (maps.rollByItem.get(v.variant_id) || []).map((r) => `<span class="chip roll" title="choice slot, best option selected">${esc(Proj.craftLabel(r, "roll"))}</span>`);
+  const ncs = (maps.ncByItem.get(v.variant_id) || []).map((n) => `<span class="chip nc" title="${esc(n.pool ? n.pool + " — per-item upgrade slot" : "Terror of Demogorgon — Nearly Completed")}">${esc(L(n, "nc"))}</span>`);
+  const rolls = (maps.rollByItem.get(v.variant_id) || []).map((r) => `<span class="chip roll" title="choice slot, best option selected">${esc(L(r, "roll"))}</span>`);
   const vikPlaced = maps.vikByItem.get(v.variant_id) || [];
-  const viks = vikPlaced.map((n) => `<span class="chip lamordia" title="The Chill of Ravenloft — Viktranium Experiment crafting">${esc(Proj.craftLabel(n, "vik"))}</span>`);
+  const viks = vikPlaced.map((n) => `<span class="chip lamordia" title="The Chill of Ravenloft — Viktranium Experiment crafting">${esc(L(n, "vik"))}</span>`);
   // #370 — a Lamordia slot the item DECLARES but the solve left empty renders as
   // a muted chip rather than vanishing. The slot is part of the item's identity,
   // so an item that ships with four slots must never read as a three-slot item.
@@ -235,9 +241,9 @@ function craftSlotChips(v, idx, maps) {
   // export reads.
   viks.push(...Proj.unfilledVikSlots(v, vikPlaced).map((s) =>
     `<span class="chip lamordia unfilled" title="The Chill of Ravenloft — this slot exists on the item; no option in its pool adds to your ranked stats">${esc(Proj.craftLabel(s, "vikEmpty"))}</span>`));
-  const seals = (maps.sealByItem.get(v.variant_id) || []).map((n) => `<span class="chip seal" title="unseal one effect at the crafting table">${esc(Proj.craftLabel(n, "seal"))}</span>`);
-  const tfs = ((maps.tfByItem && maps.tfByItem.get(v.variant_id)) || []).map((n) => `<span class="chip thunderforged" title="Legendary Thunder-Forged tier upgrade">${esc(Proj.craftLabel(n, "tf"))}</span>`);
-  const gss = ((maps.gsByItem && maps.gsByItem.get(v.variant_id)) || []).map((n) => `<span class="chip greensteel" title="Legendary Green Steel craft">${esc(Proj.craftLabel(n, "gs"))}</span>`);
+  const seals = (maps.sealByItem.get(v.variant_id) || []).map((n) => `<span class="chip seal" title="unseal one effect at the crafting table">${esc(L(n, "seal"))}</span>`);
+  const tfs = ((maps.tfByItem && maps.tfByItem.get(v.variant_id)) || []).map((n) => `<span class="chip thunderforged" title="Legendary Thunder-Forged tier upgrade">${esc(L(n, "tf"))}</span>`);
+  const gss = ((maps.gsByItem && maps.gsByItem.get(v.variant_id)) || []).map((n) => `<span class="chip greensteel" title="Legendary Green Steel craft">${esc(L(n, "gs"))}</span>`);
   return [...dinos, ...ncs, ...rolls, ...viks, ...seals, ...tfs, ...gss];
 }
 
@@ -451,8 +457,13 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
     ? `<div class="pd-rnote pd-nodrop" title="the DDO wiki records no current in-game source for this item — it stays a solver candidate; block it to exclude it">${Proj.NO_DROP_SOURCE_WORDING}</div>` : "";
   // U3 (plan 2026-08-12-001) — the priority summary sits at the bottom of the
   // box, outside `.pd-rbody` so equippedBody's emptiness guard cannot swallow it.
+  // #455 — `pd-prio` is retired. It was a second chip family restating 62% of
+  // the stat row (measured, ML34 solve, 21 of 34 chips), and its only unique
+  // content — set- and craft-sourced contributions — is now chipped in the row
+  // itself. `whyThisLine` survives ONLY for its two non-chip statements: the
+  // #245 craft-carried line and the empty-state.
   const prio = (v && !locked && prioCtx && prioCtx.result)
-    ? whyThisLine(prioCtx.result, { slot: label, variant_id: v.variant_id }, prioCtx.attr, prioCtx.targets)
+    ? whyThisNote(prioCtx.result, { slot: label, variant_id: v.variant_id }, prioCtx.attr, prioCtx.targets)
     : "";
   const rowCls = `pd-row ${(!v || locked) ? "empty" : "occupied"}${glow ? " is-set" : ""}${isArtifact ? " is-artifact" : ""}${(rowPinned || locked) ? " constrained" : ""}`;
   return `<div class="${rowCls}">
@@ -462,31 +473,37 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
   </div>`;
 }
 
-/** #453 U2 (R7/KTD2/KTD3) — the stat names this solve actually CREDITED to this
- *  item, as both solver stat names and the enchantment names they came through.
+/** #453 U2 / #455 — this solve's credited contributions for one item, indexed.
  *
  *  Derived from `itemContributions`, which is the same function `whyThisLine`
- *  reads. That is the point: deriving "tracked" twice from two sources is how
- *  the card's two surfaces come to disagree about what the solver was steering
- *  toward. `prioCtx` is already threaded to `equippedRow` for `whyThisLine`, so
- *  this costs one parameter rather than a new data path.
+ *  read. That is the point: deriving "tracked" twice from two sources is how the
+ *  card's surfaces come to disagree about what the solver was steering toward.
+ *  `prioCtx` is already threaded to `equippedRow`, so this costs one parameter
+ *  rather than a new data path.
  *
  *  Deliberately NOT "the stat appears in `targets`". A ranked stat whose bucket
  *  lost to a larger contributor was not credited and is not why this item is
  *  here; claiming otherwise on the chip would make the vivid treatment a lie.
- *  That fact is a solve-level one and `outbidNotice` already names it. */
-function trackedStatNames(prioCtx, variantId) {
-  const set = new Set();
-  if (!prioCtx || !prioCtx.result || !variantId) return set;
-  const contribs = itemContributions(
+ *  That fact is a solve-level one and `outbidNotice` already names it.
+ *
+ *  #455 — `byStat` is new. Retiring `pd-prio` moved three qualifiers onto the
+ *  chips, and every one of them lives on the CONTRIBUTION, not on the affix:
+ *  `(from <stat>)` cross-add, the #88 override disclosure, and `(set)`. Without
+ *  the index a chip can say a stat is tracked but not why, and the #88
+ *  disclosure would be the thing lost — it exists precisely so a gear box does
+ *  not state a bonus type as though the wiki said so. */
+function itemContribIndex(prioCtx, variantId) {
+  const keys = new Set(), byStat = new Map();
+  if (!prioCtx || !prioCtx.result || !variantId) return { keys, byStat, list: [] };
+  const list = itemContributions(
     prioCtx.result, { variant_id: variantId }, prioCtx.attr, prioCtx.targets);
-  for (const c of contribs) {
-    if (c.stat != null) set.add(c.stat);
+  for (const c of list) {
+    if (c.stat != null) { keys.add(c.stat); if (!byStat.has(c.stat)) byStat.set(c.stat, c); }
     // The collapsed entry is keyed by `via`, so the enchantment name has to be
-    // in the set too or a collapsed bundle never matches (KTD1's failure mode).
-    if (c.via != null) set.add(c.via);
+    // in the set too or a collapsed bundle never matches (#453 KTD1).
+    if (c.via != null) { keys.add(c.via); if (!byStat.has(c.via)) byStat.set(c.via, c); }
   }
-  return set;
+  return { keys, byStat, list };
 }
 
 /** #453 U2 (KTD3) — one of three classes, tested in this order.
@@ -518,18 +535,58 @@ function affixChipClass(entry, cover, tracked) {
  *  on exactly the items where they matter most, which R10 forbids. */
 const INCIDENTAL_CHIP_CAP = 6;
 
-/** #453 U2/U4 (R1/R9/R10) — the affix chip row.
+/** #455 — the qualifiers a chip inherits from its contribution.
  *
- *  Replaces the plain-text comma-run. Every affix is a chip so the card speaks
- *  one visual language; the class says which kind of fact it is. Overflow is
- *  present in the DOM and reachable rather than dropped — the fact stays on the
- *  card, which is the whole point of R9. */
-function statChipRow(affixes, cover, tracked) {
-  const rows = affixes.map((a) => ({ a, cls: affixChipClass(a, cover, tracked) }));
+ *  All three moved here when `pd-prio` was retired. The #88 override is the one
+ *  that must not be dropped: it shipped because a gear box stating a bonus type
+ *  without it "states a bonus type as though the wiki said so", and that claim
+ *  is exactly as false on a chip as it was on the old row. */
+function chipQualifiers(contrib) {
+  if (!contrib) return "";
+  const bits = [];
+  if (contrib.viaSet) bits.push(`<span class="pd-q pd-q-set">set</span>`);
+  if (contrib.crossAdd) {
+    bits.push(`<span class="pd-q pd-q-from" title="${esc(contrib.crossAdd)} fully stacks with this stat — its value adds on top of the stat's own bonuses, so it is counted here.">from ${esc(contrib.crossAdd)}</span>`);
+  }
+  if (contrib.overriddenFrom) {
+    bits.push(`<span class="pd-q pd-q-override" title="You told the optimizer this carries ${esc(contrib.bonus_type)} in game; the catalog records ${esc(contrib.overriddenFrom)}. It is counted in the ${esc(contrib.bonus_type)} bucket on your word, not the wiki's.">your call — catalog says ${esc(contrib.overriddenFrom)}</span>`);
+  }
+  return bits.length ? `<span class="pd-chip-q">${bits.join("")}</span>` : "";
+}
+
+/** #453 U2/U4 (R1/R9/R10) + #455 — the one stat row for an equipped item.
+ *
+ *  #455 made this the SINGLE stat surface. It was one of two: a chip row for
+ *  printed affixes and a separate `pd-prio` row for ranked contributions, and
+ *  measured on an ML34 solve 21 of 34 `pd-prio` chips (62%) restated a chip
+ *  already in this row. The 13 that did not were exactly the set-sourced and
+ *  craft-sourced contributions — which is why retiring that row and chipping
+ *  those two sources here is one change and not two.
+ *
+ *  `entries` is `{ affix, source }`, where source is null for a printed affix
+ *  and "set" / "craft" otherwise. Provenance is a TAG rather than a fourth
+ *  class: the three classes answer "did I ask for this", the tag answers "where
+ *  does it come from", and collapsing two orthogonal questions into one visual
+ *  axis is what made the card unreadable in the first place. */
+function statChipRow(entries, cover, idx, rank1) {
+  const rows = entries.map((e) => ({
+    a: e.affix, source: e.source || null,
+    cls: affixChipClass(e.affix, cover, idx.keys),
+  }));
   let seen = 0;
-  return rows.map(({ a, cls }) => {
+  return rows.map(({ a, cls, source }) => {
     const over = cls === "incidental" && ++seen > INCIDENTAL_CHIP_CAP;
-    return `<li class="pd-stat-chip is-${cls}${over ? " is-overflow" : ""}">${esc(affixLabel(a))}</li>`;
+    const key = Proj.affixCoverageKey(a);
+    const contrib = cls === "tracked" ? idx.byStat.get(key) : null;
+    // #449 R21 — the rank-1 accent survives the move off `pd-prio`. Matched on
+    // the contribution's own stat so a collapsed bundle credited through `via`
+    // still lights up.
+    const isTop = !!(rank1 && contrib && (contrib.stat === rank1 || key === rank1));
+    const tag = source
+      ? `<span class="pd-src pd-src-${esc(source)}" title="${source === "set" ? "granted by a set bonus, not printed on the item" : "granted by a craft you apply, not printed on the item"}">${esc(source)}</span>`
+      : "";
+    return `<li class="pd-stat-chip is-${cls}${isTop ? " is-rank1" : ""}${over ? " is-overflow" : ""}">`
+      + `${esc(affixLabel(a))}${tag}${chipQualifiers(contrib)}</li>`;
   }).join("") + overflowToggle(rows);
 }
 
@@ -539,6 +596,86 @@ function overflowToggle(rows) {
   return hidden > 0
     ? `<li class="pd-stat-more"><button type="button" class="pd-more-btn" data-statmore
         aria-expanded="false">+${hidden} more</button></li>` : "";
+}
+
+/** #455 — every stat an equipped item yields, from all three sources, as chip
+ *  entries in ONE list so the row can classify and collapse them together.
+ *
+ *  Printed affixes and craft-granted affixes are collapsed TOGETHER rather than
+ *  separately: one enchantment split across a printed affix and a craft would
+ *  otherwise collapse twice under the same `via` key and render as two chips
+ *  claiming to be the same bundle.
+ *
+ *  Set contributions are synthesized from the contribution itself — they have no
+ *  affix record on the item, which is exactly why `pd-prio` was the only place
+ *  they appeared. */
+function statChipEntries(v, idx2, maps, contribIdx) {
+  const printed = (v.affixes || []).map((a) => [a, null]);
+  const crafted = [];
+  if (maps && idx2 != null && idx2 >= 0) {
+    const take = (arr) => { for (const o of arr || []) for (const a of Proj.craftAffixRecords(o)) crafted.push([a, "craft"]); };
+    take(maps.dinoAssign && maps.dinoAssign.byIndex && maps.dinoAssign.byIndex.get(idx2));
+    take(maps.ncByItem && maps.ncByItem.get(v.variant_id));
+    take(maps.rollByItem && maps.rollByItem.get(v.variant_id));
+    take(maps.vikByItem && maps.vikByItem.get(v.variant_id));
+    take(maps.sealByItem && maps.sealByItem.get(v.variant_id));
+    take(maps.tfByItem && maps.tfByItem.get(v.variant_id));
+    take(maps.gsByItem && maps.gsByItem.get(v.variant_id));
+  }
+  const raw = [...printed, ...crafted];
+  const sourceOf = new Map();
+  for (const [a, src] of raw) if (src) sourceOf.set(a, src);
+  const collapsed = collapseExpansions(raw.map(([a]) => a));
+  const entries = collapsed.map((entry) => {
+    // A collapsed group takes its source from any crafted member; `members` is
+    // not retained on the collapsed entry, so resolve through the raw list by
+    // the same key the collapse filed it under.
+    // `affixCoverageKey` resolves a RAW affix to the same key the collapse filed
+    // it under (`via`, else its own name), which is exactly the join needed
+    // here. Reaching for the raw `via` field instead would need
+    // `Proj.PROVENANCE_KEY`, which is module-private — the lookup would silently
+    // read `undefined`, fall through to the name, and mis-source every collapsed
+    // craft bundle.
+    const key = Proj.affixCoverageKey(entry);
+    const src = raw.some(([a, s]) => s === "craft" && Proj.affixCoverageKey(a) === key) ? "craft" : null;
+    return { affix: entry, source: src };
+  });
+  // Set-sourced contributions carry no affix record on the item at all — which
+  // is exactly why `pd-prio` was the only surface they ever appeared on.
+  for (const c of contribIdx.list) {
+    if (!c.viaSet) continue;
+    entries.push({ affix: { name: c.stat, stat: c.stat, value: c.value, type: c.bonus_type }, source: "set" });
+  }
+  // RESIDUAL SWEEP. Every credited contribution must reach a chip. The four
+  // source kinds are accounted for above — `worn` by the printed affixes,
+  // `seal`/`nc`/`roll`/`vik`/`tf`/`gs` by the craft records (all carry
+  // `hostIds: [item]`), `set` by the loop above; an augment's contribution is
+  // never credited to its host (`hostIds` is null for that kind) and is chipped
+  // under the augment instead. So on real data this adds nothing.
+  //
+  // It exists because the alternative failure is SILENT: retiring `pd-prio`
+  // moved every contribution onto a chip derived from an affix record, and a
+  // credited point with no such record would simply vanish from the card with
+  // nothing to notice it. A visible chip beats an invisible gap. Proven
+  // non-vacuous by the legacy-shaped fixture in tests/results.test.js, and
+  // asserted to fire zero times against a real solve.
+  // `covered` must hold the MEMBER stat names, not just each entry's key. A
+  // collapsed bundle is filed under its enchantment (`via`) while the
+  // contribution names the member stat, so keying on the entry alone would make
+  // every collapsed bundle look uncovered and chip it twice.
+  const cover = Proj.affixStatCoverage(raw.map(([a]) => a));
+  const covered = new Set();
+  for (const e of entries) {
+    const key = Proj.affixCoverageKey(e.affix);
+    covered.add(key);
+    for (const n of ((cover.get(key) || {}).stats || [])) covered.add(n);
+  }
+  for (const c of contribIdx.list) {
+    if (c.viaSet || c.stat == null || covered.has(c.stat)) continue;
+    covered.add(c.stat);
+    entries.push({ affix: { name: c.stat, stat: c.stat, value: c.value, type: c.bonus_type }, source: null });
+  }
+  return { entries, raw: raw.map(([a]) => a) };
 }
 
 // The stats / augment / craft body of an equipped block. Projects the variant's
@@ -551,14 +688,18 @@ function equippedBody(v, idx, maps, augById, ownedMode, ownedAugments, prioCtx) 
   // U8/R8 — the Loadout block collapses each expansion to its enchantment for the
   // same reason the Deep Dive does: this is what the player compares against the
   // in-game tooltip.
-  const affixes = collapseExpansions(v.affixes || []);
+  // #455 — ONE stat surface. Printed affixes, craft-granted affixes and
+  // set-sourced contributions all become chips in the same row; `pd-prio` is
+  // retired rather than left beside it restating 62% of what it says.
+  const contribIdx = itemContribIndex(prioCtx, v.variant_id);
+  const { entries, raw } = statChipEntries(v, idx, maps, contribIdx);
   // #453 U2 — classify against the RAW affixes, render from the collapsed ones.
   // The collapse is what makes the card readable and is also what destroys the
   // stat names classification needs, so the two run side by side (KTD1).
-  const cover = Proj.affixStatCoverage(v.affixes || []);
-  const tracked = trackedStatNames(prioCtx, v.variant_id);
-  const stats = affixes.length
-    ? `<ul class="pd-stats">${statChipRow(affixes, cover, tracked)}</ul>` : "";
+  const cover = Proj.affixStatCoverage(raw);
+  const rank1 = (prioCtx && prioCtx.targets && prioCtx.targets.length) ? prioCtx.targets[0] : null;
+  const stats = entries.length
+    ? `<ul class="pd-stats">${statChipRow(entries, cover, contribIdx, rank1)}</ul>` : "";
 
   let augs = "";
   if (maps && maps.augAssign && idx != null && idx >= 0) {
@@ -581,7 +722,8 @@ function equippedBody(v, idx, maps, augById, ownedMode, ownedAugments, prioCtx) 
       const augAffixes = (meta && meta.affixes) || [];
       const affx = augAffixes.length
         ? `<ul class="aug-affx pd-stats">${statChipRow(
-            augAffixes, Proj.affixStatCoverage(augAffixes), tracked)}</ul>` : "";
+            augAffixes.map((a) => ({ affix: a, source: null })),
+            Proj.affixStatCoverage(augAffixes), contribIdx, rank1)}</ul>` : "";
       const col = String(p.color || "").toLowerCase();
       const where = p.slot_color && p.slot_color !== p.color ? `${p.color} in ${p.slot_color} slot` : `${p.color || ""} slot`;
       return `<li class="aug-filled"><span class="aug-pip aug-${esc(col)}" title="${esc(where)}"></span><span class="aug-name">${esc(p.variant_id)}</span>${affx}</li>`;
@@ -596,7 +738,7 @@ function equippedBody(v, idx, maps, augById, ownedMode, ownedAugments, prioCtx) 
   // Assigned craft-upgrade slots (R4) — the same shared chips the Deep Dive uses,
   // so the two surfaces never drift. Assigned-only (the maps carry no empty-slot
   // inventory); an unfilled craft slot renders nothing extra.
-  const craftArr = (maps && idx != null && idx >= 0) ? craftSlotChips(v, idx, maps) : [];
+  const craftArr = (maps && idx != null && idx >= 0) ? craftSlotChips(v, idx, maps, true) : [];
   const crafts = craftArr.length
     ? `<div class="pd-slots"><span class="pd-slabel">Craft</span>${craftArr.join("")}</div>` : "";
 
@@ -699,6 +841,31 @@ function attributionList(contribs) {
 // item maxed the stat). The full shared sentence rides the green span's title.
 // Empty-state (a filler/tie-break pick) reads as such rather than blank.
 // `item` is { slot, variant_id }; `targets` is the player's ranked order.
+/** #455 — the two statements the per-item summary makes that are NOT chips.
+ *
+ *  `whyThisLine` did three jobs: an empty-state, the #245 craft-carried line,
+ *  and a chip row. The chip row is retired — it restated the stat row — but
+ *  these two are different kinds of statement, not a list of contributions, and
+ *  neither belongs in the chip language:
+ *
+ *    - the empty-state says the item earned its slot on no ranked stat at all;
+ *    - #245 says every ranked point here is CONDITIONAL on crafting, which is a
+ *      claim about the pick, not about any one stat.
+ *
+ *  `whyThisLine` itself is kept and still exported: `tests/results.test.js`
+ *  pins it, and the Alternatives tab reads it. Retiring the row from the gear
+ *  box is a render decision, not a reason to delete a tested function. */
+function whyThisNote(result, item, attr, targets) {
+  attr = attr || attributionByTarget(result);
+  const contribs = itemContributions(result, item, attr, targets);
+  if (!contribs.length) return `<div class="pd-why muted">included to complete the loadout</div>`;
+  const carried = Proj.craftCarried(result, item, attr);
+  if (!carried) return "";
+  const txt = carried.slice(0, 3).map((p) =>
+    `${esc(p.stat)} +${esc(p.value)} (${esc(p.family)})`).join(", ");
+  return `<div class="pd-why pd-carried" title="Nothing printed on this item advances your priorities — its value here depends entirely on crafting it. Un-craftable alternatives are on the Alternatives tab.">⚒ here only for its crafts: ${txt}</div>`;
+}
+
 function whyThisLine(result, item, attr, targets) {
   attr = attr || attributionByTarget(result);
   const contribs = itemContributions(result, item, attr, targets);
@@ -2107,5 +2274,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
 }

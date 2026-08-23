@@ -1183,6 +1183,24 @@ input.wz-ml { width: 120px; }
 .pd-stat-chip.is-utility { border-style: dashed; border-color: var(--accent-2);
   color: var(--muted); }
 .pd-stat-chip.is-incidental { border-color: transparent; background: transparent; color: var(--muted); }
+/* #455 R21 -- the rank-1 accent moved here when pd-prio was retired. Border
+   WEIGHT as well as colour, so the top priority is distinguishable without
+   relying on hue (#449 R21's rule, unchanged in intent). */
+.pd-stat-chip.is-rank1 { border-width: 2px; border-color: var(--accent); padding: 0 4px; }
+/* #455 -- provenance is a TAG, orthogonal to the three classes: they answer
+   "did I ask for this", this answers "where does it come from". A set- or
+   craft-granted point is not printed on the drop, and a shopping list that does
+   not say so sends the player looking for it on the item. */
+.pd-src { margin-left: 4px; padding: 0 3px; border-radius: 3px; font-size: 0.85em;
+  text-transform: uppercase; letter-spacing: 0.03em; }
+.pd-src-set { background: rgba(143,214,176,0.16); color: #8fd6b0; }
+.pd-src-craft { background: rgba(217,164,65,0.16); color: var(--warn, #d9a441); }
+/* The qualifiers pd-prio used to carry. They wrap under the chip's own text
+   rather than extending it, so a long #88 override disclosure cannot widen the
+   row (the 375px lesson from #453). */
+.pd-chip-q { display: block; color: var(--faint); font-size: 0.85em; line-height: 1.3; }
+.pd-q + .pd-q::before { content: " · "; }
+.pd-q-override { color: var(--warn, #d9a441); }
 /* R9 -- overflow is HIDDEN, never dropped: the chips stay in the DOM so the fact
    stays on the card, which is the whole point. */
 .pd-stat-chip.is-overflow { display: none; }
