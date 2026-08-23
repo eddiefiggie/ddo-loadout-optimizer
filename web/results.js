@@ -220,20 +220,26 @@ var _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined") ? pinnedVarian
 // NOT included: the augment chips and the joker/membership (wildcard/set) chips —
 // craftChips keeps those, and the equipped block surfaces set state via its row
 // glow/setLine instead, so a joker/membership rendering change only hits the Deep Dive.
-function craftSlotChips(v, idx, maps, stepOnly) {
+function craftSlotChips(v, idx, maps, stepOnly, contribIdx, ranked) {
   // #455 — on the Loadout card the affix half of each label is now a stat chip,
   // so the instruction stands alone; the Deep Dive (via craftChips) keeps the
   // full label, being the exhaustive per-item surface. `vikEmpty` is exempt by
   // construction — craftStepLabel falls it through, because it is a disclosure
   // that a declared slot went unfilled, not a craft to go apply.
   const L = stepOnly ? Proj.craftStepLabel : Proj.craftLabel;
-  const dinos = (maps.dinoAssign.byIndex.get(idx) || []).map((d) => `<span class="chip dino" title="Isle of Dread insert">${esc(L(d, "dino"))}</span>`);
+  // #469 — the priority link for the INSTRUCTION chip. `stepOnly` moved the
+  // affix list off these labels and onto stat chips, which made the craft row a
+  // list of undifferentiated errands: nothing on it said which crafting trip
+  // actually serves the priority list. Optional, and empty without context — a
+  // caller that was not told what the player ranked marks nothing.
+  const link = (o) => grantLinkClass(Proj.craftAffixRecords(o), contribIdx, ranked);
+  const dinos = (maps.dinoAssign.byIndex.get(idx) || []).map((d) => `<span class="chip dino${link(d)}" title="Isle of Dread insert">${esc(L(d, "dino"))}</span>`);
   // #371 — the per-item pools share this chip family; the tooltip names the
   // system the placement actually came from (`pool`), not the category path's.
-  const ncs = (maps.ncByItem.get(v.variant_id) || []).map((n) => `<span class="chip nc" title="${esc(n.pool ? n.pool + " — per-item upgrade slot" : "Terror of Demogorgon — Nearly Completed")}">${esc(L(n, "nc"))}</span>`);
-  const rolls = (maps.rollByItem.get(v.variant_id) || []).map((r) => `<span class="chip roll" title="choice slot, best option selected">${esc(L(r, "roll"))}</span>`);
+  const ncs = (maps.ncByItem.get(v.variant_id) || []).map((n) => `<span class="chip nc${link(n)}" title="${esc(n.pool ? n.pool + " — per-item upgrade slot" : "Terror of Demogorgon — Nearly Completed")}">${esc(L(n, "nc"))}</span>`);
+  const rolls = (maps.rollByItem.get(v.variant_id) || []).map((r) => `<span class="chip roll${link(r)}" title="choice slot, best option selected">${esc(L(r, "roll"))}</span>`);
   const vikPlaced = maps.vikByItem.get(v.variant_id) || [];
-  const viks = vikPlaced.map((n) => `<span class="chip lamordia" title="The Chill of Ravenloft — Viktranium Experiment crafting">${esc(L(n, "vik"))}</span>`);
+  const viks = vikPlaced.map((n) => `<span class="chip lamordia${link(n)}" title="The Chill of Ravenloft — Viktranium Experiment crafting">${esc(L(n, "vik"))}</span>`);
   // #370 — a Lamordia slot the item DECLARES but the solve left empty renders as
   // a muted chip rather than vanishing. The slot is part of the item's identity,
   // so an item that ships with four slots must never read as a three-slot item.
@@ -241,13 +247,13 @@ function craftSlotChips(v, idx, maps, stepOnly) {
   // export reads.
   viks.push(...Proj.unfilledVikSlots(v, vikPlaced).map((s) =>
     `<span class="chip lamordia unfilled" title="The Chill of Ravenloft — this slot exists on the item; no option in its pool adds to your ranked stats">${esc(Proj.craftLabel(s, "vikEmpty"))}</span>`));
-  const seals = (maps.sealByItem.get(v.variant_id) || []).map((n) => `<span class="chip seal" title="unseal one effect at the crafting table">${esc(L(n, "seal"))}</span>`);
-  const tfs = ((maps.tfByItem && maps.tfByItem.get(v.variant_id)) || []).map((n) => `<span class="chip thunderforged" title="Legendary Thunder-Forged tier upgrade">${esc(L(n, "tf"))}</span>`);
-  const gss = ((maps.gsByItem && maps.gsByItem.get(v.variant_id)) || []).map((n) => `<span class="chip greensteel" title="Legendary Green Steel craft">${esc(L(n, "gs"))}</span>`);
+  const seals = (maps.sealByItem.get(v.variant_id) || []).map((n) => `<span class="chip seal${link(n)}" title="unseal one effect at the crafting table">${esc(L(n, "seal"))}</span>`);
+  const tfs = ((maps.tfByItem && maps.tfByItem.get(v.variant_id)) || []).map((n) => `<span class="chip thunderforged${link(n)}" title="Legendary Thunder-Forged tier upgrade">${esc(L(n, "tf"))}</span>`);
+  const gss = ((maps.gsByItem && maps.gsByItem.get(v.variant_id)) || []).map((n) => `<span class="chip greensteel${link(n)}" title="Legendary Green Steel craft">${esc(L(n, "gs"))}</span>`);
   return [...dinos, ...ncs, ...rolls, ...viks, ...seals, ...tfs, ...gss];
 }
 
-function craftChips(v, idx, maps, augById, stepOnly, contribIdx, rank1) {
+function craftChips(v, idx, maps, augById, stepOnly, contribIdx, rank1, ranked) {
   // #457 — the classification context, optional. Without it an augment's stats
   // still chip, they just cannot read as tracked — which is correct, since
   // nothing has told this call what the player ranked.
@@ -270,8 +276,11 @@ function craftChips(v, idx, maps, augById, stepOnly, contribIdx, rank1) {
     const affx = augAffixes.length
       ? `<ul class="aug-affx pd-stats">${statChipRow(
           augAffixes.map((x) => ({ affix: x, source: null })),
-          Proj.affixStatCoverage(augAffixes), contribIdx, rank1)}</ul>` : "";
-    return `<span class="chip aug${affx ? " has-affx" : ""}" title="augment slotted">`
+          Proj.affixStatCoverage(augAffixes), contribIdx, rank1, ranked)}</ul>` : "";
+    // #469 — the gem itself inherits the link, so a run of eighteen augments can
+    // be scanned for the ones that serve the priority list without reading every
+    // nested chip.
+    return `<span class="chip aug${affx ? " has-affx" : ""}${grantLinkClass(augAffixes, contribIdx, ranked)}" title="augment slotted">`
       + `<span class="aug-head">${esc(a.variant_id)} <span class="muted">(${esc(where)})</span></span>${affx}</span>`;
   });
   const jokers = ((maps.jokerByHost && maps.jokerByHost.get(v.variant_id)) || []).map((j) => `<span class="chip joker" title="wildcard set piece">Wildcard set: ${esc(j.set)}</span>`);
@@ -305,7 +314,7 @@ function craftChips(v, idx, maps, augById, stepOnly, contribIdx, rank1) {
       : "solver-placed Set Augment";
     return `<span class="chip setaug" title="${title}">${esc(Proj.craftLabel({ set: s.set, slot_color: s.slot_color, suppresses }, "augmentset"))}</span>`;
   });
-  return [...augs, ...craftSlotChips(v, idx, maps, stepOnly), ...jokers, ...memberships, ...setAugs];
+  return [...augs, ...craftSlotChips(v, idx, maps, stepOnly, contribIdx, ranked), ...jokers, ...memberships, ...setAugs];
 }
 
 // U4 (R7) — the sets one equipped slot CONTRIBUTES to, as [{set, kind}], from the
@@ -401,13 +410,18 @@ function loadoutDeepDive(result, query, maps, attr, augById) {
       (attr || query) ? { result, attr, targets: query && query.targets } : null, v.variant_id);
     const ddEntries = statChipEntries(v, idx, maps, ddContribIdx);
     const ddRank1 = (query && query.targets && query.targets.length) ? query.targets[0] : null;
+    // #469 — the same priority link the gear card draws. These two surfaces
+    // describe the same items and the repo's standing rule is that they must not
+    // drift: a stat framed as ranked on the card and unframed here would read as
+    // the Deep Dive disagreeing about what the player asked for.
+    const ddRanked = rankedStatSet(query);
     const affixes = ddEntries.entries.length
       ? `<ul class="dd-list pd-stats">${statChipRow(
-          ddEntries.entries, Proj.affixStatCoverage(ddEntries.raw), ddContribIdx, ddRank1)}</ul>`
+          ddEntries.entries, Proj.affixStatCoverage(ddEntries.raw), ddContribIdx, ddRank1, ddRanked)}</ul>`
       : `<p class="dd-none muted">No parsed affixes on this item.</p>`;
     // #457 — the instruction alone, for the reason #455 gave: the value it used to
     // restate is now a stat chip above.
-    const crafts = craftChips(v, idx, maps, augById, true, ddContribIdx, ddRank1);
+    const crafts = craftChips(v, idx, maps, augById, true, ddContribIdx, ddRank1, ddRanked);
     const craftBlock = crafts.length
       ? `<div class="dd-crafts"><h5>Applied crafting &amp; augments</h5><div class="dd-chips">${crafts.join(" ")}</div></div>` : "";
     const wiki = v.wiki_url ? `<a class="dd-wiki" href="${safeUrl(v.wiki_url)}" target="_blank" rel="noopener">wiki</a>` : "";
@@ -459,10 +473,23 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
   const setLine = contribs.length ? `<span class="pd-rset" title="part of a set bonus">${esc(contribSetLabel(contribs))}</span>` : "";
   const isArtifact = !!(v && !locked && v.artifact);   // U5/R5 — tag the equipped Artifact's slot
   const artifactBadge = isArtifact ? `<span class="pd-badge artifact" title="your one equipped Artifact">Artifact</span>` : "";
-  const name = locked ? "locked empty" : (v ? esc(v.variant_id) : "empty");
+  // #469 — the DISPLAYED name drops the `(level N)` disambiguator when it merely
+  // restates the ML this header already carries two lines down. The full
+  // `variant_id` stays the row's identity: it is what `data-variant` pins and
+  // blocks on below, what the `title` shows on hover, and what every export
+  // prints. See `Proj.displayItemName` for why the equality test is the guard.
+  const name = locked ? "locked empty" : (v ? esc(Proj.displayItemName(v)) : "empty");
   const nameCls = (!v || locked) ? "pd-rname muted" : "pd-rname";
-  const foot = (v && !locked)
-    ? `<div class="pd-rfoot"><span class="pd-rml">ML ${esc(itemMl(v) ?? "?")}</span>${setLine}</div>` : "";
+  // #469 — the header's meta line, rendered on EVERY row so the three header
+  // lines (slot, name, meta) sit at the same height on every card in the grid.
+  // It was `pd-rfoot`, emitted only for an occupied row; an empty slot then had a
+  // two-line header beside its neighbour's three and the two cards' bodies
+  // started at different heights. The status badges move up here from the bottom
+  // of the card: "pinned" / "locked empty" / "Artifact" describe the slot, not
+  // the notes, and leaving them below the craft chips put the card's identity
+  // after its detail.
+  const mlChip = (v && !locked) ? `<span class="pd-rml">ML ${esc(itemMl(v) ?? "?")}</span>` : "";
+  const meta = `<div class="pd-rmeta">${mlChip}${setLine}${artifactBadge}${badge}</div>`;
   // R8/AE5/AE5a — empty-slot reason note. ONLY for an optimizer-left-empty slot,
   // never for a user-locked-empty slot (that state is shown by the "locked empty"
   // badge; a "no item improves…" note there would state a false cause). In owned
@@ -501,10 +528,27 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
     ? whyThisNote(prioCtx.result, { slot: label, variant_id: v.variant_id }, prioCtx.attr, prioCtx.targets)
     : "";
   const rowCls = `pd-row ${(!v || locked) ? "empty" : "occupied"}${glow ? " is-set" : ""}${isArtifact ? " is-artifact" : ""}${(rowPinned || locked) ? " constrained" : ""}`;
+  // #469 — three named regions, in a fixed order, on every card whatever it
+  // carries: HEAD (slot, name, ML + status), BODY (the stats / augments / craft
+  // sections), FOOT (the notes). The parts were all here already, interleaved as
+  // one flat run of siblings — `${foot}${reasonNote}${noDropNote}${body}${prio}`
+  // — so a card's notes landed above its stats or below its craft chips
+  // depending only on which of them happened to be non-empty, and two cards side
+  // by side put the same kind of fact in different places. The regions are what
+  // let the CSS pin the head to a fixed height and the notes to the bottom edge,
+  // which is what makes a grid row of cards line up rather than merely share a
+  // border. `pd-card-foot` is deliberately NOT `pd-rnote*`: that name means "one
+  // note" and is matched as such.
+  const notes = `${reasonNote}${noDropNote}${prio}`;
   return `<div class="${rowCls}">
-    <div class="pd-rtop"><div class="pd-rlabel">${esc(label)}</div>${ctl}</div>
-    <div class="${nameCls}"${v ? ` title="${esc(v.variant_id)}"` : ""}>${name}</div>
-    ${foot}${reasonNote}${noDropNote}${body}${prio}${artifactBadge}${badge}${menu}
+    <div class="pd-card-head">
+      <div class="pd-rtop"><div class="pd-rlabel">${esc(label)}</div>${ctl}</div>
+      <div class="${nameCls}"${v ? ` title="${esc(v.variant_id)}"` : ""}>${name}</div>
+      ${meta}
+    </div>
+    ${body || `<div class="pd-rbody"></div>`}
+    <div class="pd-card-foot">${notes}</div>
+    ${menu}
   </div>`;
 }
 
@@ -541,21 +585,77 @@ function itemContribIndex(prioCtx, variantId) {
   return { keys, byStat, list };
 }
 
-/** #453 U2 (KTD3) — one of three classes, tested in this order.
+/** #453 U2 (KTD3) / #469 — one of FOUR classes, tested in this order.
  *
- *  tracked -> utility -> incidental, and the order is load-bearing: a presence
- *  affix the player explicitly ranked is a reason the item was picked, not a
- *  bonus that came along with it, so it must not fall into the utility bucket. */
-function affixChipClass(entry, cover, tracked) {
+ *  tracked -> ranked -> utility -> incidental, and the order is load-bearing: a
+ *  presence affix the player explicitly ranked is a reason the item was picked,
+ *  not a bonus that came along with it, so it must not fall into the utility
+ *  bucket.
+ *
+ *  #469 splits what used to be one question into the two questions it always
+ *  was. `tracked` means CREDITED — this stat is why the solver put the item
+ *  here. `ranked` means the stat is NAMED IN THE PRIORITY LIST but its points
+ *  lost their bucket to a larger contributor elsewhere in the build. Before
+ *  this, a ranked-but-outbid stat rendered identically to an affix the player
+ *  never asked about, so a card carrying `Melee Power +10` against a #1 Melee
+ *  Power priority read as unrelated to the priority list.
+ *
+ *  They stay two classes rather than one. #453's doc-comment for `tracked` is
+ *  unchanged and still true: claiming an outbid stat is why the item is here
+ *  would make the vivid treatment a lie. So `ranked` is the weaker treatment —
+ *  framed and legible, not filled and bold — and `tracked` keeps its meaning
+ *  exactly. `ranked` is empty for any caller that was not told what the player
+ *  ranked, so a context-free render still claims nothing. */
+function affixChipClass(entry, cover, tracked, ranked) {
+  ranked = ranked || _EMPTY_SET;
   const key = Proj.affixCoverageKey(entry);
   const e = (cover && cover.get(key)) || null;
+  const stats = e ? e.stats : [];
   if (key != null && tracked.has(key)) return "tracked";
-  for (const n of (e ? e.stats : [])) if (tracked.has(n)) return "tracked";
+  for (const n of stats) if (tracked.has(n)) return "tracked";
+  if (key != null && ranked.has(key)) return "ranked";
+  for (const n of stats) if (ranked.has(n)) return "ranked";
   // Read presence off the COVERAGE, not the entry: a collapsed entry carries no
   // bonus type, so `_isPresence` on it is false however presence-typed its
   // members are.
   if ((e && e.presence) || _isPresence(entry)) return "utility";
   return "incidental";
+}
+const _EMPTY_SET = new Set();
+
+/** #469 — the stats the player actually ranked, as a lookup set.
+ *
+ *  Read off `prioCtx.targets`, which is `query.targets` — the priority list
+ *  itself, not the solve's attribution. The Utility sentinel is dropped: it is
+ *  not a stat, nothing on an item is named after it, and the utility class
+ *  already carries what it means. Absent context returns an EMPTY set rather
+ *  than a permissive one, so a caller with no priority list highlights nothing. */
+function rankedStatSet(prioCtx) {
+  const targets = (prioCtx && prioCtx.targets) || [];
+  return new Set(targets.filter((t) => t !== _UTILITY_SENTINEL));
+}
+
+/** #469 — the priority link a WRAPPER inherits from what it grants.
+ *
+ *  A craft chip ("Slot Melancholic Viktranium augment") and an augment row
+ *  ("Solar Gem of Attack") are instructions, not stats — the stats they yield
+ *  are chipped separately. Without this the two surfaces the player is sent to
+ *  ACT on were the only ones with no link back to the priority list: every
+ *  augment and every craft step looked equally worth doing. Returns the
+ *  strongest class any of its affixes earns, so a gem granting one tracked stat
+ *  among five reads as the one to go slot. */
+function grantLinkClass(affixes, contribIdx, ranked) {
+  const list = affixes || [];
+  if (!list.length) return "";
+  const cover = Proj.affixStatCoverage(list);
+  const keys = (contribIdx && contribIdx.keys) || _EMPTY_SET;
+  let best = "";
+  for (const a of list) {
+    const cls = affixChipClass(a, cover, keys, ranked);
+    if (cls === "tracked") return " is-tracked";
+    if (cls === "ranked") best = " is-ranked";
+  }
+  return best;
 }
 
 /** #453 U4 (R9/R10/KTD4) — how many INCIDENTAL chips show at rest.
@@ -603,24 +703,33 @@ function chipQualifiers(contrib) {
  *  class: the three classes answer "did I ask for this", the tag answers "where
  *  does it come from", and collapsing two orthogonal questions into one visual
  *  axis is what made the card unreadable in the first place. */
-function statChipRow(entries, cover, idx, rank1) {
+function statChipRow(entries, cover, idx, rank1, ranked) {
   const rows = entries.map((e) => ({
     a: e.affix, source: e.source || null,
-    cls: affixChipClass(e.affix, cover, idx.keys),
+    cls: affixChipClass(e.affix, cover, idx.keys, ranked),
   }));
   let seen = 0;
   return rows.map(({ a, cls, source }) => {
+    // #469 — the cap still bounds INCIDENTAL chips only, and `ranked` is not
+    // incidental: a stat the player named is never the thing collapsed away.
     const over = cls === "incidental" && ++seen > INCIDENTAL_CHIP_CAP;
     const key = Proj.affixCoverageKey(a);
     const contrib = cls === "tracked" ? idx.byStat.get(key) : null;
     // #449 R21 — the rank-1 accent survives the move off `pd-prio`. Matched on
     // the contribution's own stat so a collapsed bundle credited through `via`
     // still lights up.
-    const isTop = !!(rank1 && contrib && (contrib.stat === rank1 || key === rank1));
+    // #469 — a rank-1 stat that is on the list but was outbid gets the accent
+    // too. It has no contribution to match on, so it matches on the key.
+    const isTop = !!(rank1 && ((contrib && (contrib.stat === rank1 || key === rank1))
+      || (cls === "ranked" && key === rank1)));
     const tag = source
       ? `<span class="pd-src pd-src-${esc(source)}" title="${source === "set" ? "granted by a set bonus, not printed on the item" : "granted by a craft you apply, not printed on the item"}">${esc(source)}</span>`
       : "";
-    return `<li class="pd-stat-chip is-${cls}${isTop ? " is-rank1" : ""}${over ? " is-overflow" : ""}">`
+    // #469 — the ranked chip says WHY it is framed but not filled, or the
+    // treatment reads as an unexplained second shade of the tracked one.
+    const why = cls === "ranked"
+      ? ` title="On your priority list — but a larger source elsewhere in this build already fills its bonus-type bucket, so these points are not what the solver credited this item for."` : "";
+    return `<li class="pd-stat-chip is-${cls}${isTop ? " is-rank1" : ""}${over ? " is-overflow" : ""}"${why}>`
       + `${esc(affixLabel(a))}${tag}${chipQualifiers(contrib)}</li>`;
   }).join("") + overflowToggle(rows);
 }
@@ -733,8 +842,14 @@ function equippedBody(v, idx, maps, augById, ownedMode, ownedAugments, prioCtx) 
   // stat names classification needs, so the two run side by side (KTD1).
   const cover = Proj.affixStatCoverage(raw);
   const rank1 = (prioCtx && prioCtx.targets && prioCtx.targets.length) ? prioCtx.targets[0] : null;
+  // #469 — the priority list itself, for the `ranked` chip class.
+  const ranked = rankedStatSet(prioCtx);
+  // #469 — the stats block is now a NAMED section like the two below it, so the
+  // body reads as three labelled parts in a fixed order rather than an unlabelled
+  // run of chips with two labelled rows hanging off the bottom.
   const stats = entries.length
-    ? `<ul class="pd-stats">${statChipRow(entries, cover, contribIdx, rank1)}</ul>` : "";
+    ? `<div class="pd-sec pd-sec-stats"><span class="pd-slabel">Stats</span>`
+      + `<ul class="pd-stats">${statChipRow(entries, cover, contribIdx, rank1, ranked)}</ul></div>` : "";
 
   let augs = "";
   if (maps && maps.augAssign && idx != null && idx >= 0) {
@@ -758,24 +873,26 @@ function equippedBody(v, idx, maps, augById, ownedMode, ownedAugments, prioCtx) 
       const affx = augAffixes.length
         ? `<ul class="aug-affx pd-stats">${statChipRow(
             augAffixes.map((a) => ({ affix: a, source: null })),
-            Proj.affixStatCoverage(augAffixes), contribIdx, rank1)}</ul>` : "";
+            Proj.affixStatCoverage(augAffixes), contribIdx, rank1, ranked)}</ul>` : "";
       const col = String(p.color || "").toLowerCase();
       const where = p.slot_color && p.slot_color !== p.color ? `${p.color} in ${p.slot_color} slot` : `${p.color || ""} slot`;
-      return `<li class="aug-filled"><span class="aug-pip aug-${esc(col)}" title="${esc(where)}"></span><span class="aug-name">${esc(p.variant_id)}</span>${affx}</li>`;
+      // #469 — the gem row inherits the strongest class its affixes earn, so the
+      // one to go slot is findable without reading every nested chip.
+      return `<li class="aug-filled${grantLinkClass(augAffixes, contribIdx, ranked)}"><span class="aug-pip aug-${esc(col)}" title="${esc(where)}"></span><span class="aug-name">${esc(p.variant_id)}</span>${affx}</li>`;
     });
     const openPips = open.map((c) =>
       `<li class="aug-open"><span class="aug-pip aug-${esc(String(c).toLowerCase())}" title="open ${esc(c)} augment slot"></span><span class="muted">open ${esc(c)} slot</span></li>`);
     if (filled.length || openPips.length) {
-      augs = `<div class="pd-slots"><span class="pd-slabel">Augments</span><ul class="pd-auglist">${filled.join("")}${openPips.join("")}</ul></div>`;
+      augs = `<div class="pd-sec pd-sec-aug"><span class="pd-slabel">Augments</span><ul class="pd-auglist">${filled.join("")}${openPips.join("")}</ul></div>`;
     }
   }
 
   // Assigned craft-upgrade slots (R4) — the same shared chips the Deep Dive uses,
   // so the two surfaces never drift. Assigned-only (the maps carry no empty-slot
   // inventory); an unfilled craft slot renders nothing extra.
-  const craftArr = (maps && idx != null && idx >= 0) ? craftSlotChips(v, idx, maps, true) : [];
+  const craftArr = (maps && idx != null && idx >= 0) ? craftSlotChips(v, idx, maps, true, contribIdx, ranked) : [];
   const crafts = craftArr.length
-    ? `<div class="pd-slots"><span class="pd-slabel">Craft</span>${craftArr.join("")}</div>` : "";
+    ? `<div class="pd-sec pd-sec-craft"><span class="pd-slabel">Craft</span><div class="pd-slots">${craftArr.join("")}</div></div>` : "";
 
   if (!stats && !augs && !crafts) return "";
   // R7/AE6 — in owned-inventory mode the base item is yours, but augments and
@@ -2309,5 +2426,5 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, craftChips, craftSlotChips, loadoutDeepDive, esc, safeUrl };
+  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, craftChips, craftSlotChips, loadoutDeepDive, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl };
 }
