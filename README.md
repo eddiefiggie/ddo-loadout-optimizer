@@ -116,10 +116,10 @@ The armor-dependent **dodge cap** is clamped correctly, and set definitions come
 python3 build_dataset.py          # seed + wiki shards -> web/data/items.json
 python3 -m http.server 8000       # then open http://localhost:8000/web/
 python3 tests/run_tests.py        # Python suite (stdlib only; pytest also works)
-for t in tests/*.test.js; do node "$t"; done   # JS suite — one file at a time
+./scripts/run_js_tests.sh         # JS suite — one file at a time, stops on first failure
 ```
 
-Run the JS tests **file by file**. `node a.js b.js` executes only the first, which has silently skipped the golden solver check before.
+Run the JS suite through **`scripts/run_js_tests.sh`** rather than a bare loop. It invokes one file at a time (`node a.js b.js` executes only the first, which has silently skipped the golden solver check before), exits non-zero on the first red file, and builds the gitignored `web/data/items.json` if it is missing — otherwise `dataset.test.js` and `browse.test.js` throw on require and a bare loop swallows the exit code.
 
 `web/data/items.json` is a **generated artifact** (gitignored) — edit the pipeline (`build_dataset.py`, `src/`) and the seed data, never the JSON. `web/` is a self-contained static site deployed to GitHub Pages by `.github/workflows/deploy.yml`, which rebuilds the dataset and runs the full suite on every push to `main` before deploying.
 
