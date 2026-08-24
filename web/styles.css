@@ -569,6 +569,7 @@ details.saturation-note .sat-sentences p { margin: var(--sp-1) 0 0; }
 /* #485 — a bundled enchantment the build is not getting. Dimmed AND struck:
    the shade alone would read as one more decorative tier, and the row language
    standard here is that a class carries its meaning as a shape before a colour. */
+.utility-effect .utility-mark { color: var(--optimal); }
 .set-card.bundle.is-incidental strong { color: var(--muted); }
 .bundle-dead { color: var(--muted); text-decoration: line-through; }
 .bundle-note { color: var(--muted); font-style: italic; }
@@ -1234,11 +1235,10 @@ input.wz-ml { width: 120px; }
 .pd-row.is-set { border-color: var(--border); box-shadow: inset 0 2px 0 0 var(--set), inset 0 0 0 1px rgba(240,180,90,0.16); }
 .pd-row.is-artifact { box-shadow: inset 0 2px 0 0 var(--artifact); }
 .pd-row.is-set.is-artifact { box-shadow: inset 0 2px 0 0 var(--artifact), inset 0 0 0 1px rgba(240,180,90,0.16); }
-.pd-rbody { margin: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 11px;
-  position: relative; padding: 10px var(--sp-3) 10px calc(var(--sp-3) + 9px); }
-.pd-rbody::before { content: ""; position: absolute; width: 1px; opacity: 0.8;
-  left: calc(var(--sp-3) + 1px); top: 12px; bottom: 10px;
-  background: linear-gradient(180deg, var(--accent) 0%, var(--border-2) 22%, var(--border) 78%, transparent); }
+.pd-rbody { margin: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 8px;
+  position: relative; padding: 10px var(--sp-3); }
+/* The spine is retired with the boxes above: a rule running behind three bordered
+   boxes is a fourth edge competing with them, not a grouping device. */
 .pd-rbody:empty::before { display: none; }
 /* An empty foot must take NO space — the alternative is fourteen cards each
    carrying a plate under nothing. */
@@ -1252,12 +1252,25 @@ input.wz-ml { width: 120px; }
 .pd-row.empty { text-align: left; }
 
 /* #469 — the body's three sub-sections: Stats, Augments, Craft, always in that
-   order. #471 — the divider between them is gone; the spine plus the labelled
-   tick is what marks the boundary now. */
-.pd-sec { display: flex; flex-direction: column; gap: 4px; }
-.pd-sec ~ .pd-sec { padding-top: 0; border-top: 0; }
+   order.
+
+   #471 removed the dividers and put a spine down the left gutter instead, on the
+   reasoning that "the sections are a sequence, not three stacked boxes, and a
+   spine says sequence where stacked rules say boxes". That call is REVERSED here
+   at the maintainer's direction: in use, the sequence reading is not what a
+   player wants from this card — they are looking for one KIND of thing at a
+   time ("what do I go craft"), and a box is easier to land in than a stretch of
+   spine. The spine survives only as the outer body edge; the labelled tick stays.
+
+   Recorded rather than quietly rewritten, because the #471 reasoning is sound in
+   the abstract and someone will otherwise re-derive it and reverse this back. */
+.pd-sec { display: flex; flex-direction: column; gap: 4px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: rgba(255,255,255,0.018); padding: 7px 9px 8px; }
+/* No between-section hairline: each section carries its own border, and adding a
+   rule between them would put back the exact device #471 removed, doubled. */
 .pd-slabel { text-transform: uppercase; letter-spacing: 0.09em; color: var(--faint);
-  font-size: 0.6rem; position: relative; margin: 0 0 1px -9px; padding-left: 13px; }
+  font-size: 0.6rem; position: relative; margin: 0 0 2px; padding-left: 13px; }
 .pd-slabel::before { content: ""; position: absolute; left: 0; top: 50%; width: 8px; height: 2px;
   transform: translateY(-50%); border-radius: 1px; background: var(--border-2); }
 /* Each section's tick takes the colour of what it introduces: the priority
@@ -1304,12 +1317,24 @@ input.wz-ml { width: 120px; }
    apart in monochrome and to a colour-vision difference (#453 R2/R3's rule,
    moved onto the family that replaced the chips). */
 .pd-line.is-tracked .pd-ln-what { color: #fff; font-weight: 700; }
-.pd-line.is-tracked .pd-ln-mark { color: var(--optimal); }
+/* ONE filled colour, everywhere. The marker answers a single question — is this
+   doing something — and it answered two before: tracked was green, utility was
+   the accent, a slotted augment took the augment's own colour. Three hues for
+   one fact reads as a ranking, which is exactly what the marker must not imply.
+   Whether a stat is a priority is the WHERE column's job and the row's weight;
+   the mark carries liveness alone. */
+.pd-line.is-tracked .pd-ln-mark,
+.pd-line.is-utility .pd-ln-mark { color: var(--optimal); }
+.pd-line.is-tracked .pd-ln-what { color: #fff; font-weight: 700; }
 .pd-line.is-tracked .pd-ln-where { color: var(--muted); }
 .pd-line.is-ranked .pd-ln-what { color: #fff; }
+/* Unfilled, and dimmer than filled — but still two glyphs, per #469. */
 .pd-line.is-ranked .pd-ln-mark { color: rgba(67,197,158,0.6); }
-.pd-line.is-utility .pd-ln-mark { color: var(--accent-2); }
 .pd-line.is-incidental .pd-ln-mark { color: var(--border-2); }
+/* A slotted augment is live, so its mark takes the shared filled colour. The
+   per-colour rules below still paint the Sun/Moon glyphs and the OPEN slots,
+   where the colour is the fact being reported rather than a ranking. */
+.pd-line.aug-filled .pd-ln-mark:not(.aug-mark) { color: var(--optimal); }
 /* #475 — the two directions of a TRADE, used by the Alternatives cards. They sit
    here with the other row classes rather than in the alt block, both because
    that is where the family lives and because a `.pd-ln-what` rule defined above
@@ -1323,10 +1348,12 @@ input.wz-ml { width: 120px; }
 .pd-line.is-gain .pd-ln-mark { color: var(--optimal); }
 .pd-line.is-cost .pd-ln-what { color: var(--warn); }
 .pd-line.is-cost .pd-ln-mark { color: var(--warn); }
-/* #455 R21 — the rank-1 accent. Kept as a second visible mark on the marker
-   rather than a hue change, for the reason the chip's border WEIGHT was. */
-.pd-line.is-rank1 .pd-ln-mark { color: var(--accent);
-  text-shadow: 0 0 6px rgba(91,140,255,0.85); }
+/* #455 R21 — the rank-1 accent. Its note always said this was "a second visible
+   mark on the marker rather than a hue change", and the rule then set `color`
+   anyway, which made the #1 priority's filled diamond a different colour from
+   every other filled diamond. The glow alone is the second mark; the hue is gone,
+   so the note is now true and every filled mark is one colour. */
+.pd-line.is-rank1 .pd-ln-mark { text-shadow: 0 0 7px rgba(91,140,255,0.95); }
 /* A declared slot the solve left empty. The row still exists — an item that
    ships with four slots must never read as a three-slot item (#370) — and says
    so plainly; the reason rides the row's title. */

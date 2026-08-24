@@ -3033,7 +3033,17 @@ test("#453 U2 (R1/R2/R3): one card, three chip classes", () => {
   const html = R.equippedBody(v, -1, null, null, false, false, chipCtx("Test Helm", { "Melee Power": { value: 10 } }));
   assert.ok(hasLine(html, "is-tracked", "Melee Power"), "the credited stat is tracked");
   assert.ok(hasLine(html, "is-incidental", "Armor Class"), "an uncredited affix is incidental");
-  assert.ok(hasLine(html, "is-utility", "✓ Ghostly"), "a presence affix is utility");
+  assert.ok(hasLine(html, "is-utility", "Ghostly"), "a presence affix is utility");
+  // #487 — the row no longer prints a check beside the name. A presence affix has
+  // no magnitude, so its label used to carry `✓`; the row's marker column now
+  // draws the filled diamond, and printing both said "present" twice in two
+  // vocabularies. The check survives in `affixLabel`'s default, because every
+  // EXPORT still needs it — there is no gutter there to carry the fact.
+  assert.ok(!/✓ Ghostly/.test(html), "the row does not double up on the marker");
+  assert.ok(/<span class="pd-ln-mark[^"]*"[^>]*>◆<\/span><span class="pd-ln-where">[^<]*<\/span><span class="pd-ln-what">Ghostly/.test(html),
+    "…because the gutter carries it, filled");
+  assert.strictEqual(require("../web/projection.js").affixLabel({ name: "Ghostly", value: 1, type: "Bool" }), "✓ Ghostly",
+    "and the shared label keeps the mark for the surfaces with no gutter");
   assert.ok(!/<li>/.test(html), "no bare plain-text affix line survives (R1)");
 });
 
@@ -3127,7 +3137,8 @@ test("#453 U3: an augment-granted stat is classified like any other", () => {
   ] }]]);
   const html = R.equippedBody(v, 0, maps, augById, false, false, chipCtx("Host", { Accuracy: { value: 4 } }));
   assert.ok(/<li class="is-tracked[^"]*">Accuracy/.test(html), "a credited augment stat is tracked");
-  assert.ok(/<li class="is-utility[^"]*">✓ True Seeing/.test(html), "a presence augment stat is utility");
+  assert.ok(/<li class="is-utility[^"]*">True Seeing/.test(html), "a presence augment stat is utility");
+  assert.ok(!/✓ True Seeing/.test(html), "#487 — the nested line drops the check too; the gutter marks it");
 });
 
 test("#453 U6 (R18): the stale-snapshot control is labelled for what it does", () => {
@@ -3531,7 +3542,7 @@ test("#469: an augment row carries the priority link of what the gem grants", ()
     "a gem granting a listed-but-outbid stat gets the weaker link, not none");
 });
 
-test("#469/#471: the ramp is four steps, and only the credited one is bold white", () => {
+test("#469/#471/#487: filled vs hollow is a SHAPE, and colour ranks nothing", () => {
   // #471 — the ramp moved off the chip's border onto the row's WEIGHT and its
   // MARKER. The guarantee is unchanged and is the reason this test exists:
   // colour is never the only thing separating the four classes.
@@ -3542,12 +3553,38 @@ test("#469/#471: the ramp is four steps, and only the credited one is bold white
   assert.ok(/#fff/.test(tracked) && /#fff/.test(ranked), "both are white — they are both on your list");
   assert.ok(!/font-weight/.test(ranked),
     "outbid does NOT borrow the weight — the weight is what claims 'this is why the item is here'");
-  // The four classes stay apart without colour: the marker is a SHAPE ramp.
+  // The guarantee this test exists for is unchanged: COLOUR is never the only
+  // thing separating the classes. What changed is that there are no longer four
+  // distinct glyphs, and that is deliberate — `utility` now shares the filled
+  // diamond, because a secured utility effect IS a satisfied affix and printing
+  // it with its own glyph and its own colour said so in a third visual language.
+  //
+  // So the assertions move to the distinctions that still carry meaning rather
+  // than to a count of glyphs, which was only ever a proxy for them.
   const R471 = require("../web/results.js");
-  const marks = new Set(Object.values(R471.LINE_MARK));
-  assert.strictEqual(marks.size, 4, "four classes, four distinct marker glyphs");
-  assert.strictEqual(R471.LINE_MARK.tracked, "◆", "credited is the filled shape");
-  assert.strictEqual(R471.LINE_MARK.ranked, "◇", "outbid is the hollow one");
+  const M = R471.LINE_MARK;
+  assert.strictEqual(M.tracked, "◆", "credited is the filled shape");
+  assert.strictEqual(M.utility, "◆", "…and so is a secured utility effect");
+  assert.strictEqual(M.ranked, "◇", "outbid is hollow — present, not doing anything");
+  assert.notStrictEqual(M.ranked, M.incidental,
+    "#469: outbid must not render identically to a stat the player never asked about");
+  assert.notStrictEqual(M.tracked, M.ranked, "filled and hollow stay different SHAPES");
+  // tracked and utility share a glyph, so the thing that still separates them
+  // must not be colour — it is the row's weight.
+  assert.ok(/font-weight: 700/.test(tracked), "credited carries the weight");
+  const filledColour = _cssRule(css, ".pd-line.is-tracked .pd-ln-mark,");
+  assert.ok(/var\(--optimal\)/.test(filledColour),
+    "and every filled mark is the one filled colour, so colour ranks nothing");
+  // …including the #1 priority. #455 R21's note always claimed its rank-1 accent
+  // was "a second visible mark on the marker rather than a hue change", and the
+  // rule set `color` anyway — so the top priority's filled diamond was a
+  // different colour from every other filled diamond. The glow is the second
+  // mark; a hue here would make colour rank things again, which is the one job
+  // the marker must not do.
+  const rank1 = _cssRule(css, ".pd-line.is-rank1 .pd-ln-mark {");
+  assert.ok(/text-shadow/.test(rank1), "rank 1 is emphasised");
+  assert.ok(!/(^|[^-])color:/.test(rank1),
+    "…by a glow, never by a hue — every filled mark stays one colour");
 });
 
 test("#469/#472: the crafting system is named in words, not carried by a colour", () => {
@@ -3683,7 +3720,7 @@ test("#471: the card's foot is ONE note family, whatever it is saying", () => {
   assert.ok(!/pd-rec-note/.test(html), "the owned-mode note is no longer a shape of its own in the body");
 });
 
-test("#471: head, body and foot are separated without a rule across the card", () => {
+test("#471/#487: head, body and foot are separated without a rule across the card", () => {
   // The user's report: the bars do not look good. Three devices replace them —
   // a tint that fades out, a spine the rows hang off, and a recessed plate.
   const css = _reachCss();
@@ -3694,9 +3731,17 @@ test("#471: head, body and foot are separated without a rule across the card", (
   const foot = _cssRule(css, ".pd-card-foot { margin: 0");
   assert.ok(/border-top: 0/.test(foot), "the foot's dashed rule is gone");
   assert.ok(/background: rgba\(0,0,0/.test(foot), "…replaced by a recessed plate");
-  assert.ok(/\.pd-rbody::before/.test(css), "and the body's sections hang off a spine");
-  const secs = _cssRule(css, ".pd-sec ~ .pd-sec {");
-  assert.ok(/border-top: 0/.test(secs), "the between-section hairlines are gone too");
+  // The body's device CHANGED. #471 hung the sections off a left-gutter spine;
+  // at the maintainer's direction each section is its own box now (the reasoning
+  // and the reversal are recorded on the `.pd-sec` rule). What this test still
+  // guards is the property in its own title, which is unchanged: the separation
+  // never comes from a rule drawn ACROSS the card.
+  const sec = _cssRule(css, ".pd-sec { display: flex");
+  assert.ok(/border: 1px solid/.test(sec), "each section is its own box");
+  assert.ok(!/\.pd-rbody::before \{ content/.test(css),
+    "the spine is retired — a rule behind three bordered boxes is a fourth edge competing with them");
+  assert.ok(!/\.pd-sec ~ \.pd-sec \{[^}]*border-top: 1px/.test(css),
+    "and no hairline is added BETWEEN the boxes, which would be #471's device back, doubled");
 });
 
 // ---------------------------------------------------------------------------
