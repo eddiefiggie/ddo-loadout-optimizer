@@ -211,6 +211,12 @@ Per *open work lives in GitHub Issues*, filed 2026-08-24 before any code moved:
 - **#496** — add-back of the Set Augment suppression disclosure to the Loadout
   card, if play shows it is missed.
 - **#497** — post-change stale-code sweep (scoped below).
+- **#502** — the version store has no lifecycle management. Filed 2026-08-24 from
+  the branch's own code review: the retention this plan settled on ("grow until
+  storage complains, then warn and let the player prune") ships with the growing
+  and the warning but no pruning, a warning that latches on and never clears, and
+  an auto-snapshot that duplicates on every re-solve. The design decision was
+  sound; what it assumed — a prune control — was never built.
 
 ---
 
