@@ -2525,70 +2525,36 @@ function utilityCard(build, rankIdx) {
 // same source the exports render, so the two surfaces cannot drift; `augById`
 // is the catalog fallback for placement records saved before they carried
 // affixes (the set-like block's own precedent).
-/** #485 — the load-bearing guard this block never had.
+/** #485/#488 — the block renders the credit; it no longer computes it.
  *
- *  `bundleGroups` emits one entry per (carrier, enchantment) straight from the
- *  catalog, with no check that the build is getting any of it. Buckets are
- *  max-of-type, so when two equipped items carry the same enchantment at the same
- *  bonus type only the larger contributes — and a block that lists both tells the
- *  player to value a source doing nothing. That was reported as "why is Enhancement
- *  Combat Mastery listed twice for 2 separate items".
- *
- *  The predicate is not new and is deliberately not re-derived here.
- *  `itemContribIndex` already answers "what was this carrier credited for", and
- *  #453 (KTD1) already put the ENCHANTMENT NAME into its key set precisely so a
- *  collapsed bundle can be matched by name. Asking that index is what keeps this
- *  block agreeing with the item cards; computing bucket maxima a second time here
- *  is how two surfaces come to disagree about the same build.
- *
- *  A member is judged separately from its bundle, because one carrier can hold two
- *  copies of one enchantment at different values — `Legendary Bracers of Baphomet`
- *  carries Stunning/Vertigo/Shatter at BOTH 6 and 12 — and a bundle-level verdict
- *  would light up the dead 6s alongside the live 12s.
+ *  `bundleGroups` annotates every group and member with `live` (and `null` when
+ *  there is no build to judge against), so the app and every export read the same
+ *  fact from one place. Computing it here was what left the exports listing a
+ *  superseded bundle as though the build were getting it.
  *
  *  Nothing is hidden. A superseded bundle keeps its card and says why: the player
- *  owns that item and needs to know the enchantment is on it and doing nothing,
- *  which is a different fact from the enchantment being absent. */
-function bundleCredit(b, prioCtx) {
-  // Unjudgeable is its own answer, and it is NOT "dead". Without a build to ask,
-  // the honest output is no claim in either direction — marking every bundle
-  // superseded here would have printed "a larger source elsewhere fills these
-  // buckets" for a build this code cannot see, which is a fabricated fact and a
-  // worse failure than the one the guard exists to fix.
-  if (!(prioCtx && prioCtx.result)) {
-    return { judged: false, live: null, members: (b.members || []).map((m) => ({ ...m, live: null })) };
-  }
-  const idx = itemContribIndex(prioCtx, b.host || b.carrier);
-  const memberLive = (m) => {
-    const c = idx.byStat.get(m.name);
-    // No credited contribution for this stat -> this carrier is not what the
-    // solver counted for it. Equal values -> this copy IS the credited one.
-    // A different value means a larger source won the bucket, which is exactly
-    // the case the item cards call `ranked`.
-    return !!c && Number(c.value) === Number(m.value);
-  };
-  const members = (b.members || []).map((m) => ({ ...m, live: memberLive(m) }));
-  return { judged: true, members, live: idx.keys.has(b.name) || members.some((m) => m.live) };
-}
-
-function bundlesBlock(build, augById, prioCtx) {
+ *  owns that item, and "the enchantment is on it and doing nothing" is a different
+ *  fact from "the enchantment is absent". */
+function bundlesBlock(build, augById) {
   const groups = Proj.bundleGroups(build, augById);
   if (!groups.length) return "";
   const cards = groups.map((b) => {
-    const { members, live, judged } = bundleCredit(b, prioCtx);
-    // Unjudged renders exactly as it did before the guard existed: plain text,
-    // no marks. That also keeps the member run contiguous, which is what lets
-    // the export-parity test compare the app's line against the share's
-    // character for character.
+    const members = b.members || [];
+    // ONLY `superseded` is struck. `unranked` means the player never asked for that
+    // stat — nothing is competing for its bucket — and marking it dead would claim
+    // a competitor that does not exist. `null` means there was no build to judge
+    // against, so nothing is claimed either way; that also keeps the member run
+    // contiguous, which is what lets the export-parity test compare the app's line
+    // against the share's character for character.
     const grants = members.map((m) => {
       const label = esc(affixLabel(m));
-      return (!judged || m.live) ? label : `<span class="bundle-dead">${label}</span>`;
+      return m.state === "superseded" ? `<span class="bundle-dead">${label}</span>` : label;
     }).join(", ");
     // The whole-bundle case gets a sentence rather than only a shade: "this item
     // has it and you are not getting it" is not something a reader should have to
     // infer from a colour. Wording deliberately matches the per-chip `ranked`
     // explanation on the gear cards — one fact, said the same way twice.
-    const dead = judged && !live;
+    const dead = b.state === "superseded";
     const note = dead ? `<div class="set-via bundle-note">A larger source elsewhere in this build already fills these bonus-type buckets, so this copy adds nothing.</div>` : "";
     return `<li class="set-card bundle${dead ? " is-incidental" : ""}"><strong>${esc(b.name)}</strong>`
       + `<div class="set-grants">${grants}</div>`
@@ -2758,9 +2724,7 @@ function buildViews(build, model, query, opts) {
   }
   // #340 — bundled enchantments (third block): each engraved multi-stat bundle
   // on the equipped loadout, named once with its members and carrier.
-  // #485 — the priority context rides along so the block can ask what the carrier
-  // was actually credited for, instead of reporting the catalog.
-  setsPanel += bundlesBlock(build, augById, { result: build, attr, targets: query.targets });
+  setsPanel += bundlesBlock(build, augById);
 
   return { paperdoll: `<div class="pd-list">${rows.join("")}</div>`, weapons, cards: cardsHtml, setsPanel, deepDive: loadoutDeepDive(build, query, maps, attr, augById) };
 }
@@ -2919,7 +2883,7 @@ if (typeof module !== "undefined" && module.exports) {
     setMembershipSection, setRowsFor,
     // #472 — exported so a test can build the same credited-set index the
     // renderers read, rather than hand-rolling its shape and drifting from it.
-    itemContribIndex, bundlesBlock, bundleCredit,
+    itemContribIndex, bundlesBlock,
     // #481 — the concession control's render gate, exported so a test can prove
     // WHERE it appears without driving a DOM.
     concessionControl };

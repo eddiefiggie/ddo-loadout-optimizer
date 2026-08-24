@@ -122,6 +122,17 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
   // tier. Spelled once so no format can drift.
   const BUNDLE_NOTE = "Single-source enchantments granting several stats — not sets.";
 
+  // #488 — the superseded qualifier, spelled ONCE for the same reason BUNDLE_NOTE
+  // is: five formats print bundles, and the app already tells the player this copy
+  // adds nothing. A share that omitted it would say the opposite of the screen the
+  // player copied it from.
+  const BUNDLE_SUPERSEDED = "superseded — a larger source elsewhere in this build fills these bonus-type buckets";
+  // ONLY the `superseded` state earns the qualifier. `unranked` means the stat is
+  // not on the priority list at all — nothing is filling its bucket — and `null`
+  // means there was no breakdown to judge against. Claiming a competitor in either
+  // case would be a fabricated fact about the build.
+  const bundleTail = (b) => (b && b.state === "superseded") ? ` (${BUNDLE_SUPERSEDED})` : "";
+
   // U5 (R11) — the pieces that composed one set, rendered through projection's
   // SINGLE member label (`Proj.setMemberLabel`) so the Set Bonuses card and all
   // five text formats name a piece identically. A wildcard or chosen-membership
@@ -268,7 +279,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     if ((view.bundles || []).length) {
       out += `\n## Bundled enchantments\n\n_${mdEsc(BUNDLE_NOTE)}_\n\n`;
       for (const b of view.bundles) {
-        out += `- **${mdEsc(b.name)}** — ${affixList(b.members, mdEsc)} — from ${mdEsc(b.carrier)}\n`;
+        out += `- **${mdEsc(b.name)}** — ${affixList(b.members, mdEsc)} — from ${mdEsc(b.carrier)}${mdEsc(bundleTail(b))}\n`;
       }
     }
     const stats = Object.keys(view.attribution);
@@ -357,7 +368,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     if ((view.bundles || []).length) {
       out += `\n[b]Bundled enchantments[/b]\n[i]${bbEsc(BUNDLE_NOTE)}[/i]\n[list]\n`;
       for (const b of view.bundles) {
-        out += `[*][b]${bbEsc(b.name)}[/b]: ${affixList(b.members, bbEsc)} — from ${bbEsc(b.carrier)}\n`;
+        out += `[*][b]${bbEsc(b.name)}[/b]: ${affixList(b.members, bbEsc)} — from ${bbEsc(b.carrier)}${bbEsc(bundleTail(b))}\n`;
       }
       out += `[/list]\n`;
     }
@@ -445,10 +456,11 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     // The qualifier rides the header row; no Pieces column on purpose (R6).
     if ((view.bundles || []).length) {
       rows.push("");
-      rows.push(csvRow(["Bundled enchantment", BUNDLE_NOTE, ""]));
-      rows.push(csvRow(["Bundle", "Grants", "From"]));
+      rows.push(csvRow(["Bundled enchantment", BUNDLE_NOTE, "", ""]));
+      rows.push(csvRow(["Bundle", "Grants", "From", "Status"]));
       for (const b of view.bundles) {
-        rows.push(csvRow([b.name, affixListCsv(b.members), b.carrier]));
+        rows.push(csvRow([b.name, affixListCsv(b.members), b.carrier,
+          b.state === "superseded" ? BUNDLE_SUPERSEDED : ""]));
       }
     }
     const stats = Object.keys(view.attribution);
@@ -541,7 +553,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     if ((view.bundles || []).length) {
       h += `<h2>Bundled enchantments</h2><p class="legend">${htmlEsc(BUNDLE_NOTE)}</p><ul>`;
       for (const b of view.bundles) {
-        h += `<li><strong>${htmlEsc(b.name)}</strong> — ${affixList(b.members, htmlEsc)} — from ${htmlEsc(b.carrier)}</li>`;
+        h += `<li><strong>${htmlEsc(b.name)}</strong> — ${affixList(b.members, htmlEsc)} — from ${htmlEsc(b.carrier)}${htmlEsc(bundleTail(b))}</li>`;
       }
       h += `</ul>`;
     }
@@ -826,7 +838,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       rl.push("#");
       say(`Bundled enchantments (${BUNDLE_NOTE})`);
       for (const b of view.bundles) {
-        say(`  ${b.name}: ${affixList(b.members, (s2) => s2)} — from ${b.carrier}`);
+        say(`  ${b.name}: ${affixList(b.members, (s2) => s2)} — from ${b.carrier}${bundleTail(b)}`);
       }
     }
     return `${gear.join("\n")}\n\n${rl.join("\n")}\n`;
