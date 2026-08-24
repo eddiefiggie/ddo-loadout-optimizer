@@ -985,12 +985,18 @@ function craftRowsFor(v, idx, maps) {
   push(maps.dinoAssign && maps.dinoAssign.byIndex && maps.dinoAssign.byIndex.get(idx), "dino");
   push(maps.ncByItem && maps.ncByItem.get(v.variant_id), "nc");
   push(maps.rollByItem && maps.rollByItem.get(v.variant_id), "roll");
-  const vikPlaced = (maps.vikByItem && maps.vikByItem.get(v.variant_id)) || [];
-  push(vikPlaced, "vik");
   // #370 — a Lamordia slot the item DECLARES but the solve left empty keeps its
   // row. The slot is part of the item's identity: an item that ships with four
   // slots must never read as a three-slot item.
-  for (const s of Proj.unfilledVikSlots(v, vikPlaced)) rows.push({ family: "vikEmpty", o: s, empty: true });
+  // #484 — and the filled and empty rows are ONE list in in-game slot order, not
+  // two blocks. Sorting each block separately and concatenating them is not the
+  // same as sorting the whole, which is how an item with two Melancholic slots
+  // came to render `Melancholic, Dolorous, Melancholic` and read as a duplicate.
+  for (const r of Proj.vikSlotRows(v, (maps.vikByItem && maps.vikByItem.get(v.variant_id)) || [])) {
+    rows.push(r.placement
+      ? { family: "vik", o: r.placement }
+      : { family: "vikEmpty", o: { slot_type: r.slot_type, category: r.category }, empty: true });
+  }
   push(maps.sealByItem && maps.sealByItem.get(v.variant_id), "seal");
   push(maps.tfByItem && maps.tfByItem.get(v.variant_id), "tf");
   push(maps.gsByItem && maps.gsByItem.get(v.variant_id), "gs");
@@ -1097,7 +1103,11 @@ function craftSection(v, idx, maps, contribIdx, rank1, ranked) {
     // as its `where`; when the caption already says it, blank the column rather
     // than print the same word twice on one row.
     const where = (one && parts.where === one) ? "" : parts.where;
-    return stackLine(cls, where, esc(parts.what), {
+    // #484 — the slot category, muted, in the same idiom the membership row uses
+    // for its station: a qualifier the row needs but which must not compete with
+    // the value for attention.
+    const note = parts.note ? ` <span class="muted">· ${esc(parts.note)}</span>` : "";
+    return stackLine(cls, where, `${esc(parts.what)}${note}`, {
       cls: `craft-${esc(r.family)}`,
       mark: r.empty ? "◇" : LINE_MARK[cls],
       rank1: !!(rank1 && key === rank1 && cls === "tracked"),

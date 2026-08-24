@@ -1208,24 +1208,54 @@
    *  Shared by the app chips and `craftingForItem` (every export), so the two
    *  surfaces cannot disagree about how many slots an item has.
    */
-  function unfilledVikSlots(variant, placed) {
+  function vikSlotRows(variant, placed) {
     const declared = (variant && variant.lamordia_slots) || [];
-    if (!declared.length) return [];
-    const filled = new Map();
-    for (const p of placed || []) filled.set(p.slot_type, (filled.get(p.slot_type) || 0) + 1);
-    const out = [];
-    for (const slot of declared) {
-      const n = filled.get(slot.type) || 0;
-      if (n > 0) { filled.set(slot.type, n - 1); continue; }
-      out.push({ slot_type: slot.type, category: slot.category || null });
-    }
-    const order = Craft && Craft.get("viktranium") && Craft.get("viktranium").slot_types;
-    if (order && order.length) {
-      const rank = new Map(order.map((s, i) => [s, i]));
-      const rankOf = (s) => (rank.has(s) ? rank.get(s) : order.length);
-      out.sort((a, b) => rankOf(a.slot_type) - rankOf(b.slot_type));
-    }
-    return out;
+    const list = (placed || []).slice();
+    const asRow = (p) => ({ slot_type: p.slot_type, category: p.category || null, placement: p });
+    if (!declared.length) return list.map(asRow);
+
+    const order = (Craft && Craft.get("viktranium") && Craft.get("viktranium").slot_types) || [];
+    const rank = new Map(order.map((s, i) => [s, i]));
+    const rankOf = (s) => (rank.has(s) ? rank.get(s) : order.length);
+    // Sorted ONCE, here, so the pairing below runs in the order the rows render.
+    // The tie-break on declaration index keeps two slots of one type in the order
+    // the item declares them, which is the only order there is a reason to prefer.
+    const slots = declared
+      .map((s, i) => ({ slot_type: s.type, category: s.category || null, i }))
+      .sort((a, b) => rankOf(a.slot_type) - rankOf(b.slot_type) || a.i - b.i);
+
+    const used = new Set();
+    const take = (pred) => {
+      for (let k = 0; k < list.length; k++) if (!used.has(k) && pred(list[k])) { used.add(k); return list[k]; }
+      return null;
+    };
+    const rows = slots.map((s) => ({ slot_type: s.slot_type, category: s.category, placement: null }));
+    // TWO passes, and the order matters. Exact (type, category) matches are claimed
+    // for EVERY slot first; only then do the leftovers get paired by type alone.
+    // Interleaving the two — trying exact then falling back per slot — lets the
+    // first slot of a type grab a placement that exactly belongs to the second,
+    // which on Legendary Frozen Contraption told the player to craft a Weapon
+    // option in the Armor slot, whose pool does not offer it.
+    for (const r of rows) r.placement = take((p) => p.slot_type === r.slot_type && (p.category || null) === r.category);
+    // The type-only pass exists for a restored snapshot saved before the category
+    // rode along on `vikMeta`. Pairing something beats showing a filled slot as
+    // empty, and it degrades to the pre-#484 behaviour rather than inventing a
+    // category the snapshot never carried.
+    for (const r of rows) if (!r.placement) r.placement = take((p) => p.slot_type === r.slot_type);
+    // A placement matching no declared slot is still reported. It should not
+    // happen, but dropping a craft the solve told the player to apply is the one
+    // outcome worse than an odd-looking row.
+    for (let k = 0; k < list.length; k++) if (!used.has(k)) rows.push(asRow(list[k]));
+    return rows;
+  }
+
+  /** The declared-but-empty subset, kept as its own name because it reads at the
+   *  call sites that only care about the gap. Derived from `vikSlotRows` so the
+   *  two can never disagree about which slot is empty. */
+  function unfilledVikSlots(variant, placed) {
+    return vikSlotRows(variant, placed)
+      .filter((r) => !r.placement)
+      .map((r) => ({ slot_type: r.slot_type, category: r.category }));
   }
 
   // One craft option's value label (e.g. "Constitution +15") — the unit inside a
@@ -1319,10 +1349,16 @@
         title: o.pool ? `${o.pool} — per-item upgrade slot` : "Terror of Demogorgon — Nearly Completed" };
       case "roll": return { where: "Choice", what: craftValue(o), system: sys(family),
         title: "choice slot, best option selected" };
-      case "vik": return { where: o.slot_type, what: craftAffixes(o), system: sys(family),
-        title: "The Chill of Ravenloft — Viktranium Experiment crafting" };
-      case "vikEmpty": return { where: o.slot_type, what: "left empty", system: sys(family),
-        title: craftLabel(o, "vikEmpty") };
+      // #484 — the slot CATEGORY rides as a note rather than joining the where
+      // column, which is 6.7em and already truncates "Melancholic". It is not
+      // decoration: the option pool for a Lamordia slot is keyed by (type,
+      // category), so `Melancholic (Armor)` and `Melancholic (Weapon)` offer
+      // different crafts, and an item declaring both renders two rows that are
+      // otherwise identical.
+      case "vik": return { where: o.slot_type, what: craftAffixes(o), note: o.category || null,
+        system: sys(family), title: "The Chill of Ravenloft — Viktranium Experiment crafting" };
+      case "vikEmpty": return { where: o.slot_type, what: "left empty", note: o.category || null,
+        system: sys(family), title: craftLabel(o, "vikEmpty") };
       case "seal": return { where: o.seal_type, what: craftValue(o), system: sys(family),
         title: "unseal one effect at the crafting table" };
       case "tf": return { where: `Tier ${o.tier}`, what: craftValue(o), system: sys(family),
@@ -1418,6 +1454,13 @@
     return (o && o.affixes && o.affixes.length) ? o.affixes : (o ? [o] : []);
   }
 
+  // #484 — a Lamordia slot's full name. Two slots of one type on an item differ
+  // only by category, so every text surface has to carry it or the two rows read
+  // as one craft reported twice.
+  function vikSlotName(o) {
+    return o && o.category ? `${o.slot_type} (${o.category})` : (o && o.slot_type) || "";
+  }
+
   function craftLabel(o, family) {
     switch (family) {
       case "dino": return `${o.dino_type}: ${o.name ? o.name + ", " : ""}${craftAffixes(o)}`;
@@ -1430,14 +1473,14 @@
       // "Nearly Completed" byte-identically.
       case "nc": return `${o.pool || "Nearly Completed"}: ${o.name ? o.name + ", " : ""}${craftAffixes(o)}`;
       case "roll": return `Choice: ${craftValue(o)}`;
-      case "vik": return `Slot ${o.slot_type} Viktranium augment: ${craftAffixes(o)}`;
+      case "vik": return `Slot ${vikSlotName(o)} Viktranium augment: ${craftAffixes(o)}`;
       // #370 — a declared slot the solve left empty. Says why, so the player can
       // tell "no option helps your priorities" apart from "this tool has no data
       // for that slot" — the two look identical when the slot simply vanishes.
       // Deliberately NOT given an export cue (`CUE.craft` in exporters.js): a cue
       // would file an empty slot under a crafting family in the legend and read as
       // a craft to go apply. The label stands alone on every surface instead.
-      case "vikEmpty": return `Slot ${o.slot_type} Viktranium augment: left empty — no option adds to your ranked stats`;
+      case "vikEmpty": return `Slot ${vikSlotName(o)} Viktranium augment: left empty — no option adds to your ranked stats`;
       case "seal": return `Sealed in ${o.seal_type}: ${craftValue(o)}`;
       case "tf": return `Thunder-Forged T${o.tier}: ${craftValue(o)}`;
       case "gs": return `Green Steel: ${craftValue(o)}`;
@@ -1672,12 +1715,18 @@
     for (const d of maps.dinoAssign.byIndex.get(idx) || []) out.push({ family: "dino", label: craftLabel(d, "dino") });
     for (const n of maps.ncByItem.get(v.variant_id) || []) out.push({ family: "nc", label: craftLabel(n, "nc") });
     for (const r of maps.rollByItem.get(v.variant_id) || []) out.push({ family: "roll", label: craftLabel(r, "roll") });
-    const viks = maps.vikByItem.get(v.variant_id) || [];
-    for (const n of viks) out.push({ family: "vik", label: craftLabel(n, "vik") });
     // #370 — the declared-but-empty Lamordia slots ride the same resolved view,
     // so every export states the item's real slot count (R6: never app-visible
     // but share-invisible).
-    for (const s of unfilledVikSlots(v, viks)) out.push({ family: "vikEmpty", label: craftLabel(s, "vikEmpty"), slot_type: s.slot_type });
+    // #484 — ONE pass over the declared slots in in-game order, filled and empty
+    // interleaved. Emitting every placement and then every gap produced two
+    // independently-sorted blocks whose concatenation was not slot order, so a
+    // 3-slot item read `Melancholic, Dolorous, Melancholic`.
+    for (const r of vikSlotRows(v, maps.vikByItem.get(v.variant_id) || [])) {
+      out.push(r.placement
+        ? { family: "vik", label: craftLabel(r.placement, "vik") }
+        : { family: "vikEmpty", label: craftLabel(r, "vikEmpty"), slot_type: r.slot_type, category: r.category });
+    }
     for (const n of maps.sealByItem.get(v.variant_id) || []) out.push({ family: "seal", label: craftLabel(n, "seal") });
     for (const n of maps.tfByItem.get(v.variant_id) || []) out.push({ family: "tf", label: craftLabel(n, "tf") });
     for (const n of maps.gsByItem.get(v.variant_id) || []) out.push({ family: "gs", label: craftLabel(n, "gs") });
@@ -2441,7 +2490,7 @@
     satisfiedSets, suppressedHostIds, slotSetNames,
     setContributors, contributorsFor, setMemberLabel, activeSetDetail, satisfiedSetDetail,
     // craft + cue helpers
-    buildCraftMaps, craftLabel, craftValue, unfilledVikSlots, lunarSolar, setAugmentSlotRule,
+    buildCraftMaps, craftLabel, craftValue, unfilledVikSlots, vikSlotRows, lunarSolar, setAugmentSlotRule,
     // #471 — the split craft label + section caption for the Loadout card's row
     // language. Generated from the same fields as craftLabel, beside it (KTD6).
     craftRowLabel, CRAFT_SECTION_LABEL,
