@@ -843,7 +843,7 @@
   const NATIVE_KINDS = new Set(["worn", "roll"]);
 
   // #262 — the no-drop-source disclosure wording, EXACTLY this phrase everywhere
-  // it renders (gear box, Deep Dive, browse/wizard rows, coverage note, all six
+  // it renders (gear box, browse/wizard rows, coverage note, all six
   // exports). The wiki proves its page records no source — that is the claim the
   // evidence supports, and nothing stronger is ever printed (R5). ONE spelling,
   // exported for every surface; a per-surface respelling is the drift this
@@ -1386,8 +1386,8 @@
    *  A SEPARATE function rather than a flag on `craftLabel`, because that one is
    *  what every text exporter renders from and what the export goldens pin — a
    *  parameter there is one defaulted argument away from moving five formats at
-   *  once. The Deep Dive keeps the full label too: it is the exhaustive
-   *  per-item surface, and trimming it there would lose the value entirely.
+   *  once. The value is not lost by trimming: the gear card's Craft rows state
+   *  it beside the slot that yields it (#472).
    *
    *  Families with no affix list to trim (`joker`, `augmentset`, `vikEmpty`)
    *  fall through to `craftLabel` unchanged — `vikEmpty` in particular is not an

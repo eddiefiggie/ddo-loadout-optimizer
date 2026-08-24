@@ -519,7 +519,7 @@ test("#370: the empty slots ride project() — every export states the item's re
 
 test("#370/#472: the app row states the same slots the exports do, and carries their sentence", () => {
   // #472 retired `craftSlotChips`; the app renders `craftSection` now, on both
-  // the gear card and the Deep Dive. #370's guarantee is untouched: a declared
+  // the gear card. #370's guarantee is untouched: a declared
   // slot the solve left empty must still appear, or a 4-slot item reads as a
   // 3-slot item and that is indistinguishable from missing data.
   //

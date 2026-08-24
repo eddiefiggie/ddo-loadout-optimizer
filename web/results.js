@@ -25,7 +25,7 @@ const _resultsRungExcludesNicheCrafting = (typeof rungExcludesNicheCrafting !== 
 const _resultsIsSolarLunarColor = (typeof isSolarLunarColor !== "undefined") ? isSolarLunarColor
   : (typeof require !== "undefined" ? require("./model.js").isSolarLunarColor : (c) => c === "Sun" || c === "Moon");
 // U8 (R8) — bound like every other shared primitive. `renderResults` /
-// `equippedBody` / `loadoutDeepDive` run against the LIVE solve result and have no
+// `equippedBody` runs against the LIVE solve result and has no
 // saved record, so they cannot reach the collapse through `Proj.project(rec)`;
 // they call the same primitive that builds the content model instead.
 const collapseExpansions = Proj.collapseExpansions;
@@ -61,11 +61,6 @@ var itemMl = (v) => (v && v.ml != null) ? v.ml : (v && v.minimum_level);
 var _UTILITY_SENTINEL = (typeof UTILITY_SENTINEL !== "undefined")
   ? UTILITY_SENTINEL
   : (typeof require !== "undefined" ? require("./model.js").UTILITY_SENTINEL : "Utility effects");
-
-// Standard fillable augment-slot colors — a generic augment can go here, so an
-// open one is a realizable upgrade. Named crafting slots (Lamordia, celestial)
-// need specific augments and are shown as craft slots, not flagged as unused.
-const STD_AUG_COLORS = new Set(["blue", "red", "yellow", "green", "orange", "purple", "colorless", "clear"]);
 
 function coverageNote(dataset) {
   const m = (dataset && dataset.metadata) || {};
@@ -196,7 +191,7 @@ function safeUrl(u) {
 
 // Craft/augment prescriptions applied to an equipped item (augments, Dino inserts,
 // Nearly Completed, choice slots, Viktranium, seals, wildcard), as labeled chips.
-// Used by the Loadout Deep Dive so every applied bonus is visible. Returns an array.
+// Used by the Loadout card so every applied bonus is visible. Returns an array.
 // Crafting-system label registry (U1). Global in the browser (loaded before
 // results.js); require()'d in Node tests where the global isn't present.
 const CraftingReg = (typeof CraftingSystems !== "undefined") ? CraftingSystems
@@ -212,9 +207,10 @@ var _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined") ? pinnedVarian
 // #472 — `craftSlotChips` and `craftChips` are retired. They rendered this
 // item's crafts, augments, wildcard, membership and Set Augment as a run of
 // labelled chips, and were the LAST caller of the chip language on an item
-// surface: #471 moved the gear card to rows, and the Deep Dive — their only
-// consumer — now calls the same `augmentSection` / `craftSection` /
-// `setMembershipSection` the card does.
+// surface: #471 moved the gear card to rows, and #472 moved the Deep Dive — their
+// only other consumer — onto the same `augmentSection` / `craftSection` /
+// `setMembershipSection`. #498 then retired that tab, leaving the card as the
+// single item surface and these three as its only renderers.
 //
 // What they uniquely knew is preserved, not deleted:
 //   - the split labels live in `Proj.craftRowLabel`, beside `craftLabel`;
@@ -256,7 +252,7 @@ function contribSetLabel(contribs) {
 
 // One paperdoll slot cell: uniform, fixed-size, showing only the item name, ML,
 // and the set it belongs to. A set piece gets a themed highlight frame (.is-set).
-// Full affixes/crafts live in the Loadout Deep Dive tab, not on the cell.
+// Full affixes/crafts live in the gear card below the doll, not on the cell.
 function paperdollSlot(label, pos, pick, satisfied, contributors) {
   if (!pick) {
     return `<div class="pd-slot empty pos-${pos}"><div class="pd-label">${esc(label)}</div><div class="pd-item muted">empty</div></div>`;
@@ -270,101 +266,6 @@ function paperdollSlot(label, pos, pick, satisfied, contributors) {
     <div class="pd-item" title="${esc(v.variant_id)}">${esc(v.variant_id)}</div>
     <div class="pd-foot"><span class="pd-ml">ML ${esc(itemMl(v) ?? "?")}</span>${setLine}</div>
   </div>`;
-}
-
-// Loadout Deep Dive: one block per equipped item showing where it is worn, its
-// affixes, its set membership, and every applied craft/augment (R5 detail moved
-// off the paperdoll cell into this tab).
-function loadoutDeepDive(result, query, maps, attr, augById) {
-  if (!result.chosen.length) return `<p class="dd-none muted">No items equipped for this build.</p>`;
-  const suppressed = suppressedHostIds(result);                        // U7: a Set-Augment host suppresses its own set
-  const satisfied = satisfiedSets(result.chosen, result.setsActive, suppressed);   // U6/U7: glow on completion, honoring suppression
-  const contributors = Proj.setContributors(result);                   // U4/R7: wildcard + membership pieces, not just static set_bonus
-  const freeByIndex = (maps && maps.augAssign && maps.augAssign.freeByIndex) || new Map();
-  // #335 U4 (KD3) — one block per DISPLAYED item, not per chosen index. This tab is
-  // the only surface that shows an item's augments and crafts, so a twin rendering
-  // its own second block here is the worst place for the "affixes apply twice"
-  // misreading. The pair merges into one block; both copies' open slots are unioned
-  // so the upgrade note still speaks for the whole ×2 entry.
-  return `<div class="deepdive">${Proj.collapseTwins(result.chosen).map((_g) => {
-    const idx = _g.indices[0];
-    const c = result.chosen[idx];
-    const copies = _g.count;
-    const v = c.variant;
-    // U10: flag open standard-color augment slots as a concrete unrealized upgrade.
-    const openAug = _g.indices.reduce((acc, i) => acc.concat(freeByIndex.get(i) || []), [])
-      .filter((col) => STD_AUG_COLORS.has(String(col).toLowerCase()));
-    // #472 — the note stopped naming the colours. It used to be the ONLY place an
-    // open slot appeared on this tab, so it had to list them; the Augments
-    // section now gives each one a row of its own, directly below. What the note
-    // still uniquely says is the JUDGEMENT — that these are an unrealized
-    // upgrade — and the count, which the rows do not aggregate.
-    const upgradeNote = openAug.length
-      ? `<div class="dd-upgrade"><span class="dd-upgrade-tag">Unrealized upgrade</span> ${openAug.length} open augment slot${openAug.length === 1 ? "" : "s"} — slot an augment for more stats.</div>`
-      : "";
-    const contribs = slotContribs(c.slot, v, contributors);    // U4/R7: intrinsic + wildcard + membership
-    const glow = contribGlow(contribs, satisfied);             // U6: is-set glow = satisfaction
-    // The intrinsic sets this host GAVE UP to a Set Augment — a static-only read on
-    // purpose (KTD3): the resolver has already dropped them, so the disclosure has
-    // nowhere else to come from, and dropping it would hide what the augment cost.
-    const gaveUp = suppressed.has(v.variant_id) ? slotSetNames(v) : [];
-    const suppressNote = gaveUp.length
-      ? ` <span class="dd-suppressed" title="a Set Augment slotted here overrides this item's own set bonus">(suppressed by Set Augment${contribs.length ? `: ${esc(gaveUp.join(", "))}` : ""})</span>` : "";
-    const setLine = (contribs.length || gaveUp.length)
-      ? `<div class="dd-set"><span class="setpip"></span>Part of set: ${esc(contribs.length ? contribSetLabel(contribs) : gaveUp.join(", "))}${suppressNote}</div>` : "";
-    // #457 — the SAME one stat surface the gear card uses. This tab was strictly
-    // LESS informative than the summary card it details: measured on an ML34
-    // solve, the Legendary Cataclysmic Tower Shield listed 2 affixes here while
-    // its gear card showed 13 stats, because craft- and set-granted points lived
-    // only in `pd-prio` and in the craft labels. An exhaustive surface that shows
-    // less than the summary is the wrong way round.
-    //
-    // U8/R8 still holds: `statChipEntries` collapses, so an expanded enchantment
-    // reads as the one name engraved on the item rather than as seven school lines.
-    const ddContribIdx = itemContribIndex(
-      (attr || query) ? { result, attr, targets: query && query.targets } : null, v.variant_id);
-    const ddRank1 = (query && query.targets && query.targets.length) ? query.targets[0] : null;
-    // #469 — the same priority link the gear card draws. These two surfaces
-    // describe the same items and the repo's standing rule is that they must not
-    // drift: a stat framed as ranked on the card and unframed here would read as
-    // the Deep Dive disagreeing about what the player asked for.
-    const ddRanked = rankedStatSet(query);
-    // #472 — the SAME three section renderers the gear card calls, not a second
-    // implementation of them. #471 left this surface speaking two languages: its
-    // affix list was rows while its craft and augment block was still the chip
-    // run. Sharing the functions outright is what makes a future divergence
-    // impossible rather than merely discouraged.
-    const ddAugs = augmentSection(v, idx, maps, augById, ddContribIdx, ddRank1, ddRanked);
-    const ddCrafts = craftSection(v, idx, maps, ddContribIdx, ddRank1, ddRanked);
-    const ddSets = setMembershipSection(v, maps, ddContribIdx);
-    // #472 — and therefore the same de-duplication. The Deep Dive kept
-    // `includeCraft` on while its craft block showed instructions only, because
-    // dropping the values from here would have left them nowhere (#457). Now the
-    // craft rows state their own affixes, so carrying them here as well prints
-    // the same point twice — the exact redundancy #471 removed from the card.
-    const ddEntries = statChipEntries(v, idx, maps, ddContribIdx, craftRowsFor(v, idx, maps).length > 0);
-    const affixes = ddEntries.entries.length
-      ? `<ul class="dd-list pd-lines">${statChipRow(
-          ddEntries.entries, Proj.affixStatCoverage(ddEntries.raw), ddContribIdx, ddRank1, ddRanked)}</ul>`
-      : `<p class="dd-none muted">No parsed affixes on this item.</p>`;
-    const craftBlock = (ddAugs || ddCrafts || ddSets)
-      ? `<div class="dd-crafts">${ddAugs}${ddCrafts}${ddSets}</div>` : "";
-    const wiki = v.wiki_url ? `<a class="dd-wiki" href="${safeUrl(v.wiki_url)}" target="_blank" rel="noopener">wiki</a>` : "";
-    const artifactTag = v.artifact ? `<span class="dd-artifact" title="your one equipped Artifact">Artifact</span>` : "";
-    // #262 — the wiki-confirmed no-drop-source disclosure, beside the Artifact
-    // tag: a head-level fact about the item, spelled by the ONE shared wording
-    // (projection.js) so the Deep Dive can never drift from the exports.
-    const noDropTag = v.no_drop_source
-      ? `<span class="dd-nodrop" title="the DDO wiki records no current in-game source for this item — it stays a solver candidate; block it to exclude it">${Proj.NO_DROP_SOURCE_WORDING}</span>` : "";
-    return `<div class="dd-item${glow ? " is-set" : ""}${v.artifact ? " is-artifact" : ""}">
-      <div class="dd-head"><span class="dd-slot">${esc(c.slot)}</span><span class="dd-name">${esc(v.variant_id)}</span>${artifactTag}${noDropTag}<span class="dd-ml">ML ${esc(itemMl(v) ?? "?")}</span>${wiki}</div>
-      ${whyThisNote(result, { slot: c.slot, variant_id: v.variant_id }, attr, query && query.targets)}
-      ${setLine}
-      ${upgradeNote}
-      <div class="dd-affixes"><h5>Affixes</h5>${affixes}</div>
-      ${craftBlock}
-    </div>`;
-  }).join("")}</div>`;
 }
 
 // One row of the plain equipped list (prototype layout): slot label, the full
@@ -442,7 +343,7 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
   const body = (v && !locked) ? equippedBody(v, pick ? pick.idx : -1, maps, augById, owned.mode, owned.augments, prioCtx) : "";
   // #262 — the no-drop-source note on the gear box itself: the moment of seeing
   // the pick is where the player must learn it, not at the wiki after farming.
-  // Same shared wording as the Deep Dive and every export (projection.js).
+  // Same shared wording as every export (projection.js).
   const noDropNote = (v && !locked && v.no_drop_source)
     ? `<div class="pd-note pd-rnote pd-nodrop is-source" title="the DDO wiki records no current in-game source for this item — it stays a solver candidate; block it to exclude it"><span class="pd-note-ico" aria-hidden="true">⌖</span><span>${Proj.NO_DROP_SOURCE_WORDING}</span></div>` : "";
   // U3 (plan 2026-08-12-001) — the priority summary sits at the bottom of the
@@ -885,9 +786,8 @@ function statChipEntries(v, idx2, maps, contribIdx, craftStated) {
 // are always supplied on the render path (buildViews -> equippedRow); a maps-less
 // call (only the pure test callers) simply renders no augment/craft section.
 function equippedBody(v, idx, maps, augById, ownedMode, ownedAugments, prioCtx) {
-  // U8/R8 — the Loadout block collapses each expansion to its enchantment for the
-  // same reason the Deep Dive does: this is what the player compares against the
-  // in-game tooltip.
+  // U8/R8 — the Loadout block collapses each expansion to its enchantment because
+  // that is what the player compares against the in-game tooltip.
   // #455 — ONE stat surface. Printed affixes, craft-granted affixes and
   // set-sourced contributions all become chips in the same row; `pd-prio` is
   // retired rather than left beside it restating 62% of what it says.
@@ -964,8 +864,8 @@ const SUN_MOON_GLYPH = { sun: "☀\uFE0F", moon: "🌙" };
 function augmentSection(v, idx, maps, augById, contribIdx, rank1, ranked) {
   if (!(maps && maps.augAssign && idx != null && idx >= 0)) return "";
   // `freeByIndex` is optional: a caller that never computed the OPEN slots still
-  // has placements to show. The Deep Dive's fixtures have carried that shape
-  // since long before this section existed (#472).
+  // has placements to show. Pure-test callers have carried that shape since long
+  // before this section existed (#472).
   const placed = (maps.augAssign.byIndex && maps.augAssign.byIndex.get(idx)) || [];
   const open = (maps.augAssign.freeByIndex && maps.augAssign.freeByIndex.get(idx)) || [];
   if (!placed.length && !open.length) return "";
@@ -1287,7 +1187,7 @@ function whyThisNote(result, item, attr, targets) {
 // Nothing it asserted is lost. Each behaviour it encoded is now covered on a
 // surface that actually renders: presence-not-+1, the cross-add label and the
 // rank-1 accent by the stat row; the absent at-ceiling marker by the two
-// #449 U4 guards on `equippedRow` and `loadoutDeepDive`; contribution ordering
+// #449 U4 guards on `equippedRow`; contribution ordering
 // by `itemContributions`' own tests in projection.test.js; and the four that had
 // NO live guard — the untyped bucket (#227), the craft-carried note's content
 // (#245), the filler empty-state, and the #88 override disclosure driven through
@@ -2146,14 +2046,14 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
       <button class="return-optimum" type="button">Return to optimum</button>
     </div>
     <div class="readout-analysis">
-      <p class="readout-header">Your build, tab by tab — <strong>Loadout</strong> is your equipped gear; the other tabs
-        break down priorities, set bonuses, and per-item detail. Use <strong>Adjust &amp; re-solve</strong> below to change
-        priorities or the gear pool: each adjustment shows what you gain and what you lose, then updates the loadout here.</p>
+      <p class="readout-header">Your build, tab by tab — <strong>Loadout</strong> is your equipped gear, item by item,
+        with its stats, augments and crafting steps; the other tabs break down priorities and set bonuses. Use
+        <strong>Adjust &amp; re-solve</strong> below to change priorities or the gear pool: each adjustment shows what you
+        gain and what you lose, then updates the loadout here.</p>
       <div class="result-tabs" role="tablist" aria-label="Result details">
         <button class="rtab" role="tab" id="rt-loadout" aria-controls="rp-loadout" aria-selected="true" tabindex="0" type="button">Loadout</button>
         <button class="rtab" role="tab" id="rt-ranked" aria-controls="rp-ranked" aria-selected="false" tabindex="-1" type="button">Ranked Priorities</button>
         <button class="rtab" role="tab" id="rt-sets" aria-controls="rp-sets" aria-selected="false" tabindex="-1" type="button">Set Bonuses</button>
-        <button class="rtab" role="tab" id="rt-deep" aria-controls="rp-deep" aria-selected="false" tabindex="-1" type="button">Loadout Deep Dive</button>
         <button class="rtab" role="tab" id="rt-alts" aria-controls="rp-alts" aria-selected="false" tabindex="-1" type="button">Alternatives</button>
         <button class="rtab" role="tab" id="rt-share" aria-controls="rp-share" aria-selected="false" tabindex="-1" type="button">Share</button>
       </div>
@@ -2163,7 +2063,6 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
       </section>
       <section id="rp-ranked" class="rpanel" role="tabpanel" aria-labelledby="rt-ranked" tabindex="0" hidden><div class="targets" id="rp-cards"></div></section>
       <section id="rp-sets" class="rpanel" role="tabpanel" aria-labelledby="rt-sets" tabindex="0" hidden><div id="rp-setspanel"></div></section>
-      <section id="rp-deep" class="rpanel" role="tabpanel" aria-labelledby="rt-deep" tabindex="0" hidden><div id="rp-deeppanel"></div></section>
       <section id="rp-alts" class="rpanel" role="tabpanel" aria-labelledby="rt-alts" tabindex="0" hidden><div id="rp-altspanel"></div></section>
       <section id="rp-share" class="rpanel" role="tabpanel" aria-labelledby="rt-share" tabindex="0" hidden><div id="rp-sharepanel"></div></section>
     </div>
@@ -2178,7 +2077,6 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     q("#rp-weapons").innerHTML = v.weapons;
     q("#rp-cards").innerHTML = v.cards;
     q("#rp-setspanel").innerHTML = v.setsPanel;
-    q("#rp-deeppanel").innerHTML = v.deepDive;
     animateCounters(container);
   }
   function setActive(build, isAlt, label) {
@@ -2584,13 +2482,13 @@ function concessionControl(stat, i, total, query, opts) {
     + `What would less of this buy?</button>`;
 }
 
-// Compute the per-build view HTML (paperdoll, weapon row, ranked cards, set panel,
-// deep dive) for ANY result-shaped build — the optimum or a selected alternative,
+// Compute the per-build view HTML (paperdoll, weapon row, ranked cards, set panel)
+// for ANY result-shaped build — the optimum or a selected alternative,
 // which carry the same fields (chosen, effective, breakdown, capped, setsActive,
 // the *Placed lists). Reused by renderBuild for select-to-inspect (U5).
 function buildViews(build, model, query, opts) {
   // The craft-placement maps (augment/dino assignments + per-item craft groupings)
-  // come from the shared projection so the Deep Dive chips and the exports read from
+  // come from the shared projection so the gear cards and the exports read from
   // one builder (KTD6).
   const maps = Proj.buildCraftMaps(build);
   const augAssign = maps.augAssign;
@@ -2726,7 +2624,7 @@ function buildViews(build, model, query, opts) {
   // on the equipped loadout, named once with its members and carrier.
   setsPanel += bundlesBlock(build, augById);
 
-  return { paperdoll: `<div class="pd-list">${rows.join("")}</div>`, weapons, cards: cardsHtml, setsPanel, deepDive: loadoutDeepDive(build, query, maps, attr, augById) };
+  return { paperdoll: `<div class="pd-list">${rows.join("")}</div>`, weapons, cards: cardsHtml, setsPanel };
 }
 
 // Alternative cards (U4): compact trade-off summary + gain tags, as a single-select
@@ -2841,7 +2739,7 @@ function wireAltCards(panel, ranked, setActive) {
   });
 }
 
-// Wire the result sub-tabs (Ranked / Sets / Deep Dive). Re-run on every render.
+// Wire the result sub-tabs (Ranked / Sets / …). Re-run on every render.
 function wireResultTabs(container, onShow) {
   const tablist = container.querySelector(".result-tabs");
   if (!tablist) return;
@@ -2875,11 +2773,11 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, loadoutDeepDive, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
     // #471 — the card's row language: the three-column row itself, the two
     // in-place slot sections, and the foot-note family.
     stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH,
-    // #472 — the set-yielding families, shared by the card and the Deep Dive.
+    // #472 — the set-yielding families, rendered on the card.
     setMembershipSection, setRowsFor,
     // #472 — exported so a test can build the same credited-set index the
     // renderers read, rather than hand-rolling its shape and drifting from it.
