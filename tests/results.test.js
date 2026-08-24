@@ -4165,3 +4165,52 @@ test("review fix 3: the print button sets and clears the scope class", () => {
   assert.ok(/classList\.remove\("farming-printing"\)/.test(fn), "…and removed again");
   assert.ok(/afterprint/.test(fn), "on afterprint, the same seam printLoadout uses");
 });
+
+test("#500: a slot row's label is a fixed caption, never the version's own name", () => {
+  // The reported defect. A version name — "Melee Power, Doublestrike +6 more ·
+  // 2026-08-24 14:28" — was used as the per-row label on EVERY changed slot.
+  // Measured on a real solve it was 321px against a ~350px column with
+  // `flex: none`, so it took the whole row and left the item name 19px to wrap
+  // in: "Epic Crisis Plate" rendered 19px wide and 122px tall, one character per
+  // line, reading as though the name had been turned on its side.
+  //
+  // The rule this pins: a label may never be longer than the value it labels, so
+  // the row captions are fixed strings and the two builds are named once in a
+  // legend above the list.
+  const V = require("../web/versions.js");
+  const mk = (id, ring) => ({ id, name: id, kind: "auto", query: { targets: [] },
+    inputs: { priorities: [] },
+    snapshot: { status: "optimal", chosen: [{ slot: "Ring", variant: { variant_id: ring, minimum_level: 30, affixes: [], set_bonus: [] } }],
+      effective: {}, perTarget: {}, breakdown: {}, setsActive: [], augmentsPlaced: [] } });
+  const diff = V.diffVersions(mk("a", "Short"), mk("b", "Other"));
+  const LONG = "Melee Power, Doublestrike +6 more · 2026-08-24 14:28";
+  const html = R.versionDiffView(diff, { a: "This build", b: LONG });
+
+  // The long name appears — but only in the legend and the row's title tooltip,
+  // never as the label text that has to share a row with the item.
+  const rowLabels = [...html.matchAll(/<span class="ver-side-label">([^<]*)</g)].map((m) => m[1]);
+  assert.ok(rowLabels.length >= 2, "the row renders both sides");
+  for (const l of rowLabels) {
+    assert.ok(!l.includes("2026-08-24"), `a version name leaked into a row label: ${l}`);
+    assert.ok(l.length <= 20, `row label is too long to sit beside a value: ${l}`);
+  }
+  assert.ok(/class="ver-legend"/.test(html), "the two builds are named in a legend instead");
+  assert.ok(html.includes(LONG), "…and the full name is still stated there");
+});
+
+test("#500: the slot row's two tracks cannot starve each other", () => {
+  // The flex version had `flex: none` on the label, which is what let it consume
+  // the row. Both grid tracks are now `minmax(0, …)`: the label is capped so it
+  // cannot grow into the value, and the value cannot be squeezed below its own
+  // content box. Asserted in CSS because the failure is a layout property, not
+  // markup — the markup was never the problem.
+  const css = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "styles.css"), "utf8");
+  const rule = srcBetween(css, ".ver-side { display: grid", "}", ".ver-side rule");
+  assert.ok(/grid-template-columns:\s*minmax\(0,\s*[\d.]+rem\)\s+minmax\(0,\s*1fr\)/.test(rule),
+    "a capped label track and a flexible value track, both floored at 0");
+  assert.ok(!/flex:\s*none/.test(rule), "the flex-none label that caused this is gone");
+  const item = srcBetween(css, ".ver-side-item {", "}", ".ver-side-item rule");
+  assert.ok(!/overflow-wrap:\s*anywhere/.test(item),
+    "`anywhere` breaks at every opportunity, which is what made a squeezed cell "
+    + "render one character per line; `break-word` only breaks what cannot fit");
+});

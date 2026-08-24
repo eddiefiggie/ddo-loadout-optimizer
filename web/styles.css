@@ -1639,9 +1639,29 @@ input.wz-ml { width: 120px; }
   padding: var(--sp-2) var(--sp-3); margin-bottom: var(--sp-2); }
 .ver-slot-name { font-size: var(--fs-xs); color: var(--faint); text-transform: uppercase; letter-spacing: 0.04em; }
 .ver-slot-body { display: grid; grid-template-columns: 1fr; gap: 2px; margin-top: 2px; }
-.ver-side { display: flex; align-items: baseline; gap: var(--sp-2); min-width: 0; }
-.ver-side-label { font-size: var(--fs-xs); color: var(--faint); flex: none; min-width: 8ch; }
-.ver-side-item { font-size: var(--fs-sm); color: var(--text); min-width: 0; overflow-wrap: anywhere; }
+/* A GRID, not a flex row, and both tracks are `minmax(0, …)`.
+   The label track is capped so it can never grow into the value's space, and the
+   value track can never be squeezed below its own content box. The flex version
+   this replaced had `flex: none` on the label, so a long one took the whole row
+   and left the item name 19px to wrap in — one character per line, which read as
+   the name being turned on its side. */
+.ver-side { display: grid; grid-template-columns: minmax(0, 7.5rem) minmax(0, 1fr);
+  align-items: baseline; gap: var(--sp-2); min-width: 0; }
+.ver-side-label { font-size: var(--fs-xs); color: var(--faint);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* `break-word`, not `anywhere`: it breaks a token only when the token genuinely
+   cannot fit, instead of preferring a break at every opportunity. */
+.ver-side-item { font-size: var(--fs-sm); color: var(--text); min-width: 0; overflow-wrap: break-word; }
+/* The two sides are told apart by a tint on the label as well as by position, so
+   the distinction survives the single-column stack on a phone. */
+.ver-side.is-b .ver-side-label { color: var(--muted); }
+/* The two builds, named once above the list. */
+.ver-legend { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); margin: 0 0 var(--sp-2);
+  font-size: var(--fs-xs); color: var(--muted); }
+.ver-legend-side { display: inline-flex; align-items: baseline; gap: 6px; min-width: 0; max-width: 100%; }
+.ver-legend-key { width: 8px; height: 8px; border-radius: 2px; flex: none; align-self: center;
+  background: var(--faint); }
+.ver-legend-key.is-a { background: var(--accent); }
 .ver-crafts { margin-top: var(--sp-1); padding-left: 8ch; }
 @media (min-width: 640px) {
   .ver-slot-body { grid-template-columns: 1fr 1fr; gap: var(--sp-3); }

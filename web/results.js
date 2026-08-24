@@ -3110,21 +3110,39 @@ function versionDiffView(diff, labels) {
       </ul></section>` : "";
 
   const changed = diff.slots.filter((s) => s.changed);
+  // The two builds are named ONCE, here, instead of on every slot row.
+  //
+  // Repeating them per row is what wrecked this layout: the right-hand label is a
+  // version name like "Melee Power, Doublestrike +6 more · 2026-08-24 14:28" —
+  // measured at 321px against a ~350px column, with `flex: none` — so it consumed
+  // the row and left 19px for the item, which then broke one character per line
+  // and read as if the name had been transposed on its side. A label that can be
+  // longer than the value it labels does not belong on every row.
+  //
+  // The rows now carry fixed two-word captions, and those captions are only there
+  // to say WHICH side you are reading on a narrow screen where the two stack.
+  const legend = `<div class="ver-legend">
+      <span class="ver-legend-side"><span class="ver-legend-key is-a"></span>${esc(A)}</span>
+      <span class="ver-legend-side"><span class="ver-legend-key is-b"></span>${esc(B)}</span>
+    </div>`;
   const slotRow = (s) => {
     const crafts = [
       ...s.craftsAdded.map((c) => `<li class="is-up"><span class="ver-tag">added</span>${esc(c)}</li>`),
       ...s.craftsRemoved.map((c) => `<li class="is-down"><span class="ver-tag">dropped</span>${esc(c)}</li>`),
     ].join("");
+    // `title` carries the full name of each side, so the fixed caption never
+    // costs the reader the detail the legend states in full above.
     return `<li class="ver-slot">
       <div class="ver-slot-head"><span class="ver-slot-name">${esc(s.slot)}</span></div>
       <div class="ver-slot-body">
-        <div class="ver-side"><span class="ver-side-label">${esc(A)}</span><span class="ver-side-item">${s.a ? esc(s.a.item) : "empty"}</span></div>
-        <div class="ver-side"><span class="ver-side-label">${esc(B)}</span><span class="ver-side-item">${s.b ? esc(s.b.item) : "empty"}</span></div>
+        <div class="ver-side is-a" title="${esc(A)}"><span class="ver-side-label">This build</span><span class="ver-side-item">${s.a ? esc(s.a.item) : "empty"}</span></div>
+        <div class="ver-side is-b" title="${esc(B)}"><span class="ver-side-label">Compared with</span><span class="ver-side-item">${s.b ? esc(s.b.item) : "empty"}</span></div>
       </div>
       ${crafts ? `<ul class="ver-crafts">${crafts}</ul>` : ""}
     </li>`;
   };
   const slotsBlock = `<section class="ver-sec"><h4>Slot by slot</h4>
+    ${changed.length ? legend : ""}
     ${changed.length
       ? `<ul class="ver-slots">${changed.map(slotRow).join("")}</ul>`
       : `<p class="muted">Every slot holds the same item, with the same crafts.</p>`}
