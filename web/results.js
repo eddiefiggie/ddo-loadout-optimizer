@@ -1166,7 +1166,7 @@ function whyThisNote(result, item, attr, targets) {
   // #475/#476 — the claim that "the Alternatives tab reads `whyThisLine`'s
   // markup" was false; #475 removed it and #476 removed the function. This note
   // is now the only surviving statement of the two non-chip forms, which is what
-  // it always was in substance.
+  // it always was in substance. (#499 then retired that tab outright.)
   if (!contribs.length) {
     return `<div class="pd-note pd-why muted"><span class="pd-note-ico" aria-hidden="true">·</span><span>included to complete the loadout</span></div>`;
   }
@@ -1174,7 +1174,7 @@ function whyThisNote(result, item, attr, targets) {
   if (!carried) return "";
   const txt = carried.slice(0, 3).map((p) =>
     `${esc(p.stat)} +${esc(p.value)} (${esc(p.family)})`).join(", ");
-  return `<div class="pd-note pd-why pd-carried is-craft" title="Nothing printed on this item advances your priorities — its value here depends entirely on crafting it. Un-craftable alternatives are on the Alternatives tab."><span class="pd-note-ico" aria-hidden="true">⚒</span><span><b>Here only for its crafts.</b> ${txt}</span></div>`;
+  return `<div class="pd-note pd-why pd-carried is-craft" title="Nothing printed on this item advances your priorities — its value here depends entirely on crafting it. The Upgrades note above searches for builds that avoid the craft."><span class="pd-note-ico" aria-hidden="true">⚒</span><span><b>Here only for its crafts.</b> ${txt}</span></div>`;
 }
 
 // #476 — `whyThisLine` is deleted. It rendered the gear box's per-item
@@ -1182,7 +1182,7 @@ function whyThisNote(result, item, attr, targets) {
 // two non-chip statements moved into `whyThisNote`. From then on nothing called
 // it; roughly thirty tests across three files were its only consumer, and the
 // doc-comment justifying that said the Alternatives tab read it — which was
-// false, and was corrected in #475.
+// false, and was corrected in #475. (#499 retired the tab itself.)
 //
 // Nothing it asserted is lost. Each behaviour it encoded is now covered on a
 // surface that actually renders: presence-not-+1, the cross-add label and the
@@ -2553,7 +2553,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
 
 // #91 (U5, KTD6/R9) — the Utility tier's dedicated priority card. Takes the
 // `build` BEING RENDERED (renderBuild is generic over optimum/alternative), so
-// selecting an Alternatives entry re-renders receipts from THAT build — it must
+// selecting an upgrade card re-renders receipts from THAT build — it must
 // never close over the optimum. Three states, deliberately distinct:
 //   1. report-absent (a healed pre-feature restore: the tier is in the priority
 //      list but the snapshot predates `utilityReport`) — a re-solve note, NEVER

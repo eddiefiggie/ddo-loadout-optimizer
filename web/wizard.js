@@ -1611,8 +1611,8 @@ function addBundle(key, current, vocab) {
  *  equivalence is the trap this helper exists to make untrappable: it is exported
  *  solely so `tests/wizard-yield.test.js` fails when a microtask is substituted.
  *
- *  `web/results.js` defers the alternatives spinner for the same reason, though
- *  with a timer rather than frames. */
+ *  `web/results.js` defers the upgrades-search spinner for the same reason,
+ *  though with a timer rather than frames. */
 function yieldToPaint() {
   return new Promise((resolve) => {
     // Two nested frames, not a bare `setTimeout(0)`. A timer yields the task queue
@@ -3508,8 +3508,9 @@ if (typeof window !== "undefined" && window.App) {
 
     // Load a saved character: restore inputs, rebuild the model scaffold WITHOUT
     // solving (KTD2), and render Results from the stored snapshot. renderResults
-    // only needs `highs` for the Alternatives tab, which degrades gracefully when
-    // absent, so a loaded build shows instantly.
+    // only needs `highs` for the upgrades search and the concession probe, both of
+    // which withhold their controls when it is absent, so a loaded build shows
+    // instantly.
     function loadCharacter(name) {
       // eslint-disable-next-line no-undef
       const rec = CharacterStore.loadCharacter(name);

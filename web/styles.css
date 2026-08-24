@@ -542,7 +542,6 @@ details.saturation-note .sat-sentences p { margin: var(--sp-1) 0 0; }
 .pd-figure svg { width: 100%; max-width: 140px; height: 100%; max-height: 320px; }
 /* weapon row: Main Hand · [Off Hand/Rune Arm] · Quiver, beneath the figure */
 .pd-weapons { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); margin-top: var(--sp-2); }
-.setpip { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--set); flex: none; }
 .chip.setbonus { border-color: #3a5a4a; background: #101a16; color: #8fd6b0; }
 /* Uniform, fixed-size slot cells: item name, ML, and set name only. */
 .pd-slot {
@@ -650,7 +649,8 @@ details.saturation-note .sat-sentences p { margin: var(--sp-1) 0 0; }
 .return-optimum { min-height: 2.4rem; padding: 0 var(--sp-4); flex: none; }
 
 .alt-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: var(--sp-2); }
-/* #475 — the Alternatives card joins the system #471 built for the gear cards:
+/* #475 — the trade-off card (now hosted by the Upgrades notice, #499) joins the
+   system #471 built for the gear cards:
    head / body / foot, the fading seam, the spine, the labelled section ticks and
    the three-column row. It was the last surface still speaking the chip idiom —
    `alt-tag` pills for the trade's axis, a green headline, a comma-run cost line.
@@ -1318,7 +1318,7 @@ input.wz-ml { width: 120px; }
    per-colour rules below still paint the Sun/Moon glyphs and the OPEN slots,
    where the colour is the fact being reported rather than a ranking. */
 .pd-line.aug-filled .pd-ln-mark:not(.aug-mark) { color: var(--optimal); }
-/* #475 — the two directions of a TRADE, used by the Alternatives cards. They sit
+/* #475 — the two directions of a TRADE, used by the trade-off cards. They sit
    here with the other row classes rather than in the alt block, both because
    that is where the family lives and because a `.pd-ln-what` rule defined above
    the base one makes `indexOf(".pd-ln-what {")` find the wrong block — the #450
@@ -1595,7 +1595,6 @@ input.wz-ml { width: 120px; }
    step's personal-build backup). */
 .wz-share { display: flex; flex-direction: column; gap: var(--sp-3); }
 /* U4 — Alternatives Run-analysis prompt + the panel-local computing swirly. */
-.alt-intro { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-3); padding: var(--sp-3) 0; }
 /* #499 — the upgrades notice card's controls: the bar, the run button, and the
    fine print that says what the bar actually does. Laid out as one wrapping row
    so a phone stacks them rather than squeezing the select. */
