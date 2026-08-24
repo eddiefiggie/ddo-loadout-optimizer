@@ -124,7 +124,7 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
     assert.strictEqual(parts[0].slot, "Boots", "the capped contributor still attributes to its slot");
   });
 
-  await test("U4: whyThis flags a boolean win; whyThisLine renders presence not +1", async () => {
+  await test("U4: whyThis flags a boolean win; the card renders presence, not +1", async () => {
     const r = await S.solveLexicographic({
       targets: ["Salt"], mlCap: 34, dodgeCap: null,
       worn: [slot("Trinket", [item("T", "Trinket", [["Salt", "Bool", 1]])])],
@@ -133,16 +133,16 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
     assert.strictEqual(wins.length, 1);
     assert.strictEqual(wins[0].stat, "Salt");
     assert.strictEqual(wins[0].boolean, true, "the win is flagged boolean");
-    const line = R.whyThisLine(r, { slot: "Trinket", variant_id: "T" });
-    // #449 U7 split the contribution across a chip's elements, so the tick and
-    // the stat name are no longer adjacent in the string. Both facts are still
-    // asserted — and the chip structure is asserted with them, so this cannot
-    // pass on markup that renders the tick outside a chip.
-    assert.ok(/<span class="pd-contrib pd-chip/.test(line), "rendered as a chip");
-    assert.ok(/<span class="pd-chip-check"[^>]*>✓<\/span>/.test(line), "presence marker in the why-this line");
-    assert.ok(/<span class="pd-chip-stat">Salt<\/span>/.test(line), "naming the stat it is present for");
-    assert.ok(!/pd-chip-value/.test(line), "and no value element at all for a boolean win");
-    assert.ok(!line.includes("+1"), "no magnitude for a boolean win");
+    // #476 — the second half was asserted against `whyThisLine`, which is gone.
+    // U4's guarantee is about what the player SEES, so it is asserted on the
+    // surface that renders: a presence win reads as presence, never as "+1".
+    const card = R.equippedBody(r.chosen[0].variant, 0, null, null, false, false,
+      { result: r, attr: R.attributionByTarget(r), targets: ["Salt"] });
+    assert.ok(/<span class="pd-ln-what">✓ Salt<\/span>/.test(card),
+      "the tick and the stat it is present for, on one row");
+    assert.ok(!card.includes("+1"), "no magnitude for a boolean win");
+    assert.ok(/class="pd-line is-tracked/.test(card),
+      "and a ranked presence affix is credited, not filed as a bonus that came along (KTD3)");
   });
 
   await test("U4: attributionList renders a boolean contribution as presence", async () => {

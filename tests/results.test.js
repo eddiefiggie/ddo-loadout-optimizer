@@ -589,88 +589,6 @@ function whyResult() {
   };
 }
 
-/** #449 U7 — parse a `.pd-prio` chip row back into its content model.
- *
- *  The guards below were written against the flat comma-run whyThisLine used to
- *  emit ("Constitution +15 Enhancement"). The chip splits that string across
- *  elements, so a concatenated regex now fails for a purely structural reason
- *  while every fact it named is still on screen. Parsing keeps each guard
- *  asserting the SAME fact rather than weakening it to a substring search.
- *
- *  Deliberately strict about structure: a chip missing its head, or a value that
- *  is not inside `.pd-chip-value`, parses as absent and fails the caller.
- */
-function _chips(html) {
-  // Split on the chip's OPENING tag rather than matching a closing pair: a chip
-  // nests three spans inside it, so the first `</span></span>` falls in the
-  // middle of one and a non-greedy pair match silently truncates the sub-label.
-  const parts = html.split(/(?=<span class="pd-contrib pd-chip)/).slice(1);
-  return parts.map((frag) => {
-    const g = (re) => (frag.match(re) || [])[1] ?? null;
-    const cls = (frag.match(/^<span class="pd-contrib pd-chip([^"]*)"/) || [])[1] || "";
-    assert.ok(/<span class="pd-chip-head">/.test(frag), "every chip has a head");
-    return {
-      rank1: /is-rank1/.test(cls),
-      value: g(/<span class="pd-chip-value">\+([^<]*)<\/span>/),
-      check: /<span class="pd-chip-check"[^>]*>✓<\/span>/.test(frag),
-      stat: g(/<span class="pd-chip-stat">([^<]*)<\/span>/),
-      sub: g(/<span class="pd-chip-sub">([^<]*)<\/span>/),
-    };
-  });
-}
-/** The one-line rendering a chip states, in reading order, for guards that care
- *  about the whole claim rather than its parts. */
-function _chipLine(c) {
-  return [c.check ? "✓" : null, c.value != null ? `+${c.value}` : null, c.stat, c.sub]
-    .filter(Boolean).join(" ");
-}
-
-test("whyThisLine names the ranked contribution with its bonus type (R8, R9 + plan 2026-08-12-001 U3)", () => {
-  const html = R.whyThisLine(whyResult(), { slot: "Ring", variant_id: "R" });
-  const [c] = _chips(html);
-  assert.strictEqual(_chipLine(c), "+15 Constitution Enhancement", "states stat, value, and bonus type");
-  assert.ok(/pd-prio/.test(html), "renders the contribution-summary line");
-  assert.ok(!/at-ceiling/.test(html), "no saturation report, no green");
-});
-
-test("#449 U4 (R17a/AE6): a saturated stat's gear-box span carries no ceiling marker, and keeps its label", () => {
-  const res = whyResult();
-  res.saturationReport = [{ stat: "Constitution", total: 15, bonusTypes: ["Enhancement"], unusedSources: 2 }];
-  const html = R.whyThisLine(res, { slot: "Ring", variant_id: "R" });
-  assert.ok(!/at-ceiling/.test(html), "one item is not the whole stat, so it makes no claim about one");
-  assert.ok(!/at its ceiling of 15/.test(html), "and the stat-level sentence does not ride an item span");
-  assert.strictEqual(_chipLine(_chips(html)[0]), "+15 Constitution Enhancement",
-    "the contribution itself still renders in full");
-  assert.ok(/class="pd-contrib pd-chip/.test(html), "in a plain chip — the marker went, the chip did not");
-});
-
-test("plan 2026-08-12-001 U3: same-stat contributions list separately and the cap is three", () => {
-  const res = whyResult();
-  res.breakdown.Constitution.push(
-    { bonus_type: "Insight", value: 7, source: "Topaz", sourceKind: "augment", hostIds: ["R"] });
-  res.breakdown.Deadly = [
-    { bonus_type: "Quality", value: 4, source: "R", sourceKind: "worn", slot: "Ring", hostIds: ["R"] }];
-  res.breakdown.Dodge = [
-    { bonus_type: "Enhancement", value: 3, source: "R", sourceKind: "worn", slot: "Ring", hostIds: ["R"] }];
-  const html = R.whyThisLine(res, { slot: "Ring", variant_id: "R" });
-  const lines = _chips(html).map(_chipLine);
-  assert.ok(lines.includes("+15 Constitution Enhancement") && lines.includes("+7 Constitution Insight"),
-    "both bonus types of the same stat are separate chips — merging would erase the fact");
-  assert.strictEqual(_chips(html).length, 3, "capped at three contributions");
-});
-
-test("plan 2026-08-12-001 U3: a boolean contribution reads as a feature tick", () => {
-  const res = whyResult();
-  res.breakdown["Ghost Touch"] = [
-    { bonus_type: "Bool", value: 1, source: "R", sourceKind: "worn", slot: "Ring", hostIds: ["R"] }];
-  const html = R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null, ["Ghost Touch"]);
-  const [c] = _chips(html);
-  assert.ok(c.check && c.stat === "Ghost Touch", "presence, not a magnitude");
-  assert.strictEqual(c.value, null, "no fake +1");
-  assert.ok(!/\+1/.test(html), "and no +1 anywhere in the markup");
-  assert.strictEqual(c.sub, null, "a boolean has no magnitude and no bonus type to state");
-});
-
 test("#278: a snapshot without effective renders zeroed cards, not a TypeError", () => {
   const build = { status: "optimal", chosen: [], setsActive: [], augmentsPlaced: [], breakdown: {} };
   const v = R.buildViews(build, { worn: [], augments: [] }, { targets: ["Constitution"] });
@@ -729,24 +647,6 @@ test("plan 2026-08-12-001 U3/R4 + #449 U4 + #457: the Deep Dive carries the same
   assert.ok(!/at-ceiling/.test(html), "the Deep Dive reaches the same spans, and they are unmarked here too");
 });
 
-test("plan 2026-08-12-001 U3: an untyped contribution reads \"untyped\", never the literal null", () => {
-  const res = whyResult();
-  res.breakdown.Constitution = [
-    { bonus_type: null, value: 5, source: "R", sourceKind: "worn", slot: "Ring", hostIds: ["R"] }];
-  const html = R.whyThisLine(res, { slot: "Ring", variant_id: "R" });
-  assert.strictEqual(_chipLine(_chips(html)[0]), "+5 Constitution untyped", "names the bucket");
-  assert.ok(!/null/.test(html), "the raw value never reaches the box");
-});
-
-test("plan 2026-08-12-001 U3: a set-carried contribution keeps its (set) marker", () => {
-  const res = whyResult();
-  res.breakdown.Constitution.push(
-    { bonus_type: "Insightful", value: 5, source: "Alpha", sourceKind: "set", setYieldingSlots: ["Ring"], hostIds: ["R"] });
-  const html = R.whyThisLine(res, { slot: "Ring", variant_id: "R" });
-  assert.ok(_chips(html).map(_chipLine).includes("+5 Constitution Insightful (set)"),
-    "the set provenance stays visible per contribution");
-});
-
 test("plan 2026-08-12-001 U3: equippedRow renders the summary only when the context is threaded", () => {
   const res = whyResult();
   res.saturationReport = [{ stat: "Constitution", total: 15, bonusTypes: ["Enhancement"], unusedSources: 2 }];
@@ -766,11 +666,6 @@ test("plan 2026-08-12-001 U3: equippedRow renders the summary only when the cont
   assert.ok(!/pd-prio/.test(withoutCtx), "pure-test callers render no summary and no crash");
   assert.ok(!/is-tracked/.test(withoutCtx),
     "…and claim nothing about a solve they were not given");
-});
-
-test("whyThisLine has an explicit empty state for a filler pick", () => {
-  const html = R.whyThisLine(whyResult(), { slot: "Boots", variant_id: "ZZ" });
-  assert.ok(/complete the loadout/.test(html), "a pick winning no target reads as filler, not blank");
 });
 
 test("whyThis does not cross-attribute a set win between the two rings (host-id match)", () => {
@@ -1688,24 +1583,6 @@ test("a native affix gets no provenance tooltip at all", () => {
 // ---------------------------------------------------------------------------
 // #245 — the craft-carried why-line and the opt-out notice.
 
-test("#245: whyThisLine flags an item picked only for its crafts", () => {
-  const res = whyResult();
-  res.breakdown.Constitution = [
-    { bonus_type: "Insight", value: 1, source: "Slot Melancholic Viktranium augment",
-      sourceKind: "vik", slot: "Ring", hostIds: ["R"] },
-  ];
-  const html = R.whyThisLine(res, { slot: "Ring", variant_id: "R" });
-  assert.ok(/pd-carried/.test(html), "renders the caution variant, not a win");
-  assert.ok(/here only for its crafts/.test(html) && /Constitution \+1/.test(html)
-    && /Viktranium/.test(html), "names the crafted stat, value, and family");
-});
-
-test("#245: whyThisLine stays a plain contribution line when the item earns its slot natively", () => {
-  const html = R.whyThisLine(whyResult(), { slot: "Ring", variant_id: "R" });
-  assert.strictEqual(_chips(html)[0].value, "15");
-  assert.ok(!/pd-carried/.test(html), "an item earning its slot natively is not a craft-carried pick");
-});
-
 test("#346: the ladder notice renders from the shared projection sentence", () => {
   // Called the way renderResults calls it: the SOLVED QUERY first, the bare
   // worker result second. Per
@@ -1802,31 +1679,6 @@ test("U3: an own (non-cross-added) contribution renders no from-clause", () => {
       via: null, crossAdd: null },
   ]);
   assert.ok(!/attrib-from/.test(html), "nothing to label when nothing cross-added");
-});
-
-test("U3: whyThisLine appends (from <source stat>) on a cross-added per-item contribution", () => {
-  const result = {
-    chosen: [
-      { slot: "Ring", variant: { variant_id: "Ember Band",
-        affixes: [{ name: "Combustion", type: "Equipment", value: 100 }] } },
-      { slot: "Necklace", variant: { variant_id: "Universal Torc",
-        affixes: [{ name: "Universal Spell Power", type: "Implement", value: 50 }] } },
-    ],
-    breakdown: {
-      Combustion: [
-        { bonus_type: "Equipment", value: 100, source: "Ember Band", sourceKind: "worn",
-          slot: "Ring", hostIds: ["Ember Band"], crossAdd: null },
-        { bonus_type: "Implement", value: 50, source: "Universal Torc", sourceKind: "worn",
-          slot: "Necklace", hostIds: ["Universal Torc"], crossAdd: "Universal Spell Power" },
-      ],
-    },
-    augmentsPlaced: [], setAugmentsPlaced: [], setsActive: [],
-  };
-  const torc = R.whyThisLine(result, { slot: "Necklace", variant_id: "Universal Torc" }, null, ["Combustion"]);
-  assert.strictEqual(_chipLine(_chips(torc)[0]), "+50 Combustion Implement (from Universal Spell Power)",
-    `the chip labels the cross-added credit, got: ${torc}`);
-  const band = R.whyThisLine(result, { slot: "Ring", variant_id: "Ember Band" }, null, ["Combustion"]);
-  assert.ok(!/from Universal Spell Power/.test(band), "the own contribution stays unlabeled");
 });
 
 test("U3: a pre-cross-add row (field absent entirely) renders without error and without a clause", () => {
@@ -2567,36 +2419,6 @@ test("#449 U3 (R15): the full statement renders ONCE per readout, above the card
     "a pre-#449 restore prints no orphan sentence");
 });
 
-test("#449 U4 (R17a): no stylesheet rule styles a per-item ceiling marker", () => {
-  const css = _reachCss();
-  // Asserted against the stylesheet directly, not through `_cssRule`: that helper
-  // asserts the selector EXISTS and slices its body, so it cannot express absence.
-  assert.ok(!css.includes(".pd-prio .at-ceiling"),
-    "the rule is removed, not merely unreferenced — a live rule invites the span back");
-  // U7 replaced the inline span with a chip and removed the `.pd-prio
-  // .pd-contrib { white-space: nowrap }` rule with it — a nowrap chip could not
-  // wrap its own sub-label and would overflow at 375px. The chip is what that
-  // span became, so THAT is what must still be styled.
-  assert.ok(/\.pd-chip \{/.test(css), "the chip the span became is still styled");
-  // The stat-card fallback keeps the class for a pre-#449 restore (R17b), so the
-  // name survives in exactly one place. Pin that, or a future sweep deletes it.
-  assert.ok(/\.stat-ceiling/.test(css), "the old-save chip keeps its rule");
-});
-
-test("#449 U4: whyThisLine no longer consults the saturation report at all", () => {
-  // Asserted against the function's own source, in the wizard.test.js idiom.
-  // A call-count spy CANNOT measure this: results.js captures `Proj.saturatedStats`
-  // into a module-scope binding at load, so patching projection afterwards leaves
-  // the captured reference untouched and the spy reads zero either way — a guard
-  // that passes on the pre-change tree and therefore checks nothing.
-  const src = R.whyThisLine.toString();
-  const body = src.slice(0, src.indexOf("pd-prio"));
-  assert.ok(!/saturatedStats\s*\(/.test(body), "the lookup went with the marker, not just its output");
-  assert.ok(!/saturationLineFor\s*\(/.test(body), "and so did the per-item sentence it fed");
-  assert.ok(typeof R.saturatedStats === "function",
-    "but the binding stays on the re-export surface projection.test.js pins");
-});
-
 // ---------------------------------------------------------------------------
 // #449 U5 — the notices panel: containment, the settled classification table,
 // and the resolution routes.
@@ -2961,138 +2783,6 @@ function _chipResult(rows) {
     chosen: [{ slot: "Ring", variant: { variant_id: "R", set_bonus: [], parsed_set_bonuses: [] } }],
     breakdown, computeScale: { variants: 1 }, solveMs: 1 };
 }
-
-test("#449 U7 (R20/AE8): an item contributing to three stats renders three chips", () => {
-  const res = _chipResult([{ stat: "Constitution", value: 15 },
-    { stat: "Dodge", value: 5 }, { stat: "Deadly", value: 4 }]);
-  const chips = _chips(R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null,
-    ["Constitution", "Dodge", "Deadly"]));
-  assert.deepStrictEqual(chips.map((c) => `${c.stat} ${c.value}`), ["Constitution 15", "Dodge 5", "Deadly 4"]);
-});
-
-test("#449 U7 (R31): more than three contributions still render exactly three chips", () => {
-  const res = _chipResult([{ stat: "Constitution", value: 15 }, { stat: "Dodge", value: 5 },
-    { stat: "Deadly", value: 4 }, { stat: "Doubleshot", value: 3 }, { stat: "PRR", value: 2 }]);
-  const chips = _chips(R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null,
-    ["Constitution", "Dodge", "Deadly", "Doubleshot", "PRR"]));
-  assert.strictEqual(chips.length, 3, "the cap governs the row's height at phone width");
-});
-
-test("#449 U7 (R21): only the rank-1 priority's chip is distinguished", () => {
-  const res = _chipResult([{ stat: "Constitution", value: 15 }, { stat: "Dodge", value: 5 }]);
-  const chips = _chips(R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null, ["Constitution", "Dodge"]));
-  assert.deepStrictEqual(chips.map((c) => c.rank1), [true, false]);
-  // Reversing the player's ranking moves the mark — it tracks the ranking, not
-  // the chip's position or the contribution's size.
-  const flipped = _chips(R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null, ["Dodge", "Constitution"]));
-  assert.deepStrictEqual(flipped.map((c) => `${c.stat}:${c.rank1}`), ["Dodge:true", "Constitution:false"]);
-});
-
-test("#449 U7 (R21): with no ranked targets, no chip claims rank 1", () => {
-  const res = _chipResult([{ stat: "Constitution", value: 15 }]);
-  const chips = _chips(R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null, []));
-  assert.ok(chips.length && chips.every((c) => !c.rank1),
-    "there is no player rank-1 to mark, so marking the first stat found would invent one");
-});
-
-test("#449 U7 (R21): the rank-1 carrier is not colour alone", () => {
-  const rule = _cssRule(_reachCss(), ".pd-chip.is-rank1 {");
-  assert.ok(/border-width:\s*2px/.test(rule),
-    "border WEIGHT carries it too — colour alone fails greyscale and red-green CVD");
-  assert.ok(/border-color:\s*var\(--accent\)/.test(rule), "and the colour is a named token");
-  const base = _cssRule(_reachCss(), ".pd-chip {");
-  assert.ok(/border:\s*1px solid/.test(base), "against a 1px base, so the weight difference is real");
-});
-
-test("#449 U7 (R20/AE8): a player override still names both types on the chip", () => {
-  const res = _chipResult([{ stat: "Constitution", value: 15, bonus_type: "Quality",
-    overriddenFrom: "Insightful" }]);
-  const [c] = _chips(R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null, ["Constitution"]));
-  assert.strictEqual(c.sub, "Quality (your call — catalog says Insightful)",
-    "#88 shipped this precisely so a gear box does not state a bonus type as though the wiki said so");
-});
-
-test("#449 U7 (R20/AE8): a boolean chip carries a tick, no value and no bonus type", () => {
-  const res = _chipResult([{ stat: "Ghost Touch", bonus_type: "Bool", value: 1 }]);
-  const [c] = _chips(R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null, ["Ghost Touch"]));
-  assert.ok(c.check, "presence reads as a tick");
-  assert.strictEqual(c.value, null, "with no magnitude");
-  assert.strictEqual(c.sub, null, "and no bonus type, which a presence flag does not have");
-});
-
-test("#449 U7 (R20): a boolean chip still carries (set) and the override when they apply", () => {
-  const res = _chipResult([{ stat: "Ghost Touch", bonus_type: "Bool", value: 1,
-    sourceKind: "set", setYieldingSlots: ["Ring"], source: "Alpha" }]);
-  const [c] = _chips(R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null, ["Ghost Touch"]));
-  assert.ok(c.check && c.value === null, "still a presence chip");
-  assert.strictEqual(c.sub, "(set)", "dropping the bonus type must not drop the provenance with it");
-});
-
-test("#449 U7 (R20): every numeric chip states a bonus type; a boolean states none", () => {
-  const res = _chipResult([{ stat: "Constitution", value: 15, bonus_type: null },
-    { stat: "Ghost Touch", bonus_type: "Bool", value: 1 }]);
-  const chips = _chips(R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null,
-    ["Constitution", "Ghost Touch"]));
-  for (const c of chips) {
-    if (c.check) assert.strictEqual(c.sub, null, "a presence flag has no bucket to name");
-    else assert.ok(c.sub && c.sub.length, "a numeric contribution always names its bucket, untyped included");
-  }
-  assert.strictEqual(chips[0].sub, "untyped", "#227 — untyped is a real bucket, never a raw null");
-});
-
-test("#449 U7 (R20): the two early-return forms are preserved verbatim, not turned into chips", () => {
-  // A PRESERVATION guard: both forms return before the contribution list is
-  // built, so U7 does not touch them and this cannot go red on the pre-change
-  // tree. It is here to fail on a future change that folds them into the chip
-  // row, not to demonstrate this one.
-  const filler = R.whyThisLine(_chipResult([]), { slot: "Boots", variant_id: "ZZ" }, null, ["Constitution"]);
-  assert.ok(/included to complete the loadout/.test(filler), "a pick winning no target reads as filler");
-  assert.ok(!/pd-chip/.test(filler), "not as an empty chip row");
-  assert.ok(/class="pd-why muted"/.test(filler), "in its own markup");
-  // The craft-carried path fires only when an item's every contribution is a
-  // craft: `sourceKind: "vik"` is a craft family, and no native or set row may
-  // sit beside it. Asserted unconditionally — wrapped in an `if` on whether the
-  // path fired, this half would silently assert nothing if the fixture drifted.
-  const res = _chipResult([{ stat: "Constitution", value: 15, sourceKind: "vik", source: "Woeful" }]);
-  const carried = R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null, ["Constitution"]);
-  assert.ok(/pd-carried/.test(carried), "the fixture really does take the craft-carried path");
-  assert.ok(/⚒ here only for its crafts: Constitution \+15 \(Viktranium\)/.test(carried),
-    "#245's line keeps its wording verbatim");
-  assert.ok(!/pd-chip/.test(carried), "and is not a chip row");
-  assert.ok(/Nothing printed on this item advances your priorities/.test(carried),
-    "with its explanatory title intact");
-});
-
-test("#449 U7 (R20): chip values render with tabular numerals", () => {
-  assert.ok(/font-variant-numeric:\s*tabular-nums/.test(_cssRule(_reachCss(), ".pd-chip-value {")),
-    "so a column of chips reads as a column of numbers rather than ragged text");
-});
-
-test("#449 U7 (R22): the row wraps, and a chip cannot force horizontal page scroll", () => {
-  const row = _cssRule(_reachCss(), ".pd-prio {");
-  assert.ok(/flex-wrap:\s*wrap/.test(row), "the row wraps between chips");
-  const chip = _cssRule(_reachCss(), ".pd-chip {");
-  assert.ok(/max-width:\s*100%/.test(chip), "and one long override disclosure caps at the row width…");
-  assert.ok(!/white-space:\s*nowrap/.test(chip),
-    "…wrapping its sub-label internally rather than overflowing the page at 375px");
-});
-
-test("#449 U7 (R21): two contributions to the rank-1 stat both carry the mark", () => {
-  // Found on real data, not in a fixture: itemContributions emits one row per
-  // (stat, bonus_type), so an item serving the top priority through two buckets
-  // produces two chips that are BOTH chips for the rank-1 priority. Marking only
-  // one would be arbitrary — the highest value? the first found? — and would
-  // under-report what the item does for the stat the player cares most about.
-  // Pinned so this reads as a decision rather than an accident.
-  const res = _chipResult([
-    { stat: "Intelligence", value: 14, bonus_type: "Enhancement" },
-    { stat: "Intelligence", value: 7, bonus_type: "Insight" },
-    { stat: "Dodge", value: 5 }]);
-  const chips = _chips(R.whyThisLine(res, { slot: "Ring", variant_id: "R" }, null,
-    ["Intelligence", "Dodge"]));
-  assert.deepStrictEqual(chips.map((c) => `${c.stat}/${c.sub}:${c.rank1}`),
-    ["Intelligence/Enhancement:true", "Intelligence/Insight:true", "Dodge/Enhancement:false"]);
-});
 
 // ---------------------------------------------------------------------------
 // #449 U8 / #447 — the per-slot constraint control, visible at rest.
@@ -4064,4 +3754,88 @@ test("#475: the listbox interaction is untouched — regression guard", () => {
   assert.ok(/tabindex="0"/.test(html) && /tabindex="-1"/.test(html), "roving tabindex preserved");
   assert.strictEqual((html.match(/aria-selected="false"/g) || []).length, 2, "single-select state preserved");
   assert.ok(/data-idx="0"/.test(html) && /data-idx="1"/.test(html), "and the index the click handler reads");
+});
+// ---------------------------------------------------------------------------
+// #476 — coverage moved off `whyThisLine` before it is deleted.
+//
+// That renderer had no call sites; it was kept alive by its own tests. Deleting
+// it is only safe once each behaviour those tests encode is asserted on a
+// surface that actually renders. These four are the ones that were NOT already
+// covered live — the rest (presence, cross-add, the rank-1 accent, the absent
+// at-ceiling marker, contribution ordering) already had live or projection-level
+// guards, which is recorded in the PR rather than duplicated here.
+//
+// These are BACKFILL, not new behaviour: they pass on the pre-change tree by
+// design, because the behaviour they cover already ships. What would have made
+// them fail is the deletion happening without them.
+// ---------------------------------------------------------------------------
+
+test("#476/#227: an untyped contribution names its bucket, never the literal null", () => {
+  // The one genuine gap. `whyThisLine` asserted this and nothing else did — the
+  // live surface that states a bonus type per contribution is the Ranked
+  // Priorities attribution list, and its untyped branch was untested.
+  //
+  // #227's ruling is that untyped is a REAL bucket, not missing data: it
+  // collides with nothing, so it always adds on top of every typed bonus to the
+  // same stat. Printing a raw null was the reported defect; going silent would
+  // be a quieter version of the same thing.
+  const html = R.attributionList([{ bonus_type: null, value: 5, source: "R",
+    sourceKind: "worn", slots: ["Ring"], hostIds: ["R"], isSet: false }]);
+  assert.ok(/untyped/.test(html), "names the bucket");
+  assert.ok(!/null/.test(html), "and the raw value never reaches the surface");
+  const empty = R.attributionList([{ bonus_type: "", value: 5, source: "R",
+    sourceKind: "worn", slots: ["Ring"], hostIds: ["R"], isSet: false }]);
+  assert.ok(/untyped/.test(empty), "an empty string is the same bucket as a null");
+});
+
+test("#476/#245: the craft-carried note names the stat, the value and the family", () => {
+  // `whyThisNote` renders this on the live card, but only its CLASS was asserted
+  // there. #245's point is the content: a Viktranium slot reaches 126 stats and
+  // can win a whole slot on one crafted point, so the note has to say which.
+  const res = { chosen: [{ slot: "Ring", variant: { variant_id: "R" } }],
+    breakdown: { Constitution: [{ bonus_type: "Insight", value: 1,
+      source: "Slot Melancholic Viktranium augment", sourceKind: "vik", slot: "Ring", hostIds: ["R"] }] } };
+  const html = R.equippedRow("Ring", { variant: { variant_id: "R", affixes: [] }, idx: 0 }, {},
+    new Set(), null, null, null, null,
+    { result: res, attr: R.attributionByTarget(res), targets: ["Constitution"] });
+  assert.ok(/pd-carried/.test(html), "renders the caution variant, not a win");
+  assert.ok(/Here only for its crafts/.test(html), "says the pick depends on crafting");
+  assert.ok(/Constitution \+1/.test(html) && /Viktranium/.test(html),
+    "and names the crafted stat, its value, and the family that yields it");
+});
+
+test("#476: a pick that wins no ranked target reads as filler, in its own markup", () => {
+  const res = { chosen: [{ slot: "Boots", variant: { variant_id: "ZZ" } }],
+    breakdown: { Constitution: [{ bonus_type: "Enhancement", value: 15, source: "R",
+      sourceKind: "worn", slot: "Ring", hostIds: ["R"] }] } };
+  const html = R.equippedRow("Boots", { variant: { variant_id: "ZZ", affixes: [] }, idx: 0 }, {},
+    new Set(), null, null, null, null,
+    { result: res, attr: R.attributionByTarget(res), targets: ["Constitution"] });
+  assert.ok(/included to complete the loadout/.test(html), "a pick winning no target says so");
+  assert.ok(/class="pd-note pd-why muted"/.test(html), "in the shared foot-note family");
+});
+
+test("#476/#88: the override disclosure survives the whole chain, not just a hand-built context", () => {
+  // Ported from projection.test.js, which drove this through `whyThisLine`. The
+  // existing live test builds its attribution by hand; this one starts from a
+  // solver-shaped breakdown and goes through `attributionByTarget` →
+  // `itemContributions` → the card, which is the chain that actually has to hold.
+  const ovr = {
+    breakdown: { Constitution: [
+      { bonus_type: "Insight", value: 6, source: "Necklace of X", sourceKind: "worn",
+        slot: "Necklace", hostIds: ["Necklace of X"], via: null, crossAdd: null,
+        overriddenFrom: "Enhancement" },
+      { bonus_type: "Enhancement", value: 10, source: "Ring of Y", sourceKind: "worn",
+        slot: "Ring", hostIds: ["Ring of Y"], via: null, crossAdd: null, overriddenFrom: null },
+    ] },
+    chosen: [], augmentsPlaced: [], setsActive: [],
+  };
+  const attr = R.attributionByTarget(ovr);
+  const ctx = { result: ovr, attr, targets: ["Constitution"] };
+  const html = R.equippedBody({ variant_id: "Necklace of X" }, -1, null, null, false, false, ctx);
+  assert.ok(/Constitution \+6/.test(html), "the value the player asserted");
+  assert.ok(/your call — catalog says Enhancement/.test(html),
+    "beside the type the catalog records — a gear box must never state a bonus type as though the wiki said so");
+  const plain = R.equippedBody({ variant_id: "Ring of Y" }, -1, null, null, false, false, ctx);
+  assert.ok(!/catalog says/.test(plain), "an unoverridden item's card is unchanged");
 });

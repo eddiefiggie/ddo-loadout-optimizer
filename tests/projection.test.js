@@ -1364,20 +1364,12 @@ test("#88 review #6: itemContributions carries overriddenFrom to the gear box", 
   assert.strictEqual(plain[0].overriddenFrom, null, "an ordinary contribution is unmarked");
 });
 
-test("#88 review #6: the rendered gear-box line names both types", () => {
-  const attr = P.attributionByTarget(OVR_RESULT);
-  const html = R.whyThisLine(OVR_RESULT, { variant_id: "Necklace of X" }, attr, ["Constitution"]);
-  // #449 U7 moved the bonus type off the value's line and onto the chip's
-  // sub-label, so the two are no longer adjacent in the string. Both are still
-  // asserted, and asserted as belonging to ONE chip — which is the fact that
-  // matters here: the asserted type must read as this value's type.
-  assert.ok(/<span class="pd-chip-value">\+6<\/span>/.test(html), "the value");
-  assert.ok(/<span class="pd-chip-sub">Insight \(your call — catalog says Enhancement\)<\/span>/.test(html),
-    "the type the player asserted, beside the type the catalog records, on the same chip");
-  const plain = R.whyThisLine(OVR_RESULT, { variant_id: "Ring of Y" }, attr, ["Constitution"]);
-  assert.ok(!/catalog says/.test(plain), "an unoverridden item's summary is unchanged");
-});
-
+// #476 — "the rendered gear-box line names both types" moved to
+// tests/results.test.js. It drove `whyThisLine`, which is deleted; the same
+// chain — a solver-shaped breakdown through attributionByTarget and
+// itemContributions to the rendered card — is asserted there against
+// `equippedBody`, the surface that actually renders. The row-level guarantee
+// above (itemContributions carries overriddenFrom) stays here, where it belongs.
 
 // ---- #88 U12 (R16-R19) — the catalog-correction report ----------------------
 // Generated text only (KTD10): the app is client-side and stays that way. The
