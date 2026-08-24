@@ -148,8 +148,8 @@ test("#316: coverageNote discloses the set-augment placement rule from the defs,
 });
 
 // #472 — these six pinned `craftChips`, which is retired. Every guarantee they
-// held is still a guarantee; it is now held on the row renderers the card and
-// the Deep Dive share. The membership pair is the load-bearing one: "Awaken" is
+// held is still a guarantee; it is now held on the row renderers the
+// card uses. The membership pair is the load-bearing one: "Awaken" is
 // correct for exactly one crafting system, and the fork reads the
 // crafting-systems.js registry rather than a literal in the renderer (KTD2).
 function setMaps(o) {
@@ -352,7 +352,7 @@ test("paperdollSlot is uniform: name, ML, set name, and a set-highlight frame (R
   assert.ok(html.includes("ML 31"), "shows the ML");
   assert.ok(html.includes("Dread Isle&#39;s Curse"), "names the set (escaped)");
   assert.ok(html.includes("is-set"), "a set member gets the highlight-frame class");
-  // no full affix/craft detail on the cell face (that lives in the Deep Dive)
+  // no full affix/craft detail on the cell face (that lives on the gear card)
   assert.ok(!html.includes("<details"), "the cell no longer expands on the paperdoll");
   // a non-member slot carries no set-highlight
   const plain = R.paperdollSlot("Boots", "boots", { variant: { variant_id: "X", minimum_level: 1, set_bonus: [], affixes: [] }, idx: 0 });
@@ -362,17 +362,24 @@ test("paperdollSlot is uniform: name, ML, set name, and a set-highlight frame (R
   assert.ok(/>empty</.test(empty) && !empty.includes("—"), "empty cell has no em-dash");
 });
 
-test("loadoutDeepDive renders a per-item block with slot, affixes, and set (R5)", () => {
+test("#498: the Loadout card carries slot, affixes and set name on one row", () => {
+  // The three facts the retired Deep Dive opened with. They are asserted here as
+  // ONE row rather than three separate unit checks because the point is that a
+  // player reading a gear card needs no second tab to learn them.
   const result = {
     chosen: [{ slot: "Bracers", variant: { variant_id: "Kopru Bracers", minimum_level: 31, set_bonus: [{ set: "Dread Isle's Curse" }], affixes: [{ stat: "Constitution", bonus_type: "Insightful", value: 3, unit: "flat" }] } }],
     breakdown: {}, augmentsPlaced: [], effective: {}, perTarget: {},
   };
   const maps = { augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
     ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(), jokerByHost: new Map() };
-  const html = R.loadoutDeepDive(result, { targets: [] }, maps, R.attributionByTarget(result));
-  assert.ok(/dd-slot/.test(html) && /Bracers/.test(html), "shows where the item is worn");
+  const P = require("../web/projection.js");   // `Pj` is declared further down this file
+  const pick = { variant: result.chosen[0].variant, idx: 0 };
+  const ctx = { result, attr: R.attributionByTarget(result), targets: [] };
+  const html = R.equippedRow("Bracers", pick, {}, new Set(), maps, null, null,
+    P.setContributors(result), ctx);
+  assert.ok(/pd-rlabel">Bracers</.test(html), "shows where the item is worn");
   assert.ok(/Kopru Bracers/.test(html) && /Constitution \+3 Insightful/.test(html), "lists the item's affixes");
-  assert.ok(/Part of set/.test(html) && /Dread Isle/.test(html), "shows set membership");
+  assert.ok(/pd-rset/.test(html) && /Dread Isle/.test(html), "names the set it belongs to");
 });
 
 test("U5/R5: equippedRow tags an Artifact slot with a badge + is-artifact frame", () => {
@@ -517,17 +524,6 @@ test("U2/AE4: filled and bare occupied blocks share the same container (uniform 
   assert.ok(!/style=/.test(heavyHtml) && !/style=/.test(bareHtml), "no inline sizing that would defeat the uniform grid");
 });
 
-test("U5/R5: Deep Dive mirrors the Artifact cue on its item block", () => {
-  const result = {
-    chosen: [{ slot: "Trinket", variant: { variant_id: "Family Blade", minimum_level: 32, artifact: true, affixes: [] } }],
-    breakdown: {}, augmentsPlaced: [], effective: {}, perTarget: {},
-  };
-  const maps = { augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
-    ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(), jokerByHost: new Map() };
-  const html = R.loadoutDeepDive(result, { targets: [] }, maps, R.attributionByTarget(result));
-  assert.ok(/dd-artifact/.test(html) && /is-artifact/.test(html), "Deep Dive flags the Artifact item too");
-});
-
 test("U5/R6: disclosure fires when box on and no Artifact equipped", () => {
   const result = { chosen: [{ slot: "Ring", variant: { variant_id: "Plain Ring" } }] };
   const html = R.artifactNotice(result, { includeArtifact: true });
@@ -628,23 +624,6 @@ test("#276: no per-stat ceiling claim on a degenerate save whose totals are unav
   delete b.effective;
   const v = R.buildViews(b, { worn: [], augments: [] }, { targets: ["Kinetic Lore"] });
   assert.ok(!/stat-ceiling/.test(v.cards), "a zeroed card never wears an at-ceiling chip");
-});
-
-test("plan 2026-08-12-001 U3/R4 + #449 U4 + #457: the Deep Dive carries the same one stat surface", () => {
-  const res = whyResult();
-  res.saturationReport = [{ stat: "Constitution", total: 15, bonusTypes: ["Enhancement"], unusedSources: 2 }];
-  const maps = { augAssign: { byIndex: new Map(), freeByIndex: new Map() }, dinoAssign: { byIndex: new Map() },
-    ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(), jokerByHost: new Map() };
-  const html = R.loadoutDeepDive(res, { targets: ["Constitution"] }, maps, R.attributionByTarget(res));
-  // #457 — pd-prio is retired HERE TOO. The Deep Dive gets the same treatment the
-  // gear card got: one classified chip row rather than a plain list plus a second
-  // chip family restating it. Same signal, same content, one language.
-  assert.ok(!/pd-prio/.test(html), "the second chip family is gone from this surface too");
-  assert.ok(hasLine(html, "is-tracked", "Constitution \\+15"),
-    "same contribution content as the Loadout row, classified the same way");
-  // #449 U4 — this surface reached the marker independently of the Loadout row,
-  // so it needs its own guard that the removal covered it too.
-  assert.ok(!/at-ceiling/.test(html), "the Deep Dive reaches the same spans, and they are unmarked here too");
 });
 
 test("plan 2026-08-12-001 U3: equippedRow renders the summary only when the context is threaded", () => {
@@ -813,19 +792,26 @@ test("U8: satisfiedSetDetail recovers a runtime-completed set from setsActive", 
   assert.ok(d.some((s) => s.set === "Vol's Influence"), "the chosen-membership/joker set appears in the tab, not dropped");
 });
 
-test("U6: loadoutDeepDive glows only satisfied-set pieces, not mere membership", () => {
-  const maps = { augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
-    ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(),
-    jokerByHost: new Map(), membershipByHost: new Map() };
+test("#498: the set NAME shows one piece short; only the GLOW waits for satisfaction", () => {
+  // Two facts that must not collapse into one. `equippedRow gets is-set only for
+  // a satisfied-set piece` covers the glow; what it does not cover is that the
+  // name is still printed while the set is incomplete — which is precisely the
+  // state a player needs it in, because it names the set they are one piece from.
   const tier = [{ set: "Trio", pieces_required: 2, affixes: [{ stat: "Dodge", bonus_type: "Insightful", value: 3, unit: "flat" }] }];
   const mkc = (id, slot) => ({ slot, variant: { variant_id: id, set_bonus: [{ set: "Trio" }], parsed_set_bonuses: tier, affixes: [] } });
+  const P = require("../web/projection.js");   // `Pj` is declared further down this file
+  const row = (build, slot) => {
+    const contributors = P.setContributors(build);
+    const satisfied = R.satisfiedSets(build.chosen, build.setsActive);
+    return R.equippedRow(slot, { variant: build.chosen[0].variant, idx: 0 }, {}, satisfied,
+      null, null, null, contributors);
+  };
   const oneShort = { chosen: [mkc("R", "Ring")], breakdown: {}, augmentsPlaced: [], effective: {}, setsActive: [] };
-  const html1 = R.loadoutDeepDive(oneShort, { targets: [] }, maps, R.attributionByTarget(oneShort));
-  assert.ok(!/class="dd-item is-set/.test(html1), "1/2 pieces -> no glow");
-  assert.ok(/Part of set: Trio/.test(html1), "membership label still shows for a one-short set");
+  const html1 = row(oneShort, "Ring");
+  assert.ok(!/is-set/.test(html1), "1/2 pieces -> no glow");
+  assert.ok(/pd-rset[^>]*>Trio</.test(html1), "…but the set is still named");
   const complete = { chosen: [mkc("R", "Ring"), mkc("N", "Necklace")], breakdown: {}, augmentsPlaced: [], effective: {}, setsActive: [] };
-  const html2 = R.loadoutDeepDive(complete, { targets: [] }, maps, R.attributionByTarget(complete));
-  assert.ok(/class="dd-item is-set/.test(html2), "2/2 pieces -> glow");
+  assert.ok(/is-set/.test(row(complete, "Ring")), "2/2 pieces -> glow");
 });
 
 test("U8: buildViews Set Bonuses panel lists active solar/lunar augments as set-like bonuses", () => {
@@ -1261,20 +1247,6 @@ test("U4/R7: the gem's row carries the set frame and names BOTH sets it feeds", 
   assert.ok(!/is-set/.test(blind) && !/Marshwalker/.test(blind), "reading set_bonus alone still shows nothing");
 });
 
-test("U4/R7+R8: the deep dive frames the gem, names both sets, and keeps its wildcard chip", () => {
-  const build = gemBuild();
-  const maps = Pj.buildCraftMaps(build);
-  const html = R.loadoutDeepDive(build, { targets: [] }, maps, R.attributionByTarget(build));
-  const gemBlock = html.split('<div class="dd-item').find((b) => /Gem of Many Facets/.test(b));
-  assert.ok(/^ is-set/.test(gemBlock), "the gem's block is framed as a set piece");
-  assert.ok(/Part of set: [^<]*Marshwalker/.test(gemBlock) && /Legendary Dread Isle/.test(gemBlock), "names both sets");
-  // #472 — the wildcard is a Set membership ROW now, not a chip: the mechanism
-  // on the left, the set it yields on the right. R8's guarantee is unchanged —
-  // the frame does not replace the statement of WHY the gem is in the set.
-  assert.ok(/<span class="pd-ln-where">Wildcard<\/span><span class="pd-ln-what">Marshwalker/.test(gemBlock),
-    "R8 — the wildcard statement is retained alongside the frame");
-});
-
 test("U4/R9: Ranked Priorities names the gem's slot among a set bonus's sources", () => {
   // The solver's setYieldingSlots lists x-var (intrinsic) pieces only, so the gem
   // that completed the set was missing from the source list: the player saw "via
@@ -1496,7 +1468,7 @@ test("U4/#239: a ranked stat is never offered back as a suggestion", () => {
 
 // ---- U8 (R8) — the two item-centric render paths in results.js -------------
 //
-// `equippedBody` (the Loadout block) and `loadoutDeepDive` read `v.affixes`
+// `equippedBody` (the Loadout block) reads `v.affixes`
 // directly; only the text exporters read the shared content model. Collapsing in
 // projection.js alone would fix every export and leave these two — the surfaces
 // R8 names first — still printing one line per expanded school.
@@ -1512,21 +1484,6 @@ test("U8/R8/AE3: equippedBody shows ONE line naming the enchantment, not seven s
   assert.ok(/Sacred Spell Focus Mastery \+3/.test(html), "names the enchantment engraved on the item");
   assert.ok(!/Necromancy Focus/.test(html), "the model's expanded shape does not leak into the UI");
   assert.strictEqual(countStatLines(html), 1, "exactly one affix line, not seven");
-});
-
-test("U8/R8/AE3: loadoutDeepDive collapses the same expansion the same way", () => {
-  const result = {
-    chosen: [{ slot: "Trinket", variant: { variant_id: "A Memento of Mori", minimum_level: 32,
-      set_bonus: [], affixes: focusMasteryAffixes("Sacred Spell Focus Mastery", "Sacred", 3) } }],
-    breakdown: {}, augmentsPlaced: [], effective: {}, perTarget: {},
-  };
-  const maps = { augAssign: { byIndex: new Map(), freeByIndex: new Map() }, dinoAssign: { byIndex: new Map() },
-    ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(), jokerByHost: new Map() };
-  const html = R.loadoutDeepDive(result, { targets: [] }, maps, R.attributionByTarget(result));
-  assert.ok(/Sacred Spell Focus Mastery \+3/.test(html));
-  assert.ok(!/Abjuration Focus/.test(html) && !/Necromancy Focus/.test(html),
-    "no school line survives the collapse");
-  assert.strictEqual(countLines(html), 1, "one affix line in the Deep Dive too");
 });
 
 test("U8/R8: a heterogeneous family renders its members inline on the Loadout block", () => {
@@ -1613,9 +1570,9 @@ test("U7/#110: the banner qualifies optimality only when a block removed a candi
 });
 
 // ---------------------------------------------------------------------------
-// #262 U3 — the no-drop-source disclosure on the app surfaces: gear box row,
-// Deep Dive item block, and the coverage note clause. All read the ONE shared
-// wording from projection.js — never a per-surface respelling.
+// #262 U3 — the no-drop-source disclosure on the app surfaces: the gear box row
+// and the coverage note clause. Both read the ONE shared wording from
+// projection.js — never a per-surface respelling.
 
 test("#262: equippedRow shows the note for a flagged item", () => {
   const pick = { slot: "Bracers", variant: { variant_id: "Bracers of the Spider Queen",
@@ -1629,23 +1586,6 @@ test("#262: an unflagged equipped row carries no note", () => {
   const pick = { slot: "Ring", variant: { variant_id: "Plain Ring", minimum_level: 20 } };
   const html = R.equippedRow("Ring", pick, {});
   assert.ok(!html.includes(Pj.NO_DROP_SOURCE_WORDING), "absence is asserted, not implied");
-});
-
-test("#262: loadoutDeepDive tags a flagged item beside the Artifact tag position", () => {
-  const result = {
-    chosen: [{ slot: "Bracers", variant: { variant_id: "Legendary Bracers of the Spider Queen",
-      minimum_level: 33, no_drop_source: true, affixes: [] } }],
-    breakdown: {}, augmentsPlaced: [], effective: {}, perTarget: {},
-  };
-  const ddMaps = { augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
-    ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(), jokerByHost: new Map() };
-  const html = R.loadoutDeepDive(result, { targets: [] }, ddMaps, R.attributionByTarget(result));
-  assert.ok(/dd-nodrop/.test(html) && html.includes(Pj.NO_DROP_SOURCE_WORDING),
-    "the Deep Dive item block discloses it");
-  const clean = { chosen: [{ slot: "Ring", variant: { variant_id: "Plain Ring", minimum_level: 20, affixes: [] } }],
-    breakdown: {}, augmentsPlaced: [], effective: {}, perTarget: {} };
-  assert.ok(!R.loadoutDeepDive(clean, { targets: [] }, ddMaps, R.attributionByTarget(clean))
-    .includes(Pj.NO_DROP_SOURCE_WORDING), "an unflagged item shows nothing");
 });
 
 test("#262: coverageNote gains the clause only when the coverage block reports confirmed items", () => {
@@ -2279,16 +2219,6 @@ test("#335 U4: the paperdoll renders a doubled ring as ONE row, not two", () => 
   assert.ok(!/::twin/.test(html), "and no suffixed twin id reaches the rendered row");
 });
 
-test("#335 U4: the Deep Dive merges the pair into one block", () => {
-  const build = _dupBuild();
-  const P4 = require("../web/projection.js");
-  const html = String(R.loadoutDeepDive(build, { targets: ["Charisma"] }, P4.buildCraftMaps(build), null) || "");
-  assert.ok(!/::twin/.test(html), "no suffixed twin id reaches the Deep Dive");
-  const blocks = (html.match(/class="dd-item/g) || []).length;
-  assert.strictEqual(blocks, 1,
-    "one block for the pair — this tab is the only surface showing augments, so a split here is the worst place for the 'affixes apply twice' reading");
-});
-
 // ---------------------------------------------------------------------------
 // U10 (plan 2026-08-22-001) — the three multi-fact notices are addressable per
 // FIRED branch, and render byte-identically to the pre-change tree while doing it.
@@ -2639,6 +2569,7 @@ test("#449 U5 (KTD5): the classification table is asserted entry by entry", () =
       outbidNotice: ["PRIORITY SCORED 0", "actionable"],
       absorptionQuarantineNotice: ["AFFIX WITHHELD", "qualifying"],
       saturationNotice: ["AT CEILING", "informational"],
+      upgradeNotice: ["UPGRADES", "informational"],
     });
 });
 
@@ -2650,14 +2581,14 @@ test("#449 U5 (KTD5): every notice the builder renders has a table entry", () =>
   const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
   const build = srcBetween(src, "function noticeDescriptors(", "function noticePanel(", "noticeDescriptors");
   const pushed = [...build.matchAll(/push\("(\w+)"/g)].map((m) => m[1]);
-  assert.strictEqual(pushed.length, 8, "the eight single-fact notices");
+  assert.strictEqual(pushed.length, 9, "the nine single-fact notices");
   for (const name of pushed) {
     assert.ok(R.NOTICE_TABLE[name], `${name} is rendered but has no KTD5 table entry`);
   }
   const split = [...build.matchAll(/split\("(\w+)"/g)].map((m) => m[1]);
   assert.deepStrictEqual(split.sort(), ["artifactNotice", "boundNotice", "zeroSourceNotice"],
     "and the three multi-fact notices come through their U10 entry functions");
-  assert.strictEqual(pushed.length + split.length, 11, "eleven notices, all reached");
+  assert.strictEqual(pushed.length + split.length, 12, "twelve notices, all reached");
 });
 
 test("#449 U5 (KTD5): a notice absent from the table renders unclassified, and does not throw", () => {
@@ -3333,11 +3264,14 @@ test("#455: craftLabel is unchanged, and the step label is separate", () => {
 });
 
 // ---------------------------------------------------------------------------
-// #457 — the Deep Dive gets the same treatment. It was the EXHAUSTIVE per-item
-// surface showing strictly less than the summary card it details: on an ML34
-// solve the Legendary Cataclysmic Tower Shield listed 2 affixes here against 13
-// stat chips on its gear card, and 18 augments across the loadout were named
-// with nothing they grant.
+// #457 — the gear card's per-item body: printed affixes, craft-granted points
+// and augment grants, each stated exactly once.
+//
+// These were written against the Loadout Deep Dive, the second per-item surface
+// #457 brought up to parity with the card. #498 retired that tab, and the
+// assertions came with it: what they pin lives in `augmentSection` /
+// `craftSection` / `statChipEntries`, which the card calls through
+// `equippedBody`. See `itemBody` above.
 // ---------------------------------------------------------------------------
 
 function ddMaps(o) {
@@ -3347,14 +3281,31 @@ function ddMaps(o) {
   return m;
 }
 
-test("#457: the Deep Dive chips craft-granted points its affix list never had", () => {
+/** #498 — the Loadout card's body for one equipped item.
+ *
+ *  The tests below were written against `loadoutDeepDive`, which is gone. What
+ *  they assert was never really about that tab: the Augments and Craft sections,
+ *  the stat rows, and the de-duplication between them all come from
+ *  `augmentSection` / `craftSection` / `statChipEntries`, which the Loadout card
+ *  calls through `equippedBody`. Retiring the second surface must not retire
+ *  their coverage, so they follow the behaviour to the surface that kept it.
+ *
+ *  `<ul class="pd-lines">` becomes `<ul class="pd-lines">` here — the
+ *  same list, without the wrapper class the deleted tab put on it. */
+function itemBody(res, query, maps, augById, idx) {
+  const i = idx || 0;
+  const ctx = { result: res, attr: R.attributionByTarget(res), targets: (query && query.targets) || [] };
+  return R.equippedBody(res.chosen[i].variant, i, maps, augById, false, false, ctx);
+}
+
+test("#457: the item body chips craft-granted points its affix list never had", () => {
   const v = { variant_id: "Shield", affixes: [{ name: "Armor Class", value: 41, type: "Shield" }] };
   const res = { chosen: [{ slot: "Off Hand", variant: v }], augmentsPlaced: [], setsActive: [],
     breakdown: { "Armor-Piercing": [{ bonus_type: "Enhancement", value: 23, source: "Shield",
       sourceKind: "vik", slot: "Off Hand", hostIds: ["Shield"] }] } };
   const maps = ddMaps({ vikByItem: new Map([["Shield", [{ slot_type: "Miserable",
     stat: "Armor-Piercing", bonus_type: "Enhancement", value: 23, unit: "flat" }]]]) });
-  const html = R.loadoutDeepDive(res, { targets: ["Armor-Piercing"] }, maps, R.attributionByTarget(res));
+  const html = itemBody(res, { targets: ["Armor-Piercing"] }, maps);
   assert.ok(hasLine(html, "is-incidental", "Armor Class \\+41"), "the printed affix is a row");
   // #457's guarantee is that the craft-granted point is READABLE on this surface
   // at all — it used to live only in `pd-prio` and inside the fused craft label,
@@ -3369,14 +3320,14 @@ test("#457: the Deep Dive chips craft-granted points its affix list never had", 
   // second time, and that is a different statement — a claim about the pick, not
   // a listing of what the item gives — so it is excluded from the count rather
   // than counted as duplication.
-  const affixList = html.match(/<ul class="dd-list pd-lines">[\s\S]*?<\/ul>/);
+  const affixList = html.match(/<ul class="pd-lines">[\s\S]*?<\/ul>/);
   assert.ok(affixList, "the affix list renders");
   assert.ok(!/Armor-Piercing/.test(affixList[0]),
     "the affix list does NOT restate what the craft row already states (#472)");
 });
 
-test("#457/#472: the Deep Dive's craft row is the slot and what it applies, once", () => {
-  // #457 trimmed the Deep Dive's craft chip to the instruction alone, because
+test("#457/#472: the craft row is the slot and what it applies, once", () => {
+  // #457 trimmed the craft chip to the instruction alone, because
   // the value was already restated in its affix list. #472 inverts that: the row
   // carries the value beside the slot, and the affix list no longer carries it.
   // Either way the point is stated exactly once, which is the guarantee.
@@ -3384,40 +3335,40 @@ test("#457/#472: the Deep Dive's craft row is the slot and what it applies, once
   const res = { chosen: [{ slot: "Off Hand", variant: v }], augmentsPlaced: [], setsActive: [], breakdown: {} };
   const maps = ddMaps({ vikByItem: new Map([["Shield", [{ slot_type: "Miserable",
     stat: "Armor-Piercing", bonus_type: "Enhancement", value: 23, unit: "flat" }]]]) });
-  const html = R.loadoutDeepDive(res, { targets: [] }, maps, R.attributionByTarget(res));
+  const html = itemBody(res, { targets: [] }, maps);
   assert.ok(/<span class="pd-ln-where">Miserable<\/span><span class="pd-ln-what">Armor-Piercing \+23<\/span>/.test(html),
     "the slot on the left, the affix it applies on the right");
   assert.strictEqual((html.match(/Armor-Piercing \+23/g) || []).length, 1,
-    "stated once on the Deep Dive too, not in the affix list as well");
+    "stated once, not in the affix list as well");
   assert.ok(!/Slot Miserable Viktranium augment/.test(html),
     "…and the fused sentence is gone from this surface (the exports keep it)");
 });
 
-test("#457: an unfilled Viktranium slot keeps its full disclosure in the Deep Dive", () => {
+test("#457: an unfilled Viktranium slot keeps its full disclosure", () => {
   // Regression guard, deliberately NOT proven red. `vikEmpty` is not an
   // instruction but a statement that a declared slot went unfilled; trimming it
   // would turn "no option helps you" into a craft to go apply.
   const v = { variant_id: "Cloak", affixes: [], viktranium_slots: ["Melancholic"] };
   const res = { chosen: [{ slot: "Back", variant: v }], augmentsPlaced: [], setsActive: [], breakdown: {} };
-  const html = R.loadoutDeepDive(res, { targets: [] }, ddMaps({}), R.attributionByTarget(res));
+  const html = itemBody(res, { targets: [] }, ddMaps({}));
   if (/Melancholic/.test(html)) {
     assert.ok(/left empty — no option adds to your ranked stats/.test(html),
       "the unfilled slot still says why it is empty");
   }
 });
 
-test("#457: the Deep Dive says what each augment grants, not just its name", () => {
+test("#457: the item body says what each augment grants, not just its name", () => {
   const v = { variant_id: "Host", affixes: [] };
   const res = { chosen: [{ slot: "Ring", variant: v }], augmentsPlaced: [], setsActive: [], breakdown: {} };
   const maps = ddMaps({ byIndex: new Map([[0, [{ variant_id: "Solar Gem of Attack", color: "Colorless" }]]]) });
   const augById = new Map([["Solar Gem of Attack", { affixes: [{ name: "Accuracy", value: 4, type: "Artifact" }] }]]);
-  const html = R.loadoutDeepDive(res, { targets: [] }, maps, R.attributionByTarget(res), augById);
+  const html = itemBody(res, { targets: [] }, maps, augById);
   assert.ok(/Solar Gem of Attack/.test(html), "the augment is named");
   assert.ok(/Accuracy \+4 Artifact/.test(html),
     "and what it grants is shown — the gear box has done this since #453");
 });
 
-test("#457: the Deep Dive renders without a catalog, naming the augment alone — regression guard", () => {
+test("#457: the item body renders without a catalog, naming the augment alone — regression guard", () => {
   // Deliberately NOT proven red: it passes before and after, because augById was
   // not a parameter at all before. It pins that making it optional did not make
   // it required — the pure-test callers and any caller without the catalog must
@@ -3425,17 +3376,8 @@ test("#457: the Deep Dive renders without a catalog, naming the augment alone �
   const v = { variant_id: "Host", affixes: [] };
   const res = { chosen: [{ slot: "Ring", variant: v }], augmentsPlaced: [], setsActive: [], breakdown: {} };
   const maps = ddMaps({ byIndex: new Map([[0, [{ variant_id: "Mystery Gem", color: "Colorless" }]]]) });
-  const html = R.loadoutDeepDive(res, { targets: [] }, maps, R.attributionByTarget(res));
+  const html = itemBody(res, { targets: [] }, maps);
   assert.ok(/Mystery Gem/.test(html), "the name still renders with no catalog in hand");
-});
-
-test("#457: buildViews hands the Deep Dive the augment catalog", () => {
-  // Source-text: without this the augment affixes resolve to nothing on the one
-  // path that actually has the catalog, and the test above would pass anyway.
-  const fs = require("fs"); const path = require("path");
-  const src = fs.readFileSync(path.join(__dirname, "..", "web", "results.js"), "utf-8");
-  assert.ok(/loadoutDeepDive\(build, query, maps, attr, augById\)/.test(src),
-    "the real render path passes augById through");
 });
 
 // ---------------------------------------------------------------------------
@@ -3800,13 +3742,13 @@ test("#471/#487: head, body and foot are separated without a rule across the car
 });
 
 // ---------------------------------------------------------------------------
-// #472 — the Deep Dive spoke two languages after #471: its affix list was rows
-// while its craft and augment block was still the chip run. It now calls the
-// SAME section renderers the gear card does, and the three set-yielding
-// families — wildcard, chosen membership, Set Augment — get rows of their own.
+// #472 — one visual language per item body. The affix list is rows, and so are
+// the craft, augment and set-membership blocks; the three set-yielding families
+// — wildcard, chosen membership, Set Augment — each get a row of their own.
+// (Also written against the retired Deep Dive; re-pointed by #498.)
 // ---------------------------------------------------------------------------
 
-test("#472: the Deep Dive renders the card's own section renderers, not a second set", () => {
+test("#472: the item body renders the shared section renderers, not a second set", () => {
   // Shared functions, not matching output. Two implementations that agree today
   // is what #457 and #469 each had to re-fix; one implementation cannot drift.
   const v = { variant_id: "Shield", affixes: [{ name: "Armor Class", value: 41, type: "Shield" }] };
@@ -3818,12 +3760,12 @@ test("#472: the Deep Dive renders the card's own section renderers, not a second
       bonus_type: "Enhancement", value: 23, unit: "flat" }]]]),
   });
   const augById = new Map([["Gem", { affixes: [{ name: "Doublestrike", value: 3, type: "Quality" }] }]]);
-  const html = R.loadoutDeepDive(res, { targets: [] }, maps, R.attributionByTarget(res), augById);
+  const html = itemBody(res, { targets: [] }, maps, augById);
   assert.ok(/pd-sec pd-sec-aug/.test(html) && /pd-sec pd-sec-craft/.test(html),
-    "the Deep Dive carries the card's Augments and Craft sections");
+    "the body carries the Augments and Craft sections");
   assert.ok(!/class="chip /.test(html), "and no chip survives on this surface");
-  // The open slot is stated here too — the Deep Dive used to show placements
-  // only, with open slots surfacing solely as an aggregate upgrade note.
+  // The open slot is stated as a row of its own — placements used to be all the
+  // body showed, with open slots surfacing solely as an aggregate upgrade note.
   assert.ok(/aug-open aug-red/.test(html), "an open augment colour is a row here as well");
 });
 
@@ -3866,23 +3808,6 @@ test("#472: a set row lights up only for the set this item was CREDITED through"
     "the one it did not is left quiet — matching on viaSet alone would over-claim");
 });
 
-test("#472: the Deep Dive de-duplicates too, now that its craft rows carry values", () => {
-  // It kept `includeCraft` on while its craft block showed instructions only,
-  // because dropping the values would have left them nowhere to be read (#457).
-  // With the rows stating them, carrying them in the affix list as well is the
-  // same redundancy #471 removed from the card.
-  const v = { variant_id: "Shield", affixes: [{ name: "Armor Class", value: 41, type: "Shield" }] };
-  const res = { chosen: [{ slot: "Off Hand", variant: v }], augmentsPlaced: [], setsActive: [],
-    breakdown: { "Armor-Piercing": [{ bonus_type: "Enhancement", value: 23, source: "Shield",
-      sourceKind: "vik", slot: "Off Hand", hostIds: ["Shield"] }] } };
-  const maps = ddMaps({ vikByItem: new Map([["Shield", [{ slot_type: "Miserable",
-    stat: "Armor-Piercing", bonus_type: "Enhancement", value: 23, unit: "flat" }]]]) });
-  const html = R.loadoutDeepDive(res, { targets: ["Armor-Piercing"] }, maps, R.attributionByTarget(res));
-  const affixList = html.match(/<ul class="dd-list pd-lines">[\s\S]*?<\/ul>/)[0];
-  assert.ok(/Armor Class \+41/.test(affixList), "the printed affix is in the affix list");
-  assert.ok(!/Armor-Piercing/.test(affixList), "the crafted one is not — its row states it");
-});
-
 test("#472: a caller with NO craft section keeps every credited point in its stat list", () => {
   // The safe direction, and the reason `craftStated` is computed rather than
   // chosen. If the flag were a preference a caller could set it while rendering
@@ -3897,20 +3822,19 @@ test("#472: a caller with NO craft section keeps every credited point in its sta
     "with no craft rows to state it, the point stays in the stat list");
 });
 
-test("#472: the unrealized-upgrade note counts open slots; the rows name them", () => {
-  // It used to do both, because it was the only place an open slot appeared on
-  // this tab. With a row per open colour directly below it, listing them in the
-  // note as well is the duplication these two issues exist to remove — so the
-  // note keeps the judgement and the count, and the rows keep the facts.
+test("#498: each open augment colour gets its own row, and nothing aggregates them", () => {
+  // #472 split this fact in two: a note that counted the open slots, and a row
+  // per colour that named them. #498 deleted the surface the note lived on, so
+  // the rows are now the whole statement — and there must be no second, vaguer
+  // copy of it anywhere on the card.
   const v = { variant_id: "Host", affixes: [] };
   const res = { chosen: [{ slot: "Ring", variant: v }], augmentsPlaced: [], setsActive: [], breakdown: {} };
   const maps = ddMaps({ freeByIndex: new Map([[0, ["Blue", "Colorless"]]]) });
-  const html = R.loadoutDeepDive(res, { targets: [] }, maps, R.attributionByTarget(res));
-  const note = html.match(/<div class="dd-upgrade">[\s\S]*?<\/div>/)[0];
-  assert.ok(/2 open augment slots/.test(note), "the note still counts them");
-  assert.ok(!/Blue/.test(note) && !/Colorless/.test(note), "…and no longer names them");
+  const html = itemBody(res, { targets: [] }, maps);
   assert.ok(/aug-open aug-blue/.test(html) && /aug-open aug-colorless/.test(html),
-    "the rows name each one instead");
+    "a row per open colour, each named");
+  assert.ok(!/open augment slot/.test(html),
+    "and no aggregate count restating them in prose");
 });
 
 // ---------------------------------------------------------------------------
@@ -4082,4 +4006,162 @@ test("#476/#88: the override disclosure survives the whole chain, not just a han
     "beside the type the catalog records — a gear box must never state a bonus type as though the wiki said so");
   const plain = R.equippedBody({ variant_id: "Ring of Y" }, -1, null, null, false, false, ctx);
   assert.ok(!/catalog says/.test(plain), "an unoverridden item's card is unchanged");
+});
+
+// ---------------------------------------------------------------------------
+// #499 — the upgrades notice, which replaced the Alternatives tab. The bar
+// itself is tested in tests/alternatives.test.js; these cover the surface.
+// ---------------------------------------------------------------------------
+
+test("#499: no solver, no offer — the card withholds rather than showing a dead button", () => {
+  // A restored character renders with `highs: null` and no program. The same
+  // rule the outbid pricing and concession probe follow (#345, #481): a control
+  // that cannot work is not offered and then failed, it is not offered.
+  assert.strictEqual(R.upgradeNotice(false, 0), "", "no capability -> no card at all");
+  assert.ok(R.upgradeNotice(true, 0), "with the capability, the card renders");
+});
+
+test("#499: the bar's current setting is what the select shows", () => {
+  // The bar outlives the panel — renderResults destroys and rebuilds it on every
+  // solve, load and per-slot constraint change — so the value must be stamped in
+  // at render time. A select that always reopened at 0 would silently discard
+  // the player's choice and then quietly withhold the trades they asked to see.
+  const free = R.upgradeNotice(true, 0);
+  assert.ok(/<option value="0" selected>/.test(free), "free-only is selected at the default");
+  const wide = R.upgradeNotice(true, 5);
+  assert.ok(/<option value="5" selected>/.test(wide), "…and a raised bar comes back raised");
+  assert.strictEqual((wide.match(/selected/g) || []).length, 1, "exactly one option is selected");
+});
+
+test("#499: the card offers the search rather than claiming a finding", () => {
+  const html = R.upgradeNotice(true, 0);
+  assert.ok(/upgrade-run/.test(html) && /Find upgrades/.test(html), "it carries its own control");
+  assert.strictEqual(R.NOTICE_TABLE.upgradeNotice.cls, "informational",
+    "an un-run search has found nothing yet, so it must not inflate the needs-attention pill");
+  assert.strictEqual(R.NOTICE_TABLE.upgradeNotice.jump, null,
+    "and it needs no jump — the control that resolves it is in the card");
+});
+
+test("#499: the result tabs no longer offer Alternatives or a Deep Dive", () => {
+  const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
+  const tablist = srcBetween(src, '<div class="result-tabs"', "</div>", "result tabs");
+  const labels = [...tablist.matchAll(/type="button">([^<]+)</g)].map((m) => m[1]);
+  assert.deepStrictEqual(labels, ["Loadout", "Ranked Priorities", "Set Bonuses", "Versions", "Farming List", "Share"],
+    "the two retired tabs are gone, their replacements sit in their place, and Share stays last");
+});
+
+test("#499: the bar filters BEFORE the ranking, not after", () => {
+  // `rankAlternatives` caps at five. Filtering after it would let five rejected
+  // candidates crowd out a free upgrade sitting sixth, and the card would report
+  // "no free upgrade found" against a list that had one — a false negative that
+  // looks exactly like a true one. Source-text, because the ordering is not
+  // observable from either function's output alone.
+  const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
+  const body = srcBetween(src, "function runUpgrades()", "// The card's two controls", "runUpgrades");
+  const filterAt = body.indexOf("filterUpgrades(");
+  const rankAt = body.indexOf("rankAlternatives(");
+  assert.ok(filterAt >= 0 && rankAt >= 0, "both steps are present");
+  assert.ok(filterAt < rankAt, "the bar decides eligibility, then the ranking orders what is left");
+});
+
+// ---------------------------------------------------------------------------
+// Code-review fixes: the three defects found in the #498-#501 branch. All three
+// are wiring, not rendering, so they are asserted against the source of
+// `renderResults` — there is no DOM here to drive.
+// ---------------------------------------------------------------------------
+
+function _resultsSrc() {
+  return require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
+}
+
+test("review fix 1: every per-build panel reads the ACTIVE build, not the optimum", () => {
+  // The defect: `renderBuild` refreshed the paperdoll, weapons, ranked cards and
+  // set panel; the Farming List and Versions tabs were filled once from the
+  // optimum and never again. Clicking an upgrade card left a player looking at
+  // one build's paperdoll and a DIFFERENT build's farming list — and the farming
+  // list is the surface that sends them out of the app for an evening.
+  const src = _resultsSrc();
+  const body = srcBetween(src, "function renderBuild(build) {", "function setActive(", "renderBuild");
+  assert.ok(/activeBuild = build/.test(body),
+    "renderBuild records which build is now on screen");
+  assert.ok(/fillFarmingPanel\(/.test(body), "…and refreshes the farming list for it");
+  assert.ok(/renderVersionDiff\(/.test(body), "…and re-runs the comparison against it");
+
+  const live = srcBetween(src, "function liveRecord() {", "function fillVersionsPanel(", "liveRecord");
+  assert.ok(/snapshot: activeBuild/.test(live),
+    "and the record both panels read is the ACTIVE build");
+  assert.ok(!/snapshot: optimum/.test(live),
+    "never the optimum — that is the bug, stated exactly");
+});
+
+test("review fix 1: the two panel inputs are declared before renderBuild runs", () => {
+  // `renderBuild(optimum)` fires before the Versions and Farming wiring blocks.
+  // With `verApi` and `farmCharacter` still declared down beside that wiring,
+  // the first render reads two `const`s inside their temporal dead zone and
+  // throws — and renderResults sits inside a try/catch whose catch replaces the
+  // whole results box with "Solver error", so the failure would present as a
+  // broken solver on a perfectly good solve.
+  const src = _resultsSrc();
+  const verAt = src.indexOf("const verApi = versions");
+  const farmAt = src.indexOf("const farmCharacter = String(");
+  const renderAt = src.indexOf("renderBuild(optimum);");
+  assert.ok(verAt >= 0 && farmAt >= 0 && renderAt >= 0, "all three sites are present");
+  assert.ok(verAt < renderAt, "verApi is initialized before the first renderBuild");
+  assert.ok(farmAt < renderAt, "and so is farmCharacter");
+});
+
+test("review fix 2: the farming panel's wiring is not inside its fill function", () => {
+  // `#rp-farmingpanel` is minted once by the container template and then only has
+  // its innerHTML replaced, so it outlives every fill. Wiring inside the fill
+  // stacked one listener per call: a tick on an unnamed build re-rendered with a
+  // message and added a second handler, and the next tick ran both — each
+  // flipping `box.checked`, so the box landed back where it started while two
+  // more handlers were added.
+  const src = _resultsSrc();
+  const fill = srcBetween(src, "function fillFarmingPanel(note) {", "function printFarmingList(", "fillFarmingPanel");
+  assert.ok(!/addEventListener/.test(fill),
+    "the fill function only replaces content — it binds nothing");
+  assert.ok(/farmHost\.addEventListener\("change"/.test(src),
+    "the tick handler is delegated on the long-lived host instead");
+  assert.ok(/farmHost\.addEventListener\("click"/.test(src),
+    "…and so are Copy and Print, which are rebuilt with the content");
+});
+
+test("review fix 2: Copy recomputes the plan rather than capturing it", () => {
+  // The panel is now rebuilt on every build swap. A handler closing over the plan
+  // it was wired with would copy the previous build's farming list.
+  const src = _resultsSrc();
+  const click = srcBetween(src, 'farmHost.addEventListener("click"', "wireResultTabs(", "farm click handler");
+  assert.ok(/const plan = currentPlan\(\)/.test(click),
+    "the plan is read at click time, not captured at wiring time");
+});
+
+test("review fix 3: the farming print rules are scoped to a body class", () => {
+  // Unscoped, they applied to every print the page performed: a plain Ctrl+P
+  // returned the farming list instead of the page, or a blank sheet when Farming
+  // was not the active tab. The Share tab's print has always been scoped this
+  // way (`body.printing`); this follows it.
+  const css = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "styles.css"), "utf8");
+  const block = srcBetween(css, "body.farming-printing > *:not(main)", "\n}", "farming print block");
+  assert.ok(block.length > 0, "the block exists");
+  // Every declaration inside it must carry the scope, or that one leaks to all prints.
+  for (const line of block.split("\n")) {
+    if (!/[{;]/.test(line) || /^\s*\/?\*/.test(line) || /^\s*$/.test(line)) continue;
+    if (!/display|grid-template|break-inside/.test(line)) continue;
+    assert.ok(/body\.farming-printing/.test(line) || !/^\s*[.#a-z]/.test(line),
+      `unscoped print rule leaks to every print: ${line.trim()}`);
+  }
+  assert.ok(/body\.farming-printing #wz-printarea \{ display: none/.test(css),
+    "the Share tab's print container is suppressed — it is never removed from the DOM "
+    + "and its own ID rule forces it visible on any print");
+  assert.ok(/body\.farming-printing #rp-farming \{ display: block/.test(css),
+    "and the panel is un-hidden, since `hidden` is on it whenever another tab is active");
+});
+
+test("review fix 3: the print button sets and clears the scope class", () => {
+  const src = _resultsSrc();
+  const fn = srcBetween(src, "function printFarmingList() {", "function farmNote(", "printFarmingList");
+  assert.ok(/classList\.add\("farming-printing"\)/.test(fn), "the scope is set before printing");
+  assert.ok(/classList\.remove\("farming-printing"\)/.test(fn), "…and removed again");
+  assert.ok(/afterprint/.test(fn), "on afterprint, the same seam printLoadout uses");
 });

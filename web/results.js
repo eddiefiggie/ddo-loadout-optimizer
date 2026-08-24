@@ -25,7 +25,7 @@ const _resultsRungExcludesNicheCrafting = (typeof rungExcludesNicheCrafting !== 
 const _resultsIsSolarLunarColor = (typeof isSolarLunarColor !== "undefined") ? isSolarLunarColor
   : (typeof require !== "undefined" ? require("./model.js").isSolarLunarColor : (c) => c === "Sun" || c === "Moon");
 // U8 (R8) — bound like every other shared primitive. `renderResults` /
-// `equippedBody` / `loadoutDeepDive` run against the LIVE solve result and have no
+// `equippedBody` runs against the LIVE solve result and has no
 // saved record, so they cannot reach the collapse through `Proj.project(rec)`;
 // they call the same primitive that builds the content model instead.
 const collapseExpansions = Proj.collapseExpansions;
@@ -61,11 +61,6 @@ var itemMl = (v) => (v && v.ml != null) ? v.ml : (v && v.minimum_level);
 var _UTILITY_SENTINEL = (typeof UTILITY_SENTINEL !== "undefined")
   ? UTILITY_SENTINEL
   : (typeof require !== "undefined" ? require("./model.js").UTILITY_SENTINEL : "Utility effects");
-
-// Standard fillable augment-slot colors — a generic augment can go here, so an
-// open one is a realizable upgrade. Named crafting slots (Lamordia, celestial)
-// need specific augments and are shown as craft slots, not flagged as unused.
-const STD_AUG_COLORS = new Set(["blue", "red", "yellow", "green", "orange", "purple", "colorless", "clear"]);
 
 function coverageNote(dataset) {
   const m = (dataset && dataset.metadata) || {};
@@ -196,7 +191,7 @@ function safeUrl(u) {
 
 // Craft/augment prescriptions applied to an equipped item (augments, Dino inserts,
 // Nearly Completed, choice slots, Viktranium, seals, wildcard), as labeled chips.
-// Used by the Loadout Deep Dive so every applied bonus is visible. Returns an array.
+// Used by the Loadout card so every applied bonus is visible. Returns an array.
 // Crafting-system label registry (U1). Global in the browser (loaded before
 // results.js); require()'d in Node tests where the global isn't present.
 const CraftingReg = (typeof CraftingSystems !== "undefined") ? CraftingSystems
@@ -212,9 +207,10 @@ var _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined") ? pinnedVarian
 // #472 — `craftSlotChips` and `craftChips` are retired. They rendered this
 // item's crafts, augments, wildcard, membership and Set Augment as a run of
 // labelled chips, and were the LAST caller of the chip language on an item
-// surface: #471 moved the gear card to rows, and the Deep Dive — their only
-// consumer — now calls the same `augmentSection` / `craftSection` /
-// `setMembershipSection` the card does.
+// surface: #471 moved the gear card to rows, and #472 moved the Deep Dive — their
+// only other consumer — onto the same `augmentSection` / `craftSection` /
+// `setMembershipSection`. #498 then retired that tab, leaving the card as the
+// single item surface and these three as its only renderers.
 //
 // What they uniquely knew is preserved, not deleted:
 //   - the split labels live in `Proj.craftRowLabel`, beside `craftLabel`;
@@ -256,7 +252,7 @@ function contribSetLabel(contribs) {
 
 // One paperdoll slot cell: uniform, fixed-size, showing only the item name, ML,
 // and the set it belongs to. A set piece gets a themed highlight frame (.is-set).
-// Full affixes/crafts live in the Loadout Deep Dive tab, not on the cell.
+// Full affixes/crafts live in the gear card below the doll, not on the cell.
 function paperdollSlot(label, pos, pick, satisfied, contributors) {
   if (!pick) {
     return `<div class="pd-slot empty pos-${pos}"><div class="pd-label">${esc(label)}</div><div class="pd-item muted">empty</div></div>`;
@@ -270,101 +266,6 @@ function paperdollSlot(label, pos, pick, satisfied, contributors) {
     <div class="pd-item" title="${esc(v.variant_id)}">${esc(v.variant_id)}</div>
     <div class="pd-foot"><span class="pd-ml">ML ${esc(itemMl(v) ?? "?")}</span>${setLine}</div>
   </div>`;
-}
-
-// Loadout Deep Dive: one block per equipped item showing where it is worn, its
-// affixes, its set membership, and every applied craft/augment (R5 detail moved
-// off the paperdoll cell into this tab).
-function loadoutDeepDive(result, query, maps, attr, augById) {
-  if (!result.chosen.length) return `<p class="dd-none muted">No items equipped for this build.</p>`;
-  const suppressed = suppressedHostIds(result);                        // U7: a Set-Augment host suppresses its own set
-  const satisfied = satisfiedSets(result.chosen, result.setsActive, suppressed);   // U6/U7: glow on completion, honoring suppression
-  const contributors = Proj.setContributors(result);                   // U4/R7: wildcard + membership pieces, not just static set_bonus
-  const freeByIndex = (maps && maps.augAssign && maps.augAssign.freeByIndex) || new Map();
-  // #335 U4 (KD3) — one block per DISPLAYED item, not per chosen index. This tab is
-  // the only surface that shows an item's augments and crafts, so a twin rendering
-  // its own second block here is the worst place for the "affixes apply twice"
-  // misreading. The pair merges into one block; both copies' open slots are unioned
-  // so the upgrade note still speaks for the whole ×2 entry.
-  return `<div class="deepdive">${Proj.collapseTwins(result.chosen).map((_g) => {
-    const idx = _g.indices[0];
-    const c = result.chosen[idx];
-    const copies = _g.count;
-    const v = c.variant;
-    // U10: flag open standard-color augment slots as a concrete unrealized upgrade.
-    const openAug = _g.indices.reduce((acc, i) => acc.concat(freeByIndex.get(i) || []), [])
-      .filter((col) => STD_AUG_COLORS.has(String(col).toLowerCase()));
-    // #472 — the note stopped naming the colours. It used to be the ONLY place an
-    // open slot appeared on this tab, so it had to list them; the Augments
-    // section now gives each one a row of its own, directly below. What the note
-    // still uniquely says is the JUDGEMENT — that these are an unrealized
-    // upgrade — and the count, which the rows do not aggregate.
-    const upgradeNote = openAug.length
-      ? `<div class="dd-upgrade"><span class="dd-upgrade-tag">Unrealized upgrade</span> ${openAug.length} open augment slot${openAug.length === 1 ? "" : "s"} — slot an augment for more stats.</div>`
-      : "";
-    const contribs = slotContribs(c.slot, v, contributors);    // U4/R7: intrinsic + wildcard + membership
-    const glow = contribGlow(contribs, satisfied);             // U6: is-set glow = satisfaction
-    // The intrinsic sets this host GAVE UP to a Set Augment — a static-only read on
-    // purpose (KTD3): the resolver has already dropped them, so the disclosure has
-    // nowhere else to come from, and dropping it would hide what the augment cost.
-    const gaveUp = suppressed.has(v.variant_id) ? slotSetNames(v) : [];
-    const suppressNote = gaveUp.length
-      ? ` <span class="dd-suppressed" title="a Set Augment slotted here overrides this item's own set bonus">(suppressed by Set Augment${contribs.length ? `: ${esc(gaveUp.join(", "))}` : ""})</span>` : "";
-    const setLine = (contribs.length || gaveUp.length)
-      ? `<div class="dd-set"><span class="setpip"></span>Part of set: ${esc(contribs.length ? contribSetLabel(contribs) : gaveUp.join(", "))}${suppressNote}</div>` : "";
-    // #457 — the SAME one stat surface the gear card uses. This tab was strictly
-    // LESS informative than the summary card it details: measured on an ML34
-    // solve, the Legendary Cataclysmic Tower Shield listed 2 affixes here while
-    // its gear card showed 13 stats, because craft- and set-granted points lived
-    // only in `pd-prio` and in the craft labels. An exhaustive surface that shows
-    // less than the summary is the wrong way round.
-    //
-    // U8/R8 still holds: `statChipEntries` collapses, so an expanded enchantment
-    // reads as the one name engraved on the item rather than as seven school lines.
-    const ddContribIdx = itemContribIndex(
-      (attr || query) ? { result, attr, targets: query && query.targets } : null, v.variant_id);
-    const ddRank1 = (query && query.targets && query.targets.length) ? query.targets[0] : null;
-    // #469 — the same priority link the gear card draws. These two surfaces
-    // describe the same items and the repo's standing rule is that they must not
-    // drift: a stat framed as ranked on the card and unframed here would read as
-    // the Deep Dive disagreeing about what the player asked for.
-    const ddRanked = rankedStatSet(query);
-    // #472 — the SAME three section renderers the gear card calls, not a second
-    // implementation of them. #471 left this surface speaking two languages: its
-    // affix list was rows while its craft and augment block was still the chip
-    // run. Sharing the functions outright is what makes a future divergence
-    // impossible rather than merely discouraged.
-    const ddAugs = augmentSection(v, idx, maps, augById, ddContribIdx, ddRank1, ddRanked);
-    const ddCrafts = craftSection(v, idx, maps, ddContribIdx, ddRank1, ddRanked);
-    const ddSets = setMembershipSection(v, maps, ddContribIdx);
-    // #472 — and therefore the same de-duplication. The Deep Dive kept
-    // `includeCraft` on while its craft block showed instructions only, because
-    // dropping the values from here would have left them nowhere (#457). Now the
-    // craft rows state their own affixes, so carrying them here as well prints
-    // the same point twice — the exact redundancy #471 removed from the card.
-    const ddEntries = statChipEntries(v, idx, maps, ddContribIdx, craftRowsFor(v, idx, maps).length > 0);
-    const affixes = ddEntries.entries.length
-      ? `<ul class="dd-list pd-lines">${statChipRow(
-          ddEntries.entries, Proj.affixStatCoverage(ddEntries.raw), ddContribIdx, ddRank1, ddRanked)}</ul>`
-      : `<p class="dd-none muted">No parsed affixes on this item.</p>`;
-    const craftBlock = (ddAugs || ddCrafts || ddSets)
-      ? `<div class="dd-crafts">${ddAugs}${ddCrafts}${ddSets}</div>` : "";
-    const wiki = v.wiki_url ? `<a class="dd-wiki" href="${safeUrl(v.wiki_url)}" target="_blank" rel="noopener">wiki</a>` : "";
-    const artifactTag = v.artifact ? `<span class="dd-artifact" title="your one equipped Artifact">Artifact</span>` : "";
-    // #262 — the wiki-confirmed no-drop-source disclosure, beside the Artifact
-    // tag: a head-level fact about the item, spelled by the ONE shared wording
-    // (projection.js) so the Deep Dive can never drift from the exports.
-    const noDropTag = v.no_drop_source
-      ? `<span class="dd-nodrop" title="the DDO wiki records no current in-game source for this item — it stays a solver candidate; block it to exclude it">${Proj.NO_DROP_SOURCE_WORDING}</span>` : "";
-    return `<div class="dd-item${glow ? " is-set" : ""}${v.artifact ? " is-artifact" : ""}">
-      <div class="dd-head"><span class="dd-slot">${esc(c.slot)}</span><span class="dd-name">${esc(v.variant_id)}</span>${artifactTag}${noDropTag}<span class="dd-ml">ML ${esc(itemMl(v) ?? "?")}</span>${wiki}</div>
-      ${whyThisNote(result, { slot: c.slot, variant_id: v.variant_id }, attr, query && query.targets)}
-      ${setLine}
-      ${upgradeNote}
-      <div class="dd-affixes"><h5>Affixes</h5>${affixes}</div>
-      ${craftBlock}
-    </div>`;
-  }).join("")}</div>`;
 }
 
 // One row of the plain equipped list (prototype layout): slot label, the full
@@ -442,7 +343,7 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
   const body = (v && !locked) ? equippedBody(v, pick ? pick.idx : -1, maps, augById, owned.mode, owned.augments, prioCtx) : "";
   // #262 — the no-drop-source note on the gear box itself: the moment of seeing
   // the pick is where the player must learn it, not at the wiki after farming.
-  // Same shared wording as the Deep Dive and every export (projection.js).
+  // Same shared wording as every export (projection.js).
   const noDropNote = (v && !locked && v.no_drop_source)
     ? `<div class="pd-note pd-rnote pd-nodrop is-source" title="the DDO wiki records no current in-game source for this item — it stays a solver candidate; block it to exclude it"><span class="pd-note-ico" aria-hidden="true">⌖</span><span>${Proj.NO_DROP_SOURCE_WORDING}</span></div>` : "";
   // U3 (plan 2026-08-12-001) — the priority summary sits at the bottom of the
@@ -885,9 +786,8 @@ function statChipEntries(v, idx2, maps, contribIdx, craftStated) {
 // are always supplied on the render path (buildViews -> equippedRow); a maps-less
 // call (only the pure test callers) simply renders no augment/craft section.
 function equippedBody(v, idx, maps, augById, ownedMode, ownedAugments, prioCtx) {
-  // U8/R8 — the Loadout block collapses each expansion to its enchantment for the
-  // same reason the Deep Dive does: this is what the player compares against the
-  // in-game tooltip.
+  // U8/R8 — the Loadout block collapses each expansion to its enchantment because
+  // that is what the player compares against the in-game tooltip.
   // #455 — ONE stat surface. Printed affixes, craft-granted affixes and
   // set-sourced contributions all become chips in the same row; `pd-prio` is
   // retired rather than left beside it restating 62% of what it says.
@@ -964,8 +864,8 @@ const SUN_MOON_GLYPH = { sun: "☀\uFE0F", moon: "🌙" };
 function augmentSection(v, idx, maps, augById, contribIdx, rank1, ranked) {
   if (!(maps && maps.augAssign && idx != null && idx >= 0)) return "";
   // `freeByIndex` is optional: a caller that never computed the OPEN slots still
-  // has placements to show. The Deep Dive's fixtures have carried that shape
-  // since long before this section existed (#472).
+  // has placements to show. Pure-test callers have carried that shape since long
+  // before this section existed (#472).
   const placed = (maps.augAssign.byIndex && maps.augAssign.byIndex.get(idx)) || [];
   const open = (maps.augAssign.freeByIndex && maps.augAssign.freeByIndex.get(idx)) || [];
   if (!placed.length && !open.length) return "";
@@ -1266,7 +1166,7 @@ function whyThisNote(result, item, attr, targets) {
   // #475/#476 — the claim that "the Alternatives tab reads `whyThisLine`'s
   // markup" was false; #475 removed it and #476 removed the function. This note
   // is now the only surviving statement of the two non-chip forms, which is what
-  // it always was in substance.
+  // it always was in substance. (#499 then retired that tab outright.)
   if (!contribs.length) {
     return `<div class="pd-note pd-why muted"><span class="pd-note-ico" aria-hidden="true">·</span><span>included to complete the loadout</span></div>`;
   }
@@ -1274,7 +1174,7 @@ function whyThisNote(result, item, attr, targets) {
   if (!carried) return "";
   const txt = carried.slice(0, 3).map((p) =>
     `${esc(p.stat)} +${esc(p.value)} (${esc(p.family)})`).join(", ");
-  return `<div class="pd-note pd-why pd-carried is-craft" title="Nothing printed on this item advances your priorities — its value here depends entirely on crafting it. Un-craftable alternatives are on the Alternatives tab."><span class="pd-note-ico" aria-hidden="true">⚒</span><span><b>Here only for its crafts.</b> ${txt}</span></div>`;
+  return `<div class="pd-note pd-why pd-carried is-craft" title="Nothing printed on this item advances your priorities — its value here depends entirely on crafting it. The Upgrades note above searches for builds that avoid the craft."><span class="pd-note-ico" aria-hidden="true">⚒</span><span><b>Here only for its crafts.</b> ${txt}</span></div>`;
 }
 
 // #476 — `whyThisLine` is deleted. It rendered the gear box's per-item
@@ -1282,12 +1182,12 @@ function whyThisNote(result, item, attr, targets) {
 // two non-chip statements moved into `whyThisNote`. From then on nothing called
 // it; roughly thirty tests across three files were its only consumer, and the
 // doc-comment justifying that said the Alternatives tab read it — which was
-// false, and was corrected in #475.
+// false, and was corrected in #475. (#499 retired the tab itself.)
 //
 // Nothing it asserted is lost. Each behaviour it encoded is now covered on a
 // surface that actually renders: presence-not-+1, the cross-add label and the
 // rank-1 accent by the stat row; the absent at-ceiling marker by the two
-// #449 U4 guards on `equippedRow` and `loadoutDeepDive`; contribution ordering
+// #449 U4 guards on `equippedRow`; contribution ordering
 // by `itemContributions`' own tests in projection.test.js; and the four that had
 // NO live guard — the untyped bucket (#227), the craft-carried note's content
 // (#245), the filler empty-state, and the #88 override disclosure driven through
@@ -1579,6 +1479,46 @@ function blockNotice(result) {
     : "";
 }
 
+/** #499 — the upgrades notice: the surface that replaced the Alternatives tab.
+ *
+ *  The tab generated candidates on five axes and showed the best five whatever
+ *  they cost, which is how it came to offer +1 of a low-ranked affix for 5
+ *  points of a higher-ranked one. The generator is unchanged; what changed is
+ *  that nothing reaches the player without clearing the bar in alternatives.js,
+ *  and the bar ships at free-only.
+ *
+ *  This renders the OFFER, not the answer. The search re-solves several times
+ *  and must never run on the solve path, so the card carries its own control and
+ *  the click handler in renderResults fills it in — the same shape `outbidNotice`
+ *  has used for on-request pricing since #345.
+ *
+ *  Classed INFORMATIONAL rather than actionable on purpose. An un-run search has
+ *  found nothing yet, and marking every solve "needs attention" for an offer
+ *  would inflate the pill that exists to mean something is wrong. */
+function upgradeNotice(canUpgrade, bar) {
+  if (!canUpgrade) return "";
+  const pct = Math.max(0, Number(bar) || 0);
+  const opt = (v, label) => `<option value="${esc(v)}"${v === pct ? " selected" : ""}>${esc(label)}</option>`;
+  return `<p class="notice-sentence">Your ranked priorities are already locked in. Some builds reach the same
+    totals while completing another set, freeing a slot, taking fewer crafting steps, or picking up a stat you
+    never ranked — search for the ones that cost you nothing.</p>
+  <div class="upg-controls">
+    <label class="upg-bar">Willing to give up
+      <select class="upgrade-bar" aria-label="Most a suggestion may cost any ranked priority">
+        ${opt(0, "nothing — free upgrades only")}
+        ${opt(2, "up to 2% of a priority")}
+        ${opt(5, "up to 5% of a priority")}
+        ${opt(10, "up to 10% of a priority")}
+      </select>
+    </label>
+    <button class="btn primary upgrade-run" type="button">Find upgrades</button>
+  </div>
+  <p class="upg-fineprint muted">A suggestion must clear the bar twice: the loss must be small as a share of that
+    priority's total, <em>and</em> what it buys must outweigh it once your ranking is taken into account. A point
+    of your first priority is worth far more than a point of your last.</p>
+  <div class="upg-out"></div>`;
+}
+
 // ---- #449 U5 — the notices panel -------------------------------------------
 //
 // Eleven notices rendered as flat siblings under the OPTIMAL banner, some as
@@ -1601,7 +1541,7 @@ const NOTICE_CLASS_TAG = {
 // R5 — actionable, then qualifying, then informational.
 const NOTICE_CLASS_ORDER = [NOTICE_ACTIONABLE, NOTICE_QUALIFYING, NOTICE_INFORMATIONAL];
 
-/** #449 U5 (KTD5) — the settled classification of the eight single-fact notices.
+/** #449 U5 (KTD5) — the settled classification of the nine single-fact notices.
  *
  *  Keyed by the notice's function name, which is also what the render array
  *  carries, so the completeness assertion can compare the two directly. The
@@ -1648,6 +1588,10 @@ const NOTICE_TABLE = {
   // R35 — already returns its own `<details>`. Unwrapped inside the panel so the
   // panel stays the only fold.
   saturationNotice: { id: "at-ceiling", title: "AT CEILING", subject: "at ceiling", cls: NOTICE_INFORMATIONAL, jump: null, unwrap: true },
+  // #499 — `jump: null` for the same reason `outbidNotice` carries one: the card
+  // already holds the control that resolves it, and a jump beside it would offer
+  // a second, worse route to the thing the player is looking straight at.
+  upgradeNotice: { id: "upgrades", title: "UPGRADES", subject: "upgrades", cls: NOTICE_INFORMATIONAL, jump: null },
 };
 
 /** #449 U6 (R26) — the short subject each card contributes to the qualifying
@@ -1699,10 +1643,10 @@ function _unwrapDetails(html) {
 
 /** #449 U5 — the render array as descriptors: one per CARD, not one per notice
  *  function. The three multi-fact notices contribute one descriptor per fired
- *  branch (U10); the other eight contribute at most one each, and none when the
+ *  branch (U10); the other nine contribute at most one each, and none when the
  *  notice returns empty.
  *
- *  `name` is the notice function's name for the eight, and the source function's
+ *  `name` is the notice function's name for the nine, and the source function's
  *  name for a split entry — so the completeness assertion covers both tables
  *  from one array. */
 function noticeDescriptors(ctx) {
@@ -1739,6 +1683,7 @@ function noticeDescriptors(ctx) {
   push("craftingExcludedNotice", craftingExcludedNotice(query, result));
   push("augCeilingNotice", augCeilingNotice(query, result));
   push("blockNotice", blockNotice(result));
+  push("upgradeNotice", upgradeNotice(ctx.canUpgrade, ctx.upgradeBar));
 
   const rank = (d) => {
     const i = NOTICE_CLASS_ORDER.indexOf(d.cls);
@@ -2092,7 +2037,7 @@ function outbidNotice(query, result, model, canPrice, canRequire) {
     + (ask ? `<span class="outbid-ask">${ask}</span>` : "") + `</p>`;
 }
 
-function renderResults(container, { model, result, query, dataset, highs, onAfterRender, onRequire, onJump, notesSeen, onNotesOpen }) {
+function renderResults(container, { model, result, query, dataset, highs, onAfterRender, onRequire, onJump, notesSeen, onNotesOpen, upgradeBar, onUpgradeBar, versions, characterName }) {
   if (result.status !== "optimal") {
     // Keep the Adjust & re-solve control available on a non-optimal result — this
     // is exactly when the user needs to loosen priorities/constraints in place.
@@ -2105,6 +2050,29 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   }
 
   const optimum = result;
+  // #499 — the upgrade bar: the most a suggestion may cost any one ranked
+  // priority, as a percentage of that priority's total. Ships at
+  // `DEFAULT_LOSS_PCT` (0 — free upgrades only). Held as a `let` because the
+  // card's select writes it back and the search reads it on the next run; the
+  // caller's `onUpgradeBar` seam is how it outlives this render.
+  let barPct = Math.max(0, Number(upgradeBar) || 0);
+  // #500/#501 — declared HERE, above `renderBuild`, because `renderBuild` now
+  // refreshes the Versions and Farming panels and therefore reads both on the
+  // very first call at `renderBuild(optimum)`. Left further down beside their own
+  // wiring they would be in the temporal dead zone at that moment, and a `const`
+  // read before its initializer throws rather than reading undefined.
+  //
+  // `verApi` is the caller's Versions seam: the comparison candidates it can
+  // offer, plus what to do when the player saves one. Absent (a pure-test render,
+  // or a host that stores nothing) means the panel renders its empty state —
+  // never a control that cannot work, the rule the outbid pricing, the concession
+  // probe and the upgrades search all follow.
+  const verApi = versions || {};
+  // The name the farming ticks are filed under. Its own option rather than read
+  // off `query`, which does not carry it: farming progress belongs to a
+  // character, and an unnamed build has nowhere to file it — which the panel says
+  // out loud instead of dropping the tick on the floor.
+  const farmCharacter = String(characterName || "").trim();
   const cs = optimum.computeScale || { variants: 0, crafts: 0, stages: 0 };
   // The verdict is a tap/keyboard-openable explanation (R7): native <details>, so
   // it works on touch (no hover) and via keyboard. Explains MILP plainly + links
@@ -2133,11 +2101,12 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
       </div>
     </div>`;
 
-  // #449 U5 — the eleven notices, contained. Built once so the panel, the
+  // #449 U5 — the notices, contained (#499 made them twelve). Built once so the panel, the
   // summary counts (U6) and the live announcement all read the same array
   // rather than three independent recomputations of "what fired".
   const notices = noticeDescriptors({ result, query, model, dataset,
-    canPrice: canPriceOutbid(), canRequire: typeof onRequire === "function" });
+    canPrice: canPriceOutbid(), canRequire: typeof onRequire === "function",
+    canUpgrade: canFindUpgrades(), upgradeBar: barPct });
   container.innerHTML = `
     ${banner}
     ${noticePanel(notices, { latched: !!notesSeen })}
@@ -2146,15 +2115,16 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
       <button class="return-optimum" type="button">Return to optimum</button>
     </div>
     <div class="readout-analysis">
-      <p class="readout-header">Your build, tab by tab — <strong>Loadout</strong> is your equipped gear; the other tabs
-        break down priorities, set bonuses, and per-item detail. Use <strong>Adjust &amp; re-solve</strong> below to change
-        priorities or the gear pool: each adjustment shows what you gain and what you lose, then updates the loadout here.</p>
+      <p class="readout-header">Your build, tab by tab — <strong>Loadout</strong> is your equipped gear, item by item,
+        with its stats, augments and crafting steps; the other tabs break down priorities and set bonuses. Use
+        <strong>Adjust &amp; re-solve</strong> below to change priorities or the gear pool: each adjustment shows what you
+        gain and what you lose, then updates the loadout here.</p>
       <div class="result-tabs" role="tablist" aria-label="Result details">
         <button class="rtab" role="tab" id="rt-loadout" aria-controls="rp-loadout" aria-selected="true" tabindex="0" type="button">Loadout</button>
         <button class="rtab" role="tab" id="rt-ranked" aria-controls="rp-ranked" aria-selected="false" tabindex="-1" type="button">Ranked Priorities</button>
         <button class="rtab" role="tab" id="rt-sets" aria-controls="rp-sets" aria-selected="false" tabindex="-1" type="button">Set Bonuses</button>
-        <button class="rtab" role="tab" id="rt-deep" aria-controls="rp-deep" aria-selected="false" tabindex="-1" type="button">Loadout Deep Dive</button>
-        <button class="rtab" role="tab" id="rt-alts" aria-controls="rp-alts" aria-selected="false" tabindex="-1" type="button">Alternatives</button>
+        <button class="rtab" role="tab" id="rt-versions" aria-controls="rp-versions" aria-selected="false" tabindex="-1" type="button">Versions</button>
+        <button class="rtab" role="tab" id="rt-farming" aria-controls="rp-farming" aria-selected="false" tabindex="-1" type="button">Farming List</button>
         <button class="rtab" role="tab" id="rt-share" aria-controls="rp-share" aria-selected="false" tabindex="-1" type="button">Share</button>
       </div>
       <div class="wz-adjust-slot" id="wz-adjust-slot"></div>
@@ -2163,35 +2133,56 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
       </section>
       <section id="rp-ranked" class="rpanel" role="tabpanel" aria-labelledby="rt-ranked" tabindex="0" hidden><div class="targets" id="rp-cards"></div></section>
       <section id="rp-sets" class="rpanel" role="tabpanel" aria-labelledby="rt-sets" tabindex="0" hidden><div id="rp-setspanel"></div></section>
-      <section id="rp-deep" class="rpanel" role="tabpanel" aria-labelledby="rt-deep" tabindex="0" hidden><div id="rp-deeppanel"></div></section>
-      <section id="rp-alts" class="rpanel" role="tabpanel" aria-labelledby="rt-alts" tabindex="0" hidden><div id="rp-altspanel"></div></section>
+      <section id="rp-versions" class="rpanel" role="tabpanel" aria-labelledby="rt-versions" tabindex="0" hidden><div id="rp-versionspanel"></div></section>
+      <section id="rp-farming" class="rpanel" role="tabpanel" aria-labelledby="rt-farming" tabindex="0" hidden><div id="rp-farmingpanel"></div></section>
       <section id="rp-share" class="rpanel" role="tabpanel" aria-labelledby="rt-share" tabindex="0" hidden><div id="rp-sharepanel"></div></section>
     </div>
     <div class="sr-only" aria-live="polite" id="rp-live"></div>`;
 
   const q = (s) => container.querySelector(s);
-  // Render the paperdoll + Ranked/Sets/Deep-Dive panels from ANY build (the optimum
-  // or a selected alternative) — the alternative's solution has the same shape.
+  // #499/#500/#501 — THE BUILD EVERY PANEL DESCRIBES. Selecting an upgrade card
+  // swaps the whole readout to that candidate, not just the paperdoll, so this is
+  // the one place that answers "which build is on screen".
+  //
+  // It exists because the answer used to be split. `renderBuild` refreshed the
+  // doll, weapons, ranked cards and set panel; the Farming List and Versions tabs
+  // were filled once from the optimum and never again. A player who clicked an
+  // upgrade got a paperdoll showing the candidate, a banner saying "Viewing
+  // upgrade", and a farming list for a DIFFERENT set of items — and the farming
+  // list is the surface that sends them out of the app for an evening.
+  let activeBuild = optimum;
+
+  // Render every panel that describes one build. The three template-driven
+  // panels come from `buildViews`; the Farming List and the Versions diff read
+  // `activeBuild` through `liveRecord()`, so they must be refreshed here rather
+  // than only at first render.
   function renderBuild(build) {
+    activeBuild = build;
     const v = buildViews(build, model, query, { concessions: build === optimum && canProbeConcession() });
     q("#rp-doll").innerHTML = v.paperdoll;
     q("#rp-weapons").innerHTML = v.weapons;
     q("#rp-cards").innerHTML = v.cards;
     q("#rp-setspanel").innerHTML = v.setsPanel;
-    q("#rp-deeppanel").innerHTML = v.deepDive;
+    // Both tolerate being called before their own wiring exists: the initial
+    // `renderBuild(optimum)` runs ahead of the panel setup further down, and each
+    // is a no-op until its host is in the DOM.
+    fillFarmingPanel();
+    renderVersionDiff(false);
     animateCounters(container);
   }
   function setActive(build, isAlt, label) {
     renderBuild(build);
     q(".active-build-bar").hidden = !isAlt;
-    if (isAlt) q(".active-build-msg").textContent = `Viewing alternative — ${label}`;
+    if (isAlt) q(".active-build-msg").textContent = `Viewing upgrade — ${label}`;
     // Returning to the optimum: clear any card's selected state so the listbox does not
-    // report a selection while the optimum (not that alternative) is shown.
+    // report a selection while the optimum (not that upgrade) is shown. The list now
+    // lives in the upgrades notice, which may not be on screen at all.
     if (!isAlt) {
-      q("#rp-altspanel").querySelectorAll('.alt-card[aria-selected="true"]')
+      const out = container.querySelector(".upg-out");
+      if (out) out.querySelectorAll('.alt-card[aria-selected="true"]')
         .forEach((c) => c.setAttribute("aria-selected", "false"));
     }
-    q("#rp-live").textContent = isAlt ? `Now viewing alternative: ${label}` : "Now viewing the optimal build";
+    q("#rp-live").textContent = isAlt ? `Now viewing upgrade: ${label}` : "Now viewing the optimal build";
   }
   q(".return-optimum").addEventListener("click", () => setActive(optimum, false));
 
@@ -2262,22 +2253,26 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   }
   renderBuild(optimum);
 
-  // Alternatives tab (U4): gated behind an explicit "Run analysis" button (R7) so
-  // the base solve stays instant and nothing computes until asked. While it runs,
-  // a panel-local .wz-ring swirly shows (R8/KTD4 — the wizard's overlay() is a
-  // closure results.js can't reach). Every terminal state replaces the spinner —
-  // cards, "none found", an error-with-retry, or solver-unavailable — so it is
-  // never left spinning.
-  // `probed` holds concession candidates the player priced from a stat card (#481).
-  // Kept SEPARATE from `list` so the two states stay distinguishable: `list === null`
-  // still means "the full analysis has not been run", which is what keeps the Run
-  // analysis affordance on screen after a probe has already put a card there.
+  // #499 — the upgrades search, hosted by the notice card. Gated behind an
+  // explicit button (R7 of the tab this replaced) so the base solve stays
+  // instant and nothing computes until asked: the search re-solves several
+  // times. While it runs, a card-local .wz-ring swirly shows (KTD4 — the
+  // wizard's overlay() is a closure results.js can't reach). Every terminal
+  // state replaces the spinner — cards, "none found", or an error-with-retry —
+  // so it is never left spinning.
+  //
+  // `probed` holds concession candidates the player priced from a stat card
+  // (#481). Kept SEPARATE from `list` so the two states stay distinguishable:
+  // `list === null` still means "the search has not been run", which is what
+  // keeps the Find-upgrades affordance on screen after a probe has already put a
+  // card there. A probe is also EXEMPT from the bar — the player named that
+  // trade and asked what it costs, and answering a direct question is not the
+  // same act as volunteering a suggestion.
   const altState = { list: null, probed: [], computing: false };
-  const altUnavailable = () => typeof generateAlternatives !== "function" || !highs;
 
-  // #345 (U3, KTD4) — same shape as altUnavailable: a capability probe, not an
-  // assumption. The restored-character render passes highs: null, so pricing is
-  // withheld there and the disclosure still stands on its own.
+  // #345 (U3, KTD4) — a capability probe, not an assumption. The restored-character
+  // render passes highs: null, so pricing is withheld there and the disclosure
+  // still stands on its own.
   function canPriceOutbid() {
     return typeof attributeOutbid === "function" && !!highs && !!(optimum && optimum.program);
   }
@@ -2286,81 +2281,99 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   function canProbeConcession() {
     return typeof probeConcession === "function" && !!highs && !!(optimum && optimum.program);
   }
-  // Small helper: a message + a button that (re)runs the analysis.
-  function altPrompt(msg, btnLabel, cls) {
-    const panel = q("#rp-altspanel");
-    panel.innerHTML = `<div class="alt-intro"><p class="${cls || "muted"}">${msg}</p><button class="btn ${cls === "dd-none muted" ? "ghost" : "primary"} alt-run" type="button">${esc(btnLabel)}</button></div>`;
-    const run = panel.querySelector(".alt-run");
-    if (run) run.addEventListener("click", () => { altState.list = null; runAlternatives(); });
+  // #499 — same shape again. The notice does not render at all without this, so a
+  // restored character never sees a button that cannot work.
+  function canFindUpgrades() {
+    return typeof generateAlternatives === "function" && typeof filterUpgrades === "function"
+      && !!highs && !!(optimum && optimum.chosen && optimum.chosen.length);
   }
-  // Initial (or re-open) state: the Run-analysis button, unless already computed
-  // (leave the cards/message in place) or the solver never loaded.
-  function showAltIntro() {
-    if (altState.probed.length) { renderAltPanel(); return; }   // #481 — probed cards outlive a re-open
-    if (altState.list !== null || altState.computing) return;
-    if (altUnavailable()) {
-      q("#rp-altspanel").innerHTML = `<p class="dd-none muted">Alternatives are unavailable (the solver did not load).</p>`;
-      altState.list = []; return;
-    }
-    altPrompt("Explore near-optimal trade-off builds — complete a different set, free a slot, or take fewer crafting steps.", "Run analysis");
-  }
-  /** #481 (U5) — render whatever cards exist, from either source, as ONE listbox.
+
+  /** The card's output region. Absent whenever the notice did not render (no
+   *  solver) or the panel was rebuilt, so every caller tolerates null. */
+  function upgOut() { return container.querySelector(".upg-out"); }
+
+  /** Render whatever cards exist, from either source, as ONE listbox.
    *
-   *  Probed candidates come first: the player asked for those by name. When the
-   *  full analysis has not run, the Run-analysis affordance is kept BELOW the cards
-   *  rather than replaced by them — a probe answering one question must not look
-   *  like it answered all of them.
+   *  Probed concessions come first: the player asked for those by name. When the
+   *  search has not run, the Find-upgrades affordance stays in place above rather
+   *  than being replaced — a probe answering one question must not look like it
+   *  answered all of them.
    *
    *  Cards are wrapped in a fresh element each render and wired on THAT, because
    *  `wireAltCards` binds click/keydown to the element it is handed; wiring the
-   *  long-lived panel repeatedly would stack a listener per render and select
+   *  long-lived region repeatedly would stack a listener per render and select
    *  once per stacked copy. */
-  function renderAltPanel() {
-    const panel = q("#rp-altspanel");
+  function renderUpgrades() {
+    const out = upgOut();
+    if (!out) return false;
     const list = [...altState.probed, ...(altState.list || [])];
     if (!list.length) return false;
-    const more = altState.list === null
-      ? `<div class="alt-intro"><p class="muted">That is the trade you priced. Run the full analysis for set, crafting and unranked-stat trades too.</p>`
-        + `<button class="btn primary alt-run" type="button">Run analysis</button></div>`
-      : "";
-    panel.innerHTML = `<div class="alt-wrap">${renderAltCards(list)}</div>${more}`;
-    const wrap = panel.querySelector(".alt-wrap");
-    wireAltCards(wrap, list, setActive);
-    const run = panel.querySelector(".alt-run");
-    if (run) run.addEventListener("click", () => { altState.list = null; runAlternatives(); });
+    out.innerHTML = `<div class="alt-wrap">${renderAltCards(list)}</div>`;
+    wireAltCards(out.querySelector(".alt-wrap"), list, setActive);
     return true;
   }
-  function runAlternatives() {
-    const panel = q("#rp-altspanel");
-    if (altState.computing) return;
+  /** A terminal message in the output region, with the button left usable. */
+  function upgMessage(msg) {
+    const out = upgOut();
+    if (out) out.innerHTML = `<p class="dd-none muted">${esc(msg)}</p>`;
+  }
+  function runUpgrades() {
+    const out = upgOut();
+    if (!out || altState.computing) return;
     altState.computing = true;
-    // Panel-local swirly (KTD4), same markup as the main solve overlay.
-    panel.innerHTML = `<div class="alt-computing"><div class="wz-ring"></div><p class="muted">Computing alternatives…</p></div>`;
-    q("#rp-live").textContent = "Computing alternative loadouts…";
+    out.innerHTML = `<div class="alt-computing"><div class="wz-ring"></div><p class="muted">Searching for upgrades…</p></div>`;
+    q("#rp-live").textContent = "Searching for upgrades…";
     // Defer so the spinner paints before the synchronous re-solves run.
     setTimeout(() => {
-      // If a re-render (e.g. a per-slot constraint change) replaced this panel
+      // If a re-render (e.g. a per-slot constraint change) replaced this card
       // while we waited, abandon: don't run the stale solve or write cards/aria
       // into the fresh closure's live region.
-      if (q("#rp-altspanel") !== panel) { altState.computing = false; return; }
+      if (upgOut() !== out) { altState.computing = false; return; }
       try {
         const raw = generateAlternatives(optimum, model, highs);
         const analyzed = raw.map((c) => analyzeAlternative(optimum, c, query));
-        const ranked = rankAlternatives(analyzed, optimum, {});
+        // #499 — filter BEFORE ranking. `rankAlternatives` caps at five, so
+        // filtering after it would let five rejected candidates crowd out a free
+        // upgrade sitting sixth and report "none found" against a list that had
+        // one. The bar decides what is eligible; the ranking orders what is left.
+        const kept = filterUpgrades(analyzed, optimum, query,
+          { lossPct: barPct, utilitySentinel: _UTILITY_SENTINEL });
+        const ranked = rankAlternatives(kept, optimum, {});
         altState.list = ranked;
-        if (!renderAltPanel())
-          altPrompt("No worthwhile trade-off build was found — the optimum is hard to beat for these priorities.", "Run again", "dd-none muted");
+        if (!renderUpgrades()) {
+          upgMessage(barPct === 0
+            ? "No free upgrade found — every improvement here would cost you a ranked priority. Widen the bar above to see what those trades buy."
+            : "No upgrade clears your bar — the optimum is hard to beat for these priorities.");
+        }
         q("#rp-live").textContent = ranked.length
-          ? `${ranked.length} alternative loadout${ranked.length === 1 ? "" : "s"} found.`
-          : "No worthwhile alternative loadouts were found.";
+          ? `${ranked.length} upgrade${ranked.length === 1 ? "" : "s"} found.`
+          : "No upgrade cleared the bar.";
       } catch (e) {
         console.error(e);
         altState.list = null;   // let a retry recompute cleanly
-        altPrompt("Could not compute alternatives.", "Retry", "dd-none muted");
-        q("#rp-live").textContent = "Could not compute alternative loadouts.";
+        upgMessage("Could not search for upgrades. Press Find upgrades to try again.");
+        q("#rp-live").textContent = "Could not search for upgrades.";
       }
       altState.computing = false;
     }, 20);
+  }
+
+  // The card's two controls. Delegated on `container` — the notice panel is part
+  // of THIS render's innerHTML, so a listener here lives exactly as long as the
+  // card does and cannot stack across renders.
+  const runBtn = container.querySelector(".upgrade-run");
+  if (runBtn) runBtn.addEventListener("click", () => { altState.list = null; runUpgrades(); });
+  const barSel = container.querySelector(".upgrade-bar");
+  if (barSel) {
+    barSel.addEventListener("change", () => {
+      barPct = Math.max(0, Number(barSel.value) || 0);
+      if (typeof onUpgradeBar === "function") onUpgradeBar(barPct);
+      // A changed bar invalidates the answer, never the question: the probed
+      // concessions stay (the player asked for those), the searched list goes.
+      altState.list = null;
+      const out = upgOut();
+      if (out && !renderUpgrades()) out.innerHTML = "";
+    });
   }
   // #481 (U4) — price a concession on request. One probe per click, never on the
   // solve path. Delegated on the container rather than wired per button, because
@@ -2429,16 +2442,197 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
         { sol: res.sol, gainAxis: "concession", meta: { stat, cap: res.cap, concession: res.concession } },
         query);
       if (!altState.probed.some((c) => c.key === cand.key)) altState.probed.unshift(cand);
-      renderAltPanel();
+      // #499 — the probe's answer lands in the upgrades card, which is where every
+      // candidate build now lives. It is placed there WITHOUT consulting the bar:
+      // the player named this trade and asked what it costs, and answering the
+      // question they asked is not the same act as volunteering a suggestion.
+      renderUpgrades();
       // Select through the CARD rather than calling setActive directly, so the
       // listbox's own aria-selected/roving-tabindex state matches what is on screen.
       // A build shown with no card marked selected reads as an unrelated render.
-      const card = q("#rp-altspanel").querySelector('.alt-card[data-idx="0"]');
+      const out = upgOut();
+      const card = out && out.querySelector('.alt-card[data-idx="0"]');
       if (card) card.click(); else setActive(res.sol, true, cand.gainText);
     });
   }
 
-  showAltIntro();   // pre-render the button so the tab is ready on first open
+  // #500 — the Versions tab. `versions` is the caller's seam: the comparison
+  // candidates it can offer, plus what to do when the player saves one. Absent
+  // (a pure-test render, or a host that stores nothing) means the panel simply
+  // renders its empty state — never a control that cannot work, the same rule
+  // the outbid pricing, the concession probe and the upgrades search follow.
+  function verRecords() {
+    return typeof verApi.records === "function" ? (verApi.records() || []) : (verApi.records || []);
+  }
+  /** The build ON SCREEN, in the shape `diffVersions` and `farmingPlan` consume.
+   *
+   *  Reads `activeBuild`, NOT `optimum`: after an upgrade card is selected the
+   *  readout describes that candidate, and a farming list or a comparison still
+   *  answering for the optimum would be describing gear the player is not
+   *  looking at.
+   *
+   *  The snapshot is the LIVE solve rather than a stripped one, which
+   *  `Proj.project` reads identically — a saved character's snapshot IS this
+   *  shape minus the fields persist.js drops. */
+  function liveRecord() {
+    return { id: "__current__", name: "This build", kind: "named",
+      query, inputs: { priorities: (query && query.targets) || [] }, snapshot: activeBuild };
+  }
+  /** Re-run the comparison for whatever the picker currently holds.
+   *
+   *  Deliberately separate from `fillVersionsPanel`: a build swap has to re-diff
+   *  against the NEW active build, and rebuilding the panel to do it would reset
+   *  the picker — discarding the player's chosen comparison at the exact moment
+   *  they changed what is being compared. This touches only `.ver-diff`.
+   *
+   *  A no-op until the panel has been built, which is what lets `renderBuild`
+   *  call it on the very first render before `fillVersionsPanel` has run.
+   *
+   *  `announce` is false on a build swap: the live region is already saying which
+   *  build is now shown, and a second message about the comparison on top of it
+   *  is two announcements for one action. */
+  function renderVersionDiff(announce) {
+    const host = q("#rp-versionspanel");
+    if (!host) return;
+    const pick = host.querySelector(".ver-pick");
+    const out = host.querySelector(".ver-diff");
+    if (!pick || !out) return;
+    const rec = verRecords().find((r) => String(r.id) === pick.value);
+    if (!rec) { out.innerHTML = ""; return; }
+    // The diff runs over the two records, never over the rendered HTML: the
+    // labels below are presentation, the comparison is data.
+    const d = (typeof VersionStore !== "undefined" && VersionStore.diffVersions)
+      ? VersionStore.diffVersions(liveRecord(), rec.record || rec) : null;
+    out.innerHTML = versionDiffView(d, { a: "This build", b: rec.label });
+    if (announce) {
+      q("#rp-live").textContent = d && d.identical
+        ? `This build is identical to ${rec.label}.`
+        : `Comparison with ${rec.label} ready.`;
+    }
+  }
+  function fillVersionsPanel(note) {
+    const host = q("#rp-versionspanel");
+    if (!host) return;
+    host.innerHTML = versionsPanel(verRecords(), { note: note || "" });
+    const pick = host.querySelector(".ver-pick");
+    if (pick) pick.addEventListener("change", () => renderVersionDiff(true));
+    const save = host.querySelector(".ver-save");
+    if (save) {
+      save.addEventListener("click", () => {
+        if (typeof verApi.save !== "function") {
+          fillVersionsPanel("Saving is unavailable on this screen.");
+          return;
+        }
+        const res = verApi.save() || {};
+        // The quota case is the ONE failure that must be said out loud. Snapshots
+        // carry full item objects and auto-snapshots accumulate on every solve,
+        // so a full store is a matter of when. Swallowing it would stop recording
+        // history while the tab kept implying it was still saving.
+        fillVersionsPanel(res.ok
+          ? "Saved. Solve again and compare this against what you get."
+          : res.full
+            ? "Your browser's storage for this site is full, so this version was not saved. Delete a version you no longer need, then try again."
+            : "That version could not be saved.");
+      });
+    }
+  }
+  fillVersionsPanel(typeof verApi.note === "function" ? verApi.note() : verApi.note);
+
+  // #501 — the Farming List. `character` names whose progress is being ticked;
+  // without one the list still renders and the ticks simply have nowhere to go,
+  // which is stated rather than silently discarded.
+  function currentPlan() {
+    return (typeof FarmingList !== "undefined" && FarmingList.farmingPlan)
+      ? FarmingList.farmingPlan(liveRecord()) : null;
+  }
+  /** Rebuild the panel's CONTENT only. Wiring lives outside this function on
+   *  purpose — see the delegation block below. */
+  function fillFarmingPanel(note) {
+    const host = q("#rp-farmingpanel");
+    if (!host) return;
+    const acquired = (typeof FarmingList !== "undefined" && FarmingList.loadProgress)
+      ? FarmingList.loadProgress(farmCharacter) : {};
+    host.innerHTML = farmingPanel(currentPlan(), acquired, { note: note || "" });
+  }
+  /** Print the farming list alone.
+   *
+   *  Scoped with a body class and cleared on `afterprint`, exactly as the Share
+   *  tab's `printLoadout` does. The rules were unscoped at first, which meant a
+   *  player pressing Ctrl+P anywhere in the app got the farming list instead of
+   *  the page — or a blank sheet, since `#rp-farming` still carries `hidden`
+   *  whenever another tab is active.
+   *
+   *  The class also has to suppress `#wz-printarea`. That container is created by
+   *  the Share tab's print, is never removed from the DOM afterwards, and its own
+   *  `@media print` rule forces it visible by ID — so without an explicit
+   *  override a farming printout that followed a Share printout carried the
+   *  previous loadout table along with it. */
+  function printFarmingList() {
+    document.body.classList.add("farming-printing");
+    const cleanup = () => {
+      document.body.classList.remove("farming-printing");
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
+    window.print();
+  }
+  function farmNote(msg) {
+    const el = container.querySelector(".farm-note");
+    if (el) el.textContent = msg;
+  }
+
+  // Wired ONCE, on the long-lived panel host.
+  //
+  // `#rp-farmingpanel` is minted by THIS render's container template and then only
+  // ever has its innerHTML replaced, so it outlives every `fillFarmingPanel` call.
+  // Wiring inside that function therefore stacked one listener per call: a tick on
+  // an unnamed build re-rendered with a message and added a second handler, and the
+  // next tick ran both — each flipping `box.checked`, so the box landed back where
+  // it started and two more handlers were added. Delegation on the host is what
+  // makes the wiring independent of how often the content is rebuilt, which it now
+  // is on every build swap as well.
+  const farmHost = q("#rp-farmingpanel");
+  if (farmHost) {
+    farmHost.addEventListener("change", (e) => {
+      const box = e.target.closest(".farm-tick");
+      if (!box) return;
+      if (!farmCharacter) {
+        // A tick with nowhere to go is put back rather than left looking saved.
+        box.checked = !box.checked;
+        fillFarmingPanel("Name this build in the character step to save what you have collected.");
+        return;
+      }
+      const res = FarmingList.toggleAcquired(farmCharacter, box.dataset.item);
+      if (!res.ok) {
+        box.checked = !box.checked;
+        fillFarmingPanel("That could not be saved — your browser's storage for this site may be full.");
+        return;
+      }
+      box.closest(".farm-item").classList.toggle("is-got", !!res.acquired[box.dataset.item]);
+    });
+    // Both buttons are rebuilt with the content, so they are reached by delegation
+    // too rather than re-bound per fill. The plan is recomputed at click time
+    // instead of captured, so a build swap cannot leave a stale list behind the
+    // Copy button.
+    farmHost.addEventListener("click", (e) => {
+      if (e.target.closest(".farm-print")) { printFarmingList(); return; }
+      if (!e.target.closest(".farm-copy")) return;
+      const plan = currentPlan();
+      if (!plan) return;
+      const text = FarmingList.farmingMarkdown(plan, { character: farmCharacter });
+      // The clipboard API is permissioned and absent over plain http on some
+      // browsers, so a failure is reported rather than swallowed — a Copy button
+      // that silently does nothing is worse than one that says it did not.
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+          .then(() => farmNote("Copied."))
+          .catch(() => farmNote("Could not reach the clipboard — use Print instead."));
+      } else {
+        farmNote("This browser will not let the page reach the clipboard — use Print instead.");
+      }
+    });
+  }
+
   wireResultTabs(container, () => {});
 
   // KTD3 — the Adjust (U3) and Share (U5) panels live inside this container and so
@@ -2451,7 +2645,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
 
 // #91 (U5, KTD6/R9) — the Utility tier's dedicated priority card. Takes the
 // `build` BEING RENDERED (renderBuild is generic over optimum/alternative), so
-// selecting an Alternatives entry re-renders receipts from THAT build — it must
+// selecting an upgrade card re-renders receipts from THAT build — it must
 // never close over the optimum. Three states, deliberately distinct:
 //   1. report-absent (a healed pre-feature restore: the tier is in the priority
 //      list but the snapshot predates `utilityReport`) — a re-solve note, NEVER
@@ -2584,13 +2778,13 @@ function concessionControl(stat, i, total, query, opts) {
     + `What would less of this buy?</button>`;
 }
 
-// Compute the per-build view HTML (paperdoll, weapon row, ranked cards, set panel,
-// deep dive) for ANY result-shaped build — the optimum or a selected alternative,
+// Compute the per-build view HTML (paperdoll, weapon row, ranked cards, set panel)
+// for ANY result-shaped build — the optimum or a selected alternative,
 // which carry the same fields (chosen, effective, breakdown, capped, setsActive,
 // the *Placed lists). Reused by renderBuild for select-to-inspect (U5).
 function buildViews(build, model, query, opts) {
   // The craft-placement maps (augment/dino assignments + per-item craft groupings)
-  // come from the shared projection so the Deep Dive chips and the exports read from
+  // come from the shared projection so the gear cards and the exports read from
   // one builder (KTD6).
   const maps = Proj.buildCraftMaps(build);
   const augAssign = maps.augAssign;
@@ -2726,7 +2920,7 @@ function buildViews(build, model, query, opts) {
   // on the equipped loadout, named once with its members and carrier.
   setsPanel += bundlesBlock(build, augById);
 
-  return { paperdoll: `<div class="pd-list">${rows.join("")}</div>`, weapons, cards: cardsHtml, setsPanel, deepDive: loadoutDeepDive(build, query, maps, attr, augById) };
+  return { paperdoll: `<div class="pd-list">${rows.join("")}</div>`, weapons, cards: cardsHtml, setsPanel };
 }
 
 // Alternative cards (U4): compact trade-off summary + gain tags, as a single-select
@@ -2841,7 +3035,196 @@ function wireAltCards(panel, ranked, setActive) {
   });
 }
 
-// Wire the result sub-tabs (Ranked / Sets / Deep Dive). Re-run on every render.
+/** #500 — the Versions tab.
+ *
+ *  Answers a question the app could not answer at all: *how does this build
+ *  differ from the one I had before?* Saving a character overwrites what was
+ *  there, so nothing recorded what changed or what it cost.
+ *
+ *  The build on screen is always the LEFT side. The tab lives inside the results
+ *  readout, so there is always a live subject and a free two-sided picker would
+ *  be reachable only after a solve anyway.
+ *
+ *  `records` are comparison candidates: stored versions and saved characters
+ *  alike, already normalised by the caller into `{ id, label, group }`. */
+function versionsPanel(records, opts) {
+  const o = opts || {};
+  const list = records || [];
+  const groups = [];
+  for (const r of list) {
+    let g = groups.find((x) => x.name === (r.group || "Saved"));
+    if (!g) { g = { name: r.group || "Saved", items: [] }; groups.push(g); }
+    g.items.push(r);
+  }
+  const picker = list.length
+    ? `<label class="ver-pick-label">Compare against
+        <select class="ver-pick" aria-label="Build to compare against">
+          <option value="">Choose a saved build…</option>
+          ${groups.map((g) => `<optgroup label="${esc(g.name)}">`
+            + g.items.map((r) => `<option value="${esc(r.id)}">${esc(r.label)}</option>`).join("")
+            + `</optgroup>`).join("")}
+        </select>
+      </label>`
+    : `<p class="dd-none muted">Nothing saved yet to compare against. Save this build as a version, solve again,
+       and this tab will show you exactly what moved.</p>`;
+  return `<p class="wz-help">The build on screen, against one you saved. Every difference is reported —
+      <strong>including stats you never ranked</strong>, because a swap that quietly cost you 40 HP is exactly
+      the thing you would not have gone looking for.</p>
+    <div class="ver-controls">
+      ${picker}
+      <button class="btn ghost ver-save" type="button">Save this build as a version</button>
+    </div>
+    <p class="ver-note" role="status">${o.note ? esc(o.note) : ""}</p>
+    <div class="ver-diff"></div>`;
+}
+
+/** One rendered comparison. `labels` names the two sides so every row can say
+ *  which build it is talking about rather than relying on left/right. */
+function versionDiffView(diff, labels) {
+  if (!diff) return `<p class="dd-none muted">That build could not be read for comparison.</p>`;
+  const A = (labels && labels.a) || "this build";
+  const B = (labels && labels.b) || "the saved build";
+  if (diff.identical) {
+    return `<p class="ver-same">These two builds are identical — same gear, same crafts, same totals.</p>`;
+  }
+  const sign = (n) => `${n > 0 ? "+" : "−"}${Math.abs(n)}`;
+  const statRow = (d) => `<li class="ver-stat ${d.delta > 0 ? "is-up" : "is-down"}${d.ranked ? " is-ranked" : ""}">
+      <span class="ver-stat-name">${esc(d.stat)}</span>
+      <span class="ver-stat-delta">${esc(sign(d.delta))}</span>
+      <span class="ver-stat-detail">${esc(d.a)} vs ${esc(d.b)}</span>
+    </li>`;
+  const ranked = diff.stats.filter((d) => d.ranked);
+  const rest = diff.stats.filter((d) => !d.ranked);
+  const statsBlock = `
+    ${ranked.length ? `<section class="ver-sec"><h4>Your ranked priorities</h4><ul class="ver-stats">${ranked.map(statRow).join("")}</ul></section>` : ""}
+    ${rest.length ? `<section class="ver-sec"><h4>Everything else that moved</h4>
+        <p class="ver-sec-note muted">You did not rank these, so the solver never protected them. This is where a
+          swap quietly costs you something.</p>
+        <ul class="ver-stats">${rest.map(statRow).join("")}</ul></section>` : ""}
+    ${diff.stats.length ? "" : `<section class="ver-sec"><h4>Totals</h4><p class="muted">No stat differs between these builds.</p></section>`}`;
+
+  const setsBlock = (diff.sets.gained.length || diff.sets.lost.length)
+    ? `<section class="ver-sec"><h4>Set bonuses</h4><ul class="ver-sets">
+        ${diff.sets.gained.map((x) => `<li class="is-up"><span class="ver-tag">gained</span>${esc(x)}</li>`).join("")}
+        ${diff.sets.lost.map((x) => `<li class="is-down"><span class="ver-tag">lost</span>${esc(x)}</li>`).join("")}
+      </ul></section>` : "";
+
+  const changed = diff.slots.filter((s) => s.changed);
+  const slotRow = (s) => {
+    const crafts = [
+      ...s.craftsAdded.map((c) => `<li class="is-up"><span class="ver-tag">added</span>${esc(c)}</li>`),
+      ...s.craftsRemoved.map((c) => `<li class="is-down"><span class="ver-tag">dropped</span>${esc(c)}</li>`),
+    ].join("");
+    return `<li class="ver-slot">
+      <div class="ver-slot-head"><span class="ver-slot-name">${esc(s.slot)}</span></div>
+      <div class="ver-slot-body">
+        <div class="ver-side"><span class="ver-side-label">${esc(A)}</span><span class="ver-side-item">${s.a ? esc(s.a.item) : "empty"}</span></div>
+        <div class="ver-side"><span class="ver-side-label">${esc(B)}</span><span class="ver-side-item">${s.b ? esc(s.b.item) : "empty"}</span></div>
+      </div>
+      ${crafts ? `<ul class="ver-crafts">${crafts}</ul>` : ""}
+    </li>`;
+  };
+  const slotsBlock = `<section class="ver-sec"><h4>Slot by slot</h4>
+    ${changed.length
+      ? `<ul class="ver-slots">${changed.map(slotRow).join("")}</ul>`
+      : `<p class="muted">Every slot holds the same item, with the same crafts.</p>`}
+    ${changed.length && changed.length < diff.slots.length
+      ? `<p class="ver-sec-note muted">${diff.slots.length - changed.length} unchanged slot${diff.slots.length - changed.length === 1 ? " is" : "s are"} not listed.</p>`
+      : ""}</section>`;
+
+  return `${statsBlock}${setsBlock}${slotsBlock}`;
+}
+
+/** #501 — the Farming List tab: where the gear actually comes from.
+ *
+ *  Grouped by SOURCE, ordered by how many of your items each one yields. That
+ *  ordering is the whole value: "these three drop in Gianthold Tor" turns
+ *  thirteen lookups into one run, and it is the only thing this list can tell a
+ *  player that the Loadout tab cannot.
+ *
+ *  Adventure-pack-first is the intended grouping — "do I even own this pack" is
+ *  the first question — and it waits on the curated mapping in #495, because the
+ *  pack is not in the dataset and is not upstream in gear-planner either. The
+ *  gap is STATED here rather than papered over by guessing a pack from a quest
+ *  name: "The Twilight Forge" is a quest and "Ritual Table" is a crafting
+ *  station, and no pattern separates them reliably. */
+function farmingPanel(plan, acquired, opts) {
+  if (!plan) return `<p class="dd-none muted">No build to plan a farming run for.</p>`;
+  const o = opts || {};
+  const got = acquired || {};
+  const c = plan.counts;
+  const tick = (i) => {
+    const on = !!got[i.item];
+    return `<li class="farm-item${on ? " is-got" : ""}">
+      <label class="farm-check">
+        <input type="checkbox" class="farm-tick" data-item="${esc(i.item)}"${on ? " checked" : ""} />
+        <span class="farm-item-name">${esc(i.item)}${i.copies > 1 ? ` <span class="farm-copies">×${esc(i.copies)}</span>` : ""}</span>
+      </label>
+      <span class="farm-item-meta">${esc(i.slots.join(", "))}${i.ml != null ? ` · ML ${esc(i.ml)}` : ""}</span>
+      ${i.noDropSource ? `<span class="farm-nodrop">${esc(Proj.NO_DROP_SOURCE_WORDING)}</span>` : ""}
+    </li>`;
+  };
+  const sourceBlock = (s) => `<section class="farm-source">
+    <h4 class="farm-source-name">${esc(s.name)}
+      <span class="farm-source-count">${esc(s.itemCount)} item${s.itemCount === 1 ? "" : "s"}</span></h4>
+    <p class="farm-pack muted">Adventure pack not recorded</p>
+    <ul class="farm-items">${s.items.map(tick).join("")}</ul>
+  </section>`;
+
+  const unsourced = plan.unsourced.length
+    ? `<section class="farm-source is-gap">
+        <h4 class="farm-source-name">Source not recorded
+          <span class="farm-source-count">${esc(plan.unsourced.length)} item${plan.unsourced.length === 1 ? "" : "s"}</span></h4>
+        <p class="farm-pack muted">The dataset has no location for these. That is a gap in the data, not a claim
+          that they cannot be found.</p>
+        <ul class="farm-items">${plan.unsourced.map(tick).join("")}</ul>
+      </section>` : "";
+
+  // Augments get their own section and an explicit disclaimer, because the
+  // dataset carries acquisition data for exactly none of them. Listing them
+  // beside the quests would imply a source this list does not have.
+  const augs = plan.augments.length
+    ? `<section class="farm-source is-gap">
+        <h4 class="farm-source-name">Augments to slot
+          <span class="farm-source-count">${esc(plan.augments.length)}</span></h4>
+        <p class="farm-pack muted">No augment in the dataset carries acquisition data, so this says which augment
+          goes where — not where to find it.</p>
+        <ul class="farm-items">${plan.augments.map((a) => `<li class="farm-item farm-plain">
+          <span class="farm-item-name">${esc(a.name)}</span>
+          <span class="farm-item-meta">→ ${esc(a.host)}</span></li>`).join("")}</ul>
+      </section>` : "";
+
+  const crafts = plan.crafts.length
+    ? `<section class="farm-source">
+        <h4 class="farm-source-name">Crafting steps
+          <span class="farm-source-count">${esc(plan.crafts.length)}</span></h4>
+        <p class="farm-pack muted">Do these once you have the item in hand.</p>
+        <ul class="farm-items">${plan.crafts.map((x) => `<li class="farm-item farm-plain">
+          <span class="farm-item-name">${esc(x.label)}</span>
+          <span class="farm-item-meta">→ ${esc(x.host)}</span></li>`).join("")}</ul>
+      </section>` : "";
+
+  return `<p class="wz-help">Everything this build needs, grouped by where it comes from and ordered by how much
+      each place gives you — so the run at the top is the one worth doing first. Tick things off as you get them;
+      the ticks are saved with this character.</p>
+    <div class="farm-summary">
+      <span><strong>${esc(c.items)}</strong> items</span>
+      <span><strong>${esc(c.sources)}</strong> sources</span>
+      ${c.unsourced ? `<span><strong>${esc(c.unsourced)}</strong> without a recorded source</span>` : ""}
+      ${c.crafts ? `<span><strong>${esc(c.crafts)}</strong> crafting steps</span>` : ""}
+    </div>
+    <p class="farm-disclosure">Adventure pack is not in the dataset yet, so these are grouped by the source name the
+      DDO wiki records — a quest, a raid, a vendor, a crafting station or an event, in its own words. Nothing here
+      guesses which pack a quest belongs to.</p>
+    <div class="farm-actions">
+      <button class="btn ghost farm-copy" type="button">Copy as Markdown</button>
+      <button class="btn ghost farm-print" type="button">Print</button>
+      <span class="farm-note" role="status">${o.note ? esc(o.note) : ""}</span>
+    </div>
+    <div class="farm-groups">${plan.sources.map(sourceBlock).join("")}${unsourced}${augs}${crafts}</div>`;
+}
+
+// Wire the result sub-tabs (Ranked / Sets / …). Re-run on every render.
 function wireResultTabs(container, onShow) {
   const tablist = container.querySelector(".result-tabs");
   if (!tablist) return;
@@ -2875,11 +3258,11 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, loadoutDeepDive, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
     // #471 — the card's row language: the three-column row itself, the two
     // in-place slot sections, and the foot-note family.
     stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH,
-    // #472 — the set-yielding families, shared by the card and the Deep Dive.
+    // #472 — the set-yielding families, rendered on the card.
     setMembershipSection, setRowsFor,
     // #472 — exported so a test can build the same credited-set index the
     // renderers read, rather than hand-rolling its shape and drifting from it.

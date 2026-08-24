@@ -2474,10 +2474,10 @@ async function solveLexicographic(model, highs) {
     // `program` is dropped on save and KTD6 forbids re-solving on load.
     overrideReport: buildOverrideReport(program, prim, model, visible),
     saturationReport: buildSaturationReport(program, prim),
-    // #449 U1 (KTD9) — built in readSolution so alternatives carry it too; this
-    // return picks fields off `sol` by name rather than spreading it, so the
-    // optimum needs the explicit hand-off or the census would reach only the
-    // Alternatives tab.
+    // #449 U1 (KTD9) — built in readSolution so alternative candidates carry it
+    // too; this return picks fields off `sol` by name rather than spreading it,
+    // so the optimum needs the explicit hand-off or the census would reach only
+    // the candidates shown by the upgrades search.
     ceilingReport: sol.ceilingReport,
     emptySlots: buildEmptySlotReport(model, sol),
     absorptionQuarantine: buildAbsorptionQuarantineReport(model, program),

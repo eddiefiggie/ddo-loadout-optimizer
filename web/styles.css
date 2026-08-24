@@ -542,7 +542,6 @@ details.saturation-note .sat-sentences p { margin: var(--sp-1) 0 0; }
 .pd-figure svg { width: 100%; max-width: 140px; height: 100%; max-height: 320px; }
 /* weapon row: Main Hand · [Off Hand/Rune Arm] · Quiver, beneath the figure */
 .pd-weapons { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); margin-top: var(--sp-2); }
-.setpip { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--set); flex: none; }
 .chip.setbonus { border-color: #3a5a4a; background: #101a16; color: #8fd6b0; }
 /* Uniform, fixed-size slot cells: item name, ML, and set name only. */
 .pd-slot {
@@ -600,7 +599,7 @@ details.saturation-note .sat-sentences p { margin: var(--sp-1) 0 0; }
 .pd-setname { color: var(--set); font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ============================================================================
-   Header blurb, banner explanation, query collapse, result tabs, deep dive
+   Header blurb, banner explanation, query collapse, result tabs
    ========================================================================== */
 .blurb { margin: var(--sp-3) 0 0; max-width: 70ch; color: var(--muted); font-size: var(--fs-sm); line-height: 1.55; }
 
@@ -634,24 +633,7 @@ details.saturation-note .sat-sentences p { margin: var(--sp-1) 0 0; }
 .rtab[aria-selected="true"] { color: var(--text); background: var(--panel-2); border-color: var(--border); }
 .rtab:focus-visible { outline: none; box-shadow: var(--ring); }
 
-/* loadout deep dive: one block per equipped item */
-.deepdive { display: grid; grid-template-columns: 1fr; gap: var(--sp-3); }
-.dd-item { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--panel-2); padding: var(--sp-3); }
-.dd-item.is-set { border-color: var(--set); box-shadow: 0 0 0 1px rgba(240,180,90,0.35); }
-.dd-head { display: flex; align-items: baseline; gap: var(--sp-2); flex-wrap: wrap; }
-.dd-slot { font-size: var(--fs-xs); color: var(--faint); text-transform: uppercase; letter-spacing: 0.04em; flex: none; }
-.dd-name { font-size: var(--fs-md); font-weight: 700; color: var(--text); flex: 1 1 auto; }
-.dd-ml { color: var(--muted); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
-.dd-wiki { color: var(--accent); font-size: var(--fs-xs); }
-.dd-set { color: var(--set); font-size: var(--fs-xs); display: flex; align-items: center; gap: 5px; margin-top: var(--sp-1); }
-/* U10: unrealized-upgrade / unused-augment-slot note. */
-.dd-upgrade { margin-top: var(--sp-2); font-size: var(--fs-xs); color: var(--muted); line-height: 1.4;
-  border-left: 2px solid var(--accent); padding-left: var(--sp-2); }
-.dd-upgrade-tag { display: inline-block; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.6rem;
-  font-weight: 700; color: var(--accent); margin-right: 4px; }
-.dd-affixes h5, .dd-crafts h5 { margin: var(--sp-2) 0 var(--sp-1); font-size: var(--fs-xs); color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
-.dd-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); font-size: var(--fs-sm); }
-.dd-list li { color: var(--text); }
+/* the empty-state sentence shared by the result panels */
 .dd-none { font-size: var(--fs-sm); }
 
 /* alternatives (U4/U5): active-build banner + trade-off cards */
@@ -667,7 +649,8 @@ details.saturation-note .sat-sentences p { margin: var(--sp-1) 0 0; }
 .return-optimum { min-height: 2.4rem; padding: 0 var(--sp-4); flex: none; }
 
 .alt-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: var(--sp-2); }
-/* #475 — the Alternatives card joins the system #471 built for the gear cards:
+/* #475 — the trade-off card (now hosted by the Upgrades notice, #499) joins the
+   system #471 built for the gear cards:
    head / body / foot, the fading seam, the spine, the labelled section ticks and
    the three-column row. It was the last surface still speaking the chip idiom —
    `alt-tag` pills for the trade's axis, a green headline, a comma-run cost line.
@@ -773,7 +756,6 @@ details.saturation-note .sat-sentences p { margin: var(--sp-1) 0 0; }
   main { padding: var(--sp-5); }
   .app-header .wrap { padding: 0 var(--sp-5); }   /* stay equal to main's padding */
   .targets { grid-template-columns: repeat(2, 1fr); }
-  .deepdive { grid-template-columns: repeat(2, 1fr); }
   .alt-list { grid-template-columns: repeat(2, 1fr); }
 }
 
@@ -1336,7 +1318,7 @@ input.wz-ml { width: 120px; }
    per-colour rules below still paint the Sun/Moon glyphs and the OPEN slots,
    where the colour is the fact being reported rather than a ranking. */
 .pd-line.aug-filled .pd-ln-mark:not(.aug-mark) { color: var(--optimal); }
-/* #475 — the two directions of a TRADE, used by the Alternatives cards. They sit
+/* #475 — the two directions of a TRADE, used by the trade-off cards. They sit
    here with the other row classes rather than in the alt block, both because
    that is where the family lives and because a `.pd-ln-what` rule defined above
    the base one makes `indexOf(".pd-ln-what {")` find the wrong block — the #450
@@ -1490,13 +1472,8 @@ input.wz-ml { width: 120px; }
 .pd-badge.artifact { color: var(--artifact); border-color: var(--artifact); }
 .pd-row.is-artifact { border-color: var(--artifact); box-shadow: inset 0 0 0 1px rgba(185,140,255,0.28); }
 .pd-row.is-artifact.is-set { box-shadow: inset 0 0 0 1px rgba(185,140,255,0.30), inset 3px 0 0 rgba(240,180,90,0.6); }
-.dd-item.is-artifact { border-color: var(--artifact); box-shadow: 0 0 0 1px rgba(185,140,255,0.30); }
-.dd-artifact { color: var(--artifact); border: 1px solid var(--artifact); border-radius: 5px;
-  font-size: var(--fs-xs); padding: 0 6px; font-weight: 600; align-self: center; }
-/* #262 — the no-known-drop-source disclosure: Deep Dive tag (mirrors dd-artifact)
-   and gear-box row note (mirrors the pd-carried warn treatment) */
-.dd-nodrop { color: var(--quarantined); border: 1px solid var(--quarantined); border-radius: 5px;
-  font-size: var(--fs-xs); padding: 0 6px; font-weight: 600; align-self: center; }
+/* #262 — the no-known-drop-source disclosure, as a gear-box row note (mirrors
+   the pd-carried warn treatment) */
 .pd-rnote.pd-nodrop { color: var(--quarantined); font-size: var(--fs-xs); }
 .artifact-notice { margin: var(--sp-3) 0; padding: 10px 14px; border: 1px solid var(--artifact);
   border-left-width: 3px; border-radius: var(--radius-sm); background: rgba(185,140,255,0.08);
@@ -1618,7 +1595,125 @@ input.wz-ml { width: 120px; }
    step's personal-build backup). */
 .wz-share { display: flex; flex-direction: column; gap: var(--sp-3); }
 /* U4 — Alternatives Run-analysis prompt + the panel-local computing swirly. */
-.alt-intro { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-3); padding: var(--sp-3) 0; }
+/* #499 — the upgrades notice card's controls: the bar, the run button, and the
+   fine print that says what the bar actually does. Laid out as one wrapping row
+   so a phone stacks them rather than squeezing the select. */
+.upg-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin: var(--sp-3) 0 var(--sp-2); }
+.upg-bar { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--muted); }
+.upg-bar select { font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 4px 6px; max-width: 100%; }
+.upg-fineprint { font-size: var(--fs-xs); line-height: 1.5; margin: 0 0 var(--sp-2); max-width: 70ch; }
+.upg-out:empty { display: none; }
+
+/* ============================================================================
+   #500 — the Versions tab: the picker, the delta lists, the slot-by-slot diff
+   ========================================================================== */
+.ver-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin: var(--sp-3) 0; }
+.ver-pick-label { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--muted); }
+.ver-pick { font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 4px 6px; max-width: 100%; }
+.ver-note:empty { display: none; }
+.ver-note { font-size: var(--fs-sm); color: var(--muted); margin: 0 0 var(--sp-2); }
+.ver-same { font-size: var(--fs-sm); color: var(--muted); padding: var(--sp-3) 0; }
+.ver-sec { margin: var(--sp-4) 0 0; }
+.ver-sec h4 { margin: 0 0 var(--sp-1); font-size: var(--fs-xs); color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.04em; }
+.ver-sec-note { font-size: var(--fs-xs); margin: 0 0 var(--sp-2); max-width: 70ch; line-height: 1.5; }
+.ver-stats, .ver-sets, .ver-slots, .ver-crafts { list-style: none; margin: 0; padding: 0; }
+.ver-stats li { display: flex; align-items: baseline; gap: var(--sp-2); padding: 3px 0;
+  border-bottom: 1px solid var(--border); font-size: var(--fs-sm); }
+.ver-stats li:last-child { border-bottom: 0; }
+.ver-stat-name { flex: 1 1 auto; min-width: 0; color: var(--text); }
+/* The ranked ones carry the weight: they are what the player asked to be
+   protected, so a change there is the headline and the rest is context. */
+.ver-stat.is-ranked .ver-stat-name { font-weight: 700; }
+.ver-stat-delta { font-variant-numeric: tabular-nums; font-weight: 700; flex: none; }
+.ver-stat.is-up .ver-stat-delta { color: var(--good, #6fcf97); }
+.ver-stat.is-down .ver-stat-delta { color: var(--warn, #e2a03f); }
+.ver-stat-detail { font-size: var(--fs-xs); color: var(--faint); flex: none; font-variant-numeric: tabular-nums; }
+.ver-sets li, .ver-crafts li { display: flex; align-items: baseline; gap: var(--sp-2); font-size: var(--fs-sm); padding: 2px 0; }
+.ver-tag { text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.6rem; font-weight: 700; flex: none; }
+.ver-sets li.is-up .ver-tag, .ver-crafts li.is-up .ver-tag { color: var(--good, #6fcf97); }
+.ver-sets li.is-down .ver-tag, .ver-crafts li.is-down .ver-tag { color: var(--warn, #e2a03f); }
+.ver-slot { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--panel-2);
+  padding: var(--sp-2) var(--sp-3); margin-bottom: var(--sp-2); }
+.ver-slot-name { font-size: var(--fs-xs); color: var(--faint); text-transform: uppercase; letter-spacing: 0.04em; }
+.ver-slot-body { display: grid; grid-template-columns: 1fr; gap: 2px; margin-top: 2px; }
+.ver-side { display: flex; align-items: baseline; gap: var(--sp-2); min-width: 0; }
+.ver-side-label { font-size: var(--fs-xs); color: var(--faint); flex: none; min-width: 8ch; }
+.ver-side-item { font-size: var(--fs-sm); color: var(--text); min-width: 0; overflow-wrap: anywhere; }
+.ver-crafts { margin-top: var(--sp-1); padding-left: 8ch; }
+@media (min-width: 640px) {
+  .ver-slot-body { grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+}
+
+/* ============================================================================
+   #501 — the Farming List: source groups, tickable items, and the stated gaps
+   ========================================================================== */
+.farm-summary { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); margin: var(--sp-3) 0 var(--sp-2);
+  font-size: var(--fs-sm); color: var(--muted); }
+.farm-summary strong { color: var(--text); font-variant-numeric: tabular-nums; }
+/* The pack gap is a disclosure, not decoration: it reads as a statement the
+   player is meant to act on ("check the wiki for the pack"), so it gets the
+   same left-rule treatment the other scope notes use. */
+.farm-disclosure { font-size: var(--fs-xs); color: var(--muted); line-height: 1.5; max-width: 70ch;
+  border-left: 2px solid var(--border); padding-left: var(--sp-2); margin: 0 0 var(--sp-3); }
+.farm-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin-bottom: var(--sp-3); }
+.farm-note:empty { display: none; }
+.farm-note { font-size: var(--fs-sm); color: var(--muted); }
+.farm-groups { display: grid; grid-template-columns: 1fr; gap: var(--sp-3); }
+.farm-source { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--panel-2);
+  padding: var(--sp-3); }
+.farm-source.is-gap { border-style: dashed; }
+.farm-source-name { display: flex; align-items: baseline; gap: var(--sp-2); flex-wrap: wrap;
+  margin: 0; font-size: var(--fs-md); color: var(--text); }
+.farm-source-count { font-size: var(--fs-xs); color: var(--faint); font-variant-numeric: tabular-nums; }
+.farm-pack { font-size: var(--fs-xs); margin: 2px 0 var(--sp-2); line-height: 1.5; }
+.farm-items { list-style: none; margin: 0; padding: 0; }
+.farm-item { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2);
+  padding: 4px 0; border-bottom: 1px solid var(--border); font-size: var(--fs-sm); }
+.farm-item:last-child { border-bottom: 0; }
+.farm-check { display: inline-flex; align-items: baseline; gap: var(--sp-2); cursor: pointer; min-width: 0; }
+.farm-item-name { color: var(--text); overflow-wrap: anywhere; }
+/* A collected item stays on the list — a farming plan you can no longer read is
+   not a record of what you did. It is struck through and dimmed instead. */
+.farm-item.is-got .farm-item-name { text-decoration: line-through; color: var(--faint); }
+.farm-copies { color: var(--accent); font-weight: 700; }
+.farm-item-meta { font-size: var(--fs-xs); color: var(--faint); }
+.farm-nodrop { font-size: var(--fs-xs); color: var(--quarantined); flex-basis: 100%; }
+.farm-plain { padding-left: 0; }
+@media (min-width: 640px) {
+  .farm-groups { grid-template-columns: repeat(2, 1fr); }
+}
+/* Print the list and nothing else — the whole point of the button is a sheet you
+   can read next to the game.
+
+   EVERY rule is scoped to `body.farming-printing`, which `printFarmingList` sets
+   around its own `window.print()` and clears on `afterprint`. Unscoped, these
+   applied to any print the page performed: a plain Ctrl+P returned the farming
+   list instead of the page, or a blank sheet when Farming was not the active tab.
+   The Share tab's print (`body.printing`, further up) has always been scoped this
+   way; this follows it. */
+@media print {
+  body.farming-printing > *:not(main),
+  body.farming-printing .app-header, body.farming-printing .app-footer,
+  body.farming-printing .wz-rail, body.farming-printing .result-tabs,
+  body.farming-printing .solve-banner, body.farming-printing .notes-panel,
+  body.farming-printing .readout-header, body.farming-printing .wz-adjust-slot,
+  body.farming-printing .rpanel:not(#rp-farming),
+  body.farming-printing .farm-actions { display: none !important; }
+  /* `#wz-printarea` is created by the Share tab's print and never removed, and its
+     own rule above forces it visible by ID whenever the page prints. This must
+     out-specify that (1-1-1 against 1-0-0), or a farming printout taken after a
+     Share printout carries the stale loadout table with it. */
+  body.farming-printing #wz-printarea { display: none !important; }
+  /* The panel is `hidden` unless Farming is the active tab, and the UA stylesheet
+     makes that `display: none`. Printing is initiated from a button inside the
+     panel today, but the class must not depend on that staying true. */
+  body.farming-printing #rp-farming { display: block !important; }
+  body.farming-printing .farm-groups { grid-template-columns: 1fr; }
+  body.farming-printing .farm-source { break-inside: avoid; }
+}
 .alt-computing { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); padding: var(--sp-5) 0; }
 .wz-adjust { margin-top: var(--sp-4); border: 1px dashed var(--border-2); border-radius: var(--radius);
   background: var(--panel-2); }

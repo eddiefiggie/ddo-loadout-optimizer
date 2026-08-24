@@ -1611,8 +1611,8 @@ function addBundle(key, current, vocab) {
  *  equivalence is the trap this helper exists to make untrappable: it is exported
  *  solely so `tests/wizard-yield.test.js` fails when a microtask is substituted.
  *
- *  `web/results.js` defers the alternatives spinner for the same reason, though
- *  with a timer rather than frames. */
+ *  `web/results.js` defers the upgrades-search spinner for the same reason,
+ *  though with a timer rather than frames. */
 function yieldToPaint() {
   return new Promise((resolve) => {
     // Two nested frames, not a bare `setTimeout(0)`. A timer yields the task queue
@@ -3184,6 +3184,86 @@ if (typeof window !== "undefined" && window.App) {
     // load and per-slot constraint change, which is why the flag lives out here
     // and is stamped back in at build time rather than read off `[open]`.
     let notesSeen = false;
+    // #499 — the upgrade bar: the most a suggestion may cost any one ranked
+    // priority, as a percentage. Session-scoped for exactly `notesSeen`'s reason
+    // — it is how this player wants to be shown suggestions right now, not part
+    // of the build — so it does not reach the save record. It DOES have to
+    // outlive the panel, which renderResults destroys and rebuilds on every
+    // solve, load and per-slot constraint change; hence out here rather than
+    // read back off the select.
+    let upgradeBar = 0;
+    const rememberUpgradeBar = (pct) => { upgradeBar = pct; };
+
+    // #500 — the Versions seam. Two sources of comparison candidates, and they
+    // stay two sources on purpose:
+    //
+    //   * STORED VERSIONS — auto-snapshots taken on each solve, plus anything
+    //     the player named. This store starts EMPTY ("fresh start"): existing
+    //     saved characters are not rewritten into history they never had.
+    //   * SAVED CHARACTERS — still comparable, because their snapshots already
+    //     render standalone. They are offered as candidates without being
+    //     migrated, which is exactly what fresh-start means.
+    //
+    // Auto-snapshots are named for the priorities that produced them rather than
+    // numbered, because "Melee Power, Doublestrike +2 more" is what a player
+    // recognises three solves later and "Version 4" is not.
+    function versionLabel(q) {
+      const t = ((q && q.targets) || []).filter((x) => x !== UTILITY_SENTINEL);
+      if (!t.length) return "no ranked priorities";
+      return t.slice(0, 2).join(", ") + (t.length > 2 ? ` +${t.length - 2} more` : "");
+    }
+    function versionRecords() {
+      const out = [];
+      for (const v of VersionStore.listVersions()) {
+        out.push({ id: `ver:${v.id}`, group: v.kind === "named" ? "Saved versions" : "Automatic snapshots",
+          label: v.name || versionLabel(v.query), record: v });
+      }
+      for (const name of CharacterStore.listCharacters()) {
+        const rec = CharacterStore.loadCharacter(name);
+        if (!rec || !rec.snapshot || !(rec.snapshot.chosen || []).length) continue;
+        out.push({ id: `char:${name}`, group: "Saved builds", label: name,
+          record: { name, query: rec.query, inputs: rec.inputs, snapshot: rec.snapshot } });
+      }
+      return out;
+    }
+    /** Write one version. `kind` is what distinguishes the snapshot nobody asked
+     *  for from the one the player pressed save on — and it is the auto kind that
+     *  accumulates, so it is the one a full store is really about. Returns the
+     *  store's `{ ok, full }` verbatim: the quota case has to reach the player. */
+    function saveVersion(kind) {
+      const run = state.lastRun;
+      if (!run || !run.result) return { ok: false, full: false };
+      const list = VersionStore.listVersions();
+      const stamp = new Date().toISOString();
+      const base = versionLabel(run.query);
+      const rec = VersionStore.makeVersion({
+        id: VersionStore.nextId(list), kind,
+        name: kind === "named"
+          ? `${state.characterName || "Build"} — ${base}`
+          : `${base} · ${stamp.slice(0, 16).replace("T", " ")}`,
+        query: run.query, inputs: { priorities: (run.query && run.query.targets) || [] },
+        result: run.result, buildId: currentBuildId(), savedAt: stamp,
+      });
+      return VersionStore.saveVersion(rec);
+    }
+    // The auto-snapshot. Deliberately fire-and-forget on the SOLVE path except
+    // for one thing: a full store is remembered, so the next render of the tab
+    // can say so rather than leaving the player to notice history stopped.
+    let versionsFull = false;
+    function autoSnapshot() {
+      const res = saveVersion("auto");
+      if (!res.ok && res.full) versionsFull = true;
+    }
+    const versionsSeam = {
+      records: versionRecords,
+      save: () => saveVersion("named"),
+      // A store that filled up during an automatic snapshot has to say so on the
+      // next render. The alternative is history quietly stopping while the tab
+      // goes on implying every solve is being recorded.
+      note: () => (versionsFull
+        ? "Your browser's storage for this site is full, so recent solves were not snapshotted. Delete a version you no longer need to start recording again."
+        : ""),
+    };
     // #345 (U4, R9/R10) — accept an outbid trade: require the effect, then
     // re-solve. Writes through the SAME state field and sanitizer the Advanced
     // min input writes (cleanBoundMap on the way to the query, targetFloors in
@@ -3334,11 +3414,15 @@ if (typeof window !== "undefined" && window.App) {
         // fresh:true — this build was solved against the current catalog, so a
         // subsequent Save stamps the current build id (see saveCurrentCharacter).
         state.lastRun = { model, result, query, fresh: true };
+        // #500 — the automatic snapshot, taken here because this is the one place
+        // a NEW build exists. A load or a restore re-renders an old build and must
+        // not mint a version for it.
+        autoSnapshot();
         state.step = "results";
         render();
         const box = document.getElementById("wz-results");
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result, query, dataset, highs: h, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; } });
+        if (box) renderResults(box, { model, result, query, dataset, highs: h, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; }, upgradeBar, onUpgradeBar: rememberUpgradeBar, versions: versionsSeam, characterName: state.characterName });
       } catch (err) {
         state.step = "results"; render();
         const box = document.getElementById("wz-results");
@@ -3424,8 +3508,9 @@ if (typeof window !== "undefined" && window.App) {
 
     // Load a saved character: restore inputs, rebuild the model scaffold WITHOUT
     // solving (KTD2), and render Results from the stored snapshot. renderResults
-    // only needs `highs` for the Alternatives tab, which degrades gracefully when
-    // absent, so a loaded build shows instantly.
+    // only needs `highs` for the upgrades search and the concession probe, both of
+    // which withhold their controls when it is absent, so a loaded build shows
+    // instantly.
     function loadCharacter(name) {
       // eslint-disable-next-line no-undef
       const rec = CharacterStore.loadCharacter(name);
@@ -3645,7 +3730,7 @@ if (typeof window !== "undefined" && window.App) {
         // report-absent utility card is reachable without touching the solved record.
         const renderQuery = restoredRenderQuery(query, !!i.utility_tier_aware);
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result: snap, query: renderQuery, dataset, highs: null, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; } });
+        if (box) renderResults(box, { model, result: snap, query: renderQuery, dataset, highs: null, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; }, upgradeBar, onUpgradeBar: rememberUpgradeBar, versions: versionsSeam, characterName: state.characterName });
         // #88 U8 (R30/AE9) — either cause shows the banner, and the text says which.
         refreshStaleBanner();
       } else {
@@ -4470,7 +4555,7 @@ if (typeof window !== "undefined" && window.App) {
           if (state.lastRun) {
             state.lastRun.query.slotConstraints = { ...state.slotConstraints };
             // eslint-disable-next-line no-undef
-            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; } });
+            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; }, upgradeBar, onUpgradeBar: rememberUpgradeBar, versions: versionsSeam, characterName: state.characterName });
           }
           if (cbar) cbar.classList.remove("wz-hidden");
           refreshResultsEmphasis();
