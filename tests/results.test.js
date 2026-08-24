@@ -3247,17 +3247,6 @@ test("#455: a cross-added credit keeps its (from <stat>) label", () => {
   assert.ok(/from Universal Spell Power/.test(html), "the cross-add source is named (#290/#291)");
 });
 
-test("#455: the rank-1 accent survives the move off pd-prio", () => {
-  const v = { variant_id: "Top", affixes: [
-    { name: "Melee Power", value: 10, type: "Enhancement" },
-    { name: "Doublestrike", value: 5, type: "Quality" },
-  ] };
-  const ctx = chipCtx("Top", { "Melee Power": { value: 10 }, Doublestrike: { value: 5 } });
-  const html = R.equippedBody(v, -1, null, null, false, false, ctx);
-  assert.ok(hasLine(html, "is-rank1", "Melee Power"), "the top priority is accented");
-  assert.strictEqual((html.match(/is-rank1/g) || []).length, 1, "and only the top one");
-});
-
 test("#455: a credited point with no affix record still reaches a chip", () => {
   // The residual sweep, proven non-vacuous. On real data the four source kinds
   // are all covered (worn by printed affixes, the six craft families and set by
@@ -3542,49 +3531,73 @@ test("#469: an augment row carries the priority link of what the gem grants", ()
     "a gem granting a listed-but-outbid stat gets the weaker link, not none");
 });
 
-test("#469/#471/#487: filled vs hollow is a SHAPE, and colour ranks nothing", () => {
-  // #471 — the ramp moved off the chip's border onto the row's WEIGHT and its
-  // MARKER. The guarantee is unchanged and is the reason this test exists:
-  // colour is never the only thing separating the four classes.
-  const css = _reachCss();
-  const tracked = _cssRule(css, ".pd-line.is-tracked .pd-ln-what {");
-  const ranked = _cssRule(css, ".pd-line.is-ranked .pd-ln-what {");
-  assert.ok(/font-weight: 700/.test(tracked), "credited is bold");
-  assert.ok(/#fff/.test(tracked) && /#fff/.test(ranked), "both are white — they are both on your list");
-  assert.ok(!/font-weight/.test(ranked),
-    "outbid does NOT borrow the weight — the weight is what claims 'this is why the item is here'");
-  // The guarantee this test exists for is unchanged: COLOUR is never the only
-  // thing separating the classes. What changed is that there are no longer four
-  // distinct glyphs, and that is deliberate — `utility` now shares the filled
-  // diamond, because a secured utility effect IS a satisfied affix and printing
-  // it with its own glyph and its own colour said so in a third visual language.
+test("#487: the row has TWO states — ON is filled and bold, OFF is hollow and normal", () => {
+  // This started as a four-step ramp (filled / hollow / ring / dot) with three
+  // text treatments, and the maintainer ruled it out twice: "these little
+  // indicators have 2 conditions, off and on". The symptom was a False Life row
+  // showing a HOLLOW diamond beside FULL-WHITE text, because `ranked` took `#fff`
+  // without the weight — the mark said off and the text said on.
   //
-  // So the assertions move to the distinctions that still carry meaning rather
-  // than to a count of glyphs, which was only ever a proxy for them.
+  // What this test guarded before, and still guards, is that neither state is
+  // carried by hue alone. Two states, each with a shape AND a weight.
+  const css = _reachCss();
+  // Comments are stripped once, here: several of them MENTION selectors this test
+  // asserts are absent (one records that the rank-1 accent was removed), and a
+  // naive scan reads a comment as a rule and passes for the wrong reason.
+  const rules = css.replace(/\/\*[\s\S]*?\*\//g, "");
   const R471 = require("../web/results.js");
   const M = R471.LINE_MARK;
-  assert.strictEqual(M.tracked, "◆", "credited is the filled shape");
-  assert.strictEqual(M.utility, "◆", "…and so is a secured utility effect");
-  assert.strictEqual(M.ranked, "◇", "outbid is hollow — present, not doing anything");
-  assert.notStrictEqual(M.ranked, M.incidental,
-    "#469: outbid must not render identically to a stat the player never asked about");
-  assert.notStrictEqual(M.tracked, M.ranked, "filled and hollow stay different SHAPES");
-  // tracked and utility share a glyph, so the thing that still separates them
-  // must not be colour — it is the row's weight.
-  assert.ok(/font-weight: 700/.test(tracked), "credited carries the weight");
+
+  // ON: both classes that mean "doing something" are filled…
+  assert.strictEqual(M.tracked, "◆", "credited is filled");
+  assert.strictEqual(M.utility, "◆", "a secured utility effect is filled");
+  // …and OFF: everything else is the same hollow shape, including a stat that is
+  // ON THE LIST but lost its bucket. It is not doing anything, and #469's
+  // explanation for that rides the row's title instead of a second visual shade.
+  assert.strictEqual(M.ranked, "◇", "outbid is hollow");
+  assert.strictEqual(M.incidental, "◇", "and so is an affix that came along with the item");
+  assert.strictEqual(new Set(Object.values(M)).size, 2, "TWO glyphs — no third state");
+
+  // The text treatments pair with the shapes, one each way.
+  const on = _cssRule(css, ".pd-line.is-tracked .pd-ln-what,");
+  assert.ok(/font-weight: 700/.test(on) && /#fff/.test(on), "ON is bold white");
+  assert.ok(/is-utility \.pd-ln-what/.test(on), "…for utility as well as tracked");
+  assert.ok(!/\.pd-line\.is-ranked \.pd-ln-what/.test(css),
+    "OFF takes no text treatment at all — a hollow mark beside white text is the reported bug");
+  assert.ok(!/\.pd-line\.is-incidental \.pd-ln-what/.test(css), "…for either OFF class");
+
+  // One level down: a GEM row's two states are occupancy, not whether its stats
+  // won their buckets. It carried the same split — `.aug-filled.is-tracked` bold
+  // white, `.aug-filled.is-ranked` white-not-bold — which is the reported bug
+  // reproduced on the augment row.
+  assert.ok(!/aug-filled\.is-(tracked|ranked) \.aug-name/.test(rules),
+    "a gem's name is not styled by which of its stats got credited");
+  const gem = _cssRule(css, ".pd-line.aug-filled .aug-name {");
+  assert.ok(/font-weight: 700/.test(gem) && /#fff/.test(gem),
+    "a slotted gem is ON — filled mark, bold name");
+
+  // One filled colour, and nothing keyed to a stat's RANK.
   const filledColour = _cssRule(css, ".pd-line.is-tracked .pd-ln-mark,");
-  assert.ok(/var\(--optimal\)/.test(filledColour),
-    "and every filled mark is the one filled colour, so colour ranks nothing");
-  // …including the #1 priority. #455 R21's note always claimed its rank-1 accent
-  // was "a second visible mark on the marker rather than a hue change", and the
-  // rule set `color` anyway — so the top priority's filled diamond was a
-  // different colour from every other filled diamond. The glow is the second
-  // mark; a hue here would make colour rank things again, which is the one job
-  // the marker must not do.
-  const rank1 = _cssRule(css, ".pd-line.is-rank1 .pd-ln-mark {");
-  assert.ok(/text-shadow/.test(rank1), "rank 1 is emphasised");
-  assert.ok(!/(^|[^-])color:/.test(rank1),
-    "…by a glow, never by a hue — every filled mark stays one colour");
+  assert.ok(/var\(--optimal\)/.test(filledColour), "every filled mark is the one filled colour");
+  assert.ok(!/\.is-rank1/.test(rules),
+    "no rule keys off is-rank1 — a row must not look different for being ranked higher");
+});
+
+test("#487: nothing stamps is-rank1 on a row any more", () => {
+  // The class was the last place a row's appearance depended on where its stat
+  // sat in the priority list: "I suspect your doing weird things based on how
+  // high in the priority it is, I do not want that". Asserted on the RENDER, not
+  // just on the stylesheet, because an unstyled class in the DOM still misleads
+  // anyone reading it.
+  const v = { variant_id: "Top", affixes: [
+    { name: "Melee Power", value: 10, type: "Enhancement" },
+    { name: "Doublestrike", value: 5, type: "Quality" },
+  ] };
+  const ctx = chipCtx("Top", { "Melee Power": { value: 10 }, Doublestrike: { value: 5 } });
+  const html = R.equippedBody(v, -1, null, null, false, false, ctx);
+  assert.ok(hasLine(html, "is-tracked", "Melee Power"), "the top priority is still credited");
+  assert.strictEqual((html.match(/is-rank1/g) || []).length, 0,
+    "…and carries no rank accent");
 });
 
 test("#469/#472: the crafting system is named in words, not carried by a colour", () => {

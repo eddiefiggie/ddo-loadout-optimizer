@@ -665,8 +665,6 @@ function statChipRow(entries, cover, idx, rank1, ranked) {
     // still lights up.
     // #469 — a rank-1 stat that is on the list but was outbid gets the accent
     // too. It has no contribution to match on, so it matches on the key.
-    const isTop = !!(rank1 && ((contrib && (contrib.stat === rank1 || key === rank1))
-      || (cls === "ranked" && key === rank1)));
     // #471 — the `pd-src` pill is retired. It named the provenance ("set" /
     // "craft") in a coloured pill AT THE END of the chip; the row language now
     // names it in the WHERE column at the start of every row, which is the
@@ -682,7 +680,10 @@ function statChipRow(entries, cover, idx, rank1, ranked) {
     const where = source || "item";
     return stackLine(cls, where,
       `${esc(affixLabel(a, { mark: false }))}${chipQualifiers(contrib)}`,
-      { rank1: isTop, overflow: over, title: why });
+      // No `rank1`: a row's appearance must not depend on how high its stat sits
+      // in the list. The #1 priority used to take a glow (and, before that, a
+      // hue) on its marker.
+      { overflow: over, title: why });
   }).join("") + overflowToggle(rows);
 }
 
@@ -694,26 +695,35 @@ function statChipRow(entries, cover, idx, rank1, ranked) {
  *  be stated beside, so Stats is where they belong. */
 const CRAFT_SOURCE_KINDS = new Set(["vik", "seal", "nc", "dino", "tf", "gs", "roll", "augment"]);
 
-/** #471 — the marker glyph per class. A SHAPE ramp, filled -> hollow -> ring ->
- *  dot, so the four classes stay apart without hue: the same rule #453 R2/R3
- *  wrote for the chip borders, carried onto the family that replaced them. */
-// The card's marker vocabulary. FILLED means the thing is doing something —
-// a stat that is credited, a utility effect the build secures, a slotted
-// augment. HOLLOW means present but idle. One shape carries that distinction so
-// it survives in monochrome, which is the standard the alternatives cost rows
-// set with their ▲/▼ ("amber alone would fail in monochrome").
-//
-// `utility` was `◦` and the utility card printed a `✓` beside each effect. Both
-// said "satisfied" in a third and fourth visual language for a fact the diamond
-// already carries, so a secured utility effect is now filled like any other
-// satisfied affix.
-//
-// `ranked` and `incidental` stay DIFFERENT glyphs. Both are unfilled, but #469
-// exists because a ranked-but-outbid stat rendering identically to one the
-// player never asked about made a `Melee Power +10` against a #1 Melee Power
-// priority read as unrelated to the priority list. Collapsing them would buy
-// consistency by re-introducing that.
-const LINE_MARK = { tracked: "◆", ranked: "◇", utility: "◆", incidental: "·" };
+/** The card's marker vocabulary: TWO states, and only two.
+ *
+ *  ON  — a filled diamond, and the row's text bold white.
+ *  OFF — a hollow diamond, and the row's text left normal.
+ *
+ *  ON means the affix is doing something in this build: credited to a ranked
+ *  priority, or a utility effect the build secures. Everything else is OFF —
+ *  including a stat that IS on the priority list but lost its bucket to a larger
+ *  source, which is not doing anything however high it was ranked.
+ *
+ *  There was a four-step ramp here (filled / hollow / ring / dot) with three text
+ *  treatments, which made a row's appearance a function of how high in the
+ *  priority list its stat sat. The maintainer ruled that out twice, in these
+ *  words: "these little indicators have 2 conditions, off and on". The immediate
+ *  symptom was a False Life row on Legendary Hyena Claw Necklace showing a HOLLOW
+ *  diamond beside FULL-WHITE text — `ranked` took `#fff` without the weight, so
+ *  the mark said off and the text said on.
+ *
+ *  #469 is what the ramp existed for: a ranked-but-outbid stat rendering
+ *  identically to one the player never asked about made a `Melee Power +10`
+ *  against a #1 Melee Power priority read as unrelated to the list. That fact is
+ *  NOT lost — it rides the row's `title` ("On your priority list — but a larger
+ *  source elsewhere…"), which is where the explanation always lived. What is gone
+ *  is a second visual shade for it, which is what was asked for.
+ *
+ *  The four class names survive because they carry a real distinction downstream
+ *  (`ranked` earns the tooltip; `utility` reads presence off the coverage). Only
+ *  their RENDERING collapses to two. */
+const LINE_MARK = { tracked: "◆", ranked: "◇", utility: "◆", incidental: "◇" };
 
 /** #471 — one row of the card's shared row language.
  *
@@ -756,7 +766,7 @@ function subLines(affixes, contribIdx, rank1, ranked) {
   return `<ul class="pd-sub">${list.map((a) => {
     const cls = affixChipClass(a, cover, contribIdx.keys, ranked);
     const key = Proj.affixCoverageKey(a);
-    return `<li class="is-${cls}${rank1 && key === rank1 ? " is-rank1" : ""}">${esc(affixLabel(a, { mark: false }))}</li>`;
+    return `<li class="is-${cls}">${esc(affixLabel(a, { mark: false }))}</li>`;
   }).join("")}</ul>`;
 }
 
@@ -1139,7 +1149,6 @@ function craftSection(v, idx, maps, contribIdx, rank1, ranked) {
     return stackLine(cls, where, `${esc(parts.what)}${note}`, {
       cls: `craft-${esc(r.family)}`,
       mark: r.empty ? "◇" : LINE_MARK[cls],
-      rank1: !!(rank1 && key === rank1 && cls === "tracked"),
       title: parts.title,
     });
   });

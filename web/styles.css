@@ -1308,30 +1308,31 @@ input.wz-ml { width: 120px; }
    Power +15 Exceptional") must never push the page into horizontal scroll. */
 .pd-ln-what { min-width: 0; overflow-wrap: anywhere; }
 
-/* #471 — the highlight vocabulary, reduced to what it claims:
-   WHITE + BOLD  = credited to your priority list (this is why the item is here);
-   WHITE         = on your list, but outbid elsewhere in the build;
-   grey          = came along with the item.
-   Colour is never the only carrier. Weight separates the top two, and the
-   marker is a SHAPE ramp — filled, hollow, ring, dot — so all four classes stay
-   apart in monochrome and to a colour-vision difference (#453 R2/R3's rule,
-   moved onto the family that replaced the chips). */
-.pd-line.is-tracked .pd-ln-what { color: #fff; font-weight: 700; }
-/* ONE filled colour, everywhere. The marker answers a single question — is this
-   doing something — and it answered two before: tracked was green, utility was
-   the accent, a slotted augment took the augment's own colour. Three hues for
-   one fact reads as a ranking, which is exactly what the marker must not imply.
-   Whether a stat is a priority is the WHERE column's job and the row's weight;
-   the mark carries liveness alone. */
+/* TWO states, and only two — ON and OFF.
+
+   ON  = filled diamond + bold white text. The affix is doing something in this
+         build: credited to a ranked priority, or a secured utility effect.
+   OFF = hollow diamond + the row's normal muted text. Everything else, INCLUDING
+         a stat that is on the priority list but lost its bucket to a larger
+         source. It is not doing anything, however high it was ranked.
+
+   This replaced a four-step marker ramp (filled / hollow / ring / dot) carrying
+   three text treatments. That combination made a row's appearance a function of
+   where its stat sat in the priority list, and produced the pairing that got it
+   reported: `ranked` took `#fff` WITHOUT the weight, so a False Life row showed a
+   hollow diamond beside full-white text — the mark saying off, the text saying on.
+
+   Both halves of each state are carried by something other than hue (a shape and
+   a weight), so #453 R2/R3's monochrome rule holds with two states as it did with
+   four. #469's outbid explanation is not lost — it rides the row's `title`. */
 .pd-line.is-tracked .pd-ln-mark,
 .pd-line.is-utility .pd-ln-mark { color: var(--optimal); }
-.pd-line.is-tracked .pd-ln-what { color: #fff; font-weight: 700; }
+.pd-line.is-tracked .pd-ln-what,
+.pd-line.is-utility .pd-ln-what { color: #fff; font-weight: 700; }
 .pd-line.is-tracked .pd-ln-where { color: var(--muted); }
-.pd-line.is-ranked .pd-ln-what { color: #fff; }
-/* Unfilled, and dimmer than filled — but still two glyphs, per #469. */
-.pd-line.is-ranked .pd-ln-mark { color: rgba(67,197,158,0.6); }
+.pd-line.is-ranked .pd-ln-mark,
 .pd-line.is-incidental .pd-ln-mark { color: var(--border-2); }
-/* A slotted augment is live, so its mark takes the shared filled colour. The
+/* A slotted augment is ON, so its mark takes the shared filled colour. The
    per-colour rules below still paint the Sun/Moon glyphs and the OPEN slots,
    where the colour is the fact being reported rather than a ranking. */
 .pd-line.aug-filled .pd-ln-mark:not(.aug-mark) { color: var(--optimal); }
@@ -1348,12 +1349,9 @@ input.wz-ml { width: 120px; }
 .pd-line.is-gain .pd-ln-mark { color: var(--optimal); }
 .pd-line.is-cost .pd-ln-what { color: var(--warn); }
 .pd-line.is-cost .pd-ln-mark { color: var(--warn); }
-/* #455 R21 — the rank-1 accent. Its note always said this was "a second visible
-   mark on the marker rather than a hue change", and the rule then set `color`
-   anyway, which made the #1 priority's filled diamond a different colour from
-   every other filled diamond. The glow alone is the second mark; the hue is gone,
-   so the note is now true and every filled mark is one colour. */
-.pd-line.is-rank1 .pd-ln-mark { text-shadow: 0 0 7px rgba(91,140,255,0.95); }
+/* #455 R21's rank-1 accent is GONE, not restyled. It was a hue, then a glow, and
+   either way it made the #1 priority's marker look different from every other ON
+   marker. No rule may key off `is-rank1`, and nothing stamps it any more. */
 /* A declared slot the solve left empty. The row still exists — an item that
    ships with four slots must never read as a three-slot item (#370) — and says
    so plainly; the reason rides the row's title. */
@@ -1384,8 +1382,8 @@ input.wz-ml { width: 120px; }
 .pd-sub li { position: relative; padding-left: 10px; font-size: 0.95em; color: var(--muted); }
 .pd-sub li::before { content: ""; position: absolute; left: 1px; top: 0.62em;
   width: 5px; height: 1px; background: var(--border-2); }
-.pd-sub li.is-tracked { color: #fff; font-weight: 700; }
-.pd-sub li.is-ranked { color: #fff; }
+/* Nested augment/craft affixes take the same two states as the rows above them. */
+.pd-sub li.is-tracked, .pd-sub li.is-utility { color: #fff; font-weight: 700; }
 
 /* #472 — a set-membership row's value is a SET NAME, not a stat, so it takes the
    set colour the rest of the app uses for one. It still obeys the row's class:
@@ -1412,8 +1410,14 @@ input.wz-ml { width: 120px; }
 .aug-mark.aug-moon { color: #9cc2ee; }
 .pd-line.is-empty .aug-mark { opacity: 0.6; }
 .aug-name { color: inherit; font-weight: inherit; }
-.pd-line.aug-filled.is-tracked .aug-name { color: #fff; font-weight: 700; }
-.pd-line.aug-filled.is-ranked .aug-name { color: #fff; }
+/* A gem row's two states are about OCCUPANCY, not about whether its stats won
+   their buckets: a slotted augment is ON ("solid filled diamonds once filled"),
+   an open slot is OFF. Which of the gem's stats are actually live is the job of
+   the nested sub-lines under it, each taking the same two states in its own right.
+   This was `.aug-filled.is-tracked` bold-white and `.aug-filled.is-ranked`
+   white-not-bold — the same mark-says-one-thing/text-says-another split that was
+   reported on False Life, one level down. */
+.pd-line.aug-filled .aug-name { color: #fff; font-weight: 700; }
 /* #472 — the `.aug-pip` family is gone with the chips it belonged to. Nothing
    emits it: the row marker carries the slot colour now. It was kept in #471 on
    the belief that the paperdoll cell and the browse rows still drew pips; they
