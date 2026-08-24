@@ -2123,7 +2123,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
         <button class="rtab" role="tab" id="rt-loadout" aria-controls="rp-loadout" aria-selected="true" tabindex="0" type="button">Loadout</button>
         <button class="rtab" role="tab" id="rt-ranked" aria-controls="rp-ranked" aria-selected="false" tabindex="-1" type="button">Ranked Priorities</button>
         <button class="rtab" role="tab" id="rt-sets" aria-controls="rp-sets" aria-selected="false" tabindex="-1" type="button">Set Bonuses</button>
-        <button class="rtab" role="tab" id="rt-versions" aria-controls="rp-versions" aria-selected="false" tabindex="-1" type="button">Versions</button>
+        <button class="rtab" role="tab" id="rt-versions" aria-controls="rp-versions" aria-selected="false" tabindex="-1" type="button">Adjustment Studio</button>
         <button class="rtab" role="tab" id="rt-farming" aria-controls="rp-farming" aria-selected="false" tabindex="-1" type="button">Farming List</button>
         <button class="rtab" role="tab" id="rt-share" aria-controls="rp-share" aria-selected="false" tabindex="-1" type="button">Share</button>
       </div>
@@ -2515,7 +2515,18 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     if (!host) return;
     host.innerHTML = versionsPanel(verRecords(), { note: note || "" });
     const pick = host.querySelector(".ver-pick");
-    if (pick) pick.addEventListener("change", () => renderVersionDiff(true));
+    if (pick) {
+      pick.addEventListener("change", () => renderVersionDiff(true));
+      // Open on the last change rather than on an empty picker. The seam decides
+      // WHICH record that is, because only the caller knows which stored snapshot
+      // belongs to the build already on screen — comparing against that one would
+      // greet every solve with "these two builds are identical".
+      const def = typeof verApi.defaultCompare === "function" ? verApi.defaultCompare() : null;
+      if (def && [...pick.options].some((o) => o.value === String(def))) {
+        pick.value = String(def);
+        renderVersionDiff(false);
+      }
+    }
     const save = host.querySelector(".ver-save");
     if (save) {
       save.addEventListener("click", () => {
@@ -3035,7 +3046,14 @@ function wireAltCards(panel, ranked, setActive) {
   });
 }
 
-/** #500 — the Versions tab.
+/** #500 — the Adjustment Studio.
+ *
+ *  NAMING, deliberately split rather than drifted: the SURFACE is the Adjustment
+ *  Studio, because what a player does here is see what their adjustments did. The
+ *  STORE underneath is still versions — `VersionStore`, `versions.js`, `rt-versions`
+ *  — because what it stores really is point-in-time versions of a build, and the
+ *  Studio is one reading of them rather than the only possible one. Renaming the
+ *  store to match the tab would claim the two are the same thing.
  *
  *  Answers a question the app could not answer at all: *how does this build
  *  differ from the one I had before?* Saving a character overwrites what was
@@ -3065,11 +3083,11 @@ function versionsPanel(records, opts) {
             + `</optgroup>`).join("")}
         </select>
       </label>`
-    : `<p class="dd-none muted">Nothing saved yet to compare against. Save this build as a version, solve again,
-       and this tab will show you exactly what moved.</p>`;
-  return `<p class="wz-help">The build on screen, against one you saved. Every difference is reported —
-      <strong>including stats you never ranked</strong>, because a swap that quietly cost you 40 HP is exactly
-      the thing you would not have gone looking for.</p>
+    : `<p class="dd-none muted">Nothing to compare against yet — this is the first build of the session.
+       Adjust something and re-solve, and this tab will open on exactly what moved.</p>`;
+  return `<p class="wz-help">What your adjustments did. The build on screen, against the one you had before —
+      or any build you saved. Every difference is reported, <strong>including stats you never ranked</strong>,
+      because a swap that quietly cost you 40 HP is exactly the thing you would not have gone looking for.</p>
     <div class="ver-controls">
       ${picker}
       <button class="btn ghost ver-save" type="button">Save this build as a version</button>

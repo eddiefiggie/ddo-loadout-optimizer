@@ -4046,7 +4046,7 @@ test("#499: the result tabs no longer offer Alternatives or a Deep Dive", () => 
   const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
   const tablist = srcBetween(src, '<div class="result-tabs"', "</div>", "result tabs");
   const labels = [...tablist.matchAll(/type="button">([^<]+)</g)].map((m) => m[1]);
-  assert.deepStrictEqual(labels, ["Loadout", "Ranked Priorities", "Set Bonuses", "Versions", "Farming List", "Share"],
+  assert.deepStrictEqual(labels, ["Loadout", "Ranked Priorities", "Set Bonuses", "Adjustment Studio", "Farming List", "Share"],
     "the two retired tabs are gone, their replacements sit in their place, and Share stays last");
 });
 
@@ -4213,4 +4213,40 @@ test("#500: the slot row's two tracks cannot starve each other", () => {
   assert.ok(!/overflow-wrap:\s*anywhere/.test(item),
     "`anywhere` breaks at every opportunity, which is what made a squeezed cell "
     + "render one character per line; `break-word` only breaks what cannot fit");
+});
+
+test("#500: the Studio opens on the last change, and never on the build it is showing", () => {
+  // `autoSnapshot` runs on the solve path, BEFORE the results render, so the
+  // newest stored version IS the build on screen. Defaulting to it would greet
+  // every single solve with "these two builds are identical" — technically true
+  // and completely useless, and it would make the tab's name a lie.
+  const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
+  const fill = srcBetween(src, "function fillVersionsPanel(note) {", "const save = host.querySelector", "fillVersionsPanel");
+  assert.ok(/verApi\.defaultCompare/.test(fill),
+    "the panel asks the caller which record to open on");
+  assert.ok(/renderVersionDiff\(false\)/.test(fill),
+    "…and renders that comparison immediately rather than waiting for a pick");
+
+  // The caller is the only place that knows which snapshot belongs to the build
+  // already on screen, which is why the choice lives there and not here.
+  const wiz = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "wizard.js"), "utf8");
+  const fn = srcBetween(wiz, "function defaultCompareId() {", "\n    }", "defaultCompareId");
+  assert.ok(/currentAutoId/.test(fn), "the current build's own snapshot is identified");
+  assert.ok(/!==/.test(fn), "…and excluded from the default");
+  assert.ok(/if \(res\.ok\) currentAutoId = res\.id;/.test(wiz),
+    "and it is recorded when the auto-snapshot actually lands, not assumed");
+});
+
+test("#500: the tab is renamed but the store it reads is not", () => {
+  // A deliberate split, asserted so it does not read as drift to the next person:
+  // the SURFACE is the Adjustment Studio, the STORE is still versions, because
+  // what it holds really is point-in-time versions and the Studio is one reading
+  // of them. Renaming the store to match would claim the two are the same thing.
+  const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
+  assert.ok(/>Adjustment Studio</.test(src), "the tab reads Adjustment Studio");
+  assert.ok(/id="rt-versions"/.test(src), "the internal id still names the store");
+  assert.ok(typeof R.versionsPanel === "function", "and so does the renderer");
+  const V = require("../web/versions.js");
+  assert.strictEqual(V.STORE_KEY, "ddo.versions.v1",
+    "the storage key is untouched — a rename here would orphan every saved snapshot");
 });
