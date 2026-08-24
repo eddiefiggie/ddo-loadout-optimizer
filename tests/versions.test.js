@@ -153,7 +153,11 @@ test("#500: the panel offers no picker it cannot fill", () => {
   // then failed, it is not offered.
   const empty = R.versionsPanel([], {});
   assert.ok(!/<select/.test(empty), "nothing saved -> no picker");
-  assert.ok(/Nothing saved yet/.test(empty), "…and it says why, and what to do");
+  // The empty state must say WHY there is nothing and WHAT to do about it, not
+  // just render a blank. Matched on the instruction rather than the whole
+  // sentence, so a copy edit does not fail a test about behaviour.
+  assert.ok(/Nothing to compare against yet/.test(empty), "…it says why there is nothing");
+  assert.ok(/re-solve/.test(empty), "…and what to do to get a comparison");
   const full = R.versionsPanel([{ id: "ver:v1", label: "Melee Power, Doublestrike", group: "Automatic snapshots" }], {});
   assert.ok(/<select/.test(full) && /Melee Power, Doublestrike/.test(full), "with candidates -> a picker");
   assert.ok(/optgroup label="Automatic snapshots"/.test(full), "grouped by where the candidate came from");

@@ -4,7 +4,7 @@
 
 🎮 **Play it now:** https://eddiefiggie.github.io/ddo-loadout-optimizer/ · **Code:** https://github.com/eddiefiggie/ddo-loadout-optimizer
 
-**Current build:** 08242026.5 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
+**Current build:** 08242026.7 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
 
 
 ---
@@ -92,7 +92,7 @@ A short guided wizard walks you through it:
 | **Loadout** | The full kit, slot by slot, set pieces highlighted, with augments and craft steps on each item |
 | **Ranked Priorities** | Where every point of every stat came from — which item, which set, which bonus type; and, per priority, what giving ground on it would buy the priorities beneath |
 | **Set Bonuses** | Every set you actually complete and what it grants |
-| **Versions** | This build against one you saved — every difference, *including stats you never ranked* |
+| **Adjustment Studio** | What your adjustments did — this build against the one you had before, every difference, *including stats you never ranked* |
 | **Farming List** | Where every item comes from, grouped by source and ordered so the best run is first — tick things off as you get them |
 | **Share** | Forum-ready Markdown, CSV, a print-friendly page, or a DDOBuilder-importable `.gearset` |
 

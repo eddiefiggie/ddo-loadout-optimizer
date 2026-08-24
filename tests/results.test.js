@@ -4046,7 +4046,7 @@ test("#499: the result tabs no longer offer Alternatives or a Deep Dive", () => 
   const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
   const tablist = srcBetween(src, '<div class="result-tabs"', "</div>", "result tabs");
   const labels = [...tablist.matchAll(/type="button">([^<]+)</g)].map((m) => m[1]);
-  assert.deepStrictEqual(labels, ["Loadout", "Ranked Priorities", "Set Bonuses", "Versions", "Farming List", "Share"],
+  assert.deepStrictEqual(labels, ["Loadout", "Ranked Priorities", "Set Bonuses", "Adjustment Studio", "Farming List", "Share"],
     "the two retired tabs are gone, their replacements sit in their place, and Share stays last");
 });
 
@@ -4164,4 +4164,89 @@ test("review fix 3: the print button sets and clears the scope class", () => {
   assert.ok(/classList\.add\("farming-printing"\)/.test(fn), "the scope is set before printing");
   assert.ok(/classList\.remove\("farming-printing"\)/.test(fn), "…and removed again");
   assert.ok(/afterprint/.test(fn), "on afterprint, the same seam printLoadout uses");
+});
+
+test("#500: a slot row's label is a fixed caption, never the version's own name", () => {
+  // The reported defect. A version name — "Melee Power, Doublestrike +6 more ·
+  // 2026-08-24 14:28" — was used as the per-row label on EVERY changed slot.
+  // Measured on a real solve it was 321px against a ~350px column with
+  // `flex: none`, so it took the whole row and left the item name 19px to wrap
+  // in: "Epic Crisis Plate" rendered 19px wide and 122px tall, one character per
+  // line, reading as though the name had been turned on its side.
+  //
+  // The rule this pins: a label may never be longer than the value it labels, so
+  // the row captions are fixed strings and the two builds are named once in a
+  // legend above the list.
+  const V = require("../web/versions.js");
+  const mk = (id, ring) => ({ id, name: id, kind: "auto", query: { targets: [] },
+    inputs: { priorities: [] },
+    snapshot: { status: "optimal", chosen: [{ slot: "Ring", variant: { variant_id: ring, minimum_level: 30, affixes: [], set_bonus: [] } }],
+      effective: {}, perTarget: {}, breakdown: {}, setsActive: [], augmentsPlaced: [] } });
+  const diff = V.diffVersions(mk("a", "Short"), mk("b", "Other"));
+  const LONG = "Melee Power, Doublestrike +6 more · 2026-08-24 14:28";
+  const html = R.versionDiffView(diff, { a: "This build", b: LONG });
+
+  // The long name appears — but only in the legend and the row's title tooltip,
+  // never as the label text that has to share a row with the item.
+  const rowLabels = [...html.matchAll(/<span class="ver-side-label">([^<]*)</g)].map((m) => m[1]);
+  assert.ok(rowLabels.length >= 2, "the row renders both sides");
+  for (const l of rowLabels) {
+    assert.ok(!l.includes("2026-08-24"), `a version name leaked into a row label: ${l}`);
+    assert.ok(l.length <= 20, `row label is too long to sit beside a value: ${l}`);
+  }
+  assert.ok(/class="ver-legend"/.test(html), "the two builds are named in a legend instead");
+  assert.ok(html.includes(LONG), "…and the full name is still stated there");
+});
+
+test("#500: the slot row's two tracks cannot starve each other", () => {
+  // The flex version had `flex: none` on the label, which is what let it consume
+  // the row. Both grid tracks are now `minmax(0, …)`: the label is capped so it
+  // cannot grow into the value, and the value cannot be squeezed below its own
+  // content box. Asserted in CSS because the failure is a layout property, not
+  // markup — the markup was never the problem.
+  const css = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "styles.css"), "utf8");
+  const rule = srcBetween(css, ".ver-side { display: grid", "}", ".ver-side rule");
+  assert.ok(/grid-template-columns:\s*minmax\(0,\s*[\d.]+rem\)\s+minmax\(0,\s*1fr\)/.test(rule),
+    "a capped label track and a flexible value track, both floored at 0");
+  assert.ok(!/flex:\s*none/.test(rule), "the flex-none label that caused this is gone");
+  const item = srcBetween(css, ".ver-side-item {", "}", ".ver-side-item rule");
+  assert.ok(!/overflow-wrap:\s*anywhere/.test(item),
+    "`anywhere` breaks at every opportunity, which is what made a squeezed cell "
+    + "render one character per line; `break-word` only breaks what cannot fit");
+});
+
+test("#500: the Studio opens on the last change, and never on the build it is showing", () => {
+  // `autoSnapshot` runs on the solve path, BEFORE the results render, so the
+  // newest stored version IS the build on screen. Defaulting to it would greet
+  // every single solve with "these two builds are identical" — technically true
+  // and completely useless, and it would make the tab's name a lie.
+  const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
+  const fill = srcBetween(src, "function fillVersionsPanel(note) {", "const save = host.querySelector", "fillVersionsPanel");
+  assert.ok(/verApi\.defaultCompare/.test(fill),
+    "the panel asks the caller which record to open on");
+  assert.ok(/renderVersionDiff\(false\)/.test(fill),
+    "…and renders that comparison immediately rather than waiting for a pick");
+
+  // The caller is the only place that knows which snapshot belongs to the build
+  // already on screen, which is why the choice lives there and not here.
+  const wiz = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "wizard.js"), "utf8");
+  const fn = srcBetween(wiz, "function defaultCompareId() {", "\n    }", "defaultCompareId");
+  assert.ok(/currentAutoId/.test(fn), "the current build's own snapshot is identified");
+  assert.ok(/!==/.test(fn), "…and excluded from the default");
+  assert.ok(/if \(res\.ok\) currentAutoId = res\.id;/.test(wiz),
+    "and it is recorded when the auto-snapshot actually lands, not assumed");
+});
+
+test("#500: the tab is renamed but the store it reads is not", () => {
+  // A deliberate split, asserted so it does not read as drift to the next person:
+  // the SURFACE is the Adjustment Studio, the STORE is still versions, because
+  // what it holds really is point-in-time versions and the Studio is one reading
+  // of them. Renaming the store to match would claim the two are the same thing.
+  const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
+  assert.ok(/>Adjustment Studio</.test(src), "the tab reads Adjustment Studio");
+  assert.ok(/id="rt-versions"/.test(src), "the internal id still names the store");
+  assert.ok(typeof R.versionsPanel === "function", "and so does the renderer");
+  const V = require("../web/versions.js");
+  assert.strictEqual(V.STORE_KEY, "ddo.versions.v1",
+    "the storage key is untouched — a rename here would orphan every saved snapshot");
 });

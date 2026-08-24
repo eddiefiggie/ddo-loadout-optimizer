@@ -3250,12 +3250,30 @@ if (typeof window !== "undefined" && window.App) {
     // for one thing: a full store is remembered, so the next render of the tab
     // can say so rather than leaving the player to notice history stopped.
     let versionsFull = false;
+    // #500 — the id of the snapshot taken for the build currently on screen.
+    //
+    // `autoSnapshot` runs on the solve path, BEFORE the results render, so by the
+    // time the Adjustment Studio opens the newest stored version IS the build the
+    // player is looking at. Defaulting the comparison to it would open the tab on
+    // "these two builds are identical" after every single solve. What the player
+    // wants to see is what the re-solve CHANGED, so the default skips this one and
+    // lands on the build they had before it.
+    let currentAutoId = null;
     function autoSnapshot() {
       const res = saveVersion("auto");
+      if (res.ok) currentAutoId = res.id;
       if (!res.ok && res.full) versionsFull = true;
+    }
+    /** The record the Studio should open on: the newest stored version that is not
+     *  the snapshot of the build already on screen. Null on a first-ever solve,
+     *  where there is genuinely nothing to compare against yet. */
+    function defaultCompareId() {
+      const rec = versionRecords().find((r) => r.id !== `ver:${currentAutoId}`);
+      return rec ? rec.id : null;
     }
     const versionsSeam = {
       records: versionRecords,
+      defaultCompare: defaultCompareId,
       save: () => saveVersion("named"),
       // A store that filled up during an automatic snapshot has to say so on the
       // next render. The alternative is history quietly stopping while the tab
