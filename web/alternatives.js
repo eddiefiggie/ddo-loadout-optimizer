@@ -46,6 +46,9 @@ function analyzeAlternative(optimum, candidate, query) {
   // primary tag from the generator
   if (gainAxis === "set") addTag("set bonus");
   if (gainAxis === "rebalance") addTag("rebalance");
+  // #481 — a concession is a rebalance told from the other end: the player names
+  // the priority they will give ground on, and the solve says what that buys.
+  if (gainAxis === "concession") addTag("concession");
   if (gainAxis === "unranked") addTag(meta.zeroCost ? "free upgrade" : "unranked stat");
   if (gainAxis === "crafts") addTag("cheaper crafting");
   // derivable extra tags — only meaningful secondary gains, so a build does not pick up
@@ -60,6 +63,13 @@ function analyzeAlternative(optimum, candidate, query) {
   let gainText;
   if (gainAxis === "set") gainText = `activates ${meta.set}`;
   else if (gainAxis === "rebalance") { const g = gains.find((x) => x.stat === meta.to) || gains[0]; gainText = g ? `+${g.delta} ${g.stat}` : `shifts toward ${meta.to}`; }
+  // #481 — the headline is the biggest thing this buys; what it costs is already a
+  // row in the cost section, losses beneath the conceded stat included (KTD3), so
+  // the headline must not try to carry both halves of the trade.
+  else if (gainAxis === "concession") {
+    const g = gains.slice().sort((a, b) => b.delta - a.delta)[0];
+    gainText = g ? `+${g.delta} ${g.stat}` : `${meta.stat} capped at ${meta.cap}`;
+  }
   else if (gainAxis === "unranked") gainText = `${meta.zeroCost ? "free " : ""}+${meta.stat}`;
   else gainText = `${meta.optCrafts - craftCount(sol)} fewer crafting steps`;
 
@@ -78,12 +88,19 @@ function analyzeAlternative(optimum, candidate, query) {
   if (shedEffects.length) costParts.push(`gives up ${shedEffects.join(", ")}`);
   const costText = costParts.length ? costParts.join(", ") : "no priority cost";
   const gainMag = gainAxis === "set" ? (newSets.length ? 1 : 0.5)
-    : gainAxis === "rebalance" ? gains.reduce((s, g) => s + g.delta, 0)
+    : (gainAxis === "rebalance" || gainAxis === "concession") ? gains.reduce((s, g) => s + g.delta, 0)
     : gainAxis === "unranked" ? 1
     : (meta.optCrafts - craftCount(sol));
   const totalCost = cost.reduce((s, c) => s - c.delta, 0) + (utilDelta < 0 ? -utilDelta : 0);
+  // #481 (KTD5) — a concession candidate carries its own minimum distinctness.
+  // `rankAlternatives` drops anything within K=2 differing slots on the reasoning
+  // that a near-identical build is not a distinct option; that reasoning INVERTS
+  // here, because a small concession that swaps a single item is the most valuable
+  // thing the probe can find. Threaded per-candidate rather than by loosening the
+  // shared K, which would let every other family through too.
+  const minDistinct = gainAxis === "concession" ? 1 : null;
   return { ...candidate, cost, gains, tags, gainText, costText, gainMag, activatedSets,
-    utilDelta, shedEffects, totalCost, key: buildKey(sol) };
+    utilDelta, shedEffects, totalCost, minDistinct, key: buildKey(sol) };
 }
 
 /** Dedupe (by chosen-item set), drop candidates within K different slots of the optimum
@@ -99,14 +116,18 @@ function rankAlternatives(analyzed, optimum, opts = {}) {
   const seen = new Set(), kept = [];
   for (const a of analyzed) {
     if (a.key === optKey || seen.has(a.key)) continue;
-    if (distinctCount(a, optSlots) < K) continue;                       // too close to the optimum
-    if (kept.some((b) => distinctCount(a, slotsOf(b.sol)) < K)) continue; // too close to a kept alt
+    const k = a.minDistinct != null ? a.minDistinct : K;                // #481 (KTD5)
+    if (distinctCount(a, optSlots) < k) continue;                       // too close to the optimum
+    if (kept.some((b) => distinctCount(a, slotsOf(b.sol)) < k)) continue; // too close to a kept alt
     seen.add(a.key); kept.push(a);
   }
 
   // #348 (U4, KTD7) — the `utility` axis is gone: the tier is never a gain, only a
   // named cost, so it has no slot in this order.
-  const typeOrder = { set: 0, rebalance: 1, unranked: 2, crafts: 3 };
+  // #481 — `concession` sits beside `rebalance`: they are the same kind of trade
+  // told from opposite ends, and separating them would scatter two descriptions of
+  // one move across the list.
+  const typeOrder = { set: 0, rebalance: 1, concession: 2, unranked: 3, crafts: 4 };
   kept.sort((a, b) =>
     (typeOrder[a.gainAxis] - typeOrder[b.gainAxis])
     || (b.gainMag - a.gainMag)

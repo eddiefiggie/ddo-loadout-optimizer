@@ -2118,6 +2118,119 @@ function attributeOutbid(program, highs, stat, targetList, perTarget, opts) {
   return { stat, binding: binding.stat, bindingValue: binding.value, bindingHeld: held, cost };
 }
 
+// #481 — how far below its achieved value a concession is searched. Wider than
+// `alternativeGive` on purpose: that window has to stay narrow because the
+// rebalance path reports whatever vertex it lands on, so a wide window inflates
+// the printed price. The concession probe searches over the CAP, so its answer is
+// minimal by construction and the window only bounds how far it looks. Binary
+// search makes the cost logarithmic in this number, not linear.
+function concessionWindow(value) { return Math.max(3, Math.round(0.25 * Math.abs(value))); }
+
+/** #481 — the smallest concession on `stat` that changes anything ranked beneath
+ *  it, expressed as the per-stat Max cap the player would set to take it.
+ *
+ *  The concession is a CAP, not a relaxed stage lock. A relaxed lock describes a
+ *  state the player has no input for — they cannot ask the tool for "Strength
+ *  within 2 of its max" — while a cap is an input that already exists, so the
+ *  probed build is one they can reproduce by typing a number.
+ *  `lexicographic-redundancy-is-not-a-bug.md` already ruled the cap is the honest
+ *  lever for "enough of this stat": capping does not FORCE the stat down, it stops
+ *  valuing it past the cap, and the freed slack falls through to the priorities
+ *  below. Searching over the cap also collapses minimality — searching the cap IS
+ *  searching the concession, so the answer needs no re-tightening stage.
+ *
+ *  Monotone, and therefore binary-searchable: a lower cap enlarges the set of
+ *  stage-optimal solutions (every solution with raw >= cap attains the stage max),
+ *  so each later stage's constraint set relaxes and what is reachable beneath can
+ *  only grow. `opts.linear` forces the exhaustive walk so a test can PROVE the two
+ *  agree rather than assuming the monotonicity — the same seam, for the same
+ *  reason, as `attributeOutbid`.
+ *
+ *  What comes back is the WHOLE delta vector, gains and losses alike. Per
+ *  `lexicographic-descent-bounds-the-vector-not-each-stat.md` read in the relaxing
+ *  direction, the first priority beneath that changes must RISE, but ones after it
+ *  are then locked against a different (higher) value and can genuinely FALL. A
+ *  report carrying only the gain would advertise a trade while hiding its cost.
+ *
+ *  Returns null rather than guessing: null means "searched the window and nothing
+ *  beneath moved", which the caller must keep distinct from "the probe could not
+ *  run at all".
+ */
+async function probeConcession(model, program, highs, stat, targetList, perTarget, opts = {}) {
+  const list = targetList || [];
+  const at = list.indexOf(stat);
+  // Not a stat, not ranked, or nothing ranked beneath it to buy anything with.
+  if (stat === _UTILITY_SENTINEL || at === -1 || at === list.length - 1) return null;
+  const beneath = list.slice(at + 1);
+  if (!beneath.length) return null;
+
+  const base = Number(perTarget[stat]);
+  if (!(base > 0)) return null;                 // nothing to concede
+  const window = Math.min(concessionWindow(base), base);   // never search below zero
+  if (window < 1) return null;
+
+  const baseUtility = (opts.utilityCount != null) ? opts.utilityCount : null;
+  // What the solve reports for a ranked entry, sentinel included — the sentinel is
+  // not a stat and has no `effective` row, so its count is read from its own report.
+  const valueOf = (sol, s) => (s === _UTILITY_SENTINEL
+    ? ((sol.utilityReport && sol.utilityReport.count) != null ? sol.utilityReport.count : null)
+    : (sol.effective[s] ?? 0));
+
+  // The model is COPIED, never mutated: the search applies a different cap on
+  // every step and a leaked cap would silently re-rank every later solve. The
+  // dominance pre-filter is keyed to the targets, which do not change here, and a
+  // variant dominated uncapped is still dominated capped (min(cap, .) is
+  // monotone), so re-solving the already-filtered model stays sound.
+  const solveAt = async (d) => {
+    const capped = { ...(model.userCaps || {}), [stat]: base - d };
+    return solveLexicographic({ ...model, userCaps: capped }, highs);
+  };
+  const cache = new Map();
+  const resultAt = async (d) => {
+    if (!cache.has(d)) cache.set(d, await solveAt(d));
+    return cache.get(d);
+  };
+  const changedAt = async (d) => {
+    const sol = await resultAt(d);
+    if (!sol || sol.status !== "optimal") return false;
+    if (baseUtility != null && beneath.includes(_UTILITY_SENTINEL)) {
+      const u = valueOf(sol, _UTILITY_SENTINEL);
+      if (u != null && u !== baseUtility) return true;
+    }
+    return beneath.some((s) => s !== _UTILITY_SENTINEL
+      && valueOf(sol, s) !== (perTarget[s] ?? 0));
+  };
+
+  let found = null;
+  if (opts.linear) {
+    for (let d = 1; d <= window; d++) if (await changedAt(d)) { found = d; break; }
+  } else {
+    // changedAt is monotone non-decreasing in d, with changedAt(0) false by
+    // construction (capping at the achieved value leaves the stage-optimal set
+    // exactly as it was). Probe the far end first so a window that buys nothing
+    // costs one solve instead of a full descent.
+    if (await changedAt(window)) {
+      let lo = 0, hi = window;                  // changedAt(lo) false, changedAt(hi) true
+      while (hi - lo > 1) {
+        const mid = (lo + hi) >> 1;
+        if (await changedAt(mid)) hi = mid; else lo = mid;
+      }
+      found = hi;
+    }
+  }
+  if (found == null) return null;
+
+  const sol = await resultAt(found);
+  const deltas = list.map((s) => {
+    const before = s === _UTILITY_SENTINEL ? baseUtility : (perTarget[s] ?? 0);
+    const after = valueOf(sol, s);
+    return (before == null || after == null) ? null
+      : { stat: s, before, after, delta: after - before };
+  }).filter(Boolean).filter((d) => d.delta !== 0);
+
+  return { stat, cap: base - found, concession: found, window, deltas, sol };
+}
+
 async function solveLexicographic(model, highs) {
   const program = buildProgram(model);
   if (!program.xVars.length) return { status: "infeasible", reason: "no eligible items for these constraints" };
@@ -2734,23 +2847,54 @@ function buildCreditReport(program, prim, model, floorReport, precomputedVisible
 // constraint bodies (e.g. a forced `set_active = 1`); the gain is `objectiveStat`
 // (a stat, maximized) or `objTerms` (an arbitrary linear expression, e.g. minimized
 // craft-placement binaries).
-function solveConstrained(program, highs, { objectiveStat, objTerms, sense = "max", locks = [], extra = [], tieBreak = true }) {
+function solveConstrained(program, highs, { objectiveStat, objTerms, sense = "max", locks = [], extra = [], tieBreak = true, reTighten = null }) {
   const fb = program.xVars[0].name;
   // Phase 1: optimize the gain under the relaxed/forced constraints.
   const r1 = highs.solve(encodeStage(program, { objectiveStat, objTerms, sense, locks, extra }));
   if (r1.Status !== "Optimal") return { status: "infeasible" };
+
+  // #480 — `reTighten`: after the gain is maximized, pin it and re-maximize the
+  // stat the caller relaxed to buy it. Without this the relaxed stat is
+  // unconstrained anywhere inside its give window among the solutions attaining
+  // the gain, so the cost the caller reports is an incidental vertex rather than
+  // the MINIMUM concession that buys it — a rebalance card read `-2 Strength`
+  // while a `-1 Strength` build delivering the identical gain sat in the pool.
+  //
+  // This is an APPENDED LEXICOGRAPHIC STAGE, not a tie-break term and not a
+  // member of the pinned post-stage chain (`CONCEPTS.md`, "Lexicographic
+  // solve"). It is allowed to change which items are chosen — that is the whole
+  // point — whereas a post-stage pins the loadout first and frees only the
+  // variables its own preference is about. Do not fold it into either:
+  // `add-a-solver-preference-as-a-pinned-post-stage.md` records what appending a
+  // term to the shared tie-break objective cost last time (5 of 11 golden
+  // loadouts reshuffled).
+  let rGain = r1, gainLocks = locks;
+  if (reTighten && objectiveStat && program.targetList.includes(objectiveStat)) {
+    const prim0 = (name) => (r1.Columns[name] ? r1.Columns[name].Primal : 0);
+    const pinned = [...locks, { stat: objectiveStat, value: effectiveOf(program, prim0, objectiveStat) }];
+    const rT = highs.solve(encodeStage(program, { objectiveStat: reTighten, sense: "max", locks: pinned, extra }));
+    // Infeasible cannot happen (r1's own solution satisfies the pin), but a
+    // non-Optimal status is treated as "no re-tighten" rather than as a failure:
+    // the phase-1 answer is still a legal trade, just not a minimal one.
+    if (rT.Status === "Optimal") {
+      rGain = rT;
+      const primT = (name) => (rT.Columns[name] ? rT.Columns[name].Primal : 0);
+      gainLocks = [...pinned, { stat: reTighten, value: effectiveOf(program, primT, reTighten) }];
+    }
+  }
+
   // The tie-break is a second full solve. It canonicalizes the build among equal-objective
   // vertices, but HiGHS is already deterministic for identical input, so the optimum path
   // keeps it (stable display) while on-demand alternatives skip it to halve solve count.
   if (!tieBreak) {
-    const prim1 = (name) => (r1.Columns[name] ? r1.Columns[name].Primal : 0);
-    const visible1 = visibleGateSet(program, prim1);
-    return { status: "optimal", ...readSolution(r1, program, visible1), breakdown: breakdownByTarget(program, prim1, visible1), capped: { ...program.cappedStats } };
+    const primG = (name) => (rGain.Columns[name] ? rGain.Columns[name].Primal : 0);
+    const visibleG = visibleGateSet(program, primG);
+    return { status: "optimal", ...readSolution(rGain, program, visibleG), breakdown: breakdownByTarget(program, primG, visibleG), capped: { ...program.cappedStats } };
   }
-  const prim1 = (name) => (r1.Columns[name] ? r1.Columns[name].Primal : 0);
+  const prim1 = (name) => (rGain.Columns[name] ? rGain.Columns[name].Primal : 0);
   // Pin the achieved gain, then tie-break so the item set (not just the objective
   // value) is deterministic — mirroring solveLexicographic's final tie-break stage.
-  let locks2 = locks, pin = [];
+  let locks2 = gainLocks, pin = [];
   if (objTerms) {
     const gainVal = Math.round(objTerms.reduce((s, t) => s + t.coef * prim1(t.name), 0));
     pin = [`${fmtExpr(objTerms, fb)} = ${gainVal}`];
@@ -2761,10 +2905,10 @@ function solveConstrained(program, highs, { objectiveStat, objTerms, sense = "ma
     // undefined and pinned at 0.
     const gainVal = program.targetList.includes(objectiveStat)
       ? effectiveOf(program, prim1, objectiveStat) : 0;
-    locks2 = [...locks, { stat: objectiveStat, value: gainVal }];
+    locks2 = [...gainLocks, { stat: objectiveStat, value: gainVal }];
   }
   const r2 = highs.solve(encodeStage(program, { tieBreak: true, sense: "min", locks: locks2, extra: [...extra, ...pin] }));
-  const res = r2.Status === "Optimal" ? r2 : r1;
+  const res = r2.Status === "Optimal" ? r2 : rGain;
   const prim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
   const visible = visibleGateSet(program, prim);
   const sol = readSolution(res, program, visible);
@@ -2909,7 +3053,12 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
       // ranked BELOW the maximized stat is fair game to re-rank, matching what
       // the lexicographic order means.
       const rebExtra = (sentinelIdx !== -1 && sentinelIdx < j) ? utilityLock(program) : [];
-      const sol = solveConstrained(program, highs, { objectiveStat: targets[j], locks, extra: rebExtra, tieBreak: false });
+      // #480 — `reTighten` re-maximizes the traded-FROM priority once the gain is
+      // pinned, so the card states the MINIMUM concession that buys it. Without
+      // it targets[i] floats anywhere inside its give window and the printed cost
+      // overstates the price by an arbitrary amount — the direction that kills a
+      // trade the player would have taken.
+      const sol = solveConstrained(program, highs, { objectiveStat: targets[j], locks, extra: rebExtra, tieBreak: false, reTighten: targets[i] });
       // Only a real trade: the traded-to priority must actually rise above the optimum.
       if (sol.status === "optimal" && !sameChosen(sol, optimum) && (sol.effective[targets[j]] ?? 0) > (per[targets[j]] ?? 0))
         out.push({ sol, gainAxis: "rebalance", meta: { from: targets[i], to: targets[j] } });
@@ -2988,5 +3137,5 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
 if (typeof module !== "undefined" && module.exports) {
   // readSolution is exported for TESTS ONLY — the deterministic guard tests
   // inject a synthetic primal (#319); app code goes through the solve entry points.
-  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, bucketCountsFor, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, readSolution, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars, rawTotalOf, effectiveOf, buildCreditReport, buildOverrideReport, outbidReportFor, attributeOutbid };
+  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, bucketCountsFor, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, readSolution, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars, rawTotalOf, effectiveOf, buildCreditReport, buildOverrideReport, outbidReportFor, attributeOutbid, probeConcession, concessionWindow };
 }

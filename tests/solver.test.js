@@ -6036,6 +6036,109 @@ async function withCrossAdd(map, fn) {
     O.withdrawOverrides(pool);
   });
 
+  // ---- #481: probeConcession — the smallest concession that changes anything ----
+  //
+  // Strength > Doublestrike > Deadly. Conceding 3 Strength unlocks Ring Y, whose
+  // INSIGHT Doublestrike outranks the Necklace's — which flips the Necklace to the
+  // Enhancement source and takes the Deadly with it. The gain rises and the priority
+  // BELOW it falls, which is the property KTD3 exists for.
+  const concessionModel = () => ({
+    targets: ["Strength", "Doublestrike", "Deadly"], mlCap: 34, dodgeCap: null,
+    worn: [
+      slot("Ring", [
+        item("Ring X", "Ring", [["Strength", "Enhancement", 20]]),
+        item("Ring Y", "Ring", [["Strength", "Enhancement", 17], ["Doublestrike", "Insight", 30]]),
+      ]),
+      slot("Necklace", [
+        item("Neck P", "Necklace", [["Doublestrike", "Insight", 20], ["Deadly", "Enhancement", 25]]),
+        item("Neck Q", "Necklace", [["Doublestrike", "Enhancement", 12]]),
+      ]),
+    ],
+    augments: [],
+  });
+  const probeFor = (opt, stat, opts) => S.probeConcession(
+    concessionModel(), opt.program, highs, stat,
+    opt.program.targetList, opt.perTarget || opt.effective, opts || {});
+
+  await test("#481: the binary search and the exhaustive walk agree on the boundary", async () => {
+    const opt = await S.solveLexicographic(concessionModel(), highs);
+    assert.strictEqual(opt.effective.Strength, 20);
+    // The step is at 3 while the window is 5, so a search that simply returns the
+    // widest cap — or the narrowest — cannot pass either assertion.
+    assert.strictEqual(S.concessionWindow(20), 5, "the window looks further than the answer");
+    const bin = await probeFor(opt, "Strength");
+    const lin = await probeFor(opt, "Strength", { linear: true });
+    assert.ok(bin && lin, "both modes found the concession");
+    assert.strictEqual(bin.concession, 3, "three points is the smallest concession that changes anything");
+    assert.strictEqual(bin.cap, 17, "…expressed as the Max the player would set");
+    assert.strictEqual(lin.concession, bin.concession, "exhaustive walk agrees with the binary search");
+    assert.strictEqual(lin.cap, bin.cap);
+  });
+
+  await test("#481: the delta vector carries the LOSS beneath the gain, not just the gain", async () => {
+    const opt = await S.solveLexicographic(concessionModel(), highs);
+    const r = await probeFor(opt, "Strength");
+    const by = Object.fromEntries(r.deltas.map((d) => [d.stat, d.delta]));
+    assert.strictEqual(by.Strength, -3, "the concession itself");
+    assert.strictEqual(by.Doublestrike, 22, "the first priority beneath rises");
+    assert.strictEqual(by.Deadly, -25, "…and the one after it genuinely falls (KTD3)");
+    // The failure this guards is a report that shows only positive deltas: a card
+    // built from it would advertise +22 Doublestrike and never mention the 25
+    // Deadly it costs.
+    assert.ok(r.deltas.some((d) => d.delta < 0 && d.stat !== "Strength"),
+      "a loss beneath the conceded stat is present in the vector");
+  });
+
+  await test("#481: an unprobeable target is refused BEFORE any solve runs", async () => {
+    const opt = await S.solveLexicographic(concessionModel(), highs);
+    // A returning-null assertion is not enough here: a probe that runs the whole
+    // search and finds nothing also returns null, so the refusal would pass for the
+    // wrong reason and the guard would be untested. The engine is replaced with one
+    // that throws, so only a refusal taken before the first solve survives.
+    const noSolve = { solve() { throw new Error("probeConcession solved for an unprobeable target"); } };
+    const SENT = require("../web/model.js").UTILITY_SENTINEL;
+    const refuse = (stat, list, per) => S.probeConcession(
+      concessionModel(), opt.program, noSolve, stat, list, per, {});
+
+    const targets = opt.program.targetList;
+    const per = opt.perTarget || opt.effective;
+    assert.strictEqual(await refuse("Deadly", targets, per), null, "nothing ranked beneath it to buy");
+    assert.strictEqual(await refuse("Kinetic Lore", targets, per), null, "not a ranked priority at all");
+    // The sentinel is not a stat and must never reach the cap channel — a cap keyed
+    // on it would clamp a name no bucket answers to. Fed a perTarget that DOES carry
+    // a value under the sentinel key (what a careless caller would hand it), so the
+    // refusal is the sentinel guard and not the base-value one.
+    assert.strictEqual(
+      await refuse(SENT, ["Strength", SENT, "Deadly"], { Strength: 20, [SENT]: 4, Deadly: 25 }),
+      null, "the sentinel is refused outright");
+  });
+
+  await test("#481: a window that buys nothing returns null, distinct from an infeasible solve", async () => {
+    // One slot, one axis: no concession on Strength can move Doublestrike.
+    const flat = () => ({
+      targets: ["Strength", "Doublestrike"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [item("Ring Solo", "Ring", [["Strength", "Enhancement", 20]])])],
+      augments: [],
+    });
+    const opt = await S.solveLexicographic(flat(), highs);
+    const r = await S.probeConcession(flat(), opt.program, highs, "Strength",
+      opt.program.targetList, opt.perTarget || opt.effective, {});
+    assert.strictEqual(r, null, "searched the window and nothing beneath moved");
+  });
+
+  await test("#481: the probe leaks no cap into the program or the achieved values", async () => {
+    const opt = await S.solveLexicographic(concessionModel(), highs);
+    const cappedBefore = JSON.stringify(opt.program.cappedStats);
+    const perBefore = JSON.stringify(opt.perTarget || opt.effective);
+    await probeFor(opt, "Strength");
+    assert.strictEqual(JSON.stringify(opt.program.cappedStats), cappedBefore,
+      "a leaked cap would silently re-rank every later solve");
+    assert.strictEqual(JSON.stringify(opt.perTarget || opt.effective), perBefore);
+    // …and the optimum itself is untouched (R9).
+    assert.strictEqual(opt.effective.Strength, 20);
+    assert.strictEqual(opt.effective.Deadly, 25);
+  });
+
   // review #4 — `zOf` is the ONE place a z variable is minted, and that is the
   // only reason an override marker can be attached to every contribution family.
   // A thirteenth family added later by someone who has not read this seam would

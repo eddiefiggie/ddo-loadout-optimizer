@@ -2125,7 +2125,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   // Render the paperdoll + Ranked/Sets/Deep-Dive panels from ANY build (the optimum
   // or a selected alternative) — the alternative's solution has the same shape.
   function renderBuild(build) {
-    const v = buildViews(build, model, query);
+    const v = buildViews(build, model, query, { concessions: build === optimum && canProbeConcession() });
     q("#rp-doll").innerHTML = v.paperdoll;
     q("#rp-weapons").innerHTML = v.weapons;
     q("#rp-cards").innerHTML = v.cards;
@@ -2220,7 +2220,11 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   // closure results.js can't reach). Every terminal state replaces the spinner —
   // cards, "none found", an error-with-retry, or solver-unavailable — so it is
   // never left spinning.
-  const altState = { list: null, computing: false };
+  // `probed` holds concession candidates the player priced from a stat card (#481).
+  // Kept SEPARATE from `list` so the two states stay distinguishable: `list === null`
+  // still means "the full analysis has not been run", which is what keeps the Run
+  // analysis affordance on screen after a probe has already put a card there.
+  const altState = { list: null, probed: [], computing: false };
   const altUnavailable = () => typeof generateAlternatives !== "function" || !highs;
 
   // #345 (U3, KTD4) — same shape as altUnavailable: a capability probe, not an
@@ -2228,6 +2232,11 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   // withheld there and the disclosure still stands on its own.
   function canPriceOutbid() {
     return typeof attributeOutbid === "function" && !!highs && !!(optimum && optimum.program);
+  }
+  // #481 — same shape, same reason: a restored character renders with `highs: null`
+  // and no program, so the control is WITHHELD rather than offered and then failing.
+  function canProbeConcession() {
+    return typeof probeConcession === "function" && !!highs && !!(optimum && optimum.program);
   }
   // Small helper: a message + a button that (re)runs the analysis.
   function altPrompt(msg, btnLabel, cls) {
@@ -2239,12 +2248,39 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   // Initial (or re-open) state: the Run-analysis button, unless already computed
   // (leave the cards/message in place) or the solver never loaded.
   function showAltIntro() {
+    if (altState.probed.length) { renderAltPanel(); return; }   // #481 — probed cards outlive a re-open
     if (altState.list !== null || altState.computing) return;
     if (altUnavailable()) {
       q("#rp-altspanel").innerHTML = `<p class="dd-none muted">Alternatives are unavailable (the solver did not load).</p>`;
       altState.list = []; return;
     }
     altPrompt("Explore near-optimal trade-off builds — complete a different set, free a slot, or take fewer crafting steps.", "Run analysis");
+  }
+  /** #481 (U5) — render whatever cards exist, from either source, as ONE listbox.
+   *
+   *  Probed candidates come first: the player asked for those by name. When the
+   *  full analysis has not run, the Run-analysis affordance is kept BELOW the cards
+   *  rather than replaced by them — a probe answering one question must not look
+   *  like it answered all of them.
+   *
+   *  Cards are wrapped in a fresh element each render and wired on THAT, because
+   *  `wireAltCards` binds click/keydown to the element it is handed; wiring the
+   *  long-lived panel repeatedly would stack a listener per render and select
+   *  once per stacked copy. */
+  function renderAltPanel() {
+    const panel = q("#rp-altspanel");
+    const list = [...altState.probed, ...(altState.list || [])];
+    if (!list.length) return false;
+    const more = altState.list === null
+      ? `<div class="alt-intro"><p class="muted">That is the trade you priced. Run the full analysis for set, crafting and unranked-stat trades too.</p>`
+        + `<button class="btn primary alt-run" type="button">Run analysis</button></div>`
+      : "";
+    panel.innerHTML = `<div class="alt-wrap">${renderAltCards(list)}</div>${more}`;
+    const wrap = panel.querySelector(".alt-wrap");
+    wireAltCards(wrap, list, setActive);
+    const run = panel.querySelector(".alt-run");
+    if (run) run.addEventListener("click", () => { altState.list = null; runAlternatives(); });
+    return true;
   }
   function runAlternatives() {
     const panel = q("#rp-altspanel");
@@ -2264,8 +2300,8 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
         const analyzed = raw.map((c) => analyzeAlternative(optimum, c, query));
         const ranked = rankAlternatives(analyzed, optimum, {});
         altState.list = ranked;
-        if (ranked.length) { panel.innerHTML = renderAltCards(ranked); wireAltCards(panel, ranked, setActive); }
-        else altPrompt("No worthwhile trade-off build was found — the optimum is hard to beat for these priorities.", "Run again", "dd-none muted");
+        if (!renderAltPanel())
+          altPrompt("No worthwhile trade-off build was found — the optimum is hard to beat for these priorities.", "Run again", "dd-none muted");
         q("#rp-live").textContent = ranked.length
           ? `${ranked.length} alternative loadout${ranked.length === 1 ? "" : "s"} found.`
           : "No worthwhile alternative loadouts were found.";
@@ -2278,6 +2314,82 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
       altState.computing = false;
     }, 20);
   }
+  // #481 (U4) — price a concession on request. One probe per click, never on the
+  // solve path. Delegated on the container rather than wired per button, because
+  // `renderBuild` replaces the whole ranked-cards block on every selection and a
+  // per-button wiring would be lost with it.
+  // Delegated on `#rp-cards`, NOT on `container`: `container` outlives this call,
+  // so a listener bound there would stack one copy per solve and fire the probe
+  // once per stacked copy. `#rp-cards` is minted by this render's template and
+  // survives `renderBuild`'s innerHTML swaps, which is exactly the lifetime wanted.
+  q("#rp-cards").addEventListener("click", (e) => {
+    const btn = e.target.closest(".concession-probe");
+    if (!btn || btn.disabled) return;
+    const stat = btn.dataset.stat;
+    btn.disabled = true;                                   // one probe per click
+    btn.textContent = `Pricing ${stat}…`;
+    // Defer so the label paints before the probe's solves, which are synchronous
+    // inside it however many `await`s it is written with.
+    setTimeout(() => {
+      Promise.resolve()
+        .then(() => probeConcession(model, optimum.program, highs, stat,
+          (query && query.targets) || [], optimum.perTarget || optimum.effective || {},
+          { utilityCount: optimum.utilityReport ? optimum.utilityReport.count : null }))
+        .then((res) => showConcession(btn, stat, res))
+        .catch((err) => {
+          // Never silently: a swallowed failure is indistinguishable from a genuine
+          // "nothing found", and those two must not blur — one means the trade does
+          // not exist, the other means we did not look.
+          console.error("concession probe failed", err);
+          replaceControl(btn, `Could not price a concession on ${esc(stat)} — the probe did not run.`);
+        });
+    }, 0);
+  });
+
+  function replaceControl(btn, html) {
+    const out = document.createElement("p");
+    out.className = "concession-priced";
+    out.innerHTML = html;
+    btn.replaceWith(out);
+    return out;
+  }
+
+  /** The three terminal states of a probe, kept deliberately distinct (R5). */
+  function showConcession(btn, stat, res) {
+    if (!res) {
+      const v = Number((optimum.effective || {})[stat]) || 0;
+      const w = Math.min(concessionWindow(v), v);
+      replaceControl(btn, `No concession of up to ${esc(w)} ${esc(stat)} changes anything ranked beneath it.`);
+      q("#rp-live").textContent = `No concession on ${stat} changes anything beneath it.`;
+      return;
+    }
+    const runOf = (ds, sign) => ds.map((d) => `${sign}${Math.abs(d.delta)} ${d.stat}`).join(", ");
+    const gains = res.deltas.filter((d) => d.delta > 0);
+    const losses = res.deltas.filter((d) => d.delta < 0 && d.stat !== stat);
+    // Losses are stated in the same breath as the gain, never as a footnote: per
+    // `lexicographic-descent-bounds-the-vector-not-each-stat.md` the priority after
+    // the one that rises can genuinely fall, and a sentence that mentions only the
+    // gain would advertise a trade while hiding its price.
+    const plain = `Giving up ${res.concession} ${stat} buys ${runOf(gains, "+")}`
+      + (losses.length ? ` and costs ${runOf(losses, "−")}` : "")
+      + `. Set Max ${res.cap} on ${stat} to take it.`;
+    const out = replaceControl(btn,
+      `${esc(plain)} <button class="btn ghost concession-view" type="button">See this build</button>`);
+    q("#rp-live").textContent = plain;      // the sentence itself, never its escaped form
+    out.querySelector(".concession-view").addEventListener("click", () => {
+      const cand = analyzeAlternative(optimum,
+        { sol: res.sol, gainAxis: "concession", meta: { stat, cap: res.cap, concession: res.concession } },
+        query);
+      if (!altState.probed.some((c) => c.key === cand.key)) altState.probed.unshift(cand);
+      renderAltPanel();
+      // Select through the CARD rather than calling setActive directly, so the
+      // listbox's own aria-selected/roving-tabindex state matches what is on screen.
+      // A build shown with no card marked selected reads as an unrelated render.
+      const card = q("#rp-altspanel").querySelector('.alt-card[data-idx="0"]');
+      if (card) card.click(); else setActive(res.sol, true, cand.gainText);
+    });
+  }
+
   showAltIntro();   // pre-render the button so the tab is ready on first open
   wireResultTabs(container, () => {});
 
@@ -2370,11 +2482,32 @@ function bundlesBlock(build, augById) {
   return `<h3 class="setlike-h" title="one enchantment granting several stats">Bundled enchantments (single-source, not sets)</h3><ul class="sets bundle-list">${cards}</ul>`;
 }
 
+/** #481 (U4) — the concession control: "what would less of this buy?", asked from
+ *  the priority it is about.
+ *
+ *  Rendered only where the question has an answer to give. A priority with nothing
+ *  ranked beneath it has nothing to buy, and a stat sitting at zero has nothing to
+ *  concede; offering the control there and then reporting "nothing found" would
+ *  teach the player that the control is noise. The caller's `opts.concessions` gate
+ *  carries the other half — solver availability, and that the build on screen is
+ *  the OPTIMUM. A selected alternative must not offer it: the probe is defined
+ *  against the optimum's program, so pricing from an alternative's card would
+ *  answer a question about a build the player is not looking at.
+ */
+function concessionControl(stat, i, total, query, opts) {
+  if (!(opts && opts.concessions)) return "";
+  const targets = (query && query.targets) || [];
+  if (i >= targets.length - 1) return "";      // nothing ranked beneath it
+  if (!(Number(total) > 0)) return "";         // nothing to concede
+  return `<button class="btn ghost concession-probe" type="button" data-stat="${esc(stat)}">`
+    + `What would less of this buy?</button>`;
+}
+
 // Compute the per-build view HTML (paperdoll, weapon row, ranked cards, set panel,
 // deep dive) for ANY result-shaped build — the optimum or a selected alternative,
 // which carry the same fields (chosen, effective, breakdown, capped, setsActive,
 // the *Placed lists). Reused by renderBuild for select-to-inspect (U5).
-function buildViews(build, model, query) {
+function buildViews(build, model, query, opts) {
   // The craft-placement maps (augment/dino assignments + per-item craft groupings)
   // come from the shared projection so the Deep Dive chips and the exports read from
   // one builder (KTD6).
@@ -2412,6 +2545,7 @@ function buildViews(build, model, query) {
       ${capNote}${(!reach && build.effective) ? ceilingChip(build, stat) : ""}
       ${attributionList(contribs)}
       ${reach}
+      ${concessionControl(stat, i, total, query, opts)}
     </div>`;
   }).join("");
   // #449 U3 (R15) — the FULL statement, once per readout at section level. It
@@ -2668,5 +2802,8 @@ if (typeof module !== "undefined" && module.exports) {
     setMembershipSection, setRowsFor,
     // #472 — exported so a test can build the same credited-set index the
     // renderers read, rather than hand-rolling its shape and drifting from it.
-    itemContribIndex };
+    itemContribIndex,
+    // #481 — the concession control's render gate, exported so a test can prove
+    // WHERE it appears without driving a DOM.
+    concessionControl };
 }
