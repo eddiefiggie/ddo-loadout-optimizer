@@ -1605,6 +1605,48 @@ input.wz-ml { width: 120px; }
   border-radius: var(--radius-sm); padding: 4px 6px; max-width: 100%; }
 .upg-fineprint { font-size: var(--fs-xs); line-height: 1.5; margin: 0 0 var(--sp-2); max-width: 70ch; }
 .upg-out:empty { display: none; }
+
+/* ============================================================================
+   #500 — the Versions tab: the picker, the delta lists, the slot-by-slot diff
+   ========================================================================== */
+.ver-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin: var(--sp-3) 0; }
+.ver-pick-label { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--muted); }
+.ver-pick { font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 4px 6px; max-width: 100%; }
+.ver-note:empty { display: none; }
+.ver-note { font-size: var(--fs-sm); color: var(--muted); margin: 0 0 var(--sp-2); }
+.ver-same { font-size: var(--fs-sm); color: var(--muted); padding: var(--sp-3) 0; }
+.ver-sec { margin: var(--sp-4) 0 0; }
+.ver-sec h4 { margin: 0 0 var(--sp-1); font-size: var(--fs-xs); color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.04em; }
+.ver-sec-note { font-size: var(--fs-xs); margin: 0 0 var(--sp-2); max-width: 70ch; line-height: 1.5; }
+.ver-stats, .ver-sets, .ver-slots, .ver-crafts { list-style: none; margin: 0; padding: 0; }
+.ver-stats li { display: flex; align-items: baseline; gap: var(--sp-2); padding: 3px 0;
+  border-bottom: 1px solid var(--border); font-size: var(--fs-sm); }
+.ver-stats li:last-child { border-bottom: 0; }
+.ver-stat-name { flex: 1 1 auto; min-width: 0; color: var(--text); }
+/* The ranked ones carry the weight: they are what the player asked to be
+   protected, so a change there is the headline and the rest is context. */
+.ver-stat.is-ranked .ver-stat-name { font-weight: 700; }
+.ver-stat-delta { font-variant-numeric: tabular-nums; font-weight: 700; flex: none; }
+.ver-stat.is-up .ver-stat-delta { color: var(--good, #6fcf97); }
+.ver-stat.is-down .ver-stat-delta { color: var(--warn, #e2a03f); }
+.ver-stat-detail { font-size: var(--fs-xs); color: var(--faint); flex: none; font-variant-numeric: tabular-nums; }
+.ver-sets li, .ver-crafts li { display: flex; align-items: baseline; gap: var(--sp-2); font-size: var(--fs-sm); padding: 2px 0; }
+.ver-tag { text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.6rem; font-weight: 700; flex: none; }
+.ver-sets li.is-up .ver-tag, .ver-crafts li.is-up .ver-tag { color: var(--good, #6fcf97); }
+.ver-sets li.is-down .ver-tag, .ver-crafts li.is-down .ver-tag { color: var(--warn, #e2a03f); }
+.ver-slot { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--panel-2);
+  padding: var(--sp-2) var(--sp-3); margin-bottom: var(--sp-2); }
+.ver-slot-name { font-size: var(--fs-xs); color: var(--faint); text-transform: uppercase; letter-spacing: 0.04em; }
+.ver-slot-body { display: grid; grid-template-columns: 1fr; gap: 2px; margin-top: 2px; }
+.ver-side { display: flex; align-items: baseline; gap: var(--sp-2); min-width: 0; }
+.ver-side-label { font-size: var(--fs-xs); color: var(--faint); flex: none; min-width: 8ch; }
+.ver-side-item { font-size: var(--fs-sm); color: var(--text); min-width: 0; overflow-wrap: anywhere; }
+.ver-crafts { margin-top: var(--sp-1); padding-left: 8ch; }
+@media (min-width: 640px) {
+  .ver-slot-body { grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+}
 .alt-computing { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); padding: var(--sp-5) 0; }
 .wz-adjust { margin-top: var(--sp-4); border: 1px dashed var(--border-2); border-radius: var(--radius);
   background: var(--panel-2); }

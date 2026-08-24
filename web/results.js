@@ -2037,7 +2037,7 @@ function outbidNotice(query, result, model, canPrice, canRequire) {
     + (ask ? `<span class="outbid-ask">${ask}</span>` : "") + `</p>`;
 }
 
-function renderResults(container, { model, result, query, dataset, highs, onAfterRender, onRequire, onJump, notesSeen, onNotesOpen, upgradeBar, onUpgradeBar }) {
+function renderResults(container, { model, result, query, dataset, highs, onAfterRender, onRequire, onJump, notesSeen, onNotesOpen, upgradeBar, onUpgradeBar, versions }) {
   if (result.status !== "optimal") {
     // Keep the Adjust & re-solve control available on a non-optimal result — this
     // is exactly when the user needs to loosen priorities/constraints in place.
@@ -2106,6 +2106,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
         <button class="rtab" role="tab" id="rt-loadout" aria-controls="rp-loadout" aria-selected="true" tabindex="0" type="button">Loadout</button>
         <button class="rtab" role="tab" id="rt-ranked" aria-controls="rp-ranked" aria-selected="false" tabindex="-1" type="button">Ranked Priorities</button>
         <button class="rtab" role="tab" id="rt-sets" aria-controls="rp-sets" aria-selected="false" tabindex="-1" type="button">Set Bonuses</button>
+        <button class="rtab" role="tab" id="rt-versions" aria-controls="rp-versions" aria-selected="false" tabindex="-1" type="button">Versions</button>
         <button class="rtab" role="tab" id="rt-share" aria-controls="rp-share" aria-selected="false" tabindex="-1" type="button">Share</button>
       </div>
       <div class="wz-adjust-slot" id="wz-adjust-slot"></div>
@@ -2114,6 +2115,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
       </section>
       <section id="rp-ranked" class="rpanel" role="tabpanel" aria-labelledby="rt-ranked" tabindex="0" hidden><div class="targets" id="rp-cards"></div></section>
       <section id="rp-sets" class="rpanel" role="tabpanel" aria-labelledby="rt-sets" tabindex="0" hidden><div id="rp-setspanel"></div></section>
+      <section id="rp-versions" class="rpanel" role="tabpanel" aria-labelledby="rt-versions" tabindex="0" hidden><div id="rp-versionspanel"></div></section>
       <section id="rp-share" class="rpanel" role="tabpanel" aria-labelledby="rt-share" tabindex="0" hidden><div id="rp-sharepanel"></div></section>
     </div>
     <div class="sr-only" aria-live="polite" id="rp-live"></div>`;
@@ -2414,6 +2416,65 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
       if (card) card.click(); else setActive(res.sol, true, cand.gainText);
     });
   }
+
+  // #500 — the Versions tab. `versions` is the caller's seam: the comparison
+  // candidates it can offer, plus what to do when the player saves one. Absent
+  // (a pure-test render, or a host that stores nothing) means the panel simply
+  // renders its empty state — never a control that cannot work, the same rule
+  // the outbid pricing, the concession probe and the upgrades search follow.
+  const verApi = versions || {};
+  function verRecords() {
+    return typeof verApi.records === "function" ? (verApi.records() || []) : (verApi.records || []);
+  }
+  /** The build on screen, in the shape `diffVersions` compares. `result` is the
+   *  LIVE solve rather than a stripped snapshot, which `Proj.project` reads
+   *  identically — a saved character's snapshot IS this shape minus the fields
+   *  persist.js drops. */
+  function liveRecord() {
+    return { id: "__current__", name: "This build", kind: "named",
+      query, inputs: { priorities: (query && query.targets) || [] }, snapshot: optimum };
+  }
+  function fillVersionsPanel(note) {
+    const host = q("#rp-versionspanel");
+    if (!host) return;
+    host.innerHTML = versionsPanel(verRecords(), { note: note || "" });
+    const pick = host.querySelector(".ver-pick");
+    const out = host.querySelector(".ver-diff");
+    if (pick) {
+      pick.addEventListener("change", () => {
+        const rec = verRecords().find((r) => String(r.id) === pick.value);
+        if (!rec) { out.innerHTML = ""; return; }
+        // The diff runs over the two records, never over the rendered HTML: the
+        // labels below are presentation, the comparison is data.
+        const d = (typeof VersionStore !== "undefined" && VersionStore.diffVersions)
+          ? VersionStore.diffVersions(liveRecord(), rec.record || rec) : null;
+        out.innerHTML = versionDiffView(d, { a: "This build", b: rec.label });
+        q("#rp-live").textContent = d && d.identical
+          ? `This build is identical to ${rec.label}.`
+          : `Comparison with ${rec.label} ready.`;
+      });
+    }
+    const save = host.querySelector(".ver-save");
+    if (save) {
+      save.addEventListener("click", () => {
+        if (typeof verApi.save !== "function") {
+          fillVersionsPanel("Saving is unavailable on this screen.");
+          return;
+        }
+        const res = verApi.save() || {};
+        // The quota case is the ONE failure that must be said out loud. Snapshots
+        // carry full item objects and auto-snapshots accumulate on every solve,
+        // so a full store is a matter of when. Swallowing it would stop recording
+        // history while the tab kept implying it was still saving.
+        fillVersionsPanel(res.ok
+          ? "Saved. Solve again and compare this against what you get."
+          : res.full
+            ? "Your browser's storage for this site is full, so this version was not saved. Delete a version you no longer need, then try again."
+            : "That version could not be saved.");
+      });
+    }
+  }
+  fillVersionsPanel(typeof verApi.note === "function" ? verApi.note() : verApi.note);
 
   wireResultTabs(container, () => {});
 
@@ -2817,6 +2878,106 @@ function wireAltCards(panel, ranked, setActive) {
   });
 }
 
+/** #500 — the Versions tab.
+ *
+ *  Answers a question the app could not answer at all: *how does this build
+ *  differ from the one I had before?* Saving a character overwrites what was
+ *  there, so nothing recorded what changed or what it cost.
+ *
+ *  The build on screen is always the LEFT side. The tab lives inside the results
+ *  readout, so there is always a live subject and a free two-sided picker would
+ *  be reachable only after a solve anyway.
+ *
+ *  `records` are comparison candidates: stored versions and saved characters
+ *  alike, already normalised by the caller into `{ id, label, group }`. */
+function versionsPanel(records, opts) {
+  const o = opts || {};
+  const list = records || [];
+  const groups = [];
+  for (const r of list) {
+    let g = groups.find((x) => x.name === (r.group || "Saved"));
+    if (!g) { g = { name: r.group || "Saved", items: [] }; groups.push(g); }
+    g.items.push(r);
+  }
+  const picker = list.length
+    ? `<label class="ver-pick-label">Compare against
+        <select class="ver-pick" aria-label="Build to compare against">
+          <option value="">Choose a saved build…</option>
+          ${groups.map((g) => `<optgroup label="${esc(g.name)}">`
+            + g.items.map((r) => `<option value="${esc(r.id)}">${esc(r.label)}</option>`).join("")
+            + `</optgroup>`).join("")}
+        </select>
+      </label>`
+    : `<p class="dd-none muted">Nothing saved yet to compare against. Save this build as a version, solve again,
+       and this tab will show you exactly what moved.</p>`;
+  return `<p class="wz-help">The build on screen, against one you saved. Every difference is reported —
+      <strong>including stats you never ranked</strong>, because a swap that quietly cost you 40 HP is exactly
+      the thing you would not have gone looking for.</p>
+    <div class="ver-controls">
+      ${picker}
+      <button class="btn ghost ver-save" type="button">Save this build as a version</button>
+    </div>
+    <p class="ver-note" role="status">${o.note ? esc(o.note) : ""}</p>
+    <div class="ver-diff"></div>`;
+}
+
+/** One rendered comparison. `labels` names the two sides so every row can say
+ *  which build it is talking about rather than relying on left/right. */
+function versionDiffView(diff, labels) {
+  if (!diff) return `<p class="dd-none muted">That build could not be read for comparison.</p>`;
+  const A = (labels && labels.a) || "this build";
+  const B = (labels && labels.b) || "the saved build";
+  if (diff.identical) {
+    return `<p class="ver-same">These two builds are identical — same gear, same crafts, same totals.</p>`;
+  }
+  const sign = (n) => `${n > 0 ? "+" : "−"}${Math.abs(n)}`;
+  const statRow = (d) => `<li class="ver-stat ${d.delta > 0 ? "is-up" : "is-down"}${d.ranked ? " is-ranked" : ""}">
+      <span class="ver-stat-name">${esc(d.stat)}</span>
+      <span class="ver-stat-delta">${esc(sign(d.delta))}</span>
+      <span class="ver-stat-detail">${esc(d.a)} vs ${esc(d.b)}</span>
+    </li>`;
+  const ranked = diff.stats.filter((d) => d.ranked);
+  const rest = diff.stats.filter((d) => !d.ranked);
+  const statsBlock = `
+    ${ranked.length ? `<section class="ver-sec"><h4>Your ranked priorities</h4><ul class="ver-stats">${ranked.map(statRow).join("")}</ul></section>` : ""}
+    ${rest.length ? `<section class="ver-sec"><h4>Everything else that moved</h4>
+        <p class="ver-sec-note muted">You did not rank these, so the solver never protected them. This is where a
+          swap quietly costs you something.</p>
+        <ul class="ver-stats">${rest.map(statRow).join("")}</ul></section>` : ""}
+    ${diff.stats.length ? "" : `<section class="ver-sec"><h4>Totals</h4><p class="muted">No stat differs between these builds.</p></section>`}`;
+
+  const setsBlock = (diff.sets.gained.length || diff.sets.lost.length)
+    ? `<section class="ver-sec"><h4>Set bonuses</h4><ul class="ver-sets">
+        ${diff.sets.gained.map((x) => `<li class="is-up"><span class="ver-tag">gained</span>${esc(x)}</li>`).join("")}
+        ${diff.sets.lost.map((x) => `<li class="is-down"><span class="ver-tag">lost</span>${esc(x)}</li>`).join("")}
+      </ul></section>` : "";
+
+  const changed = diff.slots.filter((s) => s.changed);
+  const slotRow = (s) => {
+    const crafts = [
+      ...s.craftsAdded.map((c) => `<li class="is-up"><span class="ver-tag">added</span>${esc(c)}</li>`),
+      ...s.craftsRemoved.map((c) => `<li class="is-down"><span class="ver-tag">dropped</span>${esc(c)}</li>`),
+    ].join("");
+    return `<li class="ver-slot">
+      <div class="ver-slot-head"><span class="ver-slot-name">${esc(s.slot)}</span></div>
+      <div class="ver-slot-body">
+        <div class="ver-side"><span class="ver-side-label">${esc(A)}</span><span class="ver-side-item">${s.a ? esc(s.a.item) : "empty"}</span></div>
+        <div class="ver-side"><span class="ver-side-label">${esc(B)}</span><span class="ver-side-item">${s.b ? esc(s.b.item) : "empty"}</span></div>
+      </div>
+      ${crafts ? `<ul class="ver-crafts">${crafts}</ul>` : ""}
+    </li>`;
+  };
+  const slotsBlock = `<section class="ver-sec"><h4>Slot by slot</h4>
+    ${changed.length
+      ? `<ul class="ver-slots">${changed.map(slotRow).join("")}</ul>`
+      : `<p class="muted">Every slot holds the same item, with the same crafts.</p>`}
+    ${changed.length && changed.length < diff.slots.length
+      ? `<p class="ver-sec-note muted">${diff.slots.length - changed.length} unchanged slot${diff.slots.length - changed.length === 1 ? " is" : "s are"} not listed.</p>`
+      : ""}</section>`;
+
+  return `${statsBlock}${setsBlock}${slotsBlock}`;
+}
+
 // Wire the result sub-tabs (Ranked / Sets / …). Re-run on every render.
 function wireResultTabs(container, onShow) {
   const tablist = container.querySelector(".result-tabs");
@@ -2851,7 +3012,7 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, upgradeNotice, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, upgradeNotice, versionsPanel, versionDiffView, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
     // #471 — the card's row language: the three-column row itself, the two
     // in-place slot sections, and the foot-note family.
     stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH,

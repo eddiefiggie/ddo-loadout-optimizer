@@ -4046,8 +4046,8 @@ test("#499: the result tabs no longer offer Alternatives or a Deep Dive", () => 
   const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
   const tablist = srcBetween(src, '<div class="result-tabs"', "</div>", "result tabs");
   const labels = [...tablist.matchAll(/type="button">([^<]+)</g)].map((m) => m[1]);
-  assert.deepStrictEqual(labels, ["Loadout", "Ranked Priorities", "Set Bonuses", "Share"],
-    "the two retired tabs are gone and the survivors keep their order");
+  assert.deepStrictEqual(labels, ["Loadout", "Ranked Priorities", "Set Bonuses", "Versions", "Share"],
+    "the retired tabs are gone, Versions sits in their place, and Share stays last");
 });
 
 test("#499: the bar filters BEFORE the ranking, not after", () => {

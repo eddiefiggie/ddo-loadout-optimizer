@@ -4,7 +4,7 @@
 
 🎮 **Play it now:** https://eddiefiggie.github.io/ddo-loadout-optimizer/ · **Code:** https://github.com/eddiefiggie/ddo-loadout-optimizer
 
-**Current build:** 08242026.2 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
+**Current build:** 08242026.3 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
 
 
 ---
@@ -85,13 +85,14 @@ A short guided wizard walks you through it:
 2. **Character** — three labelled groups. **Required** holds your build name, ML cap, race and armor type; **Restrictions** holds everything optional (ML floor, alignment, oath, **Include an Artifact**, and how much crafting the solver may assume); **Weapon setup** folds away, and says whether it holds anything. Press Continue with a required field blank and the step holds, scrolls to it, and names every field still needed.
 3. **Gear pool** — everything in the game, or only what you own via a Trove import.
 4. **Priorities** — add the stats you want, in order, and drag to reorder. First is most important.
-5. **Solve.** In well under a second you get four tabs:
+5. **Solve.** In well under a second you get five tabs:
 
 | Tab | What it shows |
 |---|---|
 | **Loadout** | The full kit, slot by slot, set pieces highlighted, with augments and craft steps on each item |
 | **Ranked Priorities** | Where every point of every stat came from — which item, which set, which bonus type; and, per priority, what giving ground on it would buy the priorities beneath |
 | **Set Bonuses** | Every set you actually complete and what it grants |
+| **Versions** | This build against one you saved — every difference, *including stats you never ranked* |
 | **Share** | Forum-ready Markdown, CSV, a print-friendly page, or a DDOBuilder-importable `.gearset` |
 
 Above the tabs, the notes panel carries an **Upgrades** card. Ask it to search and it looks for builds that reach the same totals while completing another set, freeing a slot, taking fewer crafting steps, or picking up a stat you never ranked — and it shows you only the ones that **cost you nothing**. Widen the bar if you want to see trades, and a suggestion still has to clear it twice: the loss must be small as a share of that priority's total, *and* what it buys must outweigh it once your ranking is taken into account. A point of your first priority is worth far more than a point of your last, so "+1 Dodge for −5 Melee Power" can never reach you. For the one trade you want priced by name, the **Ranked Priorities** tab asks it directly: *what would giving ground here buy me?*
